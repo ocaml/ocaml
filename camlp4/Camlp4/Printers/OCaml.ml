@@ -97,7 +97,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     try match lexer str with parser
         [: `(tok, _); `(EOI, _) :] -> tok
     with
-    [ Stream.Failure ->
+    [ Stream.Failure | Stream.Error _ ->
         failwith (sprintf
           "Cannot print %S this string contains more than one token" str)
     | Lexer.Error.E exn ->
@@ -342,8 +342,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     method sum_type f t = do {
       (* FIXME pp_print_if_newline f (); *)
-      pp_print_string f "| ";
+      pp f "@[<hv0>| ";
       o#ctyp f t;
+      pp f "@]";
     };
     method string f = pp f "%s";
     method quoted_string f = pp f "%S";

@@ -80,7 +80,8 @@ value rewrite_and_load n x =
     | ("Filters"|"", "lift" | "camlp4astlifter.cmo") -> load ["Camlp4AstLifter"]
     | ("Filters"|"", "exn" | "camlp4exceptiontracer.cmo") -> load ["Camlp4ExceptionTracer"]
     | ("Filters"|"", "prof" | "camlp4profiler.cmo") -> load ["Camlp4Profiler"]
-    | ("Filters"|"", "map" | "camlp4mapgenerator.cmo") -> load ["Camlp4MapGenerator"]
+    (* map is now an alias of fold since fold handles map too *)
+    | ("Filters"|"", "map" | "camlp4mapgenerator.cmo") -> load ["Camlp4FoldGenerator"]
     | ("Filters"|"", "fold" | "camlp4foldgenerator.cmo") -> load ["Camlp4FoldGenerator"]
     | ("Filters"|"", "meta" | "camlp4metagenerator.cmo") -> load ["Camlp4MetaGenerator"]
     | ("Filters"|"", "trash" | "camlp4trashremover.cmo") -> load ["Camlp4TrashRemover"]

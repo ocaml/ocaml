@@ -20,7 +20,7 @@
 
 (* $Id$ *)
 
-module Make (Ast : Sig.Ast)
+module Make (Ast : Sig.Camlp4Ast)
 : Sig.Quotation with module Ast = Ast
 = struct
   module Ast = Ast;

@@ -22,10 +22,10 @@ module R =
  *)
     module Id =
       struct
-        let name = "Camlp4RevisedParserParser"
+        let name = "Camlp4RevisedParser"
           
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.24 2007/06/20 13:26:29 ertai Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.25 2007/06/21 07:50:00 ertai Exp $"
           
       end
       
@@ -6035,8 +6035,9 @@ Very old (no more supported) syntax:
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj (label : 'label Gram.Entry.t));
                             Gram.Skeyword "=";
-                            Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                            Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top") ],
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (l : 'label) (_loc : Loc.t)
                                 ->
@@ -8973,7 +8974,8 @@ module Rp =
           
         type spat_comp =
           | SpTrm of Loc.t * Ast.patt * Ast.expr option
-          | SpNtr of Loc.t * Ast.patt * Ast.expr | SpStr of Loc.t * Ast.patt
+          | SpNtr of Loc.t * Ast.patt * Ast.expr
+          | SpStr of Loc.t * Ast.patt
         
         type sexp_comp =
           | SeTrm of Loc.t * Ast.expr | SeNtr of Loc.t * Ast.expr
@@ -9916,9 +9918,14 @@ module G =
         type 'e name = { expr : 'e; tvar : string; loc : loc }
         
         type styp =
-          | STlid of loc * string | STapp of loc * styp * styp
-          | STquo of loc * string | STself of loc * string | STtok of loc
-          | STstring_tok of loc | STany of loc | STtyp of Ast.ctyp
+          | STlid of loc * string
+          | STapp of loc * styp * styp
+          | STquo of loc * string
+          | STself of loc * string
+          | STtok of loc
+          | STstring_tok of loc
+          | STany of loc
+          | STtyp of Ast.ctyp
         
         type (** The first is the match function expr,
              the second is the string description.
@@ -9928,10 +9935,12 @@ module G =
           ('e, 'p) text =
           | TXmeta of loc * string * (('e, 'p) text) list * 'e * styp
           | TXlist of loc * bool * ('e, 'p) symbol * (('e, 'p) symbol) option
-          | TXnext of loc | TXnterm of loc * 'e name * string option
+          | TXnext of loc
+          | TXnterm of loc * 'e name * string option
           | TXopt of loc * ('e, 'p) text
           | TXrules of loc * (((('e, 'p) text) list) * 'e) list
-          | TXself of loc | TXkwd of loc * string
+          | TXself of loc
+          | TXkwd of loc * string
           | TXtok of loc * 'e * string
           and ('e, 'p) entry =
           { name : 'e name; pos : 'e option; levels : (('e, 'p) level) list
@@ -12413,7 +12422,8 @@ Added statements:
         include Syntax
           
         type 'a item_or_def =
-          | SdStr of 'a | SdDef of string * ((string list) * Ast.expr) option
+          | SdStr of 'a
+          | SdDef of string * ((string list) * Ast.expr) option
           | SdUnd of string
           | SdITE of string * ('a item_or_def) list * ('a item_or_def) list
           | SdLazy of 'a Lazy.t
@@ -12461,9 +12471,10 @@ Added statements:
           
         class reloc _loc =
           object inherit Ast.map as super
-                    method _Loc_t = fun _ -> _loc
+                    method loc = fun _ -> _loc
                        end
           
+        (* method _Loc_t _ = _loc; *)
         class subst _loc env =
           object inherit reloc _loc as super
                    
@@ -13806,7 +13817,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14.2.4 2007/05/22 09:05:38 pouillar Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.5 2007/06/21 08:07:08 ertai Exp $ *)
     open Camlp4
       
     open PreCast.Syntax
@@ -13919,8 +13930,9 @@ module B =
               load [ "Camlp4ExceptionTracer" ]
           | (("Filters" | ""), ("prof" | "camlp4profiler.cmo")) ->
               load [ "Camlp4Profiler" ]
-          | (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
-              load [ "Camlp4MapGenerator" ]
+          | (* map is now an alias of fold since fold handles map too *)
+              (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
+              load [ "Camlp4FoldGenerator" ]
           | (("Filters" | ""), ("fold" | "camlp4foldgenerator.cmo")) ->
               load [ "Camlp4FoldGenerator" ]
           | (("Filters" | ""), ("meta" | "camlp4metagenerator.cmo")) ->
@@ -14041,8 +14053,11 @@ camlp4 warning: option -noassert is obsolete
 You should give the -noassert option to the ocaml compiler instead.@."
       
     type file_kind =
-      | Intf of string | Impl of string | Str of string
-      | ModuleImpl of string | IncludeDir of string
+      | Intf of string
+      | Impl of string
+      | Str of string
+      | ModuleImpl of string
+      | IncludeDir of string
     
     let search_stdlib = ref true
       
@@ -14071,7 +14086,8 @@ You should give the -noassert option to the ocaml compiler instead.@."
               in
                 (output_string o s;
                  close_out o;
-                 task (process_impl dyn_loader) f)
+                 task (process_impl dyn_loader) f;
+                 at_exit (fun () -> Sys.remove f))
           | ModuleImpl file_name -> rewrite_and_load "" file_name
           | IncludeDir dir -> DynLoader.include_dir dyn_loader dir);
          !rcall_callback ())

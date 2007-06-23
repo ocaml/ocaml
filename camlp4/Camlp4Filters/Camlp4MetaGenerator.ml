@@ -35,8 +35,9 @@ value rec string_of_ident =
 
 value fold_args ty f init =
   let (_, res) =
-    List.fold_left (fun (i, acc) ty -> (succ i, f ty i acc)
-    ) (0, init) ty
+    List.fold_left begin fun (i, acc) ty ->
+      (succ i, f ty i acc)
+    end (0, init) ty
   in res;
 
 value fold_data_ctors ty f init =
@@ -53,14 +54,14 @@ value fold_type_decls m f init =
   MapTy.fold f m.type_decls init;
 
 value patt_of_data_ctor_decl cons tyargs =
-  fold_args tyargs (fun _ i acc ->
+  fold_args tyargs begin fun _ i acc ->
     <:patt< $acc$ $id:x i$ >>
-  ) <:patt< $id:cons$ >>;
+  end <:patt< $id:cons$ >>;
 
 value expr_of_data_ctor_decl cons tyargs =
-  fold_args tyargs (fun _ i acc ->
+  fold_args tyargs begin fun _ i acc ->
     <:expr< $acc$ $id:x i$ >>
-  ) <:expr< $id:cons$ >>;
+  end <:expr< $id:cons$ >>;
 
 value is_antiquot_data_ctor s =
   let ls = String.length s in
@@ -81,49 +82,50 @@ value failure = <:expr< raise (Failure "MetaGenerator: cannot handle that kind o
 
 value mk_meta m =
   let m_name_uid x = <:ident< $m.name$.$uid:x$ >> in
-  fold_type_decls m (fun tyname tydcl acc ->
-    let funct =
-      match tydcl with
-      [ Ast.TyDcl _ _ tyvars <:ctyp< [$ty$] >> _ ->
-        let match_case =
-          fold_data_ctors ty (fun cons tyargs acc ->
-            let m_name_cons = m_name_uid cons in
-            let init = m_id m (meta_ident m m_name_cons) in
-            let p = patt_of_data_ctor_decl m_name_cons tyargs in
-            let e =
-              if cons = "BAnt" || cons = "OAnt" || cons = "LAnt" then
-                <:expr< $id:m.ant$ _loc x0 >>
-              else if is_antiquot_data_ctor cons then
-                expr_of_data_ctor_decl m.ant tyargs
-              else
-                fold_args tyargs (fun ty i acc ->
-                  let rec fcall_of_ctyp ty =
-                    match ty with
-                    [ <:ctyp< $id:id$ >> ->
-                        <:expr< $id:meta_ (string_of_ident id)$ >>
-                    | <:ctyp< ($t1$ * $t2$) >> ->
-                        <:expr< (fun _loc (x1, x2) ->
-                                  $m.tup$ _loc
-                                    ($m.com$ _loc
-                                      ($fcall_of_ctyp t1$ _loc x1)
-                                      ($fcall_of_ctyp t2$ _loc x2))) >>
-                    | <:ctyp< $t1$ $t2$ >> ->
-                        <:expr< $fcall_of_ctyp t1$ $fcall_of_ctyp t2$ >>
-                    | <:ctyp< '$s$ >> -> <:expr< $lid:mf_ s$ >>
-                    | _ -> failure ]
-                  in m_app m acc <:expr< $fcall_of_ctyp ty$ _loc $id:x i$ >>
-                ) init
-            in <:match_case< $p$ -> $e$ | $acc$ >>
-          ) <:match_case<>> in
-         List.fold_right (fun tyvar acc ->
-           match tyvar with
-           [ <:ctyp< +'$s$ >> | <:ctyp< -'$s$ >> | <:ctyp< '$s$ >> ->
+  fold_type_decls m begin fun tyname tydcl binding_acc ->
+    match tydcl with
+    [ Ast.TyDcl _ _ tyvars <:ctyp< [$ty$] >> _ ->
+      let match_case =
+        fold_data_ctors ty begin fun cons tyargs acc ->
+          let m_name_cons = m_name_uid cons in
+          let init = m_id m (meta_ident m m_name_cons) in
+          let p = patt_of_data_ctor_decl m_name_cons tyargs in
+          let e =
+            if cons = "BAnt" || cons = "OAnt" || cons = "LAnt" then
+              <:expr< $id:m.ant$ _loc x0 >>
+            else if is_antiquot_data_ctor cons then
+              expr_of_data_ctor_decl m.ant tyargs
+            else
+              fold_args tyargs begin fun ty i acc ->
+                let rec fcall_of_ctyp ty =
+                  match ty with
+                  [ <:ctyp< $id:id$ >> ->
+                      <:expr< $id:meta_ (string_of_ident id)$ >>
+                  | <:ctyp< ($t1$ * $t2$) >> ->
+                      <:expr< fun _loc (x1, x2) ->
+                                $m.tup$ _loc
+                                  ($m.com$ _loc
+                                    ($fcall_of_ctyp t1$ _loc x1)
+                                    ($fcall_of_ctyp t2$ _loc x2)) >>
+                  | <:ctyp< $t1$ $t2$ >> ->
+                      <:expr< $fcall_of_ctyp t1$ $fcall_of_ctyp t2$ >>
+                  | <:ctyp< '$s$ >> -> <:expr< $lid:mf_ s$ >>
+                  | _ -> failure ]
+                in m_app m acc <:expr< $fcall_of_ctyp ty$ _loc $id:x i$ >>
+              end init
+          in <:match_case< $p$ -> $e$ | $acc$ >>
+        end <:match_case<>> in
+        let funct =
+          List.fold_right begin fun tyvar acc ->
+            match tyvar with
+            [ <:ctyp< +'$s$ >> | <:ctyp< -'$s$ >> | <:ctyp< '$s$ >> ->
                 <:expr< fun $lid:mf_ s$ -> $acc$ >>
-           | _ -> assert False ])
-         tyvars <:expr< fun _loc -> fun [ $match_case$ ] >>
-      | Ast.TyDcl _ _ _ _ _ -> <:expr< fun _ -> $failure$ >>
-      | _ -> assert False ]
-    in <:binding< $acc$ and $lid:"meta_"^tyname$ = $funct$ >>) <:binding<>>;
+            | _ -> assert False ]
+          end tyvars <:expr< fun _loc -> fun [ $match_case$ ] >>
+        in <:binding< $binding_acc$ and $lid:"meta_"^tyname$ = $funct$ >>
+    | Ast.TyDcl _ _ _ _ _ -> binding_acc
+    | _ -> assert False ]
+  end <:binding<>>;
 
 value find_type_decls = object
   inherit Ast.fold as super;

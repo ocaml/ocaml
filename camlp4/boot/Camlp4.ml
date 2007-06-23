@@ -559,9 +559,9 @@ module Sig =
     See the {!Camlp4Ast} signature for a concrete definition. *)
     module type Ast =
       sig
-        module Loc : Loc
-          
         (** {6 Syntactic categories as abstract types} *)
+        type loc
+        
         type meta_bool
         
         type 'a meta_option
@@ -603,39 +603,39 @@ module Sig =
         type module_binding
         
         (** {6 Location accessors} *)
-        val loc_of_ctyp : ctyp -> Loc.t
+        val loc_of_ctyp : ctyp -> loc
           
-        val loc_of_patt : patt -> Loc.t
+        val loc_of_patt : patt -> loc
           
-        val loc_of_expr : expr -> Loc.t
+        val loc_of_expr : expr -> loc
           
-        val loc_of_module_type : module_type -> Loc.t
+        val loc_of_module_type : module_type -> loc
           
-        val loc_of_module_expr : module_expr -> Loc.t
+        val loc_of_module_expr : module_expr -> loc
           
-        val loc_of_sig_item : sig_item -> Loc.t
+        val loc_of_sig_item : sig_item -> loc
           
-        val loc_of_str_item : str_item -> Loc.t
+        val loc_of_str_item : str_item -> loc
           
-        val loc_of_class_type : class_type -> Loc.t
+        val loc_of_class_type : class_type -> loc
           
-        val loc_of_class_sig_item : class_sig_item -> Loc.t
+        val loc_of_class_sig_item : class_sig_item -> loc
           
-        val loc_of_class_expr : class_expr -> Loc.t
+        val loc_of_class_expr : class_expr -> loc
           
-        val loc_of_class_str_item : class_str_item -> Loc.t
+        val loc_of_class_str_item : class_str_item -> loc
           
-        val loc_of_with_constr : with_constr -> Loc.t
+        val loc_of_with_constr : with_constr -> loc
           
-        val loc_of_binding : binding -> Loc.t
+        val loc_of_binding : binding -> loc
           
-        val loc_of_rec_binding : rec_binding -> Loc.t
+        val loc_of_rec_binding : rec_binding -> loc
           
-        val loc_of_module_binding : module_binding -> Loc.t
+        val loc_of_module_binding : module_binding -> loc
           
-        val loc_of_match_case : match_case -> Loc.t
+        val loc_of_match_case : match_case -> loc
           
-        val loc_of_ident : ident -> Loc.t
+        val loc_of_ident : ident -> loc
           
         (** {6 Traversals} *)
         (** This class is the base class for map traversal on the Ast.
@@ -655,32 +655,22 @@ module Sig =
       assert (map <:expr< fun x -> (x, 42) >> = <:expr< fun x -> (42, x) >>);]
   *)
         class map :
-          object
+          object ('self_type)
             method string : string -> string
               
-            method int : int -> int
-              
-            method float : float -> float
-              
-            method bool : bool -> bool
-              
-            method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list
-              
-            method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option
-              
-            method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array
-              
-            method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref
+            method list :
+              'a 'b. ('self_type -> 'a -> 'b) -> 'a list -> 'b list
               
             method meta_bool : meta_bool -> meta_bool
               
             method meta_option :
-              'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option
+              'a 'b.
+                ('self_type -> 'a -> 'b) -> 'a meta_option -> 'b meta_option
               
             method meta_list :
-              'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list
+              'a 'b. ('self_type -> 'a -> 'b) -> 'a meta_list -> 'b meta_list
               
-            method _Loc_t : Loc.t -> Loc.t
+            method loc : loc -> loc
               
             method expr : expr -> expr
               
@@ -716,6 +706,8 @@ module Sig =
               
             method ident : ident -> ident
               
+            method unknown : 'a. 'a -> 'a
+              
           end
           
         (** Fold style traversal *)
@@ -723,23 +715,8 @@ module Sig =
           object ('self_type)
             method string : string -> 'self_type
               
-            method int : int -> 'self_type
-              
-            method float : float -> 'self_type
-              
-            method bool : bool -> 'self_type
-              
             method list :
               'a. ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type
-              
-            method option :
-              'a. ('self_type -> 'a -> 'self_type) -> 'a option -> 'self_type
-              
-            method array :
-              'a. ('self_type -> 'a -> 'self_type) -> 'a array -> 'self_type
-              
-            method ref :
-              'a. ('self_type -> 'a -> 'self_type) -> 'a ref -> 'self_type
               
             method meta_bool : meta_bool -> 'self_type
               
@@ -753,7 +730,7 @@ module Sig =
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_list -> 'self_type
               
-            method _Loc_t : Loc.t -> 'self_type
+            method loc : loc -> 'self_type
               
             method expr : expr -> 'self_type
               
@@ -789,94 +766,101 @@ module Sig =
               
             method ident : ident -> 'self_type
               
+            method unknown : 'a. 'a -> 'self_type
+              
           end
           
       end
       
-    (** Signature for OCaml syntax trees.
+    (** Signature for OCaml syntax trees. *)
+    (*
     This signature is an extension of {!Ast}
     It provides:
       - Types for all kinds of structure.
       - Map: A base class for map traversals.
       - Map classes and functions for common kinds.
 
-    (* Core language *)
-    ctyp               (* Representaion of types                                     *)
-    patt               (* The type of patterns                                       *)
-    expr               (* The type of expressions                                    *)
-    match_case         (* The type of cases for match/function/try constructions     *)
-    ident              (* The type of identifiers (including path like Foo(X).Bar.y) *)
-    binding            (* The type of let bindings                                   *)
-    rec_binding        (* The type of record definitions                             *)
+    == Core language ==
+    ctyp               :: Representaion of types
+    patt               :: The type of patterns
+    expr               :: The type of expressions
+    match_case         :: The type of cases for match/function/try constructions
+    ident              :: The type of identifiers (including path like Foo(X).Bar.y)
+    binding            :: The type of let bindings
+    rec_binding        :: The type of record definitions
 
-    (* Modules *)
-    module_type        (* The type of module types                                   *)
-    sig_item           (* The type of signature items                                *)
-    str_item           (* The type of structure items                                *)
-    module_expr        (* The type of module expressions                             *)
-    module_binding     (* The type of recursive module definitions                   *)
-    with_constr        (* The type of `with' constraints                             *)
+    == Modules ==
+    module_type        :: The type of module types
+    sig_item           :: The type of signature items
+    str_item           :: The type of structure items
+    module_expr        :: The type of module expressions
+    module_binding     :: The type of recursive module definitions
+    with_constr        :: The type of `with' constraints
 
-    (* Classes *)
-    class_type         (* The type of class types                                    *)
-    class_sig_item     (* The type of class signature items                          *)
-    class_expr         (* The type of class expressions                              *)
-    class_str_item     (* The type of class structure items                          *)
+    == Classes ==
+    class_type         :: The type of class types
+    class_sig_item     :: The type of class signature items
+    class_expr         :: The type of class expressions
+    class_str_item     :: The type of class structure items
  *)
     module type Camlp4Ast =
       sig
+        (** The inner module for locations *)
         module Loc : Loc
           
-        type meta_bool = | BTrue | BFalse | BAnt of string
-        
-        type 'a meta_option = | ONone | OSome of 'a | OAnt of string
-        
-        type 'a meta_list =
-          | LNil | LCons of 'a * 'a meta_list | LAnt of string
-        
-        type ident =
-          | (* i . i *) (* i i *) (* foo *) (* Bar *)
-          IdAcc of Loc.t * ident * ident | IdApp of Loc.t * ident * ident
-          | IdLid of Loc.t * string | IdUid of Loc.t * string
-          | IdAnt of Loc.t * string
-        
-        (* $s$ *)
-        type ctyp =
-          | (* t as t *) (* list 'a as 'a *) (* _ *) (* t t *) (* list 'a *)
-          (* t -> t *) (* int -> string *) (* #i *) (* #point *) (* ~s *)
-          (* i *) (* Lazy.t *) (* t == t *) (* type t = [ A | B ] == Foo.t *)
+        type (* i . i *)
+          (* i i *)
+          (* foo *)
+          (* Bar *)
+          (* $s$ *)
+          (* t as t *)
+          (* list 'a as 'a *)
+          (* _ *)
+          (* t t *)
+          (* list 'a *)
+          (* t -> t *)
+          (* int -> string *)
+          (* #i *)
+          (* #point *)
+          (* ~s *)
+          (* i *)
+          (* Lazy.t *)
+          (* t == t *)
+          (* type t = [ A | B ] == Foo.t *)
           (* type t 'a 'b 'c = t constraint t = t constraint t = t *)
-          (* < (t)? (..)? > *) (* < move : int -> 'a .. > as 'a  *) (* ?s *)
-          (* ! t . t *) (* ! 'a . list 'a -> 'a *) (* 's *) (* +'s *)
-          (* -'s *) (* `s *) (* { t } *)
-          (* { foo : int ; bar : mutable string } *) (* t : t *) (* t; t *)
-          (* t, t *) (* [ t ] *) (* [ A of int and string | B ] *)
-          (* t of t *) (* A of int *) (* t and t *) (* t | t *)
-          (* private t *) (* mutable t *) (* ( t ) *) (* (int * string) *)
-          (* t * t *) (* [ = t ] *) (* [ > t ] *) (* [ < t ] *)
-          (* [ < t > t ] *) (* t & t *) (* t of & t *) TyNil of Loc.t
-          | TyAli of Loc.t * ctyp * ctyp | TyAny of Loc.t
-          | TyApp of Loc.t * ctyp * ctyp | TyArr of Loc.t * ctyp * ctyp
-          | TyCls of Loc.t * ident | TyLab of Loc.t * string * ctyp
-          | TyId of Loc.t * ident | TyMan of Loc.t * ctyp * ctyp
-          | TyDcl of Loc.t * string * ctyp list * ctyp * (ctyp * ctyp) list
-          | TyObj of Loc.t * ctyp * meta_bool
-          | TyOlb of Loc.t * string * ctyp | TyPol of Loc.t * ctyp * ctyp
-          | TyQuo of Loc.t * string | TyQuP of Loc.t * string
-          | TyQuM of Loc.t * string | TyVrn of Loc.t * string
-          | TyRec of Loc.t * ctyp | TyCol of Loc.t * ctyp * ctyp
-          | TySem of Loc.t * ctyp * ctyp | TyCom of Loc.t * ctyp * ctyp
-          | TySum of Loc.t * ctyp | TyOf of Loc.t * ctyp * ctyp
-          | TyAnd of Loc.t * ctyp * ctyp | TyOr of Loc.t * ctyp * ctyp
-          | TyPrv of Loc.t * ctyp | TyMut of Loc.t * ctyp
-          | TyTup of Loc.t * ctyp | TySta of Loc.t * ctyp * ctyp
-          | TyVrnEq of Loc.t * ctyp | TyVrnSup of Loc.t * ctyp
-          | TyVrnInf of Loc.t * ctyp | TyVrnInfSup of Loc.t * ctyp * ctyp
-          | TyAmp of Loc.t * ctyp * ctyp | TyOfAmp of Loc.t * ctyp * ctyp
-          | TyAnt of Loc.t * string
-        
-        (* $s$ *)
-        type (* i *)
+          (* < (t)? (..)? > *)
+          (* < move : int -> 'a .. > as 'a  *)
+          (* ?s *)
+          (* ! t . t *)
+          (* ! 'a . list 'a -> 'a *)
+          (* 's *)
+          (* +'s *)
+          (* -'s *)
+          (* `s *)
+          (* { t } *)
+          (* { foo : int ; bar : mutable string } *)
+          (* t : t *)
+          (* t; t *)
+          (* t, t *)
+          (* [ t ] *)
+          (* [ A of int and string | B ] *)
+          (* t of t *)
+          (* A of int *)
+          (* t and t *)
+          (* t | t *)
+          (* private t *)
+          (* mutable t *)
+          (* ( t ) *)
+          (* (int * string) *)
+          (* t * t *)
+          (* [ = t ] *)
+          (* [ > t ] *)
+          (* [ < t ] *)
+          (* [ < t > t ] *)
+          (* t & t *)
+          (* t of & t *)
+          (* $s$ *)
+          (* i *)
           (* p as p *)
           (* (Node x y as n) *)
           (* $s$ *)
@@ -889,6 +873,8 @@ module Sig =
           (* c *)
           (* 'x' *)
           (* ~s or ~s:(p) *)
+          (* ?s or ?s:(p = e) or ?(p = e) *)
+          (* | PaOlb of loc and string and meta_option(*FIXME*) (patt * meta_option(*FIXME*) expr) *)
           (* ?s or ?s:(p) *)
           (* ?s:(p = e) or ?(p = e) *)
           (* p | p *)
@@ -914,25 +900,25 @@ module Sig =
           (* (e : t) or (e : t :> t) *)
           (* 3.14 *)
           (* for s = e to/downto e do { e } *)
-          (* fun [ mc ] *)
+          (* fun [ a ] *)
           (* if e then e else e *)
           (* 42 *)
           (* ~s or ~s:e *)
           (* lazy e *)
-          (* let bi in e or let rec bi in e *)
+          (* let b in e or let rec b in e *)
           (* let module s = me in e *)
-          (* match e with [ mc ] *)
+          (* match e with [ a ] *)
           (* new i *)
           (* object ((p))? (cst)? end *)
           (* ?s or ?s:e *)
-          (* {< rb >} *)
-          (* { rb } or { (e) with rb } *)
+          (* {< b >} *)
+          (* { b } or { (e) with b } *)
           (* do { e } *)
           (* e#s *)
           (* e.[e] *)
           (* s *)
           (* "foo" *)
-          (* try e with [ mc ] *)
+          (* try e with [ a ] *)
           (* (e) *)
           (* e, e *)
           (* (e : t) *)
@@ -942,7 +928,7 @@ module Sig =
           (* A.B.C *)
           (* functor (s : mt) -> mt *)
           (* 's *)
-          (* sig sg end *)
+          (* sig (sg)? end *)
           (* mt with wc *)
           (* $s$ *)
           (* class cict *)
@@ -963,12 +949,12 @@ module Sig =
           (* module i = i *)
           (* wc and wc *)
           (* $s$ *)
-          (* bi and bi *)
+          (* b and b *)
           (* let a = 42 and c = 43 *)
           (* p = e *)
           (* let patt = expr *)
           (* $s$ *)
-          (* rb ; rb *)
+          (* b ; b *)
           (* i = e *)
           (* $s$ *)
           (* mb and mb *)
@@ -982,7 +968,7 @@ module Sig =
           (* i *)
           (* me me *)
           (* functor (s : mt) -> me *)
-          (* struct st end *)
+          (* struct (st)? end *)
           (* (me : mt) *)
           (* $s$ *)
           (* class cice *)
@@ -999,7 +985,7 @@ module Sig =
           (* module type s = mt *)
           (* open i *)
           (* type t *)
-          (* value b or value rec bi *)
+          (* value b or value rec b *)
           (* $s$ *)
           (* (virtual)? i ([ t ])? *)
           (* [t] -> ct *)
@@ -1018,212 +1004,324 @@ module Sig =
           (* ce e *)
           (* (virtual)? i ([ t ])? *)
           (* fun p -> ce *)
-          (* let (rec)? bi in ce *)
+          (* let (rec)? b in ce *)
           (* object ((p))? (cst)? end *)
           (* ce : ct *)
           (* ce and ce *)
           (* ce = ce *)
           (* $s$ *)
-          patt =
-          | PaNil of Loc.t | PaId of Loc.t * ident
-          | PaAli of Loc.t * patt * patt | PaAnt of Loc.t * string
-          | PaAny of Loc.t | PaApp of Loc.t * patt * patt
-          | PaArr of Loc.t * patt | PaCom of Loc.t * patt * patt
-          | PaSem of Loc.t * patt * patt | PaChr of Loc.t * string
-          | PaInt of Loc.t * string | PaInt32 of Loc.t * string
-          | PaInt64 of Loc.t * string | PaNativeInt of Loc.t * string
-          | PaFlo of Loc.t * string | PaLab of Loc.t * string * patt
-          | PaOlb of Loc.t * string * patt
-          | PaOlbi of Loc.t * string * patt * expr
-          | PaOrp of Loc.t * patt * patt | PaRng of Loc.t * patt * patt
-          | PaRec of Loc.t * patt | PaEq of Loc.t * ident * patt
-          | PaStr of Loc.t * string | PaTup of Loc.t * patt
-          | PaTyc of Loc.t * patt * ctyp | PaTyp of Loc.t * ident
-          | PaVrn of Loc.t * string
+          loc =
+          Loc.
+          t
+          and meta_bool =
+          | BTrue | BFalse | BAnt of string
+          and 'a meta_option =
+          | ONone | OSome of 'a | OAnt of string
+          and 'a meta_list =
+          | LNil | LCons of 'a * 'a meta_list | LAnt of string
+          and ident =
+          | IdAcc of loc * ident * ident
+          | IdApp of loc * ident * ident
+          | IdLid of loc * string
+          | IdUid of loc * string
+          | IdAnt of loc * string
+          and ctyp =
+          | TyNil of loc
+          | TyAli of loc * ctyp * ctyp
+          | TyAny of loc
+          | TyApp of loc * ctyp * ctyp
+          | TyArr of loc * ctyp * ctyp
+          | TyCls of loc * ident
+          | TyLab of loc * string * ctyp
+          | TyId of loc * ident
+          | TyMan of loc * ctyp * ctyp
+          | TyDcl of loc * string * ctyp list * ctyp * (ctyp * ctyp) list
+          | TyObj of loc * ctyp * meta_bool
+          | TyOlb of loc * string * ctyp
+          | TyPol of loc * ctyp * ctyp
+          | TyQuo of loc * string
+          | TyQuP of loc * string
+          | TyQuM of loc * string
+          | TyVrn of loc * string
+          | TyRec of loc * ctyp
+          | TyCol of loc * ctyp * ctyp
+          | TySem of loc * ctyp * ctyp
+          | TyCom of loc * ctyp * ctyp
+          | TySum of loc * ctyp
+          | TyOf of loc * ctyp * ctyp
+          | TyAnd of loc * ctyp * ctyp
+          | TyOr of loc * ctyp * ctyp
+          | TyPrv of loc * ctyp
+          | TyMut of loc * ctyp
+          | TyTup of loc * ctyp
+          | TySta of loc * ctyp * ctyp
+          | TyVrnEq of loc * ctyp
+          | TyVrnSup of loc * ctyp
+          | TyVrnInf of loc * ctyp
+          | TyVrnInfSup of loc * ctyp * ctyp
+          | TyAmp of loc * ctyp * ctyp
+          | TyOfAmp of loc * ctyp * ctyp
+          | TyAnt of loc * string
+          and patt =
+          | PaNil of loc
+          | PaId of loc * ident
+          | PaAli of loc * patt * patt
+          | PaAnt of loc * string
+          | PaAny of loc
+          | PaApp of loc * patt * patt
+          | PaArr of loc * patt
+          | PaCom of loc * patt * patt
+          | PaSem of loc * patt * patt
+          | PaChr of loc * string
+          | PaInt of loc * string
+          | PaInt32 of loc * string
+          | PaInt64 of loc * string
+          | PaNativeInt of loc * string
+          | PaFlo of loc * string
+          | PaLab of loc * string * patt
+          | PaOlb of loc * string * patt
+          | PaOlbi of loc * string * patt * expr
+          | PaOrp of loc * patt * patt
+          | PaRng of loc * patt * patt
+          | PaRec of loc * patt
+          | PaEq of loc * ident * patt
+          | PaStr of loc * string
+          | PaTup of loc * patt
+          | PaTyc of loc * patt * ctyp
+          | PaTyp of loc * ident
+          | PaVrn of loc * string
           and expr =
-          | ExNil of Loc.t | ExId of Loc.t * ident
-          | ExAcc of Loc.t * expr * expr | ExAnt of Loc.t * string
-          | ExApp of Loc.t * expr * expr | ExAre of Loc.t * expr * expr
-          | ExArr of Loc.t * expr | ExSem of Loc.t * expr * expr
-          | ExAsf of Loc.t | ExAsr of Loc.t * expr
-          | ExAss of Loc.t * expr * expr | ExChr of Loc.t * string
-          | ExCoe of Loc.t * expr * ctyp * ctyp | ExFlo of Loc.t * string
-          | ExFor of Loc.t * string * expr * expr * meta_bool * expr
-          | ExFun of Loc.t * match_case | ExIfe of Loc.t * expr * expr * expr
-          | ExInt of Loc.t * string | ExInt32 of Loc.t * string
-          | ExInt64 of Loc.t * string | ExNativeInt of Loc.t * string
-          | ExLab of Loc.t * string * expr | ExLaz of Loc.t * expr
-          | ExLet of Loc.t * meta_bool * binding * expr
-          | ExLmd of Loc.t * string * module_expr * expr
-          | ExMat of Loc.t * expr * match_case | ExNew of Loc.t * ident
-          | ExObj of Loc.t * patt * class_str_item
-          | ExOlb of Loc.t * string * expr | ExOvr of Loc.t * rec_binding
-          | ExRec of Loc.t * rec_binding * expr | ExSeq of Loc.t * expr
-          | ExSnd of Loc.t * expr * string | ExSte of Loc.t * expr * expr
-          | ExStr of Loc.t * string | ExTry of Loc.t * expr * match_case
-          | ExTup of Loc.t * expr | ExCom of Loc.t * expr * expr
-          | ExTyc of Loc.t * expr * ctyp | ExVrn of Loc.t * string
-          | ExWhi of Loc.t * expr * expr
+          | ExNil of loc
+          | ExId of loc * ident
+          | ExAcc of loc * expr * expr
+          | ExAnt of loc * string
+          | ExApp of loc * expr * expr
+          | ExAre of loc * expr * expr
+          | ExArr of loc * expr
+          | ExSem of loc * expr * expr
+          | ExAsf of loc
+          | ExAsr of loc * expr
+          | ExAss of loc * expr * expr
+          | ExChr of loc * string
+          | ExCoe of loc * expr * ctyp * ctyp
+          | ExFlo of loc * string
+          | ExFor of loc * string * expr * expr * meta_bool * expr
+          | ExFun of loc * match_case
+          | ExIfe of loc * expr * expr * expr
+          | ExInt of loc * string
+          | ExInt32 of loc * string
+          | ExInt64 of loc * string
+          | ExNativeInt of loc * string
+          | ExLab of loc * string * expr
+          | ExLaz of loc * expr
+          | ExLet of loc * meta_bool * binding * expr
+          | ExLmd of loc * string * module_expr * expr
+          | ExMat of loc * expr * match_case
+          | ExNew of loc * ident
+          | ExObj of loc * patt * class_str_item
+          | ExOlb of loc * string * expr
+          | ExOvr of loc * rec_binding
+          | ExRec of loc * rec_binding * expr
+          | ExSeq of loc * expr
+          | ExSnd of loc * expr * string
+          | ExSte of loc * expr * expr
+          | ExStr of loc * string
+          | ExTry of loc * expr * match_case
+          | ExTup of loc * expr
+          | ExCom of loc * expr * expr
+          | ExTyc of loc * expr * ctyp
+          | ExVrn of loc * string
+          | ExWhi of loc * expr * expr
           and module_type =
-          | MtNil of Loc.t | MtId of Loc.t * ident
-          | MtFun of Loc.t * string * module_type * module_type
-          | MtQuo of Loc.t * string | MtSig of Loc.t * sig_item
-          | MtWit of Loc.t * module_type * with_constr
-          | MtAnt of Loc.t * string
+          | MtNil of loc
+          | MtId of loc * ident
+          | MtFun of loc * string * module_type * module_type
+          | MtQuo of loc * string
+          | MtSig of loc * sig_item
+          | MtWit of loc * module_type * with_constr
+          | MtAnt of loc * string
           and sig_item =
-          | SgNil of Loc.t | SgCls of Loc.t * class_type
-          | SgClt of Loc.t * class_type
-          | SgSem of Loc.t * sig_item * sig_item
-          | SgDir of Loc.t * string * expr | SgExc of Loc.t * ctyp
-          | SgExt of Loc.t * string * ctyp * string meta_list
-          | SgInc of Loc.t * module_type
-          | SgMod of Loc.t * string * module_type
-          | SgRecMod of Loc.t * module_binding
-          | SgMty of Loc.t * string * module_type | SgOpn of Loc.t * ident
-          | SgTyp of Loc.t * ctyp | SgVal of Loc.t * string * ctyp
-          | SgAnt of Loc.t * string
+          | SgNil of loc
+          | SgCls of loc * class_type
+          | SgClt of loc * class_type
+          | SgSem of loc * sig_item * sig_item
+          | SgDir of loc * string * expr
+          | SgExc of loc * ctyp
+          | SgExt of loc * string * ctyp * string meta_list
+          | SgInc of loc * module_type
+          | SgMod of loc * string * module_type
+          | SgRecMod of loc * module_binding
+          | SgMty of loc * string * module_type
+          | SgOpn of loc * ident
+          | SgTyp of loc * ctyp
+          | SgVal of loc * string * ctyp
+          | SgAnt of loc * string
           and with_constr =
-          | WcNil of Loc.t | WcTyp of Loc.t * ctyp * ctyp
-          | WcMod of Loc.t * ident * ident
-          | WcAnd of Loc.t * with_constr * with_constr
-          | WcAnt of Loc.t * string
+          | WcNil of loc
+          | WcTyp of loc * ctyp * ctyp
+          | WcMod of loc * ident * ident
+          | WcAnd of loc * with_constr * with_constr
+          | WcAnt of loc * string
           and binding =
-          | BiNil of Loc.t | BiAnd of Loc.t * binding * binding
-          | BiEq of Loc.t * patt * expr | BiAnt of Loc.t * string
+          | BiNil of loc
+          | BiAnd of loc * binding * binding
+          | BiEq of loc * patt * expr
+          | BiAnt of loc * string
           and rec_binding =
-          | RbNil of Loc.t | RbSem of Loc.t * rec_binding * rec_binding
-          | RbEq of Loc.t * ident * expr | RbAnt of Loc.t * string
+          | RbNil of loc
+          | RbSem of loc * rec_binding * rec_binding
+          | RbEq of loc * ident * expr
+          | RbAnt of loc * string
           and module_binding =
-          | MbNil of Loc.t | MbAnd of Loc.t * module_binding * module_binding
-          | MbColEq of Loc.t * string * module_type * module_expr
-          | MbCol of Loc.t * string * module_type | MbAnt of Loc.t * string
+          | MbNil of loc
+          | MbAnd of loc * module_binding * module_binding
+          | MbColEq of loc * string * module_type * module_expr
+          | MbCol of loc * string * module_type
+          | MbAnt of loc * string
           and match_case =
-          | McNil of Loc.t | McOr of Loc.t * match_case * match_case
-          | McArr of Loc.t * patt * expr * expr | McAnt of Loc.t * string
+          | McNil of loc
+          | McOr of loc * match_case * match_case
+          | McArr of loc * patt * expr * expr
+          | McAnt of loc * string
           and module_expr =
-          | MeNil of Loc.t | MeId of Loc.t * ident
-          | MeApp of Loc.t * module_expr * module_expr
-          | MeFun of Loc.t * string * module_type * module_expr
-          | MeStr of Loc.t * str_item
-          | MeTyc of Loc.t * module_expr * module_type
-          | MeAnt of Loc.t * string
+          | MeNil of loc
+          | MeId of loc * ident
+          | MeApp of loc * module_expr * module_expr
+          | MeFun of loc * string * module_type * module_expr
+          | MeStr of loc * str_item
+          | MeTyc of loc * module_expr * module_type
+          | MeAnt of loc * string
           and str_item =
-          | StNil of Loc.t | StCls of Loc.t * class_expr
-          | StClt of Loc.t * class_type
-          | StSem of Loc.t * str_item * str_item
-          | StDir of Loc.t * string * expr
-          | StExc of Loc.t * ctyp * ident meta_option | StExp of Loc.t * expr
-          | StExt of Loc.t * string * ctyp * string meta_list
-          | StInc of Loc.t * module_expr
-          | StMod of Loc.t * string * module_expr
-          | StRecMod of Loc.t * module_binding
-          | StMty of Loc.t * string * module_type | StOpn of Loc.t * ident
-          | StTyp of Loc.t * ctyp | StVal of Loc.t * meta_bool * binding
-          | StAnt of Loc.t * string
+          | StNil of loc
+          | StCls of loc * class_expr
+          | StClt of loc * class_type
+          | StSem of loc * str_item * str_item
+          | StDir of loc * string * expr
+          | StExc of loc * ctyp * ident meta_option
+          | StExp of loc * expr
+          | StExt of loc * string * ctyp * string meta_list
+          | StInc of loc * module_expr
+          | StMod of loc * string * module_expr
+          | StRecMod of loc * module_binding
+          | StMty of loc * string * module_type
+          | StOpn of loc * ident
+          | StTyp of loc * ctyp
+          | StVal of loc * meta_bool * binding
+          | StAnt of loc * string
           and class_type =
-          | CtNil of Loc.t | CtCon of Loc.t * meta_bool * ident * ctyp
-          | CtFun of Loc.t * ctyp * class_type
-          | CtSig of Loc.t * ctyp * class_sig_item
-          | CtAnd of Loc.t * class_type * class_type
-          | CtCol of Loc.t * class_type * class_type
-          | CtEq of Loc.t * class_type * class_type | CtAnt of Loc.t * string
+          | CtNil of loc
+          | CtCon of loc * meta_bool * ident * ctyp
+          | CtFun of loc * ctyp * class_type
+          | CtSig of loc * ctyp * class_sig_item
+          | CtAnd of loc * class_type * class_type
+          | CtCol of loc * class_type * class_type
+          | CtEq of loc * class_type * class_type
+          | CtAnt of loc * string
           and class_sig_item =
-          | CgNil of Loc.t | CgCtr of Loc.t * ctyp * ctyp
-          | CgSem of Loc.t * class_sig_item * class_sig_item
-          | CgInh of Loc.t * class_type
-          | CgMth of Loc.t * string * meta_bool * ctyp
-          | CgVal of Loc.t * string * meta_bool * meta_bool * ctyp
-          | CgVir of Loc.t * string * meta_bool * ctyp
-          | CgAnt of Loc.t * string
+          | CgNil of loc
+          | CgCtr of loc * ctyp * ctyp
+          | CgSem of loc * class_sig_item * class_sig_item
+          | CgInh of loc * class_type
+          | CgMth of loc * string * meta_bool * ctyp
+          | CgVal of loc * string * meta_bool * meta_bool * ctyp
+          | CgVir of loc * string * meta_bool * ctyp
+          | CgAnt of loc * string
           and class_expr =
-          | CeNil of Loc.t | CeApp of Loc.t * class_expr * expr
-          | CeCon of Loc.t * meta_bool * ident * ctyp
-          | CeFun of Loc.t * patt * class_expr
-          | CeLet of Loc.t * meta_bool * binding * class_expr
-          | CeStr of Loc.t * patt * class_str_item
-          | CeTyc of Loc.t * class_expr * class_type
-          | CeAnd of Loc.t * class_expr * class_expr
-          | CeEq of Loc.t * class_expr * class_expr | CeAnt of Loc.t * string
+          | CeNil of loc
+          | CeApp of loc * class_expr * expr
+          | CeCon of loc * meta_bool * ident * ctyp
+          | CeFun of loc * patt * class_expr
+          | CeLet of loc * meta_bool * binding * class_expr
+          | CeStr of loc * patt * class_str_item
+          | CeTyc of loc * class_expr * class_type
+          | CeAnd of loc * class_expr * class_expr
+          | CeEq of loc * class_expr * class_expr
+          | CeAnt of loc * string
           and class_str_item =
-          | (* cst ; cst *) (* type t = t *)
-          (* inherit ce or inherit ce as s *) (* initializer e *)
+          | (* cst ; cst *)
+          (* type t = t *)
+          (* inherit ce or inherit ce as s *)
+          (* initializer e *)
           (* method (private)? s : t = e or method (private)? s = e *)
-          (* value (mutable)? s = e *) (* method virtual (private)? s : t *)
-          (* value virtual (private)? s : t *) CrNil of Loc.t
-          | CrSem of Loc.t * class_str_item * class_str_item
-          | CrCtr of Loc.t * ctyp * ctyp
-          | CrInh of Loc.t * class_expr * string | CrIni of Loc.t * expr
-          | CrMth of Loc.t * string * meta_bool * expr * ctyp
-          | CrVal of Loc.t * string * meta_bool * expr
-          | CrVir of Loc.t * string * meta_bool * ctyp
-          | CrVvr of Loc.t * string * meta_bool * ctyp
-          | CrAnt of Loc.t * string
+          (* value (mutable)? s = e *)
+          (* method virtual (private)? s : t *)
+          (* value virtual (private)? s : t *)
+          CrNil of loc
+          | CrSem of loc * class_str_item * class_str_item
+          | CrCtr of loc * ctyp * ctyp
+          | CrInh of loc * class_expr * string
+          | CrIni of loc * expr
+          | CrMth of loc * string * meta_bool * expr * ctyp
+          | CrVal of loc * string * meta_bool * expr
+          | CrVir of loc * string * meta_bool * ctyp
+          | CrVvr of loc * string * meta_bool * ctyp
+          | CrAnt of loc * string
         
-        val loc_of_ctyp : ctyp -> Loc.t
+        val loc_of_ctyp : ctyp -> loc
           
-        val loc_of_patt : patt -> Loc.t
+        val loc_of_patt : patt -> loc
           
-        val loc_of_expr : expr -> Loc.t
+        val loc_of_expr : expr -> loc
           
-        val loc_of_module_type : module_type -> Loc.t
+        val loc_of_module_type : module_type -> loc
           
-        val loc_of_module_expr : module_expr -> Loc.t
+        val loc_of_module_expr : module_expr -> loc
           
-        val loc_of_sig_item : sig_item -> Loc.t
+        val loc_of_sig_item : sig_item -> loc
           
-        val loc_of_str_item : str_item -> Loc.t
+        val loc_of_str_item : str_item -> loc
           
-        val loc_of_class_type : class_type -> Loc.t
+        val loc_of_class_type : class_type -> loc
           
-        val loc_of_class_sig_item : class_sig_item -> Loc.t
+        val loc_of_class_sig_item : class_sig_item -> loc
           
-        val loc_of_class_expr : class_expr -> Loc.t
+        val loc_of_class_expr : class_expr -> loc
           
-        val loc_of_class_str_item : class_str_item -> Loc.t
+        val loc_of_class_str_item : class_str_item -> loc
           
-        val loc_of_with_constr : with_constr -> Loc.t
+        val loc_of_with_constr : with_constr -> loc
           
-        val loc_of_binding : binding -> Loc.t
+        val loc_of_binding : binding -> loc
           
-        val loc_of_rec_binding : rec_binding -> Loc.t
+        val loc_of_rec_binding : rec_binding -> loc
           
-        val loc_of_module_binding : module_binding -> Loc.t
+        val loc_of_module_binding : module_binding -> loc
           
-        val loc_of_match_case : match_case -> Loc.t
+        val loc_of_match_case : match_case -> loc
           
-        val loc_of_ident : ident -> Loc.t
+        val loc_of_ident : ident -> loc
           
         module Meta :
           sig
             module type META_LOC =
               sig
-                val meta_loc_patt : Loc.t -> Loc.t -> patt
+                val meta_loc_patt : loc -> loc -> patt
                   
-                val meta_loc_expr : Loc.t -> Loc.t -> expr
+                val meta_loc_expr : loc -> loc -> expr
                   
               end
               
             module MetaLoc :
               sig
-                val meta_loc_patt : Loc.t -> Loc.t -> patt
+                val meta_loc_patt : loc -> loc -> patt
                   
-                val meta_loc_expr : Loc.t -> Loc.t -> expr
+                val meta_loc_expr : loc -> loc -> expr
                   
               end
               
             module MetaGhostLoc :
               sig
-                val meta_loc_patt : Loc.t -> 'a -> patt
+                val meta_loc_patt : loc -> 'a -> patt
                   
-                val meta_loc_expr : Loc.t -> 'a -> expr
+                val meta_loc_expr : loc -> 'a -> expr
                   
               end
               
             module MetaLocVar :
               sig
-                val meta_loc_patt : Loc.t -> 'a -> patt
+                val meta_loc_patt : loc -> 'a -> patt
                   
-                val meta_loc_expr : Loc.t -> 'a -> expr
+                val meta_loc_expr : loc -> 'a -> expr
                   
               end
               
@@ -1231,103 +1329,103 @@ module Sig =
               sig
                 module Expr :
                   sig
-                    val meta_string : Loc.t -> string -> expr
+                    val meta_string : loc -> string -> expr
                       
-                    val meta_int : Loc.t -> string -> expr
+                    val meta_int : loc -> string -> expr
                       
-                    val meta_float : Loc.t -> string -> expr
+                    val meta_float : loc -> string -> expr
                       
-                    val meta_char : Loc.t -> string -> expr
+                    val meta_char : loc -> string -> expr
                       
-                    val meta_bool : Loc.t -> bool -> expr
+                    val meta_bool : loc -> bool -> expr
                       
                     val meta_list :
-                      (Loc.t -> 'a -> expr) -> Loc.t -> 'a list -> expr
+                      (loc -> 'a -> expr) -> loc -> 'a list -> expr
                       
-                    val meta_binding : Loc.t -> binding -> expr
+                    val meta_binding : loc -> binding -> expr
                       
-                    val meta_rec_binding : Loc.t -> rec_binding -> expr
+                    val meta_rec_binding : loc -> rec_binding -> expr
                       
-                    val meta_class_expr : Loc.t -> class_expr -> expr
+                    val meta_class_expr : loc -> class_expr -> expr
                       
-                    val meta_class_sig_item : Loc.t -> class_sig_item -> expr
+                    val meta_class_sig_item : loc -> class_sig_item -> expr
                       
-                    val meta_class_str_item : Loc.t -> class_str_item -> expr
+                    val meta_class_str_item : loc -> class_str_item -> expr
                       
-                    val meta_class_type : Loc.t -> class_type -> expr
+                    val meta_class_type : loc -> class_type -> expr
                       
-                    val meta_ctyp : Loc.t -> ctyp -> expr
+                    val meta_ctyp : loc -> ctyp -> expr
                       
-                    val meta_expr : Loc.t -> expr -> expr
+                    val meta_expr : loc -> expr -> expr
                       
-                    val meta_ident : Loc.t -> ident -> expr
+                    val meta_ident : loc -> ident -> expr
                       
-                    val meta_match_case : Loc.t -> match_case -> expr
+                    val meta_match_case : loc -> match_case -> expr
                       
-                    val meta_module_binding : Loc.t -> module_binding -> expr
+                    val meta_module_binding : loc -> module_binding -> expr
                       
-                    val meta_module_expr : Loc.t -> module_expr -> expr
+                    val meta_module_expr : loc -> module_expr -> expr
                       
-                    val meta_module_type : Loc.t -> module_type -> expr
+                    val meta_module_type : loc -> module_type -> expr
                       
-                    val meta_patt : Loc.t -> patt -> expr
+                    val meta_patt : loc -> patt -> expr
                       
-                    val meta_sig_item : Loc.t -> sig_item -> expr
+                    val meta_sig_item : loc -> sig_item -> expr
                       
-                    val meta_str_item : Loc.t -> str_item -> expr
+                    val meta_str_item : loc -> str_item -> expr
                       
-                    val meta_with_constr : Loc.t -> with_constr -> expr
+                    val meta_with_constr : loc -> with_constr -> expr
                       
                   end
                   
                 module Patt :
                   sig
-                    val meta_string : Loc.t -> string -> patt
+                    val meta_string : loc -> string -> patt
                       
-                    val meta_int : Loc.t -> string -> patt
+                    val meta_int : loc -> string -> patt
                       
-                    val meta_float : Loc.t -> string -> patt
+                    val meta_float : loc -> string -> patt
                       
-                    val meta_char : Loc.t -> string -> patt
+                    val meta_char : loc -> string -> patt
                       
-                    val meta_bool : Loc.t -> bool -> patt
+                    val meta_bool : loc -> bool -> patt
                       
                     val meta_list :
-                      (Loc.t -> 'a -> patt) -> Loc.t -> 'a list -> patt
+                      (loc -> 'a -> patt) -> loc -> 'a list -> patt
                       
-                    val meta_binding : Loc.t -> binding -> patt
+                    val meta_binding : loc -> binding -> patt
                       
-                    val meta_rec_binding : Loc.t -> rec_binding -> patt
+                    val meta_rec_binding : loc -> rec_binding -> patt
                       
-                    val meta_class_expr : Loc.t -> class_expr -> patt
+                    val meta_class_expr : loc -> class_expr -> patt
                       
-                    val meta_class_sig_item : Loc.t -> class_sig_item -> patt
+                    val meta_class_sig_item : loc -> class_sig_item -> patt
                       
-                    val meta_class_str_item : Loc.t -> class_str_item -> patt
+                    val meta_class_str_item : loc -> class_str_item -> patt
                       
-                    val meta_class_type : Loc.t -> class_type -> patt
+                    val meta_class_type : loc -> class_type -> patt
                       
-                    val meta_ctyp : Loc.t -> ctyp -> patt
+                    val meta_ctyp : loc -> ctyp -> patt
                       
-                    val meta_expr : Loc.t -> expr -> patt
+                    val meta_expr : loc -> expr -> patt
                       
-                    val meta_ident : Loc.t -> ident -> patt
+                    val meta_ident : loc -> ident -> patt
                       
-                    val meta_match_case : Loc.t -> match_case -> patt
+                    val meta_match_case : loc -> match_case -> patt
                       
-                    val meta_module_binding : Loc.t -> module_binding -> patt
+                    val meta_module_binding : loc -> module_binding -> patt
                       
-                    val meta_module_expr : Loc.t -> module_expr -> patt
+                    val meta_module_expr : loc -> module_expr -> patt
                       
-                    val meta_module_type : Loc.t -> module_type -> patt
+                    val meta_module_type : loc -> module_type -> patt
                       
-                    val meta_patt : Loc.t -> patt -> patt
+                    val meta_patt : loc -> patt -> patt
                       
-                    val meta_sig_item : Loc.t -> sig_item -> patt
+                    val meta_sig_item : loc -> sig_item -> patt
                       
-                    val meta_str_item : Loc.t -> str_item -> patt
+                    val meta_str_item : loc -> str_item -> patt
                       
-                    val meta_with_constr : Loc.t -> with_constr -> patt
+                    val meta_with_constr : loc -> with_constr -> patt
                       
                   end
                   
@@ -1336,32 +1434,22 @@ module Sig =
           end
           
         class map :
-          object
+          object ('self_type)
             method string : string -> string
               
-            method int : int -> int
-              
-            method float : float -> float
-              
-            method bool : bool -> bool
-              
-            method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list
-              
-            method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option
-              
-            method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array
-              
-            method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref
+            method list :
+              'a 'b. ('self_type -> 'a -> 'b) -> 'a list -> 'b list
               
             method meta_bool : meta_bool -> meta_bool
               
             method meta_option :
-              'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option
+              'a 'b.
+                ('self_type -> 'a -> 'b) -> 'a meta_option -> 'b meta_option
               
             method meta_list :
-              'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list
+              'a 'b. ('self_type -> 'a -> 'b) -> 'a meta_list -> 'b meta_list
               
-            method _Loc_t : Loc.t -> Loc.t
+            method loc : loc -> loc
               
             method expr : expr -> expr
               
@@ -1397,29 +1485,16 @@ module Sig =
               
             method ident : ident -> ident
               
+            method unknown : 'a. 'a -> 'a
+              
           end
           
         class fold :
           object ('self_type)
             method string : string -> 'self_type
               
-            method int : int -> 'self_type
-              
-            method float : float -> 'self_type
-              
-            method bool : bool -> 'self_type
-              
             method list :
               'a. ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type
-              
-            method option :
-              'a. ('self_type -> 'a -> 'self_type) -> 'a option -> 'self_type
-              
-            method array :
-              'a. ('self_type -> 'a -> 'self_type) -> 'a array -> 'self_type
-              
-            method ref :
-              'a. ('self_type -> 'a -> 'self_type) -> 'a ref -> 'self_type
               
             method meta_bool : meta_bool -> 'self_type
               
@@ -1433,7 +1508,7 @@ module Sig =
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_list -> 'self_type
               
-            method _Loc_t : Loc.t -> 'self_type
+            method loc : loc -> 'self_type
               
             method expr : expr -> 'self_type
               
@@ -1469,6 +1544,8 @@ module Sig =
               
             method ident : ident -> 'self_type
               
+            method unknown : 'a. 'a -> 'self_type
+              
           end
           
         val map_expr : (expr -> expr) -> map
@@ -1481,7 +1558,7 @@ module Sig =
           
         val map_sig_item : (sig_item -> sig_item) -> map
           
-        val map_loc : (Loc.t -> Loc.t) -> map
+        val map_loc : (loc -> loc) -> map
           
         val ident_of_expr : expr -> ident
           
@@ -1604,7 +1681,7 @@ module Sig =
           
       end
       
-    module Camlp4AstToAst (M : Camlp4Ast) : Ast with module Loc = M.Loc
+    module Camlp4AstToAst (M : Camlp4Ast) : Ast with type loc = M.loc
       and type meta_bool = M.meta_bool
       and type 'a meta_option = 'a M.meta_option
       and type 'a meta_list = 'a M.meta_list and type ctyp = M.ctyp
@@ -1622,168 +1699,244 @@ module Sig =
       
     module MakeCamlp4Ast (Loc : Type) =
       struct
-        type meta_bool = | BTrue | BFalse | BAnt of string
-        
-        type 'a meta_option = | ONone | OSome of 'a | OAnt of string
-        
-        type 'a meta_list =
+        type loc =
+          Loc.
+          t
+          and meta_bool =
+          | BTrue | BFalse | BAnt of string
+          and 'a meta_option =
+          | ONone | OSome of 'a | OAnt of string
+          and 'a meta_list =
           | LNil | LCons of 'a * 'a meta_list | LAnt of string
-        
-        type ident =
-          | IdAcc of Loc.t * ident * ident | IdApp of Loc.t * ident * ident
-          | IdLid of Loc.t * string | IdUid of Loc.t * string
-          | IdAnt of Loc.t * string
-        
-        type ctyp =
-          | TyNil of Loc.t | TyAli of Loc.t * ctyp * ctyp | TyAny of Loc.t
-          | TyApp of Loc.t * ctyp * ctyp | TyArr of Loc.t * ctyp * ctyp
-          | TyCls of Loc.t * ident | TyLab of Loc.t * string * ctyp
-          | TyId of Loc.t * ident | TyMan of Loc.t * ctyp * ctyp
-          | TyDcl of Loc.t * string * ctyp list * ctyp * (ctyp * ctyp) list
-          | TyObj of Loc.t * ctyp * meta_bool
-          | TyOlb of Loc.t * string * ctyp | TyPol of Loc.t * ctyp * ctyp
-          | TyQuo of Loc.t * string | TyQuP of Loc.t * string
-          | TyQuM of Loc.t * string | TyVrn of Loc.t * string
-          | TyRec of Loc.t * ctyp | TyCol of Loc.t * ctyp * ctyp
-          | TySem of Loc.t * ctyp * ctyp | TyCom of Loc.t * ctyp * ctyp
-          | TySum of Loc.t * ctyp | TyOf of Loc.t * ctyp * ctyp
-          | TyAnd of Loc.t * ctyp * ctyp | TyOr of Loc.t * ctyp * ctyp
-          | TyPrv of Loc.t * ctyp | TyMut of Loc.t * ctyp
-          | TyTup of Loc.t * ctyp | TySta of Loc.t * ctyp * ctyp
-          | TyVrnEq of Loc.t * ctyp | TyVrnSup of Loc.t * ctyp
-          | TyVrnInf of Loc.t * ctyp | TyVrnInfSup of Loc.t * ctyp * ctyp
-          | TyAmp of Loc.t * ctyp * ctyp | TyOfAmp of Loc.t * ctyp * ctyp
-          | TyAnt of Loc.t * string
-        
-        type patt =
-          | PaNil of Loc.t | PaId of Loc.t * ident
-          | PaAli of Loc.t * patt * patt | PaAnt of Loc.t * string
-          | PaAny of Loc.t | PaApp of Loc.t * patt * patt
-          | PaArr of Loc.t * patt | PaCom of Loc.t * patt * patt
-          | PaSem of Loc.t * patt * patt | PaChr of Loc.t * string
-          | PaInt of Loc.t * string | PaInt32 of Loc.t * string
-          | PaInt64 of Loc.t * string | PaNativeInt of Loc.t * string
-          | PaFlo of Loc.t * string | PaLab of Loc.t * string * patt
-          | PaOlb of Loc.t * string * patt
-          | PaOlbi of Loc.t * string * patt * expr
-          | PaOrp of Loc.t * patt * patt | PaRng of Loc.t * patt * patt
-          | PaRec of Loc.t * patt | PaEq of Loc.t * ident * patt
-          | PaStr of Loc.t * string | PaTup of Loc.t * patt
-          | PaTyc of Loc.t * patt * ctyp | PaTyp of Loc.t * ident
-          | PaVrn of Loc.t * string
+          and ident =
+          | IdAcc of loc * ident * ident
+          | IdApp of loc * ident * ident
+          | IdLid of loc * string
+          | IdUid of loc * string
+          | IdAnt of loc * string
+          and ctyp =
+          | TyNil of loc
+          | TyAli of loc * ctyp * ctyp
+          | TyAny of loc
+          | TyApp of loc * ctyp * ctyp
+          | TyArr of loc * ctyp * ctyp
+          | TyCls of loc * ident
+          | TyLab of loc * string * ctyp
+          | TyId of loc * ident
+          | TyMan of loc * ctyp * ctyp
+          | TyDcl of loc * string * ctyp list * ctyp * (ctyp * ctyp) list
+          | TyObj of loc * ctyp * meta_bool
+          | TyOlb of loc * string * ctyp
+          | TyPol of loc * ctyp * ctyp
+          | TyQuo of loc * string
+          | TyQuP of loc * string
+          | TyQuM of loc * string
+          | TyVrn of loc * string
+          | TyRec of loc * ctyp
+          | TyCol of loc * ctyp * ctyp
+          | TySem of loc * ctyp * ctyp
+          | TyCom of loc * ctyp * ctyp
+          | TySum of loc * ctyp
+          | TyOf of loc * ctyp * ctyp
+          | TyAnd of loc * ctyp * ctyp
+          | TyOr of loc * ctyp * ctyp
+          | TyPrv of loc * ctyp
+          | TyMut of loc * ctyp
+          | TyTup of loc * ctyp
+          | TySta of loc * ctyp * ctyp
+          | TyVrnEq of loc * ctyp
+          | TyVrnSup of loc * ctyp
+          | TyVrnInf of loc * ctyp
+          | TyVrnInfSup of loc * ctyp * ctyp
+          | TyAmp of loc * ctyp * ctyp
+          | TyOfAmp of loc * ctyp * ctyp
+          | TyAnt of loc * string
+          and patt =
+          | PaNil of loc
+          | PaId of loc * ident
+          | PaAli of loc * patt * patt
+          | PaAnt of loc * string
+          | PaAny of loc
+          | PaApp of loc * patt * patt
+          | PaArr of loc * patt
+          | PaCom of loc * patt * patt
+          | PaSem of loc * patt * patt
+          | PaChr of loc * string
+          | PaInt of loc * string
+          | PaInt32 of loc * string
+          | PaInt64 of loc * string
+          | PaNativeInt of loc * string
+          | PaFlo of loc * string
+          | PaLab of loc * string * patt
+          | PaOlb of loc * string * patt
+          | PaOlbi of loc * string * patt * expr
+          | PaOrp of loc * patt * patt
+          | PaRng of loc * patt * patt
+          | PaRec of loc * patt
+          | PaEq of loc * ident * patt
+          | PaStr of loc * string
+          | PaTup of loc * patt
+          | PaTyc of loc * patt * ctyp
+          | PaTyp of loc * ident
+          | PaVrn of loc * string
           and expr =
-          | ExNil of Loc.t | ExId of Loc.t * ident
-          | ExAcc of Loc.t * expr * expr | ExAnt of Loc.t * string
-          | ExApp of Loc.t * expr * expr | ExAre of Loc.t * expr * expr
-          | ExArr of Loc.t * expr | ExSem of Loc.t * expr * expr
-          | ExAsf of Loc.t | ExAsr of Loc.t * expr
-          | ExAss of Loc.t * expr * expr | ExChr of Loc.t * string
-          | ExCoe of Loc.t * expr * ctyp * ctyp | ExFlo of Loc.t * string
-          | ExFor of Loc.t * string * expr * expr * meta_bool * expr
-          | ExFun of Loc.t * match_case | ExIfe of Loc.t * expr * expr * expr
-          | ExInt of Loc.t * string | ExInt32 of Loc.t * string
-          | ExInt64 of Loc.t * string | ExNativeInt of Loc.t * string
-          | ExLab of Loc.t * string * expr | ExLaz of Loc.t * expr
-          | ExLet of Loc.t * meta_bool * binding * expr
-          | ExLmd of Loc.t * string * module_expr * expr
-          | ExMat of Loc.t * expr * match_case | ExNew of Loc.t * ident
-          | ExObj of Loc.t * patt * class_str_item
-          | ExOlb of Loc.t * string * expr | ExOvr of Loc.t * rec_binding
-          | ExRec of Loc.t * rec_binding * expr | ExSeq of Loc.t * expr
-          | ExSnd of Loc.t * expr * string | ExSte of Loc.t * expr * expr
-          | ExStr of Loc.t * string | ExTry of Loc.t * expr * match_case
-          | ExTup of Loc.t * expr | ExCom of Loc.t * expr * expr
-          | ExTyc of Loc.t * expr * ctyp | ExVrn of Loc.t * string
-          | ExWhi of Loc.t * expr * expr
+          | ExNil of loc
+          | ExId of loc * ident
+          | ExAcc of loc * expr * expr
+          | ExAnt of loc * string
+          | ExApp of loc * expr * expr
+          | ExAre of loc * expr * expr
+          | ExArr of loc * expr
+          | ExSem of loc * expr * expr
+          | ExAsf of loc
+          | ExAsr of loc * expr
+          | ExAss of loc * expr * expr
+          | ExChr of loc * string
+          | ExCoe of loc * expr * ctyp * ctyp
+          | ExFlo of loc * string
+          | ExFor of loc * string * expr * expr * meta_bool * expr
+          | ExFun of loc * match_case
+          | ExIfe of loc * expr * expr * expr
+          | ExInt of loc * string
+          | ExInt32 of loc * string
+          | ExInt64 of loc * string
+          | ExNativeInt of loc * string
+          | ExLab of loc * string * expr
+          | ExLaz of loc * expr
+          | ExLet of loc * meta_bool * binding * expr
+          | ExLmd of loc * string * module_expr * expr
+          | ExMat of loc * expr * match_case
+          | ExNew of loc * ident
+          | ExObj of loc * patt * class_str_item
+          | ExOlb of loc * string * expr
+          | ExOvr of loc * rec_binding
+          | ExRec of loc * rec_binding * expr
+          | ExSeq of loc * expr
+          | ExSnd of loc * expr * string
+          | ExSte of loc * expr * expr
+          | ExStr of loc * string
+          | ExTry of loc * expr * match_case
+          | ExTup of loc * expr
+          | ExCom of loc * expr * expr
+          | ExTyc of loc * expr * ctyp
+          | ExVrn of loc * string
+          | ExWhi of loc * expr * expr
           and module_type =
-          | MtNil of Loc.t | MtId of Loc.t * ident
-          | MtFun of Loc.t * string * module_type * module_type
-          | MtQuo of Loc.t * string | MtSig of Loc.t * sig_item
-          | MtWit of Loc.t * module_type * with_constr
-          | MtAnt of Loc.t * string
+          | MtNil of loc
+          | MtId of loc * ident
+          | MtFun of loc * string * module_type * module_type
+          | MtQuo of loc * string
+          | MtSig of loc * sig_item
+          | MtWit of loc * module_type * with_constr
+          | MtAnt of loc * string
           and sig_item =
-          | SgNil of Loc.t | SgCls of Loc.t * class_type
-          | SgClt of Loc.t * class_type
-          | SgSem of Loc.t * sig_item * sig_item
-          | SgDir of Loc.t * string * expr | SgExc of Loc.t * ctyp
-          | SgExt of Loc.t * string * ctyp * string meta_list
-          | SgInc of Loc.t * module_type
-          | SgMod of Loc.t * string * module_type
-          | SgRecMod of Loc.t * module_binding
-          | SgMty of Loc.t * string * module_type | SgOpn of Loc.t * ident
-          | SgTyp of Loc.t * ctyp | SgVal of Loc.t * string * ctyp
-          | SgAnt of Loc.t * string
+          | SgNil of loc
+          | SgCls of loc * class_type
+          | SgClt of loc * class_type
+          | SgSem of loc * sig_item * sig_item
+          | SgDir of loc * string * expr
+          | SgExc of loc * ctyp
+          | SgExt of loc * string * ctyp * string meta_list
+          | SgInc of loc * module_type
+          | SgMod of loc * string * module_type
+          | SgRecMod of loc * module_binding
+          | SgMty of loc * string * module_type
+          | SgOpn of loc * ident
+          | SgTyp of loc * ctyp
+          | SgVal of loc * string * ctyp
+          | SgAnt of loc * string
           and with_constr =
-          | WcNil of Loc.t | WcTyp of Loc.t * ctyp * ctyp
-          | WcMod of Loc.t * ident * ident
-          | WcAnd of Loc.t * with_constr * with_constr
-          | WcAnt of Loc.t * string
+          | WcNil of loc
+          | WcTyp of loc * ctyp * ctyp
+          | WcMod of loc * ident * ident
+          | WcAnd of loc * with_constr * with_constr
+          | WcAnt of loc * string
           and binding =
-          | BiNil of Loc.t | BiAnd of Loc.t * binding * binding
-          | BiEq of Loc.t * patt * expr | BiAnt of Loc.t * string
+          | BiNil of loc
+          | BiAnd of loc * binding * binding
+          | BiEq of loc * patt * expr
+          | BiAnt of loc * string
           and rec_binding =
-          | RbNil of Loc.t | RbSem of Loc.t * rec_binding * rec_binding
-          | RbEq of Loc.t * ident * expr | RbAnt of Loc.t * string
+          | RbNil of loc
+          | RbSem of loc * rec_binding * rec_binding
+          | RbEq of loc * ident * expr
+          | RbAnt of loc * string
           and module_binding =
-          | MbNil of Loc.t | MbAnd of Loc.t * module_binding * module_binding
-          | MbColEq of Loc.t * string * module_type * module_expr
-          | MbCol of Loc.t * string * module_type | MbAnt of Loc.t * string
+          | MbNil of loc
+          | MbAnd of loc * module_binding * module_binding
+          | MbColEq of loc * string * module_type * module_expr
+          | MbCol of loc * string * module_type
+          | MbAnt of loc * string
           and match_case =
-          | McNil of Loc.t | McOr of Loc.t * match_case * match_case
-          | McArr of Loc.t * patt * expr * expr | McAnt of Loc.t * string
+          | McNil of loc
+          | McOr of loc * match_case * match_case
+          | McArr of loc * patt * expr * expr
+          | McAnt of loc * string
           and module_expr =
-          | MeNil of Loc.t | MeId of Loc.t * ident
-          | MeApp of Loc.t * module_expr * module_expr
-          | MeFun of Loc.t * string * module_type * module_expr
-          | MeStr of Loc.t * str_item
-          | MeTyc of Loc.t * module_expr * module_type
-          | MeAnt of Loc.t * string
+          | MeNil of loc
+          | MeId of loc * ident
+          | MeApp of loc * module_expr * module_expr
+          | MeFun of loc * string * module_type * module_expr
+          | MeStr of loc * str_item
+          | MeTyc of loc * module_expr * module_type
+          | MeAnt of loc * string
           and str_item =
-          | StNil of Loc.t | StCls of Loc.t * class_expr
-          | StClt of Loc.t * class_type
-          | StSem of Loc.t * str_item * str_item
-          | StDir of Loc.t * string * expr
-          | StExc of Loc.t * ctyp * ident meta_option | StExp of Loc.t * expr
-          | StExt of Loc.t * string * ctyp * string meta_list
-          | StInc of Loc.t * module_expr
-          | StMod of Loc.t * string * module_expr
-          | StRecMod of Loc.t * module_binding
-          | StMty of Loc.t * string * module_type | StOpn of Loc.t * ident
-          | StTyp of Loc.t * ctyp | StVal of Loc.t * meta_bool * binding
-          | StAnt of Loc.t * string
+          | StNil of loc
+          | StCls of loc * class_expr
+          | StClt of loc * class_type
+          | StSem of loc * str_item * str_item
+          | StDir of loc * string * expr
+          | StExc of loc * ctyp * ident meta_option
+          | StExp of loc * expr
+          | StExt of loc * string * ctyp * string meta_list
+          | StInc of loc * module_expr
+          | StMod of loc * string * module_expr
+          | StRecMod of loc * module_binding
+          | StMty of loc * string * module_type
+          | StOpn of loc * ident
+          | StTyp of loc * ctyp
+          | StVal of loc * meta_bool * binding
+          | StAnt of loc * string
           and class_type =
-          | CtNil of Loc.t | CtCon of Loc.t * meta_bool * ident * ctyp
-          | CtFun of Loc.t * ctyp * class_type
-          | CtSig of Loc.t * ctyp * class_sig_item
-          | CtAnd of Loc.t * class_type * class_type
-          | CtCol of Loc.t * class_type * class_type
-          | CtEq of Loc.t * class_type * class_type | CtAnt of Loc.t * string
+          | CtNil of loc
+          | CtCon of loc * meta_bool * ident * ctyp
+          | CtFun of loc * ctyp * class_type
+          | CtSig of loc * ctyp * class_sig_item
+          | CtAnd of loc * class_type * class_type
+          | CtCol of loc * class_type * class_type
+          | CtEq of loc * class_type * class_type
+          | CtAnt of loc * string
           and class_sig_item =
-          | CgNil of Loc.t | CgCtr of Loc.t * ctyp * ctyp
-          | CgSem of Loc.t * class_sig_item * class_sig_item
-          | CgInh of Loc.t * class_type
-          | CgMth of Loc.t * string * meta_bool * ctyp
-          | CgVal of Loc.t * string * meta_bool * meta_bool * ctyp
-          | CgVir of Loc.t * string * meta_bool * ctyp
-          | CgAnt of Loc.t * string
+          | CgNil of loc
+          | CgCtr of loc * ctyp * ctyp
+          | CgSem of loc * class_sig_item * class_sig_item
+          | CgInh of loc * class_type
+          | CgMth of loc * string * meta_bool * ctyp
+          | CgVal of loc * string * meta_bool * meta_bool * ctyp
+          | CgVir of loc * string * meta_bool * ctyp
+          | CgAnt of loc * string
           and class_expr =
-          | CeNil of Loc.t | CeApp of Loc.t * class_expr * expr
-          | CeCon of Loc.t * meta_bool * ident * ctyp
-          | CeFun of Loc.t * patt * class_expr
-          | CeLet of Loc.t * meta_bool * binding * class_expr
-          | CeStr of Loc.t * patt * class_str_item
-          | CeTyc of Loc.t * class_expr * class_type
-          | CeAnd of Loc.t * class_expr * class_expr
-          | CeEq of Loc.t * class_expr * class_expr | CeAnt of Loc.t * string
+          | CeNil of loc
+          | CeApp of loc * class_expr * expr
+          | CeCon of loc * meta_bool * ident * ctyp
+          | CeFun of loc * patt * class_expr
+          | CeLet of loc * meta_bool * binding * class_expr
+          | CeStr of loc * patt * class_str_item
+          | CeTyc of loc * class_expr * class_type
+          | CeAnd of loc * class_expr * class_expr
+          | CeEq of loc * class_expr * class_expr
+          | CeAnt of loc * string
           and class_str_item =
-          | CrNil of Loc.t | CrSem of Loc.t * class_str_item * class_str_item
-          | CrCtr of Loc.t * ctyp * ctyp
-          | CrInh of Loc.t * class_expr * string | CrIni of Loc.t * expr
-          | CrMth of Loc.t * string * meta_bool * expr * ctyp
-          | CrVal of Loc.t * string * meta_bool * expr
-          | CrVir of Loc.t * string * meta_bool * ctyp
-          | CrVvr of Loc.t * string * meta_bool * ctyp
-          | CrAnt of Loc.t * string
+          | CrNil of loc
+          | CrSem of loc * class_str_item * class_str_item
+          | CrCtr of loc * ctyp * ctyp
+          | CrInh of loc * class_expr * string
+          | CrIni of loc * expr
+          | CrMth of loc * string * meta_bool * expr * ctyp
+          | CrVal of loc * string * meta_bool * expr
+          | CrVir of loc * string * meta_bool * ctyp
+          | CrVvr of loc * string * meta_bool * ctyp
+          | CrAnt of loc * string
         
       end
       
@@ -1877,7 +2030,7 @@ module Sig =
           
         open Ast
           
-        type 'a expand_fun = Loc.t -> string option -> string -> 'a
+        type 'a expand_fun = loc -> string option -> string -> 'a
         
         val add : string -> 'a DynAst.tag -> 'a expand_fun -> unit
           
@@ -1886,12 +2039,11 @@ module Sig =
         val default : string ref
           
         val parse_quotation_result :
-          (Loc.t -> string -> 'a) ->
-            Loc.t -> quotation -> string -> string -> 'a
+          (loc -> string -> 'a) -> loc -> quotation -> string -> string -> 'a
           
         val translate : (string -> string) ref
           
-        val expand : Loc.t -> quotation -> 'a DynAst.tag -> 'a
+        val expand : loc -> quotation -> 'a DynAst.tag -> 'a
           
         val dump_file : (string option) ref
           
@@ -1936,14 +2088,27 @@ module Sig =
       end
       
     type camlp4_token =
-      | KEYWORD of string | SYMBOL of string | LIDENT of string
-      | UIDENT of string | ESCAPED_IDENT of string | INT of int * string
-      | INT32 of int32 * string | INT64 of int64 * string
-      | NATIVEINT of nativeint * string | FLOAT of float * string
-      | CHAR of char * string | STRING of string * string | LABEL of string
-      | OPTLABEL of string | QUOTATION of quotation
-      | ANTIQUOT of string * string | COMMENT of string | BLANKS of string
-      | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
+      | KEYWORD of string
+      | SYMBOL of string
+      | LIDENT of string
+      | UIDENT of string
+      | ESCAPED_IDENT of string
+      | INT of int * string
+      | INT32 of int32 * string
+      | INT64 of int64 * string
+      | NATIVEINT of nativeint * string
+      | FLOAT of float * string
+      | CHAR of char * string
+      | STRING of string * string
+      | LABEL of string
+      | OPTLABEL of string
+      | QUOTATION of quotation
+      | ANTIQUOT of string * string
+      | COMMENT of string
+      | BLANKS of string
+      | NEWLINE
+      | LINE_DIRECTIVE of int * string option
+      | EOI
     
     module type Camlp4Token = Token with type t = camlp4_token
       
@@ -1984,7 +2149,10 @@ module Sig =
         type assoc = | NonA | RightA | LeftA
         
         type position =
-          | First | Last | Before of string | After of string
+          | First
+          | Last
+          | Before of string
+          | After of string
           | Level of string
         
         module type Structure =
@@ -2005,11 +2173,18 @@ module Sig =
             
             type symbol =
               | Smeta of string * symbol list * Action.t
-              | Snterm of internal_entry | Snterml of internal_entry * string
-              | Slist0 of symbol | Slist0sep of symbol * symbol
-              | Slist1 of symbol | Slist1sep of symbol * symbol
-              | Sopt of symbol | Sself | Snext | Stoken of token_pattern
-              | Skeyword of string | Stree of tree
+              | Snterm of internal_entry
+              | Snterml of internal_entry * string
+              | Slist0 of symbol
+              | Slist0sep of symbol * symbol
+              | Slist1 of symbol
+              | Slist1sep of symbol * symbol
+              | Sopt of symbol
+              | Sself
+              | Snext
+              | Stoken of token_pattern
+              | Skeyword of string
+              | Stree of tree
             
             type production_rule = ((symbol list) * Action.t)
             
@@ -2193,9 +2368,9 @@ module Sig =
       struct
         module type SIMPLE =
           sig
-            val parse_expr : Ast.Loc.t -> string -> Ast.expr
+            val parse_expr : Ast.loc -> string -> Ast.expr
               
-            val parse_patt : Ast.Loc.t -> string -> Ast.patt
+            val parse_patt : Ast.loc -> string -> Ast.patt
               
           end
           
@@ -2203,11 +2378,11 @@ module Sig =
           sig
             val parse_implem :
               ?directive_handler: (Ast.str_item -> Ast.str_item option) ->
-                Ast.Loc.t -> char Stream.t -> Ast.str_item
+                Ast.loc -> char Stream.t -> Ast.str_item
               
             val parse_interf :
               ?directive_handler: (Ast.sig_item -> Ast.sig_item option) ->
-                Ast.Loc.t -> char Stream.t -> Ast.sig_item
+                Ast.loc -> char Stream.t -> Ast.sig_item
               
           end
           
@@ -2233,7 +2408,7 @@ module Sig =
       sig
         module Loc : Loc
           
-        module Ast : Ast with module Loc = Loc
+        module Ast : Ast with type loc = Loc.t
           
         module Token : Token with module Loc = Loc
           
@@ -3118,7 +3293,8 @@ module Struct =
             module Error =
               struct
                 type t =
-                  | Illegal_token of string | Keyword_as_label of string
+                  | Illegal_token of string
+                  | Keyword_as_label of string
                   | Illegal_token_pattern of string * string
                   | Illegal_constructor of string
                 
@@ -3370,11 +3546,16 @@ module Struct =
             module Error =
               struct
                 type t =
-                  | Illegal_character of char | Illegal_escape of string
-                  | Unterminated_comment | Unterminated_string
-                  | Unterminated_quotation | Unterminated_antiquot
-                  | Unterminated_string_in_comment | Comment_start
-                  | Comment_not_end | Literal_overflow of string
+                  | Illegal_character of char
+                  | Illegal_escape of string
+                  | Unterminated_comment
+                  | Unterminated_string
+                  | Unterminated_quotation
+                  | Unterminated_antiquot
+                  | Unterminated_string_in_comment
+                  | Comment_start
+                  | Comment_not_end
+                  | Literal_overflow of string
                 
                 exception E of t
                   
@@ -7058,7 +7239,7 @@ module Struct =
                   struct
                     open MetaLoc
                       
-                    let meta_acc_Loc_t = meta_loc_expr
+                    let meta_loc = meta_loc_expr
                       
                     module Expr =
                       struct
@@ -7097,7 +7278,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "BiEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_expr _loc x2)
                           | Ast.BiAnd (x0, x1, x2) ->
@@ -7108,7 +7289,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "BiAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_binding _loc x1),
                                 meta_binding _loc x2)
                           | Ast.BiNil x0 ->
@@ -7116,7 +7297,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "BiNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_expr _loc =
                           function
                           | Ast.CeAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -7128,7 +7309,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_class_expr _loc x2)
                           | Ast.CeAnd (x0, x1, x2) ->
@@ -7139,7 +7320,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_class_expr _loc x2)
                           | Ast.CeTyc (x0, x1, x2) ->
@@ -7150,7 +7331,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CeStr (x0, x1, x2) ->
@@ -7161,7 +7342,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeStr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_class_str_item _loc x2)
                           | Ast.CeLet (x0, x1, x2, x3) ->
@@ -7173,7 +7354,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeLet"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_binding _loc x2),
                                 meta_class_expr _loc x3)
@@ -7185,7 +7366,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeFun"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_class_expr _loc x2)
                           | Ast.CeCon (x0, x1, x2, x3) ->
@@ -7197,7 +7378,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeCon"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
@@ -7209,7 +7390,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.CeNil x0 ->
@@ -7217,7 +7398,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CeNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_sig_item _loc =
                           function
                           | Ast.CgAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -7230,7 +7411,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CgVir"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -7244,7 +7425,7 @@ module Struct =
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "CgVal"))),
-                                        meta_acc_Loc_t _loc x0),
+                                        meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_meta_bool _loc x2),
                                   meta_meta_bool _loc x3),
@@ -7258,7 +7439,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CgMth"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -7268,7 +7449,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "CgInh"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.CgSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7278,7 +7459,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CgSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_sig_item _loc x1),
                                 meta_class_sig_item _loc x2)
                           | Ast.CgCtr (x0, x1, x2) ->
@@ -7289,7 +7470,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CgCtr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.CgNil x0 ->
@@ -7297,7 +7478,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CgNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_str_item _loc =
                           function
                           | Ast.CrAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -7310,7 +7491,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrVvr"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -7323,7 +7504,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrVir"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -7336,7 +7517,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrVal"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_expr _loc x3)
@@ -7350,7 +7531,7 @@ module Struct =
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "CrMth"))),
-                                        meta_acc_Loc_t _loc x0),
+                                        meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_meta_bool _loc x2),
                                   meta_expr _loc x3),
@@ -7361,7 +7542,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "CrIni"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.CrInh (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7371,7 +7552,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CrInh"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_string _loc x2)
                           | Ast.CrCtr (x0, x1, x2) ->
@@ -7382,7 +7563,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CrCtr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.CrSem (x0, x1, x2) ->
@@ -7393,7 +7574,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CrSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_str_item _loc x1),
                                 meta_class_str_item _loc x2)
                           | Ast.CrNil x0 ->
@@ -7401,7 +7582,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CrNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_type _loc =
                           function
                           | Ast.CtAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -7413,7 +7594,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_type _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtCol (x0, x1, x2) ->
@@ -7424,7 +7605,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtCol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_type _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtAnd (x0, x1, x2) ->
@@ -7435,7 +7616,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_type _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtSig (x0, x1, x2) ->
@@ -7446,7 +7627,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtSig"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_class_sig_item _loc x2)
                           | Ast.CtFun (x0, x1, x2) ->
@@ -7457,7 +7638,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtFun"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtCon (x0, x1, x2, x3) ->
@@ -7469,7 +7650,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CtCon"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
@@ -7478,7 +7659,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CtNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_ctyp _loc =
                           function
                           | Ast.TyAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -7490,7 +7671,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOfAmp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyAmp (x0, x1, x2) ->
@@ -7501,7 +7682,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyAmp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyVrnInfSup (x0, x1, x2) ->
@@ -7512,7 +7693,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyVrnInfSup"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyVrnInf (x0, x1) ->
@@ -7521,7 +7702,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrnInf"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyVrnSup (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7529,7 +7710,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrnSup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyVrnEq (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7537,7 +7718,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrnEq"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TySta (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7547,7 +7728,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TySta"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyTup (x0, x1) ->
@@ -7556,7 +7737,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyTup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyMut (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7564,7 +7745,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyMut"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyPrv (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7572,7 +7753,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyPrv"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyOr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7582,7 +7763,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyAnd (x0, x1, x2) ->
@@ -7593,7 +7774,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyOf (x0, x1, x2) ->
@@ -7604,7 +7785,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOf"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TySum (x0, x1) ->
@@ -7613,7 +7794,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TySum"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyCom (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7623,7 +7804,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyCom"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TySem (x0, x1, x2) ->
@@ -7634,7 +7815,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TySem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyCol (x0, x1, x2) ->
@@ -7645,7 +7826,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyCol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyRec (x0, x1) ->
@@ -7654,7 +7835,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyRec"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyVrn (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7662,7 +7843,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyQuM (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7670,7 +7851,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyQuM"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyQuP (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7678,7 +7859,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyQuP"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyQuo (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7686,7 +7867,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyQuo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyPol (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7696,7 +7877,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyPol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyOlb (x0, x1, x2) ->
@@ -7707,7 +7888,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOlb"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyObj (x0, x1, x2) ->
@@ -7718,7 +7899,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyObj"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_meta_bool _loc x2)
                           | Ast.TyDcl (x0, x1, x2, x3, x4) ->
@@ -7731,7 +7912,7 @@ module Struct =
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "TyDcl"))),
-                                        meta_acc_Loc_t _loc x0),
+                                        meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_list meta_ctyp _loc x2),
                                   meta_ctyp _loc x3),
@@ -7749,7 +7930,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyMan"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyId (x0, x1) ->
@@ -7758,7 +7939,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.TyLab (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7768,7 +7949,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyLab"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyCls (x0, x1) ->
@@ -7777,7 +7958,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyCls"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.TyArr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7787,7 +7968,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyArr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyApp (x0, x1, x2) ->
@@ -7798,7 +7979,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyAny x0 ->
@@ -7806,7 +7987,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "TyAny"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           | Ast.TyAli (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -7815,7 +7996,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyAli"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyNil x0 ->
@@ -7823,7 +8004,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "TyNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_expr _loc =
                           function
                           | Ast.ExWhi (x0, x1, x2) ->
@@ -7834,7 +8015,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExWhi"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExVrn (x0, x1) ->
@@ -7843,7 +8024,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExVrn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExTyc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7853,7 +8034,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.ExCom (x0, x1, x2) ->
@@ -7864,7 +8045,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExCom"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExTup (x0, x1) ->
@@ -7873,7 +8054,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExTup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExTry (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7883,7 +8064,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExTry"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_match_case _loc x2)
                           | Ast.ExStr (x0, x1) ->
@@ -7892,7 +8073,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExStr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExSte (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7902,7 +8083,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExSte"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExSnd (x0, x1, x2) ->
@@ -7913,7 +8094,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExSnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_string _loc x2)
                           | Ast.ExSeq (x0, x1) ->
@@ -7922,7 +8103,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExSeq"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExRec (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7932,7 +8113,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExRec"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_rec_binding _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExOvr (x0, x1) ->
@@ -7941,7 +8122,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExOvr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_rec_binding _loc x1)
                           | Ast.ExOlb (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7951,7 +8132,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExOlb"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExObj (x0, x1, x2) ->
@@ -7962,7 +8143,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExObj"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_class_str_item _loc x2)
                           | Ast.ExNew (x0, x1) ->
@@ -7971,7 +8152,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExNew"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.ExMat (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -7981,7 +8162,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExMat"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_match_case _loc x2)
                           | Ast.ExLmd (x0, x1, x2, x3) ->
@@ -7993,7 +8174,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExLmd"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_expr _loc x2),
                                 meta_expr _loc x3)
@@ -8006,7 +8187,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExLet"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_binding _loc x2),
                                 meta_expr _loc x3)
@@ -8016,7 +8197,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExLaz"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExLab (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8026,7 +8207,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExLab"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExNativeInt (x0, x1) ->
@@ -8035,7 +8216,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExNativeInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExInt64 (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8043,7 +8224,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExInt64"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExInt32 (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8051,7 +8232,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExInt32"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExInt (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8059,7 +8240,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExIfe (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -8070,7 +8251,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExIfe"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_expr _loc x1),
                                   meta_expr _loc x2),
                                 meta_expr _loc x3)
@@ -8080,7 +8261,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExFun"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_match_case _loc x1)
                           | Ast.ExFor (x0, x1, x2, x3, x4, x5) ->
                               Ast.ExApp (_loc,
@@ -8093,7 +8274,7 @@ module Struct =
                                             Ast.IdAcc (_loc,
                                               Ast.IdUid (_loc, "Ast"),
                                               Ast.IdUid (_loc, "ExFor"))),
-                                          meta_acc_Loc_t _loc x0),
+                                          meta_loc _loc x0),
                                         meta_string _loc x1),
                                       meta_expr _loc x2),
                                     meta_expr _loc x3),
@@ -8105,7 +8286,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExFlo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExCoe (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -8116,7 +8297,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExCoe"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_expr _loc x1),
                                   meta_ctyp _loc x2),
                                 meta_ctyp _loc x3)
@@ -8126,7 +8307,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExChr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExAss (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8136,7 +8317,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExAss"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExAsr (x0, x1) ->
@@ -8145,14 +8326,14 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExAsr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExAsf x0 ->
                               Ast.ExApp (_loc,
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "ExAsf"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           | Ast.ExSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -8161,7 +8342,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExArr (x0, x1) ->
@@ -8170,7 +8351,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExArr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExAre (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8180,7 +8361,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExAre"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExApp (x0, x1, x2) ->
@@ -8191,7 +8372,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8203,7 +8384,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExAcc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExId (x0, x1) ->
@@ -8212,14 +8393,14 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.ExNil x0 ->
                               Ast.ExApp (_loc,
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "ExNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_ident _loc =
                           function
                           | Ast.IdAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8229,7 +8410,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "IdUid"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.IdLid (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8237,7 +8418,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "IdLid"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.IdApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8247,7 +8428,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "IdApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_ident _loc x2)
                           | Ast.IdAcc (x0, x1, x2) ->
@@ -8258,7 +8439,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "IdAcc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_ident _loc x2)
                         and meta_match_case _loc =
@@ -8273,7 +8454,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "McArr"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_patt _loc x1),
                                   meta_expr _loc x2),
                                 meta_expr _loc x3)
@@ -8285,7 +8466,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "McOr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_match_case _loc x1),
                                 meta_match_case _loc x2)
                           | Ast.McNil x0 ->
@@ -8293,7 +8474,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "McNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_meta_bool _loc =
                           function
                           | Ast.BAnt x0 -> Ast.ExAnt (_loc, x0)
@@ -8344,7 +8525,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MbCol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.MbColEq (x0, x1, x2, x3) ->
@@ -8356,7 +8537,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "MbColEq"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_type _loc x2),
                                 meta_module_expr _loc x3)
@@ -8368,7 +8549,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MbAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_binding _loc x1),
                                 meta_module_binding _loc x2)
                           | Ast.MbNil x0 ->
@@ -8376,7 +8557,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MbNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_module_expr _loc =
                           function
                           | Ast.MeAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8388,7 +8569,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MeTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_expr _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.MeStr (x0, x1) ->
@@ -8397,7 +8578,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MeStr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_str_item _loc x1)
                           | Ast.MeFun (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -8408,7 +8589,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "MeFun"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_type _loc x2),
                                 meta_module_expr _loc x3)
@@ -8420,7 +8601,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MeApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_expr _loc x1),
                                 meta_module_expr _loc x2)
                           | Ast.MeId (x0, x1) ->
@@ -8429,14 +8610,14 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MeId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.MeNil x0 ->
                               Ast.ExApp (_loc,
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MeNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8448,7 +8629,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MtWit"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_type _loc x1),
                                 meta_with_constr _loc x2)
                           | Ast.MtSig (x0, x1) ->
@@ -8457,7 +8638,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MtSig"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_sig_item _loc x1)
                           | Ast.MtQuo (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8465,7 +8646,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MtQuo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.MtFun (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -8476,7 +8657,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "MtFun"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_type _loc x2),
                                 meta_module_type _loc x3)
@@ -8486,14 +8667,14 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MtId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.MtNil x0 ->
                               Ast.ExApp (_loc,
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MtNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_patt _loc =
                           function
                           | Ast.PaVrn (x0, x1) ->
@@ -8502,7 +8683,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaVrn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaTyp (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8510,7 +8691,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaTyp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.PaTyc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8520,7 +8701,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.PaTup (x0, x1) ->
@@ -8529,7 +8710,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaTup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_patt _loc x1)
                           | Ast.PaStr (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8537,7 +8718,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaStr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaEq (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8547,7 +8728,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaRec (x0, x1) ->
@@ -8556,7 +8737,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaRec"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_patt _loc x1)
                           | Ast.PaRng (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8566,7 +8747,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaRng"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaOrp (x0, x1, x2) ->
@@ -8577,7 +8758,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaOrp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaOlbi (x0, x1, x2, x3) ->
@@ -8589,7 +8770,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "PaOlbi"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_patt _loc x2),
                                 meta_expr _loc x3)
@@ -8601,7 +8782,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaOlb"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaLab (x0, x1, x2) ->
@@ -8612,7 +8793,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaLab"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaFlo (x0, x1) ->
@@ -8621,7 +8802,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaFlo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaNativeInt (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8629,7 +8810,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaNativeInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaInt64 (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8637,7 +8818,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaInt64"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaInt32 (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8645,7 +8826,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaInt32"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaInt (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8653,7 +8834,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaChr (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8661,7 +8842,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaChr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8671,7 +8852,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaCom (x0, x1, x2) ->
@@ -8682,7 +8863,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaCom"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaArr (x0, x1) ->
@@ -8691,7 +8872,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaArr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_patt _loc x1)
                           | Ast.PaApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8701,7 +8882,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaAny x0 ->
@@ -8709,7 +8890,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "PaAny"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           | Ast.PaAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.PaAli (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8719,7 +8900,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaAli"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaId (x0, x1) ->
@@ -8728,14 +8909,14 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.PaNil x0 ->
                               Ast.ExApp (_loc,
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "PaNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_rec_binding _loc =
                           function
                           | Ast.RbAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8747,7 +8928,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "RbEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_expr _loc x2)
                           | Ast.RbSem (x0, x1, x2) ->
@@ -8758,7 +8939,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "RbSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_rec_binding _loc x1),
                                 meta_rec_binding _loc x2)
                           | Ast.RbNil x0 ->
@@ -8766,7 +8947,7 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "RbNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_sig_item _loc =
                           function
                           | Ast.SgAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8778,7 +8959,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgVal"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.SgTyp (x0, x1) ->
@@ -8787,7 +8968,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgTyp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.SgOpn (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8795,7 +8976,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgOpn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.SgMty (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8805,7 +8986,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgMty"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.SgRecMod (x0, x1) ->
@@ -8814,7 +8995,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgRecMod"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_binding _loc x1)
                           | Ast.SgMod (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8824,7 +9005,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgMod"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.SgInc (x0, x1) ->
@@ -8833,7 +9014,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgInc"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_type _loc x1)
                           | Ast.SgExt (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -8844,7 +9025,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "SgExt"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
                                 meta_meta_list meta_string _loc x3)
@@ -8854,7 +9035,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgExc"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.SgDir (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8864,7 +9045,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgDir"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.SgSem (x0, x1, x2) ->
@@ -8875,7 +9056,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_sig_item _loc x1),
                                 meta_sig_item _loc x2)
                           | Ast.SgClt (x0, x1) ->
@@ -8884,7 +9065,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgClt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.SgCls (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8892,14 +9073,14 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgCls"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.SgNil x0 ->
                               Ast.ExApp (_loc,
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "SgNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_str_item _loc =
                           function
                           | Ast.StAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8911,7 +9092,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StVal"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_meta_bool _loc x1),
                                 meta_binding _loc x2)
                           | Ast.StTyp (x0, x1) ->
@@ -8920,7 +9101,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StTyp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.StOpn (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8928,7 +9109,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StOpn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.StMty (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8938,7 +9119,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StMty"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.StRecMod (x0, x1) ->
@@ -8947,7 +9128,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StRecMod"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_binding _loc x1)
                           | Ast.StMod (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8957,7 +9138,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StMod"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_expr _loc x2)
                           | Ast.StInc (x0, x1) ->
@@ -8966,7 +9147,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StInc"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_expr _loc x1)
                           | Ast.StExt (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -8977,7 +9158,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "StExt"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
                                 meta_meta_list meta_string _loc x3)
@@ -8987,7 +9168,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StExp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.StExc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
@@ -8997,7 +9178,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StExc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_meta_option meta_ident _loc x2)
                           | Ast.StDir (x0, x1, x2) ->
@@ -9008,7 +9189,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StDir"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.StSem (x0, x1, x2) ->
@@ -9019,7 +9200,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_str_item _loc x1),
                                 meta_str_item _loc x2)
                           | Ast.StClt (x0, x1) ->
@@ -9028,7 +9209,7 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StClt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.StCls (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -9036,14 +9217,14 @@ module Struct =
                                   Ast.ExId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StCls"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_expr _loc x1)
                           | Ast.StNil x0 ->
                               Ast.ExApp (_loc,
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "StNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_with_constr _loc =
                           function
                           | Ast.WcAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -9055,7 +9236,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "WcAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_with_constr _loc x1),
                                 meta_with_constr _loc x2)
                           | Ast.WcMod (x0, x1, x2) ->
@@ -9066,7 +9247,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "WcMod"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_ident _loc x2)
                           | Ast.WcTyp (x0, x1, x2) ->
@@ -9077,7 +9258,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "WcTyp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.WcNil x0 ->
@@ -9085,11 +9266,11 @@ module Struct =
                                 Ast.ExId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "WcNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           
                       end
                       
-                    let meta_acc_Loc_t = meta_loc_patt
+                    let meta_loc = meta_loc_patt
                       
                     module Patt =
                       struct
@@ -9128,7 +9309,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "BiEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_expr _loc x2)
                           | Ast.BiAnd (x0, x1, x2) ->
@@ -9139,7 +9320,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "BiAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_binding _loc x1),
                                 meta_binding _loc x2)
                           | Ast.BiNil x0 ->
@@ -9147,7 +9328,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "BiNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_expr _loc =
                           function
                           | Ast.CeAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -9159,7 +9340,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_class_expr _loc x2)
                           | Ast.CeAnd (x0, x1, x2) ->
@@ -9170,7 +9351,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_class_expr _loc x2)
                           | Ast.CeTyc (x0, x1, x2) ->
@@ -9181,7 +9362,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CeStr (x0, x1, x2) ->
@@ -9192,7 +9373,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeStr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_class_str_item _loc x2)
                           | Ast.CeLet (x0, x1, x2, x3) ->
@@ -9204,7 +9385,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeLet"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_binding _loc x2),
                                 meta_class_expr _loc x3)
@@ -9216,7 +9397,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeFun"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_class_expr _loc x2)
                           | Ast.CeCon (x0, x1, x2, x3) ->
@@ -9228,7 +9409,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeCon"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
@@ -9240,7 +9421,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CeApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.CeNil x0 ->
@@ -9248,7 +9429,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CeNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_sig_item _loc =
                           function
                           | Ast.CgAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -9261,7 +9442,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CgVir"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -9275,7 +9456,7 @@ module Struct =
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "CgVal"))),
-                                        meta_acc_Loc_t _loc x0),
+                                        meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_meta_bool _loc x2),
                                   meta_meta_bool _loc x3),
@@ -9289,7 +9470,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CgMth"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -9299,7 +9480,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "CgInh"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.CgSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9309,7 +9490,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CgSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_sig_item _loc x1),
                                 meta_class_sig_item _loc x2)
                           | Ast.CgCtr (x0, x1, x2) ->
@@ -9320,7 +9501,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CgCtr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.CgNil x0 ->
@@ -9328,7 +9509,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CgNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_str_item _loc =
                           function
                           | Ast.CrAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -9341,7 +9522,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrVvr"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -9354,7 +9535,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrVir"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
@@ -9367,7 +9548,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrVal"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_expr _loc x3)
@@ -9381,7 +9562,7 @@ module Struct =
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "CrMth"))),
-                                        meta_acc_Loc_t _loc x0),
+                                        meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_meta_bool _loc x2),
                                   meta_expr _loc x3),
@@ -9392,7 +9573,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "CrIni"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.CrInh (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9402,7 +9583,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CrInh"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_expr _loc x1),
                                 meta_string _loc x2)
                           | Ast.CrCtr (x0, x1, x2) ->
@@ -9413,7 +9594,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CrCtr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.CrSem (x0, x1, x2) ->
@@ -9424,7 +9605,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CrSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_str_item _loc x1),
                                 meta_class_str_item _loc x2)
                           | Ast.CrNil x0 ->
@@ -9432,7 +9613,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CrNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_class_type _loc =
                           function
                           | Ast.CtAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -9444,7 +9625,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_type _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtCol (x0, x1, x2) ->
@@ -9455,7 +9636,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtCol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_type _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtAnd (x0, x1, x2) ->
@@ -9466,7 +9647,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_class_type _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtSig (x0, x1, x2) ->
@@ -9477,7 +9658,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtSig"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_class_sig_item _loc x2)
                           | Ast.CtFun (x0, x1, x2) ->
@@ -9488,7 +9669,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "CtFun"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_class_type _loc x2)
                           | Ast.CtCon (x0, x1, x2, x3) ->
@@ -9500,7 +9681,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CtCon"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
@@ -9509,7 +9690,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "CtNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_ctyp _loc =
                           function
                           | Ast.TyAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -9521,7 +9702,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOfAmp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyAmp (x0, x1, x2) ->
@@ -9532,7 +9713,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyAmp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyVrnInfSup (x0, x1, x2) ->
@@ -9543,7 +9724,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyVrnInfSup"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyVrnInf (x0, x1) ->
@@ -9552,7 +9733,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrnInf"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyVrnSup (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9560,7 +9741,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrnSup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyVrnEq (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9568,7 +9749,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrnEq"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TySta (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9578,7 +9759,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TySta"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyTup (x0, x1) ->
@@ -9587,7 +9768,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyTup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyMut (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9595,7 +9776,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyMut"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyPrv (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9603,7 +9784,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyPrv"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyOr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9613,7 +9794,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyAnd (x0, x1, x2) ->
@@ -9624,7 +9805,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyOf (x0, x1, x2) ->
@@ -9635,7 +9816,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOf"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TySum (x0, x1) ->
@@ -9644,7 +9825,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TySum"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyCom (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9654,7 +9835,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyCom"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TySem (x0, x1, x2) ->
@@ -9665,7 +9846,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TySem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyCol (x0, x1, x2) ->
@@ -9676,7 +9857,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyCol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyRec (x0, x1) ->
@@ -9685,7 +9866,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyRec"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.TyVrn (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9693,7 +9874,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyVrn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyQuM (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9701,7 +9882,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyQuM"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyQuP (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9709,7 +9890,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyQuP"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyQuo (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9717,7 +9898,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyQuo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.TyPol (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9727,7 +9908,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyPol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyOlb (x0, x1, x2) ->
@@ -9738,7 +9919,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyOlb"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyObj (x0, x1, x2) ->
@@ -9749,7 +9930,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyObj"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_meta_bool _loc x2)
                           | Ast.TyDcl (x0, x1, x2, x3, x4) ->
@@ -9762,7 +9943,7 @@ module Struct =
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "TyDcl"))),
-                                        meta_acc_Loc_t _loc x0),
+                                        meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_list meta_ctyp _loc x2),
                                   meta_ctyp _loc x3),
@@ -9780,7 +9961,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyMan"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyId (x0, x1) ->
@@ -9789,7 +9970,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.TyLab (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9799,7 +9980,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyLab"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyCls (x0, x1) ->
@@ -9808,7 +9989,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "TyCls"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.TyArr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9818,7 +9999,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyArr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyApp (x0, x1, x2) ->
@@ -9829,7 +10010,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyAny x0 ->
@@ -9837,7 +10018,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "TyAny"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           | Ast.TyAli (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -9846,7 +10027,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "TyAli"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.TyNil x0 ->
@@ -9854,7 +10035,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "TyNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_expr _loc =
                           function
                           | Ast.ExWhi (x0, x1, x2) ->
@@ -9865,7 +10046,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExWhi"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExVrn (x0, x1) ->
@@ -9874,7 +10055,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExVrn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExTyc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9884,7 +10065,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.ExCom (x0, x1, x2) ->
@@ -9895,7 +10076,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExCom"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExTup (x0, x1) ->
@@ -9904,7 +10085,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExTup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExTry (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9914,7 +10095,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExTry"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_match_case _loc x2)
                           | Ast.ExStr (x0, x1) ->
@@ -9923,7 +10104,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExStr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExSte (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9933,7 +10114,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExSte"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExSnd (x0, x1, x2) ->
@@ -9944,7 +10125,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExSnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_string _loc x2)
                           | Ast.ExSeq (x0, x1) ->
@@ -9953,7 +10134,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExSeq"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExRec (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9963,7 +10144,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExRec"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_rec_binding _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExOvr (x0, x1) ->
@@ -9972,7 +10153,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExOvr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_rec_binding _loc x1)
                           | Ast.ExOlb (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -9982,7 +10163,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExOlb"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExObj (x0, x1, x2) ->
@@ -9993,7 +10174,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExObj"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_class_str_item _loc x2)
                           | Ast.ExNew (x0, x1) ->
@@ -10002,7 +10183,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExNew"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.ExMat (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10012,7 +10193,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExMat"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_match_case _loc x2)
                           | Ast.ExLmd (x0, x1, x2, x3) ->
@@ -10024,7 +10205,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExLmd"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_expr _loc x2),
                                 meta_expr _loc x3)
@@ -10037,7 +10218,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExLet"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_meta_bool _loc x1),
                                   meta_binding _loc x2),
                                 meta_expr _loc x3)
@@ -10047,7 +10228,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExLaz"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExLab (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10057,7 +10238,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExLab"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExNativeInt (x0, x1) ->
@@ -10066,7 +10247,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExNativeInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExInt64 (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10074,7 +10255,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExInt64"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExInt32 (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10082,7 +10263,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExInt32"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExInt (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10090,7 +10271,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExIfe (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -10101,7 +10282,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExIfe"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_expr _loc x1),
                                   meta_expr _loc x2),
                                 meta_expr _loc x3)
@@ -10111,7 +10292,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExFun"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_match_case _loc x1)
                           | Ast.ExFor (x0, x1, x2, x3, x4, x5) ->
                               Ast.PaApp (_loc,
@@ -10124,7 +10305,7 @@ module Struct =
                                             Ast.IdAcc (_loc,
                                               Ast.IdUid (_loc, "Ast"),
                                               Ast.IdUid (_loc, "ExFor"))),
-                                          meta_acc_Loc_t _loc x0),
+                                          meta_loc _loc x0),
                                         meta_string _loc x1),
                                       meta_expr _loc x2),
                                     meta_expr _loc x3),
@@ -10136,7 +10317,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExFlo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExCoe (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -10147,7 +10328,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExCoe"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_expr _loc x1),
                                   meta_ctyp _loc x2),
                                 meta_ctyp _loc x3)
@@ -10157,7 +10338,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExChr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.ExAss (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10167,7 +10348,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExAss"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExAsr (x0, x1) ->
@@ -10176,14 +10357,14 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExAsr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExAsf x0 ->
                               Ast.PaApp (_loc,
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "ExAsf"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           | Ast.ExSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -10192,7 +10373,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExArr (x0, x1) ->
@@ -10201,7 +10382,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExArr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.ExAre (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10211,7 +10392,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExAre"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExApp (x0, x1, x2) ->
@@ -10222,7 +10403,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10234,7 +10415,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExAcc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_expr _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExId (x0, x1) ->
@@ -10243,14 +10424,14 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.ExNil x0 ->
                               Ast.PaApp (_loc,
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "ExNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_ident _loc =
                           function
                           | Ast.IdAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10260,7 +10441,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "IdUid"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.IdLid (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10268,7 +10449,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "IdLid"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.IdApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10278,7 +10459,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "IdApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_ident _loc x2)
                           | Ast.IdAcc (x0, x1, x2) ->
@@ -10289,7 +10470,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "IdAcc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_ident _loc x2)
                         and meta_match_case _loc =
@@ -10304,7 +10485,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "McArr"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_patt _loc x1),
                                   meta_expr _loc x2),
                                 meta_expr _loc x3)
@@ -10316,7 +10497,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "McOr"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_match_case _loc x1),
                                 meta_match_case _loc x2)
                           | Ast.McNil x0 ->
@@ -10324,7 +10505,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "McNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_meta_bool _loc =
                           function
                           | Ast.BAnt x0 -> Ast.PaAnt (_loc, x0)
@@ -10375,7 +10556,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MbCol"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.MbColEq (x0, x1, x2, x3) ->
@@ -10387,7 +10568,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "MbColEq"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_type _loc x2),
                                 meta_module_expr _loc x3)
@@ -10399,7 +10580,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MbAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_binding _loc x1),
                                 meta_module_binding _loc x2)
                           | Ast.MbNil x0 ->
@@ -10407,7 +10588,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MbNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_module_expr _loc =
                           function
                           | Ast.MeAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10419,7 +10600,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MeTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_expr _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.MeStr (x0, x1) ->
@@ -10428,7 +10609,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MeStr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_str_item _loc x1)
                           | Ast.MeFun (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -10439,7 +10620,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "MeFun"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_type _loc x2),
                                 meta_module_expr _loc x3)
@@ -10451,7 +10632,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MeApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_expr _loc x1),
                                 meta_module_expr _loc x2)
                           | Ast.MeId (x0, x1) ->
@@ -10460,14 +10641,14 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MeId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.MeNil x0 ->
                               Ast.PaApp (_loc,
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MeNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10479,7 +10660,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "MtWit"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_module_type _loc x1),
                                 meta_with_constr _loc x2)
                           | Ast.MtSig (x0, x1) ->
@@ -10488,7 +10669,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MtSig"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_sig_item _loc x1)
                           | Ast.MtQuo (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10496,7 +10677,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MtQuo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.MtFun (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -10507,7 +10688,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "MtFun"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_module_type _loc x2),
                                 meta_module_type _loc x3)
@@ -10517,14 +10698,14 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "MtId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.MtNil x0 ->
                               Ast.PaApp (_loc,
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MtNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_patt _loc =
                           function
                           | Ast.PaVrn (x0, x1) ->
@@ -10533,7 +10714,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaVrn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaTyp (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10541,7 +10722,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaTyp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.PaTyc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10551,7 +10732,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaTyc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.PaTup (x0, x1) ->
@@ -10560,7 +10741,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaTup"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_patt _loc x1)
                           | Ast.PaStr (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10568,7 +10749,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaStr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaEq (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10578,7 +10759,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaRec (x0, x1) ->
@@ -10587,7 +10768,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaRec"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_patt _loc x1)
                           | Ast.PaRng (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10597,7 +10778,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaRng"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaOrp (x0, x1, x2) ->
@@ -10608,7 +10789,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaOrp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaOlbi (x0, x1, x2, x3) ->
@@ -10620,7 +10801,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "PaOlbi"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_patt _loc x2),
                                 meta_expr _loc x3)
@@ -10632,7 +10813,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaOlb"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaLab (x0, x1, x2) ->
@@ -10643,7 +10824,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaLab"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaFlo (x0, x1) ->
@@ -10652,7 +10833,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaFlo"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaNativeInt (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10660,7 +10841,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaNativeInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaInt64 (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10668,7 +10849,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaInt64"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaInt32 (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10676,7 +10857,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaInt32"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaInt (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10684,7 +10865,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaInt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaChr (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10692,7 +10873,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaChr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_string _loc x1)
                           | Ast.PaSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10702,7 +10883,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaCom (x0, x1, x2) ->
@@ -10713,7 +10894,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaCom"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaArr (x0, x1) ->
@@ -10722,7 +10903,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaArr"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_patt _loc x1)
                           | Ast.PaApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10732,7 +10913,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaApp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaAny x0 ->
@@ -10740,7 +10921,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "PaAny"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           | Ast.PaAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.PaAli (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10750,7 +10931,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "PaAli"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_patt _loc x1),
                                 meta_patt _loc x2)
                           | Ast.PaId (x0, x1) ->
@@ -10759,14 +10940,14 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "PaId"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.PaNil x0 ->
                               Ast.PaApp (_loc,
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "PaNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_rec_binding _loc =
                           function
                           | Ast.RbAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10778,7 +10959,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "RbEq"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_expr _loc x2)
                           | Ast.RbSem (x0, x1, x2) ->
@@ -10789,7 +10970,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "RbSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_rec_binding _loc x1),
                                 meta_rec_binding _loc x2)
                           | Ast.RbNil x0 ->
@@ -10797,7 +10978,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "RbNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_sig_item _loc =
                           function
                           | Ast.SgAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10809,7 +10990,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgVal"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.SgTyp (x0, x1) ->
@@ -10818,7 +10999,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgTyp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.SgOpn (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10826,7 +11007,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgOpn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.SgMty (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10836,7 +11017,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgMty"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.SgRecMod (x0, x1) ->
@@ -10845,7 +11026,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgRecMod"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_binding _loc x1)
                           | Ast.SgMod (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10855,7 +11036,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgMod"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.SgInc (x0, x1) ->
@@ -10864,7 +11045,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgInc"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_type _loc x1)
                           | Ast.SgExt (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -10875,7 +11056,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "SgExt"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
                                 meta_meta_list meta_string _loc x3)
@@ -10885,7 +11066,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgExc"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.SgDir (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10895,7 +11076,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgDir"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.SgSem (x0, x1, x2) ->
@@ -10906,7 +11087,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "SgSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_sig_item _loc x1),
                                 meta_sig_item _loc x2)
                           | Ast.SgClt (x0, x1) ->
@@ -10915,7 +11096,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgClt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.SgCls (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10923,14 +11104,14 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "SgCls"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.SgNil x0 ->
                               Ast.PaApp (_loc,
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "SgNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_str_item _loc =
                           function
                           | Ast.StAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10942,7 +11123,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StVal"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_meta_bool _loc x1),
                                 meta_binding _loc x2)
                           | Ast.StTyp (x0, x1) ->
@@ -10951,7 +11132,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StTyp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ctyp _loc x1)
                           | Ast.StOpn (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10959,7 +11140,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StOpn"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_ident _loc x1)
                           | Ast.StMty (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10969,7 +11150,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StMty"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_type _loc x2)
                           | Ast.StRecMod (x0, x1) ->
@@ -10978,7 +11159,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StRecMod"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_binding _loc x1)
                           | Ast.StMod (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -10988,7 +11169,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StMod"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_module_expr _loc x2)
                           | Ast.StInc (x0, x1) ->
@@ -10997,7 +11178,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StInc"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_module_expr _loc x1)
                           | Ast.StExt (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -11008,7 +11189,7 @@ module Struct =
                                         Ast.IdAcc (_loc,
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "StExt"))),
-                                      meta_acc_Loc_t _loc x0),
+                                      meta_loc _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
                                 meta_meta_list meta_string _loc x3)
@@ -11018,7 +11199,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StExp"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_expr _loc x1)
                           | Ast.StExc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
@@ -11028,7 +11209,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StExc"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_meta_option meta_ident _loc x2)
                           | Ast.StDir (x0, x1, x2) ->
@@ -11039,7 +11220,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StDir"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_string _loc x1),
                                 meta_expr _loc x2)
                           | Ast.StSem (x0, x1, x2) ->
@@ -11050,7 +11231,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StSem"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_str_item _loc x1),
                                 meta_str_item _loc x2)
                           | Ast.StClt (x0, x1) ->
@@ -11059,7 +11240,7 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StClt"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_type _loc x1)
                           | Ast.StCls (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -11067,14 +11248,14 @@ module Struct =
                                   Ast.PaId (_loc,
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "StCls"))),
-                                  meta_acc_Loc_t _loc x0),
+                                  meta_loc _loc x0),
                                 meta_class_expr _loc x1)
                           | Ast.StNil x0 ->
                               Ast.PaApp (_loc,
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "StNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                         and meta_with_constr _loc =
                           function
                           | Ast.WcAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -11086,7 +11267,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "WcAnd"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_with_constr _loc x1),
                                 meta_with_constr _loc x2)
                           | Ast.WcMod (x0, x1, x2) ->
@@ -11097,7 +11278,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "WcMod"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ident _loc x1),
                                 meta_ident _loc x2)
                           | Ast.WcTyp (x0, x1, x2) ->
@@ -11108,7 +11289,7 @@ module Struct =
                                       Ast.IdAcc (_loc,
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "WcTyp"))),
-                                    meta_acc_Loc_t _loc x0),
+                                    meta_loc _loc x0),
                                   meta_ctyp _loc x1),
                                 meta_ctyp _loc x2)
                           | Ast.WcNil x0 ->
@@ -11116,7 +11297,7 @@ module Struct =
                                 Ast.PaId (_loc,
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "WcNil"))),
-                                meta_acc_Loc_t _loc x0)
+                                meta_loc _loc x0)
                           
                       end
                       
@@ -11125,670 +11306,1164 @@ module Struct =
               end
               
             class map =
-              object (o)
-                method string = fun x -> (x : string)
+              object ((o : 'self_type))
+                method string : string -> string = o#unknown
                   
-                method int = fun x -> (x : int)
-                  
-                method float = fun x -> (x : float)
-                  
-                method bool = fun x -> (x : bool)
-                  
-                method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list = List.
-                  map
-                  
-                method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option =
-                  fun f -> function | None -> None | Some x -> Some (f x)
-                  
-                method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array =
-                  Array.map
-                  
-                method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref =
-                  fun f { contents = x } -> { contents = f x; }
-                  
-                method _Loc_t : Loc.t -> Loc.t = fun x -> x
+                method list :
+                  'a 'a_out.
+                    ('self_type -> 'a -> 'a_out) -> 'a list -> 'a_out list =
+                  fun _f_a ->
+                    function
+                    | [] -> []
+                    | _x :: _x_i1 ->
+                        let _x = _f_a o _x in
+                        let _x_i1 = o#list _f_a _x_i1 in _x :: _x_i1
                   
                 method with_constr : with_constr -> with_constr =
                   function
-                  | WcNil _x0 -> WcNil (o#_Loc_t _x0)
-                  | WcTyp (_x0, _x1, _x2) ->
-                      WcTyp (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | WcMod (_x0, _x1, _x2) ->
-                      WcMod (o#_Loc_t _x0, o#ident _x1, o#ident _x2)
-                  | WcAnd (_x0, _x1, _x2) ->
-                      WcAnd (o#_Loc_t _x0, o#with_constr _x1,
-                        o#with_constr _x2)
-                  | WcAnt (_x0, _x1) -> WcAnt (o#_Loc_t _x0, o#string _x1)
+                  | WcNil _x -> let _x = o#loc _x in WcNil _x
+                  | WcTyp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in WcTyp (_x, _x_i1, _x_i2)
+                  | WcMod (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in
+                      let _x_i2 = o#ident _x_i2 in WcMod (_x, _x_i1, _x_i2)
+                  | WcAnd (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#with_constr _x_i1 in
+                      let _x_i2 = o#with_constr _x_i2
+                      in WcAnd (_x, _x_i1, _x_i2)
+                  | WcAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in WcAnt (_x, _x_i1)
                   
                 method str_item : str_item -> str_item =
                   function
-                  | StNil _x0 -> StNil (o#_Loc_t _x0)
-                  | StCls (_x0, _x1) ->
-                      StCls (o#_Loc_t _x0, o#class_expr _x1)
-                  | StClt (_x0, _x1) ->
-                      StClt (o#_Loc_t _x0, o#class_type _x1)
-                  | StSem (_x0, _x1, _x2) ->
-                      StSem (o#_Loc_t _x0, o#str_item _x1, o#str_item _x2)
-                  | StDir (_x0, _x1, _x2) ->
-                      StDir (o#_Loc_t _x0, o#string _x1, o#expr _x2)
-                  | StExc (_x0, _x1, _x2) ->
-                      StExc (o#_Loc_t _x0, o#ctyp _x1,
-                        o#meta_option o#ident _x2)
-                  | StExp (_x0, _x1) -> StExp (o#_Loc_t _x0, o#expr _x1)
-                  | StExt (_x0, _x1, _x2, _x3) ->
-                      StExt (o#_Loc_t _x0, o#string _x1, o#ctyp _x2,
-                        o#meta_list o#string _x3)
-                  | StInc (_x0, _x1) ->
-                      StInc (o#_Loc_t _x0, o#module_expr _x1)
-                  | StMod (_x0, _x1, _x2) ->
-                      StMod (o#_Loc_t _x0, o#string _x1, o#module_expr _x2)
-                  | StRecMod (_x0, _x1) ->
-                      StRecMod (o#_Loc_t _x0, o#module_binding _x1)
-                  | StMty (_x0, _x1, _x2) ->
-                      StMty (o#_Loc_t _x0, o#string _x1, o#module_type _x2)
-                  | StOpn (_x0, _x1) -> StOpn (o#_Loc_t _x0, o#ident _x1)
-                  | StTyp (_x0, _x1) -> StTyp (o#_Loc_t _x0, o#ctyp _x1)
-                  | StVal (_x0, _x1, _x2) ->
-                      StVal (o#_Loc_t _x0, o#meta_bool _x1, o#binding _x2)
-                  | StAnt (_x0, _x1) -> StAnt (o#_Loc_t _x0, o#string _x1)
+                  | StNil _x -> let _x = o#loc _x in StNil _x
+                  | StCls (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_expr _x_i1 in StCls (_x, _x_i1)
+                  | StClt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_type _x_i1 in StClt (_x, _x_i1)
+                  | StSem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#str_item _x_i1 in
+                      let _x_i2 = o#str_item _x_i2
+                      in StSem (_x, _x_i1, _x_i2)
+                  | StDir (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in StDir (_x, _x_i1, _x_i2)
+                  | StExc (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#meta_option (fun o -> o#ident) _x_i2
+                      in StExc (_x, _x_i1, _x_i2)
+                  | StExp (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in StExp (_x, _x_i1)
+                  | StExt (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in
+                      let _x_i3 = o#meta_list (fun o -> o#string) _x_i3
+                      in StExt (_x, _x_i1, _x_i2, _x_i3)
+                  | StInc (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_expr _x_i1 in StInc (_x, _x_i1)
+                  | StMod (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_expr _x_i2
+                      in StMod (_x, _x_i1, _x_i2)
+                  | StRecMod (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_binding _x_i1
+                      in StRecMod (_x, _x_i1)
+                  | StMty (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_type _x_i2
+                      in StMty (_x, _x_i1, _x_i2)
+                  | StOpn (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in StOpn (_x, _x_i1)
+                  | StTyp (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in StTyp (_x, _x_i1)
+                  | StVal (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#binding _x_i2 in StVal (_x, _x_i1, _x_i2)
+                  | StAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in StAnt (_x, _x_i1)
                   
                 method sig_item : sig_item -> sig_item =
                   function
-                  | SgNil _x0 -> SgNil (o#_Loc_t _x0)
-                  | SgCls (_x0, _x1) ->
-                      SgCls (o#_Loc_t _x0, o#class_type _x1)
-                  | SgClt (_x0, _x1) ->
-                      SgClt (o#_Loc_t _x0, o#class_type _x1)
-                  | SgSem (_x0, _x1, _x2) ->
-                      SgSem (o#_Loc_t _x0, o#sig_item _x1, o#sig_item _x2)
-                  | SgDir (_x0, _x1, _x2) ->
-                      SgDir (o#_Loc_t _x0, o#string _x1, o#expr _x2)
-                  | SgExc (_x0, _x1) -> SgExc (o#_Loc_t _x0, o#ctyp _x1)
-                  | SgExt (_x0, _x1, _x2, _x3) ->
-                      SgExt (o#_Loc_t _x0, o#string _x1, o#ctyp _x2,
-                        o#meta_list o#string _x3)
-                  | SgInc (_x0, _x1) ->
-                      SgInc (o#_Loc_t _x0, o#module_type _x1)
-                  | SgMod (_x0, _x1, _x2) ->
-                      SgMod (o#_Loc_t _x0, o#string _x1, o#module_type _x2)
-                  | SgRecMod (_x0, _x1) ->
-                      SgRecMod (o#_Loc_t _x0, o#module_binding _x1)
-                  | SgMty (_x0, _x1, _x2) ->
-                      SgMty (o#_Loc_t _x0, o#string _x1, o#module_type _x2)
-                  | SgOpn (_x0, _x1) -> SgOpn (o#_Loc_t _x0, o#ident _x1)
-                  | SgTyp (_x0, _x1) -> SgTyp (o#_Loc_t _x0, o#ctyp _x1)
-                  | SgVal (_x0, _x1, _x2) ->
-                      SgVal (o#_Loc_t _x0, o#string _x1, o#ctyp _x2)
-                  | SgAnt (_x0, _x1) -> SgAnt (o#_Loc_t _x0, o#string _x1)
+                  | SgNil _x -> let _x = o#loc _x in SgNil _x
+                  | SgCls (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_type _x_i1 in SgCls (_x, _x_i1)
+                  | SgClt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_type _x_i1 in SgClt (_x, _x_i1)
+                  | SgSem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#sig_item _x_i1 in
+                      let _x_i2 = o#sig_item _x_i2
+                      in SgSem (_x, _x_i1, _x_i2)
+                  | SgDir (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in SgDir (_x, _x_i1, _x_i2)
+                  | SgExc (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in SgExc (_x, _x_i1)
+                  | SgExt (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in
+                      let _x_i3 = o#meta_list (fun o -> o#string) _x_i3
+                      in SgExt (_x, _x_i1, _x_i2, _x_i3)
+                  | SgInc (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_type _x_i1 in SgInc (_x, _x_i1)
+                  | SgMod (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_type _x_i2
+                      in SgMod (_x, _x_i1, _x_i2)
+                  | SgRecMod (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_binding _x_i1
+                      in SgRecMod (_x, _x_i1)
+                  | SgMty (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_type _x_i2
+                      in SgMty (_x, _x_i1, _x_i2)
+                  | SgOpn (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in SgOpn (_x, _x_i1)
+                  | SgTyp (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in SgTyp (_x, _x_i1)
+                  | SgVal (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in SgVal (_x, _x_i1, _x_i2)
+                  | SgAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in SgAnt (_x, _x_i1)
                   
                 method rec_binding : rec_binding -> rec_binding =
                   function
-                  | RbNil _x0 -> RbNil (o#_Loc_t _x0)
-                  | RbSem (_x0, _x1, _x2) ->
-                      RbSem (o#_Loc_t _x0, o#rec_binding _x1,
-                        o#rec_binding _x2)
-                  | RbEq (_x0, _x1, _x2) ->
-                      RbEq (o#_Loc_t _x0, o#ident _x1, o#expr _x2)
-                  | RbAnt (_x0, _x1) -> RbAnt (o#_Loc_t _x0, o#string _x1)
+                  | RbNil _x -> let _x = o#loc _x in RbNil _x
+                  | RbSem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#rec_binding _x_i1 in
+                      let _x_i2 = o#rec_binding _x_i2
+                      in RbSem (_x, _x_i1, _x_i2)
+                  | RbEq (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in RbEq (_x, _x_i1, _x_i2)
+                  | RbAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in RbAnt (_x, _x_i1)
                   
                 method patt : patt -> patt =
                   function
-                  | PaNil _x0 -> PaNil (o#_Loc_t _x0)
-                  | PaId (_x0, _x1) -> PaId (o#_Loc_t _x0, o#ident _x1)
-                  | PaAli (_x0, _x1, _x2) ->
-                      PaAli (o#_Loc_t _x0, o#patt _x1, o#patt _x2)
-                  | PaAnt (_x0, _x1) -> PaAnt (o#_Loc_t _x0, o#string _x1)
-                  | PaAny _x0 -> PaAny (o#_Loc_t _x0)
-                  | PaApp (_x0, _x1, _x2) ->
-                      PaApp (o#_Loc_t _x0, o#patt _x1, o#patt _x2)
-                  | PaArr (_x0, _x1) -> PaArr (o#_Loc_t _x0, o#patt _x1)
-                  | PaCom (_x0, _x1, _x2) ->
-                      PaCom (o#_Loc_t _x0, o#patt _x1, o#patt _x2)
-                  | PaSem (_x0, _x1, _x2) ->
-                      PaSem (o#_Loc_t _x0, o#patt _x1, o#patt _x2)
-                  | PaChr (_x0, _x1) -> PaChr (o#_Loc_t _x0, o#string _x1)
-                  | PaInt (_x0, _x1) -> PaInt (o#_Loc_t _x0, o#string _x1)
-                  | PaInt32 (_x0, _x1) ->
-                      PaInt32 (o#_Loc_t _x0, o#string _x1)
-                  | PaInt64 (_x0, _x1) ->
-                      PaInt64 (o#_Loc_t _x0, o#string _x1)
-                  | PaNativeInt (_x0, _x1) ->
-                      PaNativeInt (o#_Loc_t _x0, o#string _x1)
-                  | PaFlo (_x0, _x1) -> PaFlo (o#_Loc_t _x0, o#string _x1)
-                  | PaLab (_x0, _x1, _x2) ->
-                      PaLab (o#_Loc_t _x0, o#string _x1, o#patt _x2)
-                  | PaOlb (_x0, _x1, _x2) ->
-                      PaOlb (o#_Loc_t _x0, o#string _x1, o#patt _x2)
-                  | PaOlbi (_x0, _x1, _x2, _x3) ->
-                      PaOlbi (o#_Loc_t _x0, o#string _x1, o#patt _x2,
-                        o#expr _x3)
-                  | PaOrp (_x0, _x1, _x2) ->
-                      PaOrp (o#_Loc_t _x0, o#patt _x1, o#patt _x2)
-                  | PaRng (_x0, _x1, _x2) ->
-                      PaRng (o#_Loc_t _x0, o#patt _x1, o#patt _x2)
-                  | PaRec (_x0, _x1) -> PaRec (o#_Loc_t _x0, o#patt _x1)
-                  | PaEq (_x0, _x1, _x2) ->
-                      PaEq (o#_Loc_t _x0, o#ident _x1, o#patt _x2)
-                  | PaStr (_x0, _x1) -> PaStr (o#_Loc_t _x0, o#string _x1)
-                  | PaTup (_x0, _x1) -> PaTup (o#_Loc_t _x0, o#patt _x1)
-                  | PaTyc (_x0, _x1, _x2) ->
-                      PaTyc (o#_Loc_t _x0, o#patt _x1, o#ctyp _x2)
-                  | PaTyp (_x0, _x1) -> PaTyp (o#_Loc_t _x0, o#ident _x1)
-                  | PaVrn (_x0, _x1) -> PaVrn (o#_Loc_t _x0, o#string _x1)
+                  | PaNil _x -> let _x = o#loc _x in PaNil _x
+                  | PaId (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in PaId (_x, _x_i1)
+                  | PaAli (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaAli (_x, _x_i1, _x_i2)
+                  | PaAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaAnt (_x, _x_i1)
+                  | PaAny _x -> let _x = o#loc _x in PaAny _x
+                  | PaApp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaApp (_x, _x_i1, _x_i2)
+                  | PaArr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in PaArr (_x, _x_i1)
+                  | PaCom (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaCom (_x, _x_i1, _x_i2)
+                  | PaSem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaSem (_x, _x_i1, _x_i2)
+                  | PaChr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaChr (_x, _x_i1)
+                  | PaInt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaInt (_x, _x_i1)
+                  | PaInt32 (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaInt32 (_x, _x_i1)
+                  | PaInt64 (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaInt64 (_x, _x_i1)
+                  | PaNativeInt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaNativeInt (_x, _x_i1)
+                  | PaFlo (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaFlo (_x, _x_i1)
+                  | PaLab (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaLab (_x, _x_i1, _x_i2)
+                  | PaOlb (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaOlb (_x, _x_i1, _x_i2)
+                  | PaOlbi (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in
+                      let _x_i3 = o#expr _x_i3
+                      in PaOlbi (_x, _x_i1, _x_i2, _x_i3)
+                  | PaOrp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaOrp (_x, _x_i1, _x_i2)
+                  | PaRng (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaRng (_x, _x_i1, _x_i2)
+                  | PaRec (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in PaRec (_x, _x_i1)
+                  | PaEq (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in
+                      let _x_i2 = o#patt _x_i2 in PaEq (_x, _x_i1, _x_i2)
+                  | PaStr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaStr (_x, _x_i1)
+                  | PaTup (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in PaTup (_x, _x_i1)
+                  | PaTyc (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in PaTyc (_x, _x_i1, _x_i2)
+                  | PaTyp (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in PaTyp (_x, _x_i1)
+                  | PaVrn (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaVrn (_x, _x_i1)
                   
                 method module_type : module_type -> module_type =
                   function
-                  | MtNil _x0 -> MtNil (o#_Loc_t _x0)
-                  | MtId (_x0, _x1) -> MtId (o#_Loc_t _x0, o#ident _x1)
-                  | MtFun (_x0, _x1, _x2, _x3) ->
-                      MtFun (o#_Loc_t _x0, o#string _x1, o#module_type _x2,
-                        o#module_type _x3)
-                  | MtQuo (_x0, _x1) -> MtQuo (o#_Loc_t _x0, o#string _x1)
-                  | MtSig (_x0, _x1) -> MtSig (o#_Loc_t _x0, o#sig_item _x1)
-                  | MtWit (_x0, _x1, _x2) ->
-                      MtWit (o#_Loc_t _x0, o#module_type _x1,
-                        o#with_constr _x2)
-                  | MtAnt (_x0, _x1) -> MtAnt (o#_Loc_t _x0, o#string _x1)
+                  | MtNil _x -> let _x = o#loc _x in MtNil _x
+                  | MtId (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in MtId (_x, _x_i1)
+                  | MtFun (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_type _x_i2 in
+                      let _x_i3 = o#module_type _x_i3
+                      in MtFun (_x, _x_i1, _x_i2, _x_i3)
+                  | MtQuo (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in MtQuo (_x, _x_i1)
+                  | MtSig (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#sig_item _x_i1 in MtSig (_x, _x_i1)
+                  | MtWit (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_type _x_i1 in
+                      let _x_i2 = o#with_constr _x_i2
+                      in MtWit (_x, _x_i1, _x_i2)
+                  | MtAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in MtAnt (_x, _x_i1)
                   
                 method module_expr : module_expr -> module_expr =
                   function
-                  | MeNil _x0 -> MeNil (o#_Loc_t _x0)
-                  | MeId (_x0, _x1) -> MeId (o#_Loc_t _x0, o#ident _x1)
-                  | MeApp (_x0, _x1, _x2) ->
-                      MeApp (o#_Loc_t _x0, o#module_expr _x1,
-                        o#module_expr _x2)
-                  | MeFun (_x0, _x1, _x2, _x3) ->
-                      MeFun (o#_Loc_t _x0, o#string _x1, o#module_type _x2,
-                        o#module_expr _x3)
-                  | MeStr (_x0, _x1) -> MeStr (o#_Loc_t _x0, o#str_item _x1)
-                  | MeTyc (_x0, _x1, _x2) ->
-                      MeTyc (o#_Loc_t _x0, o#module_expr _x1,
-                        o#module_type _x2)
-                  | MeAnt (_x0, _x1) -> MeAnt (o#_Loc_t _x0, o#string _x1)
+                  | MeNil _x -> let _x = o#loc _x in MeNil _x
+                  | MeId (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in MeId (_x, _x_i1)
+                  | MeApp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_expr _x_i1 in
+                      let _x_i2 = o#module_expr _x_i2
+                      in MeApp (_x, _x_i1, _x_i2)
+                  | MeFun (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_type _x_i2 in
+                      let _x_i3 = o#module_expr _x_i3
+                      in MeFun (_x, _x_i1, _x_i2, _x_i3)
+                  | MeStr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#str_item _x_i1 in MeStr (_x, _x_i1)
+                  | MeTyc (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_expr _x_i1 in
+                      let _x_i2 = o#module_type _x_i2
+                      in MeTyc (_x, _x_i1, _x_i2)
+                  | MeAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in MeAnt (_x, _x_i1)
                   
                 method module_binding : module_binding -> module_binding =
                   function
-                  | MbNil _x0 -> MbNil (o#_Loc_t _x0)
-                  | MbAnd (_x0, _x1, _x2) ->
-                      MbAnd (o#_Loc_t _x0, o#module_binding _x1,
-                        o#module_binding _x2)
-                  | MbColEq (_x0, _x1, _x2, _x3) ->
-                      MbColEq (o#_Loc_t _x0, o#string _x1, o#module_type _x2,
-                        o#module_expr _x3)
-                  | MbCol (_x0, _x1, _x2) ->
-                      MbCol (o#_Loc_t _x0, o#string _x1, o#module_type _x2)
-                  | MbAnt (_x0, _x1) -> MbAnt (o#_Loc_t _x0, o#string _x1)
+                  | MbNil _x -> let _x = o#loc _x in MbNil _x
+                  | MbAnd (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_binding _x_i1 in
+                      let _x_i2 = o#module_binding _x_i2
+                      in MbAnd (_x, _x_i1, _x_i2)
+                  | MbColEq (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_type _x_i2 in
+                      let _x_i3 = o#module_expr _x_i3
+                      in MbColEq (_x, _x_i1, _x_i2, _x_i3)
+                  | MbCol (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_type _x_i2
+                      in MbCol (_x, _x_i1, _x_i2)
+                  | MbAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in MbAnt (_x, _x_i1)
                   
                 method meta_option :
-                  'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option =
+                  'a 'a_out.
+                    ('self_type -> 'a -> 'a_out) ->
+                      'a meta_option -> 'a_out meta_option =
                   fun _f_a ->
                     function
                     | ONone -> ONone
-                    | OSome _x0 -> OSome (_f_a _x0)
-                    | OAnt _x0 -> OAnt (o#string _x0)
+                    | OSome _x -> let _x = _f_a o _x in OSome _x
+                    | OAnt _x -> let _x = o#string _x in OAnt _x
                   
                 method meta_list :
-                  'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list =
+                  'a 'a_out.
+                    ('self_type -> 'a -> 'a_out) ->
+                      'a meta_list -> 'a_out meta_list =
                   fun _f_a ->
                     function
                     | LNil -> LNil
-                    | LCons (_x0, _x1) ->
-                        LCons (_f_a _x0, o#meta_list _f_a _x1)
-                    | LAnt _x0 -> LAnt (o#string _x0)
+                    | LCons (_x, _x_i1) ->
+                        let _x = _f_a o _x in
+                        let _x_i1 = o#meta_list _f_a _x_i1
+                        in LCons (_x, _x_i1)
+                    | LAnt _x -> let _x = o#string _x in LAnt _x
                   
                 method meta_bool : meta_bool -> meta_bool =
                   function
                   | BTrue -> BTrue
                   | BFalse -> BFalse
-                  | BAnt _x0 -> BAnt (o#string _x0)
+                  | BAnt _x -> let _x = o#string _x in BAnt _x
                   
                 method match_case : match_case -> match_case =
                   function
-                  | McNil _x0 -> McNil (o#_Loc_t _x0)
-                  | McOr (_x0, _x1, _x2) ->
-                      McOr (o#_Loc_t _x0, o#match_case _x1, o#match_case _x2)
-                  | McArr (_x0, _x1, _x2, _x3) ->
-                      McArr (o#_Loc_t _x0, o#patt _x1, o#expr _x2,
-                        o#expr _x3)
-                  | McAnt (_x0, _x1) -> McAnt (o#_Loc_t _x0, o#string _x1)
+                  | McNil _x -> let _x = o#loc _x in McNil _x
+                  | McOr (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#match_case _x_i1 in
+                      let _x_i2 = o#match_case _x_i2
+                      in McOr (_x, _x_i1, _x_i2)
+                  | McArr (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in
+                      let _x_i3 = o#expr _x_i3
+                      in McArr (_x, _x_i1, _x_i2, _x_i3)
+                  | McAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in McAnt (_x, _x_i1)
+                  
+                method loc : loc -> loc = o#unknown
                   
                 method ident : ident -> ident =
                   function
-                  | IdAcc (_x0, _x1, _x2) ->
-                      IdAcc (o#_Loc_t _x0, o#ident _x1, o#ident _x2)
-                  | IdApp (_x0, _x1, _x2) ->
-                      IdApp (o#_Loc_t _x0, o#ident _x1, o#ident _x2)
-                  | IdLid (_x0, _x1) -> IdLid (o#_Loc_t _x0, o#string _x1)
-                  | IdUid (_x0, _x1) -> IdUid (o#_Loc_t _x0, o#string _x1)
-                  | IdAnt (_x0, _x1) -> IdAnt (o#_Loc_t _x0, o#string _x1)
+                  | IdAcc (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in
+                      let _x_i2 = o#ident _x_i2 in IdAcc (_x, _x_i1, _x_i2)
+                  | IdApp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in
+                      let _x_i2 = o#ident _x_i2 in IdApp (_x, _x_i1, _x_i2)
+                  | IdLid (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in IdLid (_x, _x_i1)
+                  | IdUid (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in IdUid (_x, _x_i1)
+                  | IdAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in IdAnt (_x, _x_i1)
                   
                 method expr : expr -> expr =
                   function
-                  | ExNil _x0 -> ExNil (o#_Loc_t _x0)
-                  | ExId (_x0, _x1) -> ExId (o#_Loc_t _x0, o#ident _x1)
-                  | ExAcc (_x0, _x1, _x2) ->
-                      ExAcc (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
-                  | ExAnt (_x0, _x1) -> ExAnt (o#_Loc_t _x0, o#string _x1)
-                  | ExApp (_x0, _x1, _x2) ->
-                      ExApp (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
-                  | ExAre (_x0, _x1, _x2) ->
-                      ExAre (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
-                  | ExArr (_x0, _x1) -> ExArr (o#_Loc_t _x0, o#expr _x1)
-                  | ExSem (_x0, _x1, _x2) ->
-                      ExSem (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
-                  | ExAsf _x0 -> ExAsf (o#_Loc_t _x0)
-                  | ExAsr (_x0, _x1) -> ExAsr (o#_Loc_t _x0, o#expr _x1)
-                  | ExAss (_x0, _x1, _x2) ->
-                      ExAss (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
-                  | ExChr (_x0, _x1) -> ExChr (o#_Loc_t _x0, o#string _x1)
-                  | ExCoe (_x0, _x1, _x2, _x3) ->
-                      ExCoe (o#_Loc_t _x0, o#expr _x1, o#ctyp _x2,
-                        o#ctyp _x3)
-                  | ExFlo (_x0, _x1) -> ExFlo (o#_Loc_t _x0, o#string _x1)
-                  | ExFor (_x0, _x1, _x2, _x3, _x4, _x5) ->
-                      ExFor (o#_Loc_t _x0, o#string _x1, o#expr _x2,
-                        o#expr _x3, o#meta_bool _x4, o#expr _x5)
-                  | ExFun (_x0, _x1) ->
-                      ExFun (o#_Loc_t _x0, o#match_case _x1)
-                  | ExIfe (_x0, _x1, _x2, _x3) ->
-                      ExIfe (o#_Loc_t _x0, o#expr _x1, o#expr _x2,
-                        o#expr _x3)
-                  | ExInt (_x0, _x1) -> ExInt (o#_Loc_t _x0, o#string _x1)
-                  | ExInt32 (_x0, _x1) ->
-                      ExInt32 (o#_Loc_t _x0, o#string _x1)
-                  | ExInt64 (_x0, _x1) ->
-                      ExInt64 (o#_Loc_t _x0, o#string _x1)
-                  | ExNativeInt (_x0, _x1) ->
-                      ExNativeInt (o#_Loc_t _x0, o#string _x1)
-                  | ExLab (_x0, _x1, _x2) ->
-                      ExLab (o#_Loc_t _x0, o#string _x1, o#expr _x2)
-                  | ExLaz (_x0, _x1) -> ExLaz (o#_Loc_t _x0, o#expr _x1)
-                  | ExLet (_x0, _x1, _x2, _x3) ->
-                      ExLet (o#_Loc_t _x0, o#meta_bool _x1, o#binding _x2,
-                        o#expr _x3)
-                  | ExLmd (_x0, _x1, _x2, _x3) ->
-                      ExLmd (o#_Loc_t _x0, o#string _x1, o#module_expr _x2,
-                        o#expr _x3)
-                  | ExMat (_x0, _x1, _x2) ->
-                      ExMat (o#_Loc_t _x0, o#expr _x1, o#match_case _x2)
-                  | ExNew (_x0, _x1) -> ExNew (o#_Loc_t _x0, o#ident _x1)
-                  | ExObj (_x0, _x1, _x2) ->
-                      ExObj (o#_Loc_t _x0, o#patt _x1, o#class_str_item _x2)
-                  | ExOlb (_x0, _x1, _x2) ->
-                      ExOlb (o#_Loc_t _x0, o#string _x1, o#expr _x2)
-                  | ExOvr (_x0, _x1) ->
-                      ExOvr (o#_Loc_t _x0, o#rec_binding _x1)
-                  | ExRec (_x0, _x1, _x2) ->
-                      ExRec (o#_Loc_t _x0, o#rec_binding _x1, o#expr _x2)
-                  | ExSeq (_x0, _x1) -> ExSeq (o#_Loc_t _x0, o#expr _x1)
-                  | ExSnd (_x0, _x1, _x2) ->
-                      ExSnd (o#_Loc_t _x0, o#expr _x1, o#string _x2)
-                  | ExSte (_x0, _x1, _x2) ->
-                      ExSte (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
-                  | ExStr (_x0, _x1) -> ExStr (o#_Loc_t _x0, o#string _x1)
-                  | ExTry (_x0, _x1, _x2) ->
-                      ExTry (o#_Loc_t _x0, o#expr _x1, o#match_case _x2)
-                  | ExTup (_x0, _x1) -> ExTup (o#_Loc_t _x0, o#expr _x1)
-                  | ExCom (_x0, _x1, _x2) ->
-                      ExCom (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
-                  | ExTyc (_x0, _x1, _x2) ->
-                      ExTyc (o#_Loc_t _x0, o#expr _x1, o#ctyp _x2)
-                  | ExVrn (_x0, _x1) -> ExVrn (o#_Loc_t _x0, o#string _x1)
-                  | ExWhi (_x0, _x1, _x2) ->
-                      ExWhi (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
+                  | ExNil _x -> let _x = o#loc _x in ExNil _x
+                  | ExId (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in ExId (_x, _x_i1)
+                  | ExAcc (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExAcc (_x, _x_i1, _x_i2)
+                  | ExAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExAnt (_x, _x_i1)
+                  | ExApp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExApp (_x, _x_i1, _x_i2)
+                  | ExAre (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExAre (_x, _x_i1, _x_i2)
+                  | ExArr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in ExArr (_x, _x_i1)
+                  | ExSem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExSem (_x, _x_i1, _x_i2)
+                  | ExAsf _x -> let _x = o#loc _x in ExAsf _x
+                  | ExAsr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in ExAsr (_x, _x_i1)
+                  | ExAss (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExAss (_x, _x_i1, _x_i2)
+                  | ExChr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExChr (_x, _x_i1)
+                  | ExCoe (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3
+                      in ExCoe (_x, _x_i1, _x_i2, _x_i3)
+                  | ExFlo (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExFlo (_x, _x_i1)
+                  | ExFor (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in
+                      let _x_i3 = o#expr _x_i3 in
+                      let _x_i4 = o#meta_bool _x_i4 in
+                      let _x_i5 = o#expr _x_i5
+                      in ExFor (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5)
+                  | ExFun (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#match_case _x_i1 in ExFun (_x, _x_i1)
+                  | ExIfe (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in
+                      let _x_i3 = o#expr _x_i3
+                      in ExIfe (_x, _x_i1, _x_i2, _x_i3)
+                  | ExInt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExInt (_x, _x_i1)
+                  | ExInt32 (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExInt32 (_x, _x_i1)
+                  | ExInt64 (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExInt64 (_x, _x_i1)
+                  | ExNativeInt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExNativeInt (_x, _x_i1)
+                  | ExLab (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExLab (_x, _x_i1, _x_i2)
+                  | ExLaz (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in ExLaz (_x, _x_i1)
+                  | ExLet (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#binding _x_i2 in
+                      let _x_i3 = o#expr _x_i3
+                      in ExLet (_x, _x_i1, _x_i2, _x_i3)
+                  | ExLmd (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#module_expr _x_i2 in
+                      let _x_i3 = o#expr _x_i3
+                      in ExLmd (_x, _x_i1, _x_i2, _x_i3)
+                  | ExMat (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#match_case _x_i2
+                      in ExMat (_x, _x_i1, _x_i2)
+                  | ExNew (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in ExNew (_x, _x_i1)
+                  | ExObj (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#class_str_item _x_i2
+                      in ExObj (_x, _x_i1, _x_i2)
+                  | ExOlb (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExOlb (_x, _x_i1, _x_i2)
+                  | ExOvr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#rec_binding _x_i1 in ExOvr (_x, _x_i1)
+                  | ExRec (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#rec_binding _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExRec (_x, _x_i1, _x_i2)
+                  | ExSeq (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in ExSeq (_x, _x_i1)
+                  | ExSnd (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#string _x_i2 in ExSnd (_x, _x_i1, _x_i2)
+                  | ExSte (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExSte (_x, _x_i1, _x_i2)
+                  | ExStr (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExStr (_x, _x_i1)
+                  | ExTry (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#match_case _x_i2
+                      in ExTry (_x, _x_i1, _x_i2)
+                  | ExTup (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in ExTup (_x, _x_i1)
+                  | ExCom (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExCom (_x, _x_i1, _x_i2)
+                  | ExTyc (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in ExTyc (_x, _x_i1, _x_i2)
+                  | ExVrn (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in ExVrn (_x, _x_i1)
+                  | ExWhi (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExWhi (_x, _x_i1, _x_i2)
                   
                 method ctyp : ctyp -> ctyp =
                   function
-                  | TyNil _x0 -> TyNil (o#_Loc_t _x0)
-                  | TyAli (_x0, _x1, _x2) ->
-                      TyAli (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyAny _x0 -> TyAny (o#_Loc_t _x0)
-                  | TyApp (_x0, _x1, _x2) ->
-                      TyApp (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyArr (_x0, _x1, _x2) ->
-                      TyArr (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyCls (_x0, _x1) -> TyCls (o#_Loc_t _x0, o#ident _x1)
-                  | TyLab (_x0, _x1, _x2) ->
-                      TyLab (o#_Loc_t _x0, o#string _x1, o#ctyp _x2)
-                  | TyId (_x0, _x1) -> TyId (o#_Loc_t _x0, o#ident _x1)
-                  | TyMan (_x0, _x1, _x2) ->
-                      TyMan (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyDcl (_x0, _x1, _x2, _x3, _x4) ->
-                      TyDcl (o#_Loc_t _x0, o#string _x1, o#list o#ctyp _x2,
-                        o#ctyp _x3,
+                  | TyNil _x -> let _x = o#loc _x in TyNil _x
+                  | TyAli (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyAli (_x, _x_i1, _x_i2)
+                  | TyAny _x -> let _x = o#loc _x in TyAny _x
+                  | TyApp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyApp (_x, _x_i1, _x_i2)
+                  | TyArr (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyArr (_x, _x_i1, _x_i2)
+                  | TyCls (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in TyCls (_x, _x_i1)
+                  | TyLab (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyLab (_x, _x_i1, _x_i2)
+                  | TyId (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in TyId (_x, _x_i1)
+                  | TyMan (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyMan (_x, _x_i1, _x_i2)
+                  | TyDcl (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#list (fun o -> o#ctyp) _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3 in
+                      let _x_i4 =
                         o#list
-                          (fun (_x0, _x1) -> ((o#ctyp _x0), (o#ctyp _x1)))
-                          _x4)
-                  | TyObj (_x0, _x1, _x2) ->
-                      TyObj (o#_Loc_t _x0, o#ctyp _x1, o#meta_bool _x2)
-                  | TyOlb (_x0, _x1, _x2) ->
-                      TyOlb (o#_Loc_t _x0, o#string _x1, o#ctyp _x2)
-                  | TyPol (_x0, _x1, _x2) ->
-                      TyPol (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyQuo (_x0, _x1) -> TyQuo (o#_Loc_t _x0, o#string _x1)
-                  | TyQuP (_x0, _x1) -> TyQuP (o#_Loc_t _x0, o#string _x1)
-                  | TyQuM (_x0, _x1) -> TyQuM (o#_Loc_t _x0, o#string _x1)
-                  | TyVrn (_x0, _x1) -> TyVrn (o#_Loc_t _x0, o#string _x1)
-                  | TyRec (_x0, _x1) -> TyRec (o#_Loc_t _x0, o#ctyp _x1)
-                  | TyCol (_x0, _x1, _x2) ->
-                      TyCol (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TySem (_x0, _x1, _x2) ->
-                      TySem (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyCom (_x0, _x1, _x2) ->
-                      TyCom (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TySum (_x0, _x1) -> TySum (o#_Loc_t _x0, o#ctyp _x1)
-                  | TyOf (_x0, _x1, _x2) ->
-                      TyOf (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyAnd (_x0, _x1, _x2) ->
-                      TyAnd (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyOr (_x0, _x1, _x2) ->
-                      TyOr (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyPrv (_x0, _x1) -> TyPrv (o#_Loc_t _x0, o#ctyp _x1)
-                  | TyMut (_x0, _x1) -> TyMut (o#_Loc_t _x0, o#ctyp _x1)
-                  | TyTup (_x0, _x1) -> TyTup (o#_Loc_t _x0, o#ctyp _x1)
-                  | TySta (_x0, _x1, _x2) ->
-                      TySta (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyVrnEq (_x0, _x1) -> TyVrnEq (o#_Loc_t _x0, o#ctyp _x1)
-                  | TyVrnSup (_x0, _x1) ->
-                      TyVrnSup (o#_Loc_t _x0, o#ctyp _x1)
-                  | TyVrnInf (_x0, _x1) ->
-                      TyVrnInf (o#_Loc_t _x0, o#ctyp _x1)
-                  | TyVrnInfSup (_x0, _x1, _x2) ->
-                      TyVrnInfSup (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyAmp (_x0, _x1, _x2) ->
-                      TyAmp (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyOfAmp (_x0, _x1, _x2) ->
-                      TyOfAmp (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | TyAnt (_x0, _x1) -> TyAnt (o#_Loc_t _x0, o#string _x1)
+                          (fun o (_x, _x_i1) ->
+                             let _x = o#ctyp _x in
+                             let _x_i1 = o#ctyp _x_i1 in (_x, _x_i1))
+                          _x_i4
+                      in TyDcl (_x, _x_i1, _x_i2, _x_i3, _x_i4)
+                  | TyObj (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2
+                      in TyObj (_x, _x_i1, _x_i2)
+                  | TyOlb (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyOlb (_x, _x_i1, _x_i2)
+                  | TyPol (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyPol (_x, _x_i1, _x_i2)
+                  | TyQuo (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in TyQuo (_x, _x_i1)
+                  | TyQuP (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in TyQuP (_x, _x_i1)
+                  | TyQuM (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in TyQuM (_x, _x_i1)
+                  | TyVrn (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in TyVrn (_x, _x_i1)
+                  | TyRec (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TyRec (_x, _x_i1)
+                  | TyCol (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyCol (_x, _x_i1, _x_i2)
+                  | TySem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TySem (_x, _x_i1, _x_i2)
+                  | TyCom (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyCom (_x, _x_i1, _x_i2)
+                  | TySum (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TySum (_x, _x_i1)
+                  | TyOf (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyOf (_x, _x_i1, _x_i2)
+                  | TyAnd (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyAnd (_x, _x_i1, _x_i2)
+                  | TyOr (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyOr (_x, _x_i1, _x_i2)
+                  | TyPrv (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TyPrv (_x, _x_i1)
+                  | TyMut (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TyMut (_x, _x_i1)
+                  | TyTup (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TyTup (_x, _x_i1)
+                  | TySta (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TySta (_x, _x_i1, _x_i2)
+                  | TyVrnEq (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TyVrnEq (_x, _x_i1)
+                  | TyVrnSup (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TyVrnSup (_x, _x_i1)
+                  | TyVrnInf (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in TyVrnInf (_x, _x_i1)
+                  | TyVrnInfSup (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2
+                      in TyVrnInfSup (_x, _x_i1, _x_i2)
+                  | TyAmp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyAmp (_x, _x_i1, _x_i2)
+                  | TyOfAmp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in TyOfAmp (_x, _x_i1, _x_i2)
+                  | TyAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in TyAnt (_x, _x_i1)
                   
                 method class_type : class_type -> class_type =
                   function
-                  | CtNil _x0 -> CtNil (o#_Loc_t _x0)
-                  | CtCon (_x0, _x1, _x2, _x3) ->
-                      CtCon (o#_Loc_t _x0, o#meta_bool _x1, o#ident _x2,
-                        o#ctyp _x3)
-                  | CtFun (_x0, _x1, _x2) ->
-                      CtFun (o#_Loc_t _x0, o#ctyp _x1, o#class_type _x2)
-                  | CtSig (_x0, _x1, _x2) ->
-                      CtSig (o#_Loc_t _x0, o#ctyp _x1, o#class_sig_item _x2)
-                  | CtAnd (_x0, _x1, _x2) ->
-                      CtAnd (o#_Loc_t _x0, o#class_type _x1,
-                        o#class_type _x2)
-                  | CtCol (_x0, _x1, _x2) ->
-                      CtCol (o#_Loc_t _x0, o#class_type _x1,
-                        o#class_type _x2)
-                  | CtEq (_x0, _x1, _x2) ->
-                      CtEq (o#_Loc_t _x0, o#class_type _x1, o#class_type _x2)
-                  | CtAnt (_x0, _x1) -> CtAnt (o#_Loc_t _x0, o#string _x1)
+                  | CtNil _x -> let _x = o#loc _x in CtNil _x
+                  | CtCon (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#ident _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3
+                      in CtCon (_x, _x_i1, _x_i2, _x_i3)
+                  | CtFun (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#class_type _x_i2
+                      in CtFun (_x, _x_i1, _x_i2)
+                  | CtSig (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#class_sig_item _x_i2
+                      in CtSig (_x, _x_i1, _x_i2)
+                  | CtAnd (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_type _x_i1 in
+                      let _x_i2 = o#class_type _x_i2
+                      in CtAnd (_x, _x_i1, _x_i2)
+                  | CtCol (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_type _x_i1 in
+                      let _x_i2 = o#class_type _x_i2
+                      in CtCol (_x, _x_i1, _x_i2)
+                  | CtEq (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_type _x_i1 in
+                      let _x_i2 = o#class_type _x_i2
+                      in CtEq (_x, _x_i1, _x_i2)
+                  | CtAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in CtAnt (_x, _x_i1)
                   
                 method class_str_item : class_str_item -> class_str_item =
                   function
-                  | CrNil _x0 -> CrNil (o#_Loc_t _x0)
-                  | CrSem (_x0, _x1, _x2) ->
-                      CrSem (o#_Loc_t _x0, o#class_str_item _x1,
-                        o#class_str_item _x2)
-                  | CrCtr (_x0, _x1, _x2) ->
-                      CrCtr (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | CrInh (_x0, _x1, _x2) ->
-                      CrInh (o#_Loc_t _x0, o#class_expr _x1, o#string _x2)
-                  | CrIni (_x0, _x1) -> CrIni (o#_Loc_t _x0, o#expr _x1)
-                  | CrMth (_x0, _x1, _x2, _x3, _x4) ->
-                      CrMth (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
-                        o#expr _x3, o#ctyp _x4)
-                  | CrVal (_x0, _x1, _x2, _x3) ->
-                      CrVal (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
-                        o#expr _x3)
-                  | CrVir (_x0, _x1, _x2, _x3) ->
-                      CrVir (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
-                        o#ctyp _x3)
-                  | CrVvr (_x0, _x1, _x2, _x3) ->
-                      CrVvr (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
-                        o#ctyp _x3)
-                  | CrAnt (_x0, _x1) -> CrAnt (o#_Loc_t _x0, o#string _x1)
+                  | CrNil _x -> let _x = o#loc _x in CrNil _x
+                  | CrSem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_str_item _x_i1 in
+                      let _x_i2 = o#class_str_item _x_i2
+                      in CrSem (_x, _x_i1, _x_i2)
+                  | CrCtr (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in CrCtr (_x, _x_i1, _x_i2)
+                  | CrInh (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_expr _x_i1 in
+                      let _x_i2 = o#string _x_i2 in CrInh (_x, _x_i1, _x_i2)
+                  | CrIni (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in CrIni (_x, _x_i1)
+                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i3 = o#expr _x_i3 in
+                      let _x_i4 = o#ctyp _x_i4
+                      in CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4)
+                  | CrVal (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i3 = o#expr _x_i3
+                      in CrVal (_x, _x_i1, _x_i2, _x_i3)
+                  | CrVir (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3
+                      in CrVir (_x, _x_i1, _x_i2, _x_i3)
+                  | CrVvr (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3
+                      in CrVvr (_x, _x_i1, _x_i2, _x_i3)
+                  | CrAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in CrAnt (_x, _x_i1)
                   
                 method class_sig_item : class_sig_item -> class_sig_item =
                   function
-                  | CgNil _x0 -> CgNil (o#_Loc_t _x0)
-                  | CgCtr (_x0, _x1, _x2) ->
-                      CgCtr (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
-                  | CgSem (_x0, _x1, _x2) ->
-                      CgSem (o#_Loc_t _x0, o#class_sig_item _x1,
-                        o#class_sig_item _x2)
-                  | CgInh (_x0, _x1) ->
-                      CgInh (o#_Loc_t _x0, o#class_type _x1)
-                  | CgMth (_x0, _x1, _x2, _x3) ->
-                      CgMth (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
-                        o#ctyp _x3)
-                  | CgVal (_x0, _x1, _x2, _x3, _x4) ->
-                      CgVal (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
-                        o#meta_bool _x3, o#ctyp _x4)
-                  | CgVir (_x0, _x1, _x2, _x3) ->
-                      CgVir (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
-                        o#ctyp _x3)
-                  | CgAnt (_x0, _x1) -> CgAnt (o#_Loc_t _x0, o#string _x1)
+                  | CgNil _x -> let _x = o#loc _x in CgNil _x
+                  | CgCtr (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in CgCtr (_x, _x_i1, _x_i2)
+                  | CgSem (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_sig_item _x_i1 in
+                      let _x_i2 = o#class_sig_item _x_i2
+                      in CgSem (_x, _x_i1, _x_i2)
+                  | CgInh (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_type _x_i1 in CgInh (_x, _x_i1)
+                  | CgMth (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3
+                      in CgMth (_x, _x_i1, _x_i2, _x_i3)
+                  | CgVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i3 = o#meta_bool _x_i3 in
+                      let _x_i4 = o#ctyp _x_i4
+                      in CgVal (_x, _x_i1, _x_i2, _x_i3, _x_i4)
+                  | CgVir (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3
+                      in CgVir (_x, _x_i1, _x_i2, _x_i3)
+                  | CgAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in CgAnt (_x, _x_i1)
                   
                 method class_expr : class_expr -> class_expr =
                   function
-                  | CeNil _x0 -> CeNil (o#_Loc_t _x0)
-                  | CeApp (_x0, _x1, _x2) ->
-                      CeApp (o#_Loc_t _x0, o#class_expr _x1, o#expr _x2)
-                  | CeCon (_x0, _x1, _x2, _x3) ->
-                      CeCon (o#_Loc_t _x0, o#meta_bool _x1, o#ident _x2,
-                        o#ctyp _x3)
-                  | CeFun (_x0, _x1, _x2) ->
-                      CeFun (o#_Loc_t _x0, o#patt _x1, o#class_expr _x2)
-                  | CeLet (_x0, _x1, _x2, _x3) ->
-                      CeLet (o#_Loc_t _x0, o#meta_bool _x1, o#binding _x2,
-                        o#class_expr _x3)
-                  | CeStr (_x0, _x1, _x2) ->
-                      CeStr (o#_Loc_t _x0, o#patt _x1, o#class_str_item _x2)
-                  | CeTyc (_x0, _x1, _x2) ->
-                      CeTyc (o#_Loc_t _x0, o#class_expr _x1,
-                        o#class_type _x2)
-                  | CeAnd (_x0, _x1, _x2) ->
-                      CeAnd (o#_Loc_t _x0, o#class_expr _x1,
-                        o#class_expr _x2)
-                  | CeEq (_x0, _x1, _x2) ->
-                      CeEq (o#_Loc_t _x0, o#class_expr _x1, o#class_expr _x2)
-                  | CeAnt (_x0, _x1) -> CeAnt (o#_Loc_t _x0, o#string _x1)
+                  | CeNil _x -> let _x = o#loc _x in CeNil _x
+                  | CeApp (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_expr _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in CeApp (_x, _x_i1, _x_i2)
+                  | CeCon (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#ident _x_i2 in
+                      let _x_i3 = o#ctyp _x_i3
+                      in CeCon (_x, _x_i1, _x_i2, _x_i3)
+                  | CeFun (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#class_expr _x_i2
+                      in CeFun (_x, _x_i1, _x_i2)
+                  | CeLet (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#binding _x_i2 in
+                      let _x_i3 = o#class_expr _x_i3
+                      in CeLet (_x, _x_i1, _x_i2, _x_i3)
+                  | CeStr (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#class_str_item _x_i2
+                      in CeStr (_x, _x_i1, _x_i2)
+                  | CeTyc (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_expr _x_i1 in
+                      let _x_i2 = o#class_type _x_i2
+                      in CeTyc (_x, _x_i1, _x_i2)
+                  | CeAnd (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_expr _x_i1 in
+                      let _x_i2 = o#class_expr _x_i2
+                      in CeAnd (_x, _x_i1, _x_i2)
+                  | CeEq (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#class_expr _x_i1 in
+                      let _x_i2 = o#class_expr _x_i2
+                      in CeEq (_x, _x_i1, _x_i2)
+                  | CeAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in CeAnt (_x, _x_i1)
                   
                 method binding : binding -> binding =
                   function
-                  | BiNil _x0 -> BiNil (o#_Loc_t _x0)
-                  | BiAnd (_x0, _x1, _x2) ->
-                      BiAnd (o#_Loc_t _x0, o#binding _x1, o#binding _x2)
-                  | BiEq (_x0, _x1, _x2) ->
-                      BiEq (o#_Loc_t _x0, o#patt _x1, o#expr _x2)
-                  | BiAnt (_x0, _x1) -> BiAnt (o#_Loc_t _x0, o#string _x1)
+                  | BiNil _x -> let _x = o#loc _x in BiNil _x
+                  | BiAnd (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#binding _x_i1 in
+                      let _x_i2 = o#binding _x_i2 in BiAnd (_x, _x_i1, _x_i2)
+                  | BiEq (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#patt _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in BiEq (_x, _x_i1, _x_i2)
+                  | BiAnt (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in BiAnt (_x, _x_i1)
+                  
+                method unknown : 'a. 'a -> 'a = fun x -> x
                   
               end
               
             class fold =
               object ((o : 'self_type))
-                method string = fun (_ : string) -> (o : 'self_type)
-                  
-                method int = fun (_ : int) -> (o : 'self_type)
-                  
-                method float = fun (_ : float) -> (o : 'self_type)
-                  
-                method bool = fun (_ : bool) -> (o : 'self_type)
+                method string : string -> 'self_type = o#unknown
                   
                 method list :
                   'a.
                     ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type =
-                  fun f -> List.fold_left f o
-                  
-                method option :
-                  'a.
-                    ('self_type -> 'a -> 'self_type) ->
-                      'a option -> 'self_type =
-                  fun f -> function | None -> o | Some x -> f o x
-                  
-                method array :
-                  'a.
-                    ('self_type -> 'a -> 'self_type) ->
-                      'a array -> 'self_type =
-                  fun f -> Array.fold_left f o
-                  
-                method ref :
-                  'a.
-                    ('self_type -> 'a -> 'self_type) -> 'a ref -> 'self_type =
-                  fun f { contents = x } -> f o x
-                  
-                method _Loc_t : Loc.t -> 'self_type = fun _ -> o
+                  fun _f_a ->
+                    function
+                    | [] -> o
+                    | _x :: _x_i1 ->
+                        let o = _f_a o _x in let o = o#list _f_a _x_i1 in o
                   
                 method with_constr : with_constr -> 'self_type =
                   function
-                  | WcNil _x0 -> o#_Loc_t _x0
-                  | WcTyp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | WcMod (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ident _x1)#ident _x2
-                  | WcAnd (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#with_constr _x1)#with_constr _x2
-                  | WcAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | WcNil _x -> let o = o#loc _x in o
+                  | WcTyp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | WcMod (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+                  | WcAnd (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#with_constr _x_i1 in
+                      let o = o#with_constr _x_i2 in o
+                  | WcAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method str_item : str_item -> 'self_type =
                   function
-                  | StNil _x0 -> o#_Loc_t _x0
-                  | StCls (_x0, _x1) -> (o#_Loc_t _x0)#class_expr _x1
-                  | StClt (_x0, _x1) -> (o#_Loc_t _x0)#class_type _x1
-                  | StSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#str_item _x1)#str_item _x2
-                  | StDir (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#expr _x2
-                  | StExc (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#meta_option
-                        (fun o -> o#ident) _x2
-                  | StExp (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
-                  | StExt (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#meta_list
-                        (fun o -> o#string) _x3
-                  | StInc (_x0, _x1) -> (o#_Loc_t _x0)#module_expr _x1
-                  | StMod (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#module_expr _x2
-                  | StRecMod (_x0, _x1) -> (o#_Loc_t _x0)#module_binding _x1
-                  | StMty (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#module_type _x2
-                  | StOpn (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | StTyp (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | StVal (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#meta_bool _x1)#binding _x2
-                  | StAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | StNil _x -> let o = o#loc _x in o
+                  | StCls (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#class_expr _x_i1 in o
+                  | StClt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#class_type _x_i1 in o
+                  | StSem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#str_item _x_i1 in
+                      let o = o#str_item _x_i2 in o
+                  | StDir (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+                  | StExc (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in
+                      let o = o#meta_option (fun o -> o#ident) _x_i2 in o
+                  | StExp (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
+                  | StExt (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#ctyp _x_i2 in
+                      let o = o#meta_list (fun o -> o#string) _x_i3 in o
+                  | StInc (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_expr _x_i1 in o
+                  | StMod (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_expr _x_i2 in o
+                  | StRecMod (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_binding _x_i1 in o
+                  | StMty (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_type _x_i2 in o
+                  | StOpn (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | StTyp (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | StVal (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#binding _x_i2 in o
+                  | StAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method sig_item : sig_item -> 'self_type =
                   function
-                  | SgNil _x0 -> o#_Loc_t _x0
-                  | SgCls (_x0, _x1) -> (o#_Loc_t _x0)#class_type _x1
-                  | SgClt (_x0, _x1) -> (o#_Loc_t _x0)#class_type _x1
-                  | SgSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#sig_item _x1)#sig_item _x2
-                  | SgDir (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#expr _x2
-                  | SgExc (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | SgExt (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#meta_list
-                        (fun o -> o#string) _x3
-                  | SgInc (_x0, _x1) -> (o#_Loc_t _x0)#module_type _x1
-                  | SgMod (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#module_type _x2
-                  | SgRecMod (_x0, _x1) -> (o#_Loc_t _x0)#module_binding _x1
-                  | SgMty (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#module_type _x2
-                  | SgOpn (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | SgTyp (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | SgVal (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#ctyp _x2
-                  | SgAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | SgNil _x -> let o = o#loc _x in o
+                  | SgCls (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#class_type _x_i1 in o
+                  | SgClt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#class_type _x_i1 in o
+                  | SgSem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#sig_item _x_i1 in
+                      let o = o#sig_item _x_i2 in o
+                  | SgDir (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+                  | SgExc (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | SgExt (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#ctyp _x_i2 in
+                      let o = o#meta_list (fun o -> o#string) _x_i3 in o
+                  | SgInc (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_type _x_i1 in o
+                  | SgMod (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_type _x_i2 in o
+                  | SgRecMod (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_binding _x_i1 in o
+                  | SgMty (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_type _x_i2 in o
+                  | SgOpn (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | SgTyp (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | SgVal (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
+                  | SgAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method rec_binding : rec_binding -> 'self_type =
                   function
-                  | RbNil _x0 -> o#_Loc_t _x0
-                  | RbSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#rec_binding _x1)#rec_binding _x2
-                  | RbEq (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ident _x1)#expr _x2
-                  | RbAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | RbNil _x -> let o = o#loc _x in o
+                  | RbSem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#rec_binding _x_i1 in
+                      let o = o#rec_binding _x_i2 in o
+                  | RbEq (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
+                  | RbAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method patt : patt -> 'self_type =
                   function
-                  | PaNil _x0 -> o#_Loc_t _x0
-                  | PaId (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | PaAli (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#patt _x2
-                  | PaAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaAny _x0 -> o#_Loc_t _x0
-                  | PaApp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#patt _x2
-                  | PaArr (_x0, _x1) -> (o#_Loc_t _x0)#patt _x1
-                  | PaCom (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#patt _x2
-                  | PaSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#patt _x2
-                  | PaChr (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaInt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaInt32 (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaInt64 (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaNativeInt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaFlo (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaLab (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#patt _x2
-                  | PaOlb (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#patt _x2
-                  | PaOlbi (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#patt _x2)#expr _x3
-                  | PaOrp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#patt _x2
-                  | PaRng (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#patt _x2
-                  | PaRec (_x0, _x1) -> (o#_Loc_t _x0)#patt _x1
-                  | PaEq (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ident _x1)#patt _x2
-                  | PaStr (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | PaTup (_x0, _x1) -> (o#_Loc_t _x0)#patt _x1
-                  | PaTyc (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#ctyp _x2
-                  | PaTyp (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | PaVrn (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | PaNil _x -> let o = o#loc _x in o
+                  | PaId (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | PaAli (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+                  | PaAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaAny _x -> let o = o#loc _x in o
+                  | PaApp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+                  | PaArr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#patt _x_i1 in o
+                  | PaCom (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+                  | PaSem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+                  | PaChr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaInt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaInt32 (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaInt64 (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaNativeInt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaFlo (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaLab (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#patt _x_i2 in o
+                  | PaOlb (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#patt _x_i2 in o
+                  | PaOlbi (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#patt _x_i2 in let o = o#expr _x_i3 in o
+                  | PaOrp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+                  | PaRng (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+                  | PaRec (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#patt _x_i1 in o
+                  | PaEq (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ident _x_i1 in let o = o#patt _x_i2 in o
+                  | PaStr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | PaTup (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#patt _x_i1 in o
+                  | PaTyc (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#ctyp _x_i2 in o
+                  | PaTyp (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | PaVrn (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method module_type : module_type -> 'self_type =
                   function
-                  | MtNil _x0 -> o#_Loc_t _x0
-                  | MtId (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | MtFun (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#module_type _x2)#
-                        module_type _x3
-                  | MtQuo (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | MtSig (_x0, _x1) -> (o#_Loc_t _x0)#sig_item _x1
-                  | MtWit (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#module_type _x1)#with_constr _x2
-                  | MtAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | MtNil _x -> let o = o#loc _x in o
+                  | MtId (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | MtFun (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_type _x_i2 in
+                      let o = o#module_type _x_i3 in o
+                  | MtQuo (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | MtSig (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#sig_item _x_i1 in o
+                  | MtWit (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#module_type _x_i1 in
+                      let o = o#with_constr _x_i2 in o
+                  | MtAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method module_expr : module_expr -> 'self_type =
                   function
-                  | MeNil _x0 -> o#_Loc_t _x0
-                  | MeId (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | MeApp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#module_expr _x1)#module_expr _x2
-                  | MeFun (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#module_type _x2)#
-                        module_expr _x3
-                  | MeStr (_x0, _x1) -> (o#_Loc_t _x0)#str_item _x1
-                  | MeTyc (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#module_expr _x1)#module_type _x2
-                  | MeAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | MeNil _x -> let o = o#loc _x in o
+                  | MeId (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | MeApp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#module_expr _x_i1 in
+                      let o = o#module_expr _x_i2 in o
+                  | MeFun (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_type _x_i2 in
+                      let o = o#module_expr _x_i3 in o
+                  | MeStr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#str_item _x_i1 in o
+                  | MeTyc (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#module_expr _x_i1 in
+                      let o = o#module_type _x_i2 in o
+                  | MeAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method module_binding : module_binding -> 'self_type =
                   function
-                  | MbNil _x0 -> o#_Loc_t _x0
-                  | MbAnd (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#module_binding _x1)#module_binding _x2
-                  | MbColEq (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#module_type _x2)#
-                        module_expr _x3
-                  | MbCol (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#module_type _x2
-                  | MbAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | MbNil _x -> let o = o#loc _x in o
+                  | MbAnd (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#module_binding _x_i1 in
+                      let o = o#module_binding _x_i2 in o
+                  | MbColEq (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_type _x_i2 in
+                      let o = o#module_expr _x_i3 in o
+                  | MbCol (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_type _x_i2 in o
+                  | MbAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method meta_option :
                   'a.
@@ -11797,8 +12472,8 @@ module Struct =
                   fun _f_a ->
                     function
                     | ONone -> o
-                    | OSome _x0 -> _f_a o _x0
-                    | OAnt _x0 -> o#string _x0
+                    | OSome _x -> let o = _f_a o _x in o
+                    | OAnt _x -> let o = o#string _x in o
                   
                 method meta_list :
                   'a.
@@ -11807,249 +12482,405 @@ module Struct =
                   fun _f_a ->
                     function
                     | LNil -> o
-                    | LCons (_x0, _x1) ->
-                        (_f_a o _x0)#meta_list (fun o -> _f_a o) _x1
-                    | LAnt _x0 -> o#string _x0
+                    | LCons (_x, _x_i1) ->
+                        let o = _f_a o _x in
+                        let o = o#meta_list _f_a _x_i1 in o
+                    | LAnt _x -> let o = o#string _x in o
                   
                 method meta_bool : meta_bool -> 'self_type =
                   function
                   | BTrue -> o
                   | BFalse -> o
-                  | BAnt _x0 -> o#string _x0
+                  | BAnt _x -> let o = o#string _x in o
                   
                 method match_case : match_case -> 'self_type =
                   function
-                  | McNil _x0 -> o#_Loc_t _x0
-                  | McOr (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#match_case _x1)#match_case _x2
-                  | McArr (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#patt _x1)#expr _x2)#expr _x3
-                  | McAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | McNil _x -> let o = o#loc _x in o
+                  | McOr (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#match_case _x_i1 in
+                      let o = o#match_case _x_i2 in o
+                  | McArr (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in
+                      let o = o#expr _x_i2 in let o = o#expr _x_i3 in o
+                  | McAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  
+                method loc : loc -> 'self_type = o#unknown
                   
                 method ident : ident -> 'self_type =
                   function
-                  | IdAcc (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ident _x1)#ident _x2
-                  | IdApp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ident _x1)#ident _x2
-                  | IdLid (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | IdUid (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | IdAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | IdAcc (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+                  | IdApp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+                  | IdLid (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | IdUid (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | IdAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method expr : expr -> 'self_type =
                   function
-                  | ExNil _x0 -> o#_Loc_t _x0
-                  | ExId (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | ExAcc (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
-                  | ExAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExApp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
-                  | ExAre (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
-                  | ExArr (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
-                  | ExSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
-                  | ExAsf _x0 -> o#_Loc_t _x0
-                  | ExAsr (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
-                  | ExAss (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
-                  | ExChr (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExCoe (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#expr _x1)#ctyp _x2)#ctyp _x3
-                  | ExFlo (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExFor (_x0, _x1, _x2, _x3, _x4, _x5) ->
-                      (((((o#_Loc_t _x0)#string _x1)#expr _x2)#expr _x3)#
-                         meta_bool _x4)#
-                        expr _x5
-                  | ExFun (_x0, _x1) -> (o#_Loc_t _x0)#match_case _x1
-                  | ExIfe (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#expr _x1)#expr _x2)#expr _x3
-                  | ExInt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExInt32 (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExInt64 (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExNativeInt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExLab (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#expr _x2
-                  | ExLaz (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
-                  | ExLet (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#meta_bool _x1)#binding _x2)#expr _x3
-                  | ExLmd (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#module_expr _x2)#expr _x3
-                  | ExMat (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#match_case _x2
-                  | ExNew (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | ExObj (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#class_str_item _x2
-                  | ExOlb (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#expr _x2
-                  | ExOvr (_x0, _x1) -> (o#_Loc_t _x0)#rec_binding _x1
-                  | ExRec (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#rec_binding _x1)#expr _x2
-                  | ExSeq (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
-                  | ExSnd (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#string _x2
-                  | ExSte (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
-                  | ExStr (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExTry (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#match_case _x2
-                  | ExTup (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
-                  | ExCom (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
-                  | ExTyc (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#ctyp _x2
-                  | ExVrn (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | ExWhi (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#expr _x1)#expr _x2
+                  | ExNil _x -> let o = o#loc _x in o
+                  | ExId (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | ExAcc (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExApp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExAre (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExArr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
+                  | ExSem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExAsf _x -> let o = o#loc _x in o
+                  | ExAsr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
+                  | ExAss (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExChr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExCoe (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in
+                      let o = o#ctyp _x_i2 in let o = o#ctyp _x_i3 in o
+                  | ExFlo (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExFor (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#expr _x_i2 in
+                      let o = o#expr _x_i3 in
+                      let o = o#meta_bool _x_i4 in let o = o#expr _x_i5 in o
+                  | ExFun (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#match_case _x_i1 in o
+                  | ExIfe (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in
+                      let o = o#expr _x_i2 in let o = o#expr _x_i3 in o
+                  | ExInt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExInt32 (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExInt64 (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExNativeInt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExLab (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+                  | ExLaz (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
+                  | ExLet (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#binding _x_i2 in let o = o#expr _x_i3 in o
+                  | ExLmd (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#module_expr _x_i2 in
+                      let o = o#expr _x_i3 in o
+                  | ExMat (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#match_case _x_i2 in o
+                  | ExNew (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | ExObj (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in
+                      let o = o#class_str_item _x_i2 in o
+                  | ExOlb (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+                  | ExOvr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#rec_binding _x_i1 in o
+                  | ExRec (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#rec_binding _x_i1 in
+                      let o = o#expr _x_i2 in o
+                  | ExSeq (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
+                  | ExSnd (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#string _x_i2 in o
+                  | ExSte (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExStr (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExTry (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#match_case _x_i2 in o
+                  | ExTup (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
+                  | ExCom (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExTyc (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#ctyp _x_i2 in o
+                  | ExVrn (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | ExWhi (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
                   
                 method ctyp : ctyp -> 'self_type =
                   function
-                  | TyNil _x0 -> o#_Loc_t _x0
-                  | TyAli (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyAny _x0 -> o#_Loc_t _x0
-                  | TyApp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyArr (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyCls (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | TyLab (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#ctyp _x2
-                  | TyId (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
-                  | TyMan (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyDcl (_x0, _x1, _x2, _x3, _x4) ->
-                      ((((o#_Loc_t _x0)#string _x1)#list (fun o -> o#ctyp)
-                          _x2)#
-                         ctyp _x3)#
-                        list (fun o (_x0, _x1) -> (o#ctyp _x0)#ctyp _x1) _x4
-                  | TyObj (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#meta_bool _x2
-                  | TyOlb (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#string _x1)#ctyp _x2
-                  | TyPol (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyQuo (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | TyQuP (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | TyQuM (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | TyVrn (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
-                  | TyRec (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TyCol (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TySem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyCom (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TySum (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TyOf (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyAnd (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyOr (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyPrv (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TyMut (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TyTup (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TySta (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyVrnEq (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TyVrnSup (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TyVrnInf (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
-                  | TyVrnInfSup (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyAmp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyOfAmp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | TyAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | TyNil _x -> let o = o#loc _x in o
+                  | TyAli (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyAny _x -> let o = o#loc _x in o
+                  | TyApp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyArr (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyCls (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | TyLab (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyId (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ident _x_i1 in o
+                  | TyMan (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyDcl (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#list (fun o -> o#ctyp) _x_i2 in
+                      let o = o#ctyp _x_i3 in
+                      let o =
+                        o#list
+                          (fun o (_x, _x_i1) ->
+                             let o = o#ctyp _x in let o = o#ctyp _x_i1 in o)
+                          _x_i4
+                      in o
+                  | TyObj (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#meta_bool _x_i2 in o
+                  | TyOlb (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyPol (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyQuo (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | TyQuP (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | TyQuM (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | TyVrn (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  | TyRec (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TyCol (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TySem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyCom (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TySum (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TyOf (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyAnd (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyOr (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyPrv (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TyMut (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TyTup (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TySta (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyVrnEq (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TyVrnSup (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TyVrnInf (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#ctyp _x_i1 in o
+                  | TyVrnInfSup (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyAmp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyOfAmp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method class_type : class_type -> 'self_type =
                   function
-                  | CtNil _x0 -> o#_Loc_t _x0
-                  | CtCon (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#meta_bool _x1)#ident _x2)#ctyp _x3
-                  | CtFun (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#class_type _x2
-                  | CtSig (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#class_sig_item _x2
-                  | CtAnd (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
-                  | CtCol (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
-                  | CtEq (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
-                  | CtAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | CtNil _x -> let o = o#loc _x in o
+                  | CtCon (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
+                  | CtFun (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#class_type _x_i2 in o
+                  | CtSig (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in
+                      let o = o#class_sig_item _x_i2 in o
+                  | CtAnd (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_type _x_i1 in
+                      let o = o#class_type _x_i2 in o
+                  | CtCol (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_type _x_i1 in
+                      let o = o#class_type _x_i2 in o
+                  | CtEq (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_type _x_i1 in
+                      let o = o#class_type _x_i2 in o
+                  | CtAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method class_str_item : class_str_item -> 'self_type =
                   function
-                  | CrNil _x0 -> o#_Loc_t _x0
-                  | CrSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_str_item _x1)#class_str_item _x2
-                  | CrCtr (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | CrInh (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_expr _x1)#string _x2
-                  | CrIni (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
-                  | CrMth (_x0, _x1, _x2, _x3, _x4) ->
-                      ((((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#expr _x3)#
-                        ctyp _x4
-                  | CrVal (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#expr _x3
-                  | CrVir (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-                  | CrVvr (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-                  | CrAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | CrNil _x -> let o = o#loc _x in o
+                  | CrSem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_str_item _x_i1 in
+                      let o = o#class_str_item _x_i2 in o
+                  | CrCtr (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | CrInh (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_expr _x_i1 in
+                      let o = o#string _x_i2 in o
+                  | CrIni (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
+                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#meta_bool _x_i2 in
+                      let o = o#expr _x_i3 in let o = o#ctyp _x_i4 in o
+                  | CrVal (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#meta_bool _x_i2 in let o = o#expr _x_i3 in o
+                  | CrVir (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                  | CrVvr (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                  | CrAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method class_sig_item : class_sig_item -> 'self_type =
                   function
-                  | CgNil _x0 -> o#_Loc_t _x0
-                  | CgCtr (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-                  | CgSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_sig_item _x1)#class_sig_item _x2
-                  | CgInh (_x0, _x1) -> (o#_Loc_t _x0)#class_type _x1
-                  | CgMth (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-                  | CgVal (_x0, _x1, _x2, _x3, _x4) ->
-                      ((((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#meta_bool
-                         _x3)#
-                        ctyp _x4
-                  | CgVir (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-                  | CgAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | CgNil _x -> let o = o#loc _x in o
+                  | CgCtr (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | CgSem (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_sig_item _x_i1 in
+                      let o = o#class_sig_item _x_i2 in o
+                  | CgInh (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#class_type _x_i1 in o
+                  | CgMth (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                  | CgVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#meta_bool _x_i2 in
+                      let o = o#meta_bool _x_i3 in let o = o#ctyp _x_i4 in o
+                  | CgVir (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in
+                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                  | CgAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method class_expr : class_expr -> 'self_type =
                   function
-                  | CeNil _x0 -> o#_Loc_t _x0
-                  | CeApp (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_expr _x1)#expr _x2
-                  | CeCon (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#meta_bool _x1)#ident _x2)#ctyp _x3
-                  | CeFun (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#class_expr _x2
-                  | CeLet (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#meta_bool _x1)#binding _x2)#class_expr
-                        _x3
-                  | CeStr (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#class_str_item _x2
-                  | CeTyc (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_expr _x1)#class_type _x2
-                  | CeAnd (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_expr _x1)#class_expr _x2
-                  | CeEq (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#class_expr _x1)#class_expr _x2
-                  | CeAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | CeNil _x -> let o = o#loc _x in o
+                  | CeApp (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_expr _x_i1 in let o = o#expr _x_i2 in o
+                  | CeCon (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
+                  | CeFun (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#class_expr _x_i2 in o
+                  | CeLet (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#loc _x in
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#binding _x_i2 in
+                      let o = o#class_expr _x_i3 in o
+                  | CeStr (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in
+                      let o = o#class_str_item _x_i2 in o
+                  | CeTyc (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_expr _x_i1 in
+                      let o = o#class_type _x_i2 in o
+                  | CeAnd (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_expr _x_i1 in
+                      let o = o#class_expr _x_i2 in o
+                  | CeEq (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#class_expr _x_i1 in
+                      let o = o#class_expr _x_i2 in o
+                  | CeAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method binding : binding -> 'self_type =
                   function
-                  | BiNil _x0 -> o#_Loc_t _x0
-                  | BiAnd (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#binding _x1)#binding _x2
-                  | BiEq (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#patt _x1)#expr _x2
-                  | BiAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  | BiNil _x -> let o = o#loc _x in o
+                  | BiAnd (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#binding _x_i1 in let o = o#binding _x_i2 in o
+                  | BiEq (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#patt _x_i1 in let o = o#expr _x_i2 in o
+                  | BiAnt (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
+                  
+                method unknown : 'a. 'a -> 'self_type = fun _ -> o
                   
               end
               
@@ -12097,7 +12928,7 @@ module Struct =
               object
                 inherit map as super
                   
-                method _Loc_t = fun x -> f (super#_Loc_t x)
+                method loc = fun x -> f (super#loc x)
                   
               end
               
@@ -12112,11 +12943,22 @@ module Struct =
             module Ast = Ast
               
             type 'a tag =
-              | Tag_ctyp | Tag_patt | Tag_expr | Tag_module_type
-              | Tag_sig_item | Tag_with_constr | Tag_module_expr
-              | Tag_str_item | Tag_class_type | Tag_class_sig_item
-              | Tag_class_expr | Tag_class_str_item | Tag_match_case
-              | Tag_ident | Tag_binding | Tag_rec_binding
+              | Tag_ctyp
+              | Tag_patt
+              | Tag_expr
+              | Tag_module_type
+              | Tag_sig_item
+              | Tag_with_constr
+              | Tag_module_expr
+              | Tag_str_item
+              | Tag_class_type
+              | Tag_class_sig_item
+              | Tag_class_expr
+              | Tag_class_str_item
+              | Tag_match_case
+              | Tag_ident
+              | Tag_binding
+              | Tag_rec_binding
               | Tag_module_binding
             
             let string_of_tag =
@@ -12202,7 +13044,8 @@ module Struct =
       
     module Quotation =
       struct
-        module Make (Ast : Sig.Ast) : Sig.Quotation with module Ast = Ast =
+        module Make (Ast : Sig.Camlp4Ast) :
+          Sig.Quotation with module Ast = Ast =
           struct
             module Ast = Ast
               
@@ -12246,7 +13089,9 @@ module Struct =
             module Error =
               struct
                 type error =
-                  | Finding | Expanding | ParsingResult of Loc.t * string
+                  | Finding
+                  | Expanding
+                  | ParsingResult of Loc.t * string
                   | Locating
                 
                 type t = (string * string * error * exn)
@@ -12262,14 +13107,20 @@ module Struct =
                     match ctx with
                     | Finding ->
                         (pp "finding quotation";
-                         fprintf ppf "@ @[<hv2>Available quotations are:@\n";
-                         List.iter
-                           (fun ((s, t), _) ->
-                              fprintf ppf
-                                "@[<2>%s@ (in@ a@ position@ of %a)@]@ " s
-                                Exp_key.print_tag t)
-                           !expanders_table;
-                         fprintf ppf "@]")
+                         if !expanders_table = []
+                         then
+                           fprintf ppf
+                             "@ There is no quotation expander available."
+                         else
+                           (fprintf ppf
+                              "@ @[<hv2>Available quotation expanders are:@\n";
+                            List.iter
+                              (fun ((s, t), _) ->
+                                 fprintf ppf
+                                   "@[<2>%s@ (in@ a@ position@ of %a)@]@ " s
+                                   Exp_key.print_tag t)
+                              !expanders_table;
+                            fprintf ppf "@]"))
                     | Expanding -> pp "expanding quotation"
                     | Locating -> pp "parsing"
                     | ParsingResult (loc, str) ->
@@ -14259,13 +15110,20 @@ module Struct =
                   and symbol =
                   | Smeta of string * symbol list * Action.t
                   | Snterm of internal_entry
-                  | Snterml of internal_entry * string | Slist0 of symbol
-                  | Slist0sep of symbol * symbol | Slist1 of symbol
-                  | Slist1sep of symbol * symbol | Sopt of symbol | Sself
-                  | Snext | Stoken of token_pattern | Skeyword of string
+                  | Snterml of internal_entry * string
+                  | Slist0 of symbol
+                  | Slist0sep of symbol * symbol
+                  | Slist1 of symbol
+                  | Slist1sep of symbol * symbol
+                  | Sopt of symbol
+                  | Sself
+                  | Snext
+                  | Stoken of token_pattern
+                  | Skeyword of string
                   | Stree of tree
                   and tree =
-                  | Node of node | LocAct of Action.t * Action.t list
+                  | Node of node
+                  | LocAct of Action.t * Action.t list
                   | DeadEnd
                   and node =
                   { node : symbol; son : tree; brother : tree
@@ -14352,13 +15210,20 @@ module Struct =
                   and symbol =
                   | Smeta of string * symbol list * Action.t
                   | Snterm of internal_entry
-                  | Snterml of internal_entry * string | Slist0 of symbol
-                  | Slist0sep of symbol * symbol | Slist1 of symbol
-                  | Slist1sep of symbol * symbol | Sopt of symbol | Sself
-                  | Snext | Stoken of token_pattern | Skeyword of string
+                  | Snterml of internal_entry * string
+                  | Slist0 of symbol
+                  | Slist0sep of symbol * symbol
+                  | Slist1 of symbol
+                  | Slist1sep of symbol * symbol
+                  | Sopt of symbol
+                  | Sself
+                  | Snext
+                  | Stoken of token_pattern
+                  | Skeyword of string
                   | Stree of tree
                   and tree =
-                  | Node of node | LocAct of Action.t * Action.t list
+                  | Node of node
+                  | LocAct of Action.t * Action.t list
                   | DeadEnd
                   and node =
                   { node : symbol; son : tree; brother : tree
@@ -16866,7 +17731,7 @@ module Printers =
             let name = "Camlp4.Printers.OCaml"
               
             let version =
-              "$Id: OCaml.ml,v 1.21.2.13 2007/06/20 13:26:29 ertai Exp $"
+              "$Id: OCaml.ml,v 1.21.2.12 2007/06/05 13:39:52 pouillar Exp $"
               
           end
           
@@ -16967,7 +17832,7 @@ module Printers =
                         | _ -> raise (Stream.Error "")))
                   | _ -> raise Stream.Failure
               with
-              | Stream.Failure ->
+              | Stream.Failure | Stream.Error _ ->
                   failwith
                     (sprintf
                        "Cannot print %S this string contains more than one token"
@@ -17265,7 +18130,7 @@ module Printers =
                     pp f "@[<2>constraint@ %a =@ %a@]" o#ctyp t1 o#ctyp t2
                   
                 method sum_type =
-                  fun f t -> (pp_print_string f "| "; o#ctyp f t)
+                  fun f t -> (pp f "@[<hv0>| "; o#ctyp f t; pp f "@]")
                   
                 method string = fun f -> pp f "%s"
                   
@@ -18095,8 +18960,8 @@ module Printers =
                            cut f;
                            o#class_str_item f cst2)
                       | Ast.CrCtr (_, t1, t2) ->
-                          pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1
-                            o#ctyp t2 semisep
+                          pp f "@[<2>type %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2
+                            semisep
                       | Ast.CrInh (_, ce, "") ->
                           pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce
                             semisep
@@ -19128,14 +19993,27 @@ module PreCast :
   sig
     type camlp4_token =
       Sig.camlp4_token =
-        | KEYWORD of string | SYMBOL of string | LIDENT of string
-        | UIDENT of string | ESCAPED_IDENT of string | INT of int * string
-        | INT32 of int32 * string | INT64 of int64 * string
-        | NATIVEINT of nativeint * string | FLOAT of float * string
-        | CHAR of char * string | STRING of string * string | LABEL of string
-        | OPTLABEL of string | QUOTATION of Sig.quotation
-        | ANTIQUOT of string * string | COMMENT of string | BLANKS of string
-        | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
+        | KEYWORD of string
+        | SYMBOL of string
+        | LIDENT of string
+        | UIDENT of string
+        | ESCAPED_IDENT of string
+        | INT of int * string
+        | INT32 of int32 * string
+        | INT64 of int64 * string
+        | NATIVEINT of nativeint * string
+        | FLOAT of float * string
+        | CHAR of char * string
+        | STRING of string * string
+        | LABEL of string
+        | OPTLABEL of string
+        | QUOTATION of Sig.quotation
+        | ANTIQUOT of string * string
+        | COMMENT of string
+        | BLANKS of string
+        | NEWLINE
+        | LINE_DIRECTIVE of int * string option
+        | EOI
     
     module Id : Sig.Id
       
@@ -19193,14 +20071,27 @@ module PreCast :
       
     type camlp4_token =
       Sig.camlp4_token =
-        | KEYWORD of string | SYMBOL of string | LIDENT of string
-        | UIDENT of string | ESCAPED_IDENT of string | INT of int * string
-        | INT32 of int32 * string | INT64 of int64 * string
-        | NATIVEINT of nativeint * string | FLOAT of float * string
-        | CHAR of char * string | STRING of string * string | LABEL of string
-        | OPTLABEL of string | QUOTATION of Sig.quotation
-        | ANTIQUOT of string * string | COMMENT of string | BLANKS of string
-        | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
+        | KEYWORD of string
+        | SYMBOL of string
+        | LIDENT of string
+        | UIDENT of string
+        | ESCAPED_IDENT of string
+        | INT of int * string
+        | INT32 of int32 * string
+        | INT64 of int64 * string
+        | NATIVEINT of nativeint * string
+        | FLOAT of float * string
+        | CHAR of char * string
+        | STRING of string * string
+        | LABEL of string
+        | OPTLABEL of string
+        | QUOTATION of Sig.quotation
+        | ANTIQUOT of string * string
+        | COMMENT of string
+        | BLANKS of string
+        | NEWLINE
+        | LINE_DIRECTIVE of int * string option
+        | EOI
     
     module Loc = Struct.Loc
       

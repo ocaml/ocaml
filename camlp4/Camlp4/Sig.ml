@@ -197,10 +197,9 @@ end;
     See the {!Camlp4Ast} signature for a concrete definition. *)
 module type Ast = sig
 
-  module Loc : Loc;
-
   (** {6 Syntactic categories as abstract types} *)
 
+  type loc;
   type meta_bool;
   type meta_option 'a;
   type meta_list 'a;
@@ -224,23 +223,23 @@ module type Ast = sig
 
   (** {6 Location accessors} *)
 
-  value loc_of_ctyp : ctyp -> Loc.t;
-  value loc_of_patt : patt -> Loc.t;
-  value loc_of_expr : expr -> Loc.t;
-  value loc_of_module_type : module_type -> Loc.t;
-  value loc_of_module_expr : module_expr -> Loc.t;
-  value loc_of_sig_item : sig_item -> Loc.t;
-  value loc_of_str_item : str_item -> Loc.t;
-  value loc_of_class_type : class_type -> Loc.t;
-  value loc_of_class_sig_item : class_sig_item -> Loc.t;
-  value loc_of_class_expr : class_expr -> Loc.t;
-  value loc_of_class_str_item : class_str_item -> Loc.t;
-  value loc_of_with_constr : with_constr -> Loc.t;
-  value loc_of_binding : binding -> Loc.t;
-  value loc_of_rec_binding : rec_binding -> Loc.t;
-  value loc_of_module_binding : module_binding -> Loc.t;
-  value loc_of_match_case : match_case -> Loc.t;
-  value loc_of_ident : ident -> Loc.t;
+  value loc_of_ctyp : ctyp -> loc;
+  value loc_of_patt : patt -> loc;
+  value loc_of_expr : expr -> loc;
+  value loc_of_module_type : module_type -> loc;
+  value loc_of_module_expr : module_expr -> loc;
+  value loc_of_sig_item : sig_item -> loc;
+  value loc_of_str_item : str_item -> loc;
+  value loc_of_class_type : class_type -> loc;
+  value loc_of_class_sig_item : class_sig_item -> loc;
+  value loc_of_class_expr : class_expr -> loc;
+  value loc_of_class_str_item : class_str_item -> loc;
+  value loc_of_with_constr : with_constr -> loc;
+  value loc_of_binding : binding -> loc;
+  value loc_of_rec_binding : rec_binding -> loc;
+  value loc_of_module_binding : module_binding -> loc;
+  value loc_of_match_case : match_case -> loc;
+  value loc_of_ident : ident -> loc;
 
   (** {6 Traversals} *)
 
@@ -260,19 +259,13 @@ module type Ast = sig
       value map = (new swap)#expr;
       assert (map <:expr< fun x -> (x, 42) >> = <:expr< fun x -> (42, x) >>);]
   *)
-  class map : object
+  class map : object ('self_type)
     method string : string -> string;
-    method int : int -> int;
-    method float : float -> float;
-    method bool : bool -> bool;
-    method list : ! 'a 'b . ('a -> 'b) -> list 'a -> list 'b;
-    method option : ! 'a 'b . ('a -> 'b) -> option 'a -> option 'b;
-    method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b;
-    method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b;
+    method list : ! 'a 'b . ('self_type -> 'a -> 'b) -> list 'a -> list 'b;
     method meta_bool : meta_bool -> meta_bool;
-    method meta_option : ! 'a 'b . ('a -> 'b) -> meta_option 'a -> meta_option 'b;
-    method meta_list : ! 'a 'b . ('a -> 'b) -> meta_list 'a -> meta_list 'b;
-    method _Loc_t : Loc.t -> Loc.t;
+    method meta_option : ! 'a 'b . ('self_type -> 'a -> 'b) -> meta_option 'a -> meta_option 'b;
+    method meta_list : ! 'a 'b . ('self_type -> 'a -> 'b) -> meta_list 'a -> meta_list 'b;
+    method loc : loc -> loc;
     method expr : expr -> expr;
     method patt : patt -> patt;
     method ctyp : ctyp -> ctyp;
@@ -291,22 +284,18 @@ module type Ast = sig
     method module_binding : module_binding -> module_binding;
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
+
+    method unknown : ! 'a. 'a -> 'a;
   end;
 
   (** Fold style traversal *)
   class fold : object ('self_type)
     method string : string -> 'self_type;
-    method int : int -> 'self_type;
-    method float : float -> 'self_type;
-    method bool : bool -> 'self_type;
     method list : ! 'a . ('self_type -> 'a -> 'self_type) -> list 'a -> 'self_type;
-    method option : ! 'a . ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type;
-    method array : ! 'a . ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type;
-    method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type;
     method meta_bool : meta_bool -> 'self_type;
     method meta_option : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_option 'a -> 'self_type;
     method meta_list : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_list 'a -> 'self_type;
-    method _Loc_t : Loc.t -> 'self_type;
+    method loc : loc -> 'self_type;
     method expr : expr -> 'self_type;
     method patt : patt -> 'self_type;
     method ctyp : ctyp -> 'self_type;
@@ -324,156 +313,153 @@ module type Ast = sig
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
+
+    method unknown : ! 'a. 'a -> 'self_type;
   end;
 
 end;
 
 
-(** Signature for OCaml syntax trees.
+(** Signature for OCaml syntax trees. *) (*
     This signature is an extension of {!Ast}
     It provides:
       - Types for all kinds of structure.
       - Map: A base class for map traversals.
       - Map classes and functions for common kinds.
 
-    (* Core language *)
-    ctyp               (* Representaion of types                                     *)
-    patt               (* The type of patterns                                       *)
-    expr               (* The type of expressions                                    *)
-    match_case         (* The type of cases for match/function/try constructions     *)
-    ident              (* The type of identifiers (including path like Foo(X).Bar.y) *)
-    binding            (* The type of let bindings                                   *)
-    rec_binding        (* The type of record definitions                             *)
+    == Core language ==
+    ctyp               :: Representaion of types
+    patt               :: The type of patterns
+    expr               :: The type of expressions
+    match_case         :: The type of cases for match/function/try constructions
+    ident              :: The type of identifiers (including path like Foo(X).Bar.y)
+    binding            :: The type of let bindings
+    rec_binding        :: The type of record definitions
 
-    (* Modules *)
-    module_type        (* The type of module types                                   *)
-    sig_item           (* The type of signature items                                *)
-    str_item           (* The type of structure items                                *)
-    module_expr        (* The type of module expressions                             *)
-    module_binding     (* The type of recursive module definitions                   *)
-    with_constr        (* The type of `with' constraints                             *)
+    == Modules ==
+    module_type        :: The type of module types
+    sig_item           :: The type of signature items
+    str_item           :: The type of structure items
+    module_expr        :: The type of module expressions
+    module_binding     :: The type of recursive module definitions
+    with_constr        :: The type of `with' constraints
 
-    (* Classes *)
-    class_type         (* The type of class types                                    *)
-    class_sig_item     (* The type of class signature items                          *)
-    class_expr         (* The type of class expressions                              *)
-    class_str_item     (* The type of class structure items                          *)
+    == Classes ==
+    class_type         :: The type of class types
+    class_sig_item     :: The type of class signature items
+    class_expr         :: The type of class expressions
+    class_str_item     :: The type of class structure items
  *)
 module type Camlp4Ast = sig
 
+  (** The inner module for locations *)
   module Loc : Loc;
 
   INCLUDE "camlp4/Camlp4/Camlp4Ast.partial.ml";
 
-  value loc_of_ctyp : ctyp -> Loc.t;
-  value loc_of_patt : patt -> Loc.t;
-  value loc_of_expr : expr -> Loc.t;
-  value loc_of_module_type : module_type -> Loc.t;
-  value loc_of_module_expr : module_expr -> Loc.t;
-  value loc_of_sig_item : sig_item -> Loc.t;
-  value loc_of_str_item : str_item -> Loc.t;
-  value loc_of_class_type : class_type -> Loc.t;
-  value loc_of_class_sig_item : class_sig_item -> Loc.t;
-  value loc_of_class_expr : class_expr -> Loc.t;
-  value loc_of_class_str_item : class_str_item -> Loc.t;
-  value loc_of_with_constr : with_constr -> Loc.t;
-  value loc_of_binding : binding -> Loc.t;
-  value loc_of_rec_binding : rec_binding -> Loc.t;
-  value loc_of_module_binding : module_binding -> Loc.t;
-  value loc_of_match_case : match_case -> Loc.t;
-  value loc_of_ident : ident -> Loc.t;
+  value loc_of_ctyp : ctyp -> loc;
+  value loc_of_patt : patt -> loc;
+  value loc_of_expr : expr -> loc;
+  value loc_of_module_type : module_type -> loc;
+  value loc_of_module_expr : module_expr -> loc;
+  value loc_of_sig_item : sig_item -> loc;
+  value loc_of_str_item : str_item -> loc;
+  value loc_of_class_type : class_type -> loc;
+  value loc_of_class_sig_item : class_sig_item -> loc;
+  value loc_of_class_expr : class_expr -> loc;
+  value loc_of_class_str_item : class_str_item -> loc;
+  value loc_of_with_constr : with_constr -> loc;
+  value loc_of_binding : binding -> loc;
+  value loc_of_rec_binding : rec_binding -> loc;
+  value loc_of_module_binding : module_binding -> loc;
+  value loc_of_match_case : match_case -> loc;
+  value loc_of_ident : ident -> loc;
 
   module Meta : sig
     module type META_LOC = sig
-      (** The first location is where to put the returned pattern.
+      (* The first location is where to put the returned pattern.
           Generally it's _loc to match with <:patt< ... >> quotations.
           The second location is the one to treat. *)
-      value meta_loc_patt : Loc.t -> Loc.t -> patt;
-      (** The first location is where to put the returned expression.
+      value meta_loc_patt : loc -> loc -> patt;
+      (* The first location is where to put the returned expression.
           Generally it's _loc to match with <:expr< ... >> quotations.
           The second location is the one to treat. *)
-      value meta_loc_expr : Loc.t -> Loc.t -> expr;
+      value meta_loc_expr : loc -> loc -> expr;
     end;
     module MetaLoc : sig
-      value meta_loc_patt : Loc.t -> Loc.t -> patt;
-      value meta_loc_expr : Loc.t -> Loc.t -> expr;
+      value meta_loc_patt : loc -> loc -> patt;
+      value meta_loc_expr : loc -> loc -> expr;
     end;
     module MetaGhostLoc : sig
-      value meta_loc_patt : Loc.t -> 'a -> patt;
-      value meta_loc_expr : Loc.t -> 'a -> expr;
+      value meta_loc_patt : loc -> 'a -> patt;
+      value meta_loc_expr : loc -> 'a -> expr;
     end;
     module MetaLocVar : sig
-      value meta_loc_patt : Loc.t -> 'a -> patt;
-      value meta_loc_expr : Loc.t -> 'a -> expr;
+      value meta_loc_patt : loc -> 'a -> patt;
+      value meta_loc_expr : loc -> 'a -> expr;
     end;
     module Make (MetaLoc : META_LOC) : sig
       module Expr : sig
-        value meta_string : Loc.t -> string -> expr;
-        value meta_int : Loc.t -> string -> expr;
-        value meta_float : Loc.t -> string -> expr;
-        value meta_char : Loc.t -> string -> expr;
-        value meta_bool : Loc.t -> bool -> expr;
-        value meta_list : (Loc.t -> 'a -> expr) -> Loc.t -> list 'a -> expr;
-        value meta_binding : Loc.t -> binding -> expr;
-        value meta_rec_binding : Loc.t -> rec_binding -> expr;
-        value meta_class_expr : Loc.t -> class_expr -> expr;
-        value meta_class_sig_item : Loc.t -> class_sig_item -> expr;
-        value meta_class_str_item : Loc.t -> class_str_item -> expr;
-        value meta_class_type : Loc.t -> class_type -> expr;
-        value meta_ctyp : Loc.t -> ctyp -> expr;
-        value meta_expr : Loc.t -> expr -> expr;
-        value meta_ident : Loc.t -> ident -> expr;
-        value meta_match_case : Loc.t -> match_case -> expr;
-        value meta_module_binding : Loc.t -> module_binding -> expr;
-        value meta_module_expr : Loc.t -> module_expr -> expr;
-        value meta_module_type : Loc.t -> module_type -> expr;
-        value meta_patt : Loc.t -> patt -> expr;
-        value meta_sig_item : Loc.t -> sig_item -> expr;
-        value meta_str_item : Loc.t -> str_item -> expr;
-        value meta_with_constr : Loc.t -> with_constr -> expr;
+        value meta_string : loc -> string -> expr;
+        value meta_int : loc -> string -> expr;
+        value meta_float : loc -> string -> expr;
+        value meta_char : loc -> string -> expr;
+        value meta_bool : loc -> bool -> expr;
+        value meta_list : (loc -> 'a -> expr) -> loc -> list 'a -> expr;
+        value meta_binding : loc -> binding -> expr;
+        value meta_rec_binding : loc -> rec_binding -> expr;
+        value meta_class_expr : loc -> class_expr -> expr;
+        value meta_class_sig_item : loc -> class_sig_item -> expr;
+        value meta_class_str_item : loc -> class_str_item -> expr;
+        value meta_class_type : loc -> class_type -> expr;
+        value meta_ctyp : loc -> ctyp -> expr;
+        value meta_expr : loc -> expr -> expr;
+        value meta_ident : loc -> ident -> expr;
+        value meta_match_case : loc -> match_case -> expr;
+        value meta_module_binding : loc -> module_binding -> expr;
+        value meta_module_expr : loc -> module_expr -> expr;
+        value meta_module_type : loc -> module_type -> expr;
+        value meta_patt : loc -> patt -> expr;
+        value meta_sig_item : loc -> sig_item -> expr;
+        value meta_str_item : loc -> str_item -> expr;
+        value meta_with_constr : loc -> with_constr -> expr;
       end;
       module Patt : sig
-        value meta_string : Loc.t -> string -> patt;
-        value meta_int : Loc.t -> string -> patt;
-        value meta_float : Loc.t -> string -> patt;
-        value meta_char : Loc.t -> string -> patt;
-        value meta_bool : Loc.t -> bool -> patt;
-        value meta_list : (Loc.t -> 'a -> patt) -> Loc.t -> list 'a -> patt;
-        value meta_binding : Loc.t -> binding -> patt;
-        value meta_rec_binding : Loc.t -> rec_binding -> patt;
-        value meta_class_expr : Loc.t -> class_expr -> patt;
-        value meta_class_sig_item : Loc.t -> class_sig_item -> patt;
-        value meta_class_str_item : Loc.t -> class_str_item -> patt;
-        value meta_class_type : Loc.t -> class_type -> patt;
-        value meta_ctyp : Loc.t -> ctyp -> patt;
-        value meta_expr : Loc.t -> expr -> patt;
-        value meta_ident : Loc.t -> ident -> patt;
-        value meta_match_case : Loc.t -> match_case -> patt;
-        value meta_module_binding : Loc.t -> module_binding -> patt;
-        value meta_module_expr : Loc.t -> module_expr -> patt;
-        value meta_module_type : Loc.t -> module_type -> patt;
-        value meta_patt : Loc.t -> patt -> patt;
-        value meta_sig_item : Loc.t -> sig_item -> patt;
-        value meta_str_item : Loc.t -> str_item -> patt;
-        value meta_with_constr : Loc.t -> with_constr -> patt;
+        value meta_string : loc -> string -> patt;
+        value meta_int : loc -> string -> patt;
+        value meta_float : loc -> string -> patt;
+        value meta_char : loc -> string -> patt;
+        value meta_bool : loc -> bool -> patt;
+        value meta_list : (loc -> 'a -> patt) -> loc -> list 'a -> patt;
+        value meta_binding : loc -> binding -> patt;
+        value meta_rec_binding : loc -> rec_binding -> patt;
+        value meta_class_expr : loc -> class_expr -> patt;
+        value meta_class_sig_item : loc -> class_sig_item -> patt;
+        value meta_class_str_item : loc -> class_str_item -> patt;
+        value meta_class_type : loc -> class_type -> patt;
+        value meta_ctyp : loc -> ctyp -> patt;
+        value meta_expr : loc -> expr -> patt;
+        value meta_ident : loc -> ident -> patt;
+        value meta_match_case : loc -> match_case -> patt;
+        value meta_module_binding : loc -> module_binding -> patt;
+        value meta_module_expr : loc -> module_expr -> patt;
+        value meta_module_type : loc -> module_type -> patt;
+        value meta_patt : loc -> patt -> patt;
+        value meta_sig_item : loc -> sig_item -> patt;
+        value meta_str_item : loc -> str_item -> patt;
+        value meta_with_constr : loc -> with_constr -> patt;
       end;
     end;
   end;
 
   (** See {!Ast.map}. *)
-  class map : object
+  class map : object ('self_type)
     method string : string -> string;
-    method int : int -> int;
-    method float : float -> float;
-    method bool : bool -> bool;
-    method list : ! 'a 'b . ('a -> 'b) -> list 'a -> list 'b;
-    method option : ! 'a 'b . ('a -> 'b) -> option 'a -> option 'b;
-    method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b;
-    method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b;
+    method list : ! 'a 'b . ('self_type -> 'a -> 'b) -> list 'a -> list 'b;
     method meta_bool : meta_bool -> meta_bool;
-    method meta_option : ! 'a 'b . ('a -> 'b) -> meta_option 'a -> meta_option 'b;
-    method meta_list : ! 'a 'b . ('a -> 'b) -> meta_list 'a -> meta_list 'b;
-    method _Loc_t : Loc.t -> Loc.t;
+    method meta_option : ! 'a 'b . ('self_type -> 'a -> 'b) -> meta_option 'a -> meta_option 'b;
+    method meta_list : ! 'a 'b . ('self_type -> 'a -> 'b) -> meta_list 'a -> meta_list 'b;
+    method loc : loc -> loc;
     method expr : expr -> expr;
     method patt : patt -> patt;
     method ctyp : ctyp -> ctyp;
@@ -492,22 +478,18 @@ module type Camlp4Ast = sig
     method module_binding : module_binding -> module_binding;
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
+
+    method unknown : ! 'a. 'a -> 'a;
   end;
 
   (** See {!Ast.fold}. *)
   class fold : object ('self_type)
     method string : string -> 'self_type;
-    method int : int -> 'self_type;
-    method float : float -> 'self_type;
-    method bool : bool -> 'self_type;
     method list : ! 'a . ('self_type -> 'a -> 'self_type) -> list 'a -> 'self_type;
-    method option : ! 'a . ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type;
-    method array : ! 'a . ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type;
-    method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type;
     method meta_bool : meta_bool -> 'self_type;
     method meta_option : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_option 'a -> 'self_type;
     method meta_list : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_list 'a -> 'self_type;
-    method _Loc_t : Loc.t -> 'self_type;
+    method loc : loc -> 'self_type;
     method expr : expr -> 'self_type;
     method patt : patt -> 'self_type;
     method ctyp : ctyp -> 'self_type;
@@ -525,6 +507,8 @@ module type Camlp4Ast = sig
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
+
+    method unknown : ! 'a. 'a -> 'self_type;
   end;
 
   value map_expr : (expr -> expr) -> map;
@@ -532,7 +516,7 @@ module type Camlp4Ast = sig
   value map_ctyp : (ctyp -> ctyp) -> map;
   value map_str_item : (str_item -> str_item) -> map;
   value map_sig_item : (sig_item -> sig_item) -> map;
-  value map_loc : (Loc.t -> Loc.t) -> map;
+  value map_loc : (loc -> loc) -> map;
 
   value ident_of_expr : expr -> ident;
   value ident_of_patt : patt -> ident;
@@ -605,7 +589,7 @@ end;
     Typical use is for [with] constraints.
     Example: ... with module Ast = Camlp4.Sig.Camlp4AstToAst Camlp4Ast *)
 module Camlp4AstToAst (M : Camlp4Ast) : Ast
-  with module Loc = M.Loc
+  with type loc = M.loc
    and type meta_bool = M.meta_bool
    and type meta_option 'a = M.meta_option 'a
    and type meta_list 'a = M.meta_list 'a
@@ -628,7 +612,8 @@ module Camlp4AstToAst (M : Camlp4Ast) : Ast
    and type ident = M.ident
 = M;
 
-(** Since the Ast contains locations. This functor produces Ast types
+(** Concrete definition of Camlp4 ASTs abstracted from locations.
+    Since the Ast contains locations, this functor produces Ast types
     for a given location type. *)
 module MakeCamlp4Ast (Loc : Type) = struct
 
@@ -711,9 +696,9 @@ module type Quotation = sig
   module DynAst : DynAst with module Ast = Ast;
   open Ast;
 
-  (** The Loc.t is the initial location. The option string is the optional name
+  (** The [loc] is the initial location. The option string is the optional name
       for the location variable. The string is the quotation contents. *)
-  type expand_fun 'a = Loc.t -> option string -> string -> 'a;
+  type expand_fun 'a = loc -> option string -> string -> 'a;
 
   (** [add name exp] adds the quotation [name] associated with the
       expander [exp]. *)
@@ -728,12 +713,12 @@ module type Quotation = sig
   (** [parse_quotation_result parse_function loc position_tag quotation quotation_result]
       It's a parser wrapper, this function handles the error reporting for you. *)
   value parse_quotation_result :
-    (Loc.t -> string -> 'a) -> Loc.t -> quotation -> string -> string -> 'a;
+    (loc -> string -> 'a) -> loc -> quotation -> string -> string -> 'a;
 
   (** function translating quotation names; default = identity *)
   value translate : ref (string -> string);
 
-  value expand : Loc.t -> quotation -> DynAst.tag 'a -> 'a;
+  value expand : loc -> quotation -> DynAst.tag 'a -> 'a;
 
   (** [dump_file] optionally tells Camlp4 to dump the
       result of an expander if this result is syntactically incorrect.
@@ -806,17 +791,17 @@ end;
     ("42", "4_2", "0000042", "0b0101010"...).
 
     The meaning of the tokens are:
--      * [KEYWORD s] is the keyword [s].
--      * [LIDENT s] is the ident [s] starting with a lowercase letter.
--      * [UIDENT s] is the ident [s] starting with an uppercase letter.
--      * [INT i s] (resp. [INT32 i s], [INT64 i s] and [NATIVEINT i s])
-       is the integer constant [i] whose string source is [s].
--      * [FLOAT f s] is the float constant [f] whose string source is [s].
--      * [STRING s s'] is the string constant [s] whose string source is [s'].
--      * [CHAR c s] is the character constant [c] whose string source is [s].
--      * [QUOTATION q] is a quotation [q], see {!Quotation.t} for more information.
--      * [ANTIQUOT n s] is an antiquotation [n] holding the string [s].
--      * [EOI] is the end of input.
+-      [KEYWORD s] is the keyword [s].
+-      [LIDENT s] is the ident [s] starting with a lowercase letter.
+-      [UIDENT s] is the ident [s] starting with an uppercase letter.
+-      [INT i s] (resp. [INT32 i s], [INT64 i s] and [NATIVEINT i s])
+        the integer constant [i] whose string source is [s].
+-      [FLOAT f s] is the float constant [f] whose string source is [s].
+-      [STRING s s'] is the string constant [s] whose string source is [s'].
+-      [CHAR c s] is the character constant [c] whose string source is [s].
+-      [QUOTATION q] is a quotation [q], see {!Quotation.t} for more information.
+-      [ANTIQUOT n s] is an antiquotation [n] holding the string [s].
+-      [EOI] is the end of input.
 
      Warning: the second string associated with the constructor [STRING] is
      the string found in the source without any interpretation. In particular,
@@ -984,9 +969,10 @@ module Grammar = struct
       (** Same as {!print} but show the left-factorization. *)
       value dump : Format.formatter -> t 'a -> unit;
 
-      (*/*)
+      (**/**)
       value obj : t 'a -> internal_entry;
       value clear : t 'a -> unit;
+      (**/**)
     end;
 
     (** [get_filter g] Get the {!Token.Filter} associated to the [g]. *)
@@ -1065,9 +1051,10 @@ module Grammar = struct
       (** Same as {!print} but show the left-factorization. *)
       value dump : Format.formatter -> t 'a -> unit;
 
-      (*/*)
+      (**/**)
       value obj : t 'a -> internal_entry;
       value clear : t 'a -> unit;
+      (**/**)
     end;
 
     (** Get the {!Token.Filter} associated to the grammar module. *)
@@ -1135,11 +1122,11 @@ module Parser (Ast : Ast) = struct
   module type SIMPLE = sig
     (** The parse function for expressions.
         The underlying expression grammar entry is generally "expr; EOI". *)
-    value parse_expr : Ast.Loc.t -> string -> Ast.expr;
+    value parse_expr : Ast.loc -> string -> Ast.expr;
 
     (** The parse function for patterns.
         The underlying pattern grammar entry is generally "patt; EOI". *)
-    value parse_patt : Ast.Loc.t -> string -> Ast.patt;
+    value parse_patt : Ast.loc -> string -> Ast.patt;
   end;
 
   module type S = sig
@@ -1151,11 +1138,11 @@ module Parser (Ast : Ast) = struct
         syntax), the given [directive_handler] function  evaluates  it  and
         the parsing starts again. *)
     value parse_implem : ?directive_handler:(Ast.str_item -> option Ast.str_item) ->
-                        Ast.Loc.t -> Stream.t char -> Ast.str_item;
+                        Ast.loc -> Stream.t char -> Ast.str_item;
 
     (** Same as {!parse_implem} but for interface (mli file). *)
     value parse_interf : ?directive_handler:(Ast.sig_item -> option Ast.sig_item) ->
-                        Ast.Loc.t -> Stream.t char -> Ast.sig_item;
+                        Ast.loc -> Stream.t char -> Ast.sig_item;
   end;
 end;
 
@@ -1177,7 +1164,7 @@ end;
    There is also the main grammar entries. *)
 module type Syntax = sig
   module Loc            : Loc;
-  module Ast            : Ast with module Loc = Loc;
+  module Ast            : Ast with type loc = Loc.t;
   module Token          : Token with module Loc = Loc;
   module Gram           : Grammar.Static with module Loc = Loc and module Token = Token;
   module Quotation      : Quotation with module Ast = Ast;
