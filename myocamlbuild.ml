@@ -837,6 +837,9 @@ module Camlp4deps = struct
     List.iter Outcome.ignore_good (build (List.map (fun i -> [i]) includes));
 end;;
 
+dep ["ocaml"; "file:camlp4/Camlp4/Sig.ml"]
+    ["camlp4/Camlp4/Camlp4Ast.partial.ml"];;
+
 rule "camlp4: ml4 -> ml"
   ~prod:"%.ml"
   ~dep:"%.ml4"

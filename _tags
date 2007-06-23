@@ -16,8 +16,8 @@ true: debug
 # By default everything we link needs the stdlib
 true: use_stdlib
 
-# The stdlib don't require the stdlib
-<stdlib/**>: -use_stdlib
+# The stdlib neither requires the stdlib nor debug information
+<stdlib/**>: -use_stdlib, -debug
 
 <**/*.ml*>: warn_Alez
 
