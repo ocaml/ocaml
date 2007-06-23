@@ -346,16 +346,19 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         | <:ctyp< $uid:s$ >> -> match_case_of_constructor s <:ctyp<>>
         | _ -> assert False ]
 
-      and match_case_of_poly_constructor s t =
-        let pat = tuplify_patt (fun k -> <:patt< `$s$ $pxik 0 k$ >>) in
-        <:match_case< $pat$ -> $expr_of_ty ~obj:<:expr< o >> (Some (tuplify_expr (exik 0))) t$ >>
+      and match_case_of_poly_constructor s ts =
+        chain_tuple
+          (fun [ [] -> <:patt< `$s$ >> | [p] -> <:patt< `$s$ $p$ >> | ps -> <:patt< `$s$ ($tup:Ast.paCom_of_list ps$) >> ])
+          (fun [ [] -> <:expr< `$s$ >> | [e] -> <:expr< `$s$ $e$ >> | es -> <:expr< `$s$ ($tup:Ast.exCom_of_list es$) >> ])
+          expr_of_ty ts
 
       and match_case_of_poly_sum_type =
         fun
         [ <:ctyp< $t1$ | $t2$ >> ->
              <:match_case< $match_case_of_poly_sum_type t1$ | $match_case_of_poly_sum_type t2$ >>
-        | <:ctyp< `$i$ of $t$ >> -> match_case_of_poly_constructor i t
-        | <:ctyp< `$i$ >> -> match_case_of_poly_constructor i <:ctyp<>>
+        | <:ctyp< `$i$ of ($tup:t$) >> -> match_case_of_poly_constructor i (Ast.list_of_ctyp t [])
+        | <:ctyp< `$i$ of $t$ >> -> match_case_of_poly_constructor i [t]
+        | <:ctyp< `$i$ >> -> match_case_of_poly_constructor i []
         | _ -> assert False ]
 
       and record_patt_of_type k =
