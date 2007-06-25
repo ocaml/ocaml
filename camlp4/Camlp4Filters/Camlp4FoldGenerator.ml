@@ -84,13 +84,6 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
       else [f m :: self (succ m)]
     in self 0;
 
-  (* Yes this is a poor way to handle name bindings *)
-  value fresh =
-    let count = ref 0 in
-    fun basename ->
-      let res = basename ^ (string_of_int count.val)
-      in do { incr count; res };
-
   value rec lid_of_ident sep =
     fun
     [ <:ident< $lid:s$ >> | <:ident< $uid:s$ >> -> s
@@ -227,12 +220,14 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
             expr_of_ty (Ast.list_of_ctyp t [])
         in <:expr< fun [ $mc$ ] >>;
 
-      value default_expr =
+      value default_match_case =
         let mk k = if k = 1 then <:patt< x >> else <:patt< _ >> in
         match mode with
-        [ Fold_map -> <:expr< fun $tuplify_patt mk$ -> (o, x) >>
-        | Fold     -> <:expr< fun _ -> o >>
-        | Map      -> <:expr< fun $tuplify_patt mk$ -> x >> ];
+        [ Fold_map -> <:match_case< $tuplify_patt mk$ -> (o, x) >>
+        | Fold     -> <:match_case< _ -> o >>
+        | Map      -> <:match_case< $tuplify_patt mk$ -> x >> ];
+
+      value default_expr = <:expr< fun [ $default_match_case$ ] >>;
 
       value mkfuno e =
         match e with
@@ -274,41 +269,27 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         [ Some x -> <:expr< $e$ $x$ >>
         | _ -> e ];
 
-      value rec expr_of_ty ?obj x ty =
-        let rec self ?(arity=0) ?(obj = <:expr<o>>) ox =
+      value rec expr_of_ty x ty =
+        let rec self ?(arity=0) ox =
           fun
           [ t when is_unknown t ->
               self ox <:ctyp< unknown >>
           | <:ctyp< $lid:id$ >> ->
               let () = store_if_builtin_type id in
-              opt_bind' ox obj (fun e1 -> <:expr< $e1$#$id$ >>)
+              opt_bind' ox <:expr<o>> (fun e1 -> <:expr< $e1$#$id$ >>)
           | <:ctyp@_loc< $t1$ $t2$ >> ->
               let e = opt_bind None
-                               (self ~arity:(arity+1) ~obj None t1)
+                               (self ~arity:(arity+1) None t1)
                                (fun e1 -> <:expr< $e1$ $mkfuno (self None t2)$ >>) in
               opt_app e ox
-          | <:ctyp< $t1$ -> $t2$ >> ->
-              let mk_fun x =
-                let y = fresh "y" in
-                let e = opt_bind (Some (patt_of_expr x)) x (fun obj -> <:expr< $obj$ $self (Some (tuplify_expr (elidk y))) t1$ >>)
-                in <:expr< fun $tuplify_patt (plidk y)$ -> $self ~obj (Some e) t2$ >> in
-              match ox with
-              [ Some x -> mk_fun x
-              | _      ->
-                  let z = fresh "z" in
-                  let ez k = <:expr< $lid:sf "%s_%d" z k$ >> in
-                  let pz k = <:patt< $lid:sf "%s_%d" z k$ >> in
-                  <:expr< fun $tuplify_patt pz$ -> $mk_fun (tuplify_expr ez)$ >> ]
           | <:ctyp< ( $tup:t$ ) >> ->
               let e = mk_tuple (self ~arity:0) t in
               opt_bind' ox e (fun e -> e)
           | <:ctyp< '$s$ >> ->
               opt_app <:expr< $lid:"_f_" ^ s$ o >> ox
           | _ ->
-              match ox with
-              [ Some x -> x
-              | _      -> default_expr ] ]
-        in self ?obj x ty
+              self ox <:ctyp< unknown >> ]
+        in self x ty
 
       and expr_of_ty' e t = expr_of_ty (Some e) t
 
@@ -401,19 +382,18 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         | <:ctyp< { $t$ } >> ->
             <:expr< fun [ $expr_of_record_type t$ ] >>
         | <:ctyp< ( $tup:t$ ) >> -> mk_tuple expr_of_ty t
-        | <:ctyp< $_$ $_$ >> | <:ctyp< $_$ -> $_$ >> | <:ctyp< '$_$ >> as t ->
-            expr_of_ty None t
         | <:ctyp< $lid:i$ >> when i = tyid -> default_expr
+        | <:ctyp< $_$ $_$ >> | <:ctyp< $_$ -> $_$ >> | <:ctyp< '$_$ >> | <:ctyp< $id:_$ >> as t ->
+            expr_of_ty None t
         | <:ctyp<>> ->
             expr_of_ty None <:ctyp< unknown >>
-        | <:ctyp< $id:i$ >> as t ->
-            let id1 = "_" ^ lid_of_ident "_" i in
-            if id1 = tyid then default_expr
-            else expr_of_ty None t
         | <:ctyp< [ = $t$ ] >> | <:ctyp< [ < $t$ ] >> | <:ctyp< private [ < $t$ ] >> ->
             <:expr< fun [ $complete_match_case match_case_of_poly_sum_type t$ ] >>
         | <:ctyp< [ > $t$ ] >> | <:ctyp< private [ > $t$ ] >> ->
-            <:expr< fun [ $complete_match_case match_case_of_poly_sum_type t$ | x -> x ] >>
+            if size > 1 then
+              <:expr< fun [ $complete_match_case match_case_of_poly_sum_type t$ ] >>
+            else
+              <:expr< fun [ $match_case_of_poly_sum_type t$ | $default_match_case$ ] >>
         | _ -> assert False ]
 
       and string_of_type_param t =

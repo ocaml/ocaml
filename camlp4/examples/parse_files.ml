@@ -1,7 +1,5 @@
 open Camlp4.PreCast;;
 
-module CamlGram = MakeGram(Lexer);;
-
 module Caml =
   Camlp4.Printers.OCaml.Make
     (Camlp4OCamlParser.Make
