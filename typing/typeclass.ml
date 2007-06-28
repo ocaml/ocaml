@@ -673,7 +673,8 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
       Vars.fold
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.cty_vars [] in
-    if mets <> [] then raise(Error(loc, Virtual_class(true, mets, vals)));
+    if mets <> [] || vals <> [] then
+      raise(Error(loc, Virtual_class(true, mets, vals)));
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
