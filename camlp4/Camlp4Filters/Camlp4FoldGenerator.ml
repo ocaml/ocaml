@@ -264,9 +264,28 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         in
         opt_bind (opt_map patt_of_expr ox) e1 mk_e2;
 
+    (* FIXME finish me
+      value rec is_simple =
+        fun
+        [ <:expr< $id:_$ >> -> True
+        | <:expr< $e$#$_$ >> | <:expr< $tup:e$ >> -> is_simple e
+        | <:expr< $e1$ $e2$ >> | <:expr< $e1$, $e2$ >> -> is_simple e1 && is_simple e2
+        | _ -> False ];
+
+      value app e1 e2 =
+        let is_e1_simple = is_simple e1 in
+        let is_e2_simple = is_simple e2 in
+        if is_e1_simple then
+          if is_e2_simple then <:expr< $e1$ $e2$ >>
+          else let x = fresh "y" in <:expr< let $lid:y$ = $e2$ in $e1$ $lid:y$ >>
+        else
+          if is_e2_simple then
+            let x = fresh "y" in <:expr< let $lid:y$ = $e1$ in $lid:y$ $e2$ >>
+          else ; *)
+
       value opt_app e ox =
         match ox with
-        [ Some x -> <:expr< $e$ $x$ >>
+        [ Some x -> <:expr< $e$ $x$ >> (* call app *)
         | _ -> e ];
 
       value rec expr_of_ty x ty =
@@ -283,8 +302,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
                                (fun e1 -> <:expr< $e1$ $mkfuno (self None t2)$ >>) in
               opt_app e ox
           | <:ctyp< ( $tup:t$ ) >> ->
-              let e = mk_tuple (self ~arity:0) t in
-              opt_bind' ox e (fun e -> e)
+              opt_app (mk_tuple (self ~arity:0) t) ox
           | <:ctyp< '$s$ >> ->
               opt_app <:expr< $lid:"_f_" ^ s$ o >> ox
           | _ ->
