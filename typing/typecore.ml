@@ -274,20 +274,16 @@ let rec build_as_type env p =
         end in
       Array.iter do_label lbl.lbl_all;
       ty
-  | Tpat_or(p1, p2, path) ->
-      let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
-      unify_pat env {p2 with pat_type = ty2} ty1;
-      begin match path with None -> ()
-      | Some path ->
-          let td = try Env.find_type path env with Not_found -> assert false in
-          let params = List.map (fun _ -> newvar()) td.type_params in
-          match expand_head env (newty (Tconstr (path, params, ref Mnil)))
-          with {desc=Tvariant row} when static_row row ->
-            unify_pat env {p1 with pat_type = ty1}
-              (newty (Tvariant{row with row_closed=false; row_more=newvar()}))
-          | _ -> ()
-      end;
-      ty1
+  | Tpat_or(p1, p2, row) ->
+      begin match row with
+        None ->
+          let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
+          unify_pat env {p2 with pat_type = ty2} ty1;
+          ty1
+      | Some row ->
+          let row = row_repr row in
+          newty (Tvariant{row with row_closed=false; row_more=newvar()})
+      end
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
 
 let build_or_pat env loc lid =
@@ -297,11 +293,10 @@ let build_or_pat env loc lid =
       raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
-  let fields =
+  let row0 =
     let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
     match ty.desc with
-      Tvariant row when static_row row ->
-        (row_repr row).row_fields
+      Tvariant row when static_row row -> row
     | _ -> raise(Error(loc, Not_a_variant_type lid))
   in
   let pats, fields =
@@ -317,7 +312,7 @@ let build_or_pat env loc lid =
             :: pats,
             (l, Reither(false, [ty], true, ref None)) :: fields
         | _ -> pats, fields)
-      ([],[]) fields in
+      ([],[]) (row_repr row0).row_fields in
   let row =
     { row_fields = List.rev fields; row_more = newvar(); row_bound = ();
       row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
@@ -335,7 +330,7 @@ let build_or_pat env loc lid =
   | pat :: pats ->
       let r =
         List.fold_left
-          (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path);
+          (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some row0);
                             pat_loc=gloc; pat_env=env; pat_type=ty})
           pat pats in
       rp { r with pat_loc = loc }
