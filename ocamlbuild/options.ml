@@ -115,14 +115,14 @@ let dummy = "*invalid-dummy-string*";; (* Dummy string for delimiting the latest
 (* The JoCaml support will be in a plugin when the plugin system will support
  * multiple/installed plugins *)
 let use_jocaml () =
-  Options.ocamlc := A "jocamlc";
-  Options.ocamlopt := A "jocamlopt";
-  Options.ocamldep := A "jocamldep";
-  Options.ocamlyacc := A "jocamlyacc";
-  Options.ocamllex := A "jocamllex";
-  Options.ocamlmklib := A "jocamlmklib";
-  Options.ocamlmktop := A "jocamlmktop";
-  Options.ocamlrun := A "jocamlrun";
+  ocamlc := A "jocamlc";
+  ocamlopt := A "jocamlopt";
+  ocamldep := A "jocamldep";
+  ocamlyacc := A "jocamlyacc";
+  ocamllex := A "jocamllex";
+  ocamlmklib := A "jocamlmklib";
+  ocamlmktop := A "jocamlmktop";
+  ocamlrun := A "jocamlrun";
 ;;
 
 let add_to rxs x =
