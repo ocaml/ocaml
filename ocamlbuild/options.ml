@@ -112,6 +112,19 @@ let () = set_log_file "_log"
 
 let dummy = "*invalid-dummy-string*";; (* Dummy string for delimiting the latest argument *)
 
+(* The JoCaml support will be in a plugin when the plugin system will support
+ * multiple/installed plugins *)
+let use_jocaml () =
+  Options.ocamlc := A "jocamlc";
+  Options.ocamlopt := A "jocamlopt";
+  Options.ocamldep := A "jocamldep";
+  Options.ocamlyacc := A "jocamlyacc";
+  Options.ocamllex := A "jocamllex";
+  Options.ocamlmklib := A "jocamlmklib";
+  Options.ocamlmktop := A "jocamlmktop";
+  Options.ocamlrun := A "jocamlrun";
+;;
+
 let add_to rxs x =
   let xs = Lexers.comma_or_blank_sep_strings (Lexing.from_string x) in
   rxs := xs :: !rxs
@@ -168,6 +181,7 @@ let spec =
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
+   "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
