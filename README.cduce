@@ -117,5 +117,10 @@ CHANGE LOG:
 3.09.3pl1
 - bug fix in unification
 
-3.10
+3.10.0
 - merge with OCaml 3.10 and CDuce 0.4.2
+
+3.10.0.1
+- fix a bug: 
+    module X = (struct class forum = object method f () = {{ 3 }} end end
+             : sig class forum: object method f: unit -> {{ Int }} end end)
