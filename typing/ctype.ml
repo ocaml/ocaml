@@ -2273,10 +2273,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               end
 	  | Text _, Text _ when !extmode ->
 	      ()
-	  | Text { ext_const = Some t1 }, Text { ext_const = Some t2 } ->
-	      if not (Cduce_types.Types.equiv t1 t2) then
-		raise (Unify [])
-	  | Text _, Text _ -> assert false
+	  | Text _, Text _ ->
+	      unify env t1' t2'
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               eqtype rename type_pairs subst env t1 t2;
