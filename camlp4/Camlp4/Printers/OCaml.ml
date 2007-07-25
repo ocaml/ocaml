@@ -626,17 +626,22 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:patt< ~ $s$ : ($p$) >> -> pp f "@[<2>~%s:@ (%a)@]" s o#patt p
     | <:patt< ? $s$ >> -> pp f "?%s" s
     | <:patt< ?($p$) >> ->
-          pp f "@[<2>?(%a)@]" o#patt p
+          pp f "@[<2>?(%a)@]" o#patt_tycon p
     | <:patt< ? $s$ : ($p$) >> ->
-          pp f "@[<2>?%s:@,@[<1>(%a)@]@]" s o#patt p
+          pp f "@[<2>?%s:@,@[<1>(%a)@]@]" s o#patt_tycon p
     | <:patt< ?($p$ = $e$) >> ->
-          pp f "@[<2>?(%a =@ %a)@]" o#patt p o#expr e
+          pp f "@[<2>?(%a =@ %a)@]" o#patt_tycon p o#expr e
     | <:patt< ? $s$ : ($p$ = $e$) >> ->
-          pp f "@[<2>?%s:@,@[<1>(%a =@ %a)@]@]" s o#patt p o#expr e
+          pp f "@[<2>?%s:@,@[<1>(%a =@ %a)@]@]" s o#patt_tycon p o#expr e
     | <:patt< $_$ $_$ >> | <:patt< ($_$ as $_$) >> | <:patt< $_$ | $_$ >> |
       <:patt< $_$ .. $_$ >> | <:patt< $_$, $_$ >> |
       <:patt< $_$; $_$ >> | <:patt< $_$ = $_$ >> as p ->
           pp f "@[<1>(%a)@]" o#patt p ];
+
+    method patt_tycon f =
+      fun
+      [ <:patt< ( $p$ : $t$ ) >> -> pp f "%a :@ %a" o#patt p o#ctyp t
+      | p -> o#patt f p ];
 
     method simple_ctyp f t =
     let () = o#node f t Ast.loc_of_ctyp in

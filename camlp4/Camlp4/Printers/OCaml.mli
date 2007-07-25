@@ -121,6 +121,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method patt3 : formatter -> Ast.patt -> unit;
     method patt4 : formatter -> Ast.patt -> unit;
     method patt5 : formatter -> Ast.patt -> unit;
+    method patt_tycon : formatter -> Ast.patt -> unit;
     method patt_expr_fun_args :
       formatter -> (Ast.patt * Ast.expr) -> unit;
     method patt_class_expr_fun_args :
