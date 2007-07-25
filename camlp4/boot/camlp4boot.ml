@@ -3415,6 +3415,18 @@ Very old (no more supported) syntax:
                                 (Ast.PaId (_loc, i) : 'patt))));
                          ([ Gram.Stoken
                               (((function
+                                 | ANTIQUOT ("`bool", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"`bool\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("`bool" as n)), s) ->
+                                    (Ast.PaAnt (_loc, mk_anti n s) : 'patt)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
                                  | ANTIQUOT ("tup", _) -> true
                                  | _ -> false),
                                 "ANTIQUOT (\"tup\", _)")) ],
@@ -3655,6 +3667,18 @@ Very old (no more supported) syntax:
                                     (Quotation.expand _loc x Quotation.
                                        DynAst.patt_tag :
                                       'ipatt)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("`bool", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"`bool\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("`bool" as n)), s) ->
+                                    (Ast.PaAnt (_loc, mk_anti n s) : 'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
@@ -12349,7 +12373,7 @@ module M =
         let name = "Camlp4MacroParser"
           
         let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1.4.5 2007/04/26 19:51:49 pouillar Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1.4.6 2007/06/23 16:00:09 ertai Exp $"
           
       end
       
@@ -13817,7 +13841,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14.2.5 2007/06/21 08:07:08 ertai Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.6 2007/06/23 16:00:09 ertai Exp $ *)
     open Camlp4
       
     open PreCast.Syntax

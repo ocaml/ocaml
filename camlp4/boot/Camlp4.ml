@@ -398,7 +398,7 @@ module Sig =
         (** The name of the extension, typically the module name. *)
         val name : string
           
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.12 2007/06/05 13:41:06 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.13 2007/06/23 16:00:09 ertai Exp $ with a versionning system. *)
         val version : string
           
       end
@@ -467,7 +467,7 @@ module Sig =
       Return the location where positions are moved.
       Affected positions are chosen with [selector].
       Returned positions have their character offset plus [n]. *)
-        val move : [ `start | `stop | `both ] -> int -> t -> t
+        val move : [ | `start | `stop | `both ] -> int -> t -> t
           
         (** [shift n loc] Return the location where the new start position is the old
       stop position, and where the new stop position character offset is the
@@ -822,7 +822,7 @@ module Sig =
           (* int -> string *)
           (* #i *)
           (* #point *)
-          (* ~s *)
+          (* ~s:t *)
           (* i *)
           (* Lazy.t *)
           (* t == t *)
@@ -830,7 +830,7 @@ module Sig =
           (* type t 'a 'b 'c = t constraint t = t constraint t = t *)
           (* < (t)? (..)? > *)
           (* < move : int -> 'a .. > as 'a  *)
-          (* ?s *)
+          (* ?s:t *)
           (* ! t . t *)
           (* ! 'a . list 'a -> 'a *)
           (* 's *)
@@ -873,8 +873,6 @@ module Sig =
           (* c *)
           (* 'x' *)
           (* ~s or ~s:(p) *)
-          (* ?s or ?s:(p = e) or ?(p = e) *)
-          (* | PaOlb of loc and string and meta_option(*FIXME*) (patt * meta_option(*FIXME*) expr) *)
           (* ?s or ?s:(p) *)
           (* ?s:(p = e) or ?(p = e) *)
           (* p | p *)
@@ -900,25 +898,25 @@ module Sig =
           (* (e : t) or (e : t :> t) *)
           (* 3.14 *)
           (* for s = e to/downto e do { e } *)
-          (* fun [ a ] *)
+          (* fun [ mc ] *)
           (* if e then e else e *)
           (* 42 *)
           (* ~s or ~s:e *)
           (* lazy e *)
           (* let b in e or let rec b in e *)
           (* let module s = me in e *)
-          (* match e with [ a ] *)
+          (* match e with [ mc ] *)
           (* new i *)
           (* object ((p))? (cst)? end *)
           (* ?s or ?s:e *)
-          (* {< b >} *)
-          (* { b } or { (e) with b } *)
+          (* {< rb >} *)
+          (* { rb } or { (e) with rb } *)
           (* do { e } *)
           (* e#s *)
           (* e.[e] *)
           (* s *)
           (* "foo" *)
-          (* try e with [ a ] *)
+          (* try e with [ mc ] *)
           (* (e) *)
           (* e, e *)
           (* (e : t) *)
@@ -928,7 +926,7 @@ module Sig =
           (* A.B.C *)
           (* functor (s : mt) -> mt *)
           (* 's *)
-          (* sig (sg)? end *)
+          (* sig sg end *)
           (* mt with wc *)
           (* $s$ *)
           (* class cict *)
@@ -949,12 +947,12 @@ module Sig =
           (* module i = i *)
           (* wc and wc *)
           (* $s$ *)
-          (* b and b *)
+          (* bi and bi *)
           (* let a = 42 and c = 43 *)
           (* p = e *)
           (* let patt = expr *)
           (* $s$ *)
-          (* b ; b *)
+          (* rb ; rb *)
           (* i = e *)
           (* $s$ *)
           (* mb and mb *)
@@ -968,7 +966,7 @@ module Sig =
           (* i *)
           (* me me *)
           (* functor (s : mt) -> me *)
-          (* struct (st)? end *)
+          (* struct st end *)
           (* (me : mt) *)
           (* $s$ *)
           (* class cice *)
@@ -985,7 +983,7 @@ module Sig =
           (* module type s = mt *)
           (* open i *)
           (* type t *)
-          (* value b or value rec b *)
+          (* value (rec)? bi *)
           (* $s$ *)
           (* (virtual)? i ([ t ])? *)
           (* [t] -> ct *)
@@ -1004,7 +1002,7 @@ module Sig =
           (* ce e *)
           (* (virtual)? i ([ t ])? *)
           (* fun p -> ce *)
-          (* let (rec)? b in ce *)
+          (* let (rec)? bi in ce *)
           (* object ((p))? (cst)? end *)
           (* ce : ct *)
           (* ce and ce *)
@@ -1238,23 +1236,23 @@ module Sig =
           | CeEq of loc * class_expr * class_expr
           | CeAnt of loc * string
           and class_str_item =
+          | CrNil of loc
           | (* cst ; cst *)
-          (* type t = t *)
-          (* inherit ce or inherit ce as s *)
-          (* initializer e *)
-          (* method (private)? s : t = e or method (private)? s = e *)
-          (* value (mutable)? s = e *)
-          (* method virtual (private)? s : t *)
-          (* value virtual (private)? s : t *)
-          CrNil of loc
-          | CrSem of loc * class_str_item * class_str_item
-          | CrCtr of loc * ctyp * ctyp
-          | CrInh of loc * class_expr * string
-          | CrIni of loc * expr
-          | CrMth of loc * string * meta_bool * expr * ctyp
-          | CrVal of loc * string * meta_bool * expr
-          | CrVir of loc * string * meta_bool * ctyp
-          | CrVvr of loc * string * meta_bool * ctyp
+          CrSem of loc * class_str_item * class_str_item
+          | (* type t = t *)
+          CrCtr of loc * ctyp * ctyp
+          | (* inherit ce or inherit ce as s *)
+          CrInh of loc * class_expr * string
+          | (* initializer e *)
+          CrIni of loc * expr
+          | (* method (private)? s : t = e or method (private)? s = e *)
+          CrMth of loc * string * meta_bool * expr * ctyp
+          | (* value (mutable)? s = e *)
+          CrVal of loc * string * meta_bool * expr
+          | (* method virtual (private)? s : t *)
+          CrVir of loc * string * meta_bool * ctyp
+          | (* value virtual (private)? s : t *)
+          CrVvr of loc * string * meta_bool * ctyp
           | CrAnt of loc * string
         
         val loc_of_ctyp : ctyp -> loc
@@ -17731,7 +17729,7 @@ module Printers =
             let name = "Camlp4.Printers.OCaml"
               
             let version =
-              "$Id: OCaml.ml,v 1.21.2.12 2007/06/05 13:39:52 pouillar Exp $"
+              "$Id: OCaml.ml,v 1.21.2.14 2007/06/23 16:00:09 ertai Exp $"
               
           end
           
@@ -18130,7 +18128,10 @@ module Printers =
                     pp f "@[<2>constraint@ %a =@ %a@]" o#ctyp t1 o#ctyp t2
                   
                 method sum_type =
-                  fun f t -> (pp f "@[<hv0>| "; o#ctyp f t; pp f "@]")
+                  fun f t ->
+                    match Ast.list_of_ctyp t [] with
+                    | [] -> ()
+                    | ts -> pp f "@[<hv0>| %a@]" (list o#ctyp "@ | ") ts
                   
                 method string = fun f -> pp f "%s"
                   
@@ -18474,22 +18475,26 @@ module Printers =
                     | Ast.PaApp (_, x, y) ->
                         let (a, al) = get_patt_args x [ y ]
                         in
-                          if
-                            (not curry_constr) && (Ast.is_patt_constructor a)
+                          if not (Ast.is_patt_constructor a)
                           then
-                            (match al with
-                             | [ Ast.PaTup (_, _) ] ->
-                                 pp f "@[<2>%a@ (%a)@]" o#simple_patt x
-                                   o#patt y
-                             | [ _ ] ->
-                                 pp f "@[<2>%a@ %a@]" o#patt5 x o#simple_patt
-                                   y
-                             | al ->
-                                 pp f "@[<2>%a@ (%a)@]" o#patt5 a
-                                   (list o#simple_patt ",@ ") al)
+                            Format.eprintf
+                              "WARNING: strange pattern application of a non constructor@."
                           else
-                            pp f "@[<2>%a@]" (list o#simple_patt "@ ")
-                              (a :: al)
+                            if curry_constr
+                            then
+                              pp f "@[<2>%a@]" (list o#simple_patt "@ ")
+                                (a :: al)
+                            else
+                              (match al with
+                               | [ Ast.PaTup (_, _) ] ->
+                                   pp f "@[<2>%a@ (%a)@]" o#simple_patt x
+                                     o#patt y
+                               | [ _ ] ->
+                                   pp f "@[<2>%a@ %a@]" o#patt5 x
+                                     o#simple_patt y
+                               | al ->
+                                   pp f "@[<2>%a@ (%a)@]" o#patt5 a
+                                     (list o#simple_patt ",@ ") al)
                     | p -> o#simple_patt f p
                   
                 method simple_patt =
@@ -18557,13 +18562,17 @@ module Printers =
                       | Ast.TyRec (_, t) -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
                       | Ast.TySum (_, t) -> pp f "@[<0>%a@]" o#sum_type t
                       | Ast.TyTup (_, t) -> pp f "@[<1>(%a)@]" o#ctyp t
-                      | Ast.TyVrnEq (_, t) -> pp f "@[<2>[@ %a@]@ ]" o#ctyp t
+                      | Ast.TyVrnEq (_, t) ->
+                          pp f "@[<2>[@ %a@]@ ]" o#sum_type t
                       | Ast.TyVrnInf (_, t) ->
-                          pp f "@[<2>[<@ %a@]@,]" o#ctyp t
+                          pp f "@[<2>[<@ %a@]@,]" o#sum_type t
                       | Ast.TyVrnInfSup (_, t1, t2) ->
-                          pp f "@[<2>[<@ %a@ >@ %a@]@ ]" o#ctyp t1 o#ctyp t2
+                          let (a, al) = get_ctyp_args t2 []
+                          in
+                            pp f "@[<2>[<@ %a@ >@ %a@]@ ]" o#sum_type t1
+                              (list o#simple_ctyp "@ ") (a :: al)
                       | Ast.TyVrnSup (_, t) ->
-                          pp f "@[<2>[>@ %a@]@,]" o#ctyp t
+                          pp f "@[<2>[>@ %a@]@,]" o#sum_type t
                       | Ast.TyCls (_, i) -> pp f "@[<2>#%a@]" o#ident i
                       | Ast.TyMan (_, t1, t2) ->
                           pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1
@@ -18960,8 +18969,8 @@ module Printers =
                            cut f;
                            o#class_str_item f cst2)
                       | Ast.CrCtr (_, t1, t2) ->
-                          pp f "@[<2>type %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2
-                            semisep
+                          pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1
+                            o#ctyp t2 semisep
                       | Ast.CrInh (_, ce, "") ->
                           pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce
                             semisep

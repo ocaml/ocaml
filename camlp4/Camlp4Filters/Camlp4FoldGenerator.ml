@@ -95,7 +95,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
   value builtin_types =
     let tyMap = StringMap.empty in
     let tyMap =
-      let abstr = ["string"; "int"; "float"; "int32"; "int64"] in
+      let abstr = ["string"; "int"; "float"; "int32"; "int64"; "nativeint"; "char"] in
       List.fold_right
         (fun name -> StringMap.add name (name, <:ident< $lid:name$ >>, [], <:ctyp<>>, False))
         abstr tyMap
