@@ -340,12 +340,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method constrain f (t1, t2) =
       pp f "@[<2>constraint@ %a =@ %a@]" o#ctyp t1 o#ctyp t2;
 
-    method sum_type f t = do {
-      (* FIXME pp_print_if_newline f (); *)
-      pp f "@[<hv0>| ";
-      o#ctyp f t;
-      pp f "@]";
-    };
+    method sum_type f t =
+      match Ast.list_of_ctyp t [] with
+      [ [] -> ()
+      | ts ->
+          pp f "@[<hv0>| %a@]" (list o#ctyp "@ | ") ts ];
+
     method string f = pp f "%s";
     method quoted_string f = pp f "%S";
 
@@ -589,15 +589,17 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ <:patt< [$_$ :: $_$] >> as p -> o#simple_patt f p
     | <:patt< $x$ $y$ >> ->
         let (a, al) = get_patt_args x [y] in
-        if (not curry_constr) && Ast.is_patt_constructor a then
+        if not (Ast.is_patt_constructor a) then
+          Format.eprintf "WARNING: strange pattern application of a non constructor@."
+        else if curry_constr then
+          pp f "@[<2>%a@]" (list o#simple_patt "@ ") [a::al]
+        else
           match al with
           [ [ <:patt< ($tup:_$) >> ] ->
               pp f "@[<2>%a@ (%a)@]" o#simple_patt x o#patt y
           | [_] -> pp f "@[<2>%a@ %a@]" o#patt5 x o#simple_patt y
           | al -> pp f "@[<2>%a@ (%a)@]" o#patt5 a
                        (list o#simple_patt ",@ ") al ]
-        else
-          pp f "@[<2>%a@]" (list o#simple_patt "@ ") [a::al]
     | p -> o#simple_patt f p ];
 
     method simple_patt f p =
@@ -652,11 +654,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< { $t$ } >> -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
     | <:ctyp< [ $t$ ] >> -> pp f "@[<0>%a@]" o#sum_type t
     | <:ctyp< ( $tup:t$ ) >> -> pp f "@[<1>(%a)@]" o#ctyp t
-    | <:ctyp< [ = $t$ ] >> -> pp f "@[<2>[@ %a@]@ ]" o#ctyp t
-    | <:ctyp< [ < $t$ ] >> -> pp f "@[<2>[<@ %a@]@,]" o#ctyp t
+    | <:ctyp< [ = $t$ ] >> -> pp f "@[<2>[@ %a@]@ ]" o#sum_type t
+    | <:ctyp< [ < $t$ ] >> -> pp f "@[<2>[<@ %a@]@,]" o#sum_type t
     | <:ctyp< [ < $t1$ > $t2$ ] >> ->
-        pp f "@[<2>[<@ %a@ >@ %a@]@ ]" o#ctyp t1 o#ctyp t2
-    | <:ctyp< [ > $t$ ] >> -> pp f "@[<2>[>@ %a@]@,]" o#ctyp t
+        let (a, al) = get_ctyp_args t2 [] in
+        pp f "@[<2>[<@ %a@ >@ %a@]@ ]" o#sum_type t1
+          (list o#simple_ctyp "@ ") [a::al]
+    | <:ctyp< [ > $t$ ] >> -> pp f "@[<2>[>@ %a@]@,]" o#sum_type t
     | <:ctyp< # $i$ >> -> pp f "@[<2>#%a@]" o#ident i
     | <:ctyp< $t1$ == $t2$ >> ->
         pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#simple_ctyp t2
