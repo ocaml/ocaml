@@ -20,20 +20,18 @@ let with_jobs f =
   Mutex.lock m; let y = f jobs in Mutex.unlock m; y
 
 let loop_id = ref None
-let reset () = loop_id := None
-let cannot_sync () =
-  match !loop_id with None -> true
-  | Some id -> Thread.id (Thread.self ()) = id
-
 let gui_safe () =
   !loop_id = Some(Thread.id (Thread.self ()))
+let running () =
+  !loop_id <> None
 
 let has_jobs () = not (with_jobs Queue.is_empty)
 let n_jobs () = with_jobs Queue.length
 let do_next_job () = with_jobs Queue.take ()
 let async j x = with_jobs (Queue.add (fun () -> j x))
 let sync f x =
-  if cannot_sync () then f x else
+  if !loop_id = None then failwith "Tkthread.sync";
+  if gui_safe () then f x else
   let m = Mutex.create () in
   let res = ref None in
   Mutex.lock m;
@@ -62,6 +60,8 @@ let thread_main () =
     raise exn
 
 let start () =
-  Thread.create thread_main ()
+  let th = Thread.create thread_main () in
+  loop_id := Some (Thread.id th);
+  th
 
 let top = Widget.default_toplevel
