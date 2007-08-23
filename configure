@@ -488,7 +488,7 @@ mksharedlibrpath=''
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd[3-9]*|*-*-netbsd[3-9]*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"

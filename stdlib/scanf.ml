@@ -36,7 +36,7 @@ val invalidate_current_char : scanbuf -> unit;;
 
 val peek_char : scanbuf -> char;;
 (* [Scanning.peek_char ib] returns the current char available in
-    the buffer or read one if necessary (when the current character is
+    the buffer or reads one if necessary (when the current character is
     already scanned).
     If no character can be read, sets an end of file condition and
     returns '\000'. *)
@@ -134,7 +134,7 @@ let next_char ib =
     ib.current_char <- c;
     ib.current_char_is_valid <- true;
     ib.char_count <- succ ib.char_count;
-    if c == '\n' then ib.line_count <- succ ib.line_count;
+    if c = '\n' then ib.line_count <- succ ib.line_count;
     c with
   | End_of_file ->
     let c = null_char in
@@ -611,7 +611,7 @@ let scan_string stp max ib =
     if max = 0 then max else
     let c = Scanning.peek_char ib in
     if Scanning.eof ib then max else
-    if stp == [] then
+    if stp = [] then
       match c with
       | ' ' | '\t' | '\n' | '\r' -> max
       | c -> loop (Scanning.store_char ib c max) else
@@ -974,22 +974,27 @@ let list_iter_i f l =
    If the scanning or some conversion fails, the main scanning function
    aborts and applies the scanning buffer and a string that explains
    the error to the error handling function [ef] (the error continuation). *)
+
 let ascanf sc fmt =
   let ac = Tformat.ac_of_format fmt in
-   match ac.Tformat.ac_rdrs with
-  | 0 -> Obj.magic (fun f -> sc fmt [||] f)
-  | 1 -> Obj.magic (fun x f -> sc fmt [| Obj.repr x |] f)
-  | 2 -> Obj.magic (fun x y f -> sc fmt [| Obj.repr x; Obj.repr y; |] f)
-  | 3 -> Obj.magic (fun x y z f ->
-                      sc fmt [| Obj.repr x; Obj.repr y; Obj.repr z; |] f) 
-  | nargs ->
-    let rec loop i args =
-      if i >= nargs then
-        let a = Array.make nargs (Obj.repr 0) in
-        list_iter_i (fun i arg -> a.(nargs - i - 1) <- arg) args;
-        Obj.magic (fun f -> sc fmt a f)
-      else Obj.magic (fun x -> loop (succ i) (x :: args)) in
-    loop 0 [];;
+    match ac.Tformat.ac_rdrs with
+    | 0 ->
+      Obj.magic (fun f -> sc fmt [||] f)
+    | 1 ->
+      Obj.magic (fun x f -> sc fmt [| Obj.repr x |] f)
+    | 2 ->
+      Obj.magic (fun x y f -> sc fmt [| Obj.repr x; Obj.repr y; |] f)
+    | 3 ->
+      Obj.magic
+        (fun x y z f -> sc fmt [| Obj.repr x; Obj.repr y; Obj.repr z; |] f) 
+    | nargs ->
+      let rec loop i args =
+        if i >= nargs then
+          let a = Array.make nargs (Obj.repr 0) in
+          list_iter_i (fun i arg -> a.(nargs - i - 1) <- arg) args;
+          Obj.magic (fun f -> sc fmt a f)
+        else Obj.magic (fun x -> loop (succ i) (x :: args)) in
+      loop 0 [];;
 
 let scan_format ib ef fmt v f =
 
@@ -1106,8 +1111,11 @@ let scan_format ib ef fmt v f =
       let rf = token_string ib in
       if not (compatible_format_type rf mf) then format_mismatch rf mf ib else
       if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
+
       let nf = scan_fmt ir (Obj.magic rf) 0 in
-      scan_fmt ir (stack f nf) j
+(*    try scan_fmt 0 (fun () -> f) 0 with*)
+      scan_fmt ir (stack (stack f rf) nf) j
+
     | c -> bad_conversion fmt i c
 
   and scan_fmt_stoppers i =

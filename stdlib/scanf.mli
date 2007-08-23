@@ -129,7 +129,7 @@ type ('a, 'b, 'c, 'd) scanner =
     according to some format string; more precisely, if [scan] is some
     formatted input function, then [scan ib fmt f] applies [f] to the arguments
     specified by the format string [fmt], when [scan] has read those arguments
-    from scanning buffer [ib].
+    from the scanning buffer [ib].
 
     For instance, the [scanf] function below has type [('a, 'b, 'c, 'd)
     scanner], since it is a formatted input function that reads from [stdib]:
@@ -229,15 +229,19 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
      applies it to the scanning buffer [ib] to read the next argument. The
      input function [ri] must therefore have type [Scanning.scanbuf -> 'a] and
      the argument read has type ['a].
-   - [\{ fmt %\}]: reads a format string argument to the format
-     specified by the internal format [fmt]. The format string to be
-     read must have the same type as the internal format [fmt].
-     For instance, "%\{%i%\}" reads any format string that can read a value of
+   - [\{ fmt %\}]: reads a format string argument.
+     The format string read must have the same type as [fmt].
+     For instance, ["%\{%i%\}"] reads any format string that can read a value of
      type [int]; hence [Scanf.sscanf "fmt:\\\"number is %u\\\"" "fmt:%\{%i%\}"]
      succeeds and returns the format string ["number is %u"].
    - [\( fmt %\)]: scanning format substitution.
-     Reads a format string to replace [fmt]. The format string read
-     must have the same type as [fmt].
+     Reads a format string to replace [fmt].
+     The format string read must have the same type as [fmt].
+     For instance, ["%\( %i% \)"] reads any format string that can read a value
+     of type [int]; hence [Scanf.sscanf "\\\"%4d\\\"1234.00" "%\(%i%\)"]
+     succeeds and returns the format string ["number is %u"].
+(** Must do something about that doc! *)
+
    - [l]: returns the number of lines read so far.
    - [n]: returns the number of characters read so far.
    - [N] or [L]: returns the number of tokens read so far.
