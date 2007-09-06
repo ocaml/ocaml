@@ -264,7 +264,10 @@ let rec build_as_type env p =
       let do_label lbl =
         let _, ty_arg, ty_res = instance_label false lbl in
         unify_pat env {p with pat_type = ty} ty_res;
-        if lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl then begin
+        let refinable =
+          lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl &&
+          match (repr lbl.lbl_arg).desc with Tpoly _ -> false | _ -> true in
+        if refinable then begin
           let arg = List.assoc lbl.lbl_pos ppl in
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
