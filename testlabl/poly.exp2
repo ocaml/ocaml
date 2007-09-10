@@ -1,4 +1,4 @@
-        Objective Caml version 3.10+dev1 (2005-10-26)
+        Objective Caml version 3.10.1+dev0 (2007-05-21)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -343,11 +343,11 @@ val f : unit -> < m : int; n : int > = <fun>
 # Characters 11-56:
 This object is expected to have type c but has actually type
   < m : int; n : 'a >
-Only the second object type has a method n
+The first object type has no method n
 # Characters 11-69:
 This object is expected to have type < n : int > but has actually type
   < m : 'a >
-Only the first object type has a method n
+The second object type has no method n
 #         Characters 66-124:
 This object is expected to have type < x : int; .. > but has actually type
   < x : int >
@@ -416,7 +416,6 @@ is not included in
 # - : u -> v = <fun>
 # Characters 9-21:
 Type v = [> `A | `B ] is not a subtype of type u = [< `A | `B ] 
-These two variant types have no intersection
 # type v = private [< t ]
 # Characters 9-21:
 Type u = [< `A | `B ] is not a subtype of type v = [< `A | `B ] 
@@ -437,7 +436,7 @@ is not a subtype of type < m : 'a. (< p : < a : int >; .. > as 'a) -> int >
 # Characters 11-55:
 Type < p : < a : int; b : int >; .. > is not a subtype of type
   < p : < a : int >; .. > 
-Only the first object type has a method b
+The second object type has no method b
 #   val f5 :
   < m : 'a. [< `A of < p : int > ] as 'a > ->
   < m : 'a. [< `A of <  > ] as 'a > = <fun>
@@ -450,4 +449,4 @@ Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of type
 # val f : c -> 'a -> 'a = <fun>
 #     val g : c -> 'a -> 'a = <fun>
 #     val h : < id : 'a; .. > -> 'a = <fun>
-# 
+#     * * * * * * * * * * * * * * * * * * *   

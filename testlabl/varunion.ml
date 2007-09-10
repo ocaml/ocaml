@@ -25,6 +25,8 @@ module Mix(X: sig type t = private [> `A of int ] end)
     (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
   struct type t = [X.t | Y.t] end;;
 
+type 'a t = private [> `L of 'a] ~ [`L];;
+
 (* ok *)
 module Mix(X: sig type t = private [> `A of int ] ~ [`B] end)
     (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
