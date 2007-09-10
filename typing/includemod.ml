@@ -208,8 +208,9 @@ and signatures env subst sig1 sig2 =
     | item2 :: rem ->
         let (id2, name2) = item_ident_name item2 in
         let name2, report =
-          match name2 with
-            Field_type s when let l = String.length s in
+          match item2, name2 with
+            Tsig_type (_, {type_manifest=None}, _), Field_type s
+            when let l = String.length s in
             l >= 4 && String.sub s (l-4) 4 = "#row" ->
               (* Do not report in case of failure,
                  as the main type will generate an error *)
