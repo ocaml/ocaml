@@ -300,7 +300,14 @@ let rec transl_type env policy styp =
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
               | _                        -> None
             in
-            name := if fields = [] then nm else None;
+            begin try
+              (* Set name if there are no fields yet *)
+              Hashtbl.iter (fun _ _ -> raise Exit) hfields;
+              name := nm
+            with Exit ->
+              (* Unset it otherwise *)
+              name := None
+            end;
             let fl = match expand_head env ty, nm with
               {desc=Tvariant row}, _ when Btype.static_row row ->
                 let row = Btype.row_repr row in
