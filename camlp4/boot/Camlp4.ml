@@ -6775,7 +6775,7 @@ module Struct =
               | Ast.PaAli (_, x, y) ->
                   (is_irrefut_patt x) && (is_irrefut_patt y)
               | Ast.PaRec (_, p) -> is_irrefut_patt p
-              | Ast.PaEq (_, (Ast.IdLid (_, _)), p) -> is_irrefut_patt p
+              | Ast.PaEq (_, _, p) -> is_irrefut_patt p
               | Ast.PaSem (_, p1, p2) ->
                   (is_irrefut_patt p1) && (is_irrefut_patt p2)
               | Ast.PaCom (_, p1, p2) ->
@@ -17648,6 +17648,8 @@ module Printers =
                         
                       method patt5 : formatter -> Ast.patt -> unit
                         
+                      method patt_tycon : formatter -> Ast.patt -> unit
+                        
                       method patt_expr_fun_args :
                         formatter -> (Ast.patt * Ast.expr) -> unit
                         
@@ -17729,7 +17731,7 @@ module Printers =
             let name = "Camlp4.Printers.OCaml"
               
             let version =
-              "$Id: OCaml.ml,v 1.21.2.14 2007/06/23 16:00:09 ertai Exp $"
+              "$Id: OCaml.ml,v 1.21.2.16 2007/07/25 15:49:15 ertai Exp $"
               
           end
           
@@ -18524,19 +18526,27 @@ module Printers =
                       | Ast.PaLab (_, s, p) ->
                           pp f "@[<2>~%s:@ (%a)@]" s o#patt p
                       | Ast.PaOlb (_, s, (Ast.PaNil _)) -> pp f "?%s" s
-                      | Ast.PaOlb (_, "", p) -> pp f "@[<2>?(%a)@]" o#patt p
+                      | Ast.PaOlb (_, "", p) ->
+                          pp f "@[<2>?(%a)@]" o#patt_tycon p
                       | Ast.PaOlb (_, s, p) ->
-                          pp f "@[<2>?%s:@,@[<1>(%a)@]@]" s o#patt p
+                          pp f "@[<2>?%s:@,@[<1>(%a)@]@]" s o#patt_tycon p
                       | Ast.PaOlbi (_, "", p, e) ->
-                          pp f "@[<2>?(%a =@ %a)@]" o#patt p o#expr e
+                          pp f "@[<2>?(%a =@ %a)@]" o#patt_tycon p o#expr e
                       | Ast.PaOlbi (_, s, p, e) ->
-                          pp f "@[<2>?%s:@,@[<1>(%a =@ %a)@]@]" s o#patt p
-                            o#expr e
+                          pp f "@[<2>?%s:@,@[<1>(%a =@ %a)@]@]" s
+                            o#patt_tycon p o#expr e
                       | (Ast.PaApp (_, _, _) | Ast.PaAli (_, _, _) |
                            Ast.PaOrp (_, _, _) | Ast.PaRng (_, _, _) |
                            Ast.PaCom (_, _, _) | Ast.PaSem (_, _, _) |
                            Ast.PaEq (_, _, _)
                          as p) -> pp f "@[<1>(%a)@]" o#patt p
+                  
+                method patt_tycon =
+                  fun f ->
+                    function
+                    | Ast.PaTyc (_, p, t) ->
+                        pp f "%a :@ %a" o#patt p o#ctyp t
+                    | p -> o#patt f p
                   
                 method simple_ctyp =
                   fun f t ->

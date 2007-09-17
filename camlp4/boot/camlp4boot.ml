@@ -25,7 +25,7 @@ module R =
         let name = "Camlp4RevisedParser"
           
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.25 2007/06/21 07:50:00 ertai Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.26 2007/07/25 13:06:27 ertai Exp $"
           
       end
       

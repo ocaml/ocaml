@@ -91,7 +91,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
       | Ast.PaAny _ -> True
       | Ast.PaAli _ x y -> (is_irrefut_patt x) && (is_irrefut_patt y)
       | Ast.PaRec _ p -> is_irrefut_patt p
-      | Ast.PaEq _ (Ast.IdLid _ _) p -> is_irrefut_patt p
+      | Ast.PaEq _ _ p -> is_irrefut_patt p
       | Ast.PaSem _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
       | Ast.PaCom _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
       | Ast.PaTyc _ p _ -> is_irrefut_patt p
