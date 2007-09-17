@@ -108,7 +108,7 @@ module Make (Loc : Sig.Loc)
     | <:patt< _ >> -> True
     | <:patt< ($x$ as $y$) >> -> is_irrefut_patt x && is_irrefut_patt y
     | <:patt< { $p$ } >> -> is_irrefut_patt p
-    | <:patt< $lid:_$ = $p$ >> -> is_irrefut_patt p
+    | <:patt< $_$ = $p$ >> -> is_irrefut_patt p
     | <:patt< $p1$; $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
     | <:patt< $p1$, $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
     | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
