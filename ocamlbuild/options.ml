@@ -224,7 +224,7 @@ let init () =
   let argv' = Array.concat [Sys.argv; [|dummy|]] in
   parse_argv argv' spec anon_fun usage_msg;
   Shell.mkdir_p !build_dir;
-  let reorder x y = x := (List.concat (List.rev !y)) in
+  let reorder x y = x := !x @ (List.concat (List.rev !y)) in
   reorder targets targets_internal;
   reorder ocaml_libs ocaml_libs_internal;
   reorder ocaml_cflags ocaml_cflags_internal;
