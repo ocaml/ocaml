@@ -227,8 +227,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let t1 = TyApp loc1 <:ctyp@loc1< option >> t1 in
         mktyp loc (Ptyp_arrow ("?" ^ lab) (ctyp t1) (ctyp t2))
     | TyArr loc t1 t2 -> mktyp loc (Ptyp_arrow "" (ctyp t1) (ctyp t2))
-    | <:ctyp@loc< <  > >> -> mktyp loc (Ptyp_object [])
-    | <:ctyp@loc< < .. > >> -> mktyp loc (Ptyp_object [mkfield loc Pfield_var])
     | <:ctyp@loc< < $fl$ > >> -> mktyp loc (Ptyp_object (meth_list fl []))
     | <:ctyp@loc< < $fl$ .. > >> ->
         mktyp loc (Ptyp_object (meth_list fl [mkfield loc Pfield_var]))
@@ -272,7 +270,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and meth_list fl acc =
     match fl with
-    [ <:ctyp< $t1$; $t2$ >> -> meth_list t1 (meth_list t2 acc)
+    [ <:ctyp<>> -> acc
+    | <:ctyp< $t1$; $t2$ >> -> meth_list t1 (meth_list t2 acc)
     | <:ctyp@loc< $lid:lab$ : $t$ >> ->
         [mkfield loc (Pfield lab (mkpolytype (ctyp t))) :: acc]
     | _ -> assert False ]
