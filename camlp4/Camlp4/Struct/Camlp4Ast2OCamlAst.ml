@@ -259,7 +259,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
       TyObj _ _ (BAnt _) | TyNil _ | TyTup _ _ ->
         assert False ]
   and row_field = fun
-    [ <:ctyp< `$i$ >> -> [Rtag i True []]
+    [ <:ctyp<>> -> []
+    | <:ctyp< `$i$ >> -> [Rtag i True []]
     | <:ctyp< `$i$ of & $t$ >> -> [Rtag i True (List.map ctyp (list_of_ctyp t []))]
     | <:ctyp< `$i$ of $t$ >> -> [Rtag i False (List.map ctyp (list_of_ctyp t []))]
     | <:ctyp< $t1$ | $t2$ >> -> row_field t1 @ row_field t2
