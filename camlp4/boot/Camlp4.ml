@@ -3085,21 +3085,20 @@ module Struct =
             loc_ghost = x.ghost;
           }
           
-        let of_ocaml_location =
-          function
-          | {
-              Camlp4_import.Location.loc_start = a;
-              loc_end = b;
-              loc_ghost = g } ->
-              let res =
-                {
-                  file_name =
-                    better_file_name a.Lexing.pos_fname b.Lexing.pos_fname;
-                  start = pos_of_lexing_position a;
-                  stop = pos_of_lexing_position b;
-                  ghost = g;
-                }
-              in res
+        let of_ocaml_location {
+                                Camlp4_import.Location.loc_start = a;
+                                loc_end = b;
+                                loc_ghost = g
+                              } =
+          let res =
+            {
+              file_name =
+                better_file_name a.Lexing.pos_fname b.Lexing.pos_fname;
+              start = pos_of_lexing_position a;
+              stop = pos_of_lexing_position b;
+              ghost = g;
+            }
+          in res
           
         let start_pos x = pos_to_lexing_position x.start x.file_name
           
@@ -13468,10 +13467,6 @@ module Struct =
                   in mktyp loc (Ptyp_arrow ("?" ^ lab, ctyp t1, ctyp t2))
               | TyArr (loc, t1, t2) ->
                   mktyp loc (Ptyp_arrow ("", ctyp t1, ctyp t2))
-              | Ast.TyObj (loc, (Ast.TyNil _), Ast.BFalse) ->
-                  mktyp loc (Ptyp_object [])
-              | Ast.TyObj (loc, (Ast.TyNil _), Ast.BTrue) ->
-                  mktyp loc (Ptyp_object [ mkfield loc Pfield_var ])
               | Ast.TyObj (loc, fl, Ast.BFalse) ->
                   mktyp loc (Ptyp_object (meth_list fl []))
               | Ast.TyObj (loc, fl, Ast.BTrue) ->
@@ -13522,6 +13517,7 @@ module Struct =
                   assert false
             and row_field =
               function
+              | Ast.TyNil _ -> []
               | Ast.TyVrn (_, i) -> [ Rtag (i, true, []) ]
               | Ast.TyOfAmp (_, (Ast.TyVrn (_, i)), t) ->
                   [ Rtag (i, true, List.map ctyp (list_of_ctyp t [])) ]
@@ -13536,6 +13532,7 @@ module Struct =
               | _ -> assert false
             and meth_list fl acc =
               match fl with
+              | Ast.TyNil _ -> acc
               | Ast.TySem (_, t1, t2) -> meth_list t1 (meth_list t2 acc)
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, lab)))), t) ->
                   (mkfield loc (Pfield (lab, mkpolytype (ctyp t)))) :: acc
