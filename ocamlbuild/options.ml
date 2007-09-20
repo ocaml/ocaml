@@ -134,6 +134,7 @@ let add_to' rxs x =
   else
     ()
 let set_cmd rcmd = String (fun s -> rcmd := Sh s)
+let set_build_dir s = make_links := false; build_dir := s
 let spec =
   Arg.align
   [
@@ -185,7 +186,7 @@ let spec =
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
-   "-build-dir", Set_string build_dir, "<path> Set build directory";
+   "-build-dir", String set_build_dir, "<path> Set build directory (implies no-links)";
    "-install-lib-dir", Set_string Ocamlbuild_where.libdir, "<path> Set the install library directory";
    "-install-bin-dir", Set_string Ocamlbuild_where.bindir, "<path> Set the install binary directory";
    "-where", Unit (fun () -> print_endline !Ocamlbuild_where.libdir; raise Exit_OK), " Display the install library directory";
