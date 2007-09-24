@@ -165,6 +165,7 @@ let main () =
     current_prompt := debugger_prompt;
     printf "\tObjective Caml Debugger version %s@.@." Config.version;
     Config.load_path := !default_load_path;
+    Clflags.recursive_types := true;    (* Allow recursive types. *)
     toplevel_loop ();                   (* Toplevel. *)
     kill_program ();
     exit 0
