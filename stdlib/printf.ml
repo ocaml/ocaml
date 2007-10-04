@@ -343,8 +343,8 @@ let scan_positional_spec fmt got_spec n i =
       | '0'..'9' as d ->
         get_int_litteral (10 * accu + (int_of_char d - 48)) (succ j)
       | '$' ->
-        if accu = 0
-          then failwith "printf: bad positional specification (0)." else
+        if accu = 0 then
+          failwith "printf: bad positional specification (0)." else
         got_spec (Spec_index (Sformat.index_of_litteral_position accu)) (succ j)
       (* Not a positional specification. *)
       | _ -> got_spec Spec_none i in
@@ -505,27 +505,27 @@ let mkprintf to_s get_out outc outs flush k fmt =
        match Sformat.unsafe_get fmt i with
        | '%' -> scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
        |  c  -> outc out c; doprn n (succ i)
-     and cont_s n s i =
-       outs out s; doprn n i
-     and cont_a n printer arg i =
-       if to_s then
-         outs out ((Obj.magic printer : unit -> _ -> string) () arg)
-       else
-         printer out arg;
-       doprn n i
-     and cont_t n printer i =
-       if to_s then
-         outs out ((Obj.magic printer : unit -> string) ())
-       else
-         printer out;
-       doprn n i
-     and cont_f n i =
-       flush out; doprn n i
-     and cont_m n xf i =
-       let m = Sformat.add_int_index (count_arguments_of_format xf) n in
-       pr (Obj.magic (fun _ -> doprn m i)) n xf v in
+    and cont_s n s i =
+      outs out s; doprn n i
+    and cont_a n printer arg i =
+      if to_s then
+        outs out ((Obj.magic printer : unit -> _ -> string) () arg)
+      else
+        printer out arg;
+      doprn n i
+    and cont_t n printer i =
+      if to_s then
+        outs out ((Obj.magic printer : unit -> string) ())
+      else
+        printer out;
+      doprn n i
+    and cont_f n i =
+      flush out; doprn n i
+    and cont_m n xf i =
+      let m = Sformat.add_int_index (count_arguments_of_format xf) n in
+      pr (Obj.magic (fun _ -> doprn m i)) n xf v in
 
-     doprn n 0 in
+    doprn n 0 in
 
   let kpr = pr k (Sformat.index_of_int 0) in
 
