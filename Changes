@@ -1,3 +1,10 @@
+Objective Caml 3.11.0:
+----------------------
+
+Standard library:
+- Scanf
+    debunking of meta format implementation.
+
 Objective Caml 3.10.0:
 ----------------------
 
