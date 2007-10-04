@@ -240,8 +240,6 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
      For instance, ["%\( %i% \)"] reads any format string that can read a value
      of type [int]; hence [Scanf.sscanf "\\\"%4d\\\"1234.00" "%\(%i%\)"]
      succeeds and returns the format string ["number is %u"].
-(** Must do something about that doc! *)
-
    - [l]: returns the number of lines read so far.
    - [n]: returns the number of characters read so far.
    - [N] or [L]: returns the number of tokens read so far.
