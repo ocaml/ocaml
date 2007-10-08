@@ -37,14 +37,40 @@ let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
 let catch_errors = ref true
-let ocamlc = ref (A"ocamlc.opt")
-let ocamlopt = ref (A"ocamlopt.opt")
-let ocamldep = ref (A"ocamldep.opt")
-let ocamldoc = ref (A"ocamldoc.opt")
-let ocamlyacc = ref (A"ocamlyacc")
-let ocamllex = ref (A"ocamllex")
-let ocamlmklib = ref (A"ocamlmklib")
-let ocamlmktop = ref (A"ocamlmktop")
+
+let mk_virtual_solvers =
+  let dir = Ocamlbuild_where.bindir in
+  List.iter begin fun cmd ->
+    let opt = cmd ^ ".opt" in
+    let a_opt = A opt in
+    let a_cmd = A cmd in
+    let search_in_path = memo Command.search_in_path in
+    let solver () =
+      if sys_file_exists !dir then
+        let long = filename_concat !dir cmd in
+        let long_opt = long ^ ".opt" in
+        if sys_file_exists long_opt then A long_opt
+        else if sys_file_exists long then A long
+        else try let _ = search_in_path opt in a_opt
+        with Not_found -> a_cmd
+      else
+        try let _ = search_in_path opt in a_opt
+        with Not_found -> a_cmd
+    in Command.setup_virtual_command_solver (String.uppercase cmd) solver
+  end
+
+let () =
+  mk_virtual_solvers
+    ["ocamlc"; "ocamlopt"; "ocamldep"; "ocamldoc";
+    "ocamlyacc"; "menhir"; "ocamllex"; "ocamlmklib"; "ocamlmktop"]
+let ocamlc = ref (V"OCAMLC")
+let ocamlopt = ref (V"OCAMLOPT")
+let ocamldep = ref (V"OCAMLDEP")
+let ocamldoc = ref (V"OCAMLDOC")
+let ocamlyacc = ref N
+let ocamllex = ref (V"OCAMLLEX")
+let ocamlmklib = ref (V"OCAMLMKLIB")
+let ocamlmktop = ref (V"OCAMLMKTOP")
 let ocamlrun = ref N
 let program_to_execute = ref false
 let must_clean = ref false
@@ -63,6 +89,7 @@ let ocaml_lexflags_internal = ref []
 let program_args_internal = ref []
 let ignore_list_internal = ref []
 let tags_internal = ref [["quiet"]]
+let tag_lines_internal = ref []
 let show_tags_internal = ref []
 
 let my_include_dirs = ref [[Filename.current_dir_name]]
@@ -124,6 +151,7 @@ let spec =
    "-pp", String (add_to ocaml_ppflags_internal), "<flag,...> (idem)";
    "-tag", String (add_to' tags_internal), "<tag> Add to default tags";
    "-tags", String (add_to tags_internal), "<tag,...> (idem)";
+   "-tag-line", String (add_to' tag_lines_internal), "<tag> Use this line of tags (as in _tags)";
    "-show-tags", String (add_to' show_tags_internal), "<path> Show tags that applies on that pathname";
 
    "-ignore", String (add_to ignore_list_internal), "<module,...> Don't try to build these modules";
@@ -139,14 +167,14 @@ let spec =
    "-no-sanitize", Clear sanitize, " Do not generate sanitization script";
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
-   "-use-menhir", Unit(fun () -> use_menhir := true; ocamlyacc := A"menhir"),
-                  " Use menhir instead of ocamlyacc";
+   "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
    "-build-dir", Set_string build_dir, "<path> Set build directory";
-   "-install-dir", Set_string Ocamlbuild_where.where, "<path> Set the install directory";
-   "-where", Unit (fun () -> print_endline !Ocamlbuild_where.where; raise Exit_OK), " Display the install directory";
+   "-install-lib-dir", Set_string Ocamlbuild_where.libdir, "<path> Set the install library directory";
+   "-install-bin-dir", Set_string Ocamlbuild_where.bindir, "<path> Set the install binary directory";
+   "-where", Unit (fun () -> print_endline !Ocamlbuild_where.libdir; raise Exit_OK), " Display the install library directory";
 
    "-ocamlc", set_cmd ocamlc, "<command> Set the OCaml bytecode compiler";
    "-ocamlopt", set_cmd ocamlopt, "<command> Set the OCaml native compiler";
@@ -173,6 +201,7 @@ let ocaml_lexflags = ref []
 let program_args = ref []
 let ignore_list = ref []
 let tags = ref []
+let tag_lines = ref []
 let show_tags = ref []
 
 let init () =
@@ -191,6 +220,7 @@ let init () =
   reorder ocaml_lexflags ocaml_lexflags_internal;
   reorder program_args program_args_internal;
   reorder tags tags_internal;
+  reorder tag_lines tag_lines_internal;
   reorder ignore_list ignore_list_internal;
   reorder show_tags show_tags_internal;
 

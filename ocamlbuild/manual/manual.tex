@@ -73,7 +73,7 @@ projects need features not available in that module -- you may then use
 functions or values directly from the core \ocb modules.  We ask you to report
 such usage to the authors so that we may make the necessary changes to the API;
 you may also want to isolate calls to the non-API parts of the \ocb library
-from the rest of your plugin to to be able to keep the later when incompatible
+from the rest of your plugin to be able to keep the later when incompatible
 changes arise.
 
 The way that \ocb handles the command-line options, the \tags file,
@@ -174,9 +174,9 @@ total 208
 You can execute your code the old-fashioned way (\texttt{./hello.native}).
 You may also type
 \begin{verbatim}
-ocamlbuild main.native -- Caesar
+ocamlbuild hello.native -- Caesar
 \end{verbatim}
-and it will compile and then run \texttt{main.native} with the arguments following \texttt{-{}-},
+and it will compile and then run \texttt{hello.native} with the arguments following \texttt{-{}-},
 which should display:
 \begin{verbatim}
 % ocamlbuild hello.native -- Caesar   
@@ -257,14 +257,14 @@ let _ =
   Printf.printf "My name is %s\n" Sys.argv.(0)
 ;;
 \end{verbatim}
-Then the module \texttt{Main} depends on the module \texttt{Greet} and \ocb can
+Then the module \texttt{Hello} depends on the module \texttt{Greet} and \ocb can
 figure this out for himself -- we still only have to invoke \texttt{\ocb
-main.native}.  Needless to say, this works for any number of modules.
+hello.native}.  Needless to say, this works for any number of modules.
 %***)
 %(*** Native and byte code
 \subsection{Native and byte-code}
 If we want to compile byte-code instead of native, we just a target name of
-\texttt{main.byte} instead of \texttt{main.native}, i.e., we type
+\texttt{hello.byte} instead of \texttt{hello.native}, i.e., we type
 \texttt{\ocb hello.byte}.
 %***)
 %(*** Compile flags
@@ -536,7 +536,8 @@ There are then two cases.  If no other modules named \texttt{Bar} or
 \texttt{Baz} exist elsewhere in the project, then you are done.  Just use
 \texttt{Foo}, \texttt{Foo.Bar} and \texttt{Foo.Baz} in your code.
 Otherwise, you will need to use the plugin mechanism and define the mutual
-visibility of the subdirectories using the XXX function.
+visibility of the subdirectories using the \texttt{Pathname.define\_context}
+function.
 %***)
 %(*** Grouping targets
 \subsection{Grouping targets with \texttt{.itarget}}

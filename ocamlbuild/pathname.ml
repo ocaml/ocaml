@@ -103,6 +103,7 @@ let clean_up_links entry =
     let pathname = in_source_dir (path/name) in
     if link_to_dir pathname !Options.build_dir then
       let z = readlink pathname in
+      (* Here is one exception where one can use Sys.file_exists directly *)
       (if not (Sys.file_exists z) then
         Shell.rm pathname; false)
     else true
@@ -145,25 +146,6 @@ let root = mk "__root__"
 
 let context_table = Hashtbl.create 107
 
-let merge_include_dirs a b =
-  let rec aux a b =
-    match a, b with
-    | [], _ -> b
-    | _, [] -> a
-    | _, x::xs ->
-        if List.mem x a then aux a xs
-        else aux (x :: a) xs
-  in List.rev (aux (List.rev a) b)
-
-let define_context dir context =
-  let dir = if dir = "" then current_dir_name else dir in
-  try
-    let context = merge_include_dirs context (Hashtbl.find context_table dir) in
-    Hashtbl.replace context_table dir context
-  with Not_found ->
-    let context = merge_include_dirs context (!Options.include_dirs) in
-    Hashtbl.add context_table dir context
-
 let rec include_dirs_of dir =
   try Hashtbl.find context_table dir
   with Not_found -> dir :: List.filter (fun dir' -> dir <> dir') !Options.include_dirs
@@ -174,6 +156,10 @@ let include_dirs_of s =
   let () = dprintf 0 "include_dirs_of %S ->@ %a" s (List.print print) res
   in res
 *)
+
+let define_context dir context =
+  let dir = if dir = "" then current_dir_name else dir in
+  Hashtbl.replace context_table dir& List.union context& include_dirs_of dir
 
 let in_build_dir p =
   if is_relative p then p

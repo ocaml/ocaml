@@ -45,93 +45,11 @@ module Make (Loc : Sig.Loc)
   external loc_of_class_str_item : class_str_item -> Loc.t = "%field0";
   external loc_of_with_constr : with_constr -> Loc.t = "%field0";
   external loc_of_binding : binding -> Loc.t = "%field0";
+  external loc_of_rec_binding : rec_binding -> Loc.t = "%field0";
   external loc_of_module_binding : module_binding -> Loc.t = "%field0";
   external loc_of_match_case : match_case -> Loc.t = "%field0";
   external loc_of_ident : ident -> Loc.t = "%field0";
 
-  module Meta = struct
-
-    module type META_LOC = sig
-      (** The first location is where to put the returned pattern.
-          Generally it's _loc to match with <:patt< ... >> quotations.
-          The second location is the one to treat. *)
-      value meta_loc_patt : Loc.t -> Loc.t -> Ast.patt;
-      (** The first location is where to put the returned expression.
-          Generally it's _loc to match with <:expr< ... >> quotations.
-          The second location is the one to treat. *)
-      value meta_loc_expr : Loc.t -> Loc.t -> Ast.expr;
-    end;
-
-    module MetaLoc = struct
-      value meta_loc_patt _loc location =
-        let (a, b, c, d, e, f, g, h) = Loc.to_tuple location in
-        <:patt< Loc.of_tuple
-                  ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
-                  $`int:e$, $`int:f$, $`int:g$,
-                  $if h then <:patt< True >> else <:patt< False >> $) >>;
-      value meta_loc_expr _loc location =
-        let (a, b, c, d, e, f, g, h) = Loc.to_tuple location in
-        <:expr< Loc.of_tuple
-                  ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
-                  $`int:e$, $`int:f$, $`int:g$,
-                  $if h then <:expr< True >> else <:expr< False >> $) >>;
-    end;
-
-    module MetaGhostLoc = struct
-      value meta_loc_patt _loc _ = <:patt< Loc.ghost >>;
-      value meta_loc_expr _loc _ = <:expr< Loc.ghost >>;
-    end;
-
-    module MetaLocVar = struct
-      value meta_loc_patt _loc _ = <:patt< $lid:Loc.name.val$ >>;
-      value meta_loc_expr _loc _ = <:expr< $lid:Loc.name.val$ >>;
-    end;
-
-    module Make (MetaLoc : META_LOC) = struct
-      open MetaLoc;
-
-      value meta_acc_Loc_t = meta_loc_expr;
-      module Expr = Camlp4Filters.MetaGeneratorExpr Ast;
-      value meta_acc_Loc_t = meta_loc_patt;
-      module Patt = Camlp4Filters.MetaGeneratorPatt Ast;
-    end;
-
-  end;
-
-  class map = Camlp4Filters.GenerateMap.generated;
-
-  class fold = Camlp4Filters.GenerateFold.generated;
-
-  class c_expr f = object
-    inherit map as super;
-    method expr x = f (super#expr x);
-  end;
-  class c_patt f = object
-    inherit map as super;
-    method patt x = f (super#patt x);
-  end;
-  class c_ctyp f = object
-    inherit map as super;
-    method ctyp x = f (super#ctyp x);
-  end;
-  class c_str_item f = object
-    inherit map as super;
-    method str_item x = f (super#str_item x);
-  end;
-  class c_sig_item f = object
-    inherit map as super;
-    method sig_item x = f (super#sig_item x);
-  end;
-  class c_loc f = object
-    inherit map as super;
-    method _Loc_t x = f (super#_Loc_t x);
-  end;
-  value map_patt f ast = (new c_patt f)#patt ast;
-  value map_loc f ast = (new c_loc f)#_Loc_t ast;
-  value map_sig_item f ast = (new c_sig_item f)#sig_item ast;
-  value map_str_item f ast = (new c_str_item f)#str_item ast;
-  value map_ctyp f ast = (new c_ctyp f)#ctyp ast;
-  value map_expr f ast = (new c_expr f)#expr ast;
   value ghost = Loc.ghost;
 
   value rec is_module_longident =
@@ -141,6 +59,47 @@ module Make (Loc : Sig.Loc)
         is_module_longident i1 && is_module_longident i2
     | <:ident< $uid:_$ >> -> True
     | _ -> False ];
+
+  value ident_of_expr =
+    let error () =
+      invalid_arg "ident_of_expr: this expression is not an identifier" in
+    let rec self =
+      fun
+      [ <:expr@_loc< $e1$ $e2$ >> -> <:ident< $self e1$ $self e2$ >>
+      | <:expr@_loc< $e1$.$e2$ >> -> <:ident< $self e1$.$self e2$ >>
+      | <:expr< $lid:_$ >> -> error ()
+      | <:expr< $id:i$ >> -> if is_module_longident i then i else error ()
+      | _ -> error () ] in
+    fun
+    [ <:expr< $id:i$ >> -> i
+    | <:expr< $_$ $_$ >> -> error ()
+    | t -> self t ];
+
+  value ident_of_ctyp =
+    let error () =
+      invalid_arg "ident_of_ctyp: this type is not an identifier" in
+    let rec self =
+      fun
+      [ <:ctyp@_loc< $t1$ $t2$ >> -> <:ident< $self t1$ $self t2$ >>
+      | <:ctyp< $lid:_$ >> -> error ()
+      | <:ctyp< $id:i$ >> -> if is_module_longident i then i else error ()
+      | _ -> error () ] in
+    fun
+    [ <:ctyp< $id:i$ >> -> i
+    | t -> self t ];
+
+  value ident_of_patt =
+    let error () =
+      invalid_arg "ident_of_patt: this pattern is not an identifier" in
+    let rec self =
+      fun
+      [ <:patt@_loc< $p1$ $p2$ >> -> <:ident< $self p1$ $self p2$ >>
+      | <:patt< $lid:_$ >> -> error ()
+      | <:patt< $id:i$ >> -> if is_module_longident i then i else error ()
+      | _ -> error () ] in
+    fun
+    [ <:patt< $id:i$ >> -> i
+    | p -> self p ];
 
   value rec is_irrefut_patt =
     fun
@@ -181,34 +140,6 @@ module Make (Loc : Sig.Loc)
     | <:expr< `$_$ >> -> True
     | _ -> False ];
 
-  value ident_of_expr =
-    let error () =
-      invalid_arg "ident_of_expr: this expression is not an identifier" in
-    let rec self =
-      fun
-      [ <:expr@_loc< $e1$ $e2$ >> -> <:ident< $self e1$ $self e2$ >>
-      | <:expr@_loc< $e1$.$e2$ >> -> <:ident< $self e1$.$self e2$ >>
-      | <:expr< $lid:_$ >> -> error ()
-      | <:expr< $id:i$ >> -> if is_module_longident i then i else error ()
-      | <:expr< $_$ >> -> error () ] in
-    fun
-    [ <:expr< $id:i$ >> -> i
-    | <:expr< $_$ $_$ >> -> error ()
-    | t -> self t ];
-
-  value ident_of_ctyp =
-    let error () =
-      invalid_arg "ident_of_ctyp: this type is not an identifier" in
-    let rec self =
-      fun
-      [ <:ctyp@_loc< $t1$ $t2$ >> -> <:ident< $self t1$ $self t2$ >>
-      | <:ctyp< $lid:_$ >> -> error ()
-      | <:ctyp< $id:i$ >> -> if is_module_longident i then i else error ()
-      | <:ctyp< $_$ >> -> error () ] in
-    fun
-    [ <:ctyp< $id:i$ >> -> i
-    | t -> self t ];
-
   value rec tyOr_of_list =
     fun
     [ [] -> <:ctyp@ghost<>>
@@ -230,6 +161,27 @@ module Make (Loc : Sig.Loc)
     | [t::ts] ->
         let _loc = loc_of_ctyp t in <:ctyp< $t$ ; $tySem_of_list ts$ >> ];
 
+  value rec tyCom_of_list =
+    fun
+    [ [] -> <:ctyp@ghost<>>
+    | [t] -> t
+    | [t::ts] ->
+        let _loc = loc_of_ctyp t in <:ctyp< $t$, $tyCom_of_list ts$ >> ];
+
+  value rec tyAmp_of_list =
+    fun
+    [ [] -> <:ctyp@ghost<>>
+    | [t] -> t
+    | [t::ts] ->
+        let _loc = loc_of_ctyp t in <:ctyp< $t$ & $tyAmp_of_list ts$ >> ];
+
+  value rec tySta_of_list =
+    fun
+    [ [] -> <:ctyp@ghost<>>
+    | [t] -> t
+    | [t::ts] ->
+        let _loc = loc_of_ctyp t in <:ctyp< $t$ * $tySta_of_list ts$ >> ];
+
   value rec stSem_of_list =
     fun
     [ [] -> <:str_item@ghost<>>
@@ -250,6 +202,14 @@ module Make (Loc : Sig.Loc)
     | [b] -> b
     | [b::bs] ->
         let _loc = loc_of_binding b in <:binding< $b$ and $biAnd_of_list bs$ >> ];
+
+  value rec rbSem_of_list =
+    fun
+    [ [] -> <:rec_binding@ghost<>>
+    | [b] -> b
+    | [b::bs] ->
+        let _loc = loc_of_rec_binding b in
+        <:rec_binding< $b$; $rbSem_of_list bs$ >> ];
 
   value rec wcAnd_of_list =
     fun
@@ -347,14 +307,6 @@ module Make (Loc : Sig.Loc)
         let _loc = loc_of_patt x in
         <:patt< $x$, $paCom_of_list xs$ >> ];
 
-  value rec biSem_of_list =
-    fun
-    [ [] -> <:binding@ghost<>>
-    | [x] -> x
-    | [x::xs] ->
-        let _loc = loc_of_binding x in
-        <:binding< $x$; $biSem_of_list xs$ >> ];
-
   value rec exSem_of_list =
     fun
     [ [] -> <:expr@ghost<>>
@@ -390,13 +342,18 @@ module Make (Loc : Sig.Loc)
     fun
     [ <:binding< $b1$ and $b2$ >> -> pel_of_binding b1 @ pel_of_binding b2
     | <:binding< $p$ = $e$ >> -> [(p, e)]
-    | <:binding< $b1$ ; $b2$ >> -> pel_of_binding b1 @ pel_of_binding b2
     | _ -> assert False ];
 
   value rec list_of_binding x acc =
     match x with
-    [ <:binding< $b1$ and $b2$ >> | <:binding< $b1$; $b2$ >> ->
+    [ <:binding< $b1$ and $b2$ >> ->
          list_of_binding b1 (list_of_binding b2 acc)
+    | t -> [t :: acc] ];
+
+  value rec list_of_rec_binding x acc =
+    match x with
+    [ <:rec_binding< $b1$; $b2$ >> ->
+         list_of_rec_binding b1 (list_of_rec_binding b2 acc)
     | t -> [t :: acc] ];
 
   value rec list_of_with_constr x acc =
@@ -493,6 +450,83 @@ module Make (Loc : Sig.Loc)
         list_of_module_binding x (list_of_module_binding y acc)
     | x -> [x :: acc] ];
 
+  module Meta = struct
+
+    module type META_LOC = sig
+      (** The first location is where to put the returned pattern.
+          Generally it's _loc to match with <:patt< ... >> quotations.
+          The second location is the one to treat. *)
+      value meta_loc_patt : Loc.t -> Loc.t -> Ast.patt;
+      (** The first location is where to put the returned expression.
+          Generally it's _loc to match with <:expr< ... >> quotations.
+          The second location is the one to treat. *)
+      value meta_loc_expr : Loc.t -> Loc.t -> Ast.expr;
+    end;
+
+    module MetaLoc = struct
+      value meta_loc_patt _loc location =
+        let (a, b, c, d, e, f, g, h) = Loc.to_tuple location in
+        <:patt< Loc.of_tuple
+                  ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
+                  $`int:e$, $`int:f$, $`int:g$,
+                  $if h then <:patt< True >> else <:patt< False >> $) >>;
+      value meta_loc_expr _loc location =
+        let (a, b, c, d, e, f, g, h) = Loc.to_tuple location in
+        <:expr< Loc.of_tuple
+                  ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
+                  $`int:e$, $`int:f$, $`int:g$,
+                  $if h then <:expr< True >> else <:expr< False >> $) >>;
+    end;
+
+    module MetaGhostLoc = struct
+      value meta_loc_patt _loc _ = <:patt< Loc.ghost >>;
+      value meta_loc_expr _loc _ = <:expr< Loc.ghost >>;
+    end;
+
+    module MetaLocVar = struct
+      value meta_loc_patt _loc _ = <:patt< $lid:Loc.name.val$ >>;
+      value meta_loc_expr _loc _ = <:expr< $lid:Loc.name.val$ >>;
+    end;
+
+    module Make (MetaLoc : META_LOC) = struct
+      open MetaLoc;
+
+      value meta_acc_Loc_t = meta_loc_expr;
+      module Expr = Camlp4Filters.MetaGeneratorExpr Ast;
+      value meta_acc_Loc_t = meta_loc_patt;
+      module Patt = Camlp4Filters.MetaGeneratorPatt Ast;
+    end;
+
+  end;
+
+  class map = Camlp4Filters.GenerateMap.generated;
+
+  class fold = Camlp4Filters.GenerateFold.generated;
+
+  value map_expr f = object
+    inherit map as super;
+    method expr x = f (super#expr x);
+  end;
+  value map_patt f = object
+    inherit map as super;
+    method patt x = f (super#patt x);
+  end;
+  value map_ctyp f = object
+    inherit map as super;
+    method ctyp x = f (super#ctyp x);
+  end;
+  value map_str_item f = object
+    inherit map as super;
+    method str_item x = f (super#str_item x);
+  end;
+  value map_sig_item f = object
+    inherit map as super;
+    method sig_item x = f (super#sig_item x);
+  end;
+  value map_loc f = object
+    inherit map as super;
+    method _Loc_t x = f (super#_Loc_t x);
+  end;
 end;
 
 module Camlp4Trash = struct

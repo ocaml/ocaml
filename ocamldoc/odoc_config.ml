@@ -11,6 +11,8 @@
 
 (* $Id$ *)
 
-let custom_generators_path = 
-  Filename.concat Config.standard_library 
+let custom_generators_path =
+  Filename.concat Config.standard_library
     (Filename.concat "ocamldoc" "custom")
+
+let print_warnings = ref true

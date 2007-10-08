@@ -51,7 +51,7 @@ let is_degraded = true
 let stat f =
   { stat_key = f;
     stat_file_kind =
-      if Sys.file_exists f then
+      if sys_file_exists f then
         if Sys.is_directory f then
           FK_dir
         else

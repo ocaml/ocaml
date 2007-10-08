@@ -175,6 +175,7 @@ let verbose s =
     ()
 
 let warning s = Odoc_messages.pwarning s
+let print_warnings = Odoc_config.print_warnings
 
 let errors = Odoc_global.errors
 

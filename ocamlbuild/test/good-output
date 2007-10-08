@@ -12,26 +12,26 @@
 + cp vivi1.ml vivi.ml
 + ../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display -- -help
 ocamldep.opt -modules toto.ml > toto.ml.depends
-ocamldep.opt -modules tutu.mli > tutu.mli.depends
-ocamldep.opt -modules titi.ml > titi.ml.depends
 ocamldep.opt -modules tata.mli > tata.mli.depends
-ocamlc.opt -c -o tutu.cmi tutu.mli
-ocamlc.opt -c -o titi.cmo titi.ml
+ocamldep.opt -modules titi.ml > titi.ml.depends
+ocamldep.opt -modules tutu.mli > tutu.mli.depends
 ocamlc.opt -c -o tata.cmi tata.mli
+ocamlc.opt -c -o titi.cmo titi.ml
+ocamlc.opt -c -o tutu.cmi tutu.mli
 ocamlc.opt -c -o toto.cmo toto.ml
-ocamldep.opt -modules tutu.ml > tutu.ml.depends
-ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
-ocamldep.opt -modules tyty.mli > tyty.mli.depends
-ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
-ocamlc.opt -c -o tyty.cmi tyty.mli
 ocamldep.opt -modules tata.ml > tata.ml.depends
-ocamlc.opt -c -o tutu.cmo tutu.ml
+ocamldep.opt -modules tutu.ml > tutu.ml.depends
+ocamldep.opt -modules tyty.mli > tyty.mli.depends
+ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
+ocamlc.opt -c -o tyty.cmi tyty.mli
+ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
 ocamlc.opt -c -o tata.cmo tata.ml
+ocamlc.opt -c -o tutu.cmo tutu.ml
 ocamlc.opt tata.cmo titi.cmo vivi.cmo tutu.cmo toto.cmo -o toto.byte
 ocamlopt.opt -c -pp camlp4o -o vivi.cmx vivi.ml
-ocamlopt.opt -c -o tutu.cmx tutu.ml
-ocamlopt.opt -c -o titi.cmx titi.ml
 ocamlopt.opt -c -o tata.cmx tata.ml
+ocamlopt.opt -c -o titi.cmx titi.ml
+ocamlopt.opt -c -o tutu.cmx tutu.ml
 ocamlopt.opt -c -o toto.cmx toto.ml
 ocamlopt.opt tata.cmx titi.cmx vivi.cmx tutu.cmx toto.cmx -o toto.native
 Warning: Using -- only run the last target
@@ -40,26 +40,26 @@ Tutu.tutu => 1
 Tata.tata => "TATA2"
 + ../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt -- -help
 [cache hit] ocamldep.opt -modules toto.ml > toto.ml.depends
-[cache hit] ocamldep.opt -modules tutu.mli > tutu.mli.depends
-[cache hit] ocamlc.opt -c -o tutu.cmi tutu.mli
-[cache hit] ocamldep.opt -modules titi.ml > titi.ml.depends
-[cache hit] ocamlc.opt -c -o titi.cmo titi.ml
 [cache hit] ocamldep.opt -modules tata.mli > tata.mli.depends
 [cache hit] ocamlc.opt -c -o tata.cmi tata.mli
+[cache hit] ocamldep.opt -modules titi.ml > titi.ml.depends
+[cache hit] ocamlc.opt -c -o titi.cmo titi.ml
+[cache hit] ocamldep.opt -modules tutu.mli > tutu.mli.depends
+[cache hit] ocamlc.opt -c -o tutu.cmi tutu.mli
 [cache hit] ocamlc.opt -c -o toto.cmo toto.ml
-[cache hit] ocamldep.opt -modules tutu.ml > tutu.ml.depends
-[cache hit] ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
-[cache hit] ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
-[cache hit] ocamldep.opt -modules tyty.mli > tyty.mli.depends
-[cache hit] ocamlc.opt -c -o tyty.cmi tyty.mli
-[cache hit] ocamlc.opt -c -o tutu.cmo tutu.ml
 [cache hit] ocamldep.opt -modules tata.ml > tata.ml.depends
 [cache hit] ocamlc.opt -c -o tata.cmo tata.ml
+[cache hit] ocamldep.opt -modules tutu.ml > tutu.ml.depends
+[cache hit] ocamldep.opt -modules tyty.mli > tyty.mli.depends
+[cache hit] ocamlc.opt -c -o tyty.cmi tyty.mli
+[cache hit] ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
+[cache hit] ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
+[cache hit] ocamlc.opt -c -o tutu.cmo tutu.ml
 [cache hit] ocamlc.opt tata.cmo titi.cmo vivi.cmo tutu.cmo toto.cmo -o toto.byte
+[cache hit] ocamlopt.opt -c -o tata.cmx tata.ml
+[cache hit] ocamlopt.opt -c -o titi.cmx titi.ml
 [cache hit] ocamlopt.opt -c -pp camlp4o -o vivi.cmx vivi.ml
 [cache hit] ocamlopt.opt -c -o tutu.cmx tutu.ml
-[cache hit] ocamlopt.opt -c -o titi.cmx titi.ml
-[cache hit] ocamlopt.opt -c -o tata.cmx tata.ml
 [cache hit] ocamlopt.opt -c -o toto.cmx toto.ml
 [cache hit] ocamlopt.opt tata.cmx titi.cmx vivi.cmx tutu.cmx toto.cmx -o toto.native
 Warning: Using -- only run the last target
@@ -79,26 +79,26 @@ Tutu.tutu => 1
 Tata.tata => "TATA2"
 + ../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt -- -help
 [cache hit] ocamldep.opt -modules toto.ml > toto.ml.depends
-[cache hit] ocamldep.opt -modules tutu.mli > tutu.mli.depends
-[cache hit] ocamlc.opt -c -o tutu.cmi tutu.mli
-[cache hit] ocamldep.opt -modules titi.ml > titi.ml.depends
-[cache hit] ocamlc.opt -c -o titi.cmo titi.ml
 [cache hit] ocamldep.opt -modules tata.mli > tata.mli.depends
 [cache hit] ocamlc.opt -c -o tata.cmi tata.mli
+[cache hit] ocamldep.opt -modules titi.ml > titi.ml.depends
+[cache hit] ocamlc.opt -c -o titi.cmo titi.ml
+[cache hit] ocamldep.opt -modules tutu.mli > tutu.mli.depends
+[cache hit] ocamlc.opt -c -o tutu.cmi tutu.mli
 [cache hit] ocamlc.opt -c -o toto.cmo toto.ml
-[cache hit] ocamldep.opt -modules tutu.ml > tutu.ml.depends
-[cache hit] ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
-[cache hit] ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
-[cache hit] ocamldep.opt -modules tyty.mli > tyty.mli.depends
-[cache hit] ocamlc.opt -c -o tyty.cmi tyty.mli
-[cache hit] ocamlc.opt -c -o tutu.cmo tutu.ml
 [cache hit] ocamldep.opt -modules tata.ml > tata.ml.depends
 [cache hit] ocamlc.opt -c -o tata.cmo tata.ml
+[cache hit] ocamldep.opt -modules tutu.ml > tutu.ml.depends
+[cache hit] ocamldep.opt -modules tyty.mli > tyty.mli.depends
+[cache hit] ocamlc.opt -c -o tyty.cmi tyty.mli
+[cache hit] ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
+[cache hit] ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
+[cache hit] ocamlc.opt -c -o tutu.cmo tutu.ml
 [cache hit] ocamlc.opt tata.cmo titi.cmo vivi.cmo tutu.cmo toto.cmo -o toto.byte
+[cache hit] ocamlopt.opt -c -o tata.cmx tata.ml
+[cache hit] ocamlopt.opt -c -o titi.cmx titi.ml
 [cache hit] ocamlopt.opt -c -pp camlp4o -o vivi.cmx vivi.ml
 [cache hit] ocamlopt.opt -c -o tutu.cmx tutu.ml
-[cache hit] ocamlopt.opt -c -o titi.cmx titi.ml
-[cache hit] ocamlopt.opt -c -o tata.cmx tata.ml
 [cache hit] ocamlopt.opt -c -o toto.cmx toto.ml
 [cache hit] ocamlopt.opt tata.cmx titi.cmx vivi.cmx tutu.cmx toto.cmx -o toto.native
 Warning: Using -- only run the last target
@@ -121,26 +121,26 @@ Tutu.tutu => 2
 Tata.tata => "TATA2"
 + ../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt -- -help
 [cache hit] ocamldep.opt -modules toto.ml > toto.ml.depends
-[cache hit] ocamldep.opt -modules tutu.mli > tutu.mli.depends
-[cache hit] ocamlc.opt -c -o tutu.cmi tutu.mli
-[cache hit] ocamldep.opt -modules titi.ml > titi.ml.depends
-[cache hit] ocamlc.opt -c -o titi.cmo titi.ml
 [cache hit] ocamldep.opt -modules tata.mli > tata.mli.depends
 [cache hit] ocamlc.opt -c -o tata.cmi tata.mli
+[cache hit] ocamldep.opt -modules titi.ml > titi.ml.depends
+[cache hit] ocamlc.opt -c -o titi.cmo titi.ml
+[cache hit] ocamldep.opt -modules tutu.mli > tutu.mli.depends
+[cache hit] ocamlc.opt -c -o tutu.cmi tutu.mli
 [cache hit] ocamlc.opt -c -o toto.cmo toto.ml
-[cache hit] ocamldep.opt -modules tutu.ml > tutu.ml.depends
-[cache hit] ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
-[cache hit] ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
-[cache hit] ocamldep.opt -modules tyty.mli > tyty.mli.depends
-[cache hit] ocamlc.opt -c -o tyty.cmi tyty.mli
-[cache hit] ocamlc.opt -c -o tutu.cmo tutu.ml
 [cache hit] ocamldep.opt -modules tata.ml > tata.ml.depends
 [cache hit] ocamlc.opt -c -o tata.cmo tata.ml
+[cache hit] ocamldep.opt -modules tutu.ml > tutu.ml.depends
+[cache hit] ocamldep.opt -modules tyty.mli > tyty.mli.depends
+[cache hit] ocamlc.opt -c -o tyty.cmi tyty.mli
+[cache hit] ocamldep.opt -pp camlp4o -modules vivi.ml > vivi.ml.depends
+[cache hit] ocamlc.opt -c -pp camlp4o -o vivi.cmo vivi.ml
+[cache hit] ocamlc.opt -c -o tutu.cmo tutu.ml
 [cache hit] ocamlc.opt tata.cmo titi.cmo vivi.cmo tutu.cmo toto.cmo -o toto.byte
+[cache hit] ocamlopt.opt -c -o tata.cmx tata.ml
+[cache hit] ocamlopt.opt -c -o titi.cmx titi.ml
 [cache hit] ocamlopt.opt -c -pp camlp4o -o vivi.cmx vivi.ml
 [cache hit] ocamlopt.opt -c -o tutu.cmx tutu.ml
-[cache hit] ocamlopt.opt -c -o titi.cmx titi.ml
-[cache hit] ocamlopt.opt -c -o tata.cmx tata.ml
 [cache hit] ocamlopt.opt -c -o toto.cmx toto.ml
 [cache hit] ocamlopt.opt tata.cmx titi.cmx vivi.cmx tutu.cmx toto.cmx -o toto.native
 Warning: Using -- only run the last target
@@ -159,9 +159,9 @@ Tata.tata => "TATA2"
 + BUILD2=../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
 + ../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display
-ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules a.mli > a.mli.depends
 ocamlc.opt -c -o a.cmi a.mli
+ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules b.mli > b.mli.depends
 ocamlc.opt -c -o b.cmi b.mli
 ocamlc.opt -c -o a.cmo a.ml
@@ -201,9 +201,9 @@ rm -rf proj.docdir
 mkdir -p proj.docdir
 ocamldoc.opt -load a.odoc -load b.odoc -load c.odoc -load d.odoc -load e.odoc -load f.odoc -html -d proj.docdir
 + ../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
-[cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules a.mli > a.mli.depends
 [cache hit] ocamlc.opt -c -o a.cmi a.mli
+[cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules b.mli > b.mli.depends
 [cache hit] ocamlc.opt -c -o b.cmi b.mli
 [cache hit] ocamlc.opt -c -o a.cmo a.ml
@@ -254,9 +254,9 @@ ocamldoc.opt -load a.odoc -load b.odoc -load c.odoc -load d.odoc -load e.odoc -l
 + BUILD2=../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
 + ../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display
-ocamldep.opt -modules a/aa.ml > a/aa.ml.depends
 ocamldep.opt -modules a/aa.mli > a/aa.mli.depends
 ocamlc.opt -c -I a -I b -o a/aa.cmi a/aa.mli
+ocamldep.opt -modules a/aa.ml > a/aa.ml.depends
 ocamldep.opt -modules b/bb.ml > b/bb.ml.depends
 ocamlc.opt -c -I b -I a -o b/bb.cmo b/bb.ml
 ocamlc.opt -c -I a -I b -o a/aa.cmo a/aa.ml
@@ -265,9 +265,9 @@ ocamlopt.opt -c -I b -I a -o b/bb.cmx b/bb.ml
 ocamlopt.opt -c -I a -I b -o a/aa.cmx a/aa.ml
 ocamlopt.opt str.cmxa b/bb.cmx a/aa.cmx -o a/aa.native
 + ../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
-[cache hit] ocamldep.opt -modules a/aa.ml > a/aa.ml.depends
 [cache hit] ocamldep.opt -modules a/aa.mli > a/aa.mli.depends
 [cache hit] ocamlc.opt -c -I a -I b -o a/aa.cmi a/aa.mli
+[cache hit] ocamldep.opt -modules a/aa.ml > a/aa.ml.depends
 [cache hit] ocamldep.opt -modules b/bb.ml > b/bb.ml.depends
 [cache hit] ocamlc.opt -c -I b -I a -o b/bb.cmo b/bb.ml
 [cache hit] ocamlc.opt -c -I a -I b -o a/aa.cmo a/aa.ml
@@ -288,9 +288,9 @@ ocamlopt.opt str.cmxa b/bb.cmx a/aa.cmx -o a/aa.native
 + rm -rf _build
 + ../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display
 ocamldep.opt -modules d.ml > d.ml.depends
-ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules a.mli > a.mli.depends
 ocamlc.opt -c -o a.cmi a.mli
+ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules stack.ml > stack.ml.depends
 ocamlc.opt -c -o stack.cmo stack.ml
 ocamldep.opt -modules b.ml > b.ml.depends
@@ -302,16 +302,14 @@ ocamlc.opt stack.cmo c.cmo d.cmo -o d.byte
 ocamlopt.opt -c -o stack.cmx stack.ml
 ocamlopt.opt -c -for-pack C -o a.cmx a.ml
 ocamlopt.opt -c -for-pack C -o b.cmx b.ml
-mv c.cmi c.cmitmp
-ocamlopt.opt -pack a.cmx b.cmx -o c.cmx
-cmp c.cmitmp c.cmi
+touch c.mli  ; if  ocamlopt.opt -pack a.cmx b.cmx -o c.cmx  ; then  rm -f c.mli  ; else  rm -f c.mli  ; exit 1; fi
 ocamlopt.opt -c -o d.cmx d.ml
 ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
 + ../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
 [cache hit] ocamldep.opt -modules d.ml > d.ml.depends
-[cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules a.mli > a.mli.depends
 [cache hit] ocamlc.opt -c -o a.cmi a.mli
+[cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules stack.ml > stack.ml.depends
 [cache hit] ocamlc.opt -c -o stack.cmo stack.ml
 [cache hit] ocamlc.opt -c -o a.cmo a.ml
@@ -323,9 +321,7 @@ ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
 [cache hit] ocamlopt.opt -c -o stack.cmx stack.ml
 [cache hit] ocamlopt.opt -c -for-pack C -o a.cmx a.ml
 [cache hit] ocamlopt.opt -c -for-pack C -o b.cmx b.ml
-[cache hit] mv c.cmi c.cmitmp
-[cache hit] ocamlopt.opt -pack a.cmx b.cmx -o c.cmx
-[cache hit] cmp c.cmitmp c.cmi
+[cache hit] touch c.mli  ; if  ocamlopt.opt -pack a.cmx b.cmx -o c.cmx  ; then  rm -f c.mli  ; else  rm -f c.mli  ; exit 1; fi
 [cache hit] ocamlopt.opt -c -o d.cmx d.ml
 [cache hit] ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
  _____         _    __
@@ -342,38 +338,38 @@ ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
 + cp b.mli.v1 b.mli
 + cp d.mli.v1 d.mli
 + ../../_build/ocamlbuild.native -no-skip main.byte -classic-display
-ocamldep.opt -modules main.ml > main.ml.depends
 ocamldep.opt -modules main.mli > main.mli.depends
 ocamlc.opt -c -o main.cmi main.mli
-ocamldep.opt -modules d.mli > d.mli.depends
+ocamldep.opt -modules main.ml > main.ml.depends
 ocamldep.opt -modules a.mli > a.mli.depends
-ocamlc.opt -c -o d.cmi d.mli
+ocamldep.opt -modules d.mli > d.mli.depends
 ocamlc.opt -c -o a.cmi a.mli
+ocamlc.opt -c -o d.cmi d.mli
 ocamlc.opt -c -o main.cmo main.ml
-ocamldep.opt -modules d.ml > d.ml.depends
 ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules b.mli > b.mli.depends
 ocamlc.opt -c -o b.cmi b.mli
-ocamlc.opt -c -o d.cmo d.ml
+ocamldep.opt -modules d.ml > d.ml.depends
 ocamlc.opt -c -o a.cmo a.ml
+ocamlc.opt -c -o d.cmo d.ml
 ocamldep.opt -modules b.ml > b.ml.depends
 ocamlc.opt -c -o b.cmo b.ml
 ocamlc.opt d.cmo b.cmo a.cmo main.cmo -o main.byte
 + ../../_build/ocamlbuild.native -no-skip main.byte -classic-display -verbose 0 -nothing-should-be-rebuilt
-[cache hit] ocamldep.opt -modules main.ml > main.ml.depends
 [cache hit] ocamldep.opt -modules main.mli > main.mli.depends
 [cache hit] ocamlc.opt -c -o main.cmi main.mli
-[cache hit] ocamldep.opt -modules d.mli > d.mli.depends
-[cache hit] ocamlc.opt -c -o d.cmi d.mli
+[cache hit] ocamldep.opt -modules main.ml > main.ml.depends
 [cache hit] ocamldep.opt -modules a.mli > a.mli.depends
 [cache hit] ocamlc.opt -c -o a.cmi a.mli
+[cache hit] ocamldep.opt -modules d.mli > d.mli.depends
+[cache hit] ocamlc.opt -c -o d.cmi d.mli
 [cache hit] ocamlc.opt -c -o main.cmo main.ml
-[cache hit] ocamldep.opt -modules d.ml > d.ml.depends
-[cache hit] ocamlc.opt -c -o d.cmo d.ml
 [cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules b.mli > b.mli.depends
 [cache hit] ocamlc.opt -c -o b.cmi b.mli
 [cache hit] ocamlc.opt -c -o a.cmo a.ml
+[cache hit] ocamldep.opt -modules d.ml > d.ml.depends
+[cache hit] ocamlc.opt -c -o d.cmo d.ml
 [cache hit] ocamldep.opt -modules b.ml > b.ml.depends
 [cache hit] ocamlc.opt -c -o b.cmo b.ml
 [cache hit] ocamlc.opt d.cmo b.cmo a.cmo main.cmo -o main.byte
@@ -396,20 +392,20 @@ ocamlc.opt -c -o d.cmo d.ml
 ocamlc.opt -c -o b.cmo b.ml
 ocamlc.opt d.cmo b.cmo a.cmo main.cmo -o main.byte
 + ../../_build/ocamlbuild.native -no-skip main.byte -classic-display -verbose 0 -nothing-should-be-rebuilt
-[cache hit] ocamldep.opt -modules main.ml > main.ml.depends
 [cache hit] ocamldep.opt -modules main.mli > main.mli.depends
 [cache hit] ocamlc.opt -c -o main.cmi main.mli
-[cache hit] ocamldep.opt -modules d.mli > d.mli.depends
-[cache hit] ocamlc.opt -c -o d.cmi d.mli
+[cache hit] ocamldep.opt -modules main.ml > main.ml.depends
 [cache hit] ocamldep.opt -modules a.mli > a.mli.depends
 [cache hit] ocamlc.opt -c -o a.cmi a.mli
+[cache hit] ocamldep.opt -modules d.mli > d.mli.depends
+[cache hit] ocamlc.opt -c -o d.cmi d.mli
 [cache hit] ocamlc.opt -c -o main.cmo main.ml
-[cache hit] ocamldep.opt -modules d.ml > d.ml.depends
-[cache hit] ocamlc.opt -c -o d.cmo d.ml
 [cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules b.mli > b.mli.depends
 [cache hit] ocamlc.opt -c -o b.cmi b.mli
 [cache hit] ocamlc.opt -c -o a.cmo a.ml
+[cache hit] ocamldep.opt -modules d.ml > d.ml.depends
+[cache hit] ocamlc.opt -c -o d.cmo d.ml
 [cache hit] ocamldep.opt -modules b.ml > b.ml.depends
 [cache hit] ocamlc.opt -c -o b.cmo b.ml
 [cache hit] ocamlc.opt d.cmo b.cmo a.cmo main.cmo -o main.byte
@@ -421,22 +417,23 @@ PASS
   | |  __/\__ \ |_ / /
   |_|\___||___/\__/_/
 
++ svn=svk
 + CMDOPTS=
 + BUILD=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display 
 + BUILD1=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  
 + BUILD2=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
-+ svn revert bb.ml
++ svk revert bb.ml
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
-ocamldep.opt -modules bb.ml > bb.ml.depends
+ocamlopt.opt -I /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules bb.mli > bb.mli.depends
 ocamlc.opt -c -o bb.cmi bb.mli
+ocamldep.opt -modules bb.ml > bb.ml.depends
 ocamldep.opt -modules cc.ml > cc.ml.depends
-ocamldep.opt -modules c2.mli > c2.mli.depends
 ocamldep.opt -modules aa.ml > aa.ml.depends
-ocamlc.opt -c -o c2.cmi c2.mli
+ocamldep.opt -modules c2.mli > c2.mli.depends
 ocamlc.opt -c -o aa.cmo aa.ml
+ocamlc.opt -c -o c2.cmi c2.mli
 ocamlc.opt -c -o bb.cmo bb.ml
 ocamlc.opt -c -o cc.cmo cc.ml
 ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
@@ -450,23 +447,23 @@ ocamldep.opt -modules c2.ml > c2.ml.depends
 ocamlc.opt -c -o c2.cmo c2.ml
 ocamlc.opt aa.cmo c2.cmo bbcc.cma c3.cmo main.cmo cool_plugin.cmo -o main.byte
 ocamlopt.opt -c -o bb.cmx bb.ml
-ocamlopt.opt -c -o c2.cmx c2.ml
 ocamlopt.opt -c -o aa.cmx aa.ml
+ocamlopt.opt -c -o c2.cmx c2.ml
 ocamlopt.opt -c -o cc.cmx cc.ml
 ocamlopt.opt -a bb.cmx cc.cmx -o bbcc.cmxa
 ocamlopt.opt -c -o c3.cmx c3.ml
 ocamlopt.opt -c -o main.cmx main.ml
 ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
-[cache hit] ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamldep.opt -modules bb.mli > bb.mli.depends
 [cache hit] ocamlc.opt -c -o bb.cmi bb.mli
+[cache hit] ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamlc.opt -c -o bb.cmo bb.ml
 [cache hit] ocamldep.opt -modules cc.ml > cc.ml.depends
-[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
-[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamldep.opt -modules aa.ml > aa.ml.depends
 [cache hit] ocamlc.opt -c -o aa.cmo aa.ml
+[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
+[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamlc.opt -c -o cc.cmo cc.ml
 [cache hit] ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
 [cache hit] ocamldep.opt -modules main.ml > main.ml.depends
@@ -479,8 +476,8 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 [cache hit] ocamlc.opt -c -o c2.cmo c2.ml
 [cache hit] ocamlc.opt aa.cmo c2.cmo bbcc.cma c3.cmo main.cmo cool_plugin.cmo -o main.byte
 [cache hit] ocamlopt.opt -c -o bb.cmx bb.ml
-[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 [cache hit] ocamlopt.opt -c -o aa.cmx aa.ml
+[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 [cache hit] ocamlopt.opt -c -o cc.cmx cc.ml
 [cache hit] ocamlopt.opt -a bb.cmx cc.cmx -o bbcc.cmxa
 [cache hit] ocamlopt.opt -c -o c3.cmx c3.ml
@@ -488,14 +485,14 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 [cache hit] ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 + cp bb2.ml bb.ml
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display -verbose 0
-ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamldep.opt -modules bb.mli > bb.mli.depends
 [cache hit] ocamlc.opt -c -o bb.cmi bb.mli
+ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamldep.opt -modules cc.ml > cc.ml.depends
-[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
-[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamldep.opt -modules aa.ml > aa.ml.depends
 [cache hit] ocamlc.opt -c -o aa.cmo aa.ml
+[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
+[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamlc.opt -c -o cc.cmo cc.ml
 ocamlc.opt -c -o bb.cmo bb.ml
 ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
@@ -508,24 +505,24 @@ ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
 [cache hit] ocamldep.opt -modules c2.ml > c2.ml.depends
 [cache hit] ocamlc.opt -c -o c2.cmo c2.ml
 ocamlc.opt aa.cmo c2.cmo bbcc.cma c3.cmo main.cmo cool_plugin.cmo -o main.byte
-[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
-ocamlopt.opt -c -o bb.cmx bb.ml
 [cache hit] ocamlopt.opt -c -o aa.cmx aa.ml
+ocamlopt.opt -c -o bb.cmx bb.ml
+[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 ocamlopt.opt -c -o cc.cmx cc.ml
 ocamlopt.opt -a bb.cmx cc.cmx -o bbcc.cmxa
 ocamlopt.opt -c -o c3.cmx c3.ml
 ocamlopt.opt -c -o main.cmx main.ml
 ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
-[cache hit] ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamldep.opt -modules bb.mli > bb.mli.depends
 [cache hit] ocamlc.opt -c -o bb.cmi bb.mli
+[cache hit] ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamlc.opt -c -o bb.cmo bb.ml
 [cache hit] ocamldep.opt -modules cc.ml > cc.ml.depends
-[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
-[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamldep.opt -modules aa.ml > aa.ml.depends
 [cache hit] ocamlc.opt -c -o aa.cmo aa.ml
+[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
+[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamlc.opt -c -o cc.cmo cc.ml
 [cache hit] ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
 [cache hit] ocamldep.opt -modules main.ml > main.ml.depends
@@ -538,8 +535,8 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 [cache hit] ocamlc.opt -c -o c2.cmo c2.ml
 [cache hit] ocamlc.opt aa.cmo c2.cmo bbcc.cma c3.cmo main.cmo cool_plugin.cmo -o main.byte
 [cache hit] ocamlopt.opt -c -o bb.cmx bb.ml
-[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 [cache hit] ocamlopt.opt -c -o aa.cmx aa.ml
+[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 [cache hit] ocamlopt.opt -c -o cc.cmx cc.ml
 [cache hit] ocamlopt.opt -a bb.cmx cc.cmx -o bbcc.cmxa
 [cache hit] ocamlopt.opt -c -o c3.cmx c3.ml
@@ -547,14 +544,14 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 [cache hit] ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 + cp bb3.ml bb.ml
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display -verbose 0
-ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamldep.opt -modules bb.mli > bb.mli.depends
 [cache hit] ocamlc.opt -c -o bb.cmi bb.mli
+ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamldep.opt -modules cc.ml > cc.ml.depends
-[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
-[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamldep.opt -modules aa.ml > aa.ml.depends
 [cache hit] ocamlc.opt -c -o aa.cmo aa.ml
+[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
+[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamlc.opt -c -o cc.cmo cc.ml
 ocamlc.opt -c -o bb.cmo bb.ml
 ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
@@ -567,24 +564,24 @@ ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
 [cache hit] ocamldep.opt -modules c2.ml > c2.ml.depends
 [cache hit] ocamlc.opt -c -o c2.cmo c2.ml
 ocamlc.opt aa.cmo c2.cmo bbcc.cma c3.cmo main.cmo cool_plugin.cmo -o main.byte
-[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
-ocamlopt.opt -c -o bb.cmx bb.ml
 [cache hit] ocamlopt.opt -c -o aa.cmx aa.ml
+ocamlopt.opt -c -o bb.cmx bb.ml
+[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 [cache hit] ocamlopt.opt -c -o cc.cmx cc.ml
 ocamlopt.opt -a bb.cmx cc.cmx -o bbcc.cmxa
 [cache hit] ocamlopt.opt -c -o c3.cmx c3.ml
 [cache hit] ocamlopt.opt -c -o main.cmx main.ml
 ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
-[cache hit] ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamldep.opt -modules bb.mli > bb.mli.depends
 [cache hit] ocamlc.opt -c -o bb.cmi bb.mli
+[cache hit] ocamldep.opt -modules bb.ml > bb.ml.depends
 [cache hit] ocamlc.opt -c -o bb.cmo bb.ml
 [cache hit] ocamldep.opt -modules cc.ml > cc.ml.depends
-[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
-[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamldep.opt -modules aa.ml > aa.ml.depends
 [cache hit] ocamlc.opt -c -o aa.cmo aa.ml
+[cache hit] ocamldep.opt -modules c2.mli > c2.mli.depends
+[cache hit] ocamlc.opt -c -o c2.cmi c2.mli
 [cache hit] ocamlc.opt -c -o cc.cmo cc.ml
 [cache hit] ocamlc.opt -a bb.cmo cc.cmo -o bbcc.cma
 [cache hit] ocamldep.opt -modules main.ml > main.ml.depends
@@ -597,15 +594,15 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 [cache hit] ocamlc.opt -c -o c2.cmo c2.ml
 [cache hit] ocamlc.opt aa.cmo c2.cmo bbcc.cma c3.cmo main.cmo cool_plugin.cmo -o main.byte
 [cache hit] ocamlopt.opt -c -o bb.cmx bb.ml
-[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 [cache hit] ocamlopt.opt -c -o aa.cmx aa.ml
+[cache hit] ocamlopt.opt -c -o c2.cmx c2.ml
 [cache hit] ocamlopt.opt -c -o cc.cmx cc.ml
 [cache hit] ocamlopt.opt -a bb.cmx cc.cmx -o bbcc.cmxa
 [cache hit] ocamlopt.opt -c -o c3.cmx c3.ml
 [cache hit] ocamlopt.opt -c -o main.cmx main.ml
 [cache hit] ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
-+ svn revert bb.ml
-Reverted 'bb.ml'
++ svk revert bb.ml
+Reverted bb.ml
  _____         _   ___
 |_   _|__  ___| |_( _ )
   | |/ _ \/ __| __/ _ \
@@ -618,7 +615,7 @@ Reverted 'bb.ml'
 + BUILD2=../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
 + ../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+ocamlopt.opt -I /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules myconfig.ml > myconfig.ml.depends
 ocamlc.opt -c -o myconfig.cmo myconfig.ml

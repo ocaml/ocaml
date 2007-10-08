@@ -18,5 +18,4 @@
 
 module Id : Sig.Id;
 
-module Make (Syntax : Sig.Camlp4Syntax) : Sig.Printer
-  with module Ast = Syntax.Ast;
+module Make (Syntax : Sig.Camlp4Syntax) : (Sig.Printer Syntax.Ast).S;

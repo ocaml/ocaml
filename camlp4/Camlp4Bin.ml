@@ -28,7 +28,7 @@ module CleanAst = Camlp4.Struct.CleanAst.Make Ast;
 module SSet = Set.Make String;
 
 value pa_r  = "Camlp4OCamlRevisedParser";
-(* value pa_rr = "Camlp4OCamlrrParser"; *)
+value pa_rr = "Camlp4OCamlReloadedParser";
 value pa_o  = "Camlp4OCamlParser";
 value pa_rp = "Camlp4OCamlRevisedParserParser";
 value pa_op = "Camlp4OCamlParserParser";
@@ -39,6 +39,8 @@ value pa_q  = "Camlp4QuotationExpander";
 value pa_rq = "Camlp4OCamlRevisedQuotationExpander";
 value pa_oq = "Camlp4OCamlOriginalQuotationExpander";
 value pa_l  = "Camlp4ListComprehension";
+
+open Register;
 
 value dyn_loader = ref (fun []);
 value rcall_callback = ref (fun () -> ());
@@ -53,23 +55,24 @@ value rewrite_and_load n x =
     add_to_loaded_modules name;
     DynLoader.load dyn_loader name
   } in
-  let load = List.iter (fun n ->
-    if SSet.mem n loaded_modules.val then ()
-    else do {
+  let load = List.iter begin fun n ->
+    if SSet.mem n loaded_modules.val || List.mem n Register.loaded_modules.val then ()
+    else begin
       add_to_loaded_modules n;
       DynLoader.load dyn_loader (n ^ ".cmo");
-    }) in
+    end
+  end in
   do {
     match (n, String.lowercase x) with
     [ ("Parsers"|"", "pa_r.cmo"      | "r"  | "ocamlr" | "ocamlrevised" | "camlp4ocamlrevisedparser.cmo") -> load [pa_r]
-    (* | ("Parsers"|"", "rr"  | "OCamlrr") -> load [pa_r; pa_rr] *)
+    | ("Parsers"|"", "rr" | "reloaded" | "ocamlreloaded" | "camlp4ocamlreloadedparser.cmo") -> load [pa_rr]
     | ("Parsers"|"", "pa_o.cmo"      | "o"  | "ocaml" | "camlp4ocamlparser.cmo") -> load [pa_r; pa_o]
     | ("Parsers"|"", "pa_rp.cmo"     | "rp" | "rparser" | "camlp4ocamlrevisedparserparser.cmo") -> load [pa_r; pa_o; pa_rp]
     | ("Parsers"|"", "pa_op.cmo"     | "op" | "parser" | "camlp4ocamlparserparser.cmo") -> load [pa_r; pa_o; pa_rp; pa_op]
-    | ("Parsers"|"", "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "grammar" | "camlp4grammarparser.cmo") -> load [pa_r; pa_g]
-    | ("Parsers"|"", "pa_macro.cmo"  | "m"  | "macro" | "camlp4macroparser.cmo") -> load [pa_r; pa_m]
-    | ("Parsers"|"", "q" | "camlp4quotationexpander.cmo") -> load [pa_r; pa_qb; pa_q]
-    | ("Parsers"|"", "q_MLast.cmo" | "rq" | "camlp4ocamlrevisedquotationexpander.cmo") -> load [pa_r; pa_qb; pa_rq]
+    | ("Parsers"|"", "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "grammar" | "camlp4grammarparser.cmo") -> load [pa_g]
+    | ("Parsers"|"", "pa_macro.cmo"  | "m"  | "macro" | "camlp4macroparser.cmo") -> load [pa_m]
+    | ("Parsers"|"", "q" | "camlp4quotationexpander.cmo") -> load [pa_qb; pa_q]
+    | ("Parsers"|"", "q_mlast.cmo" | "rq" | "camlp4ocamlrevisedquotationexpander.cmo") -> load [pa_qb; pa_rq]
     | ("Parsers"|"", "oq" | "camlp4ocamloriginalquotationexpander.cmo") -> load [pa_r; pa_o; pa_qb; pa_oq]
     | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_l; pa_m]
     | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_l; pa_m]
@@ -85,8 +88,6 @@ value rewrite_and_load n x =
     | ("Filters"|"", "tracer" | "camlp4tracer.cmo") -> load ["Camlp4Tracer"]
     | ("Printers"|"", "pr_r.cmo" | "r" | "ocamlr" | "camlp4ocamlrevisedprinter.cmo") ->
         Register.enable_ocamlr_printer ()
-    (* | ("Printers"|"", "rr" | "OCamlrr" | "Camlp4Printers/OCamlrr.cmo") -> *)
-        (* Register.enable_ocamlrr_printer () *)
     | ("Printers"|"", "pr_o.cmo" | "o" | "ocaml" | "camlp4ocamlprinter.cmo") ->
         Register.enable_ocaml_printer ()
     | ("Printers"|"", "pr_dump.cmo" | "p" | "dumpocaml" | "camlp4ocamlastdumper.cmo") ->
@@ -116,7 +117,7 @@ value rec parse_file dyn_loader name pa getdir =
     | None -> None ]) in
   let loc = Loc.mk name
   in do {
-    Warning.current.val := print_warning;
+    current_warning.val := print_warning;
     let ic = if name = "-" then stdin else open_in_bin name in
     let cs = Stream.of_channel ic in
     let clear () = if name = "-" then () else close_in ic in
@@ -145,8 +146,6 @@ value gimd =
   fun
   [ <:str_item@loc< # $n$ $str:s$ >> -> Some (loc, n, s)
   | _ -> None ];
-
-open Register;
 
 value process_intf dyn_loader name =
   process dyn_loader name CurrentParser.parse_interf CurrentPrinter.print_interf

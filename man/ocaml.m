@@ -25,7 +25,7 @@ The
 command is the toplevel system for Objective Caml,
 that permits interactive use of the Objective Caml system through a
 read-eval-print loop. In this mode, the system repeatedly reads Caml
-phrases from the input, then typechecks, compile and evaluate
+phrases from the input, then typechecks, compiles and evaluates
 them, then prints the inferred type and result value, if any. The
 system prints a # (sharp) prompt before reading each phrase.
 

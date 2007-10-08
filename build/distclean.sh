@@ -1,9 +1,10 @@
 #!/bin/sh
+# $Id$
 cd `dirname $0`/..
 set -ex
-(cd byterun && make clean)
-(cd asmrun && make clean)
-(cd yacc && make clean)
+(cd byterun && make clean) || :
+(cd asmrun && make clean)  || :
+(cd yacc && make clean)    || :
 rm -rf _build
 rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
       boot/myocamlbuild boot/myocamlbuild.native boot/myocamlbuild.native.exe \
@@ -12,13 +13,17 @@ rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
 
 # from partial boot
 rm -f driver/main.byte driver/optmain.byte lex/main.byte \
-      tools/ocamlmklib.byte camlp4/build/location.ml{,i} \
-      tools/myocamlbuild_config.ml camlp4/build/linenum.ml{i,l} \
-      camlp4/build/terminfo.ml{i,}
+      tools/ocamlmklib.byte camlp4/build/location.ml \
+      camlp4/build/location.mli \
+      tools/myocamlbuild_config.ml camlp4/build/linenum.mli \
+      camlp4/build/linenum.mll \
+      camlp4/build/terminfo.mli camlp4/build/terminfo.ml 
 
 # from ocamlbuild bootstrap
-rm -f  ocamlbuild/{_log,ocamlbuild.byte.start,boot/ocamlbuild}
-rm -rf ocamlbuild/{_build,_start}
+rm -f  ocamlbuild/_log ocamlbuild/,ocamlbuild.byte.start \
+       ocamlbuild/boot/ocamlbuild ocamlbuild/myocamlbuild_config.ml \
+       ocamlbuild/myocamlbuild_config.mli
+rm -rf ocamlbuild/_build ocamlbuild/_start
 
 # from the old build system
 rm -f camlp4/build/camlp4_config.ml camlp4/**/*.cm*

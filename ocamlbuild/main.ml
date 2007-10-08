@@ -134,6 +134,8 @@ let proceed () =
   dprintf 3 "include directories are:@ %a" print_string_list !Options.include_dirs;
   Options.entry := Some entry;
 
+  List.iter Configuration.parse_string !Options.tag_lines;
+
   Hooks.call_hook Hooks.Before_rules;
   Ocaml_specific.init ();
   Hooks.call_hook Hooks.After_rules;

@@ -391,20 +391,20 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
     | _ -> ty
   in
   let print_private ppf = function
-    Asttypes.Private -> fprintf ppf "private "
+    Asttypes.Private -> fprintf ppf " private"
   | Asttypes.Public -> () in
   let rec print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
-      fprintf ppf " = %a{%a@;<1 -2>}"
+      fprintf ppf " =%a {%a@;<1 -2>}"
         print_private priv
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
   | Otyp_sum constrs ->
-      fprintf ppf " =@;<1 2>%a%a"
+      fprintf ppf " =%a@;<1 2>%a"
         print_private priv
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
   | ty ->
-      fprintf ppf " =@;<1 2>%a%a"
+      fprintf ppf " =%a@;<1 2>%a"
         print_private priv
         !out_type ty
   in

@@ -14,7 +14,8 @@
 
 (* $Id$ *)
 
-(* Basic functions *)
+(* Helper functions for using LablTk with threads.
+   To use, add tkthread.cmo or tkthread.cmx to your command line *)
 
 (** Start the main loop in a new GUI thread. Do not use recursively. *) 
 val start : unit -> Thread.t
@@ -24,8 +25,8 @@ val thread_main : unit -> unit
 val top : Widget.toplevel Widget.widget
 
 (* Jobs are needed for Windows, as you cannot do GUI work from
-   another thread.
-   Even under Unix some calls need to come from the main thread.
+   another thread. This is apparently true on OSX/Aqua too.
+   And even using X11 some calls need to come from the main thread.
    The basic idea is to either use async (if you don't need a result)
    or sync whenever you call a Tk related function from another thread
    (for instance with the threaded toplevel).
@@ -36,6 +37,7 @@ val top : Widget.toplevel Widget.widget
 val async : ('a -> unit) -> 'a -> unit
 (** Add a synchronous job (to do in the main thread) *)
 val sync : ('a -> 'b) -> 'a -> 'b
-(** Whether it is safe to call most Tk functions directly from
-    the current thread *)
+(** Whether the current thread is the GUI thread.
+    Note that when using X11 it is generally safe to call
+    most Tk functions from other threads too. *)
 val gui_safe : unit -> bool

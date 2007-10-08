@@ -12,8 +12,8 @@
 (* $Id$ *)
 (* Original author: Nicolas Pouillard *)
 exception Error of string
-val ocamldep_command : Pathname.t -> Pathname.t -> Command.t
-val menhir_ocamldep_command : Pathname.t -> Pathname.t -> Command.t
+val ocamldep_command : Pathname.t -> Pathname.t -> Command.spec
+val menhir_ocamldep_command : Pathname.t -> Pathname.t -> Command.spec
 val module_dependencies_of : Pathname.t -> ([ `mandatory | `just_try ] * string) list
 val register_module_dependencies : Pathname.t -> string list -> unit
 val depends :
@@ -22,5 +22,5 @@ val depends :
   prod:string ->
   dep:string ->
   ?insert:[`top | `before of string | `after of string | `bottom] ->
-  ?ocamldep_command:(Pathname.t -> Pathname.t -> Command.t) ->
+  ?ocamldep_command:(Pathname.t -> Pathname.t -> Command.spec) ->
   unit -> unit

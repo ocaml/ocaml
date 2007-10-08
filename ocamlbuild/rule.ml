@@ -97,9 +97,10 @@ let exists2 find p rs =
 let all_deps_of_tags = ref []
 
 let cons deps acc =
-  List.fold_left begin fun acc dep ->
-    if List.mem dep acc then acc else dep :: acc
-  end acc deps
+  List.rev&
+    List.fold_left begin fun acc dep ->
+      if List.mem dep acc then acc else dep :: acc
+    end acc deps
 
 let deps_of_tags tags =
   List.fold_left begin fun acc (xtags, xdeps) ->
@@ -270,21 +271,22 @@ let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?(insert = `bottom) c
     code  = code }
 
 let file_rule name ?tags ~prod ?deps ?dep ?insert ~cache action =
-  rule name ?tags ~prod ?dep ?deps ?insert begin fun env _ ->
-    raise (Code_digest (cache env, (fun cached ->
+  rule name ?tags ~prod ?dep ?deps ?insert begin fun env build ->
+    raise (Code_digest (cache env build, (fun cached ->
       if not cached then
         with_output_file (env prod) (action env))))
   end
 
 let custom_rule name ?tags ?prods ?prod ?deps ?dep ?insert ~cache action =
-  rule name ?tags ?prods ?prod ?dep ?deps ?insert begin fun env _ ->
-    raise (Code_digest (cache env, fun cached -> action env ~cached))
+  rule name ?tags ?prods ?prod ?dep ?deps ?insert begin fun env build ->
+    raise (Code_digest (cache env build, fun cached -> action env ~cached))
   end
 
 module Common_commands = struct
   open Command
   let mv src dest = Cmd (S [A"mv"; P src; Px dest])
   let cp src dest = Cmd (S [A"cp"; P src; Px dest])
+  let cp_p src dest = Cmd (S [A"cp"; A"-p"; P src; Px dest])
   let ln_f pointed pointer = Cmd (S [A"ln"; A"-f"; P pointed; Px pointer])
   let ln_s pointed pointer = Cmd (S[A"ln"; A"-s"; P pointed; Px pointer])
   let rm_f x = Cmd (S [A"rm"; A"-f"; Px x])
@@ -296,5 +298,5 @@ open Common_commands
 
 let copy_rule name ?insert src dest =
   rule name ?insert ~prod:dest ~dep:src
-       (fun env _ -> cp (env src) (env dest))
+       (fun env _ -> cp_p (env src) (env dest))
 

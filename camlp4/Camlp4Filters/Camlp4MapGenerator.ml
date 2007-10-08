@@ -196,6 +196,16 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
          <:match_case< $uid:s$ -> $uid:s$ >>
     | _ -> assert False ]
 
+  and match_case_of_poly_sum_type =
+    fun
+    [ <:ctyp< $t1$ | $t2$ >> ->
+         <:match_case< $match_case_of_poly_sum_type t1$ | $match_case_of_poly_sum_type t2$ >>
+    | <:ctyp< `$i$ of $t$ >> ->
+         <:match_case< `$i$ x -> `$i$ $expr_of_ty (Some <:expr< x >>) t$ >>
+    | <:ctyp< `$i$ >> ->
+         <:match_case< `$i$ -> `$i$ >>
+    | _ -> assert False ]
+
   and record_patt_of_type =
     fun
     [ <:ctyp< $lid:s$ : $_$ >> ->
@@ -207,19 +217,30 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
   and record_binding_of_type =
     fun
     [ <:ctyp< $lid:s$ : mutable $t$ >> | <:ctyp< $lid:s$ : $t$ >> ->
-         <:binding< $lid:s$ = $expr_of_ty (Some <:expr< $lid:xs s$ >>) t$ >>
+         <:rec_binding< $lid:s$ = $expr_of_ty (Some <:expr< $lid:xs s$ >>) t$ >>
     | <:ctyp< $t1$ ; $t2$ >> ->
-         <:binding< $record_binding_of_type t1$; $record_binding_of_type t2$ >>
+         <:rec_binding< $record_binding_of_type t1$; $record_binding_of_type t2$ >>
     | _ -> assert False ]
 
-  and fun_of_ctyp =
+  and fun_of_ctyp tyid =
     fun
     [ <:ctyp< [ $t$ ] >> ->
         <:expr< fun [ $match_case_of_sum_type t$ ] >>
     | <:ctyp< { $t$ } >> ->
         <:expr< fun { $record_patt_of_type t$ } -> { $record_binding_of_type t$ } >>
     | <:ctyp< ( $tup:t$ ) >> -> mk_tuple expr_of_ty t
-    | _ -> <:expr< fun x -> x >> ]
+    | <:ctyp< $_$ $_$ >> | <:ctyp< $_$ -> $_$ >> | <:ctyp< '$_$ >> as t ->
+        expr_of_ty None t
+    | <:ctyp< $lid:i$ >> when i = tyid -> <:expr< fun x -> x >>
+    | <:ctyp< $id:i$ >> as t ->
+        let id1 = "_" ^ lid_of_ident "_" i in
+        if id1 = tyid then <:expr< fun x -> x >>
+        else expr_of_ty None t
+    | <:ctyp< [ = $t$ ] >> | <:ctyp< [ < $t$ ] >> | <:ctyp< private [ < $t$ ] >> ->
+        <:expr< fun [ $match_case_of_poly_sum_type t$ ] >>
+    | <:ctyp< [ > $t$ ] >> | <:ctyp< private [ > $t$ ] >> ->
+        <:expr< fun [ $match_case_of_poly_sum_type t$ | x -> x ] >>
+    | _ -> assert False ]
 
   and string_of_type_param t =
     match t with
@@ -232,7 +253,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
       [ [] -> acc
       | [ x :: xs ] -> lambda <:expr< fun $lid:"_f_" ^ x$ -> $acc$ >> xs ] in
     let params' = List.map string_of_type_param params in
-    let funs = lambda (fun_of_ctyp ctyp) params' in
+    let funs = lambda (fun_of_ctyp id1 ctyp) params' in
     let ty = method_type_of_type_decl type_decl in
     <:class_str_item< method $lid:id1$ : $ty$ = $funs$ >>
 
@@ -294,20 +315,25 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
     StringMap.fold class_sig_item_of_type_decl tyMap <:class_sig_item<>>
 
   and inject_structure_drop_trash generated =
-    Ast.map_str_item
+    (Ast.map_str_item
       (fun
        [ <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateMap.generated >> ->
+            let x = <:class_str_item< $builtins$; $generated$ >> in
+            <:str_item< class $lid:c$ = object (o) $x$ end >>
+       | <:str_item@_loc< class $lid:c$ = Camlp4Filters.Camlp4MapGenerator.generated >> ->
             (* FIXME <:str_item< class $lid:c$ = object (o) $builtins$; $generated$ end >> *)
             let x = <:class_str_item< $builtins$; $generated$ >> in
             <:str_item< class $lid:c$ = object (o) $x$ end >>
-       | s -> s ])
+       | s -> s ]))#str_item
   
   and inject_signature generated =
-    Ast.map_sig_item
+    (Ast.map_sig_item
       (fun
        [ <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateMap.generated >> ->
             <:sig_item< class $lid:c$ : object $generated$ end >>
-       | s -> s ])
+       | <:sig_item@_loc< class $lid:c$ : Camlp4Filters.Camlp4MapGenerator.generated >> ->
+            <:sig_item< class $lid:c$ : object $generated$ end >>
+       | s -> s ]))#sig_item
 
   and process_str_item str_item =
     let tyMap = collect_types_in_str_item str_item in

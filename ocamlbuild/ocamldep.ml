@@ -27,13 +27,14 @@ let ocamldep_command arg =
      flags_of_pathname arg; A "-modules"]
 
 let menhir_ocamldep_command arg out =
+  let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
   let tags = tags_of_pathname arg++"ocaml"++"menhir_ocamldep" in
-  Cmd (S [!Options.ocamlyacc; T tags; A"--raw-depend";
-          A"--ocamldep"; Quote (ocamldep_command arg);
-          P arg; Sh ">"; Px out])
+  S [menhir; T tags; A"--raw-depend";
+     A"--ocamldep"; Quote (ocamldep_command arg);
+     P arg; Sh ">"; Px out]
 
 let ocamldep_command arg out =
-  Cmd (S[ocamldep_command arg; P arg; Sh ">"; Px out])
+  S[ocamldep_command arg; P arg; Sh ">"; Px out]
 
 let module_dependencies = Hashtbl.create 103
 let module_dependencies_of module_path =
@@ -49,11 +50,16 @@ let register_module_dependencies module_path deps =
 
 let depends name ?tags ~prod ~dep ?insert ?(ocamldep_command=ocamldep_command) () =
   Rule.custom_rule name ?tags ~prod ~dep ?insert
-    ~cache:(fun env -> Command.to_string (ocamldep_command (env dep) (env prod)))
+    ~cache: begin fun env build ->
+      let cmd = ocamldep_command (env dep) (env prod) in
+      let str, _, tags = Command.string_target_and_tags_of_command_spec cmd in
+      let _ = Rule.build_deps_of_tags build (tags++"dont_link_with") in
+      str
+    end
     begin fun env ~cached ->
       let arg = env dep in
       let out = env prod in
-      let cmd = ocamldep_command arg out in
+      let cmd = Cmd (ocamldep_command arg out) in
       let () = dprintf 6 "ocamldep: %a %a" Pathname.print arg Command.print cmd in
       if not (Pathname.exists arg) then
         raise (Error(sbprintf "Ocamldep.ocamldep: no input file (%a)" Pathname.print arg))

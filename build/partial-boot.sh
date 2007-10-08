@@ -1,7 +1,9 @@
 #!/bin/sh
+# $Id$
 set -ex
 cd `dirname $0`/..
-export OCAMLBUILD_PARTIAL="true"
+OCAMLBUILD_PARTIAL="true"
+export OCAMLBUILD_PARTIAL
 mkdir -p _build
 cp -rf boot _build/
 cp parsing/location.ml parsing/location.mli camlp4/build

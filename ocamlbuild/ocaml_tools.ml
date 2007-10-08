@@ -20,7 +20,8 @@ open Ocaml_utils
 
 let ocamlyacc mly env _build =
   let mly = env mly in
-  Cmd(S[!Options.ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"ocamlyacc");
+  let ocamlyacc = if !Options.ocamlyacc = N then V"OCAMLYACC" else !Options.ocamlyacc in
+  Cmd(S[ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"ocamlyacc");
         flags_of_pathname mly; Px mly])
 
 let ocamllex mll env _build =
@@ -30,14 +31,18 @@ let ocamllex mll env _build =
 
 let infer_interface ml mli env build =
   let ml = env ml and mli = env mli in
+  let tags = tags_of_pathname ml++"ocaml" in
   Ocaml_compiler.prepare_compile build ml;
-  Cmd(S[!Options.ocamlc; ocaml_include_flags ml; A"-i";
-        T(tags_of_pathname ml++"ocaml"++"infer_interface"); P ml; Sh">"; Px mli])
+  Cmd(S[!Options.ocamlc; ocaml_ppflags tags; ocaml_include_flags ml; A"-i";
+        T(tags++"infer_interface"); P ml; Sh">"; Px mli])
 
 let menhir mly env build =
   let mly = env mly in
+  let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
   Ocaml_compiler.prepare_compile build mly;
-  Cmd(S[!Options.ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"menhir");
+  Cmd(S[menhir;
+        A"--ocamlc"; Quote(S[!Options.ocamlc; ocaml_include_flags mly]);
+        T(tags_of_pathname mly++"ocaml"++"parser"++"menhir");
         A"--infer"; flags_of_pathname mly; Px mly])
 
 let ocamldoc_c tags arg odoc =

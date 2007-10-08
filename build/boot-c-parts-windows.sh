@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 cd `dirname $0`/..
 set -ex
 
@@ -10,7 +11,9 @@ set -ex
 (cd win32caml && make)
 
 mkdir -p _build/boot
-cp -f byterun/{ocamlrun.exe,libcamlrun.$A,ocamlrun.dll} \
+cp -f byterun/ocamlrun.exe \
+      byterun/libcamlrun.$A \
+      byterun/ocamlrun.dll \
       asmrun/libasmrun.$A \
       yacc/ocamlyacc.exe \
       boot/ocamlc \
@@ -20,10 +23,3 @@ cp -f byterun/{ocamlrun.exe,libcamlrun.$A,ocamlrun.dll} \
 mkdir -p _build/byterun
 cp -f byterun/ocamlrun.exe byterun/ocamlrun.dll boot
 cp -f byterun/ocamlrun.$A _build/byterun
-mkdir -p _build/stdlib
-cp -f byterun/libcamlrun.$A \
-      asmrun/libasmrun.$A \
-      _build/stdlib
-mkdir -p _build/asmrun
-cp -f asmrun/{meta,dynlink}.$O \
-      _build/asmrun

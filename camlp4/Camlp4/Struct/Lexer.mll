@@ -110,15 +110,16 @@ module Make (Token : Sig.Camlp4Token)
   (* To store some context information:
   *   loc       : position of the beginning of a string, quotation and comment
   *   in_comment: are we in a comment?
-  *   quotations: shall we lex quotation? (antiquotations are lexed if
-  *               quotations are).
+  *   quotations: shall we lex quotation?
   *               If quotations is false it's a SYMBOL token.
+  *   antiquots : shall we lex antiquotations.
   *)
 
   type context =
   { loc        : Loc.t    ;
     in_comment : bool     ;
     quotations : bool     ;
+    antiquots  : bool     ;
     lexbuf     : lexbuf   ;
     buffer     : Buffer.t }
 
@@ -126,6 +127,7 @@ module Make (Token : Sig.Camlp4Token)
   { loc        = Loc.ghost ;
     in_comment = false     ;
     quotations = true      ;
+    antiquots  = false     ;
     lexbuf     = lb        ;
     buffer     = Buffer.create 256 }
 
@@ -139,6 +141,7 @@ module Make (Token : Sig.Camlp4Token)
 
   let loc c = Loc.merge c.loc (Loc.of_lexbuf c.lexbuf)
   let quotations c = c.quotations
+  let antiquots c = c.antiquots
   let is_in_comment c = c.in_comment
   let in_comment c = { (c) with in_comment = true }
   let set_start_p c = c.lexbuf.lex_start_p <- Loc.start_pos c.loc
@@ -146,7 +149,8 @@ module Make (Token : Sig.Camlp4Token)
     let p = c.lexbuf.lex_start_p in
     c.lexbuf.lex_start_p <- { (p) with pos_cnum = p.pos_cnum + shift }
 
-  let with_curr_loc f c = f { (c) with loc = Loc.of_lexbuf c.lexbuf } c.lexbuf
+  let update_loc c = { (c) with loc = Loc.of_lexbuf c.lexbuf }
+  let with_curr_loc f c = f (update_loc c) c.lexbuf
   let parse_nested f c =
     with_curr_loc f c;
     set_start_p c;
@@ -155,7 +159,7 @@ module Make (Token : Sig.Camlp4Token)
   let store_parse f c = store c ; f c c.lexbuf
   let parse f c = f c c.lexbuf
   let mk_quotation quotation c name loc shift =
-    let s = parse_nested quotation c in
+    let s = parse_nested quotation (update_loc c) in
     let contents = String.sub s 0 (String.length s - 2) in
     QUOTATION { q_name     = name     ;
                 q_loc      = loc      ;
@@ -193,8 +197,10 @@ module Make (Token : Sig.Camlp4Token)
   let identchar =
     ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
   let ident = (lowercase|uppercase) identchar*
-  let symbolchar =
-    ['$' '!' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+  let locname = ident
+  let not_star_symbolchar =
+    ['$' '!' '%' '&' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' '\\']
+  let symbolchar = '*' | not_star_symbolchar
   let hexa_char = ['0'-'9' 'A'-'F' 'a'-'f']
   let decimal_literal =
     ['0'-'9'] ['0'-'9' '_']*
@@ -210,6 +216,43 @@ module Make (Token : Sig.Camlp4Token)
     ['0'-'9'] ['0'-'9' '_']*
     ('.' ['0'-'9' '_']* )?
     (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
+
+  (* Delimitors are extended (from 3.09) in a conservative way *)
+
+  (* These chars that can't start an expression or a pattern: *)
+  let safe_delimchars = ['%' '&' '.' '/' '@' '^']
+
+  (* These symbols are unsafe since "[<", "[|", etc. exsist. *)
+  let delimchars = safe_delimchars | ['|' '<' '>' ':' '=']
+
+  let left_delims  = ['(' '[' '{']
+  let right_delims = [')' ']' '}']
+
+  let left_delimitor =
+    (* At least a safe_delimchars *)
+    left_delims (delimchars|left_delims)* safe_delimchars (delimchars|left_delims)*
+
+  (* A '(' or a new super '(' without "(<" *)
+  | '(' (['|' ':'] delimchars*)?
+  (* Old brackets, no new brackets starting with "[|" or "[:" *)
+  | '[' ['|' ':']?
+  (* Old "[<","{<" and new ones *)
+  | ['[' '{'] delimchars* '<'
+  (* Old brace and new ones *)
+  | '{' (['|' ':'] delimchars*)?
+
+  let right_delimitor =
+    (* At least a safe_delimchars *)
+    (delimchars|right_delims)* safe_delimchars (delimchars|right_delims)* right_delims
+  (* A ')' or a new super ')' without ">)" *)
+  | (delimchars* ['|' ':'])? ')'
+  (* Old brackets, no new brackets ending with "|]" or ":]" *)
+  | ['|' ':']? ']'
+  (* Old ">]",">}" and new ones *)
+  | '>' delimchars* [']' '}']
+  (* Old brace and new ones *)
+  | (delimchars* ['|' ':'])? '}'
+
 
   rule token c = parse
     | newline                            { update_loc c None 1 false 0; NEWLINE }
@@ -272,16 +315,24 @@ module Make (Token : Sig.Camlp4Token)
           [^ '\010' '\013'] * newline
       { let inum = int_of_string num
         in update_loc c name inum true 0; LINE_DIRECTIVE(inum, name)            }
-    | ( "#"  | "`"  | "'"  | "("  | ")"  | ","  | "."  | ".." | ":"  | "::"
-      | ":=" | ":>" | ":]" | ";"  | ";;" | "["  | "[|" | "[<" | "[:"
-      | "]"  | "{"  | "{<" | "|]" | ">]" | "}"  | ">}" | "_" ) as x  { SYMBOL x }
-
-    | '$' { if quotations c
+    | '(' (not_star_symbolchar as op) ')'
+                                             { ESCAPED_IDENT (String.make 1 op) }
+    | '(' (not_star_symbolchar symbolchar* not_star_symbolchar as op) ')'
+                                                             { ESCAPED_IDENT op }
+    | '(' (not_star_symbolchar symbolchar* as op) blank+ ')'
+                                                             { ESCAPED_IDENT op }
+    | '(' blank+ (symbolchar* not_star_symbolchar as op) ')'
+                                                             { ESCAPED_IDENT op }
+    | '(' blank+ (symbolchar+ as op) blank+ ')'
+                                                             { ESCAPED_IDENT op }
+    | ( "#"  | "`"  | "'"  | ","  | "."  | ".." | ":"  | "::"
+      | ":=" | ":>" | ";"  | ";;" | "_"
+      | left_delimitor | right_delimitor ) as x  { SYMBOL x }
+    | '$' { if antiquots c
             then with_curr_loc dollar (shift 1 c)
             else parse (symbolchar_star "$") c }
-    | ['~' '?' '!' '=' '<' '>' '|' '&' '@' '^' '+' '-' '*' '/' '%'] symbolchar *
+    | ['~' '?' '!' '=' '<' '>' '|' '&' '@' '^' '+' '-' '*' '/' '%' '\\'] symbolchar *
                                                                 as x { SYMBOL x }
-    | '\\' ((symbolchar | identchar)+ as x)                   { ESCAPED_IDENT x }
     | eof
       { let pos = lexbuf.lex_curr_p in
         lexbuf.lex_curr_p <- { pos with pos_bol  = pos.pos_bol  + 1 ;
@@ -292,7 +343,7 @@ module Make (Token : Sig.Camlp4Token)
       "(*"
         { store c; with_curr_loc comment c; parse comment c                     }
     | "*)"                                                            { store c }
-    | '<' (':' ident)? ('@' ident)? '<'
+    | '<' (':' ident)? ('@' locname)? '<'
         { store c;
           if quotations c then with_curr_loc quotation c; parse comment c       }
     | ident                                             { store_parse comment c }
@@ -350,13 +401,13 @@ module Make (Token : Sig.Camlp4Token)
   and maybe_quotation_colon c = parse
     | (ident as name) '<'
       { mk_quotation quotation c name "" (3 + String.length name)               }
-    | (ident as name) '@' (ident as loc) '<'
+    | (ident as name) '@' (locname as loc) '<'
       { mk_quotation quotation c name loc
                      (4 + String.length loc + String.length name)               }
     | symbolchar* as tok                                   { SYMBOL("<:" ^ tok) }
 
   and quotation c = parse
-    | '<' (':' ident)? ('@' ident)? '<'      {                          store c ;
+    | '<' (':' ident)? ('@' locname)? '<'    {                          store c ;
                                                       with_curr_loc quotation c ;
                                                               parse quotation c }
     | ">>"                                                            { store c }
@@ -367,19 +418,16 @@ module Make (Token : Sig.Camlp4Token)
 
   and dollar c = parse
     | '$'                                     { set_start_p c; ANTIQUOT("", "") }
-    (* Removed because it breaks escapings like: <:expr< $str: "\n"$ >>
-     * | '\\' _                     { istore_char c 1; parse (antiquot "") c } *)
     | ('`'? (identchar*|'.'+) as name) ':'
       { with_curr_loc (antiquot name) (shift (1 + String.length name) c)        }
     | _                                           { store_parse (antiquot "") c }
 
   and antiquot name c = parse
     | '$'                      { set_start_p c; ANTIQUOT(name, buff_contents c) }
-    (* Idem: | '\\' _             { istore_char c 1; parse (antiquot name) c } *)
     | eof                                   { err Unterminated_antiquot (loc c) }
     | newline
       { update_loc c None 1 false 0; store_parse (antiquot name) c              }
-    | '<' (':' ident)? ('@' ident)? '<'
+    | '<' (':' ident)? ('@' locname)? '<'
       { store c; with_curr_loc quotation c; parse (antiquot name) c             }
     | _                                         { store_parse (antiquot name) c }
 
@@ -408,6 +456,7 @@ module Make (Token : Sig.Camlp4Token)
   let from_lexbuf ?(quotations = true) lb =
     let c = { (default_context lb) with
               loc        = Loc.of_lexbuf lb;
+              antiquots  = !Camlp4_config.antiquotations;
               quotations = quotations      }
     in from_context c
 

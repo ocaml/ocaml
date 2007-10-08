@@ -57,9 +57,7 @@ let run_and_open s kont =
   with e -> (close (); raise e)
 
 let stdout_isatty () =
-  (* 3.10 
-    Unix.isatty Unix.stdout *)
-  true
+  Unix.isatty Unix.stdout
 
 let setup () =
   implem.is_degraded <- false;

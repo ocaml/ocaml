@@ -79,6 +79,12 @@ rule "ocaml: mlpack & d.cmo* -> d.cmo & cmi"
   ~deps:["%.mlpack"; "%.cmi"]
   (Ocaml_compiler.byte_debug_pack_mlpack "%.mlpack" "%.d.cmo");;
 
+rule "ocaml: mlpack & cmo* & cmi -> cmo"
+  ~tags:["ocaml"; "byte"]
+  ~prod:"%.cmo"
+  ~deps:["%.mli"; "%.cmi"; "%.mlpack"]
+  (Ocaml_compiler.byte_pack_mlpack "%.mlpack" "%.cmo");;
+
 rule "ocaml: mlpack & cmo* -> cmo & cmi"
   ~tags:["ocaml"; "byte"]
   ~prods:["%.cmo"; "%.cmi"]
@@ -308,6 +314,7 @@ flag ["ocaml"; "link"] begin
 end;;
 
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
+flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
 
 flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
 
@@ -326,6 +333,14 @@ let camlp4_flags camlp4s =
 
 camlp4_flags ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"];;
 
+let camlp4_flags' camlp4s =
+  List.iter begin fun (camlp4, flags) ->
+    flag ["ocaml"; "pp"; camlp4] flags
+  end camlp4s;;
+
+camlp4_flags' ["camlp4orr", S[A"camlp4of"; A"-parser"; A"reloaded"];
+               "camlp4rrr", S[A"camlp4rf"; A"-parser"; A"reloaded"]];;
+
 ocaml_lib ~extern:true ~native:false "dynlink";;
 ocaml_lib ~extern:true "unix";;
 ocaml_lib ~extern:true "str";;
@@ -333,11 +348,18 @@ ocaml_lib ~extern:true "bigarray";;
 ocaml_lib ~extern:true "nums";;
 ocaml_lib ~extern:true "dbm";;
 ocaml_lib ~extern:true "graphics";;
+ocaml_lib ~extern:true ~tag_name:"use_toplevel" "toplevellib";;
 ocaml_lib ~extern:true ~dir:"+labltk" "labltk";;
+ocaml_lib ~extern:true ~dir:"+ocamldoc" "ocamldoc";;
+ocaml_lib ~extern:true ~dir:"+ocamlbuild" ~tag_name:"use_ocamlbuild" "ocamlbuildlib";;
+
 ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_camlp4" "camlp4lib";;
 ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_old_camlp4" "camlp4";;
-ocaml_lib ~extern:true ~dir:"+ocamldoc" "ocamldoc";;
-ocaml_lib ~extern:true ~dir:"+ocamlbuild" "ocamlbuild";;
+ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_camlp4_full" "camlp4fulllib";;
+flag ["ocaml"; "compile"; "use_camlp4_full"]
+     (S[A"-I"; A"+camlp4/Camlp4Parsers";
+        A"-I"; A"+camlp4/Camlp4Printers";
+        A"-I"; A"+camlp4/Camlp4Filters"]);;
 
 flag ["ocaml"; "debug"; "compile"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "byte"; "program"] (A "-g");;
@@ -345,8 +367,11 @@ flag ["ocaml"; "debug"; "pack"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "compile"; "native"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "native"; "program"] (A "-g");;
 flag ["ocaml"; "debug"; "pack"; "native"] (A "-g");;
+flag ["ocaml"; "link"; "native"; "output_obj"] (A"-output-obj");;
+flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
+flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
 flag ["ocaml"; "linkall"; "link"] (A "-linkall");;
 flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
@@ -382,11 +407,13 @@ flag ["ocaml"; "doc"; "docfile"; "extension:texi"] (A"-texi");;
 
 (** Ocamlbuild plugin for it's own building *)
 let install_lib = lazy (try Sys.getenv "INSTALL_LIB" with Not_found -> !*stdlib_dir/"ocamlbuild" (* not My_std.getenv since it's lazy*)) in
+let install_bin = lazy (My_std.getenv ~default:"/usr/local/bin" "INSTALL_BIN") in
 file_rule "ocamlbuild_where.ml"
   ~prod:"%ocamlbuild_where.ml"
-  ~cache:(fun _ -> !*install_lib)
+  ~cache:(fun _ _ -> Printf.sprintf "lib:%S, bin:%S" !*install_lib !*install_bin)
   begin fun _ oc ->
-    Printf.fprintf oc "let where = ref %S;;\n" !*install_lib
+    Printf.fprintf oc "let bindir = ref %S;;\n" !*install_bin;
+    Printf.fprintf oc "let libdir = ref %S;;\n" !*install_lib
   end;;
 ocaml_lib "ocamlbuildlib";;
 ocaml_lib "ocamlbuildlightlib";;

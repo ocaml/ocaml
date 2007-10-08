@@ -1,8 +1,13 @@
+# $Id$
 . config/config.sh
 . build/otherlibs-targets.sh
 . build/camlp4-targets.sh
-STDLIB_BYTE="stdlib/stdlib.cma stdlib/std_exit.cmo \
-             stdlib/camlheader stdlib/camlheader_ur"
+
+INSTALL_BIN="$BINDIR"
+export INSTALL_BIN
+
+STDLIB_BYTE="stdlib/libcamlrun.$A stdlib/stdlib.cma \
+             stdlib/std_exit.cmo stdlib/camlheader stdlib/camlheader_ur"
 OCAMLLEX_BYTE=lex/ocamllex$EXE
 OCAMLC_BYTE=ocamlc$EXE
 OCAMLOPT_BYTE=ocamlopt$EXE
@@ -20,9 +25,11 @@ if [ ! -z "$DEBUGGER" ]; then
   DEBUGGER=debugger/ocamldebug$EXE
 fi
 OCAMLDOC_BYTE="ocamldoc/ocamldoc$EXE ocamldoc/odoc_info.cma"
-STDLIB_NATIVE="stdlib/stdlib.cmxa stdlib/std_exit.cmx"
+STDLIB_NATIVE="stdlib/stdlib.cmxa stdlib/std_exit.cmx asmrun/libasmrun.$A"
 case $PROFILING in
-prof) STDLIB_NATIVE="$STDLIB_NATIVE stdlib/stdlib.p.cmxa stdlib/std_exit.p.cmx";;
+prof)
+  STDLIB_NATIVE="$STDLIB_NATIVE asmrun/libasmrunp.$A \
+                 stdlib/stdlib.p.cmxa stdlib/std_exit.p.cmx";;
 noprof) ;;
 *) echo "unexpected PROFILING value $PROFILING"; exit 1;;
 esac

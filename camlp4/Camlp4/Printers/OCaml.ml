@@ -66,13 +66,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   module StringSet = Set.Make String;
 
   value is_infix =
-    let infixes =
+    let first_chars = ['='; '<'; '>'; '|'; '&'; '$'; '@'; '^'; '+'; '-'; '*'; '/'; '%'; '\\']
+    and infixes =
       List.fold_right StringSet.add
-(*         "**."; "=.";  "<>.";  "<.";  ">."; "<=."; ">=."; "~-"; "~-." *)
-        ["=="; "!="; "+"; "-"; "+."; "-."; "*"; "*."; "/"; "/."; "**";
-          "="; "<>"; "<"; ">"; "<="; ">="; "^"; "^^"; "@"; "&&"; "||";
-         "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or" ] StringSet.empty
-    in fun s -> StringSet.mem s infixes;
+        ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"] StringSet.empty
+    in fun s -> (StringSet.mem s infixes
+                 || (s <> "" && List.mem s.[0] first_chars));
 
   value is_keyword =
     let keywords =
@@ -251,7 +250,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method match_case f =
       fun
       [ <:match_case@_loc<>> ->
-          pp f "@[<2>_@ ->@ %a@]" o#raise_match_failure _loc
+          pp f "@[<2>@ _ ->@ %a@]" o#raise_match_failure _loc
       | a -> o#match_case_aux f a ];
 
     method match_case_aux f =
@@ -283,20 +282,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                 (list o#simple_patt "@ ") [p::pl] o#ctyp t o#expr e
           | _ -> pp f "%a @[<0>%a=@]@ %a" o#simple_patt
                     p (list' o#simple_patt "" "@ ") pl o#expr e ]
-      | <:binding< $_$ ; $_$ >> -> assert False
       | <:binding< $anti:s$ >> -> o#anti f s ];
 
     method record_binding f bi =
-      let () = o#node f bi Ast.loc_of_binding in
+      let () = o#node f bi Ast.loc_of_rec_binding in
       match bi with
-      [ <:binding<>> -> ()
-      | <:binding< $p$ = $e$ >> ->
-          pp f "@ @[<2>%a =@ %a@];" o#simple_patt p o#expr e
-      | <:binding< $b1$ ; $b2$ >> ->
+      [ <:rec_binding<>> -> ()
+      | <:rec_binding< $i$ = $e$ >> ->
+          pp f "@ @[<2>%a =@ %a@];" o#var_ident i o#expr e
+      | <:rec_binding< $b1$ ; $b2$ >> ->
           do { o#under_semi#record_binding f b1;
                o#under_semi#record_binding f b2 }
-      | <:binding< $_$ and $_$ >> -> assert False
-      | <:binding< $anti:s$ >> -> o#anti f s ];
+      | <:rec_binding< $anti:s$ >> -> o#anti f s ];
 
     method object_dup f =
       list (fun f (s, e) -> pp f "@[<2>%a =@ %a@]" o#var s o#expr e) ";@ " f;
@@ -421,18 +418,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<2>-.@,%a@]" o#expr x
     | <:expr< [$_$ :: $_$] >> -> o#expr_list_cons False f e
     | <:expr@_loc< $lid:n$ $x$ $y$ >> when is_infix n ->
-        pp f "@[<2>%a@ %s@ %a@]" o#dot_expr x n o#dot_expr y
+        pp f "@[<2>%a@ %s@ %a@]" o#apply_expr x n o#apply_expr y
     | <:expr< $x$ $y$ >> ->
         let (a, al) = get_expr_args x [y] in
         if (not curry_constr) && Ast.is_expr_constructor a then
           match al with
           [ [ <:expr< ($tup:_$) >> ] ->
-              pp f "@[<2>%a@ (%a)@]" o#dot_expr x o#expr y
-          | [_] -> pp f "@[<2>%a@ %a@]" o#dot_expr x o#dot_expr y
+              pp f "@[<2>%a@ (%a)@]" o#apply_expr x o#expr y
+          | [_] -> pp f "@[<2>%a@ %a@]" o#apply_expr x o#apply_expr y
           | al ->
-              pp f "@[<2>%a@ (%a)@]" o#dot_expr a
+              pp f "@[<2>%a@ (%a)@]" o#apply_expr a
                  (list o#under_pipe#expr ",@ ") al ]
-        else pp f "@[<2>%a@]" (list o#dot_expr "@ ") [a::al]
+        else pp f "@[<2>%a@]" (list o#apply_expr "@ ") [a::al]
     | <:expr< $e1$.val := $e2$ >> ->
         pp f "@[<2>%a :=@ %a@]" o#expr e1 o#expr e2
     | <:expr< $e1$ := $e2$ >> ->
@@ -462,9 +459,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
           o#expr e o#match_case a
     | <:expr< assert False >> -> pp f "@[<2>assert@ false@]"
-    | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#expr e
+    | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#dot_expr e
     | <:expr< let module $s$ = $me$ in $e$ >> ->
           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]" o#var s o#module_expr me o#expr e
+    | e -> o#apply_expr f e ];
+
+    method apply_expr f e =
+    let () = o#node f e Ast.loc_of_expr in
+    match e with
+    [ <:expr< new $i$ >> -> pp f "@[<2>new@ %a@]" o#ident i
     | e -> o#dot_expr f e ];
 
     method dot_expr f e =
@@ -508,9 +511,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:expr< $id:i$ >> -> o#var_ident f i
     | <:expr< { $b$ } >> ->
-        pp f "@[<hv0>@[<hv2>{@ %a@]@ }@]" o#record_binding b
+        pp f "@[<hv0>@[<hv2>{%a@]@ }@]" o#record_binding b
     | <:expr< { ($e$) with $b$ } >> ->
-        pp f "@[<hv0>@[<hv2>{@ (%a)@ with@ %a@]@ }@]"
+        pp f "@[<hv0>@[<hv2>{@ (%a)@ with%a@]@ }@]"
           o#expr e o#record_binding b
     | <:expr< $str:s$ >> -> pp f "\"%s\"" s
     | <:expr< while $e1$ do { $e2$ } >> ->
@@ -521,7 +524,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< ? $s$ : $e$ >> -> pp f "@[<2>?%s:@ %a@]" s o#dot_expr e
     | <:expr< ` $lid:s$ >> -> pp f "`%a" o#var s
     | <:expr< {< $b$ >} >> ->
-        pp f "@[<hv0>@[<hv2>{<@ %a@]@ >}@]" o#record_binding b
+        pp f "@[<hv0>@[<hv2>{<%a@]@ >}@]" o#record_binding b
     | <:expr< object $cst$ end >> ->
         pp f "@[<hv0>@[<hv2>object@ %a@]@ end@]" o#class_str_item cst
     | <:expr< object ($p$ : $t$) $cst$ end >> ->
@@ -530,7 +533,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< object ($p$) $cst$ end >> ->
         pp f "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
           o#patt p o#class_str_item cst
-    | <:expr< new $i$ >> -> pp f "@[<2>new@ %a@]" o#ident i
     | <:expr< $e1$, $e2$ >> ->
         pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
     | <:expr< $e1$; $e2$ >> ->
@@ -543,9 +545,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:expr< if $_$ then $_$ else $_$ >> |
       <:expr< let $rec:_$ $_$ in $_$ >> |
       <:expr< let module $_$ = $_$ in $_$ >> |
-      (* Note: `new' is treated differently in pa_o and in pa_r,
-        and should not occur at this level *)
-      <:expr< assert $_$ >> | <:expr< assert False >> | <:expr< lazy $_$ >> ->
+      <:expr< assert $_$ >> | <:expr< assert False >> |
+      <:expr< lazy $_$ >> | <:expr< new $_$ >> ->
         pp f "(%a)" o#reset#expr e ];
 
     method direction_flag f b =
@@ -557,7 +558,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method patt f p =
     let () = o#node f p Ast.loc_of_patt in match p with
     [ <:patt< ( $p1$ as $p2$ ) >> -> pp f "@[<1>(%a@ as@ %a)@]" o#patt p1 o#patt p2
-    | <:patt< $p1$ = $p2$ >> -> pp f "@[<2>%a =@ %a@]" o#patt p1 o#patt p2
+    | <:patt< $i$ = $p$ >> -> pp f "@[<2>%a =@ %a@]" o#var_ident i o#patt p
     | <:patt< $p1$; $p2$ >> -> pp f "%a;@ %a" o#patt p1 o#patt p2
     | p -> o#patt1 f p ];
 
@@ -643,7 +644,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< ? $s$ : $t$ >> -> pp f "@[<2>?%s:@ %a@]" s o#simple_ctyp t
     | <:ctyp< < > >> -> pp f "< >"
     | <:ctyp< < .. > >> -> pp f "< .. >"
-    | <:ctyp< < $t$ .. > >> -> pp f "@[<0>@[<2><@ %a@ ..@]@ >@]" o#ctyp t
+    | <:ctyp< < $t$ .. > >> -> pp f "@[<0>@[<2><@ %a;@ ..@]@ >@]" o#ctyp t
     | <:ctyp< < $t$ > >> -> pp f "@[<0>@[<2><@ %a@]@ >@]" o#ctyp t
     | <:ctyp< '$s$ >> -> pp f "'%a" o#var s
     | <:ctyp< { $t$ } >> -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
@@ -684,9 +685,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | Ast.TyDcl _ tn tp te cl -> do {
         pp f "@[<2>%a%a@]" o#type_params tp o#var tn;
         match te with
-        [ <:ctyp< '$s$ >>
-            when not (List.exists (fun [ <:ctyp< '$s'$ >> -> s = s'
-                                       | _ -> False ]) tp) -> ()
+        [ <:ctyp<>> -> ()
         | _ -> pp f " =@ %a" o#ctyp te ];
         if cl <> [] then pp f "@ %a" (list o#constrain "@ ") cl else ();
       }
@@ -738,6 +737,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:sig_item< module $s$ : $mt$ >> ->
           pp f "@[<2>module %a :@ %a%s@]"
             o#var s o#module_type mt semisep
+      | <:sig_item< module type $s$ = $ <:module_type<>> $ >> ->
+          pp f "@[<2>module type %a%s@]" o#var s semisep
       | <:sig_item< module type $s$ = $mt$ >> ->
           pp f "@[<2>module type %a =@ %a%s@]"
             o#var s o#module_type mt semisep
@@ -817,7 +818,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method module_type f mt =
     let () = o#node f mt Ast.loc_of_module_type in
     match mt with
-    [ <:module_type< $id:i$ >> -> o#ident f i
+    [ <:module_type<>> -> assert False
+    | <:module_type< $id:i$ >> -> o#ident f i
     | <:module_type< $anti:s$ >> -> o#anti f s
     | <:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >> ->
           pp f "@[<2>functor@ @[<1>(%a :@ %a)@]@ ->@ %a@]"
@@ -843,7 +845,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method module_expr f me =
     let () = o#node f me Ast.loc_of_module_expr in
     match me with
-    [ <:module_expr< $id:i$ >> -> o#ident f i
+    [ <:module_expr<>> -> assert False
+    | <:module_expr< $id:i$ >> -> o#ident f i
     | <:module_expr< $anti:s$ >> -> o#anti f s
     | <:module_expr< $me1$ $me2$ >> ->
           pp f "@[<2>%a@,(%a)@]" o#module_expr me1 o#module_expr me2
@@ -866,12 +869,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@]" o#ident i
     | <:class_expr< $id:i$ [ $t$ ] >> ->
           pp f "@[<2>@[<1>[%a]@]@ %a@]" o#class_params t o#ident i
-    (* | <:class_expr< virtual $id:i$ >> -> *)
-    | Ast.CeCon _ Ast.BTrue i <:ctyp<>> ->
-          pp f "@[<2>virtual@ %a@]" o#ident i
-    | Ast.CeCon _ Ast.BTrue i t ->
-    (* | <:class_expr< virtual $id:i$ [ $t$ ] >> -> *)
-          pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]" o#class_params t o#ident i
+    | <:class_expr< virtual $lid:i$ >> ->
+          pp f "@[<2>virtual@ %a@]" o#var i
+    | <:class_expr< virtual $lid:i$ [ $t$ ] >> ->
+          pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]" o#class_params t o#var i
     | <:class_expr< fun $p$ -> $ce$ >> ->
           pp f "@[<2>fun@ %a@ ->@ %a@]" o#patt p o#class_expr ce
     | <:class_expr< let $rec:r$ $bi$ in $ce$ >> ->
@@ -901,12 +902,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@]" o#ident i
     | <:class_type< $id:i$ [ $t$ ] >> ->
           pp f "@[<2>[@,%a@]@,]@ %a" o#class_params t o#ident i
-    (* | <:class_type< virtual $id:i$ >> -> *)
-    | Ast.CtCon _ Ast.BTrue i <:ctyp<>> ->
-          pp f "@[<2>virtual@ %a@]" o#ident i
-    (* | <:class_type< virtual $id:i$ [ $t$ ] >> -> *)
-    | Ast.CtCon _ Ast.BTrue i t ->
-          pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#class_params t o#ident i
+    | <:class_type< virtual $lid:i$ >> ->
+          pp f "@[<2>virtual@ %a@]" o#var i
+    | <:class_type< virtual $lid:i$ [ $t$ ] >> ->
+          pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#class_params t o#var i
     | <:class_type< [ $t$ ] -> $ct$ >> ->
           pp f "@[<2>%a@ ->@ %a@]" o#simple_ctyp t o#class_type ct
     | <:class_type< object $csg$ end >> ->
@@ -1017,7 +1016,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 end;
 
 module MakeMore (Syntax : Sig.Camlp4Syntax)
-: Sig.Printer with module Ast = Syntax.Ast
+: (Sig.Printer Syntax.Ast).S
 = struct
 
   include Make Syntax;

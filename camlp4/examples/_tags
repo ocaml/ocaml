@@ -1,0 +1,8 @@
+"apply_operator.ml" or "type_quotation.ml": camlp4rf, use_camlp4
+"lambda_quot.ml": camlp4rf, use_camlp4_full
+"lambda_quot_o.ml": camlp4of, use_camlp4_full
+"macros.ml" or "dirac.ml" or "puzzle.ml" or <arith.*>: camlp4of, use_camlp4
+"test_macros.ml": pp(camlp4of ./macros.cmo)
+"lambda_test.ml": pp(camlp4of ./lambda_quot_o.cmo)
+<parse_files.*>: camlp4of, use_camlp4_full, use_dynlink
+<{free_vars_test,poly_rec}.*>: camlp4rf, use_camlp4

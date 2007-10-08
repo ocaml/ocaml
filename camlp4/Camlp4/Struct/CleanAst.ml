@@ -30,7 +30,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
     method expr = fun
     [ <:expr< let $rec:_$ $ <:binding<>> $ in $e$ >> |
-      <:expr< { ($e$) with $ <:binding<>> $ } >> |
+      <:expr< { ($e$) with $ <:rec_binding<>> $ } >> |
       <:expr< $ <:expr<>> $, $e$ >> |
       <:expr< $e$, $ <:expr<>> $ >> |
       <:expr< $ <:expr<>> $; $e$ >> |
@@ -54,10 +54,13 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
     method binding = fun
     [ <:binding< $ <:binding<>> $ and $bi$ >> |
-      <:binding< $bi$ and $ <:binding<>> $ >> |
-      <:binding< $ <:binding<>> $ ; $bi$ >> |
-      <:binding< $bi$ ; $ <:binding<>> $ >> -> self#binding bi
+      <:binding< $bi$ and $ <:binding<>> $ >> -> self#binding bi
     | bi -> super#binding bi ];
+
+    method rec_binding = fun
+    [ <:rec_binding< $ <:rec_binding<>> $ ; $bi$ >> |
+      <:rec_binding< $bi$ ; $ <:rec_binding<>> $ >> -> self#rec_binding bi
+    | bi -> super#rec_binding bi ];
 
     method module_binding = fun
     [ <:module_binding< $ <:module_binding<>> $ and $mb$ >> |

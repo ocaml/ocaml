@@ -8,21 +8,23 @@ Standard library:
 Objective Caml 3.10.0:
 ----------------------
 
+(Changes that can break existing programs are marked with a "*"  )
+
 Language features:
 - Added virtual instance variables in classes "val virtual v : t"
-- Changed the behaviour of instance variable overriding; the new
+* Changed the behaviour of instance variable overriding; the new
   definition replaces the old one, rather than creating a new
   variable.
 
 New tools:
 - ocamlbuild: compilation manager for OCaml applications and libraries.
-  See description in reference manual.
-- Camlp4: heavily revised implementation, new API.
+  See draft documentation at http://gallium.inria.fr/~pouillar/
+* Camlp4: heavily revised implementation, new API.
 
 New ports:
-- MacOSX PowerPC 64 bits.
-- MS Windows 32 bits using the Visual Studio 2005 toolchain.
+- MacOS X PowerPC 64 bits.
 - MS Windows 64 bits (x64) using the Microsoft PSDK toolchain.
+- MS Windows 32 bits using the Visual Studio 2005 toolchain.
 
 Compilers:
 - Faster type-checking of functor applications.
@@ -72,8 +74,9 @@ Other libraries:
     better handling of channels opened on sockets (PR#4098);
     fixed GC bug in Unix.system (PR#4112).
 
-OCamldoc:
+Documentation generator (OCamldoc):
 - correctly handle '?' in value names (PR#4215)
+- new option -hide-warnings not to print ocamldoc warnings
 
 Lexer generator (ocamllex): improved error reporting.
 

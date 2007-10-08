@@ -85,7 +85,7 @@ typedef struct { uint32 l, h; } uint64, int64;
    float is at byte offset [a], the next lsb at [b], ..., and the
    most significant byte at [h]. */
 
-#if defined(__arm__)
+#if defined(__arm__) && !defined(__ARM_EABI__)
 #define ARCH_FLOAT_ENDIANNESS 0x45670123
 #elif defined(ARCH_BIG_ENDIAN)
 #define ARCH_FLOAT_ENDIANNESS 0x76543210

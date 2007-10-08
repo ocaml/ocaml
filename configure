@@ -488,7 +488,7 @@ mksharedlibrpath=''
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd[3-9]*|*-*-netbsd[3-9]*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -1066,10 +1066,14 @@ systhread_support=false
 
 if test "$pthread_wanted" = "yes"; then
   case "$host" in
-    *-*-solaris*)  pthread_link="-lpthread -lposix4";;
-    *-*-freebsd*)  pthread_link="-pthread";;
-    *-*-openbsd*)  pthread_link="-pthread";;
-    *)             pthread_link="-lpthread";;
+    *-*-solaris*)  pthread_link="-lpthread -lposix4"
+                   pthread_caml_link="-cclib -lpthread -cclib -lposix4";;
+    *-*-freebsd*)  pthread_link="-pthread"
+                   pthread_caml_link="-cclib -pthread";;
+    *-*-openbsd*)  pthread_link="-pthread"
+                   pthread_caml_link="-cclib -pthread";;
+    *)             pthread_link="-lpthread"
+                   pthread_caml_link="-cclib -lpthread";;
   esac
   if ./hasgot -i pthread.h $pthread_link pthread_self; then
     echo "POSIX threads library supported."
@@ -1098,7 +1102,7 @@ if test "$pthread_wanted" = "yes"; then
 else
   pthread_link=""
 fi
-echo "PTHREAD_LINK=$pthread_link" >> Makefile
+echo "PTHREAD_LINK=$pthread_caml_link" >> Makefile
 
 # Determine if the bytecode thread library is supported
 

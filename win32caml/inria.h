@@ -63,6 +63,14 @@
 #include "editbuffer.h"
 #include "history.h"
 
+#if _MSC_VER <= 1200
+#define GetWindowLongPtr GetWindowLong
+#define SetWindowLongPtr SetWindowLong
+#define DWLP_USER DWL_USER
+#define GWLP_WNDPROC GWL_WNDPROC
+#define LONG_PTR DWORD
+#endif
+
 // In this structure should go eventually all global variables scattered
 // through the program.
 typedef struct _programParams {

@@ -16,4 +16,4 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Make (Ast : Sig.Ast) : Sig.Printer with module Ast = Ast;
+module Make (Ast : Sig.Ast) : (Sig.Printer Ast).S;

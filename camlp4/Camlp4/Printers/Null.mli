@@ -19,4 +19,4 @@
 
 module Id : Sig.Id;
 
-module Make (Syntax : Sig.Syntax) : Sig.Printer with module Ast = Syntax.Ast;
+module Make (Syntax : Sig.Syntax) : (Sig.Printer Syntax.Ast).S;

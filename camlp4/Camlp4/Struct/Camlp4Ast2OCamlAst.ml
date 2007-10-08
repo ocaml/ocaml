@@ -42,6 +42,18 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     with [ Failure _ as exn -> Loc.raise loc exn ]
   ;
 
+  value remove_underscores s =
+    let l = String.length s in
+    let rec remove src dst =
+      if src >= l then
+        if dst >= l then s else String.sub s 0 dst
+      else
+        match s.[src] with
+        [ '_' -> remove (src + 1) dst
+        |  c  -> do { s.[dst] := c; remove (src + 1) (dst + 1) } ]
+    in remove 0 0
+  ;
+
   value mkloc = Loc.to_ocaml_location;
   value mkghloc loc = Loc.to_ocaml_location (Loc.ghostify loc);
 
@@ -288,14 +300,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False (*FIXME*) ];
   value rec type_decl tl cl loc m pflag =
     fun
-    [ TyMan _ t1 t2 ->
+    [ <:ctyp< $t1$ == $t2$ >> ->
         type_decl tl cl loc (Some (ctyp t1)) pflag t2
-    | TyPrv _ t ->
+    | <:ctyp< private $t$ >> ->
         type_decl tl cl loc m True t
-    | TyRec _ t ->
+    | <:ctyp< { $t$ } >> ->
         mktype loc tl cl
           (Ptype_record (List.map mktrecord (list_of_ctyp t [])) (mkprivate' pflag)) m
-    | TySum _ t ->
+    | <:ctyp< [ $t$ ] >> ->
         mktype loc tl cl
           (Ptype_variant (List.map mkvariant (list_of_ctyp t [])) (mkprivate' pflag)) m
     | t ->
@@ -303,7 +315,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           error loc "only one manifest type allowed by definition" else
         let m =
           match t with
-          [ TyQuo _ s -> if List.mem_assoc s tl then Some (ctyp t) else None
+          [ <:ctyp<>> -> None
           | _ -> Some (ctyp t) ]
         in
         let k = if pflag then Ptype_private else Ptype_abstract in
@@ -465,7 +477,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let nati = try Nativeint.of_string s with [
           Failure _ -> error loc "Integer literal exceeds the range of representable integers of type nativeint"
         ] in mkpat loc (Ppat_constant (Const_nativeint nati))
-    | PaFlo loc s -> mkpat loc (Ppat_constant (Const_float s))
+    | PaFlo loc s -> mkpat loc (Ppat_constant (Const_float (remove_underscores s)))
     | PaLab loc _ _ -> error loc "labeled pattern not allowed here"
     | PaOlb loc _ _ | PaOlbi loc _ _ _ -> error loc "labeled pattern not allowed here"
     | PaOrp loc p1 p2 -> mkpat loc (Ppat_or (patt p1) (patt p2))
@@ -491,7 +503,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         error (loc_of_patt p) "invalid pattern" ]
   and mklabpat =
     fun
-    [ <:patt< $id:i$ = $p$ >> -> (ident ~conv_lid:conv_lab i, patt p)
+    [ <:patt< $i$ = $p$ >> -> (ident ~conv_lid:conv_lab i, patt p)
     | p -> error (loc_of_patt p) "invalid pattern" ];
 
   value rec expr_fa al =
@@ -622,7 +634,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           [ <:ctyp<>> -> None
           | t -> Some (ctyp t) ] in
         mkexp loc (Pexp_constraint (expr e) t1 (Some (ctyp t2)))
-    | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float s))
+    | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float (remove_underscores s)))
     | ExFor loc i e1 e2 df el ->
         let e3 = ExSeq loc el in
         let df = if mb2b df then Upto else Downto in
@@ -677,7 +689,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | ExOvr loc iel -> mkexp loc (Pexp_override (mkideexp iel []))
     | ExRec loc lel eo ->
         match lel with
-        [ <:binding<>> -> error loc "empty record"
+        [ <:rec_binding<>> -> error loc "empty record"
         | _ ->
           let eo =
             match eo with
@@ -736,7 +748,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | e -> ("", expr e) ]
   and binding x acc =
     match x with
-    [ <:binding< $x$ and $y$ >> | <:binding< $x$; $y$ >> ->
+    [ <:binding< $x$ and $y$ >> ->
          binding x (binding y acc)
     | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
     | <:binding<>> -> acc
@@ -754,15 +766,15 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | w -> mkexp (loc_of_expr w) (Pexp_when (expr w) (expr e)) ]
   and mklabexp x acc =
     match x with
-    [ <:binding< $x$ and $y$ >> | <:binding< $x$; $y$ >> ->
+    [ <:rec_binding< $x$; $y$ >> ->
          mklabexp x (mklabexp y acc)
-    | <:binding< $id:i$ = $e$ >> -> [(ident ~conv_lid:conv_lab i, expr e) :: acc]
+    | <:rec_binding< $i$ = $e$ >> -> [(ident ~conv_lid:conv_lab i, expr e) :: acc]
     | _ -> assert False ]
   and mkideexp x acc =
     match x with
-    [ <:binding< $x$ and $y$ >> | <:binding< $x$; $y$ >> ->
+    [ <:rec_binding< $x$; $y$ >> ->
          mkideexp x (mkideexp y acc)
-    | <:binding< $lid:s$ = $e$ >> -> [(s, expr e) :: acc]
+    | <:rec_binding< $lid:s$ = $e$ >> -> [(s, expr e) :: acc]
     | _ -> assert False ]
   and mktype_decl x acc =
     match x with
@@ -780,13 +792,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and module_type =
     fun
-    [ MtId loc i -> mkmty loc (Pmty_ident (long_uident i))
-    | MtFun loc n nt mt ->
+    [ <:module_type@loc<>> -> error loc "abstract/nil module type not allowed here"
+    | <:module_type@loc< $id:i$ >> -> mkmty loc (Pmty_ident (long_uident i))
+    | <:module_type@loc< functor ($n$ : $nt$) -> $mt$ >> ->
         mkmty loc (Pmty_functor n (module_type nt) (module_type mt))
-    | MtQuo loc _ -> error loc "abstract module type not allowed here"
-    | MtSig loc sl ->
+    | <:module_type@loc< '$_$ >> -> error loc "module type variable not allowed here"
+    | <:module_type@loc< sig $sl$ end >> ->
         mkmty loc (Pmty_signature (sig_item sl []))
-    | MtWit loc mt wc ->
+    | <:module_type@loc< $mt$ with $wc$ >> ->
         mkmty loc (Pmty_with (module_type mt) (mkwithc wc []))
     | <:module_type< $anti:_$ >> -> assert False ]
   and sig_item s l =
@@ -839,14 +852,15 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and module_expr =
     fun
-    [ MeId loc i -> mkmod loc (Pmod_ident (long_uident i))
-    | MeApp loc me1 me2 ->
+    [ <:module_expr@loc<>> -> error loc "nil module expression"
+    | <:module_expr@loc< $id:i$ >> -> mkmod loc (Pmod_ident (long_uident i))
+    | <:module_expr@loc< $me1$ $me2$ >> ->
         mkmod loc (Pmod_apply (module_expr me1) (module_expr me2))
-    | MeFun loc n mt me ->
+    | <:module_expr@loc< functor ($n$ : $mt$) -> $me$ >> ->
         mkmod loc (Pmod_functor n (module_type mt) (module_expr me))
-    | MeStr loc sl ->
+    | <:module_expr@loc< struct $sl$ end >> ->
         mkmod loc (Pmod_structure (str_item sl []))
-    | MeTyc loc me mt ->
+    | <:module_expr@loc< ($me$ : $mt$) >> ->
         mkmod loc (Pmod_constraint (module_expr me) (module_type mt))
     | <:module_expr@loc< $anti:_$ >> -> error loc "antiquotation in module_expr" ]
   and str_item s l =

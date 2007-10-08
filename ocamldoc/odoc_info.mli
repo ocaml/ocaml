@@ -711,6 +711,9 @@ val verbose : string -> unit
    error counter is incremented. *)
 val warning : string -> unit
 
+(** A flag to indicate whether ocamldoc warnings must be printed or not. *)
+val print_warnings : bool ref
+
 (** Increment this counter when an error is encountered.
    The ocamldoc tool will print the number of errors
    encountered exit with code 1 if this number is greater

@@ -29,7 +29,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
   open AstFilters;
   open Ast;
 
-  register_str_item_filter (new Ast.c_loc (fun _ -> Loc.ghost))#str_item;
+  register_str_item_filter (Ast.map_loc (fun _ -> Loc.ghost))#str_item;
 
 end;
 

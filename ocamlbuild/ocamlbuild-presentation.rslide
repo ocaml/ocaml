@@ -66,6 +66,7 @@ slide "What does ocamlbuild provide?" do
       * Supports multiple build directories
       * Automatic and safe cleaning
       * A source directory uncluttered by object files
+      * A portable tool shipped with OCaml
     end
     overlay 2 do
       * Saves time and money!

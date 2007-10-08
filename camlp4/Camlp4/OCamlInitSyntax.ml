@@ -16,25 +16,29 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Make (Warning : Sig.Warning)
-            (Ast     : Sig.Camlp4Ast with module Loc = Warning.Loc)
-            (Gram    : Sig.Grammar.Static with module Loc = Warning.Loc
+module Make (Ast     : Sig.Camlp4Ast)
+            (Gram    : Sig.Grammar.Static with module Loc = Ast.Loc
                                             with type Token.t = Sig.camlp4_token)
             (Quotation : Sig.Quotation with module Ast = Sig.Camlp4AstToAst Ast)
-: Sig.Camlp4Syntax with module Loc   = Ast.Loc
-                      and module Ast   = Ast
-                      and module Token = Gram.Token
-                      and module Gram  = Gram
-                      and module AntiquotSyntax.Ast = Sig.Camlp4AstToAst Ast
-                      and module Quotation = Quotation
+: Sig.Camlp4Syntax with module Loc = Ast.Loc
+                    and module Ast = Ast
+                    and module Token = Gram.Token
+                    and module Gram = Gram
+                    and module AntiquotSyntax.Ast = Sig.Camlp4AstToAst Ast
+                    and module Quotation = Quotation
 = struct
 
-  module Warning = Warning;
   module Loc     = Ast.Loc;
   module Ast     = Ast;
   module Gram    = Gram;
   module Token   = Gram.Token;
   open Sig;
+
+  (* Warnings *)
+  type warning = Loc.t -> string -> unit;
+  value default_warning loc txt = Format.eprintf "<W> %a: %s@." Loc.print loc txt;
+  value current_warning = ref default_warning;
+  value print_warning loc txt = current_warning.val loc txt;
 
   value a_CHAR = Gram.Entry.mk "a_CHAR";
   value a_FLOAT = Gram.Entry.mk "a_FLOAT";
@@ -43,7 +47,6 @@ module Make (Warning : Sig.Warning)
   value a_INT64 = Gram.Entry.mk "a_INT64";
   value a_LABEL = Gram.Entry.mk "a_LABEL";
   value a_LIDENT = Gram.Entry.mk "a_LIDENT";
-  value a_LIDENT_or_operator = Gram.Entry.mk "a_LIDENT_or_operator";
   value a_NATIVEINT = Gram.Entry.mk "a_NATIVEINT";
   value a_OPTLABEL = Gram.Entry.mk "a_OPTLABEL";
   value a_STRING = Gram.Entry.mk "a_STRING";
@@ -90,7 +93,6 @@ module Make (Warning : Sig.Warning)
   value eq_expr = Gram.Entry.mk "eq_expr";
   value expr = Gram.Entry.mk "expr";
   value expr_eoi = Gram.Entry.mk "expr_eoi";
-  value field = Gram.Entry.mk "field";
   value field_expr = Gram.Entry.mk "field_expr";
   value fun_binding = Gram.Entry.mk "fun_binding";
   value fun_def = Gram.Entry.mk "fun_def";
@@ -141,16 +143,15 @@ module Make (Warning : Sig.Warning)
   value patt_eoi = Gram.Entry.mk "patt_eoi";
   value patt_tcon = Gram.Entry.mk "patt_tcon";
   value phrase = Gram.Entry.mk "phrase";
-  value pipe_ctyp = Gram.Entry.mk "pipe_ctyp";
   value poly_type = Gram.Entry.mk "poly_type";
   value row_field = Gram.Entry.mk "row_field";
-  value sem_ctyp = Gram.Entry.mk "sem_ctyp";
   value sem_expr = Gram.Entry.mk "sem_expr";
   value sem_expr_for_list = Gram.Entry.mk "sem_expr_for_list";
   value sem_patt = Gram.Entry.mk "sem_patt";
   value sem_patt_for_list = Gram.Entry.mk "sem_patt_for_list";
   value semi = Gram.Entry.mk "semi";
   value sequence = Gram.Entry.mk "sequence";
+  value do_sequence = Gram.Entry.mk "do_sequence";
   value sig_item = Gram.Entry.mk "sig_item";
   value sig_items = Gram.Entry.mk "sig_items";
   value star_ctyp = Gram.Entry.mk "star_ctyp";
@@ -184,10 +185,16 @@ module Make (Warning : Sig.Warning)
   value class_expr_quot = Gram.Entry.mk "quotation of class expression";
   value with_constr_quot = Gram.Entry.mk "quotation of with constraint";
   value binding_quot = Gram.Entry.mk "quotation of binding";
+  value rec_binding_quot = Gram.Entry.mk "quotation of record binding";
   value match_case_quot = Gram.Entry.mk "quotation of match_case (try/match/function case)";
   value module_binding_quot = Gram.Entry.mk "quotation of module rec binding";
   value ident_quot = Gram.Entry.mk "quotation of identifier";
-
+  value prefixop = Gram.Entry.mk "prefix operator (start with '!', '?', '~')";
+  value infixop0 = Gram.Entry.mk "infix operator (level 0) (comparison operators, and some others)";
+  value infixop1 = Gram.Entry.mk "infix operator (level 1) (start with '^', '@')";
+  value infixop2 = Gram.Entry.mk "infix operator (level 2) (start with '+', '-')";
+  value infixop3 = Gram.Entry.mk "infix operator (level 3) (start with '*', '/', '%')";
+  value infixop4 = Gram.Entry.mk "infix operator (level 4) (start with \"**\") (right assoc)";
 
   EXTEND Gram
     top_phrase:
@@ -215,31 +222,30 @@ module Make (Warning : Sig.Warning)
 
   module Quotation = Quotation;
 
-  module Parser = struct
-    module Ast = Ast;
-    value wrap directive_handler pa init_loc cs =
-      let rec loop loc =
-        let (pl, stopped_at_directive) = pa loc cs in
-        match stopped_at_directive with
-        [ Some new_loc ->
-          let pl =
-            match List.rev pl with
-            [ [] -> assert False
-            | [x :: xs] ->
-                match directive_handler x with
-                [ None -> xs
-                | Some x -> [x :: xs] ] ]
-          in (List.rev pl) @ (loop new_loc)
-        | None -> pl ]
-      in loop init_loc;
-    value parse_implem ?(directive_handler = fun _ -> None) _loc cs =
-      let l = wrap directive_handler (Gram.parse implem) _loc cs in
-      <:str_item< $list:l$ >>;
-    value parse_interf ?(directive_handler = fun _ -> None) _loc cs =
-      let l = wrap directive_handler (Gram.parse interf) _loc cs in
-      <:sig_item< $list:l$ >>;
-  end;
+  value wrap directive_handler pa init_loc cs =
+    let rec loop loc =
+      let (pl, stopped_at_directive) = pa loc cs in
+      match stopped_at_directive with
+      [ Some new_loc ->
+        let pl =
+          match List.rev pl with
+          [ [] -> assert False
+          | [x :: xs] ->
+              match directive_handler x with
+              [ None -> xs
+              | Some x -> [x :: xs] ] ]
+        in (List.rev pl) @ (loop new_loc)
+      | None -> pl ]
+    in loop init_loc;
 
-  module Printer = Struct.EmptyPrinter.Make Ast;
+  value parse_implem ?(directive_handler = fun _ -> None) _loc cs =
+    let l = wrap directive_handler (Gram.parse implem) _loc cs in
+    <:str_item< $list:l$ >>;
 
+  value parse_interf ?(directive_handler = fun _ -> None) _loc cs =
+    let l = wrap directive_handler (Gram.parse interf) _loc cs in
+    <:sig_item< $list:l$ >>;
+
+  value print_interf ?input_file:(_) ?output_file:(_) _ = failwith "No interface printer";
+  value print_implem ?input_file:(_) ?output_file:(_) _ = failwith "No implementation printer";
 end;

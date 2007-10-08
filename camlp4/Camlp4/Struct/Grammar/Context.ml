@@ -20,7 +20,7 @@
 module type S = sig
   module Token : Sig.Token;
   open Token;
-  type t = 'abstract;
+  type t;
   value call_with_ctx : Stream.t (Token.t * Loc.t) -> (t -> 'a) -> 'a;
   value loc_bp : t -> Loc.t;
   value loc_ep : t -> Loc.t;
@@ -68,8 +68,8 @@ module Make (Token : Sig.Token) : S with module Token = Token = struct
     loop list n;
 
   value njunk c n =
-    do { for i = 1 to n do { Stream.junk c.strm };
-        set_loc c };
+    (for i = 1 to n do Stream.junk c.strm done;
+     set_loc c);
 
   value streams = ref [];
   value mk strm =

@@ -42,13 +42,13 @@ value register_sig_item_parser : parser_fun PreCast.Ast.sig_item -> unit;
 value register_parser : parser_fun PreCast.Ast.str_item -> parser_fun PreCast.Ast.sig_item -> unit;
 
 module Parser
-  (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> Sig.Parser with module Ast = Ast) : sig end;
+  (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> (Sig.Parser Ast).S) : sig end;
 
 module OCamlParser
-  (Id : Sig.Id) (Maker : functor (Ast : Sig.Camlp4Ast) -> Sig.Parser with module Ast = Ast) : sig end;
+  (Id : Sig.Id) (Maker : functor (Ast : Sig.Camlp4Ast) -> (Sig.Parser Ast).S) : sig end;
 
 module OCamlPreCastParser
-  (Id : Sig.Id) (Parser : Sig.Parser with module Ast = PreCast.Ast) : sig end;
+  (Id : Sig.Id) (Parser : (Sig.Parser PreCast.Ast).S) : sig end;
 
 (** {6 Registering Printers} *)
 
@@ -61,16 +61,16 @@ value register_printer : printer_fun PreCast.Ast.str_item -> printer_fun PreCast
 
 module Printer
   (Id : Sig.Id)
-  (Maker : functor (Syn : Sig.Syntax) -> Sig.Printer with module Ast = Syn.Ast) :
+  (Maker : functor (Syn : Sig.Syntax) -> (Sig.Printer Syn.Ast).S) :
     sig end;
 
 module OCamlPrinter
   (Id : Sig.Id)
-  (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Printer with module Ast = Syn.Ast) :
+  (Maker : functor (Syn : Sig.Camlp4Syntax) -> (Sig.Printer Syn.Ast).S) :
     sig end;
 
 module OCamlPreCastPrinter
-  (Id : Sig.Id) (Printer : Sig.Printer with module Ast = PreCast.Ast) :
+  (Id : Sig.Id) (Printer : (Sig.Printer PreCast.Ast).S) :
     sig end;
 
 (** {6 Registering Filters} *)
@@ -80,9 +80,10 @@ module AstFilter
 
 value declare_dyn_module : string -> (unit -> unit) -> unit;
 value iter_and_take_callbacks : ((string * (unit -> unit)) -> unit) -> unit;
+value loaded_modules : ref (list string);
 
-module CurrentParser : Sig.Parser with module Ast = PreCast.Ast;
-module CurrentPrinter : Sig.Printer with module Ast = PreCast.Ast;
+module CurrentParser : (Sig.Parser PreCast.Ast).S;
+module CurrentPrinter : (Sig.Printer PreCast.Ast).S;
 
 value enable_ocaml_printer : unit -> unit;
 value enable_ocamlr_printer : unit -> unit;

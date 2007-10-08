@@ -147,7 +147,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       Hashtbl.iter
         (fun s (r, e) ->
           if r.val = Unused then
-            Warning.print e.name.loc ("Unused local entry \"" ^ s ^ "\"")
+            print_warning e.name.loc ("Unused local entry \"" ^ s ^ "\"")
           else ())
         ht;
     }
@@ -309,7 +309,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value srules loc t rl tvar =
     List.map
       (fun r ->
-        let sl = List.map (fun s -> s.text) r.prod in
+        let sl = [ s.text | s <- r.prod ] in
         let ac = text_of_action loc r.prod t r.action tvar in
         (sl, ac))
       rl
@@ -600,7 +600,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       fun
       [ <:patt@_loc< $lid:_$ >> -> <:patt< _ >>
       | <:patt< ($p$ as $_$) >> -> self#patt p
-      | <:patt@_loc< $p1$ = $p2$ >> -> <:patt@_loc< $p1$ = $self#patt p2$ >>
       | p -> super#patt p ];
   end;
 
@@ -624,6 +623,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           ("Deprecated syntax, use a sub rule. "^
            "LIST0 STRING becomes LIST0 [ x = STRING -> x ]"))
     | _ -> () ];
+
+  Camlp4_config.antiquotations.val := True;
 
   EXTEND Gram
     GLOBAL: expr symbol;

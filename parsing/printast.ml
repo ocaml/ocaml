@@ -89,7 +89,14 @@ let line i f s (*...*) =
   fprintf f s (*...*)
 ;;
 
-let list i f ppf l = List.iter (f i ppf) l;;
+let list i f ppf l =
+  match l with
+  | [] -> line i ppf "[]\n";
+  | h::t ->
+     line i ppf "[\n";
+     List.iter (f (i+1) ppf) l;
+     line i ppf "]\n";
+;;
 
 let option i f ppf x =
   match x with
@@ -361,9 +368,11 @@ and class_type_field i ppf x =
   | Pctf_virt (s, pf, ct, loc) ->
       line i ppf
         "Pctf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      core_type (i+1) ppf ct;
   | Pctf_meth (s, pf, ct, loc) ->
       line i ppf
         "Pctf_meth \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      core_type (i+1) ppf ct;
   | Pctf_cstr (ct1, ct2, loc) ->
       line i ppf "Pctf_cstr %a\n" fmt_location loc;
       core_type i ppf ct1;
@@ -619,11 +628,11 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct2;
 
 and string_x_core_type_list_x_location i ppf (s, l, loc) =
-  string i ppf s;
+  line i ppf "\"%s\" %a\n" s fmt_location loc;
   list (i+1) core_type ppf l;
 
 and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
-  line i ppf "\"%s\" %a\n" s fmt_mutable_flag mf;
+  line i ppf "\"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
   core_type (i+1) ppf ct;
 
 and string_list_x_location i ppf (l, loc) =

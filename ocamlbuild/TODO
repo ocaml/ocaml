@@ -1,4 +1,5 @@
 To do:
+* Executor: exceptional conditions and Not_found
 * Fix report
 * Design a nice, friendly, future-proof plugin (myocamlbuild) API
 * Ocamlbuild should keep track of files removed from the source directory, e.g.,

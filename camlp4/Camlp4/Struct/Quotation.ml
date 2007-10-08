@@ -18,24 +18,29 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-
 (* $Id$ *)
 
 module Make (Ast : Sig.Ast)
 : Sig.Quotation with module Ast = Ast
 = struct
   module Ast = Ast;
+  module DynAst = DynAst.Make Ast;
   module Loc = Ast.Loc;
   open Format;
   open Sig;
 
   type expand_fun 'a = Loc.t -> option string -> string -> 'a;
 
-  type expander =
-    [ ExStr of bool -> expand_fun string
-    | ExAst of (expand_fun Ast.expr) and (expand_fun Ast.patt) ];
+  module Exp_key = DynAst.Pack(struct
+    type t 'a = unit;
+  end);
 
-  value expanders_table = ref [];
+  module Exp_fun = DynAst.Pack(struct
+    type t 'a = expand_fun 'a;
+  end);
+
+  value expanders_table =
+    (ref [] : ref (list ((string * Exp_key.pack) * Exp_fun.pack)));
 
   value default = ref "";
   value translate = ref (fun x -> x);
@@ -45,9 +50,13 @@ module Make (Ast : Sig.Ast)
     [ "" -> default.val
     | name -> name ];
 
-  value find name = List.assoc (expander_name name) expanders_table.val;
+  value find name tag =
+    let key = (expander_name name, Exp_key.pack tag ()) in
+    Exp_fun.unpack tag (List.assoc key expanders_table.val);
 
-  value add name f = expanders_table.val := [(name, f) :: expanders_table.val];
+  value add name tag f =
+    let elt = ((name, Exp_key.pack tag ()), Exp_fun.pack tag f) in
+    expanders_table.val := [elt :: expanders_table.val];
 
   value dump_file = ref None;
 
@@ -57,18 +66,21 @@ module Make (Ast : Sig.Ast)
       | Expanding
       | ParsingResult of Loc.t and string
       | Locating ];
-    type t = (string * error * exn);
+    type t = (string * string * error * exn);
     exception E of t;
 
-    value print ppf (name, ctx, exn) =
+    value print ppf (name, position, ctx, exn) =
       let name = if name = "" then default.val else name in
-      let pp x = fprintf ppf "@?@[<2>While %s %S:" x name in
+      let pp x = fprintf ppf "@?@[<2>While %s %S in a position of %S:" x name position in
       let () =
         match ctx with
         [ Finding -> do {
             pp "finding quotation";
-            fprintf ppf " available quotations are:\n@[<2>";
-            List.iter (fun (s,_) -> fprintf ppf "%s@ " s) expanders_table.val;
+            fprintf ppf "@ @[<hv2>Available quotations are:@\n";
+            List.iter begin fun ((s,t),_) ->
+              fprintf ppf "@[<2>%s@ (in@ a@ position@ of %a)@]@ "
+                s Exp_key.print_tag t
+            end expanders_table.val;
             fprintf ppf "@]"
           } 
         | Expanding -> pp "expanding quotation"
@@ -105,56 +117,46 @@ module Make (Ast : Sig.Ast)
   let module M = ErrorHandler.Register Error in ();
   open Error;
 
-  value expand_quotation loc expander quot =
+  value expand_quotation loc expander pos_tag quot =
     debug quot "expand_quotation: name: %s, str: %S@." quot.q_name quot.q_contents in
     let loc_name_opt = if quot.q_loc = "" then None else Some quot.q_loc in
     try expander loc loc_name_opt quot.q_contents with
     [ Loc.Exc_located _ (Error.E _) as exc ->
         raise exc
     | Loc.Exc_located iloc exc ->
-        let exc1 = Error.E (quot.q_name, Expanding, exc) in
+        let exc1 = Error.E (quot.q_name, pos_tag, Expanding, exc) in
         raise (Loc.Exc_located iloc exc1)
     | exc ->
-        let exc1 = Error.E (quot.q_name, Expanding, exc) in
+        let exc1 = Error.E (quot.q_name, pos_tag, Expanding, exc) in
         raise (Loc.Exc_located loc exc1) ];
 
-  value parse_quotation_result parse loc quot str =
+  value parse_quotation_result parse loc quot pos_tag str =
     try parse loc str with
-    [ Loc.Exc_located iloc (Error.E (n, Expanding, exc)) ->
+    [ Loc.Exc_located iloc (Error.E (n, pos_tag, Expanding, exc)) ->
         let ctx = ParsingResult iloc quot.q_contents in
-        let exc1 = Error.E (n, ctx, exc) in
+        let exc1 = Error.E (n, pos_tag, ctx, exc) in
         raise (Loc.Exc_located iloc exc1)
     | Loc.Exc_located iloc (Error.E _ as exc) ->
         raise (Loc.Exc_located iloc exc)
     | Loc.Exc_located iloc exc ->
         let ctx = ParsingResult iloc quot.q_contents in
-        let exc1 = Error.E (quot.q_name, ctx, exc) in
+        let exc1 = Error.E (quot.q_name, pos_tag, ctx, exc) in
         raise (Loc.Exc_located iloc exc1) ];
 
-  value handle_quotation loc proj in_expr parse quotation =
+  value expand loc quotation tag =
+    let pos_tag = DynAst.string_of_tag tag in
     let name = quotation.q_name in
     debug quot "handle_quotation: name: %s, str: %S@." name quotation.q_contents in
     let expander =
-      try find name
+      try find name tag
       with
       [ Loc.Exc_located _ (Error.E _) as exc -> raise exc
       | Loc.Exc_located qloc exc ->
-          raise (Loc.Exc_located qloc (Error.E (name, Finding, exc)))
+          raise (Loc.Exc_located qloc (Error.E (name, pos_tag, Finding, exc)))
       | exc ->
-          raise (Loc.Exc_located loc (Error.E (name, Finding, exc))) ]
+          raise (Loc.Exc_located loc (Error.E (name, pos_tag, Finding, exc))) ]
     in
     let loc = Loc.join (Loc.move `start quotation.q_shift loc) in
-    match expander with
-    [ ExStr f ->
-        let new_str = expand_quotation loc (f in_expr) quotation in
-        parse_quotation_result parse loc quotation new_str
-    | ExAst fe fp ->
-        expand_quotation loc (proj (fe, fp)) quotation ];
-
-  value expand_expr parse loc x =
-    handle_quotation loc fst True parse x;
-
-  value expand_patt parse loc x =
-    handle_quotation loc snd False parse x;
+    expand_quotation loc expander pos_tag quotation;
 
 end;

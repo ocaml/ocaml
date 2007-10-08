@@ -23,13 +23,13 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value rec fold_binding_vars f bi acc =
     match bi with
-    [ <:binding< $bi1$ and $bi2$ >> | <:binding< $bi1$; $bi2$ >> ->
+    [ <:binding< $bi1$ and $bi2$ >> ->
         fold_binding_vars f bi1 (fold_binding_vars f bi2 acc)
     | <:binding< $lid:i$ = $_$ >> -> f i acc
     | _ -> assert False ];
 
   class c_fold_pattern_vars ['accu] f init =
-    object (o)
+    object
       inherit Ast.fold as super;
       value acc = init;
       method acc : 'accu = acc;
@@ -37,7 +37,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         fun
         [ <:patt< $lid:s$ >> | <:patt< ~ $s$ >> | <:patt< ? $s$ >> ->
               {< acc = f s acc >}
-        | <:patt< $lid:_$ = $p$ >> -> o#patt p
         | p -> super#patt p ];
     end;
 

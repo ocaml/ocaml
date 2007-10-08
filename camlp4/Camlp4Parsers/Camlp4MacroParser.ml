@@ -16,6 +16,8 @@ open Camlp4;                                             (* -*- camlp4r -*- *)
 (* Authors:
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
+ * - Aleksey Nogin: extra features and bug fixes.
+ * - Christopher Conway: extra feature (-D<uident>=)
  *)
 
 module Id = struct
@@ -31,16 +33,22 @@ Added statements:
      DEFINE <uident>
      DEFINE <uident> = <expression>
      DEFINE <uident> (<parameters>) = <expression>
-     IFDEF <uident> THEN <structure_items> (END | ENDIF)
-     IFDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
-     IFNDEF <uident> THEN <structure_items> (END | ENDIF)
-     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     IFDEF <uident> THEN <structure_items> [ ELSE <structure_items> ] (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> [ ELSE <structure_items> ] (END | ENDIF)
+     INCLUDE <string>
+
+  At toplevel (signature item):
+
+     DEFINE <uident>
+     IFDEF <uident> THEN <signature_items> [ ELSE <signature_items> ] (END | ENDIF)
+     IFNDEF <uident> THEN <signature_items> [ ELSE <signature_items> ] (END | ENDIF)
      INCLUDE <string>
 
   In expressions:
 
-     IFDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
-     IFNDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
+     IFDEF <uident> THEN <expression> [ ELSE <expression> ] (END | ENDIF)
+     IFNDEF <uident> THEN <expression> [ ELSE <expression> ] (END | ENDIF)
+     DEFINE <lident> = <expression> IN <expression>
      __FILE__
      __LOCATION__
 
@@ -51,7 +59,7 @@ Added statements:
 
   As Camlp4 options:
 
-     -D<uident>                      define <uident>
+     -D<uident> or -D<uident>=expr   define <uident> with optional value <expr>
      -U<uident>                      undefine it
      -I<dir>                         add <dir> to the search path for INCLUDE'd files
 
@@ -60,7 +68,13 @@ Added statements:
   the macro cannot be used as a pattern, there is an error message if
   it is used in a pattern.
 
+  You can also define a local macro in an expression usigng the DEFINE ... IN form.
+  Note that local macros have lowercase names and can not take parameters.
 
+  If a macro is defined to = NOTHING, and then used as an argument to a function,
+  this will be equivalent to function taking one less argument. Similarly,
+  passing NOTHING as an argument to a macro is equivalent to "erasing" the
+  corresponding parameter from the macro body.
 
   The toplevel statement INCLUDE <string> can be used to include a
   file containing macro definitions and also any other toplevel items.
@@ -82,8 +96,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ SdStr of 'a
     | SdDef of string and option (list string * Ast.expr)
     | SdUnd of string
-    | SdITE of string and 'a and 'a
-    | SdInc of string ];
+    | SdITE of string and list (item_or_def 'a) and list (item_or_def 'a)
+    | SdLazy of Lazy.t 'a ];
 
   value rec list_remove x =
     fun
@@ -95,29 +109,16 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   value is_defined i = List.mem_assoc i defined.val;
 
-  class reloc _loc = object
-    inherit Ast.map as super;
-    method _Loc_t _ = _loc;
-  end;
-
-  class subst _loc env = object
-    inherit reloc _loc as super;
-    method expr =
-      fun
-      [ <:expr< $lid:x$ >> | <:expr< $uid:x$ >> as e ->
-          try List.assoc x env with
-          [ Not_found -> e ]
-      | e -> super#expr e ];
-  end;
-
-  value bad_patt _loc = 
+  value bad_patt _loc =
     Loc.raise _loc
       (Failure
          "this macro cannot be used in a pattern (see its definition)");
+
   value substp _loc env =
     loop where rec loop =
       fun
       [ <:expr< $e1$ $e2$ >> -> <:patt< $loop e1$ $loop e2$ >>
+      | <:expr< >> -> <:patt< >>
       | <:expr< $lid:x$ >> ->
           try List.assoc x env with
           [ Not_found -> <:patt< $lid:x$ >> ]
@@ -130,11 +131,33 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:expr< $x1$, $x2$ >> -> <:patt< $loop x1$, $loop x2$ >>
       | <:expr< { $bi$ } >> ->
           let rec substbi = fun
-            [ <:binding< $b1$; $b2$ >> -> <:patt< $substbi b1$; $substbi b2$ >>
-            | <:binding< $p$ = $e$ >> -> <:patt< $p$ = $loop e$ >>
+            [ <:rec_binding< $b1$; $b2$ >> -> <:patt< $substbi b1$; $substbi b2$ >>
+            | <:rec_binding< $i$ = $e$ >> -> <:patt< $i$ = $loop e$ >>
             | _ -> bad_patt _loc ]
           in <:patt< { $substbi bi$ } >>
       | _ -> bad_patt _loc ];
+
+  class reloc _loc = object
+    inherit Ast.map as super;
+    method _Loc_t _ = _loc;
+  end;
+
+  class subst _loc env = object
+    inherit reloc _loc as super;
+    method expr =
+      fun
+      [ <:expr< $lid:x$ >> | <:expr< $uid:x$ >> as e ->
+          try List.assoc x env with
+          [ Not_found -> super#expr e ]
+      | e -> super#expr e ];
+
+    method patt =
+      fun
+      [ <:patt< $lid:x$ >> | <:patt< $uid:x$ >> as p ->
+         try substp _loc [] (List.assoc x env) with
+         [ Not_found -> super#patt p ]
+      | p -> super#patt p ];
+  end;
 
   value incorrect_number loc l1 l2 =
     Loc.raise loc
@@ -211,6 +234,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     with
     [ Not_found -> () ];
 
+  value parse_def s =
+    match Gram.parse_string expr (Loc.mk "<command line>") s with
+    [ <:expr< $uid:n$ >> -> define None n
+    | <:expr< $uid:n$ = $e$ >> -> define (Some ([],e)) n
+    | _ -> invalid_arg s ];
+
   (* This is a list of directories to search for INCLUDE statements. *)
   value include_dirs = ref [];
 
@@ -234,27 +263,69 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       let st = Stream.of_channel ch in
         Gram.parse rule (Loc.mk file) st;
 
+  value rec execute_macro nil cons =
+    fun
+    [ SdStr i -> i
+    | SdDef x eo -> do { define eo x; nil }
+    | SdUnd x -> do { undef x; nil }
+    | SdITE i l1 l2 -> execute_macro_list nil cons (if is_defined i then l1 else l2)
+    | SdLazy l -> Lazy.force l ]
+
+  and execute_macro_list nil cons = fun
+  [ [] -> nil
+  | [hd::tl] -> (* The evaluation order is important here *)
+    let il1 = execute_macro nil cons hd in
+    let il2 = execute_macro_list nil cons tl in
+    cons il1 il2 ]
+  ;
+
   EXTEND Gram
     GLOBAL: expr patt str_item sig_item;
     str_item: FIRST
-      [ [ "DEFINE"; i = uident; def = opt_macro_value ->
-            do { define def i; <:str_item<>> }
-        | "UNDEF"; i = uident ->
-            do { undef i; <:str_item<>> }
-        | "IFDEF"; i = uident; "THEN"; st = str_items; _ = endif ->
-            if is_defined i then st else <:str_item<>>
-        | "IFDEF"; i = uident; "THEN"; st1 = str_items; "ELSE"; st2 = str_items; _ = endif ->
-            if is_defined i then st1 else st2
-        | "IFNDEF"; i = uident; "THEN"; st = str_items; _ = endif ->
-            if is_defined i then <:str_item<>> else st
-        | "IFNDEF"; i = uident; "THEN"; st1 = str_items; "ELSE"; st2 = str_items; _ = endif ->
-            if is_defined i then st2 else st1
-        | "INCLUDE"; fname = STRING ->
-            parse_include_file str_items fname ] ]
+      [ [ x = macro_def ->
+            execute_macro <:str_item<>> (fun a b -> <:str_item< $a$; $b$ >>) x ] ]
     ;
     sig_item: FIRST
-      [ [ "INCLUDE"; fname = STRING ->
-            parse_include_file sig_items fname ] ]
+      [ [ x = macro_def_sig ->
+            execute_macro <:sig_item<>> (fun a b -> <:sig_item< $a$; $b$ >>) x ] ]
+    ;
+    macro_def:
+      [ [ "DEFINE"; i = uident; def = opt_macro_value -> SdDef i def
+        | "UNDEF"; i = uident -> SdUnd i
+        | "IFDEF"; i = uident; "THEN"; st1 = smlist; st2 = else_macro_def ->
+            SdITE i st1 st2
+        | "IFNDEF"; i = uident; "THEN"; st2 = smlist; st1 = else_macro_def ->
+            SdITE i st1 st2
+        | "INCLUDE"; fname = STRING ->
+            SdLazy (lazy (parse_include_file str_items fname)) ] ]
+    ;
+    macro_def_sig:
+      [ [ "DEFINE"; i = uident -> SdDef i None
+        | "UNDEF"; i = uident -> SdUnd i
+        | "IFDEF"; i = uident; "THEN"; sg1 = sglist; sg2 = else_macro_def_sig ->
+            SdITE i sg1 sg2
+        | "IFNDEF"; i = uident; "THEN"; sg2 = sglist; sg1 = else_macro_def_sig ->
+            SdITE i sg1 sg2
+        | "INCLUDE"; fname = STRING ->
+            SdLazy (lazy (parse_include_file sig_items fname)) ] ]
+    ;
+    else_macro_def:
+      [ [ "ELSE"; st = smlist; endif -> st
+        | endif -> [] ] ]
+    ;
+    else_macro_def_sig:
+      [ [ "ELSE"; st = sglist; endif -> st
+        | endif -> [] ] ]
+    ;
+    else_expr:
+      [ [ "ELSE"; e = expr; endif -> e
+      | endif -> <:expr< () >> ] ]
+    ;
+    smlist:
+      [ [ sml = LIST1 [ d = macro_def; semi -> d | si = str_item; semi -> SdStr si ] -> sml ] ]
+    ;
+    sglist:
+      [ [ sgl = LIST1 [ d = macro_def_sig; semi -> d | si = sig_item; semi -> SdStr si ] -> sgl ] ]
     ;
     endif:
       [ [ "END" -> ()
@@ -266,10 +337,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | -> None ] ]
     ;
     expr: LEVEL "top"
-      [ [ "IFDEF"; i = uident; "THEN"; e1 = expr; "ELSE"; e2 = expr; _ = endif ->
+      [ [ "IFDEF"; i = uident; "THEN"; e1 = expr; e2 = else_expr ->
             if is_defined i then e1 else e2
-        | "IFNDEF"; i = uident; "THEN"; e1 = expr; "ELSE"; e2 = expr; _ = endif ->
-            if is_defined i then e2 else e1 ] ]
+        | "IFNDEF"; i = uident; "THEN"; e1 = expr; e2 = else_expr ->
+            if is_defined i then e2 else e1
+        | "DEFINE"; i = LIDENT; "="; def = expr; "IN"; body = expr ->
+            (new subst _loc [(i, def)])#expr body ] ]
     ;
     expr: LEVEL "simple"
       [ [ LIDENT "__FILE__" -> <:expr< $`str:Loc.file_name _loc$ >>
@@ -281,9 +354,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                  $if h then <:expr< True >> else <:expr< False >> $) >> ] ]
     ;
     patt:
-      [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
+      [ [ "IFDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; endif ->
             if is_defined i then p1 else p2
-        | "IFNDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; _ = endif ->
+        | "IFNDEF"; i = uident; "THEN"; p1 = patt; "ELSE"; p2 = patt; endif ->
             if is_defined i then p2 else p1 ] ]
     ;
     uident:
@@ -291,7 +364,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
   END;
 
-  Options.add "-D" (Arg.String (define None))
+  Options.add "-D" (Arg.String parse_def)
     "<string> Define for IFDEF instruction.";
   Options.add "-U" (Arg.String undef)
     "<string> Undefine for IFDEF instruction.";
@@ -301,3 +374,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 end;
 
 let module M = Register.OCamlSyntaxExtension Id Make in ();
+
+module MakeNothing (AstFilters : Camlp4.Sig.AstFilters) = struct
+ open AstFilters;
+ open Ast;
+
+ value remove_nothings =
+   fun
+   [ <:expr< $e$ NOTHING >> | <:expr< fun $ <:patt< NOTHING >> $ -> $e$ >> -> e
+   | e -> e];
+
+ register_str_item_filter (Ast.map_expr remove_nothings)#str_item;
+
+end;
+
+let module M = Camlp4.Register.AstFilter Id MakeNothing in ();

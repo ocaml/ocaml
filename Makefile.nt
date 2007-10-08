@@ -131,7 +131,7 @@ bootstrap:
 	$(MAKEREC) promote-cross
 # Rebuild ocamlc and ocamllex (run on byterun/ocamlrun)
 	$(MAKEREC) partialclean
-	$(MAKEREC) ocamlc ocamllex
+	$(MAKEREC) ocamlc ocamllex ocamltools
 # Rebuild the library (using byterun/ocamlrun ./ocamlc)
 	$(MAKEREC) library-cross
 # Promote the new compiler and the new runtime
@@ -166,7 +166,7 @@ backup:
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
 	cp boot/ocamlrun.exe boot/Saved/ocamlrun.exe
-	cd boot ; mv ocamlc ocamllex ocamlyacc.exe Saved
+	cd boot ; mv ocamlc ocamllex ocamldep ocamlyacc.exe Saved
 	cd boot ; cp $(LIBFILES) Saved
 
 # Promote the newly compiled system to the rank of cross compiler
@@ -175,6 +175,7 @@ promote-cross:
 	cp ocamlc boot/ocamlc
 	cp lex/ocamllex boot/ocamllex
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
+	cp tools/ocamldep boot/ocamldep
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
@@ -192,6 +193,7 @@ restore:
 compare:
 	- cmp -i 4096 boot/ocamlc ocamlc
 	- cmp -i 4096 boot/ocamllex lex/ocamllex
+	- cmp -i 4096 boot/ocamldep tools/ocamldep
 
 # Remove old bootstrap compilers
 cleanboot:
@@ -568,8 +570,6 @@ camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
 	./build/camlp4-byte-only.sh
 camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
 	./build/camlp4-native-only.sh
-partialclean::
-	rm -rf _build/camlp4
 
 # Ocamlbuild
 
@@ -577,12 +577,12 @@ ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
 	./build/ocamlbuild-byte-only.sh
 ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
 	./build/ocamlbuild-native-only.sh
-partialclean::
-	rm -rf _build/ocamlbuild
 
 .PHONY: ocamlbuild-partial-boot
 ocamlbuild-partial-boot:
 	./build/partial-boot.sh
+partialclean::
+	rm -rf _build
 
 # The Win32 toplevel GUI
 

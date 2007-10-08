@@ -84,7 +84,7 @@
     | PaOrp of Loc.t and patt and patt (* p | p *)
     | PaRng of Loc.t and patt and patt (* p .. p *)
     | PaRec of Loc.t and patt (* { p } *)
-    | PaEq  of Loc.t and patt and patt (* p = p *)
+    | PaEq  of Loc.t and ident and patt (* i = p *)
     | PaStr of Loc.t and string (* s *)
     | PaTup of Loc.t and patt (* ( p ) *)
     | PaTyc of Loc.t and patt and ctyp (* (p : t) *)
@@ -128,9 +128,9 @@
       (* ?s or ?s:e *)
     | ExOlb of Loc.t and string and expr
       (* {< b >} *)
-    | ExOvr of Loc.t and binding
+    | ExOvr of Loc.t and rec_binding
       (* { b } or { (e) with b } *)
-    | ExRec of Loc.t and binding and expr
+    | ExRec of Loc.t and rec_binding and expr
       (* do { e } *)
     | ExSeq of Loc.t and expr
       (* e#s *)
@@ -152,8 +152,9 @@
       (* while e do { e } *)
     | ExWhi of Loc.t and expr and expr ]
   and module_type =
+    [ MtNil of Loc.t
       (* i *) (* A.B.C *)
-    [ MtId  of Loc.t and ident
+    | MtId  of Loc.t and ident
       (* functor (s : mt) -> mt *)
     | MtFun of Loc.t and string and module_type and module_type
       (* 's *)
@@ -205,11 +206,16 @@
     [ BiNil of Loc.t
       (* b and b *) (* let a = 42 and c = 43 *)
     | BiAnd of Loc.t and binding and binding
-      (* b ; b *)
-    | BiSem of Loc.t and binding and binding
       (* p = e *) (* let patt = expr *)
     | BiEq  of Loc.t and patt and expr
     | BiAnt of Loc.t and string (* $s$ *) ]
+  and rec_binding =
+    [ RbNil of Loc.t
+      (* b ; b *)
+    | RbSem of Loc.t and rec_binding and rec_binding
+      (* i = e *)
+    | RbEq  of Loc.t and ident and expr
+    | RbAnt of Loc.t and string (* $s$ *) ]
   and module_binding =
     [ MbNil of Loc.t
       (* mb and mb *) (* module rec (s : mt) = me and (s : mt) = me *)
@@ -227,8 +233,9 @@
     | McArr of Loc.t and patt and expr and expr
     | McAnt of Loc.t and string (* $s$ *) ]
   and module_expr =
+    [ MeNil of Loc.t
       (* i *)
-    [ MeId  of Loc.t and ident
+    | MeId  of Loc.t and ident
       (* me me *)
     | MeApp of Loc.t and module_expr and module_expr
       (* functor (s : mt) -> me *)

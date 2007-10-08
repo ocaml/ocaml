@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 set -e
 cd `dirname $0`/..
 . build/targets.sh

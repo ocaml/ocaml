@@ -312,12 +312,6 @@ let tailrec_entry_point = ref 0
 let defined_functions = ref StringSet.empty
 (* Label of glue code for calling the GC *)
 let call_gc_label = ref 0
-(* Label of jump table *)
-let lbl_jumptbl = ref 0
-(* List of all labels in jumptable (reverse order) *)
-let jumptbl_entries = ref []
-(* Number of jumptable entries *)
-let num_jumptbl_entries = ref 0
 
 (* Fixup conditional branches that exceed hardware allowed range *)
 
@@ -746,19 +740,20 @@ let rec emit_instr i dslot =
         | Some lbl -> `	bgt	{emit_label lbl}\n`
         end
     | Lswitch jumptbl ->
-        if !lbl_jumptbl = 0 then lbl_jumptbl := new_label();
-        `	addis	{emit_gpr 11}, 0, {emit_upper emit_label !lbl_jumptbl}\n`;
-        `	addi	{emit_gpr 11}, {emit_gpr 11}, {emit_lower emit_label !lbl_jumptbl}\n`;
-        `	addi	{emit_gpr 0}, {emit_reg i.arg.(0)}, {emit_int !num_jumptbl_entries}\n`;
-        `	{emit_string slgi}	{emit_gpr 0}, {emit_gpr 0}, 2\n`;
+        let lbl = new_label() in
+        `	addis	{emit_gpr 11}, 0, {emit_upper emit_label lbl}\n`;
+        `	addi	{emit_gpr 11}, {emit_gpr 11}, {emit_lower emit_label lbl}\n`;
+        `	{emit_string slgi}	{emit_gpr 0}, {emit_reg i.arg.(0)}, 2\n`;
         `	{emit_string lwa}x	{emit_gpr 0}, {emit_gpr 11}, {emit_gpr 0}\n`;
         `	add	{emit_gpr 0}, {emit_gpr 11}, {emit_gpr 0}\n`;
         `	mtctr	{emit_gpr 0}\n`;
         `	bctr\n`;
+        emit_string rodata_space;
+        `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
-          jumptbl_entries := jumptbl.(i) :: !jumptbl_entries;
-          incr num_jumptbl_entries
-        done
+          `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
+        done;
+        emit_string code_space
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`
     | Lpushtrap ->
@@ -926,9 +921,6 @@ let data l =
 let begin_assembly() =
   defined_functions := StringSet.empty;
   external_functions := StringSet.empty;
-  num_jumptbl_entries := 0;
-  jumptbl_entries := [];
-  lbl_jumptbl := 0;
   (* Emit the beginning of the segments *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   emit_string data_space;
@@ -940,15 +932,6 @@ let begin_assembly() =
   `{emit_symbol lbl_begin}:\n`
 
 let end_assembly() =
-  (* Emit the jump table *)
-  if !num_jumptbl_entries > 0 then begin
-    emit_string code_space;
-    `{emit_label !lbl_jumptbl}:\n`;
-    List.iter
-      (fun lbl -> `	.long	{emit_label lbl} - {emit_label !lbl_jumptbl}\n`)
-      (List.rev !jumptbl_entries);
-    jumptbl_entries := []
-  end;
   if pic_externals then
     (* Emit the pointers to external functions *)
     StringSet.iter emit_external !external_functions;

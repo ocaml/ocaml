@@ -76,6 +76,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "anticlass_str_item" -> <:patt< Ast.CrAnt $mloc _loc$ $p$ >>
             | "antiwith_constr" -> <:patt< Ast.WcAnt $mloc _loc$ $p$ >>
             | "antibinding" -> <:patt< Ast.BiAnt $mloc _loc$ $p$ >>
+            | "antirec_binding" -> <:patt< Ast.RbAnt $mloc _loc$ $p$ >>
             | "antimatch_case" -> <:patt< Ast.McAnt $mloc _loc$ $p$ >>
             | "antimodule_binding" -> <:patt< Ast.MbAnt $mloc _loc$ $p$ >>
             | "antiident" -> <:patt< Ast.IdAnt $mloc _loc$ $p$ >>
@@ -93,6 +94,9 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "`flo" -> <:expr< string_of_float $e$ >>
             | "`str" -> <:expr< Ast.safe_string_escaped $e$ >>
             | "`chr" -> <:expr< Char.escaped $e$ >>
+            | "`bool" ->
+                <:expr< if $e$ then $ME.meta_expr _loc <:expr<True>>$
+                               else $ME.meta_expr _loc <:expr<False>>$ >>
             | "liststr_item" -> <:expr< Ast.stSem_of_list $e$ >>
             | "listsig_item" -> <:expr< Ast.sgSem_of_list $e$ >>
             | "listclass_sig_item" -> <:expr< Ast.cgSem_of_list $e$ >>
@@ -102,13 +106,22 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "listmodule_binding" -> <:expr< Ast.mbAnd_of_list $e$ >>
             | "listbinding" -> <:expr< Ast.biAnd_of_list $e$ >>
             | "listbinding;" -> <:expr< Ast.biSem_of_list $e$ >>
+            | "listrec_binding" -> <:expr< Ast.rbSem_of_list $e$ >>
             | "listclass_type" -> <:expr< Ast.ctAnd_of_list $e$ >>
             | "listclass_expr" -> <:expr< Ast.ceAnd_of_list $e$ >>
             | "listident" -> <:expr< Ast.idAcc_of_list $e$ >>
             | "listctypand" -> <:expr< Ast.tyAnd_of_list $e$ >>
+            | "listctyp;" -> <:expr< Ast.tySem_of_list $e$ >>
+            | "listctyp*" -> <:expr< Ast.tySta_of_list $e$ >>
+            | "listctyp|" -> <:expr< Ast.tyOr_of_list $e$ >>
+            | "listctyp," -> <:expr< Ast.tyCom_of_list $e$ >>
+            | "listctyp&" -> <:expr< Ast.tyAmp_of_list $e$ >>
             | "listwith_constr" -> <:expr< Ast.wcAnd_of_list $e$ >>
             | "listmatch_case" -> <:expr< Ast.mcOr_of_list $e$ >>
+            | "listpatt," -> <:expr< Ast.paCom_of_list $e$ >>
             | "listpatt;" -> <:expr< Ast.paSem_of_list $e$ >>
+            | "listexpr," -> <:expr< Ast.exCom_of_list $e$ >>
+            | "listexpr;" -> <:expr< Ast.exSem_of_list $e$ >>
             | "antisig_item" -> <:expr< Ast.SgAnt $mloc _loc$ $e$ >>
             | "antistr_item" -> <:expr< Ast.StAnt $mloc _loc$ $e$ >>
             | "antictyp" -> <:expr< Ast.TyAnt $mloc _loc$ $e$ >>
@@ -122,6 +135,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "anticlass_str_item" -> <:expr< Ast.CrAnt $mloc _loc$ $e$ >>
             | "antiwith_constr" -> <:expr< Ast.WcAnt $mloc _loc$ $e$ >>
             | "antibinding" -> <:expr< Ast.BiAnt $mloc _loc$ $e$ >>
+            | "antirec_binding" -> <:expr< Ast.RbAnt $mloc _loc$ $e$ >>
             | "antimatch_case" -> <:expr< Ast.McAnt $mloc _loc$ $e$ >>
             | "antimodule_binding" -> <:expr< Ast.MbAnt $mloc _loc$ $e$ >>
             | "antiident" -> <:expr< Ast.IdAnt $mloc _loc$ $e$ >>
@@ -131,14 +145,23 @@ module Make (Syntax : Sig.Camlp4Syntax)
 
   value add_quotation name entry mexpr mpatt =
     let entry_eoi = Gram.Entry.mk (Gram.Entry.name entry) in
+    let parse_quot_string entry loc s =
+      let q = Camlp4_config.antiquotations.val in
+      let () = Camlp4_config.antiquotations.val := True in
+      let res = Gram.parse_string entry loc s in
+      let () = Camlp4_config.antiquotations.val := q in
+      res in
     let expand_expr loc loc_name_opt s =
-      let ast = Gram.parse_string entry_eoi loc s in
+      let ast = parse_quot_string entry_eoi loc s in
       let () = MetaLoc.loc_name.val := loc_name_opt in
       let meta_ast = mexpr loc ast in
       let exp_ast = antiquot_expander#expr meta_ast in
       exp_ast in
+    let expand_str_item loc loc_name_opt s =
+      let exp_ast = expand_expr loc loc_name_opt s in
+      <:str_item@loc< $exp:exp_ast$ >> in
     let expand_patt _loc loc_name_opt s =
-      let ast = Gram.parse_string entry_eoi _loc s in
+      let ast = parse_quot_string entry_eoi _loc s in
       let meta_ast = mpatt _loc ast in
       let exp_ast = antiquot_expander#patt meta_ast in
       match loc_name_opt with
@@ -156,7 +179,9 @@ module Make (Syntax : Sig.Camlp4Syntax)
           [ [ x = entry; `EOI -> x ] ]
         ;
       END;
-      Quotation.add name (Quotation.ExAst (expand_expr, expand_patt))
+      Quotation.add name Quotation.DynAst.expr_tag expand_expr;
+      Quotation.add name Quotation.DynAst.patt_tag expand_patt;
+      Quotation.add name Quotation.DynAst.str_item_tag expand_str_item;
     };
 
   add_quotation "sig_item" sig_item_quot ME.meta_sig_item MP.meta_sig_item;
@@ -174,6 +199,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
                 class_str_item_quot ME.meta_class_str_item MP.meta_class_str_item;
   add_quotation "with_constr" with_constr_quot ME.meta_with_constr MP.meta_with_constr;
   add_quotation "binding" binding_quot ME.meta_binding MP.meta_binding;
+  add_quotation "rec_binding" rec_binding_quot ME.meta_rec_binding MP.meta_rec_binding;
   add_quotation "match_case" match_case_quot ME.meta_match_case MP.meta_match_case;
   add_quotation "module_binding"
                 module_binding_quot ME.meta_module_binding MP.meta_module_binding;

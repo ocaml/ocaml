@@ -1,3 +1,148 @@
+2007-03-22  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Allow to receive the build function in {custom,file}_rule.
+
+	* rule.ml,
+	* rule.mli,
+	* signatures.mli: Ditto.
+	* ocaml_specific.ml: Update.
+
+	* command.ml,
+	* command.mli: Add a function to get string and tags.
+
+	* ocamldep.ml,
+	* ocamldep.mli: Make tag based dependencies.
+
+	* ocaml_compiler.ml: Do the pack as one command to be sure running the
+	remove.
+
+	* test/test8/myocamlbuild.ml,
+	* test/good-output: Update.
+
+2007-03-21  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix the previous fix.
+
+	* ocaml_compiler.ml: Remove the empty file.
+	* test/good-output: Update.
+
+2007-03-21  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	[native pack] use touch instead of mv and cmp.
+
+	* ocaml_compiler.ml: This version is will force ocamlopt to do the
+	right thing.
+	* test/good-output: Update.
+
+2007-03-20  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Two bugs, two fixes.
+
+	* ocaml_tools.ml: Add pp flags to interface inference.
+	* ocaml_specific.ml: Add a rule for packing with a cmi that already
+	exists.
+	* test/good-output: Update.
+	* Makefile: Change the default location.
+
+2007-03-13  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix a bug in expand_module.
+
+	* ocaml_utils.ml: Handle correctly pathnames instead of just basenames.
+
+2007-03-13  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Use sys_file_exists instead of Sys.file_exists.
+
+	* my_unix.ml: Since Sys.file_exists don't treat well captial letters.
+	* my_std.ml: Fix a bug.
+	* pathname.ml: Here is a an exception to the previous rule so, put a
+	comment.
+
+2007-03-11  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix the List.union order.
+
+	* my_std.ml: Fix and improve List.union.
+	* pathname.ml: Use it and fix merge_include_dirs.
+	* test/good-output: Update since the union order was wrong.
+
+2007-03-11  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Re fix menhir and include dirs.
+
+	* ocaml_tools.ml: Specifiy ocamlc and -I with --ocamlc.
+
+2007-03-11  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix a bug: Add include directories to menhir.
+
+	* ocaml_tools.ml: Ditto.
+	* my_std.ml,
+	* signatures.mli: Specification typo.
+
+2007-03-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Handle specially archives files during an import.
+
+	* shell.ml: Ditto.
+
+2007-03-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Use cp -p in copy_rule, and fix some typos in the manual.
+
+	* manual/manual.tex: Typos.
+	* rule.ml,
+	* rule.mli: Add cp_p and use it for copy_rule.
+
+2007-03-05  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Relaxe executor on exception condition.
+
+	Patch from Berke.
+	* executor.ml: Ignore Not_found and exceptional conditions.
+	* TODO: Add an entry (needs to better understand POSIX).
+
+2007-03-04  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Split where in bindir and libdir.
+
+	* ocamlbuild_where.mli: Ditto.
+	* ocaml_specific.ml: Update.
+	* options.ml: Use bindir.
+	* plugin.ml: Update.
+	* start.sh: Update.
+
+2007-03-04  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Virtual solvers for ocaml tools.
+
+	* options.ml: Setup virtual command solver for commands like ocamlc,
+	ocamlopt... This allow to have full pathname but let also failback to
+	classic search path.
+	* ocaml_compiler.ml: Add a tag to differentiate dependencies at link
+	time.
+	* ocamlbuild-presentation.rslide: Add an item as suggested by a friend.
+
+2007-03-02  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Same thing for the second link function.
+
+	* ocaml_compiler.ml: Ignore stdlib.
+
+2007-03-02  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Move the stdlib hack.
+
+	* ocaml_compiler.ml: Should works better.
+
+2007-03-02  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Little fix about library linking.
+
+	* ocaml_utils.ml: Avoid linking twice in some cases.
+	* ocaml_compiler.ml: Handle specially the OCaml stdlib.
+
 2007-03-01  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Remove a rec.

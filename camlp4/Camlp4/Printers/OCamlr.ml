@@ -33,6 +33,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   value pp = fprintf;
 
+  value is_keyword =
+    let keywords = ["where"]
+    and not_keywords = ["false"; "function"; "true"; "val"]
+    in fun s -> not (List.mem s not_keywords)
+             && (is_keyword s || List.mem s keywords);
+
   class printer ?curry_constr:(init_curry_constr = True) ?(comments = True) () =
   object (o)
     inherit PP_o.printer ~curry_constr:init_curry_constr ~comments () as super;
@@ -83,9 +89,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | v ->
           match lex_string v with
           [ (LIDENT s | UIDENT s | ESCAPED_IDENT s) when is_keyword s ->
-               pp f "\\%s" s
+              pp f "%s__" s
           | SYMBOL s ->
-              pp f "\\%s" s
+              pp f "( %s )" s
           | LIDENT s | UIDENT s | ESCAPED_IDENT s ->
               pp_print_string f s
           | tok -> failwith (sprintf
@@ -165,30 +171,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ <:expr< $e$.val >> -> pp f "@[<2>%a.@,val@]" o#simple_expr e
     | e -> super#dot_expr f e ];
 
-    method simple_expr f e =
-    let () = o#node f e Ast.loc_of_expr in
-    match e with
-    [ <:expr< for $s$ = $e1$ to $e2$ do { $e3$ } >> ->
-        pp f "@[<hv0>@[<hv2>@[<2>for %a@ =@ %a@ to@ %a@ do {@]@ %a@]@ }@]"
-          o#var s o#expr e1 o#expr e2 o#seq e3
-    | <:expr< for $s$ = $e1$ downto $e2$ do { $e3$ } >> ->
-        pp f "@[<hv0>@[<hv2>@[<2>for %a@ =@ %a@ downto@ %a@ do {@]@ %a@]@ }@]"
-          o#var s o#expr e1 o#expr e2 o#seq e3
-    | <:expr< while $e1$ do { $e2$ } >> ->
-        pp f "@[<2>while@ %a@ do {@ %a@ }@]" o#expr e1 o#seq e2
-    | <:expr< do { $e$ } >> ->
-        pp f "@[<hv0>@[<hv2>do {@ %a@]@ }@]" o#seq e
-    | e -> super#simple_expr f e ];
-
     method ctyp f t =
     let () = o#node f t Ast.loc_of_ctyp in
     match t with
     [ Ast.TyDcl _ tn tp te cl -> do {
         pp f "@[<2>%a%a@]" o#var tn o#type_params tp;
         match te with
-        [ <:ctyp< '$s$ >>
-            when not (List.exists (fun [ <:ctyp< '$s'$ >> -> s = s'
-                                       | _ -> False ]) tp) -> ()
+        [ <:ctyp<>> -> ()
         | _ -> pp f " =@ %a" o#ctyp te ];
         if cl <> [] then pp f "@ %a" (list o#constrain "@ ") cl else ();
       }
@@ -249,12 +238,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@]" o#ident i
     | <:class_type< $id:i$ [ $t$ ] >> ->
           pp f "@[<2>%a [@,%a@]@,]" o#ident i o#class_params t
-    (* | <:class_type< virtual $id:i$ >> -> *)
-    | Ast.CtCon _ Ast.BTrue i <:ctyp<>> ->
-          pp f "@[<2>virtual@ %a@]" o#ident i
-    (* | <:class_type< virtual $id:i$ [ $t$ ] >> -> *)
-    | Ast.CtCon _ Ast.BTrue i t ->
-          pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#ident i o#class_params t
+    | <:class_type< virtual $lid:i$ >> ->
+          pp f "@[<2>virtual@ %a@]" o#var i
+    | <:class_type< virtual $lid:i$ [ $t$ ] >> ->
+          pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#var i o#class_params t
     | ct -> super#class_type f ct ];
 
     method class_expr f ce =
@@ -264,12 +251,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@]" o#ident i
     | <:class_expr< $id:i$ [ $t$ ] >> ->
           pp f "@[<2>%a@ @[<1>[%a]@]@]" o#ident i o#class_params t
-    (* | <:class_expr< virtual $id:i$ >> -> *)
-    | Ast.CeCon _ Ast.BTrue i <:ctyp<>> ->
-          pp f "@[<2>virtual@ %a@]" o#ident i
-    | Ast.CeCon _ Ast.BTrue i t ->
-    (* | <:class_expr< virtual $id:i$ [ $t$ ] >> -> *)
-          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#ident i o#ctyp t
+    | <:class_expr< virtual $lid:i$ >> ->
+          pp f "@[<2>virtual@ %a@]" o#var i
+    | <:class_expr< virtual $lid:i$ [ $t$ ] >> ->
+          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i o#ctyp t
     | ce -> super#class_expr f ce ];
   end;
 
@@ -281,7 +266,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 end;
 
 module MakeMore (Syntax : Sig.Camlp4Syntax)
-: Sig.Printer with module Ast = Syntax.Ast
+: (Sig.Printer Syntax.Ast).S
 = struct
 
   include Make Syntax;

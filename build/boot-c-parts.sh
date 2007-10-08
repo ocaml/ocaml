@@ -1,24 +1,21 @@
 #!/bin/sh
+# $Id$
 cd `dirname $0`/..
 set -ex
 
-# Create a bunch of symlinks to _build/{boot,stdlib,asmrun}
+# Create a bunch of symlinks to _build/boot
 mkdir -p _build/boot
-ln -sf ../../byterun/{ocamlrun,libcamlrun.a} \
-       ../../asmrun/libasmrun{,p}.a \
+ln -sf ../../byterun/ocamlrun \
+       ../../byterun/libcamlrun.a \
+       ../../asmrun/libasmrun.a \
+       ../../asmrun/libasmrunp.a \
        ../../yacc/ocamlyacc \
        ../../boot/ocamlc \
        ../../boot/ocamllex \
        ../../boot/ocamldep \
        _build/boot
-ln -sf ../byterun/ocamlrun boot
-mkdir -p _build/stdlib
-ln -sf ../../byterun/libcamlrun.a \
-       ../../asmrun/libasmrun{,p}.a \
-       _build/stdlib
-mkdir -p _build/asmrun
-ln -sf ../../asmrun/{meta,dynlink}.o \
-       _build/asmrun
+
+[ -f boot/ocamlrun ] || ln -sf ../byterun/ocamlrun boot
 
 (cd byterun && make)
 (cd asmrun && make all meta.o dynlink.o)

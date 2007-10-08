@@ -304,18 +304,22 @@ let execute
           begin fun (fdlist, hook) ->
             List.iter
               begin fun fd ->
-                let job = FDM.find fd !outputs in
-                ticker ();
-                hook fd job
+                try
+                  let job = FDM.find fd !outputs in
+                  ticker ();
+                  hook fd job
+                with
+                | Not_found -> () (* XXX *)
               end
               fdlist
           end
           [chrfds, do_read ~loop:false;
            chwfds, (fun _ _ -> ());
            chxfds,
-             begin fun _ job ->
-               display (fun oc -> fp oc "Exceptional condition on command %S\n%!" job.job_command);
-               exit Exit_codes.rc_exceptional_condition
+             begin fun _ _job ->
+               (*display (fun oc -> fp oc "Exceptional condition on command %S\n%!" job.job_command);
+               exit Exit_codes.rc_exceptional_condition*)
+	       () (* FIXME *)
              end];
         loop ()
       end

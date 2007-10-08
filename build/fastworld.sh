@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 cd `dirname $0`
 set -e
 ./mkconfig.sh
@@ -21,7 +22,7 @@ $OCAMLBUILD $@ -log _boot_fast_log \
 
 rm -f _build/myocamlbuild
 boot/ocamlrun boot/myocamlbuild \
-  -just-plugin -install-dir _build/ocamlbuild \
+  -just-plugin -install-lib-dir _build/ocamlbuild \
   -ocamlopt "../_build/ocamlopt.opt -nostdlib -I boot -I stdlib -I $UNIXDIR"
 cp _build/myocamlbuild boot/myocamlbuild.native
 

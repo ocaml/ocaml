@@ -30,6 +30,7 @@ let program_name = ref "camlp4";;
 let constructors_arity = ref true;;
 let unsafe             = ref false;;
 let verbose            = ref false;;
+let antiquotations     = ref false;;
 let quotations         = ref true;;
 let inter_phrases      = ref None;;
 let camlp4_ast_impl_magic_number = "Camlp42006M001";;

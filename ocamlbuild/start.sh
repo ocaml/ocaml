@@ -5,7 +5,7 @@ rm -rf _start
 mkdir _start
 cp *.ml* _start
 cd _start
-echo "let where = ref \"<start>\";;" > ocamlbuild_where.ml
+echo "let bindir = ref \"<start>\";; let libdir = bindir;;" > ocamlbuild_where.ml
 ocamlc -c std_signatures.mli
 ocamlc -c signatures.mli
 ocamlc -c tags.mli

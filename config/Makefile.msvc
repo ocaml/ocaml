@@ -92,17 +92,21 @@ NATIVECCLIBS=advapi32.lib
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP
 
-### How to merge a .manifest (if any) in a .exe or .dll
-MERGEMANIFEST=test ! -f $(1).manifest || mt -nologo -outputresource:$(1) -manifest $(1).manifest && rm -f $(1).manifest
-#ml let mergemanifest out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:%s -manifest %s.manifest && rm -f %s.manifest" out out out out;;
+### How to merge a .manifest (if any) in a .exe
+MERGEMANIFESTEXE=test ! -f $(1).manifest || mt -nologo -outputresource:$(1) -manifest $(1).manifest && rm -f $(1).manifest
+#ml let mergemanifestexe out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:%s -manifest %s.manifest && rm -f %s.manifest" out out out out;;
 
 ### How to build an EXE
-MKEXE=$(BYTECC) /Fe$(1) $(2) && ($(MERGEMANIFEST))
-#ml let mkexe out files opts = Printf.sprintf "%s /Fe%s %s %s && (%s)" bytecc out opts files (mergemanifest out);;
+MKEXE=$(BYTECC) /Fe$(1) $(2) && ($(MERGEMANIFESTEXE))
+#ml let mkexe out files opts = Printf.sprintf "%s /Fe%s %s %s && (%s)" bytecc out opts files (mergemanifestexe out);;
+
+### How to merge a .manifest (if any) in a .dll
+MERGEMANIFESTDLL=test ! -f $(1).manifest || mt -nologo -outputresource:"$(1);\#2" -manifest $(1).manifest && rm -f $(1).manifest
+#ml let mergemanifestdll out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:\"%s;\\#2\" -manifest %s.manifest && rm -f %s.manifest" out out out out;;
 
 ### How to build a DLL
-MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3) && ($(MERGEMANIFEST))
-#ml let mkdll out implib files opts = Printf.sprintf "link /nologo /dll /out:%s /implib:%s %s %s && (%s)" out implib opts files (mergemanifest out);;
+MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3) && ($(MERGEMANIFESTDLL))
+#ml let mkdll out implib files opts = Printf.sprintf "link /nologo /dll /out:%s /implib:%s %s %s && (%s)" out implib opts files (mergemanifestdll out);;
 
 ### How to build a static library
 MKLIB=link /lib /nologo /out:$(1) $(2)

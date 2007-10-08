@@ -23,7 +23,7 @@ module Id : Sig.Id = struct
 end;
 
 module Make (Syntax : Sig.Camlp4Syntax)
-: Sig.Printer with module Ast = Syntax.Ast
+: (Sig.Printer Syntax.Ast).S
 = struct
   include Syntax;
   module Ast2pt = Struct.Camlp4Ast2OCamlAst.Make Ast;
