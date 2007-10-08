@@ -47,6 +47,7 @@ void caml_debugger(enum event_kind event)
 #ifdef HAS_UNISTD
 #include <unistd.h>
 #endif
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
@@ -67,12 +68,16 @@ static int dbg_socket = -1;     /* The socket connected to the debugger */
 static struct channel * dbg_in; /* Input channel on the socket */
 static struct channel * dbg_out;/* Output channel on the socket */
 
+static char *dbg_addr = "(none)";
+
 static void open_connection(void)
 {
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
   if (dbg_socket == -1 ||
-      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
-    caml_fatal_error("cannot connect to debugger");
+      connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
+    caml_fatal_error_arg2 ("cannot connect to debugger at %s", dbg_addr,
+                           "error: %s\n", strerror (errno));
+  }
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
@@ -96,6 +101,7 @@ void caml_debugger_init(void)
 
   address = getenv("CAML_DEBUG_SOCKET");
   if (address == NULL) return;
+  dbg_addr = address;
 
   /* Parse the address */
   port = NULL;
@@ -108,7 +114,7 @@ void caml_debugger_init(void)
     sock_addr.s_unix.sun_family = AF_UNIX;
     strncpy(sock_addr.s_unix.sun_path, address,
             sizeof(sock_addr.s_unix.sun_path));
-    sock_addr_len = 
+    sock_addr_len =
       ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
         + strlen(address);
   } else {
@@ -211,7 +217,7 @@ void caml_debugger(enum event_kind event)
   caml_flush(dbg_out);
 
  command_loop:
-  
+
   /* Read and execute the commands sent by the debugger */
   while(1) {
     switch(getch(dbg_in)) {
