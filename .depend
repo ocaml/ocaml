@@ -184,8 +184,6 @@ typing/subst.cmo: typing/types.cmi utils/tbl.cmi typing/path.cmi \
     utils/misc.cmi typing/ident.cmi typing/btype.cmi typing/subst.cmi 
 typing/subst.cmx: typing/types.cmx utils/tbl.cmx typing/path.cmx \
     utils/misc.cmx typing/ident.cmx typing/btype.cmx typing/subst.cmi 
-typing/type_format.cmo: typing/predef.cmi 
-typing/type_format.cmx: typing/predef.cmx 
 typing/typeclass.cmo: utils/warnings.cmi typing/typetexp.cmi typing/types.cmi \
     typing/typedtree.cmi typing/typedecl.cmi typing/typecore.cmi \
     typing/subst.cmi typing/stypes.cmi typing/printtyp.cmi typing/predef.cmi \

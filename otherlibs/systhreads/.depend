@@ -22,14 +22,14 @@ posix.o: posix.c ../../byterun/alloc.h ../../byterun/compatibility.h \
   ../../byterun/mlvalues.h ../../byterun/stacks.h ../../byterun/misc.h \
   ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/sys.h \
   ../../byterun/misc.h
-condition.cmi: ./mutex.cmi 
-condition.cmo: ./mutex.cmi condition.cmi 
-condition.cmx: ./mutex.cmx condition.cmi 
-event.cmo: ./mutex.cmi ./condition.cmi event.cmi 
-event.cmx: ./mutex.cmx ./condition.cmx event.cmi 
+condition.cmi: mutex.cmi 
+condition.cmo: mutex.cmi condition.cmi 
+condition.cmx: mutex.cmx condition.cmi 
+event.cmo: mutex.cmi condition.cmi event.cmi 
+event.cmx: mutex.cmx condition.cmx event.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
-threadUnix.cmo: ./thread.cmi threadUnix.cmi 
-threadUnix.cmx: ./thread.cmx threadUnix.cmi 
+threadUnix.cmo: thread.cmi threadUnix.cmi 
+threadUnix.cmx: thread.cmx threadUnix.cmi 

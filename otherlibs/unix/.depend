@@ -783,8 +783,8 @@ write.o: write.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/signals.h \
   ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/mlvalues.h unixsupport.h
-unixLabels.cmi: ./unix.cmi 
+unixLabels.cmi: unix.cmi 
 unix.cmo: unix.cmi 
 unix.cmx: unix.cmi 
-unixLabels.cmo: ./unix.cmi unixLabels.cmi 
-unixLabels.cmx: ./unix.cmx unixLabels.cmi 
+unixLabels.cmo: unix.cmi unixLabels.cmi 
+unixLabels.cmx: unix.cmx unixLabels.cmi 
