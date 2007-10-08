@@ -225,8 +225,8 @@ See `caml-types-location-re' for annotation file format.
       )))
 
 (defun caml-types-show-ident (arg)
-  "Show the kind of call at point.
-   The smallest function call that contains point is
+  "Show the kind of identifier at point.
+   The identifier that contains point is
    temporarily highlighted.  Its kind is highlighted in the .annot
    file and the mark is set to the beginning of the kind.
    The kind is also displayed in the mini-buffer.
