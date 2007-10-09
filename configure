@@ -635,25 +635,25 @@ case "$arch,$nativecc,$system,$host_type" in
 esac
 
 asflags=''
-aspp='$(AS)'
+aspp=''
 asppflags=''
 asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
+  alpha,*,digital)  aspp='as'; asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
                     asppprofflags='-pg -DPROFILING';;
   alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,freebsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,netbsd)   aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,openbsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
+  mips,*,irix)      aspp='as'; asflags='-n32 -O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,*)        case "$cc" in
                       gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-                         *) asppflags='-P -DSYS_$(SYSTEM)';;
+                         *) aspp='as'; asppflags='-P -DSYS_$(SYSTEM)';;
                     esac;;
   i386,*,solaris)   aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
