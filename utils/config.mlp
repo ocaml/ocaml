@@ -40,13 +40,13 @@ let ranlib = "%%RANLIBCMD%%"
 let cc_profile = "%%CC_PROFILE%%"
 
 let exec_magic_number = "Caml1999X008"
-and cmi_magic_number = "Caml1999I010"
+and cmi_magic_number = "Caml1999I011"
 and cmo_magic_number = "Caml1999O006"
 and cma_magic_number = "Caml1999A007"
 and cmx_magic_number = "Caml1999Y011"
 and cmxa_magic_number = "Caml1999Z010"
-and ast_impl_magic_number = "Caml1999M011"
-and ast_intf_magic_number = "Caml1999N010"
+and ast_impl_magic_number = "Caml1999M012"
+and ast_intf_magic_number = "Caml1999N011"
 
 let load_path = ref ([] : string list)
 
