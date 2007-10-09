@@ -631,15 +631,17 @@ class texi =
           [ Newline ; minus ; Raw "type " ;
             Raw (self#string_of_type_parameters ty) ;
             Raw (Name.simple ty.ty_name) ] @
+          let priv = ty.ty_private = Asttypes.Private in
           ( match ty.ty_manifest with
           | None -> []
           | Some typ ->
-              (Raw " = ") :: (self#text_of_short_type_expr
-                                (Name.father ty.ty_name) typ) ) @
+              (Raw " = ") ::
+              (Raw (if priv then "private " else "")) ::
+              (self#text_of_short_type_expr (Name.father ty.ty_name) typ) ) @
           (
            match ty.ty_kind with
            | Type_abstract -> [ Newline ]
-           | Type_variant (l, priv) ->
+           | Type_variant l ->
                (Raw (" ="^(if priv then " private" else "")^"\n")) ::
                (List.flatten
                   (List.map
@@ -652,7 +654,7 @@ class texi =
                            ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @
                            [ Raw " *)" ; Newline ]
                        ) ) l ) )
-           | Type_record (l, priv) ->
+           | Type_record l ->
                (Raw (" = "^(if priv then "private " else "")^"{\n")) ::
                (List.flatten
                   (List.map

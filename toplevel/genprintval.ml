@@ -242,7 +242,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                     tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_variant(constr_list, priv)} ->
+                | {type_kind = Type_variant constr_list} ->
                     let tag =
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
@@ -257,7 +257,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                         constr_args in
                     tree_of_constr_with_args (tree_of_constr env path)
                                            constr_name 0 depth obj ty_args
-                | {type_kind = Type_record(lbl_list, rep, priv)} ->
+                | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x
                     | None ->

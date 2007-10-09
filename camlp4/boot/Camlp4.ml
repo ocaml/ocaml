@@ -11441,13 +11441,14 @@ module Struct =
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, lab)))), t) ->
                   (mkfield loc (Pfield (lab, mkpolytype (ctyp t)))) :: acc
               | _ -> assert false
-            let mktype loc tl cl tk tm =
+            let mktype loc tl cl tk tp tm =
               let (params, variance) = List.split tl
               in
                 {
                   ptype_params = params;
                   ptype_cstrs = cl;
                   ptype_kind = tk;
+                  ptype_private = tp;
                   ptype_manifest = tm;
                   ptype_loc = mkloc loc;
                   ptype_variance = variance;
@@ -11477,13 +11478,13 @@ module Struct =
               | Ast.TyPrv (_, t) -> type_decl tl cl loc m true t
               | Ast.TyRec (_, t) ->
                   mktype loc tl cl
-                    (Ptype_record (List.map mktrecord (list_of_ctyp t []),
-                       mkprivate' pflag))
+                    (Ptype_record (List.map mktrecord (list_of_ctyp t [])))
+                    (mkprivate' pflag)
                     m
               | Ast.TySum (_, t) ->
                   mktype loc tl cl
-                    (Ptype_variant (List.map mkvariant (list_of_ctyp t []),
-                       mkprivate' pflag))
+                    (Ptype_variant (List.map mkvariant (list_of_ctyp t [])))
+                    (mkprivate' pflag)
                     m
               | t ->
                   if m <> None
@@ -11494,8 +11495,8 @@ module Struct =
                        match t with
                        | Ast.TyNil _ -> None
                        | _ -> Some (ctyp t) in
-                     let k = if pflag then Ptype_private else Ptype_abstract
-                     in mktype loc tl cl k m)
+                     let p = if pflag then Private else Public
+                     in mktype loc tl cl Ptype_abstract p m)
             let type_decl tl cl t =
               type_decl tl cl (loc_of_ctyp t) None false t
             let mkvalue_desc t p = { pval_type = ctyp t; pval_prim = p; }
@@ -11515,8 +11516,8 @@ module Struct =
               | _ -> lab
             let opt_private_ctyp =
               function
-              | Ast.TyPrv (_, t) -> (Ptype_private, (ctyp t))
-              | t -> (Ptype_abstract, (ctyp t))
+              | Ast.TyPrv (_, t) -> (Ptype_abstract, Private, (ctyp t))
+              | t -> (Ptype_abstract, Public, (ctyp t))
             let rec type_parameters t acc =
               match t with
               | Ast.TyApp (_, t1, t2) ->
@@ -11545,7 +11546,7 @@ module Struct =
               | WcTyp (loc, id_tpl, ct) ->
                   let (id, tpl) = type_parameters_and_type_name id_tpl [] in
                   let (params, variance) = List.split tpl in
-                  let (kind, ct) = opt_private_ctyp ct
+                  let (kind, priv, ct) = opt_private_ctyp ct
                   in
                     (id,
                      (Pwith_type
@@ -11553,6 +11554,7 @@ module Struct =
                           ptype_params = params;
                           ptype_cstrs = [];
                           ptype_kind = kind;
+                          ptype_private = priv;
                           ptype_manifest = Some ct;
                           ptype_loc = mkloc loc;
                           ptype_variance = variance;

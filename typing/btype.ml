@@ -140,7 +140,7 @@ let proxy ty =
       in proxy_obj ty
   | _ -> ty0
 
-(**** Utilities for private types ****)
+(**** Utilities for fixed row private types ****)
 
 let has_constr_row t =
   match (repr t).desc with
@@ -318,9 +318,9 @@ let unmark_type_decl decl =
   List.iter unmark_type decl.type_params;
   begin match decl.type_kind with
     Type_abstract -> ()
-  | Type_variant (cstrs, priv) ->
+  | Type_variant cstrs ->
       List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-  | Type_record(lbls, rep, priv) ->
+  | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;
   begin match decl.type_manifest with

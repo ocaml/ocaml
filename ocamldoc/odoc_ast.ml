@@ -1129,6 +1129,7 @@ module Analyser =
                       tt_type_decl.Types.type_params
                       tt_type_decl.Types.type_variance ;
                     ty_kind = kind ;
+                    ty_private = tt_type_decl.Types.type_private;
                     ty_manifest =
                     (match tt_type_decl.Types.type_manifest with
                       None -> None

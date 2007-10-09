@@ -474,11 +474,12 @@ class latex =
         self#latex_of_type_params fmt2 mod_name t;
         (match t.ty_parameters with [] -> () | _ -> ps fmt2 " ");
         ps fmt2 s_name;
+        let priv = t.ty_private = Asttypes.Private in
         (
          match t.ty_manifest with
            None -> ()
          | Some typ ->
-             p fmt2 " = %s" (self#normal_type mod_name typ)
+             p fmt2 " = %s%s" (if priv then "private " else "") (self#normal_type mod_name typ)
         );
         let s_type3 =
           p fmt2
@@ -486,8 +487,8 @@ class latex =
             (
              match t.ty_kind with
                Type_abstract -> ""
-             | Type_variant (_, priv) -> "="^(if priv then " private" else "")
-             | Type_record (_, priv) -> "= "^(if priv then "private " else "")^"{"
+             | Type_variant _ -> "="^(if priv then " private" else "")
+             | Type_record _ -> "= "^(if priv then "private " else "")^"{"
             ) ;
           flush2 ()
         in
@@ -495,7 +496,7 @@ class latex =
         let defs =
           match t.ty_kind with
             Type_abstract -> []
-          | Type_variant (l, _) ->
+          | Type_variant l ->
               (List.flatten
                (List.map
                   (fun constr ->
@@ -527,7 +528,7 @@ class latex =
                   l
                )
               )
-          | Type_record (l, _) ->
+          | Type_record l ->
               (List.flatten
                  (List.map
                     (fun r ->

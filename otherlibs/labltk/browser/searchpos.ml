@@ -165,11 +165,11 @@ let search_pos_type_decl td ~pos ~env =
     | None -> ()
     end;
     let rec search_tkind = function
-      Ptype_abstract | Ptype_private -> ()
-    | Ptype_variant (dl, _) ->
+      Ptype_abstract -> ()
+    | Ptype_variant dl ->
         List.iter dl
           ~f:(fun (_, tl, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
-    | Ptype_record (dl, _) ->
+    | Ptype_record dl ->
         List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) in
     search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:

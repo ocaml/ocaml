@@ -40,6 +40,9 @@ val approx_type_decl:
 val check_recmod_typedecl:
     Env.t -> Location.t -> Ident.t list -> Path.t -> type_declaration -> unit
 
+(* for fixed types *)
+val is_fixed_type : Parsetree.type_declaration -> bool
+
 (* for typeclass.ml *)
 val compute_variance_decls:
     Env.t ->

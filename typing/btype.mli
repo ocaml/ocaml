@@ -59,7 +59,7 @@ val proxy: type_expr -> type_expr
         (* Return the proxy representative of the type: either itself
            or a row variable *)
 
-(**** Utilities for private types ****)
+(**** Utilities for private abbreviations with fixed rows ****)
 val has_constr_row: type_expr -> bool
 val is_row_name: string -> bool
 

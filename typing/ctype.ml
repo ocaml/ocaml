@@ -439,9 +439,9 @@ let closed_type_decl decl =
     begin match decl.type_kind with
       Type_abstract ->
         ()
-    | Type_variant(v, priv) ->
+    | Type_variant v ->
         List.iter (fun (_, tyl) -> List.iter closed_type tyl) v
-    | Type_record(r, rep, priv) ->
+    | Type_record(r, rep) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
     end;
     begin match decl.type_manifest with
@@ -3267,16 +3267,16 @@ let nondep_type_decl env mid id is_covariant decl =
             match decl.type_kind with
               Type_abstract ->
                 Type_abstract
-            | Type_variant(cstrs, priv) ->
+            | Type_variant cstrs ->
                 Type_variant(List.map
                   (fun (c, tl) -> (c, List.map (nondep_type_rec env mid) tl))
-                  cstrs, priv)
-            | Type_record(lbls, rep, priv) ->
+                  cstrs)
+            | Type_record(lbls, rep) ->
                 Type_record(
                   List.map
                     (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
                     lbls,
-                  rep, priv)
+                  rep)
           with Not_found when is_covariant ->
             Type_abstract
           end;
@@ -3289,6 +3289,7 @@ let nondep_type_decl env mid id is_covariant decl =
           with Not_found when is_covariant ->
             None
           end;
+        type_private = decl.type_private;
         type_variance = decl.type_variance;
       }
     in
@@ -3296,9 +3297,9 @@ let nondep_type_decl env mid id is_covariant decl =
     List.iter unmark_type decl.type_params;
     begin match decl.type_kind with
       Type_abstract -> ()
-    | Type_variant(cstrs, priv) ->
+    | Type_variant cstrs ->
         List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-    | Type_record(lbls, rep, priv) ->
+    | Type_record(lbls, rep) ->
         List.iter (fun (c, mut, t) -> unmark_type t) lbls
     end;
     begin match decl.type_manifest with

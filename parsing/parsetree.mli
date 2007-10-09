@@ -124,16 +124,16 @@ and type_declaration =
   { ptype_params: string list;
     ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
+    ptype_private: private_flag;
     ptype_manifest: core_type option;
     ptype_variance: (bool * bool) list;
     ptype_loc: Location.t }
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list * Location.t) list * private_flag
+  | Ptype_variant of (string * core_type list * Location.t) list
   | Ptype_record of
-      (string * mutable_flag * core_type * Location.t) list * private_flag
-  | Ptype_private
+      (string * mutable_flag * core_type * Location.t) list
 
 and exception_declaration = core_type list
 

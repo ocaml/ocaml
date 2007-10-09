@@ -889,11 +889,11 @@ and assoc_comments_type module_list t =
   t.ty_info <- ao (assoc_comments_info parent module_list) t.ty_info ;
   (match t.ty_kind with
     Type_abstract -> ()
-  | Type_variant (vl, _) ->
+  | Type_variant vl ->
       List.iter
         (fun vc -> vc.vc_text <- ao (assoc_comments_text parent module_list) vc.vc_text)
         vl
-  | Type_record (fl, _) ->
+  | Type_record fl ->
       List.iter
         (fun rf -> rf.rf_text <- ao (assoc_comments_text parent module_list) rf.rf_text)
         fl

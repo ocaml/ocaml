@@ -410,17 +410,19 @@ class man =
       );
       bs b (Name.simple t.ty_name);
       bs b " \n";
+      let priv = t.ty_private = Asttypes.Private in
       (
        match t.ty_manifest with
          None -> ()
        | Some typ ->
            bs b "= ";
+           if priv then bs b "private ";
            self#man_of_type_expr b father typ
       );
       (
        match t.ty_kind with
         Type_abstract -> ()
-      | Type_variant (l, priv) ->
+      | Type_variant l ->
           bs b "=";
           if priv then bs b " private";
           bs b "\n ";
@@ -448,7 +450,7 @@ class man =
               )
             )
             l
-      | Type_record (l, priv) ->
+      | Type_record l ->
           bs b "= ";
           if priv then bs b "private ";
           bs b "{";

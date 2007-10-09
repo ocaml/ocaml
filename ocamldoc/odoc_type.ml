@@ -33,10 +33,10 @@ type record_field = {
 (** The various kinds of type. *)
 type type_kind = 
     Type_abstract
-  | Type_variant of variant_constructor list * bool
-                   (** constructors * bool *)
-  | Type_record of record_field list * bool
-	           (** fields * bool *)
+  | Type_variant of variant_constructor list
+                   (** constructors *)
+  | Type_record of record_field list
+	           (** fields *)
 
 (** Representation of a type. *)
 type t_type = {
@@ -45,6 +45,7 @@ type t_type = {
     ty_parameters : (Types.type_expr * bool * bool) list ; 
                     (** type parameters: (type, covariant, contravariant) *)
     ty_kind : type_kind ;
+    ty_private : Asttypes.private_flag;
     ty_manifest : Types.type_expr option; (** type manifest *)
     mutable ty_loc : Odoc_types.location ;
     mutable ty_code : string option;

@@ -88,7 +88,7 @@ unix.mli: $(UNIXLIB)/unix.mli
 unix.cmi: $(UNIXLIB)/unix.cmi
 	ln -sf $(UNIXLIB)/unix.cmi unix.cmi
 
-unix.cmo: unix.mli unix.cmi $(UNIXLIB)/unixLabels.cmo 
+unix.cmo: unix.mli unix.cmi $(UNIXLIB)/unixLabels.cmo
 	$(CAMLC) ${COMPFLAGS} -c unix.ml
 
 partialclean:

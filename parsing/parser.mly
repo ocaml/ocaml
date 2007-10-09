@@ -1149,10 +1149,11 @@ type_declarations:
 type_declaration:
     type_parameters LIDENT type_kind constraints
       { let (params, variance) = List.split $1 in
-        let (kind, manifest) = $3 in
+        let (kind, private_flag, manifest) = $3 in
         ($2, {ptype_params = params;
               ptype_cstrs = List.rev $4;
               ptype_kind = kind;
+              ptype_private = private_flag;
               ptype_manifest = manifest;
               ptype_variance = variance;
               ptype_loc = symbol_rloc()}) }
@@ -1163,23 +1164,23 @@ constraints:
 ;
 type_kind:
     /*empty*/
-      { (Ptype_abstract, None) }
+      { (Ptype_abstract, Public, None) }
   | EQUAL core_type
-      { (Ptype_abstract, Some $2) }
+      { (Ptype_abstract, Public, Some $2) }
   | EQUAL constructor_declarations
-      { (Ptype_variant(List.rev $2, Public), None) }
+      { (Ptype_variant(List.rev $2), Public, None) }
   | EQUAL PRIVATE constructor_declarations
-      { (Ptype_variant(List.rev $3, Private), None) }
+      { (Ptype_variant(List.rev $3), Private, None) }
   | EQUAL private_flag BAR constructor_declarations
-      { (Ptype_variant(List.rev $4, $2), None) }
+      { (Ptype_variant(List.rev $4), $2, None) }
   | EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $4, $2), None) }
+      { (Ptype_record(List.rev $4), $2, None) }
   | EQUAL core_type EQUAL private_flag opt_bar constructor_declarations
-      { (Ptype_variant(List.rev $6, $4), Some $2) }
+      { (Ptype_variant(List.rev $6), $4, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $6, $4), Some $2) }
+      { (Ptype_record(List.rev $6), $4, Some $2) }
   | EQUAL PRIVATE core_type
-      { (Ptype_private, Some $3) }
+      { (Ptype_abstract, Private, Some $3) }
 ;
 type_parameters:
     /*empty*/                                   { [] }
@@ -1228,8 +1229,9 @@ with_constraint:
       { let params, variance = List.split $2 in
         ($3, Pwith_type {ptype_params = params;
                          ptype_cstrs = List.rev $6;
-                         ptype_kind = $4;
+                         ptype_kind = Ptype_abstract;
                          ptype_manifest = Some $5;
+                         ptype_private = $4;
                          ptype_variance = variance;
                          ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
@@ -1238,8 +1240,8 @@ with_constraint:
       { ($2, Pwith_module $4) }
 ;
 with_type_binder:
-    EQUAL          { Ptype_abstract }
-  | EQUAL PRIVATE  { Ptype_private }
+    EQUAL          { Public }
+  | EQUAL PRIVATE  { Private }
 ;
 
 /* Polymorphic types */

@@ -19,7 +19,7 @@ open Asttypes
 (* Type expressions for the core language *)
 
 type type_expr =
-  { mutable desc: type_desc; 
+  { mutable desc: type_desc;
     mutable level: int;
     mutable id: int }
 
@@ -136,15 +136,16 @@ type type_declaration =
   { type_params: type_expr list;
     type_arity: int;
     type_kind: type_kind;
+    type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: (bool * bool * bool) list }
             (* covariant, contravariant, weakly contravariant *)
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list * private_flag
-  | Type_record of (string * mutable_flag * type_expr) list
-                 * record_representation * private_flag
+  | Type_variant of (string * type_expr list) list
+  | Type_record of
+      (string * mutable_flag * type_expr) list * record_representation
 
 type exception_declaration = type_expr list
 

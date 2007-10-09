@@ -38,7 +38,9 @@ let value_descriptions env vd1 vd2 =
 (* Inclusion between "private" annotations *)
 
 let private_flags priv1 priv2 =
-  match (priv1, priv2) with (Private, Public) -> false | (_, _) -> true
+  match priv1, priv2 with
+  | Private, Public -> false
+  | _, _ -> true
 
 (* Inclusion between manifest types (particularly for private row types) *)
 
@@ -93,17 +95,17 @@ let type_manifest env ty1 params1 ty2 params2 =
       let tl1, tl2 =
 	List.split (List.map (fun (_,_,t1,_,t2) -> t1, t2) pairs) in
       Ctype.equal env true (params1 @ tl1) (params2 @ tl2)
-  | _ -> 
+  | _ ->
       Ctype.equal env true (ty1 :: params1) (ty2 :: params2)
 
 (* Inclusion between type declarations *)
 
 let type_declarations env id decl1 decl2 =
   decl1.type_arity = decl2.type_arity &&
+  private_flags decl1.type_private decl2.type_private &&
   begin match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> true
-    | (Type_variant (cstrs1, priv1), Type_variant (cstrs2, priv2)) ->
-        private_flags priv1 priv2 &&
+    | (Type_variant cstrs1, Type_variant cstrs2) ->
         Misc.for_all2
           (fun (cstr1, arg1) (cstr2, arg2) ->
             cstr1 = cstr2 &&
@@ -113,8 +115,7 @@ let type_declarations env id decl1 decl2 =
                                      (ty2::decl2.type_params))
               arg1 arg2)
           cstrs1 cstrs2
-    | (Type_record(labels1,rep1,priv1), Type_record(labels2,rep2,priv2)) ->
-        private_flags priv1 priv2 &&
+    | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         rep1 = rep2 &&
         Misc.for_all2
           (fun (lbl1, mut1, ty1) (lbl2, mut2, ty2) ->
@@ -137,9 +138,10 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env false [ty1] [ty2]
   end &&
   if match decl2.type_kind with
-  | Type_record(_,_,priv) | Type_variant(_,priv) -> priv = Private
+  | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
   | Type_abstract ->
-      match decl2.type_manifest with None -> true
+      match decl2.type_manifest with
+      | None -> true
       | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
   then
     List.for_all2

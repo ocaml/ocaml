@@ -207,10 +207,10 @@ module Type :
     (** The various kinds of a type. *)
     type type_kind = Odoc_type.type_kind =
         Type_abstract (** Type is abstract, for example [type t]. *)
-      | Type_variant of variant_constructor list * bool
-                   (** constructors * bool *)
-      | Type_record of record_field list * bool
-                   (** fields * bool *)
+      | Type_variant of variant_constructor list
+                   (** constructors *)
+      | Type_record of record_field list
+                   (** fields *)
 
     (** Representation of a type. *)
     type t_type = Odoc_type.t_type =
@@ -219,7 +219,8 @@ module Type :
           mutable ty_info : info option ; (** Information found in the optional associated comment. *)
           ty_parameters : (Types.type_expr * bool * bool) list ;
                     (** type parameters: (type, covariant, contravariant) *)
-          ty_kind : type_kind ; (** Type kind. *)
+          ty_kind : type_kind; (** Type kind. *)
+          ty_private : Asttypes.private_flag; (** Private or public type. *)
           ty_manifest : Types.type_expr option; (** Type manifest. *)
           mutable ty_loc : location ;
           mutable ty_code : string option;

@@ -262,8 +262,8 @@ and find_cltype =
 let find_type_expansion path env =
   let decl = find_type path env in
   match decl.type_manifest with
-    None      -> raise Not_found
-  | Some body -> (decl.type_params, body)
+  | Some body when decl.type_private = Public -> (decl.type_params, body)
+  | _ -> raise Not_found
 
 let find_modtype_expansion path env =
   match find_modtype path env with
@@ -426,20 +426,20 @@ let rec scrape_modtype mty env =
 
 let constructors_of_type ty_path decl =
   match decl.type_kind with
-    Type_variant(cstrs, priv) ->
+    Type_variant cstrs ->
       Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        cstrs priv
+        cstrs decl.type_private
   | Type_record _ | Type_abstract -> []
 
 (* Compute label descriptions *)
 
 let labels_of_type ty_path decl =
   match decl.type_kind with
-    Type_record(labels, rep, priv) ->
+    Type_record(labels, rep) ->
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels rep priv
+        labels rep decl.type_private
   | Type_variant _ | Type_abstract -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
@@ -521,7 +521,7 @@ let rec components_of_module env sub path mty =
             List.iter
               (fun (name, descr) ->
                 c.comp_labels <- Tbl.add name (descr, nopos) c.comp_labels)
-              (labels_of_type path decl'); 
+              (labels_of_type path decl');
             env := store_type_infos id path decl !env
         | Tsig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in

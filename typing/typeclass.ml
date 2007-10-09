@@ -1007,6 +1007,7 @@ let temp_abbrev env id arity =
       {type_params = !params;
        type_arity = arity;
        type_kind = Type_abstract;
+       type_private = Public;
        type_manifest = Some ty;
        type_variance = List.map (fun _ -> true, true, true) !params}
       env
@@ -1217,6 +1218,7 @@ let class_infos define_class kind
     {type_params = obj_params;
      type_arity = List.length obj_params;
      type_kind = Type_abstract;
+     type_private = Public;
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> true, true, true) obj_params}
   in
@@ -1229,6 +1231,7 @@ let class_infos define_class kind
     {type_params = cl_params;
      type_arity = List.length cl_params;
      type_kind = Type_abstract;
+     type_private = Public;
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> true, true, true) cl_params}
   in

@@ -6,7 +6,7 @@ let rec fib n =
 let format_result n =
   let r = "Result = " ^ string_of_int n in
   (* Allocate gratuitously to test GC *)
-  for i = 1 to 1500 do String.create 256 done;
+  for i = 1 to 1500 do ignore (String.create 256) done;
   r
 
 (* Registration *)
@@ -14,4 +14,3 @@ let format_result n =
 let _ =
   Callback.register "fib" fib;
   Callback.register "format_result" format_result
-

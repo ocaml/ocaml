@@ -3,7 +3,7 @@ external mycallback2 : ('a -> 'b -> 'c) -> 'a -> 'b -> 'c = "mycallback2"
 external mycallback3 : ('a -> 'b -> 'c -> 'd) -> 'a -> 'b -> 'c -> 'd = "mycallback3"
 external mycallback4 : ('a -> 'b -> 'c -> 'd -> 'e) -> 'a -> 'b -> 'c -> 'd -> 'e = "mycallback4"
 
-let rec tak (x, y, z as tuple) =
+let rec tak (x, y, z as _tuple) =
   if x > y then tak(tak (x-1, y, z), tak (y-1, z, x), tak (z-1, x, y))
            else z
 
@@ -38,8 +38,7 @@ let sighandler signo =
   print_newline();
 *)
   (* Thoroughly wipe the minor heap *)
-  tak (18, 12, 6);
-  ()
+  ignore (tak (18, 12, 6))
 
 external unix_getpid : unit -> int = "unix_getpid" "noalloc"
 external unix_kill : int -> int -> unit = "unix_kill" "noalloc"
@@ -64,6 +63,6 @@ let _ =
   print_int(trapexit ()); print_newline();
   print_string(tripwire mypushroot); print_newline();
   print_string(tripwire mycamlparam); print_newline();
-  Sys.signal Sys.sigusr1 (Sys.Signal_handle sighandler);
+  Sys.set_signal Sys.sigusr1 (Sys.Signal_handle sighandler);
   print_string(callbacksig ()); print_newline()
 

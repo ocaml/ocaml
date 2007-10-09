@@ -150,6 +150,10 @@ let string_of_class_params c =
   iter c.Odoc_class.cl_type;
   Buffer.contents b
 
+let bool_of_private = function
+  | Asttypes.Private -> true
+  | _ -> false
+
 let string_of_type t =
   let module M = Odoc_type in
   "type "^
@@ -162,15 +166,18 @@ let string_of_type t =
         t.M.ty_parameters
      )
   )^
+  let priv = bool_of_private (t.M.ty_private) in
   (Name.simple t.M.ty_name)^" "^
   (match t.M.ty_manifest with
     None -> ""
-  | Some typ -> "= "^(Odoc_print.string_of_type_expr typ)^" "
+  | Some typ ->
+     "= " ^ (if priv then "private " else "" ) ^
+       (Odoc_print.string_of_type_expr typ)^" "
   )^
   (match t.M.ty_kind with
     M.Type_abstract ->
       ""
-  | M.Type_variant (l, priv) ->
+  | M.Type_variant l ->
       "="^(if priv then " private" else "")^"\n"^
       (String.concat ""
          (List.map
@@ -192,7 +199,7 @@ let string_of_type t =
             l
          )
       )
-  | M.Type_record (l, priv) ->
+  | M.Type_record l ->
       "= "^(if priv then "private " else "")^"{\n"^
       (String.concat ""
          (List.map

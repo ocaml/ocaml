@@ -21,6 +21,15 @@ CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
+OUTS=callback.out manyargs.out \
+cm.byt cmlinked.out cm.out \
+bigarrays.out bigarrf.out fftba.out globroots.out float.out intext.out \
+printf scanf regexp.byt regexp.opt md5.out recmod.out
+
+BROKENS=# multdef.out
+
+all: $(OUTS)
+
 callback.byt: callback.cmo callbackprim.o
 	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
 callback.out: callback.cmx callbackprim.o

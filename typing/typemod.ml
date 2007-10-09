@@ -87,13 +87,14 @@ let merge_constraint initial_env loc sg lid constr =
       ([], _, _) ->
         raise(Error(loc, With_no_component lid))
     | (Tsig_type(id, decl, rs) :: rem, [s],
-       Pwith_type ({ptype_kind = Ptype_private} as sdecl))
-      when Ident.name id = s ->
+       Pwith_type ({ptype_kind = Ptype_abstract} as sdecl))
+      when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
         let decl_row =
           { type_params =
               List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
             type_arity = List.length sdecl.ptype_params;
             type_kind = Type_abstract;
+            type_private = Private;
             type_manifest = None;
             type_variance =
               List.map (fun (c,n) -> (not n, not c, not c))
