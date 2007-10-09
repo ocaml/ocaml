@@ -230,16 +230,18 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
      input function [ri] must therefore have type [Scanning.scanbuf -> 'a] and
      the argument read has type ['a].
    - [\{ fmt %\}]: reads a format string argument.
-     The format string read must have the same type as [fmt].
+     The format string read must have the same type as the format string
+     specification [fmt].
      For instance, ["%\{%i%\}"] reads any format string that can read a value of
      type [int]; hence [Scanf.sscanf "fmt:\\\"number is %u\\\"" "fmt:%\{%i%\}"]
      succeeds and returns the format string ["number is %u"].
    - [\( fmt %\)]: scanning format substitution.
      Reads a format string to replace [fmt].
-     The format string read must have the same type as [fmt].
+     The format string read must have the same type as the format string
+     specification [fmt].
      For instance, ["%\( %i% \)"] reads any format string that can read a value
      of type [int]; hence [Scanf.sscanf "\\\"%4d\\\"1234.00" "%\(%i%\)"]
-     succeeds and returns the format string ["number is %u"].
+     is equivalent to [Scanf.sscanf "1234.00" "%4d"].
    - [l]: returns the number of lines read so far.
    - [n]: returns the number of characters read so far.
    - [N] or [L]: returns the number of tokens read so far.
