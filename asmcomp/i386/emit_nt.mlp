@@ -206,7 +206,7 @@ let emit_call_bound_error bd =
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then
-    `{emit_label !bound_error_call}:	jmp	_caml_ml_array_bound_error\n`
+    `{emit_label !bound_error_call}:	call	_caml_ml_array_bound_error\n`
 
 (* Names for instructions *)
 
