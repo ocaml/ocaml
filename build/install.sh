@@ -127,6 +127,7 @@ installdir otherlibs/"$WIN32"unix/unixsupport.h \
 
 installdir yacc/ocamlyacc byterun/ocamlrun $BINDIR
 
+installdir config/Makefile $LIBDIR/Makefile.config
 installdir byterun/ld.conf $LIBDIR
 
 cd _build
