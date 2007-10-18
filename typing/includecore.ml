@@ -37,9 +37,10 @@ let value_descriptions env vd1 vd2 =
 
 (* Inclusion between "private" annotations *)
 
-let private_flags priv1 priv2 =
-  match priv1, priv2 with
-  | Private, Public -> false
+let private_flags priv1 decl2 =
+  match priv1, decl2.type_private with
+  | Private, Public ->
+      decl2.type_kind = Type_abstract && decl2.type_manifest = None
   | _, _ -> true
 
 (* Inclusion between manifest types (particularly for private row types) *)
@@ -102,7 +103,7 @@ let type_manifest env ty1 params1 ty2 params2 =
 
 let type_declarations env id decl1 decl2 =
   decl1.type_arity = decl2.type_arity &&
-  private_flags decl1.type_private decl2.type_private &&
+  private_flags decl1.type_private decl2 &&
   begin match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> true
     | (Type_variant cstrs1, Type_variant cstrs2) ->
