@@ -81,7 +81,7 @@ let is_float env ty =
 (* Determine if a type definition defines a fixed type. (PW) *)
 let is_fixed_type sd =
   (match sd.ptype_manifest with
-   | Some { ptyp_desc = (Ptyp_variant _ | Ptyp_object _); } -> true
+   | Some { ptyp_desc = (Ptyp_variant _|Ptyp_object _|Ptyp_class _); } -> true
    | _ -> false) &&
   sd.ptype_kind = Ptype_abstract &&
   sd.ptype_private = Private
