@@ -50,7 +50,9 @@ and strengthen_sig env sg p =
         match decl.type_manifest with
           Some ty when not (Btype.has_constr_row ty) -> decl
         | _ ->
-            { decl with type_manifest =
+            { decl with
+              type_private = Asttypes.Public;
+              type_manifest =
                 Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
                                             decl.type_params, ref Mnil))) }
       in

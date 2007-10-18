@@ -564,8 +564,7 @@ let rec tree_of_type_decl id decl =
         begin match ty_manifest with
         | None -> (Otyp_abstract, Public)
         | Some ty ->
-            tree_of_typexp false ty,
-            (if has_constr_row ty then Private else decl.type_private)
+            tree_of_typexp false ty, decl.type_private
         end
     | Type_variant cstrs ->
         tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),

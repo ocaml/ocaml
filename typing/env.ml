@@ -262,7 +262,8 @@ and find_cltype =
 let find_type_expansion path env =
   let decl = find_type path env in
   match decl.type_manifest with
-  | Some body when decl.type_private = Public -> (decl.type_params, body)
+  | Some body when decl.type_private = Public || Btype.has_constr_row body ->
+      (decl.type_params, body)
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =
