@@ -25,18 +25,23 @@ module Mix(X: sig type t = private [> `A of int ] end)
     (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
   struct type t = [X.t | Y.t] end;;
 
-(* ok *)
-module Mix(X: sig type t = private [> `A of int ] ~ [`B of bool] end)
-    (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
-  struct type t = [X.t | Y.t] end;;
+type 'a t = private [> `L of 'a] ~ [`L];;
 
 (* ok *)
-module Mix(X: sig type t = private [> `A of int ] ~ [~`B] end)
+module Mix(X: sig type t = private [> `A of int ] ~ [`B] end)
     (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
   struct type t = [X.t | Y.t] let is_t = function #t -> true | _ -> false end;;
 
-module Mix(X: sig type t = private [> `A of int ] ~ [~`B] end)
+module Mix(X: sig type t = private [> `A of int ] ~ [`B] end)
     (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
+  struct
+    type t = [X.t | Y.t]
+    let which = function #X.t -> `X | #Y.t -> `Y
+  end;;
+
+module Mix(I: sig type t = private [> ] ~ [`A;`B] end)
+    (X: sig type t = private [> I.t | `A of int ] ~ [`B] end)
+    (Y: sig type t = private [> I.t | `B of bool] ~ [X.t] end) =
   struct
     type t = [X.t | Y.t]
     let which = function #X.t -> `X | #Y.t -> `Y
@@ -44,18 +49,21 @@ module Mix(X: sig type t = private [> `A of int ] ~ [~`B] end)
 
 (* ok *)
 module M =
-  Mix(struct type t = [`A of int | `C of char] end)
+  Mix(struct type t = [`C of char] end)
+    (struct type t = [`A of int | `C of char] end)
     (struct type t = [`B of bool | `C of char] end);;
 
 (* bad *)
 module M =
-  Mix(struct type t = [`A of int | `B of bool] end)
+  Mix(struct type t = [`B of bool] end)
+    (struct type t = [`A of int | `B of bool] end)
     (struct type t = [`B of bool | `C of char] end);;
 
 (* ok *)
 module M1 = struct type t = [`A of int | `C of char] end
 module M2 = struct type t = [`B of bool | `C of char] end
-module M = Mix(M1)(M2) ;;
+module I = struct type t = [`C of char] end
+module M = Mix(I)(M1)(M2) ;;
 
 let c = (`C 'c' : M.t) ;;
 
@@ -66,7 +74,7 @@ module M(X : sig type t = private [> `A] end) =
 type t = private [> `A ] ~ [`B];;
 match `B with #t -> 1 | `B -> 2;;
 
-module M : sig type t = private [> `A of int | `B] ~ [~`C] end =
+module M : sig type t = private [> `A of int | `B] ~ [`C] end =
   struct type t = [`A of int | `B | `D of bool] end;;
 let f = function (`C | #M.t) -> 1+1 ;;
 let f = function (`A _ | `B #M.t) -> 1+1 ;;
@@ -103,28 +111,8 @@ module Mix(X:T)(Y:T with type t = private [> ] ~ [X.t]) :
 module M = Mix(EStr)(EInt);;
 
 (* deep *)
-module M : sig type t = private [> ] ~ [`A] end = struct type t = [`A] end
+module M : sig type t = private [> `A] end = struct type t = [`A] end
 module M' : sig type t = private [> ] end = struct type t = [M.t | `A] end;;
-
-(* parameters *)
-module type T = sig
-  type t = private [> ] ~ [ `A of int ]
-  type ('a,'b) u = private [> ] ~ [ `A of 'a; `A of 'b; `B of 'b ]
-  type v = private [> ] ~ [ `A of int; `A of bool ]
-end
-module F(X:T) = struct
-  let h = function
-      `A _ -> true
-    | #X.t -> false
-  let f = function
-      `A _ | `B _ -> true
-    | #X.u -> false
-  let g = function
-      `A _ -> true
-    | #X.v -> false
-end
-
-(* ... *)
 
 (* bad *)
 type t = private [> ]
@@ -135,9 +123,9 @@ type t = private [> `A of int]
 type u = private [> `A of int] ~ [t] ;;
 
 module F(X: sig
-  type t = private [> ] ~ [~`A;~`B;~`C;~`D]
+  type t = private [> ] ~ [`A;`B;`C;`D]
   type u = private [> `A|`B|`C] ~ [t; `D]
-end) : sig type v = private [> ] ~ [X.t; X.u] end = struct
+end) : sig type v = private [< X.t | X.u | `D] end = struct
   open X
   let f = function #u -> 1 | #t -> 2 | `D -> 3
   let g = function #u|#t|`D -> 2 
@@ -153,7 +141,7 @@ module type T = sig type t = private [> ] ~ [`A] end;;
 module type T' = T with type t = private [> `A];;
 
 (* ok *)
-type t = private [> ] ~ [`A of int]
+type t = private [> ] ~ [`A]
 let f = function `A x -> x | #t -> 0
 type t' = private [< `A of int | t];;
 
@@ -176,6 +164,15 @@ type t = [F(String).t | M.u]
 let f = function #t -> 1 | _ -> 2;;
 module N : sig type t = private [> ] end =
   struct type t = [F(String).t | M.u] end;;
+
+(* compatibility improvement *)
+type a = [`A of int | `B]
+type b = [`A of bool | `B]
+type c = private [> ] ~ [a;b]
+let f = function #c -> 1 | `A x -> truncate x
+type d = private [> ] ~ [a]
+let g = function #d -> 1 | `A x -> truncate x;;
+
 
 (* Expression Problem: functorial form *)
 
@@ -223,7 +220,7 @@ end
 module Ext(X : sig type t = private [> ] end)(Y : sig type t end) = struct
   module type S =
     sig
-      type t = private [> ] ~ [ ~ X.t ]
+      type t = private [> ] ~ [ X.t ]
       val eval : t -> Y.t
       val show : t -> string
     end
@@ -270,9 +267,19 @@ module rec E : (Exp with type t = [num | E.t add | E.t mul]) =
   end
 
 (* Do functor applications in Mix *)
-module type T = sig type t = private [> num] end
+module type T = sig type t = private [> ] end
+module type Tnum = sig type t = private [> num] end
 
-module Ext(E : T)(X : sig type t = private [> ] end) = struct
+module Ext(E : Tnum) = struct
+  module type S = functor (Y : Exp with type t = E.t) ->
+    sig
+      type t = private [> num]
+      val eval : t -> Y.t
+      val show : t -> string
+    end
+end
+
+module Ext'(E : Tnum)(X : T) = struct
   module type S = functor (Y : Exp with type t = E.t) ->
     sig
       type t = private [> ] ~ [ X.t ]
@@ -281,7 +288,7 @@ module Ext(E : T)(X : sig type t = private [> ] end) = struct
     end
 end
 
-module Mix(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S) =
+module Mix(E : Exp)(F1 : Ext(E).S)(F2 : Ext'(E)(F1(E)).S) =
   struct
     module E1 = F1(E)
     module E2 = F2(E)
@@ -294,7 +301,7 @@ module Mix(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S) =
       | #E2.t as x -> E2.show x
   end
 
-module Join(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S)
+module Join(E : Exp)(F1 : Ext(E).S)(F2 : Ext'(E)(F1(E)).S)
     (E' : Exp with type t = E.t) =
   Mix(E)(F1)(F2)
 
@@ -308,15 +315,15 @@ module rec E : (Exp with type t = [num | E.t add | E.t mul]) =
   Mix(E)(Join(E)(Num)(Add))(Mul)
 
 (* Linear extension by the end: not so nice *)
-module LExt(X : sig type t = private [> ] end) = struct
+module LExt(X : T) = struct
   module type S =
     sig
-      type t = private [> ] ~ [X.t]
+      type t
       val eval : t -> X.t
       val show : t -> string
     end
 end
-module LNum(E: Exp)(X : LExt(E).S) =
+module LNum(E: Exp)(X : LExt(E).S with type t = private [> ] ~ [num]) =
   struct
     type t = [num | X.t]
     let show = function
@@ -327,29 +334,29 @@ module LNum(E: Exp)(X : LExt(E).S) =
       | #X.t as x -> X.eval x
   end
 module LAdd(E : Exp with type t = private [> num | 'a add] as 'a)
-    (X : LExt(E).S) =
-  LNum(E)
-    (struct
-      type t = [E.t add | X.t]
-      let show = function
-          `Add(e1,e2) -> "("^ E.show e1 ^"+"^ E.show e2 ^")"
-        | #X.t as x -> X.show x
-      let eval = function
-          `Add(e1,e2) ->
-            let e1 = E.eval e1 and e2 = E.eval e2 in
-            begin match e1, e2 with
-              `Num n1, `Num n2 -> `Num (n1+n2)
-            | `Num 0, e | e, `Num 0 -> e
-            | e12 -> `Add e12
-            end
-        | #X.t as x -> X.eval x
-    end)
+    (X : LExt(E).S with type t = private [> ] ~ [add]) =
+  struct
+    type t = [E.t add | X.t]
+    let show = function
+        `Add(e1,e2) -> "("^ E.show e1 ^"+"^ E.show e2 ^")"
+      | #X.t as x -> X.show x
+    let eval = function
+        `Add(e1,e2) ->
+          let e1 = E.eval e1 and e2 = E.eval e2 in
+          begin match e1, e2 with
+            `Num n1, `Num n2 -> `Num (n1+n2)
+          | `Num 0, e | e, `Num 0 -> e
+          | e12 -> `Add e12
+          end
+      | #X.t as x -> X.eval x
+  end
 module LEnd = struct
   type t = [`Dummy]
   let show `Dummy = ""
   let eval `Dummy = `Dummy
 end
-module rec L : Exp with type t = [num | L.t add | `Dummy] = LAdd(L)(LEnd)
+module rec L : Exp with type t = [num | L.t add | `Dummy] =
+    LAdd(L)(LNum(L)(LEnd))
 
 (* Back to first form, but add map *)
 
@@ -393,7 +400,7 @@ module Ext(X : sig type t = private [> ] end)(Y : sig type t end) = struct
     end
 end
 
-module Mix(E : Exp)(E1 : Ext(E)(E).S)(E2 : Ext(E1)(E).S) =
+module Mix(E : Exp)(E1 : Ext(Dummy)(E).S)(E2 : Ext(E1)(E).S) =
   struct
     type t = [E1.t | E2.t]
     let map f = function
