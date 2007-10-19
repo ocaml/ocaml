@@ -14,6 +14,7 @@
 
 (* Operations on module types *)
 
+open Asttypes
 open Path
 open Types
 
@@ -48,10 +49,10 @@ and strengthen_sig env sg p =
   | Tsig_type(id, decl, rs) :: rem ->
       let newdecl =
         match decl.type_manifest with
-          Some ty when not (Btype.has_constr_row ty) -> decl
+          Some ty when decl.type_private = Public -> decl
         | _ ->
             { decl with
-              type_private = Asttypes.Public;
+              type_private = Public;
               type_manifest =
                 Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
                                             decl.type_params, ref Mnil))) }
