@@ -106,7 +106,7 @@ method select_operation op args =
       | _ ->
           (Iextcall("__modsi3", false), args)
       end
-  | Ccheckbound ->
+  | Ccheckbound _ ->
       begin match args with
         [Cop(Clsr, [arg1; Cconst_int n]); arg2]
         when n > 0 && n < 32 && not(is_intconst arg2) ->
@@ -116,15 +116,15 @@ method select_operation op args =
       end
   | _ -> super#select_operation op args
 
-(* In mul rd, rm, rs,  rm and rd must be different.
+(* In mul rd, rm, rs,  the registers rm and rd must be different.
    We deal with this by pretending that rm is also a result of the mul
    operation. *)
 
-method insert_op op rs rd =
+method insert_op_debug op dbg rs rd =
   if op = Iintop(Imul) then begin
-    self#insert (Iop op) rs [| rd.(0); rs.(0) |]; rd
+    self#insert_debug (Iop op) dbg rs [| rd.(0); rs.(0) |]; rd
   end else
-    super#insert_op op rs rd
+    super#insert_op_debug op dbg rs rd
 
 end
 
