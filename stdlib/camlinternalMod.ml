@@ -48,7 +48,6 @@ let rec update_mod shape o n =
       then begin overwrite o n; Obj.truncate o (Obj.size n) (* PR #4008 *) end
       else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->
-      assert (Obj.tag n = Obj.lazy_tag);
       overwrite o n
   | Class ->
       assert (Obj.tag n = 0 && Obj.size n = 4);
