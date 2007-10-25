@@ -175,7 +175,9 @@ The \var{x}".annot" file can be used with the emacs commands given in
 \item["-g"]
 Add debugging information while compiling and linking. This option is
 required in order to be able to debug the program with "ocamldebug"
-(see chapter~\ref{c:debugger}).
+(see chapter~\ref{c:debugger}), and to produce stack backtraces when
+the program terminates on an uncaught exception (see
+section~\ref{ocamlrun-options}).
 
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred

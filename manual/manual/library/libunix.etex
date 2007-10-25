@@ -68,6 +68,8 @@ fully implemented and behave as described previously in this chapter.
 \entree{"lstat", "fstat"}{not implemented}
 \entree{"link", "symlink", "readlink"}{not implemented (no links under
 Windows)}
+\entree{"access"}{execute permission "X_OK" cannot be tested,
+  it just tests for read permission instead}
 \entree{"fchmod"}{not implemented}
 \entree{"chown", "fchown"}{not implemented (make no sense on a DOS
 file system)}

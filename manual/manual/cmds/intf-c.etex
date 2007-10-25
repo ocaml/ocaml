@@ -267,9 +267,9 @@ then loads dynamically these libraries, and resolves references to the
 required primitives, before executing the bytecode.
 
 This facility is currently supported and known to work well under
-Linux and Windows (the native Windows port).  It is supported, but not
+Linux, MacOS~X, and Windows (the native Windows port).  It is supported, but not
 fully tested yet, under FreeBSD, Tru64, Solaris and Irix.  It is not
-supported yet under other Unixes, Cygwin for Windows, and MacOS.
+supported yet under other Unixes and under Cygwin for Windows.
 
 To dynamically link C code with Caml code, the C code must first be
 compiled into a shared library (under Unix) or DLL (under Windows).
@@ -1539,8 +1539,6 @@ when the block becomes unreachable and is about to be reclaimed.
 The block is passed as first argument to the function.
 The "finalize" field can also be "custom_finalize_default" to indicate that no
 finalization function is associated with the block.
-Important note: the "v" parameter of this function is of type "value", but
-it must not be declared using the "CAMLparam" macros.
 
 \item "int (*compare)(value v1, value v2)" \\
 The "compare" field contains a pointer to a C function that is
@@ -1551,8 +1549,6 @@ the two blocks are structurally equal, a negative integer if the data
 from the first block is less than the data from the second block, and
 a positive integer if the data from the first block is greater than
 the data from the second block.
-Note: You must use "CAMLparam" to declare "v1" and "v2" and "CAMLreturn"
-to return the result.
 
 The "compare" field can be set to "custom_compare_default"; this
 default comparison function simply raises "Failure".
@@ -1566,8 +1562,6 @@ given custom block.  The hash value must be compatible with the
 "compare" function, in the sense that two structurally equal data
 (that is, two custom blocks for which "compare" returns 0) must have
 the same hash value.
-Note: You must use "CAMLparam" to declare "v" and "CAMLreturn"
-to return the result.
 
 The "hash" field can be set to "custom_hash_default", in which case
 the custom block is ignored during hash computation.
@@ -1585,8 +1579,6 @@ below.  The user-provided "serialize" function must then store in its
 "wsize_32" and "wsize_64" parameters the sizes in bytes of the data
 part of the custom block on a 32-bit architecture and on a 64-bit
 architecture, respectively.
-Note: You must use "CAMLparam" to declare "v" and "CAMLreturn"
-to return the result.
 
 The "serialize" field can be set to "custom_serialize_default",
 in which case the "Failure" exception is raised when attempting to
@@ -1611,6 +1603,13 @@ to indicate that deserialization is not supported.  In this case,
 do not register the "struct custom_operations" with the deserializer
 using "register_custom_operations" (see below).
 \end{itemize}
+
+Note: the "finalize", "compare", "hash", "serialize" and "deserialize"
+functions attached to custom block descriptors must never trigger a
+garbage collection.  Within these functions, do not call any of the
+Caml allocation functions, and do not perform a callback into Caml
+code.  Do not use "CAMLparam" to register the parameters to these
+functions, and do not use "CAMLreturn" to return the result.
 
 \subsection{Allocating custom blocks}
 

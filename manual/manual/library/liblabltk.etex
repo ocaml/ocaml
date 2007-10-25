@@ -17,14 +17,14 @@ Programs that use the "labltk" library must be linked as follows:
 
 \begin{unix}
 The "labltk" library is available for any system with Tcl/Tk installed,
-starting from Tcl 7.5/Tk 4.1 up to Tcl/Tk 8.3. Beware that some beta
+starting from Tcl 7.5/Tk 4.1 up to Tcl/Tk 8.4. Beware that some beta
 versions may have compatibility problems.
 
 If the library was not compiled correctly, try to run again the
 "configure" script with the option "-tkdefs" \var{switches},
 where \var{switches} is a list of C-style inclusion paths leading to
 the right "tcl.h" and "tk.h", for instance
-'"-I/usr/local/include/tcl8.3 -I/usr/local/include/tk8.3"'.
+'"-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4"'.
 
 A script is installed, to make easier the use of the "labltk"
 library as toplevel.
@@ -38,12 +38,12 @@ in place of "ocaml".
 \end{unix}
 
 \begin{windows}
-The "labltk" library has been precompiled for use with Tcl/Tk 8.3.
+The "labltk" library has been precompiled for use with Tcl/Tk 8.4.
 You must first have it installed on your system.
 It can be downloaded from \\
-"http://www.scriptics.com/products/tcltk/8.3.html".
+"http://www.activestate.com/products/ActiveTcl/".
 After installing it, you must put the dynamically loaded libraries
-"tcl83.dll" and "tk83.dll" (from the "bin" directory of the Tcl
+"tcl84.dll" and "tk84.dll" (from the "bin" directory of the Tcl
 installation) in a directory included in you path.
 
 No toplevel is available, but you can load the library from the
