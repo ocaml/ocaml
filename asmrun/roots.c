@@ -100,7 +100,11 @@ void caml_oldify_local_roots (void)
   frame_descr * d;
   uintnat h;
   int i, j, n, ofs;
+#ifdef Stack_grows_upwards
+  short * p;  /* PR#4339: stack offsets are negative in this case */
+#else
   unsigned short * p;
+#endif
   value glob;
   value * root;
   struct global_root * gr;
