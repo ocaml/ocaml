@@ -43,7 +43,7 @@ integers, but "+." and "*."  operate on floats.
 Recursive functions are defined with the "let rec" binding:
 \begin{caml_example}
 let rec fib n =
-  if n < 2 then 1 else fib(n-1) + fib(n-2);;
+  if n = 0 then 0 else if n = 1 then 1 else fib(n-1) + fib(n-2);;
 fib 10;;
 \end{caml_example}
 
