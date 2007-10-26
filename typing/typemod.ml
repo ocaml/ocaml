@@ -410,11 +410,19 @@ and transl_recmodule_modtypes loc env sdecls =
       (fun (name, smty) ->
         (Ident.create name, approx_modtype transl_modtype env smty))
       sdecls in
-  let first = transition (make_env init) init in
-  let final_env = make_env first in
-  let final_decl = transition final_env init in
-  check_recmod_typedecls final_env sdecls final_decl;
-  (final_decl, final_env)
+  let env0 = make_env init in
+  let dcl1 = transition env0 init in
+  let env1 = make_env dcl1 in
+  let dcl2 = transition env1 dcl1 in
+  let env2 = make_env dcl2 in
+  check_recmod_typedecls env2 sdecls dcl2;
+(*
+  List.iter
+    (fun (id, mty) ->
+      Format.printf "%a: %a@." Printtyp.ident id Printtyp.modtype mty)
+    dcl2;
+*)
+  (dcl2, env2)
 
 (* Try to convert a module expression to a module path. *)
 
@@ -629,27 +637,40 @@ and type_structure anchor env sstr =
         let (decls, newenv) =
           transl_recmodule_modtypes loc env
             (List.map (fun (name, smty, smodl) -> (name, smty)) sbind) in
-        let type_recmodule_binding (id, mty) (name, smty, smodl) =
-          let modl =
-            type_module (anchor_recmodule id anchor) newenv smodl in
-          let coercion =
-            try
-              Includemod.modtypes newenv
-                 (Mtype.strengthen env modl.mod_type (Pident id))
-                 mty
-            with Includemod.Error msg ->
-              raise(Error(smodl.pmod_loc, Not_included msg)) in
-          let modl' =
-            { mod_desc = Tmod_constraint(modl, mty, coercion);
-              mod_type = mty;
-              mod_env = newenv;
-              mod_loc = smodl.pmod_loc } in
-          (id, modl') in
-        let bind = List.map2 type_recmodule_binding decls sbind in
+        let bindings1 =
+          List.map2
+            (fun (id, mty) (name, smty, smodl) ->
+              let modl =
+                type_module (anchor_recmodule id anchor) newenv smodl in
+              let mty' =
+                enrich_module_type anchor (Ident.name id) modl.mod_type newenv in
+              (id, mty, modl, mty'))
+           decls sbind in
+        let bindenv =
+          List.fold_left
+            (fun env (id, mty, modl, mty') -> Env.add_module id mty' env)
+            env bindings1 in
+        let bindings2 =
+          List.map
+            (fun (id, mty, modl, mty') ->
+              let coercion =
+                try
+                  Includemod.modtypes bindenv
+                     (Mtype.strengthen env mty' (Pident id))
+                     mty
+                with Includemod.Error msg ->
+                  raise(Error(modl.mod_loc, Not_included msg)) in
+              let modl' =
+                { mod_desc = Tmod_constraint(modl, mty, coercion);
+                  mod_type = mty;
+                  mod_env = bindenv;
+                  mod_loc = modl.mod_loc } in
+              (id, modl'))
+            bindings1 in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (Tstr_recmodule bind :: str_rem,
+        (Tstr_recmodule bindings2 :: str_rem,
          map_rec (fun rs (id, modl) -> Tsig_module(id, modl.mod_type, rs))
-                 bind sig_rem,
+                 bindings2 sig_rem,
          final_env)
     | {pstr_desc = Pstr_modtype(name, smty); pstr_loc = loc} :: srem ->
         check "module type" loc modtype_names name;
