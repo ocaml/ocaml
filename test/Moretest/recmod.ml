@@ -62,13 +62,6 @@ let _ =
 
 (* Early application *)
 
-(*
-module rec Bad
-  : sig val f : int -> int end
-  = struct let f = let y = Bad.f 5 in fun x -> x+y end
-;;
-*)
-
 let _ =
   let res =
     try
@@ -83,6 +76,8 @@ let _ =
       true in
   test 30 res true
 ;;
+
+(* Early strict evaluation *)
 
 (*
 module rec Cyclic
@@ -156,6 +151,24 @@ module rec PolyRec
     end
 ;;
   
+(* Wrong LHS signatures (PR#4336) *)
+
+(*
+module type ASig = sig type a val a:a val print:a -> unit end
+module type BSig = sig type b val b:b val print:b -> unit end
+
+module A = struct type a = int let a = 0 let print = print_int end
+module B = struct type b = float let b = 0.0 let print = print_float end
+
+module MakeA (Empty:sig end) : ASig = A
+module MakeB (Empty:sig end) : BSig = B
+
+module
+   rec NewA : ASig = MakeA (struct end)
+   and NewB : BSig with type b = NewA.a = MakeB (struct end);;
+
+*)
+
 (* Expressions and bindings *)
 
 module StringSet = Set.Make(String);;
@@ -457,6 +470,25 @@ module rec F
 let _ =
   test 100 (F.f (F.X 1)) false;
   test 101 (F.f (F.Y 2)) true
+
+(* PR#4316 *)
+module G(S : sig val x : int Lazy.t end) = struct include S end
+
+module M1 = struct let x = lazy 3 end
+
+let _ = Lazy.force M1.x
+
+module rec M2 : sig val x : int Lazy.t end = G(M1)
+
+let _ =
+  test 102 (Lazy.force M2.x) 3
+
+let _ = Gc.full_major()   (* will shortcut forwarding in M1.x *)
+
+module rec M3 : sig val x : int Lazy.t end = G(M1)
+
+let _ =
+  test 103 (Lazy.force M3.x) 3
 
 (** Ill-formed type abbreviations.  *)
 
