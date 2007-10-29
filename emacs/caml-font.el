@@ -109,18 +109,19 @@
    caml-font-lock-keywords))
 
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
-(add-hook 'caml-mode-hook
-      '(lambda ()
-         (cond
-          ((fboundp 'global-font-lock-mode)
-           (make-local-variable 'font-lock-defaults)
-           (setq font-lock-defaults
-                 '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
-          (t
-           (setq font-lock-keywords caml-font-lock-keywords)))
-         (make-local-variable 'font-lock-keywords-only)
-         (setq font-lock-keywords-only t)
-         (font-lock-mode 1)))
+(defun caml-mode-font-hook ()
+  (cond
+   ((fboundp 'global-font-lock-mode)
+    (make-local-variable 'font-lock-defaults)
+    (setq font-lock-defaults
+	  '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
+   (t
+    (setq font-lock-keywords caml-font-lock-keywords)))
+  (make-local-variable 'font-lock-keywords-only)
+  (setq font-lock-keywords-only t)
+  (font-lock-mode 1))
+
+(add-hook 'caml-mode-hook 'caml-mode-font-hook)
 
 (defun inferior-caml-mode-font-hook ()
   (cond
