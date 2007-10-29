@@ -585,6 +585,9 @@ open M
    Si ids=0 (objet immediat), alors on ne conserve que env_init.
 *)
 
+let prerr_ids msg ids =
+  let names = List.map Ident.unique_toplevel_name ids in
+  prerr_endline (String.concat " " (msg :: names))
 
 let transl_class ids cl_id arity pub_meths cl vflag =
   (* First check if it is not only a rebind *)
@@ -602,10 +605,6 @@ let transl_class ids cl_id arity pub_meths cl vflag =
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
     let fv = List.fold_right IdentSet.remove !new_ids' fv in
-    (* IdentSet.iter
-      (fun id ->
-        if not (List.mem id new_ids) then prerr_endline (Ident.name id))
-      fv; *)
     let fv = IdentSet.filter (fun id -> List.mem id new_ids) fv in
     (* need to handle methods specially (PR#3576) *)
     let fm = IdentSet.diff (free_methods lam) meth_ids in
