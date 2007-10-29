@@ -246,6 +246,8 @@ let rec index a = function
   | b :: l ->
       if b = a then 0 else 1 + index a l
 
+let bind_id_as_val (id, _) = ("", id)
+
 let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tclass_ident path ->
@@ -308,7 +310,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
-      let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
+      let vals = List.map bind_id_as_val vals in
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tclass_apply (cl, exprs) ->
       build_class_init cla cstr super inh_init cl_init msubst top cl
@@ -316,7 +318,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
-      let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
+      let vals = List.map bind_id_as_val vals in
       (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tclass_constraint (cl, vals, meths, concr_meths) ->
       let virt_meths =
