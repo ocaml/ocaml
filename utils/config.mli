@@ -93,6 +93,10 @@ val model: string
 val system: string
         (* Name of operating system for the native-code compiler *)
 
+val asm: string
+        (* The assembler (and flags) to use for assembling
+           ocamlopt-generated code. *)
+
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)
 val ext_asm: string

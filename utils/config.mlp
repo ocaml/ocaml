@@ -65,6 +65,8 @@ let architecture = "%%ARCH%%"
 let model = "%%MODEL%%"
 let system = "%%SYSTEM%%"
 
+let asm = "%%ASM%%"
+
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
 let ext_lib = "%%EXT_LIB%%"
@@ -98,6 +100,7 @@ let print_config oc =
   p "architecture" architecture;
   p "model" model;
   p "system" system;
+  p "asm" asm;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;

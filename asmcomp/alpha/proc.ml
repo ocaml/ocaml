@@ -207,11 +207,11 @@ let contains_calls = ref false
 
 let assemble_file infile outfile =
   let as_cmd =
-    if digital_asm
-    then if !Clflags.gprofile then "as -O2 -nocpp -pg -o "
-                              else "as -O2 -nocpp -o "
-    else "as -o " in
-  Ccomp.command (as_cmd ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
+    if digital_asm && !Clflags.gprofile
+    then Config.as ^ " -pg"
+    else Config.as in
+  Ccomp.command (as_cmd ^ " -o " ^ 
+                 Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 open Clflags;;
 open Config;;

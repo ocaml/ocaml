@@ -32,9 +32,8 @@ val nativecclinkopts : string
 val nativeccrpath : string
 val nativecclibs : string
 val dllcccompopts : string
-val asflags : string
+val asm : string
 val aspp : string
-val asppflags : string
 val asppprofflags : string
 val profiling : string
 val dynlinkopts : string

@@ -206,9 +206,10 @@ let contains_calls = ref false
 (* Calling the assembler and the archiver *)
 
 let assemble_file infile outfile =
-  let asprefix = begin match !arch_version with
-    SPARC_V7 -> "as -o "
-  | SPARC_V8 -> "as -xarch=v8 -o "
-  | SPARC_V9 -> "as -xarch=v8plus -o "
+  let asflags = begin match !arch_version with
+    SPARC_V7 -> " -o "
+  | SPARC_V8 -> " -xarch=v8 -o "
+  | SPARC_V9 -> " -xarch=v8plus -o "
   end in
-  Ccomp.command (asprefix ^ Filename.quote outfile ^ " " ^ Filename.quote infile)
+  Ccomp.command (Config.asm ^ asflags ^
+                 Filename.quote outfile ^ " " ^ Filename.quote infile)

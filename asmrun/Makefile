@@ -155,11 +155,11 @@ clean::
 .SUFFIXES: .S .d.o .p.o
 
 .S.o:
-	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S || \
+	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.S || \
 	{ echo "If your assembler produced syntax errors, it is probably unhappy with the"; echo "preprocessor. Check your assembler, or try producing $*.o by hand."; exit 2; }
 
 .S.p.o:
-	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $*.p.o $*.S
+	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
 .c.d.o:
 	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
@@ -174,10 +174,10 @@ clean::
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 .s.o:
-	$(ASPP) $(ASPPFLAGS) -o $*.o $*.s
+	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s
 
 .s.p.o:
-	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $*.p.o $*.s
+	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.s
 
 clean::
 	rm -f *.o *.a *~

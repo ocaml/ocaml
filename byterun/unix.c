@@ -337,12 +337,10 @@ char * caml_dlerror(void)
 
 /* The code below supports the use of mmap() rather than malloc()
    for allocating the chunks composing the major heap.
-   This code is needed for the IA64 under Linux, where the native
+   This code is needed on 64-bit Linux platforms, where the native
    malloc() implementation can return pointers several *exabytes* apart,
    (some coming from mmap(), other from sbrk()); this makes the
-   page table *way* too large.
-   No other tested platform requires this hack so far.  However, it could
-   be useful for other 64-bit platforms in the future. */
+   page table *way* too large. */
 
 #include <sys/mman.h>
 

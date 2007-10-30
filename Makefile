@@ -340,6 +340,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_LIB%%|.a|' \
             -e 's|%%EXT_DLL%%|.so|' \
             -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
+            -e 's|%%ASM%%|$(ASM)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 

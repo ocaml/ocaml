@@ -23,6 +23,8 @@ mandir=''
 manext=1
 host_type=unknown
 ccoption=''
+asoption=''
+asppoption=''
 cclibs=''
 curseslibs=''
 mathlib='-lm'
@@ -73,6 +75,10 @@ while : ; do
         host_type=$2; shift;;
     -cc*)
         ccoption="$2"; shift;;
+    -as)
+        asoption="$2"; shift;;
+    -aspp)
+        asppoption="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
     -no-curses)
@@ -634,39 +640,45 @@ case "$arch,$nativecc,$system,$host_type" in
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
 
-asflags=''
-aspp='$(AS)'
-asppflags=''
 asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
+  alpha,*,digital)  as='as -O2 -nocpp'
+                    aspp='as -O2'
                     asppprofflags='-pg -DPROFILING';;
-  alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  alpha,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  alpha,*,freebsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  alpha,*,netbsd)   aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  alpha,*,openbsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
-  sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  sparc,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  sparc,*,*)        case "$cc" in
-                      gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-                         *) asppflags='-P -DSYS_$(SYSTEM)';;
+  alpha,*,*)        as='as'
+                    aspp='gcc -c';;
+  amd64,*,*)        as='as'
+                    aspp='gcc -c';;
+  arm,*,*)          as='as';
+                    aspp='gcc -c';;
+  hppa,*,*)         as='as';
+                    aspp='gcc -traditional -c';;
+  i386,*,solaris)   as='as'
+                    aspp='/usr/ccs/bin/as -P';;
+  i386,*,*)         as='as'
+                    aspp='gcc -c';;
+  ia64,*,*)         as='as -xexplicit'
+                    aspp='gcc -c -Wa,-xexplicit';;
+  mips,*,irix)      as='as -n32 -O2 -nocpp -g0'
+                    aspp='as -n32 -O2";;
+  power,*,elf)      as='as -u -m ppc'
+                    aspp='gcc -c';;
+  power,*,bsd)      as='as'
+                    aspp='gcc -c';;
+  power,*,rhapsody) as="as -arch $model";
+                    aspp="$bytecc -c';;
+  sparc,*,solaris)  as='as'
+                    case "$cc" in
+                      gcc*) aspp='gcc -c';;
+                         *) aspp='as -P';;
                     esac;;
-  i386,*,solaris)   aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
-  i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
-  power,*,elf)      aspp='gcc'; asppflags='-c';;
-  power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  power,*,rhapsody) aspp="$bytecc"; asppflags='-c';;
-  arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  arm,*,gnu)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  ia64,*,*)         asflags=-xexplicit
-                    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM) -Wa,-xexplicit';;
-  amd64,*,*)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  sparc,*,*)        as='as'
+                    aspp='gcc -c';;
 esac
+
+if test -n "$asoption"; then as="$asoption"; fi
+if test -n "$asppoption"; then aspp="$asppoption"; fi
 
 cc_profile='-pg'
 case "$arch,$model,$system" in
@@ -1462,9 +1474,8 @@ echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
 echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
-echo "ASFLAGS=$asflags" >> Makefile
+echo "ASM=$as" >> Makefile
 echo "ASPP=$aspp" >> Makefile
-echo "ASPPFLAGS=$asppflags" >> Makefile
 echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
 echo "PROFILING=$profiling" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
@@ -1525,8 +1536,8 @@ else
   echo "        C compiler used........... $nativecc"
   echo "        options for compiling..... $nativecccompopts"
   echo "        options for linking....... $nativecclinkopts $cclibs"
-  echo "        assembler ................ \$(AS) $asflags"
-  echo "        preprocessed assembler ... $aspp $asppflags"
+  echo "        assembler ................ $as"
+  echo "        preprocessed assembler ... $aspp"
   if test "$profiling" = "prof"; then
   echo "        profiling with gprof ..... supported"
   else
