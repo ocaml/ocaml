@@ -661,13 +661,13 @@ case "$arch,$model,$system" in
   ia64,*,*)         as='as -xexplicit'
                     aspp='gcc -c -Wa,-xexplicit';;
   mips,*,irix)      as='as -n32 -O2 -nocpp -g0'
-                    aspp='as -n32 -O2";;
+                    aspp='as -n32 -O2';;
   power,*,elf)      as='as -u -m ppc'
                     aspp='gcc -c';;
   power,*,bsd)      as='as'
                     aspp='gcc -c';;
-  power,*,rhapsody) as="as -arch $model";
-                    aspp="$bytecc -c';;
+  power,*,rhapsody) as="as -arch $model"
+                    aspp="$bytecc -c";;
   sparc,*,solaris)  as='as'
                     case "$cc" in
                       gcc*) aspp='gcc -c';;
