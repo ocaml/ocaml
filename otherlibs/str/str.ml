@@ -669,9 +669,9 @@ and replace_first expr repl text =
 
 let search_forward_progress expr text start =
   let pos = search_forward expr text start in
-  if match_end() = start && start < String.length text
-  then search_forward expr text (start + 1)
-  else pos
+  if match_end() > start then pos
+  else if start < String.length text then search_forward expr text (start + 1)
+  else raise Not_found
 
 let bounded_split expr text num =
   let start =
