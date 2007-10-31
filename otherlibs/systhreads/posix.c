@@ -122,15 +122,11 @@ static pthread_key_t last_channel_locked_key;
 /* Identifier for next thread creation */
 static intnat thread_next_ident = 0;
 
-/* Whether to use sched_yield() or not */
-static int broken_sched_yield = 0;
-
 /* Forward declarations */
 value caml_threadstatus_new (void);
 void caml_threadstatus_terminate (value);
 int caml_threadstatus_wait (value);
 static void caml_pthread_check (int, char *);
-static void caml_thread_sysdeps_initialize(void);
 
 /* Imports for the native-code compiler */
 extern struct longjmp_buffer caml_termination_jmpbuf;
@@ -258,6 +254,12 @@ static void caml_io_mutex_lock(struct channel *chan)
     pthread_mutex_init(mutex, NULL);
     chan->mutex = (void *) mutex;
   }
+  /* PR#4351: first try to acquire mutex without releasing the master lock */
+  if (pthread_mutex_trylock(chan->mutex) == 0) {
+    pthread_setspecific(last_channel_locked_key, (void *) chan);
+    return;
+  }
+  /* If unsuccessful, block on mutex */
   enter_blocking_section();
   pthread_mutex_lock(chan->mutex);
   /* Problem: if a signal occurs at this point,
@@ -338,8 +340,6 @@ value caml_thread_initialize(value unit)   /* ML */
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
   Begin_root (mu);
-    /* OS-specific initialization */
-    caml_thread_sysdeps_initialize();
     /* Initialize the keys */
     pthread_key_create(&thread_descriptor_key, NULL);
     pthread_key_create(&last_channel_locked_key, NULL);
@@ -562,7 +562,10 @@ value caml_thread_yield(value unit)        /* ML */
 {
   if (caml_runtime_waiters == 0) return Val_unit;
   enter_blocking_section();
-  if (! broken_sched_yield) sched_yield();
+#ifndef __linux__
+  /* sched_yield() doesn't do what we want in Linux 2.6 and up (PR#2663) */
+  sched_yield();
+#endif
   leave_blocking_section();
   return Val_unit;
 }
@@ -620,6 +623,10 @@ value caml_mutex_lock(value wrapper)     /* ML */
 {
   int retcode;
   pthread_mutex_t * mut = Mutex_val(wrapper);
+  /* PR#4351: first try to acquire mutex without releasing the master lock */
+  retcode = pthread_mutex_trylock(mut);
+  if (retcode == 0) return Val_unit;
+  /* If unsuccessful, block on mutex */
   Begin_root(wrapper)           /* prevent the deallocation of mutex */
     enter_blocking_section();
     retcode = pthread_mutex_lock(mut);
@@ -633,11 +640,8 @@ value caml_mutex_unlock(value wrapper)           /* ML */
 {
   int retcode;
   pthread_mutex_t * mut = Mutex_val(wrapper);
-  Begin_root(wrapper)           /* prevent the deallocation of mutex */
-    enter_blocking_section();
-    retcode = pthread_mutex_unlock(mut);
-    leave_blocking_section();
-  End_roots();
+  /* PR#4351: no need to release and reacquire master lock */
+  retcode = pthread_mutex_unlock(mut);
   caml_pthread_check(retcode, "Mutex.unlock");
   return Val_unit;
 }
@@ -703,11 +707,7 @@ value caml_condition_signal(value wrapper)           /* ML */
 {
   int retcode;
   pthread_cond_t * cond = Condition_val(wrapper);
-  Begin_root(wrapper)           /* prevent deallocation of condition */
-    enter_blocking_section();
-    retcode = pthread_cond_signal(cond);
-    leave_blocking_section();
-  End_roots();
+  retcode = pthread_cond_signal(cond);
   caml_pthread_check(retcode, "Condition.signal");
   return Val_unit;
 }
@@ -716,11 +716,7 @@ value caml_condition_broadcast(value wrapper)           /* ML */
 {
   int retcode;
   pthread_cond_t * cond = Condition_val(wrapper);
-  Begin_root(wrapper)           /* prevent deallocation of condition */
-    enter_blocking_section();
-    retcode = pthread_cond_broadcast(cond);
-    leave_blocking_section();
-  End_roots();
+  retcode = pthread_cond_broadcast(cond);
   caml_pthread_check(retcode, "Condition.broadcast");
   return Val_unit;
 }
@@ -886,22 +882,5 @@ static void caml_pthread_check(int retcode, char *msg)
   memmove (&Byte(str, msglen), ": ", 2);
   memmove (&Byte(str, msglen + 2), err, errlen);
   raise_sys_error(str);
-}
-
-/* OS-specific initialization */
-
-static void caml_thread_sysdeps_initialize(void)
-{
-#ifdef __linux__
-  /* sched_yield() doesn't do what we want in kernel 2.6 and up (PR#2663) */
-  struct utsname un;
-  if (uname(&un) == -1) return;
-  broken_sched_yield =
-    un.release[1] != '.' || un.release[0] >= '3'   /* version 3 and up */
-    || (un.release[0] == '2' &&
-        (un.release[3] != '.' || un.release[2] >= '6')); /* 2.6 and up */
-  caml_gc_message(0x100, "POSIX threads.  Avoid sched_yield: %d\n",
-                  broken_sched_yield);
-#endif
 }
 
