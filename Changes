@@ -1,9 +1,12 @@
 Objective Caml 3.11.0:
 ----------------------
 
+Language features:
+- Introduction of private abbreviation types, for abstracting the actual
+  manifest type in type abbreviations.
+
 Standard library:
-- Scanf
-    debunking of meta format implementation.
+- Scanf library: debunking of meta format implementation.
 
 Objective Caml 3.10.0:
 ----------------------

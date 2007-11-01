@@ -32,6 +32,9 @@ val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> cltype_declaration
 
 val find_type_expansion: Path.t -> t -> type_expr list * type_expr
+val find_type_expansion_opt: Path.t -> t -> type_expr list * type_expr
+(* Find the manifest type information associated to a type for the sake
+   of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> Types.module_type
 
 (* Lookup by long identifiers *)

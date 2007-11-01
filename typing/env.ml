@@ -259,11 +259,30 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+(* Find the manifest type associated to a type when appropriate:
+   - the type should be public or should have a private row,
+   - the type should have an associated manifest type. *)
 let find_type_expansion path env =
   let decl = find_type path env in
   match decl.type_manifest with
-  | Some body when decl.type_private = Public || Btype.has_constr_row body ->
-      (decl.type_params, body)
+  | Some body when decl.type_private = Public
+              || Btype.has_constr_row body -> (decl.type_params, body)
+  (* The manifest type of Private abstract data types without
+     private row are still considered unknown to the type system.
+     Hence, this case is caught by the following clause that also handles
+     purely abstract data types without manifest type definition. *)
+  | _ -> raise Not_found
+
+(* Find the manifest type information associated to a type, i.e.
+   the necessary information for the compiler's type-based optimisations.
+   In particular, the manifest type associated to a private abstract type
+   is revealed for the sake of compiler's type-based optimisations. *)
+let find_type_expansion_opt path env =
+  let decl = find_type path env in
+  match decl.type_manifest with
+  (* The manifest type of Private abstract data types can still get
+     an approximation using their manifest type. *)
+  | Some body -> (decl.type_params, body)
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =

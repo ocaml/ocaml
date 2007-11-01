@@ -575,7 +575,7 @@ let rec generalize_spine ty =
       generalize_spine ty'
   | _ -> ()
 
-let try_expand_once' = (* Forward declaration *)
+let forward_try_expand_once = (* Forward declaration *)
   ref (fun env ty -> raise Cannot_expand)
 
 (*
@@ -597,7 +597,7 @@ let rec update_level env level ty =
       Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-          link_type ty (!try_expand_once' env ty);
+          link_type ty (!forward_try_expand_once env ty);
           update_level env level ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
@@ -1067,7 +1067,7 @@ let check_abbrev_env env =
    4. The expansion requires the expansion of another abbreviation,
       and this other expansion fails.
 *)
-let expand_abbrev env ty =
+let expand_abbrev_gen find_type_expansion env ty =
   check_abbrev_env env;
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
@@ -1086,7 +1086,7 @@ let expand_abbrev env ty =
           ty
       | None ->
           let (params, body) =
-            try Env.find_type_expansion path env with Not_found ->
+            try find_type_expansion path env with Not_found ->
               raise Cannot_expand
           in
           let ty' = subst env level abbrev (Some ty) params args body in
@@ -1101,6 +1101,8 @@ let expand_abbrev env ty =
   | _ ->
       assert false
 
+let expand_abbrev = expand_abbrev_gen Env.find_type_expansion
+
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
   try ignore (expand_abbrev env ty); true
@@ -1114,7 +1116,7 @@ let try_expand_once env ty =
     Tconstr _ -> repr (expand_abbrev env ty)
   | _ -> raise Cannot_expand
 
-let _ = try_expand_once' := try_expand_once
+let _ = forward_try_expand_once := try_expand_once
 
 (* Fully expand the head of a type.
    Raise Cannot_expand if the type cannot be expanded.
@@ -1138,6 +1140,34 @@ let expand_head_unif env ty =
 let expand_head env ty =
   let snap = Btype.snapshot () in
   try try_expand_head env ty
+  with Cannot_expand | Unify _ -> (* expand_head shall never fail *)
+    Btype.backtrack snap;
+    repr ty
+
+(* Implementing function [expand_head_opt], the compiler's own version of
+   [expand_head] used for type-based optimisations.
+   [expand_head_opt] uses [Env.find_type_expansion_opt] to access the
+   normally hidden manifest type information of private abstract types. *)
+
+let expand_abbrev_opt = expand_abbrev_gen Env.find_type_expansion_opt
+
+let try_expand_once_opt env ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr _ -> repr (expand_abbrev_opt env ty)
+  | _ -> raise Cannot_expand
+
+let rec try_expand_head_opt env ty =
+  let ty' = try_expand_once_opt env ty in
+  begin try
+    try_expand_head_opt env ty'
+  with Cannot_expand ->
+    ty'
+  end
+
+let expand_head_opt env ty =
+  let snap = Btype.snapshot () in
+  try try_expand_head_opt env ty
   with Cannot_expand | Unify _ -> (* expand_head shall never fail *)
     Btype.backtrack snap;
     repr ty
