@@ -409,8 +409,7 @@ the following environment variables are also consulted:
 \item["OCAMLRUNPARAM"]  Same usage as in "ocamlrun"
   (see section~\ref{ocamlrun-options}), except that option "l"
   is ignored (the operating system's stack size limit
-  is used instead) and option "b" is ignored (stack backtraces on
-  uncaught exceptions are not printed).
+  is used instead).
 \item["CAMLRUNPARAM"]  If "OCAMLRUNPARAM" is not found in the
   environment, then "CAMLRUNPARAM" will be used instead.  If
   "CAMLRUNPARAM" is not found, then the default values will be used.
