@@ -278,10 +278,12 @@ CAMLextern header_t caml_atom_table[];
 #define Is_atom(v) ((v) >= Atom(0) && (v) <= Atom(255))
 #else
 CAMLextern char * caml_static_data_start, * caml_static_data_end;
+CAMLextern int caml_is_in_data(void *);
 #define Is_atom(v) \
-  ((((char *)(v) >= caml_static_data_start \
-     && (char *)(v) < caml_static_data_end) \
-    || ((v) >= Atom(0) && (v) <= Atom(255))))
+   ( ( (char *)(v) >= caml_static_data_start  \
+     &&(char *)(v) <  caml_static_data_end )  \
+    || ((v) >= Atom(0) && (v) <= Atom(255))   \
+    || (caml_is_in_data((void *)v)) )
 #endif
 
 /* Booleans are integers 0 or 1 */

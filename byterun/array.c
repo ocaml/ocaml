@@ -139,7 +139,7 @@ CAMLprim value caml_make_vect(value len, value init)
     res = Atom(0);
   }
   else if (Is_block(init)
-           && (Is_atom(init) || Is_young(init) || Is_in_heap(init))
+           && (Is_young(init) || Is_in_heap(init) || Is_atom(init))
            && Tag_val(init) == Double_tag) {
     d = Double_val(init);
     wsize = size * Double_wosize;
@@ -181,7 +181,7 @@ CAMLprim value caml_make_array(value init)
   } else {
     v = Field(init, 0);
     if (Is_long(v)
-        || (!Is_atom(v) && !Is_young(v) && !Is_in_heap(v))
+        || (!Is_young(v) && !Is_in_heap(v) && !Is_atom(v))
         || Tag_val(v) != Double_tag) {
       CAMLreturn (init);
     } else {

@@ -248,3 +248,5 @@ let error_message = function
       "cannot find file " ^ name ^ " in search path"
   | Cannot_open_dll reason ->
       "error loading shared library: " ^ reason
+
+let is_native = false

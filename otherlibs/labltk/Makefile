@@ -32,15 +32,7 @@ allopt:
 byte: all
 opt: allopt
 
-.PHONY: labltk camltk examples_labltk examples_camltk
-
-labltk: Widgets.src
-	compiler/tkcompiler -outdir labltk
-	cd labltk; $(MAKE)
-
-camltk: Widgets.src
-	compiler/tkcompiler -camltk -outdir camltk
-	cd camltk; $(MAKE)
+.PHONY: examples_labltk examples_camltk
 
 examples: examples_labltk examples_camltk
 

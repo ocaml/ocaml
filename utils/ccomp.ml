@@ -38,11 +38,15 @@ let build_diversion lst =
   at_exit (fun () -> Misc.remove_file responsefile);
   "@" ^ responsefile
 
+let need_diversion = match Sys.os_type with
+  | "Win32" (* | "Cygwin" *) -> true
+  | _ -> false
+
 let quote_files lst =
   let s =
     String.concat " "
       (List.map (fun f -> if f = "" then f else Filename.quote f) lst) in
-  if Sys.os_type = "Win32" && String.length s >= 256
+  if String.length s >= 256 && need_diversion
   then build_diversion lst
   else s
 
@@ -89,7 +93,10 @@ let expand_libname name =
 let make_link_options optlist =
   let rec split linkopts otheropts = function
   | [] -> String.concat " " otheropts
-	  ^ " /link /subsystem:console "
+	  ^ " -- " ^ 
+	(match Config.system with
+	   | "win32" -> "/subsystem:console "
+	   | _ -> "")
           ^ String.concat " " linkopts
   | opt :: rem ->
       if String.length opt >= 5 && String.sub opt 0 5 = "/link"
@@ -97,16 +104,3 @@ let make_link_options optlist =
                  otheropts rem
       else split linkopts (opt :: otheropts) rem
   in split [] [] optlist
-
-(* Handling of Visual C++ 2005 manifest files *)
-
-let merge_manifest exefile =
-  let manfile = exefile ^ ".manifest" in
-  if not (Sys.file_exists manfile) then 0 else begin
-    let retcode =
-      command (Printf.sprintf "mt -nologo -outputresource:%s -manifest %s"
-                              (Filename.quote exefile)
-                              (Filename.quote manfile)) in
-    Misc.remove_file manfile;
-    retcode
-  end

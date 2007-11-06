@@ -876,6 +876,9 @@ module type DynLoader = sig
   (** [find_in_path f] Returns the full path of the file [f] if
       [f] is in the current load path, raises [Not_found] otherwise. *)
   value find_in_path : t -> string -> string;
+
+  (** [is_native] [True] if we are in native code, [False] for bytecode. *)
+  value is_native : bool;
 end;
 
 module Grammar = struct

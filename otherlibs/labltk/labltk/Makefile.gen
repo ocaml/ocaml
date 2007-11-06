@@ -2,12 +2,12 @@ include ../support/Makefile.common
 
 all: tk.ml labltk.ml .depend
 
-_tkgen.ml: ../Widgets.src ../compiler/tkcompiler
-	cd ..; $(CAMLRUNGEN) compiler/tkcompiler -outdir labltk
+_tkgen.ml: ../Widgets.src ../compiler/tkcompiler$(EXE)
+	cd ..; $(CAMLRUNGEN) compiler/tkcompiler$(EXE) -outdir labltk
 
 # dependencies are broken: wouldn't work with gmake 3.77
 
-tk.ml labltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../builtin/builtin_*.ml
+tk.ml labltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp$(EXE) #../builtin/builtin_*.ml
 	(echo 'open StdLabels'; \
 	 echo 'open Widget'; \
          echo 'open Protocol'; \
@@ -33,13 +33,16 @@ tk.ml labltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../built
 	) > _tk.ml
 	$(CAMLRUN) ../compiler/pp < _tk.ml > tk.ml
 	rm -f _tk.ml
-	$(CAMLDEP) -I ../support [a-z]*.mli [a-z]*.ml > .depend
+	$(CAMLDEP) -slash -I ../support [a-z]*.mli [a-z]*.ml > .depend
 
-../compiler/pp:
-	cd ../compiler; $(MAKE) pp
+../compiler/pp$(EXE):
+	cd ../compiler; $(MAKE) pp$(EXE)
+
+../compiler/tkcompiler$(EXE):
+	cd ../compiler; $(MAKE) tkcompiler$(EXE)
 
 # All .{ml,mli} files are generated in this directory
 clean:
-	rm -f *.cm* *.ml *.mli *.o *.a .depend
+	rm -f *.cm* *.ml *.mli *.$(O) *.$(A) .depend
 
 #	rm -f modules

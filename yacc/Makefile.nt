@@ -23,7 +23,7 @@ OBJS= closure.$(O) error.$(O) lalr.$(O) lr0.$(O) main.$(O) \
 all: ocamlyacc.exe
 
 ocamlyacc.exe: $(OBJS)
-	$(call MKEXE,ocamlyacc.exe,$(BYTECCLINKOPTS) $(OBJS) $(EXTRALIBS))
+	$(call MKEXE,ocamlyacc.exe,$(OBJS) $(EXTRALIBS),$(BYTECCLINKOPTS))
 
 version.h : ../VERSION
 	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" >version.h

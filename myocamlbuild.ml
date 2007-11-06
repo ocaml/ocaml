@@ -731,6 +731,9 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
   let native = name-.-"native" in
   let unix_cma, unix_cmxa, include_unix =
     if link_unix then A"unix.cma", A"unix.cmxa", S[A"-I"; P unix_dir] else N,N,N in
+  let dynlink_cmxa,include_dynlink = 
+    A"dynlink.cmxa", S[A"-I"; P dynlink_dir]
+  in
   let deps = special_modules @ modules @ [camlp4_bin] in
   let cmos = add_extensions ["cmo"] deps in
   let cmxs = add_extensions ["cmx"] deps in
@@ -747,7 +750,7 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
     ~prod:(add_exe native)
     ~insert:(`before "ocaml: cmx* & o* -> native")
     begin fun _ _ ->
-      Cmd(S[ocamlopt; include_unix; unix_cmxa; T(tags_of_pathname native++"ocaml"++"link"++"native");
+      Cmd(S[ocamlopt; include_dynlink; dynlink_cmxa; include_unix; unix_cmxa; T(tags_of_pathname native++"ocaml"++"link"++"native");
             P camlp4lib_cmxa; A"-linkall"; atomize cmxs; A"-o"; Px (add_exe native)])
     end;;
 

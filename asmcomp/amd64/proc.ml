@@ -170,7 +170,7 @@ let destroyed_at_oper = function
   | Iop(Istore(Single, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Icomp _) | Iintop_imm((Idiv|Imod|Icomp _), _))
         -> [| rax |]
-  | Iswitch(_, _) when !pic_code -> [| r11 |]
+  | Iswitch(_, _) when !pic_code || !Clflags.dlcode -> [| r11 |]
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs

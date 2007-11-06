@@ -1927,6 +1927,36 @@ let curry_function arity =
   then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
+
+module IntSet = Set.Make(
+  struct
+    type t = int
+    let compare = compare
+  end)
+
+let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)
+  (* These apply funs are always present in the main program.
+     TODO: add more, and do the same for send and curry funs
+     (maybe up to 10-15?). *)
+
+let generic_functions shared units =
+  let (apply,send,curry) =
+    List.fold_left
+      (fun (apply,send,curry) ui ->
+	 List.fold_right IntSet.add ui.Compilenv.ui_apply_fun apply,
+	 List.fold_right IntSet.add ui.Compilenv.ui_send_fun send,
+	 List.fold_right IntSet.add ui.Compilenv.ui_curry_fun curry)
+      (IntSet.empty,IntSet.empty,IntSet.empty)
+      units
+  in
+  let apply =
+    if shared then IntSet.diff apply default_apply
+    else IntSet.union apply default_apply
+  in
+  let accu = IntSet.fold (fun n accu -> apply_function n :: accu) apply [] in
+  let accu = IntSet.fold (fun n accu -> send_function n :: accu) send accu in
+  IntSet.fold (fun n accu -> curry_function n @ accu) curry accu
+
 (* Generate the entry point *)
 
 let entry_point namelist =
@@ -1961,10 +1991,12 @@ let global_table namelist =
         List.map mksym namelist @
         [cint_zero])
 
-let globals_map namelist =
-  Cdata(Cglobal_symbol "caml_globals_map" ::
-        emit_constant "caml_globals_map"
-          (Const_base (Const_string (Marshal.to_string namelist []))) [])
+let global_data name v =
+  Cdata(Cglobal_symbol name ::
+          emit_constant name
+          (Const_base (Const_string (Marshal.to_string v []))) [])
+
+let globals_map v = global_data "caml_globals_map" v
 
 (* Generate the master table of frame descriptors *)
 
@@ -2006,3 +2038,33 @@ let predef_exception name =
           Cint(block_header 0 1);
           Cdefine_symbol bucketname;
           Csymbol_address symname ])
+
+(* Header for a plugin *)
+
+let mapflat f l = List.flatten (List.map f l)
+
+type dynunit = {
+  name: string;
+  crc: Digest.t;
+  imports_cmi: (string * Digest.t) list;
+  imports_cmx: (string * Digest.t) list;
+  defines: string list;
+}
+
+type dynheader = {
+  magic: string;
+  units: dynunit list;
+}
+
+let dyn_magic_number = "Caml2007D001"
+
+let plugin_header units =
+  let mk (ui,crc) =
+    { name = ui.Compilenv.ui_name;
+      crc = crc;
+      imports_cmi = ui.Compilenv.ui_imports_cmi;
+      imports_cmx = ui.Compilenv.ui_imports_cmx;
+      defines = ui.Compilenv.ui_defines 
+    } in
+  global_data "caml_plugin_header"
+    { magic = dyn_magic_number; units = List.map mk units }

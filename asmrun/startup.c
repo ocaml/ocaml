@@ -28,12 +28,13 @@
 #include "osdeps.h"
 #include "printexc.h"
 #include "sys.h"
+#include "natdynlink.h"
 #ifdef HAS_UI
 #include "ui.h"
 #endif
 
 extern int caml_parser_trace;
-header_t caml_atom_table[256];
+CAMLexport header_t caml_atom_table[256];
 char * caml_static_data_start, * caml_static_data_end;
 char * caml_code_area_start, * caml_code_area_end;
 

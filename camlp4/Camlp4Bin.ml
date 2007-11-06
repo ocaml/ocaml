@@ -48,6 +48,10 @@ value loaded_modules = ref SSet.empty;
 value add_to_loaded_modules name =
   loaded_modules.val := SSet.add name loaded_modules.val;
 
+value (objext,libext) =
+  if DynLoader.is_native then (".cmxs",".cmxs") 
+  else (".cmo",".cma");
+
 value rewrite_and_load n x =
   let dyn_loader = dyn_loader.val () in
   let find_in_path = DynLoader.find_in_path dyn_loader in
@@ -59,7 +63,7 @@ value rewrite_and_load n x =
     if SSet.mem n loaded_modules.val || List.mem n Register.loaded_modules.val then ()
     else begin
       add_to_loaded_modules n;
-      DynLoader.load dyn_loader (n ^ ".cmo");
+      DynLoader.load dyn_loader (n ^ objext);
     end
   end in
   do {
@@ -97,7 +101,7 @@ value rewrite_and_load n x =
     | ("Printers"|"", "a" | "auto" | "camlp4autoprinter.cmo") ->
         load ["Camlp4AutoPrinter"]
     | _ ->
-      let y = "Camlp4"^n^"/"^x^".cmo" in
+      let y = "Camlp4"^n^"/"^x^objext in
       real_load (try find_in_path y with [ Not_found -> x ]) ];
     rcall_callback.val ();
   };
@@ -172,7 +176,9 @@ Usage: camlp4 [load-options] [--] [other-options]
 Options:
 <file>.ml        Parse this implementation file
 <file>.mli       Parse this interface file
-<file>.(cmo|cma) Load this module inside the Camlp4 core@.";
+<file>.%s Load this module inside the Camlp4 core@."
+(if DynLoader.is_native then "cmx      " else "(cmo|cma)")
+;
     Options.print_usage_list ini_sl;
     (* loop (ini_sl @ ext_sl) where rec loop =
       fun
@@ -276,8 +282,8 @@ value anon_fun name =
   input_file
   (if Filename.check_suffix name ".mli" then Intf name
     else if Filename.check_suffix name ".ml" then Impl name
-    else if Filename.check_suffix name ".cmo" then ModuleImpl name
-    else if Filename.check_suffix name ".cma" then ModuleImpl name
+    else if Filename.check_suffix name objext then ModuleImpl name
+    else if Filename.check_suffix name libext then ModuleImpl name
     else raise (Arg.Bad ("don't know what to do with " ^ name)));
 
 value main argv =

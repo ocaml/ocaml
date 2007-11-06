@@ -1,6 +1,6 @@
 include ../support/Makefile.common
 
-COMPFLAGS= -I ../support
+COMPFLAGS= -I ../support -I $(OTHERS)/win32unix -I $(OTHERS)/unix
 
 all: labltkobjs
 

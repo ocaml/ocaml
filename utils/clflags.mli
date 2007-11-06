@@ -73,3 +73,5 @@ val inline_threshold : int ref
 val dont_write_files : bool ref
 val std_include_flag : string -> string
 val std_include_dir : unit -> string list
+val shared : bool ref
+val dlcode : bool ref

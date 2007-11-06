@@ -2,7 +2,7 @@
 ## Where you compiled Objective Caml
 TOPDIR=../../..
 ## Path to the otherlibs subdirectory
-OTHERS=../..
+OTHERS=$(TOPDIR)/otherlibs
 
 LIBNAME=labltk
 
@@ -13,8 +13,8 @@ INSTALLDIR=$(LIBDIR)/$(LIBNAME)
 ## Tools from the Objective Caml distribution
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
-CAMLC=$(TOPDIR)/ocamlcomp.sh
-CAMLOPT=$(TOPDIR)/ocamlcompopt.sh
+CAMLC=$(CAMLRUN) $(TOPDIR)/ocamlc -nostdlib -I $(TOPDIR)/stdlib 
+CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -nostdlib -I $(TOPDIR)/stdlib 
 CAMLCOMP=$(CAMLC) -c -warn-error A
 CAMLYACC=$(TOPDIR)/boot/ocamlyacc -v
 CAMLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex

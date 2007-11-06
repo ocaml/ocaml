@@ -83,7 +83,18 @@ let compile_phrase ppf p =
   | Cfunction fd -> compile_fundecl ppf fd
   | Cdata dl -> Emit.data dl
 
-let compile_implementation prefixname ppf (size, lam) =
+
+(* For the native toplevel: generates generic functions unless
+   they are already available in the process *)
+let compile_genfuns ppf f =
+  List.iter
+    (function
+       | (Cfunction {fun_name = name}) as ph when f name ->
+	   compile_phrase ppf ph
+       | _ -> ())
+    (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
+
+let compile_implementation ?toplevel prefixname ppf (size, lam) =
   let asmfile =
     if !keep_asm_file
     then prefixname ^ ext_asm
@@ -95,6 +106,7 @@ let compile_implementation prefixname ppf (size, lam) =
     Closure.intro size lam
     ++ Cmmgen.compunit size
     ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
+    (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
     Emit.end_assembly();
     close_out oc
   with x ->

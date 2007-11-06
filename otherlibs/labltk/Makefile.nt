@@ -2,6 +2,8 @@
 
 include ../../config/Makefile
 
+
+
 SUBDIRS=compiler support lib labltk camltk jpf frx tkanim examples_labltk examples_camltk browser
 
 all:
@@ -28,13 +30,15 @@ allopt:
 	cd frx ; $(MAKEREC) opt
 	cd tkanim ; $(MAKEREC) opt
 
-example: examples_labltk/all examples_camltk/all
+.PHONY: examples_labltk examples_camltk
 
-examples_labltk/all:
-	cd examples_labltk ; $(MAKEREC) all
+examples: examples_labltk examples_camltk
 
-examples_camltk/all:
-	cd examples_camltk ; $(MAKEREC) all
+examples_labltk:
+	cd examples_labltk; $(MAKE) all
+
+examples_camltk:
+	cd examples_camltk; $(MAKE) all
 
 install: 
 	cd labltk ; $(MAKEREC) install

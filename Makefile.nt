@@ -18,7 +18,7 @@ include config/Makefile
 include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib
+CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib -I otherlibs/dynlink
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
 CAMLYACC=boot/ocamlyacc
@@ -98,6 +98,11 @@ TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
+NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+  driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
+  toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
+  toplevel/opttopmain.cmo toplevel/opttopstart.cmo
+
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
@@ -148,7 +153,6 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 coldstart:
 	cd byterun ; $(MAKEREC) all
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-	cp byterun/ocamlrun.dll boot/ocamlrun.dll
 	cd yacc ; $(MAKEREC) all
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
 	cd stdlib ; $(MAKEREC) COMPILER=../boot/ocamlc all
@@ -213,8 +217,6 @@ installbyt:
 	mkdir -p $(BINDIR)
 	mkdir -p $(LIBDIR)
 	cd byterun ; $(MAKEREC) install
-	echo "$(STUBLIBDIR)" > $(LIBDIR)/ld.conf
-	echo "$(LIBDIR)" >> $(LIBDIR)/ld.conf
 	cp ocamlc $(BINDIR)/ocamlc.exe
 	cp ocaml $(BINDIR)/ocaml.exe
 	cd stdlib ; $(MAKEREC) install
@@ -288,6 +290,17 @@ toplevel/toplevellib.cma: $(TOPLIB)
 partialclean::
 	rm -f ocaml
 
+# The native toplevel
+
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
+	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat $(NATTOPOBJS:.cmo=.cmx) -linkall
+
+toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+
+otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
+	cd otherlibs/dynlink && make allopt
+
+
 # The configuration file
 
 utils/config.ml: utils/config.mlp config/Makefile
@@ -296,9 +309,9 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e "s|%%BYTERUN%%|ocamlrun|" \
             -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
             -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
-            -e "s|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|" \
+            -e "s|%%BYTELINK%%|flexlink|" \
             -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
-            -e "s|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|" \
+            -e "s|%%NATIVELINK%%|flexlink|" \
             -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
             -e "s|%%PACKLD%%|$(PACKLD)|" \
             -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \

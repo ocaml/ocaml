@@ -17,6 +17,7 @@
 #include "mlvalues.h"
 #include "fail.h"
 #include "libgraph.h"
+#include "callback.h"
 #include <windows.h>
 
 static value gr_reset(void);
@@ -343,7 +344,6 @@ CAMLprim value caml_gr_sigio_handler(void)
 
 /* Processing of graphic errors */
 
-value * caml_named_value (char * name);
 static value * graphic_failure_exn = NULL;
 void gr_fail(char *fmt, char *arg)
 {

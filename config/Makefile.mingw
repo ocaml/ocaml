@@ -70,6 +70,7 @@ DEBUGGER=
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
+CMXS=cmxs
 
 ########## Configuration for the bytecode compiler
 
@@ -92,13 +93,17 @@ NATIVECCLIBS=
 ### How to invoke the C preprocessor
 CPP=$(BYTECC) -E
 
+### Path to the FlexDLL includes
+FLEXDIR=$(shell flexlink -where)
+FLEXLINK=-I"$(FLEXDIR)"
+
 ### How to build an EXE
-MKEXE=$(BYTECC) -o $(1) $(2)
-#ml let mkexe out files opts = Printf.sprintf "%s -o %s %s %s" bytecc out opts files;;
+MKEXE=flexlink -merge-manifest  -chain mingw -exe -o $(1) $(2) -- $(3)
+#ml let mkexe out files opts = Printf.sprintf "flexlink -merge-manifest -chain mingw -exe -o %s %s -- %s" out files opts;;
 
 ### How to build a DLL
-MKDLL=$(BYTECC) -shared -o $(1) -Wl,--out-implib,$(2) $(3)
-#ml let mkdll out implib files opts = Printf.sprintf "%s -shared -o %s -Wl,--out-implib,%s %s %s" bytecc out implib files opts;;
+MKDLL=flexlink -merge-manifest -chain mingw -o $(1) $(3) -- $(4)
+#ml let mkdll out implib files opts = Printf.sprintf "flexlink -merge-manifest -chain mingw -o %s %s -- %s" out files opts;;
 
 ### How to build a static library
 MKLIB=rm -f $(1); ar rcs $(1) $(2)
@@ -138,7 +143,7 @@ PACKLD=$(PARTIALLD) -o #there must be a space after this '-o'
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk
+OTHERLIBRARIES=win32unix str num win32graph dynlink bigarray systhreads labltk
 
 ### Name of the target architecture for the "num" library
 BNG_ARCH=ia32
@@ -149,7 +154,8 @@ BNG_ASM_LEVEL=1
 # There must be no spaces or special characters in $(TK_ROOT)
 TK_ROOT=c:/tcl
 TK_DEFS=-I$(TK_ROOT)/include
-TK_LINK=$(TK_ROOT)/lib/tk84.lib $(TK_ROOT)/lib/tcl84.lib
+TK_LINK=$(TK_ROOT)/bin/tk83.dll $(TK_ROOT)/bin/tcl83.dll
+#TK_LINK=$(TK_ROOT)/lib/tk84.lib $(TK_ROOT)/lib/tcl84.lib
 
 ############# Aliases for common commands
 

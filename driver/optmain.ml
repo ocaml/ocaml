@@ -32,11 +32,8 @@ let process_implementation_file ppf name =
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then begin
-    let opref = output_prefix name in
-    Optcompile.implementation ppf name opref;
-    objfiles := (opref ^ ".cmx") :: !objfiles
-  end
+  || Filename.check_suffix name ".mlt" then 
+    process_implementation_file ppf name
   else if Filename.check_suffix name !Config.interface_suffix then begin
     let opref = output_prefix name in
     Optcompile.interface ppf name opref;
@@ -111,6 +108,8 @@ let main () =
              " Optimize code size rather than speed";
        "-config", Arg.Unit show_config,
              " print configuration values and exit";
+       "-dlcode", Arg.Set dlcode,
+             " Compile into code that can be dynlinked";
        "-dtypes", Arg.Set annotations,
              " (deprecated) same as -annot";
        "-for-pack", Arg.String (fun s -> for_package := Some s),
@@ -156,6 +155,8 @@ let main () =
              " Check principality of type inference";
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
+       "-shared", Arg.Unit (fun () -> shared := true; dlcode := true), 
+             " Produce a dynlinkable plugin";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
        "-thread", Arg.Set use_threads,
              " Generate code that supports the system threads library";
@@ -212,15 +213,27 @@ let main () =
        "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
       ]) (process_file ppf) usage;
+    if 
+      List.length (List.filter (fun x -> !x) 
+		     [make_archive;make_package;shared;compile_only]) > 1 
+    then begin
+      prerr_endline "Please specify at most one of -pack, -a, -shared, -c";
+      exit 2
+    end;
     if !make_archive then begin
       Optcompile.init_path();
-      Asmlibrarian.create_archive (List.rev !objfiles)
-                                  (extract_output !output_name)
+      let target = extract_output !output_name in
+      Asmlibrarian.create_archive (List.rev !objfiles) target;
     end
     else if !make_package then begin
       Optcompile.init_path();
-      Asmpackager.package_files ppf (List.rev !objfiles)
-                                    (extract_output !output_name)
+      let target = extract_output !output_name in
+      Asmpackager.package_files ppf (List.rev !objfiles) target;
+    end
+    else if !shared then begin
+      Optcompile.init_path();
+      let target = extract_output !output_name in
+      Asmlink.link_shared ppf (List.rev !objfiles) target;
     end
     else if not !compile_only && !objfiles <> [] then begin
       Optcompile.init_path();

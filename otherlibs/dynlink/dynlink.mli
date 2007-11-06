@@ -13,7 +13,11 @@
 
 (* $Id$ *)
 
-(** Dynamic loading of bytecode object files. *)
+(** Dynamic loading of object files. *)
+
+val is_native: bool
+(** [true] if the program is native,
+    [false] if the program is bytecode. *)
 
 (** {6 Initialization} *)
 
@@ -21,11 +25,14 @@ val init : unit -> unit
 (** Initialize the [Dynlink] library.
     Must be called before any other function in this module. *)
 
-(** {6 Dynamic loading of compiled bytecode files} *)
+(** {6 Dynamic loading of compiled files} *)
 
 val loadfile : string -> unit
-(** Load the given bytecode object file ([.cmo] file) or
-    bytecode library file ([.cma] file), and link it with the running program.
+(** In bytecode: load the given bytecode object file ([.cmo] file) or
+    bytecode library file ([.cma] file), and link it with the running 
+    program. In native code: load the given OCaml plugin file (usually
+    [.cmxs]), and link it with the running 
+    program.
     All toplevel expressions in the loaded compilation units
     are evaluated. No facilities are provided to
     access value names defined by the unit. Therefore, the unit
@@ -77,7 +84,8 @@ val allow_unsafe_modules : bool -> unit
     since the default initialization of allowed units, along with the
     [allow_only] and [prohibit] function, provides a better, safer
     mechanism to control access to program units.  The three functions
-    below are provided for backward compatibility only. *)
+    below are provided for backward compatibility only and are not
+    available in native code. *)
 
 val add_interfaces : string list -> string list -> unit
 (** [add_interfaces units path] grants dynamically-linked object

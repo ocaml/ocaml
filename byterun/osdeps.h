@@ -51,6 +51,8 @@ extern void caml_dlclose(void * handle);
    Return [NULL] if not found, or symbol value if found. */
 extern void * caml_dlsym(void * handle, char * name);
 
+extern void * caml_globalsym(char * name);
+
 /* Return an error message describing the most recent dynlink failure. */
 extern char * caml_dlerror(void);
 

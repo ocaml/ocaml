@@ -361,9 +361,21 @@ let transl_implementation module_name (str, cc) =
    "map" is a table from defined idents to (pos in global block, coercion).
    "prim" is a list of (pos in global block, primitive declaration). *)
 
+let transl_store_subst = ref Ident.empty
+  (** In the native toplevel, this reference is threaded through successive
+      calls of transl_store_structure *)
+
+let nat_toplevel_name id =
+  try match Ident.find_same id !transl_store_subst with
+    | Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])]) -> (glob,pos)
+    | _ -> raise Not_found
+  with Not_found ->
+    fatal_error("Translmod.nat_toplevel_name: " ^ Ident.unique_name id)
+
 let transl_store_structure glob map prims str =
   let rec transl_store subst = function
     [] ->
+      transl_store_subst := subst;
       lambda_unit
   | Tstr_eval expr :: rem ->
       Lsequence(subst_lambda subst (transl_exp expr),
@@ -468,7 +480,7 @@ let transl_store_structure glob map prims str =
                     [Lprim(Pgetglobal glob, []); transl_primitive prim]),
               cont)
 
-  in List.fold_right store_primitive prims (transl_store Ident.empty str)
+  in List.fold_right store_primitive prims (transl_store !transl_store_subst str)
 
 (* Build the list of value identifiers defined by a toplevel structure
    (excluding primitive declarations). *)
@@ -530,14 +542,28 @@ let build_ident_map restr idlist =
 (* Compile an implementation using transl_store_structure 
    (for the native-code compiler). *)
 
-let transl_store_implementation module_name (str, restr) =
+let transl_store_gen module_name (str, restr) topl =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
   let (map, prims, size) = build_ident_map restr (defined_idents str) in
-  transl_store_label_init module_id size
-    (transl_store_structure module_id map prims) str
+  let f = function
+    | [ Tstr_eval expr ] when topl ->
+	assert (size = 0);
+	subst_lambda !transl_store_subst (transl_exp expr)
+    | str -> transl_store_structure module_id map prims str in
+  transl_store_label_init module_id size f str
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
+
+let transl_store_phrases module_name str =
+  transl_store_gen module_name (str,Tcoerce_none) true
+
+let transl_store_implementation module_name (str, restr) =
+  let s = !transl_store_subst in
+  transl_store_subst := Ident.empty;
+  let r = transl_store_gen module_name (str, restr) false in
+  transl_store_subst := s;
+  r
 
 (* Compile a toplevel phrase *)
 

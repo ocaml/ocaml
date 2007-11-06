@@ -88,3 +88,7 @@ let std_include_flag prefix =
 let std_include_dir () =
   if !no_std_include then [] else [Config.standard_library]
 ;;
+
+let shared = ref false (* -shared *)
+let dlcode = ref false (* -dlcode *)
+

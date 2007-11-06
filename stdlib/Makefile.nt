@@ -55,10 +55,14 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
-	$(call MKEXE,tmpheader.exe,-I../byterun $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) headernt.c $(EXTRALIBS))
+	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun headernt.c
+	$(call MKEXE,tmpheader.exe,headernt.$(O) $(EXTRALIBS), $(BYTECCLINKOPTS))
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
 	cp camlheader camlheader_ur
+
+# TODO: do not call flexlink to build tmpheader.exe (we don't need
+# the export table)
 
 sys.ml: sys.mlp ../VERSION
 	sed -e "s|%%VERSION%%|`head -1 ../VERSION`|" sys.mlp >sys.ml

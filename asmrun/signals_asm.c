@@ -46,10 +46,12 @@ extern void caml_win32_overflow_detection();
 #endif
 
 extern char * caml_code_area_start, * caml_code_area_end;
+CAMLextern int caml_is_in_code(void *);
 
 #define In_code_area(pc) \
-  ((char *)(pc) >= caml_code_area_start && \
-   (char *)(pc) <= caml_code_area_end)
+ ( ((char *)(pc) >= caml_code_area_start && \
+    (char *)(pc) <= caml_code_area_end)     \
+   || caml_is_in_code((void *)(pc))  )
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to Caml code.

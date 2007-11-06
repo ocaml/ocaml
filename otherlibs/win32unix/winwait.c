@@ -19,6 +19,7 @@
 #include <memory.h>
 #include "unixsupport.h"
 #include <sys/types.h>
+#include <signals.h>
 
 static value alloc_process_status(HANDLE pid, int status)
 {

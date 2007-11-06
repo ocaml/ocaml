@@ -5,12 +5,12 @@ all: $(LIBNAME).cma $(LIBNAME)top$(EXE) $(LIBNAME)
 opt: $(LIBNAME).cmxa
 
 clean: 
-	rm -f $(LIBNAME)top$(EXE) $(LIBNAME) *.cm* *.a
+	rm -f $(LIBNAME)top$(EXE) $(LIBNAME) *.cm* *.$(A)
 
 superclean:
 	- if test -f tk.cmo; then \
 	  echo We have changes... Now lib directory has no .cmo files; \
-	  rm -f *.cm* *.o; \
+	  rm -f *.cm* *.$(O); \
 	fi
 
 include ../labltk/modules
@@ -32,9 +32,9 @@ $(LIBNAME).cma: $(SUPPORT) ../Widgets.src
 	$(MAKE) superclean
 	cd ../labltk; $(MAKE)
 	cd ../camltk; $(MAKE)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) -oc $(LIBNAME) \
+	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS) \
-          $(TK_LINK)
+          -ccopt "\"$(TK_LINK)\""
 
 $(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx) ../Widgets.src
 	$(MAKE) superclean
@@ -42,13 +42,13 @@ $(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx) ../Widgets.src
 	cd ../camltk; $(MAKE) opt
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o $(LIBNAME) -oc $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
-          $(TK_LINK)
+          -ccopt "\"$(TK_LINK)\""
 
-$(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).a
+$(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).$(A)
 	$(CAMLC) -verbose -linkall -o $(LIBNAME)top$(EXE) -I ../support \
 	       -I $(TOPDIR)/toplevel toplevellib.cma \
+	       -I $(OTHERS)/unix -I $(OTHERS)/win32unix unix.cma \
 	       -I ../labltk -I ../camltk $(LIBNAME).cma \
-	       -I $(OTHERS)/unix unix.cma \
 	       -I $(OTHERS)/str str.cma \
 	       topstart.cmo
 
@@ -68,7 +68,7 @@ install:
 
 installopt:
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
-	cp $(LIBNAME).cmxa $(LIBNAME).a $(INSTALLDIR)
-	cd $(INSTALLDIR); $(RANLIB) $(LIBNAME).a
+	cp $(LIBNAME).cmxa $(LIBNAME).$(A) $(INSTALLDIR)
+	cd $(INSTALLDIR); $(RANLIB) $(LIBNAME).$(A)
 	chmod 644 $(INSTALLDIR)/$(LIBNAME).cmxa
-	chmod 644 $(INSTALLDIR)/$(LIBNAME).a
+	chmod 644 $(INSTALLDIR)/$(LIBNAME).$(A)

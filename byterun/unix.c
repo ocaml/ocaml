@@ -25,6 +25,8 @@
 #ifdef SUPPORT_DYNAMIC_LINKING
 #ifdef HAS_NSLINKMODULE
 #include <mach-o/dyld.h>
+#elif defined(__CYGWIN32__)
+#include "flexdll.h"
 #else
 #include <dlfcn.h>
 #endif
@@ -263,6 +265,11 @@ void * caml_dlsym(void * handle, char * name)
   else return NULL;
 }
 
+void * caml_globalsym(char * name)
+{
+  return NULL;
+}
+
 char * caml_dlerror(void)
 {
   NSLinkEditErrors c;
@@ -271,6 +278,36 @@ char * caml_dlerror(void)
   if (dlerror_string != NULL) return dlerror_string;
   NSLinkEditError(&c,&errnum,&fileName,&errorString);
   return (char *) errorString;
+}
+
+#elif defined(__CYGWIN32__)
+/* Use flexdll */
+
+void * caml_dlopen(char * libname, int for_execution)
+{
+  int flags = FLEXDLL_RTLD_GLOBAL;
+  if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
+  return flexdll_dlopen(libname, flags);
+}
+
+void caml_dlclose(void * handle)
+{
+  flexdll_dlclose(handle);
+}
+
+void * caml_dlsym(void * handle, char * name)
+{
+  return flexdll_dlsym(handle, name);
+}
+
+void * caml_globalsym(char * name)
+{
+  return flexdll_dlsym(flexdll_dlopen(NULL,0), name);
+}
+
+char * caml_dlerror(void)
+{
+  return flexdll_dlerror();
 }
 
 #else
@@ -304,6 +341,11 @@ void * caml_dlsym(void * handle, char * name)
   return dlsym(handle, name);
 }
 
+void * caml_globalsym(char * name)
+{
+  return caml_dlsym(dlopen(NULL,RTLD_GLOBAL), name);
+}
+
 char * caml_dlerror(void)
 {
   return dlerror();
@@ -322,6 +364,11 @@ void caml_dlclose(void * handle)
 }
 
 void * caml_dlsym(void * handle, char * name)
+{
+  return NULL;
+}
+
+void * caml_globalsym(char * name)
 {
   return NULL;
 }

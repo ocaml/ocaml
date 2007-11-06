@@ -3,10 +3,10 @@
 #include <callback.h>
 #include <sys.h>
 
-extern int __argc;
-extern char **__argv;
-extern void caml_expand_command_line(int * argcp, char *** argvp);
-extern void caml_main (char **);
+CAMLextern int __argc;
+CAMLextern char **__argv;
+CAMLextern void caml_expand_command_line(int * argcp, char *** argvp);
+/* extern void caml_main (char **); */
 
 int WINAPI WinMain(HINSTANCE h, HINSTANCE HPrevInstance,
                    LPSTR lpCmdLine, int nCmdShow)

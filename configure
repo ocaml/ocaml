@@ -239,8 +239,11 @@ esac
 # Configure the bytecode compiler
 
 bytecc="$cc"
+mkexe="\$(BYTECC) -o \$(1) \$(2) \$(3)"
+mkexe_ml="Printf.sprintf \"%s -o %s %s %s\" bytecc out opts files"
 bytecccompopts=""
 bytecclinkopts=""
+dllccompopts=""
 ostype="Unix"
 exe=""
 
@@ -297,6 +300,9 @@ case "$bytecc,$host" in
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
+    dllccompopts="-D_WIN32 -DCAML_DLL"
+    mkexe="flexlink -exe -chain cygwin -o \$(1) \$(2) -- \$(3)"
+    mkexe_ml="Printf.sprintf \"flexlink -exe -chain cygwin -o %s %s -- %s\" out files opts"
     exe=".exe"
     ostype="Cygwin";;
   gcc*,x86_64-*-linux*)
@@ -491,15 +497,24 @@ sharedcccompopts=''
 mksharedlib=''
 byteccrpath=''
 mksharedlibrpath=''
+natdynlinkopts=""
+flexlink=''
+cmxs="cmxa"
 
 if test $withsharedlibs = "yes"; then
+  cmxs="cmxs"
   case "$host" in
+    *-*-cygwin*)
+      flexlink="-I`flexlink -where`"
+      mksharedlib="flexlink -chain cygwin -o"
+      shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
+      natdynlinkopts="-Wl,-E"
       shared_libraries_supported=true;;
     alpha*-*-osf*)
       case "$bytecc" in
@@ -1450,12 +1465,13 @@ echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
 echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
+echo "NATDYNLINKOPTS=$natdynlinkopts" >> Makefile
 cat >> Makefile <<EOF
 SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
 
-MKEXE=\$(BYTECC) -o \$(1) \$(2)
-#ml let mkexe out files opts = Printf.sprintf "%s -o %s %s %s" bytecc out opts files;;
+MKEXE=$mkexe
+#ml let mkexe out files opts = $mkexe_ml;;
 
 ### How to build a DLL
 MKDLL=$mksharedlib \$(1) \$(3)
@@ -1484,7 +1500,8 @@ echo "DEBUGGER=$debugger" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
 echo "PARTIALLD=$partialld" >> Makefile
-echo "DLLCCCOMPOPTS=" >> Makefile
+echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
+echo "FLEXLINK=$flexlink" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
@@ -1494,6 +1511,7 @@ echo "EXT_DLL=.so" >> Makefile
 echo "EXTRALIBS=" >> Makefile
 echo "CCOMPTYPE=cc" >> Makefile
 echo "TOOLCHAIN=cc" >> Makefile
+echo "CMXS=$cmxs" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile

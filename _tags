@@ -32,7 +32,7 @@ true: use_stdlib
 <camlp4/**/*.ml*>: camlp4boot, -warn_Alez, warn_Ale
 <camlp4/Camlp4_config.ml*>: -camlp4boot
 <camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Ale, warn_a
-"camlp4/Camlp4Bin.byte" or "camlp4/mkcamlp4.byte" or "camlp4/camlp4lib.cma": use_dynlink
+<camlp4/Camlp4Bin.{byte,native}> or "camlp4/mkcamlp4.byte" or "camlp4/camlp4lib.cma": use_dynlink
 "camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": warn_Alezv
 <camlp4/Camlp4Printers/**.ml>: include_unix
 "camlp4/Camlp4/Struct/DynLoader.ml": include_dynlink

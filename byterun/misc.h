@@ -49,19 +49,9 @@ typedef char * addr;
 
 /* Export control (to mark primitives and to handle Windows DLL) */
 
-#if defined(_WIN32) && defined(CAML_DLL)
-# define CAMLexport __declspec(dllexport)
-# define CAMLprim __declspec(dllexport)
-# if defined(IN_OCAMLRUN)
-#  define CAMLextern __declspec(dllexport) extern
-# else
-#  define CAMLextern __declspec(dllimport) extern
-# endif
-#else
-# define CAMLexport
-# define CAMLprim
-# define CAMLextern extern
-#endif
+#define CAMLexport
+#define CAMLprim
+#define CAMLextern extern
 
 /* Assertions */
 

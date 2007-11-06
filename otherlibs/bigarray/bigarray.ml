@@ -238,3 +238,10 @@ let _ =
   let _ = Array2.get in
   let _ = Array3.get in
   ()
+
+external get1: unit -> unit = "caml_ba_get_1"
+external get2: unit -> unit = "caml_ba_get_2"
+external get3: unit -> unit = "caml_ba_get_3"
+external set1: unit -> unit = "caml_ba_set_1"
+external set2: unit -> unit = "caml_ba_set_2"
+external set3: unit -> unit = "caml_ba_set_3"

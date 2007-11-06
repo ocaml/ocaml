@@ -1,8 +1,6 @@
 include ../support/Makefile.common
 
-COMPFLAGS= -I ../support
-
-TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
+COMPFLAGS= -I ../support -I $(OTHERS)/win32unix -I $(OTHERS)/unix
 
 all: camltkobjs
 

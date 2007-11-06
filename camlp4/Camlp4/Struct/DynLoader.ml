@@ -61,9 +61,7 @@ value find_in_path x name =
 value load =
   let _initialized = ref False in
   fun _path file ->
-    IFDEF OPT THEN
-      raise (Error file "native-code program cannot do a dynamic load")
-    ELSE do {
+    do {
       if not _initialized.val then
         try do {
           Dynlink.init ();
@@ -80,5 +78,7 @@ value load =
       in
       try Dynlink.loadfile fname with
       [ Dynlink.Error e -> raise (Error fname (Dynlink.error_message e)) ]
-    }
-    END;
+    };
+
+
+value is_native = Dynlink.is_native;

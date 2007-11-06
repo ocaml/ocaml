@@ -15,17 +15,11 @@
 
 # Makefile for the Unix interface library
 
-include ../../config/Makefile
+LIBNAME=unix
 
-# Compilation options
-CC=$(BYTECC)
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
-CAMLC=../../ocamlcomp.sh
-CAMLOPT=../../ocamlcompopt.sh
-MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A -g
+EXTRACAMLFLAGS=-nolabels
 
-OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
+COBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
   dup.o dup2.o envir.o errmsg.o execv.o execve.o execvp.o exit.o \
   fchmod.o fchown.o fcntl.o fork.o ftruncate.o \
@@ -42,50 +36,11 @@ OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   time.o times.o truncate.o umask.o unixsupport.o unlink.o \
   utimes.o wait.o write.o
 
-MLOBJS=unix.cmo unixLabels.cmo
+CAMLOBJS=unix.cmo unixLabels.cmo
 
-all: libunix.a unix.cma
+HEADERS=unixsupport.h
 
-allopt: libunix.a unix.cmxa
-
-libunix.a: $(OBJS)
-	$(MKLIB) -o unix $(OBJS)
-
-unix.cma: $(MLOBJS)
-	$(MKLIB) -o unix -ocamlc '$(CAMLC)' -linkall $(MLOBJS)
-
-unix.cmxa: $(MLOBJS:.cmo=.cmx)
-	$(MKLIB) -o unix -ocamlopt '$(CAMLOPT)' -linkall $(MLOBJS:.cmo=.cmx)
-
-unix.cmx: ../../ocamlopt
-
-partialclean:
-	rm -f *.cm*
-
-clean: partialclean
-	rm -f *.a *.o *.so
-
-install:
-	if test -f dllunix.so; then cp dllunix.so $(STUBLIBDIR)/dllunix.so; fi
-	cp libunix.a $(LIBDIR)/libunix.a
-	cd $(LIBDIR); $(RANLIB) libunix.a
-	cp unix.cma $(MLOBJS:.cmo=.cmi) $(MLOBJS:.cmo=.mli) $(LIBDIR)
-	cp unixsupport.h $(LIBDIR)/caml
-
-installopt:
-	cp $(MLOBJS:.cmo=.cmx) unix.cmxa unix.a $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) unix.a
-
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
-
-.mli.cmi:
-	$(CAMLC) -c $(COMPFLAGS) $<
-
-.ml.cmo:
-	$(CAMLC) -c $(COMPFLAGS) -nolabels $<
-
-.ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) -nolabels $<
+include ../Makefile
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

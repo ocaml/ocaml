@@ -69,6 +69,7 @@ DEBUGGER=
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
+CMXS=cmxs
 
 ########## Configuration for the bytecode compiler
 
@@ -76,13 +77,13 @@ EXTRALIBS=
 BYTECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(BYTECC).  (For static linking.)
-BYTECCCOMPOPTS=/Ox /MT
+BYTECCCOMPOPTS=/Ox /MD
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=/MT
+BYTECCLINKOPTS=/MD
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
-DLLCCCOMPOPTS=/Ox /MD -DCAML_DLL
+DLLCCCOMPOPTS=/Ox /MD
 
 ### Libraries needed
 BYTECCLIBS=advapi32.lib
@@ -91,21 +92,17 @@ NATIVECCLIBS=advapi32.lib
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP
 
-### How to merge a .manifest (if any) in a .exe
-MERGEMANIFESTEXE=test ! -f $(1).manifest || mt -nologo -outputresource:$(1) -manifest $(1).manifest && rm -f $(1).manifest
-#ml let mergemanifestexe out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:%s -manifest %s.manifest && rm -f %s.manifest" out out out out;;
+### Path to the FlexDLL includes
+FLEXDIR=$(shell flexlink -where)
+FLEXLINK=-I"$(FLEXDIR)"
 
 ### How to build an EXE
-MKEXE=$(BYTECC) /Fe$(1) $(2) && ($(MERGEMANIFESTEXE))
-#ml let mkexe out files opts = Printf.sprintf "%s /Fe%s %s %s && (%s)" bytecc out opts files (mergemanifestexe out);;
-
-### How to merge a .manifest (if any) in a .dll
-MERGEMANIFESTDLL=test ! -f $(1).manifest || mt -nologo -outputresource:"$(1);\#2" -manifest $(1).manifest && rm -f $(1).manifest
-#ml let mergemanifestdll out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:\"%s;\\#2\" -manifest %s.manifest && rm -f %s.manifest" out out out out;;
+MKEXE=flexlink -merge-manifest -exe -o $(1) $(2) -- $(3)
+#ml let mkexe out files opts = Printf.sprintf "flexlink -merge-manifest -exe -o %s %s -- %s" out files opts;;
 
 ### How to build a DLL
-MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3) && ($(MERGEMANIFESTDLL))
-#ml let mkdll out implib files opts = Printf.sprintf "link /nologo /dll /out:%s /implib:%s %s %s && (%s)" out implib opts files (mergemanifestdll out);;
+MKDLL=flexlink -merge-manifest -o $(1) $(3) -- $(4)
+#ml let mkdll out implib files opts = Printf.sprintf "flexlink -merge-manifest -o %s %s -- %s" out files opts;;
 
 ### How to build a static library
 MKLIB=link /lib /nologo /out:$(1) $(2)
@@ -117,7 +114,7 @@ SYSLIB=$(1).lib
 #ml let syslib x = x ^ ".lib";;
 
 ### The ranlib command
-RANLIB=
+RANLIB=echo
 RANLIBCMD=
 
 ############# Configuration for the native-code compiler
@@ -135,10 +132,10 @@ SYSTEM=win32
 NATIVECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
 
 ### Additional compile-time options for $(NATIVECC).
-NATIVECCCOMPOPTS=/Ox /MT
+NATIVECCCOMPOPTS=/Ox /MD
 
 ### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=/MT
+NATIVECCLINKOPTS=/MD
 
 ### Build partially-linked object file
 PARTIALLD=link /lib /nologo
@@ -160,7 +157,8 @@ TK_DEFS=-I$(TK_ROOT)/include
 # produced by OCaml, and is therefore required for binary distribution
 # of these libraries.  However, $(TK_ROOT) must be added to the LIB
 # environment variable, as described in README.win32.
-TK_LINK=tk84.lib tcl84.lib
+#TK_LINK=tk84.lib tcl84.lib
+TK_LINK=tk83.lib tcl83.lib
 # An alternative definition that avoids mucking with the LIB variable,
 # but hard-wires the Tcl/Tk location in the binaries
 # TK_LINK=$(TK_ROOT)/tk83.lib $(TK_ROOT)/tcl83.lib

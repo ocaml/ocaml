@@ -29,7 +29,7 @@ GENFILES=thread.ml
 
 all: libthreads.a threads.cma
 
-allopt: libthreadsnat.a threads.cmxa
+allopt: libthreadsnat.a threads.cmxa threads.$(CMXS)
 
 libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
@@ -55,7 +55,17 @@ threads.cma: $(THREAD_OBJS)
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
+          -cclib -lthreadsnat $(PTHREAD_LINK)
+
+# Note: I removed "-cclib -lunix" from the line above. 
+# Indeed, if we link threads.cmxa, then we must also link unix.cmxa, 
+# which itself will pass -lunix to the C linker.  It seems more
+# modular to me this way. -- Alain
+
+
+# Build threads.cmxs, even if unsafe
+threads.cmxs: threads.cmxa
+	$(CAMLOPT) -shared -dlcode -o threads.cmxs -I . threads.cmxa -linkall
 
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
@@ -83,6 +93,7 @@ installopt:
 	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
 	cd $(LIBDIR)/threads; $(RANLIB) threads.a
+	if test -f unix.cmxs; then cp unix.cmxs $(LIBDIR)/; fi
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
@@ -93,7 +104,7 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -dlcode -c $(COMPFLAGS) $<
 
 depend: $(GENFILES)
 	-gcc -MM -I../../byterun *.c > .depend

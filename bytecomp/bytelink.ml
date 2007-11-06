@@ -45,13 +45,15 @@ let lib_ccopts = ref []
 let lib_dllibs = ref []
 
 let add_ccobjs l =
-  if not !Clflags.no_auto_link
-      && String.length !Clflags.use_runtime = 0
+  if not !Clflags.no_auto_link then begin
+    if
+      String.length !Clflags.use_runtime = 0
       && String.length !Clflags.use_prims = 0
-  then begin
-    if l.lib_custom then Clflags.custom_runtime := true;
-    lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-    lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+    then begin
+      if l.lib_custom then Clflags.custom_runtime := true;
+      lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
+      lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+    end;
     lib_dllibs := l.lib_dllibs @ !lib_dllibs
   end
 
@@ -429,10 +431,27 @@ void caml_startup(char ** argv)
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
-  match Config.ccomp_type with
-    "cc" ->
+  match Config.system, Config.ccomp_type with
+  | ("win32"|"mingw"|"cygwin"),_ ->
+      (* TODO: load path? *)
       Ccomp.command
        (Printf.sprintf
+          "flexlink -chain %s -merge-manifest -exe -o %s %s %s %s %s %s %s"
+	  (match Config.system with
+	     | "win32" -> "msvc"
+	     | "mingw" -> "mingw"
+	     | "cygwin" -> "cygwin"
+	     | _ -> assert false)
+          (Filename.quote exec_name)
+          (Clflags.std_include_flag "-I ")
+          prim_name
+          (Ccomp.quote_files (List.rev !Clflags.ccobjs))
+          (Filename.quote "-lcamlrun")
+          Config.bytecomp_c_libraries
+          (Ccomp.make_link_options !Clflags.ccopts))
+  | _,"cc" ->
+      Ccomp.command
+	(Printf.sprintf
           "%s -o %s %s %s %s %s %s -lcamlrun %s"
           !Clflags.c_linker
           (Filename.quote exec_name)
@@ -444,27 +463,6 @@ let build_custom_runtime prim_name exec_name =
                       !load_path))
           (Ccomp.quote_files (List.rev !Clflags.ccobjs))
           Config.bytecomp_c_libraries)
-  | "msvc" ->
-      let retcode =
-      Ccomp.command
-       (Printf.sprintf
-          "%s /Fe%s %s %s %s %s %s %s"
-          !Clflags.c_linker
-          (Filename.quote exec_name)
-          (Clflags.std_include_flag "-I")
-          prim_name
-          (Ccomp.quote_files
-            (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-          (Filename.quote (Ccomp.expand_libname "-lcamlrun"))
-          Config.bytecomp_c_libraries
-          (Ccomp.make_link_options !Clflags.ccopts)) in
-      (* C compiler doesn't clean up after itself.  Note that the .obj
-         file is created in the current working directory. *)
-      remove_file
-        (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
-      if retcode <> 0
-      then retcode
-      else Ccomp.merge_manifest exec_name
   | _ -> assert false
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
