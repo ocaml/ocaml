@@ -36,6 +36,16 @@ and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
 
+\item["-module"]
+Output raw dependencies of the form
+\begin{verbatim}
+      filename: Module1 Module2 ... ModuleN
+\end{verbatim}
+where "Module1", \ldots, "ModuleN" are the names of the compilation
+units referenced within the file "filename", but these names are not
+resolved to source file names.  Such raw dependencies cannot be used
+by "make", but can be post-processed by other tools such as "Omake".
+
 \item["-native"]
 Generate dependencies for a pure native-code program (no bytecode
 version).  When an implementation file (".ml" file) has no explicit
