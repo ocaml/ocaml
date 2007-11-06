@@ -46,10 +46,10 @@ libasmrun.$(A): $(OBJS)
 	$(call MKLIB,libasmrun.$(A), $(OBJS))
 
 i386nt.obj: i386nt.asm
-	$(AS)i386nt.obj i386nt.asm
+	$(ASM)i386nt.obj i386nt.asm
 
 amd64nt.obj: amd64nt.asm
-	$(AS)amd64nt.obj amd64nt.asm
+	$(ASM)amd64nt.obj amd64nt.asm
 
 i386.o: i386.S
 	$(CC) -c -DSYS_$(SYSTEM) i386.S
