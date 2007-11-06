@@ -21,38 +21,38 @@ CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
-OUTS=callback.out manyargs.out \
-cm.byt cmlinked.out cm.out \
-bigarrays.out bigarrf.out fftba.out globroots.out float.out intext.out \
-printf scanf regexp.byt regexp.opt md5.out recmod.out
+OUTS=callback.bin manyargs.bin \
+cm.byt cmlinked.bin cm.bin \
+bigarrays.bin bigarrf.bin fftba.bin globroots.bin float.bin intext.bin \
+printf scanf regexp.byt regexp.opt md5.bin recmod.bin
 
-BROKENS=# multdef.out
+BROKENS=# multdef.bin
 
 all: $(OUTS)
 
 callback.byt: callback.cmo callbackprim.o
 	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
-callback.out: callback.cmx callbackprim.o
-	$(CAMLOPT) -o callback.out callback.cmx callbackprim.o ../../otherlibs/unix/libunix.a
+callback.bin: callback.cmx callbackprim.o
+	$(CAMLOPT) -o callback.bin callback.cmx callbackprim.o ../../otherlibs/unix/libunix.a
 
 manyargs.byt: manyargs.cmo manyargsprim.o
 	$(CAMLC) -o manyargs.byt -custom manyargs.cmo manyargsprim.o
-manyargs.out: manyargs.cmx manyargsprim.o
-	$(CAMLOPT) -inline 0 -o manyargs.out manyargs.cmx manyargsprim.o
+manyargs.bin: manyargs.cmx manyargsprim.o
+	$(CAMLOPT) -inline 0 -o manyargs.bin manyargs.cmx manyargsprim.o
 
-multdef.out: multdef.cmx usemultdef.cmx
-	$(CAMLOPT) -o multdef.out multdef.cmx usemultdef.cmx
+multdef.bin: multdef.cmx usemultdef.cmx
+	$(CAMLOPT) -o multdef.bin multdef.cmx usemultdef.cmx
 
 cm.byt: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -custom -o cm.byt cmcaml.ml cmstub.c cmmain.c
 
-cmlinked.out: cmcaml.ml cmstub.c cmmain.c
+cmlinked.bin: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -output-obj -o cm.o cmcaml.ml
-	$(BYTECC) -g -o cmlinked.out cm.o -I../../byterun -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../byterun/libcamlrun.a $(BYTECCLIBS)
+	$(BYTECC) -g -o cmlinked.bin cm.o -I../../byterun -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../byterun/libcamlrun.a $(BYTECCLIBS)
 
-cm.out: cmcaml.ml cmstub.c cmmain.c
+cm.bin: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLOPT) -output-obj -o cm.o cmcaml.ml
-	$(NATIVECC) -g -o cm.out cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(NATIVECCLIBS)
+	$(NATIVECC) -g -o cm.bin cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(NATIVECCLIBS)
 
 bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
@@ -61,9 +61,9 @@ bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrays.ml
 
-bigarrays.out: ../../otherlibs/bigarray/bigarray.cmxa \
+bigarrays.bin: ../../otherlibs/bigarray/bigarray.cmxa \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
-	$(CAMLOPT) $(OPTFLAGS) -o bigarrays.out \
+	$(CAMLOPT) $(OPTFLAGS) -o bigarrays.bin \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cmxa bigarray.cmxa bigarrays.ml
@@ -78,10 +78,10 @@ bigarrf.byt: bigarrf.o bigarrfstub.o \
                 bigarrf.o bigarrfstub.o \
                 ../../byterun/libcamlrun.a -cclib -lg2c
 
-bigarrf.out: bigarrf.o bigarrfstub.o \
+bigarrf.bin: bigarrf.o bigarrfstub.o \
                ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrfml.ml
-	$(CAMLOPT) $(OPTFLAGS) -o bigarrf.out \
+	$(CAMLOPT) $(OPTFLAGS) -o bigarrf.bin \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
                 unix.cma bigarray.cma bigarrf.ml \
@@ -98,76 +98,76 @@ fftba.byt: fftba.ml
 	$(CAMLC) -o fftba.byt -I ../../otherlibs/bigarray \
           bigarray.cma fftba.ml
 
-fftba.out: fftba.ml
-	$(CAMLOPT) $(OPTFLAGS) -o fftba.out -I ../../otherlibs/bigarray \
+fftba.bin: fftba.ml
+	$(CAMLOPT) $(OPTFLAGS) -o fftba.bin -I ../../otherlibs/bigarray \
           bigarray.cmxa fftba.ml
 
 globroots.byt: globroots.ml globrootsprim.o
 	$(CAMLC) -custom -o globroots.byt globroots.ml globrootsprim.o
 
-globroots.out: globroots.ml globrootsprim.o
-	$(CAMLOPT) -o globroots.out globroots.ml globrootsprim.o
+globroots.bin: globroots.ml globrootsprim.o
+	$(CAMLOPT) -o globroots.bin globroots.ml globrootsprim.o
 
 globrootsprim.o: globrootsprim.c
 	$(BYTECC) $(BYTECCCOMPOPTS) -I../../byterun -c globrootsprim.c
 
 float.byt: float.cmo
 	${CAMLC} -o float.byt float.cmo
-float.out: float.cmx
-	${CAMLOPT} -o float.out float.cmx
+float.bin: float.cmx
+	${CAMLOPT} -o float.bin float.cmx
 
 intext.byt: intext.cmo intextaux.o
 	${CAMLC} -o intext.byt -custom intext.cmo intextaux.o
-intext.out: intext.cmx intextaux.o
-	${CAMLOPT} -o intext.out intext.cmx intextaux.o
+intext.bin: intext.cmx intextaux.o
+	${CAMLOPT} -o intext.bin intext.cmx intextaux.o
 
 tprintf.byt: testing.cmo tprintf.cmo
 	${CAMLC} -o tprintf.byt testing.cmo tprintf.cmo
-tprintf.out: testing.cmx tprintf.cmx
-	${CAMLOPT} -o tprintf.out testing.cmx tprintf.cmx
+tprintf.bin: testing.cmx tprintf.cmx
+	${CAMLOPT} -o tprintf.bin testing.cmx tprintf.cmx
 
-printf: tprintf.byt tprintf.out
+printf: tprintf.byt tprintf.bin
 	./tprintf.byt
-	./tprintf.out
+	./tprintf.bin
 
 tscanf.byt: testing.cmo tscanf.cmo
 	${CAMLC} -o tscanf.byt testing.cmo tscanf.cmo
-tscanf.out: testing.cmx tscanf.cmx
-	${CAMLOPT} -o tscanf.out testing.cmx tscanf.cmx
+tscanf.bin: testing.cmx tscanf.cmx
+	${CAMLOPT} -o tscanf.bin testing.cmx tscanf.cmx
 
 tscanf2.byt: tscanf2_io.cmo tscanf2_slave.cmo tscanf2_master.cmo
 	${CAMLC} -o tscanf2_slave.byt tscanf2_io.cmo tscanf2_slave.cmo
 	${CAMLC} -o tscanf2_master.byt unix.cma \
 		tscanf2_io.cmo tscanf2_master.cmo
-tscanf2.out: tscanf2_io.cmx tscanf2_slave.cmx tscanf2_master.cmx
-	${CAMLOPT} -o tscanf2_slave.out tscanf2_io.cmx tscanf2_slave.cmx
-	${CAMLOPT} -o tscanf2_master.out unix.cmxa \
+tscanf2.bin: tscanf2_io.cmx tscanf2_slave.cmx tscanf2_master.cmx
+	${CAMLOPT} -o tscanf2_slave.bin tscanf2_io.cmx tscanf2_slave.cmx
+	${CAMLOPT} -o tscanf2_master.bin unix.cmxa \
 		tscanf2_io.cmx tscanf2_master.cmx
 
-scanf: tscanf.byt tscanf.out tscanf2.byt tscanf2.out
+scanf: tscanf.byt tscanf.bin tscanf2.byt tscanf2.bin
 	./tscanf.byt
-	./tscanf.out
+	./tscanf.bin
 	./tscanf2_master.byt ./tscanf2_slave.byt
-	./tscanf2_master.out ./tscanf2_slave.out
+	./tscanf2_master.bin ./tscanf2_slave.bin
 
 regexp.byt: ../../otherlibs/str/str.cma regexp.ml
 	$(CAMLC) -custom -I ../../otherlibs/str -o regexp.byt str.cma regexp.ml
 regexp.opt: ../../otherlibs/str/str.cmxa regexp.ml
 	$(CAMLOPT) -I ../../otherlibs/str -o regexp.opt str.cmxa regexp.ml
 
-md5.out: md5.ml
-	$(CAMLOPT) -unsafe -inline 100 -o md5.out md5.ml
+md5.bin: md5.ml
+	$(CAMLOPT) -unsafe -inline 100 -o md5.bin md5.ml
 
 recmod.byt: recmod.cmo
 	$(CAMLC) -o recmod.byt recmod.cmo
 
-recmod.out: recmod.cmx
-	$(CAMLOPT) -o recmod.out recmod.cmx
+recmod.bin: recmod.cmx
+	$(CAMLOPT) -o recmod.bin recmod.cmx
 
 # Common rules
 
 .SUFFIXES:
-.SUFFIXES: .mli .ml .cmi .cmo .cmx .byt .fast.byt .out .fast.out .c .o
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .byt .fast.byt .bin .fast.bin .c .o
 
 .ml.byt:
 	$(CAMLC) -o $*.byt $<
@@ -177,12 +177,12 @@ recmod.out: recmod.cmx
 	$(CAMLC) -unsafe -o $*.fast.byt $*_fast.ml
 	rm -f $*_fast.ml
 
-.ml.out:
-	$(CAMLOPT) $(OPTFLAGS) -o $*.out $<
+.ml.bin:
+	$(CAMLOPT) $(OPTFLAGS) -o $*.bin $<
 
-.ml.fast.out:
+.ml.fast.bin:
 	cp $*.ml $*_fast.ml
-	$(CAMLOPT) $(OPTFLAGS) -unsafe -o $*.fast.out $*_fast.ml
+	$(CAMLOPT) $(OPTFLAGS) -unsafe -o $*.fast.bin $*_fast.ml
 	rm -f $*_fast.ml
 
 .mli.cmi:
@@ -198,7 +198,7 @@ recmod.out: recmod.cmx
 	$(NATIVECC) $(NATIVECCCOMPOPTS) -I../../byterun -c $<
 
 clean::
-	rm -f *.byt *.out
+	rm -f *.byt *.bin
 	rm -f *.cm[iox] *.[os]
 	rm -f *~
 	rm -f intext.data
