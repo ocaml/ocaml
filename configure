@@ -502,13 +502,14 @@ flexlink=''
 cmxs="cmxa"
 
 if test $withsharedlibs = "yes"; then
-  cmxs="cmxs"
   case "$host" in
     *-*-cygwin*)
+      cmxs="cmxs"
       flexlink="-I`flexlink -where`"
       mksharedlib="flexlink -chain cygwin -o"
       shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
+      cmxs="cmxs"
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
