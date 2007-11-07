@@ -17,7 +17,7 @@
 
 CAMLC?=$(ROOTDIR)/ocamlcomp.sh
 CAMLOPT?=$(ROOTDIR)/ocamlcompopt.sh
-CFLAGS?=-I$(ROOTDIR)/byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
+CFLAGS?=-I$(ROOTDIR)/byterun -O $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
 
 include ../Makefile.shared
 # Note .. is the current directory (this makefile is included from
