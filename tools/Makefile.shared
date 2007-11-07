@@ -74,14 +74,8 @@ install::
 clean::
 	rm -f ocamlprof ocamlcp
 
-# To make custom toplevels
-
-ocamlmktop: ocamlmktop.tpl ../config/Makefile
-	sed -e 's|%%BINDIR%%|$(BINDIR)|' ocamlmktop.tpl > ocamlmktop
-	chmod +x ocamlmktop
-
 install::
-	cp ocamlmktop $(BINDIR)/ocamlmktop
+	cp ocamlmktop $(BINDIR)/ocamlmktop$(EXE)
 
 clean::
 	rm -f ocamlmktop

@@ -19,5 +19,5 @@ include Makefile.shared
 OCAMLMKTOP=ocamlmktop.cmo
 OCAMLMKTOP_IMPORTS=misc.cmo config.cmo clflags.cmo ccomp.cmo
 
-ocamlmktop.exe: $(OCAMLMKTOP)
+ocamlmktop: $(OCAMLMKTOP)
 	$(CAMLC) $(LINKFLAGS) -o ocamlmktop $(OCAMLMKTOP_IMPORTS) $(OCAMLMKTOP)
