@@ -22,16 +22,16 @@ OBJS=$(COMMONOBJS) unix.o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
 ocamlrun$(EXE): libcamlrun.a prims.o
-	$(call MKEXE,ocamlrun$(EXE),main.o prims.o libcamlrun.a $(BYTECCLIBS), \
-	$(BYTECCCOMPOPTS) $(BYTECCLINKOPTS))
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
+	          prims.o libcamlrun.a $(BYTECCLIBS)
 
 ocamlrund$(EXE): libcamlrund.a prims.o
 	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
 	          prims.o libcamlrund.a $(BYTECCLIBS)
 
-libcamlrun.$(A): $(OBJS)
-	$(call MKLIB,libcamlrun.$(A),$(OBJS))
-
+libcamlrun.a: $(OBJS)
+	ar rc libcamlrun.a $(OBJS)
+	$(RANLIB) libcamlrun.a
 
 libcamlrund.a: $(DOBJS)
 	ar rc libcamlrund.a $(DOBJS)
