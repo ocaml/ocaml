@@ -343,12 +343,12 @@ void * caml_dlsym(void * handle, char * name)
 
 void * caml_globalsym(char * name)
 {
-  return caml_dlsym(dlopen(NULL,RTLD_GLOBAL), name);
+  return caml_dlsym(RTLD_DEFAULT, name);
 }
 
 char * caml_dlerror(void)
 {
-  return dlerror();
+  return (char*) dlerror();
 }
 
 #endif
