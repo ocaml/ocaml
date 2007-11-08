@@ -16,7 +16,7 @@ clean:
 	rm -f sub/*.so sub/*.o sub/*.cm* sub/*.s sub/*.asm sub/*.obj
 
 main: api.cmx main.cmx
-	$(CAMLOPT) -o main -linkall dynlink.cmxa api.cmx main.cmx $(PTHREAD_LINK)
+	$(CAMLOPT) -o main -linkall unix.cmxa threads.cmxa dynlink.cmxa api.cmx main.cmx $(PTHREAD_LINK)
 
 main_ext: api.cmx main.cmx factorial.$(O)
 	$(CAMLOPT) -o main_ext dynlink.cmxa api.cmx main.cmx factorial.$(O)
@@ -79,8 +79,5 @@ mylib.cmxa: plugin.cmx plugin2.cmx
 factorial.$(O): factorial.c
 	$(CAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" factorial.c
 
-demo_win: all
-	./main ../../otherlibs/win32unix/unix.cmxs ../../otherlibs/systhreads/threads.cmxs plugin_thread.so
-
-demo_unix: all
-	./main ../../otherlibs/unix/unix.cmxs ../../otherlibs/systhreads/threads.cmxs plugin_thread.so
+demo: all
+	./main plugin_thread.so

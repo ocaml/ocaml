@@ -432,13 +432,14 @@ void caml_startup(char ** argv)
 
 let build_custom_runtime prim_name exec_name =
   match Config.system, Config.ccomp_type with
-  | ("win32"|"mingw"|"cygwin"),_ ->
+  | ("win32"|"win64"|"mingw"|"cygwin"),_ ->
       (* TODO: load path? *)
       Ccomp.command
        (Printf.sprintf
           "flexlink -chain %s -merge-manifest -exe -o %s %s %s %s %s %s %s"
 	  (match Config.system with
 	     | "win32" -> "msvc"
+             | "win64" -> "msvc -x64"
 	     | "mingw" -> "mingw"
 	     | "cygwin" -> "cygwin"
 	     | _ -> assert false)

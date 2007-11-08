@@ -70,14 +70,14 @@ let check_consistency file_name unit crc =
   with Not_found -> ()
   end;
   Consistbl.set crc_implementations unit.ui_name crc file_name;
-  implementations_defined := 
+  implementations_defined :=
     (unit.ui_name, file_name) :: !implementations_defined;
   if unit.ui_symbol <> unit.ui_name then
     cmx_required := unit.ui_name :: !cmx_required
 
 let extract_crc_interfaces () =
   Consistbl.extract crc_interfaces
-let extract_crc_implementations () = 
+let extract_crc_implementations () =
   List.fold_left
     (fun ncl n ->
       if List.mem_assoc n ncl then ncl else (n, cmx_not_found_crc) :: ncl)
@@ -96,7 +96,7 @@ let add_ccobjs l =
     lib_ccopts := l.lib_ccopts @ !lib_ccopts
   end
 
-let runtime_lib () =  
+let runtime_lib () =
   let libname =
     if !Clflags.gprofile
     then "libasmrunp" ^ ext_lib
@@ -143,7 +143,7 @@ let extract_missing_globals () =
   Hashtbl.iter (fun md rq -> mg := (md, !rq) :: !mg) missing_globals;
   !mg
 
-type file = 
+type file =
   | Unit of string * Compilenv.unit_infos * Digest.t
   | Library of string * Compilenv.library_infos
 
@@ -160,7 +160,7 @@ let read_file obj_name =
     Unit (file_name,info,crc)
   end
   else if Filename.check_suffix file_name ".cmxa" then begin
-    let infos = 
+    let infos =
       try Compilenv.read_library_info file_name
       with Compilenv.Error(Not_a_unit_info _) ->
 	raise(Error(Not_an_object_file file_name))
@@ -218,7 +218,7 @@ let make_startup_file ppf filename units_list =
     (Cmmgen.globals_map
        (List.map
           (fun (unit,_,crc) ->
-             try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi, 
+             try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi,
 		  crc,
 		  unit.ui_defines)
              with Not_found -> assert false)
@@ -236,13 +236,13 @@ let make_shared_startup_file ppf units filename =
   let oc = open_out filename in
   Emitaux.output_channel := oc;
   Location.input_name := "caml_startup";
-  Compilenv.reset "_shared_startup"; 
+  Compilenv.reset "_shared_startup";
   Emit.begin_assembly();
-  List.iter compile_phrase 
+  List.iter compile_phrase
     (Cmmgen.generic_functions true (List.map fst units));
   compile_phrase (Cmmgen.plugin_header units);
   compile_phrase
-    (Cmmgen.global_table 
+    (Cmmgen.global_table
        (List.map (fun (ui,_) -> ui.Compilenv.ui_symbol) units));
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
@@ -254,12 +254,13 @@ let make_shared_startup_file ppf units filename =
 let call_linker_shared file_list output_name =
   let files = Ccomp.quote_files file_list in
   let cmd = match Config.system with
-    | "mingw" | "win32" | "cygwin" ->
+    | "mingw" | "win32" | "cygwin" | "win64" ->
 	Printf.sprintf
 	  "flexlink -merge-manifest -chain %s -o %s %s %s %s %s %s"
-	  (match Config.system with 
+	  (match Config.system with
 	     | "mingw" -> "mingw"
 	     | "win32" -> "msvc"
+             | "win64" -> "msvc -x64"
 	     | "cygwin" -> "cygwin"
 	     | _ -> assert false)
 	  (Filename.quote output_name)
@@ -268,10 +269,10 @@ let call_linker_shared file_list output_name =
 			  "-I " ^ (Filename.quote s)) !load_path))
 	  files
 	  (if !Clflags.verbose then "-v" else "")
-          (Ccomp.make_link_options !Clflags.ccopts) 
+          (Ccomp.make_link_options !Clflags.ccopts)
 	  (if !Clflags.verbose then "" else ">NUL")
     | _ ->
-	Printf.sprintf 
+	Printf.sprintf
 	  "gcc %s %s %s %s -o %s %s"
 	  (match Config.system with
 	     | "macosx" | "rhapsody" -> "-bundle -flat_namespace -undefined suppress -all_load"
@@ -292,14 +293,14 @@ let link_shared ppf objfiles output_name =
     (fun (info, file_name, crc) -> check_consistency file_name info crc)
     units_tolink;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
-  let objfiles = List.rev (List.map object_file_name objfiles) @ 
+  let objfiles = List.rev (List.map object_file_name objfiles) @
     !Clflags.ccobjs in
 
   let startup =
     if !Clflags.keep_startup_file
     then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
-  make_shared_startup_file ppf 
+  make_shared_startup_file ppf
     (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink) startup;
   let startup_obj = output_name ^ ".startup" ^ ext_obj in
   if Proc.assemble_file startup startup_obj <> 0
@@ -312,12 +313,13 @@ let call_linker file_list startup_file output_name =
   let c_lib =
     if !Clflags.nopervasives then "" else Config.native_c_libraries in
   match Config.system, Config.ccomp_type with
-  | (("win32"|"mingw"|"cygwin"), _) when not !Clflags.output_c_object ->
+  | (("win32"|"win64"|"mingw"|"cygwin"), _) when not !Clflags.output_c_object ->
       let cmd =
-        Printf.sprintf 
+        Printf.sprintf
 	  "flexlink -chain %s -merge-manifest -exe -o %s %s %s %s %s %s %s %s %s"
 	  (match Config.system with
 	     | "win32" -> "msvc"
+	     | "win64" -> "msvc -x64"
 	     | "mingw" -> "mingw"
 	     | "cygwin" -> "cygwin"
 	     | _ -> assert false)
@@ -331,7 +333,7 @@ let call_linker file_list startup_file output_name =
           (Filename.quote (runtime_lib ()))
           c_lib
 	  (if !Clflags.verbose then " -v" else "")
-          (Ccomp.make_link_options !Clflags.ccopts) 
+          (Ccomp.make_link_options !Clflags.ccopts)
 	in
 	let res = Ccomp.command cmd in
 	if res <> 0 then raise(Error Linking_error)
@@ -359,7 +361,7 @@ let call_linker file_list startup_file output_name =
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
       in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
-  | (("win32"|"mingw"|"cygwin"), _) when !Clflags.output_c_object ->
+  | (("win32"|"win64"|"mingw"|"cygwin"), _) when !Clflags.output_c_object ->
       let cmd =
         Printf.sprintf "%s /out:%s %s %s"
           Config.native_partial_linker
@@ -391,7 +393,7 @@ let link ppf objfiles output_name =
     units_tolink;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
-  let startup = 
+  let startup =
     if !Clflags.keep_startup_file then output_name ^ ".startup" ^ ext_asm
     else Filename.temp_file "camlstartup" ext_asm in
   make_startup_file ppf startup units_tolink;
