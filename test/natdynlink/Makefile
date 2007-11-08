@@ -16,7 +16,7 @@ clean:
 	rm -f sub/*.so sub/*.o sub/*.cm* sub/*.s sub/*.asm sub/*.obj
 
 main: api.cmx main.cmx
-	$(CAMLOPT) -o main -linkall dynlink.cmxa api.cmx main.cmx
+	$(CAMLOPT) -o main -linkall dynlink.cmxa api.cmx main.cmx $(PTHREAD_LINK)
 
 main_ext: api.cmx main.cmx factorial.$(O)
 	$(CAMLOPT) -o main_ext dynlink.cmxa api.cmx main.cmx factorial.$(O)
