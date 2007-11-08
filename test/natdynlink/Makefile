@@ -79,5 +79,8 @@ mylib.cmxa: plugin.cmx plugin2.cmx
 factorial.$(O): factorial.c
 	$(CAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" factorial.c
 
-demo: all
+demo_win: all
 	./main ../../otherlibs/win32unix/unix.cmxs ../../otherlibs/systhreads/threads.cmxs plugin_thread.so
+
+demo_unix: all
+	./main ../../otherlibs/unix/unix.cmxs ../../otherlibs/systhreads/threads.cmxs plugin_thread.so
