@@ -46,7 +46,7 @@ let quote_files lst =
   let s =
     String.concat " "
       (List.map (fun f -> if f = "" then f else Filename.quote f) lst) in
-  if String.length s >= 256 && need_diversion
+  if String.length s >= 8192 && need_diversion
   then build_diversion lst
   else s
 
@@ -95,7 +95,8 @@ let make_link_options optlist =
   | [] -> String.concat " " otheropts
 	  ^ " -- " ^ 
 	(match Config.system with
-	   | "win32" -> "/subsystem:console "
+	   | "win32" 
+           | "win64" -> "/subsystem:console "  (* This is needed to compile with /MD, cf bug #0003821. *)
 	   | _ -> "")
           ^ String.concat " " linkopts
   | opt :: rem ->
