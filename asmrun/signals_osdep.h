@@ -88,7 +88,7 @@
 
   #include <sys/ucontext.h>
 
-  #if __DARWIN_UNIX03
+  #ifdef _STRUCT_X86_EXCEPTION_STATE
     #define CONTEXT_REG(r) __##r
   #else
     #define CONTEXT_REG(r) r
@@ -142,7 +142,7 @@
     #define CONTEXT_MCONTEXT (((ucontext_t *)context)->uc_mcontext)
   #endif
   
-  #if __DARWIN_UNIX03
+  #ifdef _STRUCT_PPC_EXCEPTION_STATE
     #define CONTEXT_REG(r) __##r
   #else
     #define CONTEXT_REG(r) r
