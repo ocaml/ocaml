@@ -23,9 +23,10 @@ CAMLOBJS=graphics.cmo graphicsX11.cmo
 LINKOPTS=-cclib "\"$(X11_LINK)\""
 LDOPTS=-ldopt "$(X11_LINK)"
 
+EXTRACFLAGS=$(X11_INCLUDES)
+
 include ../Makefile
 
-#CFLAGS=-I../../byterun $(X11_INCLUDES) -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 depend:
 	gcc -MM $(CFLAGS) *.c | sed -e 's, /usr[^ ]*\.h,,g' > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
