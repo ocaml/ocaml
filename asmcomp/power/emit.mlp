@@ -81,17 +81,15 @@ let data_space =
   | "rhapsody"    -> "	.data\n"
   | _ -> assert false
 
-let code_space () =
+let code_space =
   match Config.system with
   | "elf" | "bsd" -> "	.section \".text\"\n"
-  | "rhapsody" when !Clflags.dlcode -> "	.section __TEXT,__selfmod,regular,self_modifying_code\n"
-  | "rhapsody"    -> "	.text\n" 
+  | "rhapsody"    -> "	.text\n"
   | _ -> assert false
 
-let rodata_space () =
+let rodata_space =
   match Config.system with
   | "elf" | "bsd" -> "	.section \".rodata\"\n"
-  | "rhapsody" when !Clflags.dlcode -> "	.data\n"
   | "rhapsody"    -> "	.const\n"
   | _ -> assert false
 
@@ -252,37 +250,6 @@ let emit_external s =
   `L{emit_symbol s}$non_lazy_ptr:\n`;
   `	.indirect_symbol {emit_symbol s}\n`;
   `	{emit_string datag}	0\n`
-
-
-let external_stubs = ref StringSet.empty
-let external_non_lazy = ref StringSet.empty
-
-let emit_stub s =
-  let lbl = new_label() in
-  `	.section __TEXT,__picsymbolstub1,symbol_stubs,pure_instructions,32\n`;
-  `	.align 5\n`;
-  `L{emit_symbol s}$stub:\n`;
-  `	.indirect_symbol {emit_symbol s}\n`;
-  `	mflr r0\n`;
-  `	bcl 20,31,{emit_label lbl}\n`;
-  `{emit_label lbl}:\n`;
-  `	mflr r11\n`;
-  `	addis r11,r11,ha16(L{emit_symbol s}$lazy_ptr-{emit_label lbl})\n`;
-  `	mtlr r0\n`;
-  `	lwzu r12,lo16(L{emit_symbol s}$lazy_ptr-{emit_label lbl})(r11)\n`;
-  `	mtctr r12\n`;
-  `	bctr\n`;
-  `	.lazy_symbol_pointer\n`;
-  `L{emit_symbol s}$lazy_ptr:\n`;
-  `	.indirect_symbol {emit_symbol s}\n`;
-  `	.long	dyld_stub_binding_helper\n`
-
-let emit_non_lazy s =
-  `	.non_lazy_symbol_pointer\n`;
-  `L{emit_symbol s}$non_lazy_ptr:\n`;
-  `	.indirect_symbol {emit_symbol s}\n`;
-  `	{emit_string datag}	0\n`
-
 
 (* Names for conditional branches after comparisons *)
 
@@ -511,28 +478,14 @@ let rec emit_instr i dslot =
         `	addis	{emit_gpr 11}, 0, {emit_upper emit_label lbl}\n`;
         `	lfd	{emit_reg i.res.(0)}, {emit_lower emit_label lbl}({emit_gpr 11})\n`
     | Lop(Iconst_symbol s) ->
-	if !Clflags.dlcode then begin
-	  let lbl = new_label () in
-	  external_non_lazy := StringSet.add s !external_non_lazy;
-	  `	bcl 20,31,{emit_label lbl}\n`;
-	  `{emit_label lbl}:\n`;
-	  `	mflr {emit_reg i.res.(0)}\n`;
-          `	addis	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, ha16(L{emit_symbol s}$non_lazy_ptr-{emit_label lbl})\n`;
-          `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, lo16(L{emit_symbol s}$non_lazy_ptr-{emit_label lbl})\n`
-	end else begin
-          `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
-          `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
-	end
+        `	addis	{emit_reg i.res.(0)}, 0, {emit_upper emit_symbol s}\n`;
+        `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
     | Lop(Icall_ind) ->
         `	mtctr	{emit_reg i.arg.(0)}\n`;
         `	bctrl\n`;
         record_frame i.live i.dbg
     | Lop(Icall_imm s) ->
-	if !Clflags.dlcode then begin
-          external_stubs := StringSet.add s !external_stubs;
-          `	bl	L{emit_symbol s}$stub\n`;
-	end else	
-          `	bl	{emit_symbol s}\n`;
+        `	bl	{emit_symbol s}\n`;
         record_frame i.live i.dbg
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
@@ -571,12 +524,7 @@ let rec emit_instr i dslot =
             `	addis	{emit_gpr 11}, 0, {emit_upper emit_symbol s}\n`;
             `	addi	{emit_gpr 11}, {emit_gpr 11}, {emit_lower emit_symbol s}\n`
           end;
-	  if !Clflags.dlcode then begin
-	    (* WRONG: stub will destroy r11 *)
-	    external_stubs := StringSet.add "caml_c_call" !external_stubs;
-	    `	bl	L{emit_symbol "caml_c_call"}$stub\n`;
-	  end else
-            `	bl	{emit_symbol "caml_c_call"}\n`;
+          `	bl	{emit_symbol "caml_c_call"}\n`;
           record_frame i.live i.dbg
         end else begin
           if pic_externals then begin
@@ -800,12 +748,12 @@ let rec emit_instr i dslot =
         `	add	{emit_gpr 0}, {emit_gpr 11}, {emit_gpr 0}\n`;
         `	mtctr	{emit_gpr 0}\n`;
         `	bctr\n`;
-        emit_string (rodata_space ());
+        emit_string rodata_space;
         `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
           `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
         done;
-        emit_string (code_space ())
+        emit_string code_space
     | Lsetuptrap lbl ->
         `	bl	{emit_label lbl}\n`
     | Lpushtrap ->
@@ -893,7 +841,7 @@ let fundecl fundecl =
       `	.type	{emit_symbol fundecl.fun_name}, @function\n`
   | _ -> ()
   end;
-  emit_string (code_space ());
+  emit_string code_space;
   `	.align	2\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() in
@@ -911,16 +859,11 @@ let fundecl fundecl =
   (* Emit the glue code to call the GC *)
   if !call_gc_label > 0 then begin
     `{emit_label !call_gc_label}:\n`;
-(*    if !Clflags.dlcode then begin
-      (* WRONG: stub will destroy r11 *)
-      external_stubs := StringSet.add "caml_call_gc" !external_stubs;
-      `	b	L{emit_symbol "caml_call_gc"}$stub\n`;
-    end else *)
-      `	b	{emit_symbol "caml_call_gc"}\n`
+    `	b	{emit_symbol "caml_call_gc"}\n`
   end;
   (* Emit the numeric literals *)
   if !float_literals <> [] || !int_literals <> [] then begin
-    emit_string (rodata_space ());
+    emit_string rodata_space;
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
@@ -978,15 +921,13 @@ let data l =
 let begin_assembly() =
   defined_functions := StringSet.empty;
   external_functions := StringSet.empty;
-  external_stubs := StringSet.empty;
-  external_non_lazy := StringSet.empty;
   (* Emit the beginning of the segments *)
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   emit_string data_space;
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`;
   let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
-  emit_string (code_space ());
+  emit_string code_space;
   declare_global_data lbl_begin;
   `{emit_symbol lbl_begin}:\n`
 
@@ -994,10 +935,8 @@ let end_assembly() =
   if pic_externals then
     (* Emit the pointers to external functions *)
     StringSet.iter emit_external !external_functions;
-  StringSet.iter emit_stub !external_stubs;
-  StringSet.iter emit_non_lazy !external_non_lazy;
   (* Emit the end of the segments *)
-  emit_string (code_space ());
+  emit_string code_space;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   declare_global_data lbl_end;
   `{emit_symbol lbl_end}:\n`;
@@ -1008,7 +947,7 @@ let end_assembly() =
   `{emit_symbol lbl_end}:\n`;
   `	{emit_string datag}	0\n`;
   (* Emit the frame descriptors *)
-  emit_string (rodata_space ());
+  emit_string rodata_space;
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;
