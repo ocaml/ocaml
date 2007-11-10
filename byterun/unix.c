@@ -15,6 +15,9 @@
 
 /* Unix-specific stuff */
 
+#define _GNU_SOURCE
+           /* Helps finding RTLD_DEFAULT in glibc */
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -343,7 +346,11 @@ void * caml_dlsym(void * handle, char * name)
 
 void * caml_globalsym(char * name)
 {
+#ifdef RTLD_DEFAULT
   return caml_dlsym(RTLD_DEFAULT, name);
+#else
+  return NULL;
+#endif
 }
 
 char * caml_dlerror(void)
