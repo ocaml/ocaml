@@ -569,6 +569,17 @@ if test $withsharedlibs = "yes"; then
       #sharedcccompopts="-fnocommon"
       dl_needs_underscore=true
       shared_libraries_supported=true;;
+    m88k-*-openbsd*)
+      shared_libraries_supported=false;;
+    vax-*-openbsd*)
+      shared_libraries_supported=false;;
+    *-*-openbsd*)
+      sharedcccompopts="-fPIC"
+      mksharedlib="$bytecc -shared -o"
+      bytecclinkopts="$bytecclinkopts -Wl,-E"
+      byteccrpath="-Wl,-rpath,"
+      mksharedlibrpath="-Wl,-rpath,"
+      shared_libraries_supported=true;;
   esac
 fi
 
