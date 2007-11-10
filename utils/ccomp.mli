@@ -20,5 +20,6 @@ val compile_file: string -> int
 val create_archive: string -> string list -> int
 val expand_libname: string -> string
 val quote_files: string list -> string
+val quote_optfile: string option -> string
 val make_link_options: string list -> string
 val merge_manifest: string -> int
