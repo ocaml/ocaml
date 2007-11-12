@@ -88,13 +88,14 @@
 
   #include <sys/ucontext.h>
 
-  #if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
-    #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->ss)
-    #define CONTEXT_PC (CONTEXT_STATE.eip)
+  #ifdef _STRUCT_X86_EXCEPTION_STATE32
+    #define CONTEXT_REG(r) __##r
   #else
-    #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->__ss)
-    #define CONTEXT_PC (CONTEXT_STATE.__eip)
+    #define CONTEXT_REG(r) r
   #endif
+
+  #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
+  #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(eip))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** MIPS, all OS */
@@ -141,22 +142,18 @@
     #define CONTEXT_MCONTEXT (((ucontext_t *)context)->uc_mcontext)
   #endif
   
-  #if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
-    #define CONTEXT_STATE (CONTEXT_MCONTEXT->ss)
-    #define CONTEXT_PC (CONTEXT_STATE.srr0)
-    #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.r29)
-    #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.r30)
-    #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.r31)
-    #define CONTEXT_SP (CONTEXT_STATE.r1)
+  #ifdef _STRUCT_PPC_EXCEPTION_STATE
+    #define CONTEXT_REG(r) __##r
   #else
-    #define CONTEXT_STATE (CONTEXT_MCONTEXT->__ss)
-    #define CONTEXT_PC (CONTEXT_STATE.__srr0)
-    #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.__r29)
-    #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.__r30)
-    #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.__r31)
-    #define CONTEXT_SP (CONTEXT_STATE.__r1)
+    #define CONTEXT_REG(r) r
   #endif
-  
+
+  #define CONTEXT_STATE (CONTEXT_MCONTEXT->CONTEXT_REG(ss))
+  #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(srr0))
+  #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.CONTEXT_REG(r29))
+  #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.CONTEXT_REG(r30))
+  #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.CONTEXT_REG(r31))
+  #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(r1))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** PowerPC, ELF (Linux) */
