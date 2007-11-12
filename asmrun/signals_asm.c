@@ -240,7 +240,7 @@ void caml_init_signals(void)
   /* Stack overflow handling */
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   {
-    struct sigaltstack stk;
+    stack_t stk;
     struct sigaction act;
     stk.ss_sp = sig_alt_stack;
     stk.ss_size = SIGSTKSZ;
