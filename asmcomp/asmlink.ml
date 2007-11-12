@@ -272,17 +272,14 @@ let call_linker_shared file_list output_name =
           (Ccomp.make_link_options !Clflags.ccopts)
 	  (if !Clflags.verbose then "" else ">NUL")
     | _ ->
-	Printf.sprintf
-	  "gcc %s %s %s %s -o %s %s"
-	  (match Config.system with
-	     | "macosx" | "rhapsody" -> "-bundle -flat_namespace -undefined suppress -all_load"
-	     | _ -> "-shared")
-          (Clflags.std_include_flag "-I")
+	Printf.sprintf 
+	  "%s %s %s %s %s"
+	  mksharedlib
+	  (Filename.quote output_name)
 	  (Ccomp.quote_files
 	     (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
 		!load_path))
           (String.concat " " (List.rev !Clflags.ccopts))
-	  (Filename.quote output_name)
 	  files
   in
   if Ccomp.command cmd <> 0 then raise(Error Linking_error)
