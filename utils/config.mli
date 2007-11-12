@@ -46,6 +46,8 @@ val native_partial_linker: string
         (* The linker to use for partial links (ocamlopt -output-obj) *)
 val native_pack_linker: string
         (* The linker to use for packaging (ocamlopt -pack) *)
+val mksharedlib: string
+        (* The linker command line to build dynamic libraries. *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
 val cc_profile : string
