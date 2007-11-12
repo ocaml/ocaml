@@ -29,7 +29,7 @@ GENFILES=thread.ml
 
 all: libthreads.a threads.cma
 
-allopt: libthreadsnat.a threads.cmxa threads.$(CMXS)
+allopt: libthreadsnat.a threads.cmxa
 
 libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
@@ -63,10 +63,6 @@ threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 # modular to me this way. -- Alain
 
 
-# Build threads.cmxs, even if unsafe
-threads.cmxs: threads.cmxa
-	$(CAMLOPT) -shared -dlcode -o threads.cmxs -I . threads.cmxa -linkall
-
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
 thread.ml: thread_posix.ml
@@ -93,7 +89,6 @@ installopt:
 	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
 	cd $(LIBDIR)/threads; $(RANLIB) threads.a
-	if test -f unix.cmxs; then cp unix.cmxs $(LIBDIR)/; fi
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 
