@@ -2290,7 +2290,6 @@ class html =
         match modu.m_code with
           None -> ()
         | Some code ->
-            prerr_endline code;
             self#output_code
               modu.m_name
               (Filename.concat !Args.target_dir code_file)
