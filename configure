@@ -563,11 +563,21 @@ if test $withsharedlibs = "yes"; then
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
+    i[3456]86-*-darwin*)
+      dyld=ld
+      if test -f /usr/bin/ld_classic; then
+        # The new linker in Mac OS X 10.5 does not support read_only_relocs
+        dyld=/usr/bin/ld_classic
+      fi
+      mksharedlib="$dyld -bundle -flat_namespace -undefined suppress -read_only_relocs suppress -o"
+      bytecccompopts="$dl_defs $bytecccompopts"
+      dl_needs_underscore=false
+      shared_libraries_supported=true;;
     *-apple-darwin*)
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -o"
       bytecccompopts="$dl_defs $bytecccompopts"
       #sharedcccompopts="-fnocommon"
-      dl_needs_underscore=true
+      dl_needs_underscore=false
       shared_libraries_supported=true;;
     m88k-*-openbsd*)
       shared_libraries_supported=false;;
@@ -1016,14 +1026,15 @@ if sh ./hasgot -i locale.h && sh ./hasgot setlocale; then
   echo "#define HAS_LOCALE" >> s.h
 fi
 
-if sh ./hasgot -i mach-o/dyld.h && sh ./hasgot NSLinkModule; then
-  echo "NSLinkModule() found. Using darwin dynamic loading."
-  echo "#define HAS_NSLINKMODULE" >> s.h
-elif sh ./hasgot $dllib dlopen; then
+
+if sh ./hasgot $dllib dlopen; then
   echo "dlopen() found."
 elif sh ./hasgot $dllib -ldl dlopen; then
   echo "dlopen() found in -ldl."
   dllib="$dllib -ldl"
+elif sh ./hasgot -i mach-o/dyld.h && sh ./hasgot NSLinkModule; then
+  echo "NSLinkModule() found. Using darwin dynamic loading."
+  echo "#define HAS_NSLINKMODULE" >> s.h
 else
   shared_libraries_supported=false
 fi
@@ -1524,6 +1535,7 @@ echo "EXTRALIBS=" >> Makefile
 echo "CCOMPTYPE=cc" >> Makefile
 echo "TOOLCHAIN=cc" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
+echo "MKSHAREDLIB=$mksharedlib" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
