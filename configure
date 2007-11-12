@@ -553,7 +553,7 @@ fi
 # Further machine-specific hacks
 
 case "$host" in
-  ia64-*-linux*|alpha*-*-linux*|x86_64-*-linux*)
+  ia64-*-linux*|alpha*-*-linux*|x86_64-*-linux*|sparc64-*-linux*)
     echo "Will use mmap() instead of malloc() for allocation of major heap chunks."
     echo "#define USE_MMAP_INSTEAD_OF_MALLOC" >> s.h;;
 esac
@@ -605,6 +605,17 @@ case "$host" in
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
+
+# Some platforms exist both in 32-bit and 64-bit variants, not distinguished
+# by $host.  Turn off native code compilation on platforms where 64-bit mode
+# is not supported.  (PR#4441)
+
+if $arch64; then
+  case "$arch,$model" in
+    sparc,default|mips,default|hppa,default|power,ppc)
+      arch=none; model=default; system=unknown;;
+  esac
+fi
 
 if test -z "$ccoption"; then
   case "$arch,$system,$cc" in
