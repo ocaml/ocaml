@@ -88,7 +88,7 @@
 
   #include <sys/ucontext.h>
 
-  #ifdef _STRUCT_X86_EXCEPTION_STATE
+  #ifdef _STRUCT_X86_EXCEPTION_STATE32
     #define CONTEXT_REG(r) __##r
   #else
     #define CONTEXT_REG(r) r
