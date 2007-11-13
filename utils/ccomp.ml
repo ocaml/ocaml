@@ -93,12 +93,7 @@ let expand_libname name =
 let make_link_options optlist =
   let rec split linkopts otheropts = function
   | [] -> String.concat " " otheropts
-	  ^ " -- " ^ 
-	(match Config.system with
-	   | "win32" 
-           | "win64" -> "/subsystem:console "  (* This is needed to compile with /MD, cf bug #0003821. *)
-	   | _ -> "")
-          ^ String.concat " " linkopts
+	  ^ " -- " ^ String.concat " " linkopts
   | opt :: rem ->
       if String.length opt >= 5 && String.sub opt 0 5 = "/link"
       then split (String.sub opt 5 (String.length opt - 5) :: linkopts)
