@@ -18,14 +18,14 @@ include Makefile.common
 CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(FLEXLINK)
 
 DBGO=d.$(O)
-OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O)
-DOBJS=$(COMMONOBJS:.o=.$(DBGO)) win32.$(DBGO) prims.$(DBGO) instrtrace.$(DBGO)
+OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O)
+DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 
-ocamlrun$(EXE): libcamlrun.$(A) prims.$(O) main.$(O)
-	$(call MKEXE,ocamlrun$(EXE),main.$(O) prims.$(O) libcamlrun.$(A))
+ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
+	$(call MKEXE,ocamlrun$(EXE),prims.$(O) libcamlrun.$(A))
 
 ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
-	$(call MKEXE,ocamlrun$(EXE),$(BYTECCDBGCOMPOPTS) main.$(O) prims.$(O) libcamlrund.$(A))
+	$(call MKEXE,ocamlrun$(EXE),$(BYTECCDBGCOMPOPTS) prims.$(O) libcamlrund.$(A))
 
 libcamlrun.$(A): $(OBJS)
 	$(call MKLIB,libcamlrun.$(A),$(OBJS))

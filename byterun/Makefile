@@ -18,7 +18,7 @@ include Makefile.common
 CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS) $(FLEXLINK)
 DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
 
-OBJS=$(COMMONOBJS) unix.o main.o 
+OBJS=$(COMMONOBJS) unix.o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
 ocamlrun$(EXE): libcamlrun.a prims.o
