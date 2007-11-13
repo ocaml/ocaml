@@ -433,10 +433,9 @@ void caml_startup(char ** argv)
 let build_custom_runtime prim_name exec_name =
   match Config.system, Config.ccomp_type with
   | ("win32"|"win64"|"mingw"|"cygwin"),_ ->
-      (* TODO: load path? *)
       Ccomp.command
        (Printf.sprintf
-          "flexlink -chain %s -merge-manifest -exe -o %s %s %s %s %s %s %s"
+          "flexlink -chain %s -merge-manifest -exe -o %s %s %s %s %s %s %s %s"
 	  (match Config.system with
 	     | "win32" -> "msvc"
              | "win64" -> "msvc -x64"
@@ -446,6 +445,9 @@ let build_custom_runtime prim_name exec_name =
           (Filename.quote exec_name)
           (Clflags.std_include_flag "-I ")
           prim_name
+          (Ccomp.quote_files
+             (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
+                !load_path))
           (Ccomp.quote_files (List.rev !Clflags.ccobjs))
           (Filename.quote "-lcamlrun")
           Config.bytecomp_c_libraries
