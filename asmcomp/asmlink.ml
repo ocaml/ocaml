@@ -278,8 +278,6 @@ let link_shared ppf objfiles output_name =
   remove_file startup_obj
 
 let call_linker file_list startup_file output_name =
-  let c_lib =
-    if !Clflags.nopervasives then "" else Config.native_c_libraries in
   let main_dll = !Clflags.output_c_object && Filename.check_suffix output_name Config.ext_dll in
   let files = startup_file :: (List.rev file_list) in
   let files, c_lib =
