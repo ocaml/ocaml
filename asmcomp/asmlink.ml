@@ -102,8 +102,8 @@ let runtime_lib () =
     then "libasmrunp" ^ ext_lib
     else "libasmrun" ^ ext_lib in
   try
-    if !Clflags.nopervasives then ""
-    else find_in_path !load_path libname
+    if !Clflags.nopervasives then []
+    else [ find_in_path !load_path libname ]
   with Not_found ->
     raise(Error(File_not_found libname))
 
@@ -280,31 +280,22 @@ let link_shared ppf objfiles output_name =
 let call_linker file_list startup_file output_name =
   let c_lib =
     if !Clflags.nopervasives then "" else Config.native_c_libraries in
-  if not !Clflags.output_c_object then begin
-    let files = [startup_file] @ (List.rev file_list) @
-      (List.rev !Clflags.ccobjs) @ [runtime_lib ()] in
-    if not (Ccomp.call_linker Ccomp.Exe output_name files c_lib)
-    then raise(Error Linking_error)
-  end
-  else
-    let cmd =
-      match Config.system with
-      | "win32"|"win64"|"mingw"|"cygwin" ->
-          Printf.sprintf "%s /out:%s %s %s"
-            Config.native_partial_linker
-            (Filename.quote output_name)
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-      | _ ->
-          Printf.sprintf "%s -o %s %s %s"
-            Config.native_partial_linker
-            (Filename.quote output_name)
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-    in
-    let res = Ccomp.command cmd in
-    if res <> 0 then raise(Error Linking_error)
-
+  let main_dll = !Clflags.output_c_object && Filename.check_suffix output_name Config.ext_dll in
+  let files = startup_file :: (List.rev file_list) in
+  let files, c_lib =
+    if (not !Clflags.output_c_object) || main_dll then
+      files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
+      (if !Clflags.nopervasives then "" else Config.native_c_libraries)
+    else
+      files, ""
+  in
+  let mode =
+    if main_dll then Ccomp.MainDll
+    else if !Clflags.output_c_object then Ccomp.Partial
+    else Ccomp.Exe
+  in
+  if not (Ccomp.call_linker mode output_name files c_lib)
+  then raise(Error Linking_error)
 
 (* Main entry point *)
 

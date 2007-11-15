@@ -68,12 +68,14 @@ let print_version_string () =
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
 
+let fatal err =
+  prerr_endline err;
+  exit 2
+
 let extract_output = function
   | Some s -> s
   | None ->
-      prerr_endline
-        "Please specify the name of the output file, using option -o";
-      exit 2
+      fatal "Please specify the name of the output file, using option -o"
 
 let default_output = function
   | Some s -> s
@@ -213,13 +215,11 @@ let main () =
        "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
       ]) (process_file ppf) usage;
-    if 
-      List.length (List.filter (fun x -> !x) 
-		     [make_archive;make_package;shared;compile_only;output_c_object]) > 1 
-    then begin
-      prerr_endline "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
-      exit 2
-    end;
+    if
+      List.length (List.filter (fun x -> !x)
+		     [make_archive;make_package;shared;compile_only;output_c_object]) > 1
+    then
+      fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
     if !make_archive then begin
       Optcompile.init_path();
       let target = extract_output !output_name in
@@ -236,8 +236,23 @@ let main () =
       Asmlink.link_shared ppf (List.rev !objfiles) target;
     end
     else if not !compile_only && !objfiles <> [] then begin
+      let target =
+        if !output_c_object then
+          let s = extract_output !output_name in
+          if (Filename.check_suffix s Config.ext_obj
+            || Filename.check_suffix s Config.ext_dll)
+          then s
+          else
+            fatal
+              (Printf.sprintf
+                 "The extension of the output file must be %s or %s"
+                 Config.ext_obj Config.ext_dll
+              )
+        else
+          default_output !output_name
+      in
       Optcompile.init_path();
-      Asmlink.link ppf (List.rev !objfiles) (default_output !output_name)
+      Asmlink.link ppf (List.rev !objfiles) target
     end;
     exit 0
   with x ->

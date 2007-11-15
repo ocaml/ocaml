@@ -138,7 +138,6 @@ NATIVECCCOMPOPTS=/Ox /MD
 NATIVECCLINKOPTS=/MD
 
 ### Build partially-linked object file
-PARTIALLD=link /lib /nologo /machine:AMD64
 PACKLD=link /lib /nologo /machine:AMD64 /out:# there must be no space after this '/out:'
 
 ############# Configuration for the contributed libraries

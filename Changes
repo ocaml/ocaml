@@ -8,6 +8,28 @@ Language features:
 Standard library:
 - Scanf library: debunking of meta format implementation.
 
+Tools:
+- ocamlmklib and ocamldep.opt now available under Windows ports.
+- ocamlmklib no longer supports the -implib option.
+- ocamlnat: an experimental native toplevel (not built by default).
+
+Compilers:
+- Check that at most one of -pack, -a, -shared, -c, -output-obj is given on the
+  command line.
+- Revised -output-obj: the output name must now be provided; its extension must
+  be one of $(EXT_OBJ), $(EXT_DLL) (or .c for the bytecode compiler). The compilers
+  can now produce a shared library (with all the needed -ccopts/-ccobjs options) directly.
+- The -dllib options recorded in libraries are no longer ignored when -use_runtime or -use_prims is used 
+  (unless -no_auto_link is explicitly used).
+
+Native-code compiler:
+- A new option "-shared" to produce a plugin that can be dynlinked with the native version of Dynlink.
+- A new option "-dlcode" to produce code that can be put in a plugin (needed for some platforms only).
+
+Other libraries:
+- On some platforms, the dynlink library is now available in native code. A new Boolean
+  Dynlink.is_native allows the program to know whether it has been compiled in bytecode or in native code.
+
 Objective Caml 3.10.0:
 ----------------------
 

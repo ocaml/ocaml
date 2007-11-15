@@ -34,7 +34,6 @@ let bytecomp_c_libraries = "%%BYTECCLIBS%%"
 let native_c_compiler = "%%NATIVECC%%"
 let native_c_linker = "%%NATIVELINK%%"
 let native_c_libraries = "%%NATIVECCLIBS%%"
-let native_partial_linker = "%%PARTIALLD%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
 let cc_profile = "%%CC_PROFILE%%"
@@ -97,7 +96,7 @@ let print_config oc =
   p "native_c_compiler" native_c_compiler;
   p "native_c_linker" native_c_linker;
   p "native_c_libraries" native_c_libraries;
-  p "native_partial_linker" native_partial_linker;
+  p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;
   p "cc_profile" cc_profile;
   p "architecture" architecture;

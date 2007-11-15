@@ -103,15 +103,11 @@ let make_package_object ppf members targetobj targetname coercion =
     List.map
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
-  let ld_cmd =
-    sprintf "%s%s %s %s"
-            Config.native_pack_linker
-            (Filename.quote targetobj)
-            (Filename.quote objtemp)
-            (Ccomp.quote_files objfiles) in
-  let retcode = Ccomp.command ld_cmd in
+  let ok =
+    Ccomp.call_linker Ccomp.Partial targetobj (objtemp :: objfiles) ""
+  in
   remove_file objtemp;
-  if retcode <> 0 then raise(Error Linking_error)
+  if not ok then raise(Error Linking_error)
 
 (* Make the .cmx file for the package *)
 

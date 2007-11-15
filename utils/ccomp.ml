@@ -87,22 +87,31 @@ type link_mode =
   | Exe
   | Dll
   | MainDll
+  | Partial
 
 let call_linker mode output_name files extra =
   let files = quote_files files in
   let cmd =
-    Printf.sprintf "%s -o %s %s %s %s %s %s %s"
-      (match mode with
-      | Exe -> Config.mkexe
-      | Dll -> Config.mkdll
-      | MainDll -> Config.mkmaindll
-      )
-      (Filename.quote output_name)
-      (if !Clflags.gprofile then Config.cc_profile else "")
-      (Clflags.std_include_flag "-I")
-      (quote_prefixed "-L" !Config.load_path)
-      files
-      extra
-      (String.concat " " (List.rev !Clflags.ccopts))
+    if mode = Partial then
+      Printf.sprintf "%s%s %s %s"
+        Config.native_pack_linker
+        (Filename.quote output_name)
+        files
+        extra
+    else
+      Printf.sprintf "%s -o %s %s %s %s %s %s %s"
+        (match mode with
+        | Exe -> Config.mkexe
+        | Dll -> Config.mkdll
+        | MainDll -> Config.mkmaindll
+        | Partial -> assert false
+        )
+        (Filename.quote output_name)
+        (if !Clflags.gprofile then Config.cc_profile else "")
+        (Clflags.std_include_flag "-I")
+        (quote_prefixed "-L" !Config.load_path)
+        files
+        extra
+        (String.concat " " (List.rev !Clflags.ccopts))
   in
   command cmd = 0

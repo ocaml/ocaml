@@ -26,5 +26,6 @@ type link_mode =
   | Exe
   | Dll
   | MainDll
+  | Partial
 
 val call_linker: link_mode -> string -> string list -> string -> bool
