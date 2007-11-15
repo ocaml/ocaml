@@ -86,6 +86,7 @@ let expand_libname name =
 type link_mode =
   | Exe
   | Dll
+  | MainDll
 
 let call_linker mode output_name files extra =
   let files = quote_files files in
@@ -94,6 +95,7 @@ let call_linker mode output_name files extra =
       (match mode with
       | Exe -> Config.mkexe
       | Dll -> Config.mkdll
+      | MainDll -> Config.mkmaindll
       )
       (Filename.quote output_name)
       (if !Clflags.gprofile then Config.cc_profile else "")

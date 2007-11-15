@@ -25,5 +25,6 @@ val quote_files: string list -> string
 type link_mode =
   | Exe
   | Dll
+  | MainDll
 
 val call_linker: link_mode -> string -> string list -> string -> bool

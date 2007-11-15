@@ -359,6 +359,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%ASM%%|$(ASM)|' \
             -e 's|%%MKDLL%%|$(MKDLL)|' \
             -e 's|%%MKEXE%%|$(MKEXE)|' \
+            -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 

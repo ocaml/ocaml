@@ -137,12 +137,13 @@ module Options = Main_args.Make_options (struct
   let anonymous = anonymous
 end)
 
+let fatal err =
+  prerr_endline err;
+  exit 2
+
 let extract_output = function
   | Some s -> s
-  | None ->
-      prerr_endline
-        "Please specify the name of the output file, using option -o";
-      exit 2
+  | None -> fatal "Please specify the name of the output file, using option -o"
 
 let default_output = function
   | Some s -> s
@@ -151,6 +152,12 @@ let default_output = function
 let main () =
   try
     Arg.parse Options.list anonymous usage;
+    if
+      List.length (List.filter (fun x -> !x)
+		     [make_archive;make_package;compile_only;output_c_object]) > 1
+    then
+      fatal "Please specify at most one of -pack, -a, -c, -output-obj";
+
     if !make_archive then begin
       Compile.init_path();
       Bytelibrarian.create_archive (List.rev !objfiles)
@@ -162,8 +169,24 @@ let main () =
                                  (extract_output !output_name)
     end
     else if not !compile_only && !objfiles <> [] then begin
+      let target =
+        if !output_c_object then
+          let s = extract_output !output_name in
+          if (Filename.check_suffix s Config.ext_obj
+            || Filename.check_suffix s Config.ext_dll
+            || Filename.check_suffix s ".c")
+          then s
+          else
+            fatal
+              (Printf.sprintf
+                 "The extension of the output file must be .c, %s or %s"
+                 Config.ext_obj Config.ext_dll
+              )
+        else
+          default_output !output_name
+      in
       Compile.init_path();
-      Bytelink.link (List.rev !objfiles) (default_output !output_name)
+      Bytelink.link (List.rev !objfiles) target
     end;
     exit 0
   with x ->

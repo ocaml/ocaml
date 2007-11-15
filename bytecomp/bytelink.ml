@@ -485,17 +485,28 @@ let link objfiles output_name =
       remove_file prim_name;
       raise x
   end else begin
-    let c_file =
-      Filename.chop_suffix output_name Config.ext_obj ^ ".c" in
+    let basename = Filename.chop_extension output_name in
+    let c_file = basename ^ ".c"
+    and obj_file = basename ^ Config.ext_obj in
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
+    let temps = ref [] in
     try
       link_bytecode_as_c tolink c_file;
-      if Ccomp.compile_file c_file <> 0
-      then raise(Error Custom_runtime);
-      remove_file c_file
+      if not (Filename.check_suffix output_name ".c") then begin
+        temps := c_file :: !temps;
+        if Ccomp.compile_file c_file <> 0 then raise(Error Custom_runtime);
+        if not (Filename.check_suffix output_name Config.ext_obj) then begin
+          temps := obj_file :: !temps;
+          if not (
+            Ccomp.call_linker Ccomp.MainDll output_name
+              ([obj_file] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+              Config.bytecomp_c_libraries
+           ) then raise (Error Custom_runtime);
+        end
+      end;
+      List.iter remove_file !temps
     with x ->
-      remove_file c_file;
-      remove_file output_name;
+      List.iter remove_file !temps;
       raise x
   end
 

@@ -40,6 +40,7 @@ let ranlib = "%%RANLIBCMD%%"
 let cc_profile = "%%CC_PROFILE%%"
 let mkdll = "%%MKDLL%%"
 let mkexe = "%%MKEXE%%"
+let mkmaindll = "%%MKMAINDLL%%"
 
 let exec_magic_number = "Caml1999X008"
 and cmi_magic_number = "Caml1999I011"

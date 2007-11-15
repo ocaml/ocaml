@@ -99,6 +99,7 @@ FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)
 MKEXE=$(FLEXLINK) -exe
+MKMAINDLL=$(FLEXLINK) -maindll
 
 ### How to build a static library
 MKLIB=rm -f $(1); ar rcs $(1) $(2)

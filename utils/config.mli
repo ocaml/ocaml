@@ -49,7 +49,9 @@ val native_pack_linker: string
 val mkdll: string
         (* The linker command line to build dynamic libraries. *)
 val mkexe: string
-        (* The linker command line to executables. *)
+        (* The linker command line to build executables. *)
+val mkmaindll: string
+        (* The linker command line to build main programs as dlls. *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
 val cc_profile : string

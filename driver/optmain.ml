@@ -215,9 +215,9 @@ let main () =
       ]) (process_file ppf) usage;
     if 
       List.length (List.filter (fun x -> !x) 
-		     [make_archive;make_package;shared;compile_only]) > 1 
+		     [make_archive;make_package;shared;compile_only;output_c_object]) > 1 
     then begin
-      prerr_endline "Please specify at most one of -pack, -a, -shared, -c";
+      prerr_endline "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
       exit 2
     end;
     if !make_archive then begin

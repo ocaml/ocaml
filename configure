@@ -507,6 +507,7 @@ if test $withsharedlibs = "yes"; then
     *-*-cygwin*)
       cmxs="cmxs"
       mksharedlib="$flexlink"
+      mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
       cmxs="cmxs"
@@ -591,6 +592,10 @@ if test $withsharedlibs = "yes"; then
       mksharedlibrpath="-Wl,-rpath,"
       shared_libraries_supported=true;;
   esac
+fi
+
+if test -z "$mkmaindll"; then
+  mkmaindll=$mksharedlib
 fi
 
 # Further machine-specific hacks
@@ -1530,6 +1535,7 @@ echo "TOOLCHAIN=cc" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
+echo "MKMAINDLL=$mkmaindll" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
