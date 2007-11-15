@@ -27,7 +27,7 @@ LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,advapi32) $(call SYSLIB,gdi32) \
 all: ocamlwin.exe
 
 ocamlwin.exe: $(OBJS)
-	$(call MKEXE,ocamlwin.exe,$(OBJS) $(LIBS) $(EXTRALIBS))
+	$(MKEXE) -o ocamlwin.exe $(OBJS) $(LIBS) $(EXTRALIBS) -subsystem windows
 
 ocamlres.$(O): ocaml.rc ocaml.ico
 ifeq ($(TOOLCHAIN),msvc)

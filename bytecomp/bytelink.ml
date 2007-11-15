@@ -431,42 +431,9 @@ void caml_startup(char ** argv)
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
-  match Config.system, Config.ccomp_type with
-  | ("win32"|"win64"|"mingw"|"cygwin"),_ ->
-      Ccomp.command
-       (Printf.sprintf
-          "flexlink -chain %s -merge-manifest -exe -o %s %s %s %s %s %s %s %s"
-	  (match Config.system with
-	     | "win32" -> "msvc"
-             | "win64" -> "msvc -x64"
-	     | "mingw" -> "mingw"
-	     | "cygwin" -> "cygwin"
-	     | _ -> assert false)
-          (Filename.quote exec_name)
-          (Clflags.std_include_flag "-I ")
-          prim_name
-          (Ccomp.quote_files
-             (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
-                !load_path))
-          (Ccomp.quote_files (List.rev !Clflags.ccobjs))
-          (Filename.quote "-lcamlrun")
-          Config.bytecomp_c_libraries
-          (Ccomp.make_link_options !Clflags.ccopts))
-  | _,"cc" ->
-      Ccomp.command
-	(Printf.sprintf
-          "%s -o %s %s %s %s %s %s -lcamlrun %s"
-          !Clflags.c_linker
-          (Filename.quote exec_name)
-          (Clflags.std_include_flag "-I")
-          (String.concat " " (List.rev !Clflags.ccopts))
-          prim_name
-          (Ccomp.quote_files
-            (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
-                      !load_path))
-          (Ccomp.quote_files (List.rev !Clflags.ccobjs))
-          Config.bytecomp_c_libraries)
-  | _ -> assert false
+  Ccomp.call_linker Ccomp.Exe exec_name 
+    ([prim_name] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+    Config.bytecomp_c_libraries
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -508,7 +475,7 @@ let link objfiles output_name =
       Symtable.output_primitive_table poc;
       close_out poc;
       let exec_name = fix_exec_name output_name in
-      if build_custom_runtime prim_name exec_name <> 0
+      if not (build_custom_runtime prim_name exec_name)
       then raise(Error Custom_runtime);
       if !Clflags.make_runtime
       then (remove_file bytecode_name; remove_file prim_name)

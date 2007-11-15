@@ -86,7 +86,7 @@ ocamlmklib: myocamlbuild_config.cmo ocamlmklib.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo ocamlmklib.cmo
 
 ocamlmklib.cmo: myocamlbuild_config.cmi
-myocamlbuild_config.ml: ../config/Makefile
+myocamlbuild_config.ml: ../config/Makefile ../build/mkmyocamlbuild_config.sh
 	../build/mkmyocamlbuild_config.sh
 	cp ../myocamlbuild_config.ml .
 

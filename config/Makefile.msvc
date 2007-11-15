@@ -92,17 +92,12 @@ NATIVECCLIBS=advapi32.lib
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP
 
-### Path to the FlexDLL includes
-FLEXDIR=$(shell flexlink -where)
-FLEXLINK=-I"$(FLEXDIR)"
-
-### How to build an EXE
-MKEXE=flexlink -merge-manifest -exe -o $(1) $(2) -- $(3)
-#ml let mkexe out files opts = Printf.sprintf "flexlink -merge-manifest -exe -o %s %s -- %s" out files opts;;
-
-### How to build a DLL
-MKDLL=flexlink -merge-manifest -o $(1) $(3) -- $(4)
-#ml let mkdll out implib files opts = Printf.sprintf "flexlink -merge-manifest -o %s %s -- %s" out files opts;;
+### Flexlink
+FLEXLINK=flexlink -merge-manifest
+FLEXDIR=$(shell $(FLEXLINK) -where)
+IFLEXDIR=-I"$(FLEXDIR)"
+MKDLL=$(FLEXLINK)
+MKEXE=$(FLEXLINK) -exe
 
 ### How to build a static library
 MKLIB=link /lib /nologo /out:$(1) $(2)

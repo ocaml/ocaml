@@ -357,7 +357,8 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_DLL%%|.so|' \
             -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
             -e 's|%%ASM%%|$(ASM)|' \
-            -e 's|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|' \
+            -e 's|%%MKDLL%%|$(MKDLL)|' \
+            -e 's|%%MKEXE%%|$(MKEXE)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 

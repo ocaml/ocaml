@@ -239,13 +239,13 @@ esac
 # Configure the bytecode compiler
 
 bytecc="$cc"
-mkexe="\$(BYTECC) -o \$(1) \$(2) \$(3)"
-mkexe_ml="Printf.sprintf \"%s -o %s %s %s\" bytecc out opts files"
+mkexe="\$(BYTECC)"
 bytecccompopts=""
 bytecclinkopts=""
 dllccompopts=""
 ostype="Unix"
 exe=""
+iflexdir=""
 
 case "$bytecc,$host" in
   cc,*-*-nextstep*)
@@ -301,8 +301,10 @@ case "$bytecc,$host" in
   gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-D_WIN32 -DCAML_DLL"
-    mkexe="flexlink -exe -chain cygwin -o \$(1) \$(2) -- \$(3)"
-    mkexe_ml="Printf.sprintf \"flexlink -exe -chain cygwin -o %s %s -- %s\" out files opts"
+    flexlink="flexlink -chain cygwin -merge-manifest"
+    flexdir=`$flexlink -where | dos2unix`
+    iflexdir="-I\"$flexdir\""
+    mkexe="$flexlink -exe"
     exe=".exe"
     ostype="Cygwin";;
   gcc*,x86_64-*-linux*)
@@ -498,20 +500,18 @@ mksharedlib=''
 byteccrpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
-flexlink=''
 cmxs="cmxa"
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
     *-*-cygwin*)
       cmxs="cmxs"
-      flexlink="-I`flexlink -where`"
-      mksharedlib="flexlink -chain cygwin -o"
+      mksharedlib="$flexlink"
       shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
       cmxs="cmxs"
       sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared -o"
+      mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
@@ -521,13 +521,13 @@ if test $withsharedlibs = "yes"; then
       case "$bytecc" in
         gcc*)
           sharedcccompopts="-fPIC"
-          mksharedlib="$bytecc -shared -o"
+          mksharedlib="$bytecc -shared"
           byteccrpath="-Wl,-rpath,"
           mksharedlibrpath="-Wl,-rpath,"
           shared_libraries_supported=true;;
         cc*)
           sharedcccompopts=""
-          mksharedlib="ld -shared -expect_unresolved '*' -o"
+          mksharedlib="ld -shared -expect_unresolved '*'"
           byteccrpath="-Wl,-rpath,"
           mksharedlibrpath="-rpath "
           shared_libraries_supported=true;;
@@ -537,11 +537,11 @@ if test $withsharedlibs = "yes"; then
         gcc*)
           sharedcccompopts="-fPIC"
           if sh ./solaris-ld; then
-            mksharedlib="$bytecc -shared -o"
+            mksharedlib="$bytecc -shared"
             byteccrpath="-R"
             mksharedlibrpath="-R"
           else
-            mksharedlib="$bytecc -shared -o"
+            mksharedlib="$bytecc -shared"
             bytecclinkopts="$bytecclinkopts -Wl,-E"
             byteccrpath="-Wl,-rpath,"
             mksharedlibrpath="-Wl,-rpath,"
@@ -551,7 +551,7 @@ if test $withsharedlibs = "yes"; then
           sharedcccompopts="-KPIC"
           byteccrpath="-R"
           mksharedlibrpath="-R"
-          mksharedlib="/usr/ccs/bin/ld -G -o"
+          mksharedlib="/usr/ccs/bin/ld -G"
           shared_libraries_supported=true;;
       esac;;
     mips*-*-irix[56]*)
@@ -559,7 +559,7 @@ if test $withsharedlibs = "yes"; then
         cc*) sharedcccompopts="";;
         gcc*) sharedcccompopts="-fPIC";;
       esac
-      mksharedlib="ld -shared -rdata_shared -o"
+      mksharedlib="ld -shared -rdata_shared"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
@@ -569,12 +569,12 @@ if test $withsharedlibs = "yes"; then
         # The new linker in Mac OS X 10.5 does not support read_only_relocs
         dyld=/usr/bin/ld_classic
       fi
-      mksharedlib="$dyld -bundle -flat_namespace -undefined suppress -read_only_relocs suppress -o"
+      mksharedlib="$dyld -bundle -flat_namespace -undefined suppress -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
       dl_needs_underscore=false
       shared_libraries_supported=true;;
     *-apple-darwin*)
-      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -o"
+      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
       #sharedcccompopts="-fnocommon"
       dl_needs_underscore=false
@@ -585,7 +585,7 @@ if test $withsharedlibs = "yes"; then
       shared_libraries_supported=false;;
     *-*-openbsd*)
       sharedcccompopts="-fPIC"
-      mksharedlib="$bytecc -shared -o"
+      mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
@@ -1493,13 +1493,6 @@ cat >> Makefile <<EOF
 SYSLIB=-l\$(1)
 #ml let syslib x = "-l"^x;;
 
-MKEXE=$mkexe
-#ml let mkexe out files opts = $mkexe_ml;;
-
-### How to build a DLL
-MKDLL=$mksharedlib \$(1) \$(3)
-#ml let mkdll out _implib files opts = Printf.sprintf "%s %s %s %s" "$mksharedlib" out opts files;;
-
 ### How to build a static library
 MKLIB=ar rc \$(1) \$(2); ranlib \$(1)
 #ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
@@ -1524,7 +1517,7 @@ echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
 echo "PARTIALLD=$partialld" >> Makefile
 echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
-echo "FLEXLINK=$flexlink" >> Makefile
+echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
@@ -1535,7 +1528,8 @@ echo "EXTRALIBS=" >> Makefile
 echo "CCOMPTYPE=cc" >> Makefile
 echo "TOOLCHAIN=cc" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
-echo "MKSHAREDLIB=$mksharedlib" >> Makefile
+echo "MKEXE=$mkexe" >> Makefile
+echo "MKDLL=$mksharedlib" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -1558,7 +1552,7 @@ echo "        options for linking....... $bytecclinkopts $cclibs $dllib $cursesl
 if $shared_libraries_supported; then
 echo "        shared libraries are supported"
 echo "        options for compiling..... $sharedcccompopts $bytecccompopts"
-echo "        command for building...... $mksharedlib lib.so $mksharedlibrpath/a/path objs"
+echo "        command for building...... $mksharedlib -o lib.so $mksharedlibrpath/a/path objs"
 else
 echo "        shared libraries not supported"
 fi

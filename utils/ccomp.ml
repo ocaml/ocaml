@@ -28,38 +28,33 @@ let run_command cmdline = ignore(command cmdline)
    command-line length *)
 let build_diversion lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
-  List.iter
-    (fun f ->
-      if f <> "" then begin
-        output_string oc (Filename.quote f); output_char oc '\n'
-      end)
-    lst;
+  List.iter (fun f -> Printf.fprintf oc "%s\n" f) lst;
   close_out oc;
   at_exit (fun () -> Misc.remove_file responsefile);
   "@" ^ responsefile
 
-let need_diversion = match Sys.os_type with
-  | "Win32" (* | "Cygwin" *) -> true
-  | _ -> false
-
 let quote_files lst =
-  let s =
-    String.concat " "
-      (List.map (fun f -> if f = "" then f else Filename.quote f) lst) in
-  if String.length s >= 8192 && need_diversion
-  then build_diversion lst
+  let lst = List.filter (fun f -> f <> "") lst in
+  let quoted = List.map Filename.quote lst in
+  let s = String.concat " " quoted in
+  if String.length s >= 4096 && Sys.os_type = "Win32"
+  then build_diversion quoted
   else s
 
+let quote_prefixed pr lst =
+  let lst = List.filter (fun f -> f <> "") lst in
+  let lst = List.map (fun f -> pr ^ f) lst in
+  quote_files lst
+
 let compile_file name =
-     command
-       (Printf.sprintf
-         "%s -c %s %s %s %s"
-         !Clflags.c_compiler
-         (String.concat " " (List.rev !Clflags.ccopts))
-         (quote_files
-             (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
-         (Clflags.std_include_flag "-I")
-         (Filename.quote name))
+  command
+    (Printf.sprintf
+       "%s -c %s %s %s %s"
+       !Clflags.c_compiler
+       (String.concat " " (List.rev !Clflags.ccopts))
+       (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
+       (Clflags.std_include_flag "-I")
+       (Filename.quote name))
 
 let create_archive archive file_list =
   Misc.remove_file archive;
@@ -88,15 +83,24 @@ let expand_libname name =
       libname
   end
 
-(* Handling of msvc's /link options *)
+type link_mode =
+  | Exe
+  | Dll
 
-let make_link_options optlist =
-  let rec split linkopts otheropts = function
-  | [] -> String.concat " " otheropts
-	  ^ " -- " ^ String.concat " " linkopts
-  | opt :: rem ->
-      if String.length opt >= 5 && String.sub opt 0 5 = "/link"
-      then split (String.sub opt 5 (String.length opt - 5) :: linkopts)
-                 otheropts rem
-      else split linkopts (opt :: otheropts) rem
-  in split [] [] optlist
+let call_linker mode output_name files extra =
+  let files = quote_files files in
+  let cmd =
+    Printf.sprintf "%s -o %s %s %s %s %s %s %s"
+      (match mode with
+      | Exe -> Config.mkexe
+      | Dll -> Config.mkdll
+      )
+      (Filename.quote output_name)
+      (if !Clflags.gprofile then Config.cc_profile else "")
+      (Clflags.std_include_flag "-I")
+      (quote_prefixed "-L" !Config.load_path)
+      files
+      extra
+      (String.concat " " (List.rev !Clflags.ccopts))
+  in
+  command cmd = 0

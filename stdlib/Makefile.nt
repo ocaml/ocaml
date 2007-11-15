@@ -56,7 +56,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
 	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun headernt.c
-	$(call MKEXE,tmpheader.exe,headernt.$(O) $(EXTRALIBS), $(BYTECCLINKOPTS))
+	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
 	cp camlheader camlheader_ur

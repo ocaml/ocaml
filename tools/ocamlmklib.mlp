@@ -206,14 +206,16 @@ let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
       let retcode = command
-        (mkdll (prepostfix "dll" !output_c ext_dll)
-               "" (* no implib *)
-               (sprintf "%s %s %s %s %s"
-                    (String.concat " " !c_objs)
-                    (String.concat " " !c_opts)
-                    (String.concat " " !ld_opts)
-                    (make_rpath mksharedlibrpath)
-                    (String.concat " " !c_libs)) "") in
+          (Printf.sprintf "%s -o %s %s %s %s %s %s"
+             mkdll
+             (prepostfix "dll" !output_c ext_dll)
+             (String.concat " " !c_objs)
+             (String.concat " " !c_opts)
+             (String.concat " " !ld_opts)
+             (make_rpath mksharedlibrpath)
+             (String.concat " " !c_libs)
+          )
+      in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
     end;
     safe_remove (prepostfix "lib" !output_c ext_lib);

@@ -62,7 +62,7 @@ $(LINKEDFILES): %.c: ../byterun/%.c
 
 # Need special compilation rule so as not to do -I../byterun
 win32.$(O): ../byterun/win32.c
-	$(CC) -c $(NATIVECCCOMPOPTS) -DNATIVE_CODE $(FLEXLINK) ../byterun/win32.c
+	$(CC) -c $(NATIVECCCOMPOPTS) -DNATIVE_CODE $(IFLEXDIR) ../byterun/win32.c
 
 .SUFFIXES: .c .$(O)
 

@@ -252,37 +252,8 @@ let make_shared_startup_file ppf units filename =
 
 
 let call_linker_shared file_list output_name =
-  let files = Ccomp.quote_files file_list in
-  let cmd = match Config.system with
-    | "mingw" | "win32" | "cygwin" | "win64" ->
-	Printf.sprintf
-	  "flexlink -merge-manifest -chain %s -o %s %s %s %s %s %s"
-	  (match Config.system with
-	     | "mingw" -> "mingw"
-	     | "win32" -> "msvc"
-             | "win64" -> "msvc -x64"
-	     | "cygwin" -> "cygwin"
-	     | _ -> assert false)
-	  (Filename.quote output_name)
-	  (String.concat " "
-	     (List.map (fun s -> if s = "" then "" else
-			  "-I " ^ (Filename.quote s)) !load_path))
-	  files
-	  (if !Clflags.verbose then "-v" else "")
-          (Ccomp.make_link_options !Clflags.ccopts)
-	  (if !Clflags.verbose then "" else ">NUL")
-    | _ ->
-	Printf.sprintf 
-	  "%s %s %s %s %s"
-	  mksharedlib
-	  (Filename.quote output_name)
-	  (Ccomp.quote_files
-	     (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
-		!load_path))
-          (String.concat " " (List.rev !Clflags.ccopts))
-	  files
-  in
-  if Ccomp.command cmd <> 0 then raise(Error Linking_error)
+  if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
+  then raise(Error Linking_error)
 
 let link_shared ppf objfiles output_name =
   let units_tolink = List.fold_right scan_file objfiles [] in
@@ -309,64 +280,31 @@ let link_shared ppf objfiles output_name =
 let call_linker file_list startup_file output_name =
   let c_lib =
     if !Clflags.nopervasives then "" else Config.native_c_libraries in
-  match Config.system, Config.ccomp_type with
-  | (("win32"|"win64"|"mingw"|"cygwin"), _) when not !Clflags.output_c_object ->
-      let cmd =
-        Printf.sprintf
-	  "flexlink -chain %s -merge-manifest -exe -o %s %s %s %s %s %s %s %s %s"
-	  (match Config.system with
-	     | "win32" -> "msvc"
-	     | "win64" -> "msvc -x64"
-	     | "mingw" -> "mingw"
-	     | "cygwin" -> "cygwin"
-	     | _ -> assert false)
-          (Filename.quote output_name)
-	  (String.concat " "
-	     (List.map (fun s -> if s = "" then "" else
-			  "-I " ^ (Filename.quote s)) !load_path))
-          (Filename.quote startup_file)
-          (Ccomp.quote_files (List.rev file_list))
-          (Ccomp.quote_files (List.rev !Clflags.ccobjs))
-          (Filename.quote (runtime_lib ()))
-          c_lib
-	  (if !Clflags.verbose then " -v" else "")
-          (Ccomp.make_link_options !Clflags.ccopts)
-	in
-	let res = Ccomp.command cmd in
-	if res <> 0 then raise(Error Linking_error)
-  | _,"cc" ->
-      let cmd =
-        if not !Clflags.output_c_object then
-          Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
-            !Clflags.c_linker
-            (if !Clflags.gprofile then Config.cc_profile else "")
+  if not !Clflags.output_c_object then begin
+    let files = [startup_file] @ (List.rev file_list) @
+      (List.rev !Clflags.ccobjs) @ [runtime_lib ()] in
+    if not (Ccomp.call_linker Ccomp.Exe output_name files c_lib)
+    then raise(Error Linking_error)
+  end
+  else
+    let cmd =
+      match Config.system with
+      | "win32"|"win64"|"mingw"|"cygwin" ->
+          Printf.sprintf "%s /out:%s %s %s"
+            Config.native_partial_linker
             (Filename.quote output_name)
-            (Clflags.std_include_flag "-I")
-            (String.concat " " (List.rev !Clflags.ccopts))
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
-            (Ccomp.quote_files
-              (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
-                        !load_path))
-            (Ccomp.quote_files (List.rev !Clflags.ccobjs))
-            (Filename.quote (runtime_lib ()))
-            c_lib
-        else
+      | _ ->
           Printf.sprintf "%s -o %s %s %s"
             Config.native_partial_linker
             (Filename.quote output_name)
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
-      in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
-  | (("win32"|"win64"|"mingw"|"cygwin"), _) when !Clflags.output_c_object ->
-      let cmd =
-        Printf.sprintf "%s /out:%s %s %s"
-          Config.native_partial_linker
-          (Filename.quote output_name)
-          (Filename.quote startup_file)
-          (Ccomp.quote_files (List.rev file_list))
-      in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
-  | _ -> assert false
+    in
+    let res = Ccomp.command cmd in
+    if res <> 0 then raise(Error Linking_error)
+
 
 (* Main entry point *)
 

@@ -15,18 +15,18 @@
 
 include Makefile.common
 
-CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS) $(FLEXLINK)
+CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS) $(IFLEXDIR)
 DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=$(COMMONOBJS) unix.o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
 ocamlrun$(EXE): libcamlrun.a prims.o
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
+	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
 	          prims.o libcamlrun.a $(BYTECCLIBS)
 
 ocamlrund$(EXE): libcamlrund.a prims.o
-	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
+	$(MKEXE) -g $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
 	          prims.o libcamlrund.a $(BYTECCLIBS)
 
 libcamlrun.a: $(OBJS)

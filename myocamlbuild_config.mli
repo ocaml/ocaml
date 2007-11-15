@@ -43,8 +43,8 @@ val cc_profile : string
 val systhread_support : bool
 val partialld : string
 val syslib : string -> string
-val mkexe : string -> string -> string -> string
-val mkdll : string -> string -> string -> string -> string
+val mkexe : string
+val mkdll : string
 val mklib : string -> string -> string -> string
 val ext_lib : string
 val ext_obj : string

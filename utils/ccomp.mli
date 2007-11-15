@@ -20,4 +20,10 @@ val compile_file: string -> int
 val create_archive: string -> string list -> int
 val expand_libname: string -> string
 val quote_files: string list -> string
-val make_link_options: string list -> string
+(*val make_link_options: string list -> string*)
+
+type link_mode =
+  | Exe
+  | Dll
+
+val call_linker: link_mode -> string -> string list -> string -> bool

@@ -14,13 +14,13 @@ let fp_cat oc f = with_input_file ~bin:true f (fun ic -> copy_chan ic oc)
 
 (* Improve using the command module in Myocamlbuild_config
    with the variant version (`S, `A...) *)
-let mkdll out implib files opts =
+let mkdll out files opts =
   let s = Command.string_of_command_spec in
-  Cmd(Sh(C.mkdll out (s implib) (s files) (s opts)))
+  Cmd(Sh(Printf.sprintf "%s -o %s %s %s" C.mkdll out (s files) (s opts)))
 
 let mkexe out files opts =
   let s = Command.string_of_command_spec in
-  Cmd(Sh(C.mkexe out (s files) (s opts)))
+  Cmd(Sh(Printf.sprintf "%s -o %s %s %s" C.mkexe out (s files) (s opts)))
 
 let mklib out files opts =
   let s = Command.string_of_command_spec in
@@ -631,7 +631,7 @@ rule "ocaml C stubs on windows: dlib & d.o* -> dll"
       | Outcome.Good d_o -> d_o
       | Outcome.Bad exn -> raise exn
     end resluts in
-    mkdll dll (P("tmp"-.-C.a)) (S[atomize objs; P("byterun/ocamlrun"-.-C.a)])
+    mkdll dll (S[atomize objs; P("byterun/ocamlrun"-.-C.a)])
           (T(tags_of_pathname dll++"dll"++"link"++"c"))
   end;;
 
