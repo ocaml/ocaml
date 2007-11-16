@@ -41,7 +41,6 @@ val otherlibraries : string
 val debugger : string
 val cc_profile : string
 val systhread_support : bool
-val partialld : string
 val syslib : string -> string
 val mkexe : string
 val mkdll : string
