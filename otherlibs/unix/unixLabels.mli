@@ -383,7 +383,7 @@ module LargeFile :
 (** File operations on large files.
   This sub-module provides 64-bit variants of the functions
   {!UnixLabels.lseek} (for positioning a file descriptor),
-  {!UnixLabels.truncate} and {!UnixLabels.ftruncate} 
+  {!UnixLabels.truncate} and {!UnixLabels.ftruncate}
   (for changing the size of a file),
   and {!UnixLabels.stat}, {!UnixLabels.lstat} and {!UnixLabels.fstat}
   (for obtaining information on files).  These alternate functions represent
@@ -577,23 +577,23 @@ val open_process_full :
    and standard error of the command. *)
 
 val close_process_in : in_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process_in}, 
+(** Close channels opened by {!UnixLabels.open_process_in},
    wait for the associated command to terminate,
    and return its termination status. *)
 
 val close_process_out : out_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process_out}, 
+(** Close channels opened by {!UnixLabels.open_process_out},
    wait for the associated command to terminate,
    and return its termination status. *)
 
 val close_process : in_channel * out_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process}, 
+(** Close channels opened by {!UnixLabels.open_process},
    wait for the associated command to terminate,
    and return its termination status. *)
 
 val close_process_full :
   in_channel * out_channel * in_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process_full}, 
+(** Close channels opened by {!UnixLabels.open_process_full},
    wait for the associated command to terminate,
    and return its termination status. *)
 
@@ -675,7 +675,7 @@ val kill : pid:int -> signal:int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
    with id [pid]. *)
 
-type sigprocmask_command = Unix.sigprocmask_command = 
+type sigprocmask_command = Unix.sigprocmask_command =
     SIG_SETMASK
   | SIG_BLOCK
   | SIG_UNBLOCK
@@ -913,7 +913,7 @@ type socket_type = Unix.socket_type =
 (** The type of socket kinds, specifying the semantics of
    communications. *)
 
-type sockaddr = Unix.sockaddr = 
+type sockaddr = Unix.sockaddr =
     ADDR_UNIX of string
   | ADDR_INET of inet_addr * int
 (** The type of socket addresses. [ADDR_UNIX name] is a socket
@@ -971,11 +971,11 @@ val getsockname : file_descr -> sockaddr
 val getpeername : file_descr -> sockaddr
 (** Return the address of the host connected to the given socket. *)
 
-type msg_flag = Unix.msg_flag = 
+type msg_flag = Unix.msg_flag =
     MSG_OOB
   | MSG_DONTROUTE
   | MSG_PEEK
-(** The flags for {!UnixLabels.recv},  {!UnixLabels.recvfrom}, 
+(** The flags for {!UnixLabels.recv},  {!UnixLabels.recvfrom},
    {!UnixLabels.send} and {!UnixLabels.sendto}. *)
 
 val recv :
@@ -1271,7 +1271,7 @@ val tcgetattr : file_descr -> terminal_io
 (** Return the status of the terminal referred to by the given
    file descriptor. *)
 
-type setattr_when = Unix.setattr_when = 
+type setattr_when = Unix.setattr_when =
     TCSANOW
   | TCSADRAIN
   | TCSAFLUSH
@@ -1295,7 +1295,7 @@ val tcdrain : file_descr -> unit
 (** Waits until all output written on the given file descriptor
    has been transmitted. *)
 
-type flush_queue = Unix.flush_queue = 
+type flush_queue = Unix.flush_queue =
     TCIFLUSH
   | TCOFLUSH
   | TCIOFLUSH
@@ -1307,7 +1307,7 @@ val tcflush : file_descr -> mode:flush_queue -> unit
    [TCOFLUSH] flushes data written but not transmitted, and
    [TCIOFLUSH] flushes both. *)
 
-type flow_action = Unix.flow_action = 
+type flow_action = Unix.flow_action =
     TCOOFF
   | TCOON
   | TCIOFF
