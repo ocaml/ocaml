@@ -1,4 +1,5 @@
 To do:
+* Add rules for producing .recdepends from .ml, .mli, .mllib, .mlpack
 * Produce a dependency subgraph when failing on circular deps (e.g. "A: B C\nB: D")
 * rm sanitize.sh during -clean
 * rm sanitize.sh when running ocamlbuild
