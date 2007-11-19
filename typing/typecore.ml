@@ -30,7 +30,7 @@ type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
-  | Multiply_bound_variable
+  | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
@@ -199,7 +199,7 @@ let reset_pattern () =
 
 let enter_variable loc name ty =
   if List.exists (fun (id, _) -> Ident.name id = name) !pattern_variables
-  then raise(Error(loc, Multiply_bound_variable));
+  then raise(Error(loc, Multiply_bound_variable name));
   let id = Ident.create name in
   pattern_variables := (id, ty) :: !pattern_variables;
   id
@@ -2050,8 +2050,8 @@ let report_error ppf = function
            fprintf ppf "This pattern matches values of type")
         (function ppf ->
            fprintf ppf "but is here used to match values of type")
-  | Multiply_bound_variable ->
-      fprintf ppf "This variable is bound several times in this matching"
+  | Multiply_bound_variable name ->
+      fprintf ppf "Variable %s is bound several times in this matching" name
   | Orpat_vars id ->
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
         (Ident.name id)
