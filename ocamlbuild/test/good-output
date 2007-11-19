@@ -417,15 +417,14 @@ PASS
   | |  __/\__ \ |_ / /
   |_|\___||___/\__/_/
 
-+ svn=svk
 + CMDOPTS=
 + BUILD=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display 
 + BUILD1=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  
 + BUILD2=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
-+ svk revert bb.ml
++ cp bb1.ml bb.ml
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+ocamlopt.opt -I /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules bb.mli > bb.mli.depends
 ocamlc.opt -c -o bb.cmi bb.mli
 ocamldep.opt -modules bb.ml > bb.ml.depends
@@ -601,8 +600,6 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 [cache hit] ocamlopt.opt -c -o c3.cmx c3.ml
 [cache hit] ocamlopt.opt -c -o main.cmx main.ml
 [cache hit] ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
-+ svk revert bb.ml
-Reverted bb.ml
  _____         _   ___
 |_   _|__  ___| |_( _ )
   | |/ _ \/ __| __/ _ \
@@ -615,7 +612,7 @@ Reverted bb.ml
 + BUILD2=../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
 + ../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/w/inria/ocaml/ocaml-cvs-ocamlbuild/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+ocamlopt.opt -I /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules myconfig.ml > myconfig.ml.depends
 ocamlc.opt -c -o myconfig.cmo myconfig.ml
@@ -639,8 +636,8 @@ ocamlopt.opt myconfig.cmx a.cmx -o a.native
   | |  __/\__ \ |_ \__, |
   |_|\___||___/\__|  /_/
 
-++ dirname ./test9/test.sh
-+ cd ./test9/../..
+++ dirname test9/test.sh
++ cd test9/../..
 + ./_build/ocamlbuild.native -quiet -build-dir _buildtest -no-links test/test9/testglob.native
 + ./_buildtest/test/test9/testglob.native
 Globexp for "\"hello\"" OK
