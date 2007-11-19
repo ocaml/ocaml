@@ -18,12 +18,17 @@ type env = Pathname.t -> Pathname.t
 type builder = Pathname.t list list -> (Pathname.t, exn) Outcome.t list
 type action = env -> builder -> Command.t
 
-type t = private
+type 'a gen_rule = private
   { name  : string;
     tags  : Tags.t;
     deps  : Pathname.t list;
-    prods : Pathname.t list;
+    prods : 'a list;
     code  : env -> builder -> Command.t }
+
+type rule = Pathname.t gen_rule
+type rule_scheme = resource_pattern gen_rule
+
+type 'a rule_printer = (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a gen_rule -> unit
 
 val rule : string ->
   ?tags:string list ->
@@ -73,21 +78,21 @@ module Common_commands : sig
   val cmp : Pathname.t -> Pathname.t -> Command.t
 end
 
-val print : Format.formatter -> t -> unit
-val pretty_print : Format.formatter -> t -> unit
+val print : Format.formatter -> rule -> unit
+val pretty_print : 'a rule_printer
 
 (** For system use only *)
 
-val subst : Resource.env -> t -> t
-val can_produce : Pathname.t -> t -> t option
-val tags_matches : Tags.t -> t -> t option
-val compare : t -> t -> int
+val subst : Resource.env -> rule_scheme -> rule
+val can_produce : Pathname.t -> rule_scheme -> rule option
+(* val tags_matches : Tags.t -> t -> t option *)
+val compare : 'a gen_rule -> 'a gen_rule -> int
 
-val print_rule_name : Format.formatter -> t -> unit
-val print_rule_contents : Format.formatter -> t -> unit
+val print_rule_name : Format.formatter -> 'a gen_rule -> unit
+val print_rule_contents : 'a rule_printer
 
-val get_rules : unit -> t list
+val get_rules : unit -> rule_scheme list
 
-val call : builder -> t -> unit
+val call : builder -> rule -> unit
 
 val build_deps_of_tags : builder -> Tags.t -> Pathname.t list

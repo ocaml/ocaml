@@ -23,12 +23,17 @@ type env = Pathname.t -> Pathname.t
 type builder = Pathname.t list list -> (Pathname.t, exn) Outcome.t list
 type action = env -> builder -> Command.t
 
-type t =
+type 'a gen_rule =
   { name  : string;
     tags  : Tags.t;
     deps  : Pathname.t list;
-    prods : Pathname.t list;
+    prods : 'a list;
     code  : env -> builder -> Command.t }
+
+type rule = Pathname.t gen_rule
+type rule_scheme = Resource.resource_pattern gen_rule
+
+type 'a rule_printer = (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a gen_rule -> unit
 
 exception Code_digest of string * (bool -> unit)
 
@@ -38,25 +43,26 @@ let print_rule_name f r = pp_print_string f r.name
 
 let print_resource_list = List.print Resource.print
 
-let print_rule_contents f r =
+let print_rule_contents ppelt f r =
   fprintf f "@[<v2>{@ @[<2>name  =@ %S@];@ @[<2>tags  =@ %a@];@ @[<2>deps  =@ %a@];@ @[<2>prods = %a@];@ @[<2>code  = <fun>@]@]@ }"
-    r.name Tags.print r.tags print_resource_list r.deps print_resource_list r.prods
+    r.name Tags.print r.tags print_resource_list r.deps (List.print ppelt) r.prods
 
-let pretty_print f r =
+let pretty_print ppelt f r =
   fprintf f "@[<hv2>rule@ %S@ ~deps:%a@ ~prods:%a@ <fun>@]"
-    r.name print_resource_list r.deps print_resource_list r.prods
+    r.name print_resource_list r.deps (List.print ppelt) r.prods
 
 let print = print_rule_name
 
 let subst env rule =
   let subst_resources = List.map (Resource.subst env) in
+  let subst_resource_patterns = List.map (Resource.subst_pattern env) in
   let finder next_finder p = next_finder (Resource.subst env p) in
   { (rule) with name = sbprintf "%s (%a)" rule.name Resource.print_env env;
-                prods = subst_resources rule.prods;
+                prods = subst_resource_patterns rule.prods;
                 deps = subst_resources rule.deps;
                 code = (fun env -> rule.code (finder env)) }
 
-exception Can_produce of t
+exception Can_produce of rule
 
 let can_produce target rule =
   try
@@ -67,7 +73,7 @@ let can_produce target rule =
     end rule.prods; None
   with Can_produce r -> Some r
 
-let tags_matches tags r = if Tags.does_match tags r.tags then Some r else None
+(* let tags_matches tags r = if Tags.does_match tags r.tags then Some r else None *)
 
 let digest_prods r =
   List.fold_right begin fun p acc ->
@@ -212,7 +218,7 @@ let call builder r =
       (match cmd_or_digest with
       | Good cmd -> if cached then Command.execute ~pretend:true cmd
       | Bad (_, kont) -> kont cached);
-      List.iter Resource.Cache.resource_built r.prods;
+      List.iter (fun r -> Resource.Cache.resource_built r) r.prods;
       (if not cached then
         let new_rule_digest = digest_rule r dyndeps cmd_or_digest in
         let new_prod_digests = digest_prods r in
@@ -256,18 +262,25 @@ let (get_rules, add_rule) =
   end
 
 let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?(insert = `bottom) code =
-  let res_add x acc =
-    let x = Resource.import x in
-    if List.mem x acc then
-      failwith (sprintf "in rule %s, multiple occurences of the resource %s" name x)
-    else x :: acc in
-  let res_of_opt = function None -> [] | Some r -> [Resource.import r] in
+  let res_add import xs xopt =
+    let init =
+      match xopt with
+      | None -> []
+      | Some r -> [import r]
+    in
+    List.fold_right begin fun x acc ->
+      let r = import x in
+      if List.mem r acc then
+        failwith (sprintf "in rule %s, multiple occurences of the resource %s" name x)
+      else r :: acc
+    end xs init
+  in
   if prods = [] && prod = None then raise (Exit_rule_error "Can't make a rule that produce nothing");
   add_rule insert
   { name  = name;
     tags  = List.fold_right Tags.add tags Tags.empty;
-    deps  = List.fold_right res_add deps (res_of_opt dep);
-    prods = List.fold_right res_add prods (res_of_opt prod);
+    deps  = res_add Resource.import deps dep;
+    prods = res_add Resource.import_pattern prods prod;
     code  = code }
 
 let file_rule name ?tags ~prod ?deps ?dep ?insert ~cache action =
