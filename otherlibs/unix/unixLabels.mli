@@ -263,11 +263,8 @@ val write : file_descr -> buf:string -> pos:int -> len:int -> int
 (** [write fd buff ofs len] writes [len] characters to descriptor
    [fd], taking them from string [buff], starting at position [ofs]
    in string [buff]. Return the number of characters actually
-   written.
-
-   When an error is reported some characters might have already been
-   written.  Use [single_write] instead to ensure that this is not the
-   case. *)
+   written.  [write] repeats the writing operation until all characters
+   have been written or an error occurs. *)
 
 val single_write : file_descr -> buf:string -> pos:int -> len:int -> int
 (** Same as [write] but ensures that all errors are reported and
@@ -644,14 +641,28 @@ type lock_command =
 val lockf : file_descr -> mode:lock_command -> len:int -> unit
 (** [lockf fd cmd size] puts a lock on a region of the file opened
    as [fd]. The region starts at the current read/write position for
-   [fd] (as set by {!UnixLabels.lseek}), and extends [size] bytes forward if
+   [fd] (as set by {!Unix.lseek}), and extends [size] bytes forward if
    [size] is positive, [size] bytes backwards if [size] is negative,
    or to the end of the file if [size] is zero.
-   A write lock (set with [F_LOCK] or [F_TLOCK]) prevents any other
+   A write lock prevents any other
    process from acquiring a read or write lock on the region.
-   A read lock (set with [F_RLOCK] or [F_TRLOCK]) prevents any other
+   A read lock prevents any other
    process from acquiring a write lock on the region, but lets
-   other processes acquire read locks on it. *)
+   other processes acquire read locks on it.
+
+   The [F_LOCK] and [F_TLOCK] commands attempts to put a write lock
+   on the specified region.
+   The [F_RLOCK] and [F_TRLOCK] commands attempts to put a read lock
+   on the specified region.
+   If one or several locks put by another process prevent the current process
+   from acquiring the lock, [F_LOCK] and [F_RLOCK] block until these locks
+   are removed, while [F_TLOCK] and [F_TRLOCK] fail immediately with an
+   exception.
+   The [F_ULOCK] removes whatever locks the current process has on
+   the specified region.
+   Finally, the [F_TEST] command tests whether a write lock can be
+   acquired on the specified region, without actually putting a lock.
+   It returns immediately if successful, or fails otherwise. *)
 
 
 (** {6 Signals}
@@ -706,7 +717,7 @@ type process_times =
 
 type tm =
   Unix.tm =
-    { tm_sec : int;                       (** Seconds 0..59 *)
+    { tm_sec : int;                       (** Seconds 0..60 *)
       tm_min : int;                       (** Minutes 0..59 *)
       tm_hour : int;                      (** Hours 0..23 *)
       tm_mday : int;                      (** Day of month 1..31 *)
