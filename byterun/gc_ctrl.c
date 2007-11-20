@@ -78,7 +78,7 @@ static void check_block (char *hp)
   mlsize_t i;
   value v = Val_hp (hp);
   value f;
-  
+
   check_head (v);
   switch (Tag_hp (hp)){
   case Abstract_tag: break;
@@ -93,7 +93,7 @@ static void check_block (char *hp)
   case Custom_tag:
     Assert (!Is_in_heap (Custom_ops_val (v)));
     break;
-  
+
   case Infix_tag:
     Assert (0);
     break;
@@ -102,7 +102,10 @@ static void check_block (char *hp)
     Assert (Tag_hp (hp) < No_scan_tag);
     for (i = 0; i < Wosize_hp (hp); i++){
       f = Field (v, i);
-      if (Is_block (f) && Is_in_heap (f)) check_head (f);
+      if (Is_block (f) && Is_in_heap (f)){
+        check_head (f);
+        Assert (Color_val (f) != Caml_blue);
+      }
     }
   }
 }
