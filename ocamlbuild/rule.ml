@@ -25,14 +25,17 @@ type action = env -> builder -> Command.t
 
 type rule_action =
   | RunCmd of Command.t
-  | DigestThunk of string * (bool -> unit)
+  | FileMaker of (out_channel -> unit)
+
+type 'a digest = { digest : string; contents : 'a }
 
 type 'a gen_rule =
   { name  : string;
     tags  : Tags.t;
     deps  : Pathname.t list;
-    prods : 'a list;
-    code  : env -> builder -> rule_action }
+    prods : 'a list; (* Note that prods also contains stamp *)
+    stamp : 'a option;
+    code  : env -> builder -> rule_action digest }
 
 type rule = Pathname.t gen_rule
 type rule_scheme = Resource.resource_pattern gen_rule
@@ -40,6 +43,7 @@ type rule_scheme = Resource.resource_pattern gen_rule
 let name_of_rule r = r.name
 let deps_of_rule r = r.deps
 let prods_of_rule r = r.prods
+let stamp_of_rule r = r.stamp
 
 type 'a rule_printer = (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a gen_rule -> unit
 
@@ -63,9 +67,12 @@ let subst env rule =
   let subst_resources = List.map (Resource.subst env) in
   let subst_resource_patterns = List.map (Resource.subst_pattern env) in
   let finder next_finder p = next_finder (Resource.subst_any env p) in
+  let stamp = match rule.stamp with None -> None | Some x -> Some (Resource.subst_pattern env x) in
+  let prods = subst_resource_patterns rule.prods in
   { (rule) with name = sbprintf "%s (%a)" rule.name Resource.print_env env;
-                prods = subst_resource_patterns rule.prods;
+                prods = prods;
                 deps = subst_resources rule.deps;
+                stamp = stamp;
                 code = (fun env -> rule.code (finder env)) }
 
 exception Can_produce of rule
@@ -87,12 +94,19 @@ let digest_prods r =
     if sys_file_exists f then (f, Digest.file f) :: acc else acc
   end r.prods []
 
+let digest_deps r dyndeps =
+  let buf = Buffer.create 1024 in
+  let add_resource r = Buffer.add_string buf (Digest.to_hex
+  (Resource.Cache.digest_resource r)) in
+  Buffer.add_string buf "deps:";
+  List.iter add_resource r.deps;
+  Buffer.add_string buf "dyndeps:";
+  Resources.iter add_resource dyndeps;
+  Digest.to_hex (Digest.string (Buffer.contents buf))
+
 let digest_rule r dyndeps action =
   let buf = Buffer.create 1024 in
-  begin match action with
-   | RunCmd cmd -> Buffer.add_string buf (Command.to_string_for_digest cmd)
-   | DigestThunk(s, _) -> Buffer.add_string buf s
-  end;
+  Buffer.add_string buf action.digest;
   let add_resource r = Buffer.add_string buf (Resource.Cache.digest_resource r) in
   Buffer.add_string buf "prods:";
   List.iter add_resource r.prods;
@@ -163,9 +177,9 @@ let call builder r =
     end results in
   let () = dprintf 5 "start rule %a" print r in
   let action = r.code (fun x -> x) builder in
-  begin match action with
+  begin match action.contents with
   | RunCmd cmd -> build_deps_of_tags_on_cmd builder cmd
-  | DigestThunk _ -> ()
+  | FileMaker _ -> ()
   end;
   let dyndeps = !dyndeps in
   let () = dprintf 10 "dyndeps: %a" Resources.print dyndeps in
@@ -182,10 +196,10 @@ let call builder r =
             begin match Resource.Cache.get_digest_for r.name with
             | None -> (`cache_miss_no_digest, false)
             | Some d ->
-                begin match action with
-                | DigestThunk("", _) ->
+                begin match action.contents with
+                | FileMaker _ when action.digest = "" -> (* not sure that we still want this semantics *)
                     (`cache_miss_undigest, false)
-                | DigestThunk _ | RunCmd _ ->
+                | FileMaker _ | RunCmd _ ->
                     let rule_digest = digest_rule r dyndeps action in
                     if d = rule_digest then (`cache_hit, true)
                     else (`cache_miss_digest_changed(d, rule_digest), false)
@@ -221,9 +235,22 @@ let call builder r =
   explain_reason 3;
   let thunk () =
     try
-      begin match action with
-      | RunCmd cmd -> if cached then Command.execute ~pretend:true cmd
-      | DigestThunk(_, thunk) -> thunk cached
+      begin match action.contents with
+      | RunCmd cmd ->
+          if cached then Command.execute ~pretend:true cmd
+          else begin match r.stamp with
+          | Some stamp ->
+              reset_filesys_cache ();
+              let digest_deps = digest_deps r dyndeps in
+              with_output_file stamp (fun oc -> output_string oc digest_deps)
+          | None -> ()
+          end
+      | FileMaker file_maker ->
+          if not cached then begin
+            reset_filesys_cache ();
+            assert (List.length r.prods = 1);
+            List.iter (fun f -> with_output_file f file_maker) r.prods
+          end
       end;
       List.iter (fun r -> Resource.Cache.resource_built r) r.prods;
       (if not cached then
@@ -240,10 +267,10 @@ let call builder r =
       dprintf 5 "end rule %a" print r
     with exn -> (List.iter Resource.clean r.prods; raise exn)
   in
-  match action with
+  match action.contents with
   | RunCmd cmd when not cached ->
       List.iter (fun x -> Resource.Cache.suspend_resource x cmd thunk r.prods) r.prods
-  | RunCmd _ | DigestThunk _ -> thunk ()
+  | RunCmd _ | FileMaker _ -> thunk ()
 
 let (get_rules, add_rule) =
   let rules = ref [] in
@@ -268,7 +295,7 @@ let (get_rules, add_rule) =
             end !rules []
   end
 
-let gen_rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?(insert = `bottom) code =
+let gen_rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bottom) code =
   let res_add import xs xopt =
     let init =
       match xopt with
@@ -282,25 +309,31 @@ let gen_rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?(insert = `botto
       else r :: acc
     end xs init
   in
-  if prods = [] && prod = None then raise (Exit_rule_error "Can't make a rule that produce nothing");
+  if prods = [] && prod = None && stamp = None then raise (Exit_rule_error "Can't make a rule that produce nothing");
+  let stamp =
+    match stamp with
+    | None -> None
+    | Some stamp -> Some (Resource.import_pattern stamp)
+  in
+  let prods = res_add Resource.import_pattern prods prod in
   add_rule insert
   { name  = name;
     tags  = List.fold_right Tags.add tags Tags.empty;
     deps  = res_add Resource.import deps dep;
-    prods = res_add Resource.import_pattern prods prod;
+    stamp = stamp;
+    prods = prods;
     code  = code }
 
-let rule name ?tags ?prods ?deps ?prod ?dep ?insert code =
-  gen_rule name ?tags ?prods ?deps ?prod ?dep ?insert
-           (fun env build -> RunCmd (code env build))
+let rule name ?tags ?prods ?deps ?prod ?dep ?stamp ?insert code =
+  gen_rule name ?tags ?prods ?deps ?prod ?dep ?stamp ?insert begin fun env build ->
+    let cmd = code env build in
+    { digest   = Command.to_string_for_digest cmd
+    ; contents = RunCmd cmd }
+end
 
-let file_rule name ?tags ~prod ?deps ?dep ?insert ~cache action =
-  gen_rule name ?tags ~prod ?dep ?deps ?insert begin fun env build ->
-    let thunk cached =
-      if not cached then
-        with_output_file (env prod) (action env)
-    in
-    DigestThunk(cache env build, thunk)
+let file_rule name ?tags ~prod ?deps ?dep ?stamp ?insert ~cache action =
+  gen_rule name ?tags ~prod ?dep ?deps ?stamp ?insert begin fun env build ->
+    { digest = cache env build; contents = FileMaker(action env) }
   end
 
 module Common_commands = struct
