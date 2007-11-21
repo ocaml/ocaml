@@ -13,3 +13,4 @@ $BUILD2
 cp foo2 foo
 $BUILD1 -verbose 0
 $BUILD2
+rm foo
