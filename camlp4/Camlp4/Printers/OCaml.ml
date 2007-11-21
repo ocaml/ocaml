@@ -671,6 +671,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#simple_ctyp t2
     | <:ctyp< `$s$ >> -> pp f "`%a" o#var s
     | <:ctyp< $t1$ * $t2$ >> -> pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
+    | <:ctyp<>> -> assert False
     | t -> pp f "@[<1>(%a)@]" o#ctyp t ];
 
     method ctyp f t =
