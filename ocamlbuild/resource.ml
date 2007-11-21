@@ -242,22 +242,26 @@ module MetaPath : sig
         type t
 	type env
 
-        val mk : string -> t
+        val mk : (bool * string) -> t
 	val matchit : t -> string -> env option
 	val subst : env -> t -> string
 	val print_env : Format.formatter -> env -> unit
 
 end = struct
+        open Glob_ast
 
-	type atoms = A of string | V of string
+	type atoms = A of string | V of string * Glob.globber
 	type t = atoms list
 	type env = (string * string) list
 
 	exception No_solution
 
-	let mk s = List.map (fun (s, is_var) -> if is_var then V s else A s) (Lexers.meta_path (Lexing.from_string s))
+	let mk (pattern_allowed, s) = List.map begin function
+          | `Var(var_name, globber) -> V(var_name, globber)
+          | `Word s -> A s
+        end (Lexers.path_scheme pattern_allowed (Lexing.from_string s))
 
-  let mk = memo mk
+        let mk = memo mk
 
 	let match_prefix s pos prefix =
 		match String.contains_string s pos prefix with
@@ -266,19 +270,25 @@ end = struct
 
 	let matchit p s =
 	  let sl = String.length s in
-		let rec loop xs pos acc =
+		let rec loop xs pos acc delta =
 			match xs with
 			| [] -> if pos = sl then acc else raise No_solution
-			| A prefix :: xs -> loop xs (match_prefix s pos prefix) acc
-			| V var :: A s2 :: xs ->
-					begin match String.contains_string s pos s2 with
-					| Some(pos') ->	loop xs (pos' + String.length s2) ((var, String.sub s pos (pos' - pos)) :: acc)
-					| None -> raise No_solution
-				  end
-			| [V var] -> (var, String.sub s pos (sl - pos)) :: acc
+			| A prefix :: xs -> loop xs (match_prefix s pos prefix) acc 0
+			| V(var, patt) :: A s2 :: xs' ->
+                            begin match String.contains_string s (pos + delta) s2 with
+                            | Some(pos') ->
+                                let matched = String.sub s pos (pos' - pos) in
+                                if Glob.eval patt matched
+                                then loop xs' (pos' + String.length s2) ((var, matched) :: acc) 0
+                                else loop xs  pos acc (pos' - pos + 1)
+                            | None -> raise No_solution
+                            end
+			| [V(var, patt)] ->
+                            let matched = String.sub s pos (sl - pos) in
+                            if Glob.eval patt matched then (var, matched) :: acc else raise No_solution
 			| V _ :: _ -> assert false
 		in
-		try	Some (loop p 0 [])
+		try	Some (loop p 0 [] 0)
 		with No_solution -> None
 
   let pp_opt pp_elt f =
@@ -312,7 +322,7 @@ end = struct
 			List.map begin fun x ->
 				match x with
 				| A atom -> atom
-				| V var -> List.assoc var env
+				| V(var, _) -> List.assoc var env
 			end s
 		end
 end
@@ -322,10 +332,11 @@ type resource_pattern = (Pathname.t * MetaPath.t)
 
 let print_pattern f (x, _) = Pathname.print f x
 
-let import_pattern x = x, MetaPath.mk x
+let import_pattern x = x, MetaPath.mk (true, x)
 let matchit (_, p) x = MetaPath.matchit p x
 
-let subst env s = MetaPath.subst env (MetaPath.mk s)
+let subst env s = MetaPath.subst env (MetaPath.mk (false, s))
+let subst_any env s = MetaPath.subst env (MetaPath.mk (true, s))
 let subst_pattern env (_, p) = MetaPath.subst env p
 
 let print_env = MetaPath.print_env

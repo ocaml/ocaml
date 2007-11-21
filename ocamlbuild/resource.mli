@@ -62,6 +62,7 @@ val import_pattern : string -> resource_pattern
 
 val matchit : resource_pattern -> t -> env option
 val subst : env -> t -> t
+val subst_any : env -> t -> t
 val subst_pattern : env -> resource_pattern -> t
 val is_up_to_date : t -> bool
 val print_env : Format.formatter -> env -> unit
