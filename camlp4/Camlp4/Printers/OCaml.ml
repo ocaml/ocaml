@@ -505,11 +505,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< for $s$ = $e1$ $to:df$ $e2$ do { $e3$ } >> ->
         pp f "@[<hv0>@[<hv2>@[<2>for %a =@ %a@ %a@ %a@ do@]@ %a@]@ done@]"
           o#var s o#expr e1 o#direction_flag df o#expr e2 o#seq e3
-    | <:expr< $int:s$ >> -> pp f "%a" o#numeric s
+    | <:expr< $int:s$ >> -> o#numeric f s
     | <:expr< $nativeint:s$ >> -> pp f "%an" o#numeric s
     | <:expr< $int64:s$ >> -> pp f "%aL" o#numeric s
     | <:expr< $int32:s$ >> -> pp f "%al" o#numeric s
-    | <:expr< $flo:s$ >> -> pp f "%s" s
+    | <:expr< $flo:s$ >> -> o#numeric f s
     | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:expr< $id:i$ >> -> o#var_ident f i
     | <:expr< { $b$ } >> ->
@@ -616,8 +616,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:patt< $nativeint:s$ >> -> pp f "%an" o#numeric s
     | <:patt< $int64:s$ >> -> pp f "%aL" o#numeric s
     | <:patt< $int32:s$ >> -> pp f "%al" o#numeric s
-    | <:patt< $int:s$ >> -> pp f "%a" o#numeric s
-    | <:patt< $flo:s$ >> -> pp f "%s" s
+    | <:patt< $int:s$ >> -> o#numeric f s
+    | <:patt< $flo:s$ >> -> o#numeric f s
     | <:patt< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:patt< ~ $s$ >> -> pp f "~%s" s
     | <:patt< ` $uid:s$ >> -> pp f "`%a" o#var s
