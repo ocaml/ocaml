@@ -58,13 +58,13 @@ let x_p_a = "%.p"-.-ext_lib;;
 
 rule "target files"
   ~dep:"%.itarget"
-  ~prod:"%.otarget"
+  ~stamp:"%.otarget"
   begin fun env build ->
-    let itarget = env "%.itarget" and otarget = env "%.otarget" in
+    let itarget = env "%.itarget" in
     let dir = Pathname.dirname itarget in
     List.iter ignore_good
       (build (List.map (fun x -> [dir/x]) (string_list_of_file itarget)));
-    touch otarget
+    Nop
   end;;
 
 rule "ocaml: mli -> cmi"
