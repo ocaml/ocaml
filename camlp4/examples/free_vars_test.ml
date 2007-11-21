@@ -49,8 +49,8 @@ fv << fun x -> x y >> << y >>;
 fv << fun y -> fun x -> x y >> <<>>;
 fv << let x = 42 and y = 44 in x y z >> << z >>;
 fv << let z = g in let x = 42 and y = 44 in x y z >> << g >>;
-fv << let rec f x = g (x + 1) and g y = f (y - 1) in fun x -> g x * f x >> << \+ \- \* >>;
-fv << let rec f x = g (x + 1) and g y = f (g (y - 1)) in fun x -> g x * f x >> << \+ \- \* >>;
+fv << let rec f x = g (x + 1) and g y = f (y - 1) in fun x -> g x * f x >> << (+) (-) ( * ) >>;
+fv << let rec f x = g (x + 1) and g y = f (g (y - 1)) in fun x -> g x * f x >> << (+) (-) ( * ) >>;
 
 fv << let i = 42 in let module M = struct value f x = y x; end in M.h >> << y >>;
 
@@ -60,9 +60,9 @@ fv << fun [ A x -> x y | _ -> x ] >> << x y >>;
 
 fv << fun [ { x = A z; y = y } as q -> x z y a q ] >> << x a >>;
 
-fv << let module M = struct value a = 42; value b = a + 1; end in () >> <<\+>>;
+fv << let module M = struct value a = 42; value b = a + 1; end in () >> <<(+)>>;
 
-fv << let module M = struct value rec a = 42; value b = a + 1; end in () >> <<\+>>;
+fv << let module M = struct value rec a = 42; value b = a + 1; end in () >> <<(+)>>;
 
 fv << let rec f x = x and g = x in y >> << x y >>;
 fv << let f x = x in x >> << x >>;

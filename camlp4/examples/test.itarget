@@ -1,0 +1,8 @@
+test_macros.cmo
+lambda_test.cmo
+free_vars_test.byte
+free_vars_test.native
+global_handler_test.cmo
+apply_operator_test.cmo
+test_type_quotation.cmo
+expression_closure_test.cmo
