@@ -106,6 +106,7 @@ and parse_string b = parse
 | "\""                  { Buffer.contents b }
 | "\\\""                { Buffer.add_char b '"'; parse_string b lexbuf }
 | [^'"' '\\']+ as u     { Buffer.add_string b u; parse_string b lexbuf }
+| _ as c                { raise (Parse_error(sf "Unexpected character %C in string" c)) }
 
 and parse_class cl = parse
 | ']'                     { cl }
