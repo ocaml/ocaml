@@ -607,11 +607,11 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
   |_|\___||___/\__\___/
 
 + CMDOPTS=
-+ BUILD=../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD=../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display 
++ BUILD1=../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display  
++ BUILD2=../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
-+ ../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display
++ ../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display
 ocamlopt.opt -I /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules myconfig.ml > myconfig.ml.depends
@@ -621,7 +621,13 @@ ocamlc.opt myconfig.cmo a.cmo -o a.byte
 ocamlopt.opt -c -o myconfig.cmx myconfig.ml
 ocamlopt.opt -c -o a.cmx a.ml
 ocamlopt.opt myconfig.cmx a.cmx -o a.native
-+ ../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
+cp -p a.byte a
+cp -p a.native a.opt
+cp -p a.byte bin/a.byte
+cp -p bin/a.byte bin/a
+cp -p a.native bin/a.native
+cp -p bin/a.native bin/a.opt
++ ../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
 [cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules myconfig.ml > myconfig.ml.depends
 [cache hit] ocamlc.opt -c -o myconfig.cmo myconfig.ml
@@ -630,14 +636,20 @@ ocamlopt.opt myconfig.cmx a.cmx -o a.native
 [cache hit] ocamlopt.opt -c -o myconfig.cmx myconfig.ml
 [cache hit] ocamlopt.opt -c -o a.cmx a.ml
 [cache hit] ocamlopt.opt myconfig.cmx a.cmx -o a.native
+[cache hit] cp -p a.byte a
+[cache hit] cp -p a.native a.opt
+[cache hit] cp -p a.byte bin/a.byte
+[cache hit] cp -p bin/a.byte bin/a
+[cache hit] cp -p a.native bin/a.native
+[cache hit] cp -p bin/a.native bin/a.opt
  _____         _    ___
 |_   _|__  ___| |_ / _ \
   | |/ _ \/ __| __| (_) |
   | |  __/\__ \ |_ \__, |
   |_|\___||___/\__|  /_/
 
-++ dirname test9/test.sh
-+ cd test9/../..
+++ dirname ./test9/test.sh
++ cd ./test9/../..
 + ./_build/ocamlbuild.native -quiet -build-dir _buildtest -no-links test/test9/testglob.native
 + ./_buildtest/test/test9/testglob.native
 Globexp for "\"hello\"" OK
@@ -1020,3 +1032,24 @@ Glob.eval "<toto/**>" "toto/alpha/gamma/delta/beta.ml" = true OK
 Glob.eval "<toto/**>" "toto" = true OK
 Glob.eval "<toto/**>" "toto2/tata" = false OK
 Glob.eval "<toto/**>" "tata/titi" = false OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/bar/libfoo.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibs/unix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibsliblib/unlibix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "bar" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libbar/foo.a" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/bar/libfoo.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibs/unix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibsliblib/unlibix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "bar" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libbar/foo.a" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/bar/libfoo.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibs/unix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibsliblib/unlibix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "bar" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libbar/foo.a" = None OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" = None OK
