@@ -424,7 +424,7 @@ PASS
 + rm -rf _build
 + cp bb1.ml bb.ml
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+ocamlopt.opt -I /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules bb.mli > bb.mli.depends
 ocamlc.opt -c -o bb.cmi bb.mli
 ocamldep.opt -modules bb.ml > bb.ml.depends
@@ -612,7 +612,7 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
 + BUILD2=../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
 + ../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wd/inria/ocaml/CVS-copy/ocamlbuild-feature/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+ocamlopt.opt -I /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules myconfig.ml > myconfig.ml.depends
 ocamlc.opt -c -o myconfig.cmo myconfig.ml
@@ -1053,3 +1053,32 @@ Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibslibl
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "bar" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libbar/foo.a" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" = None OK
+ _____         _    __     ___      _               _
+|_   _|__  ___| |_  \ \   / (_)_ __| |_ _   _  __ _| |
+  | |/ _ \/ __| __|  \ \ / /| | '__| __| | | |/ _` | |
+  | |  __/\__ \ |_    \ V / | | |  | |_| |_| | (_| | |
+  |_|\___||___/\__|    \_/  |_|_|   \__|\__,_|\__,_|_|
+
+ _____                    _
+|_   _|_ _ _ __ __ _  ___| |_ ___
+  | |/ _` | '__/ _` |/ _ \ __/ __|
+  | | (_| | | | (_| |  __/ |_\__ \
+  |_|\__,_|_|  \__, |\___|\__|___/
+               |___/
++ CMDOPTS=
++ BUILD=../../_build/ocamlbuild.native bar -no-skip -classic-display 
++ BUILD1=../../_build/ocamlbuild.native bar -no-skip -classic-display  
++ BUILD2=../../_build/ocamlbuild.native bar -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ rm -rf _build
++ cp foo1 foo
++ ../../_build/ocamlbuild.native bar -no-skip -classic-display
+ocamlopt.opt -I /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+cp foo bar
++ ../../_build/ocamlbuild.native bar -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
+[cache hit] cp foo bar
++ cp foo2 foo
++ ../../_build/ocamlbuild.native bar -no-skip -classic-display -verbose 0
+cp foo bar
++ ../../_build/ocamlbuild.native bar -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
+[cache hit] cp foo bar
++ rm foo
