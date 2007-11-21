@@ -5,7 +5,7 @@
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
-(*  Copyright   2006    Institut National de Recherche en Informatique et   *)
+(*  Copyright 2006,2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
 (*  exception on linking described in LICENSE at the top of the Objective   *)
@@ -32,9 +32,28 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
 
   value _loc = Loc.ghost;
 
-  value xi i = "_x" ^ string_of_int i;
+  value sf = Printf.sprintf;
+
+  value xik i k =
+    let i =
+      if i < 0 then assert False
+      else if i = 0 then ""
+      else sf "_i%d" i
+    in
+    let k =
+      if k < 1 then assert False
+      else if k = 1 then ""
+      else sf "_k%d" k
+    in
+    sf "_x%s%s" i k;
+  value exik i k = <:expr< $lid:xik i k$ >>;
+  value pxik i k = <:patt< $lid:xik i k$ >>;
+  value elidk y k = <:expr< $lid:sf "%s_%d" y k$ >>;
+  value plidk y k = <:patt< $lid:sf "%s_%d" y k$ >>;
 
   value xs s = "_x_" ^ s;
+  value xsk = sf "_x_%s_%d";
+  value exsk s k = <:expr< $lid:xsk s k$>>;
 
   value rec apply_expr accu =
     fun 
@@ -57,12 +76,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         let _loc = Ast.loc_of_ctyp x
         in apply_ctyp <:ctyp< $accu$ $x$ >> xs ];
 
-  value list_mapi f =
-    let rec self i =
-      fun
-      [ [] -> []
-      | [ x :: xs ] -> [ f i x :: self (succ i) xs ] ]
-    in self 0;
+  value opt_map f = fun [ Some x -> Some (f x) | None -> None ];
 
   value list_init f n =
     let rec self m =
@@ -70,273 +84,525 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
       else [f m :: self (succ m)]
     in self 0;
 
-  (* Yes this is a poor fresh function *)
-  value fresh =
-    let count = ref 0 in
-    fun basename ->
-      let res = basename ^ (string_of_int count.val)
-      in do { incr count; res };
-
-  value mk_tuple self t =
-    let tl = Ast.list_of_ctyp t [] in
-    let n = List.length tl in
-    let exi i = <:expr< $lid:xi i$ >> in
-    let pxi i = <:patt< $lid:xi i$ >> in
-    let (e, _) =
-      List.fold_left
-        (fun (acc, i) t -> (self ?obj:(Some acc) (Some (exi i)) t, succ i))
-        (<:expr<o>>, 0) tl in
-    <:expr< fun ($tup:Ast.paCom_of_list (list_init pxi n)$) -> $e$ >>;
-
-  value builtins =
-    <:class_str_item<
-      method string (_ : string) : 'self_type = o;
-      method int (_ : int) : 'self_type = o;
-      method float (_ : float) : 'self_type = o;
-      method bool (_ : bool) : 'self_type = o;
-      method list : ! 'a . ('self_type -> 'a -> 'self_type) -> list 'a -> 'self_type =
-        fun f -> List.fold_left f o;
-      method option : ! 'a . ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type =
-        fun f -> fun [ None -> o | Some x -> f o x ];
-      method array : ! 'a . ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type =
-        fun f -> Array.fold_left f o;
-      method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type =
-        fun f { val = x } -> f o x;
-  >>;
-
   value rec lid_of_ident sep =
     fun
     [ <:ident< $lid:s$ >> | <:ident< $uid:s$ >> -> s
     | <:ident< $i1$.$i2$ >> -> lid_of_ident sep i1 ^ sep ^ lid_of_ident sep i2
     | _ -> assert False ];
 
-  type type_decl = (string * Ast.ident * list Ast.ctyp * Ast.ctyp);
+  type type_decl = (string * Ast.ident * list Ast.ctyp * Ast.ctyp * bool);
 
-  value (unknown_type, fold_unknown_types) =
-    let set = ref StringMap.empty in
-    let add id1 id2 ty = set.val := StringMap.add id1 (id1, id2, [], ty) set.val
-    and fold f = StringMap.fold f set.val in (add, fold);
+  value builtin_types =
+    let tyMap = StringMap.empty in
+    let tyMap =
+      let abstr = ["string"; "int"; "float"; "int32"; "int64"; "nativeint"; "char"] in
+      List.fold_right
+        (fun name -> StringMap.add name (name, <:ident< $lid:name$ >>, [], <:ctyp<>>, False))
+        abstr tyMap
+    in
+    let tyMap =
+      let concr =
+        [("bool", <:ident<bool>>, [], <:ctyp< [ False | True ] >>, False);
+         ("list", <:ident<list>>, [ <:ctyp< 'a >> ], <:ctyp< [ $uid:"[]"$ | $uid:"::"$ of 'a and list 'a ] >>, False);
+         ("option", <:ident<option>>, [ <:ctyp< 'a >> ], <:ctyp< [ None | Some of 'a ] >>, False);
+         ("ref", <:ident<ref>>, [ <:ctyp< 'a >> ], <:ctyp< { contents : 'a } >>, False)]
+      in
+      List.fold_right (fun ((name, _, _, _, _) as decl) -> StringMap.add name decl) concr tyMap
+    in
+    tyMap;
 
-  value rec expr_of_ty ?obj x ty =
-    let rec self ?(obj = <:expr<o>>) ox =
-      fun
-      [ <:ctyp< $lid:id$ >> ->
+  value used_builtins = ref StringMap.empty;
+
+  value store_if_builtin_type id =
+    if StringMap.mem id builtin_types then
+      used_builtins.val := StringMap.add id (StringMap.find id builtin_types) used_builtins.val
+    else ();
+
+  type mode = [ Fold | Map | Fold_map ];
+
+  value string_of_mode = fun [ Fold -> "fold" | Map -> "map" | Fold_map -> "fold_map" ];
+
+  module Gen (X :
+    sig
+      value size : int;
+      value mode : mode;
+    end) =
+    struct
+
+      value size = X.size;
+      value mode = X.mode;
+
+      value tuplify_expr f =
+        if size <= 0 then assert False
+        else if size = 1 then f 1
+        else
+          let rec loop k =
+            if k = 2 then f 2
+            else <:expr< $loop (k - 1)$, $f k$ >>
+          in <:expr< ($f 1$, $loop size$) >>;
+
+      value tuplify_patt f =
+        if size <= 0 then assert False
+        else if size = 1 then f 1
+        else
+          let rec loop k =
+            if k = 2 then f 2
+            else <:patt< $loop (k - 1)$, $f k$ >>
+          in <:patt< ($f 1$, $loop size$) >>;
+
+      value xiks i = tuplify_expr (exik i);
+
+      value tuplify_type typ =
+        if size <= 0 then assert False
+        else if size = 1 then typ
+        else
+          let rec loop k =
+            if k = 2 then typ
+            else <:ctyp< $loop (k - 1)$ * $typ$ >>
+          in <:ctyp< ($typ$ * $loop size$) >>;
+
+      value tuplify_tycon tycon = tuplify_type <:ctyp< $lid:tycon$ >>;
+
+      value rec patt_of_expr =
+        fun
+        [ <:expr<>> -> <:patt<>>
+        | <:expr< $id:i$ >> -> <:patt< $id:i$ >>
+        | <:expr< $e1$, $e2$ >> -> <:patt< $patt_of_expr e1$, $patt_of_expr e2$ >>
+        | <:expr< $tup:e$ >> -> <:patt< $tup:patt_of_expr e$ >>
+        | _ -> assert False ];
+
+      value bind p e1 e2 =
+        match mode with
+        [ Fold_map -> <:expr< let (o, $p$) = $e1$ in $e2$ >>
+        | Map      -> <:expr< let $p$ = $e1$ in $e2$ >>
+        | Fold     -> <:expr< let o = $e1$ in $e2$ >> ];
+
+      value return e =
+        match mode with
+        [ Fold_map -> <:expr< (o, $e$) >>
+        | Map      -> e
+        | Fold     -> <:expr<o>> ];
+
+      value rec opt_bind opt_patt e1 mk_e2 =
+        match e1 with
+        [ <:expr< $id:_$ >> | <:expr< $lid:_$#$_$ >> -> mk_e2 e1
+        | <:expr< let $p1$ = $e1$ in $e2$ >> ->
+            <:expr< let $p1$ = $e1$ in $opt_bind None e2 mk_e2$ >>
+        | _ ->
+            let e2 = mk_e2 <:expr<o>> in
+            match opt_patt with
+            [ Some patt -> bind patt e1 e2
+            | None -> <:expr< (fun o -> $e1$) $e2$ >> ] ];
+
+        (* ts = [t1; ...; tN] *)
+      value chain_tuple mkp mke expr_of_ty ts =
+        (* exiks = [<<(x_i0_k1, ..., x_i0_kM)>>; ...; <<(x_iN_k1, ..., x_iN_kM)>>] *)
+        let exiks = list_init (fun i -> tuplify_expr (exik i)) (List.length ts) in
+        (* exi1s, pxi1s = [<<x_i0_k1>>; ...; <<x_iN_k1>>] *)
+        let exi1s = list_init (fun i -> exik i 1) (List.length ts) in
+        let pxi1s = list_init (fun i -> pxik i 1) (List.length ts) in
+        let ps k = mkp (list_init (fun i -> pxik i k) (List.length ts)) in
+        let p = tuplify_patt ps in
+        let e1 = mke exi1s in
+        let es = List.map2 (fun x -> expr_of_ty (Some x)) exiks ts in
+        let e =
+          List.fold_right2 begin fun pxi1 e acc ->
+            bind pxi1 e acc
+          end pxi1s es (return e1)
+        in
+        <:match_case< $p$ -> $e$ >>;
+
+      value mk_tuple expr_of_ty t =
+        let mc =
+          chain_tuple
+            (fun ps -> <:patt< ($tup:Ast.paCom_of_list ps$) >>)
+            (fun es -> <:expr< ($tup:Ast.exCom_of_list es$) >>)
+            expr_of_ty (Ast.list_of_ctyp t [])
+        in <:expr< fun [ $mc$ ] >>;
+
+      value default_match_case =
+        let mk k = if k = 1 then <:patt< x >> else <:patt< _ >> in
+        match mode with
+        [ Fold_map -> <:match_case< $tuplify_patt mk$ -> (o, x) >>
+        | Fold     -> <:match_case< _ -> o >>
+        | Map      -> <:match_case< $tuplify_patt mk$ -> x >> ];
+
+      value default_expr = <:expr< fun [ $default_match_case$ ] >>;
+
+      value mkfuno e =
+        match e with
+        [ <:expr< $e$ o >> -> e
+        | _ -> <:expr< fun o -> $e$ >> ];
+
+      value is_unknown t =
+        let rec loop t =
+          match t with
+          [ <:ctyp< $lid:_$ >> -> False
+          | <:ctyp< $id:_$ >> -> True
+          | <:ctyp< $t$ $_$ >> -> loop t
+          | _ -> False ]
+        in
+        match t with
+        [ <:ctyp< $uid:_$ >> -> False
+        | t -> loop t ];
+
+      value contains_unknown t =
+        try
+          let (_ : < .. >) =
+            object
+              inherit Ast.fold as super;
+              method ctyp t = if is_unknown t then raise Exit else super#ctyp t;
+            end#ctyp t
+          in False
+        with [ Exit -> True ];
+
+      value opt_bind' ox e1 mk_e2 =
+        let mk_e2 =
           match ox with
-          [ Some x -> <:expr< $obj$#$id$ $x$ >>
-          | _ -> <:expr< $obj$#$id$ >> ]
-      | <:ctyp< $t1$ $t2$ >> ->
-          let e = <:expr< $self ~obj None t1$ (fun o -> $self None t2$) >> in
-          match ox with
-          [ Some x -> <:expr< $e$ $x$ >>
-          | _   -> e ]
-      | <:ctyp< $t1$ -> $t2$ >> ->
-          let mk_fun x =
-            let y = fresh "y" in
-            let py = <:expr< $lid:y$ >> in
-            let e = <:expr< $x$ $self (Some py) t1$ >>
-            in <:expr< fun $lid:y$ -> $self ~obj (Some e) t2$ >> in
-          match ox with
-          [ Some x -> mk_fun x
+          [ Some x -> fun e1 -> <:expr< $mk_e2 e1$ $x$ >>
+          | _      -> mk_e2 ]
+        in
+        opt_bind (opt_map patt_of_expr ox) e1 mk_e2;
+
+    (* FIXME finish me
+      value rec is_simple =
+        fun
+        [ <:expr< $id:_$ >> -> True
+        | <:expr< $e$#$_$ >> | <:expr< $tup:e$ >> -> is_simple e
+        | <:expr< $e1$ $e2$ >> | <:expr< $e1$, $e2$ >> -> is_simple e1 && is_simple e2
+        | _ -> False ];
+
+      value app e1 e2 =
+        let is_e1_simple = is_simple e1 in
+        let is_e2_simple = is_simple e2 in
+        if is_e1_simple then
+          if is_e2_simple then <:expr< $e1$ $e2$ >>
+          else let x = fresh "y" in <:expr< let $lid:y$ = $e2$ in $e1$ $lid:y$ >>
+        else
+          if is_e2_simple then
+            let x = fresh "y" in <:expr< let $lid:y$ = $e1$ in $lid:y$ $e2$ >>
+          else ; *)
+
+      value opt_app e ox =
+        match ox with
+        [ Some x -> <:expr< $e$ $x$ >> (* call app *)
+        | _ -> e ];
+
+      value rec expr_of_ty x ty =
+        let rec self ?(arity=0) ox =
+          fun
+          [ t when is_unknown t ->
+              self ox <:ctyp< unknown >>
+          | <:ctyp< $lid:id$ >> ->
+              let () = store_if_builtin_type id in
+              opt_bind' ox <:expr<o>> (fun e1 -> <:expr< $e1$#$id$ >>)
+          | <:ctyp@_loc< $t1$ $t2$ >> ->
+              let e = opt_bind None
+                               (self ~arity:(arity+1) None t1)
+                               (fun e1 -> <:expr< $e1$ $mkfuno (self None t2)$ >>) in
+              opt_app e ox
+          | <:ctyp< ( $tup:t$ ) >> ->
+              opt_app (mk_tuple (self ~arity:0) t) ox
+          | <:ctyp< '$s$ >> ->
+              opt_app <:expr< $lid:"_f_" ^ s$ o >> ox
           | _ ->
-              let z = fresh "z" in
-              let pz = <:expr< $lid:z$ >> in
-              <:expr< fun $lid:z$ -> $mk_fun pz$ >> ]
-      | <:ctyp< ( $tup:t$ ) >> ->
-          let e = mk_tuple self t in
-          match ox with
-          [ Some x -> <:expr< $e$ $x$ >>
-          | _ -> e ]
-      | <:ctyp< '$s$ >> ->
-          let id = "_f_" ^ s in
-          match ox with
-          [ Some x -> <:expr< $lid:id$ o $x$ >>
-          | _   -> <:expr< $lid:id$ o >> ]
-      | <:ctyp< $id:i$ >> ->
-          let id1 = "_" ^ lid_of_ident "_" i in
-          let ty = <:ctyp< $lid:id1$ >> in
-          let () = unknown_type id1 i ty in
-          self ox ty
-      | _ ->
-          match ox with
-          [ Some x -> <:expr< $x$ >>
-          | _   -> <:expr< fun _ -> o >> ] ]
-    in self ?obj x ty
+              self ox <:ctyp< unknown >> ]
+        in self x ty
 
-  and expr_of_constructor t (i, acc) =
+      and expr_of_ty' e t = expr_of_ty (Some e) t
+
+      and out_constr_patt s =
+        <:patt< $uid:s$ >>
+        (* <:patt< `$s$ >>
+        <:patt< M.$uid:s$ >> *)
+      and out_constr_expr s =
+        <:expr< $uid:s$ >>
+        (* <:expr< `$s$ >>
+        <:expr< M.$uid:s$ >> *)
+
+    (* method term t =
+        match t with
+        | C(x1, ..., xn) ->
+            let o, x1 = o#t1 x1 in
+            let o, x2 = o#t2 x2 in
+            ...
+            let o, xn = o#tn xn in
+            o, C(x1, ..., xn)
+     *)
+
+      (* s = C, t = t1 and ... and tN *)
+      and match_case_of_constructor s t =
+        chain_tuple
+          (apply_patt (out_constr_patt s))
+          (apply_expr (out_constr_expr s))
+          expr_of_ty (Ast.list_of_ctyp t [])
+
+      and match_case_of_sum_type =
+        fun
+        [ <:ctyp< $t1$ | $t2$ >> ->
+             <:match_case< $match_case_of_sum_type t1$ | $match_case_of_sum_type t2$ >>
+        | <:ctyp< $uid:s$ of $t$ >> -> match_case_of_constructor s t
+        | <:ctyp< $uid:s$ >> -> match_case_of_constructor s <:ctyp<>>
+        | _ -> assert False ]
+
+      and match_case_of_poly_constructor s ts =
+        chain_tuple
+          (fun [ [] -> <:patt< `$s$ >> | [p] -> <:patt< `$s$ $p$ >> | ps -> <:patt< `$s$ ($tup:Ast.paCom_of_list ps$) >> ])
+          (fun [ [] -> <:expr< `$s$ >> | [e] -> <:expr< `$s$ $e$ >> | es -> <:expr< `$s$ ($tup:Ast.exCom_of_list es$) >> ])
+          expr_of_ty ts
+
+      and match_case_of_poly_sum_type =
+        fun
+        [ <:ctyp< $t1$ | $t2$ >> ->
+             <:match_case< $match_case_of_poly_sum_type t1$ | $match_case_of_poly_sum_type t2$ >>
+        | <:ctyp< `$i$ of ($tup:t$) >> -> match_case_of_poly_constructor i (Ast.list_of_ctyp t [])
+        | <:ctyp< `$i$ of $t$ >> -> match_case_of_poly_constructor i [t]
+        | <:ctyp< `$i$ >> -> match_case_of_poly_constructor i []
+        | _ -> assert False ]
+
+      and record_patt_of_type k =
+        fun
+        [ <:ctyp< $lid:s$ : $_$ >> ->
+            <:patt< $lid:s$ = $lid:xsk s k$ >>
+        | <:ctyp< $t1$ ; $t2$ >> ->
+            <:patt< $record_patt_of_type k t1$; $record_patt_of_type k t2$ >>
+        | _ -> assert False ]
+
+      and type_list_of_record_type t ((acc1, acc2) as acc) =
+        match t with
+        [ <:ctyp<>> -> acc
+        | <:ctyp< $lid:s$ : mutable $t$ >> | <:ctyp< $lid:s$ : $t$ >> ->
+              ([s :: acc1], [t :: acc2])
+        | <:ctyp< $t1$ ; $t2$ >> ->
+             type_list_of_record_type t1 (type_list_of_record_type t2 acc)
+        | _ -> assert False ]
+
+      and expr_of_record_type t =
+        let (ls, ts) = type_list_of_record_type t ([], []) in
+        let mkp ps = <:patt< { $list:List.map2 (fun l p -> <:patt< $lid:l$ = $p$ >>) ls ps$ } >> in
+        let mke es = <:expr< { $list:List.map2 (fun l e -> <:rec_binding< $lid:l$ = $e$ >>) ls es$ } >> in
+        chain_tuple mkp mke expr_of_ty ts
+
+      and failure_match_case =
+        <:match_case< $tuplify_patt (pxik 0)$ ->
+                        o#$lid:sf "%s%d_failure" (string_of_mode mode) size$ $tuplify_expr (exik 0)$ >>
+
+      and complete_match_case mk t =
+        match t with
+        [ <:ctyp< $_$ | $_$ >> when size > 1 ->
+            <:match_case< $mk t$ | $failure_match_case$ >>
+        | _ -> mk t ]
+
+      and fun_of_ctyp tyid =
+        fun
+        [ <:ctyp< [ $t$ ] >> ->
+            <:expr< fun [ $complete_match_case match_case_of_sum_type t$ ] >>
+        | <:ctyp< { $t$ } >> ->
+            <:expr< fun [ $expr_of_record_type t$ ] >>
+        | <:ctyp< ( $tup:t$ ) >> -> mk_tuple expr_of_ty t
+        | <:ctyp< $lid:i$ >> when i = tyid -> default_expr
+        | <:ctyp< $_$ $_$ >> | <:ctyp< $_$ -> $_$ >> | <:ctyp< '$_$ >> | <:ctyp< $id:_$ >> as t ->
+            expr_of_ty None t
+        | <:ctyp<>> ->
+            expr_of_ty None <:ctyp< unknown >>
+        | <:ctyp< [ = $t$ ] >> | <:ctyp< [ < $t$ ] >> | <:ctyp< private [ < $t$ ] >> ->
+            <:expr< fun [ $complete_match_case match_case_of_poly_sum_type t$ ] >>
+        | <:ctyp< [ > $t$ ] >> | <:ctyp< private [ > $t$ ] >> ->
+            if size > 1 then
+              <:expr< fun [ $complete_match_case match_case_of_poly_sum_type t$ ] >>
+            else
+              <:expr< fun [ $match_case_of_poly_sum_type t$ | $default_match_case$ ] >>
+        | _ -> assert False ]
+
+      and string_of_type_param t =
+        match t with
+        [ <:ctyp< '$s$ >> | <:ctyp< +'$s$ >> | <:ctyp< -'$s$ >> -> s
+        | _ -> assert False ]
+
+      and method_of_type_decl _ ((id1, _, params, ctyp, priv) as type_decl) acc =
+        let rec lambda acc =
+          fun
+          [ [] -> acc
+          | [ x :: xs ] -> lambda <:expr< fun $lid:"_f_" ^ x$ -> $acc$ >> xs ] in
+        let params' = List.map string_of_type_param params in
+        let funs = lambda (fun_of_ctyp id1 ctyp) params' in
+        let ty = method_type_of_type_decl type_decl in
+        let priv = if priv then Ast.BTrue else Ast.BFalse in
+        <:class_str_item< method $private:priv$ $lid:id1$ : $ty$ = $funs$; $acc$ >>
+
+      and ctyp_name_of_name_params name params = 
+        apply_ctyp <:ctyp< $id:name$ >> params
+
+      and method_type_of_type_decl (_, name, params, ctyp, _) =
+        let t = ctyp_name_of_name_params name params in
+        if mode = Map && not (contains_unknown ctyp) then
+          let out_params = List.map (fun [ <:ctyp< '$i$ >> -> <:ctyp< '$i^"_out"$ >> | _ -> assert False ]) params in
+          let t_out = ctyp_name_of_name_params name out_params in
+          method_type_of_type t t_out params out_params
+        else
+          method_type_of_type t t params []
+
+      and method_type_of_type t_in t_out params_in params_out =
+        let rt t =
+          match mode with
+          [ Fold_map -> <:ctyp< ('self_type * $t$) >>
+          | Fold     -> <:ctyp< 'self_type >>
+          | Map      -> t ]
+        in
+        match (params_in, params_out) with
+        [ ([param_in], [param_out]) ->
+            let alphas = tuplify_type param_in in
+            <:ctyp< ! $param_in$ $param_out$ . ('self_type -> $alphas$ -> $rt param_out$) -> $tuplify_type t_in$ -> $rt t_out$ >>
+        | ([param], []) ->
+            let alphas = tuplify_type param in
+            <:ctyp< ! $param$ . ('self_type -> $alphas$ -> $rt param$) -> $tuplify_type t_in$ -> $rt t_out$ >>
+        | ([], []) ->
+            <:ctyp< $tuplify_type t_in$ -> $rt t_out$ >>
+        | _ ->
+            let i = List.length params_in in
+            failwith (Printf.sprintf
+                  "Camlp4FoldGenerator: FIXME not implemented for types with %d parameters" i) ]
+
+      and class_sig_item_of_type_decl _ ((name, _, _, t, _) as type_decl) acc =
+        let (_ : < .. >) =
+          object (self)
+            inherit Ast.fold as super;
+            method ctyp =
+              fun
+              [ <:ctyp< $lid:id$ >> -> let () = store_if_builtin_type id in self
+              | t -> super#ctyp t ];
+          end#ctyp t
+        in
+        <:class_sig_item<
+           method $lid:name$ : $method_type_of_type_decl type_decl$;
+           $acc$ >>
+
+      and generate_structure tyMap =
+        StringMap.fold method_of_type_decl used_builtins.val
+          (StringMap.fold method_of_type_decl tyMap <:class_str_item<>>)
+
+      and generate_signature tyMap =
+        StringMap.fold class_sig_item_of_type_decl used_builtins.val
+          (StringMap.fold class_sig_item_of_type_decl tyMap <:class_sig_item<>>);
+
+  end;
+
+  value rec tyMap_of_type_decls t acc =
     match t with
-    [ <:ctyp< $t1$ and $t2$ >> ->
-        expr_of_constructor t2 (expr_of_constructor t1 (i, acc))
-    | _ -> (succ i, <:expr< $expr_of_ty ~obj:acc (Some <:expr< $lid:xi i$ >>) t$ >>) ]
-
-(*   and expr_of_constructor_for_fold t (i, acc) =
-    match t with
-    [ <:ctyp< $t1$ and $t2$ >> ->
-        expr_of_constructor_for_fold t2 (expr_of_constructor_for_fold t1 (i, acc))
-    | _ -> (succ i, <:expr< $acc$ $expr_of_ty (Some <:expr< $lid:xi i$ >>) t$ >>) ]
- *)
-  and patt_of_constructor t (i, acc) =
-    match t with
-    [ <:ctyp< $t1$ and $t2$ >> ->
-        patt_of_constructor t2 (patt_of_constructor t1 (i, acc))
-    | _ -> (succ i, <:patt< $acc$ $lid:xi i$ >>) ]
-
-  and match_case_of_sum_type =
-    fun
-    [ <:ctyp< $t1$ | $t2$ >> ->
-         <:match_case< $match_case_of_sum_type t1$ | $match_case_of_sum_type t2$ >>
-    | <:ctyp< $uid:s$ of $t$ >> ->
-         <:match_case< $pat:snd (patt_of_constructor t (0, <:patt< $uid:s$ >>))$
-               -> $snd (expr_of_constructor t (0, <:expr< o >>))$ >>
-    | <:ctyp< $uid:s$ >> ->
-         <:match_case< $uid:s$ -> o >>
-    | _ -> assert False ]
-
-  and match_case_of_poly_sum_type =
-    fun
-    [ <:ctyp< $t1$ | $t2$ >> ->
-         <:match_case< $match_case_of_poly_sum_type t1$ | $match_case_of_poly_sum_type t2$ >>
-    | <:ctyp< `$i$ of $t$ >> ->
-         <:match_case< `$i$ x -> $expr_of_ty ~obj:<:expr< o >> (Some <:expr< x >>) t$ >>
-    | <:ctyp< `$i$ >> ->
-         <:match_case< `$i$ -> o >>
-    | _ -> assert False ]
-
-  and record_patt_of_type =
-    fun
-    [ <:ctyp< $lid:s$ : $_$ >> ->
-        <:patt< $lid:s$ = $lid:xs s$ >>
-    | <:ctyp< $t1$ ; $t2$ >> ->
-        <:patt< $record_patt_of_type t1$; $record_patt_of_type t2$ >>
-    | _ -> assert False ]
-
-  and record_binding_of_type =
-    fun
-    [ <:ctyp< $lid:s$ : mutable $t$ >> | <:ctyp< $lid:s$ : $t$ >> ->
-         <:rec_binding< $lid:s$ = $expr_of_ty (Some <:expr< $lid:xs s$ >>) t$ >>
-    | <:ctyp< $t1$ ; $t2$ >> ->
-         <:rec_binding< $record_binding_of_type t1$; $record_binding_of_type t2$ >>
-    | _ -> assert False ]
-
-  and fun_of_ctyp tyid =
-    fun
-    [ <:ctyp< [ $t$ ] >> ->
-        <:expr< fun [ $match_case_of_sum_type t$ ] >>
-    | <:ctyp< { $t$ } >> ->
-        <:expr< fun { $record_patt_of_type t$ } -> { $record_binding_of_type t$ } >>
-    | <:ctyp< ( $tup:t$ ) >> -> mk_tuple expr_of_ty t
-    | <:ctyp< $_$ $_$ >> | <:ctyp< $_$ -> $_$ >> | <:ctyp< '$_$ >> as t ->
-        expr_of_ty None t
-    | <:ctyp< $lid:i$ >> when i = tyid -> <:expr< fun _ -> o >>
-    | <:ctyp< $id:i$ >> as t ->
-        let id1 = "_" ^ lid_of_ident "_" i in
-        if id1 = tyid then <:expr< fun _ -> o >>
-        else expr_of_ty None t
-    | <:ctyp< [ = $t$ ] >> | <:ctyp< [ < $t$ ] >> | <:ctyp< private [ < $t$ ] >> ->
-        <:expr< fun [ $match_case_of_poly_sum_type t$ ] >>
-    | <:ctyp< [ > $t$ ] >> | <:ctyp< private [ > $t$ ] >> ->
-        <:expr< fun [ $match_case_of_poly_sum_type t$ | x -> x ] >>
-    | _ -> assert False ]
-
-  and string_of_type_param t =
-    match t with
-    [ <:ctyp< '$s$ >> | <:ctyp< +'$s$ >> | <:ctyp< -'$s$ >> -> s
-    | _ -> assert False ]
-
-  and method_of_type_decl ((id1, _, params, ctyp) as type_decl) =
-    let rec lambda acc =
-      fun
-      [ [] -> acc
-      | [ x :: xs ] -> lambda <:expr< fun $lid:"_f_" ^ x$ -> $acc$ >> xs ] in
-    let params' = List.map string_of_type_param params in
-    let funs = lambda (fun_of_ctyp id1 ctyp) params' in
-    let ty = method_type_of_type_decl type_decl in
-    <:class_str_item< method $lid:id1$ : $ty$ = $funs$ >>
-
-  and ctyp_name_of_name_params name params = 
-    apply_ctyp <:ctyp< $id:name$ >> params
-
-  and method_type_of_type_decl (_, name, params, _) =
-    let t = ctyp_name_of_name_params name [] (* FIXME params *) in
-    match List.length params with
-    [ 1 -> <:ctyp< ! 'a . ('self_type -> 'a -> 'self_type) -> $t$ 'a -> 'self_type >>
-    | 0 -> <:ctyp< $t$ -> 'self_type >>
-    | _ -> failwith "FIXME not implemented" ]
-
-  and class_sig_item_of_type_decl _ ((name, _, _, _) as type_decl) acc =
-    <:class_sig_item<
-       method $lid:name$ : $method_type_of_type_decl type_decl$;
-       $acc$ >>
-
-  and tyMap_of_type_decls t acc =
-    match t with
-    [ <:ctyp< $t1$ and $t2$ >> ->
+    [ <:ctyp<>> -> acc
+    | <:ctyp< $t1$ and $t2$ >> ->
         tyMap_of_type_decls t1 (tyMap_of_type_decls t2 acc)
     | Ast.TyDcl _ name tl tk _ ->
-        StringMap.add name (name, <:ident< $lid:name$ >>, tl, tk) acc
-    | _ -> assert False ]
+        StringMap.add name (name, <:ident< $lid:name$ >>, tl, tk, False) acc
+    | _ -> assert False ];
 
-  and fold_types_in_str_item f =
-    fun
-    [ <:str_item< type $t$ >> -> f t
-    | <:str_item< $st1$; $st2$ >> -> fun acc ->
-        fold_types_in_str_item f st1 (fold_types_in_str_item f st2 acc)
-    | <:str_item< module $_$ = struct $st$ end >> |
-      <:str_item< module $_$ ($_$:$_$) = struct $st$ end >> ->
-        fold_types_in_str_item f st
-    | _ -> fun x -> x ]
+  value generate_class_implem mode c tydcl n =
+    let tyMap = tyMap_of_type_decls tydcl StringMap.empty in
+    let module M = Gen(struct value size = n; value mode = mode; end) in
+    let generated = M.generate_structure tyMap in
+    let gen_type =
+      <:ctyp< ! 'a 'b . $M.method_type_of_type <:ctyp< 'a >> <:ctyp< 'b >> [] []$ >>
+    in
+    let failure =
+      if n > 1 then
+        let name = string_of_mode mode in
+        <:class_str_item< method $lid:sf "%s%d_failure" name n$ : $gen_type$ =
+                            fun $M.tuplify_patt (pxik 0)$ ->
+                              failwith $`str:sf "%s%d_failure: default implementation" name n$ >>
+      else <:class_str_item<>>
+    in
+    let gen_type =
+      <:ctyp< ! 'a . $M.method_type_of_type <:ctyp< 'a >> <:ctyp< 'a >> [] []$ >>
+    in
+    let unknown =
+      <:class_str_item< method unknown : $gen_type$ = $M.default_expr$ >>
+    in
+    <:str_item< class $lid:c$ = object (o : 'self_type) $generated$; $failure$; $unknown$ end >>;
 
-  and fold_types_in_sig_item f =
-    fun
-    [ <:sig_item< type $t$ >> -> f t
-    | <:sig_item< $sg1$; $sg2$ >> -> fun acc ->
-        fold_types_in_sig_item f sg1 (fold_types_in_sig_item f sg2 acc)
-    | <:sig_item< module $_$ : sig $sg$ end >> |
-      <:sig_item< module $_$ ($_$:$_$) : sig $sg$ end >> ->
-        fold_types_in_sig_item f sg
-    | _ -> fun x -> x ]
+  value generate_class_interf mode c tydcl n =
+    let tyMap = tyMap_of_type_decls tydcl StringMap.empty in
+    let module M = Gen(struct value size = n; value mode = mode; end) in
+    let generated = M.generate_signature tyMap in
+    let gen_type =
+      <:ctyp< ! 'a 'b . $M.method_type_of_type <:ctyp< 'a >> <:ctyp< 'b >> [] []$ >>
+    in
+    let failure =
+      if n > 1 then
+        let name = string_of_mode mode in
+        <:class_sig_item< method $lid:sf "%s%d_failure" name n$ : $gen_type$ >>
+      else <:class_sig_item<>>
+    in
+    let gen_type =
+      <:ctyp< ! 'a . $M.method_type_of_type <:ctyp< 'a >> <:ctyp< 'a >> [] []$ >>
+    in
+    let unknown =
+      <:class_sig_item< method unknown : $gen_type$ >>
+    in
+    <:sig_item< class $lid:c$ : object ('self_type) $generated$; $failure$; $unknown$ end >>;
 
-  and collect_types_in_str_item str_item =
-    fold_types_in_str_item tyMap_of_type_decls str_item StringMap.empty
+  value processor =
+    let last = ref <:ctyp<>> in
+    let generate_class' generator default c s n =
+      match s with
+      [ "Fold"    -> generator Fold c last.val n
+      | "Map"     -> generator Map c last.val n
+      | "FoldMap" -> generator Fold_map c last.val n
+      | _ -> default ]
+    in
+    let generate_class_from_module_name generator c default m =
+      try Scanf.sscanf m "Camlp4%[^G]Generator" begin fun m' ->
+        try Scanf.sscanf m' "%[^0-9]%d" (generate_class' generator default c)
+        with [ End_of_file | Scanf.Scan_failure _ -> generate_class' generator default c m' 1 ]
+      end with [ End_of_file | Scanf.Scan_failure _ -> default ]
+    in
+    object (self)
+      inherit Ast.map as super;
 
-  and collect_types_in_sig_item sig_item =
-    fold_types_in_sig_item tyMap_of_type_decls sig_item StringMap.empty
+      method str_item st =
+        match st with
+        [ <:str_item< type $t$ >> -> (last.val := t; st)
 
-  and generate_structure tyMap =
-    let f x acc = <:class_str_item< $method_of_type_decl x$; $acc$ >> in
-    let g _ ty = f ty in
-    fold_unknown_types g (StringMap.fold g tyMap <:class_str_item<>>)
+        (* backward compatibility *)
+        | <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateFold.generated >> ->
+              generate_class_implem Fold c last.val 1
+        | <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateMap.generated >> ->
+              generate_class_implem Map c last.val 1
 
-  and generate_signature tyMap =
-    StringMap.fold class_sig_item_of_type_decl tyMap <:class_sig_item<>>
+        (* Handle Camlp4(Fold|Map|FoldMap)\d*Generator *)
+        | <:str_item@_loc< class $lid:c$ = $uid:m$.generated >> ->
+              generate_class_from_module_name generate_class_implem c st m
 
-  and inject_structure_drop_trash generated =
-    (Ast.map_str_item
-      (fun
-       [ <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateFold.generated >> ->
-            (* FIXME <:str_item< class $lid:c$ = object (o) $builtins$; $generated$ end >> *)
-            let x = <:class_str_item< $builtins$; $generated$ >> in
-            <:str_item< class $lid:c$ = object (o : 'self_type) $x$ end >>
-       | s -> s ]))#str_item
-  
-  and inject_signature generated =
-    (Ast.map_sig_item
-      (fun
-       [ <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateFold.generated >> ->
-            <:sig_item< class $lid:c$ : object $generated$ end >>
-       | s -> s ]))#sig_item
+        (* It's a hack to force to recurse on the left to right order *)
+        | <:str_item< $st1$; $st2$ >> ->
+             let st1 = self#str_item st1 in
+              <:str_item< $st1$; $self#str_item st2$ >>
 
-  and process_str_item str_item =
-    let tyMap = collect_types_in_str_item str_item in
-    let generated = generate_structure tyMap in
-    inject_structure_drop_trash generated str_item
+        | st -> super#str_item st ];
 
-  and process_sig_item sig_item =
-    let tyMap = collect_types_in_sig_item sig_item in
-    let generated = generate_signature tyMap in
-    inject_signature generated sig_item;
+      method sig_item sg =
+        match sg with
+        [ <:sig_item< type $t$ >> -> (last.val := t; sg)
 
-  register_str_item_filter process_str_item;
-  register_sig_item_filter process_sig_item;
+        (* backward compatibility *)
+        | <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateFold.generated >> ->
+             generate_class_interf Fold c last.val 1
+        | <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateMap.generated >> ->
+             generate_class_interf Map c last.val 1
+
+        (* Handle Camlp4(Fold|Map|FoldMap)\d*Generator *)
+        | <:sig_item@_loc< class $lid:c$ : $uid:m$.generated >> ->
+            generate_class_from_module_name generate_class_interf c sg m
+
+        (* It's a hack to force to recurse on the left to right order *)
+        | <:sig_item< $sg1$; $sg2$ >> ->
+             let sg1 = self#sig_item sg1 in
+              <:sig_item< $sg1$; $self#sig_item sg2$ >>
+
+        | sg -> super#sig_item sg ];
+    end;
+
+  register_str_item_filter processor#str_item;
+  register_sig_item_filter processor#sig_item;
 
 end;
 
