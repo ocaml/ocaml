@@ -43,8 +43,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   object (o)
     inherit PP_o.printer ~curry_constr:init_curry_constr ~comments () as super;
 
-    value semisep = ";";
-    value andsep : format unit formatter unit = "@]@ @[<2>and@ ";
+    value semisep : sep = ";";
+    value andsep : sep = "@]@ @[<2>and@ ";
     value value_val = "value";
     value value_let = "value";
     value mode = if comments then `comments else `no_comments;
@@ -217,7 +217,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     method str_item f st =
     match st with
-    [ <:str_item< $exp:e$ >> -> pp f "@[<2>%a%s@]" o#expr e semisep
+    [ <:str_item< $exp:e$ >> -> pp f "@[<2>%a%(%)@]" o#expr e semisep
     | st -> super#str_item f st ];
 
     method module_expr f me =

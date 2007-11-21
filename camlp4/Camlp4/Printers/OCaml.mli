@@ -26,6 +26,8 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
             and module Ast     = Syntax.Ast
             and module Gram    = Syntax.Gram;
 
+  type sep = format unit formatter unit;
+
   value list' :
     (formatter -> 'a -> unit) ->
       format 'b formatter unit ->
@@ -64,7 +66,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
 
     value pipe : bool;
     value semi : bool;
-    value semisep : string;
+    value semisep : sep;
     value value_val : string;
     value value_let : string;
     method anti : formatter -> string -> unit;
@@ -92,7 +94,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
       formatter ->
         list (string * Ast.module_type) -> unit;
     method ident : formatter -> Ast.ident -> unit;
-    method numeric : formatter -> string -> unit;
+    method intlike : formatter -> string -> unit;
     method binding : formatter -> Ast.binding -> unit;
     method record_binding : formatter -> Ast.rec_binding -> unit;
     method match_case : formatter -> Ast.match_case -> unit;
@@ -113,14 +115,13 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method rec_flag : formatter -> Ast.meta_bool -> unit;
     method flag : formatter -> Ast.meta_bool -> string -> unit;
     method node : formatter -> 'b -> ('b -> Loc.t) -> unit;
-    method object_dup :
-      formatter -> list (string * Ast.expr) -> unit;
     method patt : formatter -> Ast.patt -> unit;
     method patt1 : formatter -> Ast.patt -> unit;
     method patt2 : formatter -> Ast.patt -> unit;
     method patt3 : formatter -> Ast.patt -> unit;
     method patt4 : formatter -> Ast.patt -> unit;
     method patt5 : formatter -> Ast.patt -> unit;
+    method patt_tycon : formatter -> Ast.patt -> unit;
     method patt_expr_fun_args :
       formatter -> (Ast.patt * Ast.expr) -> unit;
     method patt_class_expr_fun_args :
@@ -132,11 +133,11 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method raise_match_failure : formatter -> Loc.t -> unit;
     method reset : 'a;
     method reset_semi : 'a;
-    method semisep : string;
+    method semisep : sep;
     method set_comments : bool -> 'a;
     method set_curry_constr : bool -> 'a;
     method set_loc_and_comments : 'a;
-    method set_semisep : string -> 'a;
+    method set_semisep : sep -> 'a;
     method simple_ctyp : formatter -> Ast.ctyp -> unit;
     method simple_expr : formatter -> Ast.expr -> unit;
     method simple_patt : formatter -> Ast.patt -> unit;
