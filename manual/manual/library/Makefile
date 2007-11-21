@@ -59,7 +59,10 @@ $(INTF): $(MLIS)
 	-I $(CSLDIR)/otherlibs/str \
 	-I $(CSLDIR)/otherlibs/systhreads \
 	-I $(CSLDIR)/otherlibs/unix \
-	-I +labltk \
+	-I $(CSLDIR)/otherlibs/labltk/support \
+	-I $(CSLDIR)/otherlibs/labltk/lib \
+	-I $(CSLDIR)/otherlibs/labltk/labltk \
+	-I $(CSLDIR)/otherlibs/labltk/camltk \
 	$(MLIS) \
 	-sepfiles \
 	-latextitle "6,subsection*" \
@@ -83,4 +86,3 @@ clean:
 
 .mli.tex: $(FORMAT)
 	$(FORMAT) $< > $*.tex < $<
-

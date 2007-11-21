@@ -57,7 +57,10 @@ html: files
 	-I $(CSLDIR2)/otherlibs/str \
 	-I $(CSLDIR2)/otherlibs/systhreads \
 	-I $(CSLDIR2)/otherlibs/unix \
-	-I +labltk \
+	-I $(CSLDIR2)/otherlibs/labltk/support \
+	-I $(CSLDIR2)/otherlibs/labltk/lib \
+	-I $(CSLDIR2)/otherlibs/labltk/labltk \
+	-I $(CSLDIR2)/otherlibs/labltk/camltk \
 	$(MLIS) ; \
 	cp -f ../style.css libref ; \
 	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff manual.hva -e macros.tex ../manual.tex ;\
