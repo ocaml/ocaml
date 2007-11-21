@@ -465,16 +465,6 @@ module type PLUGIN = sig
     cache:(env -> builder -> string) ->
     (env -> out_channel -> unit) -> unit
 
-  val custom_rule : string ->
-    ?tags:string list ->
-    ?prods:string list ->
-    ?prod:string ->
-    ?deps:string list ->
-    ?dep:string ->
-    ?insert:[`top | `before of string | `after of string | `bottom] ->
-    cache:(env -> builder -> string) ->
-    (env -> cached:bool -> unit) -> unit
-
   (** [copy_rule name ?insert source destination] *)
   val copy_rule : string ->
     ?insert:[`top | `before of string | `after of string | `bottom] ->
