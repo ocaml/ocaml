@@ -52,6 +52,14 @@ let tests2 = [
                 ["toto2/tata"; "tata/titi"]
 ];;
 
+let tests3 = [
+  "%(path:<**/>)lib%(libname:<*> and not <*.*>).a",
+  ["libfoo.a","","foo";
+   "src/bar/libfoo.a","src/bar/","foo";
+   "otherlibs/unix/libunix.a","otherlibs/unix/","unix";
+   "otherlibsliblib/unlibix/libunix.a","otherlibsliblib/unlibix/","unix"],
+  ["bar"; "libbar/foo.a"; "libfoo.b.a"]
+];;
 
 let _ =
   let times = 3 in
@@ -87,5 +95,37 @@ let _ =
         check false no
       done
     end
-    tests2
+    tests2;
+  List.iter begin fun (str, yes, no) ->
+    let resource = Resource.import_pattern str in
+    for k = 1 to times do
+      List.iter begin fun (y, path, libname) ->
+        let resource' = Resource.import y in
+        match Resource.matchit resource resource' with
+        | Some env ->
+            let path' = Resource.subst env "%(path)" in
+            let libname' = Resource.subst env "%(libname)" in
+            if path' = path && libname = libname' then
+              Printf.printf "Resource.matchit %S %S OK\n%!" str y
+            else begin
+              Printf.printf "Resource.matchit %S %S FAIL\n%!" str y;
+              exit 1
+            end
+        | None ->
+            begin
+              Printf.printf "Resource.matchit %S %S = None FAIL\n%!" str y;
+              exit 1
+            end
+      end yes;
+      List.iter begin fun y ->
+        let resource' = Resource.import y in
+        if Resource.matchit resource resource' = None then
+          Printf.printf "Resource.matchit %S %S = None OK\n%!" str y
+        else begin
+          Printf.printf "Resource.matchit %S %S <> None FAIL\n%!" str y;
+          exit 1
+        end
+      end no
+    done
+  end tests3
 ;;
