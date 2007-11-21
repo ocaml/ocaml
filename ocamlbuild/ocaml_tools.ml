@@ -21,8 +21,8 @@ open Ocaml_utils
 let add_suffix s = List.map (fun x -> x -.- s) ;;
 
 let ocamldep_command' tags spec =
-  let tags = tags++"ocaml"++"ocamldep" in
-    S [!Options.ocamldep; T tags; ocaml_ppflags tags;
+  let tags' = tags++"ocaml"++"ocamldep" in
+    S [!Options.ocamldep; T tags'; ocaml_ppflags (tags++"pp:dep");
        spec; A "-modules"]
 
 let menhir_ocamldep_command' tags ~menhir_spec ~ocamldep_spec out =
