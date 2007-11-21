@@ -249,12 +249,14 @@ rule "ocaml: ml -> odoc"
 
 rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (html)"
   ~prod:"%.docdir/index.html"
+  ~stamp:"%.docdir/html.stamp" (* Depend on this file if you want to depends on all files of %.docdir *)
   ~dep:"%.odocl"
   (Ocaml_tools.document_ocaml_project
       ~ocamldoc:Ocaml_tools.ocamldoc_l_dir "%.odocl" "%.docdir/index.html" "%.docdir");;
 
 rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (man)"
   ~prod:"%.docdir/man"
+  ~stamp:"%.docdir/man.stamp" (* Depend on this file if you want to depends on all files of %.docdir/man *)
   ~dep:"%.odocl"
   (Ocaml_tools.document_ocaml_project
       ~ocamldoc:Ocaml_tools.ocamldoc_l_dir "%.odocl" "%.docdir/man" "%.docdir");;
