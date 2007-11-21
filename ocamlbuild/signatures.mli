@@ -249,8 +249,11 @@ module type GLOB = sig
         matching {i glob2}.
       - [a] matches the string consisting of the single letter [a].
       - [{]{i glob1},{i glob2}[}] matches strings matching {i glob1} or {i glob2}.
-      - [*] matches all strings, including the empty one.
-      - [?] matches strings of length 1.
+      - [?] any one-letter string, excluding the slash.
+      - [*] matches all strings not containing a slash, including the empty one.
+      - [**/] the empty string, or any string ending with a slash.
+      - [/**] any string starting with a slash, or the empty string.
+      - [/**/] any string starting and ending with a slash.
       - [\[]{i c1}-{i c2}{i c3}-{i c4}...[\]] matches characters in the range {i c1} to {i c2} inclusive,
         or in the range {i c3} to {i c4} inclusive.  For instance [\[a-fA-F0-9\]] matches hexadecimal digits.
         To match the dash, put it at the end.
