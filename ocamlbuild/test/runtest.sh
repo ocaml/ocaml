@@ -32,3 +32,5 @@ $BANNER Test8
 ./test8/test.sh $@
 $BANNER Test9
 ./test9/test.sh $@
+$BANNER Test Virtual Targets
+./test_virtual/test.sh $@
