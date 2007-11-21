@@ -1,6 +1,7 @@
 module R =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -21,182 +22,338 @@ module R =
  *)
     module Id =
       struct
-        let name = "Camlp4RevisedParserParser"
+        let name = "Camlp4RevisedParser"
+          
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.17 2007/05/10 14:24:22 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.26 2007/07/25 13:06:27 ertai Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         (* Camlp4_config.constructors_arity.val := True; *)
         let _ = Camlp4_config.constructors_arity := false
+          
         let help_sequences () =
           (Printf.eprintf
              "\
 New syntax:
+    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end
+    while e do e1; e2; ... ; en done
+    for v = v1 to/downto v2 do e1; e2; ... ; en done
+Old syntax (still supported):
     do {e1; e2; ... ; en}
     while e do {e1; e2; ... ; en}
     for v = v1 to/downto v2 do {e1; e2; ... ; en}
-Old (no more supported) syntax:
+Very old (no more supported) syntax:
     do e1; e2; ... ; en-1; return en
     while e do e1; e2; ... ; en; done
     for v = v1 to/downto v2 do e1; e2; ... ; en; done
   ";
            flush stderr;
            exit 1)
+          
         let _ =
           Options.add "-help_seq" (Arg.Unit help_sequences)
             "Print explanations about new sequences and exit."
+          
         let _ = Gram.Entry.clear a_CHAR
+          
         let _ = Gram.Entry.clear a_FLOAT
+          
         let _ = Gram.Entry.clear a_INT
+          
         let _ = Gram.Entry.clear a_INT32
+          
         let _ = Gram.Entry.clear a_INT64
+          
         let _ = Gram.Entry.clear a_LABEL
+          
         let _ = Gram.Entry.clear a_LIDENT
+          
         let _ = Gram.Entry.clear a_NATIVEINT
+          
         let _ = Gram.Entry.clear a_OPTLABEL
+          
         let _ = Gram.Entry.clear a_STRING
+          
         let _ = Gram.Entry.clear a_UIDENT
+          
         let _ = Gram.Entry.clear a_ident
+          
         let _ = Gram.Entry.clear amp_ctyp
+          
         let _ = Gram.Entry.clear and_ctyp
+          
         let _ = Gram.Entry.clear match_case
+          
         let _ = Gram.Entry.clear match_case0
+          
         let _ = Gram.Entry.clear match_case_quot
+          
         let _ = Gram.Entry.clear binding
+          
         let _ = Gram.Entry.clear binding_quot
+          
         let _ = Gram.Entry.clear rec_binding_quot
+          
         let _ = Gram.Entry.clear class_declaration
+          
         let _ = Gram.Entry.clear class_description
+          
         let _ = Gram.Entry.clear class_expr
+          
         let _ = Gram.Entry.clear class_expr_quot
+          
         let _ = Gram.Entry.clear class_fun_binding
+          
         let _ = Gram.Entry.clear class_fun_def
+          
         let _ = Gram.Entry.clear class_info_for_class_expr
+          
         let _ = Gram.Entry.clear class_info_for_class_type
+          
         let _ = Gram.Entry.clear class_longident
+          
         let _ = Gram.Entry.clear class_longident_and_param
+          
         let _ = Gram.Entry.clear class_name_and_param
+          
         let _ = Gram.Entry.clear class_sig_item
+          
         let _ = Gram.Entry.clear class_sig_item_quot
+          
         let _ = Gram.Entry.clear class_signature
+          
         let _ = Gram.Entry.clear class_str_item
+          
         let _ = Gram.Entry.clear class_str_item_quot
+          
         let _ = Gram.Entry.clear class_structure
+          
         let _ = Gram.Entry.clear class_type
+          
         let _ = Gram.Entry.clear class_type_declaration
+          
         let _ = Gram.Entry.clear class_type_longident
+          
         let _ = Gram.Entry.clear class_type_longident_and_param
+          
         let _ = Gram.Entry.clear class_type_plus
+          
         let _ = Gram.Entry.clear class_type_quot
+          
         let _ = Gram.Entry.clear comma_ctyp
+          
         let _ = Gram.Entry.clear comma_expr
+          
         let _ = Gram.Entry.clear comma_ipatt
+          
         let _ = Gram.Entry.clear comma_patt
+          
         let _ = Gram.Entry.clear comma_type_parameter
+          
         let _ = Gram.Entry.clear constrain
+          
         let _ = Gram.Entry.clear constructor_arg_list
+          
         let _ = Gram.Entry.clear constructor_declaration
+          
         let _ = Gram.Entry.clear constructor_declarations
+          
         let _ = Gram.Entry.clear ctyp
+          
         let _ = Gram.Entry.clear ctyp_quot
+          
         let _ = Gram.Entry.clear cvalue_binding
+          
         let _ = Gram.Entry.clear direction_flag
+          
         let _ = Gram.Entry.clear dummy
+          
         let _ = Gram.Entry.clear eq_expr
+          
         let _ = Gram.Entry.clear expr
+          
         let _ = Gram.Entry.clear expr_eoi
+          
         let _ = Gram.Entry.clear expr_quot
+          
         let _ = Gram.Entry.clear field_expr
+          
         let _ = Gram.Entry.clear fun_binding
+          
         let _ = Gram.Entry.clear fun_def
+          
         let _ = Gram.Entry.clear ident
+          
         let _ = Gram.Entry.clear ident_quot
+          
         let _ = Gram.Entry.clear implem
+          
         let _ = Gram.Entry.clear interf
+          
         let _ = Gram.Entry.clear ipatt
+          
         let _ = Gram.Entry.clear ipatt_tcon
+          
         let _ = Gram.Entry.clear label
+          
         let _ = Gram.Entry.clear label_declaration
+          
         let _ = Gram.Entry.clear label_expr
+          
         let _ = Gram.Entry.clear label_ipatt
+          
         let _ = Gram.Entry.clear label_longident
+          
         let _ = Gram.Entry.clear label_patt
+          
         let _ = Gram.Entry.clear labeled_ipatt
+          
         let _ = Gram.Entry.clear let_binding
+          
         let _ = Gram.Entry.clear meth_list
+          
         let _ = Gram.Entry.clear module_binding
+          
         let _ = Gram.Entry.clear module_binding0
+          
         let _ = Gram.Entry.clear module_binding_quot
+          
         let _ = Gram.Entry.clear module_declaration
+          
         let _ = Gram.Entry.clear module_expr
+          
         let _ = Gram.Entry.clear module_expr_quot
+          
         let _ = Gram.Entry.clear module_longident
+          
         let _ = Gram.Entry.clear module_longident_with_app
+          
         let _ = Gram.Entry.clear module_rec_declaration
+          
         let _ = Gram.Entry.clear module_type
+          
         let _ = Gram.Entry.clear module_type_quot
+          
         let _ = Gram.Entry.clear more_ctyp
+          
         let _ = Gram.Entry.clear name_tags
+          
         let _ = Gram.Entry.clear opt_as_lident
+          
         let _ = Gram.Entry.clear opt_class_self_patt
+          
         let _ = Gram.Entry.clear opt_class_self_type
+          
         let _ = Gram.Entry.clear opt_comma_ctyp
+          
         let _ = Gram.Entry.clear opt_dot_dot
+          
         let _ = Gram.Entry.clear opt_eq_ctyp
+          
         let _ = Gram.Entry.clear opt_expr
+          
         let _ = Gram.Entry.clear opt_meth_list
+          
         let _ = Gram.Entry.clear opt_mutable
+          
         let _ = Gram.Entry.clear opt_polyt
+          
         let _ = Gram.Entry.clear opt_private
+          
         let _ = Gram.Entry.clear opt_rec
+          
         let _ = Gram.Entry.clear opt_virtual
+          
         let _ = Gram.Entry.clear opt_when_expr
+          
         let _ = Gram.Entry.clear patt
+          
         let _ = Gram.Entry.clear patt_as_patt_opt
+          
         let _ = Gram.Entry.clear patt_eoi
+          
         let _ = Gram.Entry.clear patt_quot
+          
         let _ = Gram.Entry.clear patt_tcon
+          
         let _ = Gram.Entry.clear phrase
+          
         let _ = Gram.Entry.clear poly_type
+          
         let _ = Gram.Entry.clear row_field
+          
         let _ = Gram.Entry.clear sem_expr
+          
         let _ = Gram.Entry.clear sem_expr_for_list
+          
         let _ = Gram.Entry.clear sem_patt
+          
         let _ = Gram.Entry.clear sem_patt_for_list
+          
         let _ = Gram.Entry.clear semi
+          
         let _ = Gram.Entry.clear sequence
+          
         let _ = Gram.Entry.clear sig_item
+          
         let _ = Gram.Entry.clear sig_item_quot
+          
         let _ = Gram.Entry.clear sig_items
+          
         let _ = Gram.Entry.clear star_ctyp
+          
         let _ = Gram.Entry.clear str_item
+          
         let _ = Gram.Entry.clear str_item_quot
+          
         let _ = Gram.Entry.clear str_items
+          
         let _ = Gram.Entry.clear top_phrase
+          
         let _ = Gram.Entry.clear type_constraint
+          
         let _ = Gram.Entry.clear type_declaration
+          
         let _ = Gram.Entry.clear type_ident_and_parameters
+          
         let _ = Gram.Entry.clear type_kind
+          
         let _ = Gram.Entry.clear type_longident
+          
         let _ = Gram.Entry.clear type_longident_and_parameters
+          
         let _ = Gram.Entry.clear type_parameter
+          
         let _ = Gram.Entry.clear type_parameters
+          
         let _ = Gram.Entry.clear typevars
+          
         let _ = Gram.Entry.clear use_file
+          
         let _ = Gram.Entry.clear val_longident
+          
         let _ = Gram.Entry.clear value_let
+          
         let _ = Gram.Entry.clear value_val
+          
         let _ = Gram.Entry.clear with_constr
+          
         let _ = Gram.Entry.clear with_constr_quot
+          
         let neg_string n =
           let len = String.length n
           in
             if (len > 0) && (n.[0] = '-')
             then String.sub n 1 (len - 1)
             else "-" ^ n
+          
         let mkumin _loc f arg =
           match arg with
           | Ast.ExInt (_, n) -> Ast.ExInt (_loc, neg_string n)
@@ -207,6 +364,7 @@ Old (no more supported) syntax:
           | _ ->
               Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdLid (_loc, "~" ^ f)),
                 arg)
+          
         let mklistexp _loc last =
           let rec loop top =
             function
@@ -223,33 +381,41 @@ Old (no more supported) syntax:
                       e1),
                     loop false el)
           in loop true
+          
         let mkassert _loc =
           function
           | Ast.ExId (_, (Ast.IdUid (_, "False"))) -> Ast.ExAsf _loc
           | (* this case takes care about
                                    the special assert false node *)
               e -> Ast.ExAsr (_loc, e)
+          
         let append_eLem el e = el @ [ e ]
+          
         let mk_anti ?(c = "") n s = "\\$" ^ (n ^ (c ^ (":" ^ s)))
+          
         let mksequence _loc =
           function
           | (Ast.ExSem (_, _, _) | Ast.ExAnt (_, _) as e) ->
               Ast.ExSeq (_loc, e)
           | e -> e
+          
         let mksequence' _loc =
           function
           | (Ast.ExSem (_, _, _) as e) -> Ast.ExSeq (_loc, e)
           | e -> e
+          
         let module_type_app mt1 mt2 =
           match (mt1, mt2) with
           | (Ast.MtId (_loc, i1), Ast.MtId (_, i2)) ->
               Ast.MtId (_loc, Ast.IdApp (_loc, i1, i2))
           | _ -> raise Stream.Failure
+          
         let module_type_acc mt1 mt2 =
           match (mt1, mt2) with
           | (Ast.MtId (_loc, i1), Ast.MtId (_, i2)) ->
               Ast.MtId (_loc, Ast.IdAcc (_loc, i1, i2))
           | _ -> raise Stream.Failure
+          
         let bigarray_get _loc arr arg =
           let coords =
             match arg with
@@ -301,6 +467,7 @@ Old (no more supported) syntax:
                           Ast.IdLid (_loc, "get")))),
                     arr),
                   Ast.ExArr (_loc, Ast.exSem_of_list coords))
+          
         let bigarray_set _loc var newval =
           match var with
           | Ast.ExApp (_,
@@ -392,6 +559,7 @@ Old (no more supported) syntax:
                      Ast.ExArr (_loc, coords)),
                    newval))
           | _ -> None
+          
         let test_not_left_brace_nor_do =
           Gram.Entry.of_parser "test_not_left_brace_nor_do"
             (fun strm ->
@@ -399,17 +567,20 @@ Old (no more supported) syntax:
                | Some (((KEYWORD "{" | KEYWORD "do"), _)) ->
                    raise Stream.Failure
                | _ -> ())
+          
         let stopped_at _loc = Some (Loc.move_line 1 _loc)
+          
         (* FIXME be more precise *)
         let symbolchar =
           let list =
-            [ '!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '=';
-              '>'; '?'; '@'; '^'; '|'; '~' ] in
+            [ '$'; '!'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '=';
+              '>'; '?'; '@'; '^'; '|'; '~'; '\\' ] in
           let rec loop s i =
             if i == (String.length s)
             then true
             else if List.mem s.[i] list then loop s (i + 1) else false
           in loop
+          
         let _ =
           let list = [ '!'; '?'; '~' ] in
           let excl = [ "!="; "??" ]
@@ -425,6 +596,7 @@ Old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           let list_ok =
             [ "<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$" ] in
@@ -444,6 +616,7 @@ Old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           let list = [ '@'; '^' ]
           in
@@ -457,6 +630,7 @@ Old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           let list = [ '+'; '-' ]
           in
@@ -471,8 +645,9 @@ Old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
-          let list = [ '*'; '/'; '%' ]
+          let list = [ '*'; '/'; '%'; '\\' ]
           in
             Gram.Entry.setup_parser infixop3
               (fun (__strm : _ Stream.t) ->
@@ -487,6 +662,7 @@ Old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           Gram.Entry.setup_parser infixop4
             (fun (__strm : _ Stream.t) ->
@@ -497,6 +673,49 @@ Old (no more supported) syntax:
                    ->
                    (Stream.junk __strm; Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                | _ -> raise Stream.Failure)
+          
+        let rec infix_kwds_filter (__strm : _ Stream.t) =
+          match Stream.peek __strm with
+          | Some (((KEYWORD "(", _) as tok)) ->
+              (Stream.junk __strm;
+               let xs = __strm in
+               let (__strm : _ Stream.t) = xs
+               in
+                 (match Stream.peek __strm with
+                  | Some
+                      ((KEYWORD
+                          (("mod" | "land" | "lor" | "lxor" | "lsl" | "lsr" |
+                              "asr"
+                            as i)),
+                        _loc))
+                      ->
+                      (Stream.junk __strm;
+                       (match Stream.peek __strm with
+                        | Some ((KEYWORD ")", _)) ->
+                            (Stream.junk __strm;
+                             let xs = __strm
+                             in
+                               Stream.lcons (fun _ -> ((LIDENT i), _loc))
+                                 (Stream.slazy
+                                    (fun _ -> infix_kwds_filter xs)))
+                        | _ -> raise (Stream.Error "")))
+                  | _ ->
+                      let xs = __strm
+                      in
+                        Stream.icons tok
+                          (Stream.slazy (fun _ -> infix_kwds_filter xs))))
+          | Some x ->
+              (Stream.junk __strm;
+               let xs = __strm
+               in
+                 Stream.icons x
+                   (Stream.slazy (fun _ -> infix_kwds_filter xs)))
+          | _ -> raise Stream.Failure
+          
+        let _ =
+          Token.Filter.define_filter (Gram.get_filter ())
+            (fun f strm -> infix_kwds_filter (f strm))
+          
         (* transmit the context *)
         let _ =
           Gram.Entry.setup_parser sem_expr
@@ -519,6 +738,7 @@ Old (no more supported) syntax:
              in
                fun (__strm : _ Stream.t) ->
                  let a = symb __strm in kont a __strm)
+          
         let _ =
           let _ = (a_CHAR : 'a_CHAR Gram.Entry.t)
           and _ = (do_sequence : 'do_sequence Gram.Entry.t)
@@ -700,13 +920,15 @@ Old (no more supported) syntax:
             <:patt< ? $i$ : ($p$ = $e$) >>                             *)
             string_list : 'string_list Gram.Entry.t =
             grammar_entry_create "string_list"
+          and sequence' : 'sequence' Gram.Entry.t =
+            grammar_entry_create "sequence'"
           and infixop6 : 'infixop6 Gram.Entry.t =
             grammar_entry_create "infixop6"
           in
             (Gram.extend (module_expr : 'module_expr Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "top"), None,
                        [ ([ Gram.Skeyword "struct";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -728,7 +950,7 @@ Old (no more supported) syntax:
                              (fun (me : 'module_expr) _ _ (t : 'module_type)
                                 _ (i : 'a_UIDENT) _ _ (_loc : Loc.t) ->
                                 (Ast.MeFun (_loc, i, t, me) : 'module_expr)))) ]);
-                      (None, None,
+                      ((Some "apply"), None,
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (me2 : 'module_expr) (me1 : 'module_expr)
@@ -1083,7 +1305,7 @@ Old (no more supported) syntax:
              Gram.extend (module_type : 'module_type Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "top"), None,
                        [ ([ Gram.Skeyword "functor"; Gram.Skeyword "(";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -1094,7 +1316,7 @@ Old (no more supported) syntax:
                              (fun (mt : 'module_type) _ _ (t : 'module_type)
                                 _ (i : 'a_UIDENT) _ _ (_loc : Loc.t) ->
                                 (Ast.MtFun (_loc, i, t, mt) : 'module_type)))) ]);
-                      (None, None,
+                      ((Some "with"), None,
                        [ ([ Gram.Sself; Gram.Skeyword "with";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -1103,19 +1325,21 @@ Old (no more supported) syntax:
                              (fun (wc : 'with_constr) _ (mt : 'module_type)
                                 (_loc : Loc.t) ->
                                 (Ast.MtWit (_loc, mt, wc) : 'module_type)))) ]);
-                      (None, None,
-                       [ ([ Gram.Sself; Gram.Sself ],
+                      ((Some "apply"), None,
+                       [ ([ Gram.Sself; Gram.Sself;
+                            Gram.Snterm
+                              (Gram.Entry.obj (dummy : 'dummy Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (mt2 : 'module_type) (mt1 : 'module_type)
+                             (fun _ (mt2 : 'module_type) (mt1 : 'module_type)
                                 (_loc : Loc.t) ->
                                 (module_type_app mt1 mt2 : 'module_type)))) ]);
-                      (None, None,
+                      ((Some "."), None,
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (mt2 : 'module_type) _ (mt1 : 'module_type)
                                 (_loc : Loc.t) ->
                                 (module_type_acc mt1 mt2 : 'module_type)))) ]);
-                      (None, None,
+                      ((Some "sig"), None,
                        [ ([ Gram.Skeyword "sig";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2355,28 +2579,38 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (_loc : Loc.t) -> (() : 'dummy)))) ]) ]))
                   ());
+             Gram.extend (sequence' : 'sequence' Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Skeyword ";";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (el : 'sequence) _ (_loc : Loc.t) ->
+                                (fun e -> Ast.ExSem (_loc, e, el) :
+                                  'sequence'))));
+                         ([ Gram.Skeyword ";" ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Loc.t) ->
+                                (fun e -> e : 'sequence'))));
+                         ([],
+                          (Gram.Action.mk
+                             (fun (_loc : Loc.t) -> (fun e -> e : 'sequence')))) ]) ]))
+                  ());
              Gram.extend (sequence : 'sequence Gram.Entry.t)
                ((fun () ->
                    (None,
                     [ (None, None,
                        [ ([ Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (e : 'expr) (_loc : Loc.t) ->
-                                (e : 'sequence))));
-                         ([ Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
-                            Gram.Skeyword ";" ],
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence' : 'sequence' Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (e : 'expr) (_loc : Loc.t) ->
-                                (e : 'sequence))));
-                         ([ Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
-                            Gram.Skeyword ";"; Gram.Sself ],
-                          (Gram.Action.mk
-                             (fun (el : 'sequence) _ (e : 'expr)
-                                (_loc : Loc.t) ->
-                                (Ast.ExSem (_loc, e, el) : 'sequence))));
+                             (fun (k : 'sequence') (e : 'expr) (_loc : Loc.t)
+                                -> (k e : 'sequence))));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
@@ -2391,6 +2625,39 @@ Old (no more supported) syntax:
                                        mk_anti ~c: "expr;" n s) :
                                       'sequence)
                                 | _ -> assert false)));
+                         ([ Gram.Skeyword "let"; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_binding0 :
+                                   'module_binding0 Gram.Entry.t));
+                            Gram.Skeyword ";"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (el : 'sequence) _ (mb : 'module_binding0)
+                                (m : 'a_UIDENT) _ _ (_loc : Loc.t) ->
+                                (Ast.ExLmd (_loc, m, mb, mksequence _loc el) :
+                                  'sequence))));
+                         ([ Gram.Skeyword "let"; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_binding0 :
+                                   'module_binding0 Gram.Entry.t));
+                            Gram.Skeyword "in";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence' : 'sequence' Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (k : 'sequence') (e : 'expr) _
+                                (mb : 'module_binding0) (m : 'a_UIDENT) _ _
+                                (_loc : Loc.t) ->
+                                (k (Ast.ExLmd (_loc, m, mb, e)) : 'sequence))));
                          ([ Gram.Skeyword "let";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2398,21 +2665,30 @@ Old (no more supported) syntax:
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (binding : 'binding Gram.Entry.t));
-                            Gram.srules sequence
-                              [ ([ Gram.Skeyword ";" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t) (_loc : Loc.t) ->
-                                       (Token.extract_string x : 'e__3))));
-                                ([ Gram.Skeyword "in" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t) (_loc : Loc.t) ->
-                                       (Token.extract_string x : 'e__3)))) ];
-                            Gram.Sself ],
+                            Gram.Skeyword ";"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (el : 'sequence) _ (bi : 'binding)
                                 (rf : 'opt_rec) _ (_loc : Loc.t) ->
                                 (Ast.ExLet (_loc, rf, bi, mksequence _loc el) :
-                                  'sequence)))) ]) ]))
+                                  'sequence))));
+                         ([ Gram.Skeyword "let";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_rec : 'opt_rec Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (binding : 'binding Gram.Entry.t));
+                            Gram.Skeyword "in";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence' : 'sequence' Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (k : 'sequence') (e : 'expr) _
+                                (bi : 'binding) (rf : 'opt_rec) _
+                                (_loc : Loc.t) ->
+                                (k (Ast.ExLet (_loc, rf, bi, e)) : 'sequence)))) ]) ]))
                   ());
              Gram.extend (binding : 'binding Gram.Entry.t)
                ((fun () ->
@@ -2792,17 +3068,17 @@ Old (no more supported) syntax:
              Gram.extend (patt : 'patt Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
+                    [ ((Some "|"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Skeyword "|"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'patt) _ (p1 : 'patt) (_loc : Loc.t)
                                 -> (Ast.PaOrp (_loc, p1, p2) : 'patt)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.NonA),
+                      ((Some ".."), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Sself; Gram.Skeyword ".."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'patt) _ (p1 : 'patt) (_loc : Loc.t)
                                 -> (Ast.PaRng (_loc, p1, p2) : 'patt)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "apply"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'patt) (p1 : 'patt) (_loc : Loc.t) ->
@@ -3139,6 +3415,18 @@ Old (no more supported) syntax:
                                 (Ast.PaId (_loc, i) : 'patt))));
                          ([ Gram.Stoken
                               (((function
+                                 | ANTIQUOT ("`bool", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"`bool\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("`bool" as n)), s) ->
+                                    (Ast.PaAnt (_loc, mk_anti n s) : 'patt)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
                                  | ANTIQUOT ("tup", _) -> true
                                  | _ -> false),
                                 "ANTIQUOT (\"tup\", _)")) ],
@@ -3379,6 +3667,18 @@ Old (no more supported) syntax:
                                     (Quotation.expand _loc x Quotation.
                                        DynAst.patt_tag :
                                       'ipatt)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("`bool", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"`bool\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("`bool" as n)), s) ->
+                                    (Ast.PaAnt (_loc, mk_anti n s) : 'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
@@ -3751,12 +4051,12 @@ Old (no more supported) syntax:
              Gram.extend (ctyp : 'ctyp Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
+                    [ ((Some "=="), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Skeyword "=="; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) _ (t1 : 'ctyp) (_loc : Loc.t)
                                 -> (Ast.TyMan (_loc, t1, t2) : 'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.NonA),
+                      ((Some "private"), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Skeyword "private";
                             Gram.Snterml
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t),
@@ -3769,7 +4069,7 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) _ (t1 : 'ctyp) (_loc : Loc.t)
                                 -> (Ast.TyAli (_loc, t1, t2) : 'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "forall"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Skeyword "!";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -3818,7 +4118,7 @@ Old (no more supported) syntax:
                              (fun (t : 'ctyp) _ (i : 'a_LIDENT) _
                                 (_loc : Loc.t) ->
                                 (Ast.TyLab (_loc, i, t) : 'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "apply"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) (t1 : 'ctyp) (_loc : Loc.t) ->
@@ -3827,7 +4127,7 @@ Old (no more supported) syntax:
                                    try Ast.TyId (_loc, Ast.ident_of_ctyp t)
                                    with | Invalid_argument _ -> t :
                                   'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "."), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) _ (t1 : 'ctyp) (_loc : Loc.t)
@@ -5018,9 +5318,9 @@ Old (no more supported) syntax:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (cst : 'class_str_item)
-                                          (_loc : Loc.t) -> (cst : 'e__4)))) ]) ],
+                                          (_loc : Loc.t) -> (cst : 'e__3)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__4 list) (_loc : Loc.t) ->
+                             (fun (l : 'e__3 list) (_loc : Loc.t) ->
                                 (Ast.crSem_of_list l : 'class_structure))));
                          ([ Gram.Stoken
                               (((function
@@ -5101,7 +5401,10 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (se : 'expr) _ (_loc : Loc.t) ->
                                 (Ast.CrIni (_loc, se) : 'class_str_item))));
-                         ([ Gram.Skeyword "type";
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (type_constraint :
+                                   'type_constraint Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
                             Gram.Skeyword "=";
@@ -5461,9 +5764,9 @@ Old (no more supported) syntax:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (csg : 'class_sig_item)
-                                          (_loc : Loc.t) -> (csg : 'e__5)))) ]) ],
+                                          (_loc : Loc.t) -> (csg : 'e__4)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__5 list) (_loc : Loc.t) ->
+                             (fun (l : 'e__4 list) (_loc : Loc.t) ->
                                 (Ast.cgSem_of_list l : 'class_signature))));
                          ([ Gram.Stoken
                               (((function
@@ -5756,8 +6059,9 @@ Old (no more supported) syntax:
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj (label : 'label Gram.Entry.t));
                             Gram.Skeyword "=";
-                            Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                            Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top") ],
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (l : 'label) (_loc : Loc.t)
                                 ->
@@ -6474,9 +6778,9 @@ Old (no more supported) syntax:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (sg : 'sig_item) (_loc : Loc.t)
-                                          -> (sg : 'e__6)))) ]) ],
+                                          -> (sg : 'e__5)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__6 list) (_loc : Loc.t) ->
+                             (fun (l : 'e__5 list) (_loc : Loc.t) ->
                                 (Ast.sgSem_of_list l : 'sig_items))));
                          ([ Gram.Stoken
                               (((function
@@ -6570,9 +6874,9 @@ Old (no more supported) syntax:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (st : 'str_item) (_loc : Loc.t)
-                                          -> (st : 'e__7)))) ]) ],
+                                          -> (st : 'e__6)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__7 list) (_loc : Loc.t) ->
+                             (fun (l : 'e__6 list) (_loc : Loc.t) ->
                                 (Ast.stSem_of_list l : 'str_items))));
                          ([ Gram.Stoken
                               (((function
@@ -7609,19 +7913,19 @@ Old (no more supported) syntax:
              Gram.extend (ident_quot : 'ident_quot Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "apply"), None,
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'ident_quot) (i : 'ident_quot)
                                 (_loc : Loc.t) ->
                                 (Ast.IdApp (_loc, i, j) : 'ident_quot)))) ]);
-                      (None, None,
+                      ((Some "."), None,
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'ident_quot) _ (i : 'ident_quot)
                                 (_loc : Loc.t) ->
                                 (Ast.IdAcc (_loc, i, j) : 'ident_quot)))) ]);
-                      (None, None,
+                      ((Some "simple"), None,
                        [ ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (i : 'ident_quot) _ (_loc : Loc.t) ->
@@ -7906,12 +8210,17 @@ Old (no more supported) syntax:
                                 | EOI -> (x : 'expr_eoi)
                                 | _ -> assert false))) ]) ]))
                   ()))
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module Camlp4QuotationCommon =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -7932,35 +8241,49 @@ module Camlp4QuotationCommon =
     module Id =
       struct
         let name = "Camlp4QuotationCommon"
+          
         let version =
-          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.5 2007/05/10 14:24:22 pouillar Exp $"
+          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.6 2007/06/05 13:41:06 pouillar Exp $"
+          
       end
+      
     module Make
       (Syntax : Sig.Camlp4Syntax)
-      (TheAntiquotSyntax :
-        Sig.AntiquotSyntax with module Ast = Sig.Camlp4AstToAst(Syntax.Ast)) =
+      (TheAntiquotSyntax : Sig.Parser(Syntax.Ast).SIMPLE) =
       struct
         open Sig
+          
         include Syntax
+          
         (* Be careful an AntiquotSyntax module appears here *)
         module MetaLocHere = Ast.Meta.MetaLoc
+          
         module MetaLoc =
           struct
             module Ast = Ast
+              
             let loc_name = ref None
+              
             let meta_loc_expr _loc loc =
               match !loc_name with
               | None -> Ast.ExId (_loc, Ast.IdLid (_loc, !Loc.name))
               | Some "here" -> MetaLocHere.meta_loc_expr _loc loc
               | Some x -> Ast.ExId (_loc, Ast.IdLid (_loc, x))
+              
             let meta_loc_patt _loc _ = Ast.PaAny _loc
+              
           end
+          
         module MetaAst = Ast.Meta.Make(MetaLoc)
+          
         module ME = MetaAst.Expr
+          
         module MP = MetaAst.Patt
+          
         let is_antiquot s =
           let len = String.length s
           in (len > 2) && ((s.[0] = '\\') && (s.[1] = '$'))
+          
         let handle_antiquot_in_string s term parse loc decorate =
           if is_antiquot s
           then
@@ -7970,9 +8293,11 @@ module Camlp4QuotationCommon =
                String.sub s (pos + 1) (((String.length s) - pos) - 1)
              in decorate name (parse loc code))
           else term
+          
         let antiquot_expander =
           object
             inherit Ast.map as super
+              
             method patt =
               function
               | (Ast.PaAnt (_loc, s) | Ast.PaStr (_loc, s) as p) ->
@@ -8120,6 +8445,7 @@ module Camlp4QuotationCommon =
                                p)
                          | _ -> p)
               | p -> super#patt p
+              
             method expr =
               function
               | (Ast.ExAnt (_loc, s) | Ast.ExStr (_loc, s) as e) ->
@@ -8464,7 +8790,9 @@ module Camlp4QuotationCommon =
                                e)
                          | _ -> e)
               | e -> super#expr e
+              
           end
+          
         let add_quotation name entry mexpr mpatt =
           let entry_eoi = Gram.Entry.mk (Gram.Entry.name entry) in
           let parse_quot_string entry loc s =
@@ -8523,54 +8851,75 @@ module Camlp4QuotationCommon =
              Quotation.add name Quotation.DynAst.expr_tag expand_expr;
              Quotation.add name Quotation.DynAst.patt_tag expand_patt;
              Quotation.add name Quotation.DynAst.str_item_tag expand_str_item)
+          
         let _ =
           add_quotation "sig_item" sig_item_quot ME.meta_sig_item MP.
             meta_sig_item
+          
         let _ =
           add_quotation "str_item" str_item_quot ME.meta_str_item MP.
             meta_str_item
+          
         let _ = add_quotation "ctyp" ctyp_quot ME.meta_ctyp MP.meta_ctyp
+          
         let _ = add_quotation "patt" patt_quot ME.meta_patt MP.meta_patt
+          
         let _ = add_quotation "expr" expr_quot ME.meta_expr MP.meta_expr
+          
         let _ =
           add_quotation "module_type" module_type_quot ME.meta_module_type
             MP.meta_module_type
+          
         let _ =
           add_quotation "module_expr" module_expr_quot ME.meta_module_expr
             MP.meta_module_expr
+          
         let _ =
           add_quotation "class_type" class_type_quot ME.meta_class_type MP.
             meta_class_type
+          
         let _ =
           add_quotation "class_expr" class_expr_quot ME.meta_class_expr MP.
             meta_class_expr
+          
         let _ =
           add_quotation "class_sig_item" class_sig_item_quot ME.
             meta_class_sig_item MP.meta_class_sig_item
+          
         let _ =
           add_quotation "class_str_item" class_str_item_quot ME.
             meta_class_str_item MP.meta_class_str_item
+          
         let _ =
           add_quotation "with_constr" with_constr_quot ME.meta_with_constr
             MP.meta_with_constr
+          
         let _ =
           add_quotation "binding" binding_quot ME.meta_binding MP.
             meta_binding
+          
         let _ =
           add_quotation "rec_binding" rec_binding_quot ME.meta_rec_binding
             MP.meta_rec_binding
+          
         let _ =
           add_quotation "match_case" match_case_quot ME.meta_match_case MP.
             meta_match_case
+          
         let _ =
           add_quotation "module_binding" module_binding_quot ME.
             meta_module_binding MP.meta_module_binding
+          
         let _ = add_quotation "ident" ident_quot ME.meta_ident MP.meta_ident
+          
       end
+      
   end
+  
 module Q =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -8592,19 +8941,28 @@ module Q =
     module Id =
       struct
         let name = "Camlp4QuotationExpander"
+          
         let version =
           "$Id: Camlp4QuotationExpander.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         module M = Camlp4QuotationCommon.Make(Syntax)(Syntax.AntiquotSyntax)
+          
         include M
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module Rp =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -8626,33 +8984,50 @@ module Rp =
     module Id : Sig.Id =
       struct
         let name = "Camlp4OCamlRevisedParserParser"
+          
         let version =
-          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.2 2007/04/05 18:06:36 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.3 2007/05/16 12:48:13 pouillar Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         type spat_comp =
           | SpTrm of Loc.t * Ast.patt * Ast.expr option
-          | SpNtr of Loc.t * Ast.patt * Ast.expr | SpStr of Loc.t * Ast.patt
+          | SpNtr of Loc.t * Ast.patt * Ast.expr
+          | SpStr of Loc.t * Ast.patt
+        
         type sexp_comp =
           | SeTrm of Loc.t * Ast.expr | SeNtr of Loc.t * Ast.expr
+        
         let stream_expr = Gram.Entry.mk "stream_expr"
+          
         let stream_begin = Gram.Entry.mk "stream_begin"
+          
         let stream_end = Gram.Entry.mk "stream_end"
+          
         let stream_quot = Gram.Entry.mk "stream_quot"
+          
         let parser_case = Gram.Entry.mk "parser_case"
+          
         let parser_case_list = Gram.Entry.mk "parser_case_list"
+          
         let strm_n = "__strm"
+          
         let peek_fun _loc =
           Ast.ExId (_loc,
             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
               Ast.IdLid (_loc, "peek")))
+          
         let junk_fun _loc =
           Ast.ExId (_loc,
             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
               Ast.IdLid (_loc, "junk")))
+          
         (* Parsers. *)
         (* In syntax generated, many cases are optimisations. *)
         let rec pattern_eq_expression p e =
@@ -8664,11 +9039,13 @@ module Rp =
           | (Ast.PaApp (_, p1, p2), Ast.ExApp (_, e1, e2)) ->
               (pattern_eq_expression p1 e1) && (pattern_eq_expression p2 e2)
           | _ -> false
+          
         let is_raise e =
           match e with
           | Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, "raise")))), _) ->
               true
           | _ -> false
+          
         let is_raise_failure e =
           match e with
           | Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, "raise")))),
@@ -8677,6 +9054,7 @@ module Rp =
                     (Ast.IdUid (_, "Failure")))))))
               -> true
           | _ -> false
+          
         let rec handle_failure e =
           match e with
           | Ast.ExTry (_, _,
@@ -8724,6 +9102,7 @@ module Rp =
           | Ast.ExId (_, (Ast.IdLid (_, _))) -> false
           | Ast.ExApp (_, x, _) -> is_constr_apply x
           | _ -> false
+          
         let rec subst v e =
           let _loc = Ast.loc_of_expr e
           in
@@ -8752,6 +9131,7 @@ module Rp =
               Ast.BiEq (_loc, Ast.PaId (_loc, Ast.IdLid (_loc, v')),
                 if v = v' then e else subst v e)
           | _ -> raise Not_found
+          
         let stream_pattern_component skont ckont =
           function
           | SpTrm (_loc, p, None) ->
@@ -8881,6 +9261,7 @@ module Rp =
                      Ast.BiEq (_loc, p,
                        Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
                      skont))
+          
         let rec stream_pattern _loc epo e ekont =
           function
           | [] ->
@@ -8913,6 +9294,7 @@ module Rp =
                 in stream_pattern _loc epo e ekont spcl in
               let ckont = ekont err
               in stream_pattern_component skont ckont spc
+          
         let stream_patterns_term _loc ekont tspel =
           let pel =
             List.fold_right
@@ -8955,12 +9337,14 @@ module Rp =
                 Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
               Ast.McOr (_loc, pel,
                 Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, ekont ())))
+          
         let rec group_terms =
           function
           | ((SpTrm (_loc, p, w), None) :: spcl, epo, e) :: spel ->
               let (tspel, spel) = group_terms spel
               in (((p, w, _loc, spcl, epo, e) :: tspel), spel)
           | spel -> ([], spel)
+          
         let rec parser_cases _loc =
           function
           | [] ->
@@ -8976,6 +9360,7 @@ module Rp =
                | (tspel, spel) ->
                    stream_patterns_term _loc
                      (fun _ -> parser_cases _loc spel) tspel)
+          
         let cparser _loc bpo pc =
           let e = parser_cases _loc pc in
           let e =
@@ -8998,6 +9383,7 @@ module Rp =
                     Ast.IdLid (_loc, "t"))),
                 Ast.TyAny _loc))
           in Ast.ExFun (_loc, Ast.McArr (_loc, p, Ast.ExNil _loc, e))
+          
         let cparser_match _loc me bpo pc =
           let pc = parser_cases _loc pc in
           let e =
@@ -9031,6 +9417,7 @@ module Rp =
                         Ast.TyAny _loc)),
                     me),
                   e)
+          
         (* streams *)
         let rec not_computing =
           function
@@ -9047,6 +9434,7 @@ module Rp =
           | Ast.ExApp (_, x, y) ->
               (is_cons_apply_not_computing x) && (not_computing y)
           | _ -> false
+          
         let slazy _loc e =
           match e with
           | Ast.ExApp (_, f, (Ast.ExId (_, (Ast.IdUid (_, "()"))))) ->
@@ -9058,6 +9446,7 @@ module Rp =
           | _ ->
               Ast.ExFun (_loc,
                 Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, e))
+          
         let rec cstream gloc =
           function
           | [] ->
@@ -9125,6 +9514,7 @@ module Rp =
                         Ast.IdLid (_loc, "lapp"))),
                     slazy _loc e),
                   cstream gloc secl)
+          
         (* Syntax extensions in Revised Syntax grammar *)
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
@@ -9316,9 +9706,9 @@ module Rp =
                                              'stream_expr Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun (e : 'stream_expr) _
-                                          (_loc : Loc.t) -> (e : 'e__8)))) ]) ],
+                                          (_loc : Loc.t) -> (e : 'e__7)))) ]) ],
                           (Gram.Action.mk
-                             (fun (eo : 'e__8 option)
+                             (fun (eo : 'e__7 option)
                                 (spc : 'stream_patt_comp) (_loc : Loc.t) ->
                                 ((spc, eo) : 'stream_patt_comp_err)))) ]) ]))
                   ());
@@ -9388,9 +9778,9 @@ module Rp =
                                              'stream_expr Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun (e : 'stream_expr) _
-                                          (_loc : Loc.t) -> (e : 'e__9)))) ]) ],
+                                          (_loc : Loc.t) -> (e : 'e__8)))) ]) ],
                           (Gram.Action.mk
-                             (fun (eo : 'e__9 option) (p : 'patt) _
+                             (fun (eo : 'e__8 option) (p : 'patt) _
                                 (_loc : Loc.t) ->
                                 (SpTrm (_loc, p, eo) : 'stream_patt_comp)))) ]) ]))
                   ());
@@ -9487,28 +9877,17 @@ module Rp =
                              (fun (e : 'stream_expr) _ (_loc : Loc.t) ->
                                 (SeTrm (_loc, e) : 'stream_expr_comp)))) ]) ]))
                   ()))
+          
       end
-    (*
-    Gram.Entry.clear stream_expr;
-    Gram.Entry.clear stream_expr;
-    stream_expr:
-      [ [ e = expr LEVEL "stream_expr" -> e ] ]
-    ;
-    stream_begin:
-      [ [ "[<" -> () ] ]
-    ;
-    stream_end:
-      [ [ ">]" -> () ] ]
-    ;
-    stream_quot:
-      [ [ "'" -> () ] ]
-    ;
-    *)
+      
     module M = Register.OCamlSyntaxExtension(Id)(Make)
+      
   end
+  
 module G =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -9530,29 +9909,48 @@ module G =
     module Id =
       struct
         let name = "Camlp4GrammarParser"
+          
         let version =
           "$Id: Camlp4GrammarParser.ml,v 1.1.4.4 2007/04/20 14:57:28 pouillar Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         module MetaLoc = Ast.Meta.MetaGhostLoc
+          
         module MetaAst = Ast.Meta.Make(MetaLoc)
+          
         module PP = Camlp4.Printers.OCaml.Make(Syntax)
+          
         let pp = new PP.printer ~comments: false ()
+          
         let string_of_patt patt =
           let buf = Buffer.create 42 in
           let () = Format.bprintf buf "%a@?" pp#patt patt in
           let str = Buffer.contents buf
           in if str = "" then assert false else str
+          
         let split_ext = ref false
+          
         type loc = Loc.t
+        
         type 'e name = { expr : 'e; tvar : string; loc : loc }
+        
         type styp =
-          | STlid of loc * string | STapp of loc * styp * styp
-          | STquo of loc * string | STself of loc * string | STtok of loc
-          | STstring_tok of loc | STany of loc | STtyp of Ast.ctyp
+          | STlid of loc * string
+          | STapp of loc * styp * styp
+          | STquo of loc * string
+          | STself of loc * string
+          | STtok of loc
+          | STstring_tok of loc
+          | STany of loc
+          | STtyp of Ast.ctyp
+        
         type (** The first is the match function expr,
              the second is the string description.
              The description string will be used for
@@ -9561,10 +9959,12 @@ module G =
           ('e, 'p) text =
           | TXmeta of loc * string * (('e, 'p) text) list * 'e * styp
           | TXlist of loc * bool * ('e, 'p) symbol * (('e, 'p) symbol) option
-          | TXnext of loc | TXnterm of loc * 'e name * string option
+          | TXnext of loc
+          | TXnterm of loc * 'e name * string option
           | TXopt of loc * ('e, 'p) text
           | TXrules of loc * (((('e, 'p) text) list) * 'e) list
-          | TXself of loc | TXkwd of loc * string
+          | TXself of loc
+          | TXkwd of loc * string
           | TXtok of loc * 'e * string
           and ('e, 'p) entry =
           { name : 'e name; pos : 'e option; levels : (('e, 'p) level) list
@@ -9580,9 +9980,13 @@ module G =
           { used : string list; text : ('e, 'p) text; styp : styp;
             pattern : 'p option
           }
+        
         type used = | Unused | UsedScanned | UsedNotScanned
+        
         let _loc = Loc.ghost
+          
         let gm = "Camlp4Grammar__"
+          
         let mark_used modif ht n =
           try
             let rll = Hashtbl.find_all ht n
@@ -9594,8 +9998,10 @@ module G =
                    else ())
                 rll
           with | Not_found -> ()
+          
         let rec mark_symbol modif ht symb =
           List.iter (fun e -> mark_used modif ht e) symb.used
+          
         let check_use nl el =
           let ht = Hashtbl.create 301 in
           let modif = ref false
@@ -9644,12 +10050,15 @@ module G =
                       ("Unused local entry \"" ^ (s ^ "\""))
                   else ())
                ht)
+          
         let new_type_var =
           let i = ref 0 in fun () -> (incr i; "e__" ^ (string_of_int !i))
+          
         let used_of_rule_list rl =
           List.fold_left
             (fun nl r -> List.fold_left (fun nl s -> s.used @ nl) nl r.prod)
             [] rl
+          
         let retype_rule_list_without_patterns _loc rl =
           try
             (* ...; [ "foo" ]; ... ==> ...; (x = [ "foo" ] -> Token.extract_string x); ... *)
@@ -9691,7 +10100,9 @@ module G =
                | _ -> raise Exit)
               rl
           with | Exit -> rl
+          
         let meta_action = ref false
+          
         let mklistexp _loc =
           let rec loop top =
             function
@@ -9705,6 +10116,7 @@ module G =
                       e1),
                     loop false el)
           in loop true
+          
         let mklistpat _loc =
           let rec loop top =
             function
@@ -9718,10 +10130,12 @@ module G =
                       p1),
                     loop false pl)
           in loop true
+          
         let rec expr_fa al =
           function
           | Ast.ExApp (_, f, a) -> expr_fa (a :: al) f
           | f -> (f, al)
+          
         let rec make_ctyp styp tvar =
           match styp with
           | STlid (_loc, s) -> Ast.TyId (_loc, Ast.IdLid (_loc, s))
@@ -9744,6 +10158,7 @@ module G =
                   Ast.IdLid (_loc, "t")))
           | STstring_tok _loc -> Ast.TyId (_loc, Ast.IdLid (_loc, "string"))
           | STtyp t -> t
+          
         let make_ctyp_patt styp tvar patt =
           let styp =
             match styp with | STstring_tok _loc -> STtok _loc | t -> t
@@ -9752,10 +10167,12 @@ module G =
             | Ast.TyAny _ -> patt
             | t ->
                 let _loc = Ast.loc_of_patt patt in Ast.PaTyc (_loc, patt, t)
+          
         let make_ctyp_expr styp tvar expr =
           match make_ctyp styp tvar with
           | Ast.TyAny _ -> expr
           | t -> let _loc = Ast.loc_of_expr expr in Ast.ExTyc (_loc, expr, t)
+          
         let text_of_action _loc psl rtvar act tvar =
           let locid = Ast.PaId (_loc, Ast.IdLid (_loc, !Loc.name)) in
           let act =
@@ -9881,12 +10298,14 @@ module G =
                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Action"),
                     Ast.IdLid (_loc, "mk")))),
               txt)
+          
         let srules loc t rl tvar =
           List.map
             (fun r ->
                let sl = List.map (fun s -> s.text) r.prod in
                let ac = text_of_action loc r.prod t r.action tvar in (sl, ac))
             rl
+          
         let rec make_expr entry tvar =
           function
           | TXmeta (_loc, n, tl, e, t) ->
@@ -10051,6 +10470,7 @@ module G =
                      Ast.ExTup (_loc, Ast.ExCom (_loc, sl, ac))),
                    txt))
             (Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) rl
+          
         let expr_of_delete_rule _loc n sl =
           let sl =
             List.fold_right
@@ -10061,20 +10481,26 @@ module G =
                    e))
               sl (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
           in ((n.expr), sl)
+          
         let rec tvar_of_ident =
           function
           | Ast.IdLid (_, x) | Ast.IdUid (_, x) -> x
           | Ast.IdAcc (_, (Ast.IdUid (_, x)), xs) ->
               x ^ ("__" ^ (tvar_of_ident xs))
           | _ -> failwith "internal error in the Grammar extension"
+          
         let mk_name _loc i =
           { expr = Ast.ExId (_loc, i); tvar = tvar_of_ident i; loc = _loc; }
+          
         let slist loc min sep symb = TXlist (loc, min, symb, sep)
+          
         let sstoken _loc s =
           let n = mk_name _loc (Ast.IdLid (_loc, "a_" ^ s))
           in TXnterm (_loc, n, None)
+          
         let mk_symbol p s t =
           { used = []; text = s; styp = t; pattern = Some p; }
+          
         let sslist _loc min sep s =
           let rl =
             let r1 =
@@ -10104,6 +10530,7 @@ module G =
           let text = TXrules (_loc, srules _loc "a_list" rl "") in
           let styp = STquo (_loc, "a_list")
           in { used = used; text = text; styp = styp; pattern = None; }
+          
         let ssopt _loc s =
           let rl =
             let r1 =
@@ -10166,6 +10593,7 @@ module G =
           let text = TXrules (_loc, srules _loc "a_opt" rl "") in
           let styp = STquo (_loc, "a_opt")
           in { used = used; text = text; styp = styp; pattern = None; }
+          
         let text_of_entry _loc e =
           let ent =
             let x = e.name in
@@ -10215,6 +10643,7 @@ module G =
                  in txt)
               e.levels (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
           in (ent, pos, txt)
+          
         let let_in_of_extend _loc gram gl el args =
           match gl with
           | None -> args
@@ -10308,14 +10737,19 @@ module G =
                           xs
                           (Ast.BiEq (_loc, Ast.PaAny _loc, expr_of_name x))
                       in Ast.ExLet (_loc, Ast.BFalse, globals, e)))
+          
         class subst gmod =
           object inherit Ast.map as super
+                   
             method ident =
               function
               | Ast.IdUid (_, x) when x = gm -> gmod
               | x -> super#ident x
+              
           end
+          
         let subst_gmod ast gmod = (new subst gmod)#expr ast
+          
         let text_of_functorial_extend _loc gmod gram gl el =
           let args =
             let el =
@@ -10360,15 +10794,19 @@ module G =
                     List.fold_left (fun acc x -> Ast.ExSem (_loc, acc, x)) e
                       el)
           in subst_gmod (let_in_of_extend _loc gram gl el args) gmod
+          
         let wildcarder =
           object (self)
             inherit Ast.map as super
+              
             method patt =
               function
               | Ast.PaId (_loc, (Ast.IdLid (_, _))) -> Ast.PaAny _loc
               | Ast.PaAli (_, p, _) -> self#patt p
               | p -> super#patt p
+              
           end
+          
         let mk_tok _loc p t =
           let p' = wildcarder#patt p in
           let match_fun =
@@ -10387,7 +10825,9 @@ module G =
           let descr = string_of_patt p' in
           let text = TXtok (_loc, match_fun, descr)
           in { used = []; text = text; styp = t; pattern = Some p; }
+          
         let symbol = Gram.Entry.mk "symbol"
+          
         let check_not_tok s =
           match s with
           | { text = TXtok (_loc, _, _) } ->
@@ -10396,7 +10836,9 @@ module G =
                    ("Deprecated syntax, use a sub rule. " ^
                       "LIST0 STRING becomes LIST0 [ x = STRING -> x ]"))
           | _ -> ()
+          
         let _ = Camlp4_config.antiquotations := true
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ = (symbol : 'symbol Gram.Entry.t) in
@@ -10516,9 +10958,9 @@ module G =
                                              'semi_sep Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (e : 'entry) (_loc : Loc.t) ->
-                                          (e : 'e__10)))) ]) ],
+                                          (e : 'e__9)))) ]) ],
                           (Gram.Action.mk
-                             (fun (el : 'e__10 list)
+                             (fun (el : 'e__9 list)
                                 (global_list : 'global option)
                                 ((gram, g) : 'extend_header) (_loc : Loc.t)
                                 ->
@@ -10574,7 +11016,7 @@ module G =
                                     (fun (__camlp4_0 : Gram.Token.t)
                                        (_loc : Loc.t) ->
                                        match __camlp4_0 with
-                                       | UIDENT "GLOBAL" -> (() : 'e__11)
+                                       | UIDENT "GLOBAL" -> (() : 'e__10)
                                        | _ -> assert false)));
                                 ([ Gram.Stoken
                                      (((function
@@ -10585,7 +11027,7 @@ module G =
                                     (fun (__camlp4_0 : Gram.Token.t)
                                        (_loc : Loc.t) ->
                                        match __camlp4_0 with
-                                       | LIDENT ((_)) -> (() : 'e__11)
+                                       | LIDENT ((_)) -> (() : 'e__10)
                                        | _ -> assert false))) ] ],
                           (Gram.Action.mk
                              (fun _ (_loc : Loc.t) ->
@@ -10626,7 +11068,7 @@ module G =
                                     (fun (__camlp4_0 : Gram.Token.t)
                                        (_loc : Loc.t) ->
                                        match __camlp4_0 with
-                                       | UIDENT "GLOBAL" -> (() : 'e__12)
+                                       | UIDENT "GLOBAL" -> (() : 'e__11)
                                        | _ -> assert false)));
                                 ([ Gram.Stoken
                                      (((function
@@ -10637,7 +11079,7 @@ module G =
                                     (fun (__camlp4_0 : Gram.Token.t)
                                        (_loc : Loc.t) ->
                                        match __camlp4_0 with
-                                       | LIDENT ((_)) -> (() : 'e__12)
+                                       | LIDENT ((_)) -> (() : 'e__11)
                                        | _ -> assert false))) ] ],
                           (Gram.Action.mk
                              (fun _ (_loc : Loc.t) ->
@@ -10931,7 +11373,7 @@ module G =
                                           ->
                                           (let x =
                                              Gram.Token.extract_string x
-                                           in x : 'e__13)))) ]);
+                                           in x : 'e__12)))) ]);
                             Gram.Sopt
                               (Gram.Snterm
                                  (Gram.Entry.obj
@@ -10941,7 +11383,7 @@ module G =
                                  (rule_list : 'rule_list Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (rules : 'rule_list) (ass : 'assoc option)
-                                (lab : 'e__13 option) (_loc : Loc.t) ->
+                                (lab : 'e__12 option) (_loc : Loc.t) ->
                                 ({ label = lab; assoc = ass; rules = rules; } :
                                   'level)))) ]) ]))
                   ());
@@ -11112,10 +11554,10 @@ module G =
                                           | UIDENT "LEVEL" ->
                                               (let s =
                                                  Gram.Token.extract_string s
-                                               in s : 'e__14)
+                                               in s : 'e__13)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (lev : 'e__14 option) (i : Gram.Token.t)
+                             (fun (lev : 'e__13 option) (i : Gram.Token.t)
                                 (_loc : Loc.t) ->
                                 (let i = Gram.Token.extract_string i in
                                  let name =
@@ -11232,10 +11674,10 @@ module G =
                                           (__camlp4_0 : Gram.Token.t)
                                           (_loc : Loc.t) ->
                                           match __camlp4_0 with
-                                          | UIDENT "SEP" -> (t : 'e__16)
+                                          | UIDENT "SEP" -> (t : 'e__15)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (sep : 'e__16 option) (s : 'symbol)
+                             (fun (sep : 'e__15 option) (s : 'symbol)
                                 (__camlp4_0 : Gram.Token.t) (_loc : Loc.t) ->
                                 match __camlp4_0 with
                                 | UIDENT "LIST1" ->
@@ -11278,10 +11720,10 @@ module G =
                                           (__camlp4_0 : Gram.Token.t)
                                           (_loc : Loc.t) ->
                                           match __camlp4_0 with
-                                          | UIDENT "SEP" -> (t : 'e__15)
+                                          | UIDENT "SEP" -> (t : 'e__14)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (sep : 'e__15 option) (s : 'symbol)
+                             (fun (sep : 'e__14 option) (s : 'symbol)
                                 (__camlp4_0 : Gram.Token.t) (_loc : Loc.t) ->
                                 match __camlp4_0 with
                                 | UIDENT "LIST0" ->
@@ -11330,10 +11772,10 @@ module G =
                                           | UIDENT "LEVEL" ->
                                               (let s =
                                                  Gram.Token.extract_string s
-                                               in s : 'e__18)
+                                               in s : 'e__17)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (lev : 'e__18 option) (n : 'name)
+                             (fun (lev : 'e__17 option) (n : 'name)
                                 (_loc : Loc.t) ->
                                 ({
                                    used = [ n.tvar ];
@@ -11367,10 +11809,10 @@ module G =
                                           | UIDENT "LEVEL" ->
                                               (let s =
                                                  Gram.Token.extract_string s
-                                               in s : 'e__17)
+                                               in s : 'e__16)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (lev : 'e__17 option) (il : 'qualid) _
+                             (fun (lev : 'e__16 option) (il : 'qualid) _
                                 (i : Gram.Token.t) (_loc : Loc.t) ->
                                 (let i = Gram.Token.extract_string i in
                                  let n =
@@ -11636,6 +12078,7 @@ module G =
                           (Gram.Action.mk
                              (fun _ (_loc : Loc.t) -> (() : 'semi_sep)))) ]) ]))
                   ()))
+          
         let _ =
           Gram.extend (symbol : 'symbol Gram.Entry.t)
             ((fun () ->
@@ -11661,7 +12104,7 @@ module G =
                                  (fun (__camlp4_0 : Gram.Token.t)
                                     (_loc : Loc.t) ->
                                     match __camlp4_0 with
-                                    | UIDENT "SLIST1" -> (true : 'e__19)
+                                    | UIDENT "SLIST1" -> (true : 'e__18)
                                     | _ -> assert false)));
                              ([ Gram.Stoken
                                   (((function
@@ -11672,7 +12115,7 @@ module G =
                                  (fun (__camlp4_0 : Gram.Token.t)
                                     (_loc : Loc.t) ->
                                     match __camlp4_0 with
-                                    | UIDENT "SLIST0" -> (false : 'e__19)
+                                    | UIDENT "SLIST0" -> (false : 'e__18)
                                     | _ -> assert false))) ];
                          Gram.Sself;
                          Gram.Sopt
@@ -11690,13 +12133,14 @@ module G =
                                        (__camlp4_0 : Gram.Token.t)
                                        (_loc : Loc.t) ->
                                        match __camlp4_0 with
-                                       | UIDENT "SEP" -> (t : 'e__20)
+                                       | UIDENT "SEP" -> (t : 'e__19)
                                        | _ -> assert false))) ]) ],
                        (Gram.Action.mk
-                          (fun (sep : 'e__20 option) (s : 'symbol)
-                             (min : 'e__19) (_loc : Loc.t) ->
+                          (fun (sep : 'e__19 option) (s : 'symbol)
+                             (min : 'e__18) (_loc : Loc.t) ->
                              (sslist _loc min sep s : 'symbol)))) ]) ]))
                ())
+          
         let sfold _loc n foldfun f e s =
           let styp = STquo (_loc, new_type_var ()) in
           let e =
@@ -11725,6 +12169,7 @@ module G =
               styp = styp;
               pattern = None;
             }
+          
         let sfoldsep _loc n foldfun f e s sep =
           let styp = STquo (_loc, new_type_var ()) in
           let e =
@@ -11753,6 +12198,7 @@ module G =
               styp = styp;
               pattern = None;
             }
+          
         let _ =
           let _ = (symbol : 'symbol Gram.Entry.t) in
           let grammar_entry_create = Gram.Entry.mk in
@@ -11879,21 +12325,29 @@ module G =
                                 (Ast.ExId (_loc, Ast.IdLid (_loc, i)) :
                                   'simple_expr)))) ]) ]))
                   ()))
+          
         let _ =
           Options.add "-split_ext" (Arg.Set split_ext)
             "Split EXTEND by functions to turn around a PowerPC problem."
+          
         let _ =
           Options.add "-split_gext" (Arg.Set split_ext)
             "Old name for the option -split_ext."
+          
         let _ =
           Options.add "-meta_action" (Arg.Set meta_action) "Undocumented"
+          
       end
+      
     (* FIXME *)
     module M = Register.OCamlSyntaxExtension(Id)(Make)
+      
   end
+  
 module M =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -11917,9 +12371,12 @@ module M =
     module Id =
       struct
         let name = "Camlp4MacroParser"
+          
         let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1.4.5 2007/04/26 19:51:49 pouillar Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1.4.6 2007/06/23 16:00:09 ertai Exp $"
+          
       end
+      
     (*
 Added statements:
 
@@ -11981,26 +12438,35 @@ Added statements:
 
 *)
     open Camlp4
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         type 'a item_or_def =
-          | SdStr of 'a | SdDef of string * ((string list) * Ast.expr) option
+          | SdStr of 'a
+          | SdDef of string * ((string list) * Ast.expr) option
           | SdUnd of string
           | SdITE of string * ('a item_or_def) list * ('a item_or_def) list
           | SdLazy of 'a Lazy.t
+        
         let rec list_remove x =
           function
           | (y, _) :: l when y = x -> l
           | d :: l -> d :: (list_remove x l)
           | [] -> []
+          
         let defined = ref []
+          
         let is_defined i = List.mem_assoc i !defined
+          
         let bad_patt _loc =
           Loc.raise _loc
             (Failure
                "this macro cannot be used in a pattern (see its definition)")
+          
         let substp _loc env =
           let rec loop =
             function
@@ -12026,10 +12492,16 @@ Added statements:
                 in Ast.PaRec (_loc, substbi bi)
             | _ -> bad_patt _loc
           in loop
+          
         class reloc _loc =
-          object inherit Ast.map as super method _Loc_t = fun _ -> _loc end
+          object inherit Ast.map as super
+                    method loc = fun _ -> _loc
+                       end
+          
+        (* method _Loc_t _ = _loc; *)
         class subst _loc env =
           object inherit reloc _loc as super
+                   
             method expr =
               function
               | (Ast.ExId (_, (Ast.IdLid (_, x))) |
@@ -12037,6 +12509,7 @@ Added statements:
                  as e) ->
                   (try List.assoc x env with | Not_found -> super#expr e)
               | e -> super#expr e
+              
             method patt =
               function
               | (Ast.PaId (_, (Ast.IdLid (_, x))) |
@@ -12045,12 +12518,15 @@ Added statements:
                   (try substp _loc [] (List.assoc x env)
                    with | Not_found -> super#patt p)
               | p -> super#patt p
+              
           end
+          
         let incorrect_number loc l1 l2 =
           Loc.raise loc
             (Failure
                (Printf.sprintf "expected %d parameters; found %d"
                   (List.length l2) (List.length l1)))
+          
         let define eo x =
           ((match eo with
             | Some (([], e)) ->
@@ -12161,11 +12637,12 @@ Added statements:
                       ()))
             | None -> ());
            defined := (x, eo) :: !defined)
+          
         let undef x =
           try
-            let eo = List.assoc x !defined
-            in
-              ((match eo with
+            ((let eo = List.assoc x !defined
+              in
+                match eo with
                 | Some (([], _)) ->
                     (Gram.delete_rule expr
                        [ Gram.Stoken
@@ -12195,8 +12672,9 @@ Added statements:
                              "$UIDENT x"));
                          Gram.Sself ])
                 | None -> ());
-               defined := list_remove x !defined)
+             defined := list_remove x !defined)
           with | Not_found -> ()
+          
         let parse_def s =
           match Gram.parse_string expr (Loc.mk "<command line>") s with
           | Ast.ExId (_, (Ast.IdUid (_, n))) -> define None n
@@ -12205,8 +12683,10 @@ Added statements:
                  (Ast.ExId (_, (Ast.IdUid (_, n)))))),
               e) -> define (Some (([], e))) n
           | _ -> invalid_arg s
+          
         (* This is a list of directories to search for INCLUDE statements. *)
         let include_dirs = ref []
+          
         (* Add something to the above, make sure it ends with a slash. *)
         let add_include_dir str =
           if str <> ""
@@ -12217,6 +12697,7 @@ Added statements:
                else str ^ "/"
              in include_dirs := !include_dirs @ [ str ])
           else ()
+          
         let parse_include_file rule =
           let dir_ok file dir = Sys.file_exists (dir ^ file)
           in
@@ -12228,6 +12709,7 @@ Added statements:
               let ch = open_in file in
               let st = Stream.of_channel ch
               in Gram.parse rule (Loc.mk file) st
+          
         let rec execute_macro nil cons =
           function
           | SdStr i -> i
@@ -12242,6 +12724,7 @@ Added statements:
           | hd :: tl -> (* The evaluation order is important here *)
               let il1 = execute_macro nil cons hd in
               let il2 = execute_macro_list nil cons tl in cons il1 il2
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ = (sig_item : 'sig_item Gram.Entry.t)
@@ -12481,7 +12964,7 @@ Added statements:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (si : 'str_item) (_loc : Loc.t)
-                                          -> (SdStr si : 'e__21))));
+                                          -> (SdStr si : 'e__20))));
                                    ([ Gram.Snterm
                                         (Gram.Entry.obj
                                            (macro_def :
@@ -12491,9 +12974,9 @@ Added statements:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (d : 'macro_def) (_loc : Loc.t)
-                                          -> (d : 'e__21)))) ]) ],
+                                          -> (d : 'e__20)))) ]) ],
                           (Gram.Action.mk
-                             (fun (sml : 'e__21 list) (_loc : Loc.t) ->
+                             (fun (sml : 'e__20 list) (_loc : Loc.t) ->
                                 (sml : 'smlist)))) ]) ]))
                   ());
              Gram.extend (sglist : 'sglist Gram.Entry.t)
@@ -12511,7 +12994,7 @@ Added statements:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (si : 'sig_item) (_loc : Loc.t)
-                                          -> (SdStr si : 'e__22))));
+                                          -> (SdStr si : 'e__21))));
                                    ([ Gram.Snterm
                                         (Gram.Entry.obj
                                            (macro_def_sig :
@@ -12521,9 +13004,9 @@ Added statements:
                                            (semi : 'semi Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (d : 'macro_def_sig)
-                                          (_loc : Loc.t) -> (d : 'e__22)))) ]) ],
+                                          (_loc : Loc.t) -> (d : 'e__21)))) ]) ],
                           (Gram.Action.mk
-                             (fun (sgl : 'e__22 list) (_loc : Loc.t) ->
+                             (fun (sgl : 'e__21 list) (_loc : Loc.t) ->
                                 (sgl : 'sglist)))) ]) ]))
                   ());
              Gram.extend (endif : 'endif Gram.Entry.t)
@@ -12563,13 +13046,13 @@ Added statements:
                                           ->
                                           (let x =
                                              Gram.Token.extract_string x
-                                           in x : 'e__23)))) ],
+                                           in x : 'e__22)))) ],
                               Gram.Skeyword ",");
                             Gram.Skeyword ")"; Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) _ _ (pl : 'e__23 list) _
+                             (fun (e : 'expr) _ _ (pl : 'e__22 list) _
                                 (_loc : Loc.t) ->
                                 (Some ((pl, e)) : 'opt_macro_value)))) ]) ]))
                   ());
@@ -12720,21 +13203,29 @@ Added statements:
                                 (let i = Gram.Token.extract_string i in i :
                                   'uident)))) ]) ]))
                   ()))
+          
         let _ =
           Options.add "-D" (Arg.String parse_def)
             "<string> Define for IFDEF instruction."
+          
         let _ =
           Options.add "-U" (Arg.String undef)
             "<string> Undefine for IFDEF instruction."
+          
         let _ =
           Options.add "-I" (Arg.String add_include_dir)
             "<string> Add a directory to INCLUDE search path."
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
     module MakeNothing (AstFilters : Camlp4.Sig.AstFilters) =
       struct
         open AstFilters
+          
         open Ast
+          
         let remove_nothings =
           function
           | Ast.ExApp (_, e, (Ast.ExId (_, (Ast.IdUid (_, "NOTHING"))))) |
@@ -12743,14 +13234,20 @@ Added statements:
                    (Ast.ExNil _), e)))
               -> e
           | e -> e
+          
         let _ =
           register_str_item_filter (Ast.map_expr remove_nothings)#str_item
+          
       end
+      
     let _ = let module M = Camlp4.Register.AstFilter(Id)(MakeNothing) in ()
+      
   end
+  
 module D =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -12771,14 +13268,20 @@ module D =
     module Id =
       struct
         let name = "Camlp4DebugParser"
+          
         let version =
           "$Id: Camlp4DebugParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         module StringSet = Set.Make(String)
+          
         let debug_mode =
           try
             let str = Sys.getenv "STATIC_CAMLP4_DEBUG" in
@@ -12798,12 +13301,14 @@ module D =
               then (fun _ -> true)
               else (fun x -> StringSet.mem x sections)
           with | Not_found -> (fun _ -> false)
+          
         let rec apply accu =
           function
           | [] -> accu
           | x :: xs ->
               let _loc = Ast.loc_of_expr x
               in apply (Ast.ExApp (_loc, accu, x)) xs
+          
         let mk_debug_mode _loc =
           function
           | None ->
@@ -12815,6 +13320,7 @@ module D =
                 Ast.IdAcc (_loc, Ast.IdUid (_loc, m),
                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Debug"),
                     Ast.IdLid (_loc, "mode"))))
+          
         let mk_debug _loc m fmt section args =
           let call =
             apply
@@ -12831,6 +13337,7 @@ module D =
               Ast.ExApp (_loc, mk_debug_mode _loc m,
                 Ast.ExStr (_loc, section)),
               call, Ast.ExId (_loc, Ast.IdUid (_loc, "()")))
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t) in
           let grammar_entry_create = Gram.Entry.mk in
@@ -12925,12 +13432,17 @@ module D =
                                 | LIDENT "debug" -> (None : 'start_debug)
                                 | _ -> assert false))) ]) ]))
                   ()))
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module L =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -12952,19 +13464,26 @@ module L =
     module Id =
       struct
         let name = "Camlp4ListComprenhsion"
+          
         let version =
-          "$Id: Camlp4ListComprehension.ml,v 1.1 2007/02/27 15:50:57 pouillar Exp $"
+          "$Id: Camlp4ListComprehension.ml,v 1.1.2.1 2007/05/27 16:23:35 pouillar Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         let rec loop n =
           function
           | [] -> None
           | [ (x, _) ] -> if n = 1 then Some x else None
           | _ :: l -> loop (n - 1) l
+          
         let stream_peek_nth n strm = loop n (Stream.npeek n strm)
+          
         (* usual trick *)
         let test_patt_lessminus =
           Gram.Entry.of_parser "test_patt_lessminus"
@@ -12978,7 +13497,7 @@ module L =
                      skip_patt ((ignore_upto ")" (n + 1)) + 1)
                  | Some (KEYWORD "{") ->
                      skip_patt ((ignore_upto "}" (n + 1)) + 1)
-                 | Some (KEYWORD ("as" | "::" | ";" | "," | "_")) |
+                 | Some (KEYWORD ("as" | "::" | "," | "_")) |
                      Some (LIDENT _ | UIDENT _) -> skip_patt (n + 1)
                  | Some _ | None -> raise Stream.Failure
                and ignore_upto end_kwd n =
@@ -12993,6 +13512,7 @@ module L =
                  | Some _ -> ignore_upto end_kwd (n + 1)
                  | None -> raise Stream.Failure
                in skip_patt 1)
+          
         let map _loc p e l =
           match (p, e) with
           | (Ast.PaId (_, (Ast.IdLid (_, x))),
@@ -13044,6 +13564,7 @@ module L =
                                 Ast.ExId (_loc, Ast.IdLid (_loc, "l")))))))),
                     l),
                   Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+          
         let filter _loc p b l =
           if Ast.is_irrefut_patt p
           then
@@ -13067,12 +13588,14 @@ module L =
                     Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
                       Ast.ExId (_loc, Ast.IdUid (_loc, "False")))))),
               l)
+          
         let concat _loc l =
           Ast.ExApp (_loc,
             Ast.ExId (_loc,
               Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
                 Ast.IdLid (_loc, "concat"))),
             l)
+          
         let rec compr _loc e =
           function
           | [ `gen ((p, l)) ] -> map _loc p e l
@@ -13081,6 +13604,7 @@ module L =
           | `gen ((p, l)) :: ((`gen ((_, _)) :: _ as is)) ->
               concat _loc (map _loc p (compr _loc e is) l)
           | _ -> raise Stream.Failure
+          
         let _ =
           Gram.delete_rule expr
             [ Gram.Skeyword "[";
@@ -13088,6 +13612,7 @@ module L =
                 (Gram.Entry.obj
                    (sem_expr_for_list : 'sem_expr_for_list Gram.Entry.t));
               Gram.Skeyword "]" ]
+          
         let is_revised =
           try
             (Gram.delete_rule expr
@@ -13100,8 +13625,10 @@ module L =
                  Gram.Skeyword "]" ];
              true)
           with | Not_found -> false
+          
         let comprehension_or_sem_expr_for_list =
           Gram.Entry.mk "comprehension_or_sem_expr_for_list"
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ =
@@ -13210,6 +13737,7 @@ module L =
                              (fun (e : 'expr) _ (p : 'patt) _ (_loc : Loc.t)
                                 -> (`gen ((p, e)) : 'item)))) ]) ]))
                   ()))
+          
         let _ =
           if is_revised
           then
@@ -13264,9 +13792,13 @@ module L =
                                     'comprehension_or_sem_expr_for_list)))) ]) ]))
                     ()))
           else ()
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module P =
   struct
     (****************************************************************************)
@@ -13286,7 +13818,9 @@ module P =
  * - Nicolas Pouillard: initial version
  *)
     let _ = Camlp4.Register.enable_dump_ocaml_ast_printer ()
+      
   end
+  
 module B =
   struct
     (* camlp4r *)
@@ -13307,32 +13841,55 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14.2.3 2007/03/30 15:50:12 pouillar Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.6 2007/06/23 16:00:09 ertai Exp $ *)
     open Camlp4
+      
     open PreCast.Syntax
+      
     open PreCast
+      
     open Format
+      
     module CleanAst = Camlp4.Struct.CleanAst.Make(Ast)
+      
     module SSet = Set.Make(String)
+      
     let pa_r = "Camlp4OCamlRevisedParser"
+      
     let pa_rr = "Camlp4OCamlReloadedParser"
+      
     let pa_o = "Camlp4OCamlParser"
+      
     let pa_rp = "Camlp4OCamlRevisedParserParser"
+      
     let pa_op = "Camlp4OCamlParserParser"
+      
     let pa_g = "Camlp4GrammarParser"
+      
     let pa_m = "Camlp4MacroParser"
+      
     let pa_qb = "Camlp4QuotationCommon"
+      
     let pa_q = "Camlp4QuotationExpander"
+      
     let pa_rq = "Camlp4OCamlRevisedQuotationExpander"
+      
     let pa_oq = "Camlp4OCamlOriginalQuotationExpander"
+      
     let pa_l = "Camlp4ListComprehension"
+      
     open Register
+      
     let dyn_loader =
       ref (fun _ -> raise (Match_failure ("./camlp4/Camlp4Bin.ml", 45, 24)))
+      
     let rcall_callback = ref (fun () -> ())
+      
     let loaded_modules = ref SSet.empty
+      
     let add_to_loaded_modules name =
       loaded_modules := SSet.add name !loaded_modules
+      
     let rewrite_and_load n x =
       let dyn_loader = !dyn_loader () in
       let find_in_path = DynLoader.find_in_path dyn_loader in
@@ -13397,8 +13954,9 @@ module B =
               load [ "Camlp4ExceptionTracer" ]
           | (("Filters" | ""), ("prof" | "camlp4profiler.cmo")) ->
               load [ "Camlp4Profiler" ]
-          | (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
-              load [ "Camlp4MapGenerator" ]
+          | (* map is now an alias of fold since fold handles map too *)
+              (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
+              load [ "Camlp4FoldGenerator" ]
           | (("Filters" | ""), ("fold" | "camlp4foldgenerator.cmo")) ->
               load [ "Camlp4FoldGenerator" ]
           | (("Filters" | ""), ("meta" | "camlp4metagenerator.cmo")) ->
@@ -13426,7 +13984,9 @@ module B =
               let y = "Camlp4" ^ (n ^ ("/" ^ (x ^ ".cmo")))
               in real_load (try find_in_path y with | Not_found -> x));
          !rcall_callback ())
+      
     let print_warning = eprintf "%a:\n%s@." Loc.print
+      
     let rec parse_file dyn_loader name pa getdir =
       let directive_handler =
         Some
@@ -13452,34 +14012,44 @@ module B =
          let phr =
            try pa ?directive_handler loc cs with | x -> (clear (); raise x)
          in (clear (); phr))
+      
     let output_file = ref None
+      
     let process dyn_loader name pa pr clean fold_filters getdir =
       let ast = parse_file dyn_loader name pa getdir in
       let ast = fold_filters (fun t filter -> filter t) ast in
       let ast = clean ast
       in pr ?input_file: (Some name) ?output_file: !output_file ast
+      
     let gind =
       function
       | Ast.SgDir (loc, n, (Ast.ExStr (_, s))) -> Some ((loc, n, s))
       | _ -> None
+      
     let gimd =
       function
       | Ast.StDir (loc, n, (Ast.ExStr (_, s))) -> Some ((loc, n, s))
       | _ -> None
+      
     let process_intf dyn_loader name =
       process dyn_loader name CurrentParser.parse_interf CurrentPrinter.
         print_interf (new CleanAst.clean_ast)#sig_item AstFilters.
         fold_interf_filters gind
+      
     let process_impl dyn_loader name =
       process dyn_loader name CurrentParser.parse_implem CurrentPrinter.
         print_implem (new CleanAst.clean_ast)#str_item AstFilters.
         fold_implem_filters gimd
+      
     let just_print_the_version () =
       (printf "%s@." Camlp4_config.version; exit 0)
+      
     let print_version () =
       (eprintf "Camlp4 version %s@." Camlp4_config.version; exit 0)
+      
     let print_stdlib () =
       (printf "%s@." Camlp4_config.camlp4_standard_library; exit 0)
+      
     let usage ini_sl ext_sl =
       (eprintf
          "\
@@ -13499,16 +14069,24 @@ Options:
          (eprintf "Options added by loaded object files:@.";
           Options.print_usage_list ext_sl)
        else ())
+      
     let warn_noassert () =
       eprintf
         "\
 camlp4 warning: option -noassert is obsolete
 You should give the -noassert option to the ocaml compiler instead.@."
+      
     type file_kind =
-      | Intf of string | Impl of string | Str of string
-      | ModuleImpl of string | IncludeDir of string
+      | Intf of string
+      | Impl of string
+      | Str of string
+      | ModuleImpl of string
+      | IncludeDir of string
+    
     let search_stdlib = ref true
+      
     let print_loaded_modules = ref false
+      
     let (task, do_task) =
       let t = ref None in
       let task f x =
@@ -13519,6 +14097,7 @@ You should give the -noassert option to the ocaml compiler instead.@."
               (if !t = None then (fun _ -> f x) else (fun usage -> usage ())) in
       let do_task usage = match !t with | Some f -> f usage | None -> ()
       in (task, do_task)
+      
     let input_file x =
       let dyn_loader = !dyn_loader ()
       in
@@ -13531,10 +14110,12 @@ You should give the -noassert option to the ocaml compiler instead.@."
               in
                 (output_string o s;
                  close_out o;
-                 task (process_impl dyn_loader) f)
+                 task (process_impl dyn_loader) f;
+                 at_exit (fun () -> Sys.remove f))
           | ModuleImpl file_name -> rewrite_and_load "" file_name
           | IncludeDir dir -> DynLoader.include_dir dyn_loader dir);
          !rcall_callback ())
+      
     let initial_spec_list =
       [ ("-I", (Arg.String (fun x -> input_file (IncludeDir x))),
          "<directory>  Add directory in search patch for object files.");
@@ -13576,7 +14157,9 @@ You should give the -noassert option to the ocaml compiler instead.@."
          "<name>  Load the filter Camlp4Filters/<name>.cmo");
         ("-ignore", (Arg.String ignore), "ignore the next argument");
         ("--", (Arg.Unit ignore), "Deprecated, does nothing") ]
+      
     let _ = Options.init initial_spec_list
+      
     let anon_fun name =
       input_file
         (if Filename.check_suffix name ".mli"
@@ -13591,6 +14174,7 @@ You should give the -noassert option to the ocaml compiler instead.@."
                if Filename.check_suffix name ".cma"
                then ModuleImpl name
                else raise (Arg.Bad ("don't know what to do with " ^ name)))
+      
     let main argv =
       let usage () =
         (usage initial_spec_list (Options.ext_spec_list ()); exit 0)
@@ -13627,6 +14211,9 @@ You should give the -noassert option to the ocaml compiler instead.@."
              exit 2)
         | Arg.Help _ -> usage ()
         | exc -> (eprintf "@[<v0>%a@]@." ErrorHandler.print exc; exit 2)
+      
     let _ = main Sys.argv
+      
   end
+  
 

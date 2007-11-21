@@ -1,4 +1,3 @@
-(* camlp4r *)
 (****************************************************************************)
 (*                                                                          *)
 (*                              Objective Caml                              *)
@@ -18,7 +17,7 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-let ocaml_standard_library = Config.standard_library;;
+let ocaml_standard_library = Camlp4_import.Config.standard_library;;
 
 let camlp4_standard_library =
   try Sys.getenv "CAMLP4LIB"
@@ -35,6 +34,6 @@ let quotations         = ref true;;
 let inter_phrases      = ref None;;
 let camlp4_ast_impl_magic_number = "Camlp42006M001";;
 let camlp4_ast_intf_magic_number = "Camlp42006N001";;
-let ocaml_ast_intf_magic_number = Config.ast_intf_magic_number;;
-let ocaml_ast_impl_magic_number = Config.ast_impl_magic_number;;
+let ocaml_ast_intf_magic_number = Camlp4_import.Config.ast_intf_magic_number;;
+let ocaml_ast_impl_magic_number = Camlp4_import.Config.ast_impl_magic_number;;
 let current_input_file = ref "";;

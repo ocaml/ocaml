@@ -91,7 +91,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
       | Ast.PaAny _ -> True
       | Ast.PaAli _ x y -> (is_irrefut_patt x) && (is_irrefut_patt y)
       | Ast.PaRec _ p -> is_irrefut_patt p
-      | Ast.PaEq _ (Ast.IdLid _ _) p -> is_irrefut_patt p
+      | Ast.PaEq _ _ p -> is_irrefut_patt p
       | Ast.PaSem _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
       | Ast.PaCom _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
       | Ast.PaTyc _ p _ -> is_irrefut_patt p
@@ -379,13 +379,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
       struct
         module type META_LOC =
           sig
-            (** The first location is where to put the returned pattern.
-          Generally it's _loc to match with <:patt< ... >> quotations.
-          The second location is the one to treat. *)
             value meta_loc_patt : Loc.t -> Loc.t -> Ast.patt;
-            (** The first location is where to put the returned expression.
-          Generally it's _loc to match with <:expr< ... >> quotations.
-          The second location is the one to treat. *)
             value meta_loc_expr : Loc.t -> Loc.t -> Ast.expr;
           end;
         module MetaLoc =
@@ -462,7 +456,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
         module Make (MetaLoc : META_LOC) =
           struct
             open MetaLoc;
-            value meta_acc_Loc_t = meta_loc_expr;
+            value meta_loc = meta_loc_expr;
             module Expr =
               struct
                 value meta_string _loc s = Ast.ExStr _loc s;
@@ -491,7 +485,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "BiEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_expr _loc x2)
                   | Ast.BiAnd x0 x1 x2 ->
@@ -501,7 +495,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "BiAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_binding _loc x1))
                         (meta_binding _loc x2)
                   | Ast.BiNil x0 ->
@@ -509,7 +503,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "BiNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_expr _loc =
                   fun
                   [ Ast.CeAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -520,7 +514,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_class_expr _loc x2)
                   | Ast.CeAnd x0 x1 x2 ->
@@ -530,7 +524,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_class_expr _loc x2)
                   | Ast.CeTyc x0 x1 x2 ->
@@ -540,7 +534,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CeStr x0 x1 x2 ->
@@ -550,7 +544,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeStr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_class_str_item _loc x2)
                   | Ast.CeLet x0 x1 x2 x3 ->
@@ -561,7 +555,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeLet")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_binding _loc x2))
                         (meta_class_expr _loc x3)
@@ -572,7 +566,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeFun")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_class_expr _loc x2)
                   | Ast.CeCon x0 x1 x2 x3 ->
@@ -583,7 +577,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeCon")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
@@ -594,7 +588,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.CeNil x0 ->
@@ -602,7 +596,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CeNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_sig_item _loc =
                   fun
                   [ Ast.CgAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -614,7 +608,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CgVir")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -627,7 +621,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.ExId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "CgVal")))
-                                    (meta_acc_Loc_t _loc x0))
+                                    (meta_loc _loc x0))
                                  (meta_string _loc x1))
                               (meta_meta_bool _loc x2))
                            (meta_meta_bool _loc x3))
@@ -640,7 +634,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CgMth")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -650,7 +644,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "CgInh")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.CgSem x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -659,7 +653,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CgSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_sig_item _loc x1))
                         (meta_class_sig_item _loc x2)
                   | Ast.CgCtr x0 x1 x2 ->
@@ -669,7 +663,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CgCtr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.CgNil x0 ->
@@ -677,7 +671,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CgNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_str_item _loc =
                   fun
                   [ Ast.CrAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -689,7 +683,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrVvr")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -701,7 +695,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrVir")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -713,7 +707,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrVal")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_expr _loc x3)
@@ -726,7 +720,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.ExId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "CrMth")))
-                                    (meta_acc_Loc_t _loc x0))
+                                    (meta_loc _loc x0))
                                  (meta_string _loc x1))
                               (meta_meta_bool _loc x2))
                            (meta_expr _loc x3))
@@ -737,7 +731,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "CrIni")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.CrInh x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -746,7 +740,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CrInh")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_string _loc x2)
                   | Ast.CrCtr x0 x1 x2 ->
@@ -756,7 +750,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CrCtr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.CrSem x0 x1 x2 ->
@@ -766,7 +760,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CrSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_str_item _loc x1))
                         (meta_class_str_item _loc x2)
                   | Ast.CrNil x0 ->
@@ -774,7 +768,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CrNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_type _loc =
                   fun
                   [ Ast.CtAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -785,7 +779,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_type _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtCol x0 x1 x2 ->
@@ -795,7 +789,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtCol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_type _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtAnd x0 x1 x2 ->
@@ -805,7 +799,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_type _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtSig x0 x1 x2 ->
@@ -815,7 +809,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtSig")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_class_sig_item _loc x2)
                   | Ast.CtFun x0 x1 x2 ->
@@ -825,7 +819,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtFun")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtCon x0 x1 x2 x3 ->
@@ -836,7 +830,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CtCon")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
@@ -845,7 +839,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CtNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_ctyp _loc =
                   fun
                   [ Ast.TyAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -856,7 +850,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOfAmp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyAmp x0 x1 x2 ->
@@ -866,7 +860,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyAmp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyVrnInfSup x0 x1 x2 ->
@@ -876,7 +870,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyVrnInfSup")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyVrnInf x0 x1 ->
@@ -885,7 +879,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrnInf")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyVrnSup x0 x1 ->
                       Ast.ExApp _loc
@@ -893,7 +887,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrnSup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyVrnEq x0 x1 ->
                       Ast.ExApp _loc
@@ -901,7 +895,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrnEq")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TySta x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -910,7 +904,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TySta")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyTup x0 x1 ->
@@ -919,7 +913,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyTup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyMut x0 x1 ->
                       Ast.ExApp _loc
@@ -927,7 +921,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyMut")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyPrv x0 x1 ->
                       Ast.ExApp _loc
@@ -935,7 +929,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyPrv")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyOr x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -944,7 +938,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyAnd x0 x1 x2 ->
@@ -954,7 +948,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyOf x0 x1 x2 ->
@@ -964,7 +958,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOf")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TySum x0 x1 ->
@@ -973,7 +967,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TySum")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyCom x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -982,7 +976,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyCom")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TySem x0 x1 x2 ->
@@ -992,7 +986,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TySem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyCol x0 x1 x2 ->
@@ -1002,7 +996,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyCol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyRec x0 x1 ->
@@ -1011,7 +1005,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyRec")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyVrn x0 x1 ->
                       Ast.ExApp _loc
@@ -1019,7 +1013,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyQuM x0 x1 ->
                       Ast.ExApp _loc
@@ -1027,7 +1021,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyQuM")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyQuP x0 x1 ->
                       Ast.ExApp _loc
@@ -1035,7 +1029,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyQuP")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyQuo x0 x1 ->
                       Ast.ExApp _loc
@@ -1043,7 +1037,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyQuo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyPol x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1052,7 +1046,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyPol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyOlb x0 x1 x2 ->
@@ -1062,7 +1056,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOlb")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyObj x0 x1 x2 ->
@@ -1072,7 +1066,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyObj")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_meta_bool _loc x2)
                   | Ast.TyDcl x0 x1 x2 x3 x4 ->
@@ -1084,7 +1078,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.ExId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "TyDcl")))
-                                    (meta_acc_Loc_t _loc x0))
+                                    (meta_loc _loc x0))
                                  (meta_string _loc x1))
                               (meta_list meta_ctyp _loc x2))
                            (meta_ctyp _loc x3))
@@ -1101,7 +1095,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyMan")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyId x0 x1 ->
@@ -1110,7 +1104,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.TyLab x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1119,7 +1113,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyLab")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyCls x0 x1 ->
@@ -1128,7 +1122,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyCls")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.TyArr x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1137,7 +1131,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyArr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyApp x0 x1 x2 ->
@@ -1147,7 +1141,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyAny x0 ->
@@ -1155,7 +1149,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "TyAny")))
-                        (meta_acc_Loc_t _loc x0)
+                        (meta_loc _loc x0)
                   | Ast.TyAli x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -1163,7 +1157,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyAli")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyNil x0 ->
@@ -1171,7 +1165,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "TyNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_expr _loc =
                   fun
                   [ Ast.ExWhi x0 x1 x2 ->
@@ -1181,7 +1175,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExWhi")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExVrn x0 x1 ->
@@ -1190,7 +1184,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExVrn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExTyc x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1199,7 +1193,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.ExCom x0 x1 x2 ->
@@ -1209,7 +1203,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExCom")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExTup x0 x1 ->
@@ -1218,7 +1212,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExTup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExTry x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1227,7 +1221,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExTry")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_match_case _loc x2)
                   | Ast.ExStr x0 x1 ->
@@ -1236,7 +1230,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExStr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExSte x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1245,7 +1239,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExSte")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExSnd x0 x1 x2 ->
@@ -1255,7 +1249,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExSnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_string _loc x2)
                   | Ast.ExSeq x0 x1 ->
@@ -1264,7 +1258,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExSeq")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExRec x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1273,7 +1267,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExRec")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_rec_binding _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExOvr x0 x1 ->
@@ -1282,7 +1276,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExOvr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_rec_binding _loc x1)
                   | Ast.ExOlb x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1291,7 +1285,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExOlb")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExObj x0 x1 x2 ->
@@ -1301,7 +1295,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExObj")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_class_str_item _loc x2)
                   | Ast.ExNew x0 x1 ->
@@ -1310,7 +1304,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExNew")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.ExMat x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1319,7 +1313,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExMat")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_match_case _loc x2)
                   | Ast.ExLmd x0 x1 x2 x3 ->
@@ -1330,7 +1324,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExLmd")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_expr _loc x2))
                         (meta_expr _loc x3)
@@ -1342,7 +1336,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExLet")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_binding _loc x2))
                         (meta_expr _loc x3)
@@ -1352,7 +1346,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExLaz")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExLab x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1361,7 +1355,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExLab")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExNativeInt x0 x1 ->
@@ -1370,7 +1364,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExNativeInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExInt64 x0 x1 ->
                       Ast.ExApp _loc
@@ -1378,7 +1372,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExInt64")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExInt32 x0 x1 ->
                       Ast.ExApp _loc
@@ -1386,7 +1380,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExInt32")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExInt x0 x1 ->
                       Ast.ExApp _loc
@@ -1394,7 +1388,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExIfe x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -1404,7 +1398,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExIfe")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_expr _loc x1))
                            (meta_expr _loc x2))
                         (meta_expr _loc x3)
@@ -1414,7 +1408,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExFun")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_match_case _loc x1)
                   | Ast.ExFor x0 x1 x2 x3 x4 x5 ->
                       Ast.ExApp _loc
@@ -1427,7 +1421,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                           (Ast.IdAcc _loc
                                              (Ast.IdUid _loc "Ast")
                                              (Ast.IdUid _loc "ExFor")))
-                                       (meta_acc_Loc_t _loc x0))
+                                       (meta_loc _loc x0))
                                     (meta_string _loc x1))
                                  (meta_expr _loc x2))
                               (meta_expr _loc x3))
@@ -1439,7 +1433,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExFlo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExCoe x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -1449,7 +1443,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExCoe")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_expr _loc x1))
                            (meta_ctyp _loc x2))
                         (meta_ctyp _loc x3)
@@ -1459,7 +1453,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExChr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExAss x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1468,7 +1462,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExAss")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExAsr x0 x1 ->
@@ -1477,14 +1471,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExAsr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExAsf x0 ->
                       Ast.ExApp _loc
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "ExAsf")))
-                        (meta_acc_Loc_t _loc x0)
+                        (meta_loc _loc x0)
                   | Ast.ExSem x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -1492,7 +1486,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExArr x0 x1 ->
@@ -1501,7 +1495,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExArr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExAre x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1510,7 +1504,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExAre")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExApp x0 x1 x2 ->
@@ -1520,7 +1514,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -1531,7 +1525,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExAcc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExId x0 x1 ->
@@ -1540,14 +1534,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.ExNil x0 ->
                       Ast.ExApp _loc
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "ExNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_ident _loc =
                   fun
                   [ Ast.IdAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -1557,7 +1551,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "IdUid")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.IdLid x0 x1 ->
                       Ast.ExApp _loc
@@ -1565,7 +1559,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "IdLid")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.IdApp x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1574,7 +1568,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "IdApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_ident _loc x2)
                   | Ast.IdAcc x0 x1 x2 ->
@@ -1584,7 +1578,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "IdAcc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_ident _loc x2) ]
                 and meta_match_case _loc =
@@ -1598,7 +1592,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "McArr")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_patt _loc x1))
                            (meta_expr _loc x2))
                         (meta_expr _loc x3)
@@ -1609,7 +1603,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "McOr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_match_case _loc x1))
                         (meta_match_case _loc x2)
                   | Ast.McNil x0 ->
@@ -1617,7 +1611,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "McNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_meta_bool _loc =
                   fun
                   [ Ast.BAnt x0 -> Ast.ExAnt _loc x0
@@ -1667,7 +1661,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MbCol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.MbColEq x0 x1 x2 x3 ->
@@ -1678,7 +1672,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "MbColEq")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_type _loc x2))
                         (meta_module_expr _loc x3)
@@ -1689,7 +1683,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MbAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_binding _loc x1))
                         (meta_module_binding _loc x2)
                   | Ast.MbNil x0 ->
@@ -1697,7 +1691,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MbNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_module_expr _loc =
                   fun
                   [ Ast.MeAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -1708,7 +1702,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MeTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_expr _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.MeStr x0 x1 ->
@@ -1717,7 +1711,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MeStr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_str_item _loc x1)
                   | Ast.MeFun x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -1727,7 +1721,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "MeFun")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_type _loc x2))
                         (meta_module_expr _loc x3)
@@ -1738,7 +1732,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MeApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_expr _loc x1))
                         (meta_module_expr _loc x2)
                   | Ast.MeId x0 x1 ->
@@ -1747,14 +1741,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MeId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.MeNil x0 ->
                       Ast.ExApp _loc
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MeNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_module_type _loc =
                   fun
                   [ Ast.MtAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -1765,7 +1759,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MtWit")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_type _loc x1))
                         (meta_with_constr _loc x2)
                   | Ast.MtSig x0 x1 ->
@@ -1774,7 +1768,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MtSig")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_sig_item _loc x1)
                   | Ast.MtQuo x0 x1 ->
                       Ast.ExApp _loc
@@ -1782,7 +1776,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MtQuo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.MtFun x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -1792,7 +1786,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "MtFun")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_type _loc x2))
                         (meta_module_type _loc x3)
@@ -1802,14 +1796,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MtId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.MtNil x0 ->
                       Ast.ExApp _loc
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MtNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_patt _loc =
                   fun
                   [ Ast.PaVrn x0 x1 ->
@@ -1818,7 +1812,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaVrn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaTyp x0 x1 ->
                       Ast.ExApp _loc
@@ -1826,7 +1820,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaTyp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.PaTyc x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1835,7 +1829,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.PaTup x0 x1 ->
@@ -1844,7 +1838,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaTup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_patt _loc x1)
                   | Ast.PaStr x0 x1 ->
                       Ast.ExApp _loc
@@ -1852,7 +1846,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaStr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaEq x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1861,7 +1855,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaRec x0 x1 ->
@@ -1870,7 +1864,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaRec")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_patt _loc x1)
                   | Ast.PaRng x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1879,7 +1873,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaRng")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaOrp x0 x1 x2 ->
@@ -1889,7 +1883,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaOrp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaOlbi x0 x1 x2 x3 ->
@@ -1900,7 +1894,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "PaOlbi")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_patt _loc x2))
                         (meta_expr _loc x3)
@@ -1911,7 +1905,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaOlb")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaLab x0 x1 x2 ->
@@ -1921,7 +1915,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaLab")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaFlo x0 x1 ->
@@ -1930,7 +1924,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaFlo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaNativeInt x0 x1 ->
                       Ast.ExApp _loc
@@ -1938,7 +1932,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaNativeInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaInt64 x0 x1 ->
                       Ast.ExApp _loc
@@ -1946,7 +1940,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaInt64")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaInt32 x0 x1 ->
                       Ast.ExApp _loc
@@ -1954,7 +1948,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaInt32")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaInt x0 x1 ->
                       Ast.ExApp _loc
@@ -1962,7 +1956,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaChr x0 x1 ->
                       Ast.ExApp _loc
@@ -1970,7 +1964,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaChr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaSem x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -1979,7 +1973,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaCom x0 x1 x2 ->
@@ -1989,7 +1983,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaCom")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaArr x0 x1 ->
@@ -1998,7 +1992,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaArr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_patt _loc x1)
                   | Ast.PaApp x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2007,7 +2001,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaAny x0 ->
@@ -2015,7 +2009,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "PaAny")))
-                        (meta_acc_Loc_t _loc x0)
+                        (meta_loc _loc x0)
                   | Ast.PaAnt x0 x1 -> Ast.ExAnt x0 x1
                   | Ast.PaAli x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2024,7 +2018,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaAli")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaId x0 x1 ->
@@ -2033,14 +2027,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.PaNil x0 ->
                       Ast.ExApp _loc
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "PaNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_rec_binding _loc =
                   fun
                   [ Ast.RbAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -2051,7 +2045,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "RbEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_expr _loc x2)
                   | Ast.RbSem x0 x1 x2 ->
@@ -2061,7 +2055,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "RbSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_rec_binding _loc x1))
                         (meta_rec_binding _loc x2)
                   | Ast.RbNil x0 ->
@@ -2069,7 +2063,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "RbNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_sig_item _loc =
                   fun
                   [ Ast.SgAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -2080,7 +2074,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgVal")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.SgTyp x0 x1 ->
@@ -2089,7 +2083,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgTyp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.SgOpn x0 x1 ->
                       Ast.ExApp _loc
@@ -2097,7 +2091,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgOpn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.SgMty x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2106,7 +2100,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgMty")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.SgRecMod x0 x1 ->
@@ -2115,7 +2109,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgRecMod")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_binding _loc x1)
                   | Ast.SgMod x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2124,7 +2118,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgMod")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.SgInc x0 x1 ->
@@ -2133,7 +2127,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgInc")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_type _loc x1)
                   | Ast.SgExt x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -2143,7 +2137,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "SgExt")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_ctyp _loc x2))
                         (meta_meta_list meta_string _loc x3)
@@ -2153,7 +2147,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgExc")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.SgDir x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2162,7 +2156,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgDir")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.SgSem x0 x1 x2 ->
@@ -2172,7 +2166,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_sig_item _loc x1))
                         (meta_sig_item _loc x2)
                   | Ast.SgClt x0 x1 ->
@@ -2181,7 +2175,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgClt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.SgCls x0 x1 ->
                       Ast.ExApp _loc
@@ -2189,14 +2183,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgCls")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.SgNil x0 ->
                       Ast.ExApp _loc
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "SgNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_str_item _loc =
                   fun
                   [ Ast.StAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -2207,7 +2201,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StVal")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_meta_bool _loc x1))
                         (meta_binding _loc x2)
                   | Ast.StTyp x0 x1 ->
@@ -2216,7 +2210,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StTyp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.StOpn x0 x1 ->
                       Ast.ExApp _loc
@@ -2224,7 +2218,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StOpn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.StMty x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2233,7 +2227,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StMty")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.StRecMod x0 x1 ->
@@ -2242,7 +2236,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StRecMod")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_binding _loc x1)
                   | Ast.StMod x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2251,7 +2245,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StMod")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_expr _loc x2)
                   | Ast.StInc x0 x1 ->
@@ -2260,7 +2254,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StInc")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_expr _loc x1)
                   | Ast.StExt x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -2270,7 +2264,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "StExt")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_ctyp _loc x2))
                         (meta_meta_list meta_string _loc x3)
@@ -2280,7 +2274,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StExp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.StExc x0 x1 x2 ->
                       Ast.ExApp _loc
@@ -2289,7 +2283,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StExc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_meta_option meta_ident _loc x2)
                   | Ast.StDir x0 x1 x2 ->
@@ -2299,7 +2293,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StDir")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.StSem x0 x1 x2 ->
@@ -2309,7 +2303,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_str_item _loc x1))
                         (meta_str_item _loc x2)
                   | Ast.StClt x0 x1 ->
@@ -2318,7 +2312,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StClt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.StCls x0 x1 ->
                       Ast.ExApp _loc
@@ -2326,14 +2320,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.ExId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StCls")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_expr _loc x1)
                   | Ast.StNil x0 ->
                       Ast.ExApp _loc
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "StNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_with_constr _loc =
                   fun
                   [ Ast.WcAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -2344,7 +2338,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "WcAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_with_constr _loc x1))
                         (meta_with_constr _loc x2)
                   | Ast.WcMod x0 x1 x2 ->
@@ -2354,7 +2348,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "WcMod")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_ident _loc x2)
                   | Ast.WcTyp x0 x1 x2 ->
@@ -2364,7 +2358,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.ExId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "WcTyp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.WcNil x0 ->
@@ -2372,9 +2366,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.ExId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "WcNil")))
-                        (meta_acc_Loc_t _loc x0) ];
+                        (meta_loc _loc x0) ];
               end;
-            value meta_acc_Loc_t = meta_loc_patt;
+            value meta_loc = meta_loc_patt;
             module Patt =
               struct
                 value meta_string _loc s = Ast.PaStr _loc s;
@@ -2403,7 +2397,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "BiEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_expr _loc x2)
                   | Ast.BiAnd x0 x1 x2 ->
@@ -2413,7 +2407,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "BiAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_binding _loc x1))
                         (meta_binding _loc x2)
                   | Ast.BiNil x0 ->
@@ -2421,7 +2415,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "BiNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_expr _loc =
                   fun
                   [ Ast.CeAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -2432,7 +2426,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_class_expr _loc x2)
                   | Ast.CeAnd x0 x1 x2 ->
@@ -2442,7 +2436,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_class_expr _loc x2)
                   | Ast.CeTyc x0 x1 x2 ->
@@ -2452,7 +2446,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CeStr x0 x1 x2 ->
@@ -2462,7 +2456,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeStr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_class_str_item _loc x2)
                   | Ast.CeLet x0 x1 x2 x3 ->
@@ -2473,7 +2467,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeLet")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_binding _loc x2))
                         (meta_class_expr _loc x3)
@@ -2484,7 +2478,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeFun")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_class_expr _loc x2)
                   | Ast.CeCon x0 x1 x2 x3 ->
@@ -2495,7 +2489,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeCon")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
@@ -2506,7 +2500,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CeApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.CeNil x0 ->
@@ -2514,7 +2508,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CeNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_sig_item _loc =
                   fun
                   [ Ast.CgAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -2526,7 +2520,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CgVir")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -2539,7 +2533,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.PaId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "CgVal")))
-                                    (meta_acc_Loc_t _loc x0))
+                                    (meta_loc _loc x0))
                                  (meta_string _loc x1))
                               (meta_meta_bool _loc x2))
                            (meta_meta_bool _loc x3))
@@ -2552,7 +2546,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CgMth")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -2562,7 +2556,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "CgInh")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.CgSem x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -2571,7 +2565,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CgSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_sig_item _loc x1))
                         (meta_class_sig_item _loc x2)
                   | Ast.CgCtr x0 x1 x2 ->
@@ -2581,7 +2575,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CgCtr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.CgNil x0 ->
@@ -2589,7 +2583,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CgNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_str_item _loc =
                   fun
                   [ Ast.CrAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -2601,7 +2595,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrVvr")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -2613,7 +2607,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrVir")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
@@ -2625,7 +2619,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrVal")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_expr _loc x3)
@@ -2638,7 +2632,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.PaId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "CrMth")))
-                                    (meta_acc_Loc_t _loc x0))
+                                    (meta_loc _loc x0))
                                  (meta_string _loc x1))
                               (meta_meta_bool _loc x2))
                            (meta_expr _loc x3))
@@ -2649,7 +2643,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "CrIni")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.CrInh x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -2658,7 +2652,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CrInh")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_expr _loc x1))
                         (meta_string _loc x2)
                   | Ast.CrCtr x0 x1 x2 ->
@@ -2668,7 +2662,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CrCtr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.CrSem x0 x1 x2 ->
@@ -2678,7 +2672,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CrSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_str_item _loc x1))
                         (meta_class_str_item _loc x2)
                   | Ast.CrNil x0 ->
@@ -2686,7 +2680,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CrNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_class_type _loc =
                   fun
                   [ Ast.CtAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -2697,7 +2691,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_type _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtCol x0 x1 x2 ->
@@ -2707,7 +2701,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtCol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_type _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtAnd x0 x1 x2 ->
@@ -2717,7 +2711,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_class_type _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtSig x0 x1 x2 ->
@@ -2727,7 +2721,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtSig")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_class_sig_item _loc x2)
                   | Ast.CtFun x0 x1 x2 ->
@@ -2737,7 +2731,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "CtFun")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_class_type _loc x2)
                   | Ast.CtCon x0 x1 x2 x3 ->
@@ -2748,7 +2742,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CtCon")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
@@ -2757,7 +2751,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "CtNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_ctyp _loc =
                   fun
                   [ Ast.TyAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -2768,7 +2762,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOfAmp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyAmp x0 x1 x2 ->
@@ -2778,7 +2772,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyAmp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyVrnInfSup x0 x1 x2 ->
@@ -2788,7 +2782,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyVrnInfSup")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyVrnInf x0 x1 ->
@@ -2797,7 +2791,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrnInf")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyVrnSup x0 x1 ->
                       Ast.PaApp _loc
@@ -2805,7 +2799,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrnSup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyVrnEq x0 x1 ->
                       Ast.PaApp _loc
@@ -2813,7 +2807,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrnEq")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TySta x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -2822,7 +2816,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TySta")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyTup x0 x1 ->
@@ -2831,7 +2825,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyTup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyMut x0 x1 ->
                       Ast.PaApp _loc
@@ -2839,7 +2833,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyMut")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyPrv x0 x1 ->
                       Ast.PaApp _loc
@@ -2847,7 +2841,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyPrv")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyOr x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -2856,7 +2850,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyAnd x0 x1 x2 ->
@@ -2866,7 +2860,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyOf x0 x1 x2 ->
@@ -2876,7 +2870,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOf")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TySum x0 x1 ->
@@ -2885,7 +2879,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TySum")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyCom x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -2894,7 +2888,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyCom")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TySem x0 x1 x2 ->
@@ -2904,7 +2898,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TySem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyCol x0 x1 x2 ->
@@ -2914,7 +2908,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyCol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyRec x0 x1 ->
@@ -2923,7 +2917,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyRec")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.TyVrn x0 x1 ->
                       Ast.PaApp _loc
@@ -2931,7 +2925,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyVrn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyQuM x0 x1 ->
                       Ast.PaApp _loc
@@ -2939,7 +2933,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyQuM")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyQuP x0 x1 ->
                       Ast.PaApp _loc
@@ -2947,7 +2941,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyQuP")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyQuo x0 x1 ->
                       Ast.PaApp _loc
@@ -2955,7 +2949,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyQuo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.TyPol x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -2964,7 +2958,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyPol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyOlb x0 x1 x2 ->
@@ -2974,7 +2968,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyOlb")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyObj x0 x1 x2 ->
@@ -2984,7 +2978,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyObj")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_meta_bool _loc x2)
                   | Ast.TyDcl x0 x1 x2 x3 x4 ->
@@ -2996,7 +2990,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.PaId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "TyDcl")))
-                                    (meta_acc_Loc_t _loc x0))
+                                    (meta_loc _loc x0))
                                  (meta_string _loc x1))
                               (meta_list meta_ctyp _loc x2))
                            (meta_ctyp _loc x3))
@@ -3013,7 +3007,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyMan")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyId x0 x1 ->
@@ -3022,7 +3016,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.TyLab x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3031,7 +3025,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyLab")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyCls x0 x1 ->
@@ -3040,7 +3034,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "TyCls")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.TyArr x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3049,7 +3043,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyArr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyApp x0 x1 x2 ->
@@ -3059,7 +3053,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyAny x0 ->
@@ -3067,7 +3061,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "TyAny")))
-                        (meta_acc_Loc_t _loc x0)
+                        (meta_loc _loc x0)
                   | Ast.TyAli x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -3075,7 +3069,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "TyAli")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.TyNil x0 ->
@@ -3083,7 +3077,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "TyNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_expr _loc =
                   fun
                   [ Ast.ExWhi x0 x1 x2 ->
@@ -3093,7 +3087,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExWhi")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExVrn x0 x1 ->
@@ -3102,7 +3096,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExVrn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExTyc x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3111,7 +3105,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.ExCom x0 x1 x2 ->
@@ -3121,7 +3115,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExCom")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExTup x0 x1 ->
@@ -3130,7 +3124,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExTup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExTry x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3139,7 +3133,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExTry")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_match_case _loc x2)
                   | Ast.ExStr x0 x1 ->
@@ -3148,7 +3142,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExStr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExSte x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3157,7 +3151,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExSte")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExSnd x0 x1 x2 ->
@@ -3167,7 +3161,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExSnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_string _loc x2)
                   | Ast.ExSeq x0 x1 ->
@@ -3176,7 +3170,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExSeq")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExRec x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3185,7 +3179,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExRec")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_rec_binding _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExOvr x0 x1 ->
@@ -3194,7 +3188,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExOvr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_rec_binding _loc x1)
                   | Ast.ExOlb x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3203,7 +3197,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExOlb")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExObj x0 x1 x2 ->
@@ -3213,7 +3207,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExObj")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_class_str_item _loc x2)
                   | Ast.ExNew x0 x1 ->
@@ -3222,7 +3216,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExNew")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.ExMat x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3231,7 +3225,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExMat")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_match_case _loc x2)
                   | Ast.ExLmd x0 x1 x2 x3 ->
@@ -3242,7 +3236,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExLmd")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_expr _loc x2))
                         (meta_expr _loc x3)
@@ -3254,7 +3248,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExLet")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_meta_bool _loc x1))
                            (meta_binding _loc x2))
                         (meta_expr _loc x3)
@@ -3264,7 +3258,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExLaz")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExLab x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3273,7 +3267,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExLab")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExNativeInt x0 x1 ->
@@ -3282,7 +3276,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExNativeInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExInt64 x0 x1 ->
                       Ast.PaApp _loc
@@ -3290,7 +3284,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExInt64")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExInt32 x0 x1 ->
                       Ast.PaApp _loc
@@ -3298,7 +3292,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExInt32")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExInt x0 x1 ->
                       Ast.PaApp _loc
@@ -3306,7 +3300,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExIfe x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -3316,7 +3310,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExIfe")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_expr _loc x1))
                            (meta_expr _loc x2))
                         (meta_expr _loc x3)
@@ -3326,7 +3320,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExFun")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_match_case _loc x1)
                   | Ast.ExFor x0 x1 x2 x3 x4 x5 ->
                       Ast.PaApp _loc
@@ -3339,7 +3333,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                           (Ast.IdAcc _loc
                                              (Ast.IdUid _loc "Ast")
                                              (Ast.IdUid _loc "ExFor")))
-                                       (meta_acc_Loc_t _loc x0))
+                                       (meta_loc _loc x0))
                                     (meta_string _loc x1))
                                  (meta_expr _loc x2))
                               (meta_expr _loc x3))
@@ -3351,7 +3345,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExFlo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExCoe x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -3361,7 +3355,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExCoe")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_expr _loc x1))
                            (meta_ctyp _loc x2))
                         (meta_ctyp _loc x3)
@@ -3371,7 +3365,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExChr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.ExAss x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3380,7 +3374,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExAss")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExAsr x0 x1 ->
@@ -3389,14 +3383,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExAsr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExAsf x0 ->
                       Ast.PaApp _loc
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "ExAsf")))
-                        (meta_acc_Loc_t _loc x0)
+                        (meta_loc _loc x0)
                   | Ast.ExSem x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -3404,7 +3398,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExArr x0 x1 ->
@@ -3413,7 +3407,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExArr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.ExAre x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3422,7 +3416,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExAre")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExApp x0 x1 x2 ->
@@ -3432,7 +3426,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -3443,7 +3437,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "ExAcc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_expr _loc x1))
                         (meta_expr _loc x2)
                   | Ast.ExId x0 x1 ->
@@ -3452,14 +3446,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "ExId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.ExNil x0 ->
                       Ast.PaApp _loc
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "ExNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_ident _loc =
                   fun
                   [ Ast.IdAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -3469,7 +3463,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "IdUid")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.IdLid x0 x1 ->
                       Ast.PaApp _loc
@@ -3477,7 +3471,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "IdLid")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.IdApp x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3486,7 +3480,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "IdApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_ident _loc x2)
                   | Ast.IdAcc x0 x1 x2 ->
@@ -3496,7 +3490,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "IdAcc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_ident _loc x2) ]
                 and meta_match_case _loc =
@@ -3510,7 +3504,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "McArr")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_patt _loc x1))
                            (meta_expr _loc x2))
                         (meta_expr _loc x3)
@@ -3521,7 +3515,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "McOr")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_match_case _loc x1))
                         (meta_match_case _loc x2)
                   | Ast.McNil x0 ->
@@ -3529,7 +3523,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "McNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_meta_bool _loc =
                   fun
                   [ Ast.BAnt x0 -> Ast.PaAnt _loc x0
@@ -3579,7 +3573,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MbCol")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.MbColEq x0 x1 x2 x3 ->
@@ -3590,7 +3584,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "MbColEq")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_type _loc x2))
                         (meta_module_expr _loc x3)
@@ -3601,7 +3595,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MbAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_binding _loc x1))
                         (meta_module_binding _loc x2)
                   | Ast.MbNil x0 ->
@@ -3609,7 +3603,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MbNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_module_expr _loc =
                   fun
                   [ Ast.MeAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -3620,7 +3614,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MeTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_expr _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.MeStr x0 x1 ->
@@ -3629,7 +3623,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MeStr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_str_item _loc x1)
                   | Ast.MeFun x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -3639,7 +3633,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "MeFun")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_type _loc x2))
                         (meta_module_expr _loc x3)
@@ -3650,7 +3644,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MeApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_expr _loc x1))
                         (meta_module_expr _loc x2)
                   | Ast.MeId x0 x1 ->
@@ -3659,14 +3653,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MeId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.MeNil x0 ->
                       Ast.PaApp _loc
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MeNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_module_type _loc =
                   fun
                   [ Ast.MtAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -3677,7 +3671,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "MtWit")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_module_type _loc x1))
                         (meta_with_constr _loc x2)
                   | Ast.MtSig x0 x1 ->
@@ -3686,7 +3680,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MtSig")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_sig_item _loc x1)
                   | Ast.MtQuo x0 x1 ->
                       Ast.PaApp _loc
@@ -3694,7 +3688,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MtQuo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.MtFun x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -3704,7 +3698,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "MtFun")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_module_type _loc x2))
                         (meta_module_type _loc x3)
@@ -3714,14 +3708,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "MtId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.MtNil x0 ->
                       Ast.PaApp _loc
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MtNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_patt _loc =
                   fun
                   [ Ast.PaVrn x0 x1 ->
@@ -3730,7 +3724,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaVrn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaTyp x0 x1 ->
                       Ast.PaApp _loc
@@ -3738,7 +3732,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaTyp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.PaTyc x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3747,7 +3741,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaTyc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.PaTup x0 x1 ->
@@ -3756,7 +3750,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaTup")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_patt _loc x1)
                   | Ast.PaStr x0 x1 ->
                       Ast.PaApp _loc
@@ -3764,7 +3758,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaStr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaEq x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3773,7 +3767,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaRec x0 x1 ->
@@ -3782,7 +3776,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaRec")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_patt _loc x1)
                   | Ast.PaRng x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3791,7 +3785,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaRng")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaOrp x0 x1 x2 ->
@@ -3801,7 +3795,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaOrp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaOlbi x0 x1 x2 x3 ->
@@ -3812,7 +3806,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "PaOlbi")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_patt _loc x2))
                         (meta_expr _loc x3)
@@ -3823,7 +3817,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaOlb")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaLab x0 x1 x2 ->
@@ -3833,7 +3827,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaLab")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaFlo x0 x1 ->
@@ -3842,7 +3836,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaFlo")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaNativeInt x0 x1 ->
                       Ast.PaApp _loc
@@ -3850,7 +3844,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaNativeInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaInt64 x0 x1 ->
                       Ast.PaApp _loc
@@ -3858,7 +3852,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaInt64")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaInt32 x0 x1 ->
                       Ast.PaApp _loc
@@ -3866,7 +3860,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaInt32")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaInt x0 x1 ->
                       Ast.PaApp _loc
@@ -3874,7 +3868,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaInt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaChr x0 x1 ->
                       Ast.PaApp _loc
@@ -3882,7 +3876,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaChr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_string _loc x1)
                   | Ast.PaSem x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3891,7 +3885,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaCom x0 x1 x2 ->
@@ -3901,7 +3895,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaCom")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaArr x0 x1 ->
@@ -3910,7 +3904,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaArr")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_patt _loc x1)
                   | Ast.PaApp x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3919,7 +3913,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaApp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaAny x0 ->
@@ -3927,7 +3921,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "PaAny")))
-                        (meta_acc_Loc_t _loc x0)
+                        (meta_loc _loc x0)
                   | Ast.PaAnt x0 x1 -> Ast.PaAnt x0 x1
                   | Ast.PaAli x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -3936,7 +3930,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaAli")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_patt _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaId x0 x1 ->
@@ -3945,14 +3939,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "PaId")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.PaNil x0 ->
                       Ast.PaApp _loc
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "PaNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_rec_binding _loc =
                   fun
                   [ Ast.RbAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -3963,7 +3957,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "RbEq")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_expr _loc x2)
                   | Ast.RbSem x0 x1 x2 ->
@@ -3973,7 +3967,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "RbSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_rec_binding _loc x1))
                         (meta_rec_binding _loc x2)
                   | Ast.RbNil x0 ->
@@ -3981,7 +3975,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "RbNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_sig_item _loc =
                   fun
                   [ Ast.SgAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -3992,7 +3986,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgVal")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.SgTyp x0 x1 ->
@@ -4001,7 +3995,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgTyp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.SgOpn x0 x1 ->
                       Ast.PaApp _loc
@@ -4009,7 +4003,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgOpn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.SgMty x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -4018,7 +4012,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgMty")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.SgRecMod x0 x1 ->
@@ -4027,7 +4021,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgRecMod")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_binding _loc x1)
                   | Ast.SgMod x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -4036,7 +4030,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgMod")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.SgInc x0 x1 ->
@@ -4045,7 +4039,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgInc")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_type _loc x1)
                   | Ast.SgExt x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -4055,7 +4049,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "SgExt")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_ctyp _loc x2))
                         (meta_meta_list meta_string _loc x3)
@@ -4065,7 +4059,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgExc")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.SgDir x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -4074,7 +4068,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgDir")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.SgSem x0 x1 x2 ->
@@ -4084,7 +4078,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "SgSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_sig_item _loc x1))
                         (meta_sig_item _loc x2)
                   | Ast.SgClt x0 x1 ->
@@ -4093,7 +4087,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgClt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.SgCls x0 x1 ->
                       Ast.PaApp _loc
@@ -4101,14 +4095,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "SgCls")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.SgNil x0 ->
                       Ast.PaApp _loc
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "SgNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_str_item _loc =
                   fun
                   [ Ast.StAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -4119,7 +4113,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StVal")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_meta_bool _loc x1))
                         (meta_binding _loc x2)
                   | Ast.StTyp x0 x1 ->
@@ -4128,7 +4122,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StTyp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ctyp _loc x1)
                   | Ast.StOpn x0 x1 ->
                       Ast.PaApp _loc
@@ -4136,7 +4130,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StOpn")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_ident _loc x1)
                   | Ast.StMty x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -4145,7 +4139,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StMty")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_type _loc x2)
                   | Ast.StRecMod x0 x1 ->
@@ -4154,7 +4148,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StRecMod")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_binding _loc x1)
                   | Ast.StMod x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -4163,7 +4157,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StMod")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_module_expr _loc x2)
                   | Ast.StInc x0 x1 ->
@@ -4172,7 +4166,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StInc")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_module_expr _loc x1)
                   | Ast.StExt x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -4182,7 +4176,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaId _loc
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "StExt")))
-                                 (meta_acc_Loc_t _loc x0))
+                                 (meta_loc _loc x0))
                               (meta_string _loc x1))
                            (meta_ctyp _loc x2))
                         (meta_meta_list meta_string _loc x3)
@@ -4192,7 +4186,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StExp")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_expr _loc x1)
                   | Ast.StExc x0 x1 x2 ->
                       Ast.PaApp _loc
@@ -4201,7 +4195,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StExc")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_meta_option meta_ident _loc x2)
                   | Ast.StDir x0 x1 x2 ->
@@ -4211,7 +4205,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StDir")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_string _loc x1))
                         (meta_expr _loc x2)
                   | Ast.StSem x0 x1 x2 ->
@@ -4221,7 +4215,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StSem")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_str_item _loc x1))
                         (meta_str_item _loc x2)
                   | Ast.StClt x0 x1 ->
@@ -4230,7 +4224,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StClt")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_type _loc x1)
                   | Ast.StCls x0 x1 ->
                       Ast.PaApp _loc
@@ -4238,14 +4232,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.PaId _loc
                               (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                  (Ast.IdUid _loc "StCls")))
-                           (meta_acc_Loc_t _loc x0))
+                           (meta_loc _loc x0))
                         (meta_class_expr _loc x1)
                   | Ast.StNil x0 ->
                       Ast.PaApp _loc
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "StNil")))
-                        (meta_acc_Loc_t _loc x0) ]
+                        (meta_loc _loc x0) ]
                 and meta_with_constr _loc =
                   fun
                   [ Ast.WcAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -4256,7 +4250,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "WcAnd")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_with_constr _loc x1))
                         (meta_with_constr _loc x2)
                   | Ast.WcMod x0 x1 x2 ->
@@ -4266,7 +4260,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "WcMod")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ident _loc x1))
                         (meta_ident _loc x2)
                   | Ast.WcTyp x0 x1 x2 ->
@@ -4276,7 +4270,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (Ast.PaId _loc
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "WcTyp")))
-                              (meta_acc_Loc_t _loc x0))
+                              (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
                         (meta_ctyp _loc x2)
                   | Ast.WcNil x0 ->
@@ -4284,750 +4278,1363 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (Ast.PaId _loc
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "WcNil")))
-                        (meta_acc_Loc_t _loc x0) ];
+                        (meta_loc _loc x0) ];
               end;
           end;
       end;
     class map =
-      object (o)
-        method string = fun x -> (x : string);
-        method int = fun x -> (x : int);
-        method float = fun x -> (x : float);
-        method bool = fun x -> (x : bool);
-        method list : ! 'a 'b. ('a -> 'b) -> list 'a -> list 'b = List.map;
-        method option : ! 'a 'b. ('a -> 'b) -> option 'a -> option 'b =
-          fun f -> fun [ None -> None | Some x -> Some (f x) ];
-        method array : ! 'a 'b. ('a -> 'b) -> array 'a -> array 'b = Array.
-          map;
-        method ref : ! 'a 'b. ('a -> 'b) -> ref 'a -> ref 'b =
-          fun f { val = x } -> { val = f x; };
-        method _Loc_t : Loc.t -> Loc.t = fun x -> x;
+      object ((o : 'self_type))
+        method string : string -> string = o#unknown;
+        method list :
+          ! 'a 'a_out. ('self_type -> 'a -> 'a_out) -> list 'a -> list 'a_out =
+          fun _f_a ->
+            fun
+            [ [] -> []
+            | [ _x :: _x_i1 ] ->
+                let _x = _f_a o _x in
+                let _x_i1 = o#list _f_a _x_i1 in [ _x :: _x_i1 ] ];
         method with_constr : with_constr -> with_constr =
           fun
-          [ WcNil _x0 -> WcNil (o#_Loc_t _x0)
-          | WcTyp _x0 _x1 _x2 ->
-              WcTyp (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | WcMod _x0 _x1 _x2 ->
-              WcMod (o#_Loc_t _x0) (o#ident _x1) (o#ident _x2)
-          | WcAnd _x0 _x1 _x2 ->
-              WcAnd (o#_Loc_t _x0) (o#with_constr _x1) (o#with_constr _x2)
-          | WcAnt _x0 _x1 -> WcAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ WcNil _x -> let _x = o#loc _x in WcNil _x
+          | WcTyp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in WcTyp _x _x_i1 _x_i2
+          | WcMod _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in
+              let _x_i2 = o#ident _x_i2 in WcMod _x _x_i1 _x_i2
+          | WcAnd _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#with_constr _x_i1 in
+              let _x_i2 = o#with_constr _x_i2 in WcAnd _x _x_i1 _x_i2
+          | WcAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in WcAnt _x _x_i1 ];
         method str_item : str_item -> str_item =
           fun
-          [ StNil _x0 -> StNil (o#_Loc_t _x0)
-          | StCls _x0 _x1 -> StCls (o#_Loc_t _x0) (o#class_expr _x1)
-          | StClt _x0 _x1 -> StClt (o#_Loc_t _x0) (o#class_type _x1)
-          | StSem _x0 _x1 _x2 ->
-              StSem (o#_Loc_t _x0) (o#str_item _x1) (o#str_item _x2)
-          | StDir _x0 _x1 _x2 ->
-              StDir (o#_Loc_t _x0) (o#string _x1) (o#expr _x2)
-          | StExc _x0 _x1 _x2 ->
-              StExc (o#_Loc_t _x0) (o#ctyp _x1) (o#meta_option o#ident _x2)
-          | StExp _x0 _x1 -> StExp (o#_Loc_t _x0) (o#expr _x1)
-          | StExt _x0 _x1 _x2 _x3 ->
-              StExt (o#_Loc_t _x0) (o#string _x1) (o#ctyp _x2)
-                (o#meta_list o#string _x3)
-          | StInc _x0 _x1 -> StInc (o#_Loc_t _x0) (o#module_expr _x1)
-          | StMod _x0 _x1 _x2 ->
-              StMod (o#_Loc_t _x0) (o#string _x1) (o#module_expr _x2)
-          | StRecMod _x0 _x1 ->
-              StRecMod (o#_Loc_t _x0) (o#module_binding _x1)
-          | StMty _x0 _x1 _x2 ->
-              StMty (o#_Loc_t _x0) (o#string _x1) (o#module_type _x2)
-          | StOpn _x0 _x1 -> StOpn (o#_Loc_t _x0) (o#ident _x1)
-          | StTyp _x0 _x1 -> StTyp (o#_Loc_t _x0) (o#ctyp _x1)
-          | StVal _x0 _x1 _x2 ->
-              StVal (o#_Loc_t _x0) (o#meta_bool _x1) (o#binding _x2)
-          | StAnt _x0 _x1 -> StAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ StNil _x -> let _x = o#loc _x in StNil _x
+          | StCls _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_expr _x_i1 in StCls _x _x_i1
+          | StClt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_type _x_i1 in StClt _x _x_i1
+          | StSem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#str_item _x_i1 in
+              let _x_i2 = o#str_item _x_i2 in StSem _x _x_i1 _x_i2
+          | StDir _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#expr _x_i2 in StDir _x _x_i1 _x_i2
+          | StExc _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#meta_option (fun o -> o#ident) _x_i2
+              in StExc _x _x_i1 _x_i2
+          | StExp _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in StExp _x _x_i1
+          | StExt _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in
+              let _x_i3 = o#meta_list (fun o -> o#string) _x_i3
+              in StExt _x _x_i1 _x_i2 _x_i3
+          | StInc _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_expr _x_i1 in StInc _x _x_i1
+          | StMod _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_expr _x_i2 in StMod _x _x_i1 _x_i2
+          | StRecMod _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_binding _x_i1 in StRecMod _x _x_i1
+          | StMty _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in StMty _x _x_i1 _x_i2
+          | StOpn _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in StOpn _x _x_i1
+          | StTyp _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in StTyp _x _x_i1
+          | StVal _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#binding _x_i2 in StVal _x _x_i1 _x_i2
+          | StAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in StAnt _x _x_i1 ];
         method sig_item : sig_item -> sig_item =
           fun
-          [ SgNil _x0 -> SgNil (o#_Loc_t _x0)
-          | SgCls _x0 _x1 -> SgCls (o#_Loc_t _x0) (o#class_type _x1)
-          | SgClt _x0 _x1 -> SgClt (o#_Loc_t _x0) (o#class_type _x1)
-          | SgSem _x0 _x1 _x2 ->
-              SgSem (o#_Loc_t _x0) (o#sig_item _x1) (o#sig_item _x2)
-          | SgDir _x0 _x1 _x2 ->
-              SgDir (o#_Loc_t _x0) (o#string _x1) (o#expr _x2)
-          | SgExc _x0 _x1 -> SgExc (o#_Loc_t _x0) (o#ctyp _x1)
-          | SgExt _x0 _x1 _x2 _x3 ->
-              SgExt (o#_Loc_t _x0) (o#string _x1) (o#ctyp _x2)
-                (o#meta_list o#string _x3)
-          | SgInc _x0 _x1 -> SgInc (o#_Loc_t _x0) (o#module_type _x1)
-          | SgMod _x0 _x1 _x2 ->
-              SgMod (o#_Loc_t _x0) (o#string _x1) (o#module_type _x2)
-          | SgRecMod _x0 _x1 ->
-              SgRecMod (o#_Loc_t _x0) (o#module_binding _x1)
-          | SgMty _x0 _x1 _x2 ->
-              SgMty (o#_Loc_t _x0) (o#string _x1) (o#module_type _x2)
-          | SgOpn _x0 _x1 -> SgOpn (o#_Loc_t _x0) (o#ident _x1)
-          | SgTyp _x0 _x1 -> SgTyp (o#_Loc_t _x0) (o#ctyp _x1)
-          | SgVal _x0 _x1 _x2 ->
-              SgVal (o#_Loc_t _x0) (o#string _x1) (o#ctyp _x2)
-          | SgAnt _x0 _x1 -> SgAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ SgNil _x -> let _x = o#loc _x in SgNil _x
+          | SgCls _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_type _x_i1 in SgCls _x _x_i1
+          | SgClt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_type _x_i1 in SgClt _x _x_i1
+          | SgSem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#sig_item _x_i1 in
+              let _x_i2 = o#sig_item _x_i2 in SgSem _x _x_i1 _x_i2
+          | SgDir _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#expr _x_i2 in SgDir _x _x_i1 _x_i2
+          | SgExc _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in SgExc _x _x_i1
+          | SgExt _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in
+              let _x_i3 = o#meta_list (fun o -> o#string) _x_i3
+              in SgExt _x _x_i1 _x_i2 _x_i3
+          | SgInc _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_type _x_i1 in SgInc _x _x_i1
+          | SgMod _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in SgMod _x _x_i1 _x_i2
+          | SgRecMod _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_binding _x_i1 in SgRecMod _x _x_i1
+          | SgMty _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in SgMty _x _x_i1 _x_i2
+          | SgOpn _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in SgOpn _x _x_i1
+          | SgTyp _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in SgTyp _x _x_i1
+          | SgVal _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in SgVal _x _x_i1 _x_i2
+          | SgAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in SgAnt _x _x_i1 ];
         method rec_binding : rec_binding -> rec_binding =
           fun
-          [ RbNil _x0 -> RbNil (o#_Loc_t _x0)
-          | RbSem _x0 _x1 _x2 ->
-              RbSem (o#_Loc_t _x0) (o#rec_binding _x1) (o#rec_binding _x2)
-          | RbEq _x0 _x1 _x2 ->
-              RbEq (o#_Loc_t _x0) (o#ident _x1) (o#expr _x2)
-          | RbAnt _x0 _x1 -> RbAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ RbNil _x -> let _x = o#loc _x in RbNil _x
+          | RbSem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#rec_binding _x_i1 in
+              let _x_i2 = o#rec_binding _x_i2 in RbSem _x _x_i1 _x_i2
+          | RbEq _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in
+              let _x_i2 = o#expr _x_i2 in RbEq _x _x_i1 _x_i2
+          | RbAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in RbAnt _x _x_i1 ];
         method patt : patt -> patt =
           fun
-          [ PaNil _x0 -> PaNil (o#_Loc_t _x0)
-          | PaId _x0 _x1 -> PaId (o#_Loc_t _x0) (o#ident _x1)
-          | PaAli _x0 _x1 _x2 ->
-              PaAli (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
-          | PaAnt _x0 _x1 -> PaAnt (o#_Loc_t _x0) (o#string _x1)
-          | PaAny _x0 -> PaAny (o#_Loc_t _x0)
-          | PaApp _x0 _x1 _x2 ->
-              PaApp (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
-          | PaArr _x0 _x1 -> PaArr (o#_Loc_t _x0) (o#patt _x1)
-          | PaCom _x0 _x1 _x2 ->
-              PaCom (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
-          | PaSem _x0 _x1 _x2 ->
-              PaSem (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
-          | PaChr _x0 _x1 -> PaChr (o#_Loc_t _x0) (o#string _x1)
-          | PaInt _x0 _x1 -> PaInt (o#_Loc_t _x0) (o#string _x1)
-          | PaInt32 _x0 _x1 -> PaInt32 (o#_Loc_t _x0) (o#string _x1)
-          | PaInt64 _x0 _x1 -> PaInt64 (o#_Loc_t _x0) (o#string _x1)
-          | PaNativeInt _x0 _x1 -> PaNativeInt (o#_Loc_t _x0) (o#string _x1)
-          | PaFlo _x0 _x1 -> PaFlo (o#_Loc_t _x0) (o#string _x1)
-          | PaLab _x0 _x1 _x2 ->
-              PaLab (o#_Loc_t _x0) (o#string _x1) (o#patt _x2)
-          | PaOlb _x0 _x1 _x2 ->
-              PaOlb (o#_Loc_t _x0) (o#string _x1) (o#patt _x2)
-          | PaOlbi _x0 _x1 _x2 _x3 ->
-              PaOlbi (o#_Loc_t _x0) (o#string _x1) (o#patt _x2) (o#expr _x3)
-          | PaOrp _x0 _x1 _x2 ->
-              PaOrp (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
-          | PaRng _x0 _x1 _x2 ->
-              PaRng (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
-          | PaRec _x0 _x1 -> PaRec (o#_Loc_t _x0) (o#patt _x1)
-          | PaEq _x0 _x1 _x2 ->
-              PaEq (o#_Loc_t _x0) (o#ident _x1) (o#patt _x2)
-          | PaStr _x0 _x1 -> PaStr (o#_Loc_t _x0) (o#string _x1)
-          | PaTup _x0 _x1 -> PaTup (o#_Loc_t _x0) (o#patt _x1)
-          | PaTyc _x0 _x1 _x2 ->
-              PaTyc (o#_Loc_t _x0) (o#patt _x1) (o#ctyp _x2)
-          | PaTyp _x0 _x1 -> PaTyp (o#_Loc_t _x0) (o#ident _x1)
-          | PaVrn _x0 _x1 -> PaVrn (o#_Loc_t _x0) (o#string _x1) ];
+          [ PaNil _x -> let _x = o#loc _x in PaNil _x
+          | PaId _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ident _x_i1 in PaId _x _x_i1
+          | PaAli _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaAli _x _x_i1 _x_i2
+          | PaAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaAnt _x _x_i1
+          | PaAny _x -> let _x = o#loc _x in PaAny _x
+          | PaApp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaApp _x _x_i1 _x_i2
+          | PaArr _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaArr _x _x_i1
+          | PaCom _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaCom _x _x_i1 _x_i2
+          | PaSem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaSem _x _x_i1 _x_i2
+          | PaChr _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaChr _x _x_i1
+          | PaInt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaInt _x _x_i1
+          | PaInt32 _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaInt32 _x _x_i1
+          | PaInt64 _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaInt64 _x _x_i1
+          | PaNativeInt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaNativeInt _x _x_i1
+          | PaFlo _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaFlo _x _x_i1
+          | PaLab _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaLab _x _x_i1 _x_i2
+          | PaOlb _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaOlb _x _x_i1 _x_i2
+          | PaOlbi _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#patt _x_i2 in
+              let _x_i3 = o#expr _x_i3 in PaOlbi _x _x_i1 _x_i2 _x_i3
+          | PaOrp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaOrp _x _x_i1 _x_i2
+          | PaRng _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaRng _x _x_i1 _x_i2
+          | PaRec _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaRec _x _x_i1
+          | PaEq _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in
+              let _x_i2 = o#patt _x_i2 in PaEq _x _x_i1 _x_i2
+          | PaStr _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaStr _x _x_i1
+          | PaTup _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaTup _x _x_i1
+          | PaTyc _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in PaTyc _x _x_i1 _x_i2
+          | PaTyp _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in PaTyp _x _x_i1
+          | PaVrn _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaVrn _x _x_i1 ];
         method module_type : module_type -> module_type =
           fun
-          [ MtNil _x0 -> MtNil (o#_Loc_t _x0)
-          | MtId _x0 _x1 -> MtId (o#_Loc_t _x0) (o#ident _x1)
-          | MtFun _x0 _x1 _x2 _x3 ->
-              MtFun (o#_Loc_t _x0) (o#string _x1) (o#module_type _x2)
-                (o#module_type _x3)
-          | MtQuo _x0 _x1 -> MtQuo (o#_Loc_t _x0) (o#string _x1)
-          | MtSig _x0 _x1 -> MtSig (o#_Loc_t _x0) (o#sig_item _x1)
-          | MtWit _x0 _x1 _x2 ->
-              MtWit (o#_Loc_t _x0) (o#module_type _x1) (o#with_constr _x2)
-          | MtAnt _x0 _x1 -> MtAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ MtNil _x -> let _x = o#loc _x in MtNil _x
+          | MtId _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ident _x_i1 in MtId _x _x_i1
+          | MtFun _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in
+              let _x_i3 = o#module_type _x_i3 in MtFun _x _x_i1 _x_i2 _x_i3
+          | MtQuo _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in MtQuo _x _x_i1
+          | MtSig _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#sig_item _x_i1 in MtSig _x _x_i1
+          | MtWit _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_type _x_i1 in
+              let _x_i2 = o#with_constr _x_i2 in MtWit _x _x_i1 _x_i2
+          | MtAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in MtAnt _x _x_i1 ];
         method module_expr : module_expr -> module_expr =
           fun
-          [ MeNil _x0 -> MeNil (o#_Loc_t _x0)
-          | MeId _x0 _x1 -> MeId (o#_Loc_t _x0) (o#ident _x1)
-          | MeApp _x0 _x1 _x2 ->
-              MeApp (o#_Loc_t _x0) (o#module_expr _x1) (o#module_expr _x2)
-          | MeFun _x0 _x1 _x2 _x3 ->
-              MeFun (o#_Loc_t _x0) (o#string _x1) (o#module_type _x2)
-                (o#module_expr _x3)
-          | MeStr _x0 _x1 -> MeStr (o#_Loc_t _x0) (o#str_item _x1)
-          | MeTyc _x0 _x1 _x2 ->
-              MeTyc (o#_Loc_t _x0) (o#module_expr _x1) (o#module_type _x2)
-          | MeAnt _x0 _x1 -> MeAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ MeNil _x -> let _x = o#loc _x in MeNil _x
+          | MeId _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ident _x_i1 in MeId _x _x_i1
+          | MeApp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_expr _x_i1 in
+              let _x_i2 = o#module_expr _x_i2 in MeApp _x _x_i1 _x_i2
+          | MeFun _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in
+              let _x_i3 = o#module_expr _x_i3 in MeFun _x _x_i1 _x_i2 _x_i3
+          | MeStr _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#str_item _x_i1 in MeStr _x _x_i1
+          | MeTyc _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_expr _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in MeTyc _x _x_i1 _x_i2
+          | MeAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in MeAnt _x _x_i1 ];
         method module_binding : module_binding -> module_binding =
           fun
-          [ MbNil _x0 -> MbNil (o#_Loc_t _x0)
-          | MbAnd _x0 _x1 _x2 ->
-              MbAnd (o#_Loc_t _x0) (o#module_binding _x1)
-                (o#module_binding _x2)
-          | MbColEq _x0 _x1 _x2 _x3 ->
-              MbColEq (o#_Loc_t _x0) (o#string _x1) (o#module_type _x2)
-                (o#module_expr _x3)
-          | MbCol _x0 _x1 _x2 ->
-              MbCol (o#_Loc_t _x0) (o#string _x1) (o#module_type _x2)
-          | MbAnt _x0 _x1 -> MbAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ MbNil _x -> let _x = o#loc _x in MbNil _x
+          | MbAnd _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_binding _x_i1 in
+              let _x_i2 = o#module_binding _x_i2 in MbAnd _x _x_i1 _x_i2
+          | MbColEq _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in
+              let _x_i3 = o#module_expr _x_i3 in MbColEq _x _x_i1 _x_i2 _x_i3
+          | MbCol _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_type _x_i2 in MbCol _x _x_i1 _x_i2
+          | MbAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in MbAnt _x _x_i1 ];
         method meta_option :
-          ! 'a 'b. ('a -> 'b) -> meta_option 'a -> meta_option 'b =
+          ! 'a 'a_out.
+            ('self_type -> 'a -> 'a_out) ->
+              meta_option 'a -> meta_option 'a_out =
           fun _f_a ->
             fun
             [ ONone -> ONone
-            | OSome _x0 -> OSome (_f_a _x0)
-            | OAnt _x0 -> OAnt (o#string _x0) ];
+            | OSome _x -> let _x = _f_a o _x in OSome _x
+            | OAnt _x -> let _x = o#string _x in OAnt _x ];
         method meta_list :
-          ! 'a 'b. ('a -> 'b) -> meta_list 'a -> meta_list 'b =
+          ! 'a 'a_out.
+            ('self_type -> 'a -> 'a_out) -> meta_list 'a -> meta_list 'a_out =
           fun _f_a ->
             fun
             [ LNil -> LNil
-            | LCons _x0 _x1 -> LCons (_f_a _x0) (o#meta_list _f_a _x1)
-            | LAnt _x0 -> LAnt (o#string _x0) ];
+            | LCons _x _x_i1 ->
+                let _x = _f_a o _x in
+                let _x_i1 = o#meta_list _f_a _x_i1 in LCons _x _x_i1
+            | LAnt _x -> let _x = o#string _x in LAnt _x ];
         method meta_bool : meta_bool -> meta_bool =
           fun
           [ BTrue -> BTrue
           | BFalse -> BFalse
-          | BAnt _x0 -> BAnt (o#string _x0) ];
+          | BAnt _x -> let _x = o#string _x in BAnt _x ];
         method match_case : match_case -> match_case =
           fun
-          [ McNil _x0 -> McNil (o#_Loc_t _x0)
-          | McOr _x0 _x1 _x2 ->
-              McOr (o#_Loc_t _x0) (o#match_case _x1) (o#match_case _x2)
-          | McArr _x0 _x1 _x2 _x3 ->
-              McArr (o#_Loc_t _x0) (o#patt _x1) (o#expr _x2) (o#expr _x3)
-          | McAnt _x0 _x1 -> McAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ McNil _x -> let _x = o#loc _x in McNil _x
+          | McOr _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#match_case _x_i1 in
+              let _x_i2 = o#match_case _x_i2 in McOr _x _x_i1 _x_i2
+          | McArr _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#expr _x_i2 in
+              let _x_i3 = o#expr _x_i3 in McArr _x _x_i1 _x_i2 _x_i3
+          | McAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in McAnt _x _x_i1 ];
+        method loc : loc -> loc = o#unknown;
         method ident : ident -> ident =
           fun
-          [ IdAcc _x0 _x1 _x2 ->
-              IdAcc (o#_Loc_t _x0) (o#ident _x1) (o#ident _x2)
-          | IdApp _x0 _x1 _x2 ->
-              IdApp (o#_Loc_t _x0) (o#ident _x1) (o#ident _x2)
-          | IdLid _x0 _x1 -> IdLid (o#_Loc_t _x0) (o#string _x1)
-          | IdUid _x0 _x1 -> IdUid (o#_Loc_t _x0) (o#string _x1)
-          | IdAnt _x0 _x1 -> IdAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ IdAcc _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in
+              let _x_i2 = o#ident _x_i2 in IdAcc _x _x_i1 _x_i2
+          | IdApp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in
+              let _x_i2 = o#ident _x_i2 in IdApp _x _x_i1 _x_i2
+          | IdLid _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in IdLid _x _x_i1
+          | IdUid _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in IdUid _x _x_i1
+          | IdAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in IdAnt _x _x_i1 ];
         method expr : expr -> expr =
           fun
-          [ ExNil _x0 -> ExNil (o#_Loc_t _x0)
-          | ExId _x0 _x1 -> ExId (o#_Loc_t _x0) (o#ident _x1)
-          | ExAcc _x0 _x1 _x2 ->
-              ExAcc (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
-          | ExAnt _x0 _x1 -> ExAnt (o#_Loc_t _x0) (o#string _x1)
-          | ExApp _x0 _x1 _x2 ->
-              ExApp (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
-          | ExAre _x0 _x1 _x2 ->
-              ExAre (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
-          | ExArr _x0 _x1 -> ExArr (o#_Loc_t _x0) (o#expr _x1)
-          | ExSem _x0 _x1 _x2 ->
-              ExSem (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
-          | ExAsf _x0 -> ExAsf (o#_Loc_t _x0)
-          | ExAsr _x0 _x1 -> ExAsr (o#_Loc_t _x0) (o#expr _x1)
-          | ExAss _x0 _x1 _x2 ->
-              ExAss (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
-          | ExChr _x0 _x1 -> ExChr (o#_Loc_t _x0) (o#string _x1)
-          | ExCoe _x0 _x1 _x2 _x3 ->
-              ExCoe (o#_Loc_t _x0) (o#expr _x1) (o#ctyp _x2) (o#ctyp _x3)
-          | ExFlo _x0 _x1 -> ExFlo (o#_Loc_t _x0) (o#string _x1)
-          | ExFor _x0 _x1 _x2 _x3 _x4 _x5 ->
-              ExFor (o#_Loc_t _x0) (o#string _x1) (o#expr _x2) (o#expr _x3)
-                (o#meta_bool _x4) (o#expr _x5)
-          | ExFun _x0 _x1 -> ExFun (o#_Loc_t _x0) (o#match_case _x1)
-          | ExIfe _x0 _x1 _x2 _x3 ->
-              ExIfe (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2) (o#expr _x3)
-          | ExInt _x0 _x1 -> ExInt (o#_Loc_t _x0) (o#string _x1)
-          | ExInt32 _x0 _x1 -> ExInt32 (o#_Loc_t _x0) (o#string _x1)
-          | ExInt64 _x0 _x1 -> ExInt64 (o#_Loc_t _x0) (o#string _x1)
-          | ExNativeInt _x0 _x1 -> ExNativeInt (o#_Loc_t _x0) (o#string _x1)
-          | ExLab _x0 _x1 _x2 ->
-              ExLab (o#_Loc_t _x0) (o#string _x1) (o#expr _x2)
-          | ExLaz _x0 _x1 -> ExLaz (o#_Loc_t _x0) (o#expr _x1)
-          | ExLet _x0 _x1 _x2 _x3 ->
-              ExLet (o#_Loc_t _x0) (o#meta_bool _x1) (o#binding _x2)
-                (o#expr _x3)
-          | ExLmd _x0 _x1 _x2 _x3 ->
-              ExLmd (o#_Loc_t _x0) (o#string _x1) (o#module_expr _x2)
-                (o#expr _x3)
-          | ExMat _x0 _x1 _x2 ->
-              ExMat (o#_Loc_t _x0) (o#expr _x1) (o#match_case _x2)
-          | ExNew _x0 _x1 -> ExNew (o#_Loc_t _x0) (o#ident _x1)
-          | ExObj _x0 _x1 _x2 ->
-              ExObj (o#_Loc_t _x0) (o#patt _x1) (o#class_str_item _x2)
-          | ExOlb _x0 _x1 _x2 ->
-              ExOlb (o#_Loc_t _x0) (o#string _x1) (o#expr _x2)
-          | ExOvr _x0 _x1 -> ExOvr (o#_Loc_t _x0) (o#rec_binding _x1)
-          | ExRec _x0 _x1 _x2 ->
-              ExRec (o#_Loc_t _x0) (o#rec_binding _x1) (o#expr _x2)
-          | ExSeq _x0 _x1 -> ExSeq (o#_Loc_t _x0) (o#expr _x1)
-          | ExSnd _x0 _x1 _x2 ->
-              ExSnd (o#_Loc_t _x0) (o#expr _x1) (o#string _x2)
-          | ExSte _x0 _x1 _x2 ->
-              ExSte (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
-          | ExStr _x0 _x1 -> ExStr (o#_Loc_t _x0) (o#string _x1)
-          | ExTry _x0 _x1 _x2 ->
-              ExTry (o#_Loc_t _x0) (o#expr _x1) (o#match_case _x2)
-          | ExTup _x0 _x1 -> ExTup (o#_Loc_t _x0) (o#expr _x1)
-          | ExCom _x0 _x1 _x2 ->
-              ExCom (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
-          | ExTyc _x0 _x1 _x2 ->
-              ExTyc (o#_Loc_t _x0) (o#expr _x1) (o#ctyp _x2)
-          | ExVrn _x0 _x1 -> ExVrn (o#_Loc_t _x0) (o#string _x1)
-          | ExWhi _x0 _x1 _x2 ->
-              ExWhi (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2) ];
+          [ ExNil _x -> let _x = o#loc _x in ExNil _x
+          | ExId _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ident _x_i1 in ExId _x _x_i1
+          | ExAcc _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExAcc _x _x_i1 _x_i2
+          | ExAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExAnt _x _x_i1
+          | ExApp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExApp _x _x_i1 _x_i2
+          | ExAre _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExAre _x _x_i1 _x_i2
+          | ExArr _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in ExArr _x _x_i1
+          | ExSem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExSem _x _x_i1 _x_i2
+          | ExAsf _x -> let _x = o#loc _x in ExAsf _x
+          | ExAsr _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in ExAsr _x _x_i1
+          | ExAss _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExAss _x _x_i1 _x_i2
+          | ExChr _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExChr _x _x_i1
+          | ExCoe _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in ExCoe _x _x_i1 _x_i2 _x_i3
+          | ExFlo _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExFlo _x _x_i1
+          | ExFor _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#expr _x_i2 in
+              let _x_i3 = o#expr _x_i3 in
+              let _x_i4 = o#meta_bool _x_i4 in
+              let _x_i5 = o#expr _x_i5
+              in ExFor _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5
+          | ExFun _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#match_case _x_i1 in ExFun _x _x_i1
+          | ExIfe _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in
+              let _x_i3 = o#expr _x_i3 in ExIfe _x _x_i1 _x_i2 _x_i3
+          | ExInt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExInt _x _x_i1
+          | ExInt32 _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExInt32 _x _x_i1
+          | ExInt64 _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExInt64 _x _x_i1
+          | ExNativeInt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExNativeInt _x _x_i1
+          | ExLab _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExLab _x _x_i1 _x_i2
+          | ExLaz _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in ExLaz _x _x_i1
+          | ExLet _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#binding _x_i2 in
+              let _x_i3 = o#expr _x_i3 in ExLet _x _x_i1 _x_i2 _x_i3
+          | ExLmd _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#module_expr _x_i2 in
+              let _x_i3 = o#expr _x_i3 in ExLmd _x _x_i1 _x_i2 _x_i3
+          | ExMat _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#match_case _x_i2 in ExMat _x _x_i1 _x_i2
+          | ExNew _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in ExNew _x _x_i1
+          | ExObj _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#class_str_item _x_i2 in ExObj _x _x_i1 _x_i2
+          | ExOlb _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExOlb _x _x_i1 _x_i2
+          | ExOvr _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#rec_binding _x_i1 in ExOvr _x _x_i1
+          | ExRec _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#rec_binding _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExRec _x _x_i1 _x_i2
+          | ExSeq _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in ExSeq _x _x_i1
+          | ExSnd _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#string _x_i2 in ExSnd _x _x_i1 _x_i2
+          | ExSte _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExSte _x _x_i1 _x_i2
+          | ExStr _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExStr _x _x_i1
+          | ExTry _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#match_case _x_i2 in ExTry _x _x_i1 _x_i2
+          | ExTup _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in ExTup _x _x_i1
+          | ExCom _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExCom _x _x_i1 _x_i2
+          | ExTyc _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in ExTyc _x _x_i1 _x_i2
+          | ExVrn _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in ExVrn _x _x_i1
+          | ExWhi _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in ExWhi _x _x_i1 _x_i2 ];
         method ctyp : ctyp -> ctyp =
           fun
-          [ TyNil _x0 -> TyNil (o#_Loc_t _x0)
-          | TyAli _x0 _x1 _x2 ->
-              TyAli (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyAny _x0 -> TyAny (o#_Loc_t _x0)
-          | TyApp _x0 _x1 _x2 ->
-              TyApp (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyArr _x0 _x1 _x2 ->
-              TyArr (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyCls _x0 _x1 -> TyCls (o#_Loc_t _x0) (o#ident _x1)
-          | TyLab _x0 _x1 _x2 ->
-              TyLab (o#_Loc_t _x0) (o#string _x1) (o#ctyp _x2)
-          | TyId _x0 _x1 -> TyId (o#_Loc_t _x0) (o#ident _x1)
-          | TyMan _x0 _x1 _x2 ->
-              TyMan (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyDcl _x0 _x1 _x2 _x3 _x4 ->
-              TyDcl (o#_Loc_t _x0) (o#string _x1) (o#list o#ctyp _x2)
-                (o#ctyp _x3)
-                (o#list (fun (_x0, _x1) -> ((o#ctyp _x0), (o#ctyp _x1))) _x4)
-          | TyObj _x0 _x1 _x2 ->
-              TyObj (o#_Loc_t _x0) (o#ctyp _x1) (o#meta_bool _x2)
-          | TyOlb _x0 _x1 _x2 ->
-              TyOlb (o#_Loc_t _x0) (o#string _x1) (o#ctyp _x2)
-          | TyPol _x0 _x1 _x2 ->
-              TyPol (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyQuo _x0 _x1 -> TyQuo (o#_Loc_t _x0) (o#string _x1)
-          | TyQuP _x0 _x1 -> TyQuP (o#_Loc_t _x0) (o#string _x1)
-          | TyQuM _x0 _x1 -> TyQuM (o#_Loc_t _x0) (o#string _x1)
-          | TyVrn _x0 _x1 -> TyVrn (o#_Loc_t _x0) (o#string _x1)
-          | TyRec _x0 _x1 -> TyRec (o#_Loc_t _x0) (o#ctyp _x1)
-          | TyCol _x0 _x1 _x2 ->
-              TyCol (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TySem _x0 _x1 _x2 ->
-              TySem (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyCom _x0 _x1 _x2 ->
-              TyCom (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TySum _x0 _x1 -> TySum (o#_Loc_t _x0) (o#ctyp _x1)
-          | TyOf _x0 _x1 _x2 -> TyOf (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyAnd _x0 _x1 _x2 ->
-              TyAnd (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyOr _x0 _x1 _x2 -> TyOr (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyPrv _x0 _x1 -> TyPrv (o#_Loc_t _x0) (o#ctyp _x1)
-          | TyMut _x0 _x1 -> TyMut (o#_Loc_t _x0) (o#ctyp _x1)
-          | TyTup _x0 _x1 -> TyTup (o#_Loc_t _x0) (o#ctyp _x1)
-          | TySta _x0 _x1 _x2 ->
-              TySta (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyVrnEq _x0 _x1 -> TyVrnEq (o#_Loc_t _x0) (o#ctyp _x1)
-          | TyVrnSup _x0 _x1 -> TyVrnSup (o#_Loc_t _x0) (o#ctyp _x1)
-          | TyVrnInf _x0 _x1 -> TyVrnInf (o#_Loc_t _x0) (o#ctyp _x1)
-          | TyVrnInfSup _x0 _x1 _x2 ->
-              TyVrnInfSup (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyAmp _x0 _x1 _x2 ->
-              TyAmp (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyOfAmp _x0 _x1 _x2 ->
-              TyOfAmp (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | TyAnt _x0 _x1 -> TyAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ TyNil _x -> let _x = o#loc _x in TyNil _x
+          | TyAli _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyAli _x _x_i1 _x_i2
+          | TyAny _x -> let _x = o#loc _x in TyAny _x
+          | TyApp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyApp _x _x_i1 _x_i2
+          | TyArr _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyArr _x _x_i1 _x_i2
+          | TyCls _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in TyCls _x _x_i1
+          | TyLab _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyLab _x _x_i1 _x_i2
+          | TyId _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ident _x_i1 in TyId _x _x_i1
+          | TyMan _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyMan _x _x_i1 _x_i2
+          | TyDcl _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#list (fun o -> o#ctyp) _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in
+              let _x_i4 =
+                o#list
+                  (fun o (_x, _x_i1) ->
+                     let _x = o#ctyp _x in
+                     let _x_i1 = o#ctyp _x_i1 in (_x, _x_i1))
+                  _x_i4
+              in TyDcl _x _x_i1 _x_i2 _x_i3 _x_i4
+          | TyObj _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in TyObj _x _x_i1 _x_i2
+          | TyOlb _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyOlb _x _x_i1 _x_i2
+          | TyPol _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyPol _x _x_i1 _x_i2
+          | TyQuo _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in TyQuo _x _x_i1
+          | TyQuP _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in TyQuP _x _x_i1
+          | TyQuM _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in TyQuM _x _x_i1
+          | TyVrn _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in TyVrn _x _x_i1
+          | TyRec _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in TyRec _x _x_i1
+          | TyCol _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyCol _x _x_i1 _x_i2
+          | TySem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TySem _x _x_i1 _x_i2
+          | TyCom _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyCom _x _x_i1 _x_i2
+          | TySum _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in TySum _x _x_i1
+          | TyOf _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyOf _x _x_i1 _x_i2
+          | TyAnd _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyAnd _x _x_i1 _x_i2
+          | TyOr _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyOr _x _x_i1 _x_i2
+          | TyPrv _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in TyPrv _x _x_i1
+          | TyMut _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in TyMut _x _x_i1
+          | TyTup _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in TyTup _x _x_i1
+          | TySta _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TySta _x _x_i1 _x_i2
+          | TyVrnEq _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in TyVrnEq _x _x_i1
+          | TyVrnSup _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in TyVrnSup _x _x_i1
+          | TyVrnInf _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in TyVrnInf _x _x_i1
+          | TyVrnInfSup _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyVrnInfSup _x _x_i1 _x_i2
+          | TyAmp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyAmp _x _x_i1 _x_i2
+          | TyOfAmp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyOfAmp _x _x_i1 _x_i2
+          | TyAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in TyAnt _x _x_i1 ];
         method class_type : class_type -> class_type =
           fun
-          [ CtNil _x0 -> CtNil (o#_Loc_t _x0)
-          | CtCon _x0 _x1 _x2 _x3 ->
-              CtCon (o#_Loc_t _x0) (o#meta_bool _x1) (o#ident _x2)
-                (o#ctyp _x3)
-          | CtFun _x0 _x1 _x2 ->
-              CtFun (o#_Loc_t _x0) (o#ctyp _x1) (o#class_type _x2)
-          | CtSig _x0 _x1 _x2 ->
-              CtSig (o#_Loc_t _x0) (o#ctyp _x1) (o#class_sig_item _x2)
-          | CtAnd _x0 _x1 _x2 ->
-              CtAnd (o#_Loc_t _x0) (o#class_type _x1) (o#class_type _x2)
-          | CtCol _x0 _x1 _x2 ->
-              CtCol (o#_Loc_t _x0) (o#class_type _x1) (o#class_type _x2)
-          | CtEq _x0 _x1 _x2 ->
-              CtEq (o#_Loc_t _x0) (o#class_type _x1) (o#class_type _x2)
-          | CtAnt _x0 _x1 -> CtAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ CtNil _x -> let _x = o#loc _x in CtNil _x
+          | CtCon _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#ident _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in CtCon _x _x_i1 _x_i2 _x_i3
+          | CtFun _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#class_type _x_i2 in CtFun _x _x_i1 _x_i2
+          | CtSig _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#class_sig_item _x_i2 in CtSig _x _x_i1 _x_i2
+          | CtAnd _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_type _x_i1 in
+              let _x_i2 = o#class_type _x_i2 in CtAnd _x _x_i1 _x_i2
+          | CtCol _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_type _x_i1 in
+              let _x_i2 = o#class_type _x_i2 in CtCol _x _x_i1 _x_i2
+          | CtEq _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_type _x_i1 in
+              let _x_i2 = o#class_type _x_i2 in CtEq _x _x_i1 _x_i2
+          | CtAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in CtAnt _x _x_i1 ];
         method class_str_item : class_str_item -> class_str_item =
           fun
-          [ CrNil _x0 -> CrNil (o#_Loc_t _x0)
-          | CrSem _x0 _x1 _x2 ->
-              CrSem (o#_Loc_t _x0) (o#class_str_item _x1)
-                (o#class_str_item _x2)
-          | CrCtr _x0 _x1 _x2 ->
-              CrCtr (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | CrInh _x0 _x1 _x2 ->
-              CrInh (o#_Loc_t _x0) (o#class_expr _x1) (o#string _x2)
-          | CrIni _x0 _x1 -> CrIni (o#_Loc_t _x0) (o#expr _x1)
-          | CrMth _x0 _x1 _x2 _x3 _x4 ->
-              CrMth (o#_Loc_t _x0) (o#string _x1) (o#meta_bool _x2)
-                (o#expr _x3) (o#ctyp _x4)
-          | CrVal _x0 _x1 _x2 _x3 ->
-              CrVal (o#_Loc_t _x0) (o#string _x1) (o#meta_bool _x2)
-                (o#expr _x3)
-          | CrVir _x0 _x1 _x2 _x3 ->
-              CrVir (o#_Loc_t _x0) (o#string _x1) (o#meta_bool _x2)
-                (o#ctyp _x3)
-          | CrVvr _x0 _x1 _x2 _x3 ->
-              CrVvr (o#_Loc_t _x0) (o#string _x1) (o#meta_bool _x2)
-                (o#ctyp _x3)
-          | CrAnt _x0 _x1 -> CrAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ CrNil _x -> let _x = o#loc _x in CrNil _x
+          | CrSem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_str_item _x_i1 in
+              let _x_i2 = o#class_str_item _x_i2 in CrSem _x _x_i1 _x_i2
+          | CrCtr _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in CrCtr _x _x_i1 _x_i2
+          | CrInh _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_expr _x_i1 in
+              let _x_i2 = o#string _x_i2 in CrInh _x _x_i1 _x_i2
+          | CrIni _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in CrIni _x _x_i1
+          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i3 = o#expr _x_i3 in
+              let _x_i4 = o#ctyp _x_i4 in CrMth _x _x_i1 _x_i2 _x_i3 _x_i4
+          | CrVal _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i3 = o#expr _x_i3 in CrVal _x _x_i1 _x_i2 _x_i3
+          | CrVir _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in CrVir _x _x_i1 _x_i2 _x_i3
+          | CrVvr _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in CrVvr _x _x_i1 _x_i2 _x_i3
+          | CrAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in CrAnt _x _x_i1 ];
         method class_sig_item : class_sig_item -> class_sig_item =
           fun
-          [ CgNil _x0 -> CgNil (o#_Loc_t _x0)
-          | CgCtr _x0 _x1 _x2 ->
-              CgCtr (o#_Loc_t _x0) (o#ctyp _x1) (o#ctyp _x2)
-          | CgSem _x0 _x1 _x2 ->
-              CgSem (o#_Loc_t _x0) (o#class_sig_item _x1)
-                (o#class_sig_item _x2)
-          | CgInh _x0 _x1 -> CgInh (o#_Loc_t _x0) (o#class_type _x1)
-          | CgMth _x0 _x1 _x2 _x3 ->
-              CgMth (o#_Loc_t _x0) (o#string _x1) (o#meta_bool _x2)
-                (o#ctyp _x3)
-          | CgVal _x0 _x1 _x2 _x3 _x4 ->
-              CgVal (o#_Loc_t _x0) (o#string _x1) (o#meta_bool _x2)
-                (o#meta_bool _x3) (o#ctyp _x4)
-          | CgVir _x0 _x1 _x2 _x3 ->
-              CgVir (o#_Loc_t _x0) (o#string _x1) (o#meta_bool _x2)
-                (o#ctyp _x3)
-          | CgAnt _x0 _x1 -> CgAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ CgNil _x -> let _x = o#loc _x in CgNil _x
+          | CgCtr _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in CgCtr _x _x_i1 _x_i2
+          | CgSem _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_sig_item _x_i1 in
+              let _x_i2 = o#class_sig_item _x_i2 in CgSem _x _x_i1 _x_i2
+          | CgInh _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_type _x_i1 in CgInh _x _x_i1
+          | CgMth _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in CgMth _x _x_i1 _x_i2 _x_i3
+          | CgVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i3 = o#meta_bool _x_i3 in
+              let _x_i4 = o#ctyp _x_i4 in CgVal _x _x_i1 _x_i2 _x_i3 _x_i4
+          | CgVir _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in CgVir _x _x_i1 _x_i2 _x_i3
+          | CgAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in CgAnt _x _x_i1 ];
         method class_expr : class_expr -> class_expr =
           fun
-          [ CeNil _x0 -> CeNil (o#_Loc_t _x0)
-          | CeApp _x0 _x1 _x2 ->
-              CeApp (o#_Loc_t _x0) (o#class_expr _x1) (o#expr _x2)
-          | CeCon _x0 _x1 _x2 _x3 ->
-              CeCon (o#_Loc_t _x0) (o#meta_bool _x1) (o#ident _x2)
-                (o#ctyp _x3)
-          | CeFun _x0 _x1 _x2 ->
-              CeFun (o#_Loc_t _x0) (o#patt _x1) (o#class_expr _x2)
-          | CeLet _x0 _x1 _x2 _x3 ->
-              CeLet (o#_Loc_t _x0) (o#meta_bool _x1) (o#binding _x2)
-                (o#class_expr _x3)
-          | CeStr _x0 _x1 _x2 ->
-              CeStr (o#_Loc_t _x0) (o#patt _x1) (o#class_str_item _x2)
-          | CeTyc _x0 _x1 _x2 ->
-              CeTyc (o#_Loc_t _x0) (o#class_expr _x1) (o#class_type _x2)
-          | CeAnd _x0 _x1 _x2 ->
-              CeAnd (o#_Loc_t _x0) (o#class_expr _x1) (o#class_expr _x2)
-          | CeEq _x0 _x1 _x2 ->
-              CeEq (o#_Loc_t _x0) (o#class_expr _x1) (o#class_expr _x2)
-          | CeAnt _x0 _x1 -> CeAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ CeNil _x -> let _x = o#loc _x in CeNil _x
+          | CeApp _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_expr _x_i1 in
+              let _x_i2 = o#expr _x_i2 in CeApp _x _x_i1 _x_i2
+          | CeCon _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#ident _x_i2 in
+              let _x_i3 = o#ctyp _x_i3 in CeCon _x _x_i1 _x_i2 _x_i3
+          | CeFun _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#class_expr _x_i2 in CeFun _x _x_i1 _x_i2
+          | CeLet _x _x_i1 _x_i2 _x_i3 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#binding _x_i2 in
+              let _x_i3 = o#class_expr _x_i3 in CeLet _x _x_i1 _x_i2 _x_i3
+          | CeStr _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#class_str_item _x_i2 in CeStr _x _x_i1 _x_i2
+          | CeTyc _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_expr _x_i1 in
+              let _x_i2 = o#class_type _x_i2 in CeTyc _x _x_i1 _x_i2
+          | CeAnd _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_expr _x_i1 in
+              let _x_i2 = o#class_expr _x_i2 in CeAnd _x _x_i1 _x_i2
+          | CeEq _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#class_expr _x_i1 in
+              let _x_i2 = o#class_expr _x_i2 in CeEq _x _x_i1 _x_i2
+          | CeAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in CeAnt _x _x_i1 ];
         method binding : binding -> binding =
           fun
-          [ BiNil _x0 -> BiNil (o#_Loc_t _x0)
-          | BiAnd _x0 _x1 _x2 ->
-              BiAnd (o#_Loc_t _x0) (o#binding _x1) (o#binding _x2)
-          | BiEq _x0 _x1 _x2 -> BiEq (o#_Loc_t _x0) (o#patt _x1) (o#expr _x2)
-          | BiAnt _x0 _x1 -> BiAnt (o#_Loc_t _x0) (o#string _x1) ];
+          [ BiNil _x -> let _x = o#loc _x in BiNil _x
+          | BiAnd _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#binding _x_i1 in
+              let _x_i2 = o#binding _x_i2 in BiAnd _x _x_i1 _x_i2
+          | BiEq _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#patt _x_i1 in
+              let _x_i2 = o#expr _x_i2 in BiEq _x _x_i1 _x_i2
+          | BiAnt _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in BiAnt _x _x_i1 ];
+        method unknown : ! 'a. 'a -> 'a = fun x -> x;
       end;
     class fold =
       object ((o : 'self_type))
-        method string = fun (_ : string) -> (o : 'self_type);
-        method int = fun (_ : int) -> (o : 'self_type);
-        method float = fun (_ : float) -> (o : 'self_type);
-        method bool = fun (_ : bool) -> (o : 'self_type);
+        method string : string -> 'self_type = o#unknown;
         method list :
           ! 'a. ('self_type -> 'a -> 'self_type) -> list 'a -> 'self_type =
-          fun f -> List.fold_left f o;
-        method option :
-          ! 'a. ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type =
-          fun f -> fun [ None -> o | Some x -> f o x ];
-        method array :
-          ! 'a. ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type =
-          fun f -> Array.fold_left f o;
-        method ref :
-          ! 'a. ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type =
-          fun f { val = x } -> f o x;
-        method _Loc_t : Loc.t -> 'self_type = fun _ -> o;
+          fun _f_a ->
+            fun
+            [ [] -> o
+            | [ _x :: _x_i1 ] ->
+                let o = _f_a o _x in let o = o#list _f_a _x_i1 in o ];
         method with_constr : with_constr -> 'self_type =
           fun
-          [ WcNil _x0 -> o#_Loc_t _x0
-          | WcTyp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | WcMod _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#ident _x2
-          | WcAnd _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#with_constr _x1)#with_constr _x2
-          | WcAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ WcNil _x -> let o = o#loc _x in o
+          | WcTyp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | WcMod _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+          | WcAnd _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#with_constr _x_i1 in let o = o#with_constr _x_i2 in o
+          | WcAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method str_item : str_item -> 'self_type =
           fun
-          [ StNil _x0 -> o#_Loc_t _x0
-          | StCls _x0 _x1 -> (o#_Loc_t _x0)#class_expr _x1
-          | StClt _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
-          | StSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#str_item _x1)#str_item _x2
-          | StDir _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
-          | StExc _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#ctyp _x1)#meta_option (fun o -> o#ident) _x2
-          | StExp _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
-          | StExt _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#meta_list
-                (fun o -> o#string) _x3
-          | StInc _x0 _x1 -> (o#_Loc_t _x0)#module_expr _x1
-          | StMod _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_expr _x2
-          | StRecMod _x0 _x1 -> (o#_Loc_t _x0)#module_binding _x1
-          | StMty _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
-          | StOpn _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | StTyp _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | StVal _x0 _x1 _x2 -> ((o#_Loc_t _x0)#meta_bool _x1)#binding _x2
-          | StAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ StNil _x -> let o = o#loc _x in o
+          | StCls _x _x_i1 ->
+              let o = o#loc _x in let o = o#class_expr _x_i1 in o
+          | StClt _x _x_i1 ->
+              let o = o#loc _x in let o = o#class_type _x_i1 in o
+          | StSem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#str_item _x_i1 in let o = o#str_item _x_i2 in o
+          | StDir _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+          | StExc _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in
+              let o = o#meta_option (fun o -> o#ident) _x_i2 in o
+          | StExp _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
+          | StExt _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#ctyp _x_i2 in
+              let o = o#meta_list (fun o -> o#string) _x_i3 in o
+          | StInc _x _x_i1 ->
+              let o = o#loc _x in let o = o#module_expr _x_i1 in o
+          | StMod _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#module_expr _x_i2 in o
+          | StRecMod _x _x_i1 ->
+              let o = o#loc _x in let o = o#module_binding _x_i1 in o
+          | StMty _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#module_type _x_i2 in o
+          | StOpn _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | StTyp _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | StVal _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#meta_bool _x_i1 in let o = o#binding _x_i2 in o
+          | StAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method sig_item : sig_item -> 'self_type =
           fun
-          [ SgNil _x0 -> o#_Loc_t _x0
-          | SgCls _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
-          | SgClt _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
-          | SgSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#sig_item _x1)#sig_item _x2
-          | SgDir _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
-          | SgExc _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | SgExt _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#meta_list
-                (fun o -> o#string) _x3
-          | SgInc _x0 _x1 -> (o#_Loc_t _x0)#module_type _x1
-          | SgMod _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
-          | SgRecMod _x0 _x1 -> (o#_Loc_t _x0)#module_binding _x1
-          | SgMty _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
-          | SgOpn _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | SgTyp _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | SgVal _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#ctyp _x2
-          | SgAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ SgNil _x -> let o = o#loc _x in o
+          | SgCls _x _x_i1 ->
+              let o = o#loc _x in let o = o#class_type _x_i1 in o
+          | SgClt _x _x_i1 ->
+              let o = o#loc _x in let o = o#class_type _x_i1 in o
+          | SgSem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#sig_item _x_i1 in let o = o#sig_item _x_i2 in o
+          | SgDir _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+          | SgExc _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | SgExt _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#ctyp _x_i2 in
+              let o = o#meta_list (fun o -> o#string) _x_i3 in o
+          | SgInc _x _x_i1 ->
+              let o = o#loc _x in let o = o#module_type _x_i1 in o
+          | SgMod _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#module_type _x_i2 in o
+          | SgRecMod _x _x_i1 ->
+              let o = o#loc _x in let o = o#module_binding _x_i1 in o
+          | SgMty _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#module_type _x_i2 in o
+          | SgOpn _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | SgTyp _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | SgVal _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
+          | SgAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method rec_binding : rec_binding -> 'self_type =
           fun
-          [ RbNil _x0 -> o#_Loc_t _x0
-          | RbSem _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#rec_binding _x1)#rec_binding _x2
-          | RbEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#expr _x2
-          | RbAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ RbNil _x -> let o = o#loc _x in o
+          | RbSem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#rec_binding _x_i1 in let o = o#rec_binding _x_i2 in o
+          | RbEq _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
+          | RbAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method patt : patt -> 'self_type =
           fun
-          [ PaNil _x0 -> o#_Loc_t _x0
-          | PaId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | PaAli _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
-          | PaAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaAny _x0 -> o#_Loc_t _x0
-          | PaApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
-          | PaArr _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
-          | PaCom _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
-          | PaSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
-          | PaChr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaInt32 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaInt64 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaNativeInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaFlo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaLab _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#patt _x2
-          | PaOlb _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#patt _x2
-          | PaOlbi _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#patt _x2)#expr _x3
-          | PaOrp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
-          | PaRng _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
-          | PaRec _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
-          | PaEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#patt _x2
-          | PaStr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | PaTup _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
-          | PaTyc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#ctyp _x2
-          | PaTyp _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | PaVrn _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ PaNil _x -> let o = o#loc _x in o
+          | PaId _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | PaAli _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+          | PaAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaAny _x -> let o = o#loc _x in o
+          | PaApp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+          | PaArr _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o
+          | PaCom _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+          | PaSem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+          | PaChr _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaInt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaInt32 _x _x_i1 ->
+              let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaInt64 _x _x_i1 ->
+              let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaNativeInt _x _x_i1 ->
+              let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaFlo _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaLab _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#patt _x_i2 in o
+          | PaOlb _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#patt _x_i2 in o
+          | PaOlbi _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#patt _x_i2 in let o = o#expr _x_i3 in o
+          | PaOrp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+          | PaRng _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#patt _x_i2 in o
+          | PaRec _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o
+          | PaEq _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ident _x_i1 in let o = o#patt _x_i2 in o
+          | PaStr _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaTup _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o
+          | PaTyc _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#ctyp _x_i2 in o
+          | PaTyp _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | PaVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method module_type : module_type -> 'self_type =
           fun
-          [ MtNil _x0 -> o#_Loc_t _x0
-          | MtId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | MtFun _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#module_type _x2)#module_type _x3
-          | MtQuo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | MtSig _x0 _x1 -> (o#_Loc_t _x0)#sig_item _x1
-          | MtWit _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#module_type _x1)#with_constr _x2
-          | MtAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ MtNil _x -> let o = o#loc _x in o
+          | MtId _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | MtFun _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#module_type _x_i2 in let o = o#module_type _x_i3 in o
+          | MtQuo _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | MtSig _x _x_i1 ->
+              let o = o#loc _x in let o = o#sig_item _x_i1 in o
+          | MtWit _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#module_type _x_i1 in let o = o#with_constr _x_i2 in o
+          | MtAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method module_expr : module_expr -> 'self_type =
           fun
-          [ MeNil _x0 -> o#_Loc_t _x0
-          | MeId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | MeApp _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#module_expr _x1)#module_expr _x2
-          | MeFun _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#module_type _x2)#module_expr _x3
-          | MeStr _x0 _x1 -> (o#_Loc_t _x0)#str_item _x1
-          | MeTyc _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#module_expr _x1)#module_type _x2
-          | MeAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ MeNil _x -> let o = o#loc _x in o
+          | MeId _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | MeApp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#module_expr _x_i1 in let o = o#module_expr _x_i2 in o
+          | MeFun _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#module_type _x_i2 in let o = o#module_expr _x_i3 in o
+          | MeStr _x _x_i1 ->
+              let o = o#loc _x in let o = o#str_item _x_i1 in o
+          | MeTyc _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#module_expr _x_i1 in let o = o#module_type _x_i2 in o
+          | MeAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method module_binding : module_binding -> 'self_type =
           fun
-          [ MbNil _x0 -> o#_Loc_t _x0
-          | MbAnd _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#module_binding _x1)#module_binding _x2
-          | MbColEq _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#module_type _x2)#module_expr _x3
-          | MbCol _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
-          | MbAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ MbNil _x -> let o = o#loc _x in o
+          | MbAnd _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#module_binding _x_i1 in
+              let o = o#module_binding _x_i2 in o
+          | MbColEq _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#module_type _x_i2 in let o = o#module_expr _x_i3 in o
+          | MbCol _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#module_type _x_i2 in o
+          | MbAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method meta_option :
           ! 'a.
             ('self_type -> 'a -> 'self_type) -> meta_option 'a -> 'self_type =
           fun _f_a ->
             fun
             [ ONone -> o
-            | OSome _x0 -> _f_a o _x0
-            | OAnt _x0 -> o#string _x0 ];
+            | OSome _x -> let o = _f_a o _x in o
+            | OAnt _x -> let o = o#string _x in o ];
         method meta_list :
           ! 'a.
             ('self_type -> 'a -> 'self_type) -> meta_list 'a -> 'self_type =
           fun _f_a ->
             fun
             [ LNil -> o
-            | LCons _x0 _x1 -> (_f_a o _x0)#meta_list (fun o -> _f_a o) _x1
-            | LAnt _x0 -> o#string _x0 ];
+            | LCons _x _x_i1 ->
+                let o = _f_a o _x in let o = o#meta_list _f_a _x_i1 in o
+            | LAnt _x -> let o = o#string _x in o ];
         method meta_bool : meta_bool -> 'self_type =
-          fun [ BTrue -> o | BFalse -> o | BAnt _x0 -> o#string _x0 ];
+          fun
+          [ BTrue -> o
+          | BFalse -> o
+          | BAnt _x -> let o = o#string _x in o ];
         method match_case : match_case -> 'self_type =
           fun
-          [ McNil _x0 -> o#_Loc_t _x0
-          | McOr _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#match_case _x1)#match_case _x2
-          | McArr _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#patt _x1)#expr _x2)#expr _x3
-          | McAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ McNil _x -> let o = o#loc _x in o
+          | McOr _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#match_case _x_i1 in let o = o#match_case _x_i2 in o
+          | McArr _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in
+              let o = o#expr _x_i2 in let o = o#expr _x_i3 in o
+          | McAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
+        method loc : loc -> 'self_type = o#unknown;
         method ident : ident -> 'self_type =
           fun
-          [ IdAcc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#ident _x2
-          | IdApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#ident _x2
-          | IdLid _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | IdUid _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | IdAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ IdAcc _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+          | IdApp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+          | IdLid _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | IdUid _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | IdAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method expr : expr -> 'self_type =
           fun
-          [ ExNil _x0 -> o#_Loc_t _x0
-          | ExId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | ExAcc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
-          | ExAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
-          | ExAre _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
-          | ExArr _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
-          | ExSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
-          | ExAsf _x0 -> o#_Loc_t _x0
-          | ExAsr _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
-          | ExAss _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
-          | ExChr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExCoe _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#expr _x1)#ctyp _x2)#ctyp _x3
-          | ExFlo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExFor _x0 _x1 _x2 _x3 _x4 _x5 ->
-              (((((o#_Loc_t _x0)#string _x1)#expr _x2)#expr _x3)#meta_bool
-                 _x4)#
-                expr _x5
-          | ExFun _x0 _x1 -> (o#_Loc_t _x0)#match_case _x1
-          | ExIfe _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#expr _x1)#expr _x2)#expr _x3
-          | ExInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExInt32 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExInt64 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExNativeInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExLab _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
-          | ExLaz _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
-          | ExLet _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#meta_bool _x1)#binding _x2)#expr _x3
-          | ExLmd _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#module_expr _x2)#expr _x3
-          | ExMat _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#match_case _x2
-          | ExNew _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | ExObj _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#class_str_item _x2
-          | ExOlb _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
-          | ExOvr _x0 _x1 -> (o#_Loc_t _x0)#rec_binding _x1
-          | ExRec _x0 _x1 _x2 -> ((o#_Loc_t _x0)#rec_binding _x1)#expr _x2
-          | ExSeq _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
-          | ExSnd _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#string _x2
-          | ExSte _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
-          | ExStr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExTry _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#match_case _x2
-          | ExTup _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
-          | ExCom _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
-          | ExTyc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#ctyp _x2
-          | ExVrn _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | ExWhi _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2 ];
+          [ ExNil _x -> let o = o#loc _x in o
+          | ExId _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | ExAcc _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+          | ExAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExApp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+          | ExAre _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+          | ExArr _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
+          | ExSem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+          | ExAsf _x -> let o = o#loc _x in o
+          | ExAsr _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
+          | ExAss _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+          | ExChr _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExCoe _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in
+              let o = o#ctyp _x_i2 in let o = o#ctyp _x_i3 in o
+          | ExFlo _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExFor _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#expr _x_i2 in
+              let o = o#expr _x_i3 in
+              let o = o#meta_bool _x_i4 in let o = o#expr _x_i5 in o
+          | ExFun _x _x_i1 ->
+              let o = o#loc _x in let o = o#match_case _x_i1 in o
+          | ExIfe _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in
+              let o = o#expr _x_i2 in let o = o#expr _x_i3 in o
+          | ExInt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExInt32 _x _x_i1 ->
+              let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExInt64 _x _x_i1 ->
+              let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExNativeInt _x _x_i1 ->
+              let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExLab _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+          | ExLaz _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
+          | ExLet _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#meta_bool _x_i1 in
+              let o = o#binding _x_i2 in let o = o#expr _x_i3 in o
+          | ExLmd _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#module_expr _x_i2 in let o = o#expr _x_i3 in o
+          | ExMat _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#match_case _x_i2 in o
+          | ExNew _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | ExObj _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#class_str_item _x_i2 in o
+          | ExOlb _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#expr _x_i2 in o
+          | ExOvr _x _x_i1 ->
+              let o = o#loc _x in let o = o#rec_binding _x_i1 in o
+          | ExRec _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#rec_binding _x_i1 in let o = o#expr _x_i2 in o
+          | ExSeq _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
+          | ExSnd _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#string _x_i2 in o
+          | ExSte _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+          | ExStr _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExTry _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#match_case _x_i2 in o
+          | ExTup _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
+          | ExCom _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+          | ExTyc _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#ctyp _x_i2 in o
+          | ExVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | ExWhi _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#expr _x_i1 in let o = o#expr _x_i2 in o ];
         method ctyp : ctyp -> 'self_type =
           fun
-          [ TyNil _x0 -> o#_Loc_t _x0
-          | TyAli _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyAny _x0 -> o#_Loc_t _x0
-          | TyApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyArr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyCls _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | TyLab _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#ctyp _x2
-          | TyId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
-          | TyMan _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyDcl _x0 _x1 _x2 _x3 _x4 ->
-              ((((o#_Loc_t _x0)#string _x1)#list (fun o -> o#ctyp) _x2)#ctyp
-                 _x3)#
-                list (fun o (_x0, _x1) -> (o#ctyp _x0)#ctyp _x1) _x4
-          | TyObj _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#meta_bool _x2
-          | TyOlb _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#ctyp _x2
-          | TyPol _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyQuo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | TyQuP _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | TyQuM _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | TyVrn _x0 _x1 -> (o#_Loc_t _x0)#string _x1
-          | TyRec _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TyCol _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TySem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyCom _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TySum _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TyOf _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyAnd _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyOr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyPrv _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TyMut _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TyTup _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TySta _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyVrnEq _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TyVrnSup _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TyVrnInf _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
-          | TyVrnInfSup _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyAmp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyOfAmp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | TyAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ TyNil _x -> let o = o#loc _x in o
+          | TyAli _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyAny _x -> let o = o#loc _x in o
+          | TyApp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyArr _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyCls _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | TyLab _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyId _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
+          | TyMan _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyDcl _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#list (fun o -> o#ctyp) _x_i2 in
+              let o = o#ctyp _x_i3 in
+              let o =
+                o#list
+                  (fun o (_x, _x_i1) ->
+                     let o = o#ctyp _x in let o = o#ctyp _x_i1 in o)
+                  _x_i4
+              in o
+          | TyObj _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#meta_bool _x_i2 in o
+          | TyOlb _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyPol _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyQuo _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | TyQuP _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | TyQuM _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | TyVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | TyRec _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TyCol _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TySem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyCom _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TySum _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TyOf _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyAnd _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyOr _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyPrv _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TyMut _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TyTup _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TySta _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyVrnEq _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TyVrnSup _x _x_i1 ->
+              let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TyVrnInf _x _x_i1 ->
+              let o = o#loc _x in let o = o#ctyp _x_i1 in o
+          | TyVrnInfSup _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyAmp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyOfAmp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method class_type : class_type -> 'self_type =
           fun
-          [ CtNil _x0 -> o#_Loc_t _x0
-          | CtCon _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#meta_bool _x1)#ident _x2)#ctyp _x3
-          | CtFun _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#class_type _x2
-          | CtSig _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#class_sig_item _x2
-          | CtAnd _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
-          | CtCol _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
-          | CtEq _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
-          | CtAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ CtNil _x -> let o = o#loc _x in o
+          | CtCon _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#meta_bool _x_i1 in
+              let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
+          | CtFun _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#class_type _x_i2 in o
+          | CtSig _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#class_sig_item _x_i2 in o
+          | CtAnd _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_type _x_i1 in let o = o#class_type _x_i2 in o
+          | CtCol _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_type _x_i1 in let o = o#class_type _x_i2 in o
+          | CtEq _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_type _x_i1 in let o = o#class_type _x_i2 in o
+          | CtAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method class_str_item : class_str_item -> 'self_type =
           fun
-          [ CrNil _x0 -> o#_Loc_t _x0
-          | CrSem _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_str_item _x1)#class_str_item _x2
-          | CrCtr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | CrInh _x0 _x1 _x2 -> ((o#_Loc_t _x0)#class_expr _x1)#string _x2
-          | CrIni _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
-          | CrMth _x0 _x1 _x2 _x3 _x4 ->
-              ((((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#expr _x3)#ctyp _x4
-          | CrVal _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#expr _x3
-          | CrVir _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-          | CrVvr _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-          | CrAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ CrNil _x -> let o = o#loc _x in o
+          | CrSem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_str_item _x_i1 in
+              let o = o#class_str_item _x_i2 in o
+          | CrCtr _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | CrInh _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_expr _x_i1 in let o = o#string _x_i2 in o
+          | CrIni _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
+          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#meta_bool _x_i2 in
+              let o = o#expr _x_i3 in let o = o#ctyp _x_i4 in o
+          | CrVal _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#meta_bool _x_i2 in let o = o#expr _x_i3 in o
+          | CrVir _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+          | CrVvr _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+          | CrAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method class_sig_item : class_sig_item -> 'self_type =
           fun
-          [ CgNil _x0 -> o#_Loc_t _x0
-          | CgCtr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
-          | CgSem _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_sig_item _x1)#class_sig_item _x2
-          | CgInh _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
-          | CgMth _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-          | CgVal _x0 _x1 _x2 _x3 _x4 ->
-              ((((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#meta_bool _x3)#
-                ctyp _x4
-          | CgVir _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
-          | CgAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ CgNil _x -> let o = o#loc _x in o
+          | CgCtr _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | CgSem _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_sig_item _x_i1 in
+              let o = o#class_sig_item _x_i2 in o
+          | CgInh _x _x_i1 ->
+              let o = o#loc _x in let o = o#class_type _x_i1 in o
+          | CgMth _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+          | CgVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#meta_bool _x_i2 in
+              let o = o#meta_bool _x_i3 in let o = o#ctyp _x_i4 in o
+          | CgVir _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#string _x_i1 in
+              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+          | CgAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method class_expr : class_expr -> 'self_type =
           fun
-          [ CeNil _x0 -> o#_Loc_t _x0
-          | CeApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#class_expr _x1)#expr _x2
-          | CeCon _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#meta_bool _x1)#ident _x2)#ctyp _x3
-          | CeFun _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#class_expr _x2
-          | CeLet _x0 _x1 _x2 _x3 ->
-              (((o#_Loc_t _x0)#meta_bool _x1)#binding _x2)#class_expr _x3
-          | CeStr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#class_str_item _x2
-          | CeTyc _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_expr _x1)#class_type _x2
-          | CeAnd _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_expr _x1)#class_expr _x2
-          | CeEq _x0 _x1 _x2 ->
-              ((o#_Loc_t _x0)#class_expr _x1)#class_expr _x2
-          | CeAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ CeNil _x -> let o = o#loc _x in o
+          | CeApp _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_expr _x_i1 in let o = o#expr _x_i2 in o
+          | CeCon _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#meta_bool _x_i1 in
+              let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
+          | CeFun _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#class_expr _x_i2 in o
+          | CeLet _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#loc _x in
+              let o = o#meta_bool _x_i1 in
+              let o = o#binding _x_i2 in let o = o#class_expr _x_i3 in o
+          | CeStr _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#class_str_item _x_i2 in o
+          | CeTyc _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_expr _x_i1 in let o = o#class_type _x_i2 in o
+          | CeAnd _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_expr _x_i1 in let o = o#class_expr _x_i2 in o
+          | CeEq _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#class_expr _x_i1 in let o = o#class_expr _x_i2 in o
+          | CeAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method binding : binding -> 'self_type =
           fun
-          [ BiNil _x0 -> o#_Loc_t _x0
-          | BiAnd _x0 _x1 _x2 -> ((o#_Loc_t _x0)#binding _x1)#binding _x2
-          | BiEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#expr _x2
-          | BiAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+          [ BiNil _x -> let o = o#loc _x in o
+          | BiAnd _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#binding _x_i1 in let o = o#binding _x_i2 in o
+          | BiEq _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#patt _x_i1 in let o = o#expr _x_i2 in o
+          | BiAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
+        method unknown : ! 'a. 'a -> 'self_type = fun _ -> o;
       end;
     value map_expr f =
       object inherit map as super; method expr = fun x -> f (super#expr x);
@@ -5049,9 +5656,6 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
         method sig_item = fun x -> f (super#sig_item x);
       end;
     value map_loc f =
-      object
-        inherit map as super;
-        method _Loc_t = fun x -> f (super#_Loc_t x);
-      end;
+      object inherit map as super; method loc = fun x -> f (super#loc x); end;
   end;
 

@@ -24,7 +24,6 @@ module Make (Ast     : Sig.Camlp4Ast)
                     and module Ast = Ast
                     and module Token = Gram.Token
                     and module Gram = Gram
-                    and module AntiquotSyntax.Ast = Sig.Camlp4AstToAst Ast
                     and module Quotation = Quotation
 = struct
 

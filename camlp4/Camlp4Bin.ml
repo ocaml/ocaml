@@ -84,7 +84,8 @@ value rewrite_and_load n x =
     | ("Filters"|"", "lift" | "camlp4astlifter.cmo") -> load ["Camlp4AstLifter"]
     | ("Filters"|"", "exn" | "camlp4exceptiontracer.cmo") -> load ["Camlp4ExceptionTracer"]
     | ("Filters"|"", "prof" | "camlp4profiler.cmo") -> load ["Camlp4Profiler"]
-    | ("Filters"|"", "map" | "camlp4mapgenerator.cmo") -> load ["Camlp4MapGenerator"]
+    (* map is now an alias of fold since fold handles map too *)
+    | ("Filters"|"", "map" | "camlp4mapgenerator.cmo") -> load ["Camlp4FoldGenerator"]
     | ("Filters"|"", "fold" | "camlp4foldgenerator.cmo") -> load ["Camlp4FoldGenerator"]
     | ("Filters"|"", "meta" | "camlp4metagenerator.cmo") -> load ["Camlp4MetaGenerator"]
     | ("Filters"|"", "trash" | "camlp4trashremover.cmo") -> load ["Camlp4TrashRemover"]
@@ -122,13 +123,12 @@ value rec parse_file dyn_loader name pa getdir =
   let loc = Loc.mk name
   in do {
     current_warning.val := print_warning;
-    let ic = if name = "-" then stdin else open_in_bin name in
-    let cs = Stream.of_channel ic in
-    let clear () = if name = "-" then () else close_in ic in
+    let ic = if name = "-" then stdin else open_in_bin name;
+    let cs = Stream.of_channel ic;
+    let clear () = if name = "-" then () else close_in ic;
     let phr =
       try pa ?directive_handler loc cs
-      with x -> do { clear (); raise x }
-    in
+      with x -> do { clear (); raise x };
     clear ();
     phr
   };
@@ -223,12 +223,14 @@ value input_file x =
     match x with
     [ Intf file_name -> task (process_intf dyn_loader) file_name
     | Impl file_name -> task (process_impl dyn_loader) file_name
-    | Str s -> do {
-        let (f, o) = Filename.open_temp_file "from_string" ".ml";
-        output_string o s;
-        close_out o;
-        task (process_impl dyn_loader) f;
-      }
+    | Str s ->
+        begin
+          let (f, o) = Filename.open_temp_file "from_string" ".ml";
+          output_string o s;
+          close_out o;
+          task (process_impl dyn_loader) f;
+          at_exit (fun () -> Sys.remove f);
+        end
     | ModuleImpl file_name -> rewrite_and_load "" file_name
     | IncludeDir dir -> DynLoader.include_dir dyn_loader dir ];
     rcall_callback.val ();

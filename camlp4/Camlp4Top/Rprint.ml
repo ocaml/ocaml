@@ -21,10 +21,41 @@
 
 (* $Id$ *)
 
+(* There is a few Obj.magic due to the fact that we no longer have compiler
+   files like Parsetree, Location, Longident but Camlp4_import that wrap them to
+   avoid name clashing. *)
+module Toploop : sig
+  open Format;
+  open Camlp4_import;
+  value print_out_value :
+    ref (formatter -> Outcometree.out_value -> unit);
+  value print_out_type :
+    ref (formatter -> Outcometree.out_type -> unit);
+  value print_out_class_type :
+    ref (formatter -> Outcometree.out_class_type -> unit);
+  value print_out_module_type :
+    ref (formatter -> Outcometree.out_module_type -> unit);
+  value print_out_sig_item :
+    ref (formatter -> Outcometree.out_sig_item -> unit);
+  value print_out_signature :
+    ref (formatter -> list Outcometree.out_sig_item -> unit);
+  value print_out_phrase :
+    ref (formatter -> Outcometree.out_phrase -> unit);
+end = struct
+  open Toploop;
+  value print_out_value = Obj.magic print_out_value;
+  value print_out_type = Obj.magic print_out_type;
+  value print_out_class_type = Obj.magic print_out_class_type;
+  value print_out_module_type = Obj.magic print_out_module_type;
+  value print_out_sig_item = Obj.magic print_out_sig_item;
+  value print_out_signature = Obj.magic print_out_signature;
+  value print_out_phrase = Obj.magic print_out_phrase;
+end;
+
 (* This file originally come from typing/oprint.ml *)
 
 open Format;
-open Outcometree;
+open Camlp4_import.Outcometree;
 open Camlp4;
 
 exception Ellipsis;
@@ -383,7 +414,7 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
           (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) args ]
   and print_kind ppf ty =
     fprintf ppf "%s@ %a"
-      (if priv = Asttypes.Private then " private" else "")
+      (if priv = Obj.magic Camlp4_import.Asttypes.Private then " private" else "")
       Toploop.print_out_type.val ty
   in
   let print_types ppf = fun

@@ -129,23 +129,6 @@ let ocaml_Module_with_genmap =
                    "./Camlp4Filters/RemoveTrashModule.cmo -printer OCamlr"^^
                    i^^" -no_comments ) >"^^o^^"; else : ; fi")
 
-let misc_modules =
-  let mk = ocaml_fake_IModule ~includes:[parsing;utils]
-                              ~o:options_without_camlp4 in
-  [
-    ocaml_Module ~o:options_without_camlp4 "build/camlp4_config";
-    mk "../utils/misc";
-    mk "../utils/warnings";
-    mk "../parsing/linenum";
-    mk "../parsing/location";
-  ]
-
-let camlp4_package_as_one_file = 
-    ocaml_Module ~includes:[build]
-                 ~ext_includes:[parsing; dynlink]
-                 ~o:options_without_camlp4
-                 "Camlp4"
-
 let camlp4_package_as_one_dir =
   ocaml_PackageDir "Camlp4" (lazy [
     ocaml_IModule ~includes:[build] "Config";
@@ -225,11 +208,6 @@ let camlp4_package_as_one_dir =
     ocaml_IModule "Register"
   ])
 
-let camlp4_package =
-  if Sys.file_exists "Camlp4.ml" && not (is_file_empty "Camlp4.ml")
-    then camlp4_package_as_one_file
-    else camlp4_package_as_one_dir
-
 let camlp4_parsers =
   ocaml_PackageDir "Camlp4Parsers" (lazy [
     ocaml_Module "OCamlr";
@@ -276,62 +254,6 @@ let camlp4_top =
     ocaml_Module ~ext_includes:[toplevel; typing; parsing] "Rprint";
     ocaml_Module ~ext_includes:[toplevel; parsing; utils] "Camlp4Top";
   ])
-
-let extensions = [ camlp4_parsers; camlp4_printers; camlp4_filters; camlp4_top ]
-
-
-let pa_r  = ocaml_Module "Camlp4Parsers/OCamlr"
-let pa_o = ocaml_Module "Camlp4Parsers/OCaml"
-let pa_q = ocaml_Module "Camlp4Parsers/OCamlQuotation"
-let pa_qb = ocaml_Module "Camlp4Parsers/OCamlQuotationBase"
-let pa_rq = ocaml_Module "Camlp4Parsers/OCamlRevisedQuotation"
-let pa_oq = ocaml_Module "Camlp4Parsers/OCamlOriginalQuotation"
-let pa_rp = ocaml_Module "Camlp4Parsers/OCamlRevisedParser"
-let pa_op = ocaml_Module "Camlp4Parsers/OCamlParser"
-let pa_g  = ocaml_Module "Camlp4Parsers/Grammar"
-let pa_macro = ocaml_Module "Camlp4Parsers/Macro"
-let pa_debug = ocaml_Module "Camlp4Parsers/Debug"
-let pr_dump = ocaml_Module "Camlp4Printers/DumpOCamlAst"
-let pr_r = ocaml_Module "Camlp4Printers/OCamlr"
-let pr_o = ocaml_Module "Camlp4Printers/OCaml"
-let pr_a = ocaml_Module "Camlp4Printers/Auto"
-let fi_exc = ocaml_Module "Camlp4Filters/ExceptionTracer"
-let fi_tracer = ocaml_Module "Camlp4Filters/Tracer"
-let fi_meta = ocaml_Module "Camlp4Filters/MetaGenerator"
-let camlp4_bin = ocaml_Module "Camlp4Bin"
-let top_rprint = ocaml_Module "Camlp4Top/Rprint"
-let top_camlp4_top = ocaml_Module "Camlp4Top/Camlp4Top"
-let camlp4Profiler = ocaml_IModule "Camlp4Profiler"
-
-let byte_programs = ref []
-let opt_programs = ref []
-let byte_libraries = ref []
-(* let opt_libraries = ref [] *)
-
-let special_modules =
-  if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
-
-let mk_camlp4_top_lib name modules =
-  byte_libraries += (name ^ ".cma");
-  ocaml_Library ~default:`Byte ~libraries:["Camlp4"] ~flags:"-linkall" name
-  (special_modules @ modules @ [top_camlp4_top])
-
-let mk_camlp4_bin name ?unix:(link_unix=true) modules =
-  byte_programs += (name ^ ".run");
-  opt_programs  += (name ^ ".opt");
-  let libraries = ["Camlp4"] in
-  let libraries = if link_unix then "unix" :: libraries else libraries in
-  ocaml_Program ~default:`Byte ~includes:[unix] ~libraries ~flags:"-linkall" name
-  (special_modules @ modules @ [camlp4_bin])
-
-let mk_camlp4_tool name modules =
-  byte_programs += (name ^ ".run");
-  opt_programs  += (name ^ ".opt");
-  [ocaml_Program ~default:`Byte ~libraries:["Camlp4"] ~flags:"-linkall" name modules]
-
-let mk_camlp4 name ?unix modules bin_mods top_mods =
-  [mk_camlp4_bin name ?unix (modules @ bin_mods);
-   mk_camlp4_top_lib name (modules @ top_mods)]
 
 let split c s =
   let rec self acc s =
@@ -400,14 +322,8 @@ let run l =
   let st = YaM.call cmd in
   if st <> 0 then failwith ("Exit: " ^ string_of_int st)
 
-let mkdir l = run ("mkdir" :: "-p" :: l)
-
-let cp src dest = run ["cp"; src; dest]
-
 let sed re str file =
   run ["sed"; "-i"; "-e"; "'s/"^re^"/"^str^"/'"; file]
-
-let try_cp src dest = if Sys.file_exists src then cp src dest
 
 let pack () =
   let revised_to_ocaml f =
@@ -440,128 +356,4 @@ let just_doc () =
 
 let doc () =
   pack (); just_doc ()
-
-let other_objs =
-  [
-    (* "../utils/misc"; "../parsing/linenum"; "../utils/warnings"; *)
-   (* "../parsing/location" *)
-   ]
-let other_byte_objs = String.concat " " (List.map (fun x -> x ^ ".cmo") other_objs)
-let other_opt_objs = String.concat " " (List.map (fun x -> x ^ ".cmx") other_objs)
-let all =
- List.flatten [
-  [ocaml_Library ~default:`Byte
-                ~includes:[dynlink]
-                ~byte_flags:("dynlink.cma"^^other_byte_objs) ~opt_flags:other_opt_objs
-                ~flags:"-linkall" "Camlp4"
-                (misc_modules @ special_modules @ [camlp4_package])];
-  [mk_camlp4_bin "camlp4" []];
-  mk_camlp4 "camlp4boot" ~unix:false
-    [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug] [pr_dump] [top_rprint];
-  mk_camlp4 "camlp4r"
-    [pa_r; pa_rp] [pr_a] [top_rprint];
-  mk_camlp4 "camlp4rf"
-    [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro] [pr_a] [top_rprint];
-  mk_camlp4 "camlp4o"
-    [pa_r; pa_o; pa_rp; pa_op] [pr_a] [];
-  mk_camlp4 "camlp4of"
-    [pa_r; pa_qb; pa_q; pa_o; pa_rp; pa_op; pa_g; pa_macro] [pr_a] [];
-  mk_camlp4 "camlp4oof"
-    [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_oq; pa_g; pa_macro] [pr_a] [];
-  mk_camlp4 "camlp4orf"
-    [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_macro] [pr_a] [];
-  mk_camlp4_tool "mkcamlp4"
-    [ocaml_Module ~o:(options_without_debug ()) "mkcamlp4"];
-  mk_camlp4_tool "camlp4prof"
-    [camlp4Profiler; ocaml_Module ~o:(options_without_debug ()) "camlp4prof"];
- ] @ extensions
-
-
-(* X.run -> X.exe || X.run -> X *)
-let conv_byte_extension f =
-  if windows then
-    let c = String.copy f in
-    (String.blit c (String.rindex c '.') ".exe" 0 4; c)
-  else String.sub f 0 (String.rindex f '.')
-
-(* X.opt -> X.opt.exe || X.opt -> X.opt *)
-let conv_opt_extension f =
-  if windows then f ^ ".exe" else f
-
-let install_all dir =
-  printf "Installing %s@.  " dir;
-  run ["for i in " ^ dir ^ "/*.cm[io]; do"^^
-       "echo \"  install $i\" ; mkdir -p"^^libdir_camlp4^
-       "/`dirname $i`; cp $i"^^libdir_camlp4^"/`dirname $i`; done"]
-
-
-let byte =
-  "Camlp4.cmi" ::
-  "Camlp4.cma" ::
-  "Camlp4Parsers.cmi" ::
-  "Camlp4Printers.cmi" ::
-  "Camlp4Filters.cmi" ::
-  "Camlp4Top.cmi" ::
-  "Camlp4Bin.cmi" ::
-  "Camlp4Parsers.cmo" ::
-  "Camlp4Printers.cmo" ::
-  "Camlp4Filters.cmo" ::
-  "Camlp4Top.cmo" ::
-  "Camlp4Bin.cmo" ::
-  !byte_libraries
-
-let opt =
-  "Camlp4.cmxa" ::
-  "Camlp4.a" ::
-  "build/camlp4_config.cmx" ::
-  "Camlp4Parsers.cmx" ::
-  "Camlp4Printers.cmx" ::
-  "Camlp4Filters.cmx" ::
-  "Camlp4Bin.cmx" ::
-  (* !opt_libraries @ *)
-  []
-
-let install () =
-  mkdir [libdir_camlp4; bindir];
-  install_all "Camlp4Parsers";
-  install_all "Camlp4Printers";
-  install_all "Camlp4Filters";
-  install_all "Camlp4Top";
-  let cp_bin conv bin =
-    if Sys.file_exists bin then cp bin (bindir ^ "/" ^ conv bin) in
-  List.iter (fun x -> cp x libdir_camlp4) byte;
-  List.iter (fun x -> try_cp x libdir_camlp4) opt;
-  List.iter (cp_bin conv_byte_extension) !byte_programs;
-  List.iter (cp_bin conv_opt_extension) !opt_programs;
-  ()
-        (* cp mkcamlp4.sh "$(BINDIR)/mkcamlp4" *)
-        (* chmod a+x "$(BINDIR)/mkcamlp4" *)
-
-
-let byte = byte @ !byte_programs
-let opt = opt @ !opt_programs
-
-;;
-
-main ~rebuild:(ocaml ^^ "build/build.ml")
- (all @ [
-  phony_unit ~depends:byte "all";
-  phony_unit ~depends:opt "opt";
-  generic_unit ~name:"install" ~targets:["install"] ~trash:[]
-               ~dependencies:(fun ~native:_ _ -> [])
-               ~compile_cmd:(fun _ -> install (); exit 0)
-               ();
-  generic_unit ~name:"doc" ~targets:["doc"] ~trash:[]
-               ~dependencies:(fun ~native:_ _ -> [])
-               ~compile_cmd:(fun _ -> doc (); exit 0)
-               ();
-  generic_unit ~name:"just_doc" ~targets:["just_doc"] ~trash:[]
-               ~dependencies:(fun ~native:_ _ -> [])
-               ~compile_cmd:(fun _ -> just_doc (); exit 0)
-               ();
-  generic_unit ~name:"pack" ~targets:["pack"] ~trash:[]
-               ~dependencies:(fun ~native:_ _ -> [])
-               ~compile_cmd:(fun _ -> pack (); exit 0)
-               ();
- ])
 
