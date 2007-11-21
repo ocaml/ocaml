@@ -139,7 +139,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   class reloc _loc = object
     inherit Ast.map as super;
-    method _Loc_t _ = _loc;
+    method loc _ = _loc;
+    (* method _Loc_t _ = _loc; *)
   end;
 
   class subst _loc env = object

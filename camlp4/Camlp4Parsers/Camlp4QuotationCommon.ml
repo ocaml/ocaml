@@ -23,8 +23,7 @@ module Id = struct
 end;
 
 module Make (Syntax : Sig.Camlp4Syntax)
-            (TheAntiquotSyntax : Sig.AntiquotSyntax
-                                  with module Ast = Sig.Camlp4AstToAst Syntax.Ast)
+            (TheAntiquotSyntax : (Sig.Parser Syntax.Ast).SIMPLE)
 = struct
   open Sig;
   include Syntax; (* Be careful an AntiquotSyntax module appears here *)
