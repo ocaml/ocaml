@@ -18,6 +18,23 @@ open Tools
 open Command
 open Ocaml_utils
 
+let ocamldep_command' arg =
+  let tags = tags_of_pathname arg++"ocaml"++"ocamldep" in
+  S [!Options.ocamldep; T tags; ocaml_ppflags tags;
+     flags_of_pathname arg; A "-modules"]
+
+let menhir_ocamldep_command arg out env _build =
+  let arg = env arg and out = env out in
+  let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
+  let tags = tags_of_pathname arg++"ocaml"++"menhir_ocamldep" in
+  Cmd(S [menhir; T tags; A"--raw-depend";
+         A"--ocamldep"; Quote (ocamldep_command' arg);
+         P arg; Sh ">"; Px out])
+
+let ocamldep_command arg out env _build =
+  let arg = env arg and out = env out in
+  Cmd(S[ocamldep_command' arg; P arg; Sh ">"; Px out])
+
 let ocamlyacc mly env _build =
   let mly = env mly in
   let ocamlyacc = if !Options.ocamlyacc = N then V"OCAMLYACC" else !Options.ocamlyacc in

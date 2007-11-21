@@ -41,12 +41,16 @@ let ignore_stdlib x =
     Pathname.exists x'
 
 let non_dependencies = ref []
-let non_dependency m1 m2 = non_dependencies := (m1, m2) :: !non_dependencies
+let non_dependency m1 m2 =
+  (* non_dependency was not supposed to accept pathnames without extension. *)
+  if String.length (Pathname.get_extensions m1) = 0 then
+    invalid_arg "non_dependency: no extension";
+  non_dependencies := (m1, m2) :: !non_dependencies
 
-let module_importance modpath x =
-  if List.mem (modpath, x) !non_dependencies
+let path_importance path x =
+  if List.mem (path, x) !non_dependencies
   || (List.mem x !Options.ignore_list) then begin
-    let () = dprintf 3 "This module (%s) is ignored by %s" x modpath in
+    let () = dprintf 3 "This module (%s) is ignored by %s" x path in
     `ignored
   end
   else if ignore_stdlib x then `just_try else `mandatory
@@ -113,3 +117,38 @@ let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir ?tag_name libpath
   | Some dir -> flag ["ocaml"; tag_name; "compile"] (S[A"-I"; P dir])
 
 let cmi_of = Pathname.update_extensions "cmi"
+
+exception Ocamldep_error of string
+
+let read_path_dependencies =
+  let path_dependencies = Hashtbl.create 103 in
+  let read path =
+    let module_name = module_name_of_pathname path in
+    let depends = path-.-"depends" in
+    with_input_file depends begin fun ic ->
+      let ocamldep_output =
+        try Lexers.ocamldep_output (Lexing.from_channel ic)
+        with Lexers.Error msg -> raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: bad output (%s)" msg)) in
+      let deps =
+        List.fold_right begin fun (path, deps) acc ->
+          let module_name' = module_name_of_pathname path in
+          if module_name' = module_name 
+          then List.union deps acc
+          else raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: multiple files in ocamldep output (%s not expected)" path))
+        end ocamldep_output [] in
+      let deps =
+        if !Options.nostdlib && not (Tags.mem "nopervasives" (tags_of_pathname path)) then
+          "Pervasives" :: deps
+        else deps in
+      let deps' = List.fold_right begin fun dep acc ->
+        match path_importance path dep with
+        | `ignored -> acc
+        | (`just_try | `mandatory) as importance -> (importance, dep) :: acc
+      end deps [] in
+      Hashtbl.replace path_dependencies path
+        (List.union (try Hashtbl.find path_dependencies path with Not_found -> []) deps');
+      deps'
+    end
+  in read
+
+let path_dependencies_of = memo read_path_dependencies
