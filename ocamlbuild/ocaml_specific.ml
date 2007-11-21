@@ -223,13 +223,15 @@ rule "ocaml: cmx* & o* -> cmxa & a"
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_library_link "%.cmx" "%.cmxa");;
 
-Ocamldep.depends "ocaml dependencies ml"
+rule "ocaml dependencies ml"
   ~prod:"%.ml.depends"
-  ~dep:"%.ml" ();;
+  ~dep:"%.ml"
+  (Ocaml_tools.ocamldep_command "%.ml" "%.ml.depends");;
 
-Ocamldep.depends "ocaml dependencies mli"
+rule "ocaml dependencies mli"
   ~prod:"%.mli.depends"
-  ~dep:"%.mli" ();;
+  ~dep:"%.mli"
+  (Ocaml_tools.ocamldep_command "%.mli" "%.mli.depends");;
 
 rule "ocamllex"
   ~tags:["ocaml"] (* FIXME "lexer" *)
@@ -275,10 +277,10 @@ if !Options.use_menhir || Configuration.has_tag "use_menhir" then begin
     ~deps:["%.mly"; "%.mly.depends"]
     (Ocaml_tools.menhir "%.mly");
 
-  Ocamldep.depends "ocaml: menhir dependencies"
+  rule "ocaml: menhir dependencies"
     ~prod:"%.mly.depends"
     ~dep:"%.mly"
-    ~ocamldep_command:Ocamldep.menhir_ocamldep_command ();
+    (Ocaml_tools.menhir_ocamldep_command "%.mly" "%.mly.depends");
 end else
   rule "ocamlyacc"
     ~tags:["ocaml"] (* FIXME "parser" *)

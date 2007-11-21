@@ -275,7 +275,7 @@ let main () =
             This is likely to be a bug, please report this to the ocamlbuild\n\
             developers." s;
           exit rc_invalid_argument
-      | Ocamldep.Error msg ->
+      | Ocaml_utils.Ocamldep_error msg ->
           Log.eprintf "Ocamldep error: %s" msg;
           exit rc_ocamldep_error
       | Lexers.Error msg ->

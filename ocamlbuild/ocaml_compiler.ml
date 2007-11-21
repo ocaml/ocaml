@@ -100,7 +100,7 @@ let native_lib_linker_tags tags = tags++"ocaml"++"link"++"native"++"library"
 let prepare_compile build ml =
   let dir = Pathname.dirname ml in
   let include_dirs = Pathname.include_dirs_of dir in
-  let modules = Ocamldep.module_dependencies_of ml in
+  let modules = path_dependencies_of ml in
   let results =
     build (List.map (fun (_, x) -> expand_module include_dirs x ["cmi"]) modules) in
   List.iter2 begin fun (mandatory, name) res ->
@@ -129,9 +129,15 @@ let rec prepare_link tag cmx extensions build =
   let key = (tag, cmx, extensions) in
   let dir = Pathname.dirname cmx in
   let include_dirs = Pathname.include_dirs_of dir in
-  if Hashtbl.mem cache_prepare_link key then () else
+  let ml = Pathname.update_extensions "ml" cmx in
+  let mli = Pathname.update_extensions "mli" cmx in
+  let modules =
+    List.union
+      (if Pathname.exists (ml-.-"depends") then path_dependencies_of ml else [])
+      (if Pathname.exists (mli-.-"depends") then path_dependencies_of mli else [])
+  in
+  if modules <> [] && not (Hashtbl.mem cache_prepare_link key) then
     let () = Hashtbl.add cache_prepare_link key true in
-    let modules = Ocamldep.module_dependencies_of (Pathname.update_extensions "ml" cmx) in
     let modules' = List.map (fun (_, x) -> expand_module include_dirs x extensions) modules in
     List.iter2 begin fun (mandatory, _) result ->
       match mandatory, result with
