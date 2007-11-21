@@ -112,6 +112,19 @@ let () = set_log_file "_log"
 
 let dummy = "*invalid-dummy-string*";; (* Dummy string for delimiting the latest argument *)
 
+(* The JoCaml support will be in a plugin when the plugin system will support
+ * multiple/installed plugins *)
+let use_jocaml () =
+  ocamlc := A "jocamlc";
+  ocamlopt := A "jocamlopt";
+  ocamldep := A "jocamldep";
+  ocamlyacc := A "jocamlyacc";
+  ocamllex := A "jocamllex";
+  ocamlmklib := A "jocamlmklib";
+  ocamlmktop := A "jocamlmktop";
+  ocamlrun := A "jocamlrun";
+;;
+
 let add_to rxs x =
   let xs = Lexers.comma_or_blank_sep_strings (Lexing.from_string x) in
   rxs := xs :: !rxs
@@ -121,6 +134,7 @@ let add_to' rxs x =
   else
     ()
 let set_cmd rcmd = String (fun s -> rcmd := Sh s)
+let set_build_dir s = make_links := false; build_dir := s
 let spec =
   Arg.align
   [
@@ -168,10 +182,11 @@ let spec =
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
+   "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
-   "-build-dir", Set_string build_dir, "<path> Set build directory";
+   "-build-dir", String set_build_dir, "<path> Set build directory (implies no-links)";
    "-install-lib-dir", Set_string Ocamlbuild_where.libdir, "<path> Set the install library directory";
    "-install-bin-dir", Set_string Ocamlbuild_where.bindir, "<path> Set the install binary directory";
    "-where", Unit (fun () -> print_endline !Ocamlbuild_where.libdir; raise Exit_OK), " Display the install library directory";
@@ -210,7 +225,7 @@ let init () =
   let argv' = Array.concat [Sys.argv; [|dummy|]] in
   parse_argv argv' spec anon_fun usage_msg;
   Shell.mkdir_p !build_dir;
-  let reorder x y = x := (List.concat (List.rev !y)) in
+  let reorder x y = x := !x @ (List.concat (List.rev !y)) in
   reorder targets targets_internal;
   reorder ocaml_libs ocaml_libs_internal;
   reorder ocaml_cflags ocaml_cflags_internal;

@@ -1,4 +1,5 @@
 To do:
+* Export my_unix_with_unix and executor (and change its name)
 * Executor: exceptional conditions and Not_found
 * Fix report
 * Design a nice, friendly, future-proof plugin (myocamlbuild) API

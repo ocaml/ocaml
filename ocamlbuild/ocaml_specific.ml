@@ -243,6 +243,12 @@ rule "ocaml: mli -> odoc"
   ~deps:["%.mli"; "%.mli.depends"]
   (Ocaml_tools.document_ocaml_interf "%.mli" "%.odoc");;
 
+rule "ocaml: ml -> odoc"
+  ~tags:["ocaml"; "doc"]
+  ~prod:"%.odoc"
+  ~deps:["%.ml"; "%.ml.depends"]
+  (Ocaml_tools.document_ocaml_implem "%.ml" "%.odoc");;
+
 rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (html)"
   ~prod:"%.docdir/index.html"
   ~dep:"%.odocl"
@@ -341,6 +347,8 @@ let camlp4_flags' camlp4s =
 camlp4_flags' ["camlp4orr", S[A"camlp4of"; A"-parser"; A"reloaded"];
                "camlp4rrr", S[A"camlp4rf"; A"-parser"; A"reloaded"]];;
 
+flag ["ocaml"; "pp"; "camlp4:no_quot"] (A"-no_quot");;
+
 ocaml_lib ~extern:true ~native:false "dynlink";;
 ocaml_lib ~extern:true "unix";;
 ocaml_lib ~extern:true "str";;
@@ -378,8 +386,8 @@ flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
 flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);;
-flag ["ocaml"; "link"; "thread"; "native"] (S[A "threads.cmxa"; A "-thread"]);;
-flag ["ocaml"; "link"; "thread"; "byte"] (S[A "threads.cma"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"]);;
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
 flag ["ocaml"; "compile"; "nolabels"] (A"-nolabels");;
 

@@ -1,3 +1,5 @@
+# Works with rslide revision 8
+# http://gallium.inria.fr/~pouillar/rslide/rslide
 documentclass :beamer, :t, :compress, :red
 usepackage    :inputenc, :utf8
 
@@ -23,12 +25,18 @@ end
 beamer_footline 50, 0
 
 extend do
-  module ::Rslide::Tags
-    class CodeCaml < Code
-    end
-    class CodeTags < Code
-    end
+  def code_caml *a, &b
+    latex_only.small.code_inline(*a, &b)
+    html_only.code(*a, &b)
   end
+  def code_tags *a, &b
+    latex_only.small.code_inline(*a, &b)
+    html_only.code(*a, &b)
+  end
+end
+
+html_only do
+  paragraph.huge1 "Warning: this presentation has a degraded style compared to the Beamer/PDF version"
 end
 
 maketitle
@@ -86,7 +94,7 @@ slide "What's a regular OCaml project?" do
   end
 end
 
-slide "How difficult is it to compile regular projects by hand?" do
+slide "How difficult is it to build regular projects by hand?" do
   box "OCaml has subtle compilation rules" do
     * Interfaces (_.mli_) can be absent, yet buildable (_.mly_)
     * Native and bytecode suffixes and settings differ
@@ -153,8 +161,8 @@ slide "The tags, our way to specify exceptions", 'fragile=singleslide' do
   end
   code_tags do
     : "funny.ml":           rectypes
-      <**/*.ml*>:           warn_A, warn_error_A, debug, dtypes
-      <**/*.cmx>:           inline(9)
+      ~<**/*.ml*>~:           warn_A, warn_error_A, debug, dtypes
+      ~<**/*.cmx>~:           inline(9)
       "foo.ml" or "bar.ml": warn_v, warn_error_v
       "vendor.ml":          -warn_A, -warn_error_A
       <main.{byte,native}>: use_unix
@@ -202,8 +210,10 @@ end
 h1 "Writing an ocamlbuild plugin"
 
 slide "Not a specific language, but plain OCaml code" do
-  * Plugins are compiled on the fly
-  * Dynamic configuration is feasible
+  list do
+    * Plugins are compiled on the fly
+    * Dynamic configuration is feasible
+  end
   box "With a plugin one can:" do
     * Extend rules (add new ones, override old ones)
     * Add flags and dependencies based on tags
@@ -234,14 +244,16 @@ slide "Parallel execution where applicable" do
 end
 
 slide "A status bar for your visual comfort" do
-  * Compilation tools echo commands and their output
-  * This creates a long and boring output that scrolls too fast
-  * Here you can keep an eye on what is going on!
-  * It succinctly displays time, number of targets, and tags
-  * Command outputs are correctly multiplexed
-  * A trace of the commands executed is kept in a log file
-  * This log file can be used as the basis of a shell script
-  example do
+  list do
+    * Compilation tools echo commands and their output
+    * This creates a long and boring output that scrolls too fast
+    * Here you can keep an eye on what is going on!
+    * It succinctly displays time, number of targets, and tags
+    * Command outputs are correctly multiplexed
+    * A trace of the commands executed is kept in a log file
+    * This log file can be used as the basis of a shell script
+  end
+  latex_only.example do
     invisible_join do
       count = 0
       mod = 1
@@ -260,7 +272,7 @@ slide "A status bar for your visual comfort" do
 end
 
 slide "Hygiene and sterilization" do
-  * ocamlbuild has a Hygiene Squad (HS) that checks your source tree for cleanliness
+  > ocamlbuild has a Hygiene Squad (HS) that checks your source tree for cleanliness
   box "It has preconceived but useful cleanliness notions", '<1->' do
     * Files dirty by default: _.cmi_, _.cmo_, _.cma_, _.cmx_...
     * _ocamllex_/_ocamlyacc_ files: _.ml_ *if* _.mll_, _.ml_&_.mli_ *if* _.mly_...
@@ -324,6 +336,5 @@ end
 
 slide "Conclusion", '<+->' do
   * ocamlbuild is not perfect but already damn useful
-  * It will be in 3.10, so feel free to use it
-  * Try it now! It's in the CVS!
+  * Try it now! It's in OCaml 3.10!
 end

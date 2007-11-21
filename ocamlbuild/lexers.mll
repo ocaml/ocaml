@@ -87,7 +87,7 @@ and colon_sep_strings = parse
   | eof { [] }
   | _ { raise (Error "Expecting colon-separated strings (1)") }
 and colon_sep_strings_aux = parse
-  | ':' ([^ ':']+ as word) { word :: colon_sep_strings_aux lexbuf }
+  | ':'+ ([^ ':']+ as word) { word :: colon_sep_strings_aux lexbuf }
   | eof { [] }
   | _ { raise (Error "Expecting colon-separated strings (2)") }
 

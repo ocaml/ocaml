@@ -48,7 +48,7 @@ let menhir mly env build =
 let ocamldoc_c tags arg odoc =
   let tags = tags++"ocaml" in
   Cmd (S [!Options.ocamldoc; A"-dump"; Px odoc; T(tags++"doc");
-          ocaml_ppflags tags; flags_of_pathname arg;
+          ocaml_ppflags (tags++"pp:doc"); flags_of_pathname arg;
           ocaml_include_flags arg; P arg])
 
 let ocamldoc_l_dir tags deps _docout docdir =
@@ -69,6 +69,11 @@ let document_ocaml_interf mli odoc env build =
   let mli = env mli and odoc = env odoc in
   Ocaml_compiler.prepare_compile build mli;
   ocamldoc_c (tags_of_pathname mli++"interf") mli odoc
+
+let document_ocaml_implem ml odoc env build =
+  let ml = env ml and odoc = env odoc in
+  Ocaml_compiler.prepare_compile build ml;
+  ocamldoc_c (tags_of_pathname ml++"implem") ml odoc
 
 let document_ocaml_project ?(ocamldoc=ocamldoc_l_file) odocl docout docdir env build =
   let odocl = env odocl and docout = env docout and docdir = env docdir in
