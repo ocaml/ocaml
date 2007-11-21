@@ -281,6 +281,19 @@ if !Options.use_menhir || Configuration.has_tag "use_menhir" then begin
     ~prod:"%.mly.depends"
     ~dep:"%.mly"
     (Ocaml_tools.menhir_ocamldep_command "%.mly" "%.mly.depends");
+
+  (* Automatic handling of menhir modules, given a
+     description file %.mlypack                         *)
+  rule "ocaml: modular menhir (mlypack)"
+    ~prods:["%.mli" ; "%.ml"]
+    ~deps:["%.mlypack"]
+    (Ocaml_tools.menhir_modular "%" "%.mlypack" "%.mlypack.depends");
+
+  rule "ocaml: menhir modular dependencies"
+    ~prod:"%.mlypack.depends"
+    ~dep:"%.mlypack"
+    (Ocaml_tools.menhir_modular_ocamldep_command "%.mlypack" "%.mlypack.depends")
+
 end else
   rule "ocamlyacc"
     ~tags:["ocaml"] (* FIXME "parser" *)
