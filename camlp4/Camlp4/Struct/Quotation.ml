@@ -20,7 +20,7 @@
 
 (* $Id$ *)
 
-module Make (Ast : Sig.Ast)
+module Make (Ast : Sig.Camlp4Ast)
 : Sig.Quotation with module Ast = Ast
 = struct
   module Ast = Ast;
@@ -74,15 +74,20 @@ module Make (Ast : Sig.Ast)
       let pp x = fprintf ppf "@?@[<2>While %s %S in a position of %S:" x name position in
       let () =
         match ctx with
-        [ Finding -> do {
+        [ Finding -> begin
             pp "finding quotation";
-            fprintf ppf "@ @[<hv2>Available quotations are:@\n";
-            List.iter begin fun ((s,t),_) ->
-              fprintf ppf "@[<2>%s@ (in@ a@ position@ of %a)@]@ "
-                s Exp_key.print_tag t
-            end expanders_table.val;
-            fprintf ppf "@]"
-          } 
+            if expanders_table.val = [] then
+              fprintf ppf "@ There is no quotation expander available."
+            else
+              begin
+                fprintf ppf "@ @[<hv2>Available quotation expanders are:@\n";
+                List.iter begin fun ((s,t),_) ->
+                  fprintf ppf "@[<2>%s@ (in@ a@ position@ of %a)@]@ "
+                    s Exp_key.print_tag t
+                end expanders_table.val;
+                fprintf ppf "@]"
+              end
+          end
         | Expanding -> pp "expanding quotation"
         | Locating -> pp "parsing"
         | ParsingResult loc str ->
@@ -92,13 +97,13 @@ module Make (Ast : Sig.Ast)
               let () = fprintf ppf " dumping result...\n" in
               try
                 let oc = open_out_bin dump_file in
-                do {
+                begin
                   output_string oc str;
                   output_string oc "\n";
                   flush oc;
                   close_out oc;
                   fprintf ppf "%a:" Loc.print (Loc.set_file_name dump_file loc);
-                }
+                end
               with _ ->
                 fprintf ppf
                   "Error while dumping result in file %S; dump aborted"

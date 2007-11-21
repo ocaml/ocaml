@@ -108,7 +108,7 @@ module Make (Loc : Sig.Loc)
     | <:patt< _ >> -> True
     | <:patt< ($x$ as $y$) >> -> is_irrefut_patt x && is_irrefut_patt y
     | <:patt< { $p$ } >> -> is_irrefut_patt p
-    | <:patt< $lid:_$ = $p$ >> -> is_irrefut_patt p
+    | <:patt< $_$ = $p$ >> -> is_irrefut_patt p
     | <:patt< $p1$; $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
     | <:patt< $p1$, $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
     | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
@@ -450,6 +450,10 @@ module Make (Loc : Sig.Loc)
         list_of_module_binding x (list_of_module_binding y acc)
     | x -> [x :: acc] ];
 
+  module Camlp4Trash = struct
+    INCLUDE "camlp4/Camlp4/Camlp4Ast.partial.ml";
+  end;
+
   module Meta = struct
 
     module type META_LOC = sig
@@ -491,17 +495,17 @@ module Make (Loc : Sig.Loc)
     module Make (MetaLoc : META_LOC) = struct
       open MetaLoc;
 
-      value meta_acc_Loc_t = meta_loc_expr;
+      value meta_loc = meta_loc_expr;
       module Expr = Camlp4Filters.MetaGeneratorExpr Ast;
-      value meta_acc_Loc_t = meta_loc_patt;
+      value meta_loc = meta_loc_patt;
       module Patt = Camlp4Filters.MetaGeneratorPatt Ast;
     end;
 
   end;
 
-  class map = Camlp4Filters.GenerateMap.generated;
+  class map = Camlp4MapGenerator.generated;
 
-  class fold = Camlp4Filters.GenerateFold.generated;
+  class fold = Camlp4FoldGenerator.generated;
 
   value map_expr f = object
     inherit map as super;
@@ -525,11 +529,6 @@ module Make (Loc : Sig.Loc)
   end;
   value map_loc f = object
     inherit map as super;
-    method _Loc_t x = f (super#_Loc_t x);
+    method loc x = f (super#loc x);
   end;
-end;
-
-module Camlp4Trash = struct
-(* #use "camlp4/Camlp4/Camlp4Ast.partial.ml"; *)
-  INCLUDE "camlp4/Camlp4/Camlp4Ast.partial.ml";
 end;

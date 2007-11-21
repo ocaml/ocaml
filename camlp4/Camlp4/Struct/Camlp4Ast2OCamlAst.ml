@@ -22,9 +22,9 @@
 
 module Make (Ast : Sig.Camlp4Ast) = struct
   open Format;
-  open Parsetree;
-  open Longident;
-  open Asttypes;
+  open Camlp4_import.Parsetree;
+  open Camlp4_import.Longident;
+  open Camlp4_import.Asttypes;
   open Ast;
 
   value constructors_arity () =
@@ -227,8 +227,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let t1 = TyApp loc1 <:ctyp@loc1< option >> t1 in
         mktyp loc (Ptyp_arrow ("?" ^ lab) (ctyp t1) (ctyp t2))
     | TyArr loc t1 t2 -> mktyp loc (Ptyp_arrow "" (ctyp t1) (ctyp t2))
-    | <:ctyp@loc< <  > >> -> mktyp loc (Ptyp_object [])
-    | <:ctyp@loc< < .. > >> -> mktyp loc (Ptyp_object [mkfield loc Pfield_var])
     | <:ctyp@loc< < $fl$ > >> -> mktyp loc (Ptyp_object (meth_list fl []))
     | <:ctyp@loc< < $fl$ .. > >> ->
         mktyp loc (Ptyp_object (meth_list fl [mkfield loc Pfield_var]))
@@ -261,7 +259,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
       TyObj _ _ (BAnt _) | TyNil _ | TyTup _ _ ->
         assert False ]
   and row_field = fun
-    [ <:ctyp< `$i$ >> -> [Rtag i True []]
+    [ <:ctyp<>> -> []
+    | <:ctyp< `$i$ >> -> [Rtag i True []]
     | <:ctyp< `$i$ of & $t$ >> -> [Rtag i True (List.map ctyp (list_of_ctyp t []))]
     | <:ctyp< `$i$ of $t$ >> -> [Rtag i False (List.map ctyp (list_of_ctyp t []))]
     | <:ctyp< $t1$ | $t2$ >> -> row_field t1 @ row_field t2
@@ -272,17 +271,17 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and meth_list fl acc =
     match fl with
-    [ <:ctyp< $t1$; $t2$ >> -> meth_list t1 (meth_list t2 acc)
+    [ <:ctyp<>> -> acc
+    | <:ctyp< $t1$; $t2$ >> -> meth_list t1 (meth_list t2 acc)
     | <:ctyp@loc< $lid:lab$ : $t$ >> ->
         [mkfield loc (Pfield lab (mkpolytype (ctyp t))) :: acc]
     | _ -> assert False ]
   ;
 
-  value mktype loc tl cl tk tp tm =
+  value mktype loc tl cl tk tm =
     let (params, variance) = List.split tl in
     {ptype_params = params; ptype_cstrs = cl; ptype_kind = tk;
-     ptype_private = tp; ptype_manifest = tm; ptype_loc = mkloc loc;
-     ptype_variance = variance}
+    ptype_manifest = tm; ptype_loc = mkloc loc; ptype_variance = variance}
   ;
   value mkprivate' m = if m then Private else Public;
   value mkprivate m = mkprivate' (mb2b m);
@@ -307,10 +306,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         type_decl tl cl loc m True t
     | <:ctyp< { $t$ } >> ->
         mktype loc tl cl
-          (Ptype_record (List.map mktrecord (list_of_ctyp t []))) (mkprivate' pflag) m
-    | TySum _ t ->
+          (Ptype_record (List.map mktrecord (list_of_ctyp t [])) (mkprivate' pflag)) m
+    | <:ctyp< [ $t$ ] >> ->
         mktype loc tl cl
-          (Ptype_variant (List.map mkvariant (list_of_ctyp t []))) (mkprivate' pflag) m
+          (Ptype_variant (List.map mkvariant (list_of_ctyp t [])) (mkprivate' pflag)) m
     | t ->
         if m <> None then
           error loc "only one manifest type allowed by definition" else
@@ -319,7 +318,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           [ <:ctyp<>> -> None
           | _ -> Some (ctyp t) ]
         in
-        mktype loc tl cl Ptype_abstract (mkprivate' pflag) m ]
+        let k = if pflag then Ptype_private else Ptype_abstract in
+        mktype loc tl cl k m ]
   ;
 
   value type_decl tl cl t = type_decl tl cl (loc_of_ctyp t) None False t;
@@ -343,8 +343,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value opt_private_ctyp =
     fun
-    [ <:ctyp< private $t$ >> -> (Ptype_abstract, Private, ctyp t)
-    | t -> (Ptype_abstract, Public, ctyp t) ];
+    [ <:ctyp< private $t$ >> -> (Ptype_private, ctyp t)
+    | t -> (Ptype_abstract, ctyp t) ];
 
   value rec type_parameters t acc =
     match t with
@@ -376,12 +376,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | WcTyp loc id_tpl ct ->
         let (id, tpl) = type_parameters_and_type_name id_tpl [] in
         let (params, variance) = List.split tpl in
-        let (kind, priv, ct) = opt_private_ctyp ct in
+        let (kind, ct) = opt_private_ctyp ct in
         [(id,
         Pwith_type
           {ptype_params = params; ptype_cstrs = [];
             ptype_kind = kind;
-            ptype_private = priv;
             ptype_manifest = Some ct;
             ptype_loc = mkloc loc; ptype_variance = variance}) :: acc]
     | WcMod _ i1 i2 ->
@@ -773,7 +772,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and mkideexp x acc =
     match x with
-    [ <:rec_binding< $x$; $y$ >> ->
+    [ <:rec_binding<>> -> acc
+    | <:rec_binding< $x$; $y$ >> ->
          mkideexp x (mkideexp y acc)
     | <:rec_binding< $lid:s$ = $e$ >> -> [(s, expr e) :: acc]
     | _ -> assert False ]
