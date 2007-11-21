@@ -198,7 +198,12 @@ let add_extensions extensions modules =
 
 flag ["ocaml"; "pp"; "camlp4boot"] (convert_command_for_windows_shell (S[ocamlrun; P hot_camlp4boot]));;
 flag ["ocaml"; "pp"; "camlp4boot"; "native"] (S[A"-D"; A"OPT"]);;
+v v v v v v v
 flag ["ocaml"; "pp"; "camlp4boot"; "ocamldep"] (S[A"-D"; A"OPT"]);;
+*************
+flag ["ocaml"; "pp"; "camlp4boot"; "pp:dep"] (S[A"-D"; A"OPT"]);;
+flag ["ocaml"; "pp"; "camlp4boot"; "pp:doc"] (S[A"-printer"; A"o"]);;
+^ ^ ^ ^ ^ ^ ^
 let exn_tracer = Pathname.pwd/"camlp4"/"boot"/"Camlp4ExceptionTracer.cmo" in
 if Pathname.exists exn_tracer then
   flag ["ocaml"; "pp"; "camlp4boot"; "exntracer"] (P exn_tracer);
@@ -349,7 +354,7 @@ let import_stdlib_contents build exts =
   List.iter Outcome.ignore_good res
 ;;
 
-rule "byte stdlib in partial mode"
+virtual_rule "byte stdlib in partial mode"
   ~prod:"byte_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cma";
          "stdlib/std_exit.cmo"; "stdlib/libcamlrun"-.-C.a;
@@ -359,11 +364,10 @@ rule "byte stdlib in partial mode"
       Ocamlbuild_pack.Ocaml_compiler.byte_library_link_mllib
         "stdlib/stdlib.mllib" "stdlib/stdlib.cma" env build
     in
-    import_stdlib_contents build ["cmi"];
-    touch "byte_stdlib_partial_mode"
+    import_stdlib_contents build ["cmi"]
   end;;
 
-rule "native stdlib in partial mode"
+virtual_rule "native stdlib in partial mode"
   ~prod:"native_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cmxa";
          "stdlib/stdlib"-.-C.a; "stdlib/std_exit.cmx";
@@ -374,8 +378,7 @@ rule "native stdlib in partial mode"
       Ocamlbuild_pack.Ocaml_compiler.native_library_link_mllib
         "stdlib/stdlib.mllib" "stdlib/stdlib.cmxa" env build
     in
-    import_stdlib_contents build ["cmi"];
-    touch "native_stdlib_partial_mode"
+    import_stdlib_contents build ["cmi"]
   end;;
 
 rule "C files"
