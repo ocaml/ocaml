@@ -197,6 +197,24 @@ module String = struct
       s'.[i] <- s.[sl - i - 1]
     done;
     s';;
+
+  let implode l =
+    match l with
+    | [] -> ""
+    | cs ->
+        let r = create (List.length cs) in
+        let pos = ref 0 in
+        List.iter begin fun c ->
+          unsafe_set r !pos c;
+          incr pos
+        end cs;
+        r
+
+  let explode s =
+    let sl = String.length s in
+    let rec go pos =
+      if pos >= sl then [] else unsafe_get s pos :: go (pos + 1)
+    in go 0
 end
 
 module StringSet = Set.Make(String)

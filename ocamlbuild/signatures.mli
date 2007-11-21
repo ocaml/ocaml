@@ -82,6 +82,12 @@ module type STRING = sig
 
   val rev : string -> string
 
+  (* Convert a character list into a character string *)
+  val implode : char list -> string
+
+  (* Convert a character string into a character list *)
+  val explode : string -> char list
+
   (** The following are original functions from the [String] module. *)
   include Std_signatures.STRING
 end
