@@ -18,17 +18,16 @@ type env = Pathname.t -> Pathname.t
 type builder = Pathname.t list list -> (Pathname.t, exn) Outcome.t list
 type action = env -> builder -> Command.t
 
-type 'a gen_rule = private
-  { name  : string;
-    tags  : Tags.t;
-    deps  : Pathname.t list;
-    prods : 'a list;
-    code  : env -> builder -> Command.t }
+type 'a gen_rule
 
 type rule = Pathname.t gen_rule
 type rule_scheme = resource_pattern gen_rule
 
 type 'a rule_printer = (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a gen_rule -> unit
+
+val name_of_rule : 'a gen_rule -> string
+val deps_of_rule : 'a gen_rule -> Pathname.t list
+val prods_of_rule : 'a gen_rule -> 'a list
 
 val rule : string ->
   ?tags:string list ->
