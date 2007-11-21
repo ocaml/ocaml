@@ -11,3 +11,5 @@
 "gen_type_N.ml": camlp4orf, use_camlp4
 "syb_fold.ml": pp(camlp4o -filter fold), use_camlp4
 "syb_map.ml": pp(camlp4o -filter map), use_camlp4
+"ex_str.ml": camlp4of, use_camlp4, use_camlp4_full
+"ex_str_test.ml": pp(camlp4o ./ex_str.cmo)
