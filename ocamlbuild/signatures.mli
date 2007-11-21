@@ -453,6 +453,7 @@ module type PLUGIN = sig
     ?deps:string list ->
     ?prod:string ->
     ?dep:string ->
+    ?stamp:string ->
     ?insert:[`top | `before of string | `after of string | `bottom] ->
     action -> unit
 
@@ -461,6 +462,7 @@ module type PLUGIN = sig
     prod:string ->
     ?deps:string list ->
     ?dep:string ->
+    ?stamp:string ->
     ?insert:[`top | `before of string | `after of string | `bottom] ->
     cache:(env -> builder -> string) ->
     (env -> out_channel -> unit) -> unit
