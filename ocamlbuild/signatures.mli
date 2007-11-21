@@ -522,7 +522,6 @@ module type PLUGIN = sig
   val ln_f : Pathname.t -> Pathname.t -> Command.t
   val ln_s : Pathname.t -> Pathname.t -> Command.t
   val rm_f : Pathname.t -> Command.t
-  val touch : Pathname.t -> Command.t
   val chmod : Command.spec -> Pathname.t -> Command.t
   val cmp : Pathname.t -> Pathname.t -> Command.t
 
