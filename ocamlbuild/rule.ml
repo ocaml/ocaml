@@ -311,7 +311,6 @@ module Common_commands = struct
   let ln_f pointed pointer = Cmd (S [A"ln"; A"-f"; P pointed; Px pointer])
   let ln_s pointed pointer = Cmd (S[A"ln"; A"-s"; P pointed; Px pointer])
   let rm_f x = Cmd (S [A"rm"; A"-f"; Px x])
-  let touch file = Cmd (S[A"touch"; Px file])
   let chmod opts file = Cmd (S[A"chmod"; opts; Px file])
   let cmp a b = Cmd (S[A"cmp"; P a; Px b])
 end
