@@ -67,7 +67,7 @@ let rec self depth on_the_go_orig target =
         | [] -> assert false
         | r :: rs ->
             try
-              List.iter (force_self (depth + 1) on_the_go) r.Rule.deps;
+              List.iter (force_self (depth + 1) on_the_go) (Rule.deps_of_rule r);
               Rule.call (self_firsts (depth + 1) on_the_go) r
             with Failed backtrace ->
               if rs = [] then failed target (Depth (target, Choice (backtrace :: backtraces)))

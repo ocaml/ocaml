@@ -33,6 +33,10 @@ type 'a gen_rule =
 type rule = Pathname.t gen_rule
 type rule_scheme = Resource.resource_pattern gen_rule
 
+let name_of_rule r = r.name
+let deps_of_rule r = r.deps
+let prods_of_rule r = r.prods
+
 type 'a rule_printer = (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a gen_rule -> unit
 
 exception Code_digest of string * (bool -> unit)
