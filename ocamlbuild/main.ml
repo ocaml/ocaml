@@ -49,7 +49,7 @@ let show_documentation () =
   let flags = Flags.get_flags () in
   let pp fmt = Log.raw_dprintf (-1) fmt in
   List.iter begin fun rule ->
-    pp "%a@\n@\n" Rule.pretty_print rule
+    pp "%a@\n@\n" (Rule.pretty_print Resource.print_pattern) rule
   end rules;
   List.iter begin fun (tags, flag) ->
     let sflag = Command.string_of_command_spec flag in

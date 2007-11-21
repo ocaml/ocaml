@@ -14,6 +14,7 @@
 open My_std
 
 open Pathname
+type resource_pattern
 type env
 
 module Resources : Set.S with type elt = t
@@ -54,10 +55,13 @@ module Cache :
 
 val compare : t -> t -> int
 val print : Format.formatter -> t -> unit
+val print_pattern : Format.formatter -> resource_pattern -> unit
 val clean : t -> unit
 val import : string -> t
+val import_pattern : string -> resource_pattern
 
-val matchit : t -> t -> env option
+val matchit : resource_pattern -> t -> env option
 val subst : env -> t -> t
+val subst_pattern : env -> resource_pattern -> t
 val is_up_to_date : t -> bool
 val print_env : Format.formatter -> env -> unit

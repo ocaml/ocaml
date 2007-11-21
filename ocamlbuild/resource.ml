@@ -239,10 +239,12 @@ let import x = x
 
 module MetaPath : sig
 
+        type t
 	type env
 
-	val matchit : string -> string -> env option
-	val subst : env -> string -> string
+        val mk : string -> t
+	val matchit : t -> string -> env option
+	val subst : env -> t -> string
 	val print_env : Format.formatter -> env -> unit
 
 end = struct
@@ -276,7 +278,7 @@ end = struct
 			| [V var] -> (var, String.sub s pos (sl - pos)) :: acc
 			| V _ :: _ -> assert false
 		in
-		try	Some (loop (mk p) 0 [])
+		try	Some (loop p 0 [])
 		with No_solution -> None
 
   let pp_opt pp_elt f =
@@ -311,14 +313,19 @@ end = struct
 				match x with
 				| A atom -> atom
 				| V var -> List.assoc var env
-			end (mk s)
+			end s
 		end
 end
 
 type env = MetaPath.env
+type resource_pattern = (Pathname.t * MetaPath.t)
 
-let matchit = MetaPath.matchit
+let print_pattern f (x, _) = Pathname.print f x
 
-let subst = MetaPath.subst
+let import_pattern x = x, MetaPath.mk x
+let matchit (_, p) x = MetaPath.matchit p x
+
+let subst env s = MetaPath.subst env (MetaPath.mk s)
+let subst_pattern env (_, p) = MetaPath.subst env p
 
 let print_env = MetaPath.print_env
