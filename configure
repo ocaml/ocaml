@@ -1276,6 +1276,7 @@ do
   if test -f $dir/libX11.a || \
      test -f $dir/libX11.so || \
      test -f $dir/libX11.dll.a || \
+     test -f $dir/libX11.dylib || \
      test -f $dir/libX11.sa; then
     if test $dir = /usr/lib; then
       x11_link="-lX11"
