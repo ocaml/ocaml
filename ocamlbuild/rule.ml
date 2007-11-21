@@ -303,11 +303,6 @@ let file_rule name ?tags ~prod ?deps ?dep ?insert ~cache action =
     DigestThunk(cache env build, thunk)
   end
 
-let custom_rule name ?tags ?prods ?prod ?deps ?dep ?insert ~cache action =
-  gen_rule name ?tags ?prods ?prod ?dep ?deps ?insert begin fun env build ->
-    DigestThunk(cache env build, fun cached -> action env ~cached)
-  end
-
 module Common_commands = struct
   open Command
   let mv src dest = Cmd (S [A"mv"; P src; Px dest])
