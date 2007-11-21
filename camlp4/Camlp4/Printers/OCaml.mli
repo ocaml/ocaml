@@ -92,7 +92,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
       formatter ->
         list (string * Ast.module_type) -> unit;
     method ident : formatter -> Ast.ident -> unit;
-    method intlike : formatter -> string -> unit;
+    method numeric : formatter -> string -> unit;
     method binding : formatter -> Ast.binding -> unit;
     method record_binding : formatter -> Ast.rec_binding -> unit;
     method match_case : formatter -> Ast.match_case -> unit;

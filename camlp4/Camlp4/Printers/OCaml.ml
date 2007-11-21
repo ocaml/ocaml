@@ -347,7 +347,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method string f = pp f "%s";
     method quoted_string f = pp f "%S";
 
-    method intlike f s = if s.[0] = '-' then pp f "(%s)" s else pp f "%s" s;
+    method numeric f s = if s.[0] = '-' then pp f "(%s)" s else pp f "%s" s;
 
     method module_expr_get_functor_args accu =
       fun
@@ -503,10 +503,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< for $s$ = $e1$ $to:df$ $e2$ do { $e3$ } >> ->
         pp f "@[<hv0>@[<hv2>@[<2>for %a =@ %a@ %a@ %a@ do@]@ %a@]@ done@]"
           o#var s o#expr e1 o#direction_flag df o#expr e2 o#seq e3
-    | <:expr< $int:s$ >> -> pp f "%a" o#intlike s
-    | <:expr< $nativeint:s$ >> -> pp f "%an" o#intlike s
-    | <:expr< $int64:s$ >> -> pp f "%aL" o#intlike s
-    | <:expr< $int32:s$ >> -> pp f "%al" o#intlike s
+    | <:expr< $int:s$ >> -> pp f "%a" o#numeric s
+    | <:expr< $nativeint:s$ >> -> pp f "%an" o#numeric s
+    | <:expr< $int64:s$ >> -> pp f "%aL" o#numeric s
+    | <:expr< $int32:s$ >> -> pp f "%al" o#numeric s
     | <:expr< $flo:s$ >> -> pp f "%s" s
     | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:expr< $id:i$ >> -> o#var_ident f i
@@ -609,10 +609,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:patt< { $p$ } >> -> pp f "@[<hv2>{@ %a@]@ }" o#patt p
     | <:patt< $str:s$ >> -> pp f "\"%s\"" s
     | <:patt< ( $p$ : $t$ ) >> -> pp f "@[<1>(%a :@ %a)@]" o#patt p o#ctyp t
-    | <:patt< $nativeint:s$ >> -> pp f "%an" o#intlike s
-    | <:patt< $int64:s$ >> -> pp f "%aL" o#intlike s
-    | <:patt< $int32:s$ >> -> pp f "%al" o#intlike s
-    | <:patt< $int:s$ >> -> pp f "%a" o#intlike s
+    | <:patt< $nativeint:s$ >> -> pp f "%an" o#numeric s
+    | <:patt< $int64:s$ >> -> pp f "%aL" o#numeric s
+    | <:patt< $int32:s$ >> -> pp f "%al" o#numeric s
+    | <:patt< $int:s$ >> -> pp f "%a" o#numeric s
     | <:patt< $flo:s$ >> -> pp f "%s" s
     | <:patt< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:patt< ~ $s$ >> -> pp f "~%s" s
