@@ -86,14 +86,14 @@ and self_first depth on_the_go already_failed rs =
       with Failed backtrace -> self_first depth on_the_go (backtrace :: already_failed) rs
 and self_firsts depth on_the_go rss =
   let results = List.map (self_first depth on_the_go []) rss in
-  let cmds, konts =
+  let cmds, thunks =
     List.fold_right begin fun res ((acc1, acc2) as acc) ->
       match res with
       | Bad _ -> acc
       | Good res ->
           match Resource.Cache.get_optional_resource_suspension res with
           | None -> acc
-          | Some (cmd, kont) -> (cmd :: acc1, kont :: acc2)
+          | Some (cmd, thunk) -> (cmd :: acc1, thunk :: acc2)
     end results ([], []) in
   let count = List.length cmds in
   let job_debug = if !Command.jobs = 1 then 10 else 5 in
@@ -102,11 +102,11 @@ and self_firsts depth on_the_go rss =
   if count > 1 then dprintf job_debug "<<< PARALLEL";
   begin match opt_exn with
   | Some(res, exn) ->
-      List.iter2 (fun res kont -> if res then kont ()) res konts;
+      List.iter2 (fun res thunk -> if res then thunk ()) res thunks;
       Log.finish ~how:`Error ();
       raise exn
   | None ->
-      List.iter (fun kont -> kont ()) konts
+      List.iter (fun thunk -> thunk ()) thunks
   end;
   results
 and force_self depth on_the_go x = self depth on_the_go x; Resource.Cache.resume_resource x
