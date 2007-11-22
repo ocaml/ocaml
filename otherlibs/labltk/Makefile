@@ -32,7 +32,7 @@ allopt:
 byte: all
 opt: allopt
 
-.PHONY: labltk camltk examples_labltk examples_camltk
+.PHONY: all allopt byte opt labltk camltk examples_labltk examples_camltk
 
 labltk: Widgets.src
 	compiler/tkcompiler -outdir labltk

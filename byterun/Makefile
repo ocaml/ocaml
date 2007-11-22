@@ -48,5 +48,6 @@ libcamlrund.a: $(DOBJS)
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+.PHONY: depend
 
 include .depend

@@ -7,7 +7,9 @@ _tkgen.ml: ../Widgets.src ../compiler/tkcompiler$(EXE)
 
 # dependencies are broken: wouldn't work with gmake 3.77
 
-tk.ml labltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp$(EXE) #../builtin/builtin_*.ml
+tk.ml labltk.ml .depend: generate
+
+generate: _tkgen.ml ../builtin/report.ml ../compiler/pp$(EXE) #../builtin/builtin_*.ml
 	(echo 'open StdLabels'; \
 	 echo 'open Widget'; \
          echo 'open Protocol'; \
@@ -46,3 +48,5 @@ clean:
 	rm -f *.cm* *.ml *.mli *.$(O) *.$(A) .depend
 
 #	rm -f modules
+
+.PHONY: all generate clean

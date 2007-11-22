@@ -38,6 +38,7 @@ PUBLIC_INCLUDES=\
 
 
 all: ocamlrun$(EXE) ld.conf libcamlrun.$(A)
+.PHONY: all
 
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" >ld.conf
@@ -52,6 +53,7 @@ install:
           sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; \
         done
 	cp ld.conf $(LIBDIR)/ld.conf
+.PHONY: install
 
 
 primitives : $(PRIMS)
@@ -88,3 +90,4 @@ clean:
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A)
 	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
 	rm -f version.h
+.PHONY: clean

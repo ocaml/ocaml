@@ -142,10 +142,10 @@ typing/includemod.cmx: typing/types.cmx typing/typedtree.cmx utils/tbl.cmx \
     typing/ident.cmx typing/env.cmx typing/ctype.cmx typing/includemod.cmi 
 typing/mtype.cmo: typing/types.cmi typing/subst.cmi typing/path.cmi \
     typing/ident.cmi typing/env.cmi typing/ctype.cmi typing/btype.cmi \
-    typing/mtype.cmi 
+    parsing/asttypes.cmi typing/mtype.cmi 
 typing/mtype.cmx: typing/types.cmx typing/subst.cmx typing/path.cmx \
     typing/ident.cmx typing/env.cmx typing/ctype.cmx typing/btype.cmx \
-    typing/mtype.cmi 
+    parsing/asttypes.cmi typing/mtype.cmi 
 typing/oprint.cmo: typing/outcometree.cmi parsing/asttypes.cmi \
     typing/oprint.cmi 
 typing/oprint.cmx: typing/outcometree.cmi parsing/asttypes.cmi \
@@ -480,17 +480,17 @@ asmcomp/asmgen.cmo: asmcomp/split.cmi asmcomp/spill.cmi asmcomp/selection.cmi \
     asmcomp/proc.cmi asmcomp/printmach.cmi asmcomp/printlinear.cmi \
     asmcomp/printcmm.cmi utils/misc.cmi asmcomp/mach.cmi asmcomp/liveness.cmi \
     asmcomp/linearize.cmi asmcomp/interf.cmi asmcomp/emitaux.cmi \
-    asmcomp/emit.cmi utils/config.cmi asmcomp/comballoc.cmi \
-    asmcomp/coloring.cmi asmcomp/cmmgen.cmi asmcomp/cmm.cmi \
-    asmcomp/closure.cmi utils/clflags.cmi asmcomp/asmgen.cmi 
+    asmcomp/emit.cmi utils/config.cmi asmcomp/compilenv.cmi \
+    asmcomp/comballoc.cmi asmcomp/coloring.cmi asmcomp/cmmgen.cmi \
+    asmcomp/cmm.cmi asmcomp/closure.cmi utils/clflags.cmi asmcomp/asmgen.cmi 
 asmcomp/asmgen.cmx: asmcomp/split.cmx asmcomp/spill.cmx asmcomp/selection.cmx \
     asmcomp/scheduling.cmx asmcomp/reload.cmx asmcomp/reg.cmx \
     asmcomp/proc.cmx asmcomp/printmach.cmx asmcomp/printlinear.cmx \
     asmcomp/printcmm.cmx utils/misc.cmx asmcomp/mach.cmx asmcomp/liveness.cmx \
     asmcomp/linearize.cmx asmcomp/interf.cmx asmcomp/emitaux.cmx \
-    asmcomp/emit.cmx utils/config.cmx asmcomp/comballoc.cmx \
-    asmcomp/coloring.cmx asmcomp/cmmgen.cmx asmcomp/cmm.cmx \
-    asmcomp/closure.cmx utils/clflags.cmx asmcomp/asmgen.cmi 
+    asmcomp/emit.cmx utils/config.cmx asmcomp/compilenv.cmx \
+    asmcomp/comballoc.cmx asmcomp/coloring.cmx asmcomp/cmmgen.cmx \
+    asmcomp/cmm.cmx asmcomp/closure.cmx utils/clflags.cmx asmcomp/asmgen.cmi 
 asmcomp/asmlibrarian.cmo: utils/misc.cmi utils/config.cmi \
     asmcomp/compilenv.cmi utils/clflags.cmi asmcomp/clambda.cmi \
     utils/ccomp.cmi asmcomp/asmlink.cmi asmcomp/asmlibrarian.cmi 
@@ -623,10 +623,8 @@ asmcomp/proc.cmx: asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/arch.cmx asmcomp/proc.cmi 
 asmcomp/reg.cmo: asmcomp/cmm.cmi asmcomp/reg.cmi 
 asmcomp/reg.cmx: asmcomp/cmm.cmx asmcomp/reg.cmi 
-asmcomp/reload.cmo: asmcomp/reloadgen.cmi asmcomp/reg.cmi asmcomp/mach.cmi \
-    asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/reload.cmi 
-asmcomp/reload.cmx: asmcomp/reloadgen.cmx asmcomp/reg.cmx asmcomp/mach.cmx \
-    asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/reload.cmi 
+asmcomp/reload.cmo: asmcomp/reloadgen.cmi asmcomp/reload.cmi 
+asmcomp/reload.cmx: asmcomp/reloadgen.cmx asmcomp/reload.cmi 
 asmcomp/reloadgen.cmo: asmcomp/reg.cmi utils/misc.cmi asmcomp/mach.cmi \
     asmcomp/reloadgen.cmi 
 asmcomp/reloadgen.cmx: asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
@@ -637,20 +635,20 @@ asmcomp/schedgen.cmo: asmcomp/reg.cmi utils/misc.cmi asmcomp/mach.cmi \
 asmcomp/schedgen.cmx: asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/linearize.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/schedgen.cmi 
-asmcomp/scheduling.cmo: asmcomp/schedgen.cmi asmcomp/scheduling.cmi 
-asmcomp/scheduling.cmx: asmcomp/schedgen.cmx asmcomp/scheduling.cmi 
+asmcomp/scheduling.cmo: asmcomp/schedgen.cmi asmcomp/mach.cmi \
+    asmcomp/arch.cmo asmcomp/scheduling.cmi 
+asmcomp/scheduling.cmx: asmcomp/schedgen.cmx asmcomp/mach.cmx \
+    asmcomp/arch.cmx asmcomp/scheduling.cmi 
 asmcomp/selectgen.cmo: utils/tbl.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi asmcomp/debuginfo.cmi \
     asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/selectgen.cmi 
 asmcomp/selectgen.cmx: utils/tbl.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
     utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx asmcomp/debuginfo.cmx \
     asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/selectgen.cmi 
-asmcomp/selection.cmo: asmcomp/selectgen.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
-    utils/misc.cmi asmcomp/mach.cmi asmcomp/debuginfo.cmi asmcomp/cmm.cmi \
-    asmcomp/arch.cmo asmcomp/selection.cmi 
-asmcomp/selection.cmx: asmcomp/selectgen.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
-    utils/misc.cmx asmcomp/mach.cmx asmcomp/debuginfo.cmx asmcomp/cmm.cmx \
-    asmcomp/arch.cmx asmcomp/selection.cmi 
+asmcomp/selection.cmo: asmcomp/selectgen.cmi asmcomp/reg.cmi utils/misc.cmi \
+    asmcomp/mach.cmi asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/selection.cmi 
+asmcomp/selection.cmx: asmcomp/selectgen.cmx asmcomp/reg.cmx utils/misc.cmx \
+    asmcomp/mach.cmx asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/selection.cmi 
 asmcomp/spill.cmo: asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi asmcomp/spill.cmi 
 asmcomp/spill.cmx: asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \
@@ -770,12 +768,12 @@ toplevel/genprintval.cmx: typing/types.cmx typing/printtyp.cmx \
 toplevel/opttopdirs.cmo: utils/warnings.cmi typing/types.cmi \
     typing/printtyp.cmi typing/path.cmi toplevel/opttoploop.cmi \
     utils/misc.cmi parsing/longident.cmi typing/ident.cmi typing/env.cmi \
-    typing/ctype.cmi utils/config.cmi utils/clflags.cmi \
+    typing/ctype.cmi utils/config.cmi utils/clflags.cmi asmcomp/asmlink.cmi \
     toplevel/opttopdirs.cmi 
 toplevel/opttopdirs.cmx: utils/warnings.cmx typing/types.cmx \
     typing/printtyp.cmx typing/path.cmx toplevel/opttoploop.cmx \
     utils/misc.cmx parsing/longident.cmx typing/ident.cmx typing/env.cmx \
-    typing/ctype.cmx utils/config.cmx utils/clflags.cmx \
+    typing/ctype.cmx utils/config.cmx utils/clflags.cmx asmcomp/asmlink.cmx \
     toplevel/opttopdirs.cmi 
 toplevel/opttoploop.cmo: utils/warnings.cmi typing/unused_var.cmi \
     typing/types.cmi typing/typemod.cmi typing/typedtree.cmi \
