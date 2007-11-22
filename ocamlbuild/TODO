@@ -1,8 +1,6 @@
 To do:
 * Add rules for producing .recdepends from .ml, .mli, .mllib, .mlpack
 * Produce a dependency subgraph when failing on circular deps (e.g. "A: B C\nB: D")
-* rm sanitize.sh during -clean
-* rm sanitize.sh when running ocamlbuild
 * Export my_unix_with_unix and executor (and change its name)
 * Executor: exceptional conditions and Not_found
 * Fix report
