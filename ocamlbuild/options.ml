@@ -91,24 +91,10 @@ let ignore_list_internal = ref []
 let tags_internal = ref [["quiet"]]
 let tag_lines_internal = ref []
 let show_tags_internal = ref []
+let log_file_internal = ref "_log"
 
 let my_include_dirs = ref [[Filename.current_dir_name]]
 let my_exclude_dirs = ref [[".svn"; "CVS"]]
-
-let pwd = Sys.getcwd ()
-
-let internal_log_file = ref None
-let set_log_file file =
-  internal_log_file := Some file;
-  Log.log_file := lazy begin
-    if !Log.level <= 0
-    || ((!plugin || !just_plugin)
-        && sys_file_exists (filename_concat pwd "myocamlbuild.ml")) then
-      None
-    else Some(filename_concat pwd file)
-  end
-
-let () = set_log_file "_log"
 
 let dummy = "*invalid-dummy-string*";; (* Dummy string for delimiting the latest argument *)
 
@@ -142,8 +128,8 @@ let spec =
    "-quiet", Unit (fun () -> Log.level := 0), " Make as quiet as possible";
    "-verbose", Int (fun i -> Log.level := i + 2), "<level> Set the verbosity level";
    "-documentation", Set show_documentation, " Show rules and flags";
-   "-log", String set_log_file, "<file> Set log file";
-   "-no-log", Unit (fun () -> Log.log_file := lazy None), " No log file";
+   "-log", Set_string log_file_internal, "<file> Set log file";
+   "-no-log", Unit (fun () -> log_file_internal := ""), " No log file";
    "-clean", Set must_clean, " Remove build directory and other files, then exit"; 
 
    "-I", String (add_to' my_include_dirs), "<path> Add to include directories";
@@ -225,6 +211,26 @@ let init () =
   let argv' = Array.concat [Sys.argv; [|dummy|]] in
   parse_argv argv' spec anon_fun usage_msg;
   Shell.mkdir_p !build_dir;
+
+  let () =
+    let log = !log_file_internal in
+    if log = "" then Log.init None
+    else if not (Filename.is_implicit log) then
+      failwith
+        (sprintf "Bad log file name: the file name must be implicit (%S)" log)
+    else
+      let log = filename_concat !build_dir log in
+      Shell.mkdir_p (Filename.dirname log);
+      Shell.rm_f log;
+      let log =
+        if !Log.level > 0
+           && not ((!plugin || !just_plugin) && sys_file_exists "myocamlbuild.ml")
+        then Some log
+        else None
+      in
+      Log.init log
+  in
+
   let reorder x y = x := !x @ (List.concat (List.rev !y)) in
   reorder targets targets_internal;
   reorder ocaml_libs ocaml_libs_internal;
