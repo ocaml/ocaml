@@ -200,7 +200,7 @@ module type COMMAND = sig
   val execute : ?quiet:bool -> ?pretend:bool -> t -> unit
 
   (** Run the commands in the given list, if possible in parallel.
-      See the module [Executor]. *)
+      See the module [Ocamlbuild_executor]. *)
   val execute_many : ?quiet:bool -> ?pretend:bool -> t list -> (bool list * exn) option
 
   (** [setup_virtual_command_solver virtual_command solver]

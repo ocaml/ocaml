@@ -59,12 +59,21 @@ let run_and_open s kont =
 let stdout_isatty () =
   Unix.isatty Unix.stdout
 
+let execute_many =
+  let exit = function
+    | Ocamlbuild_executor.Subcommand_failed -> exit Exit_codes.rc_executor_subcommand_failed
+    | Ocamlbuild_executor.Subcommand_got_signal -> exit Exit_codes.rc_executor_subcommand_got_signal
+    | Ocamlbuild_executor.Io_error -> exit Exit_codes.rc_executor_io_error
+    | Ocamlbuild_executor.Exceptionl_condition -> exit Exit_codes.rc_executor_excetptional_condition
+  in
+  Ocamlbuild_executor.execute ~exit
+
 let setup () =
   implem.is_degraded <- false;
   implem.stdout_isatty <- stdout_isatty;
   implem.gettimeofday <- Unix.gettimeofday;
   implem.report_error <- report_error;
-  implem.execute_many <- Executor.execute;
+  implem.execute_many <- execute_many;
   implem.readlink <- Unix.readlink;
   implem.run_and_open <- run_and_open;
   implem.at_exit_once <- at_exit_once;
