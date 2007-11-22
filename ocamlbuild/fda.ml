@@ -49,7 +49,7 @@ let inspect entry =
     ?sanitize:
       begin
         if !Options.sanitize then
-          Some(!Options.sanitization_script)
+          Some(Pathname.concat !Options.build_dir !Options.sanitization_script)
         else
           None
       end
