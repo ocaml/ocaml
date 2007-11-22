@@ -350,8 +350,8 @@ let import_stdlib_contents build exts =
   List.iter Outcome.ignore_good res
 ;;
 
-virtual_rule "byte stdlib in partial mode"
-  ~prod:"byte_stdlib_partial_mode"
+rule "byte stdlib in partial mode"
+  ~stamp:"byte_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cma";
          "stdlib/std_exit.cmo"; "stdlib/libcamlrun"-.-C.a;
          "stdlib/camlheader"; "stdlib/camlheader_ur"]
@@ -360,11 +360,12 @@ virtual_rule "byte stdlib in partial mode"
       Ocamlbuild_pack.Ocaml_compiler.byte_library_link_mllib
         "stdlib/stdlib.mllib" "stdlib/stdlib.cma" env build
     in
-    import_stdlib_contents build ["cmi"]
+    import_stdlib_contents build ["cmi"];
+    Nop
   end;;
 
-virtual_rule "native stdlib in partial mode"
-  ~prod:"native_stdlib_partial_mode"
+rule "native stdlib in partial mode"
+  ~stamp:"native_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cmxa";
          "stdlib/stdlib"-.-C.a; "stdlib/std_exit.cmx";
          "stdlib/std_exit"-.-C.o; "stdlib/libasmrun"-.-C.a;
@@ -374,7 +375,8 @@ virtual_rule "native stdlib in partial mode"
       Ocamlbuild_pack.Ocaml_compiler.native_library_link_mllib
         "stdlib/stdlib.mllib" "stdlib/stdlib.cmxa" env build
     in
-    import_stdlib_contents build ["cmi"]
+    import_stdlib_contents build ["cmi"];
+    Nop
   end;;
 
 rule "C files"
@@ -435,6 +437,7 @@ let stdlib_mlis =
      "otherlibs/bigarray/bigarray.mli"; "otherlibs/num/num.mli"] in
 rule "Standard library manual"
   ~prod:"ocamldoc/stdlib_man/Pervasives.3o"
+  ~stamp:"ocamldoc/stdlib_man.stamp" (* Depend on this file if you want to depends on all files of stdlib_man/* *)
   ~deps:stdlib_mlis
   begin fun _ _ ->
     Seq[Cmd(S[A"mkdir"; A"-p"; P"ocamldoc/stdlib_man"]);
