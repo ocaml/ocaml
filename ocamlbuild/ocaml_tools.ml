@@ -47,8 +47,8 @@ let import_mlypack build mlypack =
     end files
   in
   let files = List.map Outcome.good (build files_alternatives) in
-  let tags2 = 
-    List.fold_right 
+  let tags2 =
+    List.fold_right
       (fun file -> Tags.union (tags_of_pathname file))
       files tags1
   in
@@ -73,9 +73,9 @@ let menhir_modular menhir_base mlypack mlypack_depends env build =
   Ocaml_compiler.prepare_compile build mlypack;
   let tags = tags++"ocaml"++"parser"++"menhir" in
   Cmd(S[menhir ;
-      	A "--ocamlc"; Quote(S[!Options.ocamlc; ocaml_include_flags mlypack]);
-      	T tags ; A "--infer" ; flags_of_pathname mlypack ;
-      	A "--base" ; Px menhir_base ; atomize_paths files])
+        A "--ocamlc"; Quote(S[!Options.ocamlc; ocaml_include_flags mlypack]);
+        T tags ; A "--infer" ; flags_of_pathname mlypack ;
+        A "--base" ; Px menhir_base ; atomize_paths files])
 
 let ocamldep_command arg out env _build =
   let arg = env arg and out = env out in
