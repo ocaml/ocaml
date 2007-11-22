@@ -1,4 +1,3 @@
-open Ocamlbuild_pack;;
 open Ocamlbuild_plugin;;
 dispatch begin function
   | After_rules ->
