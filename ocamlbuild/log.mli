@@ -19,15 +19,14 @@ include Signatures.LOG
 (** Turn it to true to have a classic display of commands. *)
 val classic_display : bool ref
 
-(** The optional log file. *)
-val log_file : string option Lazy.t ref
-
 (** See {Display.event}. *)
 val event : ?pretend:bool -> string -> string -> Tags.t -> unit
 
 (**/**)
 
-val internal_display : Display.display Lazy.t
+(** Initialize the Log module given a log file name. *)
+val init : string option -> unit
+
 val finish : ?how:[`Success|`Error|`Quiet] -> unit -> unit
 val display : (out_channel -> unit) -> unit
 val update : unit -> unit

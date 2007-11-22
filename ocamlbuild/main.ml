@@ -25,11 +25,6 @@ exception Exit_silently
 
 let clean () =
   Shell.rm_rf !Options.build_dir;
-  begin
-    match !Options.internal_log_file with
-    | None -> ()
-    | Some fn -> Shell.rm_f fn
-  end;
   let entry =
     Slurp.map (fun _ _ _ -> true)
       (Slurp.slurp Filename.current_dir_name)
