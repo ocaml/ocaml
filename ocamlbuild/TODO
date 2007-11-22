@@ -35,3 +35,5 @@ Done:
 * Display: should display nothing (even when finish is called) when no real
   event as occured.
 * Have some option to draw tags/rules that applies on a target (it's -show-tags).
+* rm sanitize.sh during -clean
+* rm sanitize.sh when running ocamlbuild
