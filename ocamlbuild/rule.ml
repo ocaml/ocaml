@@ -310,10 +310,11 @@ let gen_rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert =
     end xs init
   in
   if prods = [] && prod = None && stamp = None then raise (Exit_rule_error "Can't make a rule that produce nothing");
-  let stamp =
+  let stamp, prods =
     match stamp with
-    | None -> None
-    | Some stamp -> Some (Resource.import_pattern stamp)
+    | None -> None, prods
+    | Some stamp ->
+        Some (Resource.import_pattern stamp), stamp :: prods
   in
   let prods = res_add Resource.import_pattern prods prod in
   add_rule insert
