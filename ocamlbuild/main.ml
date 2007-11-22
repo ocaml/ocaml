@@ -25,11 +25,13 @@ exception Exit_silently
 
 let clean () =
   Shell.rm_rf !Options.build_dir;
-  let entry =
-    Slurp.map (fun _ _ _ -> true)
-      (Slurp.slurp Filename.current_dir_name)
-  in
-  Slurp.force (Pathname.clean_up_links entry);
+  if !Options.make_links then begin
+    let entry =
+      Slurp.map (fun _ _ _ -> true)
+        (Slurp.slurp Filename.current_dir_name)
+    in
+    Slurp.force (Pathname.clean_up_links entry)
+  end;
   raise Exit_silently
 ;;
 
