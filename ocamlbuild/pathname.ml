@@ -99,6 +99,7 @@ let update_extensions ext x =
   add_extension ext (chop_extensions x)
 
 let clean_up_links entry =
+  if not !Options.make_links then entry else
   Slurp.filter begin fun path name _ ->
     let pathname = in_source_dir (path/name) in
     if link_to_dir pathname !Options.build_dir then
