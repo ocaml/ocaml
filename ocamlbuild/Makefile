@@ -82,8 +82,18 @@ install: all
 	        $(BUILDDIR)/ocamlbuildlightlib.cmxa \
 	        $(BUILDDIR)/ocamlbuildlightlib.a \
 	        $(BUILDDIR)/ocamlbuildlightlib.cma \
+	        $(BUILDDIR)/ocamlbuild_unix_plugin.cmx \
+	        $(BUILDDIR)/ocamlbuild_unix_plugin.o \
+	        $(BUILDDIR)/ocamlbuild_unix_plugin.cmo \
+	        $(BUILDDIR)/ocamlbuild_unix_plugin.cmi \
+	        $(BUILDDIR)/ocamlbuild_executor.cmi \
+	        $(BUILDDIR)/ocamlbuild_executor.cmo \
+	        $(BUILDDIR)/ocamlbuild_executor.cmx \
+	        $(BUILDDIR)/ocamlbuild_executor.o \
 	        $(BUILDDIR)/ocamlbuild_pack.cmi \
+	        $(BUILDDIR)/ocamlbuild_pack.cmo \
 	        $(BUILDDIR)/ocamlbuild_pack.cmx \
+	        $(BUILDDIR)/ocamlbuild_pack.o \
 	        $(BUILDDIR)/ocamlbuild.cmi \
 	        $(BUILDDIR)/ocamlbuild_plugin.cmi \
 	        $(BUILDDIR)/ocamlbuild.cmx \

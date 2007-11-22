@@ -30,7 +30,7 @@ val run_and_open : string -> (in_channel -> 'a) -> 'a
 val readlink : string -> string
 val run_and_read : string -> string
 
-(** See [Executor.execute] *)
+(** See [Ocamlbuild_executor.execute] *)
 val execute_many :
   ?max_jobs:int ->
   ?ticker:(unit -> unit) ->

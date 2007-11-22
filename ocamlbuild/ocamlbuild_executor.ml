@@ -11,16 +11,15 @@
 
 (* $Id$ *)
 (* Original author: Berke Durak *)
-(* Executor *)
+(* Ocamlbuild_executor *)
 
 open Unix;;
 
-module Exit_codes = struct
-  let rc_subcommand_failed     = 10
-  let rc_subcommand_got_signal = 11
-  let rc_io_error              = 12
-  let rc_exceptional_condition = 13
-end;;
+type error =
+  | Subcommand_failed
+  | Subcommand_got_signal
+  | Io_error
+  | Exceptionl_condition
 
 type task = (string * (unit -> unit));;
 
@@ -48,11 +47,6 @@ let print_unix_status oc = function
   | WEXITED x -> fp oc "exit %d" x
   | WSIGNALED i -> fp oc "signal %d" i
   | WSTOPPED i -> fp oc "stop %d" i
-;;
-(* ***)
-(*** exit *)
-let exit rc =
-  raise (Ocamlbuild_pack.My_std.Exit_with_code rc)
 ;;
 (* ***)
 (*** print_job_id *)
@@ -91,6 +85,7 @@ let execute
   ?(ticker=ignore)
   ?(period=0.1)
   ?(display=(fun f -> f Pervasives.stdout))
+  ~exit
   (commands : task list list)
     =
   let batch_id = ref 0 in
@@ -222,7 +217,7 @@ let execute
                 fp oc "Exception %s while reading output of command %S\n%!" job.job_command
                   (Printexc.to_string x);
               end;
-            exit Exit_codes.rc_io_error
+            exit Io_error
   in
   (* ***)
   (*** process_jobs_to_terminate *)
@@ -273,12 +268,12 @@ let execute
             show_command ();
             display (fun oc -> fp oc "Command exited with code %d.\n" rc);
             all_ok := false;
-            exit Exit_codes.rc_subcommand_failed
+            exit Subcommand_failed
         | Unix.WSTOPPED s | Unix.WSIGNALED s ->
             show_command ();
             all_ok := false;
             display (fun oc -> fp oc "Command got signal %d.\n" s);
-            exit Exit_codes.rc_subcommand_got_signal
+            exit Subcommand_got_signal
       end
     done
   in
@@ -318,7 +313,7 @@ let execute
            chxfds,
              begin fun _ _job ->
                (*display (fun oc -> fp oc "Exceptional condition on command %S\n%!" job.job_command);
-               exit Exit_codes.rc_exceptional_condition*)
+               exit Exceptional_condition*)
 	       () (* FIXME *)
              end];
         loop ()

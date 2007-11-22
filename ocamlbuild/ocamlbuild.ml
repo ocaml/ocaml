@@ -11,5 +11,5 @@
 
 (* $Id$ *)
 (* Original author: Nicolas Pouillard *)
-My_unix_with_unix.setup ();
+Ocamlbuild_unix_plugin.setup ();
 Ocamlbuild_pack.Main.main ()

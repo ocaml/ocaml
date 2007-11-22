@@ -1,7 +1,6 @@
 To do:
 * Add rules for producing .recdepends from .ml, .mli, .mllib, .mlpack
 * Produce a dependency subgraph when failing on circular deps (e.g. "A: B C\nB: D")
-* Export my_unix_with_unix and executor (and change its name)
 * Executor: exceptional conditions and Not_found
 * Fix report
 * Design a nice, friendly, future-proof plugin (myocamlbuild) API
@@ -37,3 +36,4 @@ Done:
 * Have some option to draw tags/rules that applies on a target (it's -show-tags).
 * rm sanitize.sh during -clean
 * rm sanitize.sh when running ocamlbuild
+* Export my_unix_with_unix and executor (and change its name)
