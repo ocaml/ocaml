@@ -292,18 +292,18 @@ let link_from_file link modules_file cmX env build =
   link contents_list cmX env build
 
 let byte_library_link_modules =
-  link_modules [("cmo",[]); ("cmi",[])] "cmo" "cma" "cma" byte_lib_linker byte_lib_linker_tags
+  link_modules [("cmo",[])] "cmo" "cma" "cma" byte_lib_linker byte_lib_linker_tags
 
 let byte_library_link_mllib = link_from_file byte_library_link_modules
 
 let byte_toplevel_link_modules =
-  link_modules [("cmo",[]); ("cmi",[])] "cmo" "cma" "cma" ocamlmktop
+  link_modules [("cmo",[])] "cmo" "cma" "cma" ocamlmktop
                (fun tags -> tags++"ocaml"++"link"++"byte"++"toplevel")
 
 let byte_toplevel_link_mltop = link_from_file byte_toplevel_link_modules
 
 let byte_debug_library_link_modules =
-  link_modules [("d.cmo",[]); ("cmi",[])] "d.cmo" "d.cma" "d.cma" byte_lib_linker
+  link_modules [("d.cmo",[])] "d.cmo" "d.cma" "d.cma" byte_lib_linker
     (fun tags -> byte_lib_linker_tags tags++"debug")
 
 let byte_debug_library_link_mllib = link_from_file byte_debug_library_link_modules
@@ -334,13 +334,13 @@ let native_profile_pack_modules x =
 let native_profile_pack_mlpack = link_from_file native_profile_pack_modules
 
 let native_library_link_modules x =
-  link_modules [("cmx",[!Options.ext_obj]); ("cmi",[])] "cmx" "cmxa"
+  link_modules [("cmx",[!Options.ext_obj])] "cmx" "cmxa"
      !Options.ext_lib native_lib_linker native_lib_linker_tags x
 
 let native_library_link_mllib = link_from_file native_library_link_modules
 
 let native_profile_library_link_modules x =
-  link_modules [("p.cmx",["p" -.- !Options.ext_obj]); ("cmi",[])] "p.cmx" "p.cmxa"
+  link_modules [("p.cmx",["p" -.- !Options.ext_obj])] "p.cmx" "p.cmxa"
     ("p" -.- !Options.ext_lib) native_lib_linker
     (fun tags -> native_lib_linker_tags tags++"profile") x
 
