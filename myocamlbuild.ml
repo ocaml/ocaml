@@ -198,12 +198,8 @@ let add_extensions extensions modules =
 
 flag ["ocaml"; "pp"; "camlp4boot"] (convert_command_for_windows_shell (S[ocamlrun; P hot_camlp4boot]));;
 flag ["ocaml"; "pp"; "camlp4boot"; "native"] (S[A"-D"; A"OPT"]);;
-v v v v v v v
 flag ["ocaml"; "pp"; "camlp4boot"; "ocamldep"] (S[A"-D"; A"OPT"]);;
-*************
-flag ["ocaml"; "pp"; "camlp4boot"; "pp:dep"] (S[A"-D"; A"OPT"]);;
 flag ["ocaml"; "pp"; "camlp4boot"; "pp:doc"] (S[A"-printer"; A"o"]);;
-^ ^ ^ ^ ^ ^ ^
 let exn_tracer = Pathname.pwd/"camlp4"/"boot"/"Camlp4ExceptionTracer.cmo" in
 if Pathname.exists exn_tracer then
   flag ["ocaml"; "pp"; "camlp4boot"; "exntracer"] (P exn_tracer);
