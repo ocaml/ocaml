@@ -435,6 +435,12 @@ module type PLUGIN = sig
   module Arch      : ARCH
   include MISC
 
+  (** See [COMMAND] for the description of these types. *)
+  type command = Command.t = Seq of command list | Cmd of spec | Nop
+  and spec = Command.spec =
+    | N | S of spec list | A of string | P of string | Px of string
+    | Sh of string | T of Tags.t | V of string | Quote of spec
+
   val ( / ) : Pathname.t -> Pathname.t -> Pathname.t
   val ( -.- ) : Pathname.t -> string -> Pathname.t
 

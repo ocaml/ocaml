@@ -22,6 +22,10 @@ include Pathname.Operators
 include Tags.Operators
 module Rule = Ocamlbuild_pack.Rule
 module Options = Ocamlbuild_pack.Options
+type command = Command.t = Seq of command list | Cmd of spec | Nop
+and spec = Command.spec =
+  | N | S of spec list | A of string | P of string | Px of string
+  | Sh of string | T of Tags.t | V of string | Quote of spec
 include Rule.Common_commands
 type env = Pathname.t -> Pathname.t
 type builder = Pathname.t list list -> (Pathname.t, exn) Ocamlbuild_pack.My_std.Outcome.t list
