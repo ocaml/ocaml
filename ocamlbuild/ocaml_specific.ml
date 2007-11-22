@@ -340,6 +340,9 @@ flag [ "ocaml" ; "menhir" ; "explain" ] (S[A "--explain"]);;
 
 flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
 
+(* Tell ocamllex to generate ml code *)
+flag [ "ocaml" ; "ocamllex" ; "generate_ml" ] (S[A "-ml"]);;
+
 flag ["ocaml"; "byte"; "link"] begin
   S (List.map (fun x -> A (x^".cma")) !Options.ocaml_libs)
 end;;
