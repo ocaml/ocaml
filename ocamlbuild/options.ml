@@ -222,12 +222,7 @@ let init () =
       let log = filename_concat !build_dir log in
       Shell.mkdir_p (Filename.dirname log);
       Shell.rm_f log;
-      let log =
-        if !Log.level > 0
-           && not ((!plugin || !just_plugin) && sys_file_exists "myocamlbuild.ml")
-        then Some log
-        else None
-      in
+      let log = if !Log.level > 0 then Some log else None in
       Log.init log
   in
 
