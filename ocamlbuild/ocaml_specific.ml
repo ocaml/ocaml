@@ -335,6 +335,9 @@ end;;
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
 flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
 
+(* Tell menhir to explain conflicts *)
+flag [ "ocaml" ; "menhir" ; "explain" ] (S[A "--explain"]);;
+
 flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
 
 flag ["ocaml"; "byte"; "link"] begin
