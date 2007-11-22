@@ -1,4 +1,3 @@
-open Ocamlbuild_pack;;
 open Ocamlbuild_plugin;;
 let version = "0.1";;
 dispatch begin function
