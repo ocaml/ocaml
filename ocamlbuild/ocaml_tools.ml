@@ -37,10 +37,16 @@ let menhir_ocamldep_command arg out env _build =
   let ocamldep_spec = flags_of_pathname arg in
   menhir_ocamldep_command' tags ~menhir_spec:(P arg) ~ocamldep_spec out
 
-let import_mlypack mlypack =
+let import_mlypack build mlypack =
   let tags1 = tags_of_pathname mlypack in
   let files = string_list_of_file mlypack in
-  let files = add_suffix "mly" files in
+  let include_dirs = Pathname.include_dirs_of (Pathname.dirname mlypack) in
+  let files_alternatives =
+    List.map begin fun module_name ->
+      expand_module include_dirs module_name ["mly"]
+    end files
+  in
+  let files = List.map Outcome.good (build files_alternatives) in
   let tags2 = 
     List.fold_right 
       (fun file -> Tags.union (tags_of_pathname file))
@@ -48,9 +54,9 @@ let import_mlypack mlypack =
   in
   (tags2, files)
 
-let menhir_modular_ocamldep_command mlypack out env _build =
+let menhir_modular_ocamldep_command mlypack out env build =
   let mlypack = env mlypack and out = env out in
-  let (tags,files) = import_mlypack mlypack in
+  let (tags,files) = import_mlypack build mlypack in
   let tags = tags++"ocaml"++"menhir_ocamldep" in
   let menhir_base = Pathname.remove_extensions mlypack in
   let menhir_spec = S[A "--base" ; P menhir_base ; atomize_paths files] in
@@ -62,9 +68,7 @@ let menhir_modular menhir_base mlypack mlypack_depends env build =
   let menhir_base = env menhir_base in
   let mlypack = env mlypack in
   let mlypack_depends = env mlypack_depends in
-  let (tags,files) = import_mlypack mlypack in
-  let outcomes = build (List.map (fun x -> [x]) files) in
-  let () = List.iter Outcome.ignore_good outcomes in
+  let (tags,files) = import_mlypack build mlypack in
   let () = List.iter Outcome.ignore_good (build [[mlypack_depends]]) in
   Ocaml_compiler.prepare_compile build mlypack;
   let tags = tags++"ocaml"++"parser"++"menhir" in
