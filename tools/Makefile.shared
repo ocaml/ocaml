@@ -25,8 +25,10 @@ LINKFLAGS=$(INCLUDES)
 
 all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels \
      dumpobj
+.PHONY: all
 
 opt.opt: ocamldep.opt
+.PHONY: opt.opt
 
 # The dependency generator
 
@@ -83,9 +85,13 @@ clean::
 # To help building mixed-mode libraries (Caml + C)
 
 ocamlmklib: myocamlbuild_config.cmo ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo \
+	         ocamlmklib.cmo
 
 ocamlmklib.cmo: myocamlbuild_config.cmi
+
+myocamlbuild_config.cmi: myocamlbuild_config.cmo
+
 myocamlbuild_config.ml: ../config/Makefile ../build/mkmyocamlbuild_config.sh
 	../build/mkmyocamlbuild_config.sh
 	cp ../myocamlbuild_config.ml .
@@ -264,5 +270,7 @@ clean::
 
 depend: beforedepend
 	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend
+
+.PHONY: clean install beforedepend depend
 
 include .depend

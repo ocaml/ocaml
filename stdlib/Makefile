@@ -135,3 +135,8 @@ include .depend
 
 depend:
 	$(CAMLDEP) *.mli *.ml > .depend
+
+$(OTHERS:.cmo=.cmi): pervasives.cmi
+
+.PHONY: all allopt allopt-noprof allopt-prof install installopt
+.PHONY: installopt-default installopt-noprof installopt-prof clean depend
