@@ -1,3 +1,7 @@
 open Ocamlbuild_plugin;;
-use_lib "main" "bbcc";;
-dep ["ocaml"; "link"; "byte"; "my_cool_plugin"] ["cool_plugin.cmo"];;
+dispatch begin function
+| After_rules ->
+    use_lib "main" "bbcc";
+    dep ["ocaml"; "link"; "byte"; "my_cool_plugin"] ["cool_plugin.cmo"];
+| _ -> ()
+end
