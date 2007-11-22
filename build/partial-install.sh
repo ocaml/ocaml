@@ -154,6 +154,14 @@ installdir \
   ocamlbuildlib.cma \
   ocamlbuild_plugin.cmi \
   ocamlbuild_pack.cmi \
+  ocamlbuild_unix_plugin.cmi \
+  ocamlbuild_unix_plugin.cmo \
+  ocamlbuild_unix_plugin.cmx \
+  ocamlbuild_unix_plugin.$O \
+  ocamlbuild_executor.cmi \
+  ocamlbuild_executor.cmo \
+  ocamlbuild_executor.cmx \
+  ocamlbuild_executor.$O \
   ocamlbuild.cmo \
   ocamlbuild.cmx \
   ocamlbuild.$O \
