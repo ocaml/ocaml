@@ -33,8 +33,9 @@ fine-tune the behaviour and define custom rules.
 {\em This section is intended to read like a sales brochure or a datasheet.}
 
 \begin{itemize}
-\item Built-in compilation rules for OCaml projects handle all the nasty cases: native and byte-code,
-missing \texttt{.mli} files, preprocessor rules, debugging and profiling flags, C stubs.
+\item Built-in compilation rules for OCaml projects handle all the nasty cases:
+native and byte-code, missing \texttt{.mli} files, preprocessor rules,
+libraries, package (-pack) debugging and profiling flags, C stubs.
 \item Plugin mechanism for writing compilation rules and actions in a real programming language,
 OCaml itself.
 \item Automatic inference of dependencies.
@@ -558,7 +559,7 @@ module in a subdirectory.  For instance, assume you have a directory
 \texttt{foo} containing two modules \texttt{bar.ml} and \texttt{baz.ml}.
 You want from these to build a module \texttt{Foo} containing \texttt{Bar}
 and \texttt{Baz} as submodules.  In the case where no modules named
-\texttt{Bar} or \texttt{Baz} exist outside of \texttt{Foo}, To do this you
+\texttt{Bar} or \texttt{Baz} exist outside of \texttt{Foo}, to do this you
 must write a file \texttt{foo.mlpack}, preferably sitting in the same
 directory as the directory \texttt{Foo} and containing the list of modules
 (one per line) it must contain:
@@ -566,6 +567,30 @@ directory as the directory \texttt{Foo} and containing the list of modules
 Bar
 Baz
 \end{verbatim}
+Then when you will request for building \texttt{foo.cmo} the package will be
+made from \texttt{bar.cmo} and \texttt{baz.cmo}.
+%***)
+%(*** Making an OCaml library
+\subsection{Making an OCaml library}
+In  a  similar  way than for packaged modules you can make a library by putting
+it's  contents  in  a file (with the mllib extension). For instance, assume you
+have  a two modules \texttt{bar.ml} and \texttt{baz.ml}. You want from these to
+build  a  library  \texttt{foo.cmx?a}  containing \texttt{Bar} and \texttt{Baz}
+modules.  To  do  this  you must write a file \texttt{foo.mllib} containing the
+list of modules (one per line) it must contain:
+\begin{verbatim}
+Bar
+Baz
+\end{verbatim}
+Then  when  you  will request for building \texttt{foo.cma} the library will be
+made from \texttt{bar.cmo} and \texttt{baz.cmo}.
+%***)
+%(*** Making an OCaml toplevel
+\subsection{Making an OCaml toplevel}
+Making  a  toplevel is almost the same thing than making a packaged module or a
+library.   Just   write   a   file  with  the  \texttt{mltop}  extension  (like
+\texttt{foo.mltop})   and   request   for   building  the  toplevel  using  the
+\texttt{top} extension (\texttt{foo.top} in this example).
 %***)
 %(*** Preprocessor options
 \subsection{Preprocessor options and tags}
