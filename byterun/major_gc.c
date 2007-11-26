@@ -196,82 +196,93 @@ static void mark_slice (intnat work)
       chunk = caml_heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
-    }else if (gc_subphase == Subphase_main){
-      /* The main marking phase is over.  Start removing weak pointers to
-         dead values. */
-      gc_subphase = Subphase_weak1;
-      weak_prev = &caml_weak_list_head;
-    }else if (gc_subphase == Subphase_weak1){
-      value cur, curfield;
-      mlsize_t sz, i;
-      header_t hd;
-
-      cur = *weak_prev;
-      if (cur != (value) NULL){
-        hd = Hd_val (cur);
-        sz = Wosize_hd (hd);
-        for (i = 1; i < sz; i++){
-          curfield = Field (cur, i);
-         weak_again:
-          if (curfield != caml_weak_none
-              && Is_block (curfield) && Is_in_heap (curfield)){
-            if (Tag_val (curfield) == Forward_tag){
-              value f = Forward_val (curfield);
-              if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
-                if (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
-                    || Tag_val (f) == Double_tag){
-                  /* Do not short-circuit the pointer. */
-                }else{
-                  Field (cur, i) = curfield = f;
-                  goto weak_again;
-                }
-              }
-            }
-            if (Is_white_val (curfield)){
-              Field (cur, i) = caml_weak_none;
-            }
-          }
-        }
-        weak_prev = &Field (cur, 0);
-        work -= Whsize_hd (hd);
-      }else{
-        /* Subphase_weak1 is done.  Start removing dead weak arrays. */
-        gc_subphase = Subphase_weak2;
+    }else{
+      switch (gc_subphase){
+      case Subphase_main: {
+        /* The main marking phase is over.  Start removing weak pointers to
+           dead values. */
+        gc_subphase = Subphase_weak1;
         weak_prev = &caml_weak_list_head;
       }
-    }else if (gc_subphase == Subphase_weak2){
-      value cur;
-      header_t hd;
+        break;
+      case Subphase_weak1: {
+        value cur, curfield;
+        mlsize_t sz, i;
+        header_t hd;
 
-      cur = *weak_prev;
-      if (cur != (value) NULL){
-        hd = Hd_val (cur);
-        if (Color_hd (hd) == Caml_white){
-          /* The whole array is dead, remove it from the list. */
-          *weak_prev = Field (cur, 0);
-        }else{
+        cur = *weak_prev;
+        if (cur != (value) NULL){
+          hd = Hd_val (cur);
+          sz = Wosize_hd (hd);
+          for (i = 1; i < sz; i++){
+            curfield = Field (cur, i);
+          weak_again:
+            if (curfield != caml_weak_none
+                && Is_block (curfield) && Is_in_heap (curfield)){
+              if (Tag_val (curfield) == Forward_tag){
+                value f = Forward_val (curfield);
+                if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
+                  if (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
+                      || Tag_val (f) == Double_tag){
+                    /* Do not short-circuit the pointer. */
+                  }else{
+                    Field (cur, i) = curfield = f;
+                    goto weak_again;
+                  }
+                }
+              }
+              if (Is_white_val (curfield)){
+                Field (cur, i) = caml_weak_none;
+              }
+            }
+          }
           weak_prev = &Field (cur, 0);
+          work -= Whsize_hd (hd);
+        }else{
+          /* Subphase_weak1 is done.  Start removing dead weak arrays. */
+          gc_subphase = Subphase_weak2;
+          weak_prev = &caml_weak_list_head;
         }
-        work -= 1;
-      }else{
-        /* Subphase_weak2 is done.  Handle finalised values. */
-        gray_vals_cur = gray_vals_ptr;
-        caml_final_update ();
-        gray_vals_ptr = gray_vals_cur;
-        gc_subphase = Subphase_final;
       }
-    }else{
-      Assert (gc_subphase == Subphase_final);
-      /* Initialise the sweep phase. */
-      gray_vals_cur = gray_vals_ptr;
-      caml_gc_sweep_hp = caml_heap_start;
-      caml_fl_init_merge ();
-      caml_gc_phase = Phase_sweep;
-      chunk = caml_heap_start;
-      caml_gc_sweep_hp = chunk;
-      limit = chunk + Chunk_size (chunk);
-      work = 0;
-      caml_fl_size_at_phase_change = caml_fl_cur_size;
+        break;
+      case Subphase_weak2: {
+        value cur;
+        header_t hd;
+
+        cur = *weak_prev;
+        if (cur != (value) NULL){
+          hd = Hd_val (cur);
+          if (Color_hd (hd) == Caml_white){
+            /* The whole array is dead, remove it from the list. */
+            *weak_prev = Field (cur, 0);
+          }else{
+            weak_prev = &Field (cur, 0);
+          }
+          work -= 1;
+        }else{
+          /* Subphase_weak2 is done.  Handle finalised values. */
+          gray_vals_cur = gray_vals_ptr;
+          caml_final_update ();
+          gray_vals_ptr = gray_vals_cur;
+          gc_subphase = Subphase_final;
+        }
+      }
+        break;
+      case Subphase_final: {
+        /* Initialise the sweep phase. */
+        gray_vals_cur = gray_vals_ptr;
+        caml_gc_sweep_hp = caml_heap_start;
+        caml_fl_init_merge ();
+        caml_gc_phase = Phase_sweep;
+        chunk = caml_heap_start;
+        caml_gc_sweep_hp = chunk;
+        limit = chunk + Chunk_size (chunk);
+        work = 0;
+        caml_fl_size_at_phase_change = caml_fl_cur_size;
+      }
+        break;
+      default: Assert (0);
+      }
     }
   }
   gray_vals_cur = gray_vals_ptr;
