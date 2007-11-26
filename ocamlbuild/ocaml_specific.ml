@@ -356,7 +356,7 @@ let camlp4_flags camlp4s =
     flag ["ocaml"; "pp"; camlp4] (A camlp4)
   end camlp4s;;
 
-camlp4_flags ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"];;
+camlp4_flags ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"; "camlp4oof"];;
 
 let camlp4_flags' camlp4s =
   List.iter begin fun (camlp4, flags) ->
