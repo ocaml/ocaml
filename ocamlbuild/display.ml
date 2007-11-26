@@ -120,7 +120,7 @@ let create
     | Some fn ->
         let oc = open_out_gen [Open_text; Open_wronly; Open_creat; Open_trunc] 0o644 fn in
         let f = Format.formatter_of_out_channel oc in
-        Format.fprintf f "*** Starting build.\n";
+        Format.fprintf f "### Starting build.\n";
         Some (f, oc)
   in
 
