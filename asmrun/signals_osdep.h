@@ -87,6 +87,7 @@
      sigact.sa_flags = SA_SIGINFO
 
   #include <sys/ucontext.h>
+  #include <AvailabilityMacros.h>
 
 #if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
     #define CONTEXT_REG(r) r
@@ -123,7 +124,8 @@
      static void name(int sig, siginfo_t * info, void * context)
 
   #include <sys/ucontext.h>
-  
+  #include <AvailabilityMacros.h>  
+
   #ifdef __LP64__
     #define SET_SIGACT(sigact,name) \
        sigact.sa_sigaction = (name); \
