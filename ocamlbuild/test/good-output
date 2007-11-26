@@ -4,10 +4,10 @@
   | |  __/\__ \ |_ / __/
   |_|\___||___/\__|_____|
 
-+ CMDOPTS=-- -help
-+ BUILD=../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display  -- -help
-+ BUILD2=../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt -- -help
++ CMDOPTS='-- -help'
++ BUILD='../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display '
++ BUILD1='../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display  -- -help'
++ BUILD2='../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt -- -help'
 + rm -rf _build
 + cp vivi1.ml vivi.ml
 + ../../_build/ocamlbuild.native toto.byte toto.native -no-skip -classic-display -- -help
@@ -154,9 +154,9 @@ Tata.tata => "TATA2"
   |_|\___||___/\__|____/
 
 + CMDOTPS=
-+ BUILD=../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD='../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display '
++ BUILD1='../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display  '
++ BUILD2='../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt '
 + rm -rf _build
 + ../../_build/ocamlbuild.native a.byte a.native proj.docdir/index.html -no-skip -classic-display
 ocamldep.opt -modules a.mli > a.mli.depends
@@ -249,9 +249,9 @@ ocamldoc.opt -load a.odoc -load b.odoc -load c.odoc -load d.odoc -load e.odoc -l
   |_|\___||___/\__|  |_|
 
 + CMDOTPS=
-+ BUILD=../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD='../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display '
++ BUILD1='../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display  '
++ BUILD2='../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt '
 + rm -rf _build
 + ../../_build/ocamlbuild.native -I a -I b aa.byte aa.native -no-skip -classic-display
 ocamldep.opt -modules a/aa.mli > a/aa.mli.depends
@@ -282,9 +282,9 @@ ocamlopt.opt str.cmxa b/bb.cmx a/aa.cmx -o a/aa.native
   |_|\___||___/\__|____/
 
 + CMDOPTS=
-+ BUILD=../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD='../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display '
++ BUILD1='../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display  '
++ BUILD2='../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt '
 + rm -rf _build
 + ../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display
 ocamldep.opt -modules d.ml > d.ml.depends
@@ -332,9 +332,9 @@ ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
 
 + rm -rf _build
 + CMDOPTS=
-+ BUILD=../../_build/ocamlbuild.native -no-skip main.byte -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native -no-skip main.byte -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native -no-skip main.byte -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD='../../_build/ocamlbuild.native -no-skip main.byte -classic-display '
++ BUILD1='../../_build/ocamlbuild.native -no-skip main.byte -classic-display  '
++ BUILD2='../../_build/ocamlbuild.native -no-skip main.byte -classic-display  -verbose 0 -nothing-should-be-rebuilt '
 + cp b.mli.v1 b.mli
 + cp d.mli.v1 d.mli
 + ../../_build/ocamlbuild.native -no-skip main.byte -classic-display
@@ -418,9 +418,9 @@ PASS
   |_|\___||___/\__/_/
 
 + CMDOPTS=
-+ BUILD=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD='../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display '
++ BUILD1='../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  '
++ BUILD2='../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt '
 + rm -rf _build
 + cp bb1.ml bb.ml
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display
@@ -607,9 +607,9 @@ ocamlopt.opt aa.cmx c2.cmx bbcc.cmxa c3.cmx main.cmx -o main.native
   |_|\___||___/\__\___/
 
 + CMDOPTS=
-+ BUILD=../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD='../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display '
++ BUILD1='../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display  '
++ BUILD2='../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt '
 + rm -rf _build
 + ../../_build/ocamlbuild.native a.byte a.native a a.opt bin/a bin/a.opt -no-skip -classic-display
 ocamlopt.opt -I /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild unix.cmxa /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/l/ocaml/ocamlbuild-unstable/ocamlbuild/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
@@ -1066,9 +1066,9 @@ Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" =
   |_|\__,_|_|  \__, |\___|\__|___/
                |___/
 + CMDOPTS=
-+ BUILD=../../_build/ocamlbuild.native bar -no-skip -classic-display 
-+ BUILD1=../../_build/ocamlbuild.native bar -no-skip -classic-display  
-+ BUILD2=../../_build/ocamlbuild.native bar -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
++ BUILD='../../_build/ocamlbuild.native bar -no-skip -classic-display '
++ BUILD1='../../_build/ocamlbuild.native bar -no-skip -classic-display  '
++ BUILD2='../../_build/ocamlbuild.native bar -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt '
 + rm -rf _build
 + cp foo1 foo
 + ../../_build/ocamlbuild.native bar -no-skip -classic-display
