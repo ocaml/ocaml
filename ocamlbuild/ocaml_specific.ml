@@ -437,10 +437,10 @@ let install_lib = lazy (try Sys.getenv "INSTALL_LIB" with Not_found -> !*stdlib_
 let install_bin = lazy (My_std.getenv ~default:"/usr/local/bin" "INSTALL_BIN") in
 file_rule "ocamlbuild_where.ml"
   ~prod:"%ocamlbuild_where.ml"
-  ~cache:(fun _ _ -> Printf.sprintf "lib:%S, bin:%S" !*install_lib !*install_bin)
+  ~cache:(fun _ _ -> Printf.sprintf "version=3: lib:%S, bin:%S" !*install_lib !*install_bin)
   begin fun _ oc ->
     Printf.fprintf oc "let bindir = ref %S;;\n" !*install_bin;
-    Printf.fprintf oc "let libdir = ref %S;;\n" !*install_lib
+    Printf.fprintf oc "let libdir = ref (try Filename.concat (Sys.getenv \"OCAMLLIB\") \"ocamlbuild\" with Not_found -> %S);;\n" !*install_lib;
   end;;
 ocaml_lib "ocamlbuildlib";;
 ocaml_lib "ocamlbuildlightlib";;
