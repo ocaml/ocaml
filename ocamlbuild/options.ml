@@ -217,7 +217,7 @@ let init () =
     if log = "" then Log.init None
     else if not (Filename.is_implicit log) then
       failwith
-        (sprintf "Bad log file name: the file name must be implicit (%S)" log)
+        (sprintf "Bad log file name: the file name must be implicit (not %S)" log)
     else
       let log = filename_concat !build_dir log in
       Shell.mkdir_p (Filename.dirname log);
@@ -240,10 +240,17 @@ let init () =
   reorder ignore_list ignore_list_internal;
   reorder show_tags show_tags_internal;
 
+  let check_dir dir =
+    if Filename.is_implicit dir then
+      sys_file_exists dir
+    else
+      failwith
+        (sprintf "Included or excluded directories must be implicit (not %S)" dir)
+  in
   let dir_reorder my dir =
     let d = !dir in
     reorder dir my;
-    dir := List.filter sys_file_exists (!dir @ d)
+    dir := List.filter check_dir (!dir @ d)
   in
   dir_reorder my_include_dirs include_dirs;
   dir_reorder my_exclude_dirs exclude_dirs;
