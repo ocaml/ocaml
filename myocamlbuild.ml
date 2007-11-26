@@ -198,7 +198,7 @@ let add_extensions extensions modules =
 
 flag ["ocaml"; "pp"; "camlp4boot"] (convert_command_for_windows_shell (S[ocamlrun; P hot_camlp4boot]));;
 flag ["ocaml"; "pp"; "camlp4boot"; "native"] (S[A"-D"; A"OPT"]);;
-flag ["ocaml"; "pp"; "camlp4boot"; "ocamldep"] (S[A"-D"; A"OPT"]);;
+flag ["ocaml"; "pp"; "camlp4boot"; "pp:dep"] (S[A"-D"; A"OPT"]);;
 flag ["ocaml"; "pp"; "camlp4boot"; "pp:doc"] (S[A"-printer"; A"o"]);;
 let exn_tracer = Pathname.pwd/"camlp4"/"boot"/"Camlp4ExceptionTracer.cmo" in
 if Pathname.exists exn_tracer then
@@ -240,8 +240,6 @@ let setup_arch arch =
 let camlp4_arch =
   dir "" [
     dir "stdlib" [];
-    dir "utils" [];
-    dir "parsing" [];
     dir "camlp4" [
       dir "build" [];
       dir_pack "Camlp4" [
@@ -258,12 +256,13 @@ setup_arch camlp4_arch;;
 
 Pathname.define_context "" ["stdlib"];;
 Pathname.define_context "utils" [Pathname.current_dir_name; "stdlib"];;
-Pathname.define_context "camlp4" ["camlp4/build"; "utils"; "stdlib"];;
-Pathname.define_context "camlp4/boot" ["camlp4/build"; "utils"; "parsing"; "camlp4"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Top" ["typing"; "stdlib"];;
+Pathname.define_context "camlp4" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/boot" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Top" ["camlp4"; "stdlib"];;
+Pathname.define_context "parsing" ["parsing"; "utils"; "stdlib"];;
 Pathname.define_context "typing" ["typing"; "parsing"; "utils"; "stdlib"];;
 Pathname.define_context "ocamldoc" ["typing"; "parsing"; "utils"; "tools"; "bytecomp"; "stdlib"];;
 Pathname.define_context "bytecomp" ["bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
@@ -712,6 +711,48 @@ let camlp4lib_cmxa = p4 "camlp4lib.cmxa"
 
 let special_modules =
   if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
+;;
+
+file_rule "camlp4/Camlp4_import.ml"
+  ~deps:
+    ["parsing/linenum.ml";
+     "utils/misc.ml";
+     "utils/terminfo.ml";
+     "utils/warnings.ml";
+     "typing/outcometree.mli";
+     "parsing/location.ml";
+     "parsing/asttypes.mli";
+     "parsing/parsetree.mli";
+     "myocamlbuild_config.ml";
+     "utils/config.mlbuild";
+     "parsing/longident.ml"]
+  ~prod:"camlp4/Camlp4_import.ml"
+  ~cache:(fun _ _ -> "0.2")
+  begin fun _ oc ->
+    Printf.fprintf oc "\
+      module Misc = struct\n%a\nend;;\n\
+      module Terminfo = struct\n%a\nend;;\n\
+      module Linenum = struct\n%a\nend;;\n\
+      module Warnings = struct\n%a\nend;;\n\
+      module Location = struct\n%a\nend;;\n\
+      module Longident = struct\n%a\nend;;\n\
+      module Asttypes = struct\n%a\nend;;\n\
+      module Parsetree = struct\n%a\nend;;\n\
+      module Outcometree = struct\n%a\nend;;\n\
+      module Myocamlbuild_config = struct\n%a\nend;;\n\
+      module Config = struct\n%a\nend;;\n%!"
+      fp_cat "utils/misc.ml"
+      fp_cat "utils/terminfo.ml"
+      fp_cat "parsing/linenum.ml"
+      fp_cat "utils/warnings.ml"
+      fp_cat "parsing/location.ml"
+      fp_cat "parsing/longident.ml"
+      fp_cat "parsing/asttypes.mli"
+      fp_cat "parsing/parsetree.mli"
+      fp_cat "typing/outcometree.mli"
+      fp_cat "myocamlbuild_config.ml"
+      fp_cat "utils/config.mlbuild"
+  end;;
 
 let mk_camlp4_top_lib name modules =
   let name = "camlp4"/name in
@@ -799,6 +840,9 @@ module Camlp4deps = struct
     let includes = parse_file file in
     List.iter Outcome.ignore_good (build (List.map (fun i -> [i]) includes));
 end;;
+
+dep ["ocaml"; "file:camlp4/Camlp4/Sig.ml"]
+    ["camlp4/Camlp4/Camlp4Ast.partial.ml"];;
 
 rule "camlp4: ml4 -> ml"
   ~prod:"%.ml"
