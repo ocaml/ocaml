@@ -279,7 +279,9 @@ end = struct
                             | Some(pos') ->
                                 let matched = String.sub s pos (pos' - pos) in
                                 if Glob.eval patt matched
-                                then loop xs' (pos' + String.length s2) ((var, matched) :: acc) 0
+                                then
+                                  try loop xs' (pos' + String.length s2) ((var, matched) :: acc) 0
+                                  with No_solution -> loop xs  pos acc (pos' - pos + 1)
                                 else loop xs  pos acc (pos' - pos + 1)
                             | None -> raise No_solution
                             end

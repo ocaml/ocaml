@@ -57,7 +57,10 @@ let tests3 = [
   ["libfoo.a","","foo";
    "src/bar/libfoo.a","src/bar/","foo";
    "otherlibs/unix/libunix.a","otherlibs/unix/","unix";
-   "otherlibsliblib/unlibix/libunix.a","otherlibsliblib/unlibix/","unix"],
+   "otherlibsliblib/unlibix/libunix.a","otherlibsliblib/unlibix/","unix";
+   "libfoo/libbar.a","libfoo/","bar";
+   "src/libfoo/boo/libbar.a","src/libfoo/boo/","bar";
+  ],
   ["bar"; "libbar/foo.a"; "libfoo.b.a"]
 ];;
 
