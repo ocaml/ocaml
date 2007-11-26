@@ -65,7 +65,7 @@ let make_symlist prefix sep suffix l =
 
 let print_spec buf (key, spec, doc) =
   match spec with
-  | Symbol (l, _) -> bprintf buf "  %s %s %s\n" key (make_symlist "{" "|" "}" l)
+  | Symbol (l, _) -> bprintf buf "  %s %s%s\n" key (make_symlist "{" "|" "}" l)
                              doc
   | _ -> bprintf buf "  %s %s\n" key doc
 ;;
