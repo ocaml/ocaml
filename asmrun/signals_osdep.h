@@ -88,10 +88,10 @@
 
   #include <sys/ucontext.h>
 
-  #ifdef _STRUCT_X86_EXCEPTION_STATE32
-    #define CONTEXT_REG(r) __##r
-  #else
+#if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
     #define CONTEXT_REG(r) r
+  #else
+    #define CONTEXT_REG(r) __##r
   #endif
 
   #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
@@ -142,10 +142,10 @@
     #define CONTEXT_MCONTEXT (((ucontext_t *)context)->uc_mcontext)
   #endif
   
-  #ifdef _STRUCT_PPC_EXCEPTION_STATE
-    #define CONTEXT_REG(r) __##r
-  #else
+#if !defined(MAC_OS_X_VERSION_10_5) || MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
     #define CONTEXT_REG(r) r
+  #else
+    #define CONTEXT_REG(r) __##r
   #endif
 
   #define CONTEXT_STATE (CONTEXT_MCONTEXT->CONTEXT_REG(ss))
