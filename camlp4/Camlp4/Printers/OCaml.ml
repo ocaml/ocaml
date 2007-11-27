@@ -416,9 +416,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "(%a)" o#reset#expr e
 
     | <:expr< - $x$ >> ->
-        pp f "@[<2>-@,%a@]" o#expr x
+        (* If you want to remove the space take care of - !r *)
+        pp f "@[<2>-@ %a@]" o#dot_expr x
     | <:expr< -. $x$ >> ->
-        pp f "@[<2>-.@,%a@]" o#expr x
+        pp f "@[<2>-.@ %a@]" o#dot_expr x (* same note as above *)
     | <:expr< [$_$ :: $_$] >> -> o#expr_list_cons False f e
     | <:expr@_loc< $lid:n$ $x$ $y$ >> when is_infix n ->
         pp f "@[<2>%a@ %s@ %a@]" o#apply_expr x n o#apply_expr y
