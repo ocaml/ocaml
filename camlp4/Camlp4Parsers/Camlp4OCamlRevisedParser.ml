@@ -19,7 +19,7 @@ open Camlp4;                                        (* -*- camlp4r -*- *)
  *)
 
 module Id = struct
-  value name = "Camlp4RevisedParser";
+  value name = "Camlp4OCamlRevisedParser";
   value version = "$Id$";
 end;
 
