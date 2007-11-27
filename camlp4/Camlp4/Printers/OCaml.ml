@@ -349,7 +349,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method string f = pp f "%s";
     method quoted_string f = pp f "%S";
 
-    method numeric f s = if s.[0] = '-' then pp f "(%s)" s else pp f "%s" s;
+    method numeric f num suff =
+      if num.[0] = '-' then pp f "(%s%s)" num suff else pp f "%s%s" num suff;
 
     method module_expr_get_functor_args accu =
       fun
@@ -505,11 +506,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< for $s$ = $e1$ $to:df$ $e2$ do { $e3$ } >> ->
         pp f "@[<hv0>@[<hv2>@[<2>for %a =@ %a@ %a@ %a@ do@]@ %a@]@ done@]"
           o#var s o#expr e1 o#direction_flag df o#expr e2 o#seq e3
-    | <:expr< $int:s$ >> -> o#numeric f s
-    | <:expr< $nativeint:s$ >> -> pp f "%an" o#numeric s
-    | <:expr< $int64:s$ >> -> pp f "%aL" o#numeric s
-    | <:expr< $int32:s$ >> -> pp f "%al" o#numeric s
-    | <:expr< $flo:s$ >> -> o#numeric f s
+    | <:expr< $int:s$ >> -> o#numeric f s ""
+    | <:expr< $nativeint:s$ >> -> o#numeric f s "n"
+    | <:expr< $int64:s$ >> -> o#numeric f s "L"
+    | <:expr< $int32:s$ >> -> o#numeric f s "l"
+    | <:expr< $flo:s$ >> -> o#numeric f s ""
     | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:expr< $id:i$ >> -> o#var_ident f i
     | <:expr< { $b$ } >> ->
@@ -613,11 +614,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:patt< { $p$ } >> -> pp f "@[<hv2>{@ %a@]@ }" o#patt p
     | <:patt< $str:s$ >> -> pp f "\"%s\"" s
     | <:patt< ( $p$ : $t$ ) >> -> pp f "@[<1>(%a :@ %a)@]" o#patt p o#ctyp t
-    | <:patt< $nativeint:s$ >> -> pp f "%an" o#numeric s
-    | <:patt< $int64:s$ >> -> pp f "%aL" o#numeric s
-    | <:patt< $int32:s$ >> -> pp f "%al" o#numeric s
-    | <:patt< $int:s$ >> -> o#numeric f s
-    | <:patt< $flo:s$ >> -> o#numeric f s
+    | <:patt< $nativeint:s$ >> -> o#numeric f s "n"
+    | <:patt< $int64:s$ >> -> o#numeric f s "L"
+    | <:patt< $int32:s$ >> -> o#numeric f s "l"
+    | <:patt< $int:s$ >> -> o#numeric f s ""
+    | <:patt< $flo:s$ >> -> o#numeric f s ""
     | <:patt< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:patt< ~ $s$ >> -> pp f "~%s" s
     | <:patt< ` $uid:s$ >> -> pp f "`%a" o#var s
