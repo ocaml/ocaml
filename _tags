@@ -16,8 +16,8 @@ true: debug
 # By default everything we link needs the stdlib
 true: use_stdlib
 
-# The stdlib don't require the stdlib
-<stdlib/**>: -use_stdlib
+# The stdlib neither requires the stdlib nor debug information
+<stdlib/**>: -use_stdlib, -debug
 
 <**/*.ml*>: warn_Alez
 
@@ -30,7 +30,8 @@ true: use_stdlib
 "ocamldoc/odoc_opt.native": use_unix, use_str
 
 <camlp4/**/*.ml*>: camlp4boot, -warn_Alez, warn_Ale
-<camlp4/Camlp4_config.ml*>: -camlp4boot
+<camlp4/Camlp4_{config,import}.ml*>: -camlp4boot
+"camlp4/Camlp4_import.ml": -warn_Ale
 <camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Ale, warn_a
 <camlp4/Camlp4Bin.{byte,native}> or "camlp4/mkcamlp4.byte" or "camlp4/camlp4lib.cma": use_dynlink
 "camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": warn_Alezv
