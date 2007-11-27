@@ -31,6 +31,7 @@ val nativeccprofopts : string
 val nativecclinkopts : string
 val nativeccrpath : string
 val nativecclibs : string
+val packld : string
 val dllcccompopts : string
 val asm : string
 val aspp : string
@@ -44,6 +45,7 @@ val systhread_support : bool
 val syslib : string -> string
 val mkexe : string
 val mkdll : string
+val mkmaindll : string
 val mklib : string -> string -> string -> string
 val ext_lib : string
 val ext_obj : string
