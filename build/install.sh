@@ -127,6 +127,7 @@ installdir otherlibs/"$WIN32"unix/unixsupport.h \
 
 installdir yacc/ocamlyacc byterun/ocamlrun $BINDIR
 
+installdir config/Makefile $LIBDIR/Makefile.config
 installdir byterun/ld.conf $LIBDIR
 
 cd _build
@@ -462,8 +463,8 @@ echo "Installing manuals..."
 (cd ../man && make install)
 
 echo "Installing ocamldoc..."
-installbin ocamldoc/ocamldoc$EXE $BINDIR/ocamldoc$EXE
-installbin ocamldoc/ocamldoc.opt$EXE $BINDIR/ocamldoc.opt$EXE
+installbin ocamldoc/ocamldoc $BINDIR/ocamldoc$EXE
+installbin ocamldoc/ocamldoc.opt $BINDIR/ocamldoc.opt$EXE
 
 installdir \
   ../ocamldoc/ocamldoc.hva \
@@ -510,7 +511,7 @@ installdir \
   camlp4o.cma camlp4of.cma camlp4oof.cma \
   camlp4orf.cma camlp4r.cma camlp4rf.cma \
   Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Top.cm[io] \
-  Camlp4_config.cmi camlp4prof.cm[iox] camlp4prof.$O \
+  Camlp4_config.cmi camlp4prof.cm[iox] camlp4prof.$O Camlp4_import.cmi \
   $CAMLP4DIR
 installlibdir camlp4lib.$A camlp4fulllib.$A $CAMLP4DIR
 cd ..
