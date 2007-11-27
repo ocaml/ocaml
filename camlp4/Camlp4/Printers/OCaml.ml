@@ -435,9 +435,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                  (list o#under_pipe#expr ",@ ") al ]
         else pp f "@[<2>%a@]" (list o#apply_expr "@ ") [a::al]
     | <:expr< $e1$.val := $e2$ >> ->
-        pp f "@[<2>%a :=@ %a@]" o#expr e1 o#expr e2
+        pp f "@[<2>%a :=@ %a@]" o#dot_expr e1 o#expr e2
     | <:expr< $e1$ := $e2$ >> ->
-        pp f "@[<2>%a@ <-@ %a@]" o#expr e1 o#expr e2
+        pp f "@[<2>%a@ <-@ %a@]" o#dot_expr e1 o#expr e2
     | <:expr@loc< fun [] >> ->
         pp f "@[<2>fun@ _@ ->@ %a@]" o#raise_match_failure loc
     | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->

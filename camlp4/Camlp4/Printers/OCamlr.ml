@@ -157,7 +157,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f e Ast.loc_of_expr in
     match e with
     [ <:expr< $e1$ := $e2$ >> ->
-        pp f "@[<2>%a@ :=@ %a@]" o#expr e1 o#expr e2
+        pp f "@[<2>%a@ :=@ %a@]" o#dot_expr e1 o#expr e2
     | <:expr< fun $p$ -> $e$ >> when Ast.is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
     | <:expr< fun [ $a$ ] >> ->
