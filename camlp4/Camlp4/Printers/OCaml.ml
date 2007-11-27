@@ -945,8 +945,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           o#class_sig_item f csg
       | <:class_sig_item< $csg1$; $csg2$ >> ->
             do { o#class_sig_item f csg1; cut f; o#class_sig_item f csg2 }
-      | <:class_sig_item< type $t1$ = $t2$ >> ->
-            pp f "@[<2>type@ %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
+      | <:class_sig_item< constraint $t1$ = $t2$ >> ->
+            pp f "@[<2>constraint@ %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
       | <:class_sig_item< inherit $ct$ >> ->
             pp f "@[<2>inherit@ %a%(%)@]" o#class_type ct semisep
       | <:class_sig_item< method $private:pr$ $s$ : $t$ >> ->
@@ -971,7 +971,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           o#class_str_item f cst
       | <:class_str_item< $cst1$; $cst2$ >> ->
             do { o#class_str_item f cst1; cut f; o#class_str_item f cst2 }
-      | <:class_str_item< type $t1$ = $t2$ >> ->
+      | <:class_str_item< constraint $t1$ = $t2$ >> ->
             pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
       | <:class_str_item< inherit $ce$ >> ->
             pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce semisep
