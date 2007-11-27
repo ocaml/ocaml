@@ -463,8 +463,8 @@ echo "Installing manuals..."
 (cd ../man && make install)
 
 echo "Installing ocamldoc..."
-installbin ocamldoc/ocamldoc$EXE $BINDIR/ocamldoc$EXE
-installbin ocamldoc/ocamldoc.opt$EXE $BINDIR/ocamldoc.opt$EXE
+installbin ocamldoc/ocamldoc $BINDIR/ocamldoc$EXE
+installbin ocamldoc/ocamldoc.opt $BINDIR/ocamldoc.opt$EXE
 
 installdir \
   ../ocamldoc/ocamldoc.hva \
