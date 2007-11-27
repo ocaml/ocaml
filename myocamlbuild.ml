@@ -708,6 +708,7 @@ let camlp4Profiler = p4 "Camlp4Profiler"
 
 let camlp4lib_cma = p4 "camlp4lib.cma"
 let camlp4lib_cmxa = p4 "camlp4lib.cmxa"
+let camlp4lib_lib = p4 ("camlp4lib"-.-C.a)
 
 let special_modules =
   if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
@@ -780,6 +781,7 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
   let deps = special_modules @ modules @ [camlp4_bin] in
   let cmos = add_extensions ["cmo"] deps in
   let cmxs = add_extensions ["cmx"] deps in
+  let objs = add_extensions [C.o] deps in
   rule byte
     ~deps:(camlp4lib_cma::cmos)
     ~prod:(add_exe byte)
@@ -789,7 +791,7 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
             P camlp4lib_cma; A"-linkall"; atomize cmos; A"-o"; Px (add_exe byte)])
     end;
   rule native
-    ~deps:(camlp4lib_cmxa::cmxs)
+    ~deps:(camlp4lib_cmxa :: camlp4lib_lib :: (cmxs @ objs))
     ~prod:(add_exe native)
     ~insert:(`before "ocaml: cmx* & o* -> native")
     begin fun _ _ ->
