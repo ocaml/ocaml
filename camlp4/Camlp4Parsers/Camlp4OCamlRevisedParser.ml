@@ -1256,6 +1256,8 @@ Very old (no more supported) syntax:
             <:class_str_item< inherit $ce$ as $pb$ >>
         | value_val; mf = opt_mutable; lab = label; e = cvalue_binding ->
             <:class_str_item< value $mutable:mf$ $lab$ = $e$ >>
+        | value_val; mf = opt_mutable; "virtual"; l = label; ":"; t = poly_type ->
+            <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
         | value_val; "virtual"; mf = opt_mutable; l = label; ":"; t = poly_type ->
             <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
         | "method"; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
