@@ -593,8 +593,7 @@ Very old (no more supported) syntax:
             <:expr< let module $m$ = $mb$ in $e$ >>
         | "fun"; "["; a = LIST0 match_case0 SEP "|"; "]" ->
             <:expr< fun [ $list:a$ ] >>
-        | "fun"; p = labeled_ipatt; e = fun_def ->
-            <:expr< fun $p$ -> $e$ >>
+        | "fun"; e = fun_def -> e
         | "match"; e = sequence; "with"; a = match_case ->
             <:expr< match $mksequence' _loc e$ with [ $a$ ] >>
         | "try"; e = sequence; "with"; a = match_case ->
@@ -811,9 +810,14 @@ Very old (no more supported) syntax:
         | i = label_longident; e = fun_binding -> <:rec_binding< $i$ = $e$ >> ] ]
     ;
     fun_def:
+      [ [ p = labeled_ipatt; (w, e) = fun_def_cont ->
+            <:expr< fun [ $p$ when $w$ -> $e$ ] >> ] ]
+    ;
+    fun_def_cont:
       [ RIGHTA
-        [ p = labeled_ipatt; e = SELF -> <:expr< fun $p$ -> $e$ >>
-        | "->"; e = expr -> e ] ]
+        [ p = labeled_ipatt; (w,e) = SELF -> (<:expr<>>, <:expr< fun [ $p$ when $w$ -> $e$ ] >>)
+        | "when"; w = expr; "->"; e = expr -> (w, e)
+        | "->"; e = expr -> (<:expr<>>, e) ] ]
     ;
     patt:
       [ "|" LEFTA
