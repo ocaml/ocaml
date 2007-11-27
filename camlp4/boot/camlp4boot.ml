@@ -21,13 +21,9 @@ module R =
  * - Nicolas Pouillard: refactoring
  *)
     module Id =
-      struct
-        let name = "Camlp4RevisedParser"
-          
-        let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.26 2007/07/25 13:06:27 ertai Exp $"
-          
-      end
+      struct let name = "Camlp4RevisedParser"
+                let version = "$Id$"
+                   end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -8239,13 +8235,9 @@ module Camlp4QuotationCommon =
  * - Nicolas Pouillard: initial version
  *)
     module Id =
-      struct
-        let name = "Camlp4QuotationCommon"
-          
-        let version =
-          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.6 2007/06/05 13:41:06 pouillar Exp $"
-          
-      end
+      struct let name = "Camlp4QuotationCommon"
+                let version = "$Id$"
+                   end
       
     module Make
       (Syntax : Sig.Camlp4Syntax)
@@ -8939,13 +8931,9 @@ module Q =
  * - Nicolas Pouillard: refactoring
  *)
     module Id =
-      struct
-        let name = "Camlp4QuotationExpander"
-          
-        let version =
-          "$Id: Camlp4QuotationExpander.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
-          
-      end
+      struct let name = "Camlp4QuotationExpander"
+                let version = "$Id$"
+                   end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -8982,12 +8970,9 @@ module Rp =
  * - Nicolas Pouillard: refactoring
  *)
     module Id : Sig.Id =
-      struct
-        let name = "Camlp4OCamlRevisedParserParser"
-          
-        let version =
-          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.3 2007/05/16 12:48:13 pouillar Exp $"
-          
+      struct let name = "Camlp4OCamlRevisedParserParser"
+                let version = "$Id$"
+                  
       end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
@@ -9907,13 +9892,9 @@ module G =
  * - Nicolas Pouillard: refactoring
  *)
     module Id =
-      struct
-        let name = "Camlp4GrammarParser"
-          
-        let version =
-          "$Id: Camlp4GrammarParser.ml,v 1.1.4.4 2007/04/20 14:57:28 pouillar Exp $"
-          
-      end
+      struct let name = "Camlp4GrammarParser"
+                let version = "$Id$"
+                   end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -12369,13 +12350,9 @@ module M =
  * - Christopher Conway: extra feature (-D<uident>=)
  *)
     module Id =
-      struct
-        let name = "Camlp4MacroParser"
-          
-        let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1.4.6 2007/06/23 16:00:09 ertai Exp $"
-          
-      end
+      struct let name = "Camlp4MacroParser"
+                let version = "$Id$"
+                   end
       
     (*
 Added statements:
@@ -13266,13 +13243,9 @@ module D =
  * - Nicolas Pouillard: initial version
  *)
     module Id =
-      struct
-        let name = "Camlp4DebugParser"
-          
-        let version =
-          "$Id: Camlp4DebugParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
-          
-      end
+      struct let name = "Camlp4DebugParser"
+                let version = "$Id$"
+                   end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -13462,13 +13435,9 @@ module L =
  * - Nicolas Pouillard: revised syntax version
  *)
     module Id =
-      struct
-        let name = "Camlp4ListComprenhsion"
-          
-        let version =
-          "$Id: Camlp4ListComprehension.ml,v 1.1.2.1 2007/05/27 16:23:35 pouillar Exp $"
-          
-      end
+      struct let name = "Camlp4ListComprenhsion"
+                let version = "$Id$"
+                   end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -13841,7 +13810,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14.2.6 2007/06/23 16:00:09 ertai Exp $ *)
+    (* $Id$ *)
     open Camlp4
       
     open PreCast.Syntax
@@ -13890,6 +13859,9 @@ module B =
     let add_to_loaded_modules name =
       loaded_modules := SSet.add name !loaded_modules
       
+    let (objext, libext) =
+      if DynLoader.is_native then (".cmxs", ".cmxs") else (".cmo", ".cma")
+      
     let rewrite_and_load n x =
       let dyn_loader = !dyn_loader () in
       let find_in_path = DynLoader.find_in_path dyn_loader in
@@ -13904,7 +13876,7 @@ module B =
              then ()
              else
                (add_to_loaded_modules n;
-                DynLoader.load dyn_loader (n ^ ".cmo")))
+                DynLoader.load dyn_loader (n ^ objext)))
       in
         ((match (n, (String.lowercase x)) with
           | (("Parsers" | ""),
@@ -13981,7 +13953,7 @@ module B =
           | (("Printers" | ""), ("a" | "auto" | "camlp4autoprinter.cmo")) ->
               load [ "Camlp4AutoPrinter" ]
           | _ ->
-              let y = "Camlp4" ^ (n ^ ("/" ^ (x ^ ".cmo")))
+              let y = "Camlp4" ^ (n ^ ("/" ^ (x ^ objext)))
               in real_load (try find_in_path y with | Not_found -> x));
          !rcall_callback ())
       
@@ -14057,7 +14029,8 @@ Usage: camlp4 [load-options] [--] [other-options]
 Options:
 <file>.ml        Parse this implementation file
 <file>.mli       Parse this interface file
-<file>.(cmo|cma) Load this module inside the Camlp4 core@.";
+<file>.%s Load this module inside the Camlp4 core@."
+         (if DynLoader.is_native then "cmx      " else "(cmo|cma)");
        Options.print_usage_list ini_sl;
        (* loop (ini_sl @ ext_sl) where rec loop =
       fun
@@ -14168,10 +14141,10 @@ You should give the -noassert option to the ocaml compiler instead.@."
            if Filename.check_suffix name ".ml"
            then Impl name
            else
-             if Filename.check_suffix name ".cmo"
+             if Filename.check_suffix name objext
              then ModuleImpl name
              else
-               if Filename.check_suffix name ".cma"
+               if Filename.check_suffix name libext
                then ModuleImpl name
                else raise (Arg.Bad ("don't know what to do with " ^ name)))
       

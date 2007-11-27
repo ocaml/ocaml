@@ -398,7 +398,7 @@ module Sig =
         (** The name of the extension, typically the module name. *)
         val name : string
           
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.13 2007/06/23 16:00:09 ertai Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id$ with a versionning system. *)
         val version : string
           
       end
@@ -2125,6 +2125,8 @@ module Sig =
         val include_dir : t -> string -> unit
           
         val find_in_path : t -> string -> string
+          
+        val is_native : bool
           
       end
       
@@ -13538,13 +13540,14 @@ module Struct =
                   (mkfield loc (Pfield (lab, mkpolytype (ctyp t)))) :: acc
               | _ -> assert false
               
-            let mktype loc tl cl tk tm =
+            let mktype loc tl cl tk tp tm =
               let (params, variance) = List.split tl
               in
                 {
                   ptype_params = params;
                   ptype_cstrs = cl;
                   ptype_kind = tk;
+                  ptype_private = tp;
                   ptype_manifest = tm;
                   ptype_loc = mkloc loc;
                   ptype_variance = variance;
@@ -13579,14 +13582,12 @@ module Struct =
               | Ast.TyPrv (_, t) -> type_decl tl cl loc m true t
               | Ast.TyRec (_, t) ->
                   mktype loc tl cl
-                    (Ptype_record (List.map mktrecord (list_of_ctyp t []),
-                       mkprivate' pflag))
-                    m
+                    (Ptype_record (List.map mktrecord (list_of_ctyp t [])))
+                    (mkprivate' pflag) m
               | Ast.TySum (_, t) ->
                   mktype loc tl cl
-                    (Ptype_variant (List.map mkvariant (list_of_ctyp t []),
-                       mkprivate' pflag))
-                    m
+                    (Ptype_variant (List.map mkvariant (list_of_ctyp t [])))
+                    (mkprivate' pflag) m
               | t ->
                   if m <> None
                   then
@@ -13595,9 +13596,8 @@ module Struct =
                     (let m =
                        match t with
                        | Ast.TyNil _ -> None
-                       | _ -> Some (ctyp t) in
-                     let k = if pflag then Ptype_private else Ptype_abstract
-                     in mktype loc tl cl k m)
+                       | _ -> Some (ctyp t)
+                     in mktype loc tl cl Ptype_abstract (mkprivate' pflag) m)
               
             let type_decl tl cl t =
               type_decl tl cl (loc_of_ctyp t) None false t
@@ -13623,8 +13623,8 @@ module Struct =
               
             let opt_private_ctyp =
               function
-              | Ast.TyPrv (_, t) -> (Ptype_private, (ctyp t))
-              | t -> (Ptype_abstract, (ctyp t))
+              | Ast.TyPrv (_, t) -> (Ptype_abstract, Private, (ctyp t))
+              | t -> (Ptype_abstract, Public, (ctyp t))
               
             let rec type_parameters t acc =
               match t with
@@ -13657,7 +13657,7 @@ module Struct =
               | WcTyp (loc, id_tpl, ct) ->
                   let (id, tpl) = type_parameters_and_type_name id_tpl [] in
                   let (params, variance) = List.split tpl in
-                  let (kind, ct) = opt_private_ctyp ct
+                  let (kind, priv, ct) = opt_private_ctyp ct
                   in
                     (id,
                      (Pwith_type
@@ -13665,6 +13665,7 @@ module Struct =
                           ptype_params = params;
                           ptype_cstrs = [];
                           ptype_kind = kind;
+                          ptype_private = priv;
                           ptype_manifest = Some ct;
                           ptype_loc = mkloc loc;
                           ptype_variance = variance;
@@ -14589,6 +14590,7 @@ module Struct =
                     match super#sig_item sg with
                     | Ast.SgSem (_, (Ast.SgNil _), sg) |
                         Ast.SgSem (_, sg, (Ast.SgNil _)) -> sg
+                    | Ast.SgTyp (loc, (Ast.TyNil _)) -> Ast.SgNil loc
                     | sg -> sg
                   
                 method str_item =
@@ -14596,6 +14598,8 @@ module Struct =
                     match super#str_item st with
                     | Ast.StSem (_, (Ast.StNil _), st) |
                         Ast.StSem (_, st, (Ast.StNil _)) -> st
+                    | Ast.StTyp (loc, (Ast.TyNil _)) -> Ast.StNil loc
+                    | Ast.StVal (loc, _, (Ast.BiNil _)) -> Ast.StNil loc
                     | st -> st
                   
                 method module_type =
@@ -14758,8 +14762,30 @@ module Struct =
           let _initialized = ref false
           in
             fun _path file ->
-              raise
-                (Error (file, "native-code program cannot do a dynamic load"))
+              (if not !_initialized
+               then
+                 (try
+                    (Dynlink.init ();
+                     Dynlink.allow_unsafe_modules true;
+                     _initialized := true)
+                  with
+                  | Dynlink.Error e ->
+                      raise
+                        (Error ("Camlp4's dynamic loader initialization",
+                           Dynlink.error_message e)))
+               else ();
+               let fname =
+                 try find_in_path _path file
+                 with
+                 | Not_found ->
+                     raise (Error (file, "file not found in path"))
+               in
+                 try Dynlink.loadfile fname
+                 with
+                 | Dynlink.Error e ->
+                     raise (Error (fname, Dynlink.error_message e)))
+          
+        let is_native = Dynlink.is_native
           
       end
       
@@ -17363,8 +17389,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
               
-            let version =
-              "$Id: DumpCamlp4Ast.ml,v 1.5.4.2 2007/05/22 09:05:39 pouillar Exp $"
+            let version = "$Id$"
               
           end
           
@@ -17407,8 +17432,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
               
-            let version =
-              "$Id: DumpOCamlAst.ml,v 1.5.4.2 2007/05/22 09:05:39 pouillar Exp $"
+            let version = "$Id$"
               
           end
           
@@ -17458,13 +17482,9 @@ module Printers =
       end =
       struct
         module Id =
-          struct
-            let name = "Camlp4.Printers.Null"
-              
-            let version =
-              "$Id: Null.ml,v 1.2 2007/02/07 10:09:21 ertai Exp $"
-              
-          end
+          struct let name = "Camlp4.Printers.Null"
+                    let version = "$Id$"
+                       end
           
         module Make (Syntax : Sig.Syntax) =
           struct
@@ -17587,7 +17607,7 @@ module Printers =
                         
                       method ident : formatter -> Ast.ident -> unit
                         
-                      method intlike : formatter -> string -> unit
+                      method numeric : formatter -> string -> unit
                         
                       method binding : formatter -> Ast.binding -> unit
                         
@@ -17724,13 +17744,9 @@ module Printers =
         open Format
           
         module Id =
-          struct
-            let name = "Camlp4.Printers.OCaml"
-              
-            let version =
-              "$Id: OCaml.ml,v 1.21.2.16 2007/07/25 15:49:15 ertai Exp $"
-              
-          end
+          struct let name = "Camlp4.Printers.OCaml"
+                    let version = "$Id$"
+                       end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -18136,7 +18152,7 @@ module Printers =
                   
                 method quoted_string = fun f -> pp f "%S"
                   
-                method intlike =
+                method numeric =
                   fun f s ->
                     if s.[0] = '-' then pp f "(%s)" s else pp f "%s" s
                   
@@ -18357,11 +18373,11 @@ module Printers =
                             "@[<hv0>@[<hv2>@[<2>for %a =@ %a@ %a@ %a@ do@]@ %a@]@ done@]"
                             o#var s o#expr e1 o#direction_flag df o#expr e2
                             o#seq e3
-                      | Ast.ExInt (_, s) -> pp f "%a" o#intlike s
-                      | Ast.ExNativeInt (_, s) -> pp f "%an" o#intlike s
-                      | Ast.ExInt64 (_, s) -> pp f "%aL" o#intlike s
-                      | Ast.ExInt32 (_, s) -> pp f "%al" o#intlike s
-                      | Ast.ExFlo (_, s) -> pp f "%s" s
+                      | Ast.ExInt (_, s) -> o#numeric f s
+                      | Ast.ExNativeInt (_, s) -> pp f "%an" o#numeric s
+                      | Ast.ExInt64 (_, s) -> pp f "%aL" o#numeric s
+                      | Ast.ExInt32 (_, s) -> pp f "%al" o#numeric s
+                      | Ast.ExFlo (_, s) -> o#numeric f s
                       | Ast.ExChr (_, s) -> pp f "'%s'" (ocaml_char s)
                       | Ast.ExId (_, i) -> o#var_ident f i
                       | Ast.ExRec (_, b, (Ast.ExNil _)) ->
@@ -18510,11 +18526,11 @@ module Printers =
                       | Ast.PaStr (_, s) -> pp f "\"%s\"" s
                       | Ast.PaTyc (_, p, t) ->
                           pp f "@[<1>(%a :@ %a)@]" o#patt p o#ctyp t
-                      | Ast.PaNativeInt (_, s) -> pp f "%an" o#intlike s
-                      | Ast.PaInt64 (_, s) -> pp f "%aL" o#intlike s
-                      | Ast.PaInt32 (_, s) -> pp f "%al" o#intlike s
-                      | Ast.PaInt (_, s) -> pp f "%a" o#intlike s
-                      | Ast.PaFlo (_, s) -> pp f "%s" s
+                      | Ast.PaNativeInt (_, s) -> pp f "%an" o#numeric s
+                      | Ast.PaInt64 (_, s) -> pp f "%aL" o#numeric s
+                      | Ast.PaInt32 (_, s) -> pp f "%al" o#numeric s
+                      | Ast.PaInt (_, s) -> o#numeric f s
+                      | Ast.PaFlo (_, s) -> o#numeric f s
                       | Ast.PaChr (_, s) -> pp f "'%s'" (ocaml_char s)
                       | Ast.PaLab (_, s, (Ast.PaNil _)) -> pp f "~%s" s
                       | Ast.PaVrn (_, s) -> pp f "`%a" o#var s
@@ -18587,6 +18603,7 @@ module Printers =
                       | Ast.TyVrn (_, s) -> pp f "`%a" o#var s
                       | Ast.TySta (_, t1, t2) ->
                           pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
+                      | Ast.TyNil _ -> assert false
                       | t -> pp f "@[<1>(%a)@]" o#ctyp t
                   
                 method ctyp =
@@ -19144,13 +19161,9 @@ module Printers =
         open Format
           
         module Id =
-          struct
-            let name = "Camlp4.Printers.OCamlr"
-              
-            let version =
-              "$Id: OCamlr.ml,v 1.17.4.5 2007/06/05 13:39:52 pouillar Exp $"
-              
-          end
+          struct let name = "Camlp4.Printers.OCamlr"
+                    let version = "$Id$"
+                       end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -20076,14 +20089,9 @@ module PreCast :
       
   end =
   struct
-    module Id =
-      struct
-        let name = "Camlp4.PreCast"
-          
-        let version =
-          "$Id: PreCast.ml,v 1.4.4.1 2007/03/30 15:50:12 pouillar Exp $"
-          
-      end
+    module Id = struct let name = "Camlp4.PreCast"
+                          let version = "$Id$"
+                             end
       
     type camlp4_token =
       Sig.camlp4_token =
