@@ -318,8 +318,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method expr_list f =
       fun
       [ []  -> pp f "[]"
-      | [e] -> pp f "[ %a ]" o#expr e
-      | el  -> pp f "@[<2>[ %a@] ]" (list o#expr ";@ ") el ];
+      | [e] -> pp f "[ %a ]" o#under_semi#expr e
+      | el  -> pp f "@[<2>[ %a@] ]" (list o#under_semi#expr ";@ ") el ];
 
     method expr_list_cons simple f e = 
       let (el, c) = o#mk_expr_list e in
@@ -327,7 +327,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ None -> o#expr_list f el
       | Some x ->
           (if simple then pp f "@[<2>(%a)@]" else pp f "@[<2>%a@]")
-            (list o#dot_expr " ::@ ") (el @ [x]) ];
+            (list o#under_semi#dot_expr " ::@ ") (el @ [x]) ];
 
     method patt_expr_fun_args f (p, e) =
       let (pl, e) = expr_fun_args e
