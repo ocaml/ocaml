@@ -201,7 +201,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear labeled_ipatt;
   clear semi;
   clear do_sequence;
-  clear let_binding;
   clear type_kind;
   clear constructor_arg_list;
   clear poly_type;
@@ -417,9 +416,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
         | e = expr LEVEL ":=" -> e ] ]
     ;                                                           *)
-    let_binding:
-      [ [ p = patt; e = fun_binding -> <:binding< $p$ = $e$ >> ] ]
-    ;
     (* comma_patt:
       [ [ p1 = SELF; ","; p2 = SELF -> <:patt< $p1$, $p2$ >>
         | p = patt LEVEL ".." -> p ] ]
