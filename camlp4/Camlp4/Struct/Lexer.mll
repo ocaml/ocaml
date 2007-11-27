@@ -398,15 +398,15 @@ module Make (Token : Sig.Camlp4Token)
 
   and maybe_quotation_at c = parse
     | (ident as loc) '<'      
-      { mk_quotation quotation c "" loc (3 + String.length loc)                 }
+      { mk_quotation quotation c "" loc (1 + String.length loc)                 }
     | symbolchar* as tok                                   { SYMBOL("<@" ^ tok) }
 
   and maybe_quotation_colon c = parse
     | (ident as name) '<'
-      { mk_quotation quotation c name "" (3 + String.length name)               }
+      { mk_quotation quotation c name "" (1 + String.length name)               }
     | (ident as name) '@' (locname as loc) '<'
       { mk_quotation quotation c name loc
-                     (4 + String.length loc + String.length name)               }
+                     (2 + String.length loc + String.length name)               }
     | symbolchar* as tok                                   { SYMBOL("<:" ^ tok) }
 
   and quotation c = parse
