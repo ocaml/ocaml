@@ -59,21 +59,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                     (Ast.loc_of_expr e2) in
         <:expr< do { $e1$; $e2$ } >> ];
 
-  value is_operator =
-    let ht = Hashtbl.create 73 in
-    let ct = Hashtbl.create 73 in
-    do {
-      List.iter (fun x -> Hashtbl.add ht x True)
-        ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"];
-      List.iter (fun x -> Hashtbl.add ct x True)
-        ['!'; '&'; '*'; '+'; '-'; '/'; ':'; '<'; '='; '>'; '@'; '^'; '|'; '~';
-        '?'; '%'; '.'; '$'];
-      fun x ->
-        try Hashtbl.find ht x with
-        [ Not_found -> try Hashtbl.find ct x.[0] with [ Not_found -> False ] ]
-    }
-  ;
-
   value test_constr_decl =
     Gram.Entry.of_parser "test_constr_decl"
       (fun strm ->
@@ -153,17 +138,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | _ -> raise Stream.Failure ]
       in
       test 1)
-  ;
-
-  value test_just_a_lident_or_patt =
-    Gram.Entry.of_parser "test_just_a_lident_or_patt"
-      (fun strm ->
-        match Stream.npeek 3 strm with
-        [ [(KEYWORD "(", _); (KEYWORD s | SYMBOL s, _); (KEYWORD ")", _)] when is_operator s -> ()
-        | [((LIDENT _ | ANTIQUOT "lid" _), _); (KEYWORD ("as"|"|"|"::"|","|"."), _); _] ->
-            raise Stream.Failure
-        | [((LIDENT _ | ANTIQUOT "lid" _), _); _; _] -> ()
-        | _ -> raise Stream.Failure ])
   ;
 
   value lident_colon =
@@ -444,10 +418,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | e = expr LEVEL ":=" -> e ] ]
     ;                                                           *)
     let_binding:
-      [ [ test_just_a_lident_or_patt; s = a_LIDENT; e = fun_binding ->
-            <:binding< $lid:s$ = $e$ >>
-        | p = patt; "="; e = expr ->
-            <:binding< $p$ = $e$ >> ] ]
+      [ [ p = patt; e = fun_binding -> <:binding< $p$ = $e$ >> ] ]
     ;
     (* comma_patt:
       [ [ p1 = SELF; ","; p2 = SELF -> <:patt< $p1$, $p2$ >>
