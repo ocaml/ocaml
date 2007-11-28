@@ -244,11 +244,12 @@ let sys_file_exists x =
 let sys_command =
   match Sys.os_type with
   | "Win32" -> fun cmd ->
+      if cmd = "" then 0 else
       let cmd = "bash -c "^Filename.quote cmd in
       (* FIXME fix Filename.quote for windows *)
       let cmd = String.subst "\"&\"\"&\"" "&&" cmd in
       Sys.command cmd
-  | _ -> Sys.command
+  | _ -> fun cmd -> if cmd = "" then 0 else Sys.command cmd
 
 (* FIXME warning fix and use Filename.concat *)
 let filename_concat x y =

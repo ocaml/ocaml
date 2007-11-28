@@ -17,6 +17,7 @@ open My_std
 open Log
 
 type tags = Tags.t
+type pathname = string
 
 let jobs = ref 1
 
@@ -28,8 +29,8 @@ and spec =
 | N (* nop or nil *)
 | S of spec list
 | A of string
-| P of string (* Pathname.t *)
-| Px of string (* Pathname.t *)
+| P of pathname
+| Px of pathname
 | Sh of string
 | T of Tags.t
 | V of string
@@ -40,8 +41,8 @@ and vspec =
   [ `N
   | `S of vspec list
   | `A of string
-  | `P of string (* Pathname.t *)
-  | `Px of string (* Pathname.t *)
+  | `P of pathname
+  | `Px of pathname
   | `Sh of string
   | `Quote of vspec ]
 
@@ -158,10 +159,12 @@ let string_target_and_tags_of_command_spec spec =
   let target = if !rtarget = "" then s else !rtarget in
   s, target, !rtags
 
-let string_print_of_command_spec spec =
+let string_print_of_command_spec spec quiet pretend =
   let s, target, tags = string_target_and_tags_of_command_spec spec in
-  (s, (fun quiet pretend () -> if not quiet then Log.event ~pretend s target tags))
+  fun () -> if not quiet then Log.event ~pretend s target tags; s
 (* ***)
+
+let print_escaped_string f = Format.fprintf f "%S"
 
 let rec print f =
   function
@@ -176,12 +179,12 @@ let rec list_rev_iter f =
   | [] -> ()
   | x :: xs -> list_rev_iter f xs; f x
 
-let spec_list_of_cmd cmd =
+let flatten_commands quiet pretend cmd =
   let rec loop acc =
     function
     | [] -> acc
     | Nop :: xs -> loop acc xs
-    | Cmd spec :: xs -> loop (string_print_of_command_spec spec :: acc) xs
+    | Cmd spec :: xs -> loop (string_print_of_command_spec spec quiet pretend :: acc) xs
     | Seq l :: xs -> loop (loop acc l) xs
   in List.rev (loop [] [cmd])
 
@@ -198,27 +201,10 @@ let execute_many ?(quiet=false) ?(pretend=false) cmds =
     None
   else
     begin
-      let konts =
-        List.map
-          begin fun cmd ->
-            let specs = spec_list_of_cmd cmd in
-            List.map
-              begin fun (cmd, print) ->
-                (cmd, (print quiet pretend))
-              end
-              specs  
-          end
-          cmds
-      in
+      let konts = List.map (flatten_commands quiet pretend) cmds in
       if pretend then
         begin
-          List.iter
-            begin fun l ->
-              List.iter
-                begin fun (_, f) -> f () end
-                l
-            end
-            konts;
+          List.iter (List.iter (fun f -> ignore (f ()))) konts;
           None
         end
       else
@@ -230,13 +216,13 @@ let execute_many ?(quiet=false) ?(pretend=false) cmds =
                 match acc_exn with
                 | None ->
                     begin try
-                      List.iter begin fun (cmd, print) ->
-                        print ();
+                      List.iter begin fun action ->
+                        let cmd = action () in
                         let rc = sys_command cmd in
                         if rc <> 0 then begin
                           if not quiet then
                             eprintf "Exit code %d while executing this \
-                                     command:@\n%s" rc cmd;
+                                    command:@\n%s" rc cmd;
                           raise (Exit_with_code rc)
                         end
                       end cmds;
@@ -258,6 +244,20 @@ let execute ?quiet ?pretend cmd =
   match execute_many ?quiet ?pretend [cmd] with
   | Some(_, exn) -> raise exn
   | _ -> ()
+
+let iter_tags f x =
+  let rec spec x =
+    match x with
+    | N | A _ | Sh _ | P _ | Px _ | V _ | Quote _ -> ()
+    | S l -> List.iter spec l
+    | T tags -> f tags
+  in
+  let rec cmd x =
+    match x with
+    | Nop -> ()
+    | Cmd(s) -> spec s
+    | Seq(s) -> List.iter cmd s in
+  cmd x
 
 let rec reduce x =
   let rec self x acc =
