@@ -1147,7 +1147,9 @@ let expand_head env ty =
 (* Implementing function [expand_head_opt], the compiler's own version of
    [expand_head] used for type-based optimisations.
    [expand_head_opt] uses [Env.find_type_expansion_opt] to access the
-   normally hidden manifest type information of private abstract types. *)
+   manifest type information of private abstract data types which is
+   normally hidden to the type-checker out of the implementation module of
+   the private abbreviation. *)
 
 let expand_abbrev_opt = expand_abbrev_gen Env.find_type_expansion_opt
 
