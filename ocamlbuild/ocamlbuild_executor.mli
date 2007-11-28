@@ -32,6 +32,9 @@ type error =
     [display]  should  then  call  [f]  with  then  channel on which [f] should
     print.
 
+    Note  that  if  the shell command to execute is the empty string [""], it's
+    considered as a no-op.
+
     Note  that  [f] must be idempotent as it may well be called twice, once for
     the log file, once for the actual output.
 

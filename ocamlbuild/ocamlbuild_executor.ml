@@ -129,8 +129,7 @@ let execute
   in
   (* ***)
   (*** add_job *)
-  let add_job action rest result id =
-    let cmd = action () in
+  let add_job cmd rest result id =
     (*display begin fun oc -> fp oc "Job %a is %s\n%!" print_job_id id cmd; end;*)
     let (stdout', stdin', stderr') = open_process_full cmd env in
     incr jobs_active;
@@ -151,15 +150,23 @@ let execute
     jobs := JS.add job !jobs;
   in
   (* ***)
+  (*** skip_empty_tasks *)
+  let rec skip_empty_tasks = function
+    | [] -> None
+    | task :: tasks ->
+        let cmd = task () in
+        if cmd = "" then skip_empty_tasks tasks else Some(cmd, tasks)
+  in
+  (* ***)
   (*** add_some_jobs *)
   let add_some_jobs () =
     let (tasks, result) = Queue.take commands_to_execute in
-    match tasks with
-    | [] -> result := false
-    | task :: rest ->
+    match skip_empty_tasks tasks with
+    | None -> result := false
+    | Some(cmd, rest) ->
       let b_id = !batch_id in
       incr batch_id;
-      add_job task rest result (b_id, 0)
+      add_job cmd rest result (b_id, 0)
   in
   (* ***)
   (*** terminate *)
@@ -255,11 +262,11 @@ let execute
             begin
               if continue then
                 begin
-                  match job.job_next with
-                  | [] -> job.job_result := true
-                  | task :: rest ->
+                  match skip_empty_tasks job.job_next with
+                  | None -> job.job_result := true
+                  | Some(cmd, rest) ->
                       let (b_id, s_id) = job.job_id in
-                      add_job task rest job.job_result (b_id, s_id + 1)
+                      add_job cmd rest job.job_result (b_id, s_id + 1)
                 end
               else
                 all_ok := false;
