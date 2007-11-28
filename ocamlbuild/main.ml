@@ -30,7 +30,7 @@ let clean () =
       Slurp.map (fun _ _ _ -> true)
         (Slurp.slurp Filename.current_dir_name)
     in
-    Slurp.force (Pathname.clean_up_links entry)
+    Slurp.force (Resource.clean_up_links entry)
   end;
   raise Exit_silently
 ;;
@@ -145,7 +145,7 @@ let proceed () =
     show_documentation ();
     raise Exit_silently
   end;
-  Resource.Cache.init ();
+  Digest_cache.init ();
 
   Sys.catch_break true;
 

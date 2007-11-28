@@ -12,11 +12,4 @@
 (* $Id$ *)
 (* Original author: Nicolas Pouillard *)
 include Signatures.PATHNAME
-
-val is_up_to_date : bool -> t -> bool
-val clean_up_links : bool Slurp.entry -> bool Slurp.entry
-val exists_in_source_dir : t -> bool
-val exists_in_build_dir : t -> bool
-val import_in_build_dir : t -> unit
-val in_build_dir : t -> t
-val in_source_dir : t -> t
+val link_to_dir : t -> t -> bool

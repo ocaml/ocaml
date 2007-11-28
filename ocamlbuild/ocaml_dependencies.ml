@@ -111,7 +111,7 @@ module Make (I : INPUT) = struct
       if pack_mode then
         if Filename.check_suffix x ".cmi" then
           let caml_obj = Pathname.update_extensions caml_obj_ext x in
-          if Pathname.exists_in_build_dir caml_obj then
+          if Resource.exists_in_build_dir caml_obj then
             caml_obj
           else
             x
