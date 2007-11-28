@@ -1036,6 +1036,8 @@ Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/bar/libfoo.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibs/unix/libunix.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibsliblib/unlibix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo/libbar.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/libfoo/boo/libbar.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "bar" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libbar/foo.a" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" = None OK
@@ -1043,6 +1045,8 @@ Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/bar/libfoo.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibs/unix/libunix.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibsliblib/unlibix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo/libbar.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/libfoo/boo/libbar.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "bar" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libbar/foo.a" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" = None OK
@@ -1050,6 +1054,8 @@ Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/bar/libfoo.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibs/unix/libunix.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "otherlibsliblib/unlibix/libunix.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo/libbar.a" OK
+Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "src/libfoo/boo/libbar.a" OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "bar" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libbar/foo.a" = None OK
 Resource.matchit "%(path:<**/>)lib%(libname:<*> and not <*.*>).a" "libfoo.b.a" = None OK
