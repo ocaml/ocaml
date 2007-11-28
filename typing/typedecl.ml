@@ -72,9 +72,10 @@ let update_type temp_env env id loc =
         raise (Error(loc, Type_clash trace))
 
 (* Determine if a type is (an abbreviation for) the type "float" *)
-
+(* We use the Ctype.expand_head_opt version of expand_head to get access
+   to the manifest type of private abbreviations. *)
 let is_float env ty =
-  match Ctype.repr (Ctype.expand_head env ty) with
+  match Ctype.repr (Ctype.expand_head_opt env ty) with
     {desc = Tconstr(p, _, _)} -> Path.same p Predef.path_float
   | _ -> false
 
