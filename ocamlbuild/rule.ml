@@ -318,5 +318,9 @@ open Common_commands
 
 let copy_rule name ?insert src dest =
   rule name ?insert ~prod:dest ~dep:src
-       (fun env _ -> cp_p (env src) (env dest))
+    begin fun env _ ->
+      let src = env src and dest = env dest in
+      Shell.mkdir_p (Pathname.dirname dest);
+      cp_p src dest
+    end
 
