@@ -60,7 +60,6 @@ let proceed () =
   Options.init ();
   if !Options.must_clean then clean ();
   Hooks.call_hook Hooks.After_options;
-  Tools.default_tags := Tags.of_list !Options.tags;
   Plugin.execute_plugin_if_needed ();
 
   if !Options.targets = []
@@ -82,6 +81,8 @@ let proceed () =
      <**/*.cmi>: ocaml, byte, native
      <**/*.cmx>: ocaml, native
     ";
+
+  Configuration.tag_any !Options.tags;
 
   let newpwd = Sys.getcwd () in
   Sys.chdir Pathname.pwd;
