@@ -24,11 +24,13 @@ ocamlc -c slurp.mli
 ocamlc -c pathname.mli
 ocamlc -c discard_printf.mli
 ocamlc -c command.mli
+ocamlc -c digest_cache.mli
 ocamlc -c resource.mli
 ocamlc -c rule.mli
 ocamlc -c hygiene.mli
 ocamlc -c options.mli
 ocamlc -c tools.mli
+ocamlc -c exit_codes.mli
 ocamlc -c main.mli
 ocamlc -c ocaml_utils.mli
 ocamlc -c ocaml_tools.mli
@@ -48,6 +50,7 @@ ocamlc -c tools.ml
 ocamlc -c plugin.mli
 ocamlc -c plugin.ml
 ocamlc -c ocaml_dependencies.ml
+ocamlc -c exit_codes.ml
 ocamlc -c main.ml
 ocamlc -c ocaml_specific.ml
 ocamlc -c display.ml
@@ -76,12 +79,13 @@ ocamlc -c configuration.ml
 ocamlc -c flags.ml
 ocamlc -c hygiene.ml
 ocamlc -c ocaml_arch.ml
+ocamlc -c digest_cache.ml
 ocamlc -c resource.ml
 ocamlc -c rule.ml
 ocamlc -c report.ml
 ocamlc -c solver.ml
 ocamlc -c ocamlbuildlight.mli
-ocamlc -pack discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo ocaml_specific.cmo main.cmo -o ocamlbuild_pack.cmo
+ocamlc -pack discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo digest_cache.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo ocaml_specific.cmo exit_codes.cmo main.cmo -o ocamlbuild_pack.cmo
 ocamlc -c ocamlbuildlight.ml
 ocamlc ocamlbuild_pack.cmo ocamlbuildlight.cmo -o ../ocamlbuild.byte.start
 cd ..
