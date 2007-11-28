@@ -510,17 +510,6 @@ module type PLUGIN = sig
     ?insert:[`top | `before of string | `after of string | `bottom] ->
     action -> unit
 
-  (** This function is subject to change. *)
-  val file_rule : string ->
-    ?tags:string list ->
-    prod:string ->
-    ?deps:string list ->
-    ?dep:string ->
-    ?stamp:string ->
-    ?insert:[`top | `before of string | `after of string | `bottom] ->
-    cache:(env -> builder -> string) ->
-    (env -> out_channel -> unit) -> unit
-
   (** [copy_rule name ?insert source destination] *)
   val copy_rule : string ->
     ?insert:[`top | `before of string | `after of string | `bottom] ->

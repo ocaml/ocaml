@@ -23,11 +23,7 @@ type env = Pathname.t -> Pathname.t
 type builder = Pathname.t list list -> (Pathname.t, exn) Outcome.t list
 type action = env -> builder -> Command.t
 
-type rule_action =
-  | RunCmd of Command.t
-  | FileMaker of (out_channel -> unit)
-
-type 'a digest = { digest : string; contents : 'a }
+type digest_command = { digest : string; command : Command.t }
 
 type 'a gen_rule =
   { name  : string;
@@ -35,7 +31,7 @@ type 'a gen_rule =
     deps  : Pathname.t list;
     prods : 'a list; (* Note that prods also contains stamp *)
     stamp : 'a option;
-    code  : env -> builder -> rule_action digest }
+    code  : env -> builder -> digest_command }
 
 type rule = Pathname.t gen_rule
 type rule_scheme = Resource.resource_pattern gen_rule
@@ -172,10 +168,7 @@ let call builder r =
     end results in
   let () = dprintf 5 "start rule %a" print r in
   let action = r.code (fun x -> x) builder in
-  begin match action.contents with
-  | RunCmd cmd -> build_deps_of_tags_on_cmd builder cmd
-  | FileMaker _ -> ()
-  end;
+  build_deps_of_tags_on_cmd builder action.command;
   let dyndeps = !dyndeps in
   let () = dprintf 10 "dyndeps: %a" Resources.print dyndeps in
   let (reason, cached) =
@@ -191,14 +184,9 @@ let call builder r =
             begin match cached_digest r with
             | None -> (`cache_miss_no_digest, false)
             | Some d ->
-                begin match action.contents with
-                | FileMaker _ when action.digest = "" -> (* not sure that we still want this semantics *)
-                    (`cache_miss_undigest, false)
-                | FileMaker _ | RunCmd _ ->
-                    let rule_digest = digest_rule r dyndeps action in
-                    if d = rule_digest then (`cache_hit, true)
-                    else (`cache_miss_digest_changed(d, rule_digest), false)
-                end
+                let rule_digest = digest_rule r dyndeps action in
+                if d = rule_digest then (`cache_hit, true)
+                else (`cache_miss_digest_changed(d, rule_digest), false)
             end
         end
       end
@@ -219,8 +207,7 @@ let call builder r =
     | `cache_miss_digest_changed(old_d, new_d) ->
           dprintf l "cache miss: the digest has changed for %S (the command, a dependency, or a product: %a <> %a)"
             r.name print_digest old_d print_digest new_d
-    | `cache_miss_undigest ->
-          dprintf l "cache miss: cache not supported for the rule %S" r.name in
+  in
   let prod_digests = digest_prods r in
   (if not cached then List.iter Resource.clean r.prods);
   (if !Options.nothing_should_be_rebuilt && not cached then
@@ -230,23 +217,15 @@ let call builder r =
   explain_reason 3;
   let thunk () =
     try
-      begin match action.contents with
-      | RunCmd cmd ->
-          if cached then Command.execute ~pretend:true cmd
-          else begin match r.stamp with
-          | Some stamp ->
-              reset_filesys_cache ();
-              let digest_deps = digest_deps r dyndeps in
-              with_output_file stamp (fun oc -> output_string oc digest_deps)
-          | None -> ()
-          end
-      | FileMaker file_maker ->
-          if not cached then begin
+      if cached then Command.execute ~pretend:true action.command
+      else
+        begin match r.stamp with
+        | Some stamp ->
             reset_filesys_cache ();
-            assert (List.length r.prods = 1);
-            List.iter (fun f -> with_output_file f file_maker) r.prods
-          end
-      end;
+            let digest_deps = digest_deps r dyndeps in
+            with_output_file stamp (fun oc -> output_string oc digest_deps)
+        | None -> ()
+        end;
       List.iter (fun r -> Resource.Cache.resource_built r) r.prods;
       (if not cached then
         let new_rule_digest = digest_rule r dyndeps action in
@@ -262,10 +241,9 @@ let call builder r =
       dprintf 5 "end rule %a" print r
     with exn -> (List.iter Resource.clean r.prods; raise exn)
   in
-  match action.contents with
-  | RunCmd cmd when not cached ->
-      List.iter (fun x -> Resource.Cache.suspend_resource x cmd thunk r.prods) r.prods
-  | RunCmd _ | FileMaker _ -> thunk ()
+  if cached
+  then thunk ()
+  else List.iter (fun x -> Resource.Cache.suspend_resource x action.command thunk r.prods) r.prods
 
 let (get_rules, add_rule) =
   let rules = ref [] in
@@ -290,7 +268,7 @@ let (get_rules, add_rule) =
             end !rules []
   end
 
-let gen_rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bottom) code =
+let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bottom) code =
   let res_add import xs xopt =
     let init =
       match xopt with
@@ -312,6 +290,11 @@ let gen_rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert =
         Some (Resource.import_pattern stamp), stamp :: prods
   in
   let prods = res_add Resource.import_pattern prods prod in
+  let code env build =
+    let cmd = code env build in
+    { digest  = Command.to_string_for_digest cmd
+    ; command = cmd }
+  in
   add_rule insert
   { name  = name;
     tags  = List.fold_right Tags.add tags Tags.empty;
@@ -319,18 +302,6 @@ let gen_rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert =
     stamp = stamp;
     prods = prods;
     code  = code }
-
-let rule name ?tags ?prods ?deps ?prod ?dep ?stamp ?insert code =
-  gen_rule name ?tags ?prods ?deps ?prod ?dep ?stamp ?insert begin fun env build ->
-    let cmd = code env build in
-    { digest   = Command.to_string_for_digest cmd
-    ; contents = RunCmd cmd }
-end
-
-let file_rule name ?tags ~prod ?deps ?dep ?stamp ?insert ~cache action =
-  gen_rule name ?tags ~prod ?dep ?deps ?stamp ?insert begin fun env build ->
-    { digest = cache env build; contents = FileMaker(action env) }
-  end
 
 module Common_commands = struct
   open Command
