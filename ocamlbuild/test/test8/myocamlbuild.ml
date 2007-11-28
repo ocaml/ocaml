@@ -2,11 +2,10 @@ open Ocamlbuild_plugin;;
 let version = "0.1";;
 dispatch begin function
   | After_rules ->
-      file_rule "myconfig.ml"
+      rule "myconfig.ml"
         ~prod:"myconfig.ml"
-        ~cache:(fun _ _ -> version)
-        begin fun _ oc ->
-          Printf.fprintf oc "let version = %S;;\n%!" version
+        begin fun _ _ ->
+          Echo(["let version = \""; version; "\";;\n"], "myconfig.ml")
         end;
 
       copy_rule "copy byte-code executables" "%(path).byte" "%(path:not <**/*.*>)";

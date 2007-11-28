@@ -435,12 +435,14 @@ flag ["ocaml"; "doc"; "docfile"; "extension:texi"] (A"-texi");;
 (** Ocamlbuild plugin for it's own building *)
 let install_lib = lazy (try Sys.getenv "INSTALL_LIB" with Not_found -> !*stdlib_dir/"ocamlbuild" (* not My_std.getenv since it's lazy*)) in
 let install_bin = lazy (My_std.getenv ~default:"/usr/local/bin" "INSTALL_BIN") in
-file_rule "ocamlbuild_where.ml"
+rule "ocamlbuild_where.ml"
   ~prod:"%ocamlbuild_where.ml"
-  ~cache:(fun _ _ -> Printf.sprintf "version=3: lib:%S, bin:%S" !*install_lib !*install_bin)
-  begin fun _ oc ->
-    Printf.fprintf oc "let bindir = ref %S;;\n" !*install_bin;
-    Printf.fprintf oc "let libdir = ref (try Filename.concat (Sys.getenv \"OCAMLLIB\") \"ocamlbuild\" with Not_found -> %S);;\n" !*install_lib;
+  begin fun env _ ->
+    Echo(
+      ["let bindir = ref \""; String.escaped !*install_bin; "\";;\n";
+       "let libdir = ref (try Filename.concat (Sys.getenv \"OCAMLLIB\") \"ocamlbuild\" with Not_found -> \"";
+         String.escaped !*install_lib; "\");;\n"],
+      env "%ocamlbuild_where.ml")
   end;;
 ocaml_lib "ocamlbuildlib";;
 ocaml_lib "ocamlbuildlightlib";;
