@@ -32,3 +32,9 @@ val tags_of_filename : string -> Tags.t
 val flags_of_filename : string -> Command.spec
 
 val has_tag : string -> bool
+
+(** [tag_file filename tag_list] Tag the given filename with all given tags. *)
+val tag_file : Pathname.t -> Tags.elt list -> unit
+
+(** [tag_any tag_list] Tag anything with all given tags. *)
+val tag_any : Tags.elt list -> unit
