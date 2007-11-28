@@ -319,6 +319,8 @@ let ( @:= ) ref list = ref := !ref @ list
 
 let ( & ) f x = f x
 
+let ( |> ) x f = f x
+
 let print_string_list = List.print String.print
 
 module Digest = struct

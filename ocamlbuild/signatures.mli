@@ -338,6 +338,11 @@ module type MISC = sig
       << f (g (h x)) >>   becomes << f& g& h x >> *)
   val ( & ) : ('a -> 'b) -> 'a -> 'b
 
+  (** The reversed application combinator.
+      Useful to describe some operations chaining.
+      << f x (g y (h z)) >> becomes << z |> h |> g y |> f x >> *)
+  val ( |> ) : 'a -> ('a -> 'b) -> 'b
+
   (** [r @:= l] is equivalent to [r := !r @ l] *)
   val ( @:= ) : 'a list ref -> 'a list -> unit
 
