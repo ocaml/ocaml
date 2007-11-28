@@ -246,7 +246,7 @@ let link_units table extensions cmX_ext cma_ext a_ext linker tagger contents_lis
   let _ = Rule.build_deps_of_tags build tags in
   let dir =
     let dir1 = Pathname.remove_extensions cmX in
-    if Pathname.exists_in_source_dir dir1 then dir1
+    if Resource.exists_in_source_dir dir1 then dir1
     else Pathname.dirname cmX in
   let include_dirs = Pathname.include_dirs_of dir in
   let extension_keys = List.map fst extensions in

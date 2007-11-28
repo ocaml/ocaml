@@ -90,14 +90,13 @@ let can_produce target rule =
 
 let digest_prods r =
   List.fold_right begin fun p acc ->
-    let f = Pathname.to_string (Pathname.in_build_dir p) in
+    let f = Pathname.to_string (Resource.in_build_dir p) in
     if sys_file_exists f then (f, Digest.file f) :: acc else acc
   end r.prods []
 
 let digest_deps r dyndeps =
   let buf = Buffer.create 1024 in
-  let add_resource r = Buffer.add_string buf (Digest.to_hex
-  (Resource.Cache.digest_resource r)) in
+  let add_resource r = Buffer.add_string buf (Digest.to_hex (Resource.digest r)) in
   Buffer.add_string buf "deps:";
   List.iter add_resource r.deps;
   Buffer.add_string buf "dyndeps:";
@@ -107,7 +106,7 @@ let digest_deps r dyndeps =
 let digest_rule r dyndeps action =
   let buf = Buffer.create 1024 in
   Buffer.add_string buf action.digest;
-  let add_resource r = Buffer.add_string buf (Resource.Cache.digest_resource r) in
+  let add_resource r = Buffer.add_string buf (Resource.digest r) in
   Buffer.add_string buf "prods:";
   List.iter add_resource r.prods;
   Buffer.add_string buf "deps:";
@@ -115,6 +114,12 @@ let digest_rule r dyndeps action =
   Buffer.add_string buf "dyndeps:";
   Resources.iter add_resource dyndeps;
   Digest.string (Buffer.contents buf)
+
+let cached_digest r =
+  try Some (Digest_cache.get ("Rule: " ^ r.name))
+  with Not_found -> None
+
+let store_digest r digest = Digest_cache.put ("Rule: " ^ r.name) digest
 
 let print_digest f x = pp_print_string f (Digest.to_hex x)
 
@@ -184,7 +189,7 @@ let call builder r =
   let dyndeps = !dyndeps in
   let () = dprintf 10 "dyndeps: %a" Resources.print dyndeps in
   let (reason, cached) =
-    match exists2 List.find (fun r -> not (Pathname.exists_in_build_dir r)) r.prods with
+    match exists2 List.find (fun r -> not (Resource.exists_in_build_dir r)) r.prods with
     | Some r -> (`cache_miss_missing_prod r, false)
     | _ ->
       begin match exists2 List.find Resource.Cache.resource_has_changed r.deps with
@@ -193,7 +198,7 @@ let call builder r =
         begin match exists2 Resources.find Resource.Cache.resource_has_changed dyndeps with
         | Some r -> (`cache_miss_changed_dyn_dep r, false)
         | _ ->
-            begin match Resource.Cache.get_digest_for r.name with
+            begin match cached_digest r with
             | None -> (`cache_miss_no_digest, false)
             | Some d ->
                 begin match action.contents with
@@ -256,9 +261,9 @@ let call builder r =
       (if not cached then
         let new_rule_digest = digest_rule r dyndeps action in
         let new_prod_digests = digest_prods r in
-        let () = Resource.Cache.store_digest r.name new_rule_digest in
+        let () = store_digest r new_rule_digest in
         List.iter begin fun p ->
-          let f = Pathname.to_string (Pathname.in_build_dir p) in
+          let f = Pathname.to_string (Resource.in_build_dir p) in
           (try let digest = List.assoc f prod_digests in
                let new_digest = List.assoc f new_prod_digests in
                if digest <> new_digest then raise Not_found

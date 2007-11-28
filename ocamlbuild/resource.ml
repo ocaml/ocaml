@@ -14,6 +14,7 @@
 open My_std
 open Format
 open Log
+open Pathname.Operators
 
 module Resources = Set.Make(Pathname)
 
@@ -22,8 +23,48 @@ let print = Pathname.print
 let equal = (=)
 let compare = compare
 
+let in_source_dir p =
+  if Pathname.is_implicit p then Pathname.pwd/p else invalid_arg (Printf.sprintf "in_source_dir: %S" p)
+
+let in_build_dir p =
+  if Pathname.is_relative p then p
+  else invalid_arg (Printf.sprintf "in_build_dir: %S" p)
+
+let clean_up_links entry =
+  if not !Options.make_links then entry else
+  Slurp.filter begin fun path name _ ->
+    let pathname = in_source_dir (path/name) in
+    if Pathname.link_to_dir pathname !Options.build_dir then
+      let z = Pathname.readlink pathname in
+      (* Here is one exception where one can use Sys.file_exists directly *)
+      (if not (Sys.file_exists z) then
+        Shell.rm pathname; false)
+    else true
+  end entry
+
+let clean_up_link_to_build () =
+  Options.entry := Some(clean_up_links (the !Options.entry))
+
+let source_dir_path_set_without_links_to_build =
+  lazy begin
+    clean_up_link_to_build ();
+    Slurp.fold (fun path name _ -> StringSet.add (path/name))
+               (the !Options.entry) StringSet.empty
+  end
+
+let clean_links () =
+  if !*My_unix.is_degraded then
+    ()
+  else
+    ignore (clean_up_link_to_build ())
+
+let exists_in_source_dir p =
+  if !*My_unix.is_degraded then sys_file_exists (in_source_dir p)
+  else StringSet.mem p !*source_dir_path_set_without_links_to_build
+
+let clean p = Shell.rm_f p
+
 module Cache = struct
-  open Pathname.Operators
 
   let clean () = Shell.chdir Pathname.pwd; Shell.rm_rf !Options.build_dir
 
@@ -97,6 +138,13 @@ module Cache = struct
     dprintf 10 "resource_changed:@ %a" print r;
     (get r).changed <- Yes
 
+  let source_is_up_to_date r_in_source_dir r_in_build_dir =
+    Pathname.exists r_in_build_dir && Digest.file r_in_build_dir = Digest.file r_in_source_dir
+
+  let prod_is_up_to_date p =
+    let x = in_build_dir p in
+    not (exists_in_source_dir p) || Pathname.exists x && Pathname.same_contents x (in_source_dir p)
+
   let rec resource_has_changed r =
     let cache_entry = get r in
     match cache_entry.changed with
@@ -108,18 +156,31 @@ module Cache = struct
         | Bbuilt -> false
         | Bsuspension _ -> assert false
         | Bcannot_be_built -> false
-        | Bnot_built_yet -> not (Pathname.is_up_to_date false r) in
+        | Bnot_built_yet -> not (prod_is_up_to_date r) in
       let () = cache_entry.changed <- if res then Yes else No in res
 
   let resource_state r = (get r).built
 
-  let resource_is_built r = (get r).built = Bbuilt
-
   let resource_built r = (get r).built <- Bbuilt
 
-  let resource_is_failed r = (get r).built = Bcannot_be_built
-
   let resource_failed r = (get r).built <- Bcannot_be_built
+
+  let import_in_build_dir r =
+    if exists_in_source_dir r then begin
+      let cache_entry = get r in
+      let r_in_build_dir = in_build_dir r in
+      let r_in_source_dir = in_source_dir r in
+      if source_is_up_to_date r_in_source_dir r_in_build_dir then begin
+        dprintf 5 "%a exists and up to date" print r;
+      end else begin
+        dprintf 5 "%a exists in source dir -> import it" print r;
+        Shell.mkdir_p (Pathname.dirname r);
+        Pathname.copy r_in_source_dir r_in_build_dir;
+        cache_entry.changed <- Yes;
+      end;
+      cache_entry.built <- Bbuilt;
+      true
+    end else false
 
   let suspend_resource r cmd kont prods =
     let cache_entry = get r in
@@ -165,43 +226,16 @@ module Cache = struct
 
   let print_dependencies = print_graph
 
-  let digest_resource p =
-    let f = Pathname.to_string (Pathname.in_build_dir p) in
-    let buf = Buffer.create 1024 in
-    Buffer.add_string buf f;
-    (if sys_file_exists f then Buffer.add_string buf (Digest.file f));
-    Digest.string (Buffer.contents buf)
-
-  let digests = Hashtbl.create 103
-
-  let get_digest_for name =
-    try Some (Hashtbl.find digests name)
-    with Not_found -> None
-  let store_digest name d = Hashtbl.replace digests name d
-
-  let _digests = lazy (Pathname.pwd / !Options.build_dir / (Pathname.mk "_digests"))
-
-  let finalize () =
-    with_output_file !*_digests begin fun oc ->
-      Hashtbl.iter begin fun name digest ->
-        Printf.fprintf oc "%S: %S\n" name digest
-      end digests
-    end
-
-  let init () =
-    Shell.chdir !Options.build_dir;
-    if Pathname.exists !*_digests then
-      with_input_file !*_digests begin fun ic ->
-        try while true do
-          let l = input_line ic in
-          Scanf.sscanf l "%S: %S" store_digest
-        done with End_of_file -> ()
-      end;
-    My_unix.at_exit_once finalize
-
 end
 
-let clean p = Shell.rm_f p
+let digest p =
+  let f = Pathname.to_string (in_build_dir p) in
+  let buf = Buffer.create 1024 in
+  Buffer.add_string buf f;
+  (if sys_file_exists f then Buffer.add_string buf (Digest.file f));
+  Digest.string (Buffer.contents buf)
+
+let exists_in_build_dir p = Pathname.exists (in_build_dir p)
 
 (*
 type env = string
@@ -232,8 +266,6 @@ let rec subst percent r =
 
 let print_env = pp_print_string
 *)
-
-let is_up_to_date path = Pathname.is_up_to_date true path
 
 let import x = x
 

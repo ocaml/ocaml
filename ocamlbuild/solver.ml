@@ -46,14 +46,7 @@ let rec self depth on_the_go_orig target =
       (dprintf 5 "%a was suspended -> resuming" Resource.print target;
        Resource.Cache.resume_suspension s)
   | Resource.Cache.Bnot_built_yet ->
-    if Resource.is_up_to_date target then
-      (dprintf 5 "%a exists and up to date" Resource.print target;
-       Resource.Cache.resource_built target)
-    else if Pathname.exists_in_source_dir target then
-        (dprintf 5 "%a exists in source dir -> import it" Resource.print target;
-         Pathname.import_in_build_dir target;
-         Resource.Cache.resource_built target;
-         Resource.Cache.resource_changed target)
+    if Resource.Cache.import_in_build_dir target then ()
     else
     (* FIXME tags of target
     let tags = Configuration.tags_of_target target in
