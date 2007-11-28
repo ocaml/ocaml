@@ -164,6 +164,17 @@ recmod.byt: recmod.cmo
 recmod.bin: recmod.cmx
 	$(CAMLOPT) -o recmod.bin recmod.cmx
 
+length.cmo: length.cmi
+tlength.cmo: length.cmo
+
+tlength.byt: length.cmo tlength.cmo
+	$(CAMLC) -g -o tlength.byt length.cmo tlength.cmo
+
+float_record.cmo: float_record.cmi
+tfloat_record.cmo: float_record.cmo
+tfloat_record.byt: float_record.cmo tfloat_record.cmo
+	$(CAMLC) -g -o tfloat_record.byt float_record.cmo tfloat_record.cmo
+
 # Common rules
 
 .SUFFIXES:
@@ -189,7 +200,7 @@ recmod.bin: recmod.cmx
 	$(CAMLC) -c $<
 
 .ml.cmo:
-	$(CAMLC) -c $<
+	$(CAMLC) -c -g $<
 
 .ml.cmx:
 	$(CAMLOPT) $(OPTFLAGS) -c $<
