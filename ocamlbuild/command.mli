@@ -15,11 +15,13 @@
 
 (** Provides an abstract type for easily building complex shell commands without making
     quotation mistakes.  *)
-include Signatures.COMMAND with type tags = Tags.t
+include Signatures.COMMAND with type tags = Tags.t and type pathname = string
 
 (** {6 For system use only, not for the casual user} *)
 
 val string_target_and_tags_of_command_spec : spec -> string * string * Tags.t
+
+val iter_tags : (Tags.t -> unit) -> t -> unit
 
 (** Same as [to_string]. *)
 val to_string_for_digest : t -> string

@@ -150,22 +150,12 @@ let build_deps_of_tags builder tags =
   | [] -> []
   | deps -> List.map Outcome.good (builder (List.map (fun x -> [x]) deps))
 
-let build_deps_of_tags_on_cmd builder x =
-  let rec spec x =
-    match x with
-    | Command.N | Command.A _ | Command.Sh _ | Command.P _ | Command.Px _ | Command.V _ | Command.Quote _ -> ()
-    | Command.S l -> List.iter spec l
-    | Command.T tags ->
-        begin match deps_of_tags tags with
-        | [] -> ()
-        | deps -> List.iter ignore_good (builder (List.map (fun x -> [x]) deps))
-        end in
-  let rec cmd x =
-    match x with
-    | Command.Nop -> ()
-    | Command.Cmd(s) -> spec s
-    | Command.Seq(s) -> List.iter cmd s in
-  cmd x
+let build_deps_of_tags_on_cmd builder =
+  Command.iter_tags begin fun tags ->
+    match deps_of_tags tags with
+    | [] -> ()
+    | deps -> List.iter ignore_good (builder (List.map (fun x -> [x]) deps))
+  end
 
 let call builder r =
   let dyndeps = ref Resources.empty in

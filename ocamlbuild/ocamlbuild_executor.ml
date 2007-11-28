@@ -21,12 +21,12 @@ type error =
   | Io_error
   | Exceptionl_condition
 
-type task = (string * (unit -> unit));;
+type task = unit -> string;;
 
 type job = {
   job_id      : int * int;
   job_command : string;
-  job_next    : (string * (unit -> unit)) list;
+  job_next    : task list;
   job_result  : bool ref; (* Result of this sequence group *)
   job_stdout  : in_channel;
   job_stdin   : out_channel;
@@ -129,9 +129,9 @@ let execute
   in
   (* ***)
   (*** add_job *)
-  let add_job (cmd, action) rest result id =
+  let add_job action rest result id =
+    let cmd = action () in
     (*display begin fun oc -> fp oc "Job %a is %s\n%!" print_job_id id cmd; end;*)
-    action ();
     let (stdout', stdin', stderr') = open_process_full cmd env in
     incr jobs_active;
     set_nonblock (doi stdout');

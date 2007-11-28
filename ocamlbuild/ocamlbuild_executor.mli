@@ -24,12 +24,13 @@ type error =
 (** [execute ~ticker ~period ~display ~exit commands] will execute the commands
     in [commands] in parallel, correctly multiplexing their outputs.
 
-    A  command is a pair [(cmd, action)] where [cmd] is a shell command string,
-    and  [action] is a thunk that is to be called just before [cmd] is about to
-    be  executed.  If  specified, it will call [ticker] at least every [period]
-    seconds.  If  specified,  it  will call [display f] when it wishes to print
-    something;  [display]  should  then call [f] with then channel on which [f]
-    should print.
+    A  command  is  a function that given a unit [()] returns the shell command
+    string  to  execute,  commands  are  functions in order to do some job just
+    before  executing  the  command.  These  functions  will be called once. If
+    specified,  it  will  call  [ticker]  at  least  every [period] seconds. If
+    specified,  it  will  call  [display  f] when it wishes to print something;
+    [display]  should  then  call  [f]  with  then  channel on which [f] should
+    print.
 
     Note  that  [f] must be idempotent as it may well be called twice, once for
     the log file, once for the actual output.
@@ -46,5 +47,5 @@ val execute :
   ?period:float ->
   ?display:((out_channel -> unit) -> unit) ->
    exit:(error -> unit) ->
-    ((string * (unit -> unit)) list list) ->
+    ((unit -> string) list list) ->
     (bool list * exn) option

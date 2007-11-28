@@ -36,7 +36,7 @@ val execute_many :
   ?ticker:(unit -> unit) ->
   ?period:float ->
   ?display:((out_channel -> unit) -> unit) ->
-    ((string * (unit -> unit)) list list) ->
+    ((unit -> string) list list) ->
     (bool list * exn) option
 
 val report_error : Format.formatter -> exn -> unit
@@ -60,7 +60,7 @@ type implem =
                             ?ticker:(unit -> unit) ->
                             ?period:float ->
                             ?display:((out_channel -> unit) -> unit) ->
-                            ((string * (unit -> unit)) list list) ->
+                            ((unit -> string) list list) ->
                             (bool list * exn) option;
     mutable report_error  : Format.formatter -> exn -> unit;
     mutable at_exit_once  : (unit -> unit) -> unit;

@@ -156,6 +156,7 @@ end
     quotation mistakes.  *)
 module type COMMAND = sig
   type tags
+  type pathname
 
   (** The type [t] is basically a sequence of command specifications.  This avoids having to
       flatten lists of lists.  *)
@@ -166,8 +167,8 @@ module type COMMAND = sig
     | N                       (** No operation. *)
     | S of spec list          (** A sequence.  This gets flattened in the last stages *)
     | A of string             (** An atom. *)
-    | P of string             (** A pathname. *)
-    | Px of string            (** A pathname, that will also be given to the call_with_target hook. *)
+    | P of pathname           (** A pathname. *)
+    | Px of pathname          (** A pathname, that will also be given to the call_with_target hook. *)
     | Sh of string            (** A bit of raw shell code, that will not be escaped. *)
     | T of tags               (** A set of tags, that describe properties and some semantics
                                   information about the command, afterward these tags will be
@@ -180,8 +181,8 @@ module type COMMAND = sig
     [ `N
     | `S of vspec list
     | `A of string
-    | `P of string (* Pathname.t *)
-    | `Px of string (* Pathname.t *)
+    | `P of pathname
+    | `Px of pathname
     | `Sh of string
     | `Quote of vspec ]
 
@@ -426,7 +427,7 @@ end
 module type PLUGIN = sig
   module Pathname  : PATHNAME
   module Tags      : TAGS
-  module Command   : COMMAND with type tags = Tags.t
+  module Command   : COMMAND with type tags = Tags.t and type pathname = Pathname.t
   module Outcome   : OUTCOME
   module String    : STRING
   module List      : LIST
