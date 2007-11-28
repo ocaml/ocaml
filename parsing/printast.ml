@@ -191,7 +191,7 @@ and pattern i ppf x =
       pattern i ppf p;
       core_type i ppf ct;
   | Ppat_type li ->
-      line i ppf "PPat_type";
+      line i ppf "Ppat_type";
       longident i ppf li
 
 and expression i ppf x =
