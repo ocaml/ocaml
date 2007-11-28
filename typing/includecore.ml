@@ -37,8 +37,8 @@ let value_descriptions env vd1 vd2 =
 
 (* Inclusion between "private" annotations *)
 
-let private_flags priv1 decl2 =
-  match priv1, decl2.type_private with
+let private_flags decl1 decl2 =
+  match decl1.type_private, decl2.type_private with
   | Private, Public ->
       decl2.type_kind = Type_abstract && decl2.type_manifest = None
   | _, _ -> true
@@ -60,7 +60,7 @@ let type_manifest env ty1 params1 ty2 params2 =
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
       let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
-      (match row1.row_more with	{desc=Tvar|Tconstr _} -> true | _ -> false) &&
+      (match row1.row_more with {desc=Tvar|Tconstr _} -> true | _ -> false) &&
       let r1, r2, pairs =
 	Ctype.merge_row_fields row1.row_fields row2.row_fields in
       (not row2.row_closed ||
@@ -103,7 +103,7 @@ let type_manifest env ty1 params1 ty2 params2 =
 
 let type_declarations env id decl1 decl2 =
   decl1.type_arity = decl2.type_arity &&
-  private_flags decl1.type_private decl2 &&
+  private_flags decl1 decl2 &&
   begin match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> true
     | (Type_variant cstrs1, Type_variant cstrs2) ->
