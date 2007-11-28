@@ -36,3 +36,4 @@ Ocaml_tools
 Ocaml_compiler
 Ocaml_dependencies
 Exit_codes
+Digest_cache
