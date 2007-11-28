@@ -158,9 +158,13 @@ module type COMMAND = sig
   type tags
   type pathname
 
-  (** The type [t] is basically a sequence of command specifications.  This avoids having to
-      flatten lists of lists.  *)
-  type t = Seq of t list | Cmd of spec | Nop
+  (** The type [t] provides some basic combinators and command primitives.
+      Other commands can be made of command specifications ([spec]). *)
+  type t =
+    | Seq of t list                  (** A sequence of commands (like the `;' in shell) *)
+    | Cmd of spec                    (** A command is made of command specifications ([spec]) *)
+    | Echo of string list * pathname (** Write the given strings (w/ any formatting) to the given file *)
+    | Nop                            (** The command that does nothing *)
 
   (** The type for command specifications. *)
   and spec =
@@ -437,7 +441,7 @@ module type PLUGIN = sig
   include MISC
 
   (** See [COMMAND] for the description of these types. *)
-  type command = Command.t = Seq of command list | Cmd of spec | Nop
+  type command = Command.t = Seq of command list | Cmd of spec | Echo of string list * Pathname.t | Nop
   and spec = Command.spec =
     | N | S of spec list | A of string | P of string | Px of string
     | Sh of string | T of Tags.t | V of string | Quote of spec

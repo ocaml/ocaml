@@ -24,6 +24,7 @@ let jobs = ref 1
 type t =
 | Seq of t list
 | Cmd of spec
+| Echo of string list * pathname
 | Nop
 and spec =
 | N (* nop or nil *)
@@ -171,8 +172,19 @@ let rec print f =
   | Cmd spec -> Format.pp_print_string f (string_of_command_spec spec)
   | Seq seq -> List.print print f seq
   | Nop -> Format.pp_print_string f "nop"
+  | Echo(texts, dest_path) ->
+      Format.fprintf f "@[<2>Echo(%a,@ %a)@]"
+        (List.print print_escaped_string) texts print_escaped_string dest_path
 
 let to_string x = sbprintf "%a" print x
+
+module Primitives = struct
+  let do_echo texts dest_path =
+    with_output_file dest_path begin fun oc ->
+      List.iter (output_string oc) texts
+    end
+  let echo x y () = (* no print here yet *) do_echo x y; ""
+end
 
 let rec list_rev_iter f =
   function
@@ -185,6 +197,7 @@ let flatten_commands quiet pretend cmd =
     | [] -> acc
     | Nop :: xs -> loop acc xs
     | Cmd spec :: xs -> loop (string_print_of_command_spec spec quiet pretend :: acc) xs
+    | Echo(texts, dest_path) :: xs -> loop (Primitives.echo texts dest_path :: acc) xs
     | Seq l :: xs -> loop (loop acc l) xs
   in List.rev (loop [] [cmd])
 
@@ -254,7 +267,7 @@ let iter_tags f x =
   in
   let rec cmd x =
     match x with
-    | Nop -> ()
+    | Nop | Echo _ -> ()
     | Cmd(s) -> spec s
     | Seq(s) -> List.iter cmd s in
   cmd x
