@@ -369,6 +369,7 @@ module type OPTIONS = sig
   val catch_errors : bool ref
   val use_menhir : bool ref
   val show_documentation : bool ref
+  val recursive : bool ref
 
   val targets : string list ref
   val ocaml_libs : string list ref

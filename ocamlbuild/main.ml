@@ -70,8 +70,7 @@ let proceed () =
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
   Configuration.parse_string
-    "true: traverse
-     <**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml
+    "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml
      <**/*.byte>: ocaml, byte, program
      <**/*.odoc>: ocaml, doc
      <**/*.native>: ocaml, native, program
@@ -83,6 +82,10 @@ let proceed () =
     ";
 
   Configuration.tag_any !Options.tags;
+  if !Options.recursive
+  || Sys.file_exists (* authorized since we're not in build *) "_tags"
+  || Sys.file_exists (* authorized since we're not in build *) "myocamlbuild.ml"
+  then Configuration.tag_any ["traverse"];
 
   let newpwd = Sys.getcwd () in
   Sys.chdir Pathname.pwd;
