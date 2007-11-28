@@ -538,8 +538,10 @@ module type PLUGIN = sig
       this package even if it contains that module. *)
   val hide_package_contents : string -> unit
 
+  (** [tag_file filename tag_list] Tag the given filename with all given tags. *)
   val tag_file : Pathname.t -> Tags.elt list -> unit
 
+  (** [tag_any tag_list] Tag anything with all given tags. *)
   val tag_any : Tags.elt list -> unit
 
   val tags_of_pathname : Pathname.t -> Tags.t

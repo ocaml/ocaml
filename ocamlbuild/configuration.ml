@@ -61,3 +61,9 @@ let tags_of_filename x = fst (tags_and_flags_of_filename x)
 let flags_of_filename x = snd (tags_and_flags_of_filename x)
 
 let has_tag tag = Tags.mem tag (tags_of_filename "")
+
+let tag_file file tags =
+  if tags <> [] then parse_string (Printf.sprintf "%S: %s" file (String.concat ", " tags));;
+
+let tag_any tags =
+  if tags <> [] then parse_string (Printf.sprintf "true: %s" (String.concat ", " tags));;

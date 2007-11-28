@@ -43,10 +43,8 @@ let string_list_of_file = Ocamlbuild_pack.Ocaml_utils.string_list_of_file
 let expand_module = Ocamlbuild_pack.Ocaml_utils.expand_module
 let tags_of_pathname = Ocamlbuild_pack.Tools.tags_of_pathname
 let hide_package_contents = Ocamlbuild_pack.Ocaml_compiler.hide_package_contents
-let tag_file file tags =
-  Ocamlbuild_pack.Configuration.parse_string (Printf.sprintf "%S: %s" file (String.concat ", " tags));;
-let tag_any tags =
-  Ocamlbuild_pack.Configuration.parse_string (Printf.sprintf "true: %s" (String.concat ", " tags));;
+let tag_file = Ocamlbuild_pack.Configuration.tag_file
+let tag_any = Ocamlbuild_pack.Configuration.tag_any
 type hook = Ocamlbuild_pack.Hooks.message =
   | Before_hygiene
   | After_hygiene
