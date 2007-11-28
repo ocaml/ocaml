@@ -909,14 +909,14 @@ Pathname.define_context "otherlibs/labltk/tkanim"
 Pathname.define_context "otherlibs/labltk/browser"
   ["otherlibs/labltk/browser"; "otherlibs/labltk/labltk"; "otherlibs/labltk/support"; "parsing"; "utils"; "typing"; "stdlib"];;
 
-file_rule "otherlibs/labltk/compiler/copyright"
+rule "otherlibs/labltk/compiler/copyright"
   ~dep:"otherlibs/labltk/compiler/copyright"
   ~prod:"otherlibs/labltk/compiler/copyright.ml"
-  ~cache:(fun _ _ -> "0.1")
-  begin fun _ oc ->
-    Printf.fprintf oc "let copyright = \"%a\";;\n\
-                       let write ~w = w copyright;;"
-      fp_cat "otherlibs/labltk/compiler/copyright"
+  begin fun _ _ ->
+    Echo(["let copyright = \"";
+          Pathname.read "otherlibs/labltk/compiler/copyright";
+          "\";;\nlet write ~w = w copyright;;"],
+          "otherlibs/labltk/compiler/copyright.ml")
   end;;
 
 copy_rule "labltk tkcompiler" "otherlibs/labltk/compiler/maincompile.byte" "otherlibs/labltk/compiler/tkcompiler";;
@@ -1085,13 +1085,12 @@ rule "labltktop"
   end;;
 
 let labltk_installdir = C.libdir/"labltk" in
-file_rule "labltk"
+rule "labltk"
   ~prod:"otherlibs/labltk/lib/labltk"
-  ~cache:(fun _ _ -> labltk_installdir)
-  begin fun _ oc ->
-    Printf.fprintf oc
-      "#!/bin/sh\n\
-       exec %s -I %s $*\n" (labltk_installdir/"labltktop") labltk_installdir
+  begin fun _ _ ->
+    Echo(["#!/bin/sh\n";
+          Printf.sprintf "exec %s -I %s $*\n" (labltk_installdir/"labltktop") labltk_installdir],
+         "otherlibs/labltk/lib/labltk")
   end;;
 
 use_lib "otherlibs/labltk/browser/main" "toplevel/toplevellib";;
