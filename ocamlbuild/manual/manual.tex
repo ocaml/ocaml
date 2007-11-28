@@ -538,6 +538,19 @@ There are then two cases.  If no other modules named \texttt{Bar} or
 Otherwise, you will need to use the plugin mechanism and define the mutual
 visibility of the subdirectories using the \texttt{Pathname.define\_context}
 function.
+
+\subsubsection{Note on subdirectory traversal}
+\ocb  used  to  traverse  by  default any subdirectory not explicitly excluded.
+This  is  no  longer  the  case.  Note  that  you can still have a fine grained
+control using your \tags file and the \texttt{traverse} tag.
+
+There  is  no longer the \texttt{true: traverse} tag declaration by default. To
+make \ocb recursive use one of these:
+\begin{enumerate}
+\item Give the \texttt{-r} flag to ocamlbuild.
+\item Have a \tags or myocamlbuild.ml file in your top directory.
+\end{enumerate}
+
 %***)
 %(*** Grouping targets
 \subsection{Grouping targets with \texttt{.itarget}}
@@ -550,7 +563,7 @@ stuff.docdir/index.html
 \end{verbatim}
 Requesting the target \texttt{foo.otarget} will then build every target
 listed in the file \texttt{foo.itarget}. Blank lines and lines starting
-with a sharp (\texttt{#}) are ignored.
+with a sharp (\texttt{\#}) are ignored.
 %***)
 %(*** Packing subdirectories into modules
 \subsection{Packing subdirectories into modules}
