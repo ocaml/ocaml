@@ -759,17 +759,18 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
   let name = "camlp4"/name in
   let byte = name-.-"byte" in
   let native = name-.-"native" in
-  let unix_cma, unix_cmxa, include_unix =
-    if link_unix then A"unix.cma", A"unix.cmxa", S[A"-I"; P unix_dir] else N,N,N in
-  let dynlink_cmxa,include_dynlink = 
-    A"dynlink.cmxa", S[A"-I"; P dynlink_dir]
-  in
+  let unix_cma, dep_unix_byte, unix_cmxa, dep_unix_native, include_unix =
+    if link_unix
+    then A"unix.cma", [unix_dir/"unix.cma"],
+         A"unix.cmxa", [unix_dir/"unix.cmxa"; unix_dir/"unix"-.-C.a],
+         S[A"-I"; P unix_dir]
+    else N,[],N,[],N in
   let deps = special_modules @ modules @ [camlp4_bin] in
   let cmos = add_extensions ["cmo"] deps in
   let cmxs = add_extensions ["cmx"] deps in
   let objs = add_extensions [C.o] deps in
   rule byte
-    ~deps:(camlp4lib_cma::cmos)
+    ~deps:(camlp4lib_cma::cmos @ dep_unix_byte)
     ~prod:(add_exe byte)
     ~insert:(`before "ocaml: cmo* -> byte")
     begin fun _ _ ->
@@ -777,11 +778,11 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
             P camlp4lib_cma; A"-linkall"; atomize cmos; A"-o"; Px (add_exe byte)])
     end;
   rule native
-    ~deps:(camlp4lib_cmxa :: camlp4lib_lib :: (cmxs @ objs))
+    ~deps:(camlp4lib_cmxa :: camlp4lib_lib :: (cmxs @ objs @ dep_unix_native))
     ~prod:(add_exe native)
     ~insert:(`before "ocaml: cmx* & o* -> native")
     begin fun _ _ ->
-      Cmd(S[ocamlopt; include_dynlink; dynlink_cmxa; include_unix; unix_cmxa; T(tags_of_pathname native++"ocaml"++"link"++"native");
+      Cmd(S[ocamlopt; include_unix; unix_cmxa; T(tags_of_pathname native++"ocaml"++"link"++"native");
             P camlp4lib_cmxa; A"-linkall"; atomize cmxs; A"-o"; Px (add_exe native)])
     end;;
 
