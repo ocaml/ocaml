@@ -131,7 +131,7 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
         make -f Makefile.nt opt.opt
         make -f Makefile.nt install
 
-Alternatively you can use the experimental build procdure using ocamlbuild:
+Alternatively you can use the experimental build procedure using ocamlbuild:
 
         ./build/fastworld.sh
         ./build/install.sh

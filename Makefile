@@ -245,6 +245,7 @@ opt:
 	$(MAKE) ocamlopt
 	$(MAKE) libraryopt
 	$(MAKE) otherlibrariesopt
+	$(MAKE) ocamlbuildlib.native
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
@@ -681,6 +682,8 @@ ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
 
 ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
 	./build/ocamlbuild-native-only.sh
+ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+	./build/ocamlbuildlib-native-only.sh
 
 ocamlbuild-partial-boot: ocamlc otherlibraries
 	./build/partial-boot.sh
