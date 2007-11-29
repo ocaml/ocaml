@@ -271,6 +271,7 @@ Pathname.define_context "toplevel" ["toplevel"; "parsing"; "typing"; "bytecomp";
 Pathname.define_context "driver" ["driver"; "asmcomp"; "bytecomp"; "typing"; "utils"; "parsing"; "stdlib"];;
 Pathname.define_context "debugger" ["bytecomp"; "utils"; "typing"; "parsing"; "toplevel"; "stdlib"];;
 Pathname.define_context "otherlibs/dynlink" ["otherlibs/dynlink"; "bytecomp"; "utils"; "typing"; "parsing"; "stdlib"];;
+Pathname.define_context "otherlibs/dynlink/nat" ["otherlibs/dynlink/nat"; "stdlib"];;
 Pathname.define_context "asmcomp" ["asmcomp"; "bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
 Pathname.define_context "ocamlbuild" ["ocamlbuild"; "stdlib"; "."];;
 Pathname.define_context "lex" ["lex"; "stdlib"];;
@@ -377,6 +378,13 @@ rule "native stdlib in partial mode"
     import_stdlib_contents build ["cmi"];
     Nop
   end;;
+
+copy_rule' ~insert:`top "otherlibs/dynlink/natdynlink.ml" "otherlibs/dynlink/nat/dynlink.ml";;
+copy_rule' ~insert:`top "otherlibs/dynlink/dynlink.mli" "otherlibs/dynlink/nat/dynlink.mli";;
+copy_rule' ~insert:`top "otherlibs/dynlink/nat/dynlink.cmx" "otherlibs/dynlink/dynlink.cmx";;
+copy_rule' ~insert:`top "otherlibs/dynlink/nat/dynlink.cmxa" "otherlibs/dynlink/dynlink.cmxa";;
+copy_rule' ~insert:`top ("otherlibs/dynlink/nat/dynlink"-.-C.a) ("otherlibs/dynlink/dynlink"-.-C.a);;
+dep ["ocaml"; "compile"; "native"; "file:otherlibs/dynlink/nat/dynlink.cmx"] ["otherlibs/dynlink/nat/dynlink.cmi"];;
 
 rule "C files"
   ~prod:("%"-.-C.o)
