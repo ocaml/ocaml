@@ -714,45 +714,31 @@ let special_modules =
   if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
 ;;
 
-file_rule "camlp4/Camlp4_import.ml"
-  ~deps:
-    ["parsing/linenum.ml";
-     "utils/misc.ml";
+let camlp4_import_list =
+    ["utils/misc.ml";
      "utils/terminfo.ml";
+     "parsing/linenum.ml";
      "utils/warnings.ml";
-     "typing/outcometree.mli";
      "parsing/location.ml";
+     "parsing/longident.ml";
      "parsing/asttypes.mli";
      "parsing/parsetree.mli";
+     "typing/outcometree.mli";
      "myocamlbuild_config.ml";
-     "utils/config.mlbuild";
-     "parsing/longident.ml"]
+     "utils/config.mlbuild"]
+;;
+
+rule "camlp4/Camlp4_import.ml"
+  ~deps:camlp4_import_list
   ~prod:"camlp4/Camlp4_import.ml"
-  ~cache:(fun _ _ -> "0.2")
-  begin fun _ oc ->
-    Printf.fprintf oc "\
-      module Misc = struct\n%a\nend;;\n\
-      module Terminfo = struct\n%a\nend;;\n\
-      module Linenum = struct\n%a\nend;;\n\
-      module Warnings = struct\n%a\nend;;\n\
-      module Location = struct\n%a\nend;;\n\
-      module Longident = struct\n%a\nend;;\n\
-      module Asttypes = struct\n%a\nend;;\n\
-      module Parsetree = struct\n%a\nend;;\n\
-      module Outcometree = struct\n%a\nend;;\n\
-      module Myocamlbuild_config = struct\n%a\nend;;\n\
-      module Config = struct\n%a\nend;;\n%!"
-      fp_cat "utils/misc.ml"
-      fp_cat "utils/terminfo.ml"
-      fp_cat "parsing/linenum.ml"
-      fp_cat "utils/warnings.ml"
-      fp_cat "parsing/location.ml"
-      fp_cat "parsing/longident.ml"
-      fp_cat "parsing/asttypes.mli"
-      fp_cat "parsing/parsetree.mli"
-      fp_cat "typing/outcometree.mli"
-      fp_cat "myocamlbuild_config.ml"
-      fp_cat "utils/config.mlbuild"
+  begin fun _ _ ->
+    Echo begin
+      List.fold_right begin fun path acc ->
+        let modname = module_name_of_pathname path in
+        "module " :: modname :: " = struct\n" :: Pathname.read path :: "\nend;;\n" :: acc
+      end camlp4_import_list [],
+      "camlp4/Camlp4_import.ml"
+    end
   end;;
 
 let mk_camlp4_top_lib name modules =
