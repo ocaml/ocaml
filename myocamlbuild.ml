@@ -773,11 +773,13 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
          A"unix.cmxa", [unix_dir/"unix.cmxa"; unix_dir/"unix"-.-C.a],
          S[A"-I"; P unix_dir]
     else N,[],N,[],N in
-  let dep_dynlink_native = [dynlink_dir/"dynlink.cmxa"; dynlink_dir/"dynlink"-.-C.a] in
   let deps = special_modules @ modules @ [camlp4_bin] in
   let cmos = add_extensions ["cmo"] deps in
   let cmxs = add_extensions ["cmx"] deps in
   let objs = add_extensions [C.o] deps in
+  let dep_dynlink_native =
+    if partial then [] else [dynlink_dir/"dynlink.cmxa"; dynlink_dir/"dynlink"-.-C.a]
+  in
   rule byte
     ~deps:(camlp4lib_cma::cmos @ dep_unix_byte)
     ~prod:(add_exe byte)
