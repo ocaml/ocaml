@@ -767,12 +767,15 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
   let name = "camlp4"/name in
   let byte = name-.-"byte" in
   let native = name-.-"native" in
-  let unix_cma, dep_unix_byte, unix_cmxa, dep_unix_native, include_unix =
+  let unix_cma, unix_cmxa, include_unix =
     if link_unix
-    then A"unix.cma", [unix_dir/"unix.cma"],
-         A"unix.cmxa", [unix_dir/"unix.cmxa"; unix_dir/"unix"-.-C.a],
-         S[A"-I"; P unix_dir]
-    else N,[],N,[],N in
+    then A"unix.cma", A"unix.cmxa", S[A"-I"; P unix_dir]
+    else N,N,N in
+  let dep_unix_byte, dep_unix_native =
+    if link_unix && not partial
+    then [unix_dir/"unix.cma"],
+         [unix_dir/"unix.cmxa"; unix_dir/"unix"-.-C.a]
+    else [],[] in
   let deps = special_modules @ modules @ [camlp4_bin] in
   let cmos = add_extensions ["cmo"] deps in
   let cmxs = add_extensions ["cmx"] deps in
