@@ -2912,6 +2912,12 @@ let subtypes = TypePairs.create 17
 let subtype_error env trace =
   raise (Subtype (expand_trace env (List.rev trace), []))
 
+let private_abbrev env path =
+  try
+    let decl = Env.find_type path env in
+    decl.type_private = Private && decl.type_manifest <> None
+  with Not_found -> false
+
 let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
@@ -2956,6 +2962,8 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Not_found ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
+    | (Tconstr(p1, tl1, _), _) when private_abbrev env p1 ->
+        subtype_rec env trace (expand_abbrev_opt env t1) t2 cstrs
     | (Tobject (f1, _), Tobject (f2, _))
       when (object_row f1).desc = Tvar && (object_row f2).desc = Tvar ->
         (* Same row variable implies same object. *)
@@ -2970,6 +2978,9 @@ let rec subtype_rec env trace t1 t2 cstrs =
         end
     | (Tpoly (u1, []), Tpoly (u2, [])) ->
         subtype_rec env trace u1 u2 cstrs
+    | (Tpoly (u1, tl1), Tpoly (u2, [])) ->
+        let _, u1' = instance_poly false tl1 u1 in
+        subtype_rec env trace u1' u2 cstrs
     | (Tpoly (u1, tl1), Tpoly (u2,tl2)) ->
         begin try
           enter_poly env univar_pairs u1 tl1 u2 tl2
