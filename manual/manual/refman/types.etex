@@ -77,7 +77,7 @@ functions mapping arguments of type @typexpr_1@ to results of type
 @label-name ':' typexpr_1 '->' typexpr_2@ denotes the same function type, but
 the argument is labeled @label@.
 
-@optlabel typexpr_1 '->' typexpr_2@ denotes the type of functions
+@'?' label-name ':' typexpr_1 '->' typexpr_2@ denotes the type of functions
 mapping an optional labeled argument of type @typexpr_1@ to results of
 type @typexpr_2@. That is, the physical type of the function will be
 @typexpr_1 "option" '->' typexpr_2@.

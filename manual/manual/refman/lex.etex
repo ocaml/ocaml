@@ -140,18 +140,25 @@ length of string literals.
 
 \subsubsection*{Naming labels}
 
-To avoid ambiguities, naming labels cannot just be defined
+To avoid ambiguities, naming labels in expressions cannot just be defined
 syntactically as the sequence of the three tokens "~", @ident@ and
 ":", and have to be defined at the lexical level.
 
 \begin{syntax}
-label : "~" ("a" \ldots "z"||"_") { letter||"0"\ldots"9"||"_"||"'" } ":" ;
-optlabel : "?" ("a" \ldots "z"||"_") { letter||"0"\ldots"9"||"_"||"'" } ":"
+label-name : ("a" \ldots "z"||"_") { letter||"0"\ldots"9"||"_"||"'" };
+label : "~" label-name ":" ;
+optlabel : "?" label-name ":"
 \end{syntax}
 
 Naming labels come in two flavours: @label@ for normal arguments and
 @optlabel@ for optional ones. They are simply distinguished by their
 first character, either "~" or "?".
+
+Despite @label@ and @optlabel@ being lexical entities in expressions,
+their expansions @'~' label-name ':'@ and @'?' label-name ':'@ will be
+used in grammars, for the sake of readability. Note also that inside
+type expressions, this expansion can be taken literally, {\em i.e.}
+there are really 3 tokens, with optional spaces beween them.
 
 \subsubsection*{Prefix and infix symbols}
 

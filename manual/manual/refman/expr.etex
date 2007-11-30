@@ -248,10 +248,16 @@ This expression is equivalent to:
 \begin{center}
 @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
 \end{center}
-Functions of the form @"fun" optlabel '(' pattern '=' expr_0 ')' '->'
+
+The parameter patterns "~var" and @"~(var" [":" typexpr"])"@
+are shorthands for respectively "~var:var" and
+@"~var:(var" [":" typexpr]")"@, and similarly for their optional
+counterparts.
+
+Functions of the form @"fun" "?lab:(" pattern '=' expr_0 ')' '->'
 expr@ are equivalent to
 \begin{center}
-@"fun" optlabel ident '->'
+@"fun" "?lab:"ident '->'
   "let" pattern '='
     "match" ident "with" "Some" ident "->" ident '|' "None" '->' expr_0
   "in" expr@
