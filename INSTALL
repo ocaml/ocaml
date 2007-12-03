@@ -261,6 +261,10 @@ pinpoint the problem.
 
 COMMON PROBLEMS:
 
+* On MacOS 10.5, "make opt" doesn't work.  You need to type
+    export MACOSX_DEPLOYMENT_TARGET=10.4
+  before you do step (2) above.
+
 * The Makefiles use the "include" directive, which is not supported by
 all versions of make. Use GNU make if this is a problem.
 
