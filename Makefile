@@ -745,9 +745,12 @@ depend: beforedepend
 
 alldepend:: depend
 
+distclean:
+	./build/distclean.sh
+
 .PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
-.PHONY: compare core coreboot defaultentry depend install installopt
+.PHONY: compare core coreboot defaultentry depend distclean install installopt
 .PHONY: library library-cross libraryopt ocamlbuild-partial-boot
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
