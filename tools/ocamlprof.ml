@@ -476,7 +476,7 @@ let main () =
     let report_error ppf = function
     | Lexer.Error(err, range) ->
         fprintf ppf "@[%a%a@]@."
-        Location.print range  Lexer.report_error err
+        Location.print_error range  Lexer.report_error err
     | Syntaxerr.Error err ->
         fprintf ppf "@[%a@]@."
         Syntaxerr.report_error err

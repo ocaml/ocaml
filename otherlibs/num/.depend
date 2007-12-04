@@ -1,5 +1,5 @@
 bng.o: bng.c bng.h ../../byterun/config.h ../../byterun/../config/m.h \
-  ../../byterun/../config/s.h ../../byterun/compatibility.h bng_ia32.c \
+  ../../byterun/../config/s.h ../../byterun/compatibility.h bng_ppc.c \
   bng_digit.c
 bng_alpha.o: bng_alpha.c
 bng_amd64.o: bng_amd64.c

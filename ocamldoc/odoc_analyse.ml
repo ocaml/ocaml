@@ -158,35 +158,41 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 let process_error exn =
   let report ppf = function
   | Lexer.Error(err, loc) ->
-      Location.print ppf loc;
+      Location.print_error ppf loc;
       Lexer.report_error ppf err
   | Syntaxerr.Error err ->
       Syntaxerr.report_error ppf err
   | Env.Error err ->
+      Location.print_error_cur_file ppf;
       Env.report_error ppf err
-  | Ctype.Tags(l, l') -> fprintf ppf
+  | Ctype.Tags(l, l') ->
+      Location.print_error_cur_file ppf;
+      fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value." l l'
   | Typecore.Error(loc, err) ->
-      Location.print ppf loc; Typecore.report_error ppf err
+      Location.print_error ppf loc; Typecore.report_error ppf err
   | Typetexp.Error(loc, err) ->
-      Location.print ppf loc; Typetexp.report_error ppf err
+      Location.print_error ppf loc; Typetexp.report_error ppf err
   | Typedecl.Error(loc, err) ->
-      Location.print ppf loc; Typedecl.report_error ppf err
+      Location.print_error ppf loc; Typedecl.report_error ppf err
   | Includemod.Error err ->
+      Location.print_error_cur_file ppf;
       Includemod.report_error ppf err
   | Typemod.Error(loc, err) ->
-      Location.print ppf loc; Typemod.report_error ppf err
+      Location.print_error ppf loc; Typemod.report_error ppf err
   | Translcore.Error(loc, err) ->
-      Location.print ppf loc; Translcore.report_error ppf err
+      Location.print_error ppf loc; Translcore.report_error ppf err
   | Sys_error msg ->
+      Location.print_error_cur_file ppf;
       fprintf ppf "I/O error: %s" msg
   | Typeclass.Error(loc, err) ->
-      Location.print ppf loc; Typeclass.report_error ppf err
+      Location.print_error ppf loc; Typeclass.report_error ppf err
   | Translclass.Error(loc, err) ->
-      Location.print ppf loc; Translclass.report_error ppf err
+      Location.print_error ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
-      fprintf ppf "@.Error: error-enabled warnings (%d occurrences)" n
+      Location.print_error_cur_file ppf;
+      fprintf ppf "Error-enabled warnings (%d occurrences)" n
   | x ->
       fprintf ppf "@]";
       fprintf ppf "Compilation error. Use the OCaml compiler to get more details."
@@ -208,6 +214,7 @@ let process_file ppf sourcefile =
   match sourcefile with
     Odoc_args.Impl_file file ->
       (
+       Location.input_name := file;
        try
          let (parsetree_typedtree_opt, input_file) = process_implementation_file ppf file in
          match parsetree_typedtree_opt with
@@ -239,6 +246,7 @@ let process_file ppf sourcefile =
       )
   | Odoc_args.Intf_file file ->
       (
+       Location.input_name := file;
        try
          let (ast, signat, input_file) = process_interface_file ppf file in
          let file_module = Sig_analyser.analyse_signature file
@@ -266,6 +274,7 @@ let process_file ppf sourcefile =
            None
       )
   | Odoc_args.Text_file file ->
+      Location.input_name := file;
       try
         let mod_name =
           String.capitalize (Filename.basename (Filename.chop_extension file))

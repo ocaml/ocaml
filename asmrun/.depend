@@ -260,6 +260,17 @@ misc.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/major_gc.h ../byterun/freelist.h ../byterun/misc.h \
   ../byterun/mlvalues.h ../byterun/misc.h ../byterun/minor_gc.h \
   ../byterun/misc.h ../byterun/misc.h ../byterun/mlvalues.h
+natdynlink.o: natdynlink.c ../byterun/misc.h ../byterun/config.h \
+  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
+  ../byterun/config.h ../byterun/misc.h ../byterun/memory.h \
+  ../byterun/config.h ../byterun/gc.h ../byterun/mlvalues.h \
+  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/misc.h \
+  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/minor_gc.h \
+  ../byterun/misc.h ../byterun/misc.h ../byterun/mlvalues.h stack.h \
+  ../byterun/callback.h ../byterun/mlvalues.h ../byterun/alloc.h \
+  ../byterun/misc.h ../byterun/mlvalues.h natdynlink.h \
+  ../byterun/osdeps.h ../byterun/misc.h ../byterun/fail.h \
+  ../byterun/misc.h ../byterun/mlvalues.h
 obj.o: obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/misc.h ../byterun/fail.h \
@@ -324,7 +335,7 @@ startup.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/gc.h ../byterun/mlvalues.h ../byterun/gc_ctrl.h \
   ../byterun/misc.h ../byterun/osdeps.h ../byterun/misc.h \
   ../byterun/printexc.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/sys.h ../byterun/misc.h
+  ../byterun/sys.h ../byterun/misc.h natdynlink.h
 str.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/misc.h ../byterun/fail.h \
@@ -628,6 +639,17 @@ misc.d.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/major_gc.h ../byterun/freelist.h ../byterun/misc.h \
   ../byterun/mlvalues.h ../byterun/misc.h ../byterun/minor_gc.h \
   ../byterun/misc.h ../byterun/misc.h ../byterun/mlvalues.h
+natdynlink.d.o: natdynlink.c ../byterun/misc.h ../byterun/config.h \
+  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
+  ../byterun/config.h ../byterun/misc.h ../byterun/memory.h \
+  ../byterun/config.h ../byterun/gc.h ../byterun/mlvalues.h \
+  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/misc.h \
+  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/minor_gc.h \
+  ../byterun/misc.h ../byterun/misc.h ../byterun/mlvalues.h stack.h \
+  ../byterun/callback.h ../byterun/mlvalues.h ../byterun/alloc.h \
+  ../byterun/misc.h ../byterun/mlvalues.h natdynlink.h \
+  ../byterun/osdeps.h ../byterun/misc.h ../byterun/fail.h \
+  ../byterun/misc.h ../byterun/mlvalues.h
 obj.d.o: obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/misc.h ../byterun/fail.h \
@@ -692,7 +714,7 @@ startup.d.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/gc.h ../byterun/mlvalues.h ../byterun/gc_ctrl.h \
   ../byterun/misc.h ../byterun/osdeps.h ../byterun/misc.h \
   ../byterun/printexc.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/sys.h ../byterun/misc.h
+  ../byterun/sys.h ../byterun/misc.h natdynlink.h
 str.d.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/misc.h ../byterun/fail.h \
@@ -996,6 +1018,17 @@ misc.p.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/major_gc.h ../byterun/freelist.h ../byterun/misc.h \
   ../byterun/mlvalues.h ../byterun/misc.h ../byterun/minor_gc.h \
   ../byterun/misc.h ../byterun/misc.h ../byterun/mlvalues.h
+natdynlink.p.o: natdynlink.c ../byterun/misc.h ../byterun/config.h \
+  ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
+  ../byterun/config.h ../byterun/misc.h ../byterun/memory.h \
+  ../byterun/config.h ../byterun/gc.h ../byterun/mlvalues.h \
+  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/misc.h \
+  ../byterun/mlvalues.h ../byterun/misc.h ../byterun/minor_gc.h \
+  ../byterun/misc.h ../byterun/misc.h ../byterun/mlvalues.h stack.h \
+  ../byterun/callback.h ../byterun/mlvalues.h ../byterun/alloc.h \
+  ../byterun/misc.h ../byterun/mlvalues.h natdynlink.h \
+  ../byterun/osdeps.h ../byterun/misc.h ../byterun/fail.h \
+  ../byterun/misc.h ../byterun/mlvalues.h
 obj.p.o: obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/misc.h ../byterun/fail.h \
@@ -1060,7 +1093,7 @@ startup.p.o: startup.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/gc.h ../byterun/mlvalues.h ../byterun/gc_ctrl.h \
   ../byterun/misc.h ../byterun/osdeps.h ../byterun/misc.h \
   ../byterun/printexc.h ../byterun/misc.h ../byterun/mlvalues.h \
-  ../byterun/sys.h ../byterun/misc.h
+  ../byterun/sys.h ../byterun/misc.h natdynlink.h
 str.p.o: str.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/../config/m.h ../byterun/../config/s.h ../byterun/mlvalues.h \
   ../byterun/config.h ../byterun/misc.h ../byterun/fail.h \

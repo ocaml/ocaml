@@ -51,6 +51,7 @@ let initial_env () =
 (* Compile a .mli file *)
 
 let interface ppf sourcefile outputprefix =
+  Location.input_name := sourcefile;
   init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
@@ -81,6 +82,7 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 
 let implementation ppf sourcefile outputprefix =
+  Location.input_name := sourcefile;
   init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
@@ -95,7 +97,7 @@ let implementation ppf sourcefile outputprefix =
     with x ->
       Pparse.remove_preprocessed_if_ast inputfile;
       raise x
-  end else begin    
+  end else begin
     let objfile = outputprefix ^ ".cmo" in
     let oc = open_out_bin objfile in
     try
@@ -123,4 +125,5 @@ let implementation ppf sourcefile outputprefix =
   end
 
 let c_file name =
+  Location.input_name := name;
   if Ccomp.compile_file name <> 0 then exit 2

@@ -253,7 +253,7 @@ let file_dependencies source_file =
     let report_err = function
     | Lexer.Error(err, range) ->
         fprintf Format.err_formatter "@[%a%a@]@."
-        Location.print range  Lexer.report_error err
+        Location.print_error range  Lexer.report_error err
     | Syntaxerr.Error err ->
         fprintf Format.err_formatter "@[%a@]@."
         Syntaxerr.report_error err

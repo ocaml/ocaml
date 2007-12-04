@@ -61,7 +61,7 @@ let rhs_loc n = {
   loc_ghost = false;
 };;
 
-let input_name = ref ""
+let input_name = ref "_none_"
 let input_lexbuf = ref (None : lexbuf option)
 
 (* Terminal info *)
@@ -229,6 +229,14 @@ let print ppf loc =
     fprintf ppf "%s%i" msg_chars startchar;
     fprintf ppf "%s%i%s@.%s" msg_to endchar msg_colon msg_head;
   end
+;;
+
+let print_error ppf loc =
+  print ppf loc;
+  fprintf ppf "Error: ";
+;;
+
+let print_error_cur_file ppf = print_error ppf (in_file !input_name);;
 
 let print_warning loc ppf w =
   if Warnings.is_active w then begin

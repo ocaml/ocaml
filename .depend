@@ -663,16 +663,16 @@ driver/compile.cmo: utils/warnings.cmi typing/unused_var.cmi \
     typing/typemod.cmi typing/typedtree.cmi bytecomp/translmod.cmi \
     typing/stypes.cmi bytecomp/simplif.cmi typing/printtyp.cmi \
     bytecomp/printlambda.cmi bytecomp/printinstr.cmi parsing/printast.cmi \
-    driver/pparse.cmi parsing/parse.cmi utils/misc.cmi typing/ident.cmi \
-    typing/env.cmi bytecomp/emitcode.cmi utils/config.cmi utils/clflags.cmi \
-    utils/ccomp.cmi bytecomp/bytegen.cmi driver/compile.cmi 
+    driver/pparse.cmi parsing/parse.cmi utils/misc.cmi parsing/location.cmi \
+    typing/ident.cmi typing/env.cmi bytecomp/emitcode.cmi utils/config.cmi \
+    utils/clflags.cmi utils/ccomp.cmi bytecomp/bytegen.cmi driver/compile.cmi 
 driver/compile.cmx: utils/warnings.cmx typing/unused_var.cmx \
     typing/typemod.cmx typing/typedtree.cmx bytecomp/translmod.cmx \
     typing/stypes.cmx bytecomp/simplif.cmx typing/printtyp.cmx \
     bytecomp/printlambda.cmx bytecomp/printinstr.cmx parsing/printast.cmx \
-    driver/pparse.cmx parsing/parse.cmx utils/misc.cmx typing/ident.cmx \
-    typing/env.cmx bytecomp/emitcode.cmx utils/config.cmx utils/clflags.cmx \
-    utils/ccomp.cmx bytecomp/bytegen.cmx driver/compile.cmi 
+    driver/pparse.cmx parsing/parse.cmx utils/misc.cmx parsing/location.cmx \
+    typing/ident.cmx typing/env.cmx bytecomp/emitcode.cmx utils/config.cmx \
+    utils/clflags.cmx utils/ccomp.cmx bytecomp/bytegen.cmx driver/compile.cmi 
 driver/errors.cmo: utils/warnings.cmi typing/typetexp.cmi typing/typemod.cmi \
     typing/typedecl.cmi typing/typecore.cmi typing/typeclass.cmi \
     bytecomp/translmod.cmi bytecomp/translcore.cmi bytecomp/translclass.cmi \

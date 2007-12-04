@@ -28,7 +28,8 @@ open Lambda
 type res = Ok of Obj.t | Err of string
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
-external ndl_run_toplevel: string -> string -> res = "caml_natdynlink_run_toplevel"
+external ndl_run_toplevel: string -> string -> res
+  = "caml_natdynlink_run_toplevel"
 external ndl_loadsym: string -> Obj.t = "caml_natdynlink_loadsym"
 
 let global_symbol id =
@@ -44,9 +45,9 @@ let dll_run dll entry =
   match (try Result (Obj.magic (ndl_run_toplevel dll entry)) with exn -> Exception exn) with
     | Exception _ as r -> r
     | Result r ->
-	match Obj.magic r with 
-	  | Ok x -> Result x
-	  | Err s -> fatal_error ("Opttoploop.dll_run " ^ s)
+        match Obj.magic r with
+          | Ok x -> Result x
+          | Err s -> fatal_error ("Opttoploop.dll_run " ^ s)
 
 
 type directive_fun =
@@ -65,7 +66,7 @@ let toplevel_value id =
 
 let rec eval_path = function
   | Pident id ->
-      if Ident.persistent id || Ident.global id 
+      if Ident.persistent id || Ident.global id
       then global_symbol id
       else toplevel_value id
   | Pdot(p, s, pos) ->
@@ -110,7 +111,8 @@ let remove_printer = Printer.remove_printer
 
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
 let parse_use_file = ref Parse.use_file
-let print_location = Location.print
+let print_location = Location.print_error (* FIXME change back to print *)
+let print_error = Location.print_error
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
@@ -130,18 +132,18 @@ let load_lambda ppf (size, lam) =
   let slam = Simplif.simplify_lambda lam in
   if !Clflags.dump_lambda then fprintf ppf "%a@." Printlambda.lambda slam;
 
-  let dll = 
+  let dll =
     if !Clflags.keep_asm_file then !phrase_name ^ ext_dll
     else Filename.temp_file ("caml" ^ !phrase_name) ext_dll
   in
   let fn = Filename.chop_extension dll in
   Asmgen.compile_implementation ~toplevel:need_symbol fn ppf (size, lam);
   Asmlink.call_linker_shared [fn ^ ext_obj] dll;
-  Sys.remove (fn ^ ext_obj); 
+  Sys.remove (fn ^ ext_obj);
 
-  let dll = 
-    if Filename.is_implicit dll 
-    then Filename.concat (Sys.getcwd ()) dll 
+  let dll =
+    if Filename.is_implicit dll
+    then Filename.concat (Sys.getcwd ()) dll
     else dll in
   let res = dll_run dll !phrase_name in
   (try Sys.remove dll with Sys_error _ -> ());
@@ -236,7 +238,7 @@ let execute_phrase print_outcome ppf phr =
         let out_phr =
           match res with
           | Result v ->
-	      Compilenv.record_global_approx_toplevel ();
+              Compilenv.record_global_approx_toplevel ();
               if print_outcome then
                 match str with
                 | [Tstr_eval exp] ->
@@ -244,8 +246,8 @@ let execute_phrase print_outcome ppf phr =
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
-                | _ -> 
-		    Ophr_signature (item_list newenv
+                | _ ->
+                    Ophr_signature (item_list newenv
                                              (Typemod.simplify_signature sg))
 
               else Ophr_signature []

@@ -80,6 +80,7 @@ val max_printer_steps: int ref
 val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
+val print_error : formatter -> Location.t -> unit
 val print_warning : Location.t -> formatter -> Warnings.t -> unit
 val input_name : string ref
 

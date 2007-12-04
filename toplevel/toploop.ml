@@ -100,7 +100,8 @@ let remove_printer = Printer.remove_printer
 
 let parse_toplevel_phrase = ref Parse.toplevel_phrase
 let parse_use_file = ref Parse.use_file
-let print_location = Location.print
+let print_location = Location.print_error (* FIXME change back to print *)
+let print_error = Location.print_error
 let print_warning = Location.print_warning
 let input_name = Location.input_name
 
