@@ -809,6 +809,7 @@ from an error message produced by camlc.")
 ;; Wrapper around next-error.
 
 (defvar caml-error-overlay nil)
+(defvar caml-next-error-skip-warnings-flag nil)
 
 ;;itz 04-21-96 somebody didn't get the documetation for next-error
 ;;right. When the optional argument is a number n, it should move
@@ -825,7 +826,7 @@ fragment. The erroneous fragment is also temporarily highlighted if
 possible."
 
  (if (eq major-mode 'caml-mode)
-     (let (bol beg end)
+     (let (skip bol beg end)
        (save-excursion
          (set-buffer
           (if (boundp 'compilation-last-buffer)
@@ -839,8 +840,15 @@ possible."
                       (buffer-substring (match-beginning 1) (match-end 1)))
                      end
                      (string-to-int
-                      (buffer-substring (match-beginning 2) (match-end 2)))))))
-       (cond (beg
+                      (buffer-substring (match-beginning 2) (match-end 2)))))
+           (next-line)
+           (beginning-of-line)
+           (if (and (looking-at "Warning")
+                    caml-next-error-skip-warnings-flag)
+               (setq skip 't))))
+       (cond
+        (skip (next-error))
+        (beg
               (setq end (- end beg))
               (beginning-of-line)
               (forward-byte beg)
@@ -859,6 +867,14 @@ possible."
                                          beg end (current-buffer))
                            (sit-for 60))
                        (delete-overlay caml-error-overlay)))))))))
+
+(defun caml-next-error-skip-warnings (&rest args)
+  (let ((old-flag caml-next-error-skip-warnings-flag))
+    (unwind-protect
+        (progn (setq caml-next-error-skip-warnings-flag 't)
+               (apply 'next-error args))
+      (setq caml-next-error-skip-warnings-flag old-flag))))
+    
 
 ;; Usual match-string doesn't work properly with font-lock-mode
 ;; on some emacs.
