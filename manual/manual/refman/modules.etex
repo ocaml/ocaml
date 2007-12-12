@@ -20,7 +20,7 @@ for the specifications expressed in module types.
 \begin{syntax}
 module-expr:
           module-path
-        | 'struct' { definition [';;'] } 'end'
+        | 'struct' { definition [';;'] | expr ';;' } 'end'
         | 'functor' '(' module-name ':' module-type ')' '->' module-expr
         | module-expr '(' module-expr ')'
         | '(' module-expr ')'
@@ -75,8 +75,9 @@ structure.
 For compatibility with toplevel phrases (chapter~\ref{c:camllight})
 and with Caml Light, an optional ";;" is allowed after each
 definition in a structure. The ";;" has no semantic meaning. Also for
-compatibility, @';;' expr@ is allowed as a component of a structure,
+compatibility, @expr ';;'@ is allowed as a component of a structure,
 meaning @'let' '_' '=' expr@, i.e. evaluate @expr@ for its side-effects.
+In this case, the ";;" of the previous component is not optional.
 
 \subsubsection*{Value definitions}
 
