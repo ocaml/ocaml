@@ -56,13 +56,13 @@ clean:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
 
-install: tkanim.cma 
+install:
 	cp tkanim.cma *.cmi *.mli libtkanim.$(A) $(INSTALLDIR)
 	if [ -f dlltkanim$(EXT_DLL) ]; then \
 		cp dlltkanim$(EXT_DLL) $(STUBLIBDIR)/; \
 	fi
 
-installopt: tkanim.cmxa
+installopt:
 	cp tkanim.cmxa tkanim.$(A) $(INSTALLDIR)
 
 depend: tkanim.ml

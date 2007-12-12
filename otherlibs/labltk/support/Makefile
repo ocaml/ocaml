@@ -24,7 +24,7 @@ PUBMLI=fileevent.mli protocol.mli textvariable.mli timer.mli \
     rawwidget.mli widget.mli
 PUB= $(PUBMLI) $(PUBMLI:.mli=.cmi) tkthread.mli tkthread.cmi tkthread.cmo
 
-install: lib$(LIBNAME).$(A) $(PUB)
+install:
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(PUB) lib$(LIBNAME).$(A) $(INSTALLDIR)
 	cd $(INSTALLDIR); $(RANLIB) lib$(LIBNAME).$(A)
@@ -32,7 +32,7 @@ install: lib$(LIBNAME).$(A) $(PUB)
 	if test -f dll$(LIBNAME)$(EXT_DLL); then \
 	   cp dll$(LIBNAME)$(EXT_DLL) $(STUBLIBDIR)/; fi
 
-installopt: opt
+installopt:
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(PUBMLI:.mli=.cmx) $(INSTALLDIR)
 	if test -f tkthread.$(O); then \
@@ -40,11 +40,11 @@ installopt: opt
 	  chmod 644 $(INSTALLDIR)/tkthread.cmx $(INSTALLDIR)/tkthread.$(O); \
 	fi
 
-clean : 
+clean:
 	rm -f *.cm* *.o *.a *.so *.obj *.lib *.dll *.exp
 
-.SUFFIXES :
-.SUFFIXES : .mli .ml .cmi .cmo .cmx .mlp .c .$(O)
+.SUFFIXES:
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .mlp .c .$(O)
 
 .mli.cmi:
 	$(CAMLCOMP) $(COMPFLAGS) $<

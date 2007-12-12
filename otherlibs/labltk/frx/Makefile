@@ -19,10 +19,10 @@ frxlib.cma: $(OBJS)
 frxlib.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o frxlib.cmxa $(OBJSX)
 
-install: frxlib.cma
+install:
 	cp *.cmi *.mli frxlib.cma $(INSTALLDIR)
 
-installopt: frxlib.cmxa
+installopt:
 	cp frxlib.cmxa frxlib.$(A) $(INSTALLDIR)
 
 clean:

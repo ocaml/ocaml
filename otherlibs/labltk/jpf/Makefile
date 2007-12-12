@@ -20,10 +20,10 @@ jpflib.cma: $(OBJS)
 jpflib.cmxa: $(OBJSX)
 	$(CAMLOPTLIBR) -o jpflib.cmxa $(OBJSX)
 
-install: jpflib.cma
+install:
 	cp $(OBJS:.cmo=.cmi) $(OBJS:.cmo=.mli) jpflib.cma $(INSTALLDIR)
 
-installopt: jpflib.cmxa
+installopt:
 	cp jpflib.cmxa jpflib.$(A) $(OBJS:.cmo=.cmx) $(INSTALLDIR)
 
 clean:
