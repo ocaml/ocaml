@@ -55,7 +55,37 @@ let is_directory x =
 let readdir x = Outcome.good (sys_readdir x)
 
 let dir_seps = ['/';'\\'] (* FIXME add more *)
+let not_normal_form_re = Glob.parse "<**/{,.,..}/**>"
+
 let parent x = concat parent_dir_name x
+
+let split p =
+  let rec go p acc =
+    let dir = dirname p in
+    if dir = p then dir, acc
+    else go dir (basename p :: acc)
+  in go p []
+
+let join root paths =
+  let root = if root = current_dir_name then "" else root in
+  List.fold_left (/) root paths
+
+let _H1 = assert (current_dir_name = ".")
+let _H2 = assert (parent_dir_name = "..")
+
+(* Use H1, H2 *)
+let rec normalize_list = function
+  | [] -> []
+  | "." :: xs -> normalize_list xs
+  | ".." :: _ -> failwith "Pathname.normalize_list: .. is forbidden here"
+  | _ :: ".." :: xs -> normalize_list xs
+  | x :: xs -> x :: normalize_list xs
+
+let normalize x =
+  if Glob.eval not_normal_form_re x then
+    let root, paths = split x in
+    join root (normalize_list paths)
+  else x
 
 (* [is_prefix x y] is [x] a pathname prefix of [y] *)
 let is_prefix x y =
