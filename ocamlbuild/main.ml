@@ -169,6 +169,8 @@ let proceed () =
         (target, ext)
       end targets in
 
+    Command.dump_parallel_stats ();
+
     Log.finish ();
 
     Shell.chdir Pathname.pwd;

@@ -32,3 +32,6 @@ val jobs : int ref
 (** Hook here the function that maps a set of tags to appropriate command
     options. It also build the dependencies that matches the tags. *)
 val tag_handler : (Tags.t -> spec) ref
+
+(** For system use only *)
+val dump_parallel_stats : unit -> unit
