@@ -46,7 +46,8 @@ let rec self depth on_the_go_orig target =
       (dprintf 5 "%a was suspended -> resuming" Resource.print target;
        Resource.Cache.resume_suspension s)
   | Resource.Cache.Bnot_built_yet ->
-    if Resource.Cache.import_in_build_dir target then ()
+    if Resource.exists_in_source_dir target then
+      Resource.Cache.import_in_build_dir target
     else
     (* FIXME tags of target
     let tags = Configuration.tags_of_target target in

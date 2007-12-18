@@ -166,21 +166,18 @@ module Cache = struct
   let resource_failed r = (get r).built <- Bcannot_be_built
 
   let import_in_build_dir r =
-    if exists_in_source_dir r then begin
-      let cache_entry = get r in
-      let r_in_build_dir = in_build_dir r in
-      let r_in_source_dir = in_source_dir r in
-      if source_is_up_to_date r_in_source_dir r_in_build_dir then begin
-        dprintf 5 "%a exists and up to date" print r;
-      end else begin
-        dprintf 5 "%a exists in source dir -> import it" print r;
-        Shell.mkdir_p (Pathname.dirname r);
-        Pathname.copy r_in_source_dir r_in_build_dir;
-        cache_entry.changed <- Yes;
-      end;
-      cache_entry.built <- Bbuilt;
-      true
-    end else false
+    let cache_entry = get r in
+    let r_in_build_dir = in_build_dir r in
+    let r_in_source_dir = in_source_dir r in
+    if source_is_up_to_date r_in_source_dir r_in_build_dir then begin
+      dprintf 5 "%a exists and up to date" print r;
+    end else begin
+      dprintf 5 "%a exists in source dir -> import it" print r;
+      Shell.mkdir_p (Pathname.dirname r);
+      Pathname.copy r_in_source_dir r_in_build_dir;
+      cache_entry.changed <- Yes;
+    end;
+    cache_entry.built <- Bbuilt
 
   let suspend_resource r cmd kont prods =
     let cache_entry = get r in

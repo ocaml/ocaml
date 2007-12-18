@@ -36,7 +36,7 @@ module Cache :
     val resource_has_changed : t -> bool
     val resource_built : t -> unit
     val resource_failed : t -> unit
-    val import_in_build_dir : t -> bool
+    val import_in_build_dir : t -> unit
     val suspend_resource : t -> Command.t -> (unit -> unit) -> t list -> unit
     val resume_resource : t -> unit
     val resume_suspension : suspension -> unit
