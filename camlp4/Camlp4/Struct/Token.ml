@@ -199,6 +199,9 @@ module Eval = struct
     [ [: `'\010' :] -> ()
     | [: :] -> () ];
 
+  value chr c =
+    if c < 0 || c > 255 then failwith "invalid char token" else Char.chr c;
+
   value rec backslash = parser
     [ [: `'\010' :] -> '\010'
     | [: `'\013' :] -> '\013'
@@ -211,10 +214,10 @@ module Eval = struct
     | [: `''' :]  -> '''
     | [: `' ' :]  -> ' '
     | [: `('0'..'9' as c1); `('0'..'9' as c2); `('0'..'9' as c3) :] ->
-        Char.chr (100 * (valch c1) + 10 * (valch c2) + (valch c3))
+        chr (100 * (valch c1) + 10 * (valch c2) + (valch c3))
     | [: `'x'; `('0'..'9' | 'a'..'f' | 'A'..'F' as c1) ;
               `('0'..'9' | 'a'..'f' | 'A'..'F' as c2) :] ->
-        Char.chr (16 * (valch_hex c1) + (valch_hex c2)) ];
+        chr (16 * (valch_hex c1) + (valch_hex c2)) ];
 
   value rec backslash_in_string strict store = parser
     [ [: `'\010'; s :] -> skip_indent s
