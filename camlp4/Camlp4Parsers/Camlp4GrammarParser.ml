@@ -169,7 +169,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           (* ...; [ "foo" ]; ... ==> ...; (x = [ "foo" ] -> Gram.Token.extract_string x); ... *)
         [ {prod = [({pattern = None; styp = STtok _} as s)]; action = None} ->
             {prod = [{ (s) with pattern = Some <:patt< x >> }];
-              action = Some <:expr< Token.extract_string x >>}
+              action = Some <:expr< $uid:gm$.Token.extract_string x >>}
           (* ...; [ symb ]; ... ==> ...; (x = [ symb ] -> x); ... *)
         | {prod = [({pattern = None} as s)]; action = None} ->
             {prod = [{ (s) with pattern = Some <:patt< x >> }];
@@ -278,7 +278,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           <:expr< match $tok$ with
                   [ $pat:match_$ -> $e1$
                   | _ -> assert False ] >> ] in
-      <:expr< fun ($locid$ : Loc.t) -> $e2$ >> in
+      <:expr< fun ($locid$ : $uid:gm$.Loc.t) -> $e2$ >> in
     let (txt, _) =
       List.fold_left
         (fun (txt, i) s ->
