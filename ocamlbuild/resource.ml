@@ -151,7 +151,17 @@ module Cache = struct
     is_up_to_date || (Digest_cache.put key digest; false)
 
   let source_is_up_to_date r_in_source_dir r_in_build_dir =
-    Pathname.exists r_in_build_dir && Digest.file r_in_build_dir = Digest.file r_in_source_dir
+    let key = "Resource: " ^ r_in_source_dir in
+    let digest = Digest.file r_in_source_dir in
+    let r_is_up_to_date =
+      Pathname.exists r_in_build_dir &&
+      try
+        let digest' = Digest_cache.get key in
+        digest = digest'
+      with Not_found ->
+        false
+    in
+    r_is_up_to_date || (Digest_cache.put key digest; false)
 
   let prod_is_up_to_date p =
     let x = in_build_dir p in
