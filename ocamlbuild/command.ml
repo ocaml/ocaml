@@ -178,6 +178,37 @@ let rec print f =
 
 let to_string x = sbprintf "%a" print x
 
+let add_parallel_stat, dump_parallel_stats =
+  let xmin = ref max_int in
+  let xmax = ref 0 in
+  let xsum = ref 0 in
+  let xsumall = ref 0 in
+  let xcount = ref 0 in
+  let xcountall = ref 0 in
+  let add_parallel_stat x =
+    if x > 0 then begin
+      incr xcountall;
+      xsumall := x + !xsumall;
+    end;
+    if x > 1 then begin
+      incr xcount;
+      xsum := x + !xsum;
+      xmax := max !xmax x;
+      xmin := min !xmin x;
+    end
+  in
+  let dump_parallel_stats () =
+    if !jobs <> 1 then
+      if !xcount = 0 then
+        dprintf 1 "# No parallelism done"
+      else
+        let xaverage = float_of_int !xsumall /. float_of_int !xcountall in
+        let xaveragepara = float_of_int !xsum /. float_of_int !xcount in
+        dprintf 1 "# Parallel statistics: { count(total): %d(%d), max: %d, min: %d, average(total): %.3f(%.3f) }"
+                  !xcount !xcountall !xmax !xmin xaveragepara xaverage
+  in
+  add_parallel_stat, dump_parallel_stats
+
 module Primitives = struct
   let do_echo texts dest_path =
     with_output_file dest_path begin fun oc ->
@@ -202,6 +233,7 @@ let flatten_commands quiet pretend cmd =
   in List.rev (loop [] [cmd])
 
 let execute_many ?(quiet=false) ?(pretend=false) cmds =
+  add_parallel_stat (List.length cmds);
   let degraded = !*My_unix.is_degraded || Sys.os_type = "Win32" in
   let jobs = !jobs in
   if jobs < 0 then invalid_arg "jobs < 0";
