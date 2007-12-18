@@ -475,7 +475,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:ctyp< ( ~ $i$ : $t1$ ) -> $t2$ >>
         | i = a_OPTLABEL; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
             <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >>
-        | "?"; i=lident_colon;t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+        | "?"; i = a_LIDENT; ":"; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
             <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >> ]
       | "star"
         [ t = SELF; "*"; tl = star_ctyp ->
