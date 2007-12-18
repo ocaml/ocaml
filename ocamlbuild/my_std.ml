@@ -254,7 +254,9 @@ let sys_command =
 (* FIXME warning fix and use Filename.concat *)
 let filename_concat x y =
   if x = Filename.current_dir_name || x = "" then y else
-  if y = "" && x.[String.length x - 1] = '/' then x
+  if x.[String.length x - 1] = '/' then
+    if y = "" then x
+    else x ^ y
   else x ^ "/" ^ y  
 
 (* let reslash =
