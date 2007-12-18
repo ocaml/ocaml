@@ -23,8 +23,8 @@ val string_target_and_tags_of_command_spec : spec -> string * string * Tags.t
 
 val iter_tags : (Tags.t -> unit) -> t -> unit
 
-(** Same as [to_string]. *)
-val to_string_for_digest : t -> string
+(** Digest the given command. *)
+val digest : t -> Digest.t
 
 (** Maximum number of parallel jobs. *)
 val jobs : int ref

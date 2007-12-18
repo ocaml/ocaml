@@ -221,10 +221,10 @@ module type COMMAND = sig
       into command-line options. *)
   val reduce : spec -> spec
 
-  (** Print a command. *)
+  (** Print a command (the format is not suitable to running the command). *)
   val print : Format.formatter -> t -> unit
 
-  (** Convert a command to a string. *)
+  (** Convert a command to a string (same format as print). *)
   val to_string : t -> string
 
   (** Build a string representation of a command that can be passed to the
