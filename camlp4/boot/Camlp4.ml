@@ -3433,6 +3433,11 @@ module Struct =
               | Some '\010' -> (Stream.junk __strm; ())
               | _ -> ()
               
+            let chr c =
+              if (c < 0) || (c > 255)
+              then failwith "invalid char token"
+              else Char.chr c
+              
             let rec backslash (__strm : _ Stream.t) =
               match Stream.peek __strm with
               | Some '\010' -> (Stream.junk __strm; '\010')
@@ -3453,7 +3458,7 @@ module Struct =
                          (match Stream.peek __strm with
                           | Some (('0' .. '9' as c3)) ->
                               (Stream.junk __strm;
-                               Char.chr
+                               chr
                                  (((100 * (valch c1)) + (10 * (valch c2))) +
                                     (valch c3)))
                           | _ -> raise (Stream.Error "")))
@@ -3468,8 +3473,7 @@ module Struct =
                               (('0' .. '9' | 'a' .. 'f' | 'A' .. 'F' as c2))
                               ->
                               (Stream.junk __strm;
-                               Char.chr
-                                 ((16 * (valch_hex c1)) + (valch_hex c2)))
+                               chr ((16 * (valch_hex c1)) + (valch_hex c2)))
                           | _ -> raise (Stream.Error "")))
                     | _ -> raise (Stream.Error "")))
               | _ -> raise Stream.Failure
@@ -6325,7 +6329,7 @@ module Struct =
                   in
                     if quotations c
                     then
-                      (move_start_p (-String.length beginning);
+                      (move_start_p (- (String.length beginning));
                        mk_quotation quotation c "" "" 2)
                     else parse (symbolchar_star ("<<" ^ beginning)) c
               | 19 ->
@@ -6496,7 +6500,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       lexbuf.Lexing.lex_curr_pos
                   in
-                    (move_start_p (-String.length beginning) c;
+                    (move_start_p (- (String.length beginning)) c;
                      SYMBOL (beginning ^ tok))
               | __ocaml_lex_state ->
                   (lexbuf.Lexing.refill_buff lexbuf;
@@ -6513,7 +6517,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    mk_quotation quotation c "" loc (3 + (String.length loc))
+                    mk_quotation quotation c "" loc (1 + (String.length loc))
               | 1 ->
                   let tok =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
@@ -6538,7 +6542,7 @@ module Struct =
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
                     mk_quotation quotation c name ""
-                      (3 + (String.length name))
+                      (1 + (String.length name))
               | 1 ->
                   let name =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
@@ -6548,7 +6552,7 @@ module Struct =
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
                     mk_quotation quotation c name loc
-                      ((4 + (String.length loc)) + (String.length name))
+                      ((2 + (String.length loc)) + (String.length name))
               | 2 ->
                   let tok =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
@@ -17607,7 +17611,7 @@ module Printers =
                         
                       method ident : formatter -> Ast.ident -> unit
                         
-                      method numeric : formatter -> string -> unit
+                      method numeric : formatter -> string -> string -> unit
                         
                       method binding : formatter -> Ast.binding -> unit
                         
@@ -18110,8 +18114,10 @@ module Printers =
                   fun f ->
                     function
                     | [] -> pp f "[]"
-                    | [ e ] -> pp f "[ %a ]" o#expr e
-                    | el -> pp f "@[<2>[ %a@] ]" (list o#expr ";@ ") el
+                    | [ e ] -> pp f "[ %a ]" o#under_semi#expr e
+                    | el ->
+                        pp f "@[<2>[ %a@] ]" (list o#under_semi#expr ";@ ")
+                          el
                   
                 method expr_list_cons =
                   fun simple f e ->
@@ -18122,8 +18128,8 @@ module Printers =
                       | Some x ->
                           (if simple
                            then pp f "@[<2>(%a)@]"
-                           else pp f "@[<2>%a@]") (list o#dot_expr " ::@ ")
-                            (el @ [ x ])
+                           else pp f "@[<2>%a@]")
+                            (list o#under_semi#dot_expr " ::@ ") (el @ [ x ])
                   
                 method patt_expr_fun_args =
                   fun f (p, e) ->
@@ -18153,8 +18159,10 @@ module Printers =
                 method quoted_string = fun f -> pp f "%S"
                   
                 method numeric =
-                  fun f s ->
-                    if s.[0] = '-' then pp f "(%s)" s else pp f "%s" s
+                  fun f num suff ->
+                    if num.[0] = '-'
+                    then pp f "(%s%s)" num suff
+                    else pp f "%s%s" num suff
                   
                 method module_expr_get_functor_args =
                   fun accu ->
@@ -18241,9 +18249,9 @@ module Printers =
                          as e) when pipe || semi ->
                           pp f "(%a)" o#reset#expr e
                       | Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, "~-")))),
-                          x) -> pp f "@[<2>-@,%a@]" o#expr x
+                          x) -> pp f "@[<2>-@ %a@]" o#dot_expr x
                       | Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, "~-.")))),
-                          x) -> pp f "@[<2>-.@,%a@]" o#expr x
+                          x) -> pp f "@[<2>-.@ %a@]" o#dot_expr x
                       | Ast.ExApp (_,
                           (Ast.ExApp (_,
                              (Ast.ExId (_, (Ast.IdUid (_, "::")))), _)),
@@ -18277,9 +18285,10 @@ module Printers =
                       | Ast.ExAss (_,
                           (Ast.ExAcc (_, e1,
                              (Ast.ExId (_, (Ast.IdLid (_, "val")))))),
-                          e2) -> pp f "@[<2>%a :=@ %a@]" o#expr e1 o#expr e2
+                          e2) ->
+                          pp f "@[<2>%a :=@ %a@]" o#dot_expr e1 o#expr e2
                       | Ast.ExAss (_, e1, e2) ->
-                          pp f "@[<2>%a@ <-@ %a@]" o#expr e1 o#expr e2
+                          pp f "@[<2>%a@ <-@ %a@]" o#dot_expr e1 o#expr e2
                       | Ast.ExFun (loc, (Ast.McNil _)) ->
                           pp f "@[<2>fun@ _@ ->@ %a@]" o#raise_match_failure
                             loc
@@ -18373,11 +18382,11 @@ module Printers =
                             "@[<hv0>@[<hv2>@[<2>for %a =@ %a@ %a@ %a@ do@]@ %a@]@ done@]"
                             o#var s o#expr e1 o#direction_flag df o#expr e2
                             o#seq e3
-                      | Ast.ExInt (_, s) -> o#numeric f s
-                      | Ast.ExNativeInt (_, s) -> pp f "%an" o#numeric s
-                      | Ast.ExInt64 (_, s) -> pp f "%aL" o#numeric s
-                      | Ast.ExInt32 (_, s) -> pp f "%al" o#numeric s
-                      | Ast.ExFlo (_, s) -> o#numeric f s
+                      | Ast.ExInt (_, s) -> o#numeric f s ""
+                      | Ast.ExNativeInt (_, s) -> o#numeric f s "n"
+                      | Ast.ExInt64 (_, s) -> o#numeric f s "L"
+                      | Ast.ExInt32 (_, s) -> o#numeric f s "l"
+                      | Ast.ExFlo (_, s) -> o#numeric f s ""
                       | Ast.ExChr (_, s) -> pp f "'%s'" (ocaml_char s)
                       | Ast.ExId (_, i) -> o#var_ident f i
                       | Ast.ExRec (_, b, (Ast.ExNil _)) ->
@@ -18526,11 +18535,11 @@ module Printers =
                       | Ast.PaStr (_, s) -> pp f "\"%s\"" s
                       | Ast.PaTyc (_, p, t) ->
                           pp f "@[<1>(%a :@ %a)@]" o#patt p o#ctyp t
-                      | Ast.PaNativeInt (_, s) -> pp f "%an" o#numeric s
-                      | Ast.PaInt64 (_, s) -> pp f "%aL" o#numeric s
-                      | Ast.PaInt32 (_, s) -> pp f "%al" o#numeric s
-                      | Ast.PaInt (_, s) -> o#numeric f s
-                      | Ast.PaFlo (_, s) -> o#numeric f s
+                      | Ast.PaNativeInt (_, s) -> o#numeric f s "n"
+                      | Ast.PaInt64 (_, s) -> o#numeric f s "L"
+                      | Ast.PaInt32 (_, s) -> o#numeric f s "l"
+                      | Ast.PaInt (_, s) -> o#numeric f s ""
+                      | Ast.PaFlo (_, s) -> o#numeric f s ""
                       | Ast.PaChr (_, s) -> pp f "'%s'" (ocaml_char s)
                       | Ast.PaLab (_, s, (Ast.PaNil _)) -> pp f "~%s" s
                       | Ast.PaVrn (_, s) -> pp f "`%a" o#var s
@@ -18962,7 +18971,7 @@ module Printers =
                            cut f;
                            o#class_sig_item f csg2)
                       | Ast.CgCtr (_, t1, t2) ->
-                          pp f "@[<2>type@ %a =@ %a%(%)@]" o#ctyp t1 
+                          pp f "@[<2>constraint@ %a =@ %a%(%)@]" o#ctyp t1
                             o#ctyp t2 semisep
                       | Ast.CgInh (_, ct) ->
                           pp f "@[<2>inherit@ %a%(%)@]" o#class_type ct
@@ -19354,7 +19363,7 @@ module Printers =
                     in
                       match e with
                       | Ast.ExAss (_, e1, e2) ->
-                          pp f "@[<2>%a@ :=@ %a@]" o#expr e1 o#expr e2
+                          pp f "@[<2>%a@ :=@ %a@]" o#dot_expr e1 o#expr e2
                       | Ast.ExFun (_, (Ast.McArr (_, p, (Ast.ExNil _), e)))
                           when Ast.is_irrefut_patt p ->
                           pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
@@ -19923,7 +19932,8 @@ module OCamlInitSyntax =
                     [ ([ Gram.Stoken
                            (((function | EOI -> true | _ -> false), "EOI")) ],
                        (Gram.Action.mk
-                          (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t) ->
+                          (fun (__camlp4_0 : Gram.Token.t)
+                             (_loc : Gram.Loc.t) ->
                              match __camlp4_0 with
                              | EOI -> (None : 'top_phrase)
                              | _ -> assert false))) ]) ]))
@@ -19953,7 +19963,7 @@ module OCamlInitSyntax =
                                   "EOI")) ],
                             (Gram.Action.mk
                                (fun (__camlp4_0 : Gram.Token.t) (x : 'expr)
-                                  (_loc : Loc.t) ->
+                                  (_loc : Gram.Loc.t) ->
                                   match __camlp4_0 with
                                   | EOI -> (x : 'antiquot_expr)
                                   | _ -> assert false))) ]) ]))
@@ -19969,7 +19979,7 @@ module OCamlInitSyntax =
                                   "EOI")) ],
                             (Gram.Action.mk
                                (fun (__camlp4_0 : Gram.Token.t) (x : 'patt)
-                                  (_loc : Loc.t) ->
+                                  (_loc : Gram.Loc.t) ->
                                   match __camlp4_0 with
                                   | EOI -> (x : 'antiquot_patt)
                                   | _ -> assert false))) ]) ]))
