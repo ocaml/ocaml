@@ -14,7 +14,7 @@
 
 (** The JoCaml core library.
 
-  This modules offers basic functionalities for JoCaml.
+  This module offers basic functionalities for JoCaml.
     
 *)
 

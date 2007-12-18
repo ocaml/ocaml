@@ -1,3 +1,7 @@
+
+- Handle type constraints in join-patterns (slight change
+  in typecore).
+
 - Unused var warning corrected.
 
 - In Join_space: rid_from_space catches Join_space.NoLink in all situations and

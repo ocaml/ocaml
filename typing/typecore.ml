@@ -2454,7 +2454,9 @@ and type_clause env names reac =
   let new_env = List.fold_right add_kont jpats env in
   let new_env = List.fold_right add_pat_var pat_vars new_env in
 
-  assert (pat_force = []) ;
+  (* Let us do this now..., it may be too soon, but well,
+     at least all jpats in reaction rule are processed *)
+  List.iter (fun f -> f()) pat_force ;
   (* And type guarded process *)
   let exp = type_proc new_env sexp in
 
