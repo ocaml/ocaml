@@ -44,6 +44,7 @@ module Cache :
     val clear_resource_failed : t -> unit
     val add_dependency : t -> t -> unit
     val fold_dependencies : (string -> string -> 'a -> 'a) -> 'a -> 'a
+    val external_is_up_to_date : t -> bool
 
     (* These are not currently used by others modules. *)
     val dependencies : t -> Resources.t

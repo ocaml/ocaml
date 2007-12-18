@@ -138,6 +138,18 @@ module Cache = struct
     dprintf 10 "resource_changed:@ %a" print r;
     (get r).changed <- Yes
 
+  let external_is_up_to_date absolute_path =
+    let key = "Resource: " ^ absolute_path in
+    let digest = Digest.file absolute_path in
+    let is_up_to_date =
+      try
+        let digest' = Digest_cache.get key in
+        digest = digest'
+      with Not_found ->
+        false
+    in
+    is_up_to_date || (Digest_cache.put key digest; false)
+
   let source_is_up_to_date r_in_source_dir r_in_build_dir =
     Pathname.exists r_in_build_dir && Digest.file r_in_build_dir = Digest.file r_in_source_dir
 
@@ -264,7 +276,8 @@ let rec subst percent r =
 let print_env = pp_print_string
 *)
 
-let import x = x
+(* Should normalize *)
+let import x = Pathname.normalize x
 
 module MetaPath : sig
 

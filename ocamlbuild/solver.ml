@@ -31,6 +31,10 @@ let failed target backtrace =
 let rec pp_repeat f (n, s) =
   if n > 0 then (pp_print_string f s; pp_repeat f (n - 1, s))
 
+(* Targets must be normalized pathnames.
+ * Recursive calls are either on input targets
+ * or dependencies of these targets (returned by Rule.deps_of_rule).
+ *)
 let rec self depth on_the_go_orig target =
   let rules = Rule.get_rules () in
   let on_the_go = target :: on_the_go_orig in
@@ -46,6 +50,10 @@ let rec self depth on_the_go_orig target =
       (dprintf 5 "%a was suspended -> resuming" Resource.print target;
        Resource.Cache.resume_suspension s)
   | Resource.Cache.Bnot_built_yet ->
+    if not (Pathname.is_relative target) && Pathname.exists target then
+      if Resource.Cache.external_is_up_to_date target then ()
+      else (* perhaps the error can be refined *) failed target (Leaf target)
+    else
     if Resource.exists_in_source_dir target then
       Resource.Cache.import_in_build_dir target
     else

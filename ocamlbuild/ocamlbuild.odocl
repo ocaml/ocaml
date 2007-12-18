@@ -36,3 +36,4 @@ Ocaml_tools
 Ocaml_compiler
 Ocamldep
 Ocaml_dependencies
+Ocamlbuild_plugin
