@@ -671,7 +671,7 @@ Very old (no more supported) syntax:
         | `ANTIQUOT ("exp"|""|"anti" as n) s ->
             <:expr< $anti:mk_anti ~c:"expr" n s$ >>
         | `ANTIQUOT ("`bool" as n) s ->
-            <:expr< $anti:mk_anti n s$ >>
+            <:expr< $id:<:ident< $anti:mk_anti n s$ >>$ >>
         | `ANTIQUOT ("tup" as n) s ->
             <:expr< $tup: <:expr< $anti:mk_anti ~c:"expr" n s$ >>$ >>
         | `ANTIQUOT ("seq" as n) s ->
@@ -830,7 +830,7 @@ Very old (no more supported) syntax:
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `ANTIQUOT ("tup" as n) s -> <:patt< ($tup:<:patt< $anti:mk_anti ~c:"patt" n s$ >>$) >>
-        | `ANTIQUOT ("`bool" as n) s -> <:patt< $anti:mk_anti n s$ >>
+        | `ANTIQUOT ("`bool" as n) s -> <:patt< $id:<:ident< $anti:mk_anti n s$ >>$ >>
         | i = ident -> <:patt< $id:i$ >>
         | s = a_INT -> <:patt< $int:s$ >>
         | s = a_INT32 -> <:patt< $int32:s$ >>
@@ -911,7 +911,6 @@ Very old (no more supported) syntax:
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `ANTIQUOT ("tup" as n) s ->
             <:patt< ($tup:<:patt< $anti:mk_anti ~c:"patt" n s$ >>$) >>
-        | `ANTIQUOT ("`bool" as n) s -> <:patt< $anti:mk_anti n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.patt_tag
         | "("; ")" -> <:patt< () >>
         | "("; p = SELF; ")" -> p
