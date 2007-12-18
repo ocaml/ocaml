@@ -317,7 +317,21 @@ let rec reduce x =
   | [x] -> x
   | xs -> S xs
 
-let to_string_for_digest = to_string
+let digest =
+  let list = List.fold_right in
+  let text x acc = Digest.string x :: acc in
+  let rec cmd =
+    function
+    | Cmd spec -> fun acc -> string_of_command_spec spec :: acc
+    | Seq seq -> list cmd seq
+    | Nop -> fun acc -> acc
+    | Echo(texts, dest_path) -> list text (dest_path :: texts)
+  in
+  fun x ->
+    match cmd x [] with
+    | [x] -> x
+    | xs  -> Digest.string ("["^String.concat ";" xs^"]")
+
 (*
 let to_string_for_digest x =
   let rec cmd_of_spec =

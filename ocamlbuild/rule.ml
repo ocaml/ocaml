@@ -292,7 +292,7 @@ let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bo
   let prods = res_add Resource.import_pattern prods prod in
   let code env build =
     let cmd = code env build in
-    { digest  = Command.to_string_for_digest cmd
+    { digest  = Command.digest cmd
     ; command = cmd }
   in
   add_rule insert
