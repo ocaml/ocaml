@@ -156,6 +156,7 @@ let proceed () =
 
   let targets =
     List.map begin fun starget ->
+      let starget = Resource.import starget in
       let target = path_and_context_of_string starget in
       let ext = Pathname.get_extension starget in
       (target, starget, ext)

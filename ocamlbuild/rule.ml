@@ -28,7 +28,7 @@ type digest_command = { digest : string; command : Command.t }
 type 'a gen_rule =
   { name  : string;
     tags  : Tags.t;
-    deps  : Pathname.t list;
+    deps  : Pathname.t list; (* These pathnames must be normalized *)
     prods : 'a list; (* Note that prods also contains stamp *)
     stamp : 'a option;
     code  : env -> builder -> digest_command }
@@ -67,7 +67,7 @@ let subst env rule =
   let prods = subst_resource_patterns rule.prods in
   { (rule) with name = sbprintf "%s (%a)" rule.name Resource.print_env env;
                 prods = prods;
-                deps = subst_resources rule.deps;
+                deps = subst_resources rule.deps; (* The substition should preserve normalization of pathnames *)
                 stamp = stamp;
                 code = (fun env -> rule.code (finder env)) }
 
@@ -298,7 +298,7 @@ let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bo
   add_rule insert
   { name  = name;
     tags  = List.fold_right Tags.add tags Tags.empty;
-    deps  = res_add Resource.import deps dep;
+    deps  = res_add Resource.import (* should normalize *) deps dep;
     stamp = stamp;
     prods = prods;
     code  = code }
