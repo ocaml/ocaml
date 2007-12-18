@@ -1634,7 +1634,7 @@ Very old (no more supported) syntax:
     ;
     more_ctyp:
       [ [ "mutable"; x = SELF -> <:ctyp< mutable $x$ >>
-        | "`"; x = a_LIDENT -> <:ctyp< `$x$ >>
+        | "`"; x = a_ident -> <:ctyp< `$x$ >>
         | x = type_kind -> x
         | x = type_parameter -> x
       ] ]
