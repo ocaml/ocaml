@@ -501,53 +501,77 @@ let enrich_module_type anchor name mty env =
   | Some p -> Mtype.enrich_modtype env (Pdot(p, name, nopos)) mty
 
 let check_recmodule_inclusion env bindings =
-  (* PR#4450: consider
+  (* PR#4450, PR#4470: consider
         module rec X : DECL = MOD  where MOD has inferred type ACTUAL
      The "natural" typing condition
         E, X: ACTUAL |- ACTUAL <: DECL
      leads to circularities through manifest types.  
-     Instead, we implement a slightly weaker condition
-        E, X: DECL, Y: ACTUAL |- ACTUAL{X <- Y} <: DECL{X <- Y}
-     so that manifest types rooted at Y are expanded in terms of X,
-     avoiding circularities. *)
-  (* Generate fresh names Y_i for the recursively bound module idents X_i *)
-  let bindings1 =
-    List.map
-      (fun (id, mty_decl, modl, mty_actual) ->
-                (id, Ident.rename id, mty_decl, modl, mty_actual))
-      bindings in
-  (* s is the substitution Y_i <- X_i *)
-  let s =
-    List.fold_left
-      (fun s (id, id', mty_decl, modl, mty_actual) ->
-         Subst.add_module id (Pident id') s)
-      Subst.identity bindings1 in
-  (* Enter the Y_i in the environment with their actual types *)
-  let env' =
-    List.fold_left
-      (fun env (id, id', mty_decl, modl, mty_actual) ->
-         Env.add_module id' mty_actual env)
-      env bindings1 in
-  (* Check inclusion of mty_actual {Y_i <- X_i} in mty_decl {Y_i <- X_i}
-     and insert coercion if needed *)
-  let check_inclusion (id, id', mty_decl, modl, mty_actual) =
-    let mty_decl' = Subst.modtype s mty_decl
-    and mty_actual' = Subst.modtype s mty_actual in
-    let coercion =
-      try
-        Includemod.modtypes env'
-           (Mtype.strengthen env' mty_actual' (Pident id'))
-           mty_decl'
-      with Includemod.Error msg ->
-        raise(Error(modl.mod_loc, Not_included msg)) in
-    let modl' =
-      { mod_desc = Tmod_constraint(modl, mty_decl, coercion);
-        mod_type = mty_decl;
-        mod_env = env;
-        mod_loc = modl.mod_loc } in
-    (id, modl') in
+     Instead, we "unroll away" the potential circularities a finite number
+     of times.  The (weaker) condition we implement is:
+        E, X: DECL,
+           X1: ACTUAL,
+           X2: ACTUAL{X <- X1}/X1
+           ...
+           Xn: ACTUAL{X <- X(n-1)}/X(n-1)
+        |- ACTUAL{X <- Xn}/Xn <: DECL{X <- Xn}
+     so that manifest types rooted at X(n+1) are expanded in terms of X(n),
+     avoiding circularities.  The strengthenings ensure that
+     Xn.t = X(n-1).t = ... = X2.t = X1.t.
+     N can be chosen arbitrarily; larger values of N result in more
+     recursive definitions being accepted.  A good choice appears to be
+     the number of mutually recursive declarations. *)
 
-  List.map check_inclusion bindings1
+  let subst_and_strengthen env s id mty =
+    Mtype.strengthen env (Subst.modtype s mty)
+                         (Subst.module_path s (Pident id)) in
+
+  let rec check_incl first_time n env s =
+    if n > 0 then begin
+      (* Generate fresh names Y_i for the rec. bound module idents X_i *)
+      let bindings1 =
+        List.map
+          (fun (id, mty_decl, modl, mty_actual) ->
+             (id, Ident.rename id, mty_actual))
+          bindings in
+      (* Enter the Y_i in the environment with their actual types substituted
+         by the input substitution s *)
+      let env' =
+        List.fold_left
+          (fun env (id, id', mty_actual) ->
+             let mty_actual' =
+               if first_time
+               then mty_actual
+               else subst_and_strengthen env s id mty_actual in
+             Env.add_module id' mty_actual' env)
+          env bindings1 in
+      (* Build the output substitution Y_i <- X_i *)
+      let s' =
+        List.fold_left
+          (fun s (id, id', mty_actual) ->
+             Subst.add_module id (Pident id') s)
+          Subst.identity bindings1 in
+      (* Recurse with env' and s' *)
+      check_incl false (n-1) env' s'
+    end else begin
+      (* Base case: check inclusion of s(mty_actual) in s(mty_decl)
+         and insert coercion if needed *)
+      let check_inclusion (id, mty_decl, modl, mty_actual) =
+        let mty_decl' = Subst.modtype s mty_decl
+        and mty_actual' = subst_and_strengthen env s id mty_actual in
+        let coercion =
+          try
+            Includemod.modtypes env mty_actual' mty_decl'
+          with Includemod.Error msg ->
+            raise(Error(modl.mod_loc, Not_included msg)) in
+        let modl' =
+          { mod_desc = Tmod_constraint(modl, mty_decl, coercion);
+            mod_type = mty_decl;
+            mod_env = env;
+            mod_loc = modl.mod_loc } in
+        (id, modl') in
+      List.map check_inclusion bindings
+    end
+  in check_incl true (List.length bindings) env Subst.identity
 
 (* Type a module value expression *)
 
