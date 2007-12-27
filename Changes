@@ -72,12 +72,12 @@ Bug fixes:
 - PR#4446 configure: fails to detect X11 on MacOSX 10.5
 - PR#4448 runtime: huge page table on 64-bit architectures
 - PR#4450 compilers: stack overflow with recursive modules
+- PR#4470 compilers: type-checking of recursive modules too restrictive
 - printf: removed (partially implemented) positional specifications
 
 New features:
 - made configure script work on PlayStation 3
-- AMD64 port: enable dynlink
-- ARM port: small enhancements
+- ARM port: brought up-to-date for Debian 4.0 (Etch)
 - many other small changes and bugfixes in camlp4, ocamlbuild, labltk,
   emacs files,
 
