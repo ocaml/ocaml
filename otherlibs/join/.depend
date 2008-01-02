@@ -2,3 +2,5 @@ join.cmo: site.cmo ns.cmo join.cmi
 join.cmx: site.cmx ns.cmx join.cmi 
 ns.cmo: site.cmo 
 ns.cmx: site.cmx 
+proc.cmo: proc.cmi 
+proc.cmx: proc.cmi 

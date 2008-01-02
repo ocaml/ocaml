@@ -22,7 +22,7 @@ JCOPT=../../ocamlcompopt.sh -I ../unix
 COMPFLAGS=-warn-error A
 
 
-JOIN_OBJS=site.cmo ns.cmo join.cmo
+JOIN_OBJS=site.cmo ns.cmo join.cmo proc.cmo
 JOIN_X=$(JOIN_OBJS:.cmo=.cmx)
 
 VMTHREADSLIB=../threads
@@ -62,14 +62,16 @@ clean: partialclean
 
 install:
 	cp join.mli join.cmi $(LIBDIR)/vmthreads
+	cp proc.mli proc.cmi $(LIBDIR)/vmthreads
 	cp vmjoin.cma $(LIBDIR)/vmthreads/join.cma
 	cp join.mli join.cmi $(LIBDIR)/threads
+	cp proc.mli proc.cmi $(LIBDIR)/threads
 	cp join.cma $(LIBDIR)/threads/join.cma
 
 installopt:
 	cp join.cmxa join.a $(LIBDIR)/threads
 
-.SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) -I $(THREADS) $<

@@ -1,3 +1,4 @@
+- Added module 'Proc' in the standard library.
 
 - Handle type constraints in join-patterns (slight change
   in typecore).
