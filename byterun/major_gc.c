@@ -31,9 +31,7 @@
 
 uintnat caml_percent_free;
 intnat caml_major_heap_increment;
-CAMLexport char *caml_heap_start, *caml_heap_end;
-CAMLexport page_table_entry *caml_page_table;
-asize_t caml_page_low, caml_page_high;
+CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
 int caml_gc_phase;        /* always Phase_mark, Phase_sweep, or Phase_idle */
 static value *gray_vals;
@@ -143,7 +141,7 @@ static void mark_slice (intnat work)
             hd = Hd_val (child);
             if (Tag_hd (hd) == Forward_tag){
               value f = Forward_val (child);
-              if (Is_block (f) && (Is_young (f) || Is_in_heap (f))
+              if (Is_block (f) && Is_in_value_area(f)
                   && (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
                       || Tag_val (f) == Double_tag)){
                 /* Do not short-circuit the pointer. */
@@ -214,7 +212,7 @@ static void mark_slice (intnat work)
                 && Is_block (curfield) && Is_in_heap (curfield)){
               if (Tag_val (curfield) == Forward_tag){
                 value f = Forward_val (curfield);
-                if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
+                if (Is_block (f) && Is_in_value_area(f)) {
                   if (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
                       || Tag_val (f) == Double_tag){
                     /* Do not short-circuit the pointer. */
@@ -441,10 +439,6 @@ asize_t caml_round_heap_chunk_size (asize_t request)
 
 void caml_init_major_heap (asize_t heap_size)
 {
-  asize_t i;
-  asize_t page_table_size;
-  page_table_entry *page_table_block;
-
   caml_stat_heap_size = clip_heap_chunk_size (heap_size);
   caml_stat_top_heap_size = caml_stat_heap_size;
   Assert (caml_stat_heap_size % Page_size == 0);
@@ -452,23 +446,11 @@ void caml_init_major_heap (asize_t heap_size)
   if (caml_heap_start == NULL)
     caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   Chunk_next (caml_heap_start) = NULL;
-  caml_heap_end = caml_heap_start + caml_stat_heap_size;
-  Assert ((uintnat) caml_heap_end % Page_size == 0);
-
   caml_stat_heap_chunks = 1;
 
-  caml_page_low = Page (caml_heap_start);
-  caml_page_high = Page (caml_heap_end);
-
-  page_table_size = caml_page_high - caml_page_low;
-  page_table_block =
-    (page_table_entry *) malloc (page_table_size * sizeof (page_table_entry));
-  if (page_table_block == NULL){
-    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
-  }
-  caml_page_table = page_table_block - caml_page_low;
-  for (i = Page (caml_heap_start); i < Page (caml_heap_end); i++){
-    caml_page_table [i] = In_heap;
+  if (caml_page_table_add(In_heap, caml_heap_start,
+                          caml_heap_start + caml_stat_heap_size) != 0) {
+    caml_fatal_error ("Fatal error: not enough memory for the initial page table.\n");
   }
 
   caml_fl_init_merge ();
@@ -478,7 +460,7 @@ void caml_init_major_heap (asize_t heap_size)
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)
-    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: not enough memory for the gray cache.\n");
   gray_vals_cur = gray_vals;
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;

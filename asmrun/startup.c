@@ -23,6 +23,7 @@
 #include "fail.h"
 #include "gc.h"
 #include "gc_ctrl.h"
+#include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
 #include "osdeps.h"
@@ -35,33 +36,39 @@
 
 extern int caml_parser_trace;
 CAMLexport header_t caml_atom_table[256];
-char * caml_static_data_start, * caml_static_data_end;
 char * caml_code_area_start, * caml_code_area_end;
 
 /* Initialize the atom table and the static data and code area limits. */
 
 struct segment { char * begin; char * end; };
 
-static void minmax_table(struct segment *table, char **min, char **max)
-{
-  int i;
-  *min = table[0].begin;
-  *max = table[0].end;
-  for (i = 1; table[i].begin != 0; i++) {
-    if (table[i].begin < *min) *min = table[i].begin;
-    if (table[i].end > *max)   *max = table[i].end;
-  }
-}
-  
 static void init_atoms(void)
 {
-  int i;
   extern struct segment caml_data_segments[], caml_code_segments[];
+  int i;
 
-  for (i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
-  minmax_table(caml_data_segments,
-               &caml_static_data_start, &caml_static_data_end);
-  minmax_table(caml_code_segments, &caml_code_area_start, &caml_code_area_end);
+  for (i = 0; i < 256; i++) {
+    caml_atom_table[i] = Make_header(0, i, Caml_white);
+  }
+  if (caml_page_table_add(In_static_data,
+                          caml_atom_table, caml_atom_table + 256) != 0)
+    caml_fatal_error("Fatal error: not enough memory for the initial page table");
+
+  for (i = 0; caml_data_segments[i].begin != 0; i++) {
+    if (caml_page_table_add(In_static_data, 
+                            caml_data_segments[i].begin,
+                            caml_data_segments[i].end) != 0)
+      caml_fatal_error("Fatal error: not enough memory for the initial page table");
+  }
+
+  caml_code_area_start = caml_code_segments[0].begin;
+  caml_code_area_end = caml_code_segments[0].end;
+  for (i = 1; caml_code_segments[i].begin != 0; i++) {
+    if (caml_code_segments[i].begin < caml_code_area_start)
+      caml_code_area_start = caml_code_segments[i].begin;
+    if (caml_code_segments[i].end > caml_code_area_end)
+      caml_code_area_end = caml_code_segments[i].end;
+  }
 }
 
 /* Configuration parameters and flags */

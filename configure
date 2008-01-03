@@ -598,14 +598,6 @@ if test -z "$mkmaindll"; then
   mkmaindll=$mksharedlib
 fi
 
-# Further machine-specific hacks
-
-case "$host" in
-  ia64-*-linux*|alpha*-*-linux*|x86_64-*-linux*)
-    echo "Will use mmap() instead of malloc() for allocation of major heap chunks."
-    echo "#define USE_MMAP_INSTEAD_OF_MALLOC" >> s.h;;
-esac
-
 # Configure the native-code compiler
 
 arch=none

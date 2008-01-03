@@ -114,7 +114,7 @@ CAMLprim value caml_weak_get_copy (value ar, value n)
 
   v = Field (ar, offset);
   if (v == caml_weak_none) CAMLreturn (None_val);
-  if (Is_block (v) && (Is_young (v) || Is_in_heap (v))){
+  if (Is_block (v) && Is_in_heap_or_young(v)) {
     elt = caml_alloc (Wosize_val (v), Tag_val (v));
           /* The GC may erase or move v during this call to caml_alloc. */
     v = Field (ar, offset);

@@ -17,6 +17,7 @@
 #include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
+#include "memory.h"
 #include "major_gc.h"
 #include "misc.h"
 #include "mlvalues.h"

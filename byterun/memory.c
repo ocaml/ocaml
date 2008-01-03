@@ -27,10 +27,159 @@
 #include "mlvalues.h"
 #include "signals.h"
 
-#ifdef USE_MMAP_INSTEAD_OF_MALLOC
-extern char * caml_aligned_mmap (asize_t size, int modulo, void ** block);
-extern void caml_aligned_munmap (char * addr, asize_t size);
+/* Page table management */
+
+#define Page(p) ((uintnat) (p) >> Page_log)
+#define Page_mask ((uintnat) -1 << Page_log)
+
+/* The page table is represented sparsely as a hash table
+   with linear probing */
+
+struct page_table {
+  mlsize_t size;                /* size == 1 << (wordsize - shift) */
+  int shift;
+  mlsize_t mask;                /* mask == size - 1 */
+  mlsize_t occupancy;
+  uintnat * entries;            /* [size]  */
+};
+
+static struct page_table caml_page_table;
+
+/* Page table entries are the logical 'or' of
+   - the key: address of a page (low Page_log bits = 0)
+   - the data: a 8-bit integer */
+
+#define Page_entry_matches(entry,addr) \
+  ((((entry) ^ (addr)) & Page_mask) == 0)
+
+/* Multiplicative Fibonacci hashing
+   (Knuth, TAOCP vol 3, section 6.4, page 518).
+   HASH_FACTOR is (sqrt(5) - 1) / 2 * 2^wordsize. */
+#ifdef ARCH_SIXTYFOUR
+#define HASH_FACTOR 11400714819323198486UL
+#else
+#define HASH_FACTOR 2654435769UL
 #endif
+#define Hash(v) (((v) * HASH_FACTOR) >> caml_page_table.shift)
+
+int caml_page_table_lookup(void * addr)
+{
+  uintnat h, e;
+
+  h = Hash(Page(addr));
+  /* The first hit is almost always successful, so optimize for this case */
+  e = caml_page_table.entries[h];
+  if (Page_entry_matches(e, (uintnat)addr)) return e & 0xFF;
+  while(1) {
+    if (e == 0) return 0;
+    h = (h + 1) & caml_page_table.mask;
+    e = caml_page_table.entries[h];
+    if (Page_entry_matches(e, (uintnat)addr)) return e & 0xFF;
+  }
+}
+
+int caml_page_table_initialize(mlsize_t bytesize)
+{
+  uintnat pagesize = Page(bytesize);
+
+  caml_page_table.size = 1;
+  caml_page_table.shift = 8 * sizeof(uintnat);
+  /* Aim for initial load factor between 1/4 and 1/2 */
+  while (caml_page_table.size < 2 * pagesize) {
+    caml_page_table.size <<= 1;
+    caml_page_table.shift -= 1;
+  }
+  caml_page_table.mask = caml_page_table.size - 1;
+  caml_page_table.occupancy = 0;
+  caml_page_table.entries = calloc(caml_page_table.size, sizeof(uintnat));
+  if (caml_page_table.entries == NULL)
+    return -1;
+  else
+    return 0;
+}
+
+static int caml_page_table_resize(void)
+{
+  struct page_table old = caml_page_table;
+  uintnat * new_entries;
+  uintnat i, h;
+
+  caml_gc_message (0x08, "Growing page table to %lu entries\n", 
+                   caml_page_table.size);
+
+  new_entries = calloc(2 * old.size, sizeof(uintnat));
+  if (new_entries == NULL) {
+    caml_gc_message (0x08, "No room for growing page table\n", 0);
+    return -1;
+  }
+
+  caml_page_table.size = 2 * old.size;
+  caml_page_table.shift = old.shift - 1;
+  caml_page_table.mask = caml_page_table.size - 1;
+  caml_page_table.occupancy = old.occupancy;
+  caml_page_table.entries = new_entries;
+
+  for (i = 0; i < old.size; i++) {
+    uintnat e = old.entries[i];
+    if (e == 0) continue;
+    h = Hash(Page(e));
+    while (caml_page_table.entries[h] != 0)
+      h = (h + 1) & caml_page_table.mask;
+    caml_page_table.entries[h] = e;
+  }
+
+  free(old.entries);
+  return 0;
+}
+
+static int caml_page_table_modify(uintnat page, int toclear, int toset)
+{
+  uintnat h;
+
+  Assert ((page & ~Page_mask) == 0);
+
+  /* Resize to keep load factor below 1/2 */
+  if (caml_page_table.occupancy * 2 >= caml_page_table.size) {
+    if (caml_page_table_resize() != 0) return -1;
+  }
+  h = Hash(Page(page));
+  while (1) {
+    if (caml_page_table.entries[h] == 0) {
+      caml_page_table.entries[h] = page | toset;
+      caml_page_table.occupancy++;
+      break;
+    }
+    if (Page_entry_matches(caml_page_table.entries[h], page)) {
+      caml_page_table.entries[h] =
+        (caml_page_table.entries[h] & ~toclear) | toset;
+      break;
+    }
+    h = (h + 1) & caml_page_table.mask;
+  }
+  return 0;
+}
+
+int caml_page_table_add(int kind, void * start, void * end)
+{
+  uintnat pstart = (uintnat) start & Page_mask;
+  uintnat pend = ((uintnat) end - 1) & Page_mask;
+  uintnat p;
+
+  for (p = pstart; p <= pend; p += Page_size)
+    if (caml_page_table_modify(p, 0, kind) != 0) return -1;
+  return 0;
+}
+
+int caml_page_table_remove(int kind, void * start, void * end)
+{
+  uintnat pstart = (uintnat) start & Page_mask;
+  uintnat pend = ((uintnat) end - 1) & Page_mask;
+  uintnat p;
+
+  for (p = pstart; p <= pend; p += Page_size)
+    if (caml_page_table_modify(p, kind, 0) != 0) return -1;
+  return 0;
+}
 
 /* Allocate a block of the requested size, to be passed to
    [caml_add_to_heap] later.
@@ -44,13 +193,8 @@ char *caml_alloc_for_heap (asize_t request)
   char *mem;
   void *block;
                                               Assert (request % Page_size == 0);
-#ifdef USE_MMAP_INSTEAD_OF_MALLOC
-  mem = caml_aligned_mmap (request + sizeof (heap_chunk_head),
-                           sizeof (heap_chunk_head), &block);
-#else
   mem = caml_aligned_malloc (request + sizeof (heap_chunk_head),
                              sizeof (heap_chunk_head), &block);
-#endif
   if (mem == NULL) return NULL;
   mem += sizeof (heap_chunk_head);
   Chunk_size (mem) = request;
@@ -63,12 +207,7 @@ char *caml_alloc_for_heap (asize_t request)
 */
 void caml_free_for_heap (char *mem)
 {
-#ifdef USE_MMAP_INSTEAD_OF_MALLOC
-  caml_aligned_munmap (Chunk_block (mem),
-                       Chunk_size (mem) + sizeof (heap_chunk_head));
-#else
   free (Chunk_block (mem));
-#endif
 }
 
 /* Take a chunk of memory as argument, which must be the result of a
@@ -82,7 +221,6 @@ void caml_free_for_heap (char *mem)
 */
 int caml_add_to_heap (char *m)
 {
-  asize_t i;
                                      Assert (Chunk_size (m) % Page_size == 0);
 #ifdef DEBUG
   /* Should check the contents of the block. */
@@ -91,56 +229,9 @@ int caml_add_to_heap (char *m)
   caml_gc_message (0x04, "Growing heap to %luk bytes\n",
                    (caml_stat_heap_size + Chunk_size (m)) / 1024);
 
-  /* Extend the page table as needed. */
-  if (Page (m) < caml_page_low){
-    page_table_entry *block, *new_page_table;
-    asize_t new_page_low = Page (m);
-    asize_t new_size = caml_page_high - new_page_low;
-    
-    caml_gc_message (0x08, "Growing page table to %lu entries\n", new_size);
-    block = malloc (new_size * sizeof (page_table_entry));
-    if (block == NULL){
-      caml_gc_message (0x08, "No room for growing page table\n", 0);
-      return -1;
-    }
-    new_page_table = block - new_page_low;
-    for (i = new_page_low; i < caml_page_low; i++){
-      new_page_table [i] = Not_in_heap;
-    }
-    for (i = caml_page_low; i < caml_page_high; i++){
-      new_page_table [i] = caml_page_table [i];
-    }
-    free (caml_page_table + caml_page_low);
-    caml_page_table = new_page_table;
-    caml_page_low = new_page_low;
-  }
-  if (Page (m + Chunk_size (m)) > caml_page_high){
-    page_table_entry *block, *new_page_table;
-    asize_t new_page_high = Page (m + Chunk_size (m));
-    asize_t new_size = new_page_high - caml_page_low;
-    
-    caml_gc_message (0x08, "Growing page table to %lu entries\n", new_size);
-    block = malloc (new_size * sizeof (page_table_entry));
-    if (block == NULL){
-      caml_gc_message (0x08, "No room for growing page table\n", 0);
-      return -1;
-    }
-    new_page_table = block - caml_page_low;
-    for (i = caml_page_low; i < caml_page_high; i++){
-      new_page_table [i] = caml_page_table [i];
-    }
-    for (i = caml_page_high; i < new_page_high; i++){
-      new_page_table [i] = Not_in_heap;
-    }
-    free (caml_page_table + caml_page_low);
-    caml_page_table = new_page_table;
-    caml_page_high = new_page_high;
-  }
-
-  /* Mark the pages as being in the heap. */
-  for (i = Page (m); i < Page (m + Chunk_size (m)); i++){
-    caml_page_table [i] = In_heap;
-  }
+  /* Register block in page table */
+  if (caml_page_table_add(In_heap, m, m + Chunk_size(m)) != 0)
+    return -1;
 
   /* Chain this heap chunk. */
   {
@@ -156,10 +247,6 @@ int caml_add_to_heap (char *m)
 
     ++ caml_stat_heap_chunks;
   }
-
-  /* Update the heap bounds as needed. */
-  /* already done:   if (m < caml_heap_start) heap_start = m; */
-  if (m + Chunk_size (m) > caml_heap_end) caml_heap_end = m + Chunk_size (m);
 
   caml_stat_heap_size += Chunk_size (m);
   if (caml_stat_heap_size > caml_stat_top_heap_size){
@@ -201,7 +288,6 @@ static char *expand_heap (mlsize_t request)
 void caml_shrink_heap (char *chunk)
 {
   char **cp;
-  asize_t i;
 
   /* Never deallocate the first block, because caml_heap_start is both the
      first block and the base address for page numbers, and we don't
@@ -232,9 +318,7 @@ void caml_shrink_heap (char *chunk)
   *cp = Chunk_next (chunk);
 
   /* Remove the pages of [chunk] from the page table. */
-  for (i = Page (chunk); i < Page (chunk + Chunk_size (chunk)); i++){
-    caml_page_table [i] = Not_in_heap;
-  }
+  caml_page_table_remove(In_heap, chunk, chunk + Chunk_size (chunk));
 
   /* Free the [malloc] block that contains [chunk]. */
   caml_free_for_heap (chunk);

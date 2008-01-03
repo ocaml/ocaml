@@ -60,7 +60,7 @@ static void invert_pointer_at (word *p)
 
   /* Use Ecolor (q) == 0 instead of Is_block (q) because q could be an
      inverted pointer for an infix header (with Ecolor == 2). */
-  if (Ecolor (q) == 0 && Is_in_heap (q)){
+  if (Ecolor (q) == 0 && (Classify_addr (q) & In_heap)){
     switch (Ecolor (Hd_val (q))){
     case 0:
     case 3: /* Pointer or header: insert in inverted list. */

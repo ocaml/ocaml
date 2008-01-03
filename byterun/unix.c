@@ -387,52 +387,6 @@ char * caml_dlerror(void)
 
 #endif
 
-#ifdef USE_MMAP_INSTEAD_OF_MALLOC
-
-/* The code below supports the use of mmap() rather than malloc()
-   for allocating the chunks composing the major heap.
-   This code is needed on 64-bit Linux platforms, where the native
-   malloc() implementation can return pointers several *exabytes* apart,
-   (some coming from mmap(), other from sbrk()); this makes the
-   page table *way* too large. */
-
-#include <sys/mman.h>
-
-char *caml_aligned_mmap (asize_t size, int modulo, void **block)
-{
-  char *raw_mem;
-  uintnat aligned_mem;
-  Assert (modulo < Page_size);
-  raw_mem = (char *) mmap(NULL, size + Page_size, PROT_READ | PROT_WRITE,
-                          MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  if (raw_mem == MAP_FAILED) return NULL;
-  *block = raw_mem;
-  raw_mem += modulo;                /* Address to be aligned */
-  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
-#ifdef DEBUG
-  {
-    uintnat *p;
-    uintnat *p0 = (void *) *block,
-            *p1 = (void *) (aligned_mem - modulo),
-            *p2 = (void *) (aligned_mem - modulo + size),
-            *p3 = (void *) ((char *) *block + size + Page_size);
-
-    for (p = p0; p < p1; p++) *p = Debug_filler_align;
-    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
-    for (p = p2; p < p3; p++) *p = Debug_filler_align;
-  }
-#endif
-  return (char *) (aligned_mem - modulo);
-}
-
-void caml_aligned_munmap (char * addr, asize_t size)
-{
-  int retcode = munmap (addr, size + Page_size);
-  Assert(retcode == 0);
-}
-
-#endif
-
 /* Add to [contents] the (short) names of the files contained in
    the directory named [dirname].  No entries are added for [.] and [..].
    Return 0 on success, -1 on error; set errno in the case of error. */

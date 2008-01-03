@@ -268,24 +268,6 @@ CAMLextern int64 caml_Int64_val(value v);
 CAMLextern header_t caml_atom_table[];
 #define Atom(tag) (Val_hp (&(caml_atom_table [(tag)])))
 
-/* Is_atom tests whether a well-formed block is statically allocated
-   outside the heap. For the bytecode system, only zero-sized block (Atoms)
-   fall in this class. For the native-code generator, data
-   emitted by the code generator (as described in the table
-   caml_data_segments) are also atoms. */
-
-#ifndef NATIVE_CODE
-#define Is_atom(v) ((v) >= Atom(0) && (v) <= Atom(255))
-#else
-CAMLextern char * caml_static_data_start, * caml_static_data_end;
-CAMLextern int caml_is_in_data(void *);
-#define Is_atom(v) \
-   ( ( (char *)(v) >= caml_static_data_start  \
-     &&(char *)(v) <  caml_static_data_end )  \
-    || ((v) >= Atom(0) && (v) <= Atom(255))   \
-    || (caml_is_in_data((void *)v)) )
-#endif
-
 /* Booleans are integers 0 or 1 */
 
 #define Val_bool(x) Val_int((x) != 0)

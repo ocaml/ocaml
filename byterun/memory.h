@@ -49,6 +49,23 @@ color_t caml_allocation_color (void *hp);
 
 /* <private> */
 
+#define Not_in_heap 0
+#define In_heap 1
+#define In_young 2
+#define In_static_data 4
+#define In_code_area 8
+
+#define Classify_addr(a) (caml_page_table_lookup((void *)(a)))
+#define Is_in_value_area(a) \
+  (Classify_addr(a) & (In_heap | In_young | In_static_data))
+#define Is_in_heap(a) (Classify_addr(a) & In_heap)
+#define Is_in_heap_or_young(a) (Classify_addr(a) & (In_heap | In_young))
+
+int caml_page_table_lookup(void * addr);
+int caml_page_table_add(int kind, void * start, void * end);
+int caml_page_table_remove(int kind, void * start, void * end);
+int caml_page_table_initialize(mlsize_t bytesize);
+
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
   uintnat caml__DEBUG_i; \

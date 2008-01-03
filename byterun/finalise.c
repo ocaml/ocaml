@@ -85,7 +85,7 @@ void caml_final_update (void)
       if (Is_white_val (final_table[i].val)){
         if (Tag_val (final_table[i].val) == Forward_tag){
           value fv = Forward_val (final_table[i].val);
-          if (Is_block (fv) && (Is_young (fv) || Is_in_heap (fv))
+          if (Is_block (fv) && Is_in_value_area(fv)
               && (Tag_val (fv) == Forward_tag || Tag_val (fv) == Lazy_tag
                   || Tag_val (fv) == Double_tag)){
             /* Do not short-circuit the pointer. */
@@ -206,7 +206,7 @@ void caml_final_empty_young (void)
 /* Put (f,v) in the recent set. */
 CAMLprim value caml_final_register (value f, value v)
 {
-  if (!(Is_block (v) && (Is_in_heap (v) || Is_young (v)))){
+  if (!(Is_block (v) && Is_in_heap_or_young(v))) {
     caml_invalid_argument ("Gc.finalise");
   }
   Assert (old <= young);

@@ -67,7 +67,7 @@ CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
     return Val_int (1000);
-  }else if (Is_young (arg) || Is_in_heap (arg) || Is_atom (arg)){
+  }else if (Is_in_value_area (arg)){
     return Val_int(Tag_val(arg));
   }else{
     return Val_int (1001);
@@ -171,7 +171,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
 
 CAMLprim value caml_lazy_follow_forward (value v)
 {
-  if (Is_block (v) && (Is_young (v) || Is_in_heap (v))
+  if (Is_block (v) && Is_in_value_area(v)
       && Tag_val (v) == Forward_tag){
     return Forward_val (v);
   }else{

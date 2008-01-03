@@ -29,6 +29,7 @@
 #include "weak.h"
 
 asize_t caml_minor_heap_size;
+static void *caml_young_base = NULL;
 CAMLexport char *caml_young_start = NULL, *caml_young_end = NULL;
 CAMLexport char *caml_young_ptr = NULL, *caml_young_limit = NULL;
 
@@ -71,16 +72,23 @@ static void clear_table (struct caml_ref_table *tbl)
 void caml_set_minor_heap_size (asize_t size)
 {
   char *new_heap;
+  void *new_heap_base;
 
   Assert (size >= Minor_heap_min);
   Assert (size <= Minor_heap_max);
   Assert (size % sizeof (value) == 0);
   if (caml_young_ptr != caml_young_end) caml_minor_collection ();
                                     Assert (caml_young_ptr == caml_young_end);
-  new_heap = (char *) caml_stat_alloc (size);
+  new_heap = caml_aligned_malloc(size, 0, &new_heap_base);
+  if (new_heap == NULL) caml_raise_out_of_memory();
+  if (caml_page_table_add(In_young, new_heap, new_heap + size) != 0)
+    caml_raise_out_of_memory();
+
   if (caml_young_start != NULL){
-    caml_stat_free (caml_young_start);
+    caml_page_table_remove(In_young, caml_young_start, caml_young_end);
+    free (caml_young_base);
   }
+  caml_young_base = new_heap_base;
   caml_young_start = new_heap;
   caml_young_end = new_heap + size;
   caml_young_limit = caml_young_start;
@@ -146,7 +154,7 @@ void caml_oldify_one (value v, value *p)
         tag_t ft = 0;
 
         Assert (tag == Forward_tag);
-        if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
+        if (Is_block (f) && Is_in_value_area(f)) {
           ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
         }
         if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
