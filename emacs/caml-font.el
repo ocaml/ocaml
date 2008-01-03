@@ -77,11 +77,11 @@
    '("`?\\<[A-Z][A-Za-z0-9_']*\\>" . font-lock-function-name-face)
 ;definition
    (cons (concat
-          "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
+          "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)\\|def"
           "\\|ex\\(ception\\|ternal\\)\\|fun\\(ct\\(ion\\|or\\)\\)?"
           "\\|in\\(herit\\|itializer\\)?\\|let"
           "\\|m\\(ethod\\|utable\\|odule\\)"
-          "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
+          "\\|o\\(f\\|r\\)\\|p\\(arser\\|rivate\\)\\|rec\\|type"
           "\\|v\\(al\\|irtual\\)\\)\\>")
          'font-lock-type-face)
 ;blocking
@@ -90,7 +90,7 @@
 ;control
    (cons (concat
           "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|i\\(f\\|gnore\\)"
-          "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
+          "\\|lazy\\|match\\|new\\|spawn\\|t\\(hen\\|o\\|ry\\)"
           "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
           "\\|\|\\|->\\|&\\|#")
          'font-lock-reference-face)

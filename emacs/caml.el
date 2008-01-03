@@ -191,6 +191,11 @@ Priorities are assigned to `interesting' caml operators as follows:
 Usually negative. nil is align on master.")
 (make-variable-buffer-local 'caml-and-extra-indent)
 
+(defvar caml-or-extra-indent nil
+  "*Extra indent for caml lines starting with the or keyword.
+Usually negative. nil is align on master.")
+(make-variable-buffer-local 'caml-or-extra-indent)
+
 (defvar caml-do-extra-indent nil
   "*Extra indent for caml lines starting with the do keyword.
 Usually negative. nil is align on master.")
@@ -1137,7 +1142,7 @@ Used to distinguish it from toplevel let construct.")
 
 (defconst caml-matching-kw-regexp
   (concat
-   "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in\\|t\\(hen\\|o\\)"
+   "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in\\|or\\|t\\(hen\\|o\\)"
    "\\|with\\)\\>\\|[^[|]|")
   "Regexp used in caml mode for skipping back over nested blocks.")
 
@@ -1153,7 +1158,8 @@ Used to distinguish it from toplevel let construct.")
     ("then" . caml-find-then-match)
     ("to" . caml-find-done-match)
     ("do" . caml-find-done-match)
-    ("and" . caml-find-and-match))
+    ("and" . caml-find-and-match)
+    ("or" . caml-find-or-match))
 
   "Association list used in caml mode for skipping back over nested blocks.")
 
@@ -1241,6 +1247,8 @@ keywords."
     ("include"          nil     0       caml-include-indent)
     ("inherit"          nil     0       caml-inherit-indent)
     ("initializer"      nil     0       caml-initializer-indent)
+    ("def"              nil     6       caml-let-indent)
+    ("def-in"           nil     6       caml-let-in-indent)
     ("let"              nil     6       caml-let-indent)
     ("let-in"           nil     6       caml-let-in-indent)
     ("match"            nil     6       caml-match-indent)
@@ -1291,7 +1299,7 @@ the line where the governing keyword occurs.")
 (aset caml-kwop-regexps 2
       (concat
        (aref caml-kwop-regexps 1)
-       "\\|\\<\\(fun\\(ction\\)?\\|initializer\\|let\\|m\\(atch\\|ethod\\)"
+       "\\|\\<\\(fun\\(ction\\)?\\|initializer\\|def\\|let\\|m\\(atch\\|ethod\\)"
        "\\|parser\\|try\\|val\\)\\>\\|->"))
 (aset caml-kwop-regexps 3
       (concat (aref caml-kwop-regexps 2) "\\|\\<if\\|when\\>"))
@@ -1338,7 +1346,7 @@ the line where the governing keyword occurs.")
 (defun caml-find-in-match ()
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
-      (setq kwop (caml-find-kwop "\\<\\(in\\|let\\|end\\)\\>"))
+      (setq kwop (caml-find-kwop "\\<\\(in\\|def|\\let\\|end\\)\\>"))
       (cond
        ((not kwop))
        ((string= kwop "end") (caml-find-end-match))
@@ -1434,7 +1442,19 @@ the line where the governing keyword occurs.")
   (let ((done nil) (kwop))
     (while (not done)
       (setq kwop (caml-find-kwop
-                  "\\<\\(object\\|exception\\|let\\|type\\|end\\|in\\)\\>"))
+                  "\\<\\(object\\|def\\|exception\\|let\\|type\\|end\\|in\\)\\>"))
+      (cond
+       ((not kwop) (setq done t))
+       ((string= kwop "end") (caml-find-end-match))
+       ((string= kwop "in") (caml-find-in-match))
+       (t (setq done t))))
+    kwop))
+
+(defun caml-find-or-match ()
+  (let ((done nil) (kwop))
+    (while (not done)
+      (setq kwop (caml-find-kwop
+                  "\\<\\(def\\|end\\|in\\)\\>"))
       (cond
        ((not kwop) (setq done t))
        ((string= kwop "end") (caml-find-end-match))
@@ -1558,13 +1578,14 @@ Does not preserve point."
 
 (defconst caml-leading-kwops-regexp
   (concat
-   "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in"
+   "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in\\|or"
    "\\|t\\(hen\\|o\\)\\|with\\)\\>\\|[]|})]")
 
   "Regexp matching caml keywords which need special indentation.")
 
 (defconst caml-leading-kwops-alist
   '(("and" caml-and-extra-indent 2)
+    ("or"  caml-or-extra-indent 2)
     ("do" caml-do-extra-indent 0)
     ("done" caml-done-extra-indent 0)
     ("else" caml-else-extra-indent 3)
