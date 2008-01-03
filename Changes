@@ -74,6 +74,8 @@ Bug fixes:
 - PR#4450 compilers: stack overflow with recursive modules
 - PR#4470 compilers: type-checking of recursive modules too restrictive
 - printf: removed (partially implemented) positional specifications
+- polymorphic < and <= comparisons: some C compiler optimizations
+  were causing incorrect results when arguments are incomparable
 
 New features:
 - made configure script work on PlayStation 3
