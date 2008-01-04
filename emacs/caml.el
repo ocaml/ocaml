@@ -1235,6 +1235,7 @@ keywords."
 (defconst caml-no-indent 0)
 
 (defconst caml-kwop-alist
+  (let ((aux
   '(("begin"            nil     6       caml-begin-indent)
     (":begin"           nil     6       caml-begin-indent) ; hack
     ("class"            nil     0       caml-class-indent)
@@ -1251,7 +1252,6 @@ keywords."
     ("inherit"          nil     0       caml-inherit-indent)
     ("initializer"      nil     0       caml-initializer-indent)
     ("let"              nil     6       caml-let-indent)
-    ("def"              nil     6       caml-let-indent)
     ("let-in"           nil     6       caml-let-in-indent)
     ("match"            nil     6       caml-match-indent)
     ("method"           nil     0       caml-method-indent)
@@ -1275,7 +1275,8 @@ keywords."
     ("{"                t       8       caml-lc-indent)
     ("\("               t       8       caml-lp-indent)
     ("|"                nil     2       caml-no-indent)
-    (";;"               nil     0       caml-no-indent))
+    (";;"               nil     0       caml-no-indent))))
+    (if caml-is-jocaml (cons '("def" nil 6 caml-let-indent) aux) aux))
 ; if-else and let-in are not keywords but idioms
 ; "|" is not in the regexps
 ; all these 3 values correspond to hard-coded names
