@@ -73,6 +73,7 @@ Bug fixes:
 - PR#4448 runtime: huge page table on 64-bit architectures
 - PR#4450 compilers: stack overflow with recursive modules
 - PR#4470 compilers: type-checking of recursive modules too restrictive
+- PR#4472 configure: autodetection of libX11.so on Fedora x86_64
 - printf: removed (partially implemented) positional specifications
 - polymorphic < and <= comparisons: some C compiler optimizations
   were causing incorrect results when arguments are incomparable
