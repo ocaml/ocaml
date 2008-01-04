@@ -13,6 +13,8 @@
 ;(* $Id$ *)
 
 ;;; caml.el --- O'Caml code editing commands for Emacs
+;; Luc Maranget, January 2008. A few jocaml additions.
+(defconst caml-is-jocaml t)
 
 ;; Xavier Leroy, july 1993.
 
@@ -482,10 +484,10 @@ have caml-electric-indent on, which see.")
   "Hook for caml-mode")
 
 (defun caml-mode ()
-  "Major mode for editing Caml code.
+  "Major mode for editing (Jo)Caml code.
 
 \\{caml-mode-map}"
-
+  
   (interactive)
   (kill-all-local-variables)
   (setq major-mode 'caml-mode)
@@ -890,9 +892,13 @@ whole string."
 ;itz the heuristics used to see if we're `between two phrases'
 ;didn't seem right to me.
 
+(defconst caml-let-def
+  (if caml-is-jocaml "\\|let\\|def" "\\|let"))
+
 (defconst caml-phrase-start-keywords
   (concat "\\<\\(class\\|ex\\(ternal\\|ception\\)\\|functor"
-          "\\|let\\|module\\|open\\|type\\|val\\)\\>")
+	  caml-let-def
+          "\\|module\\|open\\|type\\|val\\)\\>")
   "Keywords starting phrases in files")
 
 ;; a phrase starts when a toplevel keyword is at the beginning of a line
@@ -1137,11 +1143,14 @@ Used to distinguish it from toplevel let construct.")
 
 (defconst caml-matching-kw-regexp
   (concat
-   "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in\\|t\\(hen\\|o\\)"
+   "\\<\\(and"
+   (if caml-is-jocaml "\\|or" "")
+   "\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in\\|t\\(hen\\|o\\)"
    "\\|with\\)\\>\\|[^[|]|")
   "Regexp used in caml mode for skipping back over nested blocks.")
 
 (defconst caml-matching-kw-alist
+  (let ((aux
   '(("|" . caml-find-pipe-match)
     (";" . caml-find-semi-match)
     ("," . caml-find-comma-match)
@@ -1153,8 +1162,8 @@ Used to distinguish it from toplevel let construct.")
     ("then" . caml-find-then-match)
     ("to" . caml-find-done-match)
     ("do" . caml-find-done-match)
-    ("and" . caml-find-and-match))
-
+    ("and" . caml-find-and-match))))
+    (if caml-is-jocaml (cons '("or" . caml-find-and-match) aux) aux))
   "Association list used in caml mode for skipping back over nested blocks.")
 
 (defconst caml-kwop-regexps (make-vector 9 nil)
@@ -1242,6 +1251,7 @@ keywords."
     ("inherit"          nil     0       caml-inherit-indent)
     ("initializer"      nil     0       caml-initializer-indent)
     ("let"              nil     6       caml-let-indent)
+    ("def"              nil     6       caml-let-indent)
     ("let-in"           nil     6       caml-let-in-indent)
     ("match"            nil     6       caml-match-indent)
     ("method"           nil     0       caml-method-indent)
@@ -1291,7 +1301,9 @@ the line where the governing keyword occurs.")
 (aset caml-kwop-regexps 2
       (concat
        (aref caml-kwop-regexps 1)
-       "\\|\\<\\(fun\\(ction\\)?\\|initializer\\|let\\|m\\(atch\\|ethod\\)"
+       "\\|\\<\\(fun\\(ction\\)?\\|initializer\\|let"
+       (if caml-is-jocaml "\\|def" "")
+       "\\|m\\(atch\\|ethod\\)"
        "\\|parser\\|try\\|val\\)\\>\\|->"))
 (aset caml-kwop-regexps 3
       (concat (aref caml-kwop-regexps 2) "\\|\\<if\\|when\\>"))
@@ -1335,10 +1347,13 @@ the line where the governing keyword occurs.")
     (if (string= kwop ":begin") "begin"
       kwop)))
 
+(defconst caml-in-match-regex
+  (concat "\\<\\(in" caml-let-def "\\|end\\)\\>"))
+
 (defun caml-find-in-match ()
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
-      (setq kwop (caml-find-kwop "\\<\\(in\\|let\\|end\\)\\>"))
+      (setq kwop  (caml-find-kwop  caml-in-match-regex))
       (cond
        ((not kwop))
        ((string= kwop "end") (caml-find-end-match))
@@ -1430,11 +1445,15 @@ the line where the governing keyword occurs.")
        (t (setq done t))))
     kwop))
 
+(defconst caml-and-match-regex
+  (concat
+   "\\<\\(object\\|exception"
+   caml-let-def "\\|type\\|end\\|in\\)\\>"))
+
 (defun caml-find-and-match ()
   (let ((done nil) (kwop))
     (while (not done)
-      (setq kwop (caml-find-kwop
-                  "\\<\\(object\\|exception\\|let\\|type\\|end\\|in\\)\\>"))
+      (setq kwop (caml-find-kwop caml-and-match-regex))
       (cond
        ((not kwop) (setq done t))
        ((string= kwop "end") (caml-find-end-match))
@@ -1559,25 +1578,28 @@ Does not preserve point."
 (defconst caml-leading-kwops-regexp
   (concat
    "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in"
+   (if caml-is-jocaml "\\|or" "")
    "\\|t\\(hen\\|o\\)\\|with\\)\\>\\|[]|})]")
 
   "Regexp matching caml keywords which need special indentation.")
 
 (defconst caml-leading-kwops-alist
-  '(("and" caml-and-extra-indent 2)
-    ("do" caml-do-extra-indent 0)
-    ("done" caml-done-extra-indent 0)
-    ("else" caml-else-extra-indent 3)
-    ("end" caml-end-extra-indent 0)
-    ("in" caml-in-extra-indent 2)
-    ("then" caml-then-extra-indent 3)
-    ("to" caml-to-extra-indent 0)
-    ("with" caml-with-extra-indent 2)
-    ("|" caml-|-extra-indent 2)
-    ("]" caml-rb-extra-indent 0)
-    ("}" caml-rc-extra-indent 0)
-    (")" caml-rp-extra-indent 0))
-
+  (let
+      ((aux
+	'(("and" caml-and-extra-indent 2)
+	  ("do" caml-do-extra-indent 0)
+	  ("done" caml-done-extra-indent 0)
+	  ("else" caml-else-extra-indent 3)
+	  ("end" caml-end-extra-indent 0)
+	  ("in" caml-in-extra-indent 2)
+	  ("then" caml-then-extra-indent 3)
+	  ("to" caml-to-extra-indent 0)
+	  ("with" caml-with-extra-indent 2)
+	  ("|" caml-|-extra-indent 2)
+	  ("]" caml-rb-extra-indent 0)
+	  ("}" caml-rc-extra-indent 0)
+	  (")" caml-rp-extra-indent 0))))
+    (if caml-is-jocaml (cons '("or" caml-and-extra-indent 2) aux) aux))
   "Association list of special caml keyword indent values.
 
 Each member is of the form (KEYWORD EXTRA-INDENT PRIO) where
