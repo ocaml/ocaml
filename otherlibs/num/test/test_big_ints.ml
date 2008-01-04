@@ -299,6 +299,24 @@ testing_function "int_of_big_int";;
 
 test 1
 eq_int (int_of_big_int (big_int_of_int 1), 1);;
+test 2
+eq_int (int_of_big_int (big_int_of_int(-1)), -1);;
+test 3
+eq_int (int_of_big_int zero_big_int, 0);;
+test 4
+eq_int (int_of_big_int (big_int_of_int max_int), max_int);;
+test 5
+eq_int (int_of_big_int (big_int_of_int min_int), min_int);;
+failwith_test 6
+  (fun () -> int_of_big_int (succ_big_int (big_int_of_int max_int)))
+  () (Failure "int_of_big_int");;
+failwith_test 7
+  (fun () -> int_of_big_int (pred_big_int (big_int_of_int min_int)))
+  () (Failure "int_of_big_int");;
+failwith_test 8
+  (fun () -> int_of_big_int (mult_big_int (big_int_of_int min_int)
+                                          (big_int_of_int 2)))
+  () (Failure "int_of_big_int");;
 
 
 testing_function "is_int_big_int";;
@@ -673,3 +691,82 @@ test 3 eq_big_int
  (square_big_int (big_int_of_string "-1"), big_int_of_string "1");;
 test 4 eq_big_int
  (square_big_int (big_int_of_string "-7"), big_int_of_string "49");;
+
+
+testing_function "big_int_of_nativeint";;
+
+test 1 eq_big_int
+  (big_int_of_nativeint 0n, zero_big_int);;
+test 2 eq_big_int
+  (big_int_of_nativeint 1234n, big_int_of_string "1234");;
+test 3 eq_big_int
+  (big_int_of_nativeint (-1234n), big_int_of_string "-1234");;
+
+testing_function "nativeint_of_big_int";;
+
+test 1 eq_nativeint
+  (nativeint_of_big_int zero_big_int, 0n);;
+test 2 eq_nativeint
+  (nativeint_of_big_int (big_int_of_string "1234"), 1234n);;
+test 2 eq_nativeint
+  (nativeint_of_big_int (big_int_of_string "-1234"), -1234n);;
+
+testing_function "big_int_of_int32";;
+
+test 1 eq_big_int
+  (big_int_of_int32 0l, zero_big_int);;
+test 2 eq_big_int
+  (big_int_of_int32 2147483647l, big_int_of_string "2147483647");;
+test 3 eq_big_int
+  (big_int_of_int32 (-2147483648l), big_int_of_string "-2147483648");;
+
+testing_function "int32_of_big_int";;
+
+test 1 eq_int32
+  (int32_of_big_int zero_big_int, 0l);;
+test 2 eq_int32
+  (int32_of_big_int (big_int_of_string "2147483647"), 2147483647l);;
+test 3 eq_int32
+  (int32_of_big_int (big_int_of_string "-2147483648"), -2147483648l);;
+test 4 eq_int32
+  (int32_of_big_int (big_int_of_string "-2147"), -2147l);;
+let should_fail s =
+  try ignore (int32_of_big_int (big_int_of_string s)); 0
+  with Failure _ -> 1;;
+test 5 eq_int
+  (should_fail "2147483648", 1);;
+test 6 eq_int
+  (should_fail "-2147483649", 1);;
+test 7 eq_int
+  (should_fail "4294967296", 1);;
+test 8 eq_int
+  (should_fail "18446744073709551616", 1);;
+
+testing_function "big_int_of_int64";;
+
+test 1 eq_big_int
+  (big_int_of_int64 0L, zero_big_int);;
+test 2 eq_big_int
+  (big_int_of_int64 9223372036854775807L, big_int_of_string "9223372036854775807");;
+test 3 eq_big_int
+  (big_int_of_int64 (-9223372036854775808L), big_int_of_string "-9223372036854775808");;
+
+testing_function "int64_of_big_int";;
+
+test 1 eq_int64
+  (int64_of_big_int zero_big_int, 0L);;
+test 2 eq_int64
+  (int64_of_big_int (big_int_of_string "9223372036854775807"), 9223372036854775807L);;
+test 2 eq_int64
+  (int64_of_big_int (big_int_of_string "-9223372036854775808"), -9223372036854775808L);;
+test 3 eq_int64
+  (int64_of_big_int (big_int_of_string "-9223372036854775"), -9223372036854775L);;
+let should_fail s =
+  try ignore (int64_of_big_int (big_int_of_string s)); 0
+  with Failure _ -> 1;;
+test 4 eq_int
+  (should_fail "9223372036854775808", 1);;
+test 5 eq_int
+  (should_fail "-9223372036854775809", 1);;
+test 6 eq_int
+  (should_fail "18446744073709551616", 1);;

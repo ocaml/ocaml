@@ -22,6 +22,8 @@ external set_to_zero_nat: nat -> int -> int -> unit = "set_to_zero_nat"
 external blit_nat: nat -> int -> nat -> int -> int -> unit = "blit_nat"
 external set_digit_nat: nat -> int -> int -> unit = "set_digit_nat"
 external nth_digit_nat: nat -> int -> int = "nth_digit_nat"
+external set_digit_nat_native: nat -> int -> nativeint -> unit = "set_digit_nat_native"
+external nth_digit_nat_native: nat -> int -> nativeint = "nth_digit_nat_native"
 external num_digits_nat: nat -> int -> int -> int = "num_digits_nat"
 external num_leading_zero_bits_in_digit: nat -> int -> int = "num_leading_zero_bits_in_digit"
 external is_digit_int: nat -> int -> bool = "is_digit_int"
@@ -568,4 +570,3 @@ let sys_nat_of_string base s off len =
 let nat_of_string s = sys_nat_of_string 10 s 0 (String.length s)
 
 let float_of_nat nat = float_of_string(string_of_nat nat)
-

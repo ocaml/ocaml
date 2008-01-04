@@ -31,10 +31,10 @@ TESTFILES=test.cmo \
 TESTOPTFILES=$(TESTFILES:.cmo=.cmx)
 
 test.byt: $(TESTFILES) ../nums.cma ../libnums.a
-	$(CAMLC) -ccopt -L.. -o test.byt ../nums.cma $(TESTFILES)
+	$(CAMLC) -ccopt -L.. -I .. -o test.byt ../nums.cma $(TESTFILES)
 
 test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.a
-	$(CAMLOPT) -ccopt -L.. -o test.opt ../nums.cmxa $(TESTOPTFILES)
+	$(CAMLOPT) -ccopt -L.. -I .. -o test.opt ../nums.cmxa $(TESTOPTFILES)
 
 test_bng: test_bng.o
 	$(CC) $(CFLAGS) -o test_bng ../bng.o test_bng.o -lbignum

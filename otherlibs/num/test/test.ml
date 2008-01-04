@@ -71,7 +71,10 @@ let end_tests () =
  end;;
 
 let eq = (==);;
-let eq_int = (==);;
-let eq_string = (=);;
+let eq_int (i: int) (j: int) = (i = j);;
+let eq_string (i: string) (j: string) = (i = j);;
+let eq_nativeint (i: nativeint) (j: nativeint) = (i = j);;
+let eq_int32 (i: int32) (j: int32) = (i = j);;
+let eq_int64 (i: int64) (j: int64) = (i = j);;
 
 let sixtyfour = (1 lsl 31) <> 0;;

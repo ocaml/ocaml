@@ -327,6 +327,72 @@ let int_of_big_int bi =
     if eq_big_int bi monster_big_int then monster_int
     else failwith "int_of_big_int";;
 
+let big_int_of_nativeint i =
+  if i = 0n then
+    zero_big_int
+  else if i > 0n then begin
+    let res = create_nat 1 in
+    set_digit_nat_native res 0 i;
+    { sign = 1; abs_value = res }
+  end else begin
+    let res = create_nat 1 in
+    set_digit_nat_native res 0 (Nativeint.neg i);
+    { sign = -1; abs_value = res }
+  end
+
+let nativeint_of_big_int bi =
+  if num_digits_big_int bi > 1 then failwith "nativeint_of_big_int";
+  let i = nth_digit_nat_native bi.abs_value 0 in
+  if bi.sign >= 0 then
+    if i >= 0n then i else failwith "nativeint_of_big_int"
+  else
+    if i >= 0n || i = Nativeint.min_int 
+    then Nativeint.neg i
+    else failwith "nativeint_of_big_int"
+
+let big_int_of_int32 i = big_int_of_nativeint (Nativeint.of_int32 i)
+
+let int32_of_big_int bi =
+  let i = nativeint_of_big_int bi in
+  if i <= 0x7FFF_FFFFn && i >= -0x8000_0000n
+  then Nativeint.to_int32 i
+  else failwith "int32_of_big_int"
+
+let big_int_of_int64 i =
+  if Sys.word_size = 64 then
+    big_int_of_nativeint (Int64.to_nativeint i)
+  else begin
+    let (sg, absi) =
+      if i = 0L then (0, 0L)
+      else if i > 0L then (1, i)
+      else (-1, Int64.neg i) in
+    let res = create_nat 2 in
+    set_digit_nat_native res 0 (Int64.to_nativeint i);
+    set_digit_nat_native res 1 (Int64.to_nativeint (Int64.shift_left i 32));
+    { sign = sg; abs_value = res }
+  end
+
+let int64_of_big_int bi =
+  if Sys.word_size = 64 then
+    Int64.of_nativeint (nativeint_of_big_int bi)
+  else begin
+    let i =
+      match num_digits_big_int bi with
+      | 1 -> Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0)
+      | 2 -> Int64.logor
+               (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))
+               (Int64.shift_left 
+                 (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 1))
+                 32)
+      | _ -> failwith "int64_of_big_int" in
+    if bi.sign >= 0 then
+      if i >= 0L then i else failwith "int64_of_big_int"
+    else
+      if i >= 0L || i = Int64.min_int
+      then Int64.neg i
+      else failwith "int64_of_big_int"
+  end  
+
 (* Coercion with nat type *)
 let nat_of_big_int bi =
  if bi.sign = -1
