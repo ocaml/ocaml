@@ -1276,7 +1276,12 @@ keywords."
     ("\("               t       8       caml-lp-indent)
     ("|"                nil     2       caml-no-indent)
     (";;"               nil     0       caml-no-indent))))
-    (if caml-is-jocaml (cons '("def" nil 6 caml-let-indent) aux) aux))
+    (if caml-is-jocaml
+	(cons
+	 '("def" nil 6 caml-let-indent)
+	 (cons
+	  '("reply" nil 6 caml-while-indent) aux))
+      aux))
 ; if-else and let-in are not keywords but idioms
 ; "|" is not in the regexps
 ; all these 3 values correspond to hard-coded names
@@ -1324,10 +1329,15 @@ the line where the governing keyword occurs.")
        "\\|\\<\\(constraint\\|exception\\|in\\(herit\\|clude\\)"
        "\\|o\\(f\\|pen\\)\\|type\\)\\>"))
 
+(defconst caml-reply (if caml-is-jocaml "\\|reply" ""))
+
+(defconst caml-done-match-regex
+  (concat "\\<\\(done\\|for" caml-reply "\\|while\\)\\>"))
+  
 (defun caml-find-done-match ()
   (let ((unbalanced 1) (kwop t))
     (while (and (not (= 0 unbalanced)) kwop)
-      (setq kwop (caml-find-kwop "\\<\\(done\\|for\\|while\\)\\>"))
+      (setq kwop (caml-find-kwop caml-done-match-regex))
       (cond
        ((not kwop))
        ((string= kwop "done") (setq unbalanced (1+ unbalanced)))

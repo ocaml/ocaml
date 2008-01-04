@@ -90,7 +90,7 @@
 ;control
    (cons (concat
           "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|i\\(f\\|gnore\\)"
-          "\\|lazy\\|match\\|new\\|spawn\\|t\\(hen\\|o\\|ry\\)"
+          "\\|lazy\\|match\\|new\\|reply\\|spawn\\|t\\(hen\\|o\\|ry\\)"
           "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
           "\\|\|\\|->\\|&\\|#")
          'font-lock-reference-face)
