@@ -14,7 +14,7 @@
 # $Id$
 
 LIBNAME=bigarray
-EXTRACFLAGS=-I../unix -DIN_OCAML_BIGARRAY
+EXTRACFLAGS=-I../unix -DIN_OCAML_BIGARRAY -DCAML_NAME_SPACE
 EXTRACAMLFLAGS=-I ../unix
 COBJS=bigarray_stubs.$(O) mmap_unix.$(O)
 CAMLOBJS=bigarray.cmo
