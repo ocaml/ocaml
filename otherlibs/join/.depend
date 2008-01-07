@@ -1,6 +1,9 @@
+joinFifo.cmi: join.cmi 
+joinFifo.cmo: join.cmi joinFifo.cmi 
+joinFifo.cmx: join.cmx joinFifo.cmi 
 join.cmo: site.cmo ns.cmo join.cmi 
 join.cmx: site.cmx ns.cmx join.cmi 
+joinProc.cmo: joinProc.cmi 
+joinProc.cmx: joinProc.cmi 
 ns.cmo: site.cmo 
 ns.cmx: site.cmx 
-proc.cmo: proc.cmi 
-proc.cmx: proc.cmi 

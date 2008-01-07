@@ -21,8 +21,10 @@ JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
 COMPFLAGS=-warn-error A
 
-
-JOIN_OBJS=site.cmo ns.cmo join.cmo proc.cmo
+STDJOIN_OBJS=joinProc.cmo joinFifo.cmo joinCount.cmo
+STDJOIN_MLI=$(STDJOIN_OBJS:.cmo=.mli)
+STDJOIN_CMI=$(STDJOIN_OBJS:.cmo=.cmi)
+JOIN_OBJS=site.cmo ns.cmo join.cmo $(STDJOIN_OBJS)
 JOIN_X=$(JOIN_OBJS:.cmo=.cmx)
 
 VMTHREADSLIB=../threads
@@ -59,13 +61,12 @@ partialclean::
 
 clean: partialclean
 
-
 install:
 	cp join.mli join.cmi $(LIBDIR)/vmthreads
-	cp proc.mli proc.cmi $(LIBDIR)/vmthreads
+	cp $(STDJOIN_MLI) $(STDJOIN_CMI) $(LIBDIR)/vmthreads
 	cp vmjoin.cma $(LIBDIR)/vmthreads/join.cma
 	cp join.mli join.cmi $(LIBDIR)/threads
-	cp proc.mli proc.cmi $(LIBDIR)/threads
+	cp  $(STDJOIN_MLI) $(STDJOIN_CMI) $(LIBDIR)/threads
 	cp join.cma $(LIBDIR)/threads/join.cma
 
 installopt:
