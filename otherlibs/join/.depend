@@ -1,4 +1,7 @@
+joinCount.cmi: join.cmi 
 joinFifo.cmi: join.cmi 
+joinCount.cmo: join.cmi joinCount.cmi 
+joinCount.cmx: join.cmx joinCount.cmi 
 joinFifo.cmo: join.cmi joinFifo.cmi 
 joinFifo.cmx: join.cmx joinFifo.cmi 
 join.cmo: site.cmo ns.cmo join.cmi 

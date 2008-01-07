@@ -1,6 +1,8 @@
+- Added 'JoinFifo' and 'JoinCount' in standard library.
+
 - Started a bit of emacs mode.
 
-- Added module 'Proc' in the standard library.
+- Added module 'JoinProc' in standard library.
 
 - Handle type constraints in join-patterns (slight change
   in typecore).
