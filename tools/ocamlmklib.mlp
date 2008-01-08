@@ -74,7 +74,7 @@ let parse_arguments argv =
       caml_opts := next_arg () :: "-I" :: !caml_opts
     else if s = "-failsafe" then
       failsafe := true
-    else if s = "-h" || s = "-help" then
+    else if s = "-h" || s = "-help" || s = "--help" then
       raise (Bad_argument "")
     else if s = "-ldopt" then
       ld_opts := next_arg () :: !ld_opts
@@ -136,6 +136,11 @@ Options are:
   -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only
   -custom        disable dynamic loading
   -dllpath <dir> Add <dir> to the run-time search path for DLLs
+  -F<dir>        Specify a framework directory (MacOSX)
+  -framework <name>    Use framework <name> (MacOSX)
+  -help          Print this help message and exit
+  --help         Same as -help
+  -h             Same as -help
   -I <dir>       Add <dir> to the path searched for Caml object files
   -failsafe      fall back to static linking if DLL construction failed
   -ldopt <opt>   C option passed to the shared linker only
@@ -149,12 +154,11 @@ Options are:
   -rpath <dir>   Same as -dllpath <dir>
   -R<dir>        Same as -rpath
   -verbose       Print commands before executing them
+  -v             same as -verbose
+  -version       Print version and exit
   -Wl,-rpath,<dir>     Same as -dllpath <dir>
   -Wl,-rpath -Wl,<dir> Same as -dllpath <dir>
   -Wl,-R<dir>          Same as -dllpath <dir>
-  -F<dir>        Specify a framework directory (MacOSX)
-  -framework <name>    Use framework <name> (MacOSX)
-  -version       Print version and exit
 "
 
 let command cmd =
