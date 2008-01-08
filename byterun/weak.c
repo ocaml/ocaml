@@ -52,15 +52,11 @@ CAMLprim value caml_weak_set (value ar, value n, value el)
   if (offset < 1 || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
-  Field (ar, offset) = caml_weak_none;
   if (el != None_val){
-    value v;                                  Assert (Wosize_val (el) == 1);
-    v = Field (el, 0);
-    if (Is_block (v) && (Is_young (v) || Is_in_heap (v))){
-      Modify (&Field (ar, offset), v);
-    }else{
-      Field (ar, offset) = v;
-    }
+                                              Assert (Wosize_val (el) == 1);
+    Modify (&Field (ar, offset), Field (el, 0));
+  }else{
+    Field (ar, offset) = caml_weak_none;
   }
   return Val_unit;
 }
@@ -140,4 +136,40 @@ CAMLprim value caml_weak_check (value ar, value n)
     caml_invalid_argument ("Weak.get");
   }
   return Val_bool (Field (ar, offset) != caml_weak_none);
+}
+
+CAMLprim value caml_weak_blit (value ars, value ofs,
+                               value ard, value ofd, value len)
+{
+  mlsize_t offset_s = Long_val (ofs) + 1;
+  mlsize_t offset_d = Long_val (ofd) + 1;
+  mlsize_t length = Long_val (len);
+  long i;
+                                                   Assert (Is_in_heap (ars));
+                                                   Assert (Is_in_heap (ard));
+  if (offset_s < 1 || offset_s + length > Wosize_val (ars)){
+    caml_invalid_argument ("Weak.blit");
+  }
+  if (offset_d < 1 || offset_d + length > Wosize_val (ard)){
+    caml_invalid_argument ("Weak.blit");
+  }
+  if (caml_gc_phase == Phase_mark && caml_gc_subphase == Subphase_weak1){
+    for (i = 0; i < length; i++){
+      value v = Field (ars, offset_s + i);
+      if (v != caml_weak_none && Is_block (v) && Is_in_heap (v)
+          && Is_white_val (v)){
+        Field (ars, offset_s + i) = caml_weak_none;
+      }
+    }
+  }
+  if (offset_d < offset_s){
+    for (i = 0; i < length; i++){
+      Modify (&Field (ard, offset_d + i), Field (ars, offset_s + i));
+    }
+  }else{
+    for (i = length - 1; i >= 0; i--){
+      Modify (&Field (ard, offset_d + i),  Field (ars, offset_s + i));
+    }
+  }
+  return Val_unit;
 }

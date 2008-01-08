@@ -50,11 +50,7 @@ extern char *caml_fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
 
-static int gc_subphase;     /* Subphase_main Subphase_weak[12] Subphase_final */
-#define Subphase_main 10
-#define Subphase_weak1 11
-#define Subphase_weak2 12
-#define Subphase_final 13
+int caml_gc_subphase;     /* Subphase_{main,weak1,weak2,final} */
 static value *weak_prev;
 
 #ifdef DEBUG
@@ -118,7 +114,7 @@ static void start_cycle (void)
   caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
   caml_darken_all_roots();
   caml_gc_phase = Phase_mark;
-  gc_subphase = Subphase_main;
+  caml_gc_subphase = Subphase_main;
   markhp = NULL;
 #ifdef DEBUG
   ++ major_gc_counter;
@@ -134,7 +130,7 @@ static void mark_slice (intnat work)
   mlsize_t size, i;
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
-  caml_gc_message (0x40, "Subphase = %ld\n", gc_subphase);
+  caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   gray_vals_ptr = gray_vals_cur;
   while (work > 0){
     if (gray_vals_ptr > gray_vals){
@@ -196,12 +192,12 @@ static void mark_slice (intnat work)
       chunk = caml_heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
-    }else if (gc_subphase == Subphase_main){
+    }else if (caml_gc_subphase == Subphase_main){
       /* The main marking phase is over.  Start removing weak pointers to
          dead values. */
-      gc_subphase = Subphase_weak1;
+      caml_gc_subphase = Subphase_weak1;
       weak_prev = &caml_weak_list_head;
-    }else if (gc_subphase == Subphase_weak1){
+    }else if (caml_gc_subphase == Subphase_weak1){
       value cur, curfield;
       mlsize_t sz, i;
       header_t hd;
@@ -236,10 +232,10 @@ static void mark_slice (intnat work)
         work -= Whsize_hd (hd);
       }else{
         /* Subphase_weak1 is done.  Start removing dead weak arrays. */
-        gc_subphase = Subphase_weak2;
+        caml_gc_subphase = Subphase_weak2;
         weak_prev = &caml_weak_list_head;
       }
-    }else if (gc_subphase == Subphase_weak2){
+    }else if (caml_gc_subphase == Subphase_weak2){
       value cur;
       header_t hd;
 
@@ -258,10 +254,10 @@ static void mark_slice (intnat work)
         gray_vals_cur = gray_vals_ptr;
         caml_final_update ();
         gray_vals_ptr = gray_vals_cur;
-        gc_subphase = Subphase_final;
+        caml_gc_subphase = Subphase_final;
       }
     }else{
-      Assert (gc_subphase == Subphase_final);
+      Assert (caml_gc_subphase == Subphase_final);
       /* Initialise the sweep phase. */
       gray_vals_cur = gray_vals_ptr;
       caml_gc_sweep_hp = caml_heap_start;
