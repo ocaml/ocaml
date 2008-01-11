@@ -85,8 +85,9 @@ void caml_final_update (void)
       Assert (Is_in_heap (final_table[i].val));
       if (Is_white_val (final_table[i].val)){
         if (Tag_val (final_table[i].val) == Forward_tag){
+          value fv;
           Assert (final_table[i].offset == 0);
-          value fv = Forward_val (final_table[i].val);
+          fv = Forward_val (final_table[i].val);
           if (Is_block (fv) && Is_in_value_area(fv)
               && (Tag_val (fv) == Forward_tag || Tag_val (fv) == Lazy_tag
                   || Tag_val (fv) == Double_tag)){
