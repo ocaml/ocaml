@@ -18,8 +18,8 @@ cd package-macosx
 rm -rf ocaml.pkg ocaml-rw.dmg
 
 VERSION=`head -1 ../VERSION`
-VERSION_MAJOR=`sed -n -e '1s/^\([0-9]*\)\..*/\1/p' ../VERSION
-VERSION_MINOR=`sed -n -e '1s/^[0-9]*\.\([0-9]*\)[.+].*/\1/p' ../VERSION
+VERSION_MAJOR=`sed -n -e '1s/^\([0-9]*\)\..*/\1/p' ../VERSION`
+VERSION_MINOR=`sed -n -e '1s/^[0-9]*\.\([0-9]*\)[.+].*/\1/p' ../VERSION`
 
 # Worked in 10.2:
 
@@ -112,7 +112,7 @@ Files will be installed in the following directories:
 EOF
 
 chmod -R g-w root
-sudo chown -R root:admin root
+sudo chown -R root:wheel root
 
 /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
   -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/Info.plist" \
@@ -136,6 +136,7 @@ else
 fi
 open "/Volumes/Objective Caml"
 hdiutil detach $name
+sleep 2  # give the Finder time to remove the icon from the Desktop
 
 rm -rf "ocaml-${VERSION}.dmg"
 hdiutil convert ocaml-rw.dmg -format UDZO -o "ocaml-${VERSION}.dmg"
