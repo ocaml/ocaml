@@ -80,7 +80,7 @@ BYTECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
 BYTECCCOMPOPTS=/Ox /MD
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=/MD
+BYTECCLINKOPTS=/MD /F16777216
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
 DLLCCCOMPOPTS=/Ox /MD
@@ -131,7 +131,7 @@ NATIVECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
 NATIVECCCOMPOPTS=/Ox /MD
 
 ### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=/MD
+NATIVECCLINKOPTS=/MD /F16777216
 
 ### Build partially-linked object file
 PACKLD=link /lib /nologo /out:# there must be no space after this '/out:'

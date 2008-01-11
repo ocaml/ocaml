@@ -18,6 +18,8 @@
  * - Nicolas Pouillard: refactoring
  *)
 
+(* $Id$ *)
+
 (** Camlp4 signature repository *)
 
 (** {6 Basic signatures} *)
@@ -42,7 +44,7 @@ module type Id = sig
   (** The name of the extension, typically the module name. *)
   value name    : string;
 
-  (** The version of the extension, typically $Id$ with a versionning system. *)
+  (** The version of the extension, typically $ Id$ with a versionning system. *)
   value version : string;
 
 end;

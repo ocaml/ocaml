@@ -89,8 +89,11 @@ THIRD-PARTY SOFTWARE:
     the Microsoft Windows Server 2003 SP1 Platform SDK, which can
     be downloaded for free from http://www.microsoft.com/.
 
-[3] MASM version 6.11 or later. MASM can be
-    downloaded for free from Microsoft's Web site; for directions, see
+[3] MASM version 6.11 or later. The full distribution of Visual C++ 2005
+    contains MASM version 8.  Users of the Express Edition of Visual C++
+    2005 can download MASM version 8 from
+http://www.microsoft.com/downloads/details.aspx?FamilyID=7A1C9DA0-0510-44A2-B042-7EF370530C64&displaylang=en
+    To obtain MASM version 6.11, see
     http://users.easystreet.com/jkirwan/new/pctools.html. 
 
 [4] TCL/TK version 8.4.  Windows binaries are available as part of the
@@ -103,7 +106,7 @@ distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
 for Windows.
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, or XP.
+- Windows NT, 2000, XP, or Vista.
 - Items [1], [2], [3] and [4] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
 
@@ -205,7 +208,7 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 RECOMPILATION FROM THE SOURCES:
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, or XP.
+- Windows NT, 2000, XP, or Vista.
 - Cygwin: http://sourceware.cygnus.com/cygwin/
 - TCL/TK version 8.4 (see above).
 

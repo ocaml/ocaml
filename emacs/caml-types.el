@@ -146,10 +146,8 @@ See `caml-types-location-re' for annotation file format.
          (target-line (1+ (count-lines (point-min)
                                        (caml-line-beginning-position))))
          (target-bol (caml-line-beginning-position))
-         (target-cnum (point))
-         (type-file (concat (file-name-sans-extension (buffer-file-name))
-                            ".annot")))
-    (caml-types-preprocess type-file)
+         (target-cnum (point)))
+    (caml-types-preprocess (buffer-file-name))
     (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
     (let* ((targ-loc (vector target-file target-line target-bol target-cnum))
            (node (caml-types-find-location targ-loc "type" ()
@@ -323,28 +321,47 @@ See `caml-types-location-re' for annotation file format.
       (delete-overlay caml-types-scope-ovl)
       )))
 
-(defun caml-types-preprocess (type-file)
-  (let* ((type-date (nth 5 (file-attributes type-file)))
-         (target-file (file-name-nondirectory (buffer-file-name)))
+(defun caml-types-preprocess (target-path)
+  (let* ((type-path (caml-types-locate-type-file target-path))
+         (type-date (nth 5 (file-attributes (file-chase-links type-path))))
          (target-date (nth 5 (file-attributes target-file))))
     (unless (and caml-types-annotation-tree
                  type-date
                  caml-types-annotation-date
                  (not (caml-types-date< caml-types-annotation-date type-date)))
       (if (and type-date target-date (caml-types-date< type-date target-date))
-          (error (format "%s is more recent than %s" target-file type-file)))
+          (error (format "`%s' is more recent than `%s'" target-path type-path)))
       (message "Reading annotation file...")
-      (let* ((type-buf (caml-types-find-file type-file))
+      (let* ((type-buf (caml-types-find-file type-path))
              (tree (with-current-buffer type-buf
                     (widen)
                     (goto-char (point-min))
-                    (caml-types-build-tree target-file))))
+                    (caml-types-build-tree 
+                     (file-name-nondirectory target-path)))))
         (setq caml-types-annotation-tree tree
               caml-types-annotation-date type-date)
         (kill-buffer type-buf)
         (message "done"))
       )))
 
+(defun caml-types-locate-type-file (target-path)
+ (let ((sibling (concat (file-name-sans-extension target-path) ".annot")))
+   (if (file-exists-p sibling)
+       sibling
+     (defun parent-dir (d) (file-name-directory (directory-file-name d)))
+     (let ((project-dir (file-name-directory sibling))
+           type-path)
+       (while (not (file-exists-p 
+                    (setq type-path 
+                          (expand-file-name
+                           (file-relative-name sibling project-dir)
+                           (expand-file-name "_build" project-dir)))))
+         (if (equal project-dir (parent-dir project-dir))
+             (error (concat "No annotation file. "
+                            "You should compile with option \"-dtypes\".")))
+         (setq project-dir (parent-dir project-dir)))
+       type-path))))
+   
 (defun caml-types-date< (date1 date2)
   (or (< (car date1) (car date2))
       (and (= (car date1) (car date2))
@@ -553,7 +570,7 @@ See `caml-types-location-re' for annotation file format.
      (with-current-buffer buf (toggle-read-only 1))
      )
    (t
-    (error "No annotation file. You should compile with option \"-annot\"."))
+    (error (format "Can't read the annotation file `%s'" name)))
     )
   buf))
 
@@ -582,8 +599,6 @@ The function uses two overlays.
   (set-buffer (window-buffer (caml-event-window event)))
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
-         (type-file (concat (file-name-sans-extension (buffer-file-name))
-                            ".annot"))
          (target-line) (target-bol)
          target-pos
          Left Right limits cnum node mes type
@@ -597,7 +612,7 @@ The function uses two overlays.
     (select-window window)
     (unwind-protect
         (progn
-          (caml-types-preprocess type-file)
+          (caml-types-preprocess (buffer-file-name))
           (setq target-tree caml-types-annotation-tree)
           (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
           ;; (message "Drag the mouse to explore types")

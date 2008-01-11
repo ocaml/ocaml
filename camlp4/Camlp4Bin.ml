@@ -49,7 +49,7 @@ value add_to_loaded_modules name =
   loaded_modules.val := SSet.add name loaded_modules.val;
 
 value (objext,libext) =
-  if DynLoader.is_native then (".cmxs",".cmxs") 
+  if DynLoader.is_native then (".cmxs",".cmxs")
   else (".cmo",".cma");
 
 value rewrite_and_load n x =
@@ -219,7 +219,7 @@ value (task, do_task) =
 value input_file x =
   let dyn_loader = dyn_loader.val () in
   do {
-    rcall_callback.val (); 
+    rcall_callback.val ();
     match x with
     [ Intf file_name -> task (process_intf dyn_loader) file_name
     | Impl file_name -> task (process_impl dyn_loader) file_name

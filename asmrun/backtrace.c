@@ -59,8 +59,8 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
     h = Hash_retaddr(pc);
     while(1) {
       d = caml_frame_descriptors[h];
+      if (d == 0) return; /* can happen if some code not compiled with -g */
       if (d->retaddr == pc) break;
-      if (d->retaddr == 0) return;     /* should not happen */
       h = (h+1) & caml_frame_descriptors_mask;
     }
     /* Skip to next frame */

@@ -73,10 +73,10 @@ let transl_val tbl create name =
   mkappl (oo_prim (if create then "new_variable" else "get_variable"),
           [Lvar tbl; transl_label name])
 
-let transl_vals tbl create vals rem =
+let transl_vals tbl create strict vals rem =
   List.fold_right
     (fun (name, id) rem ->
-      Llet(StrictOpt, id, transl_val tbl create name, rem))
+      Llet(strict, id, transl_val tbl create name, rem))
     vals rem
 
 let meths_super tbl meths inh_meths =
@@ -90,7 +90,7 @@ let meths_super tbl meths inh_meths =
     inh_meths []
 
 let bind_super tbl (vals, meths) cl_init =
-  transl_vals tbl false vals
+  transl_vals tbl false StrictOpt vals
     (List.fold_right (fun (nm, id, def) rem -> Llet(StrictOpt, id, def, rem))
        meths cl_init)
 
@@ -205,22 +205,22 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
 
 
 let bind_method tbl lab id cl_init =
-  Llet(StrictOpt, id, mkappl (oo_prim "get_method_label",
-                              [Lvar tbl; transl_label lab]),
+  Llet(Strict, id, mkappl (oo_prim "get_method_label",
+                           [Lvar tbl; transl_label lab]),
        cl_init)
 
 let bind_methods tbl meths vals cl_init =
   let methl = Meths.fold (fun lab id tl -> (lab,id) :: tl) meths [] in
   let len = List.length methl and nvals = List.length vals in
   if len < 2 && nvals = 0 then Meths.fold (bind_method tbl) meths cl_init else
-  if len = 0 && nvals < 2 then transl_vals tbl true vals cl_init else
+  if len = 0 && nvals < 2 then transl_vals tbl true Strict vals cl_init else
   let ids = Ident.create "ids" in
   let i = ref (len + nvals) in
   let getter, names =
     if nvals = 0 then "get_method_labels", [] else
     "new_methods_variables", [transl_meth_list (List.map fst vals)]
   in
-  Llet(StrictOpt, ids,
+  Llet(Strict, ids,
        mkappl (oo_prim getter,
                [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
@@ -247,6 +247,8 @@ let rec index a = function
     [] -> raise Not_found
   | b :: l ->
       if b = a then 0 else 1 + index a l
+
+let bind_id_as_val (id, _) = ("", id)
 
 let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
   match cl.cl_desc with
@@ -310,16 +312,16 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
-      let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true vals cl_init)
+      let vals = List.map bind_id_as_val vals in
+      (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tclass_apply (cl, exprs) ->
       build_class_init cla cstr super inh_init cl_init msubst top cl
   | Tclass_let (rec_flag, defs, vals, cl) ->
       let (inh_init, cl_init) =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
-      let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true vals cl_init)
+      let vals = List.map bind_id_as_val vals in
+      (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tclass_constraint (cl, vals, meths, concr_meths) ->
       let virt_meths =
         List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
@@ -586,6 +588,9 @@ open M
    Si ids=0 (objet immediat), alors on ne conserve que env_init.
 *)
 
+let prerr_ids msg ids =
+  let names = List.map Ident.unique_toplevel_name ids in
+  prerr_endline (String.concat " " (msg :: names))
 
 let transl_class ids cl_id arity pub_meths cl vflag =
   (* First check if it is not only a rebind *)
@@ -603,10 +608,6 @@ let transl_class ids cl_id arity pub_meths cl vflag =
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
     let fv = List.fold_right IdentSet.remove !new_ids' fv in
-    (* IdentSet.iter
-      (fun id ->
-        if not (List.mem id new_ids) then prerr_endline (Ident.name id))
-      fv; *)
     let fv = IdentSet.filter (fun id -> List.mem id new_ids) fv in
     (* need to handle methods specially (PR#3576) *)
     let fm = IdentSet.diff (free_methods lam) meth_ids in

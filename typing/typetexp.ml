@@ -202,14 +202,12 @@ let rec transl_type env policy styp =
             (fun l -> if not (List.mem_assoc l row.row_fields) then
               raise(Error(styp.ptyp_loc, Present_has_no_type l)))
             present;
-          let bound = ref row.row_bound in
           let fields =
             List.map
               (fun (l,f) -> l,
                 if List.mem l present then f else
                 match Btype.row_field_repr f with
                 | Rpresent (Some ty) ->
-                    bound := ty :: !bound;
                     Reither(false, [ty], false, ref None)
                 | Rpresent None ->
                     Reither (true, [], false, ref None)
@@ -217,7 +215,7 @@ let rec transl_type env policy styp =
               row.row_fields
           in
           let row = { row_closed = true; row_fields = fields;
-                      row_bound = !bound; row_name = Some (path, args);
+                      row_bound = (); row_name = Some (path, args);
                       row_fixed = false; row_more = newvar () } in
           let static = Btype.static_row row in
           let row =
@@ -262,28 +260,31 @@ let rec transl_type env policy styp =
           instance t
       end
   | Ptyp_variant(fields, closed, present) ->
-      let bound = ref [] and name = ref None in
+      let name = ref None in
       let mkfield l f =
         newty (Tvariant {row_fields=[l,f]; row_more=newvar();
-                         row_bound=[]; row_closed=true;
+                         row_bound=(); row_closed=true;
                          row_fixed=false; row_name=None}) in
-      let add_typed_field loc l f fields =
+      let hfields = Hashtbl.create 17 in
+      let add_typed_field loc l f =
+        let h = Btype.hash_variant l in
         try
-          let f' = List.assoc l fields in
+          let (l',f') = Hashtbl.find hfields h in
+          (* Check for tag conflicts *)
+          if l <> l' then raise(Error(styp.ptyp_loc, Variant_tags(l, l')));
           let ty = mkfield l f and ty' = mkfield l f' in
-          if equal env false [ty] [ty'] then fields else
-          try unify env ty ty'; fields
+          if equal env false [ty] [ty'] then () else
+          try unify env ty ty'
           with Unify trace -> raise(Error(loc, Constructor_mismatch (ty,ty')))
         with Not_found ->
-          (l, f) :: fields
+          Hashtbl.add hfields h (l,f)
       in
-      let rec add_field fields = function
+      let rec add_field = function
           Rtag (l, c, stl) ->
             name := None;
             let f = match present with
               Some present when not (List.mem l present) ->
                 let tl = List.map (transl_type env policy) stl in
-                bound := tl @ !bound;
                 Reither(c, tl, false, ref None)
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
@@ -291,7 +292,7 @@ let rec transl_type env policy styp =
                 match stl with [] -> Rpresent None
                 | st :: _ -> Rpresent (Some(transl_type env policy st))
             in
-            add_typed_field styp.ptyp_loc l f fields
+            add_typed_field styp.ptyp_loc l f
         | Rinherit sty ->
             let ty = transl_type env policy sty in
             let nm =
@@ -299,7 +300,14 @@ let rec transl_type env policy styp =
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
               | _                        -> None
             in
-            name := if fields = [] then nm else None;
+            begin try
+              (* Set name if there are no fields yet *)
+              Hashtbl.iter (fun _ _ -> raise Exit) hfields;
+              name := nm
+            with Exit ->
+              (* Unset it otherwise *)
+              name := None
+            end;
             let fl = match expand_head env ty, nm with
               {desc=Tvariant row}, _ when Btype.static_row row ->
                 let row = Btype.row_repr row in
@@ -309,13 +317,12 @@ let rec transl_type env policy styp =
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
-            List.fold_left
-              (fun fields (l, f) ->
+            List.iter
+              (fun (l, f) ->
                 let f = match present with
                   Some present when not (List.mem l present) ->
                     begin match f with
                       Rpresent(Some ty) ->
-                        bound := ty :: !bound;
                         Reither(false, [ty], false, ref None)
                     | Rpresent None ->
                         Reither(true, [], false, ref None)
@@ -324,10 +331,11 @@ let rec transl_type env policy styp =
                     end
                 | _ -> f
                 in
-                add_typed_field sty.ptyp_loc l f fields)
-              fields fl
+                add_typed_field sty.ptyp_loc l f)
+              fl
       in
-      let fields = List.fold_left add_field [] fields in
+      List.iter add_field fields;
+      let fields = Hashtbl.fold (fun _ p l -> p :: l) hfields [] in
       begin match present with None -> ()
       | Some present ->
           List.iter
@@ -335,25 +343,18 @@ let rec transl_type env policy styp =
               raise(Error(styp.ptyp_loc, Present_has_no_type l)))
             present
       end;
-      (* Check for tag conflicts *)
-      let ht = Hashtbl.create (List.length fields + 1) in
-      List.iter
-        (fun (l,_) ->
-          let h = Btype.hash_variant l in
-          try
-            let l' = Hashtbl.find ht h in
-            if l <> l' then raise(Error(styp.ptyp_loc, Variant_tags(l, l')))
-          with Not_found ->
-            Hashtbl.add ht h l)
-        fields;
       let row =
         { row_fields = List.rev fields; row_more = newvar ();
-          row_bound = !bound; row_closed = closed;
+          row_bound = (); row_closed = closed;
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =
-        if static || policy <> Univars then row
-        else { row with row_more = new_pre_univar () }
+        if static then row else
+        match policy with
+          Fixed ->
+            raise (Error (styp.ptyp_loc, Unbound_type_variable ".."))
+        | Extensible -> row
+        | Univars -> { row with row_more = new_pre_univar () }
       in
       newty (Tvariant row)
   | Ptyp_poly(vars, st) ->

@@ -443,8 +443,8 @@ structure_item:
       { match $3 with
           [{ppat_desc = Ppat_any}, exp] -> mkstr(Pstr_eval exp)
         | _ -> mkstr(Pstr_value($2, List.rev $3)) }
-  | EXTERNAL val_ident_colon core_type EQUAL primitive_declaration
-      { mkstr(Pstr_primitive($2, {pval_type = $3; pval_prim = $5})) }
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
+      { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
@@ -507,10 +507,10 @@ signature:
   | signature signature_item SEMISEMI           { $2 :: $1 }
 ;
 signature_item:
-    VAL val_ident_colon core_type
-      { mksig(Psig_value($2, {pval_type = $3; pval_prim = []})) }
-  | EXTERNAL val_ident_colon core_type EQUAL primitive_declaration
-      { mksig(Psig_value($2, {pval_type = $3; pval_prim = $5})) }
+    VAL val_ident COLON core_type
+      { mksig(Psig_value($2, {pval_type = $4; pval_prim = []})) }
+  | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
+      { mksig(Psig_value($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
@@ -666,8 +666,6 @@ concrete_method :
       { $3, $2, ghexp(Pexp_poly ($4, None)), symbol_rloc () }
   | METHOD private_flag label COLON poly_type EQUAL seq_expr
       { $3, $2, ghexp(Pexp_poly($7,Some $5)), symbol_rloc () }
-  | METHOD private_flag LABEL poly_type EQUAL seq_expr
-      { $3, $2, ghexp(Pexp_poly($6,Some $4)), symbol_rloc () }
 ;
 
 /* Class types */
@@ -1411,11 +1409,6 @@ ident:
 val_ident:
     LIDENT                                      { $1 }
   | LPAREN operator RPAREN                      { $2 }
-;
-val_ident_colon:
-    LIDENT COLON                                { $1 }
-  | LPAREN operator RPAREN COLON                { $2 }
-  | LABEL                                       { $1 }
 ;
 operator:
     PREFIXOP                                    { $1 }

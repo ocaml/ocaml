@@ -673,7 +673,8 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
       Vars.fold
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.cty_vars [] in
-    if mets <> [] then raise(Error(loc, Virtual_class(true, mets, vals)));
+    if mets <> [] || vals <> [] then
+      raise(Error(loc, Virtual_class(true, mets, vals)));
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
@@ -782,7 +783,7 @@ and class_expr cl_num val_env met_env scl =
       class_expr cl_num val_env met_env sfun
   | Pcl_fun (l, None, spat, scl') ->
       if !Clflags.principal then Ctype.begin_def ();
-      let (pat, pv, val_env, met_env) =
+      let (pat, pv, val_env', met_env) =
         Typecore.type_class_arg_pattern cl_num val_env met_env l spat
       in
       if !Clflags.principal then begin
@@ -793,7 +794,7 @@ and class_expr cl_num val_env met_env scl =
         List.map
           (function (id, id', ty) ->
             (id,
-             Typecore.type_exp val_env
+             Typecore.type_exp val_env'
                {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
                 pexp_loc = Location.none}))
           pv
@@ -810,7 +811,7 @@ and class_expr cl_num val_env met_env scl =
             exp_type = Ctype.none;
             exp_env = Env.empty }] in
       Ctype.raise_nongen_level ();
-      let cl = class_expr cl_num val_env met_env scl' in
+      let cl = class_expr cl_num val_env' met_env scl' in
       Ctype.end_def ();
       if Btype.is_optional l && not_function cl.cl_type then
         Location.prerr_warning pat.pat_loc

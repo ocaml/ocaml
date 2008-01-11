@@ -17,18 +17,110 @@ Compilers:
 - Check that at most one of -pack, -a, -shared, -c, -output-obj is given on the
   command line.
 - Revised -output-obj: the output name must now be provided; its extension must
-  be one of $(EXT_OBJ), $(EXT_DLL) (or .c for the bytecode compiler). The compilers
-  can now produce a shared library (with all the needed -ccopts/-ccobjs options) directly.
-- The -dllib options recorded in libraries are no longer ignored when -use_runtime or -use_prims is used 
-  (unless -no_auto_link is explicitly used).
+  be one of $(EXT_OBJ), $(EXT_DLL) (or .c for the bytecode compiler). The
+  compilers can now produce a shared library (with all the needed
+  -ccopts/-ccobjs options) directly.
+- The -dllib options recorded in libraries are no longer ignored when
+  -use_runtime or -use_prims is used (unless -no_auto_link is explicitly used).
 
 Native-code compiler:
-- A new option "-shared" to produce a plugin that can be dynlinked with the native version of Dynlink.
-- A new option "-dlcode" to produce code that can be put in a plugin (needed for some platforms only).
+- A new option "-shared" to produce a plugin that can be dynlinked with the
+  native version of Dynlink.
+- A new option "-dlcode" to produce code that can be put in a plugin (needed
+  for some platforms only).
 
 Other libraries:
-- On some platforms, the dynlink library is now available in native code. A new Boolean
-  Dynlink.is_native allows the program to know whether it has been compiled in bytecode or in native code.
+- On some platforms, the dynlink library is now available in native code. A
+  new Boolean Dynlink.is_native allows the program to know whether it has
+  been compiled in bytecode or in native code.
+
+
+Objective Caml 3.10.1:
+----------------------
+
+Bug fixes:
+- PR#3830 small bugs in docs
+- PR#4053 compilers: improved compilation time for large variant types
+- PR#4174 ocamlopt: fixed ocamlopt -nopervasives
+- PR#4199 otherlibs: documented a small problem in Unix.utimes
+- PR#4280 camlp4: parsing of identifier (^)
+- PR#4281 camlp4: parsing of type constraint
+- PR#4285 runtime: cannot compile under AIX
+- PR#4286 ocamlbuild: cannot compile under AIX and SunOS
+- PR#4288 compilers: including a functor application with side effects
+- PR#4295 camlp4 toplevel: synchronization after an error
+- PR#4300 ocamlopt: crash with backtrace and illegal array access
+- PR#4302 camlp4: list comprehension parsing problem
+- PR#4304 ocamlbuild: handle -I correctly
+- PR#4305 stdlib: alignment of Arg.Symbol
+- PR#4307 camlp4: assertion failure
+- PR#4312 camlp4: accept "let _ : int = 1"
+- PR#4313 ocamlbuild: -log and missing directories
+- PR#4315 camlp4: constraints in classes
+- PR#4316 compilers: crash with recursive modules and Lazy
+- PR#4318 ocamldoc: installation problem with Cygwin (tentative fix)
+- PR#4322 ocamlopt: stack overflow under Windows
+- PR#4325 compilers: wrong error message for unused var
+- PR#4326 otherlibs: marshal Big_int on win64
+- PR#4327 ocamlbuild: make emacs look for .annot in _build directory
+- PR#4328 camlp4: stack overflow with nil nodes
+- PR#4331 camlp4: guards on fun expressions
+- PR#4332 camlp4: parsing of negative 32/64 bit numbers
+- PR#4336 compilers: unsafe recursive modules
+- PR#4337 (note) camlp4: invalid character escapes
+- PR#4339 ocamlopt: problems on HP-UX (tentative fix)
+- PR#4340 camlp4: wrong pretty-printing of optional arguments
+- PR#4348 ocamlopt: crash on Mac Intel
+- PR#4349 camlp4: bug in private type definitions
+- PR#4350 compilers: type errors with records and polymorphic variants
+- PR#4352 compilers: terminal recursion under Windows (tentative fix)
+- PR#4354 ocamlcp: mismatch with ocaml on polymorphic let
+- PR#4358 ocamlopt: float constants wrong on ARM
+- PR#4360 ocamldoc: string inside comment
+- PR#4365 toplevel: wrong pretty-printing of polymorphic variants
+- PR#4373 otherlibs: leaks in win32unix
+- PR#4374 otherlibs: threads module not initialized
+- PR#4375 configure: fails to build on bytecode-only architectures
+- PR#4377 runtime: finalisation of infix pointers
+- PR#4378 ocamlbuild: typo in plugin.ml
+- PR#4379 ocamlbuild: problem with plugins under Windows
+- PR#4382 compilers: typing of polymorphic record fields
+- PR#4383 compilers: including module with private type
+- PR#4385 stdlib: Int32/Int64.format are unsafe
+- PR#4386 otherlibs: wrong signal numbers with Unix.sigprocmask etc.
+- PR#4387 ocamlbuild: build directory not used properly
+- PR#4392 ocamldep: optional argument of class
+- PR#4394 otherlibs: infinite loops in Str
+- PR#4397 otherlibs: wrong size for flag arrays in win32unix
+- PR#4402 ocamldebug: doesn't work with -rectypes
+- PR#4410 ocamlbuild: problem with plugin and -build
+- PR#4411 otherlibs: crash with Unix.access under Windows
+- PR#4412 stdlib: marshalling broken on 64 bit architectures
+- PR#4413 ocamlopt: crash on AMD64 with out-of-bound access and reraise
+- PR#4417 camlp4: pretty-printing of unary minus
+- PR#4419 camlp4: problem with constraint in type class
+- PR#4426 compilers: problem with optional labels
+- PR#4427 camlp4: wrong pretty-printing of lists of functions
+- PR#4433 ocamlopt: fails to build on MacOSX 10.5
+- PR#4435 compilers: crash with objects
+- PR#4439 fails to build on MacOSX 10.5
+- PR#4441 crash when build on sparc64 linux
+- PR#4442 stdlib: crash with weak pointers
+- PR#4446 configure: fails to detect X11 on MacOSX 10.5
+- PR#4448 runtime: huge page table on 64-bit architectures
+- PR#4450 compilers: stack overflow with recursive modules
+- PR#4470 compilers: type-checking of recursive modules too restrictive
+- PR#4472 configure: autodetection of libX11.so on Fedora x86_64
+- printf: removed (partially implemented) positional specifications
+- polymorphic < and <= comparisons: some C compiler optimizations
+  were causing incorrect results when arguments are incomparable
+
+New features:
+- made configure script work on PlayStation 3
+- ARM port: brought up-to-date for Debian 4.0 (Etch)
+- many other small changes and bugfixes in camlp4, ocamlbuild, labltk,
+  emacs files,
+
 
 Objective Caml 3.10.0:
 ----------------------
@@ -2184,4 +2276,8 @@ Caml Special Light 1.06:
 
 * First public release.
 
+<<<<<<< Changes
 $Id$
+=======
+$Id$
+>>>>>>> 1.168.2.7

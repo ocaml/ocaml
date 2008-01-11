@@ -39,6 +39,10 @@ CAMLexport struct caml_ref_table
 
 int caml_in_minor_collection = 0;
 
+#ifdef DEBUG
+static unsigned long minor_gc_counter = 0;
+#endif
+
 void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
 {
   value **new_table;
@@ -248,6 +252,7 @@ void caml_empty_minor_heap (void)
     for (p = (value *) caml_young_start; p < (value *) caml_young_end; ++p){
       *p = Debug_free_minor;
     }
+    ++ minor_gc_counter;
   }
 #endif
 }

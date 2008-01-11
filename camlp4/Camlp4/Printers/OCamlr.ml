@@ -147,7 +147,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | Some x -> pp f "@[<2>[ %a ::@ %a ]@]" (list o#patt ";@ ") pl o#patt x ]
     | p -> super#patt4 f p ];
 
-    method expr_list_cons _ f e = 
+    method expr_list_cons _ f e =
       let (el, c) = o#mk_expr_list e in
       match c with
       [ None -> o#expr_list f el

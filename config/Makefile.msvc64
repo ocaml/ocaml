@@ -83,7 +83,7 @@ BYTECCCOMPOPTS=/Ox /MD
 BYTECCDBGCOMPOPTS=-DDEBUG /Zi /W3 /Wp64
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=/MD
+BYTECCLINKOPTS=/MD /F33554432
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
 DLLCCCOMPOPTS=/Ox /MD
@@ -135,7 +135,7 @@ NATIVECC=cl /nologo
 NATIVECCCOMPOPTS=/Ox /MD
 
 ### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=/MD
+NATIVECCLINKOPTS=/MD /F33554432
 
 ### Build partially-linked object file
 PACKLD=link /lib /nologo /machine:AMD64 /out:# there must be no space after this '/out:'

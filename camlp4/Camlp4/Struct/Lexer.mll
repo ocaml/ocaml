@@ -17,7 +17,6 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-
 (* $Id$ *)
 
 (* The lexer definition *)

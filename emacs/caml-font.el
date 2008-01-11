@@ -1,140 +1,113 @@
-;(***********************************************************************)
-;(*                                                                     *)
-;(*                           Objective Caml                            *)
-;(*                                                                     *)
-;(*                Jacques Garrigue and Ian T Zimmerman                 *)
-;(*                                                                     *)
-;(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
-;(*  en Automatique.  All rights reserved.  This file is distributed    *)
-;(*  under the terms of the GNU General Public License.                 *)
-;(*                                                                     *)
-;(***********************************************************************)
+;; caml-font: font-lock support for OCaml files
+;;
+;; rewrite and clean-up. 
+;; Changes:
+;; - fontify strings and comments using syntactic font lock
+;; - define a `font-lock-syntactic-face-function' to fontify ocamldoc comments
+;; - fontify infix operators like mod, land, lsl, etc.
+;; - fontify line number directives
+;; - fontify "failwith" and "invalid_arg" like "raise"
+;; - fontify '\x..' character constants
+;; - use the regexp-opt function to build regexps (more readable)
+;; - use backquote and comma in sexp (more readable)
+;; - drop the `caml-quote-char' variable (I don't use caml-light :))
+;; - stop doing weird things with faces
 
-;(* $Id$ *)
 
-;; useful colors
+(require 'font-lock)
 
-(cond
- ((x-display-color-p)
-  (require 'font-lock)
-  (cond
-   ((not (boundp 'font-lock-type-face))
-    ; make the necessary faces
-    (make-face 'Firebrick)
-    (set-face-foreground 'Firebrick "Firebrick")
-    (make-face 'RosyBrown)
-    (set-face-foreground 'RosyBrown "RosyBrown")
-    (make-face 'Purple)
-    (set-face-foreground 'Purple "Purple")
-    (make-face 'MidnightBlue)
-    (set-face-foreground 'MidnightBlue "MidnightBlue")
-    (make-face 'DarkGoldenRod)
-    (set-face-foreground 'DarkGoldenRod "DarkGoldenRod")
-    (make-face 'DarkOliveGreen)
-    (set-face-foreground 'DarkOliveGreen "DarkOliveGreen4")
-    (make-face 'CadetBlue)
-    (set-face-foreground 'CadetBlue "CadetBlue")
-    ; assign them as standard faces
-    (setq font-lock-comment-face 'Firebrick)
-    (setq font-lock-string-face 'RosyBrown)
-    (setq font-lock-keyword-face 'Purple)
-    (setq font-lock-function-name-face 'MidnightBlue)
-    (setq font-lock-variable-name-face 'DarkGoldenRod)
-    (setq font-lock-type-face 'DarkOliveGreen)
-    (setq font-lock-reference-face 'CadetBlue)))
-  ; extra faces for documention
-  (make-face 'Stop)
-  (set-face-foreground 'Stop "White")
-  (set-face-background 'Stop "Red")
-  (make-face 'Doc)
-  (set-face-foreground 'Doc "Red")
-  (setq font-lock-stop-face 'Stop)
-  (setq font-lock-doccomment-face 'Doc)
-))
+(defvar caml-font-stop-face
+  (progn
+    (make-face 'caml-font-stop-face)
+    (set-face-foreground 'caml-font-stop-face "White")
+    (set-face-background 'caml-font-stop-face "Red")
+    'caml-font-stop-face))
 
-; The same definition is in caml.el:
-; we don't know in which order they will be loaded.
-(defvar caml-quote-char "'"
-  "*Quote for character constants. \"'\" for Objective Caml, \"`\" for Caml-Light.")
+(defvar caml-font-doccomment-face
+  (progn
+    (make-face 'caml-font-doccomment-face)
+    (set-face-foreground 'caml-font-doccomment-face "Red")
+    'caml-font-doccomment-face))
+
+(unless (facep 'font-lock-preprocessor-face)
+  (defvar font-lock-preprocessor-face
+    (copy-face 'font-lock-builtin-face 
+               'font-lock-preprocessor-face)))
 
 (defconst caml-font-lock-keywords
-  (list
-;stop special comments
-   '("\\(^\\|[^\"]\\)\\((\\*\\*/\\*\\*)\\)"
-     2 font-lock-stop-face)
-;doccomments
-   '("\\(^\\|[^\"]\\)\\((\\*\\*[^*]*\\([^)*][^*]*\\*+\\)*)\\)"
-     2 font-lock-doccomment-face)
-;comments
-   '("\\(^\\|[^\"]\\)\\((\\*[^*]*\\*+\\([^)*][^*]*\\*+\\)*)\\)"
-     2 font-lock-comment-face)
+  `(
 ;character literals
-   (cons (concat caml-quote-char "\\(\\\\\\([ntbr" caml-quote-char "\\]\\|"
-                 "[0-9][0-9][0-9]\\)\\|.\\)" caml-quote-char
-                 "\\|\"[^\"\\]*\\(\\\\\\(.\\|\n\\)[^\"\\]*\\)*\"")
-         'font-lock-string-face)
+    ("'\\(.\\|\\\\\\([ntbr\"'\\\\]\\|[0-9]\\{3\\}\\|x[0-9A-Fa-f]\\{2\\}\\)\\)'"
+     . font-lock-string-face)
 ;modules and constructors
-   '("`?\\<[A-Z][A-Za-z0-9_']*\\>" . font-lock-function-name-face)
+   ("`?\\<[A-Z][A-Za-z0-9_']*\\>" . font-lock-function-name-face)
 ;definition
-   (cons (concat
-          "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
-          "\\|ex\\(ception\\|ternal\\)\\|fun\\(ct\\(ion\\|or\\)\\)?"
-          "\\|in\\(herit\\|itializer\\)?\\|let"
-          "\\|m\\(ethod\\|utable\\|odule\\)"
-          "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
-          "\\|v\\(al\\|irtual\\)\\)\\>")
-         'font-lock-type-face)
+   (,(regexp-opt '("and" "as" "constraint" "class"
+                   "exception" "external" "fun" "function" "functor"
+                   "in" "inherit" "initializer" "let"
+                   "method" "mutable" "module" "of" "private" "rec"
+                   "type" "val" "virtual")
+                 'words)
+    . font-lock-type-face)
 ;blocking
-   '("\\<\\(begin\\|end\\|object\\|s\\(ig\\|truct\\)\\)\\>"
-     . font-lock-keyword-face)
+   (,(regexp-opt '("begin" "end" "object" "sig" "struct") 'words)
+    . font-lock-keyword-face)
+;linenums
+   ("# *[0-9]+" . font-lock-preprocessor-face)
+;infix operators
+   (,(regexp-opt '("asr" "land" "lor" "lsl" "lsr" "lxor" "mod") 'words)
+    . font-lock-builtin-face)
 ;control
-   (cons (concat
-          "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|i\\(f\\|gnore\\)"
-          "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
-          "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
-          "\\|\|\\|->\\|&\\|#")
-         'font-lock-reference-face)
-   '("\\<raise\\>" . font-lock-comment-face)
+   (,(concat "[|#&]\\|->\\|"
+             (regexp-opt '("do" "done" "dowto" "else" "for" "if" "ignore"
+                           "lazy" "match" "new" "or" "then" "to" "try"
+                           "when" "while" "with")
+                         'words))
+    . font-lock-constant-face)
+   ("\\<raise\\|failwith\\|invalid_arg\\>"
+    . font-lock-comment-face)
 ;labels (and open)
-   '("\\(\\([~?]\\|\\<\\)[a-z][a-zA-Z0-9_']*:\\)[^:=]" 1
-     font-lock-variable-name-face)
-   '("\\<\\(assert\\|open\\|include\\)\\>\\|[~?][ (]*[a-z][a-zA-Z0-9_']*"
-     . font-lock-variable-name-face)))
+   ("\\(\\([~?]\\|\\<\\)[a-z][a-zA-Z0-9_']*:\\)[^:=]"
+    1 font-lock-variable-name-face)
+   ("\\<\\(assert\\|open\\|include\\)\\>\\|[~?][ (]*[a-z][a-zA-Z0-9_']*"
+    . font-lock-variable-name-face)))
 
-(defconst inferior-caml-font-lock-keywords
-  (append
-   (list
-;inferior
-    '("^[#-]" . font-lock-comment-face))
-   caml-font-lock-keywords))
+
+(defun caml-font-syntactic-face (s)
+  (let ((in-string  (nth 3 s))
+        (in-comment (nth 4 s))
+        (start      (nth 8 s)))
+    (cond
+     (in-string 'font-lock-string-face)
+     (in-comment
+      (goto-char start)
+      (cond
+       ((looking-at "(\\*\\*/\\*\\*)") 'caml-font-stop-face)
+       ((looking-at "(\\*\\*[^*]")     'caml-font-doccomment-face)
+       (t                              'font-lock-comment-face))))))
+
 
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
-(add-hook 'caml-mode-hook
-      '(lambda ()
-         (cond
-          ((fboundp 'global-font-lock-mode)
-           (make-local-variable 'font-lock-defaults)
-           (setq font-lock-defaults
-                 '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
-          (t
-           (setq font-lock-keywords caml-font-lock-keywords)))
-         (make-local-variable 'font-lock-keywords-only)
-         (setq font-lock-keywords-only t)
-         (font-lock-mode 1)))
-
-(defun inferior-caml-mode-font-hook ()
-  (cond
-   ((fboundp 'global-font-lock-mode)
-    (make-local-variable 'font-lock-defaults)
-    (setq font-lock-defaults
-          '(inferior-caml-font-lock-keywords
-            nil nil ((?' . "w") (?_ . "w")))))
-   (t
-    (setq font-lock-keywords inferior-caml-font-lock-keywords)))
-  (make-local-variable 'font-lock-keywords-only)
-  (setq font-lock-keywords-only t)
+(defun caml-font-set-font-lock ()
+  (setq font-lock-defaults
+        '(caml-font-lock-keywords
+          nil nil nil nil 
+          (font-lock-syntactic-face-function . caml-font-syntactic-face)))
   (font-lock-mode 1))
+(add-hook 'caml-mode-hook 'caml-font-set-font-lock)
 
-(add-hook 'inferior-caml-mode-hooks 'inferior-caml-mode-font-hook)
+
+
+(defconst inferior-caml-font-lock-keywords
+  `(("^[#-]" . font-lock-comment-face)
+    ,@caml-font-lock-keywords))
+
+(defun inferior-caml-set-font-lock ()
+  (setq font-lock-defaults
+        '(inferior-caml-font-lock-keywords
+          nil nil nil nil 
+          (font-lock-syntactic-face-function . caml-font-syntactic-face)))
+  (font-lock-mode 1))
+(add-hook 'inferior-caml-mode-hooks 'inferior-caml-set-font-lock)
 
 (provide 'caml-font)

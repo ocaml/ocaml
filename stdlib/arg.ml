@@ -65,7 +65,7 @@ let make_symlist prefix sep suffix l =
 
 let print_spec buf (key, spec, doc) =
   match spec with
-  | Symbol (l, _) -> bprintf buf "  %s %s %s\n" key (make_symlist "{" "|" "}" l)
+  | Symbol (l, _) -> bprintf buf "  %s %s%s\n" key (make_symlist "{" "|" "}" l)
                              doc
   | _ -> bprintf buf "  %s %s\n" key doc
 ;;
@@ -225,13 +225,18 @@ let rec second_word s =
   with Not_found -> len
 ;;
 
-let max_arg_len cur (kwd, _, doc) =
-  max cur (String.length kwd + second_word doc)
+let max_arg_len cur (kwd, spec, doc) =
+  match spec with
+  | Symbol _ -> max cur (String.length kwd)
+  | _ -> max cur (String.length kwd + second_word doc)
 ;;
 
 let add_padding len ksd =
   match ksd with
-  | (_, Symbol _, _) -> ksd
+  | (kwd, (Symbol (l, _) as spec), msg) ->
+      let cutcol = second_word msg in
+      let spaces = String.make (len - cutcol + 3) ' ' in
+      (kwd, spec, "\n" ^ spaces ^ msg)
   | (kwd, spec, msg) ->
       let cutcol = second_word msg in
       let spaces = String.make (len - String.length kwd - cutcol) ' ' in

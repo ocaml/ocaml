@@ -199,7 +199,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value rec ty_var_list_of_ctyp =
     fun
     [ <:ctyp< $t1$ $t2$ >> -> ty_var_list_of_ctyp t1 @ ty_var_list_of_ctyp t2
-    | <:ctyp< '$s$ >> -> [s] 
+    | <:ctyp< '$s$ >> -> [s]
     | _ -> assert False ];
 
   value rec ctyp =
@@ -495,7 +495,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkpat loc (Ppat_constant (Const_string (string_of_string_token loc s)))
     | <:patt@loc< ($p1$, $p2$) >> ->
          mkpat loc (Ppat_tuple
-           (List.map patt (list_of_patt p1 (list_of_patt p2 [])))) 
+           (List.map patt (list_of_patt p1 (list_of_patt p2 []))))
     | <:patt@loc< ($tup:_$) >> -> error loc "singleton tuple pattern"
     | PaTyc loc p t -> mkpat loc (Ppat_constraint (patt p) (ctyp t))
     | PaTyp loc i -> mkpat loc (Ppat_type (long_type_ident i))
@@ -678,7 +678,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | ExLmd loc i me e -> mkexp loc (Pexp_letmodule i (module_expr me) (expr e))
     | ExMat loc e a -> mkexp loc (Pexp_match (expr e) (match_case a []))
     | ExNew loc id -> mkexp loc (Pexp_new (long_type_ident id))
-    | ExObj loc po cfl -> 
+    | ExObj loc po cfl ->
         let p =
           match po with
           [ <:patt<>> -> <:patt@loc< _ >>
@@ -716,7 +716,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkexp loc (Pexp_constant (Const_string (string_of_string_token loc s)))
     | ExTry loc e a -> mkexp loc (Pexp_try (expr e) (match_case a []))
     | <:expr@loc< ($e1$, $e2$) >> ->
-         mkexp loc (Pexp_tuple (List.map expr (list_of_expr e1 (list_of_expr e2 [])))) 
+         mkexp loc (Pexp_tuple (List.map expr (list_of_expr e1 (list_of_expr e2 []))))
     | <:expr@loc< ($tup:_$) >> -> error loc "singleton tuple"
     | ExTyc loc e t -> mkexp loc (Pexp_constraint (expr e) (Some (ctyp t)) None)
     | <:expr@loc< () >> ->
@@ -920,7 +920,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         error loc "invalid virtual class inside a class type"
     | CtAnt _ _ | CtEq _ _ _ | CtCol _ _ _ | CtAnd _ _ _ | CtNil _ ->
         assert False ]
-        
+
   and class_info_class_expr ci =
     match ci with
     [ CeEq _ (CeCon loc vir (IdLid _ name) params) ce ->

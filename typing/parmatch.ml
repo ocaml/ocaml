@@ -45,7 +45,7 @@ let zero = make_pat (Tpat_constant (Const_int 0)) Ctype.none Env.empty
 
 (* p and q compatible means, there exists V that matches both *)
 
-let is_absent tag row = Btype.row_field tag row = Rabsent
+let is_absent tag row = Btype.row_field tag !row = Rabsent
 
 let is_absent_pat p = match p.pat_desc with
 | Tpat_variant (tag, _, row) -> is_absent tag row
@@ -585,24 +585,29 @@ let close_variant env row =
                     row_closed = true; row_name = nm}))
   end
 
+let row_of_pat pat =
+  match Ctype.expand_head pat.pat_env pat.pat_type with
+    {desc = Tvariant row} -> Btype.row_repr row
+  | _ -> assert false
+
 (*
   Check whether the first column of env makes up a complete signature or
   not.
-*)      
+*)
 
 let full_match closing env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ ->
     false
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
     List.length env = c.cstr_consts + c.cstr_nonconsts
-| ({pat_desc = Tpat_variant(_,_,row)},_) :: _ ->
+| ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
       List.map
         (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
           | _ -> assert false)
         env
     in
-    let row = Btype.row_repr row in
+    let row = row_of_pat p in
     if closing && not row.row_fixed then
       (* closing=true, we are considering the variant as closed *)
       List.for_all
@@ -738,17 +743,17 @@ let build_other ext env =  match env with
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
         pat_of_constrs p (complete_constrs p all_tags)
     end
-| ({pat_desc = Tpat_variant(_,_,row)} as p,_) :: _ ->
+| ({pat_desc = Tpat_variant (_,_,r)} as p,_) :: _ ->
     let tags =
       List.map
         (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
                 | _ -> assert false)
         env
     in
-    let row = Btype.row_repr row in
+    let row = row_of_pat p in
     let make_other_pat tag const =
       let arg = if const then None else Some omega in
-      make_pat (Tpat_variant(tag, arg, row)) p.pat_type p.pat_env in
+      make_pat (Tpat_variant(tag, arg, r)) p.pat_type p.pat_env in
     begin match
       List.fold_left
         (fun others (tag,f) ->
@@ -999,8 +1004,8 @@ let rec pressure_variants tdefs = function
               else try_non_omega (filter_all q0 (mark_partial pss))
             in
             begin match constrs, tdefs with
-              ({pat_desc=Tpat_variant(_,_,row)},_):: _, Some env ->
-                let row = Btype.row_repr row in
+              ({pat_desc=Tpat_variant _} as p,_):: _, Some env ->
+                let row = row_of_pat p in
                 if row.row_fixed
                 || pressure_variants None (filter_extra pss) then ()
                 else close_variant env row

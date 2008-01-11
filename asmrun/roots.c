@@ -43,7 +43,7 @@ int caml_frame_descriptors_mask;
 typedef struct link {
   void *data;
   struct link *next;
-} link;  
+} link;
 
 static link *cons(void *data, link *tl) {
   link *lnk = caml_stat_alloc(sizeof(link));
@@ -79,13 +79,13 @@ void caml_init_frame_descriptors(void)
   link *lnk;
 
   static int inited = 0;
-  
+
   if (!inited) {
     for (i = 0; caml_frametable[i] != 0; i++)
       caml_register_frametable(caml_frametable[i]);
     inited = 1;
   }
-  
+
   /* Count the frame descriptors */
   num_descr = 0;
   iter_list(frametables,lnk) {
@@ -111,14 +111,14 @@ void caml_init_frame_descriptors(void)
     for (j = 0; j < len; j++) {
       h = Hash_retaddr(d->retaddr);
       while (caml_frame_descriptors[h] != NULL) {
-	h = (h+1) & caml_frame_descriptors_mask;
+        h = (h+1) & caml_frame_descriptors_mask;
       }
       caml_frame_descriptors[h] = d;
       nextd =
-	((uintnat)d +
-	 sizeof(char *) + sizeof(short) + sizeof(short) +
-	 sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
-	& -sizeof(frame_descr *);
+        ((uintnat)d +
+         sizeof(char *) + sizeof(short) + sizeof(short) +
+         sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
+        & -sizeof(frame_descr *);
       if (d->frame_size & 1) nextd += 8;
       d = (frame_descr *) nextd;
     }
@@ -148,7 +148,11 @@ void caml_oldify_local_roots (void)
   frame_descr * d;
   uintnat h;
   int i, j, n, ofs;
+#ifdef Stack_grows_upwards
+  short * p;  /* PR#4339: stack offsets are negative in this case */
+#else
   unsigned short * p;
+#endif
   value glob;
   value * root;
   struct global_root * gr;

@@ -335,7 +335,7 @@ and transl_structure fields cc rootpath = function
       | id :: ids ->
           Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
                rebind_idents (pos + 1) (id :: newfields) ids) in
-      Llet(Alias, mid, transl_module Tcoerce_none None modl,
+      Llet(Strict, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
 
 (* Update forward declaration in Translcore *)
@@ -539,7 +539,7 @@ let build_ident_map restr idlist =
   | _ ->
       fatal_error "Translmod.build_ident_map"
 
-(* Compile an implementation using transl_store_structure 
+(* Compile an implementation using transl_store_structure
    (for the native-code compiler). *)
 
 let transl_store_gen module_name (str, restr) topl =
@@ -549,8 +549,8 @@ let transl_store_gen module_name (str, restr) topl =
   let (map, prims, size) = build_ident_map restr (defined_idents str) in
   let f = function
     | [ Tstr_eval expr ] when topl ->
-	assert (size = 0);
-	subst_lambda !transl_store_subst (transl_exp expr)
+        assert (size = 0);
+        subst_lambda !transl_store_subst (transl_exp expr)
     | str -> transl_store_structure module_id map prims str in
   transl_store_label_init module_id size f str
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
@@ -665,7 +665,7 @@ let transl_toplevel_definition str =
 
 let get_component = function
     None -> Lconst const_unit
-  | Some id -> Lprim(Pgetglobal id, []) 
+  | Some id -> Lprim(Pgetglobal id, [])
 
 let transl_package component_names target_name coercion =
   let components =

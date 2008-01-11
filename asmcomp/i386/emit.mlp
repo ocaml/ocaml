@@ -35,7 +35,7 @@ let stack_offset = ref 0
 (* Layout of the stack frame *)
 
 let frame_size () =                     (* includes return address *)
-  let sz = 
+  let sz =
     !stack_offset + 4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + 4
   in Misc.align sz stack_alignment
 
@@ -116,12 +116,12 @@ let emit_align =
       (fun n -> `	.align	{emit_int n}\n`)
   | _ ->
       (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
-  
+
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then
     emit_align 16 ;
   emit_label lbl
-  
+
 (* Output a pseudo-register *)
 
 let emit_reg = function
@@ -239,7 +239,7 @@ let emit_call_bound_error bd =
 let emit_call_bound_errors () =
   List.iter emit_call_bound_error !bound_error_sites;
   if !bound_error_call > 0 then
-    `{emit_label !bound_error_call}:	jmp	{emit_symbol "caml_ml_array_bound_error"}\n`
+    `{emit_label !bound_error_call}:	call	{emit_symbol "caml_ml_array_bound_error"}\n`
 
 (* Names for instructions *)
 
@@ -299,7 +299,7 @@ let name_for_cond_branch = function
   | Iunsigned Ceq -> "e"   | Iunsigned Cne -> "ne"
   | Iunsigned Cle -> "be"  | Iunsigned Cgt -> "a"
   | Iunsigned Clt -> "b"  | Iunsigned Cge -> "ae"
-    
+
 (* Output an = 0 or <> 0 test. *)
 
 let output_test_zero arg =
@@ -737,7 +737,7 @@ let emit_instr fallthrough i =
             `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
-        | Iinttest_imm((Isigned Ceq | Isigned Cne | 
+        | Iinttest_imm((Isigned Ceq | Isigned Cne |
                         Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
             output_test_zero i.arg.(0);
             let b = name_for_cond_branch cmp in

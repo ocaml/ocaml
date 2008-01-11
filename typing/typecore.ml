@@ -30,7 +30,7 @@ type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
-  | Multiply_bound_variable
+  | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
@@ -152,10 +152,13 @@ let unify_pat env pat expected_ty =
 (* make all Reither present in open variants *)
 let finalize_variant pat =
   match pat.pat_desc with
-    Tpat_variant(tag, opat, row) ->
-      let row = row_repr row in
-      let field = row_field tag row in
-      begin match field with
+    Tpat_variant(tag, opat, r) ->
+      let row =
+        match expand_head pat.pat_env pat.pat_type with
+          {desc = Tvariant row} -> r := row; row_repr row
+        | _ -> assert false
+      in
+      begin match row_field tag row with
       | Rabsent -> assert false
       | Reither (true, [], _, e) when not row.row_closed ->
           set_row_field e (Rpresent None)
@@ -168,10 +171,10 @@ let finalize_variant pat =
           set_row_field e (Reither (c, [], false, ref None))
       | _ -> ()
       end;
-      (* Force check of well-formedness *)
-      unify_pat pat.pat_env pat
+      (* Force check of well-formedness   WHY? *)
+      (* unify_pat pat.pat_env pat
         (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
-                        row_bound=[]; row_fixed=false; row_name=None}));
+                        row_bound=(); row_fixed=false; row_name=None})); *)
   | _ -> ()
 
 let rec iter_pattern f p =
@@ -199,7 +202,7 @@ let reset_pattern scope =
 
 let enter_variable loc name ty =
   if List.exists (fun (id, _, _) -> Ident.name id = name) !pattern_variables
-  then raise(Error(loc, Multiply_bound_variable));
+  then raise(Error(loc, Multiply_bound_variable name));
   let id = Ident.create name in
   pattern_variables := (id, ty, loc) :: !pattern_variables;
   begin match !pattern_scope with
@@ -258,7 +261,7 @@ let rec build_as_type env p =
   | Tpat_variant(l, p', _) ->
       let ty = may_map (build_as_type env) p' in
       newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
-                      row_bound=[]; row_name=None;
+                      row_bound=(); row_name=None;
                       row_fixed=false; row_closed=false})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
@@ -268,7 +271,10 @@ let rec build_as_type env p =
       let do_label lbl =
         let _, ty_arg, ty_res = instance_label false lbl in
         unify_pat env {p with pat_type = ty} ty_res;
-        if lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl then begin
+        let refinable =
+          lbl.lbl_mut = Immutable && List.mem_assoc lbl.lbl_pos ppl &&
+          match (repr lbl.lbl_arg).desc with Tpoly _ -> false | _ -> true in
+        if refinable then begin
           let arg = List.assoc lbl.lbl_pos ppl in
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
@@ -278,20 +284,16 @@ let rec build_as_type env p =
         end in
       Array.iter do_label lbl.lbl_all;
       ty
-  | Tpat_or(p1, p2, path) ->
-      let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
-      unify_pat env {p2 with pat_type = ty2} ty1;
-      begin match path with None -> ()
-      | Some path ->
-          let td = try Env.find_type path env with Not_found -> assert false in
-          let params = List.map (fun _ -> newvar()) td.type_params in
-          match expand_head env (newty (Tconstr (path, params, ref Mnil)))
-          with {desc=Tvariant row} when static_row row ->
-            unify_pat env {p1 with pat_type = ty1}
-              (newty (Tvariant{row with row_closed=false; row_more=newvar()}))
-          | _ -> ()
-      end;
-      ty1
+  | Tpat_or(p1, p2, row) ->
+      begin match row with
+        None ->
+          let ty1 = build_as_type env p1 and ty2 = build_as_type env p2 in
+          unify_pat env {p2 with pat_type = ty2} ty1;
+          ty1
+      | Some row ->
+          let row = row_repr row in
+          newty (Tvariant{row with row_closed=false; row_more=newvar()})
+      end
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
 
 let build_or_pat env loc lid =
@@ -301,14 +303,12 @@ let build_or_pat env loc lid =
       raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
-  let fields =
+  let row0 =
     let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
     match ty.desc with
-      Tvariant row when static_row row ->
-        (row_repr row).row_fields
+      Tvariant row when static_row row -> row
     | _ -> raise(Error(loc, Not_a_variant_type lid))
   in
-  let bound = ref [] in
   let pats, fields =
     List.fold_left
       (fun (pats,fields) (l,f) ->
@@ -317,21 +317,21 @@ let build_or_pat env loc lid =
             (l,None) :: pats,
             (l, Reither(true,[], true, ref None)) :: fields
         | Rpresent (Some ty) ->
-            bound := ty :: !bound;
             (l, Some {pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
                       pat_type=ty})
             :: pats,
             (l, Reither(false, [ty], true, ref None)) :: fields
         | _ -> pats, fields)
-      ([],[]) fields in
+      ([],[]) (row_repr row0).row_fields in
   let row =
-    { row_fields = List.rev fields; row_more = newvar(); row_bound = !bound;
+    { row_fields = List.rev fields; row_more = newvar(); row_bound = ();
       row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
   let gloc = {loc with Location.loc_ghost=true} in
+  let row' = ref {row with row_more=newvar()} in
   let pats =
-    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row); pat_loc=gloc;
+    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row'); pat_loc=gloc;
                             pat_env=env; pat_type=ty})
       pats
   in
@@ -340,7 +340,7 @@ let build_or_pat env loc lid =
   | pat :: pats ->
       let r =
         List.fold_left
-          (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path);
+          (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some row0);
                             pat_loc=gloc; pat_env=env; pat_type=ty})
           pat pats in
       rp { r with pat_loc = loc }
@@ -432,13 +432,13 @@ let rec type_pat env sp =
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields =
                     [l, Reither(arg = None, arg_type, true, ref None)];
-                  row_bound = arg_type;
+                  row_bound = ();
                   row_closed = false;
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
       rp {
-        pat_desc = Tpat_variant(l, arg, row);
+        pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
         pat_loc = sp.ppat_loc;
         pat_type = newty (Tvariant row);
         pat_env = env }
@@ -594,8 +594,11 @@ let delayed_checks = ref []
 let reset_delayed_checks () = delayed_checks := []
 let add_delayed_check f = delayed_checks := f :: !delayed_checks
 let force_delayed_checks () =
+  (* checks may change type levels *)
+  let snap = Btype.snapshot () in
   List.iter (fun f -> f ()) (List.rev !delayed_checks);
-  reset_delayed_checks ()
+  reset_delayed_checks ();
+  Btype.backtrack snap
 
 
 (* Generalization criterion for expressions *)
@@ -624,6 +627,7 @@ let rec is_nonexpansive exp =
   | Texp_array [] -> true
   | Texp_ifthenelse(cond, ifso, ifnot) ->
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
+  | Texp_sequence (e1, e2) -> is_nonexpansive e2  (* PR#4354 *)
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
   (* Note: nonexpansive only means no _observable_ side effects *)
@@ -1028,7 +1032,7 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
                                   row_more = newvar ();
-                                  row_bound = [];
+                                  row_bound = ();
                                   row_closed = false;
                                   row_fixed = false;
                                   row_name = None});
@@ -2067,8 +2071,8 @@ let report_error ppf = function
            fprintf ppf "This pattern matches values of type")
         (function ppf ->
            fprintf ppf "but is here used to match values of type")
-  | Multiply_bound_variable ->
-      fprintf ppf "This variable is bound several times in this matching"
+  | Multiply_bound_variable name ->
+      fprintf ppf "Variable %s is bound several times in this matching" name
   | Orpat_vars id ->
       fprintf ppf "Variable %s must occur on both sides of this | pattern"
         (Ident.name id)

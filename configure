@@ -568,7 +568,7 @@ if test $withsharedlibs = "yes"; then
       dyld=ld
       if test -f /usr/bin/ld_classic; then
         # The new linker in Mac OS X 10.5 does not support read_only_relocs
-        dyld=/usr/bin/ld_classic
+        # dyld=/usr/bin/ld_classic  XXX FIXME incompatible with X11 libs
       fi
       mksharedlib="$dyld -bundle -flat_namespace -undefined suppress -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
@@ -629,7 +629,7 @@ case "$host" in
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
   hppa*-*-linux*)               arch=hppa; system=linux;;
   hppa*-*-gnu*)                 arch=hppa; system=gnu;;
-  powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
+  powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
@@ -645,6 +645,17 @@ case "$host" in
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
+
+# Some platforms exist both in 32-bit and 64-bit variants, not distinguished
+# by $host.  Turn off native code compilation on platforms where 64-bit mode
+# is not supported.  (PR#4441)
+
+if $arch64; then
+  case "$arch,$model" in
+    sparc,default|mips,default|hppa,default|power,ppc)
+      arch=none; model=default; system=unknown;;
+  esac
+fi
 
 if test -z "$ccoption"; then
   case "$arch,$system,$cc" in
@@ -1254,6 +1265,7 @@ for dir in \
     /usr/x386/lib         \
     /usr/XFree86/lib/X11  \
                           \
+    /usr/lib64            \
     /usr/lib              \
     /usr/local/lib        \
     /usr/unsupported/lib  \

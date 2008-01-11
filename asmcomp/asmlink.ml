@@ -163,7 +163,7 @@ let read_file obj_name =
     let infos =
       try Compilenv.read_library_info file_name
       with Compilenv.Error(Not_a_unit_info _) ->
-	raise(Error(Not_an_object_file file_name))
+        raise(Error(Not_an_object_file file_name))
     in
     Library (file_name,infos)
   end
@@ -172,17 +172,17 @@ let read_file obj_name =
 let scan_file obj_name tolink = match read_file obj_name with
   | Unit (file_name,info,crc) ->
       (* This is a .cmx file. It must be linked in any case.
-	 Read the infos to see which modules it requires. *)
+         Read the infos to see which modules it requires. *)
       let (info, crc) = Compilenv.read_unit_info file_name in
       remove_required info.ui_name;
       List.iter (add_required file_name) info.ui_imports_cmx;
       (info, file_name, crc) :: tolink
   | Library (file_name,infos) ->
       (* This is an archive file. Each unit contained in it will be linked
-	 in only if needed. *)
+         in only if needed. *)
       add_ccobjs infos;
       List.fold_right
-	(fun (info, crc) reqd ->
+        (fun (info, crc) reqd ->
            if info.ui_force_link
              || !Clflags.link_everything
              || is_required info.ui_name
@@ -194,7 +194,7 @@ let scan_file obj_name tolink = match read_file obj_name with
              (info, file_name, crc) :: reqd
            end else
              reqd)
-	infos.lib_units tolink
+        infos.lib_units tolink
 
 (* Second pass: generate the startup file and link it with everything else *)
 
@@ -219,8 +219,8 @@ let make_startup_file ppf filename units_list =
        (List.map
           (fun (unit,_,crc) ->
              try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi,
-		  crc,
-		  unit.ui_defines)
+                  crc,
+                  unit.ui_defines)
              with Not_found -> assert false)
           units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
@@ -278,7 +278,9 @@ let link_shared ppf objfiles output_name =
   remove_file startup_obj
 
 let call_linker file_list startup_file output_name =
-  let main_dll = !Clflags.output_c_object && Filename.check_suffix output_name Config.ext_dll in
+  let main_dll = !Clflags.output_c_object
+                 && Filename.check_suffix output_name Config.ext_dll
+  in
   let files = startup_file :: (List.rev file_list) in
   let files, c_lib =
     if (not !Clflags.output_c_object) || main_dll then

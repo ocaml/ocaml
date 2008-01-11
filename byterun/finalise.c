@@ -24,6 +24,7 @@
 struct final {
   value fun;
   value val;
+  int offset;
 };
 
 static struct final *final_table = NULL;
@@ -67,7 +68,7 @@ void caml_final_update (void)
 {
   uintnat i, j, k;
   uintnat todo_count = 0;
-  
+
   Assert (young == old);
   for (i = 0; i < old; i++){
     Assert (Is_block (final_table[i].val));
@@ -84,6 +85,7 @@ void caml_final_update (void)
       Assert (Is_in_heap (final_table[i].val));
       if (Is_white_val (final_table[i].val)){
         if (Tag_val (final_table[i].val) == Forward_tag){
+          Assert (final_table[i].offset == 0);
           value fv = Forward_val (final_table[i].val);
           if (Is_block (fv) && Is_in_value_area(fv)
               && (Tag_val (fv) == Forward_tag || Tag_val (fv) == Lazy_tag
@@ -136,7 +138,7 @@ void caml_final_do_calls (void)
       -- to_do_hd->size;
       f = to_do_hd->item[to_do_hd->size];
       running_finalisation_function = 1;
-      caml_callback (f.fun, f.val);
+      caml_callback (f.fun, f.val + f.offset);
       running_finalisation_function = 0;
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);
@@ -159,7 +161,7 @@ void caml_final_do_strong_roots (scanning_action f)
 
   Assert (old == young);
   for (i = 0; i < old; i++) Call_action (f, final_table[i].fun);
-  
+
   for (todo = to_do_hd; todo != NULL; todo = todo->next){
     for (i = 0; i < todo->size; i++){
       Call_action (f, todo->item[i].fun);
@@ -186,7 +188,7 @@ void caml_final_do_weak_roots (scanning_action f)
 void caml_final_do_young_roots (scanning_action f)
 {
   uintnat i;
-  
+
   Assert (old <= young);
   for (i = old; i < young; i++){
     Call_action (f, final_table[i].fun);
@@ -210,7 +212,7 @@ CAMLprim value caml_final_register (value f, value v)
     caml_invalid_argument ("Gc.finalise");
   }
   Assert (old <= young);
-  
+
   if (young >= size){
     if (final_table == NULL){
       uintnat new_size = 30;
@@ -227,8 +229,13 @@ CAMLprim value caml_final_register (value f, value v)
   }
   Assert (young < size);
   final_table[young].fun = f;
-  if (Tag_val (v) == Infix_tag) v -= Infix_offset_val (v);
-  final_table[young].val = v;
+  if (Tag_val (v) == Infix_tag){
+    final_table[young].offset = Infix_offset_val (v);
+    final_table[young].val = v - Infix_offset_val (v);
+  }else{
+    final_table[young].offset = 0;
+    final_table[young].val = v;
+  }
   ++ young;
 
   return Val_unit;

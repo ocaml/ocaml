@@ -70,9 +70,10 @@ let status = ref Terminfo.Uninitialised
 
 let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
-(* Highlight the location using standout mode. *)
+(* Highlight the locations using standout mode. *)
 
 let highlight_terminfo ppf num_lines lb loc1 loc2 =
+  Format.pp_print_flush ppf ();  (* avoid mixing Format and normal output *)
   (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
   let pos0 = -lb.lex_abs_pos in
   (* Do nothing if the buffer does not contain the whole phrase. *)
@@ -125,7 +126,7 @@ let highlight_dumb ppf lb loc =
   Format.fprintf ppf "Characters %i-%i:@."
                  loc.loc_start.pos_cnum loc.loc_end.pos_cnum;
   (* Print the input, underlining the location *)
-  print_string "  ";
+  Format.pp_print_string ppf "  ";
   let line = ref 0 in
   let pos_at_bol = ref 0 in
   for pos = 0 to end_pos do
@@ -133,34 +134,34 @@ let highlight_dumb ppf lb loc =
     if c <> '\n' then begin
       if !line = !line_start && !line = !line_end then
         (* loc is on one line: print whole line *)
-        print_char c
+        Format.pp_print_char ppf c
       else if !line = !line_start then
         (* first line of multiline loc: print ... before loc_start *)
         if pos < loc.loc_start.pos_cnum
-        then print_char '.'
-        else print_char c
+        then Format.pp_print_char ppf '.'
+        else Format.pp_print_char ppf c
       else if !line = !line_end then
         (* last line of multiline loc: print ... after loc_end *)
         if pos < loc.loc_end.pos_cnum
-        then print_char c
-        else print_char '.'
+        then Format.pp_print_char ppf c
+        else Format.pp_print_char ppf '.'
       else if !line > !line_start && !line < !line_end then
         (* intermediate line of multiline loc: print whole line *)
-        print_char c
+        Format.pp_print_char ppf c
     end else begin
       if !line = !line_start && !line = !line_end then begin
         (* loc is on one line: underline location *)
-        print_string "\n  ";
+        Format.fprintf ppf "@.  ";
         for i = !pos_at_bol to loc.loc_start.pos_cnum - 1 do
-          print_char ' '
+          Format.pp_print_char ppf ' '
         done;
         for i = loc.loc_start.pos_cnum to loc.loc_end.pos_cnum - 1 do
-          print_char '^'
+          Format.pp_print_char ppf '^'
         done
       end;
       if !line >= !line_start && !line <= !line_end then begin
-        print_char '\n';
-        if pos < loc.loc_end.pos_cnum then print_string "  "
+        Format.fprintf ppf "@.";
+        if pos < loc.loc_end.pos_cnum then Format.pp_print_string ppf "  "
       end;
       incr line;
       pos_at_bol := pos + 1;

@@ -1,3 +1,17 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                           Objective Caml                            *)
+(*                                                                     *)
+(*       Nicolas Pouillard, projet Gallium, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2007 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 open Ocamlbuild_plugin
 open Command
 open Arch
@@ -24,7 +38,7 @@ let mkexe out files opts =
 
 let mklib out files opts =
   let s = Command.string_of_command_spec in
-  Cmd(Sh(C.mklib out (s files) (s opts)))  
+  Cmd(Sh(C.mklib out (s files) (s opts)))
 
 let syslib x = A(C.syslib x);;
 let syscamllib x =
@@ -67,7 +81,7 @@ let add_exe_if_exists a =
     if Pathname.exists exe then exe else a;;
 
 let convert_command_for_windows_shell spec =
-  if not windows then spec else 
+  if not windows then spec else
   let rec self specs acc =
     match specs with
     | N :: specs -> self specs acc
@@ -149,7 +163,7 @@ dispatch begin function
          "toplevel"; "typing"; "utils"]
       in Ocamlbuild_pack.Configuration.parse_string
            (sprintf "<{%s}/**>: not_hygienic, -traverse" patt)
-  
+
 | After_options ->
     begin
       Options.ocamlrun := ocamlrun;
@@ -563,8 +577,8 @@ rule "The numeric opcodes"
   ~prod:"bytecomp/opcodes.ml"
   ~dep:"byterun/instruct.h"
   ~insert:`top
-	begin fun _ _ ->
-	  Cmd(Sh "sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/instruct.h | \
+        begin fun _ _ ->
+          Cmd(Sh "sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/instruct.h | \
         awk -f ../tools/make-opcodes > bytecomp/opcodes.ml")
   end;;
 
@@ -573,9 +587,9 @@ rule "tools/opnames.ml"
   ~dep:"byterun/instruct.h"
   begin fun _ _ ->
     Cmd(Sh"unset LC_ALL || : ; \
-  	unset LC_CTYPE || : ; \
-  	unset LC_COLLATE LANG || : ; \
-  	sed -e '/\\/\\*/d' \
+        unset LC_CTYPE || : ; \
+        unset LC_COLLATE LANG || : ; \
+        sed -e '/\\/\\*/d' \
               -e '/^#/d' \
               -e 's/enum \\(.*\\) {/let names_of_\\1 = [|/' \
               -e 's/};$/ |]/' \
@@ -932,7 +946,7 @@ let builtins =
 let labltk_support =
   ["support"; "rawwidget"; "widget"; "protocol"; "textvariable"; "timer"; "fileevent"; "camltkwrap"];;
 
-let labltk_generated_modules = 
+let labltk_generated_modules =
   ["place"; "wm"; "imagephoto"; "canvas"; "button"; "text"; "label"; "scrollbar";
    "image"; "encoding"; "pixmap"; "palette"; "font"; "message"; "menu"; "entry";
    "listbox"; "focus"; "menubutton"; "pack"; "option"; "toplevel"; "frame";

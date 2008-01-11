@@ -46,6 +46,10 @@ let quote_prefixed pr lst =
   let lst = List.map (fun f -> pr ^ f) lst in
   quote_files lst
 
+let quote_optfile = function
+  | None -> ""
+  | Some f -> Filename.quote f
+
 let compile_file name =
   command
     (Printf.sprintf

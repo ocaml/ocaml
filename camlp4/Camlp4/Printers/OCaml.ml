@@ -321,7 +321,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | [e] -> pp f "[ %a ]" o#under_semi#expr e
       | el  -> pp f "@[<2>[ %a@] ]" (list o#under_semi#expr ";@ ") el ];
 
-    method expr_list_cons simple f e = 
+    method expr_list_cons simple f e =
       let (el, c) = o#mk_expr_list e in
       match c with
       [ None -> o#expr_list f el
@@ -496,7 +496,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< ( $tup:e$ ) >> ->
         pp f "@[<1>(%a)@]" o#expr e
     | <:expr< [| $e$ |] >> ->
-        pp f "@[<0>@[<2>[|@ %a@]@ |]@]" o#under_semi#expr e 
+        pp f "@[<0>@[<2>[|@ %a@]@ |]@]" o#under_semi#expr e
     | <:expr< ($e$ :> $t$) >> ->
         pp f "@[<2>(%a :>@ %a)@]" o#expr e o#ctyp t
     | <:expr< ($e$ : $t1$ :> $t2$) >> ->
@@ -903,7 +903,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:class_expr< $ce1$ and $ce2$ >> ->
           do { o#class_expr f ce1; pp f andsep; o#class_expr f ce2 }
     | <:class_expr< $ce1$ = fun $p$ -> $ce2$ >> when is_irrefut_patt p ->
-          pp f "@[<2>%a@ %a" o#class_expr ce1 
+          pp f "@[<2>%a@ %a" o#class_expr ce1
             o#patt_class_expr_fun_args (p, ce2)
     | <:class_expr< $ce1$ = $ce2$ >> ->
           pp f "@[<2>%a =@]@ %a" o#class_expr ce1 o#class_expr ce2

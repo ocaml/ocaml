@@ -63,6 +63,8 @@ CAMLprim value win_waitpid(value vflags, value vpid_req)
   }
   if (status == STILL_ACTIVE)
     return alloc_process_status((HANDLE) 0, 0);
-  else
+  else {
+    CloseHandle(pid_req);
     return alloc_process_status(pid_req, status);
+  }
 }

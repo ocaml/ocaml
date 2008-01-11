@@ -411,11 +411,19 @@ and transl_recmodule_modtypes loc env sdecls =
       (fun (name, smty) ->
         (Ident.create name, approx_modtype transl_modtype env smty))
       sdecls in
-  let first = transition (make_env init) init in
-  let final_env = make_env first in
-  let final_decl = transition final_env init in
-  check_recmod_typedecls final_env sdecls final_decl;
-  (final_decl, final_env)
+  let env0 = make_env init in
+  let dcl1 = transition env0 init in
+  let env1 = make_env dcl1 in
+  let dcl2 = transition env1 dcl1 in
+  let env2 = make_env dcl2 in
+  check_recmod_typedecls env2 sdecls dcl2;
+(*
+  List.iter
+    (fun (id, mty) ->
+      Format.printf "%a: %a@." Printtyp.ident id Printtyp.modtype mty)
+    dcl2;
+*)
+  (dcl2, env2)
 
 (* Try to convert a module expression to a module path. *)
 
@@ -492,6 +500,79 @@ let enrich_module_type anchor name mty env =
   match anchor with
     None -> mty
   | Some p -> Mtype.enrich_modtype env (Pdot(p, name, nopos)) mty
+
+let check_recmodule_inclusion env bindings =
+  (* PR#4450, PR#4470: consider
+        module rec X : DECL = MOD  where MOD has inferred type ACTUAL
+     The "natural" typing condition
+        E, X: ACTUAL |- ACTUAL <: DECL
+     leads to circularities through manifest types.  
+     Instead, we "unroll away" the potential circularities a finite number
+     of times.  The (weaker) condition we implement is:
+        E, X: DECL,
+           X1: ACTUAL,
+           X2: ACTUAL{X <- X1}/X1
+           ...
+           Xn: ACTUAL{X <- X(n-1)}/X(n-1)
+        |- ACTUAL{X <- Xn}/Xn <: DECL{X <- Xn}
+     so that manifest types rooted at X(n+1) are expanded in terms of X(n),
+     avoiding circularities.  The strengthenings ensure that
+     Xn.t = X(n-1).t = ... = X2.t = X1.t.
+     N can be chosen arbitrarily; larger values of N result in more
+     recursive definitions being accepted.  A good choice appears to be
+     the number of mutually recursive declarations. *)
+
+  let subst_and_strengthen env s id mty =
+    Mtype.strengthen env (Subst.modtype s mty)
+                         (Subst.module_path s (Pident id)) in
+
+  let rec check_incl first_time n env s =
+    if n > 0 then begin
+      (* Generate fresh names Y_i for the rec. bound module idents X_i *)
+      let bindings1 =
+        List.map
+          (fun (id, mty_decl, modl, mty_actual) ->
+             (id, Ident.rename id, mty_actual))
+          bindings in
+      (* Enter the Y_i in the environment with their actual types substituted
+         by the input substitution s *)
+      let env' =
+        List.fold_left
+          (fun env (id, id', mty_actual) ->
+             let mty_actual' =
+               if first_time
+               then mty_actual
+               else subst_and_strengthen env s id mty_actual in
+             Env.add_module id' mty_actual' env)
+          env bindings1 in
+      (* Build the output substitution Y_i <- X_i *)
+      let s' =
+        List.fold_left
+          (fun s (id, id', mty_actual) ->
+             Subst.add_module id (Pident id') s)
+          Subst.identity bindings1 in
+      (* Recurse with env' and s' *)
+      check_incl false (n-1) env' s'
+    end else begin
+      (* Base case: check inclusion of s(mty_actual) in s(mty_decl)
+         and insert coercion if needed *)
+      let check_inclusion (id, mty_decl, modl, mty_actual) =
+        let mty_decl' = Subst.modtype s mty_decl
+        and mty_actual' = subst_and_strengthen env s id mty_actual in
+        let coercion =
+          try
+            Includemod.modtypes env mty_actual' mty_decl'
+          with Includemod.Error msg ->
+            raise(Error(modl.mod_loc, Not_included msg)) in
+        let modl' =
+          { mod_desc = Tmod_constraint(modl, mty_decl, coercion);
+            mod_type = mty_decl;
+            mod_env = env;
+            mod_loc = modl.mod_loc } in
+        (id, modl') in
+      List.map check_inclusion bindings
+    end
+  in check_incl true (List.length bindings) env Subst.identity
 
 (* Type a module value expression *)
 
@@ -641,27 +722,21 @@ and type_structure anchor env sstr scope =
         let (decls, newenv) =
           transl_recmodule_modtypes loc env
             (List.map (fun (name, smty, smodl) -> (name, smty)) sbind) in
-        let type_recmodule_binding (id, mty) (name, smty, smodl) =
-          let modl =
-            type_module (anchor_recmodule id anchor) newenv smodl in
-          let coercion =
-            try
-              Includemod.modtypes newenv
-                 (Mtype.strengthen env modl.mod_type (Pident id))
-                 mty
-            with Includemod.Error msg ->
-              raise(Error(smodl.pmod_loc, Not_included msg)) in
-          let modl' =
-            { mod_desc = Tmod_constraint(modl, mty, coercion);
-              mod_type = mty;
-              mod_env = newenv;
-              mod_loc = smodl.pmod_loc } in
-          (id, modl') in
-        let bind = List.map2 type_recmodule_binding decls sbind in
+        let bindings1 =
+          List.map2
+            (fun (id, mty) (name, smty, smodl) ->
+              let modl =
+                type_module (anchor_recmodule id anchor) newenv smodl in
+              let mty' =
+                enrich_module_type anchor (Ident.name id) modl.mod_type newenv in
+              (id, mty, modl, mty'))
+           decls sbind in
+        let bindings2 =
+          check_recmodule_inclusion newenv bindings1 in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (Tstr_recmodule bind :: str_rem,
+        (Tstr_recmodule bindings2 :: str_rem,
          map_rec (fun rs (id, modl) -> Tsig_module(id, modl.mod_type, rs))
-                 bind sig_rem,
+                 bindings2 sig_rem,
          final_env)
     | {pstr_desc = Pstr_modtype(name, smty); pstr_loc = loc} :: srem ->
         check "module type" loc modtype_names name;
