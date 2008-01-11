@@ -544,12 +544,14 @@ have caml-electric-indent on, which see.")
   (run-hooks 'caml-mode-hook))
 
 (defun caml-set-compile-command ()
-  "Hook to set compile-command locally, unless there is a Makefile in the 
-   current directory." 
+  "Hook to set compile-command locally, unless there is a Makefile or
+   a _build directory or a _tags file in the current directory."
   (interactive)
   (unless (or (null buffer-file-name)
               (file-exists-p "makefile")
-              (file-exists-p "Makefile"))
+              (file-exists-p "Makefile")
+              (file-exists-p "_build")
+              (file-exists-p "_tags"))
     (let* ((filename (file-name-nondirectory buffer-file-name))
            (basename (file-name-sans-extension filename))
            (command nil))
@@ -565,7 +567,7 @@ have caml-electric-indent on, which see.")
         (setq command "ocamlyacc"))
        )
       (if command
-          (progn 
+          (progn
             (make-local-variable 'compile-command)
             (setq compile-command (concat command " " filename))))
       )))
@@ -592,7 +594,7 @@ have caml-electric-indent on, which see.")
   (inferior-caml-eval-region start end))
 
 ;; old version ---to be deleted later
-; 
+;
 ; (defun caml-eval-phrase ()
 ;   "Send the current Caml phrase to the inferior Caml process."
 ;   (interactive)
@@ -602,15 +604,15 @@ have caml-electric-indent on, which see.")
 
 (defun caml-eval-phrase (arg &optional min max)
   "Send the phrase containing the point to the CAML process.
-With prefix-arg send as many phrases as its numeric value, 
+With prefix-arg send as many phrases as its numeric value,
 If an error occurs during evalutaion, stop at this phrase and
-repport the error. 
+repport the error.
 
 Return nil if noerror and position of error if any.
 
 If arg's numeric value is zero or negative, evaluate the current phrase
-or as many as prefix arg, ignoring evaluation errors. 
-This allows to jump other erroneous phrases. 
+or as many as prefix arg, ignoring evaluation errors.
+This allows to jump other erroneous phrases.
 
 Optional arguments min max defines a region within which the phrase
 should lies."
@@ -874,7 +876,7 @@ possible."
         (progn (setq caml-next-error-skip-warnings-flag 't)
                (apply 'next-error args))
       (setq caml-next-error-skip-warnings-flag old-flag))))
-    
+
 
 ;; Usual match-string doesn't work properly with font-lock-mode
 ;; on some emacs.
@@ -985,7 +987,7 @@ to the end.
     (push-mark)
     (goto-char beg)
     (cons beg end)))
-    
+
 ;;itz Fri Sep 25 12:58:13 PDT 1998 support for adding change-log entries
 (defun caml-current-defun ()
   (save-excursion
@@ -1749,7 +1751,7 @@ by |, insert one."
 
 ;; to mark phrases, so that repeated calls will take several of them
 ;; knows little about Ocaml appart literals and comments, so it should work
-;; with other dialects as long as ;; marks the end of phrase. 
+;; with other dialects as long as ;; marks the end of phrase.
 
 (defun caml-indent-phrase (arg)
   "Indent current phrase
