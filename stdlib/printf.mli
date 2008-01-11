@@ -99,8 +99,8 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    [*], in which case an extra integer argument is taken to specify
    the corresponding [width] or [precision]. This integer argument
    precedes immediately the argument to print.
-   For instance, [%.*3$f] prints a [float] with as many fractional
-   digits as the value of the third argument. *)
+   For instance, [%.*f] prints a [float] with as many fractional
+   digits as the value of the argument given before the float. *)
 
 val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)
