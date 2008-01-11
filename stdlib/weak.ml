@@ -26,6 +26,7 @@ external set : 'a t -> int -> 'a option -> unit = "caml_weak_set";;
 external get: 'a t -> int -> 'a option = "caml_weak_get";;
 external get_copy: 'a t -> int -> 'a option = "caml_weak_get_copy";;
 external check: 'a t -> int -> bool = "caml_weak_check";;
+external blit: 'a t -> int -> 'a t -> int -> int -> unit = "caml_weak_blit";;
 
 let fill ar ofs len x =
   if ofs < 0 || len < 0 || ofs + len > length ar
@@ -36,23 +37,6 @@ let fill ar ofs len x =
     done
   end
 ;;
-
-let blit ar1 of1 ar2 of2 len =
-  if of1 < 0 || of1 + len > length ar1 || of2 < 0 || of2 + len > length ar2
-  then raise (Invalid_argument "Weak.blit")
-  else begin
-    if of2 > of1 then begin
-      for i = 0 to len - 1 do
-        set ar2 (of2 + i) (get ar1 (of1 + i))
-      done
-    end else begin
-      for i = len - 1 downto 0 do
-        set ar2 (of2 + i) (get ar1 (of1 + i))
-      done
-    end
-  end
-;;
-
 
 (** Weak hash tables *)
 
@@ -83,27 +67,35 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
 
   type t = {
     mutable table : data weak_t array;
-    mutable totsize : int;             (* sum of the bucket sizes *)
-    mutable limit : int;               (* max ratio totsize/table length *)
+    mutable hashes : int array array;
+    mutable limit : int;               (* bucket size limit *)
+    mutable oversize : int;            (* number of oversize buckets *)
+    mutable rover : int;               (* for internal bookkeeping *)
   };;
 
-  let get_index t d = (H.hash d land max_int) mod (Array.length t.table);;
+  let get_index t h = (h land max_int) mod (Array.length t.table);;
+
+  let limit = 7;;
+  let over_limit = 2;;
 
   let create sz =
     let sz = if sz < 7 then 7 else sz in
     let sz = if sz > Sys.max_array_length then Sys.max_array_length else sz in
     {
       table = Array.create sz emptybucket;
-      totsize = 0;
-      limit = 3;
+      hashes = Array.create sz [| |];
+      limit = limit;
+      oversize = 0;
+      rover = 0;
     };;
 
   let clear t =
     for i = 0 to Array.length t.table - 1 do
       t.table.(i) <- emptybucket;
+      t.hashes.(i) <- [| |];
     done;
-    t.totsize <- 0;
-    t.limit <- 3;
+    t.limit <- limit;
+    t.oversize <- 0;
   ;;
 
   let fold f t init =
@@ -126,85 +118,139 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     Array.iter (iter_bucket 0) t.table
   ;;
 
+  let rec count_bucket i b accu =
+    if i >= length b then accu else
+    count_bucket (i+1) b (accu + (if check b i then 1 else 0))
+  ;;
+
   let count t =
-    let rec count_bucket i b accu =
-      if i >= length b then accu else
-      count_bucket (i+1) b (accu + (if check b i then 1 else 0))
-    in
     Array.fold_right (count_bucket 0) t.table 0
   ;;
 
-  let next_sz n = min (3*n/2 + 3) (Sys.max_array_length - 1);;
+  let next_sz n = min (3 * n / 2 + 3) Sys.max_array_length;;
+  let prev_sz n = ((n - 3) * 2 + 2) / 3;;
+
+  let test_shrink_bucket t =
+    let bucket = t.table.(t.rover) in
+    let hbucket = t.hashes.(t.rover) in
+    let len = length bucket in
+    let prev_len = prev_sz len in
+    let live = count_bucket 0 bucket 0 in
+    if live <= prev_len then begin
+      let rec loop i j =
+        if j > prev_len then begin
+          if check bucket i then loop (i + 1) j
+          else if check bucket j then begin
+            blit bucket j bucket i 1;
+            hbucket.(i) <- hbucket.(j);
+            loop (i + 1) (j - 1);
+          end else loop i (j - 1);
+        end;
+      in
+      loop 0 (length bucket - 1);
+      if prev_len = 0 then begin
+        t.table.(t.rover) <- emptybucket;
+        t.hashes.(t.rover) <- [| |];
+      end else begin
+        Obj.truncate (Obj.repr bucket) (prev_len + 1);
+        Obj.truncate (Obj.repr hbucket) prev_len;
+      end;
+      if len > t.limit && prev_len <= t.limit then t.oversize <- t.oversize - 1;
+    end;
+    t.rover <- (t.rover + 1) mod (Array.length t.table);
+  ;;
 
   let rec resize t =
     let oldlen = Array.length t.table in
     let newlen = next_sz oldlen in
     if newlen > oldlen then begin
       let newt = create newlen in
-      newt.limit <- t.limit + 100;          (* prevent resizing of newt *)
       fold (fun d () -> add newt d) t ();
-   (* assert Array.length newt.table = newlen; *)
       t.table <- newt.table;
-   (* t.limit <- t.limit + 2; -- performance bug *)
+      t.hashes <- newt.hashes;
+      t.limit <- newt.limit;
+      t.oversize <- newt.oversize;
+      t.rover <- t.rover mod Array.length newt.table;
+    end else begin
+      t.limit <- max_int;             (* maximum size already reached *)
+      t.oversize <- 0;
     end
 
-  and add_aux t d index =
+  and add_aux t d h index =
     let bucket = t.table.(index) in
+    let hashes = t.hashes.(index) in
     let sz = length bucket in
     let rec loop i =
       if i >= sz then begin
-        let newsz = min (sz + 3) (Sys.max_array_length - 1) in
-        if newsz <= sz then failwith "Weak.Make : hash bucket cannot grow more";
+        let newsz = min (3 * sz / 2 + 3) (Sys.max_array_length - 1) in
+        if newsz <= sz then failwith "Weak.Make: hash bucket cannot grow more";
         let newbucket = weak_create newsz in
+        let newhashes = Array.make newsz 0 in
         blit bucket 0 newbucket 0 sz;
-        set newbucket i (Some d);
+        Array.blit hashes 0 newhashes 0 sz;
+        set newbucket sz (Some d);
+        newhashes.(sz) <- h;
         t.table.(index) <- newbucket;
-        t.totsize <- t.totsize + (newsz - sz);
-        if t.totsize > t.limit * Array.length t.table then resize t;
+        t.hashes.(index) <- newhashes;
+        if sz <= t.limit && newsz > t.limit then begin
+          t.oversize <- t.oversize + 1;
+          for i = 0 to over_limit do test_shrink_bucket t done;
+        end;
+        if t.oversize > Array.length t.table / over_limit then resize t;
       end else begin
         if check bucket i
-        then loop (i+1)
-        else set bucket i (Some d)
-      end
+        then loop (i + 1)
+        else begin
+          set bucket i (Some d);
+          hashes.(i) <- h;
+        end;
+      end;
     in
     loop 0;
 
-  and add t d = add_aux t d (get_index t d)
+  and add t d =
+    let h = H.hash d in
+    add_aux t d h (get_index t h);
   ;;
 
   let find_or t d ifnotfound =
-    let index = get_index t d in
+    let h = H.hash d in
+    let index = get_index t h in
     let bucket = t.table.(index) in
+    let hashes = t.hashes.(index) in
     let sz = length bucket in
     let rec loop i =
-      if i >= sz then ifnotfound index
-      else begin
+      if i >= sz then ifnotfound h index
+      else if h = hashes.(i) then begin
         match get_copy bucket i with
         | Some v when H.equal v d
            -> begin match get bucket i with
               | Some v -> v
-              | None -> loop (i+1)
+              | None -> loop (i + 1)
               end
-        | _ -> loop (i+1)
-      end
+        | _ -> loop (i + 1)
+      end else loop (i + 1)
     in
     loop 0
   ;;
 
-  let merge t d = find_or t d (fun index -> add_aux t d index; d);;
+  let merge t d = find_or t d (fun h index -> add_aux t d h index; d);;
 
-  let find t d = find_or t d (fun index -> raise Not_found);;
+  let find t d = find_or t d (fun h index -> raise Not_found);;
 
   let find_shadow t d iffound ifnotfound =
-    let index = get_index t d in
+    let h = H.hash d in
+    let index = get_index t h in
     let bucket = t.table.(index) in
+    let hashes = t.hashes.(index) in
     let sz = length bucket in
     let rec loop i =
-      if i >= sz then ifnotfound else begin
+      if i >= sz then ifnotfound
+      else if h = hashes.(i) then begin
         match get_copy bucket i with
         | Some v when H.equal v d -> iffound bucket i
-        | _ -> loop (i+1)
-      end
+        | _ -> loop (i + 1)
+      end else loop (i + 1)
     in
     loop 0
   ;;
@@ -214,20 +260,22 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
   let mem t d = find_shadow t d (fun w i -> true) false;;
 
   let find_all t d =
-    let index = get_index t d in
+    let h = H.hash d in
+    let index = get_index t h in
     let bucket = t.table.(index) in
+    let hashes = t.hashes.(index) in
     let sz = length bucket in
     let rec loop i accu =
       if i >= sz then accu
-      else begin
+      else if h = hashes.(i) then begin
         match get_copy bucket i with
         | Some v when H.equal v d
            -> begin match get bucket i with
-              | Some v -> loop (i+1) (v::accu)
-              | None -> loop (i+1) accu
+              | Some v -> loop (i + 1) (v :: accu)
+              | None -> loop (i + 1) accu
               end
-        | _ -> loop (i+1) accu
-      end
+        | _ -> loop (i + 1) accu
+      end else loop (i + 1) accu
     in
     loop 0 []
   ;;

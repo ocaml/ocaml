@@ -33,6 +33,7 @@ typedef struct {
 #define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
 
 extern int caml_gc_phase;
+extern int caml_gc_subphase;
 extern uintnat caml_allocated_words;
 extern double caml_extra_heap_resources;
 extern uintnat caml_dependent_size, caml_dependent_allocated;
@@ -41,6 +42,10 @@ extern uintnat caml_fl_size_at_phase_change;
 #define Phase_mark 0
 #define Phase_sweep 1
 #define Phase_idle 2
+#define Subphase_main 10
+#define Subphase_weak1 11
+#define Subphase_weak2 12
+#define Subphase_final 13
 
 CAMLextern char *caml_heap_start;
 extern uintnat total_heap_size;
