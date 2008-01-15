@@ -49,7 +49,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   HANDLE fd, fmap;
   int flags, major_dim, mode, perm;
   intnat num_dims, i;
-  intnat dim[MAX_NUM_DIMS];
+  intnat dim[CAML_BA_MAX_NUM_DIMS];
   __int64 currpos, startpos, file_size, data_size;
   uintnat array_size, page, delta;
   char c;
@@ -61,10 +61,10 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   flags = Int_val(vkind) | Int_val(vlayout);
   startpos = Int64_val(vstart);
   num_dims = Wosize_val(vdim);
-  major_dim = flags & BIGARRAY_FORTRAN_LAYOUT ? num_dims - 1 : 0;
+  major_dim = flags & CAML_BA_FORTRAN_LAYOUT ? num_dims - 1 : 0;
   /* Extract dimensions from Caml array */
   num_dims = Wosize_val(vdim);
-  if (num_dims < 1 || num_dims > MAX_NUM_DIMS)
+  if (num_dims < 1 || num_dims > CAML_BA_MAX_NUM_DIMS)
     caml_invalid_argument("Bigarray.mmap: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
@@ -79,7 +79,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   if (file_size == -1) caml_ba_sys_error();
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
-  array_size = caml_ba_element_size[flags & BIGARRAY_KIND_MASK];
+  array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
   for (i = 0; i < num_dims; i++)
     if (dim[i] != -1) array_size *= dim[i];
   /* Check if the first/last dimension is unknown */
@@ -118,7 +118,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   /* Close the file mapping */
   CloseHandle(fmap);
   /* Build and return the Caml bigarray */
-  return caml_ba_alloc(flags | BIGARRAY_MAPPED_FILE, num_dims, addr, dim);
+  return caml_ba_alloc(flags | CAML_BA_MAPPED_FILE, num_dims, addr, dim);
 }
 
 CAMLprim value caml_ba_map_file_bytecode(value * argv, int argn)
