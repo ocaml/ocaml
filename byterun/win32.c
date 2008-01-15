@@ -486,10 +486,10 @@ static void caml_reset_stack (void *faulting_address)
 extern char * caml_code_area_start, * caml_code_area_end;
 CAMLextern int caml_is_in_code(void *);
 
-#define In_code_area(pc) \
+#define Is_in_code_area(pc) \
  ( ((char *)(pc) >= caml_code_area_start && \
     (char *)(pc) <= caml_code_area_end)     \
-   || caml_is_in_code((void *)(pc))  )
+   || (Classify_addr(pc) & In_code_area) )
 
 static LONG CALLBACK
     caml_UnhandledExceptionFilter (EXCEPTION_POINTERS* exn_info)
@@ -499,7 +499,7 @@ static LONG CALLBACK
   DWORD *ctx_ip = &(ctx->Eip);
   DWORD *ctx_sp = &(ctx->Esp);
 
-  if (code == EXCEPTION_STACK_OVERFLOW && In_code_area (*ctx_ip))
+  if (code == EXCEPTION_STACK_OVERFLOW && Is_in_code_area (*ctx_ip))
     {
       uintnat faulting_address;
       uintnat * alt_esp;
