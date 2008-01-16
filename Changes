@@ -82,7 +82,7 @@ New features:
 - made configure script work on PlayStation 3
 - ARM port: brought up-to-date for Debian 4.0 (Etch)
 - many other small changes and bugfixes in camlp4, ocamlbuild, labltk,
-  emacs files,
+  emacs files
 
 Objective Caml 3.10.0:
 ----------------------
