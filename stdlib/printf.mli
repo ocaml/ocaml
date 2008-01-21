@@ -27,7 +27,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 
    Conversion specifications have the following form:
 
-   [% \[positional specifier\] \[flags\] \[width\] \[.precision\] type]
+   [% \[flags\] \[width\] \[.precision\] type]
 
    In short, a conversion specification consists in the [%] character,
    followed by optional modifiers and a type which is made of one or
@@ -79,10 +79,6 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 
-   The optional [positional specifier] consists of an integer followed
-   by a [$]; the integer indicates which argument to use, the first
-   argument being denoted by 1.
-
    The optional [flags] are:
    - [-]: left-justify the output (default is right justification).
    - [0]: for numerical conversions, pad with zeroes instead of spaces.
@@ -102,10 +98,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    The integer in a [width] or [precision] can also be specified as
    [*], in which case an extra integer argument is taken to specify
    the corresponding [width] or [precision]. This integer argument
-   precedes immediately the argument to print, unless an optional
-   [positional specifier] is given to indicates which argument to
-   use. For instance, [%.*3$f] prints a [float] with as many fractional
-   digits as the value of the third argument. *)
+   precedes immediately the argument to print.
+   For instance, [%.*f] prints a [float] with as many fractional
+   digits as the value of the argument given before the float. *)
 
 val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)
