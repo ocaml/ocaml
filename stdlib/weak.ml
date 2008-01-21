@@ -27,6 +27,7 @@ external get: 'a t -> int -> 'a option = "caml_weak_get";;
 external get_copy: 'a t -> int -> 'a option = "caml_weak_get_copy";;
 external check: 'a t -> int -> bool = "caml_weak_check";;
 external blit: 'a t -> int -> 'a t -> int -> int -> unit = "caml_weak_blit";;
+(* blit: src srcoff dst dstoff len *)
 
 let fill ar ofs len x =
   if ofs < 0 || len < 0 || ofs + len > length ar
@@ -118,6 +119,16 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     Array.iter (iter_bucket 0) t.table
   ;;
 
+  let iter_weak f t =
+    let rec iter_bucket i j b =
+      if i >= length b then () else
+      match check b i with
+      | true -> f b t.hashes.(j) i; iter_bucket (i+1) j b
+      | false -> iter_bucket (i+1) j b
+    in
+    Array.iteri (iter_bucket 0) t.table
+  ;;
+
   let rec count_bucket i b accu =
     if i >= length b then accu else
     count_bucket (i+1) b (accu + (if check b i then 1 else 0))
@@ -165,7 +176,12 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let newlen = next_sz oldlen in
     if newlen > oldlen then begin
       let newt = create newlen in
-      fold (fun d () -> add newt d) t ();
+      let add_weak ob oh oi =
+        let setter nb ni _ = blit ob oi nb ni 1 in
+        let h = oh.(oi) in
+        add_aux newt setter None h (get_index newt h);
+      in
+      iter_weak add_weak t;
       t.table <- newt.table;
       t.hashes <- newt.hashes;
       t.limit <- newt.limit;
@@ -176,7 +192,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       t.oversize <- 0;
     end
 
-  and add_aux t d h index =
+  and add_aux t setter d h index =
     let bucket = t.table.(index) in
     let hashes = t.hashes.(index) in
     let sz = length bucket in
@@ -188,7 +204,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
         let newhashes = Array.make newsz 0 in
         blit bucket 0 newbucket 0 sz;
         Array.blit hashes 0 newhashes 0 sz;
-        set newbucket sz (Some d);
+        setter newbucket sz d;
         newhashes.(sz) <- h;
         t.table.(index) <- newbucket;
         t.hashes.(index) <- newhashes;
@@ -197,20 +213,19 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
           for i = 0 to over_limit do test_shrink_bucket t done;
         end;
         if t.oversize > Array.length t.table / over_limit then resize t;
+      end else if check bucket i then begin
+        loop (i + 1)
       end else begin
-        if check bucket i
-        then loop (i + 1)
-        else begin
-          set bucket i (Some d);
-          hashes.(i) <- h;
-        end;
+        setter bucket i d;
+        hashes.(i) <- h;
       end;
     in
     loop 0;
+  ;;
 
-  and add t d =
+  let add t d =
     let h = H.hash d in
-    add_aux t d h (get_index t h);
+    add_aux t set (Some d) h (get_index t h);
   ;;
 
   let find_or t d ifnotfound =
@@ -234,7 +249,9 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     loop 0
   ;;
 
-  let merge t d = find_or t d (fun h index -> add_aux t d h index; d);;
+  let merge t d =
+    find_or t d (fun h index -> add_aux t set (Some d) h index; d)
+  ;;
 
   let find t d = find_or t d (fun h index -> raise Not_found);;
 
