@@ -237,8 +237,7 @@
 #define young_end caml_young_end
 #define young_ptr caml_young_ptr
 #define young_limit caml_young_limit
-#define ref_table_ptr caml_ref_table_ptr
-#define ref_table_limit caml_ref_table_limit
+#define ref_table caml_ref_table
 #define minor_collection caml_minor_collection
 #define check_urgent_gc caml_check_urgent_gc
 
