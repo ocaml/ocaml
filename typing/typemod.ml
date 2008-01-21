@@ -871,10 +871,7 @@ and simplify_signature sg =
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
-  let (str, sg, finalenv) =
-    Misc.try_finally (fun () -> type_structure initial_env ast Location.none)
-                     (fun () -> Stypes.dump (outputprefix ^ ".annot"))
-  in
+  let (str, sg, finalenv) = type_structure initial_env ast Location.none in
   let simple_sg = simplify_signature sg in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then begin

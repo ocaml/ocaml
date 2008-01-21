@@ -64,9 +64,11 @@ let interface ppf sourcefile outputprefix =
     Warnings.check_fatal ();
     if not !Clflags.print_types then
       Env.save_signature sg modulename (outputprefix ^ ".cmi");
-    Pparse.remove_preprocessed inputfile
+    Pparse.remove_preprocessed inputfile;
+    Stypes.dump (outputprefix ^ ".annot");
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
+    Stypes.dump (outputprefix ^ ".annot");
     raise e
 
 (* Compile a .ml file *)
