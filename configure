@@ -569,6 +569,7 @@ if test $withsharedlibs = "yes"; then
       if test -f /usr/bin/ld_classic; then
         # The new linker in Mac OS X 10.5 does not support read_only_relocs
         # dyld=/usr/bin/ld_classic  XXX FIXME incompatible with X11 libs
+        :
       fi
       mksharedlib="$dyld -bundle -flat_namespace -undefined suppress -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
