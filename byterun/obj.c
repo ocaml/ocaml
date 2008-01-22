@@ -63,14 +63,19 @@ CAMLprim value caml_obj_is_block(value arg)
   return Val_bool(Is_block(arg));
 }
 
+CAMLprim value caml_obj_is_in_heaps (value arg)
+{
+  return Val_bool (Is_young (arg) || Is_in_heap (arg) || Is_atom (arg));
+}
+
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
     return Val_int (1000);
-  }else if (Is_young (arg) || Is_in_heap (arg) || Is_atom (arg)){
-    return Val_int(Tag_val(arg));
+  }else if ((long) arg & (sizeof (value) - 1)){
+    return Val_int (1001);  /* unaligned */
   }else{
-    return Val_int (1001);
+    return Val_int(Tag_val(arg));
   }
 }
 

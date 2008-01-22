@@ -74,17 +74,20 @@ let force (l : 'arg t) =
 
 let force_val (l : 'arg t) =
   let x = Obj.repr l in
-  let t = Obj.tag x in
-  if t = Obj.forward_tag then (follow_forward x : 'arg)
-  else if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
-  else begin
-    let closure = (Obj.obj (Obj.field x 0) : unit -> 'arg) in
-    Obj.set_field x 0 raise_undefined;
-    let result = closure () in
-    Obj.set_field x 0 (Obj.repr result);  (* do set_field BEFORE set_tag *)
-    Obj.set_tag x (Obj.forward_tag);
-    result
-  end
+  if Obj.is_in_heaps x then begin
+    let t = Obj.tag x in
+    if t = Obj.forward_tag then (follow_forward x : 'arg)
+    else if t <> Obj.lazy_tag then (Obj.obj x : 'arg)
+    else begin
+      let closure = (Obj.obj (Obj.field x 0) : unit -> 'arg) in
+      Obj.set_field x 0 raise_undefined;
+      let result = closure () in
+      Obj.set_field x 0 (Obj.repr result);  (* do set_field BEFORE set_tag *)
+      Obj.set_tag x (Obj.forward_tag);
+      result
+    end
+  end else
+    (Obj.obj x : 'arg)
 ;;
 
 let lazy_from_fun (f : unit -> 'arg) =
@@ -94,12 +97,19 @@ let lazy_from_fun (f : unit -> 'arg) =
 ;;
 
 let lazy_from_val (v : 'arg) =
-  let t = Obj.tag (Obj.repr v) in
-  if t = Obj.forward_tag || t = Obj.lazy_tag || t = Obj.double_tag then begin
+  let x = Obj.repr v in
+  if Obj.is_in_heaps x then begin
+    let t = Obj.tag x in
+    if t = Obj.forward_tag || t = Obj.lazy_tag || t = Obj.double_tag then begin
+      make_forward v
+    end else begin
+      (Obj.obj x : 'arg t)
+    end
+  end else
     make_forward v
-  end else begin
-    (Obj.magic v : 'arg t)
-  end
 ;;
 
-let lazy_is_val (l : 'arg t) = Obj.tag (Obj.repr l) <> Obj.lazy_tag;;
+let lazy_is_val (l : 'arg t) =
+  let x = Obj.repr l in
+  not (Obj.is_in_heaps x && Obj.tag x = Obj.lazy_tag)
+;;
