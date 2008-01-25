@@ -189,7 +189,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLreturn (res);
 }
 
-/* For camlinternalOO.ml
+/* For mlvalues.h and camlinternalOO.ml
    See also GETPUBMET in interp.c
  */
 
@@ -202,7 +202,8 @@ CAMLprim value caml_get_public_method (value obj, value tag)
     if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  return Field (meths, li-1);
+  /* return 0 if tag is not there */
+  return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
 }
 
 /* these two functions might be useful to an hypothetical JIT */

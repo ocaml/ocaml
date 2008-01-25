@@ -188,8 +188,11 @@ typedef opcode_t * code_t;
 #define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_val(Field((val), 1))
 CAMLextern value caml_get_public_method (value obj, value tag);
-/* called as:
+/* Called as:
    caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
+/* caml_get_public_method returns 0 if tag not in the table.
+   Note however that tags being hashed, same tag does not necessarily mean
+   same method name. */
 
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
