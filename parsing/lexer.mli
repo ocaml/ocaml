@@ -25,6 +25,7 @@ type error =
   | Unterminated_string_in_comment
   | Keyword_as_label of string
   | Literal_overflow of string
+  | Unterminated_regexp
 ;;
 
 exception Error of error * Location.t

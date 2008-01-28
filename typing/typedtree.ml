@@ -98,6 +98,7 @@ and expression_desc =
   | Texp_rtype of type_expr
   | Texp_typedecl of Path.t
   | Texp_generic of (type_expr * expression) list
+  | Texp_regexp of string * Regexp.token list * Regexp.typ * expression
 
 and meth =
     Tmeth_name of string

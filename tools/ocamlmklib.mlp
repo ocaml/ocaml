@@ -135,7 +135,7 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a files>
+Usage: gcamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a files>
 Options are:
   -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only
   -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only

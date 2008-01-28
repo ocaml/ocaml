@@ -19,11 +19,13 @@ open Typedtree
 
 let debug = try ignore (Sys.getenv "GCAML_DEBUG_KSET"); true with _ -> false
 
-type elem = type_expr * value_description * instance_info ref 
+type elem = { kelem_type : type_expr;
+	      kelem_vdesc : value_description;
+	      kelem_instinfo : instance_info ref } 
 type t = elem list ref
 
 let empty () = ref []
-let add kset k = kset := k @ !kset
+let add kset k = kset := k :: !kset
 let get kset = !kset
 let create kset = ref kset
 
@@ -34,7 +36,7 @@ let print ppf kset =
       | [a] -> pr ppf a
       | a :: l -> pr ppf a; sep ppf; print_list pr sep ppf l
   in
-  let print_kelem ppf (kt,kvdesc,_) = 
+  let print_kelem ppf { kelem_type= kt; kelem_vdesc= kvdesc } = 
     Format.fprintf ppf "@[<2>%a <@ %a@]" 
       Printtyp.type_scheme kt
       Printtyp.type_scheme kvdesc.val_type
@@ -42,79 +44,59 @@ let print ppf kset =
   Format.fprintf ppf "{ @[%a@] }" 
     (print_list print_kelem (fun ppf -> Format.fprintf ppf ",@ ")) !kset
 
+(* New type instantiation of [vdesc]
+   When an overloaded type is instantiated, we add its konstraint part
+   to the konstraint set [kset]. The gathered constraints in [kset] 
+   must be solved later. 
+*)
 let instance kset vdesc =
-  let t = Ctype.repr (vdesc.val_type) in
+  let t = Ctype.repr vdesc.val_type in
   (* Instantiations of Toverload and Tkonst are special! *)
   match t.desc with
   | Toverload {over_aunif= aunif; over_cases= cases} ->
       let t' = Ctype.instance aunif in 
       let inst_info = ref FA_none in
-      add kset [t', vdesc, inst_info];
+      add kset { kelem_type= t'; 
+		 kelem_vdesc= vdesc; 
+		 kelem_instinfo= inst_info };
       t', inst_info
   | Tkonst (konst, t') -> 
       let t'' = Ctype.instance t' in
       let inst_info = ref FA_none in
-      add kset [t'', vdesc, inst_info];
+      add kset { kelem_type= t'';
+		 kelem_vdesc= vdesc;
+		 kelem_instinfo= inst_info };
       t'', inst_info
-(* TOO ADVANCED
-      begin match 
-	Ctype.instance_list (t::(List.map (fun ke -> ke.ktype) konst)) 
-      with
-      | t'::ktypes' ->
-	  let konst' = 
-	    List.map2 (fun ke ktype' -> { ke with ktype= ktype' }) 
-	      konst ktypes'
-	  in
-Format.eprintf "kinst=%a@." Printtyp.type_scheme t;
-	  add kset konst'; 
-	  t'
-      | _ -> assert false
-      end
-*)
   | _ -> 
-	(* Even for non overloaded types, inst_info must be kept its track,
-	   for a derived generic defined by let rec; when the definition is
-	   type-checked, the derived generic is not yet polymorphic! *)
-	let t' = Ctype.instance t in
-	let inst_info = ref FA_none in
-	add kset [t', vdesc, inst_info];
-	t', inst_info
-(*
-	Ctype.instance t, ref FA_none
-*)
+      (* Even for non overloaded types, inst_info must be kept its track,
+	 for a derived generic defined by let rec; when the definition is
+	 type-checked, the derived generic is not yet polymorphic! *)
+      let t' = Ctype.instance t in
+      let inst_info = ref FA_none in
+      add kset { kelem_type= t';
+		 kelem_vdesc= vdesc;
+		 kelem_instinfo= inst_info };
+      t', inst_info
 
-(*
-let make_tkonst konsts typ =
-  let typ = Ctype.repr typ in
-  let konsts = List.filter filter_konst konsts in
-  if konsts <> [] then begin 
-    (* Type variable leaves inside genk are generalized, 
-       but parent nodes are not. Here, we fix them. *)
-(* WE CANNOT DO THIS HERE, SINCE GENERIC RECURSIVE LOOPS MAY BE LOST.
-    let t = Ctype.correct_levels t in
-*)
-    let t = Btype.newgenty (Tkonst (konsts, typ)) in
-Format.eprintf "make_tkonst=> %a@." Printtyp.type_scheme t;
-    Etype.normalize_type t;
-    t
-  end else typ
-*)
-
-let filter_konst (_,kvdesc,_) =
+let filter_konst { kelem_vdesc= kvdesc } =
   match (Ctype.repr kvdesc.val_type).desc with
   | Tkonst _ | Toverload _ -> true
   | _ -> false
 
 let resolve_kset env kset =
+  let size0 = List.length !kset in
   kset := List.filter filter_konst !kset;
+  let size1 = List.length !kset in
+  Format.eprintf "kset length= %d => %d@." size0 size1;
   if debug && !kset <> [] then Format.eprintf "@[<2>resolve:@, %a@]@." print kset;
   let flow_record = 
-    Gtype.resolve_konstraint env (List.map (fun (kt,kvdesc,_) ->
-      {ktype= kt; kdepend= Some kvdesc.val_type}) !kset)
+    Gtype.resolve_konstraint env (List.map (fun kelem ->
+      { ktype= kelem.kelem_type; 
+	kdepend= Some kelem.kelem_vdesc.val_type }) !kset)
   in
-  List.iter2 (fun (kt,kvdesc,instinforef) (kelem2,flow) ->
-    if kt != kelem2.ktype then assert false;
-    instinforef := FA_flow flow) !kset flow_record;
-if debug then if flow_record <> [] then 
-  Format.eprintf "FLOW: %a@." Gtype.print_flow_record flow_record
+  List.iter2 (fun kelem (kelem2,flow) ->
+    if kelem.kelem_type != kelem2.ktype then assert false;
+    kelem.kelem_instinfo := FA_flow flow) !kset flow_record;
+  if debug then if flow_record <> [] then 
+    Format.eprintf "FLOW: %a@." Gtype.print_flow_record flow_record
 

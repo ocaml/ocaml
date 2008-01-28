@@ -97,7 +97,7 @@ let make_package_object ppf members targetobj targetname coercion =
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ld_cmd =
     sprintf "%s -o %s %s %s"
-            Config.native_pack_linker 
+            Config.native_pack_linker
             (Filename.quote targetobj)
             (Filename.quote objtemp)
             (Ccomp.quote_files objfiles) in
@@ -118,17 +118,17 @@ let build_package_cmx members cmxfile =
           (fun accu n -> if List.mem n accu then accu else n :: accu))
       [] lst in
   let units =
-    List.fold_left
-      (fun accu m ->
+    List.fold_right
+      (fun m accu ->
         match m.pm_kind with PM_intf -> accu | PM_impl info -> info :: accu)
-      [] members in
+      members [] in
   let ui = Compilenv.current_unit_infos() in
   let pkg_infos =
     { ui_name = ui.ui_name;
       ui_symbol = ui.ui_symbol;
       ui_defines =
-          ui.ui_symbol ::
-          union (List.map (fun info -> info.ui_defines) units);
+          List.flatten (List.map (fun info -> info.ui_defines) units) @
+          [ui.ui_symbol];
       ui_imports_cmi =
           (ui.ui_name, Env.crc_of_unit ui.ui_name) ::
           filter(Asmlink.extract_crc_interfaces());
@@ -148,7 +148,7 @@ let build_package_cmx members cmxfile =
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files ppf files targetcmx 
+let package_object_files ppf files targetcmx
                          targetobj targetname coercion =
   let pack_path =
     match !Clflags.for_package with
@@ -194,7 +194,7 @@ let report_error ppf = function
   | Forward_reference(file, ident) ->
       fprintf ppf "Forward reference to %s in file %s" ident file
   | Wrong_for_pack(file, path) ->
-      fprintf ppf "File %s@ was not compiled with the `-pack %s' option"
+      fprintf ppf "File %s@ was not compiled with the `-for-pack %s' option"
               file path
   | File_not_found file ->
       fprintf ppf "File %s not found" file

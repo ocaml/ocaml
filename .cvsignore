@@ -11,3 +11,4 @@ ocamlcomp.sh
 ocamlcompopt.sh
 package-macosx
 .DS_Store
+*.annot

@@ -89,7 +89,7 @@
   typedef int context_reg;
   #define CONTEXT_PC (context->sc_pc)
   #define CONTEXT_EXCEPTION_POINTER (context->sc_regs[30])
-  #define CONTEXT_YOUNG_LIMIT (context->sc_regs[22]
+  #define CONTEXT_YOUNG_LIMIT (context->sc_regs[22])
   #define CONTEXT_YOUNG_PTR (context->sc_regs[23])
 
 /****************** PowerPC, MacOS X */

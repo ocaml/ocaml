@@ -816,7 +816,7 @@ and search_pos_expr ~pos exp =
       search_pos_expr exp ~pos
   | Texp_object (cls, _, _) ->
       	search_pos_class_structure ~pos cls
-  | Texp_generic _ | Texp_typedecl _ | Texp_rtype _ -> (* FIXME *) assert false
+  | Texp_generic _ | Texp_typedecl _ | Texp_rtype _ | Texp_regexp _ -> (* FIXME *) assert false
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc
   end

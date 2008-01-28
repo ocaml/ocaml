@@ -289,6 +289,7 @@ and rw_exp iflag sexp =
   | Pexp_rtype ty -> () (* FIXME *)
   | Pexp_typedecl lid -> () (* FIXME *)
   | Pexp_generic cases -> () (* FIXME *)
+  | Pexp_regexp _ -> assert false (* FIXME *)
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then

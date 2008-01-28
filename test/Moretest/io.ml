@@ -83,19 +83,21 @@ let make_lines ofile =
 
 let _ =
   let src = Sys.argv.(1) in
-  test "16-byte chunks" (copy_file 16) src "/tmp/testio";
-  test "256-byte chunks" (copy_file 256) src "/tmp/testio";
-  test "4096-byte chunks" (copy_file 4096) src "/tmp/testio";
-  test "65536-byte chunks" (copy_file 65536) src "/tmp/testio";
-  test "19-byte chunks" (copy_file 19) src "/tmp/testio";
-  test "263-byte chunks" (copy_file 263) src "/tmp/testio";
-  test "4011-byte chunks" (copy_file 4011) src "/tmp/testio";
-  test "0...8192 byte chunks" (copy_random 8192) src "/tmp/testio";
-  test "line per line, short lines" copy_line "/etc/hosts" "/tmp/testio";
-  make_lines "/tmp/lines";
-  test "line per line, short and long lines" copy_line "/tmp/lines" "/tmp/testio";
-  test "backwards, 4096-byte chunks" (copy_seek 4096) src "/tmp/testio"; 
-  test "backwards, 64-byte chunks" (copy_seek 64) src "/tmp/testio"; 
-  Sys.remove "/tmp/lines";
-  Sys.remove "/tmp/testio";
+  let testio = Filename.temp_file "testio" "" in
+  let lines = Filename.temp_file "lines" "" in
+  test "16-byte chunks" (copy_file 16) src testio;
+  test "256-byte chunks" (copy_file 256) src testio;
+  test "4096-byte chunks" (copy_file 4096) src testio;
+  test "65536-byte chunks" (copy_file 65536) src testio;
+  test "19-byte chunks" (copy_file 19) src testio;
+  test "263-byte chunks" (copy_file 263) src testio;
+  test "4011-byte chunks" (copy_file 4011) src testio;
+  test "0...8192 byte chunks" (copy_random 8192) src testio;
+  test "line per line, short lines" copy_line "/etc/hosts" testio;
+  make_lines lines;
+  test "line per line, short and long lines" copy_line lines testio;
+  test "backwards, 4096-byte chunks" (copy_seek 4096) src testio;
+  test "backwards, 64-byte chunks" (copy_seek 64) src testio;
+  Sys.remove lines;
+  Sys.remove testio;
   exit 0

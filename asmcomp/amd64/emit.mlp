@@ -534,7 +534,12 @@ let emit_instr fallthrough i =
             end
     | Lswitch jumptbl ->
         let lbl = new_label() in
-        `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 8)\n`;
+        if !pic_code then begin
+          `	leaq	{emit_label lbl}(%rip), %r11\n`;
+          `	jmp	*(%r11, {emit_reg i.arg.(0)}, 8)\n`
+        end else begin
+          `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 8)\n`
+        end;
         `	.section .rodata\n`;
         emit_align 8;
         `{emit_label lbl}:`;

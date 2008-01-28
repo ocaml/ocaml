@@ -20,6 +20,7 @@ module M = Odoc_messages
 type source_file =
     Impl_file of string
   | Intf_file of string
+  | Text_file of string
 
 let include_dirs = Clflags.include_dirs
 
@@ -214,6 +215,7 @@ let options = ref [
   "-pp", Arg.String (fun s -> preprocessor := Some s), M.preprocess ;
   "-impl", Arg.String (fun s -> files := !files @ [Impl_file s]), M.option_impl ;
   "-intf", Arg.String (fun s -> files := !files @ [Intf_file s]), M.option_intf ;
+  "-text", Arg.String (fun s -> files := !files @ [Text_file s]), M.option_text ;
   "-rectypes", Arg.Set recursive_types, M.rectypes ;
   "-nolabels", Arg.Unit (fun () -> classic := true), M.nolabels ;
   "-warn-error", Arg.Set Odoc_global.warn_error, M.werr ;
@@ -313,12 +315,15 @@ let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_g
   let anonymous f =
     let sf =
       if Filename.check_suffix f "ml" then
-	Impl_file f
+        Impl_file f
       else
-	if Filename.check_suffix f "mli" then
-	  Intf_file f
-	else
-	  failwith (Odoc_messages.unknown_extension f)
+        if Filename.check_suffix f "mli" then
+          Intf_file f
+        else
+          if Filename.check_suffix f "txt" then
+            Text_file f
+          else
+            failwith (Odoc_messages.unknown_extension f)
     in
     files := !files @ [sf]
   in

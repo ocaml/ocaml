@@ -124,6 +124,7 @@ and expression_desc =
   | Pexp_rtype of core_type
   | Pexp_typedecl of Longident.t
   | Pexp_generic of (core_type option * expression) list
+  | Pexp_regexp of string
 
 (* Value descriptions *)
 

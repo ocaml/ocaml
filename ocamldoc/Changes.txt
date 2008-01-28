@@ -2,9 +2,25 @@ TODO:
  - need to fix display of type parameters for inherited classes/class types
  - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
+ - xml generator
 
 =====
-Next release:
+Release 3.09.1:
+ - fix: remove .TP for generated man pages, use .sp instead
+   (.TP caused a lot of odd margins)
+ - fix: html generator now output DOCTYPE and character encoding information.
+ - add: m_text_only field in Module.t_module, to separate real modules
+   from text files handled as modules.
+ - fix: display only text for "text modules"
+ - extensible {foo } syntax
+ - user can give .txt files on the command line, containing ocamldoc formatted
+   text, to be able to include bigger texts out of source files
+ - -o option is now used by the html generator to indicate the prefix
+   of generated index files (to avoid conflict when a Index module exists
+   on case-insensitive file systems).
+
+=====
+Release 3.08.4:
  - some improvements in html display
  - better error messages for misplaced variant constructors comments
  - some fixes in man page generation (escaping characters)

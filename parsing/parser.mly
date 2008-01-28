@@ -279,6 +279,7 @@ let bigarray_set arr arg newval =
 %token RBRACE
 %token RBRACKET
 %token REC
+%token <string> REGEXP
 %token RPAREN
 %token SEMI
 %token SEMISEMI
@@ -360,7 +361,7 @@ The precedences must be listed from low to high.
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          NEW NATIVEINT PREFIXOP REGEXP STRING TRUE UIDENT
           LBRACKETCOLON 
 
 
@@ -923,6 +924,9 @@ simple_expr:
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
       { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
+
+  | REGEXP { mkexp(Pexp_regexp $1) }
+
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, $3)) }
   | simple_expr DOT LPAREN seq_expr RPAREN

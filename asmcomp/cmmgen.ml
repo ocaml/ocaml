@@ -27,7 +27,7 @@ open Cmm
 
 let bind name arg fn =
   match arg with
-    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _ 
+    Cvar _ | Cconst_int _ | Cconst_natint _ | Cconst_symbol _
   | Cconst_pointer _ | Cconst_natpointer _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
@@ -343,7 +343,7 @@ let make_alloc_generic set_fn tag wordsize args =
       [] -> Cvar id
     | e1::el -> Csequence(set_fn (Cvar id) (Cconst_int idx) e1,
                           fill_fields (idx + 2) el) in
-    Clet(id, 
+    Clet(id,
          Cop(Cextcall("caml_alloc", typ_addr, true),
                  [Cconst_int wordsize; Cconst_int tag]),
          fill_fields 1 args)
@@ -423,7 +423,7 @@ let transl_constant = function
       int_const n
   | Const_base(Const_char c) ->
       Cconst_int(((Char.code c) lsl 1) + 1)
-  | Const_pointer n ->      
+  | Const_pointer n ->
       if n <= max_repr_int && n >= min_repr_int
       then Cconst_pointer((n lsl 1) + 1)
       else Cconst_natpointer
@@ -477,7 +477,7 @@ let unbox_int bi arg =
     when bi = Pint32 && size_int = 8 && not big_endian ->
       (* Force sign-extension of low 32 bits *)
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
-  | Cop(Calloc, [hdr; ops; contents]) -> 
+  | Cop(Calloc, [hdr; ops; contents]) ->
       contents
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
@@ -645,7 +645,7 @@ let make_switch_gen arg cases acts =
   let lcases = Array.length cases in
   let new_cases = Array.create lcases 0 in
   let store = Switch.mk_store (=) in
-            
+
   for i = 0 to Array.length cases-1 do
     let act = cases.(i) in
     let new_act = store.Switch.act_store act in
@@ -741,7 +741,7 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id exp =
       Cvar id as e ->
         if Ident.same id boxed_id then need_boxed := true; e
     | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
-    | Cassign(id, arg) -> 
+    | Cassign(id, arg) ->
         if Ident.same id boxed_id then begin
           assigned := true;
           Cassign(unboxed_id, subst(unbox_fn arg))
@@ -759,11 +759,11 @@ let subst_boxed_number unbox_fn boxed_id unboxed_id exp =
         Cswitch(subst arg, index, Array.map subst cases)
     | Cloop e -> Cloop(subst e)
     | Ccatch(nfail, ids, e1, e2) -> Ccatch(nfail, ids, subst e1, subst e2)
-    | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)        
+    | Cexit (nfail, el) -> Cexit (nfail, List.map subst el)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
     | e -> e in
   let res = subst exp in
-  (res, !need_boxed, !assigned)  
+  (res, !need_boxed, !assigned)
 
 (* Translate an expression *)
 
@@ -820,20 +820,20 @@ let rec transl = function
       Cop(Capply typ_addr, cargs)
   | Usend(kind, met, obj, args) ->
       let call_met obj args clos =
-	if args = [] then Cop(Capply typ_addr,[get_field clos 0;obj;clos]) else
-	let arity = List.length args + 1 in
+        if args = [] then Cop(Capply typ_addr,[get_field clos 0;obj;clos]) else
+        let arity = List.length args + 1 in
         let cargs = Cconst_symbol(apply_function arity) :: obj ::
-	  (List.map transl args) @ [clos] in
+          (List.map transl args) @ [clos] in
         Cop(Capply typ_addr, cargs)
       in
       bind "obj" (transl obj) (fun obj ->
-	match kind, args with
-	  Self, _ ->
+        match kind, args with
+          Self, _ ->
             bind "met" (lookup_label obj (transl met)) (call_met obj args)
-	| Cached, cache :: pos :: args ->
+        | Cached, cache :: pos :: args ->
             call_cached_method obj (transl met) (transl cache) (transl pos)
               (List.map transl args)
-	| _ ->
+        | _ ->
             bind "met" (lookup_tag obj (transl met)) (call_met obj args))
   | Ulet(id, exp, body) ->
       begin match is_unboxed_number exp with
@@ -853,7 +853,7 @@ let rec transl = function
   | Uprim(prim, args) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          Cconst_symbol (Compilenv.symbol_for_global id)
+          Cconst_symbol (Ident.name id)
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
@@ -961,7 +961,7 @@ let rec transl = function
         (exit_if_false cond (transl ifso) raise_num)
         (transl ifnot)
   | Uifthenelse(Uprim(Psequor, _) as cond, ifso, ifnot) ->
-      let raise_num = next_raise_count () in      
+      let raise_num = next_raise_count () in
       make_catch
         raise_num
         (exit_if_true cond raise_num (transl ifnot))
@@ -1007,7 +1007,7 @@ let rec transl = function
                          (remove_unit(transl body),
                          Clet(id_prev, Cvar id,
                           Csequence
-                            (Cassign(id, 
+                            (Cassign(id,
                                Cop(inc, [Cvar id; Cconst_int 2])),
                              Cifthenelse
                                (Cop(Ccmpi Ceq, [Cvar id_prev; high]),
@@ -1152,7 +1152,7 @@ and transl_prim_2 p arg1 arg2 =
   | Pintcomp cmp ->
       tag_int(Cop(Ccmpi(transl_comparison cmp), [transl arg1; transl arg2]))
   | Pisout ->
-      transl_isout (transl arg1) (transl arg2)        
+      transl_isout (transl arg1) (transl arg2)
   (* Float operations *)
   | Paddfloat ->
       box_float(Cop(Caddf,
@@ -1216,7 +1216,7 @@ and transl_prim_2 p arg1 arg2 =
           box_float(
             bind "index" (transl arg2) (fun idx ->
               bind "arr" (transl arg1) (fun arr ->
-                Csequence(Cop(Ccheckbound, 
+                Csequence(Cop(Ccheckbound,
                               [float_array_length(header arr); idx]),
                           unboxed_float_array_ref arr idx))))
       end
@@ -1239,7 +1239,7 @@ and transl_prim_2 p arg1 arg2 =
       box_int bi (Cop(Csubi,
                       [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
   | Pmulbint bi ->
-      box_int bi (Cop(Cmuli, 
+      box_int bi (Cop(Cmuli,
                       [transl_unbox_int bi arg1; transl_unbox_int bi arg2]))
   | Pdivbint bi ->
       box_int bi (safe_divmod Cdivi
@@ -1366,7 +1366,7 @@ and transl_unbox_let box_fn unbox_fn transl_unbox_fn id exp body =
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
-| _ ->  Ccatch (ncatch, [], body, handler) 
+| _ ->  Ccatch (ncatch, [], body, handler)
 
 and make_catch2 mk_body handler = match handler with
 | Cexit (_,[])|Ctuple []|Cconst_int _|Cconst_pointer _ ->
@@ -1377,7 +1377,7 @@ and make_catch2 mk_body handler = match handler with
       nfail
       (mk_body (Cexit (nfail,[])))
       handler
-  
+
 and exit_if_true cond nfail otherwise =
   match cond with
   | Uconst (Const_pointer 0) -> otherwise
@@ -1387,14 +1387,14 @@ and exit_if_true cond nfail otherwise =
   | Uprim(Psequand, _) ->
       begin match otherwise with
       | Cexit (raise_num,[]) ->
-          exit_if_false cond (Cexit (nfail,[])) raise_num 
+          exit_if_false cond (Cexit (nfail,[])) raise_num
       | _ ->
           let raise_num = next_raise_count () in
           make_catch
             raise_num
             (exit_if_false cond (Cexit (nfail,[])) raise_num)
             otherwise
-      end   
+      end
   | Uprim(Pnot, [arg]) ->
       exit_if_false arg otherwise nfail
   | Uifthenelse (cond, ifso, ifnot) ->
@@ -1444,7 +1444,7 @@ and transl_switch arg index cases = match Array.length cases with
 | _ ->
     let n_index = Array.length index in
     let actions = Array.map transl cases in
-      
+
     let inters = ref []
     and this_high = ref (n_index-1)
     and this_low = ref (n_index-1)
@@ -1576,17 +1576,17 @@ and emit_constant_field field cont =
   | Const_base(Const_string s) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
+       Cint(string_header (String.length s)) :: Cdefine_label lbl ::
        emit_string_constant s cont)
   | Const_immstring s ->
       begin try
-	(Clabel_address (Hashtbl.find immstrings s), cont)
+        (Clabel_address (Hashtbl.find immstrings s), cont)
       with Not_found ->
-	let lbl = new_const_label() in
-	Hashtbl.add immstrings s lbl;
-	(Clabel_address lbl,
-	 Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
-	 emit_string_constant s cont)
+        let lbl = new_const_label() in
+        Hashtbl.add immstrings s lbl;
+        (Clabel_address lbl,
+         Cint(string_header (String.length s)) :: Cdefine_label lbl ::
+         emit_string_constant s cont)
       end
   | Const_base(Const_int32 n) ->
       let lbl = new_const_label() in
@@ -1733,22 +1733,22 @@ let cache_public_method meths tag cache =
     (raise_num, [],
      Cloop
        (Clet(
-	mi,
-	Cop(Cor,
-	    [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi]); Cconst_int 1]);
-	     Cconst_int 1]),
-	Csequence(
-	Cifthenelse
-	  (Cop (Ccmpi Clt,
-		[tag;
-		 Cop(Cload Word,
-		     [Cop(Cadda,
-			  [meths; lsl_const (Cvar mi) log2_size_addr])])]),
-	   Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2])),
-	   Cassign(li, Cvar mi)),
-	Cifthenelse
-	  (Cop(Ccmpi Cge, [Cvar li; Cvar hi]), Cexit (raise_num, []),
-	   Ctuple [])))),
+        mi,
+        Cop(Cor,
+            [Cop(Clsr, [Cop(Caddi, [Cvar li; Cvar hi]); Cconst_int 1]);
+             Cconst_int 1]),
+        Csequence(
+        Cifthenelse
+          (Cop (Ccmpi Clt,
+                [tag;
+                 Cop(Cload Word,
+                     [Cop(Cadda,
+                          [meths; lsl_const (Cvar mi) log2_size_addr])])]),
+           Cassign(hi, Cop(Csubi, [Cvar mi; Cconst_int 2])),
+           Cassign(li, Cvar mi)),
+        Cifthenelse
+          (Cop(Ccmpi Cge, [Cvar li; Cvar hi]), Cexit (raise_num, []),
+           Ctuple [])))),
      Ctuple []),
   Clet (
   tagged, Cop(Cadda, [lsl_const (Cvar li) log2_size_addr;
@@ -1811,13 +1811,13 @@ let send_function arity =
     Clet (
     cached, Cop(Cand, [Cop(Cload Word, [cache]); mask]),
     Clet (
-    real,     
+    real,
     Cifthenelse(Cop(Ccmpa Cne, [tag'; tag]),
-	        cache_public_method (Cvar meths) tag cache,
+                cache_public_method (Cvar meths) tag cache,
                 cached_pos),
     Cop(Cload Word, [Cop(Cadda, [Cop (Cadda, [Cvar real; Cvar meths]);
                                  Cconst_int(2*size_addr-1)])]))))
-    
+
   in
   let body = Clet(clos', clos, body) in
   let fun_args =
@@ -1904,13 +1904,13 @@ let rec intermediate_curry_functions arity num =
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];
       fun_body = Cop(Calloc,
-                     [alloc_closure_header 4; 
+                     [alloc_closure_header 4;
                       Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                       int_const 1; Cvar arg; Cvar clos]);
       fun_fast = true}
     :: intermediate_curry_functions arity (num+1)
   end
-    
+
 let curry_function arity =
   if arity >= 0
   then intermediate_curry_functions arity 0

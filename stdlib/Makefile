@@ -23,6 +23,7 @@ OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=-warn-error Ag -nostdlib
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 
 OBJS=builtintypes.cmo pervasives.cmo $(OTHERS)
 OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
@@ -36,7 +37,7 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
   lazy.cmo filename.cmo complex.cmo \
-  rtype.cmo \
+  rtype.cmo regexp.cmo \
   arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
 # make MODE=migration when you want to port ocaml to the latest ocaml-cvs
@@ -102,6 +103,11 @@ camlheader camlheader_ur: header.c ../config/Makefile
 clean::
 	rm -f camlheader camlheader_ur
 
+regexp.cmo: regexp.ml
+
+regexp.ml: regexp.mll
+	$(CAMLLEX) $<
+
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
@@ -137,5 +143,5 @@ clean::
 
 include .depend
 
-depend:
+depend: regexp.ml
 	$(CAMLDEP) *.mli *.ml > .depend

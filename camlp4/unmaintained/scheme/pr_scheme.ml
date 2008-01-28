@@ -203,7 +203,7 @@ pr_constr_decl.pr_levels :=
     pr_box ppf f x = fprintf ppf "@[%t@]" f;
     pr_rules =
       extfun Extfun.empty with
-      [ (loc, c, []) as x ->
+      [ (loc, c, []) ->
           fun ppf curr next dg k -> fprintf ppf "(@[<hv>%s%t@]" c (ks ")" k)
       | (loc, c, tl) ->
           fun ppf curr next dg k ->

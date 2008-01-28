@@ -33,8 +33,17 @@ let rec split_list n l =
 let rec build_closure_env env_param pos = function
     [] -> Tbl.empty
   | id :: rem ->
-      Tbl.add id (Uprim(Pfield pos, [Uvar env_param])) 
+      Tbl.add id (Uprim(Pfield pos, [Uvar env_param]))
               (build_closure_env env_param (pos+1) rem)
+
+(* Auxiliary for accessing globals.  We change the name of the global
+   to the name of the corresponding asm symbol.  This is done here
+   and no longer in Cmmgen so that approximations stored in .cmx files
+   contain the right names if the -for-pack option is active. *)
+
+let getglobal id =
+  Uprim(Pgetglobal (Ident.create_persistent (Compilenv.symbol_for_global id)),
+        [])
 
 (* Check if a variable occurs in a [clambda] term. *)
 
@@ -62,7 +71,7 @@ let occurs_var var u =
     | Uwhile(cond, body) -> occurs cond || occurs body
     | Ufor(id, lo, hi, dir, body) -> occurs lo || occurs hi || occurs body
     | Uassign(id, u) -> id = var || occurs u
-    | Usend(_, met, obj, args) -> 
+    | Usend(_, met, obj, args) ->
         occurs met || occurs obj || List.exists occurs args
   and occurs_array a =
     try
@@ -103,7 +112,7 @@ let prim_size prim args =
   | _ -> 2 (* arithmetic and comparisons *)
 
 (* Very raw approximation of switch cost *)
-  
+
 let lambda_smaller lam threshold =
   let size = ref 0 in
   let rec lambda_size lam =
@@ -276,7 +285,7 @@ let rec substitute sb ulam =
       let bindings1 =
         List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
       let sb' =
-        List.fold_right 
+        List.fold_right
           (fun (id, id', _) s -> Tbl.add id (Uvar id') s)
           bindings1 sb in
       Uletrec(
@@ -529,7 +538,8 @@ let rec close fenv cenv = function
       end
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
-          (Uprim(Pgetglobal id, [])) (Compilenv.global_approx id)
+                            (getglobal id)
+                            (Compilenv.global_approx id)
   | Lprim(Pmakeblock(tag, mut) as prim, lams) ->
       let (ulams, approxs) = List.split (List.map (close fenv cenv) lams) in
       (Uprim(prim, ulams),
@@ -547,7 +557,7 @@ let rec close fenv cenv = function
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, false), [Uprim(Pgetglobal id, []); ulam]),
+      (Uprim(Psetfield(n, false), [getglobal id; ulam]),
        Value_unknown)
   | Lprim(p, args) ->
       simplif_prim p (close_list_approx fenv cenv args)
@@ -558,7 +568,7 @@ let rec close fenv cenv = function
         close_switch fenv cenv sw.sw_consts sw.sw_numconsts sw.sw_failaction
       and block_index, block_actions =
         close_switch fenv cenv sw.sw_blocks sw.sw_numblocks sw.sw_failaction in
-      (Uswitch(uarg, 
+      (Uswitch(uarg,
                {us_index_consts = const_index;
                 us_actions_consts = const_actions;
                 us_index_blocks = block_index;
@@ -579,7 +589,7 @@ let rec close fenv cenv = function
         (uarg, Value_constptr n) ->
           sequence_constant_expr arg uarg
             (close fenv cenv (if n = 0 then ifnot else ifso))
-      | (uarg, _ ) ->    
+      | (uarg, _ ) ->
           let (uifso, _) = close fenv cenv ifso in
           let (uifnot, _) = close fenv cenv ifnot in
           (Uifthenelse(uarg, uifso, uifnot), Value_unknown)

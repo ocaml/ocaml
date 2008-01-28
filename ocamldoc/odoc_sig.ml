@@ -683,6 +683,7 @@ module Analyser =
                 m_top_deps = [] ;
 		m_code = None ;
 		m_code_intf = code_intf ;
+		m_text_only = false ;
               }
             in
             let (maybe_more, info_after_opt) =
@@ -773,6 +774,7 @@ module Analyser =
                       m_top_deps = [] ;
 		      m_code = None ;
 		      m_code_intf = code_intf ;
+		      m_text_only = false ;
 		    }
 		  in
 		  let (maybe_more, info_after_opt) =
@@ -1318,6 +1320,7 @@ module Analyser =
         m_top_deps = [] ;
 	m_code = None ;
 	m_code_intf = code_intf ;
+	m_text_only = false ;
       }
 
     end

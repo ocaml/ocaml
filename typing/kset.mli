@@ -16,17 +16,16 @@ open Types
 open Typedtree
 
 val debug : bool
-type elem = type_expr * value_description * instance_info ref 
+type elem = { kelem_type : type_expr;
+	      kelem_vdesc : value_description;
+	      kelem_instinfo : instance_info ref } 
 type t = elem list ref
 val empty : unit -> t
-val add : t -> elem list -> unit
+val add : t -> elem -> unit
 val get : t -> elem list
 val create : elem list -> t
 val print :
   Format.formatter -> t -> unit
 val instance :
-  t -> value_description -> type_expr * instance_info ref
-(*
-val make_tkonst : konstraint -> type_expr -> type_expr
-*)
+    t -> value_description -> type_expr * instance_info ref
 val resolve_kset : Env.t -> t ->  unit

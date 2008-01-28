@@ -171,6 +171,7 @@ let rec add_expr bv exp =
       List.iter (fun (po, e) -> 
 	add_opt add_type bv po;
 	add_expr bv e) cases
+  | Pexp_regexp _ -> assert false
 
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel

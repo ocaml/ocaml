@@ -894,7 +894,8 @@ let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 let filter_generalized_konstraints env typ kset =
   let genk, monok = 
     let vars_of_typ = Etype.type_variables [typ] in
-    List.fold_left (fun (genk,monok) ((kt, kvdesc, _) as kselem) ->
+    List.fold_left (fun (genk,monok) ({Kset.kelem_type=kt; 
+				       Kset.kelem_vdesc= kvdesc} as kselem) ->
       let kelem = {ktype= kt; kdepend= Some kvdesc.val_type} in
       if List.exists (fun t -> 
 	t.level = generic_level && List.memq t vars_of_typ)
@@ -912,7 +913,26 @@ let fix_konstraints rec_flag env pat_exp_kset_list =
       filter_generalized_konstraints env pat.pat_type kset) pat_exp_kset_list
   in
 
-  let pat_vdescs_tbl, recursively_defined_vdescs, vdesc_genk_tbl =
+  let pat_vdescs_tbl, defined_vdescs, vdesc_genk_tbl =
+    List.fold_left2 (fun 
+        (pat_vdescs_tbl, defined_vdescs, vdesc_genk_tbl) 
+	(pat,(exp,kset)) (genk,monok) ->
+	  
+	  let vdescs =
+	    let idents = pat_bound_idents pat in
+	    List.map (fun ident -> 
+	      Env.find_value (Path.Pident ident) env) idents
+	  in
+	  (pat, vdescs) :: pat_vdescs_tbl,
+	  vdescs @ defined_vdescs,
+	  List.map (fun vdesc -> vdesc, genk) vdescs @ vdesc_genk_tbl)
+      ([], [], []) pat_exp_kset_list genk_monok_list
+  in
+  let recursively_defined_vdescs = 
+    if rec_flag = Recursive then defined_vdescs else []
+  in
+
+(* old code by iter2
     let pat_vdescs_tbl = ref [] in
     let recursively_defined_vdescs = ref [] in
     let vdesc_genk_tbl = ref [] in
@@ -928,10 +948,11 @@ let fix_konstraints rec_flag env pat_exp_kset_list =
       vdesc_genk_tbl := 
 	List.map (fun vdesc -> vdesc, genk) vdescs @ !vdesc_genk_tbl)
       pat_exp_kset_list genk_monok_list;
+
     !pat_vdescs_tbl,
     (if rec_flag = Recursive then !recursively_defined_vdescs else []),
     !vdesc_genk_tbl
-  in
+*)
   
   let generic_genk genk =
     let rec is_generic touched vdesc =
@@ -954,7 +975,8 @@ let fix_konstraints rec_flag env pat_exp_kset_list =
         else false
       end
     and generic_genk touched genk =
-      List.filter (fun (_,kvdesc,_) -> is_generic touched kvdesc) genk
+      List.filter (fun {Kset.kelem_vdesc= kvdesc} -> 
+	is_generic touched kvdesc) genk
     in
     generic_genk [] genk
   in
@@ -975,7 +997,9 @@ let fix_konstraints rec_flag env pat_exp_kset_list =
 	| Not_found -> assert false
       in
       let konsts =
-	List.map (fun (ktype, kvdesc, instoptref) ->
+	List.map (fun { Kset.kelem_type= ktype;
+			Kset.kelem_vdesc= kvdesc;
+			Kset.kelem_instinfo= instoptref } ->
 	  let ktype = Ctype.correct_levels ktype in 
 	  try
 	    let genk = List.assq kvdesc vdesc_genk_tbl in
@@ -1010,87 +1034,25 @@ Format.eprintf "SCM=%a@." Printtyp.type_scheme scm;
       (* reject let x,y = generic ... *)
       let rec check_simple_pattern p =
 	match p.pat_desc with
-	| Tpat_any -> []
-	| Tpat_var id -> [id]
-	| Tpat_alias (p, id) -> id :: check_simple_pattern p
+	| Tpat_any -> ()
+	| Tpat_var id -> ()
+	| Tpat_alias (p, id) -> check_simple_pattern p
 	| _ -> 
 	    raise (Error (exp.exp_loc, 
 			  Should_not_be_generic (scm,pat.pat_type)))
       in
-      ignore (check_simple_pattern pat);
+      check_simple_pattern pat;
 
-      List.iter (fun vdesc -> vdesc.val_type <- scm) (List.assq pat pat_vdescs_tbl);
+      List.iter (fun vdesc -> vdesc.val_type <- scm) 
+	(List.assq pat pat_vdescs_tbl);
       pat.pat_type <- scm;
-      List.iter2 (fun (_,_,instinforef) kelem ->
+      List.iter2 (fun { Kset.kelem_instinfo= instinforef } kelem ->
 	instinforef := FA_konst (pat, kelem, scm)) genk konsts;
 
     end) pat_exp_kset_list genk_monok_list;
     
   (* return accumulated mono konstraints *)
   List.flatten (List.map snd genk_monok_list)
-
-(****
-  List.flatten (List.map (fun (pat, (exp, kset)) ->
-    let genk, monok = filter_generalized_konstraints env pat.pat_type kset in
-    let is_generic_def =
-      List.exists (fun (_,kvdesc,_) -> 
-	match (Ctype.repr kvdesc.val_type).desc with
-	| Tkonst _ | Toverload _ -> true | _ -> false) genk
-    in
-    if is_generic_def then begin
-      (* pattern must be enough simple, 
-	 since the definition is actually a function *)
-      (* reject let x,y = generic ... *)
-      let rec check_simple_pattern p =
-	match p.pat_desc with
-	| Tpat_any -> []
-	| Tpat_var id -> [id]
-	| Tpat_alias (p, id) -> id :: check_simple_pattern p
-	| _ -> 
-	    raise (Error (exp.exp_loc, 
-			  Should_not_be_generic (pat.pat_type)))
-      in
-      let defined_idents = check_simple_pattern pat in
-      let defined_vdescs = 
-	List.map (fun ident -> Env.find_value (Path.Pident ident) env)
-	  defined_idents
-      in
-      let genk = 
-	List.filter (fun (_,kvdesc,_) ->
-	  List.memq kvdesc defined_vdescs || 
-	  match (Ctype.repr kvdesc.val_type).desc with
-	  | Tkonst _ | Toverload _ -> true | _ -> false) genk
-      in
-      let dummy_var = Btype.newgenty Tvar in
-      (* making the scheme *)
-      let konsts =
-	List.map (fun (ktype, kvdesc, instoptref) ->
-	  if List.memq kvdesc defined_vdescs then
-	    {ktype= ktype; kdepend= Some dummy_var}
-	  else
-	    {ktype= ktype; kdepend= Some kvdesc.val_type}) genk
-      in
-      let scm = 
-	let scm = Btype.newgenty (Tkonst (konsts, pat.pat_type)) in
-	(* make a loop *)
-	let scm = Ctype.correct_levels scm in
-	dummy_var.desc <- Tlink scm;
-	scm
-      in
-      (* Type variable leaves inside genk are generalized, 
-	 but parent nodes are not. Here, we fix them. *)
-      (* FIXME: Is it really required? *)
-      Etype.normalize_type scm;
-(*
-Format.eprintf "SCM=%a@." Printtyp.type_scheme scm;
-*)
-      List.iter (fun vdesc -> vdesc.val_type <- scm) defined_vdescs;
-      pat.pat_type <- scm;
-      List.iter2 (fun (_,_,instinforef) kelem ->
-	instinforef := FA_konst (pat, kelem, scm)) genk konsts
-    end else ();
-    monok) pat_exp_kset_list )
-****)
 
 (* Typing of expressions *)
 
@@ -1760,7 +1722,91 @@ let rec type_exp env kset sexp =
 
   | Pexp_poly _ ->
       assert false
+
+  | Pexp_regexp r -> 
+      let regexp = Regexp.from_string r in
+      let t = Regexp.type_regexp regexp in
+
+      let result_creation_code =
+	let pexp desc = { pexp_desc= desc; pexp_loc= Location.none }
+	and ppat desc = { ppat_desc= desc; ppat_loc= Location.none }
+	in
+	let ptyp = ppat (Ppat_var "_typ")
+	and pgroups = ppat (Ppat_var "_groups")
+	and etyp = pexp (Pexp_ident (Longident.Lident "_typ"))
+	and egroups = pexp (Pexp_ident (Longident.Lident "_groups"))
+	in
+        let self = "_self" in
+        let pself = ppat (Ppat_var self) in
+        let eself = pexp (Pexp_ident (Longident.Lident self)) in
+        let class_fields =
+  	let inher =
+  	  let super_id = 
+  	    Longident.Ldot (Longident.Lident "Regexp", "result")
+  	  in
+	  let super = { pcl_desc= Pcl_constr (super_id, []);
+			pcl_loc= Location.none } 
+	  in
+  	  Pcf_inher ( { pcl_desc= Pcl_apply (super, ["", etyp;
+						     "", egroups]);
+  			pcl_loc= Location.none }, None ) 
+  	in
+  	let methods =
+	  let polyexp e = pexp (Pexp_poly (e, None)) in
+	  let name_codes =
+	    let rec numbered = function
+	      | n when n > t.Regexp.num_of_groups -> []
+	      | n -> 
+		  ("_" ^ string_of_int n,
+  		   pexp (Pexp_apply (pexp (Pexp_send (eself, "_unsafe_group")),
+  				    ["", pexp (Pexp_constant (Const_int n))])))
+		  :: numbered (n+1)
+	    in
+	    let rec named = function
+	      | (s,p) :: ss -> 
+  		  (s,
+		   pexp (Pexp_apply (pexp (Pexp_send (eself, "_unsafe_group")),
+  				    ["", pexp (Pexp_constant (Const_int p))])))
+		  :: named ss
+	      | [] -> []
+	    in
+	    (* 0 always exists *)
+	    numbered 0 @ named t.Regexp.named_groups
+	  in
+  	  List.map (fun (n,code) -> 
+  	    Pcf_meth (n, Public, polyexp code, Location.none)) name_codes
+  	in
+  	inher :: methods
+        in
+	let o = pexp (Pexp_object (pself, class_fields)) in
+	pexp (Pexp_function ("", None, [ptyp, 
+          pexp(Pexp_function ("", None, [pgroups, o]))])) 
+      in
+      let code = type_exp env kset result_creation_code in
       
+      let ty_regexp, param =
+	let path, tdesc = 
+	  Env.lookup_type 
+	    (Longident.Ldot (Longident.Lident "Regexp", "t")) env in
+	let param =
+	  match Ctype.instance_list tdesc.type_params with
+	  | [p] -> p
+	  | _ -> assert false
+	in
+	Ctype.newty (Tconstr (path, [param], ref Mnil)), param
+      in
+
+      let ty = Ctype.newty (Tarrow ("", Ctype.newvar (),
+                 Ctype.newty (Tarrow ("", Ctype.newvar (), 				           param, Cunknown)), Cunknown))
+      in
+
+      unify env ty code.exp_type;
+
+      re {
+        exp_desc = Texp_regexp (r, regexp, t, code); 
+        exp_loc = sexp.pexp_loc;
+        exp_type = ty_regexp;
+        exp_env = env }
 
 and type_argument env kset sarg ty_expected' =
   (* ty_expected' may be generic *)
@@ -2325,6 +2371,8 @@ and type_let env kset rec_flag spat_sexp_list =
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;
   end_def();
+  (* JPF: konstraint resolution possibility here *)
+  (* generalization *)
   List.iter2
     (fun pat (exp, kset') ->
        if not (is_nonexpansive exp) then
@@ -2347,7 +2395,8 @@ if rec_flag = Recursive then
 
   (* fix konstraint info *)
   (* FIXME: for let generic, this is meaningless (really?) *)
-  Kset.add kset (fix_konstraints rec_flag new_env pat_exp_kset_list);
+  List.iter (Kset.add kset)
+    (fix_konstraints rec_flag new_env pat_exp_kset_list);
 
 (*
 if rec_flag = Recursive then
@@ -2420,11 +2469,13 @@ and type_generic_case env kset patopt styopt e =
 if Kset.get kset' <> [] then Format.eprintf "KSET: %a@." Kset.print kset';
 *)
   let genk, monok = filter_generalized_konstraints env exp.exp_type kset' in
-  let genk = List.filter (fun (_,kvdesc,_) ->
+  let genk = List.filter (fun { Kset.kelem_vdesc= kvdesc } ->
     match (Ctype.repr kvdesc.val_type).desc with
     | Tkonst _ | Toverload _ -> true | _ -> false) genk
   in
-  let konst = List.map (fun (ktype, kvdesc, instoptref) ->
+  let konst = List.map (fun { Kset.kelem_type= ktype;
+			      Kset.kelem_vdesc= kvdesc;
+			      Kset.kelem_instinfo= instoptref } ->
     {ktype=ktype; kdepend= Some kvdesc.val_type}) genk in
   let typ = 
     if konst <> [] then Btype.newgenty (Tkonst(konst, exp.exp_type)) 
@@ -2432,14 +2483,14 @@ if Kset.get kset' <> [] then Format.eprintf "KSET: %a@." Kset.print kset';
   in
   begin match patopt with
   | Some pat -> (* pat must be enough simple (by parser) *)
-      List.iter2 (fun (_,_,instinforef) kelem ->
+      List.iter2 (fun { Kset.kelem_instinfo= instinforef } kelem ->
 	instinforef := FA_overload (pat, kelem, typ)) genk konst
   | None -> ()
   end;
 (*
 if Kset.get kset' <> [] then Format.eprintf "ATTACH: %a@." Gdebug.print_type_scheme typ;
 *)
-  Kset.add kset monok;
+  List.iter (Kset.add kset) monok;
   typ, exp
 
 and type_approx env sexp =
@@ -2509,7 +2560,8 @@ let type_expression env kset sexp =
 		    pat_env= env } 
   in
   (* dummy_pat.pat_type will carry the konstraint-attached type. *)
-  Kset.add kset (fix_konstraints Default env [dummy_pat, (exp, kset')]);
+  List.iter (Kset.add kset)
+    (fix_konstraints Default env [dummy_pat, (exp, kset')]);
   exp.exp_type <- dummy_pat.pat_type;
 (*
 Format.eprintf "type_expression %a@." Gdebug.print_type_scheme exp.exp_type;

@@ -1,3 +1,38 @@
+Objective Caml 3.09.1:
+----------------------
+
+Bug fixes:
+- compilers: raise not_found with -principal PR#3855
+- compilers: assert failure in typeclass.cml PR#3856
+- compilers: assert failure in typing/ctype.ml PR#3909
+- compilers: fatal error exception Ctype.Unify PR#3918
+- compilers: spurious warning Y PR#3868
+- compilers: spurious warning Z on loop index PR#3907
+- compilers: error message that emacs cannot parse
+- ocamlopt: problems with -for-pack/-pack PR#3825, PR#3826, PR#3919
+- ocamlopt: can't produce shared libraries on x86_64 PR#3869, PR#3924
+- ocamlopt: float alignment problem on SPARC PR#3944
+- ocamlopt: can't compile on MIPS PR#3936
+- runtime: missing dependence for ld.conf
+- runtime: missing dependence for .depend.nt PR#3880
+- runtime: memory leak in caml_register_named_value PR#3940
+- runtime: crash in Marshal.to_buffer PR#3879
+- stdlib: Sys.time giving wrong results on Mac OS X PR#3850
+- stdlib: Weak.get_copy causing random crashes in rare cases
+- stdlib, debugger, labltk: use TMPDIR if set PR#3895
+- stdlib: scanf bug on int32 and nativeint PR#3932
+- camlp4: mkcamlp4 option parsing problem PR#3941
+- camlp4: bug in pretty-printing of lazy/assert/new
+- camlp4: update the unmaintained makefile for _loc name
+- ocamldoc: several fixes see ocamldoc/Changes.txt
+- otherlibs/str: bug in long sequences of alternatives PR#3783
+- otherlibs/systhreads: deadlock in Windows PR#3910
+- tools: update dumpobj to handle new event format PR#3873
+- toplevel: activate warning Y in toplevel PR#3832
+
+New features:
+- otherlibs/labltk: browser uses menu bars instead of menu buttons
+
 Objective Caml 3.09.0:
 ----------------------
 
@@ -16,8 +51,8 @@ Type checking:
 Both compilers:
 - Added warnings 'Y' and 'Z' for local variables that are bound but
   never used.
-- Added warning for some uses non-returning functions (e.g. raise), when they are
-  passed extra arguments, or followed by extra statements.
+- Added warning for some uses non-returning functions (e.g. raise), when they
+  are passed extra arguments, or followed by extra statements.
 - Pattern matching: more prudent compilation in case of guards; fixed PR#3780.
 - Compilation of classes: reduction in size of generated code.
 - Compilation of "module rec" definitions: fixed a bad interaction with

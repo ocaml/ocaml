@@ -47,4 +47,6 @@ STDLIB_MODULES=\
   sys \
   weak \
   rtype \
-  builtintypes
+  builtintypes \
+  regexp
+
