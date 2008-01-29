@@ -66,11 +66,13 @@ CAMLprim value caml_obj_is_block(value arg)
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
-    return Val_int (1000);
+    return Val_int (1000);   /* int_tag */
+  }else if ((long) arg & (sizeof (value) - 1)){
+    return Val_int (1002);   /* unaligned_tag */
   }else if (Is_in_value_area (arg)){
     return Val_int(Tag_val(arg));
   }else{
-    return Val_int (1001);
+    return Val_int (1001);   /* out_of_heap_tag */
   }
 }
 
