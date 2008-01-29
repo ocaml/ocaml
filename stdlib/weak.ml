@@ -149,7 +149,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     let live = count_bucket 0 bucket 0 in
     if live <= prev_len then begin
       let rec loop i j =
-        if j > prev_len then begin
+        if j >= prev_len then begin
           if check bucket i then loop (i + 1) j
           else if check bucket j then begin
             blit bucket j bucket i 1;
