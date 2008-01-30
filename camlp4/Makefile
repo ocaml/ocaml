@@ -69,7 +69,7 @@ Makefile.cmo: build/YaM.cmi build/camlp4_config.cmo
 
 uninstall:
 	rm -rf "$(LIBDIR)/camlp4"
-	cd "$(BINDIR)"; rm -f *camlp4*
+	cd "$(BINDIR)"; rm -f *gcamlp4*
 
 depend:
 

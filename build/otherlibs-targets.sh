@@ -93,7 +93,9 @@ for lib in $OTHERLIBRARIES; do
     add_ocaml_lib dbm
     add_c_lib mldbm;;
   dynlink)
-    add_byte $lib.cmi $lib.cma extract_crc;;
+    add_ocaml_lib dynlink
+    add_native dynlink.cmx
+    add_file $lib.cmi extract_crc;;
   win32unix)
     UNIXDIR="otherlibs/win32unix"
     add_file unixsupport.h cst2constr.h socketaddr.h

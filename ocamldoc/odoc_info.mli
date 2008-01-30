@@ -583,6 +583,14 @@ module Module :
   end
 
 
+(** Dump of a list of modules into a file. 
+   @raise Failure if an error occurs.*)
+val dump_modules : string -> Odoc_module.t_module list -> unit
+
+(** Load of a list of modules from a file. 
+   @raise Failure if an error occurs.*)
+val load_modules : string -> Odoc_module.t_module list
+
 (** {3 Getting strings from values} *)
 
 (** This function is used to reset the names of type variables.

@@ -63,8 +63,8 @@ install:
 	chmod 644 $(INSTALLDIR)/$(LIBNAME).cma
 	chmod 755 $(INSTALLDIR)/$(LIBNAME)top$(EXE)
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
-	cp $(LIBNAME) $(BINDIR)
-	chmod 755 $(BINDIR)/$(LIBNAME)
+	cp $(LIBNAME) $(BINDIR)/g$(LIBNAME)
+	chmod 755 $(BINDIR)/g$(LIBNAME)
 
 installopt:
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi

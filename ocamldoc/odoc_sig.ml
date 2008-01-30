@@ -1195,7 +1195,7 @@ module Analyser =
           ([], Class_structure (inher_l, ele))
 
       | (Parsetree.Pcty_fun (parse_label, _, pclass_type), Types.Tcty_fun (label, type_expr, class_type)) ->
-          (* label = string. Dans les signatures, pas de nom de paramètres à l'intérieur des tuples *)
+          (* label = string. Dans les signatures, pas de nom de paramètres  l'intérieur des tuples *)
           (* si label = "", pas de label. ici on a l'information pour savoir si on a un label explicite. *)
           if parse_label = label then
             (

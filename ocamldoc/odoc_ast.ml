@@ -423,7 +423,7 @@ module Analyser =
            | l ->
                match l with
                  [] ->
-                   (* cas impossible, on l'a filtré avant *)
+                   (* cas impossible, on l'a filtr avant *)
                    assert false
                | (pattern_param, exp) :: second_ele :: q ->
                    (* implicit pattern matching -> anonymous parameter *)
@@ -1055,6 +1055,25 @@ module Analyser =
       | Parsetree.Pstr_primitive (name_pre, val_desc) ->
           (* of string * value_description *)
           print_DEBUG ("Parsetree.Pstr_primitive ("^name_pre^", ["^(String.concat ", " val_desc.Parsetree.pval_prim)^"]");
+          let typ = Typedtree_search.search_primitive table name_pre in
+          let name = Name.parens_if_infix name_pre in
+          let complete_name = Name.concat current_module_name name in
+          let new_value = {
+             val_name = complete_name ;
+             val_info = comment_opt ;
+             val_type = Odoc_env.subst_type env typ ;
+             val_recursive = false ;
+             val_parameters = [] ;
+             val_code = Some (get_string_of_file loc.Location.loc_start.Lexing.pos_cnum loc.Location.loc_end.Lexing.pos_cnum) ;
+             val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
+           }
+           in
+          let new_env = Odoc_env.add_value env new_value.val_name in
+          (0, new_env, [Element_value new_value])
+
+      | Parsetree.Pstr_genprimitive (name_pre, typ, _) ->
+          (* of string * core_type * expression *)
+          print_DEBUG ("Parsetree.Pstr_genprimitive ("^name_pre^", _, _)");
           let typ = Typedtree_search.search_primitive table name_pre in
           let name = Name.parens_if_infix name_pre in
           let complete_name = Name.concat current_module_name name in

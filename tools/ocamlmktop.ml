@@ -14,4 +14,4 @@
 
 let _ =
   let args = Ccomp.quote_files (List.tl (Array.to_list Sys.argv)) in
-  exit(Sys.command("ocamlc -linkall toplevellib.cma " ^ args ^ " topstart.cmo"))
+  exit(Sys.command("gcamlc -linkall toplevellib.cma " ^ args ^ " topstart.cmo"))

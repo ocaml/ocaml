@@ -280,8 +280,8 @@ and transl_structure fields cc rootpath = function
       | _ ->
           fatal_error "Translmod.transl_structure"
       end
-  | Tstr_eval expr :: rem ->
-      Lsequence(transl_exp expr, transl_structure fields cc rootpath rem)
+  | Tstr_eval (expr, pat) :: rem ->
+      Lsequence(transl_eval expr pat, transl_structure fields cc rootpath rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
       transl_let rec_flag pat_expr_list
@@ -294,7 +294,10 @@ and transl_structure fields cc rootpath = function
       end;
       transl_structure fields cc rootpath rem
   | Tstr_type(decls) :: rem ->
-      transl_structure fields cc rootpath rem
+      let idents = List.map fst decls in
+      let defs = Transltype.transl_type_declarations decls in
+      (* idents must be reversed when stored in fields! *)
+      Lletrec (defs, (transl_structure (List.rev_append idents fields) cc rootpath rem))
   | Tstr_exception(id, decl) :: rem ->
       Llet(Strict, id, transl_exception id (field_path rootpath id) decl,
            transl_structure (id :: fields) cc rootpath rem)
@@ -363,8 +366,8 @@ let transl_store_structure glob map prims str =
   let rec transl_store subst = function
     [] ->
       lambda_unit
-  | Tstr_eval expr :: rem ->
-      Lsequence(subst_lambda subst (transl_exp expr),
+  | Tstr_eval (expr, pat) :: rem ->
+      Lsequence(subst_lambda subst (transl_eval expr pat),
                 transl_store subst rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       let ids = let_bound_idents pat_expr_list in
@@ -379,7 +382,11 @@ let transl_store_structure glob map prims str =
       end;
       transl_store subst rem
   | Tstr_type(decls) :: rem ->
-      transl_store subst rem
+      let idents = List.map fst decls in
+      let defs = Transltype.transl_type_declarations decls in
+      let lam = Lletrec (defs, store_idents idents) in
+      Lsequence(subst_lambda subst lam,
+		transl_store (add_idents false idents subst) rem)
   | Tstr_exception(id, decl) :: rem ->
       let lam = transl_exception id (field_path (global_path glob) id) decl in
       Lsequence(Llet(Strict, id, lam, store_ident id),
@@ -473,11 +480,12 @@ let transl_store_structure glob map prims str =
 
 let rec defined_idents = function
     [] -> []
-  | Tstr_eval expr :: rem -> defined_idents rem
+  | Tstr_eval (expr, _) :: rem -> defined_idents rem
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       let_bound_idents pat_expr_list @ defined_idents rem
   | Tstr_primitive(id, descr) :: rem -> defined_idents rem
-  | Tstr_type decls :: rem -> defined_idents rem
+  | Tstr_type decls :: rem -> 
+      map_end (fun (id,_) -> id) decls (defined_idents rem)
   | Tstr_exception(id, decl) :: rem -> id :: defined_idents rem
   | Tstr_exn_rebind(id, path) :: rem -> id :: defined_idents rem
   | Tstr_module(id, modl) :: rem -> id :: defined_idents rem
@@ -570,8 +578,8 @@ let close_toplevel_term lam =
                 (free_variables lam) lam
 
 let transl_toplevel_item = function
-    Tstr_eval expr ->
-      transl_exp expr
+    Tstr_eval (expr, pat) ->
+      transl_eval expr pat
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
       transl_let rec_flag pat_expr_list
@@ -579,7 +587,13 @@ let transl_toplevel_item = function
   | Tstr_primitive(id, descr) ->
       lambda_unit
   | Tstr_type(decls) ->
-      lambda_unit
+      (* let idents = List.map fst decls in *)
+      let defs = Transltype.transl_type_declarations decls in
+(*
+      List.iter (fun id -> Ident.make_global id) idents;
+*)
+      Lletrec (defs,
+	       make_sequence toploop_setvalue_id (List.map fst decls))
   | Tstr_exception(id, decl) ->
       toploop_setvalue id (transl_exception id None decl)
   | Tstr_exn_rebind(id, path) ->

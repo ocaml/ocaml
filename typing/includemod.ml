@@ -51,6 +51,12 @@ let value_descriptions env subst id vd1 vd2 =
     Includecore.value_descriptions env vd1 vd2
   with Includecore.Dont_match ->
     raise(Error[Value_descriptions(id, vd1, vd2)])
+  | e -> 
+prerr_endline "STRAANGEEE"; 
+Format.eprintf "value_descriptions@ @[%a@]@ @[%a@]@."
+	Gdebug.print_type_scheme vd1.val_type
+	Gdebug.print_type_scheme vd2.val_type;
+prerr_endline (Printexc.to_string e); raise e
 
 (* Inclusion between type declarations *)
 
@@ -177,22 +183,22 @@ and signatures env subst sig1 sig2 =
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
-      [] -> tbl
+      [] -> (tbl, pos)
     | item :: rem ->
         let (id, name) = item_ident_name item in
         let nextpos =
           match item with
             Tsig_value(_,{val_kind = Val_prim _})
-          | Tsig_type(_,_,_)
           | Tsig_modtype(_,_)
           | Tsig_cltype(_,_,_) -> pos
           | Tsig_value(_,_)
+          | Tsig_type(_,_,_)
           | Tsig_exception(_,_)
           | Tsig_module(_,_,_)
           | Tsig_class(_, _,_) -> pos+1 in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
-  let comps1 =
+  let (comps1, size1) =
     build_component_table 0 Tbl.empty sig1 in
   (* Pair each component of sig2 with a component of sig1,
      identifying the names along the way.
@@ -252,7 +258,7 @@ and signature_components env subst = function
       end
   | (Tsig_type(id1, tydecl1, _), Tsig_type(id2, tydecl2, _), pos) :: rem ->
       type_declarations env subst id1 tydecl1 tydecl2;
-      signature_components env subst rem
+      (pos, Tcoerce_none) :: signature_components env subst rem
   | (Tsig_exception(id1, excdecl1), Tsig_exception(id2, excdecl2), pos)
     :: rem ->
       exception_declarations env subst id1 excdecl1 excdecl2;

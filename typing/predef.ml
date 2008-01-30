@@ -79,9 +79,11 @@ and ident_sys_blocked_io = Ident.create_predef_exn "Sys_blocked_io"
 and ident_assert_failure = Ident.create_predef_exn "Assert_failure"
 and ident_undefined_recursive_module =
         Ident.create_predef_exn "Undefined_recursive_module"
+and ident_assert_exception = Ident.create_predef_exn "Assert_exception"
 
 let path_match_failure = Pident ident_match_failure
 and path_assert_failure = Pident ident_assert_failure
+and path_assert_exception = Pident ident_assert_exception
 and path_undefined_recursive_module = Pident ident_undefined_recursive_module
 
 let build_initial_env add_type add_exception empty_env =
@@ -168,6 +170,8 @@ let build_initial_env add_type add_exception empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_exception ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
+  add_exception ident_assert_exception
+                         [newgenty (Ttuple[type_exn; newgenty (Ttuple[type_string; type_int; type_int])])] (
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
@@ -183,7 +187,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))))))))))
+    empty_env))))))))))))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))
@@ -191,4 +195,9 @@ let builtin_values =
        ident_invalid_argument;
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
        ident_division_by_zero; ident_sys_blocked_io;
-       ident_assert_failure; ident_undefined_recursive_module ]
+       ident_assert_failure; ident_undefined_recursive_module; ident_assert_exception ]
+
+let builtin_types = 
+  [path_int; path_char; path_string; path_float; path_bool; path_unit;
+   path_exn; path_array; path_list; path_format6; path_option;
+   path_nativeint; path_int32; path_int64; path_lazy_t]

@@ -482,5 +482,8 @@ let remove_option typ =
     | Types.Tvariant _ -> t
     | Types.Tlink t2
     | Types.Tsubst t2 -> iter t2.Types.desc
+    | Types.Tpath _ 
+    | Types.Toverload _
+    | Types.Tkonst (_,_) -> t
   in
   { typ with Types.desc = iter typ.Types.desc }

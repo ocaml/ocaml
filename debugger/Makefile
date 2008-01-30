@@ -15,7 +15,7 @@
 include ../config/Makefile
 
 CAMLC=../ocamlcomp.sh
-COMPFLAGS=-warn-error A $(INCLUDES)
+COMPFLAGS=-warn-error Ag $(INCLUDES)
 LINKFLAGS=-linkall -I ../otherlibs/unix
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=
@@ -31,12 +31,19 @@ OTHEROBJS=\
   ../otherlibs/unix/unix.cma \
   ../utils/misc.cmo ../utils/config.cmo \
   ../utils/tbl.cmo ../utils/clflags.cmo ../utils/consistbl.cmo \
+  ../utils/warnings.cmo \
   ../parsing/longident.cmo \
+  ../parsing/linenum.cmo ../parsing/asttypes.cmo ../parsing/location.cmo \
+  ../parsing/parsetree.cmo \
+  ../typing/primitive.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
-  ../typing/btype.cmo ../typing/primitive.cmo ../typing/typedtree.cmo \
-  ../typing/subst.cmo ../typing/predef.cmo \
-  ../typing/datarepr.cmo ../typing/env.cmo ../typing/oprint.cmo \
+../typing/gdebug.cmo \
+  ../typing/btype.cmo ../typing/subst.cmo ../typing/predef.cmo \
+  ../typing/primitive.cmo \
+  ../typing/datarepr.cmo ../typing/env.cmo ../typing/typedtree.cmo ../typing/oprint.cmo \
+  ../typing/etype.cmo ../typing/gdebug.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
+  ../typing/gtype.cmo ../typing/typetexp.cmo ../typing/typertype.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
   ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/symtable.cmo \
   ../bytecomp/opcodes.cmo \
@@ -83,7 +90,7 @@ ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
 install:
-	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)
+	cp ocamldebug$(EXE) $(BINDIR)/gcamldebug$(EXE)
 
 clean::
 	rm -f ocamldebug$(EXE)

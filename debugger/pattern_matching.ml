@@ -193,7 +193,7 @@ and match_concrete_type pattern obj cstr ty ty_list =
                              [var,
                               obj,
                               {typ_desc = Tproduct (filter_product n ty_arg);
-                               typ_level = generic}]
+                               typ_level = generic_ (* GCAML: debugger does not use this file??? *) }]
                          | P_dummy ->
                              []
                          | _ ->

@@ -104,3 +104,6 @@ sys.cmo: sys.cmi
 sys.cmx: sys.cmi 
 weak.cmo: sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi 
 weak.cmx: sys.cmx obj.cmx hashtbl.cmx array.cmx weak.cmi 
+rtype.cmo: rtype.cmi
+regexp.cmo: regexp.cmi
+xGprint.cmo: xGprint.cmi

@@ -17,6 +17,6 @@ include ../config/Makefile
 DIR=$(MANDIR)/man$(MANEXT)
 
 install:
-	for i in *.m; do cp $$i $(DIR)/`basename $$i .m`.$(MANEXT); done
-	echo '.so man$(MANEXT)/ocamlc.$(MANEXT)' > $(DIR)/ocamlc.opt.$(MANEXT)
-	echo '.so man$(MANEXT)/ocamlopt.$(MANEXT)' > $(DIR)/ocamlopt.opt.$(MANEXT)
+	for i in *.m; do cp $$i $(DIR)/`basename $$i .m | sed -e 's/ocaml/gcaml/'`.$(MANEXT); done
+	echo '.so man$(MANEXT)/ocamlc.$(MANEXT)' > $(DIR)/gcamlc.opt.$(MANEXT)
+	echo '.so man$(MANEXT)/ocamlopt.$(MANEXT)' > $(DIR)/gcamlopt.opt.$(MANEXT)

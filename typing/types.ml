@@ -22,7 +22,8 @@ open Asttypes
 type type_expr =
   { mutable desc: type_desc; 
     mutable level: int;
-    mutable id: int }
+    mutable id: int;
+  }
 
 and type_desc =
     Tvar
@@ -37,6 +38,9 @@ and type_desc =
   | Tvariant of row_desc
   | Tunivar
   | Tpoly of type_expr * type_expr list
+  | Tkonst of konstraint * type_expr
+  | Toverload of overload_desc
+  | Tpath of Path.t
 
 and row_desc =
     { row_fields: (label * row_field) list;
@@ -66,6 +70,18 @@ and commutable =
   | Cunknown
   | Clink of commutable ref
 
+and konst_elem = 
+    { ktype : type_expr;
+      kdepend : type_expr option }
+
+and konstraint = konst_elem list
+
+and kset = konstraint ref
+
+and overload_desc =
+    { over_aunif: type_expr;
+      over_cases: type_expr list }
+
 module TypeOps = struct
   type t = type_expr
   let compare t1 t2 = t1.id - t2.id
@@ -82,8 +98,9 @@ module Vars = Meths
 (* Value descriptions *)
 
 type value_description =
-  { val_type: type_expr;                (* Type of the value *)
-    val_kind: value_kind }
+  { mutable val_type: type_expr;                (* Type of the value *)
+    val_kind: value_kind;
+   }
 
 and value_kind =
     Val_reg                             (* Regular value *)

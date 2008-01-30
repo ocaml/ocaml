@@ -30,6 +30,7 @@ val ccopts : string list ref
 val classic : bool ref
 val nopervasives : bool ref
 val preprocessor : string option ref
+val nobuiltintypes : bool ref
 val save_types : bool ref
 val use_threads : bool ref
 val use_vmthreads : bool ref
@@ -53,6 +54,7 @@ val dump_parsetree : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
 val dump_instr : bool ref
+val no_gcamllib_link : bool ref
 val keep_asm_file : bool ref
 val optimize_for_speed : bool ref
 val dump_cmm : bool ref

@@ -277,6 +277,7 @@ and rw_exp iflag sexp =
 
   | Pexp_assert (cond) -> rewrite_exp iflag cond
   | Pexp_assertfalse -> ()
+  | Pexp_assertexception (expr) -> rewrite_exp iflag expr
 
   | Pexp_lazy (expr) -> rewrite_exp iflag expr
 
@@ -284,6 +285,11 @@ and rw_exp iflag sexp =
 
   | Pexp_object (_, fieldl) ->
       List.iter (rewrite_class_field iflag) fieldl
+
+  | Pexp_rtype ty -> () (* FIXME *)
+  | Pexp_typedecl lid -> () (* FIXME *)
+  | Pexp_generic cases -> () (* FIXME *)
+  | Pexp_regexp _ -> assert false (* FIXME *)
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then

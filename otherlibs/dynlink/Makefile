@@ -18,7 +18,7 @@
 include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../ocamlc
-INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
+INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp -I ../../parsing
 COMPFLAGS=-warn-error A -I ../../stdlib $(INCLUDES)
 
 OBJS=dynlinkaux.cmo dynlink.cmo
@@ -27,10 +27,10 @@ COMPILEROBJS=\
   ../../utils/misc.cmo ../../utils/config.cmo ../../utils/clflags.cmo \
   ../../utils/tbl.cmo ../../utils/consistbl.cmo \
   ../../utils/terminfo.cmo ../../utils/warnings.cmo \
-  ../../parsing/asttypes.cmi ../../parsing/linenum.cmo \
+  ../../parsing/asttypes.cmo ../../parsing/linenum.cmo \
   ../../parsing/location.cmo ../../parsing/longident.cmo \
   ../../typing/ident.cmo ../../typing/path.cmo \
-  ../../typing/primitive.cmo ../../typing/types.cmo \
+  ../../typing/primitive.cmo ../../typing/types.cmo ../../typing/gdebug.cmo \
   ../../typing/btype.cmo ../../typing/subst.cmo ../../typing/predef.cmo \
   ../../typing/datarepr.cmo ../../typing/env.cmo \
   ../../bytecomp/lambda.cmo ../../bytecomp/instruct.cmo \
@@ -50,7 +50,7 @@ dynlinkaux.cmo dynlinkaux.cmi: $(COMPILEROBJS)
 	$(CAMLC) $(COMPFLAGS) -pack -o dynlinkaux.cmo $(COMPILEROBJS)
 
 extract_crc: dynlink.cma extract_crc.cmo
-	$(CAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
+	$(CAMLC) $(COMPFLAGS) -nogcamllib -o extract_crc dynlink.cma extract_crc.cmo
 
 install:
 	cp dynlink.cmi dynlink.cma dynlink.mli extract_crc $(LIBDIR)

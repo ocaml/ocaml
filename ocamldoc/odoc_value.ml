@@ -85,6 +85,9 @@ let parameter_list_from_arrows typ =
     | Types.Tunivar
     | Types.Tvariant _ ->
         []
+    | Types.Tpath _ 
+    | Types.Toverload _
+    | Types.Tkonst (_,_) -> [] (* FIXME *)
   in
   iter typ
 

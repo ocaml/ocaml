@@ -34,6 +34,9 @@ let create_predef_exn s =
 let create_persistent s =
   { name = s; stamp = 0; flags = global_flag }
 
+let create_with_stamp s stamp =
+  { name = s; stamp = stamp; flags = 0 }
+
 let rename i =
   incr currentstamp;
   { i with stamp = !currentstamp }

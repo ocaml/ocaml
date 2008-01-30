@@ -146,7 +146,16 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
-
+  | Ptyp_konst (konst, t) ->
+      line i ppf "Ptyp_konst\n";
+      list (i+1) konstelem ppf konst; 
+      core_type (i+1) ppf t
+  | Ptyp_overload (typs) ->
+      line i ppf "Ptyp_overload\n";
+      list (i+1) core_type ppf typs
+  | Ptyp_lident lid ->
+      line i ppf "Ptyp_lident %a\n" fmt_longident lid
+      
 and core_field_type i ppf x =
   line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
   let i = i+1 in
@@ -155,6 +164,10 @@ and core_field_type i ppf x =
       line i ppf "Pfield \"%s\"\n" s;
       core_type i ppf ct;
   | Pfield_var -> line i ppf "Pfield_var\n";
+
+and konstelem i ppf (kt,kd) =
+  core_type (i+1) ppf kt;
+  option (i+1) core_type ppf kd
 
 and pattern i ppf x =
   line i ppf "pattern %a\n" fmt_location x.ppat_loc;
@@ -193,6 +206,9 @@ and pattern i ppf x =
   | Ppat_type li ->
       line i ppf "PPat_type";
       longident i ppf li
+  | Ppat_rtype ct ->
+      line i ppf "Ppat_rtype";
+      core_type i ppf ct
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;
@@ -292,6 +308,9 @@ and expression i ppf x =
       expression i ppf e;
   | Pexp_assertfalse ->
       line i ppf "Pexp_assertfalse";
+  | Pexp_assertexception (e) ->
+      line i ppf "Pexp_assertexception";
+      expression i ppf e;
   | Pexp_lazy (e) ->
       line i ppf "Pexp_lazy";
       expression i ppf e;
@@ -302,6 +321,21 @@ and expression i ppf x =
   | Pexp_object s ->
       line i ppf "Pexp_object";
       class_structure i ppf s
+  | Pexp_rtype ct ->
+      line i ppf "Pexp_rtype";
+      core_type i ppf ct
+  | Pexp_typedecl li ->
+      line i ppf "Pexp_typedecl %a\n" fmt_longident li
+  | Pexp_generic cases ->
+      line i ppf "Pexp_generic";
+      list i generic_case ppf cases
+  | Pexp_regexp s ->
+      line i ppf "Pexp_regexp %S" s
+
+and generic_case i ppf (po, e) =
+  line i ppf "<gcase>\n";
+  option (i+1) core_type ppf po;
+  expression (i+1) ppf e;
 
 and value_description i ppf x =
   line i ppf "value_description\n";
@@ -577,6 +611,10 @@ and structure_item i ppf x =
   | Pstr_primitive (s, vd) ->
       line i ppf "Pstr_primitive \"%s\"\n" s;
       value_description i ppf vd;
+  | Pstr_genprimitive (s, exttyp, expr) ->
+      line i ppf "Pstr_genprimitive \"%s\"\n" s;
+      core_type (i+1) ppf exttyp;
+      expression (i+1) ppf expr
   | Pstr_type (l) ->
       line i ppf "Pstr_type\n";
       list i string_x_type_declaration ppf l;

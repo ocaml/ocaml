@@ -54,7 +54,7 @@ let event_mark_after  = "<|a|>"
 let shell = "/bin/sh"
 
 (* Name of the Objective Caml runtime. *)
-let runtime_program = "ocamlrun"
+let runtime_program = "gcamlrun"
 
 (* Time history size (for `last') *)
 let history_size = ref 30

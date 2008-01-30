@@ -34,6 +34,8 @@ let report_error ppf exn =
   | Ctype.Tags(l, l') -> fprintf ppf
       "In this program,@ variant constructors@ `%s and `%s@ \
        have the same hash value.@ Change one of them." l l'
+  | Typertype.Error(loc, err) ->
+      Location.print ppf loc; Typertype.report_error ppf err
   | Typecore.Error(loc, err) ->
       Location.print ppf loc; Typecore.report_error ppf err
   | Typetexp.Error(loc, err) ->

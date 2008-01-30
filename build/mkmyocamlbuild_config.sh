@@ -1,9 +1,23 @@
 #!/bin/sh
+
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#       Nicolas Pouillard, projet Gallium, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 2007 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
 # $Id$
 
 cd `dirname $0`/..
 
 sed \
+    -e 's/^.*FLEXDIR.*$//g' \
     -e 's/^#ml \(.*\)/\1/' \
     -e 's/^\(#.*\)$/(* \1 *)/' \
     -e 's/^\(.*\$([0-9]).*\)$/(* \1 *)/' \

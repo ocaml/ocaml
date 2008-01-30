@@ -31,8 +31,10 @@ OCAMLPP=-pp './remove_DEBUG'
 MKDIR=mkdir -p
 CP=cp -f
 OCAMLDOC=ocamldoc
+GCAMLDOC=gcamldoc
 OCAMLDOC_RUN=./ocamldoc.opt #sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
 OCAMLDOC_OPT=$(OCAMLDOC).opt
+GCAMLDOC_OPT=$(GCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
 OCAMLDOC_LIBCMXA=odoc_info.cmxa
@@ -68,7 +70,7 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
-COMPFLAGS=$(INCLUDES) -warn-error A
+COMPFLAGS=$(INCLUDES) -warn-error Ag
 LINKFLAGS=$(INCLUDES)
 
 CMOFILES= odoc_config.cmo \
@@ -146,6 +148,10 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/parsing/parser.cmo \
 	$(OCAMLSRCDIR)/parsing/lexer.cmo \
 	$(OCAMLSRCDIR)/parsing/parse.cmo \
+$(OCAMLSRCDIR)/parsing/asttypes.cmo \
+$(OCAMLSRCDIR)/parsing/parsetree.cmo \
+$(OCAMLSRCDIR)/typing/path.cmo \
+$(OCAMLSRCDIR)/typing/primitive.cmo \
 	$(OCAMLSRCDIR)/typing/types.cmo \
 	$(OCAMLSRCDIR)/typing/path.cmo \
 	$(OCAMLSRCDIR)/typing/btype.cmo \
@@ -153,15 +159,21 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/datarepr.cmo \
 	$(OCAMLSRCDIR)/typing/subst.cmo \
 	$(OCAMLSRCDIR)/typing/env.cmo \
+$(OCAMLSRCDIR)/typing/gdebug.cmo \
+$(OCAMLSRCDIR)/typing/etype.cmo \
 	$(OCAMLSRCDIR)/typing/ctype.cmo \
 	$(OCAMLSRCDIR)/typing/primitive.cmo \
 	$(OCAMLSRCDIR)/typing/oprint.cmo \
+$(OCAMLSRCDIR)/typing/gdebug.cmo \
 	$(OCAMLSRCDIR)/typing/printtyp.cmo \
 	$(OCAMLSRCDIR)/typing/includecore.cmo \
+$(OCAMLSRCDIR)/typing/gtype.cmo \
 	$(OCAMLSRCDIR)/typing/typetexp.cmo \
 	$(OCAMLSRCDIR)/typing/typedtree.cmo \
 	$(OCAMLSRCDIR)/typing/parmatch.cmo \
 	$(OCAMLSRCDIR)/typing/stypes.cmo \
+$(OCAMLSRCDIR)/typing/typertype.cmo \
+$(OCAMLSRCDIR)/typing/kset.cmo \
 	$(OCAMLSRCDIR)/typing/typecore.cmo \
 	$(OCAMLSRCDIR)/typing/includeclass.cmo \
 	$(OCAMLSRCDIR)/typing/typedecl.cmo \
@@ -175,6 +187,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/switch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matching.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
+$(OCAMLSRCDIR)/bytecomp/metacomp.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translclass.cmo \
 	$(OCAMLSRCDIR)/tools/depend.cmo
@@ -261,7 +274,7 @@ install: dummy
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
 	if test -d $(INSTALL_CUSTOMDIR); then : ; else $(MKDIR) $(INSTALL_CUSTOMDIR); fi
-	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC)$(EXE)
+	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(GCAMLDOC)$(EXE)
 	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
@@ -273,7 +286,7 @@ installopt:
 installopt_really:
 	if test -d $(INSTALL_BINDIR); then : ; else $(MKDIR) $(INSTALL_BINDIR); fi
 	if test -d $(INSTALL_LIBDIR); then : ; else $(MKDIR) $(INSTALL_LIBDIR); fi
-	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(OCAMLDOC_OPT)$(EXE)
+	$(CP) $(OCAMLDOC_OPT) $(INSTALL_BINDIR)/$(GCAMLDOC_OPT)$(EXE)
 	$(CP) ocamldoc.hva $(OCAMLDOC_LIBA) $(OCAMLDOC_LIBCMXA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
@@ -319,7 +332,7 @@ stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
 	-t "OCaml library" -man-mini \
-	$(STDLIB_MLIS)
+	`ls $(STDLIB_MLIS) | grep -v rtype.mli`
 
 autotest_stdlib: dummy
 	$(MKDIR) $@

@@ -27,6 +27,7 @@ type error =
   | Unterminated_string_in_comment
   | Keyword_as_label of string
   | Literal_overflow of string
+  | Unterminated_regexp
 ;;
 
 exception Error of error * Location.t;;
@@ -53,6 +54,7 @@ let keyword_table =
     "fun", FUN;
     "function", FUNCTION;
     "functor", FUNCTOR;
+    "generic", GENERIC; 
     "if", IF;
     "in", IN;
     "include", INCLUDE;
@@ -79,6 +81,7 @@ let keyword_table =
     "true", TRUE;
     "try", TRY;
     "type", TYPE;
+    "typedecl", TYPEDECL;
     "val", VAL;
     "virtual", VIRTUAL;
     "when", WHEN;
@@ -201,6 +204,8 @@ let report_error ppf = function
       fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
   | Literal_overflow ty ->
       fprintf ppf "Integer literal exceeds the range of representable integers of type %s" ty
+  | Unterminated_regexp ->
+      fprintf ppf "Regular expression not terminated"
 ;;
 
 }
@@ -329,6 +334,15 @@ rule token = parse
         lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
         STAR
       }
+  | "[/"
+      { reset_string_buffer ();
+        let string_start = lexbuf.lex_start_p in
+	(* let switches = regexp lexbuf in *)
+	let _ = regexp lexbuf in
+	lexbuf.lex_start_p <- string_start;
+        REGEXP (get_stored_string())
+      }
+
   | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
         ("\"" ([^ '\010' '\013' '"' ] * as name) "\"")?
         [^ '\010' '\013'] * newline
@@ -345,6 +359,7 @@ rule token = parse
   | "*"  { STAR }
   | ","  { COMMA }
   | "->" { MINUSGREATER }
+  | "=>" { EQUALGREATER }
   | "."  { DOT }
   | ".." { DOTDOT }
   | ":"  { COLON }
@@ -360,6 +375,8 @@ rule token = parse
   | "[|" { LBRACKETBAR }
   | "[<" { LBRACKETLESS }
   | "[>" { LBRACKETGREATER }
+  | "[:" { LBRACKETCOLON }
+  | ":]" { COLONRBRACKET }
   | "]"  { RBRACKET }
   | "{"  { LBRACE }
   | "{<" { LBRACELESS }
@@ -498,3 +515,18 @@ and skip_sharp_bang = parse
   | "#!" [^ '\n']* '\n'
        { update_loc lexbuf None 1 false 0 }
   | "" { () }
+
+and regexp = parse
+  | '/' ['i' 'm' 's']* ']' 
+      (* x is not supported, due to the lexer complexity *)
+      { let lx = Lexing.lexeme lexbuf in
+        String.sub lx 1 (String.length lx - 2)
+      }
+  | ((_ # ['/' '\\']) | '\\' _) +
+      { String.iter store_string_char (Lexing.lexeme lexbuf);
+	regexp lexbuf
+      }
+  | '/' (* never matches with /] *)
+      { store_string_char '/';
+	regexp lexbuf }
+  | "" { raise (Error (Unterminated_regexp, !string_start_loc)) }

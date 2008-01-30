@@ -57,6 +57,9 @@ val load_path: string list ref
 val interface_suffix: string ref
         (* Suffix for interface file names *)
 
+val implementation_suffix: string ref
+        (* Suffix for implementation file names *)
+
 val exec_magic_number: string
         (* Magic number for bytecode executable files *)
 val cmi_magic_number: string

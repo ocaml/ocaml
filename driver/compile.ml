@@ -50,6 +50,38 @@ let initial_env () =
 
 (* Compile a .mli file *)
 
+let print_if ppf flag printer arg =
+  if !flag then fprintf ppf "%a@." printer arg;
+  arg
+
+let (++) x f = f x
+
+let cmo_of_interface ppf sourcefile outputprefix sg =
+  let modulename =
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
+  let objfile = outputprefix ^ ".cmo" in
+  let oc = open_out_bin objfile in
+  try
+    let debug = sourcefile = "camlp4/Camlp4/Printers/DumpCamlp4Ast.mli" in
+    if debug then begin
+      let t = Translsig.structure_of_signature (initial_env ()) sg in
+      XGprint.eprint t
+    end;
+    (fst (Translsig.structure_of_signature (initial_env ()) sg), Tcoerce_none)
+      ++ Translmod.transl_implementation modulename 
+      ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+      ++ Simplif.simplify_lambda
+      ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+      ++ Bytegen.compile_implementation modulename
+      ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
+      ++ Emitcode.to_file oc modulename;
+    Warnings.check_fatal ();
+    close_out oc;
+  with x ->
+    close_out oc;
+    remove_file objfile;
+    raise x
+
 let interface ppf sourcefile outputprefix =
   init_path ();
   let modulename =
@@ -67,18 +99,25 @@ let interface ppf sourcefile outputprefix =
     Warnings.check_fatal ();
     if not !Clflags.print_types then
       Env.save_signature sg modulename (outputprefix ^ ".cmi");
+    (* do we need .cmo ? *)
+    let sourceimpl =
+      Misc.chop_extension_if_any sourcefile ^ !Config.implementation_suffix in
+    if not (Sys.file_exists sourceimpl) then begin
+      Format.eprintf "MLI ONLY MODULE %s (no %s)@." sourcefile sourceimpl;
+      try
+	cmo_of_interface ppf sourcefile outputprefix sg;
+	prerr_endline "MLI ONLY MODULE PROVIDED A CMO!"
+      with
+      | Translsig.Not_pure -> 
+	  prerr_endline "MLI ONLY MODULE IS NOT PURE";
+	  ()
+    end;
     Pparse.remove_preprocessed inputfile
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
     raise e
 
 (* Compile a .ml file *)
-
-let print_if ppf flag printer arg =
-  if !flag then fprintf ppf "%a@." printer arg;
-  arg
-
-let (++) x f = f x
 
 let implementation ppf sourcefile outputprefix =
   init_path ();

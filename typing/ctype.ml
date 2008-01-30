@@ -490,6 +490,10 @@ let closed_class params sign =
     unmark_class_signature sign;
     Some reason
 
+let generalized_vars ty = 
+  let tvars = free_vars ty in
+  unmark_type ty;
+  List.filter (fun t -> t.level = generic_level) (List.map fst tvars)
 
                             (**********************)
                             (*  Type duplication  *)
@@ -741,6 +745,10 @@ let rec find_repr p1 =
    stored by [save_desc], must be put back, using [cleanup_types].
 *)
 
+let anti_unify_types_ref =
+  ref (fun _ _ -> assert false :
+      Env.t -> Types.type_expr list -> Types.type_expr)
+
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
@@ -819,7 +827,115 @@ let rec copy ty =
 
 (**** Variants of instantiations ****)
 
+let unwind_gtype sch =
+  let sch = repr sch in
+  match sch.desc with
+  | Tkonst _ | Toverload _ -> 
+      begin try
+(*
+	Format.eprintf "@[<2>UNWIND: @[%a@]@ ======> " Gdebug.print_type_scheme sch;
+*)
+	begin_def ();
+	let dup = copy sch in (* dup is "instantiated" *)
+	cleanup_types ();
+	end_def ();
+	generalize dup; (* recover generalization *)
+	assert (dup  != sch);
+(*
+	Format.eprintf "@[dup=(%a)@]@ " Gdebug.print_type_scheme dup;
+	Format.eprintf "@[dup=(%a)@]@ " Gdebug.print_raw_type_expr dup;
+*)
+	(* duplicate the head *)
+	let head = { dup with desc= dup.desc } in (* it is a copy *)
+(*
+	Format.eprintf "@[head=(%a)@]@ " Gdebug.print_type_scheme head;
+*)
+	(* change the old head *)
+	dup.desc <- Tlink sch;
+(*
+	Format.eprintf "@[%a@]@]@,@." Gdebug.print_type_scheme head;
+*)
+	head
+      with
+      | e ->
+(*
+	  Format.eprintf "ERROR@]@,";
+*)
+	  raise e
+      end
+  | _ -> sch
+
+let guard_internally_generalized_variables ty =
+  let ty = repr ty in 
+  let externally_generalized = 
+    match ty.desc with
+    | Tkonst(konst, t) ->
+	(* type variables which do not appear in t but in konsts
+	   must not be instantiated, since they are internally generalized.
+	   we use Tsubst for this. *)
+	(* find the type vars generalized inside t *)
+	let gen_in_t = ref [] in
+	let visited = ref [] in
+	let rec find_gen_in_t ty =
+	  if List.memq ty !visited then ()
+	  else begin 
+	    visited := ty :: !visited;
+	    match ty.desc with
+	    | Tvar when ty.level = generic_level -> 
+		gen_in_t := ty :: !gen_in_t
+	    | _ -> iter_type_expr find_gen_in_t ty
+	  end
+	in
+	find_gen_in_t t;
+	!gen_in_t
+    | Toverload _ -> []
+    | _ -> assert false
+  in
+  (* save_desc type variables [ty] not in [externally_generalized] 
+     but in konst, then replace them by [Tsubst ty]. They will be instantiated
+     back to [ty] later (but [ty.desc = Tsubst ty]). Finally, 
+     [cleanup_types ()] will make [Tsubst ty] back to 
+     the normal type variables.
+   *)
+  let rec guard =
+    let visited = ref [] in
+    let rec f ty =
+      if List.memq ty !visited then ()
+      else begin
+	visited := ty :: !visited;
+	match ty.desc with
+	| Tvar when ty.level = generic_level -> 
+	    if not (List.memq ty externally_generalized) then begin
+	      save_desc ty ty.desc;
+	      ty.desc <- Tsubst ty
+	    end 
+	| _ -> iter_type_expr f ty
+      end
+    in
+    f
+  in
+  match ty.desc with
+  | Tkonst (konst,t) ->
+      List.iter (fun kelem ->
+	guard kelem.ktype;
+	Misc.may guard kelem.kdepend) konst
+  | Toverload _ -> guard ty
+  | _ -> assert false
+
+let prepare_instance sch =
+  let sch = repr sch in
+  match sch.desc with
+  | Tkonst _ | Toverload _ ->
+      let sch = unwind_gtype sch in
+      guard_internally_generalized_variables sch;
+      sch
+  | _ -> sch
+
 let instance sch =
+  (* unwind loop once:
+     Tkonst may have a loop. We unwind it only once, so that
+     the extensional polymorphism is kept. *)
+  let sch = prepare_instance sch in
   let ty = copy sch in
   cleanup_types ();
   ty
@@ -1509,6 +1625,8 @@ let rec unify env t1 t2 =
                  || has_cached_expansion p2 !a2) ->
         update_level env t1.level t2;
         link_type t1 t2
+    | (Toverload odesc1, Toverload odesc2) ->
+	if Etype.compare_types t1 t2 <>  0 then raise (Unify [])
     | _ ->
         unify2 env t1 t2
   with Unify trace ->
@@ -1958,6 +2076,9 @@ let moregen_occur env level ty =
   occur_univar env ty;
   update_level env level ty
 
+exception Etype
+
+(* JPF: check t1 is more general than t2. t2 is already instantiated *)
 let rec moregen inst_nongen type_pairs env t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
@@ -1972,6 +2093,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                                     else t1.level =  generic_level ->
         moregen_occur env t1.level t2;
         occur env t1 t2;
+        (* JPF: instantiate t1. 
+	   t1 has been backed-up, so no fear of instantiating. *)
         link_type t1 t2
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
@@ -2012,6 +2135,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
               enter_poly env univar_pairs t1 tl1 t2 tl2
                 (moregen inst_nongen type_pairs env)
+	  | (Tkonst (_,_), Tkonst (_,_))
+	  | (Toverload _, Toverload _) -> raise Etype
           | (_, _) ->
               raise (Unify [])
         end
@@ -2136,7 +2261,9 @@ let moregeneral env inst_nongen pat_sch subj_sch =
   let patt = instance pat_sch in
   let res =
     try moregen inst_nongen (TypePairs.create 13) env patt subj; true with
-      Unify _ -> false
+    | Unify _ -> false
+    | Etype -> (* inst_nongen??? *)
+	Etype.compare_types pat_sch subj_sch = 0
   in
   current_level := old_level;
   res
@@ -2854,6 +2981,46 @@ let rec build_subtype env visited loops posi level t =
       else (t, Unchanged)
   | Tunivar ->
       (t, Unchanged)
+  | Tkonst (konst, ty) ->
+      (* FIXME: I do not know it is correct.. *)
+      if memq_warn t visited then (t, Unchanged) else
+      let visited = t :: visited in
+      let konst' =
+        List.map (fun kelem ->
+	  let ktype', c1 = 
+	    build_subtype env visited loops (not posi) level kelem.ktype 
+	  in
+	  let kdepend', c2 =
+	    match kelem.kdepend with
+	    | Some t -> 
+		let t, c = build_subtype env visited loops (not posi) level t
+		in Some t, Some c 
+	    | None -> None, None
+	  in
+	  { ktype= ktype'; kdepend= kdepend' },
+	  (match c2 with Some c -> max c1 c | None -> c1)) konst
+      in
+      assert (konst' <> []);
+      let (ty',c2) = build_subtype env visited loops posi level ty in
+      let _c1 = collect konst' in (* FIXME ??? *)
+      let c = List.fold_left max c2 (List.map snd konst') in
+      if c > Unchanged then (newty (Tkonst (List.map fst konst', ty')), c)
+      else (t, Unchanged)
+  | Toverload odesc ->
+      (* FIXME: I do not know it is correct.. *)
+      if memq_warn t visited then (t, Unchanged) else
+      let visited = t :: visited in
+      let aunif = build_subtype env visited loops posi level odesc.over_aunif 
+      in
+      let cases =
+        List.map (build_subtype env visited loops posi level) odesc.over_cases
+      in
+      let c = collect (aunif :: cases) in
+      if c > Unchanged then 
+	newty (Toverload {over_aunif= fst aunif; 
+			  over_cases= List.map fst cases}), c
+      else (t, Unchanged)
+  | Tpath p -> assert false
 
 let enlarge_type env ty =
   warn := false;

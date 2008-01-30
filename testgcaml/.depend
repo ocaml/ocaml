@@ -1,0 +1,4 @@
+main.cmo: print_t.cmo t.cmo 
+main.cmx: print_t.cmx t.cmx 
+print_t.cmo: t.cmo 
+print_t.cmx: t.cmx 

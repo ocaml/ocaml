@@ -25,8 +25,8 @@ and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
 and c_opts = ref []      (* options to pass to mksharedlib and ocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
-and ocamlc = ref (Filename.concat bindir "ocamlc")
-and ocamlopt = ref (Filename.concat bindir "ocamlopt")
+and ocamlc = ref (Filename.concat bindir "gcamlc")
+and ocamlopt = ref (Filename.concat bindir "gcamlopt")
 and output = ref "a"        (* Output name for Caml part of library *)
 and output_c = ref ""       (* Output name for C part of library *)
 and rpath = ref []          (* rpath options *)
@@ -44,7 +44,7 @@ let chop_suffix = Filename.chop_suffix
 exception Bad_argument of string
 
 let print_version () =
-  printf "ocamlmklib, version %s\n" Sys.ocaml_version;
+  printf "gcamlmklib, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
 
@@ -131,7 +131,11 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
+<<<<<<< ocamlmklib.mlp
+Usage: gcamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a files>
+=======
 Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib files>
+>>>>>>> 1.13
 Options are:
   -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only
   -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only

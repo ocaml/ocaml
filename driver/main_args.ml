@@ -56,10 +56,14 @@ module Make_options (F :
      val _where : unit -> unit
 
      val _nopervasives : unit -> unit
+     val _nobuiltintypes : unit -> unit
      val _dparsetree : unit -> unit
      val _drawlambda : unit -> unit
      val _dlambda : unit -> unit
      val _dinstr : unit -> unit
+
+     val _nogcamllib : unit -> unit
+
      val anonymous : string -> unit
    end) =
 struct
@@ -135,6 +139,7 @@ struct
       \032    D/d enable/disable deprecated features\n\
       \032    E/e enable/disable fragile match\n\
       \032    F/f enable/disable partially applied function\n\
+      \032    G/g enable/disable G'Caml related warnings\n\
       \032    L/l enable/disable labels omitted in application\n\
       \032    M/m enable/disable overriden methods\n\
       \032    P/p enable/disable partial match\n\
@@ -153,11 +158,17 @@ struct
     "-where", Arg.Unit F._where,
            " Print location of standard library and exit";
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
+    "-nobuiltintypes", Arg.Unit F._nobuiltintypes, " (undocumented)";
     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
     "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
     "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
     "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
     "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
+
+    "-nogcamllib", Arg.Unit F._nogcamllib,
+      " do not link the G'Caml special library\n\
+      \032   automatically enabled when either -nostdlib or -nopervasives\n\
+      \032   is specified.";
 
     "-", Arg.String F.anonymous,
            "<file>  Treat <file> as a file name (even if it starts with `-')";

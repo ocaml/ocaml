@@ -103,6 +103,8 @@ val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 
+val anti_unify_types_ref : (Env.t -> type_expr list -> type_expr) ref
+
 val instance: type_expr -> type_expr
         (* Take an instance of a type scheme *)
 val instance_list: type_expr list -> type_expr list
@@ -182,6 +184,7 @@ val match_class_types:
         Env.t -> class_type -> class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> bool
+(* FIXME: The comment is no longer true!*)
         (* [equal env [x1...xn] tau [y1...yn] sigma]
            checks whether the parameterized types
            [/\x1.../\xn.tau] and [/\y1.../\yn.sigma] are equivalent. *)
@@ -228,6 +231,7 @@ type closed_class_failure =
 val closed_class:
         type_expr list -> class_signature -> closed_class_failure option
         (* Check whether all type variables are bound *)
+val generalized_vars : type_expr -> type_expr list
 
 val unalias: type_expr -> type_expr
 val signature_of_class_type: class_type -> class_signature
