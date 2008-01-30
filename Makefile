@@ -139,7 +139,7 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library gcamllibrary ocaml \
-   otherlibraries $(DEBUGGER) ocamldoc
+   otherlibraries ocamlbuild.byte $(DEBUGGER) ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -240,16 +240,15 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
-# opt: runtimeopt ocamlopt libraryopt gcamllibraryopt otherlibrariesopt ocamlbuildlib.native
-opt: runtimeopt ocamlopt libraryopt gcamllibraryopt otherlibrariesopt
+opt: runtimeopt ocamlopt libraryopt gcamllibraryopt otherlibrariesopt ocamlbuildlib.native
 
 # Native-code versions of the tools
 # opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 # 	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
 # 	 ocamllex.opt ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
-	 ocamllex.opt ocamltoolsopt.opt camlp4opt ocamldoc.opt
+	 ocamlbuild.byte $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
+	 ocamllex.opt ocamltoolsopt.opt ocamlbuild.native ocamldoc.opt
 
 # Installation
 install: FORCE
