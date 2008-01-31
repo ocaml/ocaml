@@ -25,7 +25,7 @@ OPTCOMPFLAGS=-warn-error Ag -nostdlib -I ../stdlib -I ../toplevel -I ../typing
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 # OBJS=gcaml.cmo safevio.cmo gprint.cmo plus.cmo rec.cmo cplus.cmo
-OBJS=gcaml.cmo garith.cmo safevio.cmo gprint.cmo plus.cmo rec.cmo cplus.cmo generic.cmo
+OBJS=gcaml.cmo garith.cmo safevio.cmo gprint.cmo plus.cmo rec.cmo cplus.cmo generic.cmo gtest.cmo
 ALLOBJS=$(OBJS)
 
 all: gcamllib.cma

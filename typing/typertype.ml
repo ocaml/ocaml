@@ -295,7 +295,8 @@ let pattern_of_type non_linear transl_longident t =
         make_pat_construct loc (cstr "Tconstr")
   	  [ make_pat loc (Ppat_tuple 
  			    [ make_pat loc Ppat_any; (* ignore path *)
-			      make_pat loc (Ppat_var name) ]);
+			      make_pat_construct loc (cstr "Box")
+				[make_pat loc (Ppat_var name)] ]);
   	    mktailpat (List.map pattern_of_type ts)]
     | Ptyp_lident _ -> assert false
     | _ -> raise (Error (loc, Unsupported))
