@@ -171,9 +171,7 @@ let read_file obj_name =
 
 let scan_file obj_name tolink = match read_file obj_name with
   | Unit (file_name,info,crc) ->
-      (* This is a .cmx file. It must be linked in any case.
-         Read the infos to see which modules it requires. *)
-      let (info, crc) = Compilenv.read_unit_info file_name in
+      (* This is a .cmx file. It must be linked in any case. *)
       remove_required info.ui_name;
       List.iter (add_required file_name) info.ui_imports_cmx;
       (info, file_name, crc) :: tolink

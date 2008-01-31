@@ -107,6 +107,19 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     ++ Cmmgen.compunit size
     ++ List.iter (compile_phrase ppf) ++ (fun () -> ());
     (match toplevel with None -> () | Some f -> compile_genfuns ppf f);
+
+    (* We add explicit references to external primitive symbols.  This
+       is to ensure that the object files that define these symbols,
+       when part of a C library, won't be discarded by the linker.
+       This is important if a module that uses such a symbol is later
+       dynlinked. *)
+
+    compile_phrase ppf
+      (Cmmgen.reference_symbols
+         (List.filter (fun s -> s <> "" && s.[0] <> '%')
+            !Translmod.primitive_declarations)
+      );
+
     Emit.end_assembly();
     close_out oc
   with x ->

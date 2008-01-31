@@ -1991,6 +1991,10 @@ let global_table namelist =
         List.map mksym namelist @
         [cint_zero])
 
+let reference_symbols namelist =
+  let mksym name = Csymbol_address name in
+  Cdata(List.map mksym namelist)
+
 let global_data name v =
   Cdata(Cglobal_symbol name ::
           emit_constant name
