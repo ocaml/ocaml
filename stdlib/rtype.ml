@@ -114,7 +114,8 @@ and equal_desc f d1 d2 =
       if f v1 v2 then List.for_all2 (raw_equal f) ts1 ts2 else false
   | _ -> false
 
-let equal = raw_equal (fun (p1,d1) (p2,d2) -> (* p1 = p2 && *) d1 == d2)
+let equal = raw_equal (fun (p1, Box d1) (p2, Box d2) -> 
+  (* p1 = p2 && *) d1 == d2)
   (* Paths may be different. ex:
        module M = struct
          type t 

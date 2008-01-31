@@ -16,6 +16,17 @@
 open Format
 open Rtype
 
+type depth_info = 
+    { max_depth : int;
+      cur_depth : int }
+
+let incr_depth depth = { depth with cur_depth= depth.cur_depth + 1 }
+let over_depth depth = depth.max_depth < depth.cur_depth
+
+let print_dots ppf = fprintf ppf "..."
+
+type base_printer = depth_info -> formatter -> Obj.t -> unit
+
 let rec print_list sep f ppf = function
   | [] -> ()
   | [x] -> f ppf x
@@ -25,55 +36,65 @@ let rec print_list sep f ppf = function
 	sep ()
 	(print_list sep f) xs
 
+let rec print_list_with_depth depth sep (f : base_printer) ppf = function
+  | [] -> ()
+  | _ when over_depth depth -> print_dots ppf
+  | [x] -> f depth ppf x
+  | x::xs -> 
+      fprintf ppf "%a%a%a" 
+	(f depth) x
+	sep ()
+	(print_list_with_depth (incr_depth depth) sep f) xs
+
 let print_tuple f ppf v = 
   print_list (fun ppf () -> fprintf ppf ",@ ") f ppf v
 
-type base_printer = formatter -> Obj.t -> unit
-
-let printers =
-  [ Rtype.int, ((fun _(*[]*) ppf v -> fprintf ppf "%i" (Obj.obj v)) :
-			 base_printer list -> base_printer);
-    Rtype.char, (fun _(*[]*) ppf v -> fprintf ppf "%C" (Obj.obj v));
-    Rtype.string, (fun _(*[]*) ppf v -> fprintf ppf "%S" (Obj.obj v));
-    Rtype.float, (fun _(*[]*) ppf v -> fprintf ppf "%F" (Obj.obj v));
-    Rtype.bool, (fun _(*[]*) ppf v -> fprintf ppf "%B" (Obj.obj v));
-    Rtype.unit, (fun _(*[]*) ppf v -> fprintf ppf "()");
-    Rtype.exn, (fun _(*[]*) ppf v -> fprintf ppf "<exn>");
-    Rtype.nativeint, (fun _(*[]*) ppf v -> fprintf ppf "%nd" (Obj.obj v));
-    Rtype.int32, (fun _(*[]*) ppf v -> fprintf ppf "%ld" (Obj.obj v));
-    Rtype.int64, (fun _(*[]*) ppf v -> fprintf ppf "%Ld" (Obj.obj v));
+let base_printers : (Rtype.type_declaration * (base_printer list -> base_printer)) list =
+  [ Rtype.int, (fun _ _ ppf v -> fprintf ppf "%i" (Obj.obj v));
+    Rtype.char, (fun _ _ ppf v -> fprintf ppf "%C" (Obj.obj v));
+    Rtype.string, (fun _ _ ppf v -> fprintf ppf "%S" (Obj.obj v));
+    Rtype.float, (fun _ _ ppf v -> fprintf ppf "%F" (Obj.obj v));
+    Rtype.bool, (fun _ _ ppf v -> fprintf ppf "%B" (Obj.obj v));
+    Rtype.unit, (fun _ _ ppf v -> fprintf ppf "()");
+    Rtype.exn, (fun _ _ ppf v -> fprintf ppf "<exn>");
+    Rtype.nativeint, (fun _ _ ppf v -> fprintf ppf "%nd" (Obj.obj v));
+    Rtype.int32, (fun _ _ ppf v -> fprintf ppf "%ld" (Obj.obj v));
+    Rtype.int64, (fun _ _ ppf v -> fprintf ppf "%Ld" (Obj.obj v));
     
-    Rtype.list, (fun printers ppf v ->
+    Rtype.list, (fun printers depth ppf v ->
+      if over_depth depth then fprintf ppf "..." else
       match printers with
       | [printer] ->
 	  begin match Obj.obj v with
 	  | [] -> fprintf ppf "[]"
 	  | v -> 
 	      fprintf ppf "@[<2>[ %a ]@]" 
-		(print_list (fun ppf () -> fprintf ppf ";@ ") printer) v
+		(print_list_with_depth 
+		   depth (fun ppf () -> fprintf ppf ";@ ") printer) v
 	  end
       | _ -> assert false);
 
-    Rtype.array, (fun printers ppf v ->
+    Rtype.array, (fun printers depth ppf v ->
+      if over_depth depth then fprintf ppf "..." else
       match printers with
       | [printer] ->
 	  begin match Array.to_list (Obj.obj v) with
 	  | [] -> fprintf ppf "[||]"
 	  | v -> 
 	      fprintf ppf "@[<3>[| %a |]@]" 
-		(print_list (fun ppf () -> fprintf ppf ";@ ") printer) v
+		(print_list_with_depth
+		   depth (fun ppf () -> fprintf ppf ";@ ") printer) v
 	  end
       | _ -> assert false)
       
   ]
 
-type printer = Rtype.type_expr -> Format.formatter -> Obj.t -> unit
+type printer = Rtype.type_expr -> depth_info -> Format.formatter -> Obj.t -> unit
 
-let gen_print self max_depth depth ty ppf v =
+let gen_print (self : printer) ty depth ppf v =
 
-  Format.eprintf "%d/%d" depth max_depth;
-  if depth > max_depth then fprintf ppf "..." else
-  let self = self max_depth (depth + 1) in
+  if over_depth depth then print_dots ppf else
+  let depth' = incr_depth depth in
 
   let rec gen_print ty ppf v =
     match ty.desc with
@@ -86,7 +107,7 @@ let gen_print self max_depth depth ty ppf v =
   	  | t::ts -> (t, Obj.field v pos) :: bind (pos+1) ts
 	in
 	fprintf ppf "(@[%a@])" 
-  	  (print_tuple (fun ppf (t,v) -> self t ppf v)) (bind 0 ts)
+  	  (print_tuple (fun ppf (t,v) -> self t depth' ppf v)) (bind 0 ts)
     | Tconstr ((_, Box decl), args) -> 
 	try
 	  (* call printers of base types *)
@@ -98,7 +119,7 @@ let gen_print self max_depth depth ty ppf v =
 		begin match decl.type_manifest with
 		| Some t ->
 		    let s = List.combine decl.type_params args in
-		    self (Rtype.subst s t) ppf v
+		    self (Rtype.subst s t) depth ppf v
 		| None -> fprintf ppf "<abstr>"
 		end
 	    | Type_variant ([], _) -> 
@@ -112,9 +133,9 @@ let gen_print self max_depth depth ty ppf v =
 		print_float_record ppf decl args labels v
 
   and print_base ppf decl args v =
-    let printer = List.assq decl printers in
+    let printer = List.assq decl base_printers in
     let sub_printers = List.map self args in
-    printer sub_printers ppf v
+    printer sub_printers depth ppf v
 
   and print_variant ppf decl args cnstrs v =
     if Obj.is_int v then
@@ -147,27 +168,24 @@ let gen_print self max_depth depth ty ppf v =
 	get_fields 0 args
       in
       match List.combine subprinters fields with
-      | [sprt, field] -> 
-	  fprintf ppf "@[%s (%a)@]" cnst sprt field
+      | [sprt, field] -> fprintf ppf "@[%s (%a)@]" cnst (sprt depth') field
       | sprtfields -> 
 	  let rec print_args ppf = function
 	    | [] -> ()
-	    | [p,v] -> p ppf v
+	    | [p,v] -> p depth' ppf v
 	    | (p,v)::pvs -> 
 		fprintf ppf "%a,@,%a" 
-		  p v 
+		  (p depth') v 
 		  print_args pvs
 	  in
-	  fprintf ppf "@[%s (@[%a@])@]" cnst
-	    print_args sprtfields
+	  fprintf ppf "@[<2>%s@ (@[%a@])@]" cnst print_args sprtfields
     end
 
   and print_regular_record ppf decl args labels v =
     let sub = List.combine decl.type_params args in
     (* sub printer prints label and content *)
     let labels_and_subprinters = 
-      List.map (fun (l,_,t) -> 
-	l, self (Rtype.subst sub t)) labels
+      List.map (fun (l,_,t) -> l, self (Rtype.subst sub t) depth') labels
     in
     let fields =
       let rec get_fields p = function
@@ -187,7 +205,7 @@ let gen_print self max_depth depth ty ppf v =
     (* sub printer prints label and content *)
     let labels_and_subprinters = 
       List.map (fun (l,_,t) -> 
-	l, self (Rtype.subst sub t)) labels
+	l, self (Rtype.subst sub t) depth') labels
     in
     let values_as_float = 
       Array.to_list (Obj.obj v : float array) 
@@ -201,11 +219,13 @@ let gen_print self max_depth depth ty ppf v =
 
   gen_print ty ppf v 
     
-let rec printer maxdepth depth ty ppf v = 
-  gen_print printer maxdepth depth ty ppf v
+let rec printer ty depth ppf v = gen_print printer ty depth ppf v
 
-let printer = printer 10 0
+let printer ty ?(max_depth=20) ppf v = 
+  printer ty { max_depth=max_depth; cur_depth=0 } ppf v
 
-generic val print : {'a} => formatter -> 'a -> unit = printer
+let eprinter ty ?max_depth v = Format.eprintf "%a@." (printer ty ?max_depth) v 
 
-let eprint v = Format.eprintf "X %a@." print v 
+generic val print : {'a} => ?max_depth: int -> formatter -> 'a -> unit = printer
+generic val eprint : {'a} => ?max_depth: int -> 'a -> unit = eprinter
+

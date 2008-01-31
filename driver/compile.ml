@@ -142,7 +142,10 @@ let implementation ppf sourcefile outputprefix =
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Unused_var.warn ppf
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
-      ++ Translmod.transl_implementation modulename
+      ++ (fun x ->
+	let debug = sourcefile = "camlp4/Camlp4/Printers/DumpCamlp4Ast.ml" in
+	if debug then XGprint.eprint x;
+	Translmod.transl_implementation modulename x)
       ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Simplif.simplify_lambda
       ++ print_if ppf Clflags.dump_lambda Printlambda.lambda

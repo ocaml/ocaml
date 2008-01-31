@@ -13,12 +13,17 @@
 
 (* $Id$ *)
 
-type printer = Rtype.type_expr -> Format.formatter -> Obj.t -> unit
+open Rtype
 
-val gen_print : (int -> int -> printer) -> (int -> int -> printer)
+type depth_info = { max_depth : int; cur_depth : int; }
+type base_printer = depth_info -> Format.formatter -> Obj.t -> unit
+val base_printers : 
+    (type_declaration * (base_printer list -> base_printer)) list
 
-val print : { 'a } => Format.formatter -> 'a -> unit
+type printer = type_expr -> depth_info -> Format.formatter -> Obj.t -> unit
 
-val eprint :
-    { Format.formatter -> 'b -> unit < 
-      { 'a } => Format.formatter -> 'a -> unit } => 'b -> unit
+val gen_print : printer -> printer
+
+val printer : type_expr -> ?max_depth: int -> Format.formatter -> Obj.t -> unit
+val print : { 'a } => ?max_depth: int -> Format.formatter -> 'a -> unit
+val eprint : { 'a } => ?max_depth: int -> 'a -> unit
