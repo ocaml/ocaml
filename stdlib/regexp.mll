@@ -471,13 +471,16 @@ let type_regexp re =
     | Recursive _ -> ()
   in
 
-  let pos = ref 1 in
-  let rec give_numbers_for_named_callouts = function
-    | [] -> []
-    | s::ss ->
-	while List.mem !pos !callouts do incr pos done;
-	if !pos = 255 then raise Too_many_callouts;
-	(s, !pos) :: give_numbers_for_named_callouts ss
+  let give_numbers_for_named_callouts = 
+    let pos = ref 1 in
+    let rec f = function
+      | [] -> []
+      | s::ss ->
+	  while List.mem !pos !callouts do incr pos done;
+	  if !pos = 255 then raise Too_many_callouts;
+	  (s, !pos) :: f ss
+    in
+    f 
   in
 
   regexp re;
@@ -641,7 +644,6 @@ class virtual result ty groups =
   method _group n = groups.(n)
   method _unsafe_group n = Array.unsafe_get groups n
   method _named_group s = List.assoc s named_groups
-  method virtual _0 : string
 end
 
 type 'a t = {
@@ -650,7 +652,4 @@ type 'a t = {
     result : result;
   }
 
-let string t = t.string 
-
 }
-

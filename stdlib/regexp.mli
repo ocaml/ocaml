@@ -18,9 +18,6 @@ class virtual result : typ -> string array -> object
   method _group : int -> string
   method _unsafe_group : int -> string
   method _named_group : string -> string
-  method virtual _0 : string
 end
 
 type 'a t
-
-val string : 'a t -> string

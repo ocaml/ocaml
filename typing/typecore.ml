@@ -1765,7 +1765,6 @@ let rec type_exp env kset sexp =
   | Pexp_regexp r -> 
       let regexp = Regexp.from_string r in
       let t = Regexp.type_regexp regexp in
-
       let result_creation_code =
 	let pexp desc = { pexp_desc= desc; pexp_loc= Location.none }
 	and ppat desc = { ppat_desc= desc; ppat_loc= Location.none }
@@ -1809,8 +1808,7 @@ let rec type_exp env kset sexp =
 		  :: named ss
 	      | [] -> []
 	    in
-	    (* 0 always exists *)
-	    numbered 0 @ named t.Regexp.named_groups
+	    numbered 1 @ named t.Regexp.named_groups
 	  in
   	  List.map (fun (n,code) -> 
   	    Pcf_meth (n, Public, polyexp code, Location.none)) name_codes
