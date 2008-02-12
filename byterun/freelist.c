@@ -263,7 +263,7 @@ void caml_fl_add_blocks (char *bp)
   if (bp > fl_last){
     Next (fl_last) = bp;
     if (fl_last == caml_fl_merge && bp < caml_gc_sweep_hp){
-      caml_fl_merge = Field (bp, 1);
+      caml_fl_merge = (char *) Field (bp, 1);
     }
   }else{
     char *cur, *prev;
@@ -281,7 +281,7 @@ void caml_fl_add_blocks (char *bp)
        we must advance [caml_fl_merge] to the new block, so that [caml_fl_merge]
        is always the last free-list block before [caml_gc_sweep_hp]. */
     if (prev == caml_fl_merge && bp < caml_gc_sweep_hp){
-      caml_fl_merge = Field (bp, 1);
+      caml_fl_merge = (char *) Field (bp, 1);
     }
   }
 }

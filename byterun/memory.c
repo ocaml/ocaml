@@ -211,9 +211,9 @@ static char *expand_heap (mlsize_t request)
     caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
 #endif
     Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
-    Field (Op_hp (hp), 0) = NULL;
+    Field (Op_hp (hp), 0) = (value) NULL;
   }else{
-    Field (Op_hp (prev), 0) = NULL;
+    Field (Op_hp (prev), 0) = (value) NULL;
     if (remain == 1) Hd_hp (hp) = Make_header (0, 0, Caml_white);
   }
   Assert (Wosize_hp (mem) >= request);
