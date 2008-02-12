@@ -68,9 +68,10 @@ static void fl_check (void)
     cur = Next (prev);
   }
   Assert (prev_found || fl_prev == Fl_head);
-  Assert (merge_found || caml_fl_merge == Fl_head);
+  Assert (merge_found || caml_fl_merge == Fl_head); /* XXX check caml_gc_sweep_hp */
   Assert (size_found == caml_fl_cur_size);
 }
+
 #endif
 
 /* [allocate_block] is called by [caml_fl_allocate].  Given a suitable free
@@ -109,7 +110,7 @@ static char *allocate_block (mlsize_t wh_sz, char *prev, char *cur)
   }
   fl_prev = prev;
   return cur + Bosize_hd (h) - Bsize_wsize (wh_sz);
-}  
+}
 
 /* [caml_fl_allocate] does not set the header of the newly allocated block.
    The calling function must do it before any GC function gets called.
@@ -175,14 +176,9 @@ char *caml_fl_merge_block (char *bp)
   mlsize_t prev_wosz;
 
   caml_fl_cur_size += Whsize_hd (hd);
-  
+
 #ifdef DEBUG
-  {
-    mlsize_t i;
-    for (i = 0; i < Wosize_hd (hd); i++){
-      Field (Val_bp (bp), i) = Debug_free_major;
-    }
-  }
+  caml_set_fields (bp, 0, Debug_free_major);
 #endif
   prev = caml_fl_merge;
   cur = Next (prev);
@@ -249,29 +245,26 @@ char *caml_fl_merge_block (char *bp)
 
 /* This is a heap extension.  We have to insert it in the right place
    in the free-list.
-   [caml_fl_add_block] can only be called right after a call to
+   [caml_fl_add_blocks] can only be called right after a call to
    [caml_fl_allocate] that returned NULL.
    Most of the heap extensions are expected to be at the end of the
    free list.  (This depends on the implementation of [malloc].)
+
+   [bp] must point to a list of blocks chained by their field 0,
+   terminated by NULL, and field 1 of the first block must point to
+   the last block.
 */
-void caml_fl_add_block (char *bp)
+void caml_fl_add_blocks (char *bp)
 {
                                                    Assert (fl_last != NULL);
                                             Assert (Next (fl_last) == NULL);
-#ifdef DEBUG
-  {
-    mlsize_t i;
-    for (i = 0; i < Wosize_bp (bp); i++){
-      Field (Val_bp (bp), i) = Debug_free_major;
-    }
-  }
-#endif
-
   caml_fl_cur_size += Whsize_bp (bp);
 
   if (bp > fl_last){
     Next (fl_last) = bp;
-    Next (bp) = NULL;
+    if (fl_last == caml_fl_merge && bp < caml_gc_sweep_hp){
+      caml_fl_merge = Field (bp, 1);
+    }
   }else{
     char *cur, *prev;
 
@@ -282,12 +275,14 @@ void caml_fl_add_block (char *bp)
       cur = Next (prev);
     }                                  Assert (prev < bp || prev == Fl_head);
                                             Assert (cur > bp || cur == NULL);
-    Next (bp) = cur;
+    Next (Field (bp, 1)) = cur;
     Next (prev) = bp;
-    /* When inserting a block between [caml_fl_merge] and [caml_gc_sweep_hp],
+    /* When inserting blocks between [caml_fl_merge] and [caml_gc_sweep_hp],
        we must advance [caml_fl_merge] to the new block, so that [caml_fl_merge]
        is always the last free-list block before [caml_gc_sweep_hp]. */
-    if (prev == caml_fl_merge && bp <= caml_gc_sweep_hp) caml_fl_merge = bp;
+    if (prev == caml_fl_merge && bp < caml_gc_sweep_hp){
+      caml_fl_merge = Field (bp, 1);
+    }
   }
 }
 

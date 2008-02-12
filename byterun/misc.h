@@ -132,6 +132,8 @@ char *caml_aligned_malloc (asize_t, int, void **);
 #define Debug_filler_align   Debug_tag (0x85)
 
 #define Debug_uninit_stat    0xD7
+
+extern void caml_set_fields (char *, unsigned long, unsigned long);
 #endif /* DEBUG */
 
 

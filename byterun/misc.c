@@ -29,6 +29,14 @@ int caml_failed_assert (char * expr, char * file, int line)
   return 1; /* not reached */
 }
 
+void caml_set_fields (char *bp, unsigned long start, unsigned long filler)
+{
+  mlsize_t i;
+  for (i = start; i < Wosize_bp (bp); i++){
+    Field (Val_bp (bp), i) = (value) filler;
+  }
+}
+
 #endif /* DEBUG */
 
 uintnat caml_verb_gc = 0;
@@ -54,7 +62,7 @@ CAMLexport void caml_fatal_error_arg (char *fmt, char *arg)
 }
 
 CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
-				       char *fmt2, char *arg2)
+                                       char *fmt2, char *arg2)
 {
   fprintf (stderr, fmt1, arg1);
   fprintf (stderr, fmt2, arg2);

@@ -2,6 +2,13 @@ Objective Caml 3.10.1:
 ----------------------
 
 Bug fixes:
+- Random crash on 32-bit when major_heap_increment > 4Mi
+- Big performance bug in Weak hashtables
+
+Objective Caml 3.10.1:
+----------------------
+
+Bug fixes:
 - PR#3830 small bugs in docs
 - PR#4053 compilers: improved compilation time for large variant types
 - PR#4174 ocamlopt: fixed ocamlopt -nopervasives
