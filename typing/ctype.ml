@@ -2068,8 +2068,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
   | Tunivar, _ | _, Tunivar ->
       raise (Unify [])
   | _ when static_row row1 -> ()
-  | _ ->
-      if not may_inst then raise (Unify []);
+  | _ when may_inst ->
       if not (static_row row2) then moregen_occur env rm1.level rm2;
       let ext =
         if r2 = [] then rm2 else
@@ -2078,6 +2077,9 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
         newty2 rm1.level (Tvariant row_ext)
       in
       link_type rm1 ext
+  | Tconstr _, Tconstr _ ->
+      moregen inst_nongen type_pairs env rm1 rm2
+  | _ -> raise (Unify [])
   end;
   List.iter
     (fun (l,f1,f2) ->
