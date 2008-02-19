@@ -63,12 +63,16 @@ static void fl_check (void)
     size_found += Whsize_bp (cur);
     Assert (Is_in_heap (cur));
     if (cur == fl_prev) prev_found = 1;
-    if (cur == caml_fl_merge) merge_found = 1;
+    if (cur == caml_fl_merge){
+      merge_found = 1;
+      Assert (cur <= caml_gc_sweep_hp);
+      Assert (Next (cur) == NULL || Next (cur) > caml_gc_sweep_hp);
+    }
     prev = cur;
     cur = Next (prev);
   }
   Assert (prev_found || fl_prev == Fl_head);
-  Assert (merge_found || caml_fl_merge == Fl_head); /* XXX check caml_gc_sweep_hp */
+  Assert (merge_found || caml_fl_merge == Fl_head);
   Assert (size_found == caml_fl_cur_size);
 }
 
