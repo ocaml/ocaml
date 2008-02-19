@@ -1,12 +1,14 @@
 color.o: color.c libgraph.h \
   \
   \
+  \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/compatibility.h \
   ../../byterun/misc.h ../../byterun/compatibility.h \
   ../../byterun/config.h
 draw.o: draw.c libgraph.h \
+  \
   \
   \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
@@ -17,6 +19,7 @@ draw.o: draw.c libgraph.h \
   ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/mlvalues.h
 dump_img.o: dump_img.c libgraph.h \
+  \
   \
   \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
@@ -34,6 +37,7 @@ dump_img.o: dump_img.c libgraph.h \
 events.o: events.c libgraph.h \
   \
   \
+  \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/compatibility.h \
@@ -44,6 +48,7 @@ events.o: events.c libgraph.h \
   ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/mlvalues.h
 fill.o: fill.c libgraph.h \
+  \
   \
   \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
@@ -59,6 +64,7 @@ fill.o: fill.c libgraph.h \
 image.o: image.c libgraph.h \
   \
   \
+  \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/compatibility.h \
@@ -68,6 +74,7 @@ image.o: image.c libgraph.h \
   ../../byterun/mlvalues.h ../../byterun/custom.h \
   ../../byterun/compatibility.h ../../byterun/mlvalues.h
 make_img.o: make_img.c libgraph.h \
+  \
   \
   \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
@@ -81,6 +88,7 @@ make_img.o: make_img.c libgraph.h \
   ../../byterun/misc.h ../../byterun/minor_gc.h ../../byterun/misc.h \
   ../../byterun/misc.h ../../byterun/mlvalues.h
 open.o: open.c libgraph.h \
+  \
   \
   \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
@@ -101,12 +109,14 @@ open.o: open.c libgraph.h \
 point_col.o: point_col.c libgraph.h \
   \
   \
+  \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/compatibility.h \
   ../../byterun/misc.h ../../byterun/compatibility.h \
   ../../byterun/config.h
 sound.o: sound.c libgraph.h \
+  \
   \
   \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
@@ -117,12 +127,14 @@ sound.o: sound.c libgraph.h \
 subwindow.o: subwindow.c libgraph.h \
   \
   \
+  \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/compatibility.h \
   ../../byterun/misc.h ../../byterun/compatibility.h \
   ../../byterun/config.h
 text.o: text.c libgraph.h \
+  \
   \
   \
   ../../byterun/mlvalues.h ../../byterun/compatibility.h \

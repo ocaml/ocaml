@@ -1,9 +1,17 @@
-Objective Caml 3.10.1:
+Objective Caml 3.10.2:
 ----------------------
 
 Bug fixes:
+- PR#1217 (partial) Typo in ocamldep man page
+- PR#4455 str.mli not installed under Windows
+- PR#4473 crash when accessing float array with polymorphic method
+- PR#4480 runtime would not compile without gcc extensions
+- PR#4481 wrong typing of exceptions with object arguments
+- PR#4490 typo in error message
 - Random crash on 32-bit when major_heap_increment > 4Mi
 - Big performance bug in Weak hashtables
+- Small bugs in the make-package-macosx script
+- Bug in typing of polymorphic variants (reported on caml-list)
 
 Objective Caml 3.10.1:
 ----------------------

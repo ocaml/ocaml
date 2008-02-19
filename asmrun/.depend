@@ -252,7 +252,7 @@ minor_gc.o: minor_gc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/misc.h ../byterun/minor_gc.h ../byterun/misc.h \
   ../byterun/misc.h ../byterun/mlvalues.h ../byterun/gc_ctrl.h \
   ../byterun/misc.h ../byterun/signals.h ../byterun/misc.h \
-  ../byterun/mlvalues.h
+  ../byterun/mlvalues.h ../byterun/weak.h ../byterun/mlvalues.h
 misc.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/memory.h ../byterun/config.h ../byterun/gc.h \
@@ -620,7 +620,7 @@ minor_gc.d.o: minor_gc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/misc.h ../byterun/minor_gc.h ../byterun/misc.h \
   ../byterun/misc.h ../byterun/mlvalues.h ../byterun/gc_ctrl.h \
   ../byterun/misc.h ../byterun/signals.h ../byterun/misc.h \
-  ../byterun/mlvalues.h
+  ../byterun/mlvalues.h ../byterun/weak.h ../byterun/mlvalues.h
 misc.d.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/memory.h ../byterun/config.h ../byterun/gc.h \
@@ -988,7 +988,7 @@ minor_gc.p.o: minor_gc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/misc.h ../byterun/minor_gc.h ../byterun/misc.h \
   ../byterun/misc.h ../byterun/mlvalues.h ../byterun/gc_ctrl.h \
   ../byterun/misc.h ../byterun/signals.h ../byterun/misc.h \
-  ../byterun/mlvalues.h
+  ../byterun/mlvalues.h ../byterun/weak.h ../byterun/mlvalues.h
 misc.p.o: misc.c ../byterun/config.h ../byterun/../config/m.h \
   ../byterun/../config/s.h ../byterun/misc.h ../byterun/config.h \
   ../byterun/memory.h ../byterun/config.h ../byterun/gc.h \
