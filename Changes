@@ -3,6 +3,7 @@ Objective Caml 3.10.2:
 
 Bug fixes:
 - PR#1217 (partial) Typo in ocamldep man page
+- PR#4339 continued: ocamlopt problems on HPPA
 - PR#4455 str.mli not installed under Windows
 - PR#4473 crash when accessing float array with polymorphic method
 - PR#4480 runtime would not compile without gcc extensions
