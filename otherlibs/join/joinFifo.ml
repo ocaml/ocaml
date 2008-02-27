@@ -55,4 +55,30 @@ let create_prod_cons () =
   { P.put = f.put ; P.close = f.close ; },
   { C.get = f.get ; C.kill = f.kill ; }
 
+module S = struct
+  exception Closed
 
+  type 'a t =
+    { put : 'a -> unit ;
+      get :  unit -> 'a ;
+      close : unit -> unit ;
+      kill : unit -> unit ; }
+end
+
+let create_sync () =
+  let f = create () in
+  def put(v) =
+    def k(true) & wait() = reply to wait
+    or  k(false) & wait() = reply raise S.Closed to wait in
+    f.put(v,k) & reply wait() to put in
+  def get() =
+    def k(Some v) & wait() = reply v to wait
+    or  k(None) & wait()  = reply raise S.Closed to wait in
+    f.get(k) & reply wait () to get in
+  def kill() = f.kill() & reply to kill in
+  {
+   S.put = put ;
+   S.get = get ;
+   S.close = f.close ;
+   S.kill = kill ;
+  }

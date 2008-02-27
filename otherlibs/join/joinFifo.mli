@@ -98,4 +98,35 @@ module C :
 
 val create_prod_cons : unit -> 'a P.t * 'a C.t
 (** Create a pair of producer/consumer connected by
-    a fifo. *)
+    a fifo.
+    Producer have the put and close operations, while consumer
+    have the get and kill operations. *)
+
+(** {6 Synchronous interface} *)
+
+(** Type of fifo with synchronous operations *)
+
+module S : sig
+  exception Closed
+
+  type 'a t =
+    { put : 'a -> unit ;
+      get :  unit -> 'a ;
+      close : unit -> unit ;
+      kill : unit -> unit ; }
+end
+
+
+val create_sync : unit -> 'a S.t
+(** Records of type 'a S.t offer the same fields as the ones of
+    type ['a t], but they hold synchronous channels (of functional
+    type)
+
+     - [put] of type ['a -> unit] either returns (when successful)
+       or raise the exception [S.Closed].
+     - [get] follows the same behavior.
+     - [close] of type [unit -> unit] closes the fifo,
+       returning when the fifo is empty.
+*)       
+       
+
