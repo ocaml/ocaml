@@ -109,8 +109,8 @@ let really_create_process f =
     Some t
   with
   | e ->
-(*DEBUG*)debug1 "REAL FORK FAILED"
-(*DEBUG*)  "%s, %s" (tasks_status ()) (Printexc.to_string e) ;
+      debug "REAL FORK FAILED"
+	"%s, %s" (tasks_status ()) (Printexc.to_string e) ;
       decr_locked nthreads_mutex nthreads ;
       None
       
