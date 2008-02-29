@@ -28,7 +28,7 @@ char *caml_fl_allocate (mlsize_t);
 void caml_fl_init_merge (void);
 void caml_fl_reset (void);
 char *caml_fl_merge_block (char *);
-void caml_fl_add_block (char *);
+void caml_fl_add_blocks (char *);
 void caml_make_free_blocks (value *, mlsize_t, int);
 
 

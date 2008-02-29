@@ -38,7 +38,7 @@ extern void caml_shrink_heap (char *);              /* memory.c */
    1: integer or (unencoded) infix header
    2: inverted pointer for infix header
    3: integer or encoded (noninfix) header
-   
+
   XXX Should be fixed:
   XXX The above assumes that all roots are aligned on a 4-byte boundary,
   XXX which is not always guaranteed by C.
@@ -203,7 +203,7 @@ void caml_compact_heap (void)
         while (Ecolor (q) == 0) q = * (word *) q;
         sz = Whsize_ehd (q);
         t = Tag_ehd (q);
-        
+
         if (t == Infix_tag){
           /* Get the original header of this block. */
           infixes = p + sz;
@@ -252,18 +252,18 @@ void caml_compact_heap (void)
     ch = caml_heap_start;
     while (ch != NULL){
       word *p = (word *) ch;
-      
+
       chend = ch + Chunk_size (ch);
       while ((char *) p < chend){
         word q = *p;
-        
+
         if (Ecolor (q) == 0 || Tag_ehd (q) == Infix_tag){
           /* There were (normal or infix) pointers to this block. */
           size_t sz;
           tag_t t;
           char *newadr;
           word *infixes = NULL;
-          
+
           while (Ecolor (q) == 0) q = * (word *) q;
           sz = Whsize_ehd (q);
           t = Tag_ehd (q);
@@ -393,7 +393,7 @@ void caml_compact_heap (void)
   caml_gc_message (0x10, "done.\n", 0);
 }
 
-uintnat caml_percent_max;  /* used in gc_ctrl.c */
+uintnat caml_percent_max;  /* used in gc_ctrl.c and memory.c */
 
 void caml_compact_heap_maybe (void)
 {
@@ -408,7 +408,7 @@ void caml_compact_heap_maybe (void)
   float fw, fp;
                                           Assert (caml_gc_phase == Phase_idle);
   if (caml_percent_max >= 1000000) return;
-  if (caml_stat_major_collections < 5 || caml_stat_heap_chunks < 2) return;
+  if (caml_stat_major_collections < 3 || caml_stat_heap_chunks < 3) return;
 
   fw = 3.0 * caml_fl_cur_size - 2.0 * caml_fl_size_at_phase_change;
   if (fw < 0) fw = caml_fl_cur_size;

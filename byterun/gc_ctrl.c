@@ -457,10 +457,6 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
 {
   uintnat major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
-#ifdef DEBUG
-  caml_gc_message (-1, "### O'Caml runtime: debug mode ###\n", 0);
-#endif
-
   caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size);
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
   caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));

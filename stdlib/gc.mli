@@ -86,7 +86,7 @@ type control =
 
     mutable major_heap_increment : int;
     (** The minimum number of words to add to the
-       major heap when increasing it.  Default: 62k. *)
+       major heap when increasing it.  Default: 124k. *)
 
     mutable space_overhead : int;
     (** The major GC speed is computed from this parameter.
