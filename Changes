@@ -10,7 +10,7 @@ Bug fixes:
 - PR#4480 runtime would not compile without gcc extensions
 - PR#4481 wrong typing of exceptions with object arguments
 - PR#4490 typo in error message
-- Random crash on 32-bit when major_heap_increment > 4Mi
+- Random crash on 32-bit when major_heap_increment >= 2^22
 - Big performance bug in Weak hashtables
 - Small bugs in the make-package-macosx script
 - Bug in typing of polymorphic variants (reported on caml-list)
