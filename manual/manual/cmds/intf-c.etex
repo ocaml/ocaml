@@ -621,7 +621,7 @@ $\hbox{"Wosize_val"}(v)-1$.
 \var{v} in the field number \var{n} of value \var{b}, which must be a
 structured block.
 \item "Code_val("\var{v}")" returns the code part of the closure \var{v}.
-\item "string_length("\var{v}")" returns the length (number of characters)
+\item "caml_string_length("\var{v}")" returns the length (number of characters)
 of the string \var{v}.
 \item "Byte("\var{v}", "\var{n}")" returns the $n\th$ character of the string
 \var{v}, with type "char". Characters are numbered from 0 to
