@@ -131,9 +131,6 @@ defaultentry:
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
   otherlibraries ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc
 
-# The compilation of ocaml will fail if the runtime has changed.
-# Never mind, just do make bootstrap to reach fixpoint again.
-
 # Compile everything the first time
 world:
 	$(MAKE) coldstart
@@ -143,6 +140,17 @@ world:
 world.opt:
 	$(MAKE) coldstart
 	$(MAKE) opt.opt
+
+# Hard bootstrap how-to:
+# (only necessary in some cases, for example if you remove some primitive)
+#
+# make coreboot     [old system -- you were in a stable state]
+# <change the source>
+# make core         [cross-compiler]
+# make partialclean [if you get "inconsistent assumptions"]
+# <debug your changes>
+# make core         [cross-compiler]
+# make coreboot     [new system -- now you are in a stable state]
 
 # Core bootstrapping cycle
 coreboot:
@@ -166,6 +174,8 @@ coreboot:
 	$(MAKE) compare
 
 # Bootstrap and rebuild the whole system.
+# The compilation of ocaml will fail if the runtime has changed.
+# Never mind, just do make bootstrap to reach fixpoint again.
 bootstrap:
 	$(MAKE) coreboot
 	$(MAKE) all
@@ -707,10 +717,7 @@ checkstack:
 
 package-macosx:
 	sudo rm -rf package-macosx/root
-	make BINDIR="`pwd`"/package-macosx/root/bin \
-	     LIBDIR="`pwd`"/package-macosx/root/lib/ocaml \
-	     MANDIR="`pwd`"/package-macosx/root/man \
-             install
+	make PREFIX="`pwd`"/package-macosx/root install
 	tools/make-package-macosx
 	sudo rm -rf package-macosx/root
 
