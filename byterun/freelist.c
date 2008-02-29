@@ -88,6 +88,7 @@ static void fl_check (void)
   Assert (merge_found || caml_fl_merge == Fl_head);
   Assert (size_found == caml_fl_cur_size);
 }
+
 #endif
 
 /* [allocate_block] is called by [caml_fl_allocate].  Given a suitable free

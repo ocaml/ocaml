@@ -1479,16 +1479,16 @@ let report_error ppf = function
         "This pattern cannot match self: it only matches values of type"
         Printtyp.type_expr ty
   | Unbound_class cl ->
-      fprintf ppf "Unbound class@ %a"
+      fprintf ppf "@[Unbound class@ %a@]"
       Printtyp.longident cl
   | Unbound_class_2 cl ->
-      fprintf ppf "The class@ %a@ is not yet completely defined"
+      fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Unbound_class_type cl ->
-      fprintf ppf "Unbound class type@ %a"
+      fprintf ppf "@[Unbound class type@ %a@]"
       Printtyp.longident cl
   | Unbound_class_type_2 cl ->
-      fprintf ppf "The class type@ %a@ is not yet completely defined"
+      fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
       (* XXX Afficher une trace ? *)

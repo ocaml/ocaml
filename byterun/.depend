@@ -42,10 +42,9 @@ fix_code.o: fix_code.c config.h ../config/m.h ../config/s.h \
 floats.o: floats.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h reverse.h stacks.h
-freelist-new.o: freelist-new.c config.h ../config/m.h ../config/s.h \
-  compatibility.h freelist.h misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
 freelist.o: freelist.c config.h ../config/m.h ../config/s.h \
-  compatibility.h freelist.h misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
+  compatibility.h freelist.h misc.h mlvalues.h gc.h gc_ctrl.h memory.h \
+  major_gc.h minor_gc.h
 gc_ctrl.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h compact.h custom.h finalise.h \
   roots.h memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h \
@@ -179,10 +178,9 @@ fix_code.d.o: fix_code.c config.h ../config/m.h ../config/s.h \
 floats.d.o: floats.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h reverse.h stacks.h
-freelist-new.d.o: freelist-new.c config.h ../config/m.h ../config/s.h \
-  compatibility.h freelist.h misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
 freelist.d.o: freelist.c config.h ../config/m.h ../config/s.h \
-  compatibility.h freelist.h misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
+  compatibility.h freelist.h misc.h mlvalues.h gc.h gc_ctrl.h memory.h \
+  major_gc.h minor_gc.h
 gc_ctrl.d.o: gc_ctrl.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h compact.h custom.h finalise.h \
   roots.h memory.h gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h \

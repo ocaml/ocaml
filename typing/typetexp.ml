@@ -386,8 +386,12 @@ and transl_fields env policy =
   function
     [] ->
       newty Tnil
-  | {pfield_desc = Pfield_var}::_ ->
-      if policy = Univars then new_pre_univar () else newvar ()
+  | ({pfield_desc = Pfield_var} as pf)::_ ->
+      begin match policy with
+        Fixed -> raise (Error (pf.pfield_loc, Unbound_type_variable ".."))
+      | Extensible -> newvar ()
+      | Univars -> new_pre_univar ()
+      end
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy e in
       let ty2 = transl_fields env policy l in

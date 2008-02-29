@@ -125,7 +125,7 @@ type control =
     mutable stack_limit : int;
     (** The maximum size of the stack (in words).  This is only
        relevant to the byte-code runtime, as the native code runtime
-       uses the operating system's stack.  Default: 256k. *) 
+       uses the operating system's stack.  Default: 256k. *)
 }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the

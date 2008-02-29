@@ -35,6 +35,23 @@ Other libraries:
   been compiled in bytecode or in native code.
 
 
+Objective Caml 3.10.2:
+----------------------
+
+Bug fixes:
+- PR#1217 (partial) Typo in ocamldep man page
+- PR#3952 (partial) ocamlopt: allocation problems on ARM
+- PR#4339 (continued) ocamlopt: problems on HPPA
+- PR#4455 str.mli not installed under Windows
+- PR#4473 crash when accessing float array with polymorphic method
+- PR#4480 runtime would not compile without gcc extensions
+- PR#4481 wrong typing of exceptions with object arguments
+- PR#4490 typo in error message
+- Random crash on 32-bit when major_heap_increment >= 2^22
+- Big performance bug in Weak hashtables
+- Small bugs in the make-package-macosx script
+- Bug in typing of polymorphic variants (reported on caml-list)
+
 Objective Caml 3.10.1:
 ----------------------
 
@@ -119,7 +136,7 @@ New features:
 - made configure script work on PlayStation 3
 - ARM port: brought up-to-date for Debian 4.0 (Etch)
 - many other small changes and bugfixes in camlp4, ocamlbuild, labltk,
-  emacs files,
+  emacs files
 
 
 Objective Caml 3.10.0:
@@ -2277,7 +2294,11 @@ Caml Special Light 1.06:
 * First public release.
 
 <<<<<<< Changes
+<<<<<<< Changes
 $Id$
 =======
 $Id$
 >>>>>>> 1.168.2.7
+=======
+$Id$
+>>>>>>> 1.168.2.13

@@ -1990,6 +1990,10 @@ let moregen_occur env level ty =
   occur_univar env ty;
   update_level env level ty
 
+let may_instantiate inst_nongen t1 =
+  if inst_nongen then t1.level <> generic_level - 1
+                 else t1.level =  generic_level
+
 let rec moregen inst_nongen type_pairs env t1 t2 =
   if t1 == t2 then () else
   let t1 = repr t1 in
@@ -2000,8 +2004,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
     match (t1.desc, t2.desc) with
       (Tunivar, Tunivar) ->
         unify_univar t1 t2 !univar_pairs
-    | (Tvar, _) when if inst_nongen then t1.level <> generic_level - 1
-                                    else t1.level =  generic_level ->
+    | (Tvar, _) when may_instantiate inst_nongen t1 ->
         moregen_occur env t1.level t2;
         occur env t1 t2;
         link_type t1 t2
@@ -2018,8 +2021,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         with Not_found ->
           TypePairs.add type_pairs (t1', t2') ();
           match (t1'.desc, t2'.desc) with
-            (Tvar, _) when if inst_nongen then t1'.level <> generic_level - 1
-                                          else t1'.level =  generic_level ->
+            (Tvar, _) when may_instantiate inst_nongen t1 ->
               moregen_occur env t1'.level t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -2081,33 +2083,36 @@ and moregen_kind k1 k2 =
 
 and moregen_row inst_nongen type_pairs env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
+  let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
+  if rm1 == rm2 then () else
+  let may_inst = rm1.desc = Tvar && may_instantiate inst_nongen rm1 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   let r1, r2 =
     if row2.row_closed then
-      filter_row_fields true r1, filter_row_fields false r2
+      filter_row_fields may_inst r1, filter_row_fields false r2
     else r1, r2
   in
   if r1 <> [] || row1.row_closed && (not row2.row_closed || r2 <> [])
   then raise (Unify []);
-  let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
-  let univ =
-    match rm1.desc, rm2.desc with
-      Tunivar, Tunivar ->
-        unify_univar rm1 rm2 !univar_pairs;
-        true
-    | Tunivar, _ | _, Tunivar ->
-        raise (Unify [])
-    | _ ->
-        if not (static_row row2) then moregen_occur env rm1.level rm2;
-        let ext =
-          if r2 = [] then rm2 else
-          let row_ext = {row2 with row_fields = r2} in
-          iter_row (moregen_occur env rm1.level) row_ext;
-          newty2 rm1.level (Tvariant row_ext)
-        in
-        if ext != rm1 then link_type rm1 ext;
-        false
-  in
+  begin match rm1.desc, rm2.desc with
+    Tunivar, Tunivar ->
+      unify_univar rm1 rm2 !univar_pairs
+  | Tunivar, _ | _, Tunivar ->
+      raise (Unify [])
+  | _ when static_row row1 -> ()
+  | _ when may_inst ->
+      if not (static_row row2) then moregen_occur env rm1.level rm2;
+      let ext =
+        if r2 = [] then rm2 else
+        let row_ext = {row2 with row_fields = r2} in
+        iter_row (moregen_occur env rm1.level) row_ext;
+        newty2 rm1.level (Tvariant row_ext)
+      in
+      link_type rm1 ext
+  | Tconstr _, Tconstr _ ->
+      moregen inst_nongen type_pairs env rm1 rm2
+  | _ -> raise (Unify [])
+  end;
   List.iter
     (fun (l,f1,f2) ->
       let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
@@ -2116,7 +2121,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
         Rpresent(Some t1), Rpresent(Some t2) ->
           moregen inst_nongen type_pairs env t1 t2
       | Rpresent None, Rpresent None -> ()
-      | Reither(false, tl1, _, e1), Rpresent(Some t2) when not univ ->
+      | Reither(false, tl1, _, e1), Rpresent(Some t2) when may_inst ->
           set_row_field e1 f2;
           List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
       | Reither(c1, tl1, _, e1), Reither(c2, tl2, m2, e2) ->
@@ -2132,9 +2137,9 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
             | [] ->
                 if tl1 <> [] then raise (Unify [])
           end
-      | Reither(true, [], _, e1), Rpresent None when not univ ->
+      | Reither(true, [], _, e1), Rpresent None when may_inst ->
           set_row_field e1 f2
-      | Reither(_, _, _, e1), Rabsent when not univ ->
+      | Reither(_, _, _, e1), Rabsent when may_inst ->
           set_row_field e1 f2
       | Rabsent, Rabsent -> ()
       | _ -> raise (Unify []))
