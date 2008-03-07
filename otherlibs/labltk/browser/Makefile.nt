@@ -10,8 +10,7 @@ endif
 
 OCAMLBR=threads.cma winmain.$(O) $(WINDOWS_APP)
 
-dummy.mli:
-	cp dummyWin.mli dummy.mli
-
 include Makefile.shared
 
+dummy.mli:
+	cp dummyWin.mli dummy.mli

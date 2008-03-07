@@ -39,7 +39,7 @@ ocamlbrowser.cma: jglib.cma $(OBJ)
 	$(CAMLC) -a -o $@ -linkall jglib.cma $(OBJ)
 
 jglib.cma: $(JG)
-	$(CAMLCOMP) -a -o jglib.cma $(JG)
+	$(CAMLC) -a -o $@ $(JG)
 
 help.ml:
 	echo 'let text = "\\' > $@
