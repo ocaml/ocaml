@@ -149,8 +149,8 @@ BNG_ASM_LEVEL=1
 # There must be no spaces or special characters in $(TK_ROOT)
 TK_ROOT=c:/tcl
 TK_DEFS=-I$(TK_ROOT)/include
-TK_LINK=$(TK_ROOT)/bin/tk83.dll $(TK_ROOT)/bin/tcl83.dll
-#TK_LINK=$(TK_ROOT)/lib/tk84.lib $(TK_ROOT)/lib/tcl84.lib
+TK_LINK=$(TK_ROOT)/bin/tk83.dll $(TK_ROOT)/bin/tcl83.dll -lwsock32
+#TK_LINK=$(TK_ROOT)/lib/tk84.lib $(TK_ROOT)/lib/tcl84.lib -lwsock32
 
 ############# Aliases for common commands
 
