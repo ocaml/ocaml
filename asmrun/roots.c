@@ -155,7 +155,6 @@ void caml_oldify_local_roots (void)
 #endif
   value glob;
   value * root;
-  struct global_root * gr;
   struct caml__roots_block *lr;
   link *lnk;
 
@@ -238,13 +237,11 @@ void caml_oldify_local_roots (void)
     }
   }
   /* Global C roots */
-  for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    Oldify (gr->root);
-  }
+  caml_scan_global_young_roots(&caml_oldify_one);
   /* Finalised values */
   caml_final_do_young_roots (&caml_oldify_one);
   /* Hook */
-  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(caml_oldify_one);
+  if (caml_scan_roots_hook != NULL) (*caml_scan_roots_hook)(&caml_oldify_one);
 }
 
 /* Call [darken] on all roots */
@@ -258,7 +255,6 @@ void caml_do_roots (scanning_action f)
 {
   int i, j;
   value glob;
-  struct global_root * gr;
   link *lnk;
 
   /* The global roots */
@@ -281,9 +277,7 @@ void caml_do_roots (scanning_action f)
   caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
                       caml_gc_regs, caml_local_roots);
   /* Global C roots */
-  for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    f(*(gr->root), gr->root);
-  }
+  caml_scan_global_roots(f);
   /* Finalised values */
   caml_final_do_strong_roots (f);
   /* Hook */
