@@ -61,8 +61,9 @@ not referenced anywhere in the program, then it is not linked in.
 
 \item
 Arguments ending in ".c" are passed to the C compiler, which generates
-a ".o" object file. This object file is linked with the program if the
-"-custom" flag is set (see the description of "-custom" below).
+a ".o" object file (".obj" under Windows). This object file is linked
+with the program if the "-custom" flag is set (see the description of
+"-custom" below).
 
 \item
 Arguments ending in ".o" or ".a" (".obj" or ".lib" under Windows)
@@ -102,6 +103,8 @@ the bytecode interpreter by itself.
 \section{Options}
 
 The following command-line options are recognized by "ocamlc".
+The options "-pack", "-a", "-c" and "-output-obj" are mutually exclusive.
+
 
 \begin{options}
 
@@ -255,7 +258,9 @@ Cause the linker to produce a C object file instead of a bytecode
 executable file. This is useful to wrap Caml code as a C library,
 callable from any C program. See chapter~\ref{c:intf-c},
 section~\ref{s:embedded-code}. The name of the output object file is
-"camlprog.o" by default; it can be set with the "-o" option.
+"camlprog.o" by default; it can be set with the "-o" option. This
+option can also be used to produce a C source file (".c" extension) or
+a compiled shared/dynamic library (".so" extension, ".dll" under Windows).
 
 \item["-pack"]
 Build a bytecode object file (".cmo" file) and its associated compiled

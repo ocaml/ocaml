@@ -44,7 +44,7 @@ compiler produces two files: \var{x}".o", containing native object code,
 and \var{x}".cmx", containing extra information for linking and
 optimization of the clients of the unit. The compiled implementation
 should always be referred to under the name \var{x}".cmx" (when given
-a ".o" file, "ocamlopt" assumes that it contains code compiled from C,
+a ".o" or ".obj" file, "ocamlopt" assumes that it contains code compiled from C,
 not from Caml).
 
 The implementation is checked against the interface file \var{x}".mli"
@@ -64,8 +64,8 @@ before all ".cmx" files that refer to the unit \var{x}.
 
 \item
 Arguments ending in ".cmxa" are taken to be libraries of object code.
-Such a library packs in two files (\var{lib}".cmxa" and \var{lib}".a")
-a set of object files (".cmx"/".o" files). Libraries are build with
+Such a library packs in two files (\var{lib}".cmxa" and \var{lib}".a"/".lib")
+a set of object files (".cmx" and ".o"/".obj" files). Libraries are build with
 "ocamlopt -a" (see the description of the "-a" option below). The object
 files contained in the library are linked as regular ".cmx" files (see
 above), in the order specified when the library was built. The only
@@ -74,7 +74,7 @@ referenced anywhere in the program, then it is not linked in.
 
 \item
 Arguments ending in ".c" are passed to the C compiler, which generates
-a ".o" object file. This object file is linked with the program.
+a ".o"/".obj" object file. This object file is linked with the program.
 
 \item
 Arguments ending in ".o", ".a" or ".so" (".obj", ".lib" and ".dll"
@@ -89,14 +89,15 @@ executable file. It does not need "ocamlrun" to run.
 \section{Options}
 
 The following command-line options are recognized by "ocamlopt".
+The options "-pack", "-a", "-shared", "-c" and "-output-obj" are mutually exclusive.
 
 \begin{options}
 
 \item["-a"]
-Build a library (".cmxa"/".a" file) with the object files (".cmx"/".o"
-files) given on the command line, instead of linking them into an
-executable file. The name of the library can be set with the "-o"
-option. The default name is "library.cmxa".
+Build a library (".cmxa" and ".a"/".lib" files) with the object files
+(".cmx" and ".o"/".obj" files) given on the command line, instead of
+linking them into an executable file. The name of the library must be
+set with the "-o" option.
 
 If "-cclib" or "-ccopt" options are passed on the command
 line, these options are stored in the resulting ".cmxa" library.  Then,
@@ -128,6 +129,9 @@ Optimize the produced code for space rather than for time. This
 results in slightly smaller but slightly slower programs. The default is to
 optimize for speed.
 
+\item["-dlcode"]
+See the documentation for the "-shared" option.
+
 \item["-dtypes"]
 Dump detailed type information.  The information for file \var{x}".ml"
 is put into file \var{x}".annot".  In case of a type error, dump
@@ -136,7 +140,7 @@ The \var{x}".annot" file can be used with the emacs commands given in
 "emacs/caml-types.el" to display types interactively.
 
 \item["-for-pack" \var{module-path}]
-Generate an object file (".cmx"/".o" file) that can later be included
+Generate an object file (".cmx" and ".o"/".obj" files) that can later be included
 as a sub-module (with the given access path) of a compilation unit
 constructed with "-pack".  For instance, "ocamlopt -for-pack P -c A.ml"
 will generate "a.cmx" and "a.o" files that can later be used with
@@ -210,7 +214,8 @@ default output name is "a.out" under Unix and "camlprog.exe" under
 Windows. If the "-a" option is given, specify the name of the library
 produced.  If the "-pack" option is given, specify the name of the
 packed object file produced.  If the "-output-obj" option is given,
-specify the name of the output file produced.
+specify the name of the output file produced. If the "-shared" option
+is given, specify the name of plugin file produced.
 
 \item["-output-obj"]
 Cause the linker to produce a C object file instead of an executable
@@ -218,6 +223,8 @@ file. This is useful to wrap Caml code as a C library,
 callable from any C program. See chapter~\ref{c:intf-c},
 section~\ref{s:embedded-code}. The name of the output object file is
 "camlprog.o" by default; it can be set with the "-o" option.
+This option can also be used to produce a compiled shared/dynamic
+library (".so" extension, ".dll" under Windows).
 
 \item["-p"]
 Generate extra code to write profile information when the program is
@@ -241,7 +248,7 @@ The "-p" option does not work under Windows.
 \end{windows}
 
 \item["-pack"]
-Build an object file (".cmx"/".o" file) and its associated compiled
+Build an object file (".cmx" and ".o"/".obj" files) and its associated compiled
 interface (".cmi") that combines the ".cmx" object
 files given on the command line, making them appear as sub-modules of
 the output ".cmx" file.  The name of the output ".cmx" file must be
@@ -295,6 +302,18 @@ flag, you must use it again for all dependencies.
 \item["-S"]
 Keep the assembly code produced during the compilation. The assembly
 code for the source file \var{x}".ml" is saved in the file \var{x}".s".
+
+\item["-shared"]
+Build a plugin (usually ".cmxs") that can be dynamically loaded with
+the "Dynlink" module. The name of the plugin must be
+set with the "-o" option. A plugin can include a number of Caml
+modules and libraries, and extra native objects (".o", ".obj", ".a",
+".lib" files). Building native plugins is only supported for some
+operating system. Under some systems (currently,
+only Linux AMD 64), all the Caml code linked in a plugin must have
+been compiled with the "-dlcode" flag. Some constraints might also
+apply to the way the extra native objects have been compiled (under
+Linux AMD 64, they must contain only position-independent code).
 
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the

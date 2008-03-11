@@ -209,8 +209,7 @@ To link in ``custom runtime'' mode, execute the "ocamlc" command with:
 \item the names of the desired Caml object files (".cmo" and ".cma" files) ;
 \item the names of the C object files and libraries (".o" and ".a"
 files) that implement the required primitives. Under Unix and Windows,
-a library named "lib"\var{name}".a" residing in one of the standard
-library directories can also be specified as "-cclib -l"\var{name}.
+a library named "lib"\var{name}".a" (respectively, ".lib") residing in one of the standard library directories can also be specified as "-cclib -l"\var{name}.
 \end{itemize}
 
 If you are using the native-code compiler "ocamlopt", the "-custom"
@@ -267,14 +266,15 @@ then loads dynamically these libraries, and resolves references to the
 required primitives, before executing the bytecode.
 
 This facility is currently supported and known to work well under
-Linux, MacOS~X, and Windows (the native Windows port).  It is supported, but not
+Linux, MacOS~X, and Windows.  It is supported, but not
 fully tested yet, under FreeBSD, Tru64, Solaris and Irix.  It is not
-supported yet under other Unixes and under Cygwin for Windows.
+supported yet under other Unixes.
 
 To dynamically link C code with Caml code, the C code must first be
 compiled into a shared library (under Unix) or DLL (under Windows).
 This involves 1- compiling the C files with appropriate C compiler
-flags for producing position-independent code, and 2- building a
+flags for producing position-independent code (when required by the
+operating system), and 2- building a
 shared library from the resulting object files.  The resulting shared
 library or DLL file must be installed in a place where "ocamlrun" can
 find it later at program start-up time (see
@@ -290,11 +290,11 @@ in one of the standard library directories can also be specified as
 \end{itemize}
 Do {\em not} set the "-custom" flag, otherwise you're back to static linking
 as described in section~\ref{staticlink-c-code}.
-Under Unix, the "ocamlmklib" tool (see section~\ref{s-ocamlmklib})
+The "ocamlmklib" tool (see section~\ref{s-ocamlmklib})
 automates steps 2 and 3.
 
 As in the case of static linking, it is possible (and recommended) to
-record the names of C libraries in a Caml ".cmo" library archive.  
+record the names of C libraries in a Caml ".cma" library archive.  
 Consider again a Caml library
 "mylib.cma", built from the Caml object files "a.cmo" and "b.cmo",
 which reference C code in "dllmylib.so".  If the library is
@@ -1368,12 +1368,12 @@ section~\ref{s:main-c}, this means that "argv[0]" or "argv[1]" must
 contain the executable file name.
 
 An alternative is to embed the bytecode in the C code. The
-"-output-obj" option to "ocamlc" is provided for this purpose.
-It causes the "ocamlc" compiler to output a C object file (".o" file)
-containing the bytecode for the Caml part of the program, as well as a
-"caml_startup" function. The C object file produced by "ocamlc
--output-obj" can then be linked with C code using the standard C
-compiler, or stored in a C library.
+"-output-obj" option to "ocamlc" is provided for this purpose.  It
+causes the "ocamlc" compiler to output a C object file (".o" file,
+".obj" under Windows) containing the bytecode for the Caml part of the
+program, as well as a "caml_startup" function. The C object file
+produced by "ocamlc -output-obj" can then be linked with C code using
+the standard C compiler, or stored in a C library.
 
 The "caml_startup" function must be called from the main C program in
 order to initialize the Caml runtime and execute the Caml
@@ -1382,11 +1382,22 @@ parameter containing the command-line parameters. Unlike "caml_main",
 this "argv" parameter is used only to initialize "Sys.argv", but not
 for finding the name of the executable file.
 
+The "-output-obj" option can also be used to obtain the C source file.
+More interestingly, the same option can also produce directly a shared
+library (".so" file, ".dll" under Windows) that contains the Caml
+code, the Caml runtime system and any other static C code given to
+"ocamlc" (".o", ".a", respectively, ".obj", ".lib"). This use of
+"-output-obj" is very similar to a normal linking step, but instead of
+producing a main program that automatically runs the Caml code, it
+produces a shared library that can run the Caml code on demand. The
+three possible behaviors of "-output-obj" are selected according
+to the extension of the resulting file (given with "-o").
+
 The native-code compiler "ocamlopt" also supports the "-output-obj"
-option, causing it to output a C object file containing the native
-code for all Caml modules on the command-line, as well as the Caml
-startup code. Initialization is performed by calling "caml_startup" as
-in the case of the bytecode compiler.
+option, causing it to output a C object file or a shared library
+containing the native code for all Caml modules on the command-line,
+as well as the Caml startup code. Initialization is performed by
+calling "caml_startup" as in the case of the bytecode compiler.
 
 For the final linking phase, in addition to the object file produced
 by "-output-obj", you will have to provide the Objective Caml runtime
@@ -1406,6 +1417,10 @@ With "ocamlopt", you should do:
            camlcode.o -L/usr/local/lib/ocaml -lunix -lasmrun
 \end{alltt}
 
+The shared libraries produced by "ocamlc -output-obj" or by "ocamlopt
+-output-obj" already contains the Objective Caml runtime library as
+well as all the needed C libraries.
+
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
@@ -1421,8 +1436,8 @@ object files produced by "ocamlc -output-obj" must be linked with the
 "gcc" options "-Wl,-T,12000000 -Wl,-D,14000000".
 This is not necessary for object files produced by "ocamlopt -output-obj".
 \item Windows NT: the object file produced by Objective Caml have been
-compiled with the "/MT" flag, and therefore all other object files
-linked with it should also be compiled with "/MT".
+compiled with the "/MD" flag, and therefore all other object files
+linked with it should also be compiled with "/MD".
 \end{itemize}
 
 \section{Advanced example with callbacks}
@@ -1764,16 +1779,16 @@ The "ocamlmklib" command facilitates the construction of libraries
 containing both Caml code and C code, and usable both in static
 linking and dynamic linking modes.
 
-\begin{windows} This command is available only under Cygwin, but not for the
-native Win32 port.
+\begin{windows} This command is available for all the Windows ports
+  only since version 3.11.
 \end{windows}
 
 The "ocamlmklib" command takes three kinds of arguments:
 \begin{itemize}
 \item Caml source files and object files (".cmo", ".cmx", ".ml")
 comprising the Caml part of the library;
-\item C object files (".o", ".a") comprising the C part of the
-library;
+\item C object files (".o", ".a", respectively, ".obj", ".lib")
+  comprising the C part of the library;
 \item Support libraries for the C part ("-l"\var{lib}).
 \end{itemize}
 It generates the following outputs:
@@ -1785,9 +1800,9 @@ C library generated with the C object files.
 ".ml" Caml files given as arguments, and automatically referencing the
 C library generated with the C object files.
 \item If dynamic linking is supported on the target platform, a
-".so" shared library built from the C object files given as arguments,
+".so" (respectively, ".dll") shared library built from the C object files given as arguments,
 and automatically referencing the support libraries.
-\item A C static library ".a" built from the C object files.
+\item A C static library ".a"(respectively, ".lib") built from the C object files.
 \end{itemize}
 In addition, the following options are recognized:
 \begin{options}
