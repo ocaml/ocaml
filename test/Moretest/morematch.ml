@@ -616,27 +616,27 @@ let replicaContent2shortString rc =
 ;;
 
 
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`ABSENT, `Unchanged) "        " ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`ABSENT, `Deleted) "deleted " ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`FILE, `Modified) "changed " ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`DIRECTORY, `PropsChanged) "props   " ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`FILE, `Deleted) "assert false" ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`SYMLINK, `Deleted) "assert false" ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`SYMLINK, `PropsChanged) "assert false" ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`DIRECTORY, `Deleted) "assert false" ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`ABSENT, `Created) "assert false" ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`ABSENT, `Modified) "assert false" ;
-test "jerome_constr" 
+test "jerome_variant" 
    replicaContent2shortString (`ABSENT, `PropsChanged) "assert false" ;
 ;;
 
