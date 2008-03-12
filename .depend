@@ -378,13 +378,15 @@ bytecomp/matchcommon.cmx: typing/types.cmx typing/typedtree.cmx \
     bytecomp/lambda.cmx typing/ident.cmx typing/btype.cmx \
     parsing/asttypes.cmi 
 bytecomp/matching.cmo: typing/types.cmi typing/typedtree.cmi \
-    typing/primitive.cmi typing/parmatch.cmi utils/misc.cmi \
-    bytecomp/matchcommon.cmo parsing/location.cmi bytecomp/lambda.cmi \
-    bytecomp/automatch.cmo parsing/asttypes.cmi bytecomp/matching.cmi 
+    bytecomp/treematch.cmo typing/primitive.cmi typing/parmatch.cmi \
+    utils/misc.cmi bytecomp/matchcommon.cmo parsing/location.cmi \
+    bytecomp/lambda.cmi bytecomp/automatch.cmo parsing/asttypes.cmi \
+    bytecomp/matching.cmi 
 bytecomp/matching.cmx: typing/types.cmx typing/typedtree.cmx \
-    typing/primitive.cmx typing/parmatch.cmx utils/misc.cmx \
-    bytecomp/matchcommon.cmx parsing/location.cmx bytecomp/lambda.cmx \
-    bytecomp/automatch.cmx parsing/asttypes.cmi bytecomp/matching.cmi 
+    bytecomp/treematch.cmx typing/primitive.cmx typing/parmatch.cmx \
+    utils/misc.cmx bytecomp/matchcommon.cmx parsing/location.cmx \
+    bytecomp/lambda.cmx bytecomp/automatch.cmx parsing/asttypes.cmi \
+    bytecomp/matching.cmi 
 bytecomp/meta.cmo: bytecomp/meta.cmi 
 bytecomp/meta.cmx: bytecomp/meta.cmi 
 bytecomp/printinstr.cmo: bytecomp/printlambda.cmi parsing/location.cmi \
