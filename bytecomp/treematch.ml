@@ -14,8 +14,7 @@ open Matchcommon
 
 (* Alpha-conversion to fresh variables of variables
    bound by patterp in action lam *)
-let alpha p lam =
-  let ids = IdentSet.elements (extract_vars IdentSet.empty p) in
+let alpha_ids alpha_pat ids p lam =
   let env =
     List.map
       (fun id ->
@@ -30,6 +29,14 @@ let alpha p lam =
   let lam = subst_lambda tbl lam in
   p,lam
 
+let alpha p lam =
+  let ids = IdentSet.elements (extract_vars IdentSet.empty p) in
+  alpha_ids alpha_pat ids p lam
+
+
+(* Variables, aliases and or-pattern
+   are handled by preprocessing,
+   Records are also normalized *)
 
 let precompile x cls =
   
@@ -147,7 +154,7 @@ let rec split_guarded lam_exit = function
   | _ -> assert false
 ;;
 
-let split vars_pat pat_act_list =
+let split alpha_ids vars_pat pat_act_list =
   List.fold_right
     (fun (p,act) cls ->
       let num_exit = next_raise_count ()
@@ -159,6 +166,7 @@ let split vars_pat pat_act_list =
 	  split_guarded lam_exit act
 	else
 	  lam_exit, act in
+      let p,match_act = alpha_ids ids p match_act in
       ((p,match_act),(num_exit, ids, def_act))::cls)
     pat_act_list []
 ;;
@@ -173,7 +181,7 @@ let add_defs lam defs =
 let compile_matching loc repr handler_fun arg pat_act_list _partial =
   let v =
     match arg with Lvar v -> v | _ -> Ident.create "m" in
-  let pat_exits = split vars_pat pat_act_list in
+  let pat_exits = split (alpha_ids alpha_pat) vars_pat pat_act_list in
   let pat_act_list,defs = List.split pat_exits in
   let pss = List.map (fun (p,act)  -> [p],act) pat_act_list
   and num_fail = next_raise_count () in
@@ -198,7 +206,7 @@ let rec super_flatten size (p,act) k = match p.pat_desc with
 let for_multiple_match loc args pat_act_list _partial =  
   let repr = None in
   try
-    let pat_exits = split vars_pat pat_act_list in
+    let pat_exits = split (alpha_ids alpha_pat) vars_pat pat_act_list in
     let pss,defs =  List.split pat_exits in
     let pss = List.fold_right (super_flatten (List.length args)) pss [] in
     let xs =
@@ -219,9 +227,12 @@ let for_multiple_match loc args pat_act_list _partial =
       compile_matching loc repr (partial_function loc) arg pat_act_list _partial
 
 (************************)
-	
+
 let for_tupled_function loc xs pats_act_list  _partial =
-  let pats_exits = split vars_pats pats_act_list in
+  let pats_exits =
+    split
+      (alpha_ids (fun env ps -> List.map (alpha_pat env) ps))
+      vars_pats pats_act_list in
   let pss,defs =  List.split pats_exits in 
   let num_fail = next_raise_count () in
   let lam = compile_match None xs pss (Lstaticraise (num_fail,[])) in

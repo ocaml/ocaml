@@ -30,8 +30,14 @@ let compile_matching =
   else Automatch.compile_matching
 
 let for_function loc repr param pat_act_list partial =
-  compile_matching
-    loc repr (partial_function loc) param pat_act_list partial
+  match pat_act_list with
+  | [{pat_desc=Tpat_var id},e] ->
+      bind Alias id param e
+  |  [{pat_desc=Tpat_any},e] ->
+      e
+  | _ ->
+      compile_matching
+	loc repr (partial_function loc) param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
