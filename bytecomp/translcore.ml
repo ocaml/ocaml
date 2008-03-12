@@ -840,7 +840,12 @@ and transl_let rec_flag pat_expr_list body =
         [] ->
           body
       | (pat, expr) :: rem ->
-          Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
+	  begin match pat.pat_desc with
+	  | Tpat_var id ->
+	      bind Strict id  (transl_exp expr) (transl rem)
+	  | _ ->
+              Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
+	  end
       in transl pat_expr_list
   | Recursive ->
       let idlist =

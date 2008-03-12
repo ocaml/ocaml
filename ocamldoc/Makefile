@@ -173,6 +173,10 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/typeopt.cmo \
 	$(OCAMLSRCDIR)/bytecomp/printlambda.cmo \
 	$(OCAMLSRCDIR)/bytecomp/switch.cmo \
+	$(OCAMLSRCDIR)/bytecomp/matchcommon.cmo \
+	$(OCAMLSRCDIR)/bytecomp/discr.cmo \
+	$(OCAMLSRCDIR)/bytecomp/treematch.cmo \
+	$(OCAMLSRCDIR)/bytecomp/automatch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matching.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \

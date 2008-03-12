@@ -1052,6 +1052,15 @@ let pretty_matrix pss =
       prerr_endline "")
     pss ;
   prerr_endline "end matrix"
+
+let pretty_match pss = 
+  prerr_endline "begin matrix" ;
+  List.iter
+    (fun (ps,_) ->
+      pretty_line ps ;
+      prerr_endline "")
+    pss ;
+  prerr_endline "end matrix"
   
 (* this row type enable column processing inside the matrix 
     - left  ->  elements not to be processed,

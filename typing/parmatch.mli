@@ -20,6 +20,7 @@ val top_pretty : Format.formatter -> pattern -> unit
 val pretty_pat : pattern -> unit
 val pretty_line : pattern list -> unit
 val pretty_matrix : pattern list list -> unit
+val pretty_match : (pattern list * 'a) list -> unit
 
 val omega : pattern
 val omegas : int -> pattern list
