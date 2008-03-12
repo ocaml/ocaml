@@ -78,6 +78,12 @@ test "quatre" g 4 4 ;
 test "quatre" g 7 100 ; ()
 ;;
 
+(*
+File "morematch.ml", line 73, characters 2-5:
+Warning U: this sub-pattern is unused.
+File "morematch.ml", line 74, characters 2-3:
+Warning U: this sub-pattern is unused.
+*)
 
 let h x =
  match x with
@@ -331,9 +337,9 @@ let rec approx_present v l = true
 
 let rec lower_bind v arg lam = match lam with
 | Lifthenelse (cond, ifso, ifnot) -> 1
-| Lswitch (ls,({sw_consts=[i,act] ; sw_blocks = []} as sw))
+| Lswitch (ls,({sw_consts=[i,act] ; sw_blocks = []} as _sw))
     when not (approx_present v ls) -> 2
-| Lswitch (ls,({sw_consts=[] ; sw_blocks = [i,act]} as sw))
+| Lswitch (ls,({sw_consts=[] ; sw_blocks = [i,act]} as _sw))
     when not (approx_present v ls) -> 3
 | Llet (true , vv, lv, l) -> 4
 | _ -> 5
@@ -439,7 +445,10 @@ let rec autre = function
 | I,_,_ -> 6
 | E _,_,_ -> 7
 ;;
-
+(*
+File "morematch.ml", line 437, characters 43-44:
+Warning U: this sub-pattern is unused.
+*)
 test "autre" autre (J,J,F (D,D)) 3 ;
 test "autre" autre (J,J,D) 3 ;
 test "autre" autre (J,J,I) 9 ;
@@ -459,7 +468,12 @@ let xyz = function
 | _,_,(X|U _) -> 8
 | _,_,Y -> 5
 ;;
-
+(*
+File "morematch.ml", line 459, characters 7-8:
+Warning U: this sub-pattern is unused.
+File "morematch.ml", line 460, characters 2-7:
+Warning U: this match case is unused.
+*)
 test "xyz" xyz (YC,YC,X) 6 ;
 test "xyz" xyz (YC,YB,U X) 8 ;
 test "xyz" xyz (YB,YC,X) 6 ; ()
@@ -1135,3 +1149,21 @@ let rec gilles o = match o with
   | {v = (`U _ | `V _); x = `False}
   | {v = _ ; x = `True}
     -> 2
+
+(*
+  Match in trywith should always have a default case
+*)
+
+exception Found of string * int
+exception Error of string
+
+
+let lucexn  e =
+  try
+    try  raise e  with Error msg -> msg
+  with Found (s,r) -> s^string_of_int r
+
+let () =
+  test "lucexn1" lucexn  (Error "coucou") "coucou" ;
+  test "lucexn2" lucexn (Found ("int: ",0)) "int: 0" ;
+  ()
