@@ -93,6 +93,8 @@ let implementation ppf sourcefile outputprefix =
       ++ Unused_var.warn ppf
       ++ Typemod.type_implementation sourcefile outputprefix modulename env)
     else begin
+      let cmxfile = outputprefix ^ ".cmx" in
+      let objfile = outputprefix ^ ext_obj in
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Unused_var.warn ppf
@@ -102,11 +104,13 @@ let implementation ppf sourcefile outputprefix =
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
       ++ Asmgen.compile_implementation outputprefix ppf;
-      Compilenv.save_unit_info (outputprefix ^ ".cmx");
+      Compilenv.save_unit_info cmxfile;
     end;
     Warnings.check_fatal ();
     Pparse.remove_preprocessed inputfile
   with x ->
+    remove_file objfile;
+    remove_file cmxfile;
     Pparse.remove_preprocessed_if_ast inputfile;
     raise x
 
