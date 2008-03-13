@@ -259,12 +259,10 @@ let no_switch cls = match cls with
 | [_,act] -> act
 | _ -> assert false
   
-let switch ds x cls fail =
-  if DSet.is_empty ds then match fail with
-  | Some lam -> lam
-  | None -> assert false
-  else
-    let d = DSet.choose ds in
+let switch x cls fail = match cls, fail with
+| [],Some lam -> lam
+| [],None -> assert false
+| (d,_)::_,_ ->
     match d with
     | Constant c -> sw_constant c x cls fail
     | Construct c ->

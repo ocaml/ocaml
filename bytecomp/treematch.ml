@@ -33,6 +33,42 @@ let alpha p lam =
   let ids = IdentSet.elements (extract_vars IdentSet.empty p) in
   alpha_ids alpha_pat ids p lam
 
+(* Out module, can produce lambda code or a dag *)
+module type Out = sig
+  type out
+  (* forth and back *)
+  val final : lambda -> out
+  val to_lambda : out -> lambda
+
+  (* need that for guards *)
+  val is_guarded : out -> bool
+  val patch_guarded : out -> out -> out
+  val event_branch : int ref option -> out -> out
+
+  (* constructors *)
+  val alias : Ident.t -> Ident.t -> out -> out
+  val field_ids : Discr.discr -> Ident.t ->
+    Ident.t list * (let_kind * lambda) list
+  val get_fields : Ident.t list -> (let_kind * lambda) list -> out -> out
+  val switch : Ident.t -> (Discr.discr * out) list -> out option -> out
+end
+
+module OutLambda = struct
+  type out = lambda
+  let final lam = lam
+  let to_lambda lam = lam
+
+  let is_guarded = is_guarded
+  let patch_guarded = patch_guarded
+  let event_branch = event_branch
+
+  let alias = Discr.alias
+  let field_ids = Discr.field_ids
+  let get_fields = Discr.get_fields
+  let switch = Discr.switch
+end
+
+module Out : Out = OutLambda
 
 (* Variables, aliases and or-pattern
    are handled by preprocessing,
@@ -45,12 +81,12 @@ let precompile x cls =
     | ((pat :: patl, action) as cl) :: rem ->
         begin match pat.pat_desc with
         | Tpat_var id ->
-            (omega :: patl, Discr.alias id x action) ::
+            (omega :: patl, Out.alias id x action) ::
             simplify rem
         | Tpat_any ->
             cl :: simplify rem
         | Tpat_alias(p, id) ->
-            simplify ((p :: patl, Discr.alias id x action) :: rem)
+            simplify ((p :: patl, Out.alias id x action) :: rem)
         | Tpat_record [] ->
             (omega :: patl, action)::
             simplify rem
@@ -60,7 +96,9 @@ let precompile x cls =
             (full_pat::patl,action)::
             simplify rem
         | Tpat_or (p1,p2,_) -> (* or expansion *)
-	    let p2,act2 = alpha p2 action in
+	    let p2,act2 = (* alpha p2 action *) p2,action in
+	    (* alpha-conversion not needed, all variables in pat
+	       will be bound to another variable *)
             simplify ((p1::patl,action)::(p2::patl,act2) :: rem)
         | _ -> cl :: simplify rem
         end
@@ -88,18 +126,18 @@ let rec compile_match repr xs pss lam_fail = match pss with
 
 and compile_row repr xs ps act ys pss lam_fail = match xs,ps with
 | [],[] ->
-    if is_guarded act then
-      let lam = compile_match repr ys pss lam_fail in
-      event_branch repr (patch_guarded lam act)
+    if Out.is_guarded act then
+      let lam = compile_match None ys pss lam_fail in
+      Out.event_branch repr (Out.patch_guarded lam act)
     else
-      act
+      Out.event_branch repr act
 | x::xs,p::ps ->
     begin match p.pat_desc with
     | Tpat_any -> compile_row repr xs ps act ys pss lam_fail
     | Tpat_var id ->
-	compile_row repr xs ps (Discr.alias id x act) ys pss lam_fail
+	compile_row repr xs ps (Out.alias id x act) ys pss lam_fail
     | Tpat_alias (p,id) ->
-	compile_row repr (x::xs) (p::ps) (Discr.alias id x act) ys pss lam_fail
+	compile_row repr (x::xs) (p::ps) (Out.alias id x act) ys pss lam_fail
     | Tpat_or (p,_,_) ->
 	compile_row repr (x::xs) (p::ps) act ys pss lam_fail
     | _ -> assert false
@@ -107,8 +145,6 @@ and compile_row repr xs ps act ys pss lam_fail = match xs,ps with
 | _,_ -> assert false
 
 and do_compile_matching repr x xs pss lam_fail =
-
-
   let pss = precompile x pss in
   let ds = Discr.collect pss in
 (*
@@ -120,11 +156,11 @@ and do_compile_matching repr x xs pss lam_fail =
     Discr.DSet.fold
       (fun d k ->
 	let pss = Discr.specialize d pss in
-	let ys,es = Discr.field_ids d x in
+	let ys,es = Out.field_ids d x in
 	let lam = compile_match repr (ys@xs) pss lam_fail in
-	(d,Discr.get_fields ys es lam)::k)
+	(d,Out.get_fields ys es lam)::k)
       ds [] in
-  Discr.switch ds x cls
+  Out.switch x cls
     (if Discr.has_default ds then
       Some (compile_match repr xs (Discr.default pss) lam_fail)
     else
@@ -171,6 +207,14 @@ let split alpha_ids vars_pat pat_act_list =
     pat_act_list []
 ;;
 
+(* Translate actions to out.out and back *)
+
+let compile_match_out repr xs pss fail =
+  let pss = List.map (fun (ps,lam) -> ps,Out.final lam) pss
+  and fail = Out.final fail in
+  let out = compile_match repr xs pss fail in
+  Out.to_lambda out
+
 (******************)
 
 let add_defs lam defs =
@@ -186,7 +230,7 @@ let compile_matching loc repr handler_fun arg pat_act_list _partial =
   let pss = List.map (fun (p,act)  -> [p],act) pat_act_list
   and num_fail = next_raise_count () in
   let lam =
-    compile_match repr [v] pss (Lstaticraise (num_fail,[])) in
+    compile_match_out repr [v] pss (Lstaticraise (num_fail,[])) in
   let lam = bind Strict v arg lam in
   let lam = add_defs lam defs in
   Lstaticcatch (lam,(num_fail,[]),handler_fun ())
@@ -214,7 +258,7 @@ let for_multiple_match loc args pat_act_list _partial =
 	(function | Lvar v -> v | lam -> Ident.create "m")
 	args in
     let num_fail = next_raise_count () in
-    let lam = compile_match repr xs pss (Lstaticraise (num_fail,[])) in
+    let lam = compile_match_out repr xs pss (Lstaticraise (num_fail,[])) in
     let lam =
       List.fold_right2
 	(fun x arg lam -> bind Strict x arg lam)
@@ -235,7 +279,7 @@ let for_tupled_function loc xs pats_act_list  _partial =
       vars_pats pats_act_list in
   let pss,defs =  List.split pats_exits in 
   let num_fail = next_raise_count () in
-  let lam = compile_match None xs pss (Lstaticraise (num_fail,[])) in
+  let lam = compile_match_out None xs pss (Lstaticraise (num_fail,[])) in
   let lam =  add_defs lam defs in
   Lstaticcatch (lam,(num_fail,[]),partial_function loc ())
 	  

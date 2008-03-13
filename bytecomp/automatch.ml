@@ -493,12 +493,12 @@ let rec simplify_cases args cls = match args with
       | ((pat :: patl, action) as cl) :: rem ->
           begin match pat.pat_desc with
           | Tpat_var id ->
-              (omega :: patl, bind StrictOpt id arg action) ::
+              (omega :: patl, bind Alias id arg action) ::
               simplify rem
           | Tpat_any ->
               cl :: simplify rem
           | Tpat_alias(p, id) ->
-              simplify ((p :: patl, bind StrictOpt id arg action) :: rem)
+              simplify ((p :: patl, bind Alias id arg action) :: rem)
           | Tpat_record [] ->
               (omega :: patl, action)::
               simplify rem
@@ -1111,9 +1111,9 @@ let make_constr_matching p def ctx = function
       let newargs =
         match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
-            make_field_args StrictOpt arg 0 (cstr.cstr_arity - 1) argl
+            make_field_args Alias arg 0 (cstr.cstr_arity - 1) argl
         | Cstr_exception _ ->
-            make_field_args StrictOpt arg 1 cstr.cstr_arity argl in
+            make_field_args Alias arg 1 cstr.cstr_arity argl in
       {pm=
         {cases = []; args = newargs;
           default = make_default (matcher_constr cstr) def} ;
@@ -1164,7 +1164,7 @@ let make_variant_matching_nonconst p lab def ctx = function
       let def = make_default (matcher_variant_nonconst lab) def
       and ctx = filter_ctx p ctx in
       {pm=
-        {cases = []; args = (Lprim(Pfield 1, [arg]), StrictOpt) :: argl;
+        {cases = []; args = (Lprim(Pfield 1, [arg]), Alias) :: argl;
           default=def} ;
         ctx=ctx ;
         pat = normalize_pat p}
@@ -1236,7 +1236,7 @@ let make_tuple_matching arity def = function
       let rec make_args pos =
         if pos >= arity
         then argl
-        else (Lprim(Pfield pos, [arg]), StrictOpt) :: make_args (pos + 1) in
+        else (Lprim(Pfield pos, [arg]), Alias) :: make_args (pos + 1) in
       {cases = []; args = make_args 0 ;
         default=make_default (matcher_tuple arity) def}
 
@@ -1279,7 +1279,7 @@ let make_record_matching all_labels def = function
             | Record_float -> Pfloatfield lbl.lbl_pos in
           let str =
             match lbl.lbl_mut with
-              Immutable -> StrictOpt
+              Immutable -> Alias
             | Mutable -> StrictOpt in
           (Lprim(access, [arg]), str) :: make_args(pos + 1)
         end in
@@ -1574,7 +1574,7 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
           match raw_action r with
           | Lstaticraise (j,args) ->
               if i=j then
-                List.fold_right2 (bind StrictOpt) vars args handler_i,
+                List.fold_right2 (bind Alias) vars args handler_i,
                 jumps_map (ctx_rshift_num (ncols mat)) total_i
               else
                 do_rec r total_r rem
@@ -1613,7 +1613,7 @@ let rec approx_present v = function
       List.exists (fun lam -> approx_present v lam) args
   | Lprim (_,args) ->
       List.exists (fun lam -> approx_present v lam) args
-  | Llet (StrictOpt, _, l1, l2) ->
+  | Llet (Alias, _, l1, l2) ->
       approx_present v l1 || approx_present v l2
   | Lvar vv -> Ident.same v vv
   | _ -> true
@@ -1633,7 +1633,7 @@ let rec lower_bind v arg lam = match lam with
         Lifthenelse (cond, lower_bind v arg ifso, ifnot)
     | false, false, true ->
         Lifthenelse (cond, ifso, lower_bind v arg ifnot)
-    | _,_,_ -> bind StrictOpt v arg lam
+    | _,_,_ -> bind Alias v arg lam
     end
 | Lswitch (ls,({sw_consts=[i,act] ; sw_blocks = []} as sw))
     when not (approx_present v ls) ->
@@ -1641,17 +1641,17 @@ let rec lower_bind v arg lam = match lam with
 | Lswitch (ls,({sw_consts=[] ; sw_blocks = [i,act]} as sw))
     when not (approx_present v ls) ->
       Lswitch (ls, {sw with sw_blocks = [i,lower_bind v arg act]})
-| Llet (StrictOpt, vv, lv, l) ->
+| Llet (Alias, vv, lv, l) ->
     if approx_present v lv then
-      bind StrictOpt v arg lam
+      bind Alias v arg lam
     else
-      Llet (StrictOpt, vv, lv, lower_bind v arg l)
+      Llet (Alias, vv, lv, lower_bind v arg l)
 | _ -> 
-    bind StrictOpt v arg lam
+    bind Alias v arg lam
 
 let bind_check str v arg lam = match str,arg with
 | _, Lvar _ ->bind str v arg lam
-(* | StrictOpt,_ -> lower_bind v arg lam *)
+| Alias,_ -> lower_bind v arg lam
 | _,_     -> bind str v arg lam
 
 let rec comp_exit ctx m = match m.default with
@@ -1719,7 +1719,7 @@ let rec compile_match repr partial ctx m = match m with
     let v,newarg = arg_to_var arg m.cases in
     let first_match,rem =
       split_precompile (Some v)
-        { m with args = (newarg, StrictOpt) :: argl } in
+        { m with args = (newarg, Alias) :: argl } in
     let (lam, total) =
       comp_match_handlers
         (do_compile_matching repr) partial ctx newarg first_match rem in
