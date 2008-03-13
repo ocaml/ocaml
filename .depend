@@ -8,6 +8,8 @@ utils/config.cmo: utils/config.cmi
 utils/config.cmx: utils/config.cmi 
 utils/consistbl.cmo: utils/consistbl.cmi 
 utils/consistbl.cmx: utils/consistbl.cmi 
+utils/extarray.cmo: utils/extarray.cmi 
+utils/extarray.cmx: utils/extarray.cmi 
 utils/misc.cmo: utils/misc.cmi 
 utils/misc.cmx: utils/misc.cmi 
 utils/tbl.cmo: utils/tbl.cmi 
@@ -339,12 +341,12 @@ bytecomp/bytesections.cmo: utils/config.cmi bytecomp/bytesections.cmi
 bytecomp/bytesections.cmx: utils/config.cmx bytecomp/bytesections.cmi 
 bytecomp/discr.cmo: typing/types.cmi bytecomp/typeopt.cmi \
     typing/typedtree.cmi typing/primitive.cmi typing/parmatch.cmi \
-    bytecomp/matchcommon.cmo bytecomp/lambda.cmi typing/ident.cmi \
-    typing/btype.cmi parsing/asttypes.cmi 
+    bytecomp/matchcommon.cmo bytecomp/lambda.cmi typing/btype.cmi \
+    parsing/asttypes.cmi 
 bytecomp/discr.cmx: typing/types.cmx bytecomp/typeopt.cmx \
     typing/typedtree.cmx typing/primitive.cmx typing/parmatch.cmx \
-    bytecomp/matchcommon.cmx bytecomp/lambda.cmx typing/ident.cmx \
-    typing/btype.cmx parsing/asttypes.cmi 
+    bytecomp/matchcommon.cmx bytecomp/lambda.cmx typing/btype.cmx \
+    parsing/asttypes.cmi 
 bytecomp/dll.cmo: utils/misc.cmi utils/config.cmi bytecomp/dll.cmi 
 bytecomp/dll.cmx: utils/misc.cmx utils/config.cmx bytecomp/dll.cmi 
 bytecomp/emitcode.cmo: bytecomp/translmod.cmi bytecomp/opcodes.cmo \
@@ -403,6 +405,10 @@ bytecomp/printlambda.cmx: typing/types.cmx typing/primitive.cmx \
     parsing/asttypes.cmi bytecomp/printlambda.cmi 
 bytecomp/runtimedef.cmo: bytecomp/runtimedef.cmi 
 bytecomp/runtimedef.cmx: bytecomp/runtimedef.cmi 
+bytecomp/share.cmo: bytecomp/printlambda.cmi bytecomp/lambda.cmi \
+    typing/ident.cmi utils/extarray.cmi bytecomp/discr.cmo 
+bytecomp/share.cmx: bytecomp/printlambda.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx utils/extarray.cmx bytecomp/discr.cmx 
 bytecomp/simplif.cmo: bytecomp/lambda.cmi typing/ident.cmi utils/clflags.cmi \
     parsing/asttypes.cmi bytecomp/simplif.cmi 
 bytecomp/simplif.cmx: bytecomp/lambda.cmx typing/ident.cmx utils/clflags.cmx \
@@ -462,13 +468,13 @@ bytecomp/translobj.cmx: typing/primitive.cmx utils/misc.cmx \
     utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
     bytecomp/translobj.cmi 
 bytecomp/treematch.cmo: typing/types.cmi typing/typedtree.cmi \
-    typing/primitive.cmi typing/parmatch.cmi utils/misc.cmi \
-    bytecomp/matchcommon.cmo bytecomp/lambda.cmi typing/ident.cmi \
-    bytecomp/discr.cmo parsing/asttypes.cmi 
+    bytecomp/share.cmo typing/primitive.cmi typing/parmatch.cmi \
+    utils/misc.cmi bytecomp/matchcommon.cmo bytecomp/lambda.cmi \
+    typing/ident.cmi bytecomp/discr.cmo parsing/asttypes.cmi 
 bytecomp/treematch.cmx: typing/types.cmx typing/typedtree.cmx \
-    typing/primitive.cmx typing/parmatch.cmx utils/misc.cmx \
-    bytecomp/matchcommon.cmx bytecomp/lambda.cmx typing/ident.cmx \
-    bytecomp/discr.cmx parsing/asttypes.cmi 
+    bytecomp/share.cmx typing/primitive.cmx typing/parmatch.cmx \
+    utils/misc.cmx bytecomp/matchcommon.cmx bytecomp/lambda.cmx \
+    typing/ident.cmx bytecomp/discr.cmx parsing/asttypes.cmi 
 bytecomp/typeopt.cmo: typing/types.cmi typing/typedtree.cmi \
     typing/primitive.cmi typing/predef.cmi typing/path.cmi utils/misc.cmi \
     bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi typing/ctype.cmi \

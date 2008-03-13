@@ -184,6 +184,7 @@ val free_methods: lambda -> IdentSet.t
 val transl_path: Path.t -> lambda
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
+val subst_var: lambda Ident.tbl -> Ident.t -> lambda
 val subst_lambda: lambda Ident.tbl -> lambda -> lambda
 val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 

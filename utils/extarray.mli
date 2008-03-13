@@ -20,7 +20,7 @@ type 'a t
 exception Error
 
 
-val create : 'a -> 'a t 
+val create : unit -> 'a t 
 val size : 'a t -> int
 
 (*
@@ -40,7 +40,7 @@ val iter : 'a t -> ('a -> unit) -> unit
   The following two functions return the elements in a table.
   Notice that tables are emptied.
 *)
-val trim : 'a t -> 'a array        (* Renvoie un tableau *)
+val trim : 'a t -> 'a array
 
 
 

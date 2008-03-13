@@ -139,6 +139,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/utils/warnings.cmo \
 	$(OCAMLSRCDIR)/utils/ccomp.cmo \
 	$(OCAMLSRCDIR)/utils/consistbl.cmo \
+	$(OCAMLSRCDIR)/utils/extarray.cmo \
 	$(OCAMLSRCDIR)/parsing/linenum.cmo\
 	$(OCAMLSRCDIR)/parsing/location.cmo\
 	$(OCAMLSRCDIR)/parsing/longident.cmo \
@@ -175,6 +176,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/switch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matchcommon.cmo \
 	$(OCAMLSRCDIR)/bytecomp/discr.cmo \
+	$(OCAMLSRCDIR)/bytecomp/share.cmo \
 	$(OCAMLSRCDIR)/bytecomp/treematch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/automatch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matching.cmo \

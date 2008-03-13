@@ -14,25 +14,23 @@
 
 type 'a t = {mutable next : int ; mutable data : 'a array}
 
-let default_size = 32
-;;
 
-let create x = {next = 0 ; data = Array.create default_size x}
-and reset t = t.next <- 0
-;;
+let create () = {next = 0 ; data = [||]; }
+
+let reset t = t.next <- 0 ; t.data <- [||]
+
 
 let size t = t.next
 
-let incr_table table new_size =
-  let t = Array.create new_size table.data.(0) in
+let incr_table x table new_size =
+  let t = Array.create new_size x in
   Array.blit table.data 0 t 0 (Array.length table.data) ;
   table.data <- t
 
-let do_emit table i =
+let do_emit table x =
  let size = Array.length table.data in
- if table.next >= size then
-    incr_table table (2*size);
- table.data.(table.next) <- i ;
+ if table.next >= size then incr_table x table (2*(size+1));
+ table.data.(table.next) <- x ;
  table.next <- table.next + 1
 ;;
 

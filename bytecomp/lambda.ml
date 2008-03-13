@@ -369,10 +369,12 @@ let rec make_sequence fn = function
    Assumes that the image of the substitution is out of reach
    of the bound variables of the lambda-term (no capture). *)
 
+let subst_var s id =
+  try Ident.find_same id s with Not_found -> Lvar id
+
 let subst_lambda s lam =
   let rec subst = function
-    Lvar id as l ->
-      begin try Ident.find_same id s with Not_found -> l end
+    Lvar id -> subst_var s id
   | Lconst sc as l -> l
   | Lapply(fn, args, loc) -> Lapply(subst fn, List.map subst args, loc)
   | Lfunction(kind, params, body) -> Lfunction(kind, params, subst body)

@@ -154,35 +154,36 @@ let specialize d pss =
 
 
 (* Extract data fields *)
-let mk_fids mk_lam first_pos last_pos =
+let mk_fids mk_id mk_lam first_pos last_pos =
   let rec mk_rec pos =
     if pos > last_pos then [],[]
     else
       let ys,lams = mk_rec (pos+1) in
-      let y = Ident.create "f" in
-      y::ys,mk_lam pos::lams in
+      let lam = mk_lam pos in
+      let y = mk_id lam in
+      y::ys,lam::lams in
   mk_rec first_pos
       
 let fids_constant _x = [],[]
 
-and fids_block arity x =
-  mk_fids
+and fids_block mk_id arity x =
+  mk_fids mk_id
     (fun pos -> Alias,Lprim(Pfield pos, [Lvar x]))
     0 (arity-1)
 
-let fids_construct tag arity = match tag with
+let fids_construct mk_id tag arity = match tag with
 | Cstr_constant _ -> fids_constant
-| Cstr_block _ -> fids_block arity
+| Cstr_block _ -> fids_block mk_id arity
 | Cstr_exception _ ->
     (fun x ->
-      mk_fids
+      mk_fids mk_id
 	(fun pos -> Alias,Lprim(Pfield pos, [Lvar x]))
 	1 arity)
 
-and fids_variant has_arg = 
+and fids_variant mk_id has_arg = 
   if has_arg then
     (fun x ->
-      mk_fids
+      mk_fids mk_id
 	(fun pos -> Alias,Lprim(Pfield pos, [Lvar x]))
 	1 1)
   else
@@ -190,8 +191,8 @@ and fids_variant has_arg =
 
 and fids_tuple = fids_block
 
-and fids_record lbl_all x =
-  mk_fids
+and fids_record mk_id lbl_all x =
+  mk_fids mk_id
     (fun pos ->
       let lbl = lbl_all.(pos) in
       let access = match lbl.lbl_repres with
@@ -203,21 +204,21 @@ and fids_record lbl_all x =
       str,Lprim (access,[Lvar x]))
     0 (Array.length lbl_all-1)
 
-and fids_array kind sz x =
-  mk_fids
+and fids_array mk_id kind sz x =
+  mk_fids mk_id
     (fun pos ->
       StrictOpt,
       Lprim (Parrayrefu kind,[Lvar x;Lconst(Const_base(Const_int pos))]))
     0 (sz-1)
       
 
-let field_ids d = match d with
+let field_ids mk_id d = match d with
 | Constant c -> fids_constant
-| Construct c -> fids_construct c.cstr_tag c.cstr_arity
-| Variant (lbl,has_arg,_) -> fids_variant has_arg
-| Tuple a -> fids_tuple a
-| Record lbl_all -> fids_record lbl_all
-| Array (kind,a) -> fids_array kind a
+| Construct c -> fids_construct  mk_id c.cstr_tag c.cstr_arity
+| Variant (lbl,has_arg,_) -> fids_variant  mk_id has_arg
+| Tuple a -> fids_tuple  mk_id a
+| Record lbl_all -> fids_record mk_id lbl_all
+| Array (kind,a) -> fids_array mk_id kind a
 
 (* Put let's for fields *)
  let get_fields =

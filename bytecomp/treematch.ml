@@ -38,7 +38,7 @@ module type Out = sig
   type out
   (* forth and back *)
   val final : lambda -> out
-  val to_lambda : out -> lambda
+  val to_lambda : Ident.t list -> out -> lambda
 
   (* need that for guards *)
   val is_guarded : out -> bool
@@ -53,22 +53,28 @@ module type Out = sig
   val switch : Ident.t -> (Discr.discr * out) list -> out option -> out
 end
 
+
 module OutLambda = struct
   type out = lambda
   let final lam = lam
-  let to_lambda lam = lam
+  let to_lambda _xs lam = lam
 
   let is_guarded = is_guarded
   let patch_guarded = patch_guarded
   let event_branch = event_branch
 
   let alias = Discr.alias
-  let field_ids = Discr.field_ids
+  let field_ids = Discr.field_ids (fun _lam -> Ident.create "f")
   let get_fields = Discr.get_fields
   let switch = Discr.switch
 end
 
+(*
 module Out : Out = OutLambda
+*)
+
+module Out : Out = Share
+
 
 (* Variables, aliases and or-pattern
    are handled by preprocessing,
@@ -213,7 +219,7 @@ let compile_match_out repr xs pss fail =
   let pss = List.map (fun (ps,lam) -> ps,Out.final lam) pss
   and fail = Out.final fail in
   let out = compile_match repr xs pss fail in
-  Out.to_lambda out
+  Out.to_lambda xs out
 
 (******************)
 
@@ -223,6 +229,7 @@ let add_defs lam defs =
     lam defs
 
 let compile_matching loc repr handler_fun arg pat_act_list _partial =
+  Location.prerr_warning loc Warnings.Deprecated ;
   let v =
     match arg with Lvar v -> v | _ -> Ident.create "m" in
   let pat_exits = split (alpha_ids alpha_pat) vars_pat pat_act_list in
