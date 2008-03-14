@@ -60,7 +60,7 @@ TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo \
   bytecomp/matchcommon.cmo bytecomp/discr.cmo \
-  bytecomp/share.cmo \
+  bytecomp/share.cmo bytecomp/heuristic.cmo \
   bytecomp/treematch.cmo bytecomp/automatch.cmo bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \

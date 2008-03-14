@@ -1,3 +1,17 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                           Objective Caml                            *)
+(*                                                                     *)
+(*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 2008 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
 open Misc
 open Asttypes
 open Primitive
@@ -121,11 +135,13 @@ let rec compile_match repr xs pss lam_fail = match pss with
 | [] -> lam_fail
 | (ps,act)::pss when all_vars ps ->
     compile_row repr xs ps act xs pss lam_fail
-| _ -> match xs with
-  | x::xs ->
-      do_compile_matching repr x xs pss lam_fail
-  | [] -> assert false
-
+| _ ->
+    let xs,pss = Heuristic.opt xs pss in
+    begin  match xs with
+    | x::xs ->
+	do_compile_matching repr x xs pss lam_fail
+    | [] -> assert false
+    end
 and compile_row repr xs ps act ys pss lam_fail = match xs,ps with
 | [],[] ->
     if Out.is_guarded act then
@@ -225,7 +241,7 @@ let add_defs lam defs =
     lam defs
 
 let compile_matching loc repr handler_fun arg pat_act_list _partial =
-  Location.prerr_warning loc Warnings.Deprecated ;
+  if verbose > 0 then Location.prerr_warning loc Warnings.Deprecated ;
   let v =
     match arg with Lvar v -> v | _ -> Ident.create "m" in
   let pat_exits = split (alpha_ids alpha_pat) vars_pat pat_act_list in
@@ -288,10 +304,8 @@ let for_tupled_function loc xs pats_act_list  _partial =
 	  
 end
 
-let share = true
-
 let compile_matching,  for_multiple_match,  for_tupled_function =
-  if share then
+  if Matchcommon.share then
     let module M = Make(Share) in
     M.compile_matching,  M.for_multiple_match,  M.for_tupled_function
   else

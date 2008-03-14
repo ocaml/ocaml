@@ -113,8 +113,10 @@ let share_node key =
 	  {sharable = true ; refs = 0 ; fv=comp_fv key ; me = key } in
       Hashtbl.add t_mem key idx ;
       idx in
+(*
   prerr_string "NODE: " ;
   dump_node stderr idx (Extarray.get t_node idx) ; flush stderr ;
+*)
   idx
 
 let final lam = share_node (Final lam)
@@ -293,9 +295,12 @@ let to_lambda xs idx =
 
   let _tops = put_handlers (of_list xs)  idx in
 
-  for k = 0 to Array.length t_node-1 do
-    dump_node stderr k t_node.(k)
-  done ;
+  if Matchcommon.verbose > 1 then begin
+    prerr_endline "** Sharing **" ;
+    for k = 0 to Array.length t_node-1 do
+      dump_node stderr k t_node.(k)
+    done
+  end ;
 
   let rec do_share alpha idx =
     let cell = t_node.(idx) in

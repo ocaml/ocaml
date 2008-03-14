@@ -7,6 +7,28 @@ open Lambda
 open Parmatch
 open Printf
 
+(* Matching parameters *)
+
+let match_string =
+  try Sys.getenv "MATCH" with Not_found -> ""
+
+let match_option c =
+  try ignore (String.index match_string c) ; true
+  with Not_found -> false
+
+let share = match_option 's'
+and tree = match_option 't'
+and direction = match_option 'o'
+and verbose =
+  let r = ref 0 in
+  for i = 0 to String.length match_string-1 do
+    match  match_string.[i] with
+    | 'v' -> incr r
+    | 'V' -> r := !r + 2
+    | _ -> ()
+  done ;
+  !r
+
 (* Flatten one pattern *)
 exception Cannot_flatten
 

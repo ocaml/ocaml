@@ -177,6 +177,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matchcommon.cmo \
 	$(OCAMLSRCDIR)/bytecomp/discr.cmo \
 	$(OCAMLSRCDIR)/bytecomp/share.cmo \
+	$(OCAMLSRCDIR)/bytecomp/heuristic.cmo \
 	$(OCAMLSRCDIR)/bytecomp/treematch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/automatch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matching.cmo \

@@ -21,12 +21,10 @@ open Parmatch
 open Printf
 open Matchcommon
 
-let treematch =
-  try ignore (Sys.getenv "TREEMATCH") ; true with Not_found -> false
 
 
 let compile_matching =
-  if treematch then Treematch.compile_matching
+  if Matchcommon.tree then Treematch.compile_matching
   else Automatch.compile_matching
 
 let for_function loc repr param pat_act_list partial =
@@ -49,11 +47,11 @@ let for_let loc param pat body =
 
 (* Those two are more complex *)
 let for_multiple_match =
-  if treematch then Treematch.for_multiple_match
+  if Matchcommon.tree then Treematch.for_multiple_match
   else Automatch.for_multiple_match
 
 let for_tupled_function =
-  if treematch then Treematch.for_tupled_function
+  if Matchcommon.tree then Treematch.for_tupled_function
   else Automatch.for_tupled_function
 
 (* Re-exported *)

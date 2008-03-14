@@ -44,8 +44,8 @@ module DSet = Set.Make
       let compare = compare
     end)
 
-let collect_pat p = match p.pat_desc with
-| Tpat_any -> DSet.empty
+let rec collect_pat p = match p.pat_desc with
+| Tpat_any|Tpat_var _ -> DSet.empty
 | Tpat_constant c -> DSet.singleton (Constant c)
 | Tpat_tuple ps -> DSet.singleton (Tuple (List.length ps))
 | Tpat_construct (c,_) -> DSet.singleton (Construct c)
@@ -66,7 +66,13 @@ let collect_pat p = match p.pat_desc with
     let lbl_all = match lbls with
     | (lbl,_)::_ -> lbl.lbl_all | [] -> assert false in
     DSet.singleton (Record lbl_all)
-| Tpat_var _|Tpat_alias (_,_)|Tpat_or (_,_,_) -> assert false
+|Tpat_alias (p,_) -> collect_pat p
+|Tpat_or (p1,p2,_) -> DSet.union (collect_pat p1) (collect_pat p2)
+
+let collect_ps ps =
+   List.fold_left
+    (fun r p -> DSet.union (collect_pat p) r)
+    DSet.empty ps
 
 let collect pss =
   List.fold_left
