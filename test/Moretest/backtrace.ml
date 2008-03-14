@@ -13,6 +13,7 @@ let g msg =
      | Error "c" -> raise (Error "c")
 
 let _ =
+  Printexc.record_backtrace true;
   ignore (g Sys.argv.(1))
 
 (* Expected results:
@@ -31,12 +32,12 @@ Called from file "backtrace.ml", line 6, characters 42-53
 Called from file "backtrace.ml", line 6, characters 42-53
 Called from file "backtrace.ml", line 10, characters 4-11
 Re-raised at file "backtrace.ml", line 12, characters 68-71
-Called from file "backtrace.ml", line 16, characters 9-25
+Called from file "backtrace.ml", line 17, characters 9-25
 
 OCAMLRUNPARAM=b=1 ./backtrace.out c
 Fatal error: exception Backtrace.Error("c")
 Raised at file "backtrace.ml", line 13, characters 26-37
-Called from file "backtrace.ml", line 16, characters 9-25
+Called from file "backtrace.ml", line 17, characters 9-25
 
 OCAMLRUNPARAM=b=1 ./backtrace.out d
 Fatal error: exception Backtrace.Error("d")
@@ -47,10 +48,10 @@ Called from file "backtrace.ml", line 6, characters 42-53
 Called from file "backtrace.ml", line 6, characters 42-53
 Called from file "backtrace.ml", line 6, characters 42-53
 Called from file "backtrace.ml", line 10, characters 4-11
-Called from file "backtrace.ml", line 16, characters 9-25
+Called from file "backtrace.ml", line 17, characters 9-25
 
 OCAMLRUNPARAM=b=1 ./backtrace.out
 Fatal error: exception Invalid_argument("index out of bounds")
-Raised at file "backtrace.ml", line 16, characters 12-24
+Raised at file "backtrace.ml", line 17, characters 12-24
 
 *)

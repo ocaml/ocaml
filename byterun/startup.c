@@ -258,7 +258,7 @@ static int parse_command_line(char **argv)
       exit(0);
       break;
     case 'b':
-      caml_init_backtrace();
+      caml_record_backtrace(Val_true);
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
@@ -311,7 +311,7 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
-      case 'b': caml_init_backtrace(); break;
+      case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       }
     }

@@ -16,6 +16,7 @@
 /* Stack backtrace for uncaught exceptions */
 
 #include <stdio.h>
+#include "alloc.h"
 #include "backtrace.h"
 #include "memory.h"
 #include "misc.h"
@@ -28,12 +29,29 @@ code_t * caml_backtrace_buffer = NULL;
 value caml_backtrace_last_exn = Val_unit;
 #define BACKTRACE_BUFFER_SIZE 1024
 
-/* Initialize the backtrace machinery */
+/* Start or stop the backtrace machinery */
 
-void caml_init_backtrace(void)
+CAMLprim value caml_record_backtrace(value vflag)
 {
-  caml_backtrace_active = 1;
-  caml_register_global_root(&caml_backtrace_last_exn);
+  int flag = Int_val(vflag);
+
+  if (flag != caml_backtrace_active) {
+    caml_backtrace_active = flag;
+    caml_backtrace_pos = 0;
+    if (flag) {
+      caml_register_global_root(&caml_backtrace_last_exn);
+    } else {
+      caml_remove_global_root(&caml_backtrace_last_exn);
+    }
+  }
+  return Val_unit;
+}
+
+/* Return the status of the backtrace machinery */
+
+CAMLprim value caml_backtrace_status(value vunit)
+{
+  return Val_bool(caml_backtrace_active);
 }
 
 /* Store the return addresses contained in the given stack fragment
@@ -95,18 +113,31 @@ void caml_stash_backtrace(value exn, uintnat pc, char * sp, char * trapsp)
   }
 }
 
-/* Print a backtrace */
+/* Extract location information for the given frame descriptor */
 
-static void print_location(int index, frame_descr * d)
+struct loc_info {
+  int loc_valid;
+  int loc_is_raise;
+  char * loc_filename;
+  int loc_lnum;
+  int loc_startchr;
+  int loc_endchr;
+};
+
+static void extract_location_info(frame_descr * d,
+                                  /*out*/ struct loc_info * li)
 {
   uintnat infoptr;
-  uint32 info1, info2, k, n, l, a, b;
-  char * kind;
+  uint32 info1, info2;
 
   /* If no debugging information available, print nothing.
      When everything is compiled with -g, this corresponds to 
      compiler-inserted re-raise operations. */
-  if ((d->frame_size & 1) == 0) return;
+  if ((d->frame_size & 1) == 0) {
+    li->loc_valid = 0;
+    li->loc_is_raise = 1;
+    return;
+  }
   /* Recover debugging info */
   infoptr = ((uintnat) d +
              sizeof(char *) + sizeof(short) + sizeof(short) +
@@ -123,27 +154,72 @@ static void print_location(int index, frame_descr * d)
      l (20 bits): line number
      a ( 8 bits): beginning of character range
      b (10 bits): end of character range */
-  k = info1 & 3;
-  n = info1 & 0x3FFFFFC;
-  l = info2 >> 12;
-  a = (info2 >> 4) & 0xFF;
-  b = ((info2 & 0xF) << 6) | (info1 >> 26);
+  li->loc_valid = 1;
+  li->loc_is_raise = (info1 & 3) != 0;
+  li->loc_filename = (char *) infoptr + (info1 & 0x3FFFFFC);
+  li->loc_lnum = info2 >> 12;
+  li->loc_startchr = (info2 >> 4) & 0xFF;
+  li->loc_endchr = ((info2 & 0xF) << 6) | (info1 >> 26);
+}
+
+static void print_location(struct loc_info * li, int index)
+{
+  char * info;
+
+  /* Ignore compiler-inserted raise */
+  if (!li->loc_valid) return;
 
   if (index == 0)
-    kind = "Raised at";
-  else if (k == 1)
-    kind = "Re-raised at";
+    info = "Raised at";
+  else if (li->loc_is_raise)
+    info = "Re-raised at";
   else
-    kind = "Called from";
-
-  fprintf(stderr, "%s file \"%s\", line %d, characters %d-%d\n",
-          kind, ((char *) infoptr) + n, l, a, b);
+    info = "Called from";
+  fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n",
+           info, li->loc_filename, li->loc_lnum,
+           li->loc_startchr, li->loc_endchr);
 }
+
+/* Print a backtrace */
 
 void caml_print_exception_backtrace(void)
 {
   int i;
+  struct loc_info li;
 
-  for (i = 0; i < caml_backtrace_pos; i++)
-    print_location(i, (frame_descr *) caml_backtrace_buffer[i]);
+  for (i = 0; i < caml_backtrace_pos; i++) {
+    extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
+    print_location(&li, i);
+  }
 }
+
+/* Convert the backtrace to a data structure usable from Caml */
+
+CAMLprim value caml_get_exception_backtrace(value unit)
+{
+  CAMLparam0();
+  CAMLlocal4(res, arr, p, fname);
+  int i;
+  struct loc_info li;
+
+  arr = caml_alloc(caml_backtrace_pos, 0);
+  for (i = 0; i < caml_backtrace_pos; i++) {
+    extract_location_info((frame_descr *) (caml_backtrace_buffer[i]), &li);
+    if (li.loc_valid) {
+      fname = caml_copy_string(li.loc_filename);
+      p = caml_alloc_small(5, 0);
+      Field(p, 0) = Val_bool(li.loc_is_raise);
+      Field(p, 1) = fname;
+      Field(p, 2) = Val_int(li.loc_lnum);
+      Field(p, 3) = Val_int(li.loc_startchr);
+      Field(p, 4) = Val_int(li.loc_endchr);
+    } else {
+      p = caml_alloc_small(1, 1);
+      Field(p, 0) = Val_bool(li.loc_is_raise);
+    }
+    caml_modify(&Field(arr, i), p);
+  }
+  res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+  CAMLreturn(res);
+}
+

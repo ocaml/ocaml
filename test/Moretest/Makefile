@@ -15,20 +15,21 @@
 include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
+BYTEFLAGS=-g
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
 OPTFLAGS=-S -g
 CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
-OUTS=callback.bin manyargs.bin \
+OUTS=bakctrace2.bin callback.bin manyargs.bin \
 cm.byt cmlinked.bin cm.bin \
 bigarrays.bin bigarrf.bin fftba.bin globroots.bin float.bin intext.bin \
 printf scanf regexp.byt regexp.opt md5.bin recmod.bin
 
 BROKENS=# multdef.bin
 
-all: $(OUTS)
+all: $(OUTS:.bin=.byt) $(OUTS)
 
 callback.byt: callback.cmo callbackprim.o
 	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
@@ -181,11 +182,11 @@ tfloat_record.byt: float_record.cmo tfloat_record.cmo
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .byt .fast.byt .bin .fast.bin .c .o
 
 .ml.byt:
-	$(CAMLC) -o $*.byt $<
+	$(CAMLC) $(BYTEFLAGS) -o $*.byt $<
 
 .ml.fast.byt:
 	cp $*.ml $*_fast.ml
-	$(CAMLC) -unsafe -o $*.fast.byt $*_fast.ml
+	$(CAMLC) $(BYTEFLAGS) -unsafe -o $*.fast.byt $*_fast.ml
 	rm -f $*_fast.ml
 
 .ml.bin:
@@ -200,7 +201,7 @@ tfloat_record.byt: float_record.cmo tfloat_record.cmo
 	$(CAMLC) -c $<
 
 .ml.cmo:
-	$(CAMLC) -c -g $<
+	$(CAMLC) $(BYTEFLAGS) -c -g $<
 
 .ml.cmx:
 	$(CAMLOPT) $(OPTFLAGS) -c $<

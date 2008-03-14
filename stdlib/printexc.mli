@@ -36,3 +36,24 @@ val catch : ('a -> 'b) -> 'a -> 'b
    makes it harder to track the location of the exception
    using the debugger or the stack backtrace facility.
    So, do not use [Printexc.catch] in new code.  *)
+
+val print_backtrace: out_channel -> unit
+(** [Printexc.print_backtrace oc] prints an exception backtrace
+    on the output channel [oc].  The backtrace lists the program
+    locations where the most-recently raised exception was raised
+    and where it was propagated through function calls. *)
+
+val get_backtrace: unit -> string
+(** [Printexc.get_backtrace ()] returns a string containing the
+    same exception backtrace that [Printexc.print_backtrace] would
+    print. *)
+
+val record_backtrace: bool -> unit
+(** [Printexc.record_backtrace b] turns recording of exception backtraces
+    on (if [b = true]) or off (if [b = false]).  Initially, backtraces
+    are not recorded, unless the [b] flag is given to the program
+    through the [OCAMLRUNPARAM] variable.  *)
+
+val backtrace_status: unit -> bool
+(** [Printexc.backtrace_status()] returns [true] if exception
+    backtraces are currently recorded, [false] if not. *)
