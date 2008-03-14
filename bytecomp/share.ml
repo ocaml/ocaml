@@ -31,16 +31,21 @@ type key =
   | Patch of out * out (* Delayed patch for guards *)
 
 type node =
-    { mutable refs : int ; fv : IdentSet.t ; me : key ; }
+    { mutable sharable : bool ;
+      mutable refs : int ;
+      fv : IdentSet.t ;
+      me : key ; }
 
 let t_mem = Hashtbl.create 101
 and t_node = Extarray.create ()
 (* This table maps access path to (unique) variables *)
 let t_ids = Hashtbl.create 101
 
+
 let reset_state () =
   Hashtbl.clear t_mem ;
-  Hashtbl.clear t_ids
+  Hashtbl.clear t_ids ;
+  ()
 
 (* DEBUG *)
 
@@ -75,9 +80,7 @@ let dump_node chan k cell =
 (* Free variables *)
 (******************)
 
-(* Just get them *)
-let node_fv idx =  (Extarray.get t_node idx).fv  
-
+let node_fv idx = (Extarray.get t_node idx).fv
 
 (* Compute them *)
 
@@ -97,14 +100,17 @@ let comp_fv node = match node with
 	 | Some idx -> node_fv idx))
 | Patch (idx1,idx2) -> IdentSet.union (node_fv idx1) (node_fv idx2)
 
+
 (* Hash-Consing constructors *)
+
 
 let share_node key =
   let idx = 
     try Hashtbl.find t_mem key
     with Not_found ->
       let idx =
-	Extarray.emit t_node {refs = 0 ; fv = comp_fv key ; me = key } in
+	Extarray.emit t_node
+	  {sharable = true ; refs = 0 ; fv=comp_fv key ; me = key } in
       Hashtbl.add t_mem key idx ;
       idx in
   prerr_string "NODE: " ;
@@ -128,10 +134,8 @@ let share_id lam =
 let field_ids d x = Discr.field_ids share_id d x
   
 let get_fields ys es idx =
-  let fv = node_fv idx in
-  let yes =
-    List.filter (fun (y,_) -> IdentSet.mem y fv)
-      (List.combine ys es) in
+  let yes = List.combine ys es in
+  let yes = List.filter (fun (y,_) -> IdentSet.mem y (node_fv idx)) yes in
   List.fold_right
     (fun (y,(str,ey)) k -> share_bind str y ey k)
     yes idx
@@ -212,40 +216,44 @@ let to_lambda xs idx =
     Hashtbl.replace handlers idx ((e,args,idx_e)::get_handlers idx) in
 
 
-(* Set ref counts, much safer to do it in a separate pass *)
+(* Set ref counts, much safer  in a separate pass,
+   also returns the set of all bound vars *)
   let rec set_refs idx =
     let cell = t_node.(idx) in
-    if cell.refs > 0 then
-      cell.refs <- cell.refs + 1
-    else begin
+    if cell.refs > 0 then begin
+      cell.refs <- cell.refs + 1 ;
+      IdentSet.empty
+    end else begin
       cell.refs <- 1 ;
       match cell.me with
-      | Final _ -> ()
-      | Bind (_,_,_,idx) -> set_refs  idx
-      | Patch (i1,i2) -> set_refs i1 ; set_special i2 
+      | Final _ -> IdentSet.empty
+      | Bind (_,x,_,idx) -> IdentSet.add x (set_refs idx)
+      | Patch (i1,i2) ->
+	  IdentSet.union (set_refs i1) (set_unsharable i2)
       | Choose (x,cls,d) ->
-          List.iter (fun (_,idx) -> set_refs idx) cls ;
-          begin match d with
-          | None -> ()
-          | Some idx -> set_refs idx
-          end
+          List.fold_right
+	    (fun (_,idx) bv -> IdentSet.union (set_refs idx) bv)	      
+	    cls
+            (match d with
+            | None -> IdentSet.empty
+            | Some idx -> set_refs idx)
     end
-  and set_special idx =
+  and set_unsharable idx =
     let cell =  t_node.(idx) in
-    cell.refs <- 1 ;
+    cell.sharable <-  false ;
     match cell.me with
-    | Final _ -> ()
-    | Bind (_,_,_,idx) -> set_special idx 
+    | Final _ -> IdentSet.empty
+    | Bind (_,x,_,idx) -> IdentSet.add x (set_unsharable idx) 
     | Patch _|Choose _ -> assert false in
 
-  set_refs idx ;
+  let all_bounds = set_refs idx in
 
 (* Put handlers at appropriate places,
    ie, as deep as possible with all exits included *)
 
   let rec put_handlers bound idx =
     let cell = t_node.(idx) in
-    if cell.refs = 1 then
+    if cell.sharable && cell.refs = 1 then
       do_put bound idx cell.me
     else begin
       register_exit idx ;
@@ -277,7 +285,8 @@ let to_lambda xs idx =
     | idx_e::rem ->
         let e = get_exit idx_e
         and cell = t_node.(idx_e) in
-        let args = IdentSet.diff cell.fv bound in
+        let args =
+	  IdentSet.diff (IdentSet.inter all_bounds cell.fv) bound in
         register_handler idx e args idx_e ;
         let r,now = merge (do_put cell.fv idx_e cell.me) r in
         dodo_put bound idx (dodo_put bound idx r now) rem in
@@ -290,7 +299,7 @@ let to_lambda xs idx =
 
   let rec do_share alpha idx =
     let cell = t_node.(idx) in
-    if cell.refs = 1 then
+    if not cell.sharable || cell.refs = 1 then
       share_handlers alpha (share_node alpha cell) idx
     else
       let e,args =

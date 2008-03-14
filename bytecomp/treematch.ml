@@ -69,11 +69,7 @@ module OutLambda = struct
   let switch = Discr.switch
 end
 
-(*
-module Out : Out = OutLambda
-*)
-
-module Out : Out = Share
+module Make (Out : Out) = struct
 
 
 (* Variables, aliases and or-pattern
@@ -290,3 +286,14 @@ let for_tupled_function loc xs pats_act_list  _partial =
   let lam =  add_defs lam defs in
   Lstaticcatch (lam,(num_fail,[]),partial_function loc ())
 	  
+end
+
+let share = true
+
+let compile_matching,  for_multiple_match,  for_tupled_function =
+  if share then
+    let module M = Make(Share) in
+    M.compile_matching,  M.for_multiple_match,  M.for_tupled_function
+  else
+    let module M = Make(OutLambda) in
+    M.compile_matching,  M.for_multiple_match,  M.for_tupled_function
