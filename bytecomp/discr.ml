@@ -164,9 +164,9 @@ let mk_fids mk_id mk_lam first_pos last_pos =
   let rec mk_rec pos =
     if pos > last_pos then [],[]
     else
-      let ys,lams = mk_rec (pos+1) in
       let lam = mk_lam pos in
       let y = mk_id lam in
+      let ys,lams = mk_rec (pos+1) in
       y::ys,lam::lams in
   mk_rec first_pos
       

@@ -129,13 +129,19 @@ let rec match_omega p = match p.pat_desc with
   | Tpat_construct (_, _)| Tpat_tuple _|Tpat_constant _)
       -> false
 
-let direction col pss =
+let direction k col pss =
   let rec do_rec col qss pss = match col,pss with
   | [],[] -> 0
   | c::col, ps::pss ->
-      if match_omega c && Parmatch.satisfiable qss ps then
-	0
-      else
+      if match_omega c then begin	
+	if Parmatch.satisfiable qss ps then 0
+	else begin
+	  if Matchcommon.verbose > 0 then begin
+	    Printf.eprintf "** Non obvious direction: %i\n"  k
+	  end ;
+	  do_rec col (ps::qss) pss - 1
+	end
+      end else 
 	do_rec col (ps::qss) pss - 1
   | _ -> assert false in
   do_rec col [] pss
@@ -149,10 +155,7 @@ let directions xs pss ks =
 	if i < k then
 	  do_rec (i+1) (conses ps left) qss ks xs
 	else
-	  let d =
-	    if false && no_test ps then 0-List.length ps
-	    else
-	      direction ps (appends left right) in
+	  let d = direction k ps (appends left right) in
 	  (k,d)::do_rec (i+1) (conses ps left) qss rk xs
     | _ -> assert false in
 
