@@ -2752,6 +2752,10 @@ let rec build_subtype env visited loops posi level t =
                 ty1, tl1
             | _ -> raise Not_found
           in
+          (* Fix PR4505: do not set ty to Tvar when it appears in tl1,
+             as this occurence might break the occur check.
+             XXX not clear whether this correct anyway... *)
+          if List.exists (deep_occur ty) tl1 then raise Not_found;
           ty.desc <- Tvar;
           let t'' = newvar () in
           let loops = (ty, t'') :: loops in
