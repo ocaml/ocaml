@@ -362,9 +362,7 @@ val min_float : float
 
 val epsilon_float : float
 (** The difference between [1.0] and the smallest exactly representable
-    floating-point number greater than [1.0].  In other words,
-    [epsilon_float] is the smallest positive floating-point number [x]
-    such that [(1.0 +. x) -. 1.0 = x]. *)
+    floating-point number greater than [1.0]. *)
 
 type fpclass =
     FP_normal           (** Normal number, none of the below *)
