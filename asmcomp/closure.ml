@@ -378,7 +378,7 @@ let rec is_pure = function
   | Lconst cst -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _), _) -> false
+           Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
   | Lprim(p, args) -> List.for_all is_pure args
   | Levent(lam, ev) -> is_pure lam
   | _ -> false
