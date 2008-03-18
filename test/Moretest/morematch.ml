@@ -1167,3 +1167,17 @@ let () =
   test "lucexn1" lucexn  (Error "coucou") "coucou" ;
   test "lucexn2" lucexn (Found ("int: ",0)) "int: 0" ;
   ()
+
+(* Peform strict bindings *)
+
+let find (_x:string) = raise Not_found
+
+let exists name =
+  try
+    let _ = find name in true
+  with
+  | Not_found -> false
+
+let () = 
+  test "exists1" exists "coucou" false ;
+  ()
