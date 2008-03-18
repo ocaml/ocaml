@@ -325,7 +325,7 @@ let make_switch (arg,sw) = match sw.sw_failaction with
           i_max := i ;
           max := c
         end) t ;
-    if !i_max >= 0 then
+    if !i_max >= 1 then
       let default = !i_max in
       let rec remove = function
         | [] -> []

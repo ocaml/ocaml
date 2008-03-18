@@ -17,5 +17,5 @@
 open Typedtree
 
 val opt:
-    Ident.t list -> (pattern list * 'b) list ->
-      Ident.t list * (pattern list * 'b) list
+    ('a * Ident.t * 'c) list -> (pattern list * 'b) list ->
+      ('a * Ident.t * 'c) list * (pattern list * 'b) list

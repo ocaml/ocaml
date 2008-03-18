@@ -11,7 +11,7 @@ true: -traverse
 "yacc" or "win32caml": not_hygienic
 
 # We want -g everywhere it's possible
-true: debug
+# true: debug
 
 # By default everything we link needs the stdlib
 true: use_stdlib

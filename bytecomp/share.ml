@@ -124,6 +124,7 @@ let final lam = share_node (Final lam)
 let share_bind str x ex idx = share_node (Bind (str,x,ex,idx))
 
 let alias x y idx = share_bind Alias x (Lvar y) idx
+let bind = share_bind
 
 (* lam will always be a field access on another variable *)
 let share_id lam =
@@ -134,13 +135,6 @@ let share_id lam =
     id
 
 let field_ids d x = Discr.field_ids share_id d x
-  
-let get_fields ys es idx =
-  let yes = List.combine ys es in
-  let yes = List.filter (fun (y,_) -> IdentSet.mem y (node_fv idx)) yes in
-  List.fold_right
-    (fun (y,(str,ey)) k -> share_bind str y ey k)
-    yes idx
 
 let switch x cls d = match cls,d with
 | ([],Some idx)
@@ -170,7 +164,7 @@ let event_branch _repr idx = idx
 
 let of_list xs = List.fold_right IdentSet.add xs IdentSet.empty
 
-let to_lambda xs idx =
+let to_lambda idx =
   let t_node = Extarray.trim t_node in
   reset_state () ;
 
@@ -293,7 +287,7 @@ let to_lambda xs idx =
         let r,now = merge (do_put cell.fv idx_e cell.me) r in
         dodo_put bound idx (dodo_put bound idx r now) rem in
 
-  let _tops = put_handlers (of_list xs)  idx in
+  let _tops = put_handlers IdentSet.empty  idx in
 
   if Matchcommon.verbose > 1 then begin
     prerr_endline "** Sharing **" ;
@@ -334,13 +328,15 @@ let to_lambda xs idx =
   | Final e ->
       IdentSet.fold
         (fun x k ->
-          try bind Alias x  (subst_var alpha x) k
+          try Lambda.bind Alias x  (subst_var alpha x) k
           with Not_found -> k)
         cell.fv e
+  | Bind (str,x,(Lvar _ as ex),idx) ->
+      Lambda.bind str x (subst_lambda alpha ex) (do_share alpha idx)
   | Bind (str,x,ex,idx) ->
       let xx = Ident.create (Ident.name x)
       and exx = subst_lambda alpha ex in
-      bind str xx exx
+      Lambda.bind str xx exx
 	(do_share (Ident.add x (Lvar xx) alpha) idx)
   | Choose (v,cls,d) ->
       Discr.switch

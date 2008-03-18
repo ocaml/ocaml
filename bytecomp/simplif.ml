@@ -278,7 +278,7 @@ let simplify_lets lam =
   | Lconst cst -> ()
   | Lapply(l1, ll, _) -> count l1; List.iter count ll
   | Lfunction(kind, params, l) -> count l
-  | Llet(str, v, Lvar w, l2) when not !Clflags.debug ->
+  | Llet(str, v, Lvar w, l2) (* when not !Clflags.debug *) ->
       (* v will be replaced by w in l2, so each occurrence of v in l2
          increases w's refcount *)
       count l2;
@@ -348,7 +348,7 @@ let simplify_lets lam =
   | Lconst cst as l -> l
   | Lapply(l1, ll, loc) -> Lapply(simplif l1, List.map simplif ll, loc)
   | Lfunction(kind, params, l) -> Lfunction(kind, params, simplif l)
-  | Llet(str, v, Lvar w, l2) when not !Clflags.debug ->
+  | Llet(str, v, Lvar w, l2) (* when  not !Clflags.debug *) ->
       Hashtbl.add subst v (simplif (Lvar w));
       simplif l2
   | Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [linit]), lbody)
@@ -370,7 +370,7 @@ let simplify_lets lam =
   | Llet(StrictOpt, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | n -> Llet(Alias, v, simplif l1, simplif l2)
+      | n -> Llet(StrictOpt, v, simplif l1, simplif l2)
       end
   | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->

@@ -216,8 +216,30 @@ let nrows xs pss ks =
   end ;
 
   ws
-  
 
+(*****************************)
+(* Minimize branching factor *)  
+(*****************************)
+
+let nbranchs xs pss ks =
+  let rec do_rec  i right ks xs = match ks,xs with
+    | [],_ -> []
+    | k::rk,_::xs ->
+	let ps,qss = extract_first_col right in
+	if i < k then
+	  do_rec (i+1) qss ks xs
+	else
+	  (k,-nmats ps)::do_rec (i+1) qss rk xs
+    | _ -> assert false in
+  let ws =  do_rec 0 pss ks xs in
+
+  if Matchcommon.verbose > 0 then begin
+    prerr_string "NBRANCH: " ;
+    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
+    prerr_endline ""
+  end ;
+
+  ws
 (******************************************)
 (* Select minimal variable, this enforces *)
 (* irrelevance of previous column swaps   *)
@@ -240,6 +262,7 @@ let best_column xs pss = match xs with
 |[]|[_]  -> assert false
 | _ ->
     let pss = List.map fst pss
+    and xs = List.map (fun (_,x,_) -> x) xs
     and ks = mapi (fun i _ -> i) xs in
 
     if Matchcommon.verbose > 0 then begin
@@ -248,30 +271,9 @@ let best_column xs pss = match xs with
     end ;
 
     let zyva =
-      first << vars xs << nrows xs pss << directions xs pss in
+      first << vars xs << nbranchs xs pss
+	<< nrows xs pss << directions xs pss in
     zyva ks
-
-(*
-    let css = Pat.collects pss in
-    let wilds = eval_dups pss in
-    let ncs = List.map (fun cs -> ConstrSet.cardinal cs) css in
-    let ks =
-      List.map2 (fun wild ncs ->
-	let c = wild * ncs in
-	c)
-	wilds ncs in
-    let ks = List.combine ds ks in
-    let vs = List.map (fun x -> x.id_id) xs in
-    let ks = List.map2 (fun (x,y) z -> (x,y,z)) ks vs in
-    let ks = List.map2 (fun (x,y,t) z -> (x,y,z,t)) ks ncs in
-    if verbose > 1 then begin
-      fprintf stderr "*** HEURISTIC **\n" ;
-      Pat.print_matrix stderr pss ;
-      List.iter (fun (d,k,v,z) -> fprintf stderr " (%d,%d,%d,%d)" d k v z) ks ;
-      prerr_newline ()
-  end ;
-  min ks
-*)
 
 let choose xs pss =  match xs with
 |[]|[_] -> xs,pss

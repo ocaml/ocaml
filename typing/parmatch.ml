@@ -20,6 +20,188 @@ open Types
 open Typedtree
 
 (*************************************)
+(* Values as patterns pretty printer *)
+(*************************************)
+
+(****************************************)
+(* Utilities for retrieving constructor *)
+(* and record label names               *)
+(****************************************)
+
+exception Empty (* Empty pattern *)
+
+let get_type_path ty tenv =
+  let ty = Ctype.repr (Ctype.expand_head tenv ty) in
+  match ty.desc with
+  | Tconstr (path,_,_) -> path
+  | _ -> fatal_error "Parmatch.get_type_path"
+
+let get_type_descr ty tenv =
+  match (Ctype.repr ty).desc with
+  | Tconstr (path,_,_) -> Env.find_type path tenv
+  | _ -> fatal_error "Parmatch.get_type_descr"
+
+let rec get_constr tag ty tenv =
+  match get_type_descr ty tenv with
+  | {type_kind=Type_variant constr_list} ->
+      Datarepr.find_constr_by_tag tag constr_list
+  | {type_manifest = Some _} ->
+      get_constr tag (Ctype.expand_head_once tenv ty) tenv
+  | _ -> fatal_error "Parmatch.get_constr"
+
+let find_label lbl lbls =
+  try
+    let name,_,_ = List.nth lbls lbl.lbl_pos in
+    name
+  with Failure "nth" -> "*Unkown label*"
+
+let rec get_record_labels ty tenv =
+  match get_type_descr ty tenv with
+  | {type_kind = Type_record(lbls, rep)} -> lbls
+  | {type_manifest = Some _} ->
+      get_record_labels (Ctype.expand_head_once tenv ty) tenv
+  | _ -> fatal_error "Parmatch.get_record_labels"
+
+open Format
+;;
+
+let get_constr_name tag ty tenv  = match tag with
+| Cstr_exception path -> Path.name path
+| _ ->
+  try
+    let name,_ = get_constr tag ty tenv in name
+  with
+  | Datarepr.Constr_not_found -> "*Unknown constructor*"
+
+let is_cons tag v  = match get_constr_name tag v.pat_type v.pat_env with
+| "::" -> true
+| _ -> false
+
+  
+let rec pretty_val ppf v = match v.pat_desc with
+  | Tpat_any -> fprintf ppf "_"
+  | Tpat_var x -> Ident.print ppf x
+  | Tpat_constant (Const_int i) -> fprintf ppf "%d" i
+  | Tpat_constant (Const_char c) -> fprintf ppf "%C" c
+  | Tpat_constant (Const_string s) -> fprintf ppf "%S" s
+  | Tpat_constant (Const_float f) -> fprintf ppf "%s" f
+  | Tpat_constant (Const_int32 i) -> fprintf ppf "%ldl" i
+  | Tpat_constant (Const_int64 i) -> fprintf ppf "%LdL" i
+  | Tpat_constant (Const_nativeint i) -> fprintf ppf "%ndn" i
+  | Tpat_tuple vs ->
+      fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
+  | Tpat_construct ({cstr_tag=tag},[]) ->
+      let name = get_constr_name tag v.pat_type v.pat_env in
+      fprintf ppf "%s" name
+  | Tpat_construct ({cstr_tag=tag},[w]) ->
+      let name = get_constr_name tag v.pat_type v.pat_env in
+      fprintf ppf "@[<2>%s@ %a@]" name pretty_arg w
+  | Tpat_construct ({cstr_tag=tag},vs) ->
+      let name = get_constr_name tag v.pat_type v.pat_env in
+      begin match (name, vs) with
+        ("::", [v1;v2]) ->
+          fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
+      |  _ ->
+          fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
+      end
+  | Tpat_variant (l, None, _) ->
+      fprintf ppf "`%s" l
+  | Tpat_variant (l, Some w, _) ->
+      fprintf ppf "@[<2>`%s@ %a@]" l pretty_arg w
+  | Tpat_record lvs ->
+      fprintf ppf "@[{%a}@]"
+        (pretty_lvals (get_record_labels v.pat_type v.pat_env))
+        (List.filter
+           (function
+             | (_,{pat_desc=Tpat_any}) -> true (* do not show lbl=_ *)
+             | _ -> true) lvs)
+  | Tpat_array vs ->
+      fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
+  | Tpat_alias (v,x) ->
+      fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
+  | Tpat_or (v,w,_)    ->
+      fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
+
+and pretty_car ppf v = match v.pat_desc with
+| Tpat_construct ({cstr_tag=tag}, [_ ; _])
+    when is_cons tag v ->
+      fprintf ppf "(%a)" pretty_val v
+| _ -> pretty_val ppf v
+
+and pretty_cdr ppf v = match v.pat_desc with
+| Tpat_construct ({cstr_tag=tag}, [v1 ; v2])
+    when is_cons tag v ->
+      fprintf ppf "%a::@,%a" pretty_car v1 pretty_cdr v2
+| _ -> pretty_val ppf v
+
+and pretty_arg ppf v = match v.pat_desc with
+| Tpat_construct (_,_::_) -> fprintf ppf "(%a)" pretty_val v
+|  _ -> pretty_val ppf v
+
+and pretty_or ppf v = match v.pat_desc with
+| Tpat_or (v,w,_) ->
+    fprintf ppf "%a|@,%a" pretty_or v pretty_or w
+| _ -> pretty_val ppf v
+
+and pretty_vals sep ppf = function
+  | [] -> ()
+  | [v] -> pretty_val ppf v
+  | v::vs ->
+      fprintf ppf "%a%s@ %a" pretty_val v sep (pretty_vals sep) vs
+
+and pretty_lvals lbls ppf = function
+  | [] -> ()
+  | [lbl,v] ->
+      let name = find_label lbl lbls in
+      fprintf ppf "%s=%a" name pretty_val v
+  | (lbl,v)::rest ->
+      let name = find_label lbl lbls in
+      fprintf ppf "%s=%a;@ %a" name pretty_val v (pretty_lvals lbls) rest
+
+let top_pretty ppf v =
+  fprintf ppf "@[%a@]@?" pretty_val v
+
+let prerr_pat v =
+  top_pretty str_formatter v ;
+  prerr_string (flush_str_formatter ())
+
+let pretty_pat p =
+  top_pretty Format.str_formatter p ;
+  prerr_string (Format.flush_str_formatter ())
+
+type matrix = pattern list list
+
+let pretty_line ps =
+  List.iter
+    (fun p ->
+      top_pretty Format.str_formatter p ;
+      prerr_string " <" ;
+      prerr_string (Format.flush_str_formatter ()) ;
+      prerr_string ">")
+    ps
+
+let pretty_matrix pss =
+  prerr_endline "begin matrix" ;
+  List.iter
+    (fun ps ->
+      pretty_line ps ;
+      prerr_endline "")
+    pss ;
+  prerr_endline "end matrix"
+
+let pretty_match pss = 
+  prerr_endline "begin matrix" ;
+  List.iter
+    (fun (ps,_) ->
+      pretty_line ps ;
+      prerr_endline "")
+    pss ;
+  prerr_endline "end matrix"
+  
+
+  
+
+(*************************************)
 (* Utilities for building patterns   *)
 (*************************************)
 
@@ -105,158 +287,8 @@ and compats ps qs = match ps,qs with
 | p::ps, q::qs -> compat p q && compats ps qs
 | _,_    -> assert false
 
-(****************************************)
-(* Utilities for retrieving constructor *)
-(* and record label names               *)
-(****************************************)
-
-exception Empty (* Empty pattern *)
-
-let get_type_path ty tenv =
-  let ty = Ctype.repr (Ctype.expand_head tenv ty) in
-  match ty.desc with
-  | Tconstr (path,_,_) -> path
-  | _ -> fatal_error "Parmatch.get_type_path"
-
-let get_type_descr ty tenv =
-  match (Ctype.repr ty).desc with
-  | Tconstr (path,_,_) -> Env.find_type path tenv
-  | _ -> fatal_error "Parmatch.get_type_descr"
-
-let rec get_constr tag ty tenv =
-  match get_type_descr ty tenv with
-  | {type_kind=Type_variant constr_list} ->
-      Datarepr.find_constr_by_tag tag constr_list
-  | {type_manifest = Some _} ->
-      get_constr tag (Ctype.expand_head_once tenv ty) tenv
-  | _ -> fatal_error "Parmatch.get_constr"
-
-let find_label lbl lbls =
-  try
-    let name,_,_ = List.nth lbls lbl.lbl_pos in
-    name
-  with Failure "nth" -> "*Unkown label*"
-
-let rec get_record_labels ty tenv =
-  match get_type_descr ty tenv with
-  | {type_kind = Type_record(lbls, rep)} -> lbls
-  | {type_manifest = Some _} ->
-      get_record_labels (Ctype.expand_head_once tenv ty) tenv
-  | _ -> fatal_error "Parmatch.get_record_labels"
 
 
-(*************************************)
-(* Values as patterns pretty printer *)
-(*************************************)
-
-open Format
-;;
-
-let get_constr_name tag ty tenv  = match tag with
-| Cstr_exception path -> Path.name path
-| _ ->
-  try
-    let name,_ = get_constr tag ty tenv in name
-  with
-  | Datarepr.Constr_not_found -> "*Unknown constructor*"
-
-let is_cons tag v  = match get_constr_name tag v.pat_type v.pat_env with
-| "::" -> true
-| _ -> false
-
-  
-let rec pretty_val ppf v = match v.pat_desc with
-  | Tpat_any -> fprintf ppf "_"
-  | Tpat_var x -> Ident.print ppf x
-  | Tpat_constant (Const_int i) -> fprintf ppf "%d" i
-  | Tpat_constant (Const_char c) -> fprintf ppf "%C" c
-  | Tpat_constant (Const_string s) -> fprintf ppf "%S" s
-  | Tpat_constant (Const_float f) -> fprintf ppf "%s" f
-  | Tpat_constant (Const_int32 i) -> fprintf ppf "%ldl" i
-  | Tpat_constant (Const_int64 i) -> fprintf ppf "%LdL" i
-  | Tpat_constant (Const_nativeint i) -> fprintf ppf "%ndn" i
-  | Tpat_tuple vs ->
-      fprintf ppf "@[(%a)@]" (pretty_vals ",") vs
-  | Tpat_construct ({cstr_tag=tag},[]) ->
-      let name = get_constr_name tag v.pat_type v.pat_env in
-      fprintf ppf "%s" name
-  | Tpat_construct ({cstr_tag=tag},[w]) ->
-      let name = get_constr_name tag v.pat_type v.pat_env in
-      fprintf ppf "@[<2>%s@ %a@]" name pretty_arg w
-  | Tpat_construct ({cstr_tag=tag},vs) ->
-      let name = get_constr_name tag v.pat_type v.pat_env in
-      begin match (name, vs) with
-        ("::", [v1;v2]) ->
-          fprintf ppf "@[%a::@,%a@]" pretty_car v1 pretty_cdr v2
-      |  _ ->
-          fprintf ppf "@[<2>%s@ @[(%a)@]@]" name (pretty_vals ",") vs
-      end
-  | Tpat_variant (l, None, _) ->
-      fprintf ppf "`%s" l
-  | Tpat_variant (l, Some w, _) ->
-      fprintf ppf "@[<2>`%s@ %a@]" l pretty_arg w
-  | Tpat_record lvs ->
-      fprintf ppf "@[{%a}@]"
-        (pretty_lvals (get_record_labels v.pat_type v.pat_env))
-        (List.filter
-           (function
-             | (_,{pat_desc=Tpat_any}) -> false (* do not show lbl=_ *)
-             | _ -> true) lvs)
-  | Tpat_array vs ->
-      fprintf ppf "@[[| %a |]@]" (pretty_vals " ;") vs
-  | Tpat_alias (v,x) ->
-      fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
-  | Tpat_or (v,w,_)    ->
-      fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
-
-and pretty_car ppf v = match v.pat_desc with
-| Tpat_construct ({cstr_tag=tag}, [_ ; _])
-    when is_cons tag v ->
-      fprintf ppf "(%a)" pretty_val v
-| _ -> pretty_val ppf v
-
-and pretty_cdr ppf v = match v.pat_desc with
-| Tpat_construct ({cstr_tag=tag}, [v1 ; v2])
-    when is_cons tag v ->
-      fprintf ppf "%a::@,%a" pretty_car v1 pretty_cdr v2
-| _ -> pretty_val ppf v
-
-and pretty_arg ppf v = match v.pat_desc with
-| Tpat_construct (_,_::_) -> fprintf ppf "(%a)" pretty_val v
-|  _ -> pretty_val ppf v
-
-and pretty_or ppf v = match v.pat_desc with
-| Tpat_or (v,w,_) ->
-    fprintf ppf "%a|@,%a" pretty_or v pretty_or w
-| _ -> pretty_val ppf v
-
-and pretty_vals sep ppf = function
-  | [] -> ()
-  | [v] -> pretty_val ppf v
-  | v::vs ->
-      fprintf ppf "%a%s@ %a" pretty_val v sep (pretty_vals sep) vs
-
-and pretty_lvals lbls ppf = function
-  | [] -> ()
-  | [lbl,v] ->
-      let name = find_label lbl lbls in
-      fprintf ppf "%s=%a" name pretty_val v
-  | (lbl,v)::rest ->
-      let name = find_label lbl lbls in
-      fprintf ppf "%s=%a;@ %a" name pretty_val v (pretty_lvals lbls) rest
-
-let top_pretty ppf v =
-  fprintf ppf "@[%a@]@?" pretty_val v
-
-
-let prerr_pat v =
-  top_pretty str_formatter v ;
-  prerr_string (flush_str_formatter ())
-  
-
-(****************************)
-(* Utilities for matching   *)
-(****************************)
 
 (* Check top matching *)
 let simple_match p1 p2 = 
@@ -390,9 +422,9 @@ let discr_pat q pss =
               (lbl,omega)::r)
           (record_arg acc)
           largs in
-      acc_pat
-        (make_pat (Tpat_record new_omegas) p.pat_type p.pat_env)
-        pss
+      let n_acc = 
+	make_pat (Tpat_record new_omegas) p.pat_type p.pat_env in
+      acc_pat n_acc  pss
   | _ -> acc in
 
   match normalize_pat q with
@@ -887,20 +919,20 @@ let rec satisfiable pss qs = match pss with
           (* first column of pss is made of variables only *)
         | [] -> satisfiable (filter_extra pss) qs
         | constrs  ->
-            if full_match false constrs then
+            if full_match false constrs then begin
               List.exists
                 (fun (p,pss) ->
                   not (is_absent_pat p) &&
                   satisfiable pss (simple_match_args p omega @ qs))
                 constrs
-            else
+            end else begin
               satisfiable (filter_extra pss) qs
+	    end
         end
     | {pat_desc=Tpat_variant (l,_,r)}::_ when is_absent l r -> false
     | q::qs ->
         let q0 = discr_pat q pss in
         satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
-
 (*
   Now another satisfiable function that additionally
   supplies an example of a matching value.
@@ -1029,39 +1061,6 @@ type answer =
   | Upartial of Typedtree.pattern list  (* Neither, with list of useless pattern *)
 
 
-let pretty_pat p =
-  top_pretty Format.str_formatter p ;
-  prerr_string (Format.flush_str_formatter ())
-
-type matrix = pattern list list
-
-let pretty_line ps =
-  List.iter
-    (fun p ->
-      top_pretty Format.str_formatter p ;
-      prerr_string " <" ;
-      prerr_string (Format.flush_str_formatter ()) ;
-      prerr_string ">")
-    ps
-
-let pretty_matrix pss =
-  prerr_endline "begin matrix" ;
-  List.iter
-    (fun ps ->
-      pretty_line ps ;
-      prerr_endline "")
-    pss ;
-  prerr_endline "end matrix"
-
-let pretty_match pss = 
-  prerr_endline "begin matrix" ;
-  List.iter
-    (fun (ps,_) ->
-      pretty_line ps ;
-      prerr_endline "")
-    pss ;
-  prerr_endline "end matrix"
-  
 (* this row type enable column processing inside the matrix 
     - left  ->  elements not to be processed,
     - right ->  elements to be processed
@@ -1082,6 +1081,7 @@ let pretty_rows rs =
       prerr_endline "")
     rs ;
   prerr_endline "end matrix"
+
 
 (* Initial build *)
 let make_row ps = {ors=[] ; no_ors=[]; active=ps}

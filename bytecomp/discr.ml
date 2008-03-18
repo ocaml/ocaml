@@ -162,15 +162,15 @@ let specialize d pss =
 (* Extract data fields *)
 let mk_fids mk_id mk_lam first_pos last_pos =
   let rec mk_rec pos =
-    if pos > last_pos then [],[]
+    if pos > last_pos then []
     else
-      let lam = mk_lam pos in
-      let y = mk_id lam in
-      let ys,lams = mk_rec (pos+1) in
-      y::ys,lam::lams in
+      let (str,ex) = mk_lam pos in
+      let x = mk_id ex in
+      let r = mk_rec (pos+1) in
+      (str,x,ex)::r in
   mk_rec first_pos
       
-let fids_constant _x = [],[]
+let fids_constant _x = []
 
 and fids_block mk_id arity x =
   mk_fids mk_id
