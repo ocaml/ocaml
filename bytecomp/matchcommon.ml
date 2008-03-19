@@ -485,60 +485,75 @@ let as_exit e =
   with
   | Not_simple -> None
 
-let call_switcher konst fail arg low high int_lambda_list =
+(* Share switch actions *)
+let rec as_exits = function
+  | [] -> []
+  | (i,e)::rem ->
+      begin match as_exit e with
+      | Some num -> (i,num,None)::as_exits rem
+      | None ->
+	  let num = next_raise_count () in
+	  (i,num,Some e)::as_exits rem
+      end 
 
-  let rec as_exits = function
+let share_actions fail int_lambda_list =
+
+  let rec do_share bef = function
     | [] -> []
-    | (i,e)::rem ->
-	begin match as_exit e with
-	| Some num -> (i,num,None)::as_exits rem
-	| None ->
-	    let num = next_raise_count () in
-	    (i,num,Some e)::as_exits rem
-	end in
-  let rec share_again bef = function
-    | [] -> []
-    | (_,_,None) as x::rem -> x::share_again bef rem
+    | (_,_,None) as x::rem -> x::do_share bef rem
     | (i,num,Some e) as x::rem ->
 	let rec find = function
 	  | [] -> raise Not_found
-	  | (_,num0,e0)::rem ->
+	  | (num0,e0)::rem ->
 	      if equal_action e e0 then num0
 	      else find rem in
 	begin try
 	  let num0 = find bef in
-	  (i,num0,None)::share_again bef rem
+	  (i,num0,None)::do_share bef rem
 	with Not_found ->
-	  x::share_again ((i,num,e)::bef) rem
+	  x::do_share ((num,e)::bef) rem
 	end in
-	      
-  let eo = match fail with
-  | None -> None
-  | Some e ->
-      let num = next_raise_count () in
-      Some (num,e)
-  and xs = share_again [] (as_exits int_lambda_list) in
 
-  let int_lambda_list =
-    List.map
+  let xs = as_exits int_lambda_list in
+  let (fail,cls) as r  =
+    match fail with
+    | None -> None, do_share [] xs
+    | Some e ->
+	begin match as_exit e with
+	| Some num -> Some (num,None), do_share [] xs
+	| None ->
+	    let num = next_raise_count () in
+	    Some (num, Some e),do_share [num,e] xs
+	end in
+  let fail_act = 
+    match fail with
+      None -> None | Some (num,_) -> Some (Lstaticraise (num,[]))
+  and cls_act = List.map
       (fun (i,num,_) -> i,Lstaticraise (num,[]))
-      xs
-  and fail =
-    match eo with
-    | None -> None
-    | Some (num,_) -> Some (Lstaticraise (num,[])) in
+      cls in
+  (fail_act,cls_act),r
+    
 
-  let edges, (cases, actions) = as_interval fail low high int_lambda_list in
-  let lam = Switcher.zyva edges konst arg cases actions in  
+let put_action_handlers fail cls lam =
   List.fold_left
     (fun lam (_,num,e) -> match e with
     | None ->lam
     | Some e ->  Lstaticcatch (lam,(num,[]),e))
-    (match eo with
-    | None -> lam
-    | Some (num,e) ->
+    (match fail with
+    | None|Some (_,None) -> lam
+    | Some (num,Some e) ->
 	Lstaticcatch (lam,(num,[]),e))
-    xs
+    cls
+
+let call_switcher  konst fail arg low high int_lambda_list =
+  let edges, (cases, actions) = as_interval fail low high int_lambda_list in
+  Switcher.zyva edges konst arg cases actions
+
+let share_call_switcher konst fail arg low high int_lambda_list =
+  let (fail,int_lambda_list),(f,cls) = share_actions fail int_lambda_list in
+  let edges, (cases, actions) = as_interval fail low high int_lambda_list in
+  let lam = Switcher.zyva edges konst arg cases actions in  
+  put_action_handlers f cls lam
 
 
 (* Stubs for all cases of switch *)
@@ -547,14 +562,14 @@ let switch_constant cst arg const_lambda_list fail = match cst with
     let int_lambda_list =
       List.map (function Const_int n, l -> n,l | _ -> assert false)
         const_lambda_list in
-    call_switcher
+    share_call_switcher
       lambda_of_int fail arg min_int max_int int_lambda_list
 | Const_char _ ->
     let int_lambda_list =
       List.map (function Const_char c, l -> (Char.code c, l)
         | _ -> assert false)
         const_lambda_list in
-    call_switcher
+    share_call_switcher
       (fun i -> Lconst (Const_base (Const_int i)))
       fail arg 0 255 int_lambda_list
 | Const_string _ ->
@@ -617,8 +632,9 @@ let split_cases tag_lambda_list =
     
 
 let switch_constr cstr arg cls fail =
+  let (fail,cls),(f,xs) = share_actions fail cls in
   let (consts, nonconsts) = split_cases cls in
-  match same_actions cls,fail with
+  let lam = match same_actions cls,fail with
   | Some act,None -> act
   | _,_ ->
       begin match
@@ -648,7 +664,8 @@ let switch_constr cstr arg cls fail =
 				sw_blocks = nonconsts;
 				sw_failaction = fail})
 	  end
-      end
+      end in
+  put_action_handlers f xs lam
       
 (* Variants *)
 let make_test_sequence_variant_constant fail arg int_lambda_list =
@@ -672,40 +689,43 @@ let call_switcher_variant_constr fail arg int_lambda_list =
 let test_int_or_block arg if_int if_block =
   Lifthenelse(Lprim (Pisint, [arg]), if_int, if_block)
 
-let switch_variant arg cls fail =
-  let one_action = same_actions cls in
-  let (consts, nonconsts) = split_cases cls in
-  match one_action,fail with
-  | Some act,None -> act
-  | _,_ ->
-      match (consts, nonconsts) with
-      | ([n, act1], [m, act2]) when fail=None ->
-          test_int_or_block arg act1 act2
-      | (_, []) -> (* One can compare integers and pointers *)
-          make_test_sequence_variant_constant fail arg consts
-      | ([], _) ->
-          let lam = call_switcher_variant_constr
-              fail arg nonconsts in
-          (* One must not dereference integers *)
-          begin match fail with
-          | None -> lam
-          | Some fail -> test_int_or_block arg fail lam
-          end
-      | (_, _) ->
-          let lam_const =
-            call_switcher_variant_constant
-              fail arg consts
-          and lam_nonconst =
-            call_switcher_variant_constr
-              fail arg nonconsts in
-          test_int_or_block arg lam_const lam_nonconst
+let switch_variant arg cls fail =  
+  let (fail,cls),(f,xs) = share_actions fail cls in
+  let lam =
+    let one_action = same_actions cls in
+    let (consts, nonconsts) = split_cases cls in
+    match one_action,fail with
+    | Some act,None -> act
+    | _,_ ->
+	match (consts, nonconsts) with
+	| ([n, act1], [m, act2]) when fail=None ->
+            test_int_or_block arg act1 act2
+	| (_, []) -> (* One can compare integers and pointers *)
+            make_test_sequence_variant_constant fail arg consts
+	| ([], _) ->
+            let lam = call_switcher_variant_constr
+		fail arg nonconsts in
+            (* One must not dereference integers *)
+            begin match fail with
+            | None -> lam
+            | Some fail -> test_int_or_block arg fail lam
+            end
+	| (_, _) ->
+            let lam_const =
+              call_switcher_variant_constant
+		fail arg consts
+            and lam_nonconst =
+              call_switcher_variant_constr
+		fail arg nonconsts in
+            test_int_or_block arg lam_const lam_nonconst in
+  put_action_handlers f xs lam
 
 (* Array *)
 
 let switch_array kind arg cls fail =
   let newvar = Ident.create "len" in
   let switch =
-    call_switcher
+    share_call_switcher
       lambda_of_int
       fail (Lvar newvar)
       0 max_int cls in

@@ -254,7 +254,6 @@ let has_default ds =
   | Array (_,_) -> true)
 
 (* Switch, on peut dire que c'est une horreur *)
-
 let sw_constant c x cls fail =
   Matchcommon.switch_constant c (Lvar x)
     (List.map
