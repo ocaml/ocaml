@@ -334,10 +334,9 @@ let to_lambda idx =
   | Bind (str,x,(Lvar _ as ex),idx) ->
       Lambda.bind str x (subst_lambda alpha ex) (do_share alpha idx)
   | Bind (str,x,ex,idx) ->
-      let xx = Ident.create (Ident.name x)
-      and exx = subst_lambda alpha ex in
-      Lambda.bind str xx exx
-	(do_share (Ident.add x (Lvar xx) alpha) idx)
+      let ex = subst_lambda alpha ex in
+      Lambda.bind str x ex
+	(do_share alpha idx)
   | Choose (v,cls,d) ->
       Discr.switch
 	(match subst_var alpha v with Lvar v -> v | _ -> assert false)

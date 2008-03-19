@@ -152,7 +152,7 @@ let rec raw_rec env = function
   | Lprim (Pfield i,args) ->
       Lprim (Pfield i, List.map (raw_rec env) args)
   | Lconst _ as l -> l
-  | Lstaticraise (i,args) ->
+   | Lstaticraise (i,args) ->
         Lstaticraise (i, List.map (raw_rec env) args)
   | _ -> raise Not_simple
 
@@ -304,6 +304,41 @@ let make_switch_switcher arg cases acts =
             sw_numblocks = 0 ; sw_blocks =  []  ;
             sw_failaction = None})
     
+
+module SArg = struct
+  type primitive = Lambda.primitive
+
+  let eqint = Pintcomp Ceq
+  let neint = Pintcomp Cneq
+  let leint = Pintcomp Cle
+  let ltint = Pintcomp Clt
+  let geint = Pintcomp Cge
+  let gtint = Pintcomp Cgt
+
+  type act = Lambda.lambda
+
+  let make_prim p args = Lprim (p,args)
+  let make_offset arg n = match n with
+  | 0 -> arg
+  | _ -> Lprim (Poffsetint n,[arg])
+  let bind arg body =
+    let newvar,newarg = match arg with
+    | Lvar v -> v,arg
+    | _      ->
+        let newvar = Ident.create "switcher" in
+        newvar,Lvar newvar in
+    bind StrictOpt newvar arg (body newarg)
+
+  let make_isout h arg = Lprim (Pisout, [h ; arg])
+  let make_isin h arg = Lprim (Pnot,[make_isout h arg])
+  let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
+  let make_switch = make_switch_switcher
+end
+
+module Switcher = Switch.Make(SArg)
+
+open Switch
+
 let full sw =
   List.length sw.sw_consts = sw.sw_numconsts &&
   List.length sw.sw_blocks = sw.sw_numblocks
@@ -344,40 +379,6 @@ let make_switch (arg,sw) = match sw.sw_failaction with
 | _ -> Lswitch (arg,sw)
       
 
-
-module SArg = struct
-  type primitive = Lambda.primitive
-
-  let eqint = Pintcomp Ceq
-  let neint = Pintcomp Cneq
-  let leint = Pintcomp Cle
-  let ltint = Pintcomp Clt
-  let geint = Pintcomp Cge
-  let gtint = Pintcomp Cgt
-
-  type act = Lambda.lambda
-
-  let make_prim p args = Lprim (p,args)
-  let make_offset arg n = match n with
-  | 0 -> arg
-  | _ -> Lprim (Poffsetint n,[arg])
-  let bind arg body =
-    let newvar,newarg = match arg with
-    | Lvar v -> v,arg
-    | _      ->
-        let newvar = Ident.create "switcher" in
-        newvar,Lvar newvar in
-    bind StrictOpt newvar arg (body newarg)
-
-  let make_isout h arg = Lprim (Pisout, [h ; arg])
-  let make_isin h arg = Lprim (Pnot,[make_isout h arg])
-  let make_if cond ifso ifnot = Lifthenelse (cond, ifso, ifnot)
-  let make_switch = make_switch_switcher
-end
-
-module Switcher = Switch.Make(SArg)
-
-open Switch
 
 let lambda_of_int i =  Lconst (Const_base (Const_int i))
 
@@ -474,19 +475,31 @@ let as_interval fail low high l =
   | None -> as_interval_nofail l
   | Some act -> as_interval_canfail act low high l)
 
-(* Since the switcher may unshare actions,
-   we introduce exits for them *)
+(* Since the switcher may unshare actions,  we introduce exits for them *)
+
+let as_exit e =
+  try
+    match raw_rec [] e with
+    | Lstaticraise (i,[]) -> Some i
+    | _ -> None
+  with
+  | Not_simple -> None
+
 let call_switcher konst fail arg low high int_lambda_list =
+
   let rec as_exits = function
     | [] -> []
     | (i,e)::rem ->
-	let num = next_raise_count () in
-	let xs = as_exits rem in
-	(i,num,e)::xs in
-
+	begin match as_exit e with
+	| Some num -> (i,num,None)::as_exits rem
+	| None ->
+	    let num = next_raise_count () in
+	    (i,num,Some e)::as_exits rem
+	end in
   let rec share_again bef = function
     | [] -> []
-    | (i,num,e)::rem ->
+    | (_,_,None) as x::rem -> x::share_again bef rem
+    | (i,num,Some e) as x::rem ->
 	let rec find = function
 	  | [] -> raise Not_found
 	  | (_,num0,e0)::rem ->
@@ -496,7 +509,7 @@ let call_switcher konst fail arg low high int_lambda_list =
 	  let num0 = find bef in
 	  (i,num0,None)::share_again bef rem
 	with Not_found ->
-	  (i,num,Some e)::share_again ((i,num,e)::bef) rem
+	  x::share_again ((i,num,e)::bef) rem
 	end in
 	      
   let eo = match fail with
@@ -515,8 +528,7 @@ let call_switcher konst fail arg low high int_lambda_list =
     | None -> None
     | Some (num,_) -> Some (Lstaticraise (num,[])) in
 
-  let edges, (cases, actions) =
-    as_interval fail low high int_lambda_list in
+  let edges, (cases, actions) = as_interval fail low high int_lambda_list in
   let lam = Switcher.zyva edges konst arg cases actions in  
   List.fold_left
     (fun lam (_,num,e) -> match e with

@@ -141,6 +141,7 @@ clean::
 
 test: codetest
 
+byte:  $(BYTE_EXE)
 bytetest:
 	set -e; \
         for prog in $(BYTE_EXE:.byt=); do \

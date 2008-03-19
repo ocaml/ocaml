@@ -18,6 +18,138 @@
 open Asttypes
 open Lambda
 
+(* Since the various matching algorithms may violate the invariant
+   of unique let-bound names, refresh them all *)
+
+let refresh lam =
+
+  let rec do_pairs do_rec seen env = function
+    | [] -> seen,[]
+    | (x,e)::rem ->
+	let seen,e = do_rec seen env e in
+	let seen,rem = do_pairs do_rec seen env rem in
+	seen,(x,e)::rem in
+
+
+  let do_bd seen env v =
+    if IdentSet.mem v seen then begin
+	let w = Ident.rename v in
+(*
+	Printf.eprintf "RENAME: %s -> %s\n"
+	  (Ident.unique_name v) (Ident.unique_name w) ;
+*)
+	seen,Ident.add v w env,w
+    end else
+      IdentSet.add v seen,env,v in
+
+  let rec do_bds seen env = function
+    | [] -> seen,env,[]
+    | x::xs ->
+	let seen,env,x = do_bd seen env x in
+	let seen,env,xs = do_bds seen env xs in
+	seen,env,x::xs in
+
+  let do_var env v =
+    try Ident.find_same v env
+    with Not_found -> v in
+
+	  
+  let rec do_rec seen env e = match e with
+  | Lvar v -> seen,Lvar (do_var env v)
+  | Lconst _ -> seen,e
+  | Lapply (f,es,loc) ->
+      let seen,f = do_rec seen env f in
+      let seen,es = do_args seen env es in
+      seen,Lapply (f,es,loc)
+  | Lfunction (k,xs,e) ->
+      let seen,env,xs = do_bds seen env xs in
+      do1 seen env e (fun e ->  Lfunction (k,xs,e))
+  | Llet (str,v,ev,e) ->
+      let seen,ev = do_rec seen env ev in
+      let seen,env,v = do_bd seen env v in
+      do1 seen env e (fun e -> Llet (str,v,ev,e))
+  | Lletrec(xes,e) ->
+      let xs,es = List.split xes in
+      let seen,env,xs = do_bds seen env xs in
+      let seen,es = do_args seen env es in
+      let seen,e = do_rec seen env e in
+      seen,Lletrec (List.combine xs es,e)
+  | Lprim (p,es) ->
+      let seen,es = do_args seen env es in
+      seen,Lprim (p,es)
+  | Lswitch (e,sw) ->
+      let seen,e = do_rec seen env e in
+      let seen,consts = do_pairs do_rec seen env sw.sw_consts in
+      let seen,blocks = do_pairs do_rec seen env sw.sw_blocks in
+      let seen,failaction = match sw.sw_failaction with
+      | None -> seen,None
+      | Some e ->
+	  let seen,e = do_rec seen env e in
+	  seen,Some e in
+      seen,Lswitch
+	(e,
+	 {sw with
+	  sw_consts=consts ; sw_blocks=blocks; sw_failaction=failaction; })
+  | Lstaticraise (i,es) ->
+      let seen,es = do_args seen env es in
+      seen,Lstaticraise (i,es)
+  | Lstaticcatch(e1, (i,xs), e2) ->
+      let seen,e1 = do_rec seen env e1 in
+      let seen,env,xs = do_bds seen env xs in
+      let seen,e2 = do_rec seen env e2 in
+      seen,Lstaticcatch(e1, (i,xs), e2)
+  | Ltrywith(e1, v, e2) ->
+      let seen,e1 = do_rec seen env e1 in
+      let seen,env,v = do_bd seen env v in
+      let seen,e2 = do_rec seen env e2 in
+      seen,Ltrywith(e1, v, e2)
+  | Lifthenelse(e1, e2, e3) ->
+      let seen,e1 = do_rec seen env e1 in
+      let seen,e2 = do_rec seen env e2 in
+      let seen,e3 = do_rec seen env e3 in
+      seen,Lifthenelse(e1, e2, e3)
+  | Lsequence(e1, e2) ->
+      do2 seen env e1 e2 (fun e1 e2 ->  Lsequence(e1, e2))
+  | Lwhile(e1, e2) ->
+      do2 seen env e1 e2 (fun e1 e2 ->  Lwhile(e1, e2))
+  | Lfor(v, e1, e2, dir, e3) ->
+      let seen,e1 = do_rec seen env e1 in
+      let seen,e2 = do_rec seen env e2 in
+      let seen,env,v = do_bd seen env v in
+      let seen,e3 = do_rec seen env e3 in
+      seen, Lfor(v, e1, e2, dir, e3)
+  | Lassign(v, e) ->
+      let v = do_var env v in
+      do1 seen env e (fun e -> Lassign(v, e)) 
+  | Lsend(k, m, o, el) ->
+      let seen,m = do_rec seen env m in
+      let seen,o = do_rec seen env o in
+      let seen,el = do_args seen env el in
+      seen, Lsend(k, m, o, el)
+  | Levent(l, ev) ->
+      do1 seen env l (fun l ->  Levent(l, ev))
+  | Lifused(v, e) ->
+      let v = do_var env v in
+      do1 seen env e (fun e ->  Lifused(v, e))
+
+  and do1 seen env e k =
+    let seen,e = do_rec seen env e in
+    seen,k e
+
+  and do2 seen env e1 e2 k =
+    let seen,e1 = do_rec seen env e1 in
+    let seen,e2 = do_rec seen env e2 in
+    seen, k e1 e2
+
+  and do_args seen env = function
+    | [] -> seen,[]
+    | e::es ->
+	let seen,e = do_rec seen env e in
+	let seen,es = do_args seen env es in
+	seen,e::es in
+
+  let _,lam = do_rec IdentSet.empty Ident.empty lam in lam
+      
 (* To transform let-bound references into variables *)
 
 exception Real_reference
@@ -209,7 +341,7 @@ let simplify_exits lam =
       with
       | Not_found -> l
       end
-  | Lstaticraise (i,ls) as l ->
+  | Lstaticraise (i,ls) ->
       let ls = List.map simplif ls in
       begin try
         let xs,handler =  Hashtbl.find subst i in
@@ -222,7 +354,7 @@ let simplify_exits lam =
           (fun y l r -> Llet (Alias, y, l, r))
           ys ls (Lambda.subst_lambda env handler)
       with
-      | Not_found -> l
+      | Not_found -> Lstaticraise (i,ls)
       end
   | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
       Hashtbl.add subst i ([],simplif l2) ;
@@ -409,4 +541,6 @@ let simplify_lets lam =
   in
   simplif lam
 
-let simplify_lambda lam = simplify_lets (simplify_exits lam)
+let simplify_lambda lam =
+  let lam = refresh lam in
+  simplify_lets (simplify_exits lam)
