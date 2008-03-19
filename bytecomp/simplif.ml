@@ -209,7 +209,7 @@ let simplify_exits lam =
       with
       | Not_found -> l
       end
-  | Lstaticraise (i,ls) as l ->
+  | Lstaticraise (i,ls) ->
       let ls = List.map simplif ls in
       begin try
         let xs,handler =  Hashtbl.find subst i in
@@ -222,7 +222,7 @@ let simplify_exits lam =
           (fun y l r -> Llet (Alias, y, l, r))
           ys ls (Lambda.subst_lambda env handler)
       with
-      | Not_found -> l
+      | Not_found -> Lstaticraise (i,ls)
       end
   | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
       Hashtbl.add subst i ([],simplif l2) ;
