@@ -143,7 +143,8 @@ let count_variants row =
 exception Not_simple
 
 let rec raw_rec env = function
-  | Llet(StrictOpt,x,ex, body) -> raw_rec ((x,raw_rec env ex)::env) body
+  | Llet((StrictOpt|Alias),x,ex, body) ->
+      raw_rec ((x,raw_rec env ex)::env) body
   | Lvar id as l ->
       begin try List.assoc id env with
       | Not_found -> l
@@ -473,10 +474,59 @@ let as_interval fail low high l =
   | None -> as_interval_nofail l
   | Some act -> as_interval_canfail act low high l)
 
+(* Since the switcher may unshare actions,
+   we introduce exits for them *)
 let call_switcher konst fail arg low high int_lambda_list =
+  let rec as_exits = function
+    | [] -> []
+    | (i,e)::rem ->
+	let num = next_raise_count () in
+	let xs = as_exits rem in
+	(i,num,e)::xs in
+
+  let rec share_again bef = function
+    | [] -> []
+    | (i,num,e)::rem ->
+	let rec find = function
+	  | [] -> raise Not_found
+	  | (_,num0,e0)::rem ->
+	      if equal_action e e0 then num0
+	      else find rem in
+	begin try
+	  let num0 = find bef in
+	  (i,num0,None)::share_again bef rem
+	with Not_found ->
+	  (i,num,Some e)::share_again ((i,num,e)::bef) rem
+	end in
+	      
+  let eo = match fail with
+  | None -> None
+  | Some e ->
+      let num = next_raise_count () in
+      Some (num,e)
+  and xs = share_again [] (as_exits int_lambda_list) in
+
+  let int_lambda_list =
+    List.map
+      (fun (i,num,_) -> i,Lstaticraise (num,[]))
+      xs
+  and fail =
+    match eo with
+    | None -> None
+    | Some (num,_) -> Some (Lstaticraise (num,[])) in
+
   let edges, (cases, actions) =
     as_interval fail low high int_lambda_list in
-  Switcher.zyva edges konst arg cases actions
+  let lam = Switcher.zyva edges konst arg cases actions in  
+  List.fold_left
+    (fun lam (_,num,e) -> match e with
+    | None ->lam
+    | Some e ->  Lstaticcatch (lam,(num,[]),e))
+    (match eo with
+    | None -> lam
+    | Some (num,e) ->
+	Lstaticcatch (lam,(num,[]),e))
+    xs
 
 
 (* Stubs for all cases of switch *)
