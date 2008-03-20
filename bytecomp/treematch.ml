@@ -47,6 +47,9 @@ let alpha p lam =
   let ids = IdentSet.elements (extract_vars IdentSet.empty p) in
   alpha_ids alpha_pat ids p lam
 
+let alpha_ids _ _ p lam = p,lam
+and  alpha p lam = p, lam
+
 (* Out module, can produce lambda code or a dag *)
 module type Out = sig
   type out
@@ -288,16 +291,23 @@ let for_multiple_match loc args pat_act_list _partial =
     let pat_exits = split (alpha_ids alpha_pat) vars_pat pat_act_list in
     let pss,defs =  List.split pat_exits in
     let pss = List.fold_right (super_flatten (List.length args)) pss [] in
-    let xs =
+    let args =
       List.map
 	(fun lam -> match lam with
 	| Lvar v -> Alias,v,lam
 	| lam -> Strict,Ident.create "m",lam)
 	args in
     let num_fail = next_raise_count () in
+
+    (* Match compilation can duplicate args.
+       Thus perform top-level strict let binding *)
+    let xs = List.map (fun (_,v,_) -> Alias,v,Lvar v) args in
     let lam = compile_match_out repr xs pss (Lstaticraise (num_fail,[])) in
     let lam = add_defs lam defs in
-    Lstaticcatch (lam,(num_fail,[]), partial_function loc ())
+    let lam = Lstaticcatch (lam,(num_fail,[]), partial_function loc ()) in
+    List.fold_right
+      (fun (str,v,ev) lam -> Lambda.bind str v ev lam)
+      args lam
   with
   | Cannot_flatten ->
       let arg =  (Lprim(Pmakeblock(0, Immutable), args)) in

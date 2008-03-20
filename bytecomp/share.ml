@@ -59,7 +59,7 @@ let rec iter_dump dump chan = function
 
 
 let dump_node chan k cell =
-  fprintf chan "%02d:<%d> " k cell.refs ;
+  fprintf chan "%02d:<%d>%s " k cell.refs (if cell.sharable then "" else "*") ;
   match cell.me with
   | Final lam ->
       let ppf = Format.formatter_of_out_channel chan in
@@ -121,9 +121,17 @@ let share_node key =
 
 let final lam = share_node (Final lam)
 
-let share_bind str x ex idx = share_node (Bind (str,x,ex,idx))
+(* Remove useless bindinds now, it cannot hurt *)
+let share_bind str x ex idx = match ex with
+| Lvar y when Ident.same x y -> idx
+| _ ->
+    if IdentSet.mem x (node_fv idx) then
+      share_node (Bind (str,x,ex,idx))
+    else
+      idx
 
 let alias x y idx = share_bind Alias x (Lvar y) idx
+
 let bind = share_bind
 
 (* lam will always be a field access on another variable *)
@@ -162,54 +170,9 @@ let event_branch _repr idx = idx
 (* Back to lambda... *)
 (*********************)
 
-let of_list xs = List.fold_right IdentSet.add xs IdentSet.empty
-
 let to_lambda idx =
   let t_node = Extarray.trim t_node in
   reset_state () ;
-
-  let rec merge e1 e2 = match e1,e2 with
-  | [],e | e,[] -> e,[]
-  | ((x1,v1) as c1::r1), ((x2,v2) as c2::r2) ->
-      if x1 < x2 then
-	let kont,now = merge r1 e2 in
-	c1::kont,now
-      else if x2 < x1 then
-	let kont,now = merge e1 r2 in
-	c2::kont,now
-      else
-	let v = v1+v2 in
-	if v = t_node.(x1).refs then begin
-          let kont, now = merge r1 r2 in
-          kont, x1::now
-	end else
-          let kont, now = merge r1 r2 in
-          (x1,v)::kont,now in
-
-
-  let idx_to_e = Hashtbl.create 17
-  and handlers = Hashtbl.create 17
-  and exits = Hashtbl.create 17 in
-  
-  
-  let register_exit idx =
-    try
-      let _ = Hashtbl.find idx_to_e idx in ()
-    with
-    | Not_found ->
-        let e = next_raise_count () in
-        Hashtbl.add idx_to_e idx e
-
-  and get_exit idx =
-    try Hashtbl.find idx_to_e idx with Not_found -> assert false in
-
-  let get_handlers idx =
-    try Hashtbl.find handlers idx
-    with Not_found -> [] in
-
-  let register_handler idx e args idx_e =
-    Hashtbl.add exits idx_e (e,args) ;
-    Hashtbl.replace handlers idx ((e,args,idx_e)::get_handlers idx) in
 
 
 (* Set ref counts, much safer  in a separate pass,
@@ -244,16 +207,96 @@ let to_lambda idx =
 
   let all_bounds = set_refs idx in
 
-(* Put handlers at appropriate places,
-   ie, as deep as possible with all exits included *)
+  if Matchcommon.verbose > 2 then begin
+    Printf.eprintf "All bound:" ;
+    IdentSet.iter (fun v -> Printf.eprintf " %s" (Ident.unique_name v))
+      all_bounds ;
+    prerr_endline ""
+  end ;
+
+(***************************************************)
+(* Put handlers at appropriate places,             *)
+(* ie, as deep as possible with all exits included *)
+(* Deep handlers minimize static raise number of   *)
+(* arguments.                                      *)
+(***************************************************)
+
+(*
+  let E be a share expression
+
+   .... E ... E .....
+
+  is to be changed into
+   catch ... (exit i args1) .... (exit i args2)
+   with (i vars) E
+
+*)
+
+  let idx_to_e = Hashtbl.create 17 (* from node indices to exit numbers *)
+  and handlers = Hashtbl.create 17 (* from node indices to to handlers
+	                              to be inserted above them *)
+  and exits = Hashtbl.create 17 in (* from indices to exit numbers + formal args *)
+  
+  
+  let register_exit idx =
+    try
+      let _ = Hashtbl.find idx_to_e idx in ()
+    with
+    | Not_found ->
+        let e = next_raise_count () in
+        Hashtbl.add idx_to_e idx e
+
+  and get_exit idx =
+    try Hashtbl.find idx_to_e idx with Not_found -> assert false in
+
+  let get_handlers idx =
+    try Hashtbl.find handlers idx
+    with Not_found -> [] in
+
+  let register_handler idx e args idx_e =
+    let args = IdentSet.elements args in
+    Hashtbl.add exits idx_e (e,args) ;
+    Hashtbl.replace handlers idx ((e,args,idx_e)::get_handlers idx) in
+
+
+(*
+  e1, e2 below are lists (node index X number of occurences of idx)
+  merge detects when seen references of idx are all here
+  (cf. now below)
+*)
+
+  let rec merge e1 e2 = match e1,e2 with
+  | [],e | e,[] -> e,[]
+  | ((x1,v1) as c1::r1), ((x2,v2) as c2::r2) ->
+      if x1 < x2 then
+	let kont,now = merge r1 e2 in
+	c1::kont,now
+      else if x2 < x1 then
+	let kont,now = merge e1 r2 in
+	c2::kont,now
+      else
+	let v = v1+v2 in
+	if v = t_node.(x1).refs then begin
+          let kont, now = merge r1 r2 in
+          kont, x1::now
+	end else
+          let kont, now = merge r1 r2 in
+          (x1,v)::kont,now in
+
+(*
+  This series of functions builds two tables indexed by nodes (indices)
+    1. For exits
+    2. For handlers
+*)
 
   let rec put_handlers bound idx =
     let cell = t_node.(idx) in
-    if cell.sharable && cell.refs = 1 then
-      do_put bound idx cell.me
-    else begin
+    if cell.sharable && cell.refs > 1 then begin
+ (* This node will be replaced by an exit *)
       register_exit idx ;
       [idx,1]
+    end else begin
+      do_put bound idx cell.me
     end
 
   and do_put bound idx = function
@@ -276,82 +319,82 @@ let to_lambda idx =
 	  merge (put_handlers bound i1) (put_handlers bound i2) in
 	dodo_put bound idx kont now
 
+(* Insert the given list of nodes as handlers here *)
   and dodo_put bound idx r = function
     | [] -> r
     | idx_e::rem ->
         let e = get_exit idx_e
         and cell = t_node.(idx_e) in
-        let args =
-	  IdentSet.diff (IdentSet.inter all_bounds cell.fv) bound in
+	(* Those variables need to be given as arguments
+           by exits *)
+        let args = IdentSet.diff (IdentSet.inter all_bounds cell.fv) bound in
         register_handler idx e args idx_e ;
+	(* Node idx_e is scanned now, in its final context
+           Notice
+             1. All its free vars are bound
+             2. we may have to insert  additional handler,
+                given that scanning idx_e may produce
+                enough exits *)
         let r,now = merge (do_put cell.fv idx_e cell.me) r in
         dodo_put bound idx (dodo_put bound idx r now) rem in
 
   let _tops = put_handlers IdentSet.empty  idx in
 
+
   if Matchcommon.verbose > 1 then begin
     prerr_endline "** Sharing **" ;
     for k = 0 to Array.length t_node-1 do
       dump_node stderr k t_node.(k)
-    done
+    done ;
+    if _tops <> [] then begin
+      prerr_string "Tops:" ;
+      List.iter
+	(fun (idx,c) -> eprintf " <%i,%i>" idx c) _tops ;
+    end
+      
   end ;
 
-  let rec do_share alpha idx =
+  assert (_tops = []) ;
+
+  let rec do_share idx =
     let cell = t_node.(idx) in
     if not cell.sharable || cell.refs = 1 then
-      share_handlers alpha (share_node alpha cell) idx
+      share_handlers (share_node cell) idx
     else
       let e,args =
         try Hashtbl.find exits idx with Not_found -> assert false in
       Lstaticraise
-        (e, List.map (fun v -> subst_var alpha v) (IdentSet.elements args))
+        (e, List.map (fun v -> Lvar v) args)
 
-  and share_handlers alpha r idx =
+  and share_handlers r idx =
     let hs = get_handlers idx in
     List.fold_right
-      (fun (e,args,idx_e) r ->
-        let xs = IdentSet.elements args in
-        let ys = List.map (fun _ -> Ident.create "e") xs in
-        let new_alpha =
-          List.fold_right
-            (fun (x,y) k -> Ident.add x (Lvar y) k)
-            (List.combine xs ys)
-            alpha in
+      (fun (e,xs,idx_e) r ->
         Lstaticcatch
-          (r,(e,ys),
-           share_handlers new_alpha
-             (share_node new_alpha (t_node.(idx_e)))
+          (r,(e,xs),
+           share_handlers
+             (share_node (t_node.(idx_e)))
              idx_e))
       hs r
 
-  and share_node alpha cell = match cell.me with
-  | Final e ->
-      IdentSet.fold
-        (fun x k ->
-          try Lambda.bind Alias x  (subst_var alpha x) k
-          with Not_found -> k)
-        cell.fv e
-  | Bind (str,x,(Lvar _ as ex),idx) ->
-      Lambda.bind str x (subst_lambda alpha ex) (do_share alpha idx)
-  | Bind (str,x,ex,idx) ->
-      let ex = subst_lambda alpha ex in
-      Lambda.bind str x ex
-	(do_share alpha idx)
+  and share_node cell = match cell.me with
+  | Final e -> e
+  | Bind (str,x,ex,idx) -> Lambda.bind str x ex (do_share idx)
   | Choose (v,cls,d) ->
       Discr.switch
-	(match subst_var alpha v with Lvar v -> v | _ -> assert false)
-        (List.map (fun (c,idx) -> c, do_share alpha idx) cls)
+	v
+        (List.map (fun (c,idx) -> c, do_share idx) cls)
         (match d with
         | None -> None
-        | Some idx -> Some (do_share alpha idx))
+        | Some idx -> Some (do_share idx))
   | Patch (i1,i2) ->
-      let lam2 = do_share alpha i2
-      and lam1 =  do_share alpha i1 in
+      let lam2 = do_share i2
+      and lam1 =  do_share i1 in
       try
 	Lambda.patch_guarded lam1 lam2
       with e ->
 	Format.eprintf "%a@." Printlambda.lambda lam1;
 	Format.eprintf "%a@." Printlambda.lambda lam2 ;
 	raise e in
-	  
-  do_share Ident.empty idx
+  
+  do_share idx
