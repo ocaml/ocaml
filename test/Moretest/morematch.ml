@@ -1181,3 +1181,25 @@ let exists name =
 let () = 
   test "exists1" exists "coucou" false ;
   ()
+
+(* when guards *)
+
+let f = function
+  | (1 as x,1)|(2,(2 as x)) -> x+x
+  | (1|2 as x),(1|2 as y) -> x+y
+  | (1,x)|(x,1) when x > 0 -> 1
+  | (2,t)|(t,2) when t > 0 -> 2
+  | (1,0)|(0,1) -> 1001
+  | (2,0)|(0,2) -> 2002
+  | _,_ -> 0
+
+let () =
+  test "when1" f (1,0) 1001 ;
+  test "when2" f (0,1) 1001 ;
+  test "when3" f (2,0) 2002 ;
+  test "when5" f (0,2) 2002 ;
+  test "when6" f (1,1) 2 ;
+  test "when7" f (2,3) 2 ;
+  test "when8" f (3,2) 2 ;
+  test "when9" f (1,2) 3 ;
+  ()

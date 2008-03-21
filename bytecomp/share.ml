@@ -28,11 +28,10 @@ type key =
   | Final of lambda
   | Bind of let_kind * Ident.t * lambda * out
   | Choose of Ident.t * (Discr.discr * out) list * out option
-  | Patch of out * out (* Delayed patch for guards *)
+  | Patch of  out * lambda (* Delayed patch for guards *)
 
 type node =
-    { mutable sharable : bool ;
-      mutable refs : int ;
+    { mutable refs : int ;
       fv : IdentSet.t ;
       me : key ; }
 
@@ -59,7 +58,7 @@ let rec iter_dump dump chan = function
 
 
 let dump_node chan k cell =
-  fprintf chan "%02d:<%d>%s " k cell.refs (if cell.sharable then "" else "*") ;
+  fprintf chan "%02d:<%d> " k cell.refs ;
   match cell.me with
   | Final lam ->
       let ppf = Format.formatter_of_out_channel chan in
@@ -73,8 +72,10 @@ let dump_node chan k cell =
       | Some idx -> fprintf chan ",%d}\n" idx
       | None -> fprintf chan "}\n"
       end
-  | Patch (i1,i2) ->
-      fprintf chan "Patch {%i, %i}\n" i1 i2
+  | Patch (i,lam) ->
+      let ppf = Format.formatter_of_out_channel chan in
+      Format.fprintf ppf "Patch {%i %a}@." i Printlambda.lambda lam
+
 
 (******************)
 (* Free variables *)
@@ -98,7 +99,8 @@ let comp_fv node = match node with
 	 (match d with
 	 | None -> IdentSet.empty
 	 | Some idx -> node_fv idx))
-| Patch (idx1,idx2) -> IdentSet.union (node_fv idx1) (node_fv idx2)
+| Patch (idx,e) ->
+    IdentSet.union (node_fv idx) (Lambda.free_variables e)
 
 
 (* Hash-Consing constructors *)
@@ -110,7 +112,7 @@ let share_node key =
     with Not_found ->
       let idx =
 	Extarray.emit t_node
-	  {sharable = true ; refs = 0 ; fv=comp_fv key ; me = key } in
+	  {refs = 0 ; fv=comp_fv key ; me = key } in
       Hashtbl.add t_mem key idx ;
       idx in
 (*
@@ -159,7 +161,7 @@ let rec is_guarded idx = match (Extarray.get t_node idx).me with
 | Patch _| Choose _ -> assert false
 
 let rec patch_guarded patch idx = match (Extarray.get t_node idx).me with
-| Final _ -> share_node (Patch (patch,idx))
+| Final e -> share_node (Patch (patch,e))
 | Bind (str,x,ex,idx) -> share_bind str x ex (patch_guarded patch idx)
 | Patch _| Choose _ -> assert false
 
@@ -187,8 +189,7 @@ let to_lambda idx =
       match cell.me with
       | Final _ -> IdentSet.empty
       | Bind (_,x,_,idx) -> IdentSet.add x (set_refs idx)
-      | Patch (i1,i2) ->
-	  IdentSet.union (set_refs i1) (set_unsharable i2)
+      | Patch (i,e) -> set_refs i
       | Choose (x,cls,d) ->
           List.fold_right
 	    (fun (_,idx) bv -> IdentSet.union (set_refs idx) bv)	      
@@ -196,14 +197,7 @@ let to_lambda idx =
             (match d with
             | None -> IdentSet.empty
             | Some idx -> set_refs idx)
-    end
-  and set_unsharable idx =
-    let cell =  t_node.(idx) in
-    cell.sharable <-  false ;
-    match cell.me with
-    | Final _ -> IdentSet.empty
-    | Bind (_,x,_,idx) -> IdentSet.add x (set_unsharable idx) 
-    | Patch _|Choose _ -> assert false in
+    end in
 
   let all_bounds = set_refs idx in
 
@@ -291,7 +285,7 @@ let to_lambda idx =
 
   let rec put_handlers bound idx =
     let cell = t_node.(idx) in
-    if cell.sharable && cell.refs > 1 then begin
+    if cell.refs > 1 then begin
  (* This node will be replaced by an exit *)
       register_exit idx ;
       [idx,1]
@@ -314,10 +308,8 @@ let to_lambda idx =
             | Some idx -> put_handlers bound idx,[])
             cls in
         dodo_put bound idx r now
-    | Patch (i1,i2) ->
-	let kont,now =
-	  merge (put_handlers bound i1) (put_handlers bound i2) in
-	dodo_put bound idx kont now
+    | Patch (idx,e) -> put_handlers bound idx
+
 
 (* Insert the given list of nodes as handlers here *)
   and dodo_put bound idx r = function
@@ -358,7 +350,7 @@ let to_lambda idx =
 
   let rec do_share idx =
     let cell = t_node.(idx) in
-    if not cell.sharable || cell.refs = 1 then
+    if cell.refs = 1 then
       share_handlers (share_node cell) idx
     else
       let e,args =
@@ -387,9 +379,8 @@ let to_lambda idx =
         (match d with
         | None -> None
         | Some idx -> Some (do_share idx))
-  | Patch (i1,i2) ->
-      let lam2 = do_share i2
-      and lam1 =  do_share i1 in
+  | Patch (i1,lam2) ->
+      let lam1 =  do_share i1 in
       try
 	Lambda.patch_guarded lam1 lam2
       with e ->
