@@ -54,11 +54,10 @@ runs without any additional tools.
 
 Statically linking Caml bytecode with C code (ocamlc -custom) requires the
 Microsoft Visual C++ compiler (items [1] and [2] in the section
-"third-party software" below).  Dynamic loading of DLLs is supported
-out of the box, without additional software.
+"third-party software" below) and the flexdll tool (item [5]).
 
-The native-code compiler (ocamlopt) requires Visual C++ (items [1], [2])
-and the Microsoft assembler MASM (item [3]).
+The native-code compiler (ocamlopt) requires Visual C++ (items [1], [2]),
+the Microsoft assembler MASM (item [3]) and the flexdll tool (item [5]).
 
 The LablTk GUI requires Tcl/Tk 8.4 (item [4]).
 
@@ -77,7 +76,6 @@ libraries tk84.lib and tcl84.lib were installed (by the Tcl/Tk
 installer) must be added to the library search path in the LIB
 environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 "C:\tcl\lib" to the LIB environment variable.
-
 
 THIRD-PARTY SOFTWARE:
 
@@ -99,6 +97,9 @@ http://www.microsoft.com/downloads/details.aspx?FamilyID=7A1C9DA0-0510-44A2-B042
 [4] TCL/TK version 8.4.  Windows binaries are available as part of the
     ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
 
+[5] flexdll.
+    Can be downloaded from http://alain.frisch.fr/flexdll.html
+
 RECOMPILATION FROM THE SOURCES:
 
 The command-line tools can be recompiled from the Unix source
@@ -107,7 +108,7 @@ for Windows.
 
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, XP, or Vista.
-- Items [1], [2], [3] and [4] from the list of recommended software above.
+- Items [1], [2], [3], [4] and [5] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
 
 Remember to add the directory where the libraries tk84.lib and
@@ -177,6 +178,8 @@ The native-code compiler (ocamlopt), as well as static linking of
 Caml bytecode with C code (ocamlc -custom), require 
 the Cygwin development tools, available at
         http://www.cygwin.com/
+and the flexdll tool, available at
+        http://alain.frisch.fr/flexdll.html
 You will need to install at least the following Cygwin packages (use
 the Setup tool from Cygwin):
 binutils, gcc-core, gcc-mingw-core, mingw-runtime, w32-api.
@@ -211,6 +214,7 @@ You will need the following software components to perform the recompilation:
 - Windows NT, 2000, XP, or Vista.
 - Cygwin: http://sourceware.cygnus.com/cygwin/
 - TCL/TK version 8.4 (see above).
+- the flexdll tool (see above).
 
 Do *not* install the standalone distribution of MinGW, nor the
 companion MSYS tools: these have problems with long command lines.
@@ -256,6 +260,9 @@ This port requires the Cygwin environment from Cygnus/RedHat, which
 is freely available at:
           http://www.cygwin.com/
 
+It also requires the flexdll tool, available at:
+          http://alain.frisch.fr/flexdll.html
+
 This port runs under all versions of MS Windows supported by Cygwin.
 
 
@@ -291,11 +298,10 @@ runs without any additional tools.
 
 Statically linking Caml bytecode with C code (ocamlc -custom) requires the
 Microsoft Platform SDK compiler (item [1] in the section
-"third-party software" below).  Dynamic loading of DLLs is supported
-out of the box, without additional software.
+"third-party software" below) and the flexdll tool (item [2]).
 
 The native-code compiler (ocamlopt) requires the Microsoft compiler
-and the Microsoft assembler MASM64 (item [1]).
+and the Microsoft assembler MASM64 (item [1]) and the flexdll tool (item [2]).
 
 
 INSTALLATION:
@@ -311,6 +317,10 @@ THIRD-PARTY SOFTWARE:
     Includes all we need, namely a C compiler, the masm64 assembler,
     Windows libraries and include files.
 
+[2] flexdll.
+    Can be downloaded from http://alain.frisch.fr/flexdll.html
+
+
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -322,6 +332,7 @@ You will need the following software components to perform the recompilation:
 - Windows XP 64 or Server 64.
 - The Platform SDK (item [1] from the list of recommended software above).
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
+- The flexdll tool (see above).
 
 To recompile, start a Cygwin shell and change to the top-level
 directory of the OCaml distribution.  Then, do
