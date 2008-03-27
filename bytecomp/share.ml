@@ -123,11 +123,11 @@ let share_node key =
 
 let final lam = share_node (Final lam)
 
-(* Remove useless bindinds now, it cannot hurt *)
+(* Remove useless bindings now, it cannot hurt *)
 let share_bind str x ex idx = match ex with
 | Lvar y when Ident.same x y -> idx
 | _ ->
-    if IdentSet.mem x (node_fv idx) then
+    if str = Strict || IdentSet.mem x (node_fv idx) then
       share_node (Bind (str,x,ex,idx))
     else
       idx
