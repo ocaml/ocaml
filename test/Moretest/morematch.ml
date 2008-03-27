@@ -1203,3 +1203,13 @@ let () =
   test "when8" f (3,2) 2 ;
   test "when9" f (1,2) 3 ;
   ()
+
+(* Avoid 'optim' let _ = e1 in e2 -> e2 *)
+
+let ign () =
+  try
+    let _ = raise Exit in 0
+  with Exit -> 1
+
+
+let () = test "ign" ign () 1 ; ()
