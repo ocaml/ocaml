@@ -26,30 +26,6 @@ open Matchcommon
 (* Get rid of variables, aliases and or-pattern *)
 (************************************************)
 
-(* Alpha-conversion to fresh variables of variables
-   bound by patterp in action lam *)
-let alpha_ids alpha_pat ids p lam =
-  let env =
-    List.map
-      (fun id ->
-	let nid = Ident.create (Ident.name id) in
-	id,nid)
-      ids in
-  let p = alpha_pat env p in
-  let tbl =
-    List.fold_right
-      (fun (id,nid) tbl -> Ident.add id (Lvar nid) tbl)
-      env Ident.empty in
-  let lam = subst_lambda tbl lam in
-  p,lam
-
-let alpha p lam =
-  let ids = IdentSet.elements (extract_vars IdentSet.empty p) in
-  alpha_ids alpha_pat ids p lam
-
-let alpha_ids _ _ p lam = p,lam
-and  alpha p lam = p, lam
-
 (* Since the various matching algorithms may violate the invariant
    of unique let-bound names, refresh them all *)
 
@@ -257,10 +233,7 @@ let precompile x cls =
             (full_pat::patl,action)::
             simplify rem
         | Tpat_or (p1,p2,_) -> (* or expansion *)
-	    let p2,act2 = (* alpha p2 action *) p2,action in
-	    (* alpha-conversion not needed, all variables in pat
-	       will be bound to another variable *)
-            simplify ((p1::patl,action)::(p2::patl,act2) :: rem)
+            simplify ((p1::patl,action)::(p2::patl,action) :: rem)
         | _ -> cl :: simplify rem
         end
     | _ -> assert false in
@@ -373,7 +346,7 @@ let rec split_guarded lam_exit = function
   | _ -> assert false
 ;;
 
-let split alpha_ids vars_pat pat_act_list =
+let split vars_pat pat_act_list =
   List.fold_right
     (fun (p,act) cls ->
       let num_exit = next_raise_count ()
@@ -385,7 +358,6 @@ let split alpha_ids vars_pat pat_act_list =
 	  split_guarded lam_exit act
 	else
 	  lam_exit, act in
-      let p,match_act = alpha_ids ids p match_act in
       ((p,match_act),(num_exit, ids, def_act))::cls)
     pat_act_list []
 ;;
@@ -410,7 +382,7 @@ let compile_matching loc repr handler_fun arg pat_act_list _partial =
 (*
   if verbose > 1 then Location.prerr_warning loc Warnings.Deprecated ;
 *)
-  let pat_exits = split (alpha_ids alpha_pat) vars_pat pat_act_list in
+  let pat_exits = split vars_pat pat_act_list in
   let pat_act_list,defs = List.split pat_exits in
   let pss = List.map (fun (p,act)  -> [p],act) pat_act_list
   and num_fail = next_raise_count ()
@@ -428,14 +400,14 @@ let rec super_flatten size (p,act) k = match p.pat_desc with
 | Tpat_any -> (omegas size,act)::k
 | Tpat_tuple ps -> (ps,act)::k
 | Tpat_or (p1,p2,_) ->
-    super_flatten size (p1,act) (super_flatten size (alpha p2 act) k)
+    super_flatten size (p1,act) (super_flatten size (p2,act) k)
 | _ -> raise Cannot_flatten
       
 
 let for_multiple_match loc args pat_act_list _partial =  
   let repr = None in
   try
-    let pat_exits = split (alpha_ids alpha_pat) vars_pat pat_act_list in
+    let pat_exits = split vars_pat pat_act_list in
     let pss,defs =  List.split pat_exits in
     let pss = List.fold_right (super_flatten (List.length args)) pss [] in
     let args =
@@ -446,8 +418,7 @@ let for_multiple_match loc args pat_act_list _partial =
 	args in
     let num_fail = next_raise_count () in
 
-    (* Match compilation can duplicate args.
-       Thus perform top-level strict let binding *)
+    (* Perform strict let binding, for the sake of semantics *)
     let xs = List.map (fun (_,v,_) -> Alias,v,Lvar v) args in
     let lam = compile_match_out repr xs pss (Lstaticraise (num_fail,[])) in
     let lam = add_defs lam defs in
@@ -463,10 +434,7 @@ let for_multiple_match loc args pat_act_list _partial =
 (************************)
 
 let for_tupled_function loc xs pats_act_list  _partial =
-  let pats_exits =
-    split
-      (alpha_ids (fun env ps -> List.map (alpha_pat env) ps))
-      vars_pats pats_act_list in
+  let pats_exits = split vars_pats pats_act_list in
   let pss,defs =  List.split pats_exits
   and num_fail = next_raise_count ()
   and xs = List.map (fun x -> Alias,x,Lvar x) xs in

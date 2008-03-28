@@ -361,7 +361,7 @@ let make_switch (arg,sw) = match sw.sw_failaction with
           i_max := i ;
           max := c
         end) t ;
-    if !i_max >= 1 then
+    if !i_max > 1 then
       let default = !i_max in
       let rec remove = function
         | [] -> []
@@ -376,9 +376,19 @@ let make_switch (arg,sw) = match sw.sw_failaction with
 	  sw_failaction = Some (Lstaticraise (default,[]))})
     else
       Lswitch (arg,sw)
-| _ -> Lswitch (arg,sw)
-      
-
+| Some default ->
+    let rec remove = function
+      | [] -> []
+      | (c,act) as cl::rem ->
+	  if equal_action default act then
+	    remove rem
+	  else
+	    cl::remove rem in
+    Lswitch
+      (arg,
+       {sw with
+	sw_consts = remove sw.sw_consts ;
+	sw_blocks = remove sw.sw_blocks ; })
 
 let lambda_of_int i =  Lconst (Const_base (Const_int i))
 

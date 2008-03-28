@@ -100,16 +100,8 @@ let extract_first_col pss =
     | [] -> assert false)
     pss ([],[])
 
-let rec conses ps qss = match ps,qss with
-| [],[] -> []
-| p::ps,qs::qss -> (p::qs)::conses ps qss
-|  _ -> assert false
-
-let rec appends pss qss = match pss,qss with
-| [],[] -> []
-| ps::pss,qs::qss -> (ps@qs)::appends pss qss
-|  _ -> assert false
-
+let conses ps qss = List.map2 (fun x xs -> x::xs) ps qss
+and appends pss qss = List.map2 (@) pss qss
 
 (* Variables in tuple/record/one constr types are not duplicated *)
 
@@ -130,33 +122,40 @@ let rec match_omega p = match p.pat_desc with
       -> false
 
 let direction k col pss =
-  let rec do_rec col qss pss = match col,pss with
+  let rec do_rec n col qss pss = match col,pss with
   | [],[] -> 0
   | c::col, ps::pss ->
-      if match_omega c then begin	
+      if match_omega c then begin
+(*
+	Printf.eprintf "** QSS **\n" ;
+	Parmatch.pretty_matrix qss ;
+	Printf.eprintf "** PS **\n" ;
+	Parmatch.pretty_line ps ;
+	prerr_newline () ;
+*)
 	if Parmatch.satisfiable qss ps then 0
 	else begin
 	  if Matchcommon.verbose > 0 then begin
-	    Printf.eprintf "** Non obvious direction: %i\n"  k
+	    Printf.eprintf "** Non obvious direction: col=%i, row=%i\n"  k n
 	  end ;
-	  do_rec col (ps::qss) pss - 1
+	  do_rec (n+1) col (ps::qss) pss - 1
 	end
       end else 
-	do_rec col (ps::qss) pss - 1
+	do_rec (n+1) col (ps::qss) pss - 1
   | _ -> assert false in
-  do_rec col [] pss
+  do_rec 0 col [] pss
 
 
 let directions xs pss ks =
   let rec do_rec i left right ks xs = match ks,xs with
     | [],_ -> []
     | k::rk,_::xs ->
-	let ps,qss = extract_first_col right in
+	let col,right = extract_first_col right in
 	if i < k then
-	  do_rec (i+1) (conses ps left) qss ks xs
+	  do_rec (i+1) (conses col left) right ks xs
 	else
-	  let d = direction k ps (appends left right) in
-	  (k,d)::do_rec (i+1) (conses ps left) qss rk xs
+	  let d = direction k col (appends left right) in
+	  (k,d)::do_rec (i+1) (conses col left) right rk xs
     | _ -> assert false in
 
   let ws =  do_rec 0 (List.map (fun _ -> []) pss) pss ks xs in
