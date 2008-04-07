@@ -16,6 +16,8 @@ open Printf
 
 type 'a t = string -> (('a, unit, string, unit) format4 -> 'a)
 
+let verbose = -1
+
 (*DEBUG*)let verbose =
 (*DEBUG*)  try int_of_string (Sys.getenv "JOVERBOSE") with | _ -> -1
 

@@ -97,6 +97,8 @@ let really_exit_thread () =
 
 exception MaxRun
 
+let n_msgs = ref 0
+
 let really_create_process f =
   incr_locked nthreads_mutex nthreads ;
   try
@@ -109,8 +111,16 @@ let really_create_process f =
     Some t
   with
   | e ->
-      debug "REAL FORK FAILED"
-	"%s, %s" (tasks_status ()) (Printexc.to_string e) ;
+      if verbose >= 0 then
+	debug "REAL FORK FAILED"
+	  "%s, %s" (tasks_status ()) (Printexc.to_string e)
+      else begin
+	if !n_msgs <= 0 then begin
+	  debug "Warning" "Threads are exhausted, deadlock may occur" ;
+	  n_msgs := 100
+	end else
+	  decr n_msgs
+      end ;
       decr_locked nthreads_mutex nthreads ;
       None
       
@@ -172,7 +182,7 @@ let pool_enter () =
 
 let grab_from_pool () =
   Mutex.lock pool_mutex ;
-  if !in_pool > !signaled then begin
+  if  !signaled < !pool_konts && !signaled < !in_pool then begin
     Condition.signal pool_condition ;
     incr signaled ;
     Mutex.unlock pool_mutex
@@ -182,16 +192,20 @@ let grab_from_pool () =
 let exit_thread () =
 (*DEBUG*)debug2 "EXIT THREAD" "%s" (tasks_status ()) ;
   become_inactive () ;
-  if !in_pool - !signaled >= pool_size && !active > !pool_konts then
+  if
+    ((!in_pool - !signaled >= pool_size || !in_pool > pool_size) && !active > !pool_konts)
+  then
     really_exit_thread ()
   else 
     pool_enter ()
 
-let put_pool_locked f =
+let put_pool_locked  f =
   pool_kont := f :: !pool_kont ; incr pool_konts ;
-  Condition.signal pool_condition ;
-(*DEBUG*)debug2 "PUT POOL" "%s" (tasks_status ()) ;
-  incr signaled ;
+  if !signaled < !pool_konts && !signaled < !in_pool then begin
+    Condition.signal pool_condition ;
+    incr signaled
+  end ;
+  (*DEBUG*)debug2 "PUT POOL" "%s" (tasks_status ()) ;
   Mutex.unlock pool_mutex
 
 let put_pool f =
@@ -218,13 +232,17 @@ let create_process f =
     exit_thread () in
 
   Mutex.lock pool_mutex ;
-  if !in_pool = !signaled then begin
+  let pks = !pool_konts and nsigs = !signaled and inp = !in_pool in
+  let not_signaled = inp - nsigs in
+  let extra_signals =  min inp nsigs - pks in
+  if not_signaled > 0 || extra_signals > 0 then begin
+  (* In that case there is a thread waiting for me in the pool *)
+    put_pool_locked g 
+  end else begin
     Mutex.unlock pool_mutex ;
     match really_create_process g with
-    | None -> put_pool g
+    | None -> (* Thread creation failed *) put_pool g
     | Some _ -> ()
-  end else begin
-    put_pool_locked g 
   end
   
 let inform_suspend () =

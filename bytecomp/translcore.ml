@@ -596,6 +596,7 @@ and transl_exp0 e =
   | Texp_def (d,body) ->
       do_transl_def d (transl_exp body)
   | Texp_loc (d,body) -> assert false
+(*>JOCAML*)
   | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
@@ -604,7 +605,6 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-(*>JOCAML*)
 (* two small optimizations *)
   | Texp_apply
       ({exp_desc = Texp_ident(path, {val_kind = Val_alone id})},

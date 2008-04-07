@@ -20,7 +20,7 @@ FILES=	caml-font.el caml-hilit.el caml.el camldebug.el \
 	caml-xemacs.el caml-emacs.el
 
 # Where to install. If empty, automatically determined.
-#EMACSDIR=
+EMACSDIR=/usr/local/share/emacs/site-lisp
 
 # Name of Emacs executable
 EMACS=emacs

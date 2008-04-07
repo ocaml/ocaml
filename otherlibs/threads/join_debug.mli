@@ -13,6 +13,7 @@
 (* $Id$ *)
 
 open Printf
+val  verbose : int
 
 type 'a t = string -> (('a, unit, string, unit) format4 -> 'a)
 
