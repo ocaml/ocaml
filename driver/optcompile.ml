@@ -86,6 +86,8 @@ let implementation ppf sourcefile outputprefix =
   let inputfile = Pparse.preprocess sourcefile in
   let env = initial_env() in
   Compilenv.reset ?packname:!Clflags.for_package modulename;
+  let cmxfile = outputprefix ^ ".cmx" in
+  let objfile = outputprefix ^ ext_obj in
   try
     if !Clflags.print_types then ignore(
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
@@ -93,8 +95,6 @@ let implementation ppf sourcefile outputprefix =
       ++ Unused_var.warn ppf
       ++ Typemod.type_implementation sourcefile outputprefix modulename env)
     else begin
-      let cmxfile = outputprefix ^ ".cmx" in
-      let objfile = outputprefix ^ ext_obj in
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Unused_var.warn ppf
