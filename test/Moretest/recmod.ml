@@ -62,13 +62,6 @@ let _ =
 
 (* Early application *)
 
-(*
-module rec Bad
-  : sig val f : int -> int end
-  = struct let f = let y = Bad.f 5 in fun x -> x+y end
-;;
-*)
-
 let _ =
   let res =
     try
@@ -83,6 +76,8 @@ let _ =
       true in
   test 30 res true
 ;;
+
+(* Early strict evaluation *)
 
 (*
 module rec Cyclic
@@ -156,6 +151,24 @@ module rec PolyRec
     end
 ;;
   
+(* Wrong LHS signatures (PR#4336) *)
+
+(*
+module type ASig = sig type a val a:a val print:a -> unit end
+module type BSig = sig type b val b:b val print:b -> unit end
+
+module A = struct type a = int let a = 0 let print = print_int end
+module B = struct type b = float let b = 0.0 let print = print_float end
+
+module MakeA (Empty:sig end) : ASig = A
+module MakeB (Empty:sig end) : BSig = B
+
+module
+   rec NewA : ASig = MakeA (struct end)
+   and NewB : BSig with type b = NewA.a = MakeB (struct end);;
+
+*)
+
 (* Expressions and bindings *)
 
 module StringSet = Set.Make(String);;
@@ -457,6 +470,124 @@ module rec F
 let _ =
   test 100 (F.f (F.X 1)) false;
   test 101 (F.f (F.Y 2)) true
+
+(* PR#4316 *)
+module G(S : sig val x : int Lazy.t end) = struct include S end
+
+module M1 = struct let x = lazy 3 end
+
+let _ = Lazy.force M1.x
+
+module rec M2 : sig val x : int Lazy.t end = G(M1)
+
+let _ =
+  test 102 (Lazy.force M2.x) 3
+
+let _ = Gc.full_major()   (* will shortcut forwarding in M1.x *)
+
+module rec M3 : sig val x : int Lazy.t end = G(M1)
+
+let _ =
+  test 103 (Lazy.force M3.x) 3
+
+(* PR#4450 *)
+
+module PR_4450_1 = struct
+  module type MyT = sig type 'a t = Succ of 'a t end
+  module MyMap(X : MyT) = X
+  module rec MyList : MyT = MyMap(MyList)
+end;;
+
+module PR_4450_2 = struct
+  module type MyT = sig
+    type 'a wrap = My of 'a t
+    and 'a t = private < map : 'b. ('a -> 'b) ->'b wrap; .. >
+    val create : 'a list -> 'a t
+  end
+  module MyMap(X : MyT) = struct
+    include X
+    class ['a] c l = object (self)
+      method map : 'b. ('a -> 'b) -> 'b wrap =
+        fun f -> My (create (List.map f l))
+    end
+  end
+  module rec MyList : sig
+    type 'a wrap = My of 'a t
+    and 'a t = < map : 'b. ('a -> 'b) ->'b wrap >
+    val create : 'a list -> 'a t
+  end = struct
+    include MyMap(MyList)
+    let create l = new c l
+  end
+end;;
+
+(* A synthetic example of bootstrapped data structure
+   (suggested by J-C Filliatre) *)
+
+module type ORD = sig
+  type t
+  val compare : t -> t -> int
+end
+
+module type SET = sig
+  type elt
+  type t
+  val iter : (elt -> unit) -> t -> unit
+end
+
+type 'a tree = E | N of 'a tree * 'a * 'a tree
+
+module Bootstrap2
+  (MakeDiet : functor (X: ORD) -> SET with type t = X.t tree and type elt = X.t)
+  : SET with type elt = int =
+struct
+
+  type elt = int
+
+  module rec Elt : sig
+    type t = I of int * int | D of int * Diet.t * int
+    val compare : t -> t -> int
+    val iter : (int -> unit) -> t -> unit
+  end = 
+  struct
+    type t = I of int * int | D of int * Diet.t * int
+    let compare x1 x2 = 0
+    let rec iter f = function
+      | I (l, r) -> for i = l to r do f i done
+      | D (_, d, _) -> Diet.iter (iter f) d
+  end 
+
+  and Diet : SET with type t = Elt.t tree and type elt = Elt.t = MakeDiet(Elt)
+
+  type t = Diet.t
+  let iter f = Diet.iter (Elt.iter f)
+end
+
+(* PR 4470: simplified from OMake's sources *)
+
+module rec DirElt
+  : sig
+      type t = DirRoot | DirSub of DirHash.t
+    end
+  = struct
+      type t = DirRoot | DirSub of DirHash.t
+    end
+
+and DirCompare
+  : sig
+      type t = DirElt.t
+    end
+  = struct
+      type t = DirElt.t
+    end
+
+and DirHash
+  : sig
+      type t = DirElt.t list
+    end
+  = struct
+      type t = DirCompare.t list
+    end      
 
 (** Ill-formed type abbreviations.  *)
 

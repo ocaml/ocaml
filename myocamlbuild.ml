@@ -198,7 +198,8 @@ let add_extensions extensions modules =
 
 flag ["ocaml"; "pp"; "camlp4boot"] (convert_command_for_windows_shell (S[ocamlrun; P hot_camlp4boot]));;
 flag ["ocaml"; "pp"; "camlp4boot"; "native"] (S[A"-D"; A"OPT"]);;
-flag ["ocaml"; "pp"; "camlp4boot"; "ocamldep"] (S[A"-D"; A"OPT"]);;
+flag ["ocaml"; "pp"; "camlp4boot"; "pp:dep"] (S[A"-D"; A"OPT"]);;
+flag ["ocaml"; "pp"; "camlp4boot"; "pp:doc"] (S[A"-printer"; A"o"]);;
 let exn_tracer = Pathname.pwd/"camlp4"/"boot"/"Camlp4ExceptionTracer.cmo" in
 if Pathname.exists exn_tracer then
   flag ["ocaml"; "pp"; "camlp4boot"; "exntracer"] (P exn_tracer);
@@ -239,8 +240,6 @@ let setup_arch arch =
 let camlp4_arch =
   dir "" [
     dir "stdlib" [];
-    dir "utils" [];
-    dir "parsing" [];
     dir "camlp4" [
       dir "build" [];
       dir_pack "Camlp4" [
@@ -257,12 +256,13 @@ setup_arch camlp4_arch;;
 
 Pathname.define_context "" ["stdlib"];;
 Pathname.define_context "utils" [Pathname.current_dir_name; "stdlib"];;
-Pathname.define_context "camlp4" ["camlp4/build"; "utils"; "stdlib"];;
-Pathname.define_context "camlp4/boot" ["camlp4/build"; "utils"; "parsing"; "camlp4"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Top" ["typing"; "stdlib"];;
+Pathname.define_context "camlp4" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/boot" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Top" ["camlp4"; "stdlib"];;
+Pathname.define_context "parsing" ["parsing"; "utils"; "stdlib"];;
 Pathname.define_context "typing" ["typing"; "parsing"; "utils"; "stdlib"];;
 Pathname.define_context "ocamldoc" ["typing"; "parsing"; "utils"; "tools"; "bytecomp"; "stdlib"];;
 Pathname.define_context "bytecomp" ["bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
@@ -350,7 +350,7 @@ let import_stdlib_contents build exts =
 ;;
 
 rule "byte stdlib in partial mode"
-  ~prod:"byte_stdlib_partial_mode"
+  ~stamp:"byte_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cma";
          "stdlib/std_exit.cmo"; "stdlib/libcamlrun"-.-C.a;
          "stdlib/camlheader"; "stdlib/camlheader_ur"]
@@ -360,11 +360,11 @@ rule "byte stdlib in partial mode"
         "stdlib/stdlib.mllib" "stdlib/stdlib.cma" env build
     in
     import_stdlib_contents build ["cmi"];
-    touch "byte_stdlib_partial_mode"
+    Nop
   end;;
 
 rule "native stdlib in partial mode"
-  ~prod:"native_stdlib_partial_mode"
+  ~stamp:"native_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cmxa";
          "stdlib/stdlib"-.-C.a; "stdlib/std_exit.cmx";
          "stdlib/std_exit"-.-C.o; "stdlib/libasmrun"-.-C.a;
@@ -375,7 +375,7 @@ rule "native stdlib in partial mode"
         "stdlib/stdlib.mllib" "stdlib/stdlib.cmxa" env build
     in
     import_stdlib_contents build ["cmi"];
-    touch "native_stdlib_partial_mode"
+    Nop
   end;;
 
 rule "C files"
@@ -436,6 +436,7 @@ let stdlib_mlis =
      "otherlibs/bigarray/bigarray.mli"; "otherlibs/num/num.mli"] in
 rule "Standard library manual"
   ~prod:"ocamldoc/stdlib_man/Pervasives.3o"
+  ~stamp:"ocamldoc/stdlib_man.stamp" (* Depend on this file if you want to depends on all files of stdlib_man/* *)
   ~deps:stdlib_mlis
   begin fun _ _ ->
     Seq[Cmd(S[A"mkdir"; A"-p"; P"ocamldoc/stdlib_man"]);
@@ -707,9 +708,38 @@ let camlp4Profiler = p4 "Camlp4Profiler"
 
 let camlp4lib_cma = p4 "camlp4lib.cma"
 let camlp4lib_cmxa = p4 "camlp4lib.cmxa"
+let camlp4lib_lib = p4 ("camlp4lib"-.-C.a)
 
 let special_modules =
   if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
+;;
+
+let camlp4_import_list =
+    ["utils/misc.ml";
+     "utils/terminfo.ml";
+     "parsing/linenum.ml";
+     "utils/warnings.ml";
+     "parsing/location.ml";
+     "parsing/longident.ml";
+     "parsing/asttypes.mli";
+     "parsing/parsetree.mli";
+     "typing/outcometree.mli";
+     "myocamlbuild_config.ml";
+     "utils/config.mlbuild"]
+;;
+
+rule "camlp4/Camlp4_import.ml"
+  ~deps:camlp4_import_list
+  ~prod:"camlp4/Camlp4_import.ml"
+  begin fun _ _ ->
+    Echo begin
+      List.fold_right begin fun path acc ->
+        let modname = module_name_of_pathname path in
+        "module " :: modname :: " = struct\n" :: Pathname.read path :: "\nend;;\n" :: acc
+      end camlp4_import_list [],
+      "camlp4/Camlp4_import.ml"
+    end
+  end;;
 
 let mk_camlp4_top_lib name modules =
   let name = "camlp4"/name in
@@ -730,12 +760,20 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
   let byte = name-.-"byte" in
   let native = name-.-"native" in
   let unix_cma, unix_cmxa, include_unix =
-    if link_unix then A"unix.cma", A"unix.cmxa", S[A"-I"; P unix_dir] else N,N,N in
+    if link_unix
+    then A"unix.cma", A"unix.cmxa", S[A"-I"; P unix_dir]
+    else N,N,N in
+  let dep_unix_byte, dep_unix_native =
+    if link_unix && not partial
+    then [unix_dir/"unix.cma"],
+         [unix_dir/"unix.cmxa"; unix_dir/"unix"-.-C.a]
+    else [],[] in
   let deps = special_modules @ modules @ [camlp4_bin] in
   let cmos = add_extensions ["cmo"] deps in
   let cmxs = add_extensions ["cmx"] deps in
+  let objs = add_extensions [C.o] deps in
   rule byte
-    ~deps:(camlp4lib_cma::cmos)
+    ~deps:(camlp4lib_cma::cmos @ dep_unix_byte)
     ~prod:(add_exe byte)
     ~insert:(`before "ocaml: cmo* -> byte")
     begin fun _ _ ->
@@ -743,7 +781,7 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
             P camlp4lib_cma; A"-linkall"; atomize cmos; A"-o"; Px (add_exe byte)])
     end;
   rule native
-    ~deps:(camlp4lib_cmxa::cmxs)
+    ~deps:(camlp4lib_cmxa :: camlp4lib_lib :: (cmxs @ objs @ dep_unix_native))
     ~prod:(add_exe native)
     ~insert:(`before "ocaml: cmx* & o* -> native")
     begin fun _ _ ->
@@ -794,6 +832,9 @@ module Camlp4deps = struct
     let includes = parse_file file in
     List.iter Outcome.ignore_good (build (List.map (fun i -> [i]) includes));
 end;;
+
+dep ["ocaml"; "file:camlp4/Camlp4/Sig.ml"]
+    ["camlp4/Camlp4/Camlp4Ast.partial.ml"];;
 
 rule "camlp4: ml4 -> ml"
   ~prod:"%.ml"
@@ -858,14 +899,14 @@ Pathname.define_context "otherlibs/labltk/tkanim"
 Pathname.define_context "otherlibs/labltk/browser"
   ["otherlibs/labltk/browser"; "otherlibs/labltk/labltk"; "otherlibs/labltk/support"; "parsing"; "utils"; "typing"; "stdlib"];;
 
-file_rule "otherlibs/labltk/compiler/copyright"
+rule "otherlibs/labltk/compiler/copyright"
   ~dep:"otherlibs/labltk/compiler/copyright"
   ~prod:"otherlibs/labltk/compiler/copyright.ml"
-  ~cache:(fun _ _ -> "0.1")
-  begin fun _ oc ->
-    Printf.fprintf oc "let copyright = \"%a\";;\n\
-                       let write ~w = w copyright;;"
-      fp_cat "otherlibs/labltk/compiler/copyright"
+  begin fun _ _ ->
+    Echo(["let copyright = \"";
+          Pathname.read "otherlibs/labltk/compiler/copyright";
+          "\";;\nlet write ~w = w copyright;;"],
+          "otherlibs/labltk/compiler/copyright.ml")
   end;;
 
 copy_rule "labltk tkcompiler" "otherlibs/labltk/compiler/maincompile.byte" "otherlibs/labltk/compiler/tkcompiler";;
@@ -1034,13 +1075,12 @@ rule "labltktop"
   end;;
 
 let labltk_installdir = C.libdir/"labltk" in
-file_rule "labltk"
+rule "labltk"
   ~prod:"otherlibs/labltk/lib/labltk"
-  ~cache:(fun _ _ -> labltk_installdir)
-  begin fun _ oc ->
-    Printf.fprintf oc
-      "#!/bin/sh\n\
-       exec %s -I %s $*\n" (labltk_installdir/"labltktop") labltk_installdir
+  begin fun _ _ ->
+    Echo(["#!/bin/sh\n";
+          Printf.sprintf "exec %s -I %s $*\n" (labltk_installdir/"labltktop") labltk_installdir],
+         "otherlibs/labltk/lib/labltk")
   end;;
 
 use_lib "otherlibs/labltk/browser/main" "toplevel/toplevellib";;

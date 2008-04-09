@@ -551,15 +551,21 @@ CAMLprim value caml_int64_of_string(value s)
 
 CAMLprim value caml_int64_bits_of_float(value vd)
 {
-  union { double d; int64 i; } u;
+  union { double d; int64 i; int32 h[2]; } u;
   u.d = Double_val(vd);
+#if defined(__arm__) && !defined(__ARM_EABI__)
+  { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
+#endif
   return caml_copy_int64(u.i);
 }
 
 CAMLprim value caml_int64_float_of_bits(value vi)
 {
-  union { double d; int64 i; } u;
+  union { double d; int64 i; int32 h[2]; } u;
   u.i = Int64_val(vi);
+#if defined(__arm__) && !defined(__ARM_EABI__)
+  { int32 t = u.h[0]; u.h[0] = u.h[1]; u.h[1] = t; }
+#endif
   return caml_copy_double(u.d);
 }
 

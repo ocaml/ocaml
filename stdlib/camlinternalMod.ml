@@ -48,8 +48,16 @@ let rec update_mod shape o n =
       then begin overwrite o n; Obj.truncate o (Obj.size n) (* PR #4008 *) end
       else overwrite o (Obj.repr (fun x -> (Obj.obj n : _ -> _) x))
   | Lazy ->
-      assert (Obj.tag n = Obj.lazy_tag);
-      overwrite o n
+      if Obj.tag n = Obj.lazy_tag then
+        Obj.set_field o 0 (Obj.field n 0)
+      else if Obj.tag n = Obj.forward_tag then begin (* PR#4316 *)
+        Obj.set_tag o Obj.forward_tag;
+        Obj.set_field o 0 (Obj.field n 0)
+      end else begin
+        (* forwarding pointer was shortcut by GC *)
+        Obj.set_tag o Obj.forward_tag;
+        Obj.set_field o 0 n
+      end
   | Class ->
       assert (Obj.tag n = 0 && Obj.size n = 4);
       overwrite o n

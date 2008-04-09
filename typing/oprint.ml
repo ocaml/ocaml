@@ -75,7 +75,7 @@ let print_out_value ppf tree =
         fprintf ppf "@[<1>%a@ (%a)@]" print_ident name
           (print_tree_list print_tree_1 ",") params
     | Oval_variant (name, Some param) ->
-        fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
+        fprintf ppf "@[<2>`%s@ %a@]" name print_constr_param param
     | tree -> print_simple_tree ppf tree
   and print_constr_param ppf = function
     | Oval_int i -> parenthesize_if_neg ppf "%i" i (i < 0)

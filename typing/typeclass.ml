@@ -673,7 +673,8 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
       Vars.fold
         (fun name (mut, vr, ty) l -> if vr = Virtual then name :: l else l)
         sign.cty_vars [] in
-    if mets <> [] then raise(Error(loc, Virtual_class(true, mets, vals)));
+    if mets <> [] || vals <> [] then
+      raise(Error(loc, Virtual_class(true, mets, vals)));
     let self_methods =
       List.fold_right
         (fun (lab,kind,ty) rem ->
@@ -782,7 +783,7 @@ and class_expr cl_num val_env met_env scl =
       class_expr cl_num val_env met_env sfun
   | Pcl_fun (l, None, spat, scl') ->
       if !Clflags.principal then Ctype.begin_def ();
-      let (pat, pv, val_env, met_env) =
+      let (pat, pv, val_env', met_env) =
         Typecore.type_class_arg_pattern cl_num val_env met_env l spat
       in
       if !Clflags.principal then begin
@@ -793,7 +794,7 @@ and class_expr cl_num val_env met_env scl =
         List.map
           (function (id, id', ty) ->
             (id,
-             Typecore.type_exp val_env
+             Typecore.type_exp val_env'
                {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
                 pexp_loc = Location.none}))
           pv
@@ -810,7 +811,7 @@ and class_expr cl_num val_env met_env scl =
             exp_type = Ctype.none;
             exp_env = Env.empty }] in
       Ctype.raise_nongen_level ();
-      let cl = class_expr cl_num val_env met_env scl' in
+      let cl = class_expr cl_num val_env' met_env scl' in
       Ctype.end_def ();
       if Btype.is_optional l && not_function cl.cl_type then
         Location.prerr_warning pat.pat_loc
@@ -1475,16 +1476,16 @@ let report_error ppf = function
         "This pattern cannot match self: it only matches values of type"
         Printtyp.type_expr ty
   | Unbound_class cl ->
-      fprintf ppf "Unbound class@ %a"
+      fprintf ppf "@[Unbound class@ %a@]"
       Printtyp.longident cl
   | Unbound_class_2 cl ->
-      fprintf ppf "The class@ %a@ is not yet completely defined"
+      fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Unbound_class_type cl ->
-      fprintf ppf "Unbound class type@ %a"
+      fprintf ppf "@[Unbound class type@ %a@]"
       Printtyp.longident cl
   | Unbound_class_type_2 cl ->
-      fprintf ppf "The class type@ %a@ is not yet completely defined"
+      fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
   | Abbrev_type_clash (abbrev, actual, expected) ->
       (* XXX Afficher une trace ? *)

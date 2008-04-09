@@ -648,9 +648,6 @@ let begin_assembly() =
   `trap_ptr     .req    r11\n`;
   `alloc_ptr    .req    r8\n`;
   `alloc_limit  .req    r9\n`;
-  `sp           .req    r13\n`;
-  `lr           .req    r14\n`;
-  `pc           .req    r15\n`;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.global	{emit_symbol lbl_begin}\n`;

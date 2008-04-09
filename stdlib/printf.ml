@@ -36,8 +36,6 @@ module Sformat = struct
 
   let add_int_index i idx = index_of_int (i + int_of_index idx);;
   let succ_index = add_int_index 1;;
-  (* Litteral position are one-based (hence pred p instead of p). *)
-  let index_of_litteral_position p = index_of_int (pred p);;
 
   external length : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int
     = "%string_length";;
@@ -102,17 +100,7 @@ let format_string sfmt s =
    '*' in the format are replaced by integers taken from the [widths] list.
    extract_format returns a string. *)
 let extract_format fmt start stop widths =
-  let skip_positional_spec start =
-    match Sformat.unsafe_get fmt start with
-    | '0'..'9' ->
-      let rec skip_int_litteral i =
-        match Sformat.unsafe_get fmt i with
-        | '0'..'9' -> skip_int_litteral (succ i)
-        | '$' -> succ i
-        | _ -> start in
-      skip_int_litteral (succ start)
-    | _ -> start in
-  let start = skip_positional_spec (succ start) in
+  let start = succ start in
   let b = Buffer.create (stop - start + 10) in
   Buffer.add_char b '%';
   let rec fill_format i widths =
@@ -120,7 +108,7 @@ let extract_format fmt start stop widths =
       match (Sformat.unsafe_get fmt i, widths) with
       | ('*', h :: t) ->
         Buffer.add_string b (string_of_int h);
-        let i = skip_positional_spec (succ i) in
+        let i = succ i in
         fill_format i t
       | ('*', []) ->
         assert false (* should not happen *)
@@ -175,7 +163,6 @@ let iter_on_format_args fmt add_conv add_char =
     if i > lim then incomplete_format fmt else
     match Sformat.unsafe_get fmt i with
     | '*' -> scan_flags skip (add_conv skip i 'i')
-    | '$' -> scan_flags skip (succ i)
     | '#' | '-' | ' ' | '+' -> scan_flags skip (succ i)
     | '_' -> scan_flags true (succ i)
     | '0'..'9'
@@ -324,47 +311,8 @@ let kapr kpr fmt =
       else Obj.magic (fun x -> loop (succ i) (x :: args)) in
     loop 0 [];;
 
-type positional_specification =
-   | Spec_none | Spec_index of Sformat.index;; 
-
-(* To scan an optional positional parameter specification,
-   i.e. an integer followed by a [$].
-   We do not support [*$] specifications, since this would lead to type checking
-   problems: the type of the specified [*$] parameter would be the type of the
-   corresponding argument to [printf], hence the type of the $n$-th argument to
-   [printf] with $n$ being the {\em value} of the integer argument defining
-   [*]; this means type dependency, which is out of scope of the Caml type
-   algebra. *)
-let scan_positional_spec fmt got_spec n i =
-  match Sformat.unsafe_get fmt i with
-  | '0'..'9' as d ->
-    let rec get_int_litteral accu j =
-      match Sformat.unsafe_get fmt j with
-      | '0'..'9' as d ->
-        get_int_litteral (10 * accu + (int_of_char d - 48)) (succ j)
-      | '$' ->
-        if accu = 0
-          then failwith "printf: bad positional specification (0)." else
-        got_spec (Spec_index (Sformat.index_of_litteral_position accu)) (succ j)
-      (* Not a positional specification. *)
-      | _ -> got_spec Spec_none i in
-    get_int_litteral (int_of_char d - 48) (succ i)
-  (* No positional specification. *)
-  | _ -> got_spec Spec_none i;;
-
-(* Get the position of the next argument to printf, according to the given
-   positional specification. *)
-let next_index spec n =
-  match spec with
-  | Spec_none -> Sformat.succ_index n
-  | Spec_index _ -> n;;
-
-(* Get the position of the actual argument to printf, according to its
-   optional positional specification. *)
-let get_index spec n =
-  match spec with
-  | Spec_none -> n
-  | Spec_index p -> p;;
+(* Get the index of the next argument to printf. *)
+let next_index n = Sformat.succ_index n;;
 
 (* Decode a format string and act on it.
    [fmt] is the printf format string, and [pos] points to a [%] character.
@@ -388,67 +336,58 @@ let get_index spec n =
    Don't do this at home, kids. *)
 let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
 
-  let get_arg spec n =
-    Obj.magic (args.(Sformat.int_of_index (get_index spec n))) in
+  let get_arg n =
+    Obj.magic (args.(Sformat.int_of_index n)) in
 
-  let rec scan_positional n widths i =
-    let got_spec spec i = scan_flags spec n widths i in
-    scan_positional_spec fmt got_spec n i
-
-  and scan_flags spec n widths i =
+  let rec scan_flags n widths i =
     match Sformat.unsafe_get fmt i with
     | '*' ->
-      let got_spec wspec i =
-        let (width : int) = get_arg wspec n in
-        scan_flags spec (next_index wspec n) (width :: widths) i in
-      scan_positional_spec fmt got_spec n (succ i)
+      let (width : int) = get_arg n in
+      scan_flags (next_index n) (width :: widths) (succ i)
     | '0'..'9'
-    | '.' | '#' | '-' | ' ' | '+' -> scan_flags spec n widths (succ i)
-    | _ -> scan_conv spec n widths i
+    | '.' | '#' | '-' | ' ' | '+' -> scan_flags n widths (succ i)
+    | _ -> scan_conv n widths i
 
-  and scan_conv spec n widths i =
+  and scan_conv n widths i =
     match Sformat.unsafe_get fmt i with
     | '%' ->
       cont_s n "%" (succ i)
     | 's' | 'S' as conv ->
-      let (x : string) = get_arg spec n in
+      let (x : string) = get_arg n in
       let x = if conv = 's' then x else "\"" ^ String.escaped x ^ "\"" in
       let s =
         (* optimize for common case %s *)
         if i = succ pos then x else
         format_string (extract_format fmt pos i widths) x in
-      cont_s (next_index spec n) s (succ i)
+      cont_s (next_index n) s (succ i)
     | 'c' | 'C' as conv ->
-      let (x : char) = get_arg spec n in
+      let (x : char) = get_arg n in
       let s =
         if conv = 'c' then String.make 1 x else "'" ^ Char.escaped x ^ "'" in
-      cont_s (next_index spec n) s (succ i)
+      cont_s (next_index n) s (succ i)
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' | 'N' as conv ->
-      let (x : int) = get_arg spec n in
+      let (x : int) = get_arg n in
       let s =
         format_int (extract_format_int conv fmt pos i widths) x in
-      cont_s (next_index spec n) s (succ i)
+      cont_s (next_index n) s (succ i)
     | 'f' | 'e' | 'E' | 'g' | 'G' ->
-      let (x : float) = get_arg spec n in
+      let (x : float) = get_arg n in
       let s = format_float (extract_format fmt pos i widths) x in
-      cont_s (next_index spec n) s (succ i)
+      cont_s (next_index n) s (succ i)
     | 'F' ->
-      let (x : float) = get_arg spec n in
-      cont_s (next_index spec n) (string_of_float x) (succ i)
+      let (x : float) = get_arg n in
+      cont_s (next_index n) (string_of_float x) (succ i)
     | 'B' | 'b' ->
-      let (x : bool) = get_arg spec n in
-      cont_s (next_index spec n) (string_of_bool x) (succ i)
+      let (x : bool) = get_arg n in
+      cont_s (next_index n) (string_of_bool x) (succ i)
     | 'a' ->
-      let printer = get_arg spec n in
-      (* If the printer spec is Spec_none, go on as usual.
-         If the printer spec is Spec_index p,
-         printer's argument spec is Spec_index (succ_index p). *)
-      let n = Sformat.succ_index (get_index spec n) in
-      let arg = get_arg Spec_none n in
-      cont_a (next_index spec n) printer arg (succ i)
+      let printer = get_arg n in
+      let n = Sformat.succ_index n in
+      let arg = get_arg n in
+      cont_a (next_index n) printer arg (succ i)
     | 't' ->
-      let printer = get_arg spec n in
-      cont_t (next_index spec n) printer (succ i)
+      let printer = get_arg n in
+      cont_t (next_index n) printer (succ i)
     | 'l' | 'n' | 'L' as conv ->
       begin match Sformat.unsafe_get fmt (succ i) with
       | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
@@ -456,39 +395,39 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
         let s =
           match conv with
           | 'l' ->
-            let (x : int32) = get_arg spec n in
+            let (x : int32) = get_arg n in
             format_int32 (extract_format fmt pos i widths) x
           | 'n' ->
-            let (x : nativeint) = get_arg spec n in
+            let (x : nativeint) = get_arg n in
             format_nativeint (extract_format fmt pos i widths) x
           | _ ->
-            let (x : int64) = get_arg spec n in
+            let (x : int64) = get_arg n in
             format_int64 (extract_format fmt pos i widths) x in
-        cont_s (next_index spec n) s (succ i)
+        cont_s (next_index n) s (succ i)
       | _ ->
-        let (x : int) = get_arg spec n in
+        let (x : int) = get_arg n in
         let s = format_int (extract_format_int 'n' fmt pos i widths) x in
-        cont_s (next_index spec n) s (succ i)
+        cont_s (next_index n) s (succ i)
       end
     | '!' -> cont_f n (succ i)
     | '{' | '(' as conv (* ')' '}' *) ->
-      let (xf : ('a, 'b, 'c, 'd, 'e, 'f) format6) = get_arg spec n in
+      let (xf : ('a, 'b, 'c, 'd, 'e, 'f) format6) = get_arg n in
       let i = succ i in
       let j = sub_format_for_printf conv fmt i in
       if conv = '{' (* '}' *) then
         (* Just print the format argument as a specification. *)
         cont_s
-          (next_index spec n)
+          (next_index n)
           (summarize_format_type xf)
           j else
         (* Use the format argument instead of the format specification. *)
-        cont_m (next_index spec n) xf j
+        cont_m (next_index n) xf j
     | (* '(' *) ')' ->
       cont_s n "" (succ i)
     | conv ->
       bad_conversion_format fmt i conv in
 
-  scan_positional n [] (succ pos);;
+  scan_flags n [] (succ pos);;
 
 let mkprintf to_s get_out outc outs flush k fmt =
 
@@ -505,27 +444,27 @@ let mkprintf to_s get_out outc outs flush k fmt =
        match Sformat.unsafe_get fmt i with
        | '%' -> scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
        |  c  -> outc out c; doprn n (succ i)
-     and cont_s n s i =
-       outs out s; doprn n i
-     and cont_a n printer arg i =
-       if to_s then
-         outs out ((Obj.magic printer : unit -> _ -> string) () arg)
-       else
-         printer out arg;
-       doprn n i
-     and cont_t n printer i =
-       if to_s then
-         outs out ((Obj.magic printer : unit -> string) ())
-       else
-         printer out;
-       doprn n i
-     and cont_f n i =
-       flush out; doprn n i
-     and cont_m n xf i =
-       let m = Sformat.add_int_index (count_arguments_of_format xf) n in
-       pr (Obj.magic (fun _ -> doprn m i)) n xf v in
+    and cont_s n s i =
+      outs out s; doprn n i
+    and cont_a n printer arg i =
+      if to_s then
+        outs out ((Obj.magic printer : unit -> _ -> string) () arg)
+      else
+        printer out arg;
+      doprn n i
+    and cont_t n printer i =
+      if to_s then
+        outs out ((Obj.magic printer : unit -> string) ())
+      else
+        printer out;
+      doprn n i
+    and cont_f n i =
+      flush out; doprn n i
+    and cont_m n xf i =
+      let m = Sformat.add_int_index (count_arguments_of_format xf) n in
+      pr (Obj.magic (fun _ -> doprn m i)) n xf v in
 
-     doprn n 0 in
+    doprn n 0 in
 
   let kpr = pr k (Sformat.index_of_int 0) in
 

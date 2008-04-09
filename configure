@@ -553,7 +553,7 @@ fi
 # Further machine-specific hacks
 
 case "$host" in
-  ia64-*-linux*|alpha*-*-linux*|x86_64-*-linux*)
+  ia64-*-linux*|alpha*-*-linux*|x86_64-*-linux*|sparc64-*-linux*)
     echo "Will use mmap() instead of malloc() for allocation of major heap chunks."
     echo "#define USE_MMAP_INSTEAD_OF_MALLOC" >> s.h;;
 esac
@@ -589,7 +589,7 @@ case "$host" in
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
   hppa*-*-linux*)               arch=hppa; system=linux;;
   hppa*-*-gnu*)                 arch=hppa; system=gnu;;
-  powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
+  powerpc*-*-linux*)            arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
@@ -605,6 +605,17 @@ case "$host" in
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
+
+# Some platforms exist both in 32-bit and 64-bit variants, not distinguished
+# by $host.  Turn off native code compilation on platforms where 64-bit mode
+# is not supported.  (PR#4441)
+
+if $arch64; then
+  case "$arch,$model" in
+    sparc,default|mips,default|hppa,default|power,ppc)
+      arch=none; model=default; system=unknown;;
+  esac
+fi
 
 if test -z "$ccoption"; then
   case "$arch,$system,$cc" in
@@ -635,25 +646,25 @@ case "$arch,$nativecc,$system,$host_type" in
 esac
 
 asflags=''
-aspp='$(AS)'
+aspp=''
 asppflags=''
 asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
+  alpha,*,digital)  aspp='as'; asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
                     asppprofflags='-pg -DPROFILING';;
   alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,freebsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,netbsd)   aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,openbsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
+  mips,*,irix)      aspp='as'; asflags='-n32 -O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,*)        case "$cc" in
                       gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-                         *) asppflags='-P -DSYS_$(SYSTEM)';;
+                         *) aspp='as'; asppflags='-P -DSYS_$(SYSTEM)';;
                     esac;;
   i386,*,solaris)   aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
@@ -1207,6 +1218,7 @@ for dir in \
     /usr/x386/lib         \
     /usr/XFree86/lib/X11  \
                           \
+    /usr/lib64            \
     /usr/lib              \
     /usr/local/lib        \
     /usr/unsupported/lib  \
@@ -1221,6 +1233,7 @@ do
   if test -f $dir/libX11.a || \
      test -f $dir/libX11.so || \
      test -f $dir/libX11.dll.a || \
+     test -f $dir/libX11.dylib || \
      test -f $dir/libX11.sa; then
     if test $dir = /usr/lib; then
       x11_link="-lX11"

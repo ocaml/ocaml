@@ -53,7 +53,7 @@ clean: partialclean
 install:
 	cp dllstr.dll $(STUBLIBDIR)/dllstr.dll
 	cp libstr.$(A) $(LIBDIR)/libstr.$(A)
-	cp str.cma str.cmi $(LIBDIR)
+	cp str.cma str.cmi str.mli $(LIBDIR)
 
 installopt:
 	cp str.cmx str.cmxa str.$(A) $(LIBDIR)

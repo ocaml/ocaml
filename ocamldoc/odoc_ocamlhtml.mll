@@ -14,7 +14,7 @@
 (* $Id$ *)
 
 (** Generation of html code to display OCaml code. *)
-open Lexing 
+open Lexing
 
 exception Fatal_error
 
@@ -31,17 +31,17 @@ type error =
 
 exception Error of error * int * int
 
-let base_escape_strings = [ 
-    ("&", "&amp;") ; 
-    ("<", "&lt;") ; 
-    (">", "&gt;") ; 
-] 
+let base_escape_strings = [
+    ("&", "&amp;") ;
+    ("<", "&lt;") ;
+    (">", "&gt;") ;
+]
 
 let pre_escape_strings = [
   (" ", "&nbsp;") ;
   ("\n", "<br>\n") ;
   ("\t", "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;") ;
-  ] 
+  ]
 
 
 let pre = ref false
@@ -49,7 +49,7 @@ let fmt = ref Format.str_formatter
 
 (** Escape the strings which would clash with html syntax,
    and some other strings if we want to get a PRE style.*)
-let escape s = 
+let escape s =
   List.fold_left
     (fun acc -> fun (s, s2) -> Str.global_replace (Str.regexp s) s2 acc)
     s
@@ -64,7 +64,7 @@ let escape_base s =
 
 (** The output functions *)
 
-let print ?(esc=true) s = 
+let print ?(esc=true) s =
   Format.pp_print_string !fmt (if esc then escape s else s)
 ;;
 
@@ -81,7 +81,7 @@ let create_hashtable size init =
   tbl
 
 (** The function used to return html code for the given comment body. *)
-let html_of_comment = ref 
+let html_of_comment = ref
     (fun (s : string) -> "<b>Odoc_ocamlhtml.html_of_comment not initialized</b>")
 
 let keyword_table =
@@ -160,6 +160,7 @@ let margin = ref 0
 let comment_buffer = Buffer.create 32
 let reset_comment_buffer () = Buffer.reset comment_buffer
 let store_comment_char = Buffer.add_char comment_buffer
+let add_comment_string = Buffer.add_string comment_buffer
 
 let make_margin () =
   let rec iter n =
@@ -171,14 +172,14 @@ let make_margin () =
 let print_comment () =
   let s = Buffer.contents comment_buffer in
   let len = String.length s in
-  let code = 
+  let code =
     if len < 1 then
       "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
     else
-      match s.[0] with 
-        '*' -> 
+      match s.[0] with
+        '*' ->
           (
-           try 
+           try
              let html = !html_of_comment (String.sub s 1 (len-1)) in
              "</code><table><tr><td>"^(make_margin ())^"</td><td>"^
              "<span class=\""^comment_class^"\">"^
@@ -199,7 +200,7 @@ let print_comment () =
 let string_buffer = Buffer.create 32
 let reset_string_buffer () = Buffer.reset string_buffer
 let store_string_char = Buffer.add_char string_buffer
-let get_stored_string () = 
+let get_stored_string () =
   let s = Buffer.contents string_buffer in
   String.escaped s
 
@@ -215,7 +216,7 @@ let char_for_backslash = function
 let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
-                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
+                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
   Char.chr(c land 0xFF)
 
 (** To store the position of the beginning of a string and comment *)
@@ -245,7 +246,7 @@ let report_error ppf = function
 let blank = [' ' '\010' '\013' '\009' '\012']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar = 
+let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -258,17 +259,17 @@ let float_literal =
 
 rule token = parse
     blank
-      { 
+      {
         let s = Lexing.lexeme lexbuf in
         (
          match s with
-           " " -> incr margin 
+           " " -> incr margin
          | "\t" -> margin := !margin + 8
          | "\n" -> margin := 0
          | _ -> ()
         );
         print s;
-        token lexbuf 
+        token lexbuf
       }
   | "_"
       { print "_" ; token lexbuf }
@@ -320,9 +321,9 @@ rule token = parse
       { print_class string_class (Lexing.lexeme lexbuf ) ;
         token lexbuf }
   | "(*"
-      { 
+      {
         reset_comment_buffer ();
-        comment_start_pos := [Lexing.lexeme_start lexbuf];        
+        comment_start_pos := [Lexing.lexeme_start lexbuf];
         comment lexbuf ;
         print_comment ();
         token lexbuf }
@@ -335,18 +336,18 @@ rule token = parse
       }
   | "*)"
       { lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
-        lexbuf.Lexing.lex_curr_p <- 
+        lexbuf.Lexing.lex_curr_p <-
 	  { lexbuf.Lexing.lex_curr_p with
 	    pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1
 	  } ;
         print (Lexing.lexeme lexbuf) ;
-        token lexbuf 
+        token lexbuf
       }
   | "#" [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] * ('\n' | '\r' | "\r\n")
       (* # linenum ...  *)
-      { 
+      {
         print (Lexing.lexeme lexbuf);
-        token lexbuf 
+        token lexbuf
       }
   | "#"  { print_class kwsign_class (Lexing.lexeme lexbuf) ; token lexbuf }
   | "&"  { print_class kwsign_class (Lexing.lexeme lexbuf) ; token lexbuf }
@@ -419,7 +420,7 @@ and comment = parse
       { match !comment_start_pos with
         | [] -> assert false
         | [x] -> comment_start_pos := []
-        | _ :: l -> 
+        | _ :: l ->
             store_comment_char '*';
             store_comment_char ')';
             comment_start_pos := l;
@@ -429,32 +430,33 @@ and comment = parse
       { reset_string_buffer();
         string_start_pos := Lexing.lexeme_start lexbuf;
         store_comment_char '"';
-        begin try string lexbuf
-        with Error (Unterminated_string, _, _) ->
+        begin
+          try string lexbuf; add_comment_string ((get_stored_string()^"\""))
+          with Error (Unterminated_string, _, _) ->
           let st = List.hd !comment_start_pos in
           raise (Error (Unterminated_string_in_comment, st, st + 2))
         end;
         comment lexbuf }
   | "''"
-      { 
+      {
         store_comment_char '\'';
         store_comment_char '\'';
         comment lexbuf }
   | "'" [^ '\\' '\''] "'"
-      { 
+      {
         store_comment_char '\'';
         store_comment_char (Lexing.lexeme_char lexbuf 1);
         store_comment_char '\'';
         comment lexbuf }
   | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
-      { 
+      {
         store_comment_char '\'';
         store_comment_char '\\';
         store_comment_char(char_for_backslash(Lexing.lexeme_char lexbuf 1)) ;
         store_comment_char '\'';
         comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
-      { 
+      {
         store_comment_char '\'';
         store_comment_char '\\';
         store_comment_char(char_for_decimal_code lexbuf 1);
@@ -497,10 +499,10 @@ let html_of_code b ?(with_pre=true) code =
   fmt := Format.formatter_of_buffer buf ;
   pre := with_pre;
   margin := 0;
-  
+
   let start = "<code class=\""^code_class^"\">" in
   let ending = "</code>" in
-  let html = 
+  let html =
     (
      try
        print ~esc: false start ;
@@ -510,8 +512,8 @@ let html_of_code b ?(with_pre=true) code =
        Format.pp_print_flush !fmt () ;
        Buffer.contents buf
      with
-       _ -> 
-         (* flush str_formatter because we already output 
+       _ ->
+         (* flush str_formatter because we already output
             something in it *)
          Format.pp_print_flush !fmt () ;
          start^code^ending
@@ -527,4 +529,4 @@ let html_of_code b ?(with_pre=true) code =
 
   Buffer.add_string b html
 
-} 
+}

@@ -384,9 +384,17 @@ G(caml_ml_array_bound_error):
         ffree   %st(5)
         ffree   %st(6)
         ffree   %st(7)
-    /* Branch to [caml_array_bound_error] */
-        movl    $ G(caml_array_bound_error), %eax
-        jmp     G(caml_c_call)
+    /* Record lowest stack address and return address */
+        movl    (%esp), %edx
+        movl    %edx, G(caml_last_return_address)
+        leal    4(%esp), %edx
+        movl    %edx, G(caml_bottom_of_stack)
+    /* For MacOS X: re-align the stack */
+#ifdef SYS_macosx
+        andl	$-16, %esp
+#endif
+    /* Branch to [caml_array_bound_error] (never returns) */
+        call    G(caml_array_bound_error)
 
         .data
         .globl  G(caml_system__frametable)

@@ -229,8 +229,8 @@ let call_linker file_list startup_file output_name =
     else "libasmrun" ^ ext_lib in
   let runtime_lib =
     try
-      if !Clflags.nopervasives then ""
-      else find_in_path !load_path libname
+      if !Clflags.nopervasives then None
+      else Some(find_in_path !load_path libname)
     with Not_found ->
       raise(Error(File_not_found libname)) in
   let c_lib =
@@ -251,7 +251,7 @@ let call_linker file_list startup_file output_name =
               (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
                         !load_path))
             (Ccomp.quote_files (List.rev !Clflags.ccobjs))
-            (Filename.quote runtime_lib)
+            (Ccomp.quote_optfile runtime_lib)
             c_lib
         else
           Printf.sprintf "%s -o %s %s %s"
@@ -271,7 +271,7 @@ let call_linker file_list startup_file output_name =
             (Ccomp.quote_files (List.rev file_list))
             (Ccomp.quote_files 
               (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-            (Filename.quote runtime_lib)
+            (Ccomp.quote_optfile runtime_lib)
             c_lib
             (Ccomp.make_link_options !Clflags.ccopts) in
         if Ccomp.command cmd <> 0 then raise(Error Linking_error);

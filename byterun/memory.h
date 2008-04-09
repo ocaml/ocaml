@@ -94,11 +94,11 @@ color_t caml_allocation_color (void *hp);
     if (caml_gc_phase == Phase_mark) caml_darken (_old_, NULL);             \
     if (Is_block (val) && Is_young (val)                                    \
         && ! (Is_block (_old_) && Is_young (_old_))){                       \
-      *caml_ref_table_ptr++ = (fp);                                         \
-      if (caml_ref_table_ptr >= caml_ref_table_limit){                      \
-        CAMLassert (caml_ref_table_ptr == caml_ref_table_limit);            \
-        caml_realloc_ref_table ();                                          \
+      if (caml_ref_table.ptr >= caml_ref_table.limit){                      \
+        CAMLassert (caml_ref_table.ptr == caml_ref_table.limit);            \
+        caml_realloc_ref_table (&caml_ref_table);                           \
       }                                                                     \
+      *caml_ref_table.ptr++ = (fp);                                         \
     }                                                                       \
   }                                                                         \
 }while(0)

@@ -87,7 +87,7 @@ meta.o: meta.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h stacks.h
 minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h \
   compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
-  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h
+  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h weak.h
 misc.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
   misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
 obj.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \
@@ -224,7 +224,7 @@ meta.d.o: meta.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h stacks.h
 minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h \
   compatibility.h fail.h misc.h mlvalues.h finalise.h roots.h memory.h \
-  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h
+  gc.h major_gc.h freelist.h minor_gc.h gc_ctrl.h signals.h weak.h
 misc.d.o: misc.c config.h ../config/m.h ../config/s.h compatibility.h \
   misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h minor_gc.h
 obj.d.o: obj.c alloc.h compatibility.h misc.h config.h ../config/m.h \

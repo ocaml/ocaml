@@ -91,11 +91,13 @@ caml_allocN:
     /* Record return address and desired size */
         ldr     alloc_limit, .Lcaml_last_return_address
         str     lr, [alloc_limit, #0]
-        str     r10, .Lcaml_requested_size
+        ldr     alloc_limit, .LLcaml_requested_size
+        str     r10, [alloc_limit, #0]
     /* Invoke GC */
         bl      .Linvoke_gc
     /* Try again */
-        ldr     r10, .Lcaml_requested_size
+        ldr     r10, .LLcaml_requested_size
+        ldr     r10, [r10, #0]
         b       caml_allocN
 
 /* Shared code to invoke the GC */
@@ -323,8 +325,11 @@ caml_ml_array_bound_error:
 .LLtrap_handler:                .word .Ltrap_handler
 .Lcaml_apply2:                  .word caml_apply2
 .Lcaml_apply3:                  .word caml_apply3
-.Lcaml_requested_size:          .word 0
+.LLcaml_requested_size:         .word .Lcaml_requested_size
 .Lcaml_array_bound_error:       .word caml_array_bound_error
+
+.data
+.Lcaml_requested_size:          .word 0
 
 /* GC roots for callback */
 

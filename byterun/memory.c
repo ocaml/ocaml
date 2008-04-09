@@ -27,6 +27,8 @@
 #include "mlvalues.h"
 #include "signals.h"
 
+extern uintnat caml_percent_free;                   /* major_gc.c */
+
 #ifdef USE_MMAP_INSTEAD_OF_MALLOC
 extern char * caml_aligned_mmap (asize_t size, int modulo, void ** block);
 extern void caml_aligned_munmap (char * addr, asize_t size);
@@ -96,7 +98,7 @@ int caml_add_to_heap (char *m)
     page_table_entry *block, *new_page_table;
     asize_t new_page_low = Page (m);
     asize_t new_size = caml_page_high - new_page_low;
-    
+
     caml_gc_message (0x08, "Growing page table to %lu entries\n", new_size);
     block = malloc (new_size * sizeof (page_table_entry));
     if (block == NULL){
@@ -118,7 +120,7 @@ int caml_add_to_heap (char *m)
     page_table_entry *block, *new_page_table;
     asize_t new_page_high = Page (m + Chunk_size (m));
     asize_t new_size = new_page_high - caml_page_low;
-    
+
     caml_gc_message (0x08, "Growing page table to %lu entries\n", new_size);
     block = malloc (new_size * sizeof (page_table_entry));
     if (block == NULL){
@@ -169,25 +171,52 @@ int caml_add_to_heap (char *m)
 }
 
 /* Allocate more memory from malloc for the heap.
-   Return a blue block of at least the requested size (in words).
-   The caller must insert the block into the free list.
+   Return a blue block of at least the requested size.
+   The blue block is chained to a sequence of blue blocks (through their
+   field 0); the last block of the chain is pointed by field 1 of the
+   first.  There may be a fragment after the last block.
+   The caller must insert the blocks into the free list.
    The request must be less than or equal to Max_wosize.
    Return NULL when out of memory.
 */
 static char *expand_heap (mlsize_t request)
 {
-  char *mem;
-  asize_t malloc_request;
+  char *mem, *hp, *prev;
+  asize_t over_request, malloc_request, remain;
 
-  malloc_request = caml_round_heap_chunk_size (Bhsize_wosize (request));
+  Assert (request <= Max_wosize);
+  over_request = request + request / 100 * caml_percent_free;
+  malloc_request = caml_round_heap_chunk_size (Bhsize_wosize (over_request));
   mem = caml_alloc_for_heap (malloc_request);
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n", 0);
     return NULL;
   }
-  Assert (Wosize_bhsize (malloc_request) >= request);
-  Hd_hp (mem) = Make_header (Wosize_bhsize (malloc_request), 0, Caml_blue);
-
+  remain = malloc_request;
+  prev = hp = mem;
+  /* XXX find a way to do this with a call to caml_make_free_blocks */
+  while (Wosize_bhsize (remain) > Max_wosize){
+    Hd_hp (hp) = Make_header (Max_wosize, 0, Caml_blue);
+#ifdef DEBUG
+    caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
+#endif
+    hp += Bhsize_wosize (Max_wosize);
+    remain -= Bhsize_wosize (Max_wosize);
+    Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
+    prev = hp;
+  }
+  if (remain > 1){
+    Hd_hp (hp) = Make_header (Wosize_bhsize (remain), 0, Caml_blue);
+#ifdef DEBUG
+    caml_set_fields (Bp_hp (hp), 0, Debug_free_major);
+#endif
+    Field (Op_hp (mem), 1) = Field (Op_hp (prev), 0) = (value) Op_hp (hp);
+    Field (Op_hp (hp), 0) = (value) NULL;
+  }else{
+    Field (Op_hp (prev), 0) = (value) NULL;
+    if (remain == 1) Hd_hp (hp) = Make_header (0, 0, Caml_white);
+  }
+  Assert (Wosize_hp (mem) >= request);
   if (caml_add_to_heap (mem) != 0){
     caml_free_for_heap (mem);
     return NULL;
@@ -267,7 +296,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
       else
         caml_raise_out_of_memory ();
     }
-    caml_fl_add_block (new_block);
+    caml_fl_add_blocks (new_block);
     hp = caml_fl_allocate (wosize);
   }
 
@@ -358,10 +387,10 @@ void caml_initialize (value *fp, value val)
 {
   *fp = val;
   if (Is_block (val) && Is_young (val) && Is_in_heap (fp)){
-    *caml_ref_table_ptr++ = fp;
-    if (caml_ref_table_ptr >= caml_ref_table_limit){
-      caml_realloc_ref_table ();
+    if (caml_ref_table.ptr >= caml_ref_table.limit){
+      caml_realloc_ref_table (&caml_ref_table);
     }
+    *caml_ref_table.ptr++ = fp;
   }
 }
 

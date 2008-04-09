@@ -63,6 +63,14 @@ For other bindings, see C-h b.
 
 Changes log:
 -----------
+Version 3.10.1:
+---------------
+* use caml-font.el from Olivier Andrieu
+  old version is left as caml-font-old.el for compatibility
+
+Version 3.07:
+-------------
+* support for showing type information <Damien Doligez>
 
 Version 3.05:
 -------------
@@ -195,4 +203,4 @@ in other cases may confuse the phrase selection function.
 
 Comments and bug reports to
 
-    Jacques Garrigue <garrigue@kurims.kyoto-u.ac.jp>
+    Jacques Garrigue <garrigue@math.nagoya-u.ac.jp>

@@ -46,6 +46,10 @@ let quote_files lst =
   then build_diversion lst
   else s
 
+let quote_optfile = function
+  | None -> ""
+  | Some f -> Filename.quote f
+
 let compile_file name =
      command
        (Printf.sprintf
