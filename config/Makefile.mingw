@@ -94,7 +94,7 @@ NATIVECCLIBS=
 CPP=$(BYTECC) -E
 
 ### Flexlink
-FLEXLINK=flexlink -chain mingw -merge-manifest
+FLEXLINK=flexlink -chain mingw
 FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)
