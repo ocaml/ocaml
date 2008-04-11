@@ -658,6 +658,13 @@ let switch_constr cstr arg cls fail =
 	  call_switcher
             (fun i -> Lconst (Const_base (Const_int i)))
             fail arg 0 (n-1) consts
+      | (n,_,_,[],Some act) ->
+	  Lifthenelse
+	    (Lprim (Pisint, [arg]),
+	     call_switcher
+	       (fun i -> Lconst (Const_base (Const_int i)))
+	       fail arg 0 (n-1) consts,
+	     act)
       | (n,_,_,_,_) ->
 	  begin match same_actions nonconsts,fail with
 	  | Some act,None ->
