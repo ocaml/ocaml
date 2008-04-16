@@ -137,7 +137,7 @@ let main () =
              " Link all modules, even unused ones";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-noautolink", Arg.Set no_auto_link,
-             " Don't automatically link C libraries specified in .cma files";
+             " Don't automatically link C libraries specified in .cmxa files";
        "-nolabels", Arg.Set classic, " Ignore non-optional labels in types";
        "-nostdlib", Arg.Set no_std_include,
            " do not add standard directory to the list of include directories";
