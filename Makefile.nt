@@ -310,9 +310,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e "s|%%BYTERUN%%|ocamlrun|" \
             -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
             -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
-            -e "s|%%BYTELINK%%|flexlink|" \
             -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
-            -e "s|%%NATIVELINK%%|flexlink|" \
             -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
             -e "s|%%PACKLD%%|$(PACKLD)|" \
             -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \

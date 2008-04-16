@@ -91,7 +91,6 @@ let show_config () =
 let main () =
   native_code := true;
   c_compiler := Config.native_c_compiler;
-  c_linker := Config.native_c_linker;
   let ppf = Format.err_formatter in
   try
     Arg.parse (Arch.command_line_options @ [
@@ -99,7 +98,7 @@ let main () =
        "-annot", Arg.Set annotations,
              " Save information in <filename>.annot";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
-       "-cc", Arg.String(fun s -> c_compiler := s; c_linker := s),
+       "-cc", Arg.String(fun s -> c_compiler := s),
              "<comp>  Use <comp> as the C compiler and linker";
        "-cclib", Arg.String(fun s ->
                               ccobjs := Misc.rev_split_words s @ !ccobjs),

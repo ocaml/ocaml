@@ -47,7 +47,7 @@ all: dynlink.cma extract_crc
 allopt: dynlink.cmxa
 
 dynlink.cma: $(OBJS)
-	$(CAMLC) $(COMPFLAGS) -a -o dynlink.cma $(OBJS)
+	$(CAMLC) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -o dynlink.cma $(OBJS)
 
 dynlink.cmxa: $(NATOBJS)
 	$(CAMLOPT) $(COMPFLAGS) -ccopt "$(NATDYNLINKOPTS)" -a -o dynlink.cmxa $(NATOBJS)

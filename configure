@@ -544,6 +544,7 @@ if test $withsharedlibs = "yes"; then
           else
             mksharedlib="$bytecc -shared"
             bytecclinkopts="$bytecclinkopts -Wl,-E"
+            natdynlinkopts="-Wl,-E"
             byteccrpath="-Wl,-rpath,"
             mksharedlibrpath="-Wl,-rpath,"
           fi
@@ -589,6 +590,7 @@ if test $withsharedlibs = "yes"; then
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
+      natdynlinkopts="-Wl,-E"
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-Wl,-rpath,"
       shared_libraries_supported=true;;
