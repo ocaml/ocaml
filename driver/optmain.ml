@@ -89,6 +89,15 @@ let show_config () =
 ;;
 
 let main () =
+  (* This is a temporary solution to help the community evaluate
+     the impact of -dlcode on performance for AMD64 systems (so that
+     3rd-party libraries can be recompiled with -dlcode without touching
+     their Makefiles).
+  begin
+    try if Sys.getenv "OCAML_DLCODE" <> "" then dlcode := true
+    with Not_found -> ();
+  end;
+
   native_code := true;
   c_compiler := Config.native_c_compiler;
   let ppf = Format.err_formatter in
