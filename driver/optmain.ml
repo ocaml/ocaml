@@ -92,7 +92,7 @@ let main () =
   (* This is a temporary solution to help the community evaluate
      the impact of -dlcode on performance for AMD64 systems (so that
      3rd-party libraries can be recompiled with -dlcode without touching
-     their Makefiles).
+     their Makefiles). *)
   begin
     try if Sys.getenv "OCAML_DLCODE" <> "" then dlcode := true
     with Not_found -> ();
