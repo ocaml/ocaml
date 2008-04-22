@@ -122,7 +122,7 @@ let default_available_units () =
   inited := true
 
 let init () =
-  if !inited then default_available_units ()
+  if not !inited then default_available_units ()
 
 let add_check_ifaces allow_ext filename ui ifaces =
   List.fold_left
