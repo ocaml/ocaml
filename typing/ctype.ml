@@ -101,7 +101,6 @@ let current_level = ref 0
 let nongen_level = ref 0
 let global_level = ref 1
 let saved_level = ref []
-let saved_global_level = ref []
 
 let init_def level = current_level := level; nongen_level := level
 let begin_def () =
@@ -119,8 +118,7 @@ let end_def () =
   current_level := cl; nongen_level := nl
 
 let reset_global_level () =
-  global_level := !current_level + 1;
-  saved_global_level := []
+  global_level := !current_level + 1
 let increase_global_level () =
   let gl = !global_level in
   global_level := !current_level;
