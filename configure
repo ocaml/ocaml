@@ -1043,9 +1043,6 @@ if sh ./hasgot $dllib dlopen; then
 elif sh ./hasgot $dllib -ldl dlopen; then
   echo "dlopen() found in -ldl."
   dllib="$dllib -ldl"
-elif sh ./hasgot -i mach-o/dyld.h && sh ./hasgot NSLinkModule; then
-  echo "NSLinkModule() found. Using darwin dynamic loading."
-  echo "#define HAS_NSLINKMODULE" >> s.h
 else
   shared_libraries_supported=false
 fi
