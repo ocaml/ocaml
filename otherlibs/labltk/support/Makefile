@@ -17,7 +17,7 @@ CCFLAGS=-I../../../byterun $(TK_DEFS) $(SHAREDCCCOMPOPTS)
 COMPFLAGS=-I $(OTHERS)/win32unix -I $(OTHERS)/unix
 THFLAGS=-I $(OTHERS)/systhreads -I $(OTHERS)/threads
 
-lib$(LIBNAME).$(A) : $(COBJS)
+lib$(LIBNAME).$(A): $(COBJS)
 	$(MKLIB) -o $(LIBNAME) $(COBJS) -ldopt "$(TK_LINK)"
 
 PUBMLI=fileevent.mli protocol.mli textvariable.mli timer.mli \
