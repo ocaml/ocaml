@@ -19,12 +19,6 @@ val is_native: bool
 (** [true] if the program is native,
     [false] if the program is bytecode. *)
 
-(** {6 Initialization} *)
-
-val init : unit -> unit
-(** Initialize the [Dynlink] library.
-    Must be called before any other function in this module. *)
-
 (** {6 Dynamic loading of compiled files} *)
 
 val loadfile : string -> unit
@@ -43,6 +37,10 @@ val loadfile_private : string -> unit
 (** Same as [loadfile], except that the compilation units just loaded
     are hidden (cannot be referenced) from other modules dynamically
     loaded afterwards. *)
+
+val adapt_filename : string -> string
+(** In bytecode, the identity function. In native code, replace the last
+    extension with [.cmxs]. *)
 
 (** {6 Access control} *)
 
@@ -75,7 +73,8 @@ val allow_unsafe_modules : bool -> unit
     dynamically linked. A compilation unit is ``unsafe'' if it contains
     declarations of external functions, which can break type safety.
     By default, dynamic linking of unsafe object files is
-    not allowed. *)
+    not allowed. In native code, this function does nothing; object files
+    with external functions are always allowed to be dynamically linked. *)
 
 (** {6 Deprecated, low-level API for access control} *)
 
@@ -105,6 +104,12 @@ val clear_available_units : unit -> unit
 (** Empty the list of compilation units accessible to dynamically-linked
     programs. *)
 
+(** {6 Deprecated, initialization} *)
+
+val init : unit -> unit
+(** @deprecated Initialize the [Dynlink] library. This function is called
+    automatically when needed. *)
+
 (** {6 Error reporting} *)
 
 type linking_error =
@@ -121,6 +126,7 @@ type error =
   | Corrupted_interface of string
   | File_not_found of string
   | Cannot_open_dll of string
+  | Inconsistent_implementation of string
 
 exception Error of error
 (** Errors in dynamic linking are reported by raising the [Error]

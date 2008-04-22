@@ -11,20 +11,16 @@
 #include <stdio.h>
 #include <string.h>
 
-static void *getsym(void *handle, char *module, char *name, int opt){  	 
-  char *fullname = malloc(strlen(module) + strlen(name) + 5); 	 
-  void *sym; 	 
-  sprintf(fullname, "caml%s%s", module, name); 	 
-  sym = caml_dlsym (handle, fullname); 	 
+static void *getsym(void *handle, char *module, char *name){
+  char *fullname = malloc(strlen(module) + strlen(name) + 5);
+  void *sym;
+  sprintf(fullname, "caml%s%s", module, name);
+  sym = caml_dlsym (handle, fullname);
   /*  printf("%s => %lx\n", fullname, (uintnat) sym); */
-  free(fullname); 	 
-  if (NULL == sym && !opt) { 	 
-    printf("natdynlink: cannot find symbol %s\n", fullname); 	 
-    exit(2); 	 
-  } 	 
-  return sym; 	 
-} 	 
- 
+  free(fullname);
+  return sym;
+}
+
 extern char caml_globals_map[];
 
 CAMLprim value caml_natdynlink_getmap(value unit)
@@ -37,7 +33,7 @@ CAMLprim value caml_natdynlink_globals_inited(value unit)
   return Val_int(caml_globals_inited);
 }
 
-CAMLprim value caml_natdynlink_open(value filename)
+CAMLprim value caml_natdynlink_open(value filename, value global)
 {
   CAMLparam1 (filename);
   CAMLlocal1 (res);
@@ -46,13 +42,13 @@ CAMLprim value caml_natdynlink_open(value filename)
 
   /* TODO: dlclose in case of error... */
 
-  handle = caml_dlopen(String_val(filename), 1);
-  
+  handle = caml_dlopen(String_val(filename), 1, Int_val(global));
+
   if (NULL == handle)
     CAMLreturn(caml_copy_string(caml_dlerror()));
 
   sym = caml_dlsym(handle, "caml_plugin_header");
-  if (NULL == sym) 
+  if (NULL == sym)
     CAMLreturn(caml_copy_string("not an OCaml plugin"));
 
   res = caml_alloc_tuple(2);
@@ -66,7 +62,7 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
   CAMLlocal1 (result);
   void *sym,*sym2;
 
-#define optsym(n) getsym(handle,unit,n,1)
+#define optsym(n) getsym(handle,unit,n)
   char *unit;
   void (*entrypoint)(void);
 
@@ -74,15 +70,15 @@ CAMLprim value caml_natdynlink_run(void *handle, value symbol) {
 
   sym = optsym("__frametable");
   if (NULL != sym) caml_register_frametable(sym);
-  
+
   sym = optsym("");
   if (NULL != sym) caml_register_dyn_global(sym);
-  
+
   sym = optsym("__data_begin");
   sym2 = optsym("__data_end");
   if (NULL != sym && NULL != sym2)
     caml_page_table_add(In_static_data, sym, sym2);
-  
+
   sym = optsym("__code_begin");
   sym2 = optsym("__code_end");
   if (NULL != sym && NULL != sym2)
@@ -105,8 +101,8 @@ CAMLprim value caml_natdynlink_run_toplevel(value filename, value symbol)
 
   /* TODO: dlclose in case of error... */
 
-  handle = caml_dlopen(String_val(filename), 1);
-  
+  handle = caml_dlopen(String_val(filename), 1, 1);
+
   if (NULL == handle) {
     res = caml_alloc(1,1);
     v = caml_copy_string(caml_dlerror());

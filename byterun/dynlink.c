@@ -123,7 +123,7 @@ static void open_shared_lib(char * name)
   realname = caml_search_dll_in_path(&caml_shared_libs_path, name);
   caml_gc_message(0x100, "Loading shared library %s\n",
                   (uintnat) realname);
-  handle = caml_dlopen(realname, 1);
+  handle = caml_dlopen(realname, 1, 1);
   if (handle == NULL)
     caml_fatal_error_arg2("Fatal error: cannot load shared library %s\n", name,
                           "Reason: %s\n", caml_dlerror());
@@ -201,7 +201,7 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
 
   caml_gc_message(0x100, "Opening shared library %s\n",
                   (uintnat) String_val(filename));
-  handle = caml_dlopen(String_val(filename), Int_val(mode));
+  handle = caml_dlopen(String_val(filename), Int_val(mode), 1);
   if (handle == NULL) caml_failwith(caml_dlerror());
   result = caml_alloc_small(1, Abstract_tag);
   Handle_val(result) = handle;

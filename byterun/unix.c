@@ -204,7 +204,7 @@ entry_t *caml_lookup_bundle(const char *name)
   return current;
 }
 
-void * caml_dlopen(char * libname, int for_execution)
+void * caml_dlopen(char * libname, int for_execution, int global)
 {
   NSObjectFileImage image;
   entry_t *bentry = caml_lookup_bundle(libname);
@@ -286,9 +286,9 @@ char * caml_dlerror(void)
 #elif defined(__CYGWIN32__)
 /* Use flexdll */
 
-void * caml_dlopen(char * libname, int for_execution)
+void * caml_dlopen(char * libname, int for_execution, int global)
 {
-  int flags = FLEXDLL_RTLD_GLOBAL;
+  int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
   if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
   return flexdll_dlopen(libname, flags);
 }
@@ -305,7 +305,7 @@ void * caml_dlsym(void * handle, char * name)
 
 void * caml_globalsym(char * name)
 {
-  return flexdll_dlsym(flexdll_dlopen(NULL,0), name);
+  return flexdll_dlsym(flexdll_dlopen(NULL,0,1), name);
 }
 
 char * caml_dlerror(void)
@@ -323,9 +323,9 @@ char * caml_dlerror(void)
 #define RTLD_NODELETE 0
 #endif
 
-void * caml_dlopen(char * libname, int for_execution)
+void * caml_dlopen(char * libname, int for_execution, int global)
 {
-  return dlopen(libname, RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+  return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : 0) | RTLD_NODELETE);
   /* Could use RTLD_LAZY if for_execution == 0, but needs testing */
 }
 
@@ -361,7 +361,7 @@ char * caml_dlerror(void)
 #endif
 #else
 
-void * caml_dlopen(char * libname, int for_execution)
+void * caml_dlopen(char * libname, int for_execution, int global)
 {
   return NULL;
 }

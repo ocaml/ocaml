@@ -233,7 +233,7 @@ installbyt:
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	cd win32caml ; $(MAKE) install
-	./build/partial-install.sh
+#	./build/partial-install.sh
 	cp config/Makefile $(LIBDIR)/Makefile.config
 	cp README $(DISTRIB)/Readme.general.txt
 	cp README.win32 $(DISTRIB)/Readme.windows.txt
@@ -583,17 +583,25 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
-	./build/camlp4-byte-only.sh
-camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
-	./build/camlp4-native-only.sh
+#camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
+#	./build/camlp4-byte-only.sh
+#camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
+#	./build/camlp4-native-only.sh
+
+camlp4out:
+
+camlp4opt:
 
 # Ocamlbuild
 
-ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
-	./build/ocamlbuild-byte-only.sh
-ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
-	./build/ocamlbuild-native-only.sh
+ocamlbuild.byte:
+
+ocamlbuild.native:
+
+#ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
+#	./build/ocamlbuild-byte-only.sh
+#ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+#	./build/ocamlbuild-native-only.sh
 ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
 	./build/ocamlbuildlib-native-only.sh
 
