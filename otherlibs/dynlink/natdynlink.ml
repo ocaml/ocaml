@@ -251,7 +251,7 @@ let error_message = function
       "cannot find file " ^ name ^ " in search path"
   | Cannot_open_dll reason ->
       "error loading shared library: " ^ reason
-  | Inconsistent_import name ->
+  | Inconsistent_implementation name ->
       "implementation mismatch on " ^ name
 
 let is_native = true
