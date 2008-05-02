@@ -334,7 +334,11 @@ FileReadGIF(interp, f, fileName, formatString)
                 goto error;
             }
         }
-        Tk_PhotoPutBlock(photoHandle, &block, 0, 0, imageWidth, imageHeight
+        Tk_PhotoPutBlock(
+#if (TK_MAJOR_VERSION == 8 && TK_MINOR_VERSION >= 5 || TK_MAJOR_VERSION > 8)
+	NULL,
+#endif
+photoHandle, &block, 0, 0, imageWidth, imageHeight
 #if (TK_MAJOR_VERSION == 8 && TK_MINOR_VERSION >= 4 || TK_MAJOR_VERSION > 8)
                    , TK_PHOTO_COMPOSITE_SET
 #endif

@@ -1402,6 +1402,7 @@ if test $has_tk = true; then
     8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
     8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
     8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
+    8.5) tclmaj=8 tclmin=5 tkmaj=8 tkmin=5 ;;
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
