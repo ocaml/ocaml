@@ -18,7 +18,6 @@ let match_option c =
 
 let share = match_option 's'
 and tree = match_option 't'
-and direction = match_option 'o'
 and verbose =
   let r = ref 0 in
   for i = 0 to String.length match_string-1 do
@@ -28,6 +27,16 @@ and verbose =
     | _ -> ()
   done ;
   !r
+
+
+type heuristics = | No | Standard | Semantics
+
+let heuristic =
+  if match_option 'O' then Semantics
+  else if match_option 'o' then Standard
+  else No
+
+
 
 (* Flatten one pattern *)
 exception Cannot_flatten

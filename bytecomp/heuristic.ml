@@ -103,15 +103,6 @@ let extract_first_col pss =
 let conses ps qss = List.map2 (fun x xs -> x::xs) ps qss
 and appends pss qss = List.map2 (@) pss qss
 
-(* Variables in tuple/record/one constr types are not duplicated *)
-
-let no_test ps =
-  let ds = Discr.collect_ps ps in
-  match DSet.cardinal ds with
-  | 0 -> true
-  | 1 -> not (Discr.has_default ds)
-  | _ -> false
-
 (* Does omega matches a pattern ? *)
 let rec match_omega p = match p.pat_desc with
   | Tpat_any|Tpat_var _ -> true
@@ -126,13 +117,6 @@ let direction k col pss =
   | [],[] -> 0
   | c::col, ps::pss ->
       if match_omega c then begin
-(*
-	Printf.eprintf "** QSS **\n" ;
-	Parmatch.pretty_matrix qss ;
-	Printf.eprintf "** PS **\n" ;
-	Parmatch.pretty_line ps ;
-	prerr_newline () ;
-*)
 	if Parmatch.satisfiable qss ps then 0
 	else begin
 	  if Matchcommon.verbose > 0 then begin
@@ -165,9 +149,51 @@ let directions xs pss ks =
     List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
     prerr_endline ""
   end ;
-
   ws
       
+(************************)
+(* Counted needed lines *)
+(************************)
+
+let needed_one k col pss =
+  let rec do_rec n col qss pss = match col,pss with
+  | [],[] -> 0
+  | c::col, ps::pss ->
+      if match_omega c then begin
+	if Parmatch.satisfiable qss ps then
+	  do_rec (n+1) col (ps::qss) pss
+	else begin
+	  if Matchcommon.verbose > 0 then begin
+	    Printf.eprintf "** Non obvious direction: col=%i, row=%i\n"  k n
+	  end ;
+	  do_rec (n+1) col (ps::qss) pss - 1
+	end
+      end else 
+	do_rec (n+1) col (ps::qss) pss - 1
+  | _ -> assert false in
+  do_rec 0 col [] pss
+
+let needed xs pss ks =
+  let rec do_rec i left right ks xs = match ks,xs with
+    | [],_ -> []
+    | k::rk,_::xs ->
+	let col,right = extract_first_col right in
+	if i < k then
+	  do_rec (i+1) (conses col left) right ks xs
+	else
+	  let d = needed_one k col (appends left right) in
+	  (k,d)::do_rec (i+1) (conses col left) right rk xs
+    | _ -> assert false in
+
+  let ws =  do_rec 0 (List.map (fun _ -> []) pss) pss ks xs in
+  
+  if Matchcommon.verbose > 0 then begin
+    prerr_string "NEEDED: " ;
+    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
+    prerr_endline ""
+  end ;
+  ws
+
 
 (********************************************)
 (* Minimize specialized/default matrix size *)
@@ -180,8 +206,7 @@ let rec nwilds_pat p = match p.pat_desc with
 | Tpat_alias (p,_) -> nwilds_pat p
 | Tpat_or (p1,p2,_) -> nwilds_pat p1 + nwilds_pat p2
 | Tpat_construct _ | Tpat_variant _ 
-| Tpat_array _|Tpat_record _|Tpat_tuple _|Tpat_constant _ ->
-  0
+| Tpat_array _|Tpat_record _|Tpat_tuple _|Tpat_constant _ -> 0
 
 let rec nwilds ps =
   List.fold_left
@@ -213,9 +238,30 @@ let nrows xs pss ks =
     List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
     prerr_endline ""
   end ;
-
   ws
 
+(******************)
+(* Small defaults *)
+(******************)
+
+let ndefaults xs pss ks =
+  let rec do_rec  i right ks xs = match ks,xs with
+    | [],_ -> []
+    | k::rk,_::xs ->
+	let ps,qss = extract_first_col right in
+	if i < k then
+	  do_rec (i+1) qss ks xs
+	else
+	  (k,ndups ps)::do_rec (i+1) qss rk xs
+    | _ -> assert false in
+  let ws =  do_rec 0 pss ks xs in
+
+  if Matchcommon.verbose > 0 then begin
+    prerr_string "DEFAULTS: " ;
+    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
+    prerr_endline ""
+  end ;
+  ws
 (*****************************)
 (* Minimize branching factor *)  
 (*****************************)
@@ -228,7 +274,7 @@ let nbranchs xs pss ks =
 	if i < k then
 	  do_rec (i+1) qss ks xs
 	else
-	  (k,-nmats ps)::do_rec (i+1) qss rk xs
+	  (k,nmats ps)::do_rec (i+1) qss rk xs
     | _ -> assert false in
   let ws =  do_rec 0 pss ks xs in
 
@@ -237,8 +283,37 @@ let nbranchs xs pss ks =
     List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
     prerr_endline ""
   end ;
-
   ws
+
+(*********************)
+(* Naive 'relevance' *)
+(*********************)
+
+let is_constr p = not (match_omega p)
+
+let basic pss ks =
+  let rec do_rec i ks ps = match ks,ps with
+  | [],_ -> []
+  | k::rk, p::ps ->
+      if i < k then
+	do_rec (i+1) ks ps
+      else
+	(k,if is_constr p then -1 else 0)::do_rec (i+1) rk ps
+  | _,_ -> assert false in
+
+  let ws =
+    match pss with
+    | [] -> assert false
+    | ps::_ -> do_rec 0 ks ps in
+  
+  if Matchcommon.verbose > 0 then begin
+    prerr_string "BASIC: " ;
+    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
+    prerr_endline ""
+  end ;
+  ws
+
+
 (******************************************)
 (* Select minimal variable, this enforces *)
 (* irrelevance of previous column swaps   *)
@@ -256,6 +331,34 @@ let vars xs ks =
   do_rec 0 xs ks
 	
 
+(*************************)
+(* Heuristic definitions *)
+(*************************)
+
+let lefttoright ks pss =
+  let rec do_rec ks pss = match ks with
+  | [] -> assert false
+  | k::rk ->
+      let col,pss = extract_first_col pss in
+      if List.exists is_constr col then k
+      else do_rec rk pss in
+  do_rec ks pss
+
+let norman xs pss =
+  first
+    << vars xs
+    << nbranchs xs pss
+    << ndefaults xs pss
+    << basic pss
+
+let luc xs pss =
+   first
+    << vars xs
+    << nbranchs xs pss
+    << needed xs pss
+    << directions xs pss
+  
+module C = Matchcommon
 
 let best_column xs pss = match xs with
 |[]|[_]  -> assert false
@@ -264,25 +367,23 @@ let best_column xs pss = match xs with
     and xs = List.map (fun (_,x,_) -> x) xs
     and ks = mapi (fun i _ -> i) xs in
 
-    if Matchcommon.verbose > 0 then begin
-    prerr_endline "** HEURISTICS **" ;
-    Parmatch.pretty_matrix pss
+    if C.verbose > 0 then begin
+      prerr_endline "** HEURISTICS **" ;
+      Parmatch.pretty_matrix pss
     end ;
+    let k =
+      match C.heuristic with
+      | C.No -> lefttoright ks pss
+      | C.Standard -> norman xs pss ks
+      | C.Semantics -> luc xs pss ks in
+    if C.verbose > 0 then begin
+      Printf.eprintf "Selected: %i\n" k ;
+      flush stderr
+    end ;
+    k
 
-    let zyva =
-      first << vars xs << nbranchs xs pss
-	<< nrows xs pss << directions xs pss in
-    zyva ks
-
-let choose xs pss =  match xs with
+let opt xs pss =  match xs with
 |[]|[_] -> xs,pss
 | _ ->
     let k = best_column xs pss in
     swap_all k xs pss
-
-let opt =
-  if Matchcommon.direction then
-    choose
-  else
-    (fun xs pss -> xs,pss)
-
