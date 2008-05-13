@@ -119,9 +119,6 @@ let direction k col pss =
       if match_omega c then begin
 	if Parmatch.satisfiable qss ps then 0
 	else begin
-	  if Matchcommon.verbose > 0 then begin
-	    Printf.eprintf "** Non obvious direction: col=%i, row=%i\n"  k n
-	  end ;
 	  do_rec (n+1) col (ps::qss) pss - 1
 	end
       end else 
@@ -163,9 +160,6 @@ let needed_one k col pss =
 	if Parmatch.satisfiable qss ps then
 	  do_rec (n+1) col (ps::qss) pss
 	else begin
-	  if Matchcommon.verbose > 0 then begin
-	    Printf.eprintf "** Non obvious direction: col=%i, row=%i\n"  k n
-	  end ;
 	  do_rec (n+1) col (ps::qss) pss - 1
 	end
       end else 
@@ -221,6 +215,20 @@ let nmats ps =
 
 let ndups col = nwilds col * nmats col
 
+let rec dupconstr_pat p = match p.pat_desc with
+  | Tpat_any|Tpat_var _ -> 0
+  | Tpat_alias (p,_) -> dupconstr_pat p
+  | Tpat_or (p1,p2,_) -> dupconstr_pat p1 + dupconstr_pat p2
+  | (Tpat_array _|Tpat_record _|Tpat_variant (_, _, _)
+  | Tpat_construct (_, _)| Tpat_tuple _|Tpat_constant _)
+      -> 1
+
+let dupconstr col =
+  List.fold_left
+    (fun r p -> r + dupconstr_pat p)
+    0 col
+
+      
 let nrows xs pss ks =
   let rec do_rec  i right ks xs = match ks,xs with
     | [],_ -> []
@@ -229,7 +237,7 @@ let nrows xs pss ks =
 	if i < k then
 	  do_rec (i+1) qss ks xs
 	else
-	  (k,ndups ps)::do_rec (i+1) qss rk xs
+	  (k,ndups ps+dupconstr ps)::do_rec (i+1) qss rk xs
     | _ -> assert false in
   let ws =  do_rec 0 pss ks xs in
 
@@ -252,7 +260,7 @@ let ndefaults xs pss ks =
 	if i < k then
 	  do_rec (i+1) qss ks xs
 	else
-	  (k,ndups ps)::do_rec (i+1) qss rk xs
+	  (k,nwilds ps)::do_rec (i+1) qss rk xs
     | _ -> assert false in
   let ws =  do_rec 0 pss ks xs in
 
@@ -347,14 +355,13 @@ let lefttoright ks pss =
 let norman xs pss =
   first
     << vars xs
-    << nbranchs xs pss
-    << ndefaults xs pss
+    << nrows xs pss
     << basic pss
 
 let luc xs pss =
    first
     << vars xs
-    << nbranchs xs pss
+    << nrows xs pss
     << needed xs pss
     << directions xs pss
   

@@ -147,8 +147,7 @@ let share_id lam =
 let field_ids d x = Discr.field_ids share_id d x
 
 let switch x cls d = match cls,d with
-| ([],Some idx)
-| ([_,idx],None) -> idx
+| ([],Some idx)  -> idx
 | _,_ -> share_node (Choose (x,cls,d))
 
 (*********************)
