@@ -25,7 +25,22 @@ open Matchcommon
 
 let compile_matching =
   if Matchcommon.tree then Treematch.compile_matching
-  else Automatch.compile_matching
+  else begin
+    (fun loc repr hf param pat_act_list partial ->
+      nswitch := 0 ;
+      ignore
+	(Treematch.compile_matching loc repr hf param pat_act_list partial);
+      let ntree = !nswitch in
+      nswitch := 0 ;
+      let r =
+	Automatch.compile_matching  loc repr hf param pat_act_list partial in
+      let nauto = !nswitch in
+      if ntree <> nauto then begin
+	Location.print_error Format.err_formatter loc ;
+	Format.eprintf "Signal: %i > %i@." ntree nauto ;
+      end ;
+      r)
+  end
 
 let for_function loc repr param pat_act_list partial =
   match pat_act_list with
@@ -48,11 +63,27 @@ let for_let loc param pat body =
 (* Those two are more complex *)
 let for_multiple_match =
   if Matchcommon.tree then Treematch.for_multiple_match
-  else Automatch.for_multiple_match
+  else
+    (fun loc args pss partial ->
+      nswitch := 0 ;
+      ignore
+	(Treematch.for_multiple_match loc args pss partial);
+      let ntree = !nswitch in
+      nswitch := 0 ;
+      let r =
+	Automatch.for_multiple_match loc args pss partial in
+      let nauto = !nswitch in
+      if ntree <> nauto then begin
+	Location.print_error Format.err_formatter loc ;
+	Format.eprintf "Signal: %i > %i@." ntree nauto ;
+      end ;
+      r)
 
 let for_tupled_function =
-  if Matchcommon.tree then Treematch.for_tupled_function
-  else Automatch.for_tupled_function
+  if Matchcommon.tree then
+    Treematch.for_tupled_function
+  else
+    Automatch.for_tupled_function
 
 (* Re-exported *)
 exception Cannot_flatten = Matchcommon.Cannot_flatten

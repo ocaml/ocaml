@@ -37,6 +37,8 @@ let heuristic =
   else No
 
 
+(* Count switches *)
+let nswitch = ref 0
 
 (* Flatten one pattern *)
 exception Cannot_flatten
@@ -576,7 +578,9 @@ let share_call_switcher konst fail arg low high int_lambda_list =
 
 
 (* Stubs for all cases of switch *)
-let switch_constant cst arg const_lambda_list fail = match cst with
+let switch_constant cst arg const_lambda_list fail =
+incr nswitch ;
+ match cst with
 | Const_int _ ->
     let int_lambda_list =
       List.map (function Const_int n, l -> n,l | _ -> assert false)
@@ -617,6 +621,7 @@ let switch_constant cst arg const_lambda_list fail = match cst with
 
 (* Exceptions *)
 let switch_exn arg cls fail =
+  incr nswitch ;
   let default, tests =
     match fail with
     | None ->
@@ -656,6 +661,7 @@ let switch_constr cstr arg cls fail =
   let lam = match same_actions cls,fail with
   | Some act,None -> act
   | _,_ ->
+      incr nswitch ;
       begin match
         (cstr.cstr_consts, cstr.cstr_nonconsts, consts, nonconsts,fail)
       with
@@ -716,6 +722,7 @@ let test_int_or_block arg if_int if_block =
   Lifthenelse(Lprim (Pisint, [arg]), if_int, if_block)
 
 let switch_variant arg cls fail =  
+  incr nswitch ;
   let (fail,cls),(f,xs) = share_actions fail cls in
   let lam =
     let one_action = same_actions cls in
@@ -749,6 +756,7 @@ let switch_variant arg cls fail =
 (* Array *)
 
 let switch_array kind arg cls fail =
+  incr nswitch ;
   let newvar = Ident.create "len" in
   let switch =
     share_call_switcher
@@ -777,3 +785,4 @@ let partial_function loc () =
               [Const_base(Const_string fname);
                Const_base(Const_int line);
                Const_base(Const_int char)]))])])
+
