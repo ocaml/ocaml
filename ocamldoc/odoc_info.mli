@@ -187,6 +187,9 @@ module Exception :
 (** Representation and manipulation of types.*)
 module Type :
   sig
+    type private_flag = Odoc_type.private_flag =
+      Private | Public
+
     (** Description of a variant type constructor. *)
     type variant_constructor = Odoc_type.variant_constructor =
         {
@@ -220,7 +223,7 @@ module Type :
           ty_parameters : (Types.type_expr * bool * bool) list ;
                     (** type parameters: (type, covariant, contravariant) *)
           ty_kind : type_kind; (** Type kind. *)
-          ty_private : Asttypes.private_flag; (** Private or public type. *)
+          ty_private : private_flag; (** Private or public type. *)
           ty_manifest : Types.type_expr option; (** Type manifest. *)
           mutable ty_loc : location ;
           mutable ty_code : string option;
