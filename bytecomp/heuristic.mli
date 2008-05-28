@@ -12,10 +12,13 @@
 
 (* $Id$ *)
 
+val mapi : (int -> 'a -> 'b) -> 'a list -> 'b list
+
 (** Heuristics for matching *)
 
 open Typedtree
+type occ = int list
 
 val opt:
-    ('a * Ident.t * 'c) list -> (pattern list * 'b) list ->
-      ('a * Ident.t * 'c) list * (pattern list * 'b) list
+    ('a * Ident.t * 'c * occ) list -> (pattern list * 'b) list ->
+      ('a * Ident.t * 'c * occ) list * (pattern list * 'b) list

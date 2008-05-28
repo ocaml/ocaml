@@ -16,6 +16,18 @@
 
 open Typedtree
 open Discr
+open Printf
+
+type occ = int list
+
+let print_occ =
+  let rec p_rec chan = function
+    | [] -> ()
+    | [x]  -> fprintf chan "%i" x
+    | x::xs  -> fprintf chan "%i.%a" x p_rec xs in
+  fun chan xs ->
+    fprintf chan "<%a>" p_rec (List.rev xs)
+
 
 (*************************************)
 (* put column no k in first position *)
@@ -24,13 +36,13 @@ open Discr
 let rec swap k x = function
   | [] -> assert false
   | y::ys ->
-      if k = 0 then y,x::ys
+      if k = 1 then y,x::ys
       else
 	let z,ys = swap (k-1) x ys in
 	z,y::ys
 
 let swap k xs = match k with
-| 0 -> xs
+| 1 -> xs
 | _ ->
     match xs with
     | x::xs ->
@@ -43,9 +55,9 @@ let swap_all k xs pss =
   and pss = List.map (fun (ps,e) -> swap k ps,e) pss in
   xs,pss
 
-(*************************)
-(* To combine heuristics *)
-(*************************)
+(**************************************)
+(* Bricks to build/combine heuristics *)
+(**************************************)
 
 let mapi f xs =
   let rec map_rec i = function
@@ -53,45 +65,43 @@ let mapi f xs =
     | x::xs -> f i x::map_rec (i+1) xs in
   map_rec 0 xs
 
-let select_mins ws =
+
+
+let get_mins name ws =
+  if Matchcommon.verbose > 0 then begin
+    eprintf "%s: " name ;
+    List.iter (fun (k,w) -> eprintf "<%i,%i>" k w) ws
+  end ;
   let ws =
     List.sort
       (fun (i1,w1) (i2,w2) ->
 	let c = Pervasives.compare w1 w2 in
 	if c=0 then Pervasives.compare i1 i2 else c)
       ws in
-  match ws with
+  let ks =
+    match ws with
+    | [] -> assert false
+    | (i,w)::rem ->
+	let rec do_rec = function
+	  | [] -> []
+	  | (ii,ww)::rem ->
+	      if w=ww then ii::do_rec rem
+	      else [] in
+	i::do_rec rem in
+  if Matchcommon.verbose > 0 then begin
+    eprintf " -> " ;
+    List.iter (fun k -> eprintf "<%i>" k) ks ;
+    prerr_newline ()
+  end ;
+  ks
+
+let compose h1 h2 ks = match h1 ks with
 | [] -> assert false
-| (i,w)::rem ->
-    let rec do_rec = function
-      | [] -> []
-      | (ii,ww)::rem ->
-	  if w=ww then ii::do_rec rem
-	  else [] in
-    i::do_rec rem
+| [k] -> k
+| ks -> h2 ks
 
 
-let (++) f g =
-  fun ks -> match ks with
-  | [k] -> k
-  | _ ->
-      match select_mins (f ks)  with
-      | [] -> assert false
-      | [k] -> k
-      | ks -> g ks
-
-let (<<) f g = g ++ f
-
-let first ks = match ks with
-| k::_ -> k
-| [] -> assert false
-
-  
-(********************************)
-(* Compute 'partial' directions *)
-(********************************)
-
-(* A few matrix manipulations *)
+(* Generic heuristic that look at one column only *)
 
 let extract_first_col pss =
   List.fold_right
@@ -103,6 +113,43 @@ let extract_first_col pss =
 let conses ps qss = List.map2 (fun x xs -> x::xs) ps qss
 and appends pss qss = List.map2 (@) pss qss
 
+let generic name score = 
+  let rec do_rec  i right ks xs = match ks,xs with
+    | [],_ -> []
+    | k::rk,_::xs ->
+	let ps,qss = extract_first_col right in
+	if i < k then
+	  do_rec (i+1) qss ks xs
+	else
+	  (k,score ps)::do_rec (i+1) qss rk xs
+    | _ -> assert false in
+  fun xs pss ks ->
+    let ws =  do_rec 1 pss ks xs in
+    get_mins name ws
+
+
+
+(********************************)
+(* Compute 'partial' directions *)
+(********************************)
+
+
+let generic2 name score =
+  let rec do_rec i left right ks xs = match ks,xs with
+    | [],_ -> []
+    | k::rk,_::xs ->
+	let col,right = extract_first_col right in
+	if i < k then
+	  do_rec (i+1) (conses col left) right ks xs
+	else
+	  let d = score col (appends left right) in
+	  (k,d)::do_rec (i+1) (conses col left) right rk xs
+    | _ -> assert false in
+  fun xs pss ks ->
+    let ws =  do_rec 1 (List.map (fun _ -> []) pss) pss ks xs in
+    get_mins name ws
+
+
 (* Does omega matches a pattern ? *)
 let rec match_omega p = match p.pat_desc with
   | Tpat_any|Tpat_var _ -> true
@@ -112,7 +159,7 @@ let rec match_omega p = match p.pat_desc with
   | Tpat_construct (_, _)| Tpat_tuple _|Tpat_constant _)
       -> false
 
-let direction k col pss =
+let direction col pss =
   let rec do_rec n col qss pss = match col,pss with
   | [],[] -> 0
   | c::col, ps::pss ->
@@ -127,32 +174,13 @@ let direction k col pss =
   do_rec 0 col [] pss
 
 
-let directions xs pss ks =
-  let rec do_rec i left right ks xs = match ks,xs with
-    | [],_ -> []
-    | k::rk,_::xs ->
-	let col,right = extract_first_col right in
-	if i < k then
-	  do_rec (i+1) (conses col left) right ks xs
-	else
-	  let d = direction k col (appends left right) in
-	  (k,d)::do_rec (i+1) (conses col left) right rk xs
-    | _ -> assert false in
-
-  let ws =  do_rec 0 (List.map (fun _ -> []) pss) pss ks xs in
-  
-  if Matchcommon.verbose > 0 then begin
-    prerr_string "DIRECTIONS: " ;
-    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
-    prerr_endline ""
-  end ;
-  ws
+let directions = generic2 "DIRECTIONS" direction
       
 (************************)
 (* Counted needed lines *)
 (************************)
 
-let needed_one k col pss =
+let needed_one col pss =
   let rec do_rec n col qss pss = match col,pss with
   | [],[] -> 0
   | c::col, ps::pss ->
@@ -167,26 +195,7 @@ let needed_one k col pss =
   | _ -> assert false in
   do_rec 0 col [] pss
 
-let needed xs pss ks =
-  let rec do_rec i left right ks xs = match ks,xs with
-    | [],_ -> []
-    | k::rk,_::xs ->
-	let col,right = extract_first_col right in
-	if i < k then
-	  do_rec (i+1) (conses col left) right ks xs
-	else
-	  let d = needed_one k col (appends left right) in
-	  (k,d)::do_rec (i+1) (conses col left) right rk xs
-    | _ -> assert false in
-
-  let ws =  do_rec 0 (List.map (fun _ -> []) pss) pss ks xs in
-  
-  if Matchcommon.verbose > 0 then begin
-    prerr_string "NEEDED: " ;
-    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
-    prerr_endline ""
-  end ;
-  ws
+let needed = generic2 "NEEDED" needed_one
 
 
 (********************************************)
@@ -229,165 +238,160 @@ let dupconstr col =
     0 col
 
       
-let nrows xs pss ks =
-  let rec do_rec  i right ks xs = match ks,xs with
-    | [],_ -> []
-    | k::rk,_::xs ->
-	let ps,qss = extract_first_col right in
-	if i < k then
-	  do_rec (i+1) qss ks xs
-	else
-	  (k,ndups ps+dupconstr ps)::do_rec (i+1) qss rk xs
-    | _ -> assert false in
-  let ws =  do_rec 0 pss ks xs in
+let nrows = generic "NROWS" (fun ps -> ndups ps+dupconstr ps)
 
-  if Matchcommon.verbose > 0 then begin
-    prerr_string "NROWS: " ;
-    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
-    prerr_endline ""
-  end ;
-  ws
 
-(******************)
-(* Small defaults *)
-(******************)
+let ndefaults = generic "DEFAULTS" nwilds
 
-let ndefaults xs pss ks =
-  let rec do_rec  i right ks xs = match ks,xs with
-    | [],_ -> []
-    | k::rk,_::xs ->
-	let ps,qss = extract_first_col right in
-	if i < k then
-	  do_rec (i+1) qss ks xs
-	else
-	  (k,nwilds ps)::do_rec (i+1) qss rk xs
-    | _ -> assert false in
-  let ws =  do_rec 0 pss ks xs in
 
-  if Matchcommon.verbose > 0 then begin
-    prerr_string "DEFAULTS: " ;
-    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
-    prerr_endline ""
-  end ;
-  ws
-(*****************************)
-(* Minimize branching factor *)  
-(*****************************)
+let nbranchs = generic "NBRANCH" nmats
 
-let nbranchs xs pss ks =
-  let rec do_rec  i right ks xs = match ks,xs with
-    | [],_ -> []
-    | k::rk,_::xs ->
-	let ps,qss = extract_first_col right in
-	if i < k then
-	  do_rec (i+1) qss ks xs
-	else
-	  (k,nmats ps)::do_rec (i+1) qss rk xs
-    | _ -> assert false in
-  let ws =  do_rec 0 pss ks xs in
-
-  if Matchcommon.verbose > 0 then begin
-    prerr_string "NBRANCH: " ;
-    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
-    prerr_endline ""
-  end ;
-  ws
-
-(*********************)
-(* Naive 'relevance' *)
-(*********************)
 
 let is_constr p = not (match_omega p)
 
-let basic pss ks =
-  let rec do_rec i ks ps = match ks,ps with
-  | [],_ -> []
-  | k::rk, p::ps ->
-      if i < k then
-	do_rec (i+1) ks ps
-      else
-	(k,if is_constr p then -1 else 0)::do_rec (i+1) rk ps
-  | _,_ -> assert false in
+let first =
+  generic "FIRST"
+    (fun ps -> match ps with
+    | p::_ -> if is_constr p then -1 else 0
+    | [] -> assert false)
 
-  let ws =
-    match pss with
-    | [] -> assert false
-    | ps::_ -> do_rec 0 ks ps in
-  
-  if Matchcommon.verbose > 0 then begin
-    prerr_string "BASIC: " ;
-    List.iter (fun (k,w) -> Printf.eprintf "<%i,%i>" k w) ws ;
-    prerr_endline ""
-  end ;
-  ws
 
+let arity ps =
+  let ds = Discr.collect_ps ps in
+  DSet.fold
+    (fun c r -> r + Discr.arity c)
+    ds 0
+
+let arities = generic "ARITIES" arity
+
+let rec prefix_one ps = match ps with
+| p::ps when is_constr p -> 1 + prefix_one ps
+| _ -> 0
+
+let prefix =
+  generic "PREFIX"
+    (fun ps -> -prefix_one ps)
 
 (******************************************)
 (* Select minimal variable, this enforces *)
 (* irrelevance of previous column swaps   *)
 (******************************************)
 
-let vars xs ks =
-  let rec do_rec i xs ks = match xs,ks with
-  | _,[] -> []
-  | x::xs,k::rk ->
+let as_some = function
+  | Some (k,_) -> k
+  | None -> assert false
+
+let cmp_opt cmp oo k2 o2 = match oo with
+| Some (k1,o1) when cmp o1 o2 -> oo
+| _ -> Some (k2,o2)
+
+let min_occs cmp  =
+  let rec do_rec min i os ks = match ks,os with
+  | [],_ -> as_some min
+  | k::rk,o::os ->
       if i < k then
-	do_rec (i+1) xs ks
+	do_rec min (i+1) os ks
       else
-	(k,Ident.stamp x)::do_rec (i+1) xs rk
-  | _ -> assert false in
-  do_rec 0 xs ks
-	
+	do_rec (cmp_opt cmp min k o) (i+1) os rk
+  | _,_ -> assert false in
+  fun os ks -> do_rec None 1 os ks
+
+
+let cmp_rev cmp o1 o2 = cmp (List.rev o1) (List.rev o2)
+
+let rec cmp_left o1 o2 = match o1,o2 with
+| i1::o1,i2::o2 ->
+    if i1 < i2 then true
+    else if i2 < i1 then false
+    else cmp_left o1 o2
+| _,_ -> assert false
+
+let cmp_lr o1 o2 = 
+  let l1 = List.length o1 and l2 = List.length o2 in
+  if l1 < l2 then true
+  else if l1 > l2 then false
+  else cmp_rev cmp_left o1 o2
+
+let cmp_rl o1 o2 = 
+  let l1 = List.length o1 and l2 = List.length o2 in
+  if l1 < l2 then true
+  else if l1 > l2 then false
+  else cmp_rev cmp_left o2 o1
+
+let left = min_occs (cmp_rev cmp_left)
+let leftright =  min_occs cmp_lr
+let rightleft = min_occs cmp_rl
 
 (*************************)
 (* Heuristic definitions *)
 (*************************)
 
-let lefttoright ks pss =
-  let rec do_rec ks pss = match ks with
-  | [] -> assert false
-  | k::rk ->
-      let col,pss = extract_first_col pss in
-      if List.exists is_constr col then k
-      else do_rec rk pss in
-  do_rec ks pss
+let exists_constr ps = List.exists is_constr ps
 
-let norman xs pss =
-  first
-    << vars xs
-    << nrows xs pss
-    << basic pss
+let withconstr xs pss =
+  let rec do_rec  k right xs = match xs with
+    | [] -> []
+    | _::xs ->
+	let ps,qss = extract_first_col right in
+	if exists_constr ps then
+	  k::do_rec (k+1) qss xs
+	else
+	  do_rec (k+1) qss xs in
+  let ws =  do_rec 1 pss  xs in
+  ws
 
-let luc xs pss =
-   first
-    << vars xs
-    << nrows xs pss
-    << needed xs pss
-    << directions xs pss
-  
 module C = Matchcommon
+
+let build h xs mat =
+  let rec do_rec i =
+    if i >= String.length h then
+      left xs
+    else
+      let h2 = do_rec (i+1)
+      and h1 = match h.[i] with
+      | 'a' -> arities xs mat
+      | 'b' -> nbranchs xs mat
+      | 'd' -> ndefaults xs mat
+      | 'f' -> first xs mat
+      | 'p' -> directions xs mat
+      | 'q' -> prefix xs mat
+      | 'n' -> needed xs mat
+      | 'r' -> nrows xs mat
+      | 'L' -> (fun ks -> [left xs ks])
+      | 'i' -> (fun x -> x)
+      | c -> Misc.fatal_error (sprintf "Bad heuristic: %c" c) in
+      compose h1 h2 in
+  do_rec 0
+
 
 let best_column xs pss = match xs with
 |[]|[_]  -> assert false
 | _ ->
     let pss = List.map fst pss
-    and xs = List.map (fun (_,x,_) -> x) xs
-    and ks = mapi (fun i _ -> i) xs in
-
-    if C.verbose > 0 then begin
-      prerr_endline "** HEURISTICS **" ;
-      Parmatch.pretty_matrix pss
-    end ;
-    let k =
-      match C.heuristic with
-      | C.No -> lefttoright ks pss
-      | C.Standard -> norman xs pss ks
-      | C.Semantics -> luc xs pss ks in
-    if C.verbose > 0 then begin
-      Printf.eprintf "Selected: %i\n" k ;
-      flush stderr
-    end ;
-    k
+    and xs = List.map (fun (_,_,_,occ) -> occ) xs in
+    let ks = withconstr xs pss in
+    match ks with
+    | [] -> 1
+    | [k] -> k
+    | _ ->
+	if C.verbose > 0 then begin
+	  prerr_endline "** HEURISTICS **" ;
+	  List.iter
+	    (fun occ ->  eprintf " %a" print_occ  occ)
+	    xs ;
+	  prerr_newline () ;
+	  Parmatch.pretty_matrix pss
+	end ;
+	let k =
+	  match C.heuristic with
+	  | C.No -> left xs ks
+	  | C.Opt -> build "qba" xs pss ks
+	  | C.Custom h -> build h xs pss ks in
+	if C.verbose > 0 then begin
+	  eprintf "Selected: %i\n" k ;
+	  flush stderr
+	end ;
+	k
 
 let opt xs pss =  match xs with
 |[]|[_] -> xs,pss

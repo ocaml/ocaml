@@ -9,32 +9,59 @@ open Printf
 
 (* Matching parameters *)
 
-let match_string =
-  try Sys.getenv "MATCH" with Not_found -> ""
+let split s = 
+  let rec split i =
+    if i >= String.length s then
+      []
+    else
+      let idx =
+	try String.index_from s i ','
+	with Not_found -> String.length s in
+      String.sub s i (idx-i)::
+      split (idx+1) in
+  split 0
 
-let match_option c =
-  try ignore (String.index match_string c) ; true
-  with Not_found -> false
+let to_pairs opts =
+  List.fold_right
+    (fun opt k ->
+      match String.length opt with
+      | 0 -> k
+      | 1 -> (opt.[0],"")::k
+      | 2 -> (opt.[0],"")::k
+      | n ->  (opt.[0],String.sub opt 2 (n-2))::k)
+    opts []
 
-let share = match_option 's'
-and tree = match_option 't'
-and verbose =
-  let r = ref 0 in
-  for i = 0 to String.length match_string-1 do
-    match  match_string.[i] with
-    | 'v' -> incr r
-    | 'V' -> r := !r + 2
-    | _ -> ()
-  done ;
-  !r
+    
+let parse_opts s = to_pairs (split s)
+      
+let match_opts =
+  let s = try Sys.getenv "MATCH" with Not_found -> "" in
+  parse_opts s
 
 
-type heuristics = | No | Standard | Semantics
+let find_opt c =
+  try Some (List.assoc c match_opts) with Not_found -> None
 
-let heuristic =
-  if match_option 'O' then Semantics
-  else if match_option 'o' then Standard
-  else No
+let bool_opt c = match find_opt c with
+| Some _ -> true
+| None -> false
+
+  
+let share = bool_opt 's'
+and tree = bool_opt 't'
+
+and verbose = match find_opt 'v' with
+| None -> 0
+| Some "" -> 1
+| Some x -> int_of_string x
+
+type heuristics = | No | Opt | Custom of string
+
+
+let heuristic = match find_opt 'h' with
+| None -> No
+| Some "o" -> Opt
+| Some s -> Custom s
 
 
 (* Count switches *)

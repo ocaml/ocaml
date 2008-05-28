@@ -176,7 +176,9 @@ module type Out = sig
 
   (* constructors *)
   val alias : Ident.t -> Ident.t -> out -> out
-  val field_ids : Discr.discr -> Ident.t -> (let_kind * Ident.t * lambda) list
+  val field_ids :
+      Discr.discr -> Ident.t -> int list ->
+	(let_kind * Ident.t * lambda * int list ) list
   val bind : let_kind -> Ident.t -> lambda -> out -> out
   val switch : Ident.t -> (Discr.discr * out) list -> out option -> out
 end
@@ -249,6 +251,13 @@ let rec is_var_pat p = match p.pat_desc with
 
 let all_vars ps = List.for_all is_var_pat ps
 
+let all_vars_col pss =
+  List.for_all
+    (fun (ps,_) -> match ps with
+    | p::_ -> is_var_pat p
+    | [] -> assert false)
+    pss
+      
 let rec compile_match repr xs pss lam_fail = match pss with
 | [] -> lam_fail
 | (ps,act)::pss when all_vars ps ->
@@ -260,9 +269,16 @@ let rec compile_match repr xs pss lam_fail = match pss with
       Parmatch.pretty_match pss ;
     end ;
     begin  match xs with
-    | (str,x,ex)::xs ->
-	Out.bind str x ex
-	  (do_compile_matching repr x xs pss lam_fail)
+    | (str,x,ex,occ)::xs ->
+	if all_vars_col pss then match str with
+	| Strict ->
+	    Out.bind str x ex
+	      (do_compile_vars repr (Lvar x) xs pss lam_fail)
+	| Variable|StrictOpt|Alias ->
+	    do_compile_vars repr ex xs pss lam_fail
+	else
+	  Out.bind str x ex
+	    (do_compile_matching repr x occ xs pss lam_fail)
     | [] -> assert false
     end
 
@@ -273,31 +289,42 @@ and compile_row repr xs ps act ys pss lam_fail = match xs,ps with
       Out.event_branch repr (Out.patch_guarded lam act)
     else
       Out.event_branch repr act
-| (str,x,ex)::xs,p::ps ->
-    begin match p.pat_desc with
-    | Tpat_any ->
-	let lam = compile_row repr xs ps act ys pss lam_fail in
-	begin match str with
-	| Strict -> Out.bind str x ex lam
-	| Variable|StrictOpt|Alias -> lam
-	end
-    | _ ->
-	let rec do_rec p act = match p.pat_desc with
+| (str,x,ex,_)::xs,p::ps ->
+	let rec do_rec p ex act = match p.pat_desc with
 	| Tpat_any ->
 	     compile_row repr xs ps act ys pss lam_fail
 	| Tpat_var id ->
-	    compile_row repr xs ps (Out.alias id x act) ys pss lam_fail
+	    compile_row repr xs ps (Out.bind str id ex act) ys pss lam_fail
 	| Tpat_alias (p,id) ->
-	    do_rec p (Out.alias id x act)
-	| Tpat_or (p,_,_) ->
-	    do_rec p act
+	    do_rec p ex (Out.bind str id ex act)
+	| Tpat_or (p,_,_) -> do_rec p ex act
 	| _ -> assert false in
-	Out.bind str x ex (do_rec p act)
-    end
+	begin match str with
+	| Strict ->
+	    Out.bind str x ex (do_rec p (Lvar x) act)
+	| Variable|StrictOpt|Alias ->
+	    do_rec p ex act
+	end
 | _,_ -> assert false
 
 
-and do_compile_matching repr x xs pss lam_fail =
+and do_compile_vars repr ex xs pss lam_fail =
+  let rec do_rec (ps,act) k = match ps with
+  | [] -> assert false
+  | p::ps ->
+      begin match p.pat_desc with
+      | Tpat_any -> (ps,act)::k
+      | Tpat_var y -> (ps,Out.bind Alias y ex act)::k
+      | Tpat_alias (p,y) ->
+	  do_rec (p::ps,Out.bind Alias y ex act) k
+      | Tpat_or (p,_,_) ->
+	  do_rec (p::ps,act) k
+      | _ -> assert false
+      end in
+  let pss = List.fold_right do_rec pss [] in
+  compile_match repr xs pss lam_fail
+  
+and do_compile_matching repr x occ xs pss lam_fail =
   let pss = precompile x pss in
   let ds = Discr.collect pss in
 (*
@@ -309,7 +336,7 @@ and do_compile_matching repr x xs pss lam_fail =
     Discr.DSet.fold
       (fun d k ->
 	let pss = Discr.specialize d pss in
-	let ys = Out.field_ids d x in
+	let ys = Out.field_ids d x occ in
 	let lam = compile_match repr (ys@xs) pss lam_fail in
 	(d,lam)::k)
       ds [] in
@@ -379,16 +406,14 @@ let add_defs lam defs =
     lam defs
 
 let compile_matching loc repr handler_fun arg pat_act_list _partial =
-(*
-  if verbose > 1 then Location.prerr_warning loc Warnings.Deprecated ;
-*)
   let pat_exits = split vars_pat pat_act_list in
   let pat_act_list,defs = List.split pat_exits in
   let pss = List.map (fun (p,act)  -> [p],act) pat_act_list
   and num_fail = next_raise_count ()
   and v = match arg with Lvar v -> v | _ -> Ident.create "m" in
   let lam =
-    compile_match_out repr [Strict,v,arg] pss (Lstaticraise (num_fail,[])) in
+    compile_match_out repr [Strict,v,arg,[]]
+      pss (Lstaticraise (num_fail,[])) in
   let lam = add_defs lam defs in
   Lstaticcatch (lam,(num_fail,[]),handler_fun ())
 
@@ -419,7 +444,8 @@ let for_multiple_match loc args pat_act_list _partial =
     let num_fail = next_raise_count () in
 
     (* Perform strict let binding, for the sake of semantics *)
-    let xs = List.map (fun (_,v,_) -> Alias,v,Lvar v) args in
+    let xs = Heuristic.mapi
+	(fun i (_,v,_) -> Alias,v,Lvar v,[i+1]) args in
     let lam = compile_match_out repr xs pss (Lstaticraise (num_fail,[])) in
     let lam = add_defs lam defs in
     let lam = Lstaticcatch (lam,(num_fail,[]), partial_function loc ()) in
@@ -437,7 +463,7 @@ let for_tupled_function loc xs pats_act_list  _partial =
   let pats_exits = split vars_pats pats_act_list in
   let pss,defs =  List.split pats_exits
   and num_fail = next_raise_count ()
-  and xs = List.map (fun x -> Alias,x,Lvar x) xs in
+  and xs = Heuristic.mapi (fun i x -> Alias,x,Lvar x,[i+1]) xs in
   let lam = compile_match_out None xs pss (Lstaticraise (num_fail,[])) in
   let lam =  add_defs lam defs in
   Lstaticcatch (lam,(num_fail,[]),partial_function loc ())

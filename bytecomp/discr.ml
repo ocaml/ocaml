@@ -28,6 +28,14 @@ type discr =
 let p_discr chan = function
   | Variant (lab,_,_) -> Printf.fprintf chan "`%s" lab
   | _ -> ()
+let arity d = match d with
+| Constant _ -> 0
+| Construct c -> c.cstr_arity
+| Tuple a -> a
+| Record t -> Array.length t
+| Variant (_,false,_) -> 0
+| Variant (_,true,_) -> 1
+| Array (_,a) -> a
 
 let compare d1 d2 = match d1,d2 with
 | Constant c1,Constant c2 -> compare c1 c2
@@ -38,14 +46,17 @@ let compare d1 d2 = match d1,d2 with
 | Array (_,x1),Array (_,x2) -> compare x1 x2
 | _,_ -> assert false
 
+
+
 module DSet = Set.Make
     (struct
       type t = discr
       let compare = compare
     end)
 
+
 let rec collect_pat p = match p.pat_desc with
-| Tpat_any|Tpat_var _ -> DSet.empty
+| Tpat_any|Tpat_var _|Tpat_record []  -> DSet.empty
 | Tpat_constant c -> DSet.singleton (Constant c)
 | Tpat_tuple ps -> DSet.singleton (Tuple (List.length ps))
 | Tpat_construct (c,_) -> DSet.singleton (Construct c)
@@ -62,10 +73,7 @@ let rec collect_pat p = match p.pat_desc with
       (Array
 	 (Typeopt.array_pattern_kind p,
 	  List.length ps))
-| Tpat_record lbls ->
-    let lbl_all = match lbls with
-    | (lbl,_)::_ -> lbl.lbl_all | [] -> assert false in
-    DSet.singleton (Record lbl_all)
+| Tpat_record ((lbl,_)::_) ->DSet.singleton (Record lbl.lbl_all)
 |Tpat_alias (p,_) -> collect_pat p
 |Tpat_or (p1,p2,_) -> DSet.union (collect_pat p1) (collect_pat p2)
 
@@ -160,17 +168,17 @@ let specialize d pss =
 
 
 (* Extract data fields *)
-let mk_fids mk_id mk_lam first_pos last_pos =
+let mk_fids mk_id mk_lam first_pos last_pos occ =
   let rec mk_rec pos =
     if pos > last_pos then []
     else
       let (str,ex) = mk_lam pos in
       let x = mk_id ex in
       let r = mk_rec (pos+1) in
-      (str,x,ex)::r in
+      (str,x,ex,pos+1::occ)::r in
   mk_rec first_pos
       
-let fids_constant _x = []
+let fids_constant _x _occ = []
 
 and fids_block mk_id arity x =
   mk_fids mk_id
@@ -188,10 +196,10 @@ let fids_construct mk_id tag arity = match tag with
 
 and fids_variant mk_id has_arg = 
   if has_arg then
-    (fun x ->
+    (fun x occ ->
       mk_fids mk_id
 	(fun pos -> Alias,Lprim(Pfield pos, [Lvar x]))
-	1 1)
+	1 1 occ)
   else
     fids_constant
 
@@ -227,13 +235,14 @@ let field_ids mk_id d = match d with
 | Array (kind,a) -> fids_array mk_id kind a
 
 (* Put let's for fields *)
+(*
  let get_fields =
    let rec get_rec ys es k = match ys,es with
    | [],[] -> k
    | y::ys,(str,e)::es -> Llet (str, y, e, get_rec ys es k)
     | _ -> assert false in
     get_rec
-
+*)
 (* Need to add a default case ? *)
 
 let has_default ds =
