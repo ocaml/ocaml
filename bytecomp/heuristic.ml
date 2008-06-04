@@ -153,8 +153,8 @@ let generic2 name score =
 (* Does omega matches a pattern ? *)
 let rec match_omega p = match p.pat_desc with
   | Tpat_any|Tpat_var _ -> true
-  | Tpat_alias (p,_) -> match_omega p
-  | Tpat_or (p1,_,_) -> match_omega p1
+  | Tpat_alias (p,_)
+  | Tpat_or (p,_,_) -> match_omega p
   | (Tpat_array _|Tpat_record _|Tpat_variant (_, _, _)
   | Tpat_construct (_, _)| Tpat_tuple _|Tpat_constant _)
       -> false
@@ -196,6 +196,33 @@ let needed_one col pss =
   do_rec 0 col [] pss
 
 let needed = generic2 "NEEDED" needed_one
+
+(*************)
+(* Leaf edge *)
+(*************)
+
+let leaf_here qss = match qss with
+| (qs,_)::_ -> List.for_all match_omega qs
+| []    -> true
+
+let leafedge col pss =
+  let cs =  Discr.collect_ps col in
+  let pss = conses col pss in
+  let mat = List.map (fun ps -> ps,()) pss in
+  DSet.fold
+    (fun c r ->
+      if leaf_here (Discr.specialize c mat) then
+	r-1
+      else
+	r)
+    cs
+    (if Discr.has_default cs && leaf_here (Discr.default mat) then
+	-1
+      else
+	0)
+
+
+let leafedges = generic2 "LEAFEDGE" leafedge
 
 
 (********************************************)
@@ -353,9 +380,10 @@ let build h xs mat =
       | 'b' -> nbranchs xs mat
       | 'd' -> ndefaults xs mat
       | 'f' -> first xs mat
+      | 'l' -> leafedges xs mat
+      | 'n' -> needed xs mat
       | 'p' -> directions xs mat
       | 'q' -> prefix xs mat
-      | 'n' -> needed xs mat
       | 'r' -> nrows xs mat
       | 'L' -> (fun ks -> [left xs ks])
       | 'i' -> (fun x -> x)
