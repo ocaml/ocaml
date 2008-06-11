@@ -122,6 +122,12 @@ let rec transl_type env policy styp =
       newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl) ->
       let (path, decl) =
+	let lid, env =
+	  match lid with
+	  | Longident.Ldot (Longident.Lident "*predef*", lid) -> 
+	      Longident.Lident lid, Env.initial
+	  | _ -> lid, env
+	in
         try
           Env.lookup_type lid env
         with Not_found ->

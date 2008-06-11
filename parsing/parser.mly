@@ -675,12 +675,12 @@ class_type:
       { $1 }
   | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $2 ,
-                       {ptyp_desc = Ptyp_constr(Lident "option", [$4]);
+                       {ptyp_desc = Ptyp_constr(Ldot (Lident "*predef*", "option"), [$4]);
                         ptyp_loc = $4.ptyp_loc},
                        $6)) }
   | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $1 ,
-                       {ptyp_desc = Ptyp_constr(Lident "option", [$2]);
+                       {ptyp_desc = Ptyp_constr(Ldot (Lident "*predef*", "option"), [$2]);
                         ptyp_loc = $2.ptyp_loc},
                        $4)) }
   | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
@@ -1268,11 +1268,11 @@ core_type2:
       { $1 }
   | QUESTION LIDENT COLON core_type2 MINUSGREATER core_type2
       { mktyp(Ptyp_arrow("?" ^ $2 ,
-               {ptyp_desc = Ptyp_constr(Lident "option", [$4]);
+               {ptyp_desc = Ptyp_constr(Ldot (Lident "*predef*", "option"), [$4]);
                 ptyp_loc = $4.ptyp_loc}, $6)) }
   | OPTLABEL core_type2 MINUSGREATER core_type2
       { mktyp(Ptyp_arrow("?" ^ $1 ,
-               {ptyp_desc = Ptyp_constr(Lident "option", [$2]);
+               {ptyp_desc = Ptyp_constr(Ldot (Lident "*predef*", "option"), [$2]);
                 ptyp_loc = $2.ptyp_loc}, $4)) }
   | LIDENT COLON core_type2 MINUSGREATER core_type2
       { mktyp(Ptyp_arrow($1, $3, $5)) }
