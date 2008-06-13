@@ -1308,6 +1308,8 @@ let rec le_pat p q =
       l1 = l2
   | Tpat_variant(_,_,_), Tpat_variant(_,_,_) -> false
   | Tpat_tuple(ps), Tpat_tuple(qs) -> le_pats ps qs
+  | Tpat_tuple(ps),  (Tpat_var _|Tpat_any) ->
+      le_pats ps (List.map (fun _ -> omega) ps)
   | Tpat_record l1, Tpat_record l2 ->
       let ps,qs = records_args l1 l2 in
       le_pats ps qs
