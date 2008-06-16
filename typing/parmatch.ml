@@ -1658,3 +1658,9 @@ let check_unused tdefs casel =
             do_rec ([q]::pref) rem in
 
     do_rec [] casel
+
+(********************************)
+(* Exported irrefutability test *)
+(********************************)
+
+let irrefutable pat = le_pat pat omega
