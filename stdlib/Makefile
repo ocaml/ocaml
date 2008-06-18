@@ -29,13 +29,13 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
   lexing.cmo parsing.cmo \
-  set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
+  set.cmo map.cmo stack.cmo queue.cmo lazy.cmo stream.cmo buffer.cmo \
   printf.cmo format.cmo scanf.cmo \
   arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo callback.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
-  lazy.cmo filename.cmo complex.cmo \
+  filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur

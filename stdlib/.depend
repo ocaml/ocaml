@@ -94,7 +94,7 @@ stack.cmo: list.cmi stack.cmi
 stack.cmx: list.cmx stack.cmi 
 stdLabels.cmo: stringLabels.cmi listLabels.cmi arrayLabels.cmi stdLabels.cmi 
 stdLabels.cmx: stringLabels.cmx listLabels.cmx arrayLabels.cmx stdLabels.cmi 
-stream.cmo: string.cmi obj.cmi list.cmi stream.cmi 
+stream.cmo: string.cmi obj.cmi list.cmi lazy.cmi stream.cmi 
 stream.cmx: string.cmx obj.cmx list.cmx stream.cmi 
 string.cmo: pervasives.cmi list.cmi char.cmi string.cmi 
 string.cmx: pervasives.cmx list.cmx char.cmx string.cmi 
