@@ -28,6 +28,7 @@ type discr =
 let p_discr chan = function
   | Variant (lab,_,_) -> Printf.fprintf chan "`%s" lab
   | _ -> ()
+
 let arity d = match d with
 | Constant _ -> 0
 | Construct c -> c.cstr_arity

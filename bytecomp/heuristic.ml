@@ -385,7 +385,9 @@ let build h xs mat =
       | 'p' -> directions xs mat
       | 'q' -> prefix xs mat
       | 'r' -> nrows xs mat
-      | 'L' -> (fun ks -> [left xs ks])
+      | 'N' -> (fun ks -> [left xs ks])
+      | 'L' -> (fun ks -> [leftright xs ks])
+      | 'R' -> (fun ks -> [rightleft xs ks])
       | 'i' -> (fun x -> x)
       | c -> Misc.fatal_error (sprintf "Bad heuristic: %c" c) in
       compose h1 h2 in
