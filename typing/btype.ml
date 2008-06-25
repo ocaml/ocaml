@@ -69,8 +69,8 @@ let rec commu_repr = function
 let rec row_field_repr_aux tl = function
     Reither(_, tl', _, {contents = Some fi}) ->
       row_field_repr_aux (tl@tl') fi
-  | Reither(c, tl', m, r) ->
-      Reither(c, tl@tl', m, r)
+  | Reither(c, tl', m, r) as f ->
+      if tl = [] then f else Reither(c, tl@tl', m, r)
   | Rpresent (Some _) when tl <> [] ->
       Rpresent (Some (List.hd tl))
   | fi -> fi
