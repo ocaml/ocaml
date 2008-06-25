@@ -880,11 +880,13 @@ and transl_exp0 e =
   | Texp_generic cases ->
       (* FIXME *)
       lambda_unit
+(*
   | Texp_regexp (r, regexp, t, code) ->
       Lprim(Pmakeblock(0, Immutable), 
 	    [ Lconst (Const_base (Const_string r));
 	      Metacomp.transl_constant [] (Obj.repr t);
 	      transl_exp code ])
+*)
 
 and transl_list expr_list =
   List.map transl_exp expr_list

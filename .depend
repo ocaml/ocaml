@@ -506,9 +506,9 @@ bytecomp/translobj.cmx: typing/primitive.cmx utils/misc.cmx \
     utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmx \
     bytecomp/translobj.cmi 
 bytecomp/translsig.cmo: typing/types.cmi typing/typedtree.cmi \
-    parsing/location.cmi typing/env.cmi 
+    parsing/location.cmi typing/ident.cmi typing/env.cmi 
 bytecomp/translsig.cmx: typing/types.cmx typing/typedtree.cmx \
-    parsing/location.cmx typing/env.cmx 
+    parsing/location.cmx typing/ident.cmx typing/env.cmx 
 bytecomp/transltype.cmo: typing/types.cmi typing/typedtree.cmi \
     bytecomp/translcore.cmi typing/path.cmi utils/misc.cmi typing/ident.cmi \
     typing/env.cmi typing/btype.cmi bytecomp/transltype.cmi 

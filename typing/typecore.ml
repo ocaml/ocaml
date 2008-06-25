@@ -1763,6 +1763,8 @@ let rec type_exp env kset sexp =
       assert false
 
   | Pexp_regexp r -> 
+      assert false
+(*
       let regexp = Regexp.from_string r in
       let t = Regexp.type_regexp regexp in
       let result_creation_code =
@@ -1844,6 +1846,7 @@ let rec type_exp env kset sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = ty_regexp;
         exp_env = env }
+*)
 
 and type_argument env kset sarg ty_expected' =
   (* ty_expected' may be generic *)
