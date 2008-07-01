@@ -115,7 +115,7 @@ let format_string sfmt s =
 ;;
 
 (* Extract a format string out of [fmt] between [start] and [stop] inclusive.
-   '*' in the format are replaced by integers taken from the [widths] list.
+   ['*'] in the format are replaced by integers taken from the [widths] list.
    [extract_format] returns a string which is the string representation of
    the resulting format string. *)
 let extract_format fmt start stop widths =
@@ -311,7 +311,7 @@ let list_iter_i f l =
 (* ``Abstracting'' version of kprintf: returns a (curried) function that
    will print when totally applied.
    Note: in the following, we are careful not to be badly caught
-   by the compiler optimizations on the representation of arrays. *)
+   by the compiler optimizations for the representation of arrays. *)
 let kapr kpr fmt =
   match count_arguments_of_format fmt with
   | 0 -> kpr fmt [||]
@@ -362,12 +362,19 @@ type positional_specification =
    Calling [got_spec] with appropriate arguments, we ``return'' a positional
    specification and an index to go on scanning the [fmt] format at hand.
 
-   We do not support [*$] specifications, since this would lead to type checking
-   problems: the type of the specified [*$] parameter would be the type of the
-   corresponding argument to [printf], hence the type of the $n$-th argument to
-   [printf] with $n$ being the {\em value} of the integer argument defining
-   [*]; this means type dependency, which is out of scope of the Caml type
-   algebra. *)
+   We do not support [*$] specifications, since this would lead to type
+   checking problems: a [*$] positional specification means ``take the next
+   argument to [printf] (which must be an integer value)'', name this integer
+   value $n$; [*$] now designates parameter $n$.
+
+   Unfortunately, the type of a parameter specified via a [*$] positional
+   specification should be the type of the corresponding argument to
+   [printf], hence this sould be the type of the $n$-th argument to [printf]
+   with $n$ being the {\em value} of the integer argument defining [*]; we
+   clearly cannot statically guess the value of this parameter in the general
+   case. Put it another way: this means type dependency, which is completely
+   out of scope of the Caml type algebra. *)
+
 let scan_positional_spec fmt got_spec n i =
   match Sformat.unsafe_get fmt i with
   | '0'..'9' as d ->
@@ -406,19 +413,18 @@ let get_index spec n =
 ;;
 
 (* Decode a format string and act on it.
-   [fmt] is the printf format string, and [pos] points to a [%] character in
+   [fmt] is the [printf] format string, and [pos] points to a [%] character in
    the format string.
    After consuming the appropriate number of arguments and formatting
-   them, one of the five continuations is called.
-   If we denote [idx] the index of the following argument to printf,
-   [pos] the index of the next character to scan in the format strin.
-   [cont_s] for outputting a string (arguments: the , string, next pos)
-   [cont_a] for performing a %a action (arguments: arg num, fn, arg, next pos)
-   [cont_t] for performing a %t action (arguments: arg num, fn, next pos)
-   [cont_f] for performing a flush action (arguments: arg num, next pos)
-   [cont_m] for performing a %( action (arguments: arg num, sfmt, next pos)
+   them, one of the following five continuations described below is called:
 
-   "arg num" is the index in array args of the next argument to printf.
+   - [cont_s] for outputting a string (arguments: arg num, string, next pos)
+   - [cont_a] for performing a %a action (arguments: arg num, fn, arg, next pos)
+   - [cont_t] for performing a %t action (arguments: arg num, fn, next pos)
+   - [cont_f] for performing a flush action (arguments: arg num, next pos)
+   - [cont_m] for performing a %( action (arguments: arg num, sfmt, next pos)
+
+   "arg num" is the index in array [args] of the next argument to [printf].
    "next pos" is the position in [fmt] of the first character following
    the %conversion specification in [fmt]. *)
 
@@ -622,7 +628,7 @@ module CamlinternalPr = struct
       mutable ac_skip : int;
       mutable ac_rdrs : int;
     }
-;;
+    ;;
 
     let ac_of_format = ac_of_format;;
 
@@ -635,7 +641,7 @@ module CamlinternalPr = struct
     let kapr = kapr;;
 
   end
-;;
+  ;;
 
 end
 ;;
