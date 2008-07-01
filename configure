@@ -1380,6 +1380,9 @@ if test $has_tk = true; then
   tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   for tk_incs in \
     "-I/usr/local/include" \
+    "-I/usr/include" \
+    "-I/usr/local/include/tcl8.5 -I/usr/local/include/tk8.5" \
+    "-I/usr/include/tcl8.5 -I/usr/include/tk8.5" \
     "-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4" \
     "-I/usr/include/tcl8.4 -I/usr/include/tk8.4" \
     "-I/usr/local/include/tcl8.3 -I/usr/local/include/tk8.3" \

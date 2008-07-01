@@ -63,7 +63,7 @@ CAMLprim value camltk_tcl_eval(value str)
   char *cmd = NULL;
 
   CheckInit();
-  
+
   /* Tcl_Eval may write to its argument, so we take a copy
    * If the evaluation raises a Caml exception, we have a space
    * leak
@@ -83,8 +83,7 @@ CAMLprim value camltk_tcl_eval(value str)
   }
 }
 
-
-/* 
+/*
  * Calling Tcl from Caml
  *   direct call, argument is TkArgs vect
   type TkArgs =
@@ -94,8 +93,8 @@ CAMLprim value camltk_tcl_eval(value str)
  * NO PARSING, NO SUBSTITUTION
  */
 
-/* 
- * Compute the size of the argument (of type TkArgs). 
+/*
+ * Compute the size of the argument (of type TkArgs).
  * TkTokenList must be expanded,
  * TkQuote count for one.
  */
@@ -119,14 +118,14 @@ int argv_size(value v)
 }
 
 /* Fill a preallocated vector arguments, doing expansion and all.
- * Assumes Tcl will 
+ * Assumes Tcl will
  *  not tamper with our strings
  *  make copies if strings are "persistent"
  */
 int fill_args (char **argv, int where, value v)
 {
   value l;
-  
+
   switch (Tag_val(v)) {
   case 0:
     argv[where] = caml_string_to_tcl(Field(v,0)); /* must free by stat_free */
@@ -144,10 +143,10 @@ int fill_args (char **argv, int where, value v)
       fill_args(tmpargv,0,Field(v,0));
       tmpargv[size] = NULL;
       merged = Tcl_Merge(size,tmpargv);
-      for(i = 0 ; i<size; i++){ stat_free(tmpargv[i]); }
+      for(i = 0; i<size; i++){ stat_free(tmpargv[i]); }
       stat_free((char *)tmpargv);
       /* must be freed by stat_free */
-      argv[where] = (char*)stat_alloc(strlen(merged)+1); 
+      argv[where] = (char*)stat_alloc(strlen(merged)+1);
       strcpy(argv[where], merged);
       Tcl_Free(merged);
       return (where + 1);
@@ -169,7 +168,7 @@ CAMLprim value camltk_tcl_direct_eval(value v)
   CheckInit();
 
   /* walk the array to compute final size for Tcl */
-  for(i=0,size=0;i<Wosize_val(v);i++)
+  for(i=0, size=0; i<Wosize_val(v); i++)
     size += argv_size(Field(v,i));
 
   /* +2: one slot for NULL
@@ -180,11 +179,11 @@ CAMLprim value camltk_tcl_direct_eval(value v)
   /* Copy -- argv[i] must be freed by stat_free */
   {
     int where;
-    for(i=0, where=0;i<Wosize_val(v);i++){
+    for(i=0, where=0; i<Wosize_val(v); i++){
       where = fill_args(argv,where,Field(v,i));
     }
     if( size != where ){ tk_error("fill_args error!!! Call the CamlTk maintainer!"); }
-    for(i=0; i<where; i++){ allocated[i] = argv[i]; } 
+    for(i=0; i<where; i++){ allocated[i] = argv[i]; }
     argv[size] = NULL;
     argv[size + 1] = NULL;
   }
@@ -221,7 +220,7 @@ CAMLprim value camltk_tcl_direct_eval(value v)
       result = (*info.proc)(info.clientData,cltclinterp,size+1,argv);
     } else { /* ah, it isn't there at all */
       result = TCL_ERROR;
-      Tcl_AppendResult(cltclinterp, "Unknown command \"", 
+      Tcl_AppendResult(cltclinterp, "Unknown command \"",
                        argv[0], "\"", NULL);
     }
   }
@@ -232,7 +231,7 @@ CAMLprim value camltk_tcl_direct_eval(value v)
   }
   stat_free((char *)argv);
   stat_free((char *)allocated);
-  
+
   switch (result) {
   case TCL_OK:
     return tcl_string_to_caml (cltclinterp->result);

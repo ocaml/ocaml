@@ -38,10 +38,10 @@ CAMLprim value camltk_getimgdata (value imgname) /* ML */
   int code,size;
 
 #if (TK_MAJOR_VERSION < 8)
-  if (NULL == (ph = Tk_FindPhoto(String_val(imgname)))) 
+  if (NULL == (ph = Tk_FindPhoto(String_val(imgname))))
     tk_error("no such image");
 #else
-  if (NULL == (ph = Tk_FindPhoto(cltclinterp, String_val(imgname)))) 
+  if (NULL == (ph = Tk_FindPhoto(cltclinterp, String_val(imgname))))
     tk_error("no such image");
 #endif
 
@@ -76,17 +76,17 @@ CAMLprim value camltk_getimgdata (value imgname) /* ML */
 }
 
 CAMLprim void
-camltk_setimgdata_native (value imgname, value pixmap, value x, value y, 
+camltk_setimgdata_native (value imgname, value pixmap, value x, value y,
                    value w, value h) /* ML */
 {
   Tk_PhotoHandle ph;
   Tk_PhotoImageBlock pib;
 
 #if (TK_MAJOR_VERSION < 8)
-  if (NULL == (ph = Tk_FindPhoto(String_val(imgname)))) 
+  if (NULL == (ph = Tk_FindPhoto(String_val(imgname))))
     tk_error("no such image");
 #else
-  if (NULL == (ph = Tk_FindPhoto(cltclinterp, String_val(imgname)))) 
+  if (NULL == (ph = Tk_FindPhoto(cltclinterp, String_val(imgname))))
     tk_error("no such image");
 #endif
 
@@ -106,7 +106,7 @@ ph,&pib,Int_val(x),Int_val(y),Int_val(w),Int_val(h)
 #if (TK_MAJOR_VERSION == 8 && TK_MINOR_VERSION >= 4 || TK_MAJOR_VERSION > 8)
                    , TK_PHOTO_COMPOSITE_SET
 #endif
-    ); 
+    );
 }
 
 CAMLprim void camltk_setimgdata_bytecode(argv,argn)

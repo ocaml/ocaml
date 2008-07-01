@@ -32,14 +32,14 @@ extern char * caml_string_to_tcl( value );
 
 /* cltkEval.c */
 CAMLTKextern Tcl_Interp *cltclinterp; /* The Tcl interpretor */
-extern value copy_string_list(int argc, char ** argv);
+extern value copy_string_list(int argc, char **argv);
 
 /* cltkCaml.c */
 /* pointers to Caml values */
 extern value *tkerror_exn;
 extern value *handler_code;
 extern int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp,
-                     int argc, char *argv[]);
+                     int argc, CONST84 char *argv[]);
 CAMLTKextern void tk_error(char * errmsg) Noreturn;
 
 /* cltkMain.c */

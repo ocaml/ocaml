@@ -28,7 +28,11 @@ value * tkerror_exn = NULL;
 value * handler_code = NULL;
 
 /* The Tcl command for evaluating callback in Caml */
+#if (TK_MAJOR_VERSION == 8 && TK_MINOR_VERSION >= 4 || TK_MAJOR_VERSION > 8)
+int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp, int argc, CONST84 char **argv)
+#else
 int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp, int argc, char **argv)
+#endif
 {
   CheckInit();
 
@@ -38,7 +42,7 @@ int CamlCBCmd(ClientData clientdata, Tcl_Interp *interp, int argc, char **argv)
     int id;
     if (Tcl_GetInt(interp, argv[1], &id) != TCL_OK)
       return TCL_ERROR;
-    callback2(*handler_code,Val_int(id),copy_string_list(argc - 2,&argv[2]));
+    callback2(*handler_code,Val_int(id),copy_string_list(argc - 2,(char **)&argv[2]));
     /* Never fails (Caml would have raised an exception) */
     /* but result may have been set by callback */
     return TCL_OK;
