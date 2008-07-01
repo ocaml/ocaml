@@ -824,13 +824,13 @@ external decr : int ref -> unit = "%decr"
 (** Format strings have a general and highly polymorphic type
     [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
     The two simplified types, [format] and [format4] below are
-    included for and backward compatibility with earlier releases of Objective
+    included for backward compatibility with earlier releases of Objective
     Caml.
     ['a] is the type of the parameters of the format,
     ['c] is the result type for the "printf"-style function,
     and ['b] is the type of the first argument given to
     [%a] and [%t] printing functions. *)
-type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 
@@ -857,7 +857,7 @@ val ( ^^ ) :
 val exit : int -> 'a
 (** Terminate the process, returning the given status code
    to the operating system: usually 0 to indicate no errors,
-   and a small positive integer to indicate failure. 
+   and a small positive integer to indicate failure.
    All open output channels are flushed with flush_all.
    An implicit [exit 0] is performed each time a program
    terminates normally.  An implicit [exit 2] is performed if the program
