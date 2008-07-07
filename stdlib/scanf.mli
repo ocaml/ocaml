@@ -19,11 +19,11 @@
 
 (** {7 Functional input with format strings} *)
 
-(** The module [Scanf] provides formatted input functions or {em scanners}.
+(** The module [Scanf] provides formatted input functions or {e scanners}.
 
     The formatted input functions can read from any kind of input, including
     strings, files, or anything that can return characters. The more general
-    source of characters is named a {\em scanning buffer} and has type
+    source of characters is named a {e scanning buffer} and has type
     {!Scanning.scanbuf}. The more general formatted input function reads from
     any scanning buffer and is named [bscanf].
 
@@ -31,13 +31,13 @@
     - the first argument is a source of characters for the input,
     - the second argument is a format string that specifies the values to
       read,
-    - the third argument is a {\em receiver function} that is applied to the
+    - the third argument is a {e receiver function} that is applied to the
       values read.
 
     Hence, a typical call to the formatted input function {!Scanf.bscanf} is
     [bscanf ib fmt f], where:
 
-    - [ib] is a source of characters (typically a {\em
+    - [ib] is a source of characters (typically a {e
     scanning buffer} with type {!Scanning.scanbuf}),
 
     - [fmt] is a format string (the same format strings as those used to print
@@ -202,10 +202,10 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     special exception to this simple rule: the space character (ASCII code
     32) does not match a single space character, but any amount of
     ``whitespace'' in the input. More precisely, a space inside the format
-    string matches {\em any number} of tab, space, line feed and carriage
+    string matches {e any number} of tab, space, line feed and carriage
     return characters.
 
-    Matching {\em any} amount of whitespace, a space in the format string
+    Matching {e any} amount of whitespace, a space in the format string
     also matches no amount of whitespace at all; hence, the call [bscanf ib
     "Price = %d $" (fun p -> p)] succeds and returns [1] when reading an
     input with various whitespace in it, such as [Price = 1 $],
