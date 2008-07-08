@@ -742,6 +742,8 @@ and transl_exp0 e =
       | Texp_function(_, _)
       | Texp_construct ({cstr_arity = 0}, _)
         -> transl_exp e
+      | Texp_constant(Const_float _) ->
+          Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
       | Texp_ident(_, _) -> (* according to the type *)
           begin match e.exp_type.desc with
           (* the following may represent a float/forward/lazy: need a
@@ -773,8 +775,6 @@ and transl_exp0 e =
                 Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
           end
       (* other cases compile to a lazy block holding a function *)
-      | Texp_constant(Const_float _) ->
-          Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
       | _ ->
           let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
           Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
