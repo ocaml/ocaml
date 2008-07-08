@@ -731,8 +731,54 @@ and transl_exp0 e =
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
   | Texp_lazy e ->
-      let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
-      Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+      (* when e needs no computation (constants, identifiers, ...), we
+         optimize the translation just as Lazy.lazy_from_val would
+         do *)
+      begin match e.exp_desc with
+        (* a constant expr of type <> float gets compiled as itself *)
+      | Texp_constant
+          ( Const_int _ | Const_char _ | Const_string _
+          | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
+      | Texp_function(_, _)
+      | Texp_construct ({cstr_arity = 0}, _)
+        -> transl_exp e
+      | Texp_ident(_, _) -> (* according to the type *)
+          begin match e.exp_type.desc with
+          (* the following may represent a float/forward/lazy: need a
+             forward_tag *)
+          | Tvar | Tlink _ | Tsubst _ | Tunivar
+          | Tpoly(_,_) | Tfield(_,_,_,_) ->
+              Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+          (* the following cannot be represented as float/forward/lazy:
+             optimize *)
+          | Tarrow(_,_,_,_) | Ttuple _ | Tobject(_,_) | Tnil | Tvariant _
+              -> transl_exp e
+          (* optimize predefined types (excepted float) *)
+          | Tconstr(_,_,_) ->
+              if has_base_type e Predef.path_int
+                || has_base_type e Predef.path_char
+                || has_base_type e Predef.path_string
+                || has_base_type e Predef.path_bool
+                || has_base_type e Predef.path_unit
+                || has_base_type e Predef.path_exn
+                || has_base_type e Predef.path_array
+                || has_base_type e Predef.path_list
+                || has_base_type e Predef.path_format6
+                || has_base_type e Predef.path_option
+                || has_base_type e Predef.path_nativeint
+                || has_base_type e Predef.path_int32
+                || has_base_type e Predef.path_int64
+              then transl_exp e
+              else
+                Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+          end
+      (* other cases compile to a lazy block holding a function *)
+      | Texp_constant(Const_float _) ->
+          Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+      | _ ->
+          let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
+          Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+      end
   | Texp_object (cs, cty, meths) ->
       let cl = Ident.create "class" in
       !transl_object cl meths
