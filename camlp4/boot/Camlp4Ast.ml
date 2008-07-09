@@ -1806,7 +1806,15 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (meta_loc _loc x0) ]
                 and meta_patt _loc =
                   fun
-                  [ Ast.PaVrn x0 x1 ->
+                  [ Ast.PaLaz x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaLaz")))
+                           (meta_loc _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaVrn x0 x1 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExId _loc
@@ -3718,7 +3726,15 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (meta_loc _loc x0) ]
                 and meta_patt _loc =
                   fun
-                  [ Ast.PaVrn x0 x1 ->
+                  [ Ast.PaLaz x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaLaz")))
+                           (meta_loc _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaVrn x0 x1 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaId _loc
@@ -4518,7 +4534,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x_i1 = o#ident _x_i1 in PaTyp _x _x_i1
           | PaVrn _x _x_i1 ->
               let _x = o#loc _x in
-              let _x_i1 = o#string _x_i1 in PaVrn _x _x_i1 ];
+              let _x_i1 = o#string _x_i1 in PaVrn _x _x_i1
+          | PaLaz _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaLaz _x _x_i1 ];
         method module_type : module_type -> module_type =
           fun
           [ MtNil _x -> let _x = o#loc _x in MtNil _x
@@ -5237,7 +5255,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#loc _x in
               let o = o#patt _x_i1 in let o = o#ctyp _x_i2 in o
           | PaTyp _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
-          | PaVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
+          | PaVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | PaLaz _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o ];
         method module_type : module_type -> 'self_type =
           fun
           [ MtNil _x -> let o = o#loc _x in o

@@ -203,7 +203,11 @@ let ctx_matcher p =
           let l' = all_record_args l' in
           p, List.fold_right (fun (_,p) r -> p::r) l' rem
       | _ -> p,List.fold_right (fun (_,p) r -> p::r) l rem)
-  | _ -> fatal_error "Matching.ctx_matcher"
+  | Tpat_lazy omega ->
+      (fun q rem -> match q.pat_desc with
+      | Tpat_lazy arg -> p, (arg::rem)
+      | _          -> p, (omega::rem))
+ | _ -> fatal_error "Matching.ctx_matcher"
 
 
 
@@ -616,6 +620,7 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_array pats ->
     List.fold_left extract_vars r pats
 | Tpat_variant (_,Some p, _) -> extract_vars r p
+| Tpat_lazy p -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
 
@@ -683,6 +688,10 @@ and group_array = function
   | {pat_desc=Tpat_array _} -> true
   | _ -> false
 
+and group_lazy = function
+  | {pat_desc = Tpat_lazy _} -> true
+  | _ -> false
+
 let get_group p = match p.pat_desc with
 | Tpat_any -> group_var
 | Tpat_constant _ -> group_constant
@@ -691,6 +700,7 @@ let get_group p = match p.pat_desc with
 | Tpat_record _ -> group_record
 | Tpat_array _ -> group_array
 | Tpat_variant (_,_,_) -> group_variant
+| Tpat_lazy _ -> group_lazy
 |  _ -> fatal_error "Matching.get_group"
 
 
@@ -1286,6 +1296,50 @@ let make_var_matching def = function
 
 let divide_var ctx pm =
   divide_line ctx_lshift make_var_matching get_args_var omega ctx pm
+
+(* Matching and forcing a lazy value *)
+
+let get_arg_lazy p rem = match p with
+| {pat_desc = Tpat_any} -> omega :: rem
+| {pat_desc = Tpat_lazy arg} -> arg :: rem
+| _ ->  assert false
+
+let matcher_lazy p rem = match p.pat_desc with
+| Tpat_or (_,_,_)     -> raise OrPat
+| Tpat_lazy arg       -> arg :: rem
+| Tpat_var _          -> get_arg_lazy omega rem
+| _                   -> get_arg_lazy p rem
+
+
+(* Compute lazily the lambda-code of Lazy.force *)
+
+let lambda_of_force =
+  lazy (
+    let lazy_mod_ident = Ident.create_persistent "Lazy" in
+    let lazy_env = Env.open_pers_signature "Lazy" Env.initial in
+    let p = try
+      match Env.lookup_value (Longident.Lident "force") lazy_env with
+      | (Path.Pdot(_,_,i), _) -> i
+      | _ -> assert false
+    with Not_found -> assert false
+    in
+    Lprim(Pfield p, [Lprim(Pgetglobal lazy_mod_ident, [])])
+  )
+
+let make_lazy_matching def = function
+    [] -> fatal_error "Matching.make_lazy_matching"
+  | (arg,mut) :: argl ->
+      { cases = [];
+        args = (Lapply(Lazy.force lambda_of_force, [arg], Location.none),
+                Strict) :: argl;
+        default = make_default matcher_lazy def }
+    
+let divide_lazy p ctx pm =
+  divide_line
+    (filter_ctx p)
+    make_lazy_matching
+    get_arg_lazy
+    p ctx pm
 
 (* Matching against a tuple pattern *)
 
@@ -2335,6 +2389,10 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
       compile_test (compile_match repr partial) partial
         (divide_array kind) (combine_array arg kind partial)
         ctx pm
+  | Tpat_lazy _ ->
+      compile_no_test
+        (divide_lazy (normalize_pat pat))
+        ctx_combine repr partial ctx pm
   | Tpat_variant(lab, _, row) ->
       compile_test (compile_match repr partial) partial
         (divide_variant !row)
@@ -2577,4 +2635,3 @@ let for_multiple_match loc paraml pat_act_list partial =
       end
   with Unused ->
     assert false (* ; partial_function loc () *)
-

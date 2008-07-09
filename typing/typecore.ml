@@ -294,7 +294,8 @@ let rec build_as_type env p =
           let row = row_repr row in
           newty (Tvariant{row with row_closed=false; row_more=newvar()})
       end
-  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
+  | Tpat_any | Tpat_var _ | Tpat_constant _
+  | Tpat_array _ | Tpat_lazy _ -> p.pat_type
 
 let build_or_pat env loc lid =
   let path, decl =
@@ -508,6 +509,13 @@ let rec type_pat env sp =
         pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
         pat_loc = sp.ppat_loc;
         pat_type = p1.pat_type;
+        pat_env = env }
+  | Ppat_lazy sp1 ->
+      let p1 = type_pat env sp1 in
+      rp {
+        pat_desc = Tpat_lazy p1;
+        pat_loc = sp.ppat_loc;
+        pat_type = instance (Predef.type_lazy_t p1.pat_type);
         pat_env = env }
   | Ppat_constraint(sp, sty) ->
       let p = type_pat env sp in
@@ -1466,7 +1474,7 @@ let rec type_exp env sexp =
          exp_type = newvar ();
          exp_env = env;
        }
-  | Pexp_lazy (e) ->
+  | Pexp_lazy e ->
        let arg = type_exp env e in
        re {
          exp_desc = Texp_lazy arg;

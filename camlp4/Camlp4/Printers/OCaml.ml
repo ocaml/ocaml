@@ -589,6 +589,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     method patt5 f = fun
     [ <:patt< [$_$ :: $_$] >> as p -> o#simple_patt f p
+    | <:patt< lazy $p$ >> ->
+        pp f "@[<2>lazy %a@]" o#simple_patt p
     | <:patt< $x$ $y$ >> ->
         let (a, al) = get_patt_args x [y] in
         if not (Ast.is_patt_constructor a) then
@@ -637,8 +639,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>?%s:@,@[<1>(%a =@ %a)@]@]" s o#patt_tycon p o#expr e
     | <:patt< $_$ $_$ >> | <:patt< ($_$ as $_$) >> | <:patt< $_$ | $_$ >> |
       <:patt< $_$ .. $_$ >> | <:patt< $_$, $_$ >> |
-      <:patt< $_$; $_$ >> | <:patt< $_$ = $_$ >> as p ->
-          pp f "@[<1>(%a)@]" o#patt p ];
+      <:patt< $_$; $_$ >> | <:patt< $_$ = $_$ >> | <:patt< lazy $_$ >> as p ->
+          pp f "@[<1>(%a)@]" o#patt p
+    ];
 
     method patt_tycon f =
       fun

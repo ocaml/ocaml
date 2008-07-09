@@ -112,6 +112,7 @@ let rec add_pattern bv pat =
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type (li) -> add bv li
+  | Ppat_lazy p -> add_pattern bv p
 
 let rec add_expr bv exp =
   match exp.pexp_desc with

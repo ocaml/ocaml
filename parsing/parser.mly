@@ -1077,6 +1077,8 @@ pattern:
                              false)) }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
+  | LAZY simple_pattern
+      { mkpat(Ppat_lazy $2) }
 ;
 simple_pattern:
     val_ident %prec below_EQUAL

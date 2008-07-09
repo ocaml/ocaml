@@ -186,6 +186,9 @@ and pattern i ppf x =
       line i ppf "Ppat_or\n";
       pattern i ppf p1;
       pattern i ppf p2;
+  | Ppat_lazy p ->
+      line i ppf "Ppat_lazy\n";
+      pattern i ppf p;
   | Ppat_constraint (p, ct) ->
       line i ppf "Ppat_constraint";
       pattern i ppf p;

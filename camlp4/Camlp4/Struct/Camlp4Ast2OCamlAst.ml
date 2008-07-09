@@ -500,6 +500,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | PaTyc loc p t -> mkpat loc (Ppat_constraint (patt p) (ctyp t))
     | PaTyp loc i -> mkpat loc (Ppat_type (long_type_ident i))
     | PaVrn loc s -> mkpat loc (Ppat_variant s None)
+    | PaLaz loc p -> mkpat loc (Ppat_lazy (patt p))
     | PaEq _ _ _ | PaSem _ _ _ | PaCom _ _ _ | PaNil _ as p ->
         error (loc_of_patt p) "invalid pattern" ]
   and mklabpat =

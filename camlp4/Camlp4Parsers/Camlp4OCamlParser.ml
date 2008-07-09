@@ -372,6 +372,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                 List.fold_left (fun p1 p2 -> <:patt< $p1$ $p2$ >>) p1
                                 (Ast.list_of_patt p [])
             | _ -> <:patt< $p1$ $p2$ >> ]
+        | "lazy"; p = SELF -> <:patt< lazy $p$ >>
         | `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | p = patt_constr -> p ]

@@ -851,7 +851,7 @@ and transl_apply lam sargs loc =
 and transl_function loc untuplify_fn repr partial pat_expr_list =
   match pat_expr_list with
     [pat, ({exp_desc = Texp_function(pl,partial')} as exp)]
-    when Parmatch.irrefutable pat ->
+    when Parmatch.fluid pat ->
       let param = name_pattern "param" pat_expr_list in
       let ((_, params), body) =
         transl_function exp.exp_loc false repr partial' pl in

@@ -825,7 +825,8 @@ Very old (no more supported) syntax:
       | ".." NONA
         [ p1 = SELF; ".."; p2 = SELF -> <:patt< $p1$ .. $p2$ >> ]
       | "apply" LEFTA
-        [ p1 = SELF; p2 = SELF -> <:patt< $p1$ $p2$ >> ]
+        [ p1 = SELF; p2 = SELF -> <:patt< $p1$ $p2$ >>
+        | "lazy"; p = SELF -> <:patt< lazy $p$ >>  ]
       | "simple"
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
