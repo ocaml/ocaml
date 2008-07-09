@@ -19,6 +19,7 @@ pattern:
   | '[' pattern { ';' pattern } ']'
   | pattern '::' pattern
   | '[|' pattern { ';' pattern } '|]'
+  | "lazy" pattern
 \end{syntax}
 
 The table below shows the relative precedences and associativity of

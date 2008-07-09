@@ -141,7 +141,16 @@ encapsulates the computation of @expr@.  The argument @expr@ is not
 evaluated at this point in the program.  Instead, its evaluation will
 be performed the first time "Lazy.force" is applied to the value
 \var{v}, returning the actual value of @expr@. Subsequent applications
-of "Lazy.force" to \var{v} do not evaluate @expr@ again.
+of "Lazy.force" to \var{v} do not evaluate @expr@ again. Applications
+of "Lazy.force" may be implicit through pattern matching.
+
+The pattern @"lazy" pattern@ matches values \var{v} of type "Lazy.t",
+provided @pattern@ matches the result of forcing \var{v} with
+"Lazy.force". Note that matching against a pattern @"lazy" value-name@
+or @"lazy" "_"@ may call "Lazy.force" even when @value-name@ is
+unused.
+
+
 For more information, see the description of module "Lazy" in the
 standard library (see
 \ifouthtml
