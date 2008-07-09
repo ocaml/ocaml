@@ -825,6 +825,7 @@ and search_pos_pat ~pos ~env pat =
       add_found_str (`Exp(`Val (Pident id), pat.pat_type))
         ~env ~loc:pat.pat_loc
   | Tpat_alias (pat, _) -> search_pos_pat pat ~pos ~env
+  | Tpat_lazy pat -> search_pos_pat pat ~pos ~env
   | Tpat_constant _ ->
       add_found_str (`Exp(`Const, pat.pat_type)) ~env ~loc:pat.pat_loc
   | Tpat_tuple l ->

@@ -421,6 +421,7 @@ let rec bound_variables pat =
   | Ppat_or (pat1,pat2) ->
       bound_variables pat1 @ bound_variables pat2
   | Ppat_constraint (pat,_) -> bound_variables pat
+  | Ppat_lazy pat -> bound_variables pat
 
 let search_structure str ~name ~kind ~prefix =
   let loc = ref 0 in
