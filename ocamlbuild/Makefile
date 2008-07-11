@@ -43,7 +43,7 @@ ppcache:
 	$(OCAMLBUILD) ppcache.byte ppcache.native
 doc:
 	$(OCAMLBUILD) ocamlbuild.docdir/index.html
-	ln -sf $(BUILDDIR)/ocamlbuild.docdir doc
+	ln -s -f $(BUILDDIR)/ocamlbuild.docdir doc
 else
 all byte native: ocamlbuild.byte.start
 	mkdir -p boot
