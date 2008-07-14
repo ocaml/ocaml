@@ -701,6 +701,9 @@ ocamlbuild-partial-boot: ocamlc otherlibraries
 
 partialclean::
 	rm -rf _build
+	if test -d test; then \
+	 (cd test; $(MAKE) clean); \
+	fi
 
 # Check that the stack limit is reasonable.
 
