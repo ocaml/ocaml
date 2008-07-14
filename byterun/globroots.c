@@ -209,11 +209,12 @@ CAMLexport void caml_register_generational_global_root(value *r)
 CAMLexport void caml_remove_generational_global_root(value *r)
 {
   value v = *r;
-  Assert(Is_block(v));
-  if (Is_young(v))
-    caml_delete_global_root(&caml_global_roots_young, r);
-  else if (Is_in_heap(v))
-    caml_delete_global_root(&caml_global_roots_old, r);
+  if (Is_block(v)) {
+    if (Is_young(v))
+      caml_delete_global_root(&caml_global_roots_young, r);
+    else if (Is_in_heap(v))
+      caml_delete_global_root(&caml_global_roots_old, r);
+  }
 }
 
 /* Modify the value of a global C root of the generational kind */
@@ -221,13 +222,13 @@ CAMLexport void caml_remove_generational_global_root(value *r)
 CAMLexport void caml_modify_generational_global_root(value *r, value newval)
 {
   value oldval = *r;
-  Assert(Is_block(oldval));
 
   /* It is OK to have a root in roots_young that suddenly points to 
      the old generation -- the next minor GC will take care of that.
      What needs corrective action is a root in roots_old that suddenly
      points to the young generation. */
-  if (Is_block(newval) && Is_young(newval) && Is_in_heap(oldval)) {
+  if (Is_block(newval) && Is_young(newval) && 
+      Is_block(oldval) && Is_in_heap(oldval)) {
     caml_delete_global_root(&caml_global_roots_old, r);
     caml_insert_global_root(&caml_global_roots_young, r);
   }
