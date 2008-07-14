@@ -176,6 +176,15 @@ let _ =
   test 18 true (try ignore d.{4}; false with Invalid_argument _ -> true);
   test 19 true (try ignore d.{0}; false with Invalid_argument _ -> true);
 
+  testing_function "set/get (unsafe, specialized)";
+  let a = Array1.create int c_layout 3 in
+  for i = 0 to 2 do Array1.unsafe_set a i i done;
+  for i = 0 to 2 do test (i+1) (Array1.unsafe_get a i) i done;
+    
+  let b = Array1.create float64 fortran_layout 3 in
+  for i = 1 to 3 do Array1.unsafe_set b i (float i) done;
+  for i = 1 to 3 do test (5 + i) (Array1.unsafe_get b i) (float i) done;
+
   testing_function "comparisons";
   let normalize_comparison n =
     if n = 0 then 0 else if n < 0 then -1 else 1 in
@@ -463,6 +472,23 @@ let _ =
   test 9 true (try ignore b.{1,4}; false with Invalid_argument _ -> true);
   test 10 true (try ignore b.{1,0}; false with Invalid_argument _ -> true);
 
+  testing_function "set/get (unsafe, specialized)";
+  let a = Array2.create int16_signed c_layout 3 3 in
+  for i = 0 to 2 do for j = 0 to 2 do Array2.unsafe_set a i j (i-j) done done;
+  let ok = ref true in
+  for i = 0 to 2 do
+    for j = 0 to 2 do if Array2.unsafe_get a i j <> i-j then ok := false done
+  done;
+  test 1 true !ok;
+    
+  let b = Array2.create float32 fortran_layout 3 3 in
+  for i = 1 to 3 do for j = 1 to 3 do Array2.unsafe_set b i j (float(i-j)) done done;
+  let ok = ref true in
+  for i = 1 to 3 do
+    for j = 1 to 3 do if Array2.unsafe_get b i j <> float(i-j) then ok := false done
+  done;
+  test 2 true !ok;
+
   testing_function "dim";
   let a = (make_array2 int c_layout 0 4 6 id) in
   test 1 (Array2.dim1 a) 4;
@@ -595,6 +621,17 @@ let _ =
      if Int64.to_int b.{i,j,k} <> (i lsl 4) + (j lsl 2) + k then ok := false
   done done done;
   test 2 true !ok;
+
+  testing_function "set/get (unsafe, specialized)";
+  let a = Array3.create int32 c_layout 2 3 4 in
+  for i = 0 to 1 do for j = 0 to 2 do for k = 0 to 3 do
+     Array3.unsafe_set a i j k (Int32.of_int((i lsl 4) + (j lsl 2) + k))
+  done done done;
+  let ok = ref true in
+  for i = 0 to 1 do for j = 0 to 2 do for k = 0 to 3 do
+     if Int32.to_int (Array3.unsafe_get a i j k) <> (i lsl 4) + (j lsl 2) + k then ok := false
+  done done done;
+  test 1 true !ok;
 
   testing_function "dim";
   let a = (make_array3 int c_layout 0 4 5 6 id) in

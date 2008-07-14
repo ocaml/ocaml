@@ -250,12 +250,30 @@ let primitives_table = create_hashtable 57 [
   "%int64_to_int32", Pcvtbint(Pint64, Pint32);
   "%int64_of_nativeint", Pcvtbint(Pnativeint, Pint64);
   "%int64_to_nativeint", Pcvtbint(Pint64, Pnativeint);
-  "%caml_ba_ref_1", Pbigarrayref(1, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_ref_2", Pbigarrayref(2, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_ref_3", Pbigarrayref(3, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_set_1", Pbigarrayset(1, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_set_2", Pbigarrayset(2, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_set_3", Pbigarrayset(3, Pbigarray_unknown, Pbigarray_c_layout)
+  "%caml_ba_ref_1",
+    Pbigarrayref(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_ref_2",
+    Pbigarrayref(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_ref_3",
+    Pbigarrayref(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_set_1",
+    Pbigarrayset(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_set_2",
+    Pbigarrayset(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_set_3",
+    Pbigarrayset(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_ref_1",
+    Pbigarrayref(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_ref_2",
+    Pbigarrayref(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_ref_3",
+    Pbigarrayref(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_set_1",
+    Pbigarrayset(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_set_2",
+    Pbigarrayset(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_set_3",
+    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout)
 ]
 
 let prim_makearray =
@@ -306,12 +324,14 @@ let transl_prim prim args =
       | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
       | (Parrayrefs Pgenarray, arg1 :: _) -> Parrayrefs(array_kind arg1)
       | (Parraysets Pgenarray, arg1 :: _) -> Parraysets(array_kind arg1)
-      | (Pbigarrayref(n, Pbigarray_unknown, _), arg1 :: _) ->
+      | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+                      arg1 :: _) ->
             let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayref(n, k, l)
-      | (Pbigarrayset(n, Pbigarray_unknown, _), arg1 :: _) ->
+            Pbigarrayref(unsafe, n, k, l)
+      | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+                      arg1 :: _) ->
             let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayset(n, k, l)
+            Pbigarrayset(unsafe, n, k, l)
       | _ -> p
     end
   with Not_found ->

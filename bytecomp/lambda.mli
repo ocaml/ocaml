@@ -79,9 +79,9 @@ type primitive =
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
   | Pbintcomp of boxed_integer * comparison
-  (* Operations on big arrays *)
-  | Pbigarrayref of int * bigarray_kind * bigarray_layout
-  | Pbigarrayset of int * bigarray_kind * bigarray_layout
+  (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
+  | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
+  | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge

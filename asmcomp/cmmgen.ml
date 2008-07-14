@@ -507,23 +507,22 @@ let bigarray_elt_size = function
   | Pbigarray_complex32 -> 8
   | Pbigarray_complex64 -> 16
 
-let bigarray_indexing elt_kind layout b args dbg =
+let bigarray_indexing unsafe elt_kind layout b args dbg =
+  let check_bound a1 a2 k =
+    if unsafe then k else Csequence(Cop(Ccheckbound dbg, [a1;a2]), k) in
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
       bind "idx" (untag_int arg)
         (fun idx ->
-          Csequence(
-            Cop(Ccheckbound dbg, [Cop(Cload Word,[field_address b dim_ofs]); idx]),
-            idx))
+           check_bound (Cop(Cload Word,[field_address b dim_ofs])) idx idx)
   | arg1 :: argl ->
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
       bind "idx" (untag_int arg1)
         (fun idx ->
           bind "bound" (Cop(Cload Word, [field_address b dim_ofs]))
           (fun bound ->
-            Csequence(Cop(Ccheckbound dbg, [bound; idx]),
-                      add_int (mul_int rem bound) idx))) in
+            check_bound bound idx (add_int (mul_int rem bound) idx))) in
   let offset =
     match layout with
       Pbigarray_unknown_layout ->
@@ -555,33 +554,33 @@ let bigarray_word_kind = function
   | Pbigarray_complex32 -> Single
   | Pbigarray_complex64 -> Double
 
-let bigarray_get elt_kind layout b args dbg =
+let bigarray_get unsafe elt_kind layout b args dbg =
   match elt_kind with
     Pbigarray_complex32 | Pbigarray_complex64 ->
       let kind = bigarray_word_kind elt_kind in
       let sz = bigarray_elt_size elt_kind / 2 in
-      bind "addr" (bigarray_indexing elt_kind layout b args dbg) (fun addr ->
+      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
         box_complex
           (Cop(Cload kind, [addr]))
           (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
   | _ ->
       Cop(Cload (bigarray_word_kind elt_kind),
-          [bigarray_indexing elt_kind layout b args dbg])
+          [bigarray_indexing unsafe elt_kind layout b args dbg])
 
-let bigarray_set elt_kind layout b args newval dbg =
+let bigarray_set unsafe elt_kind layout b args newval dbg =
   match elt_kind with
     Pbigarray_complex32 | Pbigarray_complex64 ->
       let kind = bigarray_word_kind elt_kind in
       let sz = bigarray_elt_size elt_kind / 2 in
       bind "newval" newval (fun newv ->
-      bind "addr" (bigarray_indexing elt_kind layout b args dbg) (fun addr ->
+      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
         Csequence(
           Cop(Cstore kind, [addr; complex_re newv]),
           Cop(Cstore kind,
               [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
   | _ ->
       Cop(Cstore (bigarray_word_kind elt_kind),
-          [bigarray_indexing elt_kind layout b args dbg; newval])
+          [bigarray_indexing unsafe elt_kind layout b args dbg; newval])
 
 (* Simplification of some primitives into C calls *)
 
@@ -616,9 +615,9 @@ let simplif_primitive_32bits = function
   | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
-  | Pbigarrayref(n, Pbigarray_int64, layout) ->
+  | Pbigarrayref(unsafe, n, Pbigarray_int64, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(n, Pbigarray_int64, layout) ->
+  | Pbigarrayset(unsafe, n, Pbigarray_int64, layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p -> p
 
@@ -626,13 +625,13 @@ let simplif_primitive p =
   match p with
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
-  | Pbigarrayref(n, Pbigarray_unknown, layout) ->
+  | Pbigarrayref(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(n, Pbigarray_unknown, layout) ->
+  | Pbigarrayset(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
-  | Pbigarrayref(n, kind, Pbigarray_unknown_layout) ->
+  | Pbigarrayref(unsafe, n, kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(n, kind, Pbigarray_unknown_layout) ->
+  | Pbigarrayset(unsafe, n, kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p ->
       if size_int = 8 then p else simplif_primitive_32bits p
@@ -729,11 +728,11 @@ let is_unboxed_number = function
         | Plslbint bi -> Boxed_integer bi
         | Plsrbint bi -> Boxed_integer bi
         | Pasrbint bi -> Boxed_integer bi
-        | Pbigarrayref(_, (Pbigarray_float32 | Pbigarray_float64), _) ->
+        | Pbigarrayref(_, _, (Pbigarray_float32 | Pbigarray_float64), _) ->
             Boxed_float
-        | Pbigarrayref(_, Pbigarray_int32, _) -> Boxed_integer Pint32
-        | Pbigarrayref(_, Pbigarray_int64, _) -> Boxed_integer Pint64
-        | Pbigarrayref(_, Pbigarray_native_int, _) -> Boxed_integer Pnativeint
+        | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed_integer Pint32
+        | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed_integer Pint64
+        | Pbigarrayref(_, _, Pbigarray_native_int, _) -> Boxed_integer Pnativeint
         | _ -> No_unboxing
       end
   | _ -> No_unboxing
@@ -890,9 +889,9 @@ let rec transl = function
               make_float_alloc Obj.double_array_tag
                               (List.map transl_unbox_float args)
           end
-      | (Pbigarrayref(num_dims, elt_kind, layout), arg1 :: argl) ->
+      | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
-            bigarray_get elt_kind layout
+            bigarray_get unsafe elt_kind layout
               (transl arg1) (List.map transl argl) dbg in
           begin match elt_kind with
             Pbigarray_float32 | Pbigarray_float64 -> box_float elt
@@ -903,9 +902,9 @@ let rec transl = function
           | Pbigarray_caml_int -> force_tag_int elt
           | _ -> tag_int elt
           end
-      | (Pbigarrayset(num_dims, elt_kind, layout), arg1 :: argl) ->
+      | (Pbigarrayset(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let (argidx, argnewval) = split_last argl in
-          return_unit(bigarray_set elt_kind layout
+          return_unit(bigarray_set unsafe elt_kind layout
             (transl arg1)
             (List.map transl argidx)
             (match elt_kind with

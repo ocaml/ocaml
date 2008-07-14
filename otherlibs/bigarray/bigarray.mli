@@ -489,6 +489,18 @@ module Array1 : sig
     bool -> int -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a one-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
+
+  external unsafe_get: ('a, 'b, 'c) t -> int -> 'a = "%caml_ba_unsafe_ref_1"
+  (** Like {!Bigarray.Array1.get}, but bounds checking is not always performed.
+      Use with caution and only when the program logic guarantees that
+      the access is within bounds. *)
+
+  external unsafe_set: ('a, 'b, 'c) t -> int -> 'a -> unit
+                     = "%caml_ba_unsafe_set_1"
+  (** Like {!Bigarray.Array1.set}, but bounds checking is not always performed.
+      Use with caution and only when the program logic guarantees that
+      the access is within bounds. *)
+
 end
 
 
@@ -583,7 +595,17 @@ module Array2 :
   (** Memory mapping of a file as a two-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
 
-  end
+  external unsafe_get: ('a, 'b, 'c) t -> int -> int -> 'a
+                     = "%caml_ba_unsafe_ref_2"
+  (** Like {!Bigarray.Array2.get}, but bounds checking is not always
+      performed. *)
+
+  external unsafe_set: ('a, 'b, 'c) t -> int -> int -> 'a -> unit
+                     = "%caml_ba_unsafe_set_2"
+  (** Like {!Bigarray.Array2.set}, but bounds checking is not always
+      performed. *)
+
+end
 
 (** {6 Three-dimensional arrays} *)
 
@@ -700,7 +722,18 @@ module Array3 :
              bool -> int -> int -> int -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a three-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
-  end
+
+  external unsafe_get: ('a, 'b, 'c) t -> int -> int -> int -> 'a
+                     = "%caml_ba_unsafe_ref_3"
+  (** Like {!Bigarray.Array3.get}, but bounds checking is not always
+      performed. *)
+
+  external unsafe_set: ('a, 'b, 'c) t -> int -> int -> int -> 'a -> unit
+                     = "%caml_ba_unsafe_set_3"
+  (** Like {!Bigarray.Array3.set}, but bounds checking is not always
+      performed. *)
+
+end
 
 (** {6 Coercions between generic big arrays and fixed-dimension big arrays} *)
 
