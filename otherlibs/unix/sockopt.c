@@ -14,15 +14,18 @@
 /* $Id$ */
 
 #include <mlvalues.h>
+#include <memory.h>
 #include <alloc.h>
 #include <fail.h>
 #include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
 
+#include <errno.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <netinet/tcp.h>
 
 #include "socketaddr.h"
 
@@ -74,164 +77,217 @@
 #ifndef SO_SNDTIMEO
 #define SO_SNDTIMEO (-1)
 #endif
+#ifndef TCP_NODELAY
+#define TCP_NODELAY (-1)
+#endif
+#ifndef SO_ERROR
+#define SO_ERROR (-1)
+#endif
 
-static int sockopt_bool[] = {
-  SO_DEBUG, SO_BROADCAST, SO_REUSEADDR, SO_KEEPALIVE,
-  SO_DONTROUTE, SO_OOBINLINE, SO_ACCEPTCONN };
+enum option_type {
+  TYPE_BOOL = 0,
+  TYPE_INT = 1,
+  TYPE_LINGER = 2,
+  TYPE_TIMEVAL = 3,
+  TYPE_UNIX_ERROR = 4
+};
 
-static int sockopt_int[] = {
-  SO_SNDBUF, SO_RCVBUF, SO_ERROR, SO_TYPE, SO_RCVLOWAT, SO_SNDLOWAT };
+struct socket_option {
+  int level;
+  int option;
+};
 
-static int sockopt_optint[] = { SO_LINGER };
+/* Table of options, indexed by type */
 
-static int sockopt_float[] = { SO_RCVTIMEO, SO_SNDTIMEO };
+static struct socket_option sockopt_bool[] = {
+  { SOL_SOCKET, SO_DEBUG },
+  { SOL_SOCKET, SO_BROADCAST },
+  { SOL_SOCKET, SO_REUSEADDR },
+  { SOL_SOCKET, SO_KEEPALIVE },
+  { SOL_SOCKET, SO_DONTROUTE },
+  { SOL_SOCKET, SO_OOBINLINE },
+  { SOL_SOCKET, SO_ACCEPTCONN },
+  { IPPROTO_TCP, TCP_NODELAY }
+};
 
-CAMLexport value getsockopt_int(int *sockopt, value socket,
-                                int level, value option)
+static struct socket_option sockopt_int[] = {
+  { SOL_SOCKET, SO_SNDBUF },
+  { SOL_SOCKET, SO_RCVBUF },
+  { SOL_SOCKET, SO_ERROR },
+  { SOL_SOCKET, SO_TYPE },
+  { SOL_SOCKET, SO_RCVLOWAT },
+  { SOL_SOCKET, SO_SNDLOWAT } };
+
+static struct socket_option sockopt_linger[] = {
+  { SOL_SOCKET, SO_LINGER } 
+};
+
+static struct socket_option sockopt_timeval[] = { 
+  { SOL_SOCKET, SO_RCVTIMEO },
+  { SOL_SOCKET, SO_SNDTIMEO }
+};
+
+static struct socket_option sockopt_unix_error[] = {
+  { SOL_SOCKET, SO_ERROR }
+};
+
+static struct socket_option * sockopt_table[] = {
+  sockopt_bool,
+  sockopt_int,
+  sockopt_linger,
+  sockopt_timeval,
+  sockopt_unix_error
+};
+
+static char * getsockopt_fun_name[] = {
+  "getsockopt",
+  "getsockopt_int",
+  "getsockopt_optint",
+  "getsockopt_float",
+  "getsockopt_error"
+};
+
+static char * setsockopt_fun_name[] = {
+  "setsockopt",
+  "setsockopt_int",
+  "setsockopt_optint",
+  "setsockopt_float",
+  "setsockopt_error"
+};
+
+union option_value {
+  int i;
+  struct linger lg;
+  struct timeval tv;
+};
+
+CAMLexport value
+unix_getsockopt_aux(char * name,
+                    enum option_type ty, int level, int option,
+                    value socket)
 {
-  int optval;
+  union option_value optval;
   socklen_param_type optsize;
 
-  optsize = sizeof(optval);
-  if (getsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-                 (void *) &optval, &optsize) == -1)
-    uerror("getsockopt", Nothing);
-  return Val_int(optval);
-}
 
-CAMLexport value setsockopt_int(int *sockopt, value socket, int level,
-                                value option, value status)
-{
-  int optval = Int_val(status);
-  if (setsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-                 (void *) &optval, sizeof(optval)) == -1)
-    uerror("setsockopt", Nothing);
-  return Val_unit;
-}
-
-CAMLprim value unix_getsockopt_bool(value socket, value option) {
-  value res = getsockopt_int(sockopt_bool, socket, SOL_SOCKET, option);
-  return Val_bool(Int_val(res));
-}
-
-CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
-{
- return setsockopt_int(sockopt_bool, socket, SOL_SOCKET, option, status);
-}
-
-CAMLprim value unix_getsockopt_int(value socket, value option) {
-  return getsockopt_int(sockopt_int, socket, SOL_SOCKET, option);
-}
-
-CAMLprim value unix_setsockopt_int(value socket, value option, value status)
-{
- return setsockopt_int(sockopt_int, socket, SOL_SOCKET, option, status);
-}
-
-CAMLexport value getsockopt_optint(int *sockopt, value socket,
-                                   int level, value option)
-{
-  struct linger optval;
-  socklen_param_type optsize;
-  value res = Val_int(0);                       /* None */
-
-  optsize = sizeof(optval);
-  if (getsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-                 (void *) &optval, &optsize) == -1)
-    uerror("getsockopt_optint", Nothing);
-  if (optval.l_onoff != 0) {
-    res = alloc_small(1, 0);
-    Field(res, 0) = Val_int(optval.l_linger);
+  switch (ty) {
+  case TYPE_BOOL:
+  case TYPE_INT:
+  case TYPE_UNIX_ERROR:
+    optsize = sizeof(optval.i); break;
+  case TYPE_LINGER:
+    optsize = sizeof(optval.lg); break;
+  case TYPE_TIMEVAL:
+    optsize = sizeof(optval.tv); break;
+  default:
+    unix_error(EINVAL, name, Nothing);
   }
-  return res;
+
+  if (getsockopt(Int_val(socket), level, option,
+                 (void *) &optval, &optsize) == -1)
+    uerror(name, Nothing);
+
+  switch (ty) {
+  case TYPE_BOOL:
+  case TYPE_INT:
+    return Val_int(optval.i);
+  case TYPE_LINGER:
+    if (optval.lg.l_onoff == 0) {
+      return Val_int(0);        /* None */
+    } else {
+      value res = alloc_small(1, 0); /* Some */
+      Field(res, 0) = Val_int(optval.lg.l_linger);
+      return res;
+    }
+  case TYPE_TIMEVAL:
+    return copy_double((double) optval.tv.tv_sec
+                       + (double) optval.tv.tv_usec / 1e6);
+  case TYPE_UNIX_ERROR:
+    if (optval.i == 0) {
+      return Val_int(0);        /* None */
+    } else {
+      value err, res;
+      err = unix_error_of_code(optval.i);
+      Begin_root(err);
+        res = alloc_small(1, 0); /* Some */
+        Field(res, 0) = err;
+      End_roots();
+      return res;
+    }
+  default:
+    unix_error(EINVAL, name, Nothing);
+  }
 }
 
-CAMLexport value setsockopt_optint(int *sockopt, value socket, int level,
-                                   value option, value status)
+CAMLexport value 
+unix_setsockopt_aux(char * name,
+                    enum option_type ty, int level, int option,
+                    value socket, value val)
 {
-  struct linger optval;
-
-  optval.l_onoff = Is_block (status);
-  if (optval.l_onoff)
-    optval.l_linger = Int_val (Field (status, 0));
-  if (setsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-                 (void *) &optval, sizeof(optval)) == -1)
-    uerror("setsockopt_optint", Nothing);
-  return Val_unit;
-}
-
-CAMLprim value unix_getsockopt_optint(value socket, value option)
-{
-  return getsockopt_optint(sockopt_optint, socket, SOL_SOCKET, option);
-}
-
-CAMLprim value unix_setsockopt_optint(value socket, value option, value status)
-{
-  return setsockopt_optint(sockopt_optint, socket, SOL_SOCKET, option, status);
-}
-
-CAMLexport value getsockopt_float(int *sockopt, value socket,
-                                  int level, value option)
-{
-  struct timeval tv;
+  union option_value optval;
   socklen_param_type optsize;
+  double f;
 
-  optsize = sizeof(tv);
-  if (getsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-                 (void *) &tv, &optsize) == -1)
-    uerror("getsockopt_float", Nothing);
-  return copy_double((double) tv.tv_sec + (double) tv.tv_usec / 1e6);
-}
+  switch (ty) {
+  case TYPE_BOOL:
+  case TYPE_INT:
+    optsize = sizeof(optval.i);
+    optval.i = Int_val(val);
+    break;
+  case TYPE_LINGER:
+    optsize = sizeof(optval.lg);
+    optval.lg.l_onoff = Is_block (val);
+    if (optval.lg.l_onoff)
+      optval.lg.l_linger = Int_val (Field (val, 0));
+    break;
+  case TYPE_TIMEVAL:
+    f = Double_val(val);
+    optsize = sizeof(optval.tv);
+    optval.tv.tv_sec = (int) f;
+    optval.tv.tv_usec = (int) (1e6 * (f - optval.tv.tv_sec));
+    break;
+  case TYPE_UNIX_ERROR:
+  default:
+    unix_error(EINVAL, name, Nothing);
+  }
 
-CAMLexport value setsockopt_float(int *sockopt, value socket, int level,
-                                  value option, value status)
-{
-  struct timeval tv;
-  double tv_f;
+  if (setsockopt(Int_val(socket), level, option,
+                 (void *) &optval, optsize) == -1)
+    uerror(name, Nothing);
 
-  tv_f = Double_val(status);
-  tv.tv_sec = (int)tv_f;
-  tv.tv_usec = (int) (1e6 * (tv_f - tv.tv_sec));
-  if (setsockopt(Int_val(socket), level, sockopt[Int_val(option)],
-                 (void *) &tv, sizeof(tv)) == -1)
-    uerror("setsockopt_float", Nothing);
   return Val_unit;
 }
 
-CAMLprim value unix_getsockopt_float(value socket, value option)
+CAMLprim value unix_getsockopt(value vty, value vsocket, value voption)
 {
-  return getsockopt_float(sockopt_float, socket, SOL_SOCKET, option);
+  enum option_type ty = Int_val(vty);
+  struct socket_option * opt = &(sockopt_table[ty][Int_val(voption)]);
+  return unix_getsockopt_aux(getsockopt_fun_name[ty],
+                             ty,
+                             opt->level,
+                             opt->option,
+                             vsocket);
 }
 
-CAMLprim value unix_setsockopt_float(value socket, value option, value status)
+CAMLprim value unix_setsockopt(value vty, value vsocket, value voption,
+                               value val)
 {
-  return setsockopt_float(sockopt_float, socket, SOL_SOCKET, option, status);
+  enum option_type ty = Int_val(vty);
+  struct socket_option * opt = &(sockopt_table[ty][Int_val(voption)]);
+  return unix_setsockopt_aux(setsockopt_fun_name[ty],
+                             ty,
+                             opt->level,
+                             opt->option,
+                             vsocket,
+                             val);
 }
 
 #else
 
-CAMLprim value unix_getsockopt_bool(value socket, value option)
+CAMLprim value unix_getsockopt(value vty, value socket, value option)
 { invalid_argument("getsockopt not implemented"); }
 
-CAMLprim value unix_setsockopt_bool(value socket, value option, value status)
+CAMLprim value unix_setsockopt(value vty, value socket, value option, value val)
 { invalid_argument("setsockopt not implemented"); }
-
-CAMLprim value unix_getsockopt_int(value socket, value option)
-{ invalid_argument("getsockopt_int not implemented"); }
-
-CAMLprim value unix_setsockopt_int(value socket, value option, value status)
-{ invalid_argument("setsockopt_int not implemented"); }
-
-CAMLprim value unix_getsockopt_optint(value socket, value option)
-{ invalid_argument("getsockopt_optint not implemented"); }
-
-CAMLprim value unix_setsockopt_optint(value socket, value option, value status)
-{ invalid_argument("setsockopt_optint not implemented"); }
-
-CAMLprim value unix_getsockopt_float(value socket, value option)
-{ invalid_argument("getsockopt_float not implemented"); }
-
-CAMLprim value unix_setsockopt_float(value socket, value option, value status)
-{ invalid_argument("setsockopt_float not implemented"); }
 
 #endif

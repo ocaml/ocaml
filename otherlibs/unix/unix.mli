@@ -996,6 +996,7 @@ type socket_bool_option =
   | SO_DONTROUTE   (** Bypass the standard routing algorithms *)
   | SO_OOBINLINE   (** Leave out-of-band data in line *)
   | SO_ACCEPTCONN  (** Report whether socket listening is enabled *)
+  | TCP_NODELAY    (** Control the Nagle algorithm for TCP sockets *)
 (** The socket options that can be consulted with {!Unix.getsockopt}
    and modified with {!Unix.setsockopt}.  These options have a boolean
    ([true]/[false]) value. *)
@@ -1003,7 +1004,7 @@ type socket_bool_option =
 type socket_int_option =
     SO_SNDBUF      (** Size of send buffer *)
   | SO_RCVBUF      (** Size of received buffer *)
-  | SO_ERROR       (** Report the error status and clear it *)
+  | SO_ERROR       (** Deprecated.  Use {!Unix.getsockopt_error} instead. *)
   | SO_TYPE        (** Report the socket type *)
   | SO_RCVLOWAT    (** Minimum number of bytes to process for input operations *)
   | SO_SNDLOWAT    (** Minimum number of bytes to process for output operations *)
@@ -1034,30 +1035,28 @@ val getsockopt : file_descr -> socket_bool_option -> bool
 val setsockopt : file_descr -> socket_bool_option -> bool -> unit
 (** Set or clear a boolean-valued option in the given socket. *)
 
-external getsockopt_int :
-  file_descr -> socket_int_option -> int = "unix_getsockopt_int"
+val getsockopt_int : file_descr -> socket_int_option -> int
 (** Same as {!Unix.getsockopt} for an integer-valued socket option. *)
 
-external setsockopt_int :
-  file_descr -> socket_int_option -> int -> unit = "unix_setsockopt_int"
+val setsockopt_int : file_descr -> socket_int_option -> int -> unit
 (** Same as {!Unix.setsockopt} for an integer-valued socket option. *)
 
-external getsockopt_optint :
-  file_descr -> socket_optint_option -> int option = "unix_getsockopt_optint"
+val getsockopt_optint : file_descr -> socket_optint_option -> int option
 (** Same as {!Unix.getsockopt} for a socket option whose value is an [int option]. *)
 
-external setsockopt_optint :
-  file_descr -> socket_optint_option -> int option ->
-    unit = "unix_setsockopt_optint"
+val setsockopt_optint :
+      file_descr -> socket_optint_option -> int option -> unit
 (** Same as {!Unix.setsockopt} for a socket option whose value is an [int option]. *)
 
-external getsockopt_float :
-  file_descr -> socket_float_option -> float = "unix_getsockopt_float"
+val getsockopt_float : file_descr -> socket_float_option -> float
 (** Same as {!Unix.getsockopt} for a socket option whose value is a floating-point number. *)
 
-external setsockopt_float :
-  file_descr -> socket_float_option -> float -> unit = "unix_setsockopt_float"
+val setsockopt_float : file_descr -> socket_float_option -> float -> unit
 (** Same as {!Unix.setsockopt} for a socket option whose value is a floating-point number. *)
+
+val getsockopt_error : file_descr -> error option
+(** Return the error condition associated with the given socket,
+    and clear it. *)
 
 (** {6 High-level network connection functions} *)
 

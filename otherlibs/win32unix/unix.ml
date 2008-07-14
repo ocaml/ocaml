@@ -506,29 +506,6 @@ type msg_flag =
   | MSG_DONTROUTE
   | MSG_PEEK
 
-type socket_bool_option =
-    SO_DEBUG
-  | SO_BROADCAST
-  | SO_REUSEADDR
-  | SO_KEEPALIVE
-  | SO_DONTROUTE
-  | SO_OOBINLINE
-  | SO_ACCEPTCONN
-
-type socket_int_option =
-    SO_SNDBUF
-  | SO_RCVBUF
-  | SO_ERROR
-  | SO_TYPE
-  | SO_RCVLOWAT
-  | SO_SNDLOWAT
-
-type socket_optint_option = SO_LINGER
-
-type socket_float_option =
-    SO_RCVTIMEO
-  | SO_SNDTIMEO
-
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
 let socketpair dom ty proto = invalid_arg "Unix.socketpair not implemented"
@@ -570,22 +547,67 @@ let sendto fd buf ofs len flags addr =
   then invalid_arg "Unix.sendto"
   else unsafe_sendto fd buf ofs len flags addr
 
-external getsockopt : file_descr -> socket_bool_option -> bool
-                                          = "unix_getsockopt_bool"
-external setsockopt : file_descr -> socket_bool_option -> bool -> unit
-                                          = "unix_setsockopt_bool"
-external getsockopt_int : file_descr -> socket_int_option -> int
-                                          = "unix_getsockopt_int"
-external setsockopt_int : file_descr -> socket_int_option -> int -> unit
-                                          = "unix_setsockopt_int"
-external getsockopt_optint : file_descr -> socket_optint_option -> int option
-                                          = "unix_getsockopt_optint"
-external setsockopt_optint : file_descr -> socket_optint_option -> int option -> unit
-                                          = "unix_setsockopt_optint"
-external getsockopt_float : file_descr -> socket_float_option -> float
-                                          = "unix_getsockopt_float"
-external setsockopt_float : file_descr -> socket_float_option -> float -> unit
-                                          = "unix_setsockopt_float"
+type socket_bool_option =
+    SO_DEBUG
+  | SO_BROADCAST
+  | SO_REUSEADDR
+  | SO_KEEPALIVE
+  | SO_DONTROUTE
+  | SO_OOBINLINE
+  | SO_ACCEPTCONN
+  | TCP_NODELAY
+
+type socket_int_option =
+    SO_SNDBUF
+  | SO_RCVBUF
+  | SO_ERROR
+  | SO_TYPE
+  | SO_RCVLOWAT
+  | SO_SNDLOWAT
+
+type socket_optint_option = SO_LINGER
+
+type socket_float_option =
+    SO_RCVTIMEO
+  | SO_SNDTIMEO
+
+type socket_error_option = SO_ERROR
+
+module SO: sig
+  type ('opt, 'v) t
+  val bool: (socket_bool_option, bool) t
+  val int: (socket_int_option, int) t
+  val optint: (socket_optint_option, int option) t
+  val float: (socket_float_option, float) t
+  val error: (socket_error_option, error option) t
+  val get: ('opt, 'v) t -> file_descr -> 'opt -> 'v
+  val set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
+end = struct
+  type ('opt, 'v) t = int
+  let bool = 0
+  let int = 1
+  let optint = 2
+  let float = 3
+  let error = 4
+  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v 
+              = "unix_getsockopt"
+  external set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
+              = "unix_setsockopt"
+end
+
+let getsockopt fd opt = SO.get SO.bool fd opt
+let setsockopt fd opt v = SO.set SO.bool fd opt v
+
+let getsockopt_int fd opt = SO.get SO.int fd opt
+let setsockopt_int fd opt v = SO.set SO.int fd opt v
+
+let getsockopt_optint fd opt = SO.get SO.optint fd opt
+let setsockopt_optint fd opt v = SO.set SO.optint fd opt v
+
+let getsockopt_float fd opt = SO.get SO.float fd opt
+let setsockopt_float fd opt v = SO.set SO.float fd opt v
+
+let getsockopt_error fd = SO.get SO.error fd SO_ERROR
 
 (* Host and protocol databases *)
 
