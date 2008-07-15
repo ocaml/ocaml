@@ -1591,7 +1591,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
 | Tpat_variant (_, Some p, _) | Tpat_alias (p,_) -> collect_paths_from_pat r p
 | Tpat_or (p1,p2,_) ->
     collect_paths_from_pat (collect_paths_from_pat r p1) p2
-| Tpat_lazy p1 ->
+| Tpat_lazy p ->
     collect_paths_from_pat r p
       
 
