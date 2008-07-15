@@ -19,8 +19,8 @@ Compilers:
 Native-code compiler:
 - A new option "-shared" to produce a plugin that can be dynamically
   loaded with the native version of Dynlink.
-- A new option "-dlcode" to produce code that can be put in a plugin (needed
-  for some platforms only).
+- A new option "-nodynlink" to enable optimizations valid only for code
+  that is never dynlinked (no-op except for AMD64).
 
 Standard library:
 - Printexc library: new functions "print_backtrace" and "get_backtrace"

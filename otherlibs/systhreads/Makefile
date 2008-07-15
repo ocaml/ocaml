@@ -99,7 +99,7 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -dlcode -c $(COMPFLAGS) $<
+	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: $(GENFILES)
 	-gcc -MM -I../../byterun *.c > .depend
