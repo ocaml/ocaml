@@ -129,9 +129,6 @@ Optimize the produced code for space rather than for time. This
 results in slightly smaller but slightly slower programs. The default is to
 optimize for speed.
 
-\item["-dlcode"]
-See the documentation for the "-shared" option.
-
 \item["-dtypes"]
 Dump detailed type information.  The information for file \var{x}".ml"
 is put into file \var{x}".annot".  In case of a type error, dump
@@ -203,6 +200,10 @@ given when building the libraries).  This can be useful if a library
 contains incorrect specifications of C libraries or C options; in this
 case, during linking, set "-noautolink" and pass the correct C
 libraries and options on the command line.
+
+\item["-nodynlink"]
+Allow the compiler to use some optimizations that are valid only for code
+that is never dynlinked.
 
 \item["-nolabels"]
 Ignore non-optional labels in types. Labels cannot be used in
@@ -311,7 +312,7 @@ modules and libraries, and extra native objects (".o", ".obj", ".a",
 ".lib" files). Building native plugins is only supported for some
 operating system. Under some systems (currently,
 only Linux AMD 64), all the Caml code linked in a plugin must have
-been compiled with the "-dlcode" flag. Some constraints might also
+been compiled without the "-nodynlink" flag. Some constraints might also
 apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
 
