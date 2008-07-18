@@ -901,6 +901,17 @@ let check_application_result env statement exp =
       if statement then
         Location.prerr_warning exp.exp_loc Warnings.Statement_type
 
+(* Check that a type is generalizable at some level *)
+let generalizable level ty =
+  let rec check ty =
+    let ty = repr ty in
+    if ty.level < lowest_level then () else
+    if ty.level <= level then raise Exit else
+    (mark_type_node ty; iter_type_expr check ty)
+  in
+  try check ty; unmark_type ty; true
+  with Exit -> unmark_type ty; false
+
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
@@ -1237,12 +1248,42 @@ let rec type_exp env sexp =
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
+            if !Clflags.principal then begin_def ();
             let arg = type_exp env sarg in
+            let gen =
+              if !Clflags.principal then begin
+                end_def ();
+                let tv = newvar () in
+                let gen = generalizable tv.level arg.exp_type in
+                unify_var env tv arg.exp_type;
+                gen
+              end else true
+            in
             begin match arg.exp_desc, !self_coercion, (repr ty').desc with
               Texp_ident(_, {val_kind=Val_self _}), (path,r) :: _,
               Tconstr(path',_,_) when Path.same path path' ->
                 r := sexp.pexp_loc :: !r;
                 force ()
+            | _ when free_variables arg.exp_type = []
+                  && free_variables ty' = [] ->
+                if not gen && (* first try a single coercion *)
+                  let snap = snapshot () in
+                  let ty, b = enlarge_type env ty' in
+                  try
+                    force (); Ctype.unify env arg.exp_type ty; true
+                  with Unify _ ->
+                    backtrack snap; false
+                then ()
+                else begin try
+                  prerr_endline "using a ground coercion\n\n";
+                  let force' = subtype env arg.exp_type ty' in
+                  force (); force' ();
+                  if not gen then
+                    Location.prerr_warning sexp.pexp_loc
+                      (Warnings.Not_principal "this ground coercion");
+                with Subtype (tr1, tr2) ->
+                  raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
+                end;
             | _ ->
                 let ty, b = enlarge_type env ty' in
                 force ();
