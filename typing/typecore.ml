@@ -1275,7 +1275,6 @@ let rec type_exp env sexp =
                     backtrack snap; false
                 then ()
                 else begin try
-                  prerr_endline "using a ground coercion\n\n";
                   let force' = subtype env arg.exp_type ty' in
                   force (); force' ();
                   if not gen then

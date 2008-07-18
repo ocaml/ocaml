@@ -1044,11 +1044,14 @@ let apply env params body args =
    quite pessimistic: it would be enough to flush the cache when a
    type or module definition is overriden in the environnement.
 *)
+type kind = Sound | Opt
 let previous_env = ref Env.empty
-let check_abbrev_env env =
-  if env != !previous_env then begin
+let previous_kind = ref Sound
+let check_abbrev_env env kind =
+  if env != !previous_env || kind <> !previous_kind then begin
     cleanup_abbrev ();
-    previous_env := env
+    previous_env := env;
+    previous_kind := kind
   end
 
 (* Expand an abbreviation. The expansion is memorized. *)
@@ -1069,8 +1072,8 @@ let check_abbrev_env env =
    4. The expansion requires the expansion of another abbreviation,
       and this other expansion fails.
 *)
-let expand_abbrev_gen find_type_expansion env ty =
-  check_abbrev_env env;
+let expand_abbrev_gen kind find_type_expansion env ty =
+  check_abbrev_env env kind;
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
       let lookup_abbrev = proper_abbrevs path args abbrev in
@@ -1103,7 +1106,7 @@ let expand_abbrev_gen find_type_expansion env ty =
   | _ ->
       assert false
 
-let expand_abbrev = expand_abbrev_gen Env.find_type_expansion
+let expand_abbrev = expand_abbrev_gen Sound Env.find_type_expansion
 
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
@@ -1153,7 +1156,7 @@ let expand_head env ty =
    normally hidden to the type-checker out of the implementation module of
    the private abbreviation. *)
 
-let expand_abbrev_opt = expand_abbrev_gen Env.find_type_expansion_opt
+let expand_abbrev_opt = expand_abbrev_gen Opt Env.find_type_expansion_opt
 
 let try_expand_once_opt env ty =
   let ty = repr ty in
@@ -1242,7 +1245,7 @@ let rec non_recursive_abbrev env ty0 ty =
   end
 
 let correct_abbrev env path params ty =
-  check_abbrev_env env;
+  check_abbrev_env env Sound;
   let ty0 = newgenvar () in
   visited := [];
   let abbrev = Mcons (path, ty0, ty0, Mnil) in
