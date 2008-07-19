@@ -198,7 +198,7 @@ let iter_type_expr f ty =
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
-  | Mcons(_, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
+  | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
   | Mlink rem              -> iter_abbrev f !rem
 
 let copy_row f fixed row keep more =
@@ -341,11 +341,12 @@ let rec unmark_class_type =
                   (*******************************************)
 
 (* Search whether the expansion has been memorized. *)
-let rec find_expans p1 = function
+let rec find_expans priv p1 = function
     Mnil -> None
-  | Mcons (p2, ty0, ty, _) when Path.same p1 p2 -> Some ty
-  | Mcons (_, _, _, rem)   -> find_expans p1 rem
-  | Mlink {contents = rem} -> find_expans p1 rem
+  | Mcons (priv', p2, ty0, ty, _)
+    when priv' >= priv && Path.same p1 p2 -> Some ty
+  | Mcons (_, _, _, _, rem)   -> find_expans priv p1 rem
+  | Mlink {contents = rem} -> find_expans priv p1 rem
 
 (* debug: check for cycles in abbreviation. only works with -principal
 let rec check_expans visited ty =
@@ -368,9 +369,9 @@ let cleanup_abbrev () =
   List.iter (fun abbr -> abbr := Mnil) !memo;
   memo := []
 
-let memorize_abbrev mem path v v' =
+let memorize_abbrev mem priv path v v' =
         (* Memorize the expansion of an abbreviation. *)
-  mem := Mcons (path, v, v', !mem);
+  mem := Mcons (priv, path, v, v', !mem);
   (* check_expans [] v; *)
   memo := mem :: !memo
 
@@ -378,10 +379,10 @@ let rec forget_abbrev_rec mem path =
   match mem with
     Mnil ->
       assert false
-  | Mcons (path', _, _, rem) when Path.same path path' ->
+  | Mcons (_, path', _, _, rem) when Path.same path path' ->
       rem 
-  | Mcons (path', v, v', rem) ->
-      Mcons (path', v, v', forget_abbrev_rec rem path)
+  | Mcons (priv, path', v, v', rem) ->
+      Mcons (priv, path', v, v', forget_abbrev_rec rem path)
   | Mlink mem' ->
       mem' := forget_abbrev_rec !mem' path;
       raise Exit

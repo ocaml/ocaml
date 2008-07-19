@@ -55,7 +55,7 @@ and row_field =
 
 and abbrev_memo =
     Mnil
-  | Mcons of Path.t * type_expr * type_expr * abbrev_memo
+  | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
   | Mlink of abbrev_memo ref
 
 and field_kind =

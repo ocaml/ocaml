@@ -722,9 +722,9 @@ let rec find_repr p1 =
   function
     Mnil ->
       None
-  | Mcons (p2, ty, _, _) when Path.same p1 p2 ->
+  | Mcons (Public, p2, ty, _, _) when Path.same p1 p2 ->
       Some ty
-  | Mcons (_, _, _, rem) ->
+  | Mcons (_, _, _, _, rem) ->
       find_repr p1 rem
   | Mlink {contents = rem} ->
       find_repr p1 rem
@@ -996,7 +996,7 @@ let instance_label fixed lbl =
 let unify' = (* Forward declaration *)
   ref (fun env ty1 ty2 -> raise (Unify []))
 
-let rec subst env level abbrev ty params args body =
+let rec subst env level priv abbrev ty params args body =
   if List.length params <> List.length args then raise (Unify []);
   let old_level = !current_level in
   current_level := level;
@@ -1006,7 +1006,7 @@ let rec subst env level abbrev ty params args body =
       None      -> ()
     | Some ({desc = Tconstr (path, tl, _)} as ty) ->
         let abbrev = proper_abbrevs path tl abbrev in
-        memorize_abbrev abbrev path ty body0
+        memorize_abbrev abbrev priv path ty body0
     | _ ->
         assert false
     end;
@@ -1029,7 +1029,7 @@ let rec subst env level abbrev ty params args body =
 *)
 let apply env params body args =
   try
-    subst env generic_level (ref Mnil) None params args body
+    subst env generic_level Public (ref Mnil) None params args body
   with
     Unify _ -> raise Cannot_apply
 
@@ -1044,14 +1044,13 @@ let apply env params body args =
    quite pessimistic: it would be enough to flush the cache when a
    type or module definition is overriden in the environnement.
 *)
-type kind = Sound | Opt
 let previous_env = ref Env.empty
-let previous_kind = ref Sound
-let check_abbrev_env env kind =
-  if env != !previous_env || kind <> !previous_kind then begin
+let string_of_kind = function Public -> "public" | Private -> "private"
+let check_abbrev_env env =
+  if env != !previous_env then begin
+    (* prerr_endline "cleanup expansion cache"; *)
     cleanup_abbrev ();
-    previous_env := env;
-    previous_kind := kind
+    previous_env := env
   end
 
 (* Expand an abbreviation. The expansion is memorized. *)
@@ -1073,12 +1072,14 @@ let check_abbrev_env env kind =
       and this other expansion fails.
 *)
 let expand_abbrev_gen kind find_type_expansion env ty =
-  check_abbrev_env env kind;
+  check_abbrev_env env;
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
       let lookup_abbrev = proper_abbrevs path args abbrev in
-      begin match find_expans path !lookup_abbrev with
+      begin match find_expans kind path !lookup_abbrev with
         Some ty ->
+          (* prerr_endline
+            ("found a "^string_of_kind kind^" expansion for "^Path.name path);*)
           if level <> generic_level then
             begin try
               update_level env level ty
@@ -1094,7 +1095,9 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             try find_type_expansion path env with Not_found ->
               raise Cannot_expand
           in
-          let ty' = subst env level abbrev (Some ty) params args body in
+          (* prerr_endline
+            ("add a "^string_of_kind kind^" expansion for "^Path.name path);*)
+          let ty' = subst env level kind abbrev (Some ty) params args body in
           (* Hack to name the variant type *)
           begin match repr ty' with
             {desc=Tvariant row} as ty when static_row row ->
@@ -1106,7 +1109,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
   | _ ->
       assert false
 
-let expand_abbrev = expand_abbrev_gen Sound Env.find_type_expansion
+let expand_abbrev = expand_abbrev_gen Public Env.find_type_expansion
 
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
@@ -1156,7 +1159,7 @@ let expand_head env ty =
    normally hidden to the type-checker out of the implementation module of
    the private abbreviation. *)
 
-let expand_abbrev_opt = expand_abbrev_gen Opt Env.find_type_expansion_opt
+let expand_abbrev_opt = expand_abbrev_gen Private Env.find_type_expansion_opt
 
 let try_expand_once_opt env ty =
   let ty = repr ty in
@@ -1186,7 +1189,8 @@ let enforce_constraints env ty =
     {desc = Tconstr (path, args, abbrev); level = level} ->
       let decl = Env.find_type path env in
       ignore
-        (subst env level (ref Mnil) None decl.type_params args (newvar2 level))
+        (subst env level Public (ref Mnil) None decl.type_params args
+           (newvar2 level))
   | _ ->
       assert false
 
@@ -1245,14 +1249,14 @@ let rec non_recursive_abbrev env ty0 ty =
   end
 
 let correct_abbrev env path params ty =
-  check_abbrev_env env Sound;
+  check_abbrev_env env;
   let ty0 = newgenvar () in
   visited := [];
-  let abbrev = Mcons (path, ty0, ty0, Mnil) in
+  let abbrev = Mcons (Public, path, ty0, ty0, Mnil) in
   simple_abbrevs := abbrev;
   try
     non_recursive_abbrev env ty0
-      (subst env generic_level (ref abbrev) None [] [] ty);
+      (subst env generic_level Public (ref abbrev) None [] [] ty);
     simple_abbrevs := Mnil;
     visited := []
   with exn ->
@@ -1448,7 +1452,7 @@ let univar_pairs = ref []
 let rec has_cached_expansion p abbrev =
   match abbrev with
     Mnil                   -> false
-  | Mcons(p', _, _, rem)   -> Path.same p p' || has_cached_expansion p rem
+  | Mcons(_, p', _, _, rem)   -> Path.same p p' || has_cached_expansion p rem
   | Mlink rem              -> has_cached_expansion p !rem
 
 (**** Transform error trace ****)
@@ -2777,7 +2781,8 @@ let rec build_subtype env visited loops posi level t =
         Tobject _ when posi && not (opened_object t') ->
           let cl_abbr, body = find_cltype_for_path env p in
           let ty =
-            subst env !current_level abbrev None cl_abbr.type_params tl body in
+            subst env !current_level Public abbrev None
+              cl_abbr.type_params tl body in
           let ty = repr ty in
           let ty1, tl1 =
             match ty.desc with

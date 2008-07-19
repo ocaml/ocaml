@@ -96,7 +96,7 @@ let rec safe_repr v = function
 
 let rec list_of_memo = function
     Mnil -> []
-  | Mcons (p, t1, t2, rem) -> p :: list_of_memo rem
+  | Mcons (priv, p, t1, t2, rem) -> p :: list_of_memo rem
   | Mlink rem -> list_of_memo !rem
 
 let visited = ref []
