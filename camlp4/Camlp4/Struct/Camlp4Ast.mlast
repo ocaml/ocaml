@@ -106,11 +106,14 @@ module Make (Loc : Sig.Loc)
     [ <:patt< $lid:_$ >> -> True
     | <:patt< () >> -> True
     | <:patt< _ >> -> True
+    | <:patt<>> -> True (* why not *)
     | <:patt< ($x$ as $y$) >> -> is_irrefut_patt x && is_irrefut_patt y
     | <:patt< { $p$ } >> -> is_irrefut_patt p
     | <:patt< $_$ = $p$ >> -> is_irrefut_patt p
     | <:patt< $p1$; $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
     | <:patt< $p1$, $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
+    | <:patt< $p1$ | $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2 (* could be more fine grained *)
+    | <:patt< $p1$ $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
     | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
     | <:patt< ($tup:pl$) >> -> is_irrefut_patt pl
     | <:patt< ? $_$ >> -> True
@@ -118,7 +121,13 @@ module Make (Loc : Sig.Loc)
     | <:patt< ? $_$ : ($p$ = $_$) >> -> is_irrefut_patt p
     | <:patt< ~ $_$ >> -> True
     | <:patt< ~ $_$ : $p$ >> -> is_irrefut_patt p
-    | _ -> False ];
+    | <:patt< lazy $p$ >> -> is_irrefut_patt p
+    | <:patt< $id:_$ >> -> False (* here one need to know the arity of constructors *)
+    | <:patt< `$_$ >> | <:patt< $str:_$ >> | <:patt< $_$ .. $_$ >> |
+      <:patt< $flo:_$ >> | <:patt< $nativeint:_$ >> | <:patt< $int64:_$ >> |
+      <:patt< $int32:_$ >> | <:patt< $int:_$ >> | <:patt< $chr:_$ >> |
+      <:patt< #$_$ >> | <:patt< [| $_$ |] >> | <:patt< $anti:_$ >> -> False
+    ];
 
   value rec is_constructor =
     fun

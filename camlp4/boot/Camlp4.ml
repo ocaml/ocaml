@@ -372,7 +372,7 @@ module Sig =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Sig.ml,v 1.6 2008/01/11 16:13:16 doligez Exp $ *)
+    (* $Id$ *)
     (** Camlp4 signature repository *)
     (** {6 Basic signatures} *)
     (** Signature with just a type. *)
@@ -6805,6 +6805,7 @@ module Struct =
               | Ast.PaId (_, (Ast.IdLid (_, _))) -> true
               | Ast.PaId (_, (Ast.IdUid (_, "()"))) -> true
               | Ast.PaAny _ -> true
+              | Ast.PaNil _ -> true
               | Ast.PaAli (_, x, y) ->
                   (is_irrefut_patt x) && (is_irrefut_patt y)
               | Ast.PaRec (_, p) -> is_irrefut_patt p
@@ -6813,6 +6814,10 @@ module Struct =
                   (is_irrefut_patt p1) && (is_irrefut_patt p2)
               | Ast.PaCom (_, p1, p2) ->
                   (is_irrefut_patt p1) && (is_irrefut_patt p2)
+              | Ast.PaOrp (_, p1, p2) ->
+                  (is_irrefut_patt p1) && (is_irrefut_patt p2)
+              | Ast.PaApp (_, p1, p2) ->
+                  (is_irrefut_patt p1) && (is_irrefut_patt p2)
               | Ast.PaTyc (_, p, _) -> is_irrefut_patt p
               | Ast.PaTup (_, pl) -> is_irrefut_patt pl
               | Ast.PaOlb (_, _, (Ast.PaNil _)) -> true
@@ -6820,7 +6825,13 @@ module Struct =
               | Ast.PaOlbi (_, _, p, _) -> is_irrefut_patt p
               | Ast.PaLab (_, _, (Ast.PaNil _)) -> true
               | Ast.PaLab (_, _, p) -> is_irrefut_patt p
-              | _ -> false
+              | Ast.PaLaz (_, p) -> is_irrefut_patt p
+              | Ast.PaId (_, _) -> false
+              | Ast.PaVrn (_, _) | Ast.PaStr (_, _) | Ast.PaRng (_, _, _) |
+                  Ast.PaFlo (_, _) | Ast.PaNativeInt (_, _) |
+                  Ast.PaInt64 (_, _) | Ast.PaInt32 (_, _) | Ast.PaInt (_, _)
+                  | Ast.PaChr (_, _) | Ast.PaTyp (_, _) | Ast.PaArr (_, _) |
+                  Ast.PaAnt (_, _) -> false
               
             let rec is_constructor =
               function
@@ -17443,8 +17454,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
               
-            let version =
-              "$Id: DumpCamlp4Ast.ml,v 1.7 2007/11/21 17:53:10 ertai Exp $"
+            let version = "$Id$"
               
           end
           
@@ -17487,8 +17497,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
               
-            let version =
-              "$Id: DumpOCamlAst.ml,v 1.7 2007/11/21 17:53:10 ertai Exp $"
+            let version = "$Id$"
               
           end
           
@@ -17538,13 +17547,9 @@ module Printers =
       end =
       struct
         module Id =
-          struct
-            let name = "Camlp4.Printers.Null"
-              
-            let version =
-              "$Id: Null.ml,v 1.2 2007/02/07 10:09:21 ertai Exp $"
-              
-          end
+          struct let name = "Camlp4.Printers.Null"
+                    let version = "$Id$"
+                       end
           
         module Make (Syntax : Sig.Syntax) =
           struct
@@ -17804,13 +17809,9 @@ module Printers =
         open Format
           
         module Id =
-          struct
-            let name = "Camlp4.Printers.OCaml"
-              
-            let version =
-              "$Id: OCaml.ml,v 1.34 2008-01-11 16:13:16 doligez Exp $"
-              
-          end
+          struct let name = "Camlp4.Printers.OCaml"
+                    let version = "$Id$"
+                       end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -19232,13 +19233,9 @@ module Printers =
         open Format
           
         module Id =
-          struct
-            let name = "Camlp4.Printers.OCamlr"
-              
-            let version =
-              "$Id: OCamlr.ml,v 1.21 2008/01/11 16:13:16 doligez Exp $"
-              
-          end
+          struct let name = "Camlp4.Printers.OCamlr"
+                    let version = "$Id$"
+                       end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -20165,14 +20162,9 @@ module PreCast :
       
   end =
   struct
-    module Id =
-      struct
-        let name = "Camlp4.PreCast"
-          
-        let version =
-          "$Id: PreCast.ml,v 1.5 2007/10/08 14:19:34 doligez Exp $"
-          
-      end
+    module Id = struct let name = "Camlp4.PreCast"
+                          let version = "$Id$"
+                             end
       
     type camlp4_token =
       Sig.camlp4_token =

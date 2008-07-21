@@ -89,11 +89,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
       [ Ast.PaId _ (Ast.IdLid _ _) -> True
       | Ast.PaId _ (Ast.IdUid _ "()") -> True
       | Ast.PaAny _ -> True
-      | Ast.PaAli _ x y -> (is_irrefut_patt x) && (is_irrefut_patt y)
+      | Ast.PaNil _ -> True
+      | (* why not *) Ast.PaAli _ x y ->
+          (is_irrefut_patt x) && (is_irrefut_patt y)
       | Ast.PaRec _ p -> is_irrefut_patt p
       | Ast.PaEq _ _ p -> is_irrefut_patt p
       | Ast.PaSem _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
       | Ast.PaCom _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
+      | Ast.PaOrp _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
+      | (* could be more fine grained *) Ast.PaApp _ p1 p2 ->
+          (is_irrefut_patt p1) && (is_irrefut_patt p2)
       | Ast.PaTyc _ p _ -> is_irrefut_patt p
       | Ast.PaTup _ pl -> is_irrefut_patt pl
       | Ast.PaOlb _ _ (Ast.PaNil _) -> True
@@ -101,7 +106,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
       | Ast.PaOlbi _ _ p _ -> is_irrefut_patt p
       | Ast.PaLab _ _ (Ast.PaNil _) -> True
       | Ast.PaLab _ _ p -> is_irrefut_patt p
-      | _ -> False ];
+      | Ast.PaLaz _ p -> is_irrefut_patt p
+      | Ast.PaId _ _ -> False
+      | (* here one need to know the arity of constructors *)
+          Ast.PaVrn _ _ | Ast.PaStr _ _ | Ast.PaRng _ _ _ | Ast.PaFlo _ _ |
+            Ast.PaNativeInt _ _ | Ast.PaInt64 _ _ | Ast.PaInt32 _ _ |
+            Ast.PaInt _ _ | Ast.PaChr _ _ | Ast.PaTyp _ _ | Ast.PaArr _ _ |
+            Ast.PaAnt _ _
+          -> False ];
     value rec is_constructor =
       fun
       [ Ast.IdAcc _ _ i -> is_constructor i
