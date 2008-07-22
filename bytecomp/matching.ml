@@ -1306,7 +1306,6 @@ let get_arg_lazy p rem = match p with
 
 let matcher_lazy p rem = match p.pat_desc with
 | Tpat_or (_,_,_)     -> raise OrPat
-| Tpat_lazy arg       -> arg :: rem
 | Tpat_var _          -> get_arg_lazy omega rem
 | _                   -> get_arg_lazy p rem
 
