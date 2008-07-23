@@ -33,7 +33,7 @@ let ajout_string = Buffer.add_string string_buffer
 
 let lecture_string () = Buffer.contents string_buffer
 
-(** The variable which will contain the description string. 
+(** The variable which will contain the description string.
    Is initialized when we encounter the start of a special comment. *)
 let description = ref ""
 
@@ -52,7 +52,7 @@ let remove_blanks s =
     let rec iter liste =
       match liste with
         h :: q ->
-          let h2 = Str.global_replace (Str.regexp ("^"^blank^"+")) "" h in 
+          let h2 = Str.global_replace (Str.regexp ("^"^blank^"+")) "" h in
           if h2 = "" then
             (
              print_DEBUG2 (h^" n'a que des blancs");
@@ -66,11 +66,11 @@ let remove_blanks s =
           []
     in iter l
   in
-  let l3 = 
-    let rec iter liste = 
+  let l3 =
+    let rec iter liste =
       match liste with
         h :: q ->
-          let h2 = Str.global_replace (Str.regexp (blank^"+$")) "" h in 
+          let h2 = Str.global_replace (Str.regexp (blank^"+$")) "" h in
           if h2 = "" then
             (
              print_DEBUG2 (h^" n'a que des blancs");
@@ -91,16 +91,16 @@ let remove_blanks s =
 let remove_stars s =
   let s2 = Str.global_replace (Str.regexp ("^"^blank^"*\\*")) "" s in
   s2
-} 
+}
 
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar = 
+let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 
 rule main = parse
     [' ' '\013' '\009' '\012'] +
-      { 
+      {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         main lexbuf
       }
@@ -109,36 +109,36 @@ rule main = parse
       {
         incr line_number;
         incr Odoc_comments_global.nb_chars;
-        main lexbuf 
+        main lexbuf
       }
   | "(**)"
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         Description ("", None)
-      } 
+      }
 
   | "(**"("*"+)")"
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         main lexbuf
-      } 
+      }
 
   | "(***"
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         incr comments_level;
         main lexbuf
-      } 
+      }
 
   | "(**"
-      { 
+      {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         incr comments_level;
         if !comments_level = 1 then
           (
            reset_string_buffer ();
            description := "";
-           special_comment lexbuf 
+           special_comment lexbuf
           )
         else
           main lexbuf
@@ -152,24 +152,24 @@ rule main = parse
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         decr comments_level ;
         main lexbuf
-      } 
+      }
 
   |  "(*"
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         incr comments_level ;
         main lexbuf
-      } 
+      }
 
   | _
-      { 
+      {
         incr Odoc_comments_global.nb_chars;
         main lexbuf
       }
 
 and special_comment = parse
   | "*)"
-      { 
+      {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         if !comments_level = 1 then
@@ -177,7 +177,7 @@ and special_comment = parse
            (* there is just a description *)
            let s2 = lecture_string () in
            let s3 = remove_blanks s2 in
-           let s4 = 
+           let s4 =
              if !Odoc_args.remove_stars then
                remove_stars s3
              else
@@ -200,16 +200,16 @@ and special_comment = parse
         incr comments_level ;
         ajout_string s;
         special_comment lexbuf
-      } 
+      }
 
   | "\\@"
-      { 
+      {
         let s = Lexing.lexeme lexbuf in
         let c = (Lexing.lexeme_char lexbuf 1) in
         ajout_char_string c;
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
-        special_comment lexbuf 
-      } 
+        special_comment lexbuf
+      }
 
   | "@"lowercase+
       {
@@ -219,38 +219,38 @@ and special_comment = parse
         reset_string_buffer ();
         let len = String.length (Lexing.lexeme lexbuf) in
         lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - len;
-        lexbuf.Lexing.lex_curr_p <- 
+        lexbuf.Lexing.lex_curr_p <-
 	  { lexbuf.Lexing.lex_curr_p with
 	    pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - len
 	  } ;
         (* we don't increment the Odoc_comments_global.nb_chars *)
         special_comment_part2 lexbuf
-      } 
+      }
 
   | _
-      { 
+      {
         let c = (Lexing.lexeme_char lexbuf 0) in
         ajout_char_string c;
         if c = '\010' then incr line_number;
         incr Odoc_comments_global.nb_chars;
-        special_comment lexbuf 
-      } 
+        special_comment lexbuf
+      }
 
 and special_comment_part2 = parse
   | "*)"
-      { 
+      {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         if !comments_level = 1 then
           (* finally we return the description we kept *)
-          let desc = 
+          let desc =
             if !Odoc_args.remove_stars then
               remove_stars !description
              else
               !description
           in
           let remain = lecture_string () in
-          let remain2 = 
+          let remain2 =
             if !Odoc_args.remove_stars then
               remove_stars remain
              else
@@ -272,20 +272,20 @@ and special_comment_part2 = parse
         ajout_string s;
         incr comments_level ;
         special_comment_part2 lexbuf
-      } 
+      }
 
   | _
-      { 
+      {
         let c = (Lexing.lexeme_char lexbuf 0) in
         ajout_char_string c;
         if c = '\010' then incr line_number;
         incr Odoc_comments_global.nb_chars;
-        special_comment_part2 lexbuf 
-      } 
+        special_comment_part2 lexbuf
+      }
 
 and elements = parse
   | [' ' '\013' '\009' '\012'] +
-      { 
+      {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         elements lexbuf
       }
@@ -297,14 +297,14 @@ and elements = parse
         elements lexbuf }
 
   | "@"lowercase+
-      { 
+      {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         let s2 = String.sub s 1 ((String.length s) - 1) in
         print_DEBUG2 s2;
         match s2 with
           "param" ->
-            T_PARAM 
+            T_PARAM
          | "author" ->
             T_AUTHOR
          | "version" ->
@@ -324,25 +324,26 @@ and elements = parse
                raise (Failure (Odoc_messages.not_a_valid_tag s))
              else
                T_CUSTOM s
-      } 
+      }
 
   | ("\\@" | [^'@'])+
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         let s = Lexing.lexeme lexbuf in
-        let s2 = remove_blanks s in
-        print_DEBUG2 ("Desc "^s2);
-        Desc s2
-      } 
+        let s = Str.global_replace (Str.regexp_string "\\@") "@" s in
+        let s = remove_blanks s in
+        print_DEBUG2 ("Desc "^s);
+        Desc s
+      }
   | eof
       {
         EOF
-      } 
-    
+      }
+
 
 and simple = parse
     [' ' '\013' '\009' '\012'] +
-      { 
+      {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         simple lexbuf
       }
@@ -350,32 +351,32 @@ and simple = parse
   | [ '\010' ]
       { incr line_number;
         incr Odoc_comments_global.nb_chars;
-        simple lexbuf 
+        simple lexbuf
       }
 
-  | "(**"("*"+) 
+  | "(**"("*"+)
       {
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length (Lexing.lexeme lexbuf));
         incr comments_level;
         simple lexbuf
-      } 
+      }
 
   | "(*"("*"+)")"
       {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         simple lexbuf
-      } 
+      }
   | "(**"
       {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         incr comments_level;
         simple lexbuf
-      } 
+      }
 
   | "(*"
-      { 
+      {
         let s = Lexing.lexeme lexbuf in
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         incr comments_level;
@@ -383,7 +384,7 @@ and simple = parse
           (
            reset_string_buffer ();
            description := "";
-           special_comment lexbuf 
+           special_comment lexbuf
           )
         else
           (
@@ -401,7 +402,7 @@ and simple = parse
         Odoc_comments_global.nb_chars := !Odoc_comments_global.nb_chars + (String.length s);
         decr comments_level ;
         simple lexbuf
-      } 
+      }
 
   | _
       {
