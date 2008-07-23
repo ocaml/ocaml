@@ -251,6 +251,7 @@ module Value :
         {
           att_value : t_value ; (** an attribute has almost all the same information as a value *)
           att_mutable : bool ;  (** [true] if the attribute is mutable. *)
+          att_virtual : bool ;  (** [true] if the attribute is virtual. *)
         }
 
     (** Representation of a class method. *)

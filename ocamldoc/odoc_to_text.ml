@@ -13,10 +13,10 @@
 
 (** Text generation.
 
-   This module contains the class [to_text] with methods used to transform 
+   This module contains the class [to_text] with methods used to transform
    information about elements to a [text] structure.*)
 
-open Odoc_info 
+open Odoc_info
 open Exception
 open Type
 open Value
@@ -28,7 +28,7 @@ open Parameter
 class virtual info =
   object (self)
     (** The list of pairs [(tag, f)] where [f] is a function taking
-       the [text] associated to [tag] and returning a [text]. 
+       the [text] associated to [tag] and returning a [text].
        Add a pair here to handle a tag.*)
     val mutable tag_functions = ([] : (string * (Odoc_info.text -> Odoc_info.text)) list)
 
@@ -40,8 +40,8 @@ class virtual info =
       | _ ->
           [ Bold [Raw (Odoc_messages.authors^": ")] ;
             Raw (String.concat ", " l) ;
-            Newline 
-          ] 
+            Newline
+          ]
 
     (** @return [text] value for the given optional version information.*)
     method text_of_version_opt v_opt =
@@ -58,19 +58,19 @@ class virtual info =
         None -> []
       | Some s -> [ Bold [Raw (Odoc_messages.since^": ")] ;
                     Raw s ;
-                    Newline 
+                    Newline
                   ]
 
     (** @return [text] value for the given list of raised exceptions.*)
     method text_of_raised_exceptions l =
       match l with
         [] -> []
-      | (s, t) :: [] -> 
+      | (s, t) :: [] ->
           [ Bold [ Raw Odoc_messages.raises ] ;
             Raw " " ;
             Code s ;
             Raw " "
-          ]  
+          ]
           @ t
           @ [ Newline ]
       | _ ->
@@ -82,28 +82,28 @@ class virtual info =
                  l
               ) ;
             Newline
-          ] 
+          ]
 
     (** Return [text] value for the given "see also" reference. *)
     method text_of_see (see_ref, t)  =
-      let t_ref = 
+      let t_ref =
         match see_ref with
           Odoc_info.See_url s -> [ Odoc_info.Link (s, t) ]
         | Odoc_info.See_file s -> (Odoc_info.Code s) :: (Odoc_info.Raw " ") :: t
         | Odoc_info.See_doc s -> (Odoc_info.Italic [Odoc_info.Raw s]) :: (Odoc_info.Raw " ") :: t
       in
       t_ref
-        
+
     (** Return [text] value for the given list of "see also" references.*)
     method text_of_sees l =
       match l with
         [] -> []
-      | see :: [] -> 
-          (Bold [ Raw Odoc_messages.see_also ]) :: 
-          (Raw " ") :: 
+      | see :: [] ->
+          (Bold [ Raw Odoc_messages.see_also ]) ::
+          (Raw " ") ::
           (self#text_of_see see) @ [ Newline ]
       | _ ->
-          (Bold [ Raw Odoc_messages.see_also ]) :: 
+          (Bold [ Raw Odoc_messages.see_also ]) ::
           [ List
               (List.map
                  (fun see -> self#text_of_see see)
@@ -120,7 +120,7 @@ class virtual info =
 
     (** Return a [text] for the given list of custom tagged texts. *)
     method text_of_custom l =
-      List.fold_left 
+      List.fold_left
         (fun acc -> fun (tag, text) ->
           try
             let f = List.assoc tag tag_functions in
@@ -141,7 +141,7 @@ class virtual info =
         None ->
           []
       | Some info ->
-          let t = 
+          let t =
             (match info.i_deprecated with
               None -> []
             | Some t -> ( Italic [Raw (Odoc_messages.deprecated^" ")] ) :: t
@@ -160,8 +160,8 @@ class virtual info =
             (self#text_of_custom info.i_custom)
           in
           if block then
-            [Block t] 
-          else 
+            [Block t]
+          else
             t
   end
 
@@ -172,11 +172,11 @@ class virtual to_text =
 
     method virtual label : ?no_: bool -> string -> string
 
-    (** Take a string and return the string where fully qualified idents 
+    (** Take a string and return the string where fully qualified idents
        have been replaced by idents relative to the given module name.
        Also remove the "hidden modules".*)
     method relative_idents m_name s =
-      let f str_t = 
+      let f str_t =
         let match_s = Str.matched_string str_t in
         let rel = Name.get_relative m_name match_s in
         Odoc_info.apply_if_equal Odoc_info.use_hidden_modules match_s rel
@@ -188,11 +188,11 @@ class virtual to_text =
       in
       s2
 
-    (** Take a string and return the string where fully qualified idents 
+    (** Take a string and return the string where fully qualified idents
        have been replaced by idents relative to the given module name.
        Also remove the "hidden modules".*)
     method relative_module_idents m_name s =
-      let f str_t = 
+      let f str_t =
         let match_s = Str.matched_string str_t in
         let rel = Name.get_relative m_name match_s in
         Odoc_info.apply_if_equal Odoc_info.use_hidden_modules match_s rel
@@ -228,41 +228,41 @@ class virtual to_text =
     (** Get a string for the parameters of a class (with arrows) where all idents are relative. *)
     method normal_class_params m_name c =
       let s = Odoc_info.string_of_class_params c in
-      self#relative_idents m_name 
+      self#relative_idents m_name
 	(Odoc_info.remove_ending_newline s)
 
     (** @return [text] value to represent a [Types.type_expr].*)
     method text_of_type_expr module_name t =
-      let t = List.flatten 
+      let t = List.flatten
           (List.map
              (fun s -> [Code s ; Newline ])
-             (Str.split (Str.regexp "\n") 
+             (Str.split (Str.regexp "\n")
                 (self#normal_type module_name t))
           )
       in
       t
 
     (** Return [text] value for a given short [Types.type_expr].*)
-    method text_of_short_type_expr module_name t = 
+    method text_of_short_type_expr module_name t =
       [ Code (self#normal_type module_name t) ]
 
     (** Return [text] value or the given list of [Types.type_expr], with
        the given separator. *)
     method text_of_type_expr_list module_name sep l =
-      [ Code (self#normal_type_list module_name sep l) ]        
+      [ Code (self#normal_type_list module_name sep l) ]
 
-    (** Return [text] value or the given list of [Types.type_expr], 
+    (** Return [text] value or the given list of [Types.type_expr],
        as type parameters of a class of class type. *)
     method text_of_class_type_param_expr_list module_name l =
-      [ Code (self#normal_class_type_param_list module_name l) ]        
+      [ Code (self#normal_class_type_param_list module_name l) ]
 
     (** @return [text] value to represent parameters of a class (with arraows).*)
     method text_of_class_params module_name c =
-      let t = Odoc_info.text_concat 
+      let t = Odoc_info.text_concat
 	  [Newline]
           (List.map
              (fun s -> [Code s])
-	     (Str.split (Str.regexp "\n") 
+	     (Str.split (Str.regexp "\n")
                 (self#normal_class_params module_name c))
 	  )
       in
@@ -274,18 +274,18 @@ class virtual to_text =
           (Str.split (Str.regexp "\n") (Odoc_info.string_of_module_type t))
       in
       [ Code s ]
-    
+
     (** @return [text] value for a value. *)
     method text_of_value v =
       let name = v.val_name in
       let s_name = Name.simple name in
-      let s = 
+      let s =
 	Format.fprintf Format.str_formatter "@[<hov 2>val %s :@ %s"
           s_name
           (self#normal_type (Name.father v.val_name) v.val_type);
 	Format.flush_str_formatter ()
       in
-      [ CodePre s ] @ 
+      [ CodePre s ] @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info v.val_info)
 
@@ -293,14 +293,15 @@ class virtual to_text =
     method text_of_attribute a =
       let s_name = Name.simple a.att_value.val_name in
       let mod_name = Name.father a.att_value.val_name in
-      let s = 
-	Format.fprintf Format.str_formatter "@[<hov 2>val %s%s :@ %s"
+      let s =
+	Format.fprintf Format.str_formatter "@[<hov 2>val %s%s%s :@ %s"
+          (if a.att_virtual then "virtual " else "")
           (if a.att_mutable then "mutable " else "")
           s_name
 	  (self#normal_type mod_name a.att_value.val_type);
 	Format.flush_str_formatter ()
       in
-      (CodePre s) :: 
+      (CodePre s) ::
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
       (self#text_of_info a.att_value.val_info)
 
@@ -308,11 +309,11 @@ class virtual to_text =
     method text_of_method m =
       let s_name = Name.simple m.met_value.val_name in
       let mod_name = Name.father m.met_value.val_name in
-      let s = 
+      let s =
 	Format.fprintf Format.str_formatter "@[<hov 2>method %s%s%s :@ %s"
           (if m.met_private then "private " else "")
           (if m.met_virtual then "virtual " else "")
-          s_name 
+          s_name
 	  (self#normal_type mod_name m.met_value.val_type);
 	Format.flush_str_formatter ()
       in
@@ -327,18 +328,18 @@ class virtual to_text =
       Format.fprintf Format.str_formatter "@[<hov 2>exception %s" s_name ;
         (match e.ex_args with
           [] -> ()
-        | _ -> 
+        | _ ->
             Format.fprintf Format.str_formatter "@ of "
         );
-      let s = self#normal_type_list 
-	  ~par: false (Name.father e.ex_name) " * " e.ex_args 
+      let s = self#normal_type_list
+	  ~par: false (Name.father e.ex_name) " * " e.ex_args
       in
-      let s2 = 
+      let s2 =
         Format.fprintf Format.str_formatter "%s" s ;
         (match e.ex_alias with
           None -> ()
-        | Some ea -> 
-            Format.fprintf Format.str_formatter " = %s" 
+        | Some ea ->
+            Format.fprintf Format.str_formatter " = %s"
               (
                match ea.ea_ex with
                  None -> ea.ea_name
@@ -377,7 +378,7 @@ class virtual to_text =
                      )
                      l2
                   )
-              ] 
+              ]
 
 
     (** Return [text] value for a list of parameters. *)
@@ -396,13 +397,13 @@ class virtual to_text =
                    | s -> Code s
                    ) ::
                    [Code " : "] @
-                   (self#text_of_short_type_expr m_name (Parameter.typ p)) @ 
+                   (self#text_of_short_type_expr m_name (Parameter.typ p)) @
                    [Newline] @
                    (self#text_of_parameter_description p)
                  )
                  l
               )
-          ] 
+          ]
 
     (** Return [text] value for a list of module parameters. *)
     method text_of_module_parameter_list l =
@@ -410,7 +411,7 @@ class virtual to_text =
         [] ->
           []
       | _ ->
-          [ Newline ; 
+          [ Newline ;
             Bold [Raw Odoc_messages.parameters] ;
             Raw ":" ;
             List
@@ -424,18 +425,18 @@ class virtual to_text =
                  )
                  l
               )
-          ] 
+          ]
 
 (**/**)
 
     (** Return [text] value for the given [class_kind].*)
     method text_of_class_kind father ckind =
       match ckind with
-        Class_structure _ -> 
+        Class_structure _ ->
           [Code Odoc_messages.object_end]
 
       | Class_apply capp ->
-          [Code 
+          [Code
               (
                (
                 match capp.capp_class with
@@ -448,13 +449,13 @@ class virtual to_text =
                      (fun s -> "("^s^")")
                      capp.capp_params_code))
               )
-          ] 
-            
+          ]
+
       | Class_constr cco ->
           (
            match cco.cco_type_parameters with
              [] -> []
-           | l -> 
+           | l ->
                (Code "[")::
                (self#text_of_type_expr_list father ", " l)@
                [Code "] "]
@@ -465,7 +466,7 @@ class virtual to_text =
             | Some (Cl cl) -> Name.get_relative father cl.cl_name
             | Some (Cltype (clt,_)) -> Name.get_relative father clt.clt_name
            )
-          ] 
+          ]
 
       | Class_constraint (ck, ctk) ->
           [Code "( "] @
@@ -478,11 +479,11 @@ class virtual to_text =
     (** Return [text] value for the given [class_type_kind].*)
     method text_of_class_type_kind father ctkind =
       match ctkind with
-        Class_type cta -> 
+        Class_type cta ->
           (
            match cta.cta_type_parameters with
              [] -> []
-           | l -> 
+           | l ->
                (Code "[") ::
                (self#text_of_class_type_param_expr_list father l) @
                [Code "] "]
@@ -490,16 +491,16 @@ class virtual to_text =
           (
            match cta.cta_class with
              None -> [ Code cta.cta_name ]
-           | Some (Cltype (clt, _)) -> 
-               let rel = Name.get_relative father clt.clt_name in 
+           | Some (Cltype (clt, _)) ->
+               let rel = Name.get_relative father clt.clt_name in
                [Code rel]
-           | Some (Cl cl) -> 
+           | Some (Cl cl) ->
                let rel = Name.get_relative father cl.cl_name in
                [Code rel]
           )
       | Class_signature _ ->
           [Code Odoc_messages.object_end]
-   
+
     (** Return [text] value for a [module_kind]. *)
     method text_of_module_kind ?(with_def_syntax=true) k =
       match k with
@@ -518,12 +519,12 @@ class virtual to_text =
           [Code " ( "] @
           (self#text_of_module_kind ~with_def_syntax: false k2) @
           [Code " ) "]
-                                                                         
+
       | Module_with (tk, code) ->
           (if with_def_syntax then [Code " : "] else []) @
           (self#text_of_module_type_kind ~with_def_syntax: false tk) @
           [Code code]
-            
+
       | Module_constraint (k, tk) ->
           (if with_def_syntax then [Code " : "] else []) @
           [Code "( "] @
@@ -531,7 +532,7 @@ class virtual to_text =
           [Code " : "] @
           (self#text_of_module_type_kind ~with_def_syntax: false tk) @
           [Code " )"]
-                                                                        
+
       | Module_struct _ ->
           [Code ((if with_def_syntax then " : " else "")^
                  Odoc_messages.struct_end^" ")]
@@ -550,14 +551,14 @@ class virtual to_text =
 
       | Module_type_functor (p, k) ->
           let t1 =
-	    [Code ("("^p.mp_name^" : ")] @ 
+	    [Code ("("^p.mp_name^" : ")] @
             (self#text_of_module_type_kind p.mp_kind) @
             [Code ") -> "]
           in
           let t2 = self#text_of_module_type_kind ~with_def_syntax: false k in
           (if with_def_syntax then [Code " = "] else []) @ t1 @ t2
-          
-      | Module_type_with (tk2, code) -> 
+
+      | Module_type_with (tk2, code) ->
           let t = self#text_of_module_type_kind ~with_def_syntax: false tk2 in
           (if with_def_syntax then [Code " = "] else []) @
           t @ [Code code]
@@ -567,7 +568,7 @@ class virtual to_text =
                  (match mt_alias.mta_module with
                    None -> mt_alias.mta_name
                  | Some mt -> mt.mt_name))
-          ] 
+          ]
 
 
   end

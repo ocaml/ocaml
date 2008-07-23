@@ -1476,12 +1476,17 @@ class html =
       (* html mark *)
       bp b "<a name=\"%s\"></a>" (Naming.attribute_target a);
       (
-       if a.att_mutable then
-         bs b ((self#keyword Odoc_messages.mutab)^ " ")
+       if a.att_virtual then
+         bs b ((self#keyword "virtual")^ " ")
        else
          ()
       );
       (
+       if a.att_mutable then
+         bs b ((self#keyword Odoc_messages.mutab)^ " ")
+       else
+         ()
+      );(
        match a.att_value.val_code with
          None -> bs b (Name.simple a.att_value.val_name)
        | Some c ->
@@ -1490,7 +1495,7 @@ class html =
            bp b "<a href=\"%s\">%s</a>" file (Name.simple a.att_value.val_name);
       );
       bs b " : ";
-      self#html_of_type_expr b module_name  a.att_value.val_type;
+      self#html_of_type_expr b module_name a.att_value.val_type;
       bs b "</pre>";
       self#html_of_info b a.att_value.val_info
 

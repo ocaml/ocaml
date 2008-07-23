@@ -577,6 +577,7 @@ class texi =
       let t = [ self#fixedblock
                   [ Newline ; minus ;
                     Raw "val " ;
+                    Raw (if a.att_virtual then "virtual " else "") ;
                     Raw (if a.att_mutable then "mutable " else "") ;
                     Raw (Name.simple a.att_value.val_name) ;
                     Raw " :\n" ;

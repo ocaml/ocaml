@@ -192,6 +192,20 @@ module Typedtree_search =
       in
       iter cls.Typedtree.cl_field
 
+    let class_sig_of_cltype_decl =
+      let rec iter = function
+        Types.Tcty_constr (_, _, cty) -> iter cty
+      | Types.Tcty_signature s -> s
+      | Types.Tcty_fun (_,_, cty) -> iter cty
+      in
+      fun ct_decl -> iter ct_decl.Types.clty_type
+
+    let search_virtual_attribute_type table ctname name =
+      let ct_decl = search_class_type_declaration table ctname in
+      let cls_sig = class_sig_of_cltype_decl ct_decl in
+      let (_,_,texp) = Types.Vars.find name cls_sig.cty_vars in
+      texp
+
    let search_method_expression cls name =
       let rec iter = function
         | [] ->
@@ -482,7 +496,7 @@ module Analyser =
 
     (** Analysis of a [Parsetree.class_struture] and a [Typedtree.class_structure] to get a couple
        (inherited classes, class elements). *)
-    let analyse_class_structure env current_class_name tt_class_sig last_pos pos_limit p_cls tt_cls =
+    let analyse_class_structure env current_class_name tt_class_sig last_pos pos_limit p_cls tt_cls table =
       let rec iter acc_inher acc_fields last_pos = function
         | [] ->
             let s = get_string_of_file last_pos pos_limit in
@@ -523,13 +537,20 @@ module Analyser =
               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
               q
 
-        | (Parsetree.Pcf_val (label, mutable_flag, _, loc) |
-           Parsetree.Pcf_valvirt (label, mutable_flag, _, loc)) :: q ->
+      | ((Parsetree.Pcf_val (label, mutable_flag, _, loc) |
+              Parsetree.Pcf_valvirt (label, mutable_flag, _, loc) ) as x) :: q ->
+            let virt = match x with Parsetree.Pcf_val _ -> false | _ -> true in
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let type_exp =
-              try Typedtree_search.search_attribute_type tt_cls label
-              with Not_found -> raise (Failure (Odoc_messages.attribute_not_found_in_typedtree complete_name))
+            try
+              if virt then
+                Typedtree_search.search_virtual_attribute_type table
+                  (Name.simple current_class_name) label
+              else
+                Typedtree_search.search_attribute_type tt_cls label
+            with Not_found ->
+                raise (Failure (Odoc_messages.attribute_not_found_in_typedtree complete_name))
             in
             let att =
               {
@@ -542,6 +563,7 @@ module Analyser =
                               val_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
                             } ;
                 att_mutable = mutable_flag = Asttypes.Mutable ;
+                att_virtual = virt ;
               }
             in
             iter acc_inher (acc_fields @ ele_comments @ [ Class_attribute att ]) loc.Location.loc_end.Lexing.pos_cnum q
@@ -628,7 +650,7 @@ module Analyser =
       iter [] [] last_pos (snd p_cls)
 
     (** Analysis of a [Parsetree.class_expr] and a [Typedtree.class_expr] to get a a couple (class parameters, class kind). *)
-    let rec analyse_class_kind env current_class_name comment_opt last_pos p_class_expr tt_class_exp =
+    let rec analyse_class_kind env current_class_name comment_opt last_pos p_class_expr tt_class_exp table =
       match (p_class_expr.Parsetree.pcl_desc, tt_class_exp.Typedtree.cl_desc) with
         (Parsetree.Pcl_constr (lid, _), tt_class_exp_desc ) ->
           let name =
@@ -672,6 +694,7 @@ module Analyser =
               p_class_expr.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
               p_class_structure
               tt_class_structure
+              table
           in
           ([],
            Class_structure (inherited_classes, class_elements) )
@@ -710,7 +733,10 @@ module Analyser =
                  in
                  (new_param, tt_class_expr2)
            in
-           let (params, k) = analyse_class_kind env current_class_name comment_opt last_pos p_class_expr2 next_tt_class_exp in
+           let (params, k) = analyse_class_kind
+              env current_class_name comment_opt last_pos p_class_expr2
+                next_tt_class_exp table
+            in
            (parameter :: params, k)
 
       | (Parsetree.Pcl_apply (p_class_expr2, _), Tclass_apply (tt_class_expr2, exp_opt_optional_list)) ->
@@ -754,12 +780,17 @@ module Analyser =
 
       | (Parsetree.Pcl_let (_, _, p_class_expr2), Typedtree.Tclass_let (_, _, _, tt_class_expr2)) ->
           (* we don't care about these lets *)
-          analyse_class_kind env current_class_name comment_opt last_pos p_class_expr2 tt_class_expr2
+          analyse_class_kind
+              env current_class_name comment_opt last_pos p_class_expr2
+              tt_class_expr2 table
 
       | (Parsetree.Pcl_constraint (p_class_expr2, p_class_type2),
          Typedtree.Tclass_constraint (tt_class_expr2, _, _, _)) ->
-          let (l, class_kind)  = analyse_class_kind env current_class_name comment_opt last_pos p_class_expr2 tt_class_expr2 in
-          (* A VOIR : analyse du class type ? on n'a pas toutes les infos. cf. Odoc_sig.analyse_class_type_kind *)
+          let (l, class_kind) = analyse_class_kind
+              env current_class_name comment_opt last_pos p_class_expr2
+                tt_class_expr2 table
+            in
+            (* A VOIR : analyse du class type ? on n'a pas toutes les infos. cf. Odoc_sig.analyse_class_type_kind *)
           let class_type_kind =
             (*Sig.analyse_class_type_kind
               env
@@ -777,7 +808,7 @@ module Analyser =
           raise (Failure "analyse_class_kind: Parsetree and typedtree don't match.")
 
     (** Analysis of a [Parsetree.class_declaration] and a [Typedtree.class_expr] to return a [t_class].*)
-    let analyse_class env current_module_name comment_opt p_class_decl tt_type_params tt_class_exp =
+    let analyse_class env current_module_name comment_opt p_class_decl tt_type_params tt_class_exp table =
       let name = p_class_decl.Parsetree.pci_name in
       let complete_name = Name.concat current_module_name name in
       let pos_start = p_class_decl.Parsetree.pci_expr.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum in
@@ -791,6 +822,7 @@ module Analyser =
           pos_start
           p_class_decl.Parsetree.pci_expr
           tt_class_exp
+          table
       in
       let cl =
         {
@@ -1391,6 +1423,7 @@ module Analyser =
                     class_decl
                     tt_type_params
                     tt_class_exp
+                    table
                 in
                 ele_comments @ ((Element_class new_class) :: (f last_pos2 q))
           in

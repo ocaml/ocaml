@@ -479,6 +479,7 @@ class man =
     (** Print groff string for a class attribute. *)
     method man_of_attribute b a =
       bs b ".I val ";
+      if a.att_virtual then bs b ("virtual ");
       if a.att_mutable then bs b (Odoc_messages.mutab^" ");
       bs b ((Name.simple a.att_value.val_name)^" : ");
       self#man_of_type_expr b (Name.father a.att_value.val_name) a.att_value.val_type;

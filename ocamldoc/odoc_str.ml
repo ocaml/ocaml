@@ -256,6 +256,7 @@ let string_of_value v =
 let string_of_attribute a =
   let module M = Odoc_value in
   "val "^
+  (if a.M.att_virtual then "virtual " else "")^
   (if a.M.att_mutable then Odoc_messages.mutab^" " else "")^
   (Name.simple a.M.att_value.M.val_name)^" : "^
   (Odoc_print.string_of_type_expr a.M.att_value.M.val_type)^"\n"^
