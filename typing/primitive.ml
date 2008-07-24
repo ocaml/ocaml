@@ -54,3 +54,11 @@ let description_list p =
   in
   let list = if p.prim_native_float then "float" :: list else list in
   List.rev list
+
+let native_name p =
+  if p.prim_native_name <> ""
+  then p.prim_native_name
+  else p.prim_name
+
+let byte_name p =
+  p.prim_name

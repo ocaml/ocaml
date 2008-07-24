@@ -868,14 +868,9 @@ let rec transl = function
             box_float
               (Cop(Cextcall(prim.prim_native_name, typ_float, false, dbg),
                    List.map transl_unbox_float args))
-          else begin
-            let name =
-              if prim.prim_native_name <> ""
-              then prim.prim_native_name
-              else prim.prim_name in
-            Cop(Cextcall(name, typ_addr, prim.prim_alloc, dbg),
+          else
+            Cop(Cextcall(Primitive.native_name prim, typ_addr, prim.prim_alloc, dbg),
                 List.map transl args)
-          end
       | (Pmakearray kind, []) ->
           transl_constant(Const_block(0, []))
       | (Pmakearray kind, args) ->

@@ -31,7 +31,7 @@ val transl_store_package:
 val toplevel_name: Ident.t -> string
 val nat_toplevel_name: Ident.t -> Ident.t * int
 
-val primitive_declarations: string list ref
+val primitive_declarations: Primitive.description list ref
 
 type error =
   Circular_dependency of Ident.t

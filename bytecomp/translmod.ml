@@ -80,8 +80,11 @@ let rec compose_coercions c1 c2 =
 
 (* Record the primitive declarations occuring in the module compiled *)
 
-let primitive_declarations = ref ([] : string list)
-
+let primitive_declarations = ref ([] : Primitive.description list)
+let record_primitive = function
+  | {val_kind=Val_prim p} -> primitive_declarations := p :: !primitive_declarations
+  | _ -> ()
+ 
 (* Keep track of the root path (from the root of the namespace to the
    currently compiled module expression).  Useful for naming exceptions. *)
 
@@ -289,11 +292,7 @@ and transl_structure fields cc rootpath = function
       transl_let rec_flag pat_expr_list
                  (transl_structure ext_fields cc rootpath rem)
   | Tstr_primitive(id, descr) :: rem ->
-      begin match descr.val_kind with
-        Val_prim p -> primitive_declarations :=
-                        p.Primitive.prim_name :: !primitive_declarations
-      | _ -> ()
-      end;
+      record_primitive descr;
       transl_structure fields cc rootpath rem
   | Tstr_type(decls) :: rem ->
       transl_structure fields cc rootpath rem
@@ -386,11 +385,7 @@ let transl_store_structure glob map prims str =
       Lsequence(subst_lambda subst lam,
                 transl_store (add_idents false ids subst) rem)
   | Tstr_primitive(id, descr) :: rem ->
-      begin match descr.val_kind with
-        Val_prim p -> primitive_declarations :=
-                        p.Primitive.prim_name :: !primitive_declarations
-      | _ -> ()
-      end;
+      record_primitive descr;
       transl_store subst rem
   | Tstr_type(decls) :: rem ->
       transl_store subst rem

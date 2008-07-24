@@ -117,7 +117,7 @@ let compile_implementation ?toplevel prefixname ppf (size, lam) =
     compile_phrase ppf
       (Cmmgen.reference_symbols
          (List.filter (fun s -> s <> "" && s.[0] <> '%')
-            !Translmod.primitive_declarations)
+            (List.map Primitive.native_name !Translmod.primitive_declarations))
       );
 
     Emit.end_assembly();
