@@ -617,6 +617,9 @@ module type PLUGIN = sig
   (** Returns the set of tags that applies to the given pathname. *)
   val tags_of_pathname : Pathname.t -> Tags.t
 
+  (** Run the given command and returns it's output as a string. *)
+  val run_and_read : string -> string
+
   (** Here is the list of hooks that the dispatch function have to handle.
       Generally one respond to one or two hooks (like After_rules) and do
       nothing in the default case. *)

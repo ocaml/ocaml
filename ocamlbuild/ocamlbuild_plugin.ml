@@ -45,6 +45,7 @@ let tags_of_pathname = Ocamlbuild_pack.Tools.tags_of_pathname
 let hide_package_contents = Ocamlbuild_pack.Ocaml_compiler.hide_package_contents
 let tag_file = Ocamlbuild_pack.Configuration.tag_file
 let tag_any = Ocamlbuild_pack.Configuration.tag_any
+let run_and_read = Ocamlbuild_pack.My_unix.run_and_read
 type hook = Ocamlbuild_pack.Hooks.message =
   | Before_hygiene
   | After_hygiene
