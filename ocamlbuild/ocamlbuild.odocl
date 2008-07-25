@@ -34,6 +34,7 @@ Hooks
 Ocaml_utils
 Ocaml_tools
 Ocaml_compiler
-Ocamldep
 Ocaml_dependencies
+Exit_codes
+Digest_cache
 Ocamlbuild_plugin
