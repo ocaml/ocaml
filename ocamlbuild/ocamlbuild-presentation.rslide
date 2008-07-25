@@ -158,7 +158,7 @@ end
 
 slide "The tags, our way to specify exceptions", 'fragile=singleslide' do
   list do
-    * The _tags file is made of lines
+    * Tagging is made in _tags files
     * Each line is made of a pattern and a list of signed tags
     * A line adds or removes tags from matching files
     * Patterns are boolean combinations of shell-like globbing expressions
@@ -166,7 +166,6 @@ slide "The tags, our way to specify exceptions", 'fragile=singleslide' do
   code_tags do
     : "funny.ml":           rectypes
       ~<**/*.ml*>~:           warn_A, warn_error_A, debug, dtypes
-      ~<**/*.cmx>~:           inline(9)
       "foo.ml" or "bar.ml": warn_v, warn_error_v
       "vendor.ml":          -warn_A, -warn_error_A
       <main.{byte,native}>: use_unix
