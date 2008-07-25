@@ -1,13 +1,10 @@
 # OCamlbuild tags file
 true: debug
-<*.ml> or <*.mli>: warn_A, warn_error_A, dtypes
+<*.ml> or <*.mli>: warn_A, warn_error_A, warn_e, dtypes
 "discard_printf.ml": rectypes
 "ocamlbuildlib.cma" or "ocamlbuildlightlib.cma": linkall
 <*.byte> or <*.native> or <*.top>: use_unix
 "ocamlbuildlight.byte": -use_unix
 <*.cmx>: for-pack(Ocamlbuild_pack)
 <{ocamlbuild_{pack,plugin},my_unix_with_unix,ppcache,executor}{,.p}.cmx>: -for-pack(Ocamlbuild_pack)
-"lexers.ml" or "glob_lexer.ml": -warn_A, -warn_error_A
-"glob.ml": -warn_E, -warn_error_E, -warn_A, -warn_error_A
 "doc": not_hygienic
-"resource.ml": warn_error_e

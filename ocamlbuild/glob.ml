@@ -270,7 +270,7 @@ module Brute =
                 (match_character_class cl u.[i + k]) && check (k + 1)
             in
             check 0
-        | Star p -> raise Too_hard
+        | Star _ -> raise Too_hard
         | Class cl -> n = 1 && match_character_class cl u.[i]
         | Concat(p1,p2) ->
             let rec scan j =
