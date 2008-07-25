@@ -69,6 +69,9 @@ val keep_code : bool ref
 (** To inverse implementation and interface files when merging. *)
 val inverse_merge_ml_mli : bool ref
 
+(** To filter module elements according to module type constraints. *)
+val filter_with_module_constraints : bool ref
+
 (** The optional title to use in the generated documentation. *)
 val title : string option ref
 

@@ -108,6 +108,8 @@ let keep_code = ref false
 
 let inverse_merge_ml_mli = ref false
 
+let filter_with_module_constraints = ref true
+
 let title = ref (None : string option)
 
 let intro_file = ref (None : string option)
@@ -229,6 +231,9 @@ let options = ref [
   "-no-custom-tags", Arg.Set no_custom_tags, M.no_custom_tags ;
   "-stars", Arg.Set remove_stars, M.remove_stars ;
   "-inv-merge-ml-mli", Arg.Set inverse_merge_ml_mli, M.inverse_merge_ml_mli ;
+  "-no-module-constraint-filter", Arg.Clear filter_with_module_constraints,
+  M.no_filter_with_module_constraints ;
+
   "-keep-code", Arg.Set keep_code, M.keep_code^"\n" ;
 
   "-dump", Arg.String (fun s -> dump := Some s), M.dump ;

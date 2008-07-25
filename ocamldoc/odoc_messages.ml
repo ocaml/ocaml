@@ -167,6 +167,7 @@ let no_custom_tags = "\n\t\tDo not allow custom @-tags"
 let remove_stars = "\tRemove beginning blanks of comment lines, until the first '*'"
 let keep_code = "\tAlways keep code when available"
 let inverse_merge_ml_mli = "\n\t\tInverse implementations and interfaces when merging"
+let no_filter_with_module_constraints = "\n\t\tDo not filter module elements using module type constraints"
 let merge_description = ('d', "merge description")
 let merge_author = ('a', "merge @author")
 let merge_version = ('v', "merge @version")

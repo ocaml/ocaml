@@ -1617,7 +1617,8 @@ module Analyser =
               p_modtype tt_modtype
           in
           let tt_modtype = Odoc_env.subst_module_type env tt_modtype in
-          filter_module_with_module_type_constraint m_base2 tt_modtype;
+          if !Odoc_args.filter_with_module_constraints then
+            filter_module_with_module_type_constraint m_base2 tt_modtype;
           {
             m_base with
             m_type = tt_modtype ;
