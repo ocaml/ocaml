@@ -156,7 +156,8 @@ let string_of_command_spec x = string_of_command_spec_with_calls ignore ignore f
 let string_target_and_tags_of_command_spec spec =
   let rtags = ref Tags.empty in
   let rtarget = ref "" in
-  let s = string_of_command_spec_with_calls ((:=) rtags) ((:=) rtarget) true spec in
+  let union_rtags tags = rtags := Tags.union !rtags tags in
+  let s = string_of_command_spec_with_calls union_rtags ((:=) rtarget) true spec in
   let target = if !rtarget = "" then s else !rtarget in
   s, target, !rtags
 
