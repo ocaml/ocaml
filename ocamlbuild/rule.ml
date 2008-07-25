@@ -18,6 +18,7 @@ open Outcome
 module Resources = Resource.Resources
 
 exception Exit_rule_error of string
+exception Failed
 
 type env = Pathname.t -> Pathname.t
 type builder = Pathname.t list list -> (Pathname.t, exn) Outcome.t list

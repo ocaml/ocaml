@@ -25,6 +25,10 @@ type rule_scheme = resource_pattern gen_rule
 
 type 'a rule_printer = (Format.formatter -> 'a -> unit) -> Format.formatter -> 'a gen_rule -> unit
 
+(** This exception can be raised inside the action of a rule to make the
+    algorithm skip this rule. *)
+exception Failed
+
 val name_of_rule : 'a gen_rule -> string
 val deps_of_rule : 'a gen_rule -> Pathname.t list
 val prods_of_rule : 'a gen_rule -> 'a list
