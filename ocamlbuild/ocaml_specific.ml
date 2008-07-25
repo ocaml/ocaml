@@ -320,6 +320,11 @@ rule "ocaml: mltop -> top"
   ~dep:"%.mltop"
   (Ocaml_compiler.byte_toplevel_link_mltop "%.mltop" "%.top");;
 
+rule "preprocess: ml -> pp.ml"
+  ~dep:"%.ml"
+  ~prod:"%.pp.ml"
+  (Ocaml_tools.camlp4 "pp.ml" "%.ml" "%.pp.ml");;
+
 flag ["ocaml"; "pp"] begin
   S (List.fold_right (fun x acc -> Sh x :: acc) !Options.ocaml_ppflags [])
 end;;

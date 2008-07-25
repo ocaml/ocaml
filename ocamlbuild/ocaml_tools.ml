@@ -152,3 +152,15 @@ let document_ocaml_project ?(ocamldoc=ocamldoc_l_file) odocl docout docdir env b
   let module_paths = List.map Outcome.good (build to_build) in
   let tags = (Tags.union (tags_of_pathname docout) (tags_of_pathname docdir))++"ocaml" in
   ocamldoc tags module_paths docout docdir
+
+let camlp4 ?(default=A"camlp4o") tag i o env build =
+  let ml = env i and pp_ml = env o in
+  let tags = tags_of_pathname ml++"ocaml"++"pp"++tag in
+  let _ = Rule.build_deps_of_tags build tags in
+  let pp = Command.reduce (Flags.of_tags tags) in
+  let pp =
+    match pp with
+    | N -> default
+    | _ -> pp
+  in
+  Cmd(S[pp; P ml; A"-printer"; A"o"; A"-o"; Px pp_ml])
