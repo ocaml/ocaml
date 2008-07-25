@@ -109,7 +109,7 @@ let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir ?tag_name libpath
   in
   let flag_and_dep tags lib =
     flag tags (add_dir (A lib));
-    if not extern then dep tags [lib]
+    if not extern then dep tags [lib] (* cannot happen? *)
   in
   Hashtbl.replace info_libraries tag_name (libpath, extern);
   if extern then begin

@@ -12,7 +12,7 @@
 (* $Id$ *)
 (* Original author: Nicolas Pouillard *)
 
-let version = "ocamlbuild 0.1";;
+let version = "ocamlbuild "^(Sys.ocaml_version);;
 
 type command_spec = Command.spec
 
