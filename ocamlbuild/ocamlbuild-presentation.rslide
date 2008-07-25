@@ -5,7 +5,8 @@ usepackage    :inputenc, :utf8
 
 words "**OCaml**", "**ocamlbuild**", "_Makefile_"
 
-title     "ocamlbuild, a tool for automatic compilation of OCaml projects"
+title     "ocamlbuild"
+subtitle  "a compilation manager for OCaml projects"
 authors   "Berke Durak", "Nicolas Pouillard"
 institute do
   > @@Berke.Durak@inria.fr@@
