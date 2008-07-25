@@ -527,6 +527,14 @@ module type PLUGIN = sig
       ([command_spec]) when all [tags] will be activated. *)
   val flag : Tags.elt list -> Command.spec -> unit
 
+  (** [flag_and_dep tags command_spec]
+      Combines [flag] and [dep] function.
+      Basically it calls [flag tags command_spec], and calls [dep tags files]
+      where [files] is the list of all pathnames in [command_spec].
+      Pathnames selected are those in the constructor [P] or [Px], or the
+      pathname argument of builtins like [Echo]. *)
+  val flag_and_dep : Tags.elt list -> Command.spec -> unit
+
   (** [non_dependency module_path module_name]
        Example: 
          [non_dependency "foo/bar/baz" "Goo"]

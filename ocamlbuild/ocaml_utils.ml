@@ -23,6 +23,11 @@ open Command;;
 
 module S = Set.Make(String)
 
+let flag_and_dep tags cmd_spec =
+  flag tags cmd_spec;
+  let ps = Command.fold_pathnames (fun p ps -> p :: ps) (Cmd cmd_spec) [] in
+  dep tags ps
+
 let stdlib_dir = lazy begin
   (* FIXME *)
   let ocamlc_where = sprintf "%s/ocamlc.where" (Pathname.pwd / !Options.build_dir) in
@@ -102,12 +107,16 @@ let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir ?tag_name libpath
     | Some x -> x
     | None -> "use_" ^ Pathname.basename libpath
   in
+  let flag_and_dep tags lib =
+    flag tags (add_dir (A lib));
+    if not extern then dep tags [lib]
+  in
   Hashtbl.replace info_libraries tag_name (libpath, extern);
   if extern then begin
     if byte then
-      flag ["ocaml"; tag_name; "link"; "byte"] (add_dir (A (libpath^".cma")));
+      flag_and_dep ["ocaml"; tag_name; "link"; "byte"] (libpath^".cma");
     if native then
-      flag ["ocaml"; tag_name; "link"; "native"] (add_dir (A (libpath^".cmxa")));
+      flag_and_dep ["ocaml"; tag_name; "link"; "native"] (libpath^".cmxa");
   end else begin
     if not byte && not native then
       invalid_arg "ocaml_lib: ~byte:false or ~native:false only works with ~extern:true";
