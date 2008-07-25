@@ -387,6 +387,8 @@ flag ["ocaml"; "compile"; "use_camlp4_full"]
      (S[A"-I"; A"+camlp4/Camlp4Parsers";
         A"-I"; A"+camlp4/Camlp4Printers";
         A"-I"; A"+camlp4/Camlp4Filters"]);;
+flag ["ocaml"; "use_camlp4_bin"; "link"; "byte"] (A"+camlp4/Camlp4Bin.cmo");;
+flag ["ocaml"; "use_camlp4_bin"; "link"; "native"] (A"+camlp4/Camlp4Bin.cmx");;
 
 flag ["ocaml"; "debug"; "compile"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "byte"; "program"] (A "-g");;
@@ -402,6 +404,7 @@ flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
 flag ["ocaml"; "linkall"; "link"] (A "-linkall");;
 flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
+flag ["ocaml"; "link"; "library"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
 flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);;
