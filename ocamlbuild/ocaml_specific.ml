@@ -270,16 +270,6 @@ rule "ocamldoc: document ocaml project odocl & *odoc -> man|latex|dot..."
 (* To use menhir give the -use-menhir option at command line,
    Or put true: use_menhir in your tag file. *)
 if !Options.use_menhir || Configuration.has_tag "use_menhir" then begin
-  rule "ocaml: menhir"
-    ~prods:["%.ml"; "%.mli"]
-    ~deps:["%.mly"; "%.mly.depends"]
-    (Ocaml_tools.menhir "%.mly");
-
-  rule "ocaml: menhir dependencies"
-    ~prod:"%.mly.depends"
-    ~dep:"%.mly"
-    (Ocaml_tools.menhir_ocamldep_command "%.mly" "%.mly.depends");
-
   (* Automatic handling of menhir modules, given a
      description file %.mlypack                         *)
   rule "ocaml: modular menhir (mlypack)"
@@ -290,7 +280,17 @@ if !Options.use_menhir || Configuration.has_tag "use_menhir" then begin
   rule "ocaml: menhir modular dependencies"
     ~prod:"%.mlypack.depends"
     ~dep:"%.mlypack"
-    (Ocaml_tools.menhir_modular_ocamldep_command "%.mlypack" "%.mlypack.depends")
+    (Ocaml_tools.menhir_modular_ocamldep_command "%.mlypack" "%.mlypack.depends");
+
+  rule "ocaml: menhir"
+    ~prods:["%.ml"; "%.mli"]
+    ~deps:["%.mly"; "%.mly.depends"]
+    (Ocaml_tools.menhir "%.mly");
+
+  rule "ocaml: menhir dependencies"
+    ~prod:"%.mly.depends"
+    ~dep:"%.mly"
+    (Ocaml_tools.menhir_ocamldep_command "%.mly" "%.mly.depends");
 
 end else
   rule "ocamlyacc"
