@@ -187,7 +187,7 @@ let spec =
    "-ocamllex", set_cmd ocamllex, "<command> Set the ocamllex tool";
    (* Not set since we perhaps want to replace ocamlmklib *)
    (* "-ocamlmklib", set_cmd ocamlmklib, "<command> Set the ocamlmklib tool"; *)
-   "-ocamlmktop", set_cmd ocamlmklib, "<command> Set the ocamlmktop tool";
+   "-ocamlmktop", set_cmd ocamlmktop, "<command> Set the ocamlmktop tool";
    "-ocamlrun", set_cmd ocamlrun, "<command> Set the ocamlrun tool";
 
    "--", Rest (fun x -> program_to_execute := true; add_to' program_args_internal x),
