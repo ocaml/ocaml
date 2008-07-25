@@ -28,6 +28,7 @@ let empty = { plus_flags = []; minus_flags = []; plus_tags = []; minus_tags = []
 
 let newline = ('\n' | '\r' | "\r\n")
 let space = [' ' '\t' '\012']
+let space_or_esc_nl = (space | '\\' newline)
 let blank = newline | space
 let not_blank = [^' ' '\t' '\012' '\n' '\r']
 let not_space_nor_comma = [^' ' '\t' '\012' ',']
@@ -116,7 +117,7 @@ and conf_value pos err x = parse
   | (_ | eof) { raise (Error(Printf.sprintf "Bad value in configuration line at line %d (from %s)" pos err)) }
 
 and conf_values pos err x = parse
-  | space* ',' space* { conf_values pos err (conf_value pos err x lexbuf) lexbuf }
+  | space_or_esc_nl* ',' space_or_esc_nl* { conf_values pos err (conf_value pos err x lexbuf) lexbuf }
   | (newline | eof) { x }
   | (_ | eof) { raise (Error(Printf.sprintf "Bad values in configuration line at line %d (from %s)" pos err)) }
 
