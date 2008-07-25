@@ -71,9 +71,10 @@ let menhir_modular menhir_base mlypack mlypack_depends env build =
   let (tags,files) = import_mlypack build mlypack in
   let () = List.iter Outcome.ignore_good (build [[mlypack_depends]]) in
   Ocaml_compiler.prepare_compile build mlypack;
+  let ocamlc_tags = tags++"ocaml"++"byte"++"compile" in
   let tags = tags++"ocaml"++"parser"++"menhir" in
   Cmd(S[menhir ;
-        A "--ocamlc"; Quote(S[!Options.ocamlc; ocaml_include_flags mlypack]);
+        A "--ocamlc"; Quote(S[!Options.ocamlc; T ocamlc_tags; ocaml_include_flags mlypack]);
         T tags ; A "--infer" ; flags_of_pathname mlypack ;
         A "--base" ; Px menhir_base ; atomize_paths files])
 
