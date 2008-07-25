@@ -39,6 +39,8 @@ html_only do
   paragraph.huge1 "Warning: this presentation has a degraded style compared to the Beamer/PDF version"
 end
 
+short_version = true
+
 maketitle
 
 h1 "Introduction"
@@ -115,6 +117,7 @@ slide "How does ocamlbuild manage all that?" do
   end
 end
 
+unless short_version
 slide "Demo..." do
   box "Many projects can be compiled with a single command:" do
     * Menhir: _ocamlbuild -lib unix back.native_
@@ -127,6 +130,7 @@ slide "Demo..." do
     > Some of these projects require that a _version.ml_
       or _stdlib.ml_ file be generated beforehand.
   end
+end
 end
 
 h1 "Dealing with exceptions to standard rules"
@@ -225,8 +229,10 @@ slide "Not a specific language, but plain OCaml code" do
   end
 end
 
+unless short_version
 slide "A plugin example" do
   > Let's read it in live...
+end
 end
 
 # slide "ocamlbuild scales" do
@@ -243,6 +249,7 @@ slide "Parallel execution where applicable" do
   * (Optimal scheduling would require a static graph)
 end
 
+unless short_version
 slide "A status bar for your visual comfort" do
   list do
     * Compilation tools echo commands and their output
@@ -285,6 +292,7 @@ slide "Hygiene and sterilization" do
     > Files or directories tagged as __not_hygienic__ or _precious_.
   end
 end
+end
 
 slide "Some supported tools" do
   box "_Menhir_ as an _ocamlyacc_ replacement", '<1->' do
@@ -321,6 +329,7 @@ slide "Resume" do
   end
 end
 
+unless short_version
 slide "Acknowledgments" do
   box "For enlightening discussions about OCaml internals:", '<1->' do
     * Xavier Leroy
@@ -337,4 +346,5 @@ end
 slide "Conclusion", '<+->' do
   * ocamlbuild is not perfect but already damn useful
   * Try it now! It's in OCaml 3.10!
+end
 end
