@@ -44,9 +44,6 @@ val copy_rule : string ->
   ?insert:[`top | `before of string | `after of string | `bottom] ->
   string -> string -> unit
 
-(** [dep tags deps] Will build [deps] when [tags] will be activated. *)
-val dep : string list -> string list -> unit
-
 module Common_commands : sig
   val mv : Pathname.t -> Pathname.t -> Command.t
   val cp : Pathname.t -> Pathname.t -> Command.t
