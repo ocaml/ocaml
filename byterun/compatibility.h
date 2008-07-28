@@ -211,7 +211,6 @@
 
 /* **** major_gc.c */
 #define heap_start caml_heap_start
-#define heap_end caml_heap_end
 #define page_table caml_page_table
 
 /* **** md5.c */
