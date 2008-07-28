@@ -156,12 +156,16 @@ void caml_oldify_one (value v, value *p)
       }else{
         value f = Forward_val (v);
         tag_t ft = 0;
+        int vv = 1;
 
         Assert (tag == Forward_tag);
-        if (Is_block (f) && Is_in_value_area(f)) {
-          ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
+        if (Is_block (f)){
+          vv = Is_in_value_area(f);
+          if (vv) {
+            ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
+          }
         }
-        if (ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
+        if (!vv || ft == Forward_tag || ft == Lazy_tag || ft == Double_tag){
           /* Do not short-circuit the pointer.  Copy as a normal block. */
           Assert (Wosize_hd (hd) == 1);
           result = caml_alloc_shr (1, Forward_tag);

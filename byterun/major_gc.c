@@ -144,9 +144,9 @@ static void mark_slice (intnat work)
             hd = Hd_val (child);
             if (Tag_hd (hd) == Forward_tag){
               value f = Forward_val (child);
-              if (Is_block (f) && Is_in_value_area(f)
-                  && (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
-                      || Tag_val (f) == Double_tag)){
+              if (Is_block (f)
+                  && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+                      || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
                 /* Do not short-circuit the pointer. */
               }else{
                 Field (v, i) = f;
@@ -215,9 +215,9 @@ static void mark_slice (intnat work)
                 && Is_block (curfield) && Is_in_heap (curfield)){
               if (Tag_val (curfield) == Forward_tag){
                 value f = Forward_val (curfield);
-                if (Is_block (f) && Is_in_value_area(f)) {
-                  if (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
-                      || Tag_val (f) == Double_tag){
+                if (Is_block (f)) {
+                  if (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+                      || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag){
                     /* Do not short-circuit the pointer. */
                   }else{
                     Field (cur, i) = curfield = f;

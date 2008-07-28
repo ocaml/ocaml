@@ -88,9 +88,9 @@ void caml_final_update (void)
           value fv;
           Assert (final_table[i].offset == 0);
           fv = Forward_val (final_table[i].val);
-          if (Is_block (fv) && Is_in_value_area(fv)
-              && (Tag_val (fv) == Forward_tag || Tag_val (fv) == Lazy_tag
-                  || Tag_val (fv) == Double_tag)){
+          if (Is_block (fv)
+              && (!Is_in_value_area(fv) || Tag_val (fv) == Forward_tag
+                  || Tag_val (fv) == Lazy_tag || Tag_val (fv) == Double_tag)){
             /* Do not short-circuit the pointer. */
           }else{
             final_table[i].val = fv;
