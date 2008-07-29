@@ -15,7 +15,9 @@
 
 #include <errno.h>
 #include <mlvalues.h>
+#include <memory.h>
 #include <alloc.h>
+#include <fail.h>
 #include "unixsupport.h"
 #include "socketaddr.h"
 
