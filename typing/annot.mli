@@ -18,6 +18,6 @@ type call = Tail | Stack | Inline;;
 
 type ident =
   | Iref_internal of Location.t (* defining occurrence *)
-  | Iref_external of string     (* fully qualified name *)
+  | Iref_external
   | Idef of Location.t          (* scope *)
 ;;

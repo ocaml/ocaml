@@ -207,7 +207,7 @@ let enter_variable loc name ty =
   pattern_variables := (id, ty, loc) :: !pattern_variables;
   begin match !pattern_scope with
   | None -> ()
-  | Some s -> Stypes.record (Stypes.An_ident (loc, s));
+  | Some s -> Stypes.record (Stypes.An_ident (loc, name, s));
   end;
   id
 
@@ -934,7 +934,8 @@ let rec type_exp env sexp =
       begin try
         if !Clflags.annotations then begin
           try let (path, annot) = Env.lookup_annot lid env in
-              Stypes.record (Stypes.An_ident (sexp.pexp_loc, annot));
+              Stypes.record (Stypes.An_ident (sexp.pexp_loc, Path.name path,
+                                              annot));
           with _ -> ()
         end;
         let (path, desc) = Env.lookup_value lid env in

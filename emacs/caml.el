@@ -296,9 +296,9 @@ have caml-electric-indent on, which see.")
     (define-key caml-mode-map "\177" 'backward-delete-char-untabify))
 
   ;; caml-types
-  (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)
-  (define-key caml-mode-map [?\C-c?\C-s] 'caml-types-show-call)
-  (define-key caml-mode-map [?\C-c?\C-i] 'caml-types-show-ident)
+  (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)  ; "type"
+  (define-key caml-mode-map [?\C-c?\C-f] 'caml-types-show-call)  ; "function"
+  (define-key caml-mode-map [?\C-c?\C-l] 'caml-types-show-ident) ; "let"
   ;; must be a mouse-down event. Can be any button and any prefix
   (define-key caml-mode-map [?\C-c down-mouse-1] 'caml-types-explore)
   ;; caml-help
@@ -813,6 +813,9 @@ from an error message produced by camlc.")
 (defvar caml-error-overlay nil)
 (defvar caml-next-error-skip-warnings-flag nil)
 
+(defun caml-string-to-int (x)
+  (if boundp 'string-to-number (string-to-number x) (string-to-int x)))
+
 ;;itz 04-21-96 somebody didn't get the documetation for next-error
 ;;right. When the optional argument is a number n, it should move
 ;;forward n errors, not reparse.
@@ -838,10 +841,10 @@ possible."
            (goto-char (window-point (get-buffer-window (current-buffer))))
            (if (looking-at caml-error-chars-regexp)
                (setq beg
-                     (string-to-int
+                     (caml-string-to-int
                       (buffer-substring (match-beginning 1) (match-end 1)))
                      end
-                     (string-to-int
+                     (caml-string-to-int
                       (buffer-substring (match-beginning 2) (match-end 2)))))
            (next-line)
            (beginning-of-line)

@@ -33,7 +33,7 @@ type annotation =
   | Ti_class of class_expr
   | Ti_mod   of module_expr
   | An_call of Location.t * Annot.call
-  | An_ident of Location.t * Annot.ident
+  | An_ident of Location.t * string * Annot.ident
 ;;
 
 let get_location ti =
@@ -43,7 +43,7 @@ let get_location ti =
   | Ti_class c -> c.cl_loc
   | Ti_mod m   -> m.mod_loc
   | An_call (l, k) -> l
-  | An_ident (l, k) -> l
+  | An_ident (l, s, k) -> l
 ;;
 
 let annotations = ref ([] : annotation list);;
@@ -115,11 +115,11 @@ let call_kind_string k =
   | Inline -> "inline"
 ;;
 
-let print_ident_annot pp k =
+let print_ident_annot pp str k =
   match k with
-  | Idef l -> fprintf pp "def %a@." print_location l;
-  | Iref_internal l -> fprintf pp "internal_ref %a@." print_location l;
-  | Iref_external s -> fprintf pp "external_ref %s@." s;
+  | Idef l -> fprintf pp "def %s %a@." str print_location l;
+  | Iref_internal l -> fprintf pp "int_ref %s %a@." str print_location l;
+  | Iref_external -> fprintf pp "ext_ref %s@." str;
 ;;
 
 (* The format of the annotation file is documented in emacs/caml-types.el. *)
@@ -140,10 +140,10 @@ let print_info pp prev_loc ti =
       if loc <> prev_loc then fprintf pp "%a@." print_location loc;
       fprintf pp "call(@.  %s@.)@." (call_kind_string k);
       loc
-  | An_ident (loc, k) ->
+  | An_ident (loc, str, k) ->
       if loc <> prev_loc then fprintf pp "%a@." print_location loc;
       fprintf pp "ident(@.  ";
-      print_ident_annot pp k;
+      print_ident_annot pp str k;
       fprintf pp ")@.";
       loc
 ;;

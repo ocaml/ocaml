@@ -660,7 +660,7 @@ and type_structure anchor env sstr scope =
                                  Location.loc_start = loc.Location.loc_start})
           | Nonrecursive ->
               let start = match srem with
-                | [] -> scope.Location.loc_end
+                | [] -> loc.Location.loc_end
                 | {pstr_loc = loc2} :: _ -> loc2.Location.loc_start
               in Some (Annot.Idef {scope with Location.loc_start = start})
           | Default -> None

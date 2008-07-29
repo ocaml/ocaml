@@ -17,7 +17,7 @@
 ;; XEmacs compatibility
 
 (eval-and-compile
-  (if (and (boundp 'running-xemacs) running-xemacs) 
+  (if (and (boundp 'running-xemacs) running-xemacs)
       (require 'caml-xemacs)
     (require 'caml-emacs)))
 
@@ -135,7 +135,7 @@ type call ident"
      in the file, up to where the type checker failed.
 
 Types are also displayed in the buffer *caml-types*, which is
-displayed when the command is called with Prefix argument 4. 
+displayed when the command is called with Prefix argument 4.
 
 See also `caml-types-explore' for exploration by mouse dragging.
 See `caml-types-location-re' for annotation file format.
@@ -182,7 +182,7 @@ See `caml-types-location-re' for annotation file format.
    The kind is also displayed in the mini-buffer.
 
 The kind is also displayed in the buffer *caml-types*, which is
-displayed when the command is called with Prefix argument 4. 
+displayed when the command is called with Prefix argument 4.
 
 See `caml-types-location-re' for annotation file format.
 "
@@ -223,14 +223,14 @@ See `caml-types-location-re' for annotation file format.
       )))
 
 (defun caml-types-show-ident (arg)
-  "Show the kind of identifier at point.
+  "Show the binding of identifier at point.
    The identifier that contains point is
-   temporarily highlighted.  Its kind is highlighted in the .annot
-   file and the mark is set to the beginning of the kind.
-   The kind is also displayed in the mini-buffer.
+   temporarily highlighted.  Its binding is highlighted in the .annot
+   file and the mark is set to the beginning of the binding.
+   The binding is also displayed in the mini-buffer.
 
-The kind is also displayed in the buffer *caml-types*, which is
-displayed when the command is called with Prefix argument 4. 
+The binding is also displayed in the buffer *caml-types*, which is
+displayed when the command is called with Prefix argument 4.
 
 See `caml-types-location-re' for annotation file format.
 "
@@ -260,50 +260,55 @@ See `caml-types-location-re' for annotation file format.
           (let* ((loc-re (concat caml-types-position-re " "
                                  caml-types-position-re))
                  (end-re (concat caml-types-position-re " --"))
-                 (def-re (concat "def " loc-re))
-                 (def-end-re (concat "def " end-re))
-                 (internal-re (concat "internal_ref " loc-re))
-                 (external-re "external_ref \\(.*\\)"))
+                 (def-re (concat "def \\([^ ]\\)* " loc-re))
+                 (def-end-re (concat "def \\([^ ]\\)* " end-re))
+                 (internal-re (concat "int_ref \\([^ ]\\)* " loc-re))
+                 (external-re "ext_ref \\(.*\\)"))
             (cond
              ((string-match def-re kind)
-              (let ((l-file (file-name-nondirectory (match-string 1 kind)))
-                    (l-line (string-to-int (match-string 3 kind)))
-                    (l-bol (string-to-int (match-string 4 kind)))
-                    (l-cnum (string-to-int (match-string 5 kind)))
-                    (r-file (file-name-nondirectory (match-string 6 kind)))
-                    (r-line (string-to-int (match-string 8 kind)))
-                    (r-bol (string-to-int (match-string 9 kind)))
-                    (r-cnum (string-to-int (match-string 10 kind))))
+              (let ((var-name (match-string 1 kind))
+                    (l-file (file-name-nondirectory (match-string 2 kind)))
+                    (l-line (string-to-int (match-string 4 kind)))
+                    (l-bol (string-to-int (match-string 5 kind)))
+                    (l-cnum (string-to-int (match-string 6 kind)))
+                    (r-file (file-name-nondirectory (match-string 7 kind)))
+                    (r-line (string-to-int (match-string 9 kind)))
+                    (r-bol (string-to-int (match-string 10 kind)))
+                    (r-cnum (string-to-int (match-string 11 kind))))
                 (let* ((lpos (vector l-file l-line l-bol l-cnum))
                        (rpos (vector r-file r-line r-bol r-cnum))
                        (left (caml-types-get-pos target-buf lpos))
                        (right (caml-types-get-pos target-buf rpos)))
+                  (message (format "local variable %s is bound here" var-name))
                   (move-overlay caml-types-scope-ovl left right target-buf))))
              ((string-match def-end-re kind)
-              (let ((l-file (file-name-nondirectory (match-string 1 kind)))
-                    (l-line (string-to-int (match-string 3 kind)))
-                    (l-bol (string-to-int (match-string 4 kind)))
-                    (l-cnum (string-to-int (match-string 5 kind))))
+              (let ((var-name (match-string 1 kind))
+                    (l-file (file-name-nondirectory (match-string 2 kind)))
+                    (l-line (string-to-int (match-string 4 kind)))
+                    (l-bol (string-to-int (match-string 5 kind)))
+                    (l-cnum (string-to-int (match-string 6 kind))))
                 (let* ((lpos (vector l-file l-line l-bol l-cnum))
                        (left (caml-types-get-pos target-buf lpos))
                        (right (buffer-size target-buf)))
+                  (message (format "global variable %s is bound here" var-name))
                   (move-overlay caml-types-scope-ovl left right target-buf))))
              ((string-match internal-re kind)
-              (let ((l-file (file-name-nondirectory (match-string 1 kind)))
-                    (l-line (string-to-int (match-string 3 kind)))
-                    (l-bol (string-to-int (match-string 4 kind)))
-                    (l-cnum (string-to-int (match-string 5 kind)))
-                    (r-file (file-name-nondirectory (match-string 6 kind)))
-                    (r-line (string-to-int (match-string 8 kind)))
-                    (r-bol (string-to-int (match-string 9 kind)))
-                    (r-cnum (string-to-int (match-string 10 kind))))
+              (let ((var-name (match-string 1 kind))
+                    (l-file (file-name-nondirectory (match-string 2 kind)))
+                    (l-line (string-to-int (match-string 4 kind)))
+                    (l-bol (string-to-int (match-string 5 kind)))
+                    (l-cnum (string-to-int (match-string 6 kind)))
+                    (r-file (file-name-nondirectory (match-string 7 kind)))
+                    (r-line (string-to-int (match-string 9 kind)))
+                    (r-bol (string-to-int (match-string 10 kind)))
+                    (r-cnum (string-to-int (match-string 11 kind))))
                 (let* ((lpos (vector l-file l-line l-bol l-cnum))
                        (rpos (vector r-file r-line r-bol r-cnum))
                        (left (caml-types-get-pos target-buf lpos))
                        (right (caml-types-get-pos target-buf rpos)))
                   (move-overlay caml-types-def-ovl left right target-buf)
-                  (message (format "this variable is bound at line %d char %d"
-                                   l-line (- l-cnum l-bol))))))
+                  (message (format "%s is bound at line %d char %d"
+                                   var-name l-line (- l-cnum l-bol))))))
              ((string-match external-re kind)
               (let ((fullname (match-string 1 kind)))
                 (with-current-buffer caml-types-buffer
@@ -336,7 +341,7 @@ See `caml-types-location-re' for annotation file format.
              (tree (with-current-buffer type-buf
                     (widen)
                     (goto-char (point-min))
-                    (caml-types-build-tree 
+                    (caml-types-build-tree
                      (file-name-nondirectory target-path)))))
         (setq caml-types-annotation-tree tree
               caml-types-annotation-date type-date)
@@ -351,8 +356,8 @@ See `caml-types-location-re' for annotation file format.
      (defun parent-dir (d) (file-name-directory (directory-file-name d)))
      (let ((project-dir (file-name-directory sibling))
            type-path)
-       (while (not (file-exists-p 
-                    (setq type-path 
+       (while (not (file-exists-p
+                    (setq type-path
                           (expand-file-name
                            (file-relative-name sibling project-dir)
                            (expand-file-name "_build" project-dir)))))
@@ -361,7 +366,7 @@ See `caml-types-location-re' for annotation file format.
                             "You should compile with option \"-dtypes\".")))
          (setq project-dir (parent-dir project-dir)))
        type-path))))
-   
+
 (defun caml-types-date< (date1 date2)
   (or (< (car date1) (car date2))
       (and (= (car date1) (car date2))
@@ -586,12 +591,12 @@ See `caml-types-location-re' for annotation file format.
 (defun caml-types-explore (event)
   "Explore type annotations by mouse dragging.
 
-The expression under the mouse is highlighted and its type is displayed 
+The expression under the mouse is highlighted and its type is displayed
 in the minibuffer, until the move is released, much as `caml-types-show-type'.
-The function uses two overlays. 
+The function uses two overlays.
 
- . One overlay delimits the largest region whose all subnodes 
-   are well-typed. 
+ . One overlay delimits the largest region whose all subnodes
+   are well-typed.
  . Another overlay delimits the current node under the mouse (whose type
    annotation is beeing displayed).
 "
@@ -620,7 +625,7 @@ The function uses two overlays.
               (caml-track-mouse
                (while event
                  (cond
-                  ;; we ignore non mouse events 
+                  ;; we ignore non mouse events
                   ((caml-ignore-event-p event))
                   ;; we stop when the original button is released
                   ((caml-release-event-p original-event event)
@@ -638,7 +643,7 @@ The function uses two overlays.
                           )
                      (while (and
                              (caml-sit-for 0 (/ 500 speed))
-                             (setq time (caml-types-time)) 
+                             (setq time (caml-types-time))
                              (> (- time last-time) (/ 500 speed))
                              (setq mouse (caml-mouse-vertical-position))
                              (or (< mouse top) (>= mouse bottom))
@@ -655,7 +660,7 @@ The function uses two overlays.
                          (condition-case nil
                              (scroll-up 1)
                            (error (message "End of buffer!"))))
-                        )                         
+                        )
                        (setq speed (* speed speed))
                        )))
                   ;; main action, when the motion is inside the window
@@ -667,7 +672,7 @@ The function uses two overlays.
                             (<= (car region) cnum) (< cnum (cdr region)))
                        ;; mouse remains in outer region
                        nil
-                     ;; otherwise, reset the outer region 
+                     ;; otherwise, reset the outer region
                      (setq region
                            (caml-types-typed-make-overlay
                             target-buf (caml-event-point-start event))))
@@ -730,7 +735,7 @@ The function uses two overlays.
       ;; However, it could also be a key stroke before mouse release.
       ;; Emacs does not allow to test whether mouse is up or down.
       ;; Not sure it is robust to loop for mouse release after an error
-      ;; occured, as is done for exploration. 
+      ;; occured, as is done for exploration.
       ;; So far, we just ignore next event. (Next line also be uncommenting.)
       (if event (caml-read-event))
       )))
@@ -758,7 +763,7 @@ The function uses two overlays.
 (defun caml-types-version ()
   "internal version number of caml-types.el"
   (interactive)
-  (message "3")
+  (message "4")
 )
 
 (provide 'caml-types)

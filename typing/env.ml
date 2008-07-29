@@ -412,12 +412,7 @@ let lookup_simple proj1 proj2 lid env =
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
 let lookup_annot id e =
-  let (path, annot) =
-    lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
-  in
-  match annot with
-  | Annot.Iref_external "" -> (path, Annot.Iref_external (Path.name path))
-  | _ -> (path, annot)
+  lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
 and lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
@@ -525,7 +520,7 @@ let rec components_of_module env sub path mty =
               Tbl.add (Ident.name id) (decl', !pos) c.comp_values;
             if !Clflags.annotations then begin
               c.comp_annotations <-
-                Tbl.add (Ident.name id) (Annot.Iref_external "", !pos)
+                Tbl.add (Ident.name id) (Annot.Iref_external, !pos)
                         c.comp_annotations;
             end;
             begin match decl.val_kind with
@@ -752,7 +747,7 @@ let open_signature root sg env =
           Tsig_value(id, decl) ->
             let e1 = store_value (Ident.hide id) p
                         (Subst.value_description sub decl) env
-            in store_annot (Ident.hide id) p (Annot.Iref_external "") e1
+            in store_annot (Ident.hide id) p (Annot.Iref_external) e1
         | Tsig_type(id, decl, _) ->
             store_type (Ident.hide id) p
                        (Subst.type_declaration sub decl) env

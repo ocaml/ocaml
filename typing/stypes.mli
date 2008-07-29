@@ -24,7 +24,7 @@ type annotation =
   | Ti_class of class_expr
   | Ti_mod   of module_expr
   | An_call of Location.t * Annot.call
-  | An_ident of Location.t * Annot.ident
+  | An_ident of Location.t * string * Annot.ident
 ;;
 
 val record : annotation -> unit;;
