@@ -146,10 +146,12 @@ of "Lazy.force" may be implicit through pattern matching.
 
 The pattern @"lazy" pattern@ matches values \var{v} of type "Lazy.t",
 provided @pattern@ matches the result of forcing \var{v} with
-"Lazy.force". Note that matching against a pattern @"lazy" value-name@
-or @"lazy" "_"@ may call "Lazy.force" even when @value-name@ is
-unused.
-
+"Lazy.force". A successful match of a pattern containing "lazy"
+sub-patterns forces the corresponding parts of the value matched, even
+those that imply no test such as @"lazy" value-name@ or @"lazy" "_"@.
+Matching a value with a @pattern-matching@ where some patterns
+contain "lazy" sub-patterns may imply forcing parts of the value,
+even when the selected pattern has no "lazy" sub-pattern.
 
 For more information, see the description of module "Lazy" in the
 standard library (see
