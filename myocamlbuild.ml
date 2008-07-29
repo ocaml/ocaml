@@ -432,8 +432,8 @@ flag ["c"; "compile"; "otherlibs_num"] begin
     A"-I"; P"../otherlibs/num"]
 end;;
 flag ["c"; "compile"; "otherlibs_win32unix"] (A"-I../otherlibs/win32unix");;
-flag [(* "ocaml" or "c"; *) "ocamlmklib"; "otherlibs_win32unix"] (S[A"-cclib"; Quote (syslib "wsock32")]);;
-flag ["c"; "link"; "dll"; "otherlibs_win32unix"] (syslib "wsock32");;
+flag [(* "ocaml" or "c"; *) "ocamlmklib"; "otherlibs_win32unix"] (S[A"-cclib"; Quote (syslib "ws2_32")]);;
+flag ["c"; "link"; "dll"; "otherlibs_win32unix"] (syslib "ws2_32");;
 let flags = S[syslib "kernel32"; syslib "gdi32"; syslib "user32"] in
 flag ["c"; "ocamlmklib"; "otherlibs_win32graph"] (S[A"-cclib"; Quote flags]);
 flag ["c"; "link"; "dll"; "otherlibs_win32graph"] flags;;

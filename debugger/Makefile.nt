@@ -12,5 +12,6 @@
 
 # $Id$
 
-UNIXDIR=../otherlibs/unix
+UNIXDIR=../otherlibs/win32unix
 include Makefile.shared
+

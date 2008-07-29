@@ -76,6 +76,13 @@ let error text =
   eprintf "%s@." text;
   raise Toplevel
 
+let check_not_windows feature =
+  match Sys.os_type with 
+  | "Win32" ->
+      error ("'"^feature^"' feature not supported on Windows")
+  | _ -> 
+      ()
+
 let eol =
   end_of_line Lexer.lexeme
 
@@ -220,7 +227,7 @@ let instr_shell ppf lexbuf =
 
 let instr_pwd ppf lexbuf =
   eol lexbuf;
-  ignore(system "/bin/pwd")
+  fprintf ppf "%s@." (Sys.getcwd ())
 
 let instr_dir ppf lexbuf =
   let new_directory = argument_list_eol argument lexbuf in
@@ -254,6 +261,7 @@ let instr_run ppf lexbuf =
 
 let instr_reverse ppf lexbuf =
   eol lexbuf;
+  check_not_windows "reverse";
   ensure_loaded ();
   reset_named_values();
   back_run ();
@@ -276,6 +284,7 @@ let instr_back ppf lexbuf =
     | None -> _1
     | Some x -> x
   in
+    check_not_windows "backstep";
     ensure_loaded ();
     reset_named_values();
     step (_0 -- step_count);
@@ -301,6 +310,7 @@ let instr_next ppf lexbuf =
 
 let instr_start ppf lexbuf =
   eol lexbuf;
+  check_not_windows "start";
   ensure_loaded ();
   reset_named_values();
   start ();
@@ -312,6 +322,7 @@ let instr_previous ppf lexbuf =
     | None -> 1
     | Some x -> x
   in
+    check_not_windows "previous";
     ensure_loaded ();
     reset_named_values();
     previous step_count;
@@ -672,6 +683,7 @@ let instr_last ppf lexbuf =
     | None -> _1
     | Some x -> x
   in
+    check_not_windows "last";
     reset_named_values();
     go_to (History.previous_time count);
     show_current_event ppf

@@ -7,6 +7,7 @@ mkdir.d.o open.d.o pipe.d.o read.d.o rename.d.o
 select.d.o sendrecv.d.o
 shutdown.d.o sleep.d.o socket.d.o sockopt.d.o startup.d.o stat.d.o
 system.d.o unixsupport.d.o windir.d.o winwait.d.o write.d.o
+winlist.d.o winworker.d.o windbug.d.o
 
 # Files from the ../unix directory
 access.d.o addrofstr.d.o chdir.d.o chmod.d.o cst2constr.d.o

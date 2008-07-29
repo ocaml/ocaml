@@ -99,10 +99,13 @@ let rec do_go n =
 (* Perform a checkpoint *)
 
 let do_checkpoint () =
-  output_char !conn.io_out 'c';
-  flush !conn.io_out;
-  let pid = input_binary_int !conn.io_in in
-  if pid = -1 then Checkpoint_failed else Checkpoint_done pid
+  match Sys.os_type with
+    "Win32" -> failwith "do_checkpoint"
+  | _ ->
+      output_char !conn.io_out 'c';
+      flush !conn.io_out;
+      let pid = input_binary_int !conn.io_in in
+      if pid = -1 then Checkpoint_failed else Checkpoint_done pid
 
 (* Kill the given process. *)
 let stop chan =

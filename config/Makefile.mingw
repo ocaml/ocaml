@@ -66,7 +66,7 @@ ASPP=gcc
 ASPPPROFFLAGS=
 PROFILING=noprof
 DYNLINKOPTS=
-DEBUGGER=
+DEBUGGER=ocamldebugger
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
@@ -87,8 +87,8 @@ BYTECCLINKOPTS=
 DLLCCCOMPOPTS=-O -mms-bitfields -Wall -Wno-unused -DCAML_DLL
 
 ### Libraries needed
-BYTECCLIBS=
-NATIVECCLIBS=
+BYTECCLIBS=-lws2_32
+NATIVECCLIBS=-lws2_32
 
 ### How to invoke the C preprocessor
 CPP=$(BYTECC) -E
@@ -149,8 +149,8 @@ BNG_ASM_LEVEL=1
 # There must be no spaces or special characters in $(TK_ROOT)
 TK_ROOT=c:/tcl
 TK_DEFS=-I$(TK_ROOT)/include
-TK_LINK=$(TK_ROOT)/bin/tk83.dll $(TK_ROOT)/bin/tcl83.dll -lwsock32
-#TK_LINK=$(TK_ROOT)/lib/tk84.lib $(TK_ROOT)/lib/tcl84.lib -lwsock32
+TK_LINK=$(TK_ROOT)/bin/tk83.dll $(TK_ROOT)/bin/tcl83.dll -lws2_32
+#TK_LINK=$(TK_ROOT)/lib/tk84.lib $(TK_ROOT)/lib/tcl84.lib -lws2_32
 
 ############# Aliases for common commands
 

@@ -37,7 +37,7 @@ let load_program () =
 (*** Launching functions. ***)
 
 (* A generic function for launching the program *)
-let generic_exec cmdline = function () ->
+let generic_exec_unix cmdline = function () ->
   if !debug_loading then
     prerr_endline "Launching program...";
   let child =
@@ -64,11 +64,36 @@ let generic_exec cmdline = function () ->
        (_, WEXITED 0) -> ()
      | _ -> raise Toplevel
 
+let generic_exec_win cmdline = function () ->
+  if !debug_loading then
+    prerr_endline "Launching program...";
+  try ignore(create_process "cmd.exe" [| "/C"; cmdline() |] stdin stdout stderr)
+  with x ->
+    Unix_tools.report_error x;
+    raise Toplevel
+
+let generic_exec =
+  match Sys.os_type with
+    "Win32" -> generic_exec_win
+  | _ -> generic_exec_unix
+
 (* Execute the program by calling the runtime explicitely *)
 let exec_with_runtime =
   generic_exec
     (function () ->
-      Printf.sprintf "CAML_DEBUG_SOCKET=%s %s %s %s"
+      match Sys.os_type with
+        "Win32" ->
+          (* This fould fail on a file name with spaces
+             but quoting is even worse because Unix.create_process
+             thinks each command line parameter is a file.
+             So no good solution so far *)
+          Printf.sprintf "set CAML_DEBUG_SOCKET=%s && %s %s %s"
+                     !socket_name
+                     runtime_program
+                     !program_name
+                     !arguments
+      | _ ->
+          Printf.sprintf "CAML_DEBUG_SOCKET=%s %s %s %s"
                      !socket_name
                      (Filename.quote runtime_program)
                      (Filename.quote !program_name)
@@ -78,7 +103,15 @@ let exec_with_runtime =
 let exec_direct =
   generic_exec
     (function () ->
-      Printf.sprintf "CAML_DEBUG_SOCKET=%s %s %s"
+      match Sys.os_type with
+        "Win32" ->
+          (* See the comment above *)
+          Printf.sprintf "set CAML_DEBUG_SOCKET=%s && %s %s"
+                     !socket_name
+                     !program_name
+                     !arguments
+      | _ ->
+          Printf.sprintf "CAML_DEBUG_SOCKET=%s %s %s"
                      !socket_name
                      (Filename.quote !program_name)
                      !arguments)

@@ -16,6 +16,8 @@
 #include <stdlib.h>
 #include <mlvalues.h>
 #include "unixsupport.h"
+#include "winworker.h"
+#include "windbug.h"
 
 value val_process_id;
 
@@ -26,11 +28,15 @@ CAMLprim value win_startup(unit)
   int i;
   HANDLE h;
 
+  DBUG_INIT;
+
   (void) WSAStartup(MAKEWORD(2, 0), &wsaData);
   DuplicateHandle(GetCurrentProcess(), GetCurrentProcess(),
                   GetCurrentProcess(), &h, 0, TRUE,
                   DUPLICATE_SAME_ACCESS);
   val_process_id = Val_int(h);
+
+  worker_init();
 
   return Val_unit;
 }
@@ -38,6 +44,11 @@ CAMLprim value win_startup(unit)
 CAMLprim value win_cleanup(unit)
      value unit;
 {
+  worker_cleanup();
+
   (void) WSACleanup();
+
+  DBUG_CLEANUP;
+
   return Val_unit;
 }

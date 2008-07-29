@@ -7,6 +7,7 @@ mkdir.o open.o pipe.o read.o rename.o
 select.o sendrecv.o
 shutdown.o sleep.o socket.o sockopt.o startup.o stat.o
 system.o unixsupport.o windir.o winwait.o write.o
+winlist.o winworker.o windbug.o
 
 # Files from the ../unix directory
 access.o addrofstr.o chdir.o chmod.o cst2constr.o

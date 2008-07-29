@@ -15,6 +15,10 @@
 
 /* Interface with the debugger */
 
+#ifdef _WIN32
+#include <io.h>
+#endif /* _WIN32 */
+
 #include <string.h>
 
 #include "config.h"
@@ -32,7 +36,7 @@
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
 
-#if !defined(HAS_SOCKETS) || defined(_WIN32)
+#if !defined(HAS_SOCKETS)
 
 void caml_debugger_init(void)
 {
@@ -49,17 +53,26 @@ void caml_debugger(enum event_kind event)
 #endif
 #include <errno.h>
 #include <sys/types.h>
+#ifndef _WIN32
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#else
+#define ATOM ATOM_WS
+#include <winsock.h>
+#undef ATOM
+#include <process.h>
+#endif
 
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
   struct sockaddr s_gen;
+#ifndef _WIN32
   struct sockaddr_un s_unix;
+#endif    
   struct sockaddr_in s_inet;
 } sock_addr;
 static int sock_addr_len;       /* Length of sock_addr */
@@ -72,16 +85,46 @@ static char *dbg_addr = "(none)";
 
 static void open_connection(void)
 {
+#ifdef _WIN32
+  /* Set socket to synchronous mode so that file descriptor-oriented
+     functions (read()/write() etc.) can be used */
+
+  int oldvalue, oldvaluelen, newvalue, retcode;
+  oldvaluelen = sizeof(oldvalue);
+  retcode = getsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+                       (char *) &oldvalue, &oldvaluelen);
+  if (retcode == 0) {
+      newvalue = SO_SYNCHRONOUS_NONALERT;
+      setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+                 (char *) &newvalue, sizeof(newvalue));
+  }
+#endif    
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
+#ifdef _WIN32
+  if (retcode == 0) {
+    /* Restore initial mode */
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
+               (char *) &oldvalue, oldvaluelen);
+  }
+#endif    
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
     caml_fatal_error_arg2 ("cannot connect to debugger at %s", dbg_addr,
                            "error: %s\n", strerror (errno));
   }
+#ifdef _WIN32
+  dbg_socket = _open_osfhandle(dbg_socket, 0);
+  if (dbg_socket == -1)
+    caml_fatal_error("_open_osfhandle failed");
+#endif
   dbg_in = caml_open_descriptor_in(dbg_socket);
   dbg_out = caml_open_descriptor_out(dbg_socket);
   if (!caml_debugger_in_use) caml_putword(dbg_out, -1); /* first connection */
+#ifdef _WIN32
+  caml_putword(dbg_out, _getpid());
+#else
   caml_putword(dbg_out, getpid());
+#endif
   caml_flush(dbg_out);
 }
 
@@ -91,6 +134,20 @@ static void close_connection(void)
   caml_close_channel(dbg_out);
   dbg_socket = -1;              /* was closed by caml_close_channel */
 }
+
+#ifdef _WIN32
+static void winsock_startup(void)
+{
+  WSADATA wsaData;
+  int err = WSAStartup(MAKEWORD(2, 0), &wsaData);
+  if (err) caml_fatal_error("WSAStartup failed");
+}
+
+static void winsock_cleanup(void)
+{
+  WSACleanup();
+}
+#endif
 
 void caml_debugger_init(void)
 {
@@ -103,12 +160,17 @@ void caml_debugger_init(void)
   if (address == NULL) return;
   dbg_addr = address;
 
+#ifdef _WIN32
+  winsock_startup();
+  (void)atexit(winsock_cleanup);
+#endif
   /* Parse the address */
   port = NULL;
   for (p = address; *p != 0; p++) {
     if (*p == ':') { *p = 0; port = p+1; break; }
   }
   if (port == NULL) {
+#ifndef _WIN32
     /* Unix domain */
     sock_domain = PF_UNIX;
     sock_addr.s_unix.sun_family = AF_UNIX;
@@ -117,6 +179,9 @@ void caml_debugger_init(void)
     sock_addr_len =
       ((char *)&(sock_addr.s_unix.sun_path) - (char *)&(sock_addr.s_unix))
         + strlen(address);
+#else
+    caml_fatal_error("Unix sockets not supported");
+#endif    
   } else {
     /* Internet domain */
     sock_domain = PF_INET;
@@ -241,6 +306,7 @@ void caml_debugger(enum event_kind event)
       caml_set_instruction(caml_start_code + pos, caml_saved_code[pos]);
       break;
     case REQ_CHECKPOINT:
+#ifndef _WIN32
       i = fork();
       if (i == 0) {
         close_connection();     /* Close parent connection. */
@@ -249,6 +315,10 @@ void caml_debugger(enum event_kind event)
         caml_putword(dbg_out, i);
         caml_flush(dbg_out);
       }
+#else
+      caml_fatal_error("error: REQ_CHECKPOINT command");
+      exit(-1);
+#endif      
       break;
     case REQ_GO:
       caml_event_count = caml_getword(dbg_in);
@@ -257,7 +327,12 @@ void caml_debugger(enum event_kind event)
       exit(0);
       break;
     case REQ_WAIT:
+#ifndef _WIN32
       wait(NULL);
+#else
+      caml_fatal_error("Fatal error: REQ_WAIT command");
+      exit(-1);
+#endif      
       break;
     case REQ_INITIAL_FRAME:
       frame = caml_extern_sp + 1;

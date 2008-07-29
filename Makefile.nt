@@ -120,7 +120,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out $(DEBUGGER) win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -232,6 +232,8 @@ installbyt:
 	cd ocamldoc ; $(MAKEREC) install
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
+	if test -f debugger/ocamldebug.exe; then (cd debugger; $(MAKEREC) install); \
+	   else :; fi
 	cd win32caml ; $(MAKE) install
 	./build/partial-install.sh
 	cp config/Makefile $(LIBDIR)/Makefile.config
@@ -580,6 +582,15 @@ clean::
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i clean; done
 alldepend::
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i depend; done
+
+# The replay debugger
+
+ocamldebugger: ocamlc ocamlyacc ocamllex
+	cd debugger; $(MAKEREC) all
+partialclean::
+	cd debugger; $(MAKEREC) clean
+alldepend::
+	cd debugger; $(MAKEREC) depend
 
 # Camlp4
 
