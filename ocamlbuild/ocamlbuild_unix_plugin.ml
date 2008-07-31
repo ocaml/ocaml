@@ -52,9 +52,10 @@ let run_and_open s kont =
     | Unix.WEXITED 0 -> ()
     | Unix.WEXITED _ | Unix.WSIGNALED _ | Unix.WSTOPPED _ ->
         failwith (Printf.sprintf "Error while running: %s" s) in
-  try
-    let res = kont ic in close (); res
-  with e -> (close (); raise e)
+  let res = try
+      kont ic
+    with e -> (close (); raise e)
+  in close (); res
 
 let stdout_isatty () =
   Unix.isatty Unix.stdout
