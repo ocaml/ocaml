@@ -113,6 +113,7 @@ You will need the following software components to perform the recompilation:
 - Windows NT, 2000, XP, or Vista.
 - Items [1], [2], [3], [4] and [5] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
+  Install at least the following packages: diffutils, make, ncurses.
 
 Remember to add the directory where the libraries tk84.lib and
 tcl84.lib were installed (by the Tcl/Tk installer) to the LIB variable
@@ -153,7 +154,7 @@ Unix/GCC or Cygwin or Mingw on similar hardware.
 * Libraries available in this port: "num", "str", "threads", "graphics",
 "labltk", and large parts of "unix". 
 
-* The replay debugger is partially supported.
+* The replay debugger is partially supported (no reverse execution).
 
 CREDITS:
 
@@ -216,12 +217,14 @@ RECOMPILATION FROM THE SOURCES:
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, XP, or Vista.
 - Cygwin: http://sourceware.cygnus.com/cygwin/
+  Install at least the following packages: binutils, diffutils, 
+    gcc-core, gcc-mingw-core, make, mingw-runtime, ncurses, w32-api.
 - TCL/TK version 8.4 (see above).
-- the flexdll tool (see above).
+- The flexdll tool (see above).
 
 Do *not* install the standalone distribution of MinGW, nor the
 companion MSYS tools: these have problems with long command lines.
-Instead, use the version of MinGW that is installed along with Cygwin.
+Instead, use the version of MinGW provided by Cygwin.
 
 Start a Cygwin shell and unpack the source distribution
 (ocaml-X.YZ.tar.gz) with "tar xzf".  Change to the top-level
@@ -250,7 +253,7 @@ NOTES:
 * Libraries available in this port: "num", "str", "threads", "graphics",
   "labltk", and large parts of "unix". 
 
-* The replay debugger is partially supported.
+* The replay debugger is partially supported (no reverse execution).
 
 ------------------------------------------------------------------------------
 
@@ -335,6 +338,7 @@ You will need the following software components to perform the recompilation:
 - Windows XP 64 or Server 64.
 - The Platform SDK (item [1] from the list of recommended software above).
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
+  Install at least the following packages: diffutils, make, ncurses.
 - The flexdll tool (see above).
 
 To recompile, start a Cygwin shell and change to the top-level
@@ -368,5 +372,6 @@ NOTES:
 * Libraries available in this port: "num", "str", "threads", "graphics",
   and large parts of "unix". 
 
-* The replay debugger and the graphical browser are not supported.
+* The replay debugger is partially supported (no reverse execution).
 
+* The graphical browser ocamlbrowser is not supported.
