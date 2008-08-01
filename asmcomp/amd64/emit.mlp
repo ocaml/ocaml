@@ -752,4 +752,8 @@ let end_assembly() =
       efa_label_rel = (fun lbl ofs ->
                            `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
       efa_def_label = (fun l -> `{emit_label l}:\n`);
-      efa_string = (fun s -> emit_string_directive "	.asciz	" s) }
+      efa_string = (fun s -> emit_string_directive "	.asciz	" s) };
+  if Config.system = "linux" then
+    (* Mark stack as non-executable, PR#4564 *)
+    `	.section .note.GNU-stack,\"\",%progbits\n`
+

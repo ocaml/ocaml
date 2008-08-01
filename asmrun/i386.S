@@ -424,3 +424,8 @@ Lmcount$stub:
         hlt ; hlt ; hlt ; hlt ; hlt
         .subsections_via_symbols
 #endif
+
+#if defined(SYS_linux_elf)
+    /* Mark stack as non-executable, PR#4564 */
+        .section .note.GNU-stack,"",%progbits
+#endif
