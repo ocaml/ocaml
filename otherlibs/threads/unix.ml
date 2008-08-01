@@ -640,6 +640,8 @@ type socket_bool_option =
   | SO_OOBINLINE
   | SO_ACCEPTCONN
   | TCP_NODELAY
+  | IPV6_ONLY
+
 
 type socket_int_option =
     SO_SNDBUF
