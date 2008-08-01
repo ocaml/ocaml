@@ -645,20 +645,25 @@ let substitute_first expr repl_fun text =
   with Not_found ->
     text
 
+let opt_search_forward re s pos =
+  try Some(search_forward re s pos) with Not_found -> None
+
 let global_substitute expr repl_fun text =
-  let rec replace start last_was_empty =
-    try
-      let startpos = if last_was_empty then start + 1 else start in
-      if startpos > String.length text then raise Not_found;
-      let pos = search_forward expr text startpos in
-      let end_pos = match_end() in
-      let repl_text = repl_fun text in
-      String.sub text start (pos-start) ::
-      repl_text ::
-      replace end_pos (end_pos = pos)
-    with Not_found ->
-      [string_after text start] in
-  String.concat "" (replace 0 false)
+  let rec replace accu start last_was_empty =
+    let startpos = if last_was_empty then start + 1 else start in
+    if startpos > String.length text then
+      string_after text start :: accu
+    else 
+      match opt_search_forward expr text startpos with
+      | None ->       
+          string_after text start :: accu
+      | Some pos ->
+          let end_pos = match_end() in
+          let repl_text = repl_fun text in
+          replace (repl_text :: String.sub text start (pos-start) :: accu)
+                  end_pos (end_pos = pos)
+  in
+    String.concat "" (List.rev (replace [] 0 false))
 
 let global_replace expr repl text =
   global_substitute expr (replace_matched repl) text
@@ -667,58 +672,66 @@ and replace_first expr repl text =
 
 (** Splitting *)
 
-let search_forward_progress expr text start =
-  let pos = search_forward expr text start in
-  if match_end() > start then pos
-  else if start < String.length text then search_forward expr text (start + 1)
-  else raise Not_found
+let opt_search_forward_progress expr text start =
+  match opt_search_forward expr text start with
+  | None -> None
+  | Some pos ->
+      if match_end() > start then 
+        Some pos
+      else if start < String.length text then
+        opt_search_forward expr text (start + 1)
+      else None
 
 let bounded_split expr text num =
   let start =
     if string_match expr text 0 then match_end() else 0 in
-  let rec split start n =
-    if start >= String.length text then [] else
-    if n = 1 then [string_after text start] else
-      try
-        let pos = search_forward_progress expr text start in
-        String.sub text start (pos-start) :: split (match_end()) (n-1)
-      with Not_found ->
-        [string_after text start] in
-  split start num
+  let rec split accu start n =
+    if start >= String.length text then accu else
+    if n = 1 then string_after text start :: accu else
+      match opt_search_forward_progress expr text start with
+      | None ->
+          string_after text start :: accu
+      | Some pos ->
+          split (String.sub text start (pos-start) :: accu)
+                (match_end()) (n-1)
+  in
+    List.rev (split [] start num)
 
 let split expr text = bounded_split expr text 0
 
 let bounded_split_delim expr text num =
-  let rec split start n =
-    if start > String.length text then [] else
-    if n = 1 then [string_after text start] else
-      try
-        let pos = search_forward_progress expr text start in
-        String.sub text start (pos-start) :: split (match_end()) (n-1)
-      with Not_found ->
-        [string_after text start] in
-  if text = "" then [] else split 0 num
+  let rec split accu start n =
+    if start > String.length text then accu else
+    if n = 1 then string_after text start :: accu else
+      match opt_search_forward_progress expr text start with
+      | None ->
+          string_after text start :: accu
+      | Some pos ->
+          split (String.sub text start (pos-start) :: accu)
+                (match_end()) (n-1)
+  in
+    if text = "" then [] else List.rev (split [] 0 num)
 
 let split_delim expr text = bounded_split_delim expr text 0
 
 type split_result = Text of string | Delim of string
 
 let bounded_full_split expr text num =
-  let rec split start n =
-    if start >= String.length text then [] else
-    if n = 1 then [Text(string_after text start)] else
-      try
-        let pos = search_forward_progress expr text start in
-        let s = matched_string text in
-        if pos > start then
-          Text(String.sub text start (pos-start)) ::
-          Delim(s) ::
-          split (match_end()) (n-1)
-        else
-          Delim(s) ::
-          split (match_end()) (n-1)
-      with Not_found ->
-        [Text(string_after text start)] in
-  split 0 num
+  let rec split accu start n =
+    if start >= String.length text then accu else
+    if n = 1 then Text(string_after text start) :: accu else
+      match opt_search_forward_progress expr text start with
+      | None ->
+          Text(string_after text start) :: accu
+      | Some pos ->
+          let s = matched_string text in
+          if pos > start then
+            split (Delim(s) :: Text(String.sub text start (pos-start)) :: accu)
+                  (match_end()) (n-1)
+          else
+            split (Delim(s) :: accu)
+                  (match_end()) (n-1)
+  in
+    List.rev (split [] 0 num)
 
 let full_split expr text = bounded_full_split expr text 0

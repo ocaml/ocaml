@@ -71,7 +71,7 @@ let automated_test() =
   test_search_forward r n "What do you know about THE QUICK BROWN FOX?"
     [||];
 
-  start_test "Search for /the quick brown fox/";
+  start_test "Search for /the quick brown fox/ (case-insensitive)";
   let r = Str.regexp_case_fold "the quick brown fox" in
   let n = 0 in
   test_search_forward r n "the quick brown fox"
@@ -717,6 +717,24 @@ let automated_test() =
   test (Str.replace_first (Str.regexp "[0-9]\\([0-9]*\\)") "-\\0-\\1-"
           "abc012def3ghi45")
        "abc-012-12-def3ghi45";
+
+  (** Splitting *)
+  start_test "Splitting";
+  test (Str.split (Str.regexp "[ \t]+") "si non e vero")
+       ["si"; "non"; "e"; "vero"];
+  test (Str.split (Str.regexp "[ \t]+") " si non\te vero\t")
+       ["si"; "non"; "e"; "vero"];
+  test (Str.bounded_split (Str.regexp "[ \t]+") " si non e vero " 3)
+       ["si"; "non"; "e vero "];
+  test (Str.split (Str.regexp "[ \t]*") "si non e vero")
+       ["s"; "i"; "n"; "o"; "n"; "e"; "v"; "e"; "r"; "o"];
+  test (Str.split_delim (Str.regexp "[ \t]+") " si non e vero\t")
+       [""; "si"; "non"; "e"; "vero"; ""];
+  test (Str.full_split (Str.regexp "[ \t]+") " si non\te vero\t")
+       [Str.Delim " "; Str.Text "si"; 
+        Str.Delim " "; Str.Text "non";
+        Str.Delim "\t"; Str.Text "e";
+        Str.Delim " "; Str.Text "vero"; Str.Delim "\t"];
 
   (** XML tokenization *)
   (* See "REX: XML Shallow Parsing with Regular Expressions",
