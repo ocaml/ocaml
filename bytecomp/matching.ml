@@ -1309,30 +1309,100 @@ let matcher_lazy p rem = match p.pat_desc with
 | Tpat_var _          -> get_arg_lazy omega rem
 | _                   -> get_arg_lazy p rem
 
+(* Inlining the tag tests before calling the primitive that works on
+   lazy blocks. This is alse used in translcore.ml.
+   No call other than Obj.tag when the value has been forced before.
+*)
 
-(* Compute lazily the lambda-code of Lazy.force *)
+let prim_obj_tag =
+  {prim_name = "caml_obj_tag";
+   prim_arity = 1; prim_alloc = false;
+   prim_native_name = "";
+   prim_native_float = false}
 
-let lambda_of_force =
+let get_mod_field modname field =
   lazy (
-    let lazy_mod_ident = Ident.create_persistent "Lazy" in
-    let lazy_env = Env.open_pers_signature "Lazy" Env.initial in
-    let p = try
-      match Env.lookup_value (Longident.Lident "force") lazy_env with
-      | (Path.Pdot(_,_,i), _) -> i
-      | _ -> assert false
-    with Not_found -> assert false
-    in
-    Lprim(Pfield p, [Lprim(Pgetglobal lazy_mod_ident, [])])
+    try
+      let mod_ident = Ident.create_persistent modname in
+      let env = Env.open_pers_signature modname Env.initial in
+      let p = try
+        match Env.lookup_value (Longident.Lident field) env with
+        | (Path.Pdot(_,_,i), _) -> i
+        | _ -> fatal_error ("Primitive "^modname^"."^field^" not found.")
+      with Not_found -> fatal_error ("Primitive "^modname^"."^field^" not found.")
+      in
+      Lprim(Pfield p, [Lprim(Pgetglobal mod_ident, [])])
+    with Not_found -> fatal_error ("Module "^modname^" unavailable.")
   )
+
+let code_force_lazy_block =
+  get_mod_field "CamlinternalLazy" "force_lazy_block"
+;;
+
+(* inline_lazy_force inlines the beginning of the code of Lazy.force. When
+   the value argument is tagged as:
+   - forward, take field 0
+   - lazy, call the primitive that forces (without testing again the tag)
+   - anything else, return it
+
+   Using Lswitch below relies on the fact that the GC does not shortcut
+   Forward(val_out_of_heap).
+*)
+
+let inline_lazy_force_cond arg loc =
+  let idarg = Ident.create "lzarg" in
+  let varg = Lvar idarg in
+  let tag = Ident.create "tag" in
+  let force_fun = Lazy.force code_force_lazy_block in
+  Llet(Strict, idarg, arg,
+       Llet(Alias, tag, Lprim(Pccall prim_obj_tag, [varg]),
+            Lifthenelse(
+              (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
+              Lprim(Pintcomp Ceq,
+                    [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))]),
+              Lprim(Pfield 0, [varg]),
+              Lifthenelse(
+                (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
+                Lprim(Pintcomp Ceq,
+                      [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))]),
+                Lapply(force_fun, [varg], loc),
+                (* ... arg *)
+                  varg))))
+
+let inline_lazy_force_switch arg loc =
+  let idarg = Ident.create "lzarg" in
+  let varg = Lvar idarg in
+  let force_fun = Lazy.force code_force_lazy_block in
+  Llet(Strict, idarg, arg,
+       Lifthenelse(
+         Lprim(Pisint, [varg]), varg,
+         (Lswitch
+            (varg,
+             { sw_numconsts = 0; sw_consts = [];   
+               sw_numblocks = (max Obj.lazy_tag Obj.forward_tag) + 1;
+               sw_blocks =
+                 [ (Obj.forward_tag, Lprim(Pfield 0, [varg]));
+                   (Obj.lazy_tag,
+                    Lapply(force_fun, [varg], loc)) ];
+               sw_failaction = Some varg } ))))
+
+let inline_lazy_force =
+  if !Clflags.native_code then
+    (* Lswitch generates compact and efficient native code *)
+    inline_lazy_force_switch
+  else
+    (* generating bytecode: Lswitch would generate too many rather big
+       tables (~ 250 elts); conditionals are better *)
+    inline_lazy_force_cond
 
 let make_lazy_matching def = function
     [] -> fatal_error "Matching.make_lazy_matching"
   | (arg,mut) :: argl ->
       { cases = [];
-        args = (Lapply(Lazy.force lambda_of_force, [arg], Location.none),
-                Strict) :: argl;
+        args =
+          (inline_lazy_force arg Location.none, Strict) :: argl;
         default = make_default matcher_lazy def }
-    
+
 let divide_lazy p ctx pm =
   divide_line
     (filter_ctx p)

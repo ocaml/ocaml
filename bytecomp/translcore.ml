@@ -202,6 +202,7 @@ let primitives_table = create_hashtable 57 [
   "%obj_field", Parrayrefu Pgenarray;
   "%obj_set_field", Parraysetu Pgenarray;
   "%obj_is_int", Pisint;
+  "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
   "%nativeint_to_int", Pintofbint Pnativeint;
   "%nativeint_neg", Pnegbint Pnativeint;
@@ -351,10 +352,15 @@ let transl_primitive p =
       Hashtbl.find primitives_table p.prim_name
     with Not_found ->
       Pccall p in
-  let rec make_params n =
-    if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
-  let params = make_params p.prim_arity in
-  Lfunction(Curried, params, Lprim(prim, List.map (fun id -> Lvar id) params))
+  match prim with
+    Plazyforce ->
+      let parm = Ident.create "prim" in
+      Lfunction(Curried, [parm], Matching.inline_lazy_force (Lvar parm) Location.none)
+  | _ ->
+      let rec make_params n =
+        if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
+      let params = make_params p.prim_arity in
+      Lfunction(Curried, params, Lprim(prim, List.map (fun id -> Lvar id) params))
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -584,10 +590,10 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
-    when List.length args >= p.prim_arity
-    && List.for_all (fun (arg,_) -> arg <> None) args ->
-      let args, args' = cut p.prim_arity args in
+  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, oargs)
+    when List.length oargs >= p.prim_arity
+    && List.for_all (fun (arg,_) -> arg <> None) oargs ->
+      let args, args' = cut p.prim_arity oargs in
       let wrap f =
         if args' = []
         then event_after e f
@@ -613,8 +619,13 @@ and transl_exp0 e =
           (Praise, [arg1]) ->
             wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))
         | (_, _) ->
-            let p = Lprim(prim, argl) in
-            if primitive_is_ccall prim then wrap p else wrap0 p
+            begin match (prim, argl) with
+            | (Plazyforce, [a]) ->
+                wrap (Matching.inline_lazy_force a e.exp_loc)
+            | (Plazyforce, _) -> assert false
+            |_ -> let p = Lprim(prim, argl) in
+               if primitive_is_ccall prim then wrap p else wrap0 p
+            end
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)

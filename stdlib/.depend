@@ -1,3 +1,4 @@
+camlinternalLazy.cmi: obj.cmi 
 camlinternalMod.cmi: obj.cmi 
 camlinternalOO.cmi: obj.cmi 
 format.cmi: buffer.cmi 
@@ -18,6 +19,7 @@ buffer.cmo: sys.cmi string.cmi buffer.cmi
 buffer.cmx: sys.cmx string.cmx buffer.cmi 
 callback.cmo: obj.cmi callback.cmi 
 callback.cmx: obj.cmx callback.cmi 
+camlinternalLazy.cmo: camlinternalLazy.cmi
 camlinternalMod.cmo: obj.cmi camlinternalOO.cmi array.cmi camlinternalMod.cmi 
 camlinternalMod.cmx: obj.cmx camlinternalOO.cmx array.cmx camlinternalMod.cmi 
 camlinternalOO.cmo: sys.cmi string.cmi obj.cmi map.cmi list.cmi char.cmi \
@@ -46,8 +48,8 @@ int32.cmo: pervasives.cmi int32.cmi
 int32.cmx: pervasives.cmx int32.cmi 
 int64.cmo: pervasives.cmi int64.cmi 
 int64.cmx: pervasives.cmx int64.cmi 
-lazy.cmo: obj.cmi lazy.cmi 
-lazy.cmx: obj.cmx lazy.cmi 
+lazy.cmo: obj.cmi camlinternalLazy.cmi lazy.cmi 
+lazy.cmx: obj.cmx camlinternalLazy.cmx lazy.cmi 
 lexing.cmo: sys.cmi string.cmi array.cmi lexing.cmi 
 lexing.cmx: sys.cmx string.cmx array.cmx lexing.cmi 
 list.cmo: list.cmi 

@@ -39,3 +39,5 @@ val flatten_pattern: int -> pattern -> pattern list
 val make_test_sequence:
         lambda option -> primitive -> primitive -> lambda ->
         (Asttypes.constant * lambda) list -> lambda
+
+val inline_lazy_force : lambda -> Location.t -> lambda

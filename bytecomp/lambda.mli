@@ -29,6 +29,8 @@ type primitive =
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
+  (* Force lazy values *)
+  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
