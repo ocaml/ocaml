@@ -113,21 +113,18 @@ let print_filename s =
 ;;
 
 let print_dependencies target_file deps =
-  match deps with
-    [] -> ()
-  | _ ->
-    print_filename target_file; print_string depends_on;
-    let rec print_items pos = function
-      [] -> print_string "\n"
-    | dep :: rem ->
-        if pos + String.length dep <= 77 then begin
-          print_filename dep; print_string " ";
-          print_items (pos + String.length dep + 1) rem
-        end else begin
-          print_string escaped_eol; print_filename dep; print_string " ";
-          print_items (String.length dep + 5) rem
-        end in
-    print_items (String.length target_file + 2) deps
+  print_filename target_file; print_string depends_on;
+  let rec print_items pos = function
+    [] -> print_string "\n"
+  | dep :: rem ->
+      if pos + String.length dep <= 77 then begin
+        print_filename dep; print_string " ";
+        print_items (pos + String.length dep + 1) rem
+      end else begin
+        print_string escaped_eol; print_filename dep; print_string " ";
+        print_items (String.length dep + 5) rem
+      end in
+  print_items (String.length target_file + 2) deps
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string ":";
