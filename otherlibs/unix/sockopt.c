@@ -83,6 +83,12 @@
 #ifndef SO_ERROR
 #define SO_ERROR (-1)
 #endif
+#ifndef IPPROTO_IPV6
+#define IPPROTO_IPV6 (-1)
+#endif
+#ifndef IPV6_V6ONLY
+#define IPV6_V6ONLY (-1)
+#endif
 
 enum option_type {
   TYPE_BOOL = 0,
@@ -107,7 +113,8 @@ static struct socket_option sockopt_bool[] = {
   { SOL_SOCKET, SO_DONTROUTE },
   { SOL_SOCKET, SO_OOBINLINE },
   { SOL_SOCKET, SO_ACCEPTCONN },
-  { IPPROTO_TCP, TCP_NODELAY }
+  { IPPROTO_TCP, TCP_NODELAY },
+  { IPPROTO_IPV6, IPV6_V6ONLY}
 };
 
 static struct socket_option sockopt_int[] = {

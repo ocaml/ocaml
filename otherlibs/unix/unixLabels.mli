@@ -1010,6 +1010,7 @@ type socket_bool_option =
   | SO_OOBINLINE   (** Leave out-of-band data in line *)
   | SO_ACCEPTCONN  (** Report whether socket listening is enabled *)
   | TCP_NODELAY    (** Control the Nagle algorithm for TCP sockets *)
+  | IPV6_ONLY      (** Forbid binding an IPv6 socket to an IPv4 address *)
 (** The socket options that can be consulted with {!UnixLabels.getsockopt}
    and modified with {!UnixLabels.setsockopt}.  These options have a boolean
    ([true]/[false]) value. *)
