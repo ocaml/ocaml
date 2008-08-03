@@ -883,6 +883,24 @@ failwith_test 11
 (approx_ratio_fix 5) (create_ratio (big_int_of_int 0) (big_int_of_int 0))
 (Failure "approx_ratio_fix infinite or undefined rational number");;
 
+(* PR#4566 *)
+test 12
+eq_string (approx_ratio_fix 8
+                            (create_ratio (big_int_of_int 9603)
+                                          (big_int_of_string "100000000000")),
+
+          "+0.00000010");;
+test 13
+eq_string (approx_ratio_fix 1
+                            (create_ratio (big_int_of_int 94)
+                                          (big_int_of_int 1000)),
+          "+0.1");;
+test 14
+eq_string (approx_ratio_fix 1
+                            (create_ratio (big_int_of_int 49)
+                                          (big_int_of_int 1000)),
+          "+0.0");;
+
 testing_function "approx_ratio_exp";;
 
 test 1

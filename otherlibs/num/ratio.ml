@@ -425,55 +425,54 @@ let approx_ratio_fix n r =
   let sign_r = sign_ratio r in 
    if sign_r = 0
    then "+0" (* r = 0 *)
-   else (* r.numerator and r.denominator are not null numbers 
-           s contains one more digit than desired for the round off operation
-           and to have enough room in s when including the decimal point *)
-    if n >= 0 then 
-        let s = 
-         let nat = 
+   else
+    (* r.numerator and r.denominator are not null numbers 
+       s1 contains one more digit than desired for the round off operation *)
+     if n >= 0 then begin
+       let s1 = 
+         string_of_nat
            (nat_of_big_int
                 (div_big_int
                    (base_power_big_int
                        10 (succ n) (abs_big_int r.numerator))
-                   r.denominator))
-         in (if sign_r = -1 then "-" else "+") ^ string_of_nat nat in
-        let l = String.length s in
-         if round_futur_last_digit s 1 (pred l) 
-          then begin (* if one more char is needed in s *)
-           let str = (String.make (succ l) '0') in 
-            String.set str 0 (if sign_r = -1 then '-' else '+');
-            String.set str 1 '1';
-            String.set str (l - n) '.';
-            str
-          end else (* s can contain the final result *)
-           if l > n + 2
-            then begin (* |r| >= 1, set decimal point *)
-             let l2 = (pred l) - n in
-               String.blit s l2 s (succ l2) n; 
-               String.set s l2 '.'; s
-            end else begin (* |r| < 1, there must be 0-characters *)
-                           (* before the significant development, *)
-                           (* with care to the sign of the number *)
-             let size = n + 3 in
-             let m = size - l + 2
-             and str = String.make size '0' in
-
-              (String.blit (if sign_r = 1 then "+0." else "-0.") 0 str 0 3);
-              (String.blit s 1 str m (l - 2));
-              str
-            end
-       else begin
-         let s = string_of_big_int
-                   (div_big_int
-                      (abs_big_int r.numerator) 
-                      (base_power_big_int
-                        10 (-n) r.denominator)) in
-         let len = succ (String.length s) in
-         let s' = String.make len '0' in
-          String.set s' 0 (if sign_r = -1 then '-' else '+');
-          String.blit s 0 s' 1 (pred len);
-          s'
+                   r.denominator)) in
+       (* Round up and add 1 in front if needed *)
+       let s2 =
+         if round_futur_last_digit s1 0 (String.length s1)
+         then "1" ^ s1
+         else s1 in
+       let l2 = String.length s2 - 1 in
+       (*   if s2 without last digit is xxxxyyy with n 'yyy' digits:
+               <sign> xxxx . yyy
+            if s2 without last digit is      yy with <= n digits:
+               <sign> 0 . 0yy *)
+       if l2 > n then begin
+         let s = String.make (l2 + 2) '0' in
+         String.set s 0  (if sign_r = -1 then '-' else '+');
+         String.blit s2 0 s 1 (l2 - n);
+         String.set s (l2 - n + 1) '.';
+         String.blit s2 (l2 - n) s (l2 - n + 2) n;
+         s
+       end else begin
+         let s = String.make (n + 3) '0' in
+         String.set s 0  (if sign_r = -1 then '-' else '+');
+         String.set s 2 '.';
+         String.blit s2 0 s (n + 3 - l2) l2;
+         s
        end
+     end else begin
+       (* Dubious; what is this code supposed to do? *)
+       let s = string_of_big_int
+                 (div_big_int
+                    (abs_big_int r.numerator) 
+                    (base_power_big_int
+                      10 (-n) r.denominator)) in
+       let len = succ (String.length s) in
+       let s' = String.make len '0' in
+        String.set s' 0 (if sign_r = -1 then '-' else '+');
+        String.blit s 0 s' 1 (pred len);
+        s'
+     end
 
 (* Number of digits of the decimal representation of an int *)
 let num_decimal_digits_int n = 

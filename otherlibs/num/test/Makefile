@@ -31,7 +31,7 @@ TESTFILES=test.cmo \
 TESTOPTFILES=$(TESTFILES:.cmo=.cmx)
 
 test.byt: $(TESTFILES) ../nums.cma ../libnums.a
-	$(CAMLC) -ccopt -L.. -I .. -o test.byt ../nums.cma $(TESTFILES)
+	$(CAMLC) -ccopt -L.. -I .. -o test.byt -g ../nums.cma $(TESTFILES)
 
 test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.a
 	$(CAMLOPT) -ccopt -L.. -I .. -o test.opt ../nums.cmxa $(TESTOPTFILES)
@@ -44,7 +44,7 @@ $(TESTOPTFILES): ../../../ocamlopt
 .SUFFIXES: .ml .cmo .cmx
 
 .ml.cmo:
-	$(CAMLC) -I .. -c $<
+	$(CAMLC) -I .. -c -g $<
 
 .ml.cmx:
 	$(CAMLOPT) -I .. -c $<

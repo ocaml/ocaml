@@ -368,7 +368,7 @@ let big_int_of_int64 i =
       else (-1, Int64.neg i) in
     let res = create_nat 2 in
     set_digit_nat_native res 0 (Int64.to_nativeint i);
-    set_digit_nat_native res 1 (Int64.to_nativeint (Int64.shift_left i 32));
+    set_digit_nat_native res 1 (Int64.to_nativeint (Int64.shift_right i 32));
     { sign = sg; abs_value = res }
   end
 
@@ -380,7 +380,9 @@ let int64_of_big_int bi =
       match num_digits_big_int bi with
       | 1 -> Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0)
       | 2 -> Int64.logor
-               (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))
+               (Int64.logand
+                 (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))
+                 0xFFFFFFFFL)
                (Int64.shift_left 
                  (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 1))
                  32)
@@ -619,14 +621,14 @@ let round_futur_last_digit s off_set length =
   if Char.code(String.get s l) >= Char.code '5'
     then
      let rec round_rec l =
-      let current_char = String.get s l in
-       if current_char = '9'
-        then
-         (String.set s l '0';
-          if l = off_set then true else round_rec (pred l))
-        else
-         (String.set s l (Char.chr (succ (Char.code current_char)));
-          false)
+       if l < off_set then true else begin
+         let current_char = String.get s l in
+         if current_char = '9' then
+           (String.set s l '0'; round_rec (pred l))
+         else
+           (String.set s l (Char.chr (succ (Char.code current_char)));
+            false)
+       end
      in round_rec (pred l)
    else false
 

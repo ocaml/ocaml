@@ -757,9 +757,9 @@ test 1 eq_int64
   (int64_of_big_int zero_big_int, 0L);;
 test 2 eq_int64
   (int64_of_big_int (big_int_of_string "9223372036854775807"), 9223372036854775807L);;
-test 2 eq_int64
-  (int64_of_big_int (big_int_of_string "-9223372036854775808"), -9223372036854775808L);;
 test 3 eq_int64
+  (int64_of_big_int (big_int_of_string "-9223372036854775808"), -9223372036854775808L);;
+test 4 eq_int64
   (int64_of_big_int (big_int_of_string "-9223372036854775"), -9223372036854775L);;
 let should_fail s =
   try ignore (int64_of_big_int (big_int_of_string s)); 0
