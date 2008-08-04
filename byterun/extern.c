@@ -639,7 +639,7 @@ CAMLexport void caml_serialize_float_4(float f)
 
 CAMLexport void caml_serialize_float_8(double f)
 {
-  caml_serialize_block_8(&f, 1);
+  caml_serialize_block_float_8(&f, 1);
 }
 
 CAMLexport void caml_serialize_block_1(void * data, intnat len)
