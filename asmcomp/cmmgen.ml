@@ -180,8 +180,15 @@ let test_bool = function
 
 let box_float c = Cop(Calloc, [alloc_float_header; c])
 
-let unbox_float = function
+let rec unbox_float = function
     Cop(Calloc, [header; c]) -> c
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_float body)
+  | Cifthenelse(cond, e1, e2) ->
+      Cifthenelse(cond, unbox_float e1, unbox_float e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_float e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_float el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_float e1, unbox_float e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float e1, id, unbox_float e2)
   | c -> Cop(Cload Double_u, [c])
 
 (* Complex *)
@@ -469,7 +476,7 @@ let box_int bi arg =
                    Cconst_symbol(operations_boxed_int bi);
                    arg'])
 
-let unbox_int bi arg =
+let rec unbox_int bi arg =
   match arg with
     Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
     when bi = Pint32 && size_int = 8 && big_endian ->
@@ -481,6 +488,13 @@ let unbox_int bi arg =
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
   | Cop(Calloc, [hdr; ops; contents]) ->
       contents
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body)
+  | Cifthenelse(cond, e1, e2) ->
+      Cifthenelse(cond, unbox_int bi e1, unbox_int bi e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map (unbox_int bi) el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_int bi e1, unbox_int bi e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_int bi e1, id, unbox_int bi e2)
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
           [Cop(Cadda, [arg; Cconst_int size_addr])])
