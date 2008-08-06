@@ -37,14 +37,14 @@ PUBLIC_INCLUDES=\
   memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h
 
 
-all: ocamlrun$(EXE) ld.conf libcamlrun.$(A)
+all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A)
 .PHONY: all
 
 ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" >ld.conf
 	echo "$(LIBDIR)" >>ld.conf
 
-install:
+install::
 	cp ocamlrun$(EXE) $(BINDIR)/ocamlrun$(EXE)
 	cp libcamlrun.$(A) $(LIBDIR)/libcamlrun.$(A)
 	cd $(LIBDIR); $(RANLIB) libcamlrun.$(A)

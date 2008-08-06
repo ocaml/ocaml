@@ -20,6 +20,16 @@ DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=$(COMMONOBJS) unix.o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
+PICOBJS=$(OBJS:.o=.pic.o)
+
+ifeq ($(SUPPORTS_SHARED_LIBRARIES),true)
+
+all:: libcamlrun_shared.so
+
+install::
+	cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so
+
+endif
 
 ocamlrun$(EXE): libcamlrun.a prims.o
 	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
@@ -37,7 +47,10 @@ libcamlrund.a: $(DOBJS)
 	ar rc libcamlrund.a $(DOBJS)
 	$(RANLIB) libcamlrund.a
 
-.SUFFIXES: .d.o
+libcamlrun_shared.so: $(PICOBJS)
+	$(MKDLL) -o libcamlrun_shared.so $(PICOBJS)
+
+.SUFFIXES: .d.o .pic.o
 
 .c.d.o:
 	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
@@ -45,9 +58,16 @@ libcamlrund.a: $(DOBJS)
 	mv $*.o $*.d.o
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
+.c.pic.o:
+	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
+	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $<
+	mv $*.o $*.pic.o
+	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
 	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	-gcc -MM $(BYTECCCOMPOPTS) *.c | sed -e 's/\.o/.pic.o/' >> .depend
 .PHONY: depend
 
 include .depend
