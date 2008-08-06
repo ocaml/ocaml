@@ -331,11 +331,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     method patt_expr_fun_args f (p, e) =
       let (pl, e) = expr_fun_args e
-      in pp f "%a@ ->@ %a" (list o#patt "@ ") [p::pl] o#expr e;
+      in pp f "%a@ ->@ %a" (list o#simple_patt "@ ") [p::pl] o#expr e;
 
     method patt_class_expr_fun_args f (p, ce) =
       let (pl, ce) = class_expr_fun_args ce
-      in pp f "%a =@]@ %a" (list o#patt "@ ") [p::pl] o#class_expr ce;
+      in pp f "%a =@]@ %a" (list o#simple_patt "@ ") [p::pl] o#class_expr ce;
 
     method constrain f (t1, t2) =
       pp f "@[<2>constraint@ %a =@ %a@]" o#ctyp t1 o#ctyp t2;
@@ -891,7 +891,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:class_expr< virtual $lid:i$ [ $t$ ] >> ->
           pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]" o#class_params t o#var i
     | <:class_expr< fun $p$ -> $ce$ >> ->
-          pp f "@[<2>fun@ %a@ ->@ %a@]" o#patt p o#class_expr ce
+          pp f "@[<2>fun@ %a@ ->@ %a@]" o#simple_patt p o#class_expr ce
     | <:class_expr< let $rec:r$ $bi$ in $ce$ >> ->
           pp f "@[<2>let %a%a@]@ @[<2>in@ %a@]"
             o#rec_flag r o#binding bi o#class_expr ce
