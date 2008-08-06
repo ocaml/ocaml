@@ -291,3 +291,12 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
   }
   
 }
+
+/* Control printing of debugging info */
+
+CAMLprim value caml_set_parser_trace(value flag)
+{
+  value oldflag = Val_bool(caml_parser_trace);
+  caml_parser_trace = Bool_val(flag);
+  return oldflag;
+}
