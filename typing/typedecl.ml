@@ -801,7 +801,7 @@ let check_recmod_typedecl env loc recmod_ids path decl =
   (* recmod_ids is the list of recursively-defined module idents.
      (path, decl) is the type declaration to be checked. *)
   check_recursion env loc path decl
-    (fun path -> List.mem (Path.head path) recmod_ids)
+    (fun path -> List.exists (fun id -> Path.isfree id path) recmod_ids)
 
 
 (**** Error report ****)
