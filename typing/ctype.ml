@@ -1236,7 +1236,7 @@ let rec non_recursive_abbrev env ty0 ty =
     match ty.desc with
       Tconstr(p, args, abbrev) ->
         begin try
-          non_recursive_abbrev env ty0 (try_expand_head env ty)
+          non_recursive_abbrev env ty0 (try_expand_once env ty)
         with Cannot_expand ->
           if !Clflags.recursive_types then () else
           iter_type_expr (non_recursive_abbrev env ty0) ty
