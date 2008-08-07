@@ -22,14 +22,14 @@ CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
-OUTS=bakctrace2.bin callback.bin manyargs.bin \
+OUTS=backtrace2.bin callback.bin manyargs.bin \
 cm.byt cmlinked.bin cm.bin \
 bigarrays.bin bigarrf.bin fftba.bin globroots.bin float.bin intext.bin \
 printf scanf regexp.byt regexp.opt md5.bin recmod.bin
 
 BROKENS=# multdef.bin
 
-all: $(OUTS:.bin=.byt) $(OUTS)
+all: $(OUTS:.bin=.byt) $(OUTS) recmods
 
 callback.byt: callback.cmo callbackprim.o
 	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
@@ -164,6 +164,22 @@ recmod.byt: recmod.cmo
 
 recmod.bin: recmod.cmx
 	$(CAMLOPT) -o recmod.bin recmod.cmx
+
+recmods:
+	set -e; \
+        for i in recmod/*.ml; do \
+          case $$i in \
+          *ok.ml) \
+            echo "$$i (should succeed)"; \
+            $(CAMLC) -c $$i;; \
+          *bad.ml) \
+            echo "$$i (should fail)"; \
+            if $(CAMLC) -c $$i; then exit 2; else :; fi;; \
+          esac; \
+        done
+
+clean::
+	rm -f recmods/*.cm[io]
 
 length.cmo: length.cmi
 tlength.cmo: length.cmo
