@@ -691,6 +691,10 @@ module PR_4261 = struct
 
   module rec U : T with module D = U' = U
   and U' : S with type t = U'.t = U 
-end
+end;;
+
+(* Bad - PR 4512 *)
+module type S' = sig type t = int end
+module rec M : S' with type t = M.t = struct type t = M.t end;;
 
 **)

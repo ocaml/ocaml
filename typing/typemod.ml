@@ -410,6 +410,7 @@ and transl_recmodule_modtypes loc env sdecls =
   let env0 = make_env init in
   let dcl1 = transition env0 init in
   let env1 = make_env dcl1 in
+  check_recmod_typedecls env1 sdecls dcl1;
   let dcl2 = transition env1 dcl1 in
 (*
   List.iter
