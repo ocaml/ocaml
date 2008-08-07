@@ -589,6 +589,19 @@ and DirHash
       type t = DirCompare.t list
     end      
 
+(* PR 4758, PR 4266 *)
+
+module PR_4758 = struct
+  module type S = sig end
+  module type Mod = sig
+    module Other : S
+  end
+  module rec A : S = struct
+  end and C : sig include Mod with module Other = A end = struct
+    module Other = A
+  end
+end
+
 (** Ill-formed type abbreviations.  *)
 
 (**
@@ -661,5 +674,23 @@ class type [ 'node ] extension = object method node : 'node end
 class type [ 'ext ] node = object constraint 'ext = 'ext node #extension end 
 class x = object method node : x node = assert false end
 type t = x node;;
+
+(* Bad - PR 4261 *)
+
+module PR_4261 = struct
+  module type S =
+  sig
+    type t
+  end
+
+  module type T =
+  sig
+    module D : S
+    type t = D.t
+  end
+
+  module rec U : T with module D = U' = U
+  and U' : S with type t = U'.t = U 
+end
 
 **)
