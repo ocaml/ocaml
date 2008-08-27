@@ -5,9 +5,9 @@ all: cTk.ml camltk.ml .depend
 _tkgen.ml: ../Widgets.src ../compiler/tkcompiler$(EXE)
 	cd ..; $(CAMLRUNGEN) compiler/tkcompiler$(EXE) -camltk -outdir camltk
 
-cTk.ml camltk.ml .depend: generate
+#cTk.ml camltk.ml .depend: generate
 
-generate: _tkgen.ml ../builtin/report.ml ../compiler/pp$(EXE) #../builtin/builtin_*.ml
+cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp$(EXE) #../builtin/builtin_*.ml
 	(echo '##define CAMLTK'; \
          echo 'include Camltkwrap'; \
 	 echo 'open Widget'; \
