@@ -298,6 +298,12 @@ let transl_prim prim args =
     | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
+    | [arg1; {exp_desc = Texp_variant(_, None)}]
+      when simplify_constant_constructor ->
+        intcomp
+    | [{exp_desc = Texp_variant(_, None)}; exp2]
+      when simplify_constant_constructor ->
+        intcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_int
                      || has_base_type arg1 Predef.path_char ->
         intcomp
