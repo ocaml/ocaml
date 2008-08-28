@@ -188,13 +188,14 @@ let loadunits filename handle units state =
   List.iter (ndl_run handle) defines;
   { implems = new_implems; ifaces = new_ifaces }
 
-let load priv filename state =
+let load priv filename =
   init();
   let (filename,handle,units) = read_file filename priv in
-  loadunits filename handle units state
+  let nstate = loadunits filename handle units !global_state in
+  if not priv then global_state := nstate
 
-let loadfile filename = global_state := load false filename !global_state
-let loadfile_private filename = ignore (load true filename !global_state)
+let loadfile filename = load false filename
+let loadfile_private filename = load true filename
 
 let allow_only names =
   init();
