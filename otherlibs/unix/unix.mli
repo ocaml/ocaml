@@ -144,7 +144,9 @@ type process_status =
   | WSTOPPED of int
         (** The process was stopped by a signal; the argument is the
            signal number. *)
-(** The termination status of a process. *)
+(** The termination status of a process.  See module {!Sys} for the
+    definitions of the standard signal numbers.  Note that they are
+    not the numbers used by the OS. *)
 
 
 type wait_flag =
