@@ -126,8 +126,8 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"::"}{right}
 \entree{{\tt \char64}\ldots "   ^"\ldots}{right}
 \entree{comparisons ("=  ==  < " etc.), all other infix symbols}{left}
-\entree{"&   &&"}{left}
-\entree{"or  ||"}{left}
+\entree{"&   &&"}{right}
+\entree{"or  ||"}{right}
 \entree{","}{--}
 \entree{"<-   :="}{right}
 \entree{"if"}{--}
