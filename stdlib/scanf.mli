@@ -211,7 +211,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     input with various whitespace in it, such as [Price = 1 $],
     [Price  =  1    $], or even [Price=1$]. *)
 
-(** {7 Convertion specifications in format strings} *)
+(** {7 Conversion specifications in format strings} *)
 
 (** Conversion specifications consist in the [%] character, followed by
     an optional flag, an optional field width, and followed by one or
@@ -230,7 +230,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
       scanning indication has been encountered, or the end-of-input has been
       reached.
       Hence, this conversion always succeeds: it returns an empty
-      string if the bounding condition holds when the scan begins.
+      string, if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
       escaped characters follow the lexical conventions of Caml).
     - [c]: reads a single character. To test the current input character

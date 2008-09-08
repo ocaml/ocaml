@@ -413,7 +413,9 @@ let format_pp_token state size = function
 (* Print if token size is known or printing is delayed.
    Size is known when not negative.
    Printing is delayed when the text waiting in the queue requires
-   more room to format than exists on the current line. *)
+   more room to format than exists on the current line.
+
+   Note: [advance_loop] must be tail recursive to prevent stack overflows. *)
 let rec advance_loop state =
   match peek_queue state.pp_queue with
   | {elem_size = size; token = tok; length = len} ->
