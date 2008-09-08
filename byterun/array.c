@@ -21,8 +21,6 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-#ifndef NATIVE_CODE
-
 CAMLprim value caml_array_get_addr(value array, value index)
 {
   intnat idx = Long_val(index);
@@ -124,8 +122,6 @@ CAMLprim value caml_array_unsafe_set(value array, value index, value newval)
   else
     return caml_array_unsafe_set_addr(array, index, newval);
 }
-
-#endif
 
 CAMLprim value caml_make_vect(value len, value init)
 {
