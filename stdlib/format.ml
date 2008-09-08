@@ -395,23 +395,28 @@ let format_pp_token state size = function
 (* Print if token size is known or printing is delayed.
    Size is known when not negative.
    Printing is delayed when the text waiting in the queue requires
-   more room to format than exists on the current line. *)
-let rec advance_left state =
-  try
-    match peek_queue state.pp_queue with
-    | { elem_size = size; token = tok; length = len; } ->
-      let size = int_of_size size in
-      if not
-       (size < 0 &&
-        (state.pp_right_total - state.pp_left_total <
-         state.pp_space_left)) then
-      begin
-        ignore(take_queue state.pp_queue);
-        format_pp_token state (if size < 0 then pp_infinity else size) tok;
-        state.pp_left_total <- len + state.pp_left_total;
-        advance_left state
-      end with
-  | Empty_queue -> ();;
+   more room to format than exists on the current line.
+
+   Note: [advance_loop] must be tail recursive to prevent stack overflows. *)
+let rec advance_loop state =
+  match peek_queue state.pp_queue with
+  | {elem_size = size; token = tok; length = len} ->
+    let size = int_of_size size in
+    if not
+         (size < 0 &&
+          (state.pp_right_total - state.pp_left_total < state.pp_space_left))
+    then begin
+      ignore (take_queue state.pp_queue);
+      format_pp_token state (if size < 0 then pp_infinity else size) tok;
+      state.pp_left_total <- len + state.pp_left_total;
+      advance_loop state
+    end
+;;
+
+let advance_left state =
+  try advance_loop state with
+  | Empty_queue -> ()
+;;
 
 let enqueue_advance state tok = pp_enqueue state tok; advance_left state;;
 
