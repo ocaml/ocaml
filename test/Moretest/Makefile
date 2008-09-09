@@ -22,20 +22,25 @@ CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
+#FORTRANC=g77
+#FORTRANLIB=g2c
+FORTRANC=gfortran
+FORTRANLIB=gfortran
+
 OUTS=backtrace2.bin callback.bin manyargs.bin \
 cm.byt cmlinked.bin cm.bin \
 bigarrays.bin bigarrf.bin fftba.bin globroots.bin float.bin intext.bin \
 printf scanf regexp.byt regexp.opt md5.bin recmod.bin
 
-BROKENS=# multdef.bin
+BROKENS=
 
 all: $(OUTS:.bin=.byt) $(OUTS) recmods
 
-callback.byt: callback.cmo callbackprim.o
+callback.byt: tcallback.cmo callbackprim.o
 	$(CAMLC) -o callback.byt \
-	  -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
-callback.bin: callback.cmx callbackprim.o
-	$(CAMLOPT) -o callback.bin callback.cmx \
+	  -custom tcallback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
+callback.bin: tcallback.cmx callbackprim.o
+	$(CAMLOPT) -o tcallback.bin tcallback.cmx \
 	  callbackprim.o ../../otherlibs/unix/libunix.a
 
 manyargs.byt: manyargs.cmo manyargsprim.o
@@ -43,6 +48,8 @@ manyargs.byt: manyargs.cmo manyargsprim.o
 manyargs.bin: manyargs.cmx manyargsprim.o
 	$(CAMLOPT) -inline 0 -o manyargs.bin manyargs.cmx manyargsprim.o
 
+multdef.byt: multdef.cmo usemultdef.cmo
+	$(CAMLC) -o multdef.byt multdef.cmo usemultdef.cmo
 multdef.bin: multdef.cmx usemultdef.cmx
 	$(CAMLOPT) -o multdef.bin multdef.cmx usemultdef.cmx
 
@@ -51,7 +58,14 @@ cm.byt: cmcaml.ml cmstub.c cmmain.c
 
 cmlinked.bin: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -output-obj -o cm.o cmcaml.ml
-	$(BYTECC) -g -o cmlinked.bin cm.o -I../../byterun \
+	$(BYTECC) -g -o cmlinked.bin cm.o \
+	  -I../../byterun -I/usr/local/lib/ocaml \
+	  -DNO_BYTECODE_FILE cmstub.c cmmain.c \
+	  ../../byterun/libcamlrun.a $(BYTECCLIBS)
+cmlinked.byt: cmcaml.ml cmstub.c cmmain.c
+	$(CAMLC) -output-obj -o cm.o cmcaml.ml
+	$(BYTECC) -g -o cmlinked.byt cm.o  \
+	  -I../../byterun -I/usr/local/lib/ocaml \
 	  -DNO_BYTECODE_FILE cmstub.c cmmain.c \
 	  ../../byterun/libcamlrun.a $(BYTECCLIBS)
 
@@ -81,9 +95,9 @@ bigarrf.byt: bigarrf.o bigarrfstub.o \
 	$(CAMLC) -custom -o bigarrf.byt \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
-                unix.cma bigarray.cma bigarrf.ml \
+                unix.cma bigarray.cma bigarrfml.ml \
                 bigarrf.o bigarrfstub.o \
-                ../../byterun/libcamlrun.a -cclib -lg2c
+                ../../byterun/libcamlrun.a -cclib -l$(FORTRANLIB)
 
 bigarrf.bin: bigarrf.o bigarrfstub.o \
                ../../otherlibs/bigarray/bigarray.cma \
@@ -91,12 +105,12 @@ bigarrf.bin: bigarrf.o bigarrfstub.o \
 	$(CAMLOPT) $(OPTFLAGS) -o bigarrf.bin \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
-                unix.cma bigarray.cma bigarrf.ml \
+                unix.cma bigarray.cma bigarrfml.ml \
                 bigarrf.o bigarrfstub.o \
-                ../../byterun/libcamlrun.a -cclib -lg2c
+                ../../byterun/libcamlrun.a -cclib -l$(FORTRANLIB)
 
 bigarrf.o: bigarrf.f
-	g77 -c bigarrf.f
+	$(FORTRANC) -c bigarrf.f
 
 bigarrfstub.o: bigarrfstub.c
 	$(NATIVECC) $(NATIVECCCOMPOPTS) -I../../byterun \
