@@ -30,7 +30,7 @@ FORTRANLIB=gfortran
 OUTS=backtrace2.bin callback.bin manyargs.bin \
 cm.byt cmlinked.bin cm.bin \
 bigarrays.bin bigarrf.bin fftba.bin globroots.bin float.bin intext.bin \
-printf scanf regexp.byt regexp.opt md5.bin recmod.bin
+printf scanf regexp.byt regexp.bin md5.bin recmod.bin
 
 BROKENS=
 
@@ -183,8 +183,8 @@ scanf: tscanf.byt tscanf.bin tscanf2.byt tscanf2.bin
 
 regexp.byt: ../../otherlibs/str/str.cma regexp.ml
 	$(CAMLC) -custom -I ../../otherlibs/str -o regexp.byt str.cma regexp.ml
-regexp.opt: ../../otherlibs/str/str.cmxa regexp.ml
-	$(CAMLOPT) -I ../../otherlibs/str -o regexp.opt str.cmxa regexp.ml
+regexp.bin: ../../otherlibs/str/str.cmxa regexp.ml
+	$(CAMLOPT) -I ../../otherlibs/str -o regexp.bin str.cmxa regexp.ml
 
 md5.bin: md5.ml
 	$(CAMLOPT) -unsafe -inline 100 -o md5.bin md5.ml
