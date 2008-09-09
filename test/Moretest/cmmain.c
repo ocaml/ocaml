@@ -1,6 +1,7 @@
 /* Main program -- in C */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <caml/callback.h>
 
 extern int fib(int n);
