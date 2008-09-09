@@ -32,9 +32,11 @@ BROKENS=# multdef.bin
 all: $(OUTS:.bin=.byt) $(OUTS) recmods
 
 callback.byt: callback.cmo callbackprim.o
-	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
+	$(CAMLC) -o callback.byt \
+	  -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
 callback.bin: callback.cmx callbackprim.o
-	$(CAMLOPT) -o callback.bin callback.cmx callbackprim.o ../../otherlibs/unix/libunix.a
+	$(CAMLOPT) -o callback.bin callback.cmx \
+	  callbackprim.o ../../otherlibs/unix/libunix.a
 
 manyargs.byt: manyargs.cmo manyargsprim.o
 	$(CAMLC) -o manyargs.byt -custom manyargs.cmo manyargsprim.o
@@ -49,11 +51,15 @@ cm.byt: cmcaml.ml cmstub.c cmmain.c
 
 cmlinked.bin: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -output-obj -o cm.o cmcaml.ml
-	$(BYTECC) -g -o cmlinked.bin cm.o -I../../byterun -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../byterun/libcamlrun.a $(BYTECCLIBS)
+	$(BYTECC) -g -o cmlinked.bin cm.o -I../../byterun \
+	  -DNO_BYTECODE_FILE cmstub.c cmmain.c \
+	  ../../byterun/libcamlrun.a $(BYTECCLIBS)
 
 cm.bin: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLOPT) -output-obj -o cm.o cmcaml.ml
-	$(NATIVECC) -g -o cm.bin cm.o -I$(LIBDIR) -DNO_BYTECODE_FILE cmstub.c cmmain.c ../../asmrun/libasmrun.a $(NATIVECCLIBS)
+	$(NATIVECC) -g -o cm.bin cm.o -I$(LIBDIR) \
+	  -DNO_BYTECODE_FILE cmstub.c cmmain.c \
+	  ../../asmrun/libasmrun.a $(NATIVECCLIBS)
 
 bigarrays.byt: ../../otherlibs/bigarray/bigarray.cma \
                ../../otherlibs/bigarray/libbigarray.a bigarrays.ml
@@ -93,7 +99,8 @@ bigarrf.o: bigarrf.f
 	g77 -c bigarrf.f
 
 bigarrfstub.o: bigarrfstub.c
-	$(NATIVECC) $(NATIVECCCOMPOPTS) -I../../byterun -I../../otherlibs/bigarray -c bigarrfstub.c
+	$(NATIVECC) $(NATIVECCCOMPOPTS) -I../../byterun \
+	  -I../../otherlibs/bigarray -c bigarrfstub.c
 
 fftba.byt: fftba.ml
 	$(CAMLC) -o fftba.byt -I ../../otherlibs/bigarray \
@@ -130,6 +137,15 @@ tprintf.bin: testing.cmx tprintf.cmx
 printf: tprintf.byt tprintf.bin
 	./tprintf.byt
 	./tprintf.bin
+
+tbuffer.byt: testing.cmo tbuffer.cmo
+	${CAMLC} -o tbuffer.byt testing.cmo tbuffer.cmo
+tbuffer.bin: testing.cmx tbuffer.cmx
+	${CAMLOPT} -o tbuffer.bin testing.cmx tbuffer.cmx
+
+buffer: tscanf.byt tscanf.bin
+	./tbuffer.byt
+	./tbuffer.bin
 
 tscanf.byt: testing.cmo tscanf.cmo
 	${CAMLC} -o tscanf.byt testing.cmo tscanf.cmo
@@ -226,7 +242,7 @@ tfloat_record.byt: float_record.cmo tfloat_record.cmo
 	$(NATIVECC) $(NATIVECCCOMPOPTS) -I../../byterun -c $<
 
 clean::
-	rm -f *.byt *.bin
+	rm -f *.byt *.bin a.out
 	rm -f *.cm[iox] *.[os]
 	rm -f *~
 	rm -f intext.data
