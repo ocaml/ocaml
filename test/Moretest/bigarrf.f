@@ -1,5 +1,6 @@
 	subroutine filltab()
 
+	integer dimx, dimy
 	parameter (dimx = 8, dimy = 6)
 	real ftab(dimx, dimy)
 	common /ftab/ ftab
