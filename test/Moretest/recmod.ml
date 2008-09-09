@@ -271,9 +271,24 @@ module Bootstrap (MakeH: functor (Element:ORDERED) ->
       end                  
     = struct
         type t = E | H of Elem.t * PrimH.heap
-        let leq (H(x, _)) (H(y, _)) = Elem.leq x y
-        let eq (H(x, _)) (H(y, _)) = Elem.eq x y
-        let lt (H(x, _)) (H(y, _)) = Elem.lt x y
+        let leq t1 t2 =
+          match t1, t2 with
+          | (H(x, _)), (H(y, _)) -> Elem.leq x y
+          | H _, E -> false
+          | E, H _ -> true
+          | E, E -> true
+        let eq t1 t2 =
+          match t1, t2 with
+          | (H(x, _)), (H(y, _)) -> Elem.eq x y
+          | H _, E -> false
+          | E, H _ -> false
+          | E, E -> true
+        let lt t1 t2 =
+          match t1, t2 with
+          | (H(x, _)), (H(y, _)) -> Elem.lt x y
+          | H _, E -> false
+          | E, H _ -> true
+          | E, E -> false
       end
     and PrimH
     : HEAP with type Elem.t = BE.t
@@ -298,9 +313,11 @@ module Bootstrap (MakeH: functor (Element:ORDERED) ->
         BE.E -> raise Not_found
       | BE.H(x, p) ->
           if PrimH.isEmpty p then BE.E else begin
-            let (BE.H(y, p1)) = PrimH.findMin p in
-            let p2 = PrimH.deleteMin p in
-            BE.H(y, PrimH.merge p1 p2)
+            match PrimH.findMin p with
+            | (BE.H(y, p1)) ->
+              let p2 = PrimH.deleteMin p in
+              BE.H(y, PrimH.merge p1 p2)
+            | BE.E -> assert false
           end
   end
 ;;
