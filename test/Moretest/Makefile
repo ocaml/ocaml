@@ -59,7 +59,7 @@ cm.byt: cmcaml.ml cmstub.c cmmain.c
 cmlinked.bin: cmcaml.ml cmstub.c cmmain.c
 	$(CAMLC) -output-obj -o cm.o cmcaml.ml
 	$(BYTECC) -g -o cmlinked.bin cm.o \
-	  -I../../byterun -I/usr/local/lib/ocaml \
+	  -I../../asmrun -I/usr/local/lib/ocaml \
 	  -DNO_BYTECODE_FILE cmstub.c cmmain.c \
 	  ../../byterun/libcamlrun.a $(BYTECCLIBS)
 cmlinked.byt: cmcaml.ml cmstub.c cmmain.c
@@ -105,9 +105,9 @@ bigarrf.bin: bigarrf.o bigarrfstub.o \
 	$(CAMLOPT) $(OPTFLAGS) -o bigarrf.bin \
                 -I ../../otherlibs/bigarray \
                 -I ../../otherlibs/unix \
-                unix.cma bigarray.cma bigarrfml.ml \
+                unix.cmxa bigarray.cmxa bigarrfml.ml \
                 bigarrf.o bigarrfstub.o \
-                ../../byterun/libcamlrun.a -cclib -l$(FORTRANLIB)
+                ../../asmrun/libasmrun.a -cclib -l$(FORTRANLIB)
 
 bigarrf.o: bigarrf.f
 	$(FORTRANC) -c bigarrf.f
