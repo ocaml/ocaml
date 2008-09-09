@@ -22,14 +22,14 @@ OBJS=$(COMMONOBJS) unix.o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 PICOBJS=$(OBJS:.o=.pic.o)
 
-ifeq ($(SUPPORTS_SHARED_LIBRARIES),true)
+#ifeq ($(SUPPORTS_SHARED_LIBRARIES),true)
 
 all:: libcamlrun_shared.so
 
 install::
 	cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so
 
-endif
+#endif
 
 ocamlrun$(EXE): libcamlrun.a prims.o
 	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
