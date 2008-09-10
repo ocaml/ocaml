@@ -1196,11 +1196,12 @@ let scan_format ib ef fmt rv f =
             incomplete_format bad_conversion conv fmt i in
         let mf = Sformat.sub fmt (Sformat.index_of_int i) (j - 2 - i) in
         (* Read the specified format string in the input buffer,
-           and check its correction. *)
+           and check its correctness. *)
         let _x = scan_String max ib in
         let rf = token_string ib in
         if not (compatible_format_type rf mf) then format_mismatch rf mf else
-        (* For conversion %{%}, just return this format string as the token read. *)
+        (* For conversion %{%}, just return this format string as the token
+           read. *)
         if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
         (* Or else, read according to the format string just read. *)
         let ir, nf = scan (Obj.magic rf) ir (stack f rf) 0 in

@@ -196,7 +196,7 @@ let iter_on_format_args fmt add_conv add_char =
     if i > lim then incomplete_format fmt else
     match Sformat.unsafe_get fmt i with
     | '*' -> scan_flags skip (add_conv skip i 'i')
-    | '$' -> scan_flags skip (succ i)
+ (* | '$' -> scan_flags skip (succ i) *** PR#4321 *)
     | '#' | '-' | ' ' | '+' -> scan_flags skip (succ i)
     | '_' -> scan_flags true (succ i)
     | '0'..'9'
