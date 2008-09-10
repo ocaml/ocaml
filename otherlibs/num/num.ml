@@ -26,7 +26,7 @@ let biggest_INT = big_int_of_int biggest_int
 and least_INT = big_int_of_int least_int
 
 (* Coercion big_int -> num *)
-let num_of_big_int bi = 
+let num_of_big_int bi =
  if le_big_int bi biggest_INT && ge_big_int bi least_INT
  then Int (int_of_big_int bi)
  else Big_int bi
@@ -49,8 +49,8 @@ let normalize_num = function
 let cautious_normalize_num_when_printing n =
  if (!normalize_ratio_when_printing_flag) then (normalize_num n) else n
 
-let num_of_ratio r = 
- ignore (normalize_ratio r); 
+let num_of_ratio r =
+ ignore (normalize_ratio r);
  if not (is_integer_ratio r) then Ratio r
  else if is_int_big_int (numerator_ratio r) then
         Int (int_of_big_int (numerator_ratio r))
@@ -85,7 +85,7 @@ let add_num a b = match (a,b) with
 
 let ( +/ ) = add_num
 
-let minus_num = function 
+let minus_num = function
   Int i -> if i = monster_int
               then Big_int (minus_big_int (big_int_of_int i))
               else Int (-i)
@@ -100,7 +100,7 @@ let mult_num a b = match (a,b) with
    ((Int int1), (Int int2)) ->
     if num_bits_int int1 + num_bits_int int2 < length_of_int
        then Int (int1 * int2)
-       else num_of_big_int (mult_big_int (big_int_of_int int1) 
+       else num_of_big_int (mult_big_int (big_int_of_int int1)
                                          (big_int_of_int int2))
 
  | ((Int i), (Big_int bi)) ->
@@ -113,7 +113,7 @@ let mult_num a b = match (a,b) with
  | ((Ratio r), (Int i)) ->
      num_of_ratio (mult_int_ratio i r)
 
- | ((Big_int bi1), (Big_int bi2)) -> 
+ | ((Big_int bi1), (Big_int bi2)) ->
      num_of_big_int (mult_big_int bi1 bi2)
 
  | ((Big_int bi), (Ratio r)) ->
@@ -127,7 +127,7 @@ let mult_num a b = match (a,b) with
 let ( */ ) = mult_num
 
 let square_num = function
-   Int i -> if 2 * num_bits_int i < length_of_int 
+   Int i -> if 2 * num_bits_int i < length_of_int
                then Int (i * i)
                else num_of_big_int (square_big_int (big_int_of_int i))
  | Big_int bi -> Big_int (square_big_int bi)
@@ -162,9 +162,57 @@ let floor_num = function
 | Big_int bi as n -> n
 | Ratio r -> num_of_big_int (floor_ratio r)
 
-let quo_num x y = floor_num (div_num x y)
+(* The function [quo_num] is equivalent to
 
-let mod_num x y = sub_num x (mult_num y (quo_num x y))
+  let quo_num x y = floor_num (div_num x y);;
+
+  However, this definition is vastly inefficient (cf PR #3473):
+  we define here a better way of computing the same thing.
+ *)
+let quo_num n1 n2 =
+ match n1 with
+ | Int i1 ->
+   begin match n2 with
+   | Int i2 -> Int (i1 / i2)
+   | Big_int bi2 -> num_of_big_int (div_big_int (big_int_of_int i1) bi2)
+   | Ratio r2 -> num_of_big_int (floor_ratio (div_int_ratio i1 r2)) end
+
+ | Big_int bi1 ->
+   begin match n2 with
+   | Int i2 -> num_of_big_int (div_big_int bi1 (big_int_of_int i2))
+   | Big_int bi2 -> num_of_big_int (div_big_int bi1 bi2)
+   | Ratio r2 -> num_of_big_int (floor_ratio (div_big_int_ratio bi1 r2)) end
+
+ | Ratio r1 ->
+   begin match n2 with
+   | Int i2 -> num_of_big_int (floor_ratio (div_ratio_int r1 i2))
+   | Big_int bi2 -> num_of_big_int (floor_ratio (div_ratio_big_int r1 bi2))
+   | Ratio r2 -> num_of_big_int (floor_ratio (div_ratio r1 r2)) end
+;;
+
+(* The function [mod_num] is equivalent to:
+
+  let mod_num x y = sub_num x (mult_num y (quo_num x y));;
+
+  However, as for [quo_num] above, this definition is inefficient:
+  we define here a better way of computing the same thing.
+ *)
+let mod_num n1 n2 =
+ match n1 with
+ | Int i1 ->
+   begin match n2 with
+   | Int i2 -> Int (i1 mod i2)
+   | Big_int bi2 -> num_of_big_int (mod_big_int (big_int_of_int i1) bi2)
+   | Ratio _r2 -> sub_num n1 (mult_num n2 (quo_num n1 n2)) end
+
+ | Big_int bi1 ->
+   begin match n2 with
+   | Int i2 -> num_of_big_int (mod_big_int bi1 (big_int_of_int i2))
+   | Big_int bi2 -> num_of_big_int (mod_big_int bi1 bi2)
+   | Ratio _r2 -> sub_num n1 (mult_num n2 (quo_num n1 n2)) end
+
+ | Ratio _r1 -> sub_num n1 (mult_num n2 (quo_num n1 n2))
+;;
 
 let power_num_int a b = match (a,b) with
    ((Int i), n) ->
@@ -173,7 +221,7 @@ let power_num_int a b = match (a,b) with
          | 1 -> num_of_big_int (power_int_positive_int i n)
          | _ -> Ratio (create_normalized_ratio
                         unit_big_int (power_int_positive_int i (-n))))
-| ((Big_int bi), n) -> 
+| ((Big_int bi), n) ->
        (match sign_int n with
            0 -> Int 1
          | 1 -> num_of_big_int (power_big_int_positive_int bi n)
@@ -183,29 +231,29 @@ let power_num_int a b = match (a,b) with
        (match sign_int n with
            0 -> Int 1
          | 1 -> Ratio (power_ratio_positive_int r n)
-         | _ -> Ratio (power_ratio_positive_int 
+         | _ -> Ratio (power_ratio_positive_int
                          (inverse_ratio r) (-n)))
 
 let power_num_big_int a b =  match (a,b) with
-   ((Int i), n) -> 
+   ((Int i), n) ->
     (match sign_big_int n with
            0 -> Int 1
          | 1 -> num_of_big_int (power_int_positive_big_int i n)
          | _ -> Ratio (create_normalized_ratio
-                         unit_big_int 
+                         unit_big_int
                          (power_int_positive_big_int i (minus_big_int n))))
-| ((Big_int bi), n) -> 
+| ((Big_int bi), n) ->
        (match sign_big_int n with
            0 -> Int 1
          | 1 -> num_of_big_int (power_big_int_positive_big_int bi n)
          | _ -> Ratio (create_normalized_ratio
-                         unit_big_int 
+                         unit_big_int
                          (power_big_int_positive_big_int bi (minus_big_int n))))
 | ((Ratio r), n) ->
        (match sign_big_int n with
            0 -> Int 1
          | 1 -> Ratio (power_ratio_positive_big_int r n)
-         | _ -> Ratio (power_ratio_positive_big_int 
+         | _ -> Ratio (power_ratio_positive_big_int
                          (inverse_ratio r) (minus_big_int n)))
 
 let power_num a b = match (a,b) with
@@ -221,7 +269,7 @@ let is_integer_num = function
 | Ratio r   -> is_integer_ratio r
 
 (* integer_num, floor_num, round_num, ceiling_num rendent des nums *)
-let integer_num = function        
+let integer_num = function
   Int i as n -> n
 | Big_int bi as n -> n
 | Ratio r -> num_of_big_int (integer_ratio r)
@@ -300,7 +348,7 @@ let int_of_num = function
 | Big_int bi -> int_of_big_int bi
 | Ratio r -> int_of_ratio r
 
-and num_of_int i = 
+and num_of_int i =
   if i = monster_int
   then Big_int (big_int_of_int i)
   else Int i
@@ -312,7 +360,7 @@ let nat_of_num = function
 | Ratio r -> nat_of_ratio r
 
 and num_of_nat nat =
-  if (is_nat_int nat 0 (length_nat nat)) 
+  if (is_nat_int nat 0 (length_nat nat))
   then Int (nth_digit_nat nat 0)
   else Big_int (big_int_of_nat nat)
 
@@ -326,10 +374,11 @@ let big_int_of_num = function
 let ratio_of_num = function
   Int i -> ratio_of_int i
 | Big_int bi -> ratio_of_big_int bi
-| Ratio r -> r;;
+| Ratio r -> r
+;;
 
 let string_of_big_int_for_num bi =
-  if !approx_printing_flag 
+  if !approx_printing_flag
      then approx_big_int !floating_precision bi
      else string_of_big_int bi
 
@@ -340,7 +389,7 @@ let string_of_big_int_for_num bi =
 let string_of_normalized_num = function
   Int i -> string_of_int i
 | Big_int bi -> string_of_big_int_for_num bi
-| Ratio r -> string_of_ratio r 
+| Ratio r -> string_of_ratio r
 let string_of_num n =
     string_of_normalized_num (cautious_normalize_num_when_printing n)
 let num_of_string s =
@@ -349,7 +398,7 @@ let num_of_string s =
     normalize_ratio_flag := true;
     let r = ratio_of_string s in
     normalize_ratio_flag := flag;
-    if eq_big_int (denominator_ratio r) unit_big_int 
+    if eq_big_int (denominator_ratio r) unit_big_int
     then num_of_big_int (numerator_ratio r)
     else Ratio r
   with Failure _ ->
