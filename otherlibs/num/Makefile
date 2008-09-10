@@ -15,7 +15,6 @@
 
 # Makefile for the "num" (exact rational arithmetic) library
 
-
 LIBNAME=nums
 EXTRACFLAGS=-DBNG_ARCH_$(BNG_ARCH) -DBNG_ASM_LEVEL=$(BNG_ASM_LEVEL)
 CAMLOBJS=int_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
@@ -26,7 +25,8 @@ COBJS=bng.$(O) nat_stubs.$(O)
 include ../Makefile
 
 clean::
-	cd test ; $(MAKE) clean
+	rm -f *~
+	cd test; $(MAKE) clean
 
 bng.$(O): bng.h bng_digit.c \
        bng_alpha.c bng_amd64.c bng_ia32.c bng_mips.c bng_ppc.c bng_sparc.c
