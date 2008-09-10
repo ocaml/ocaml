@@ -84,7 +84,7 @@ val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
 
-(* Remember the name of the current compilation unit. *)
+(* Check and remember the name of the current compilation unit. *)
 val set_unit_name: string -> unit
 
 (* Read, save a signature to/from a file *)
@@ -95,7 +95,7 @@ val save_signature: signature -> string -> string -> unit
         (* Arguments: signature, module name, file name. *)
 val save_signature_with_imports:
             signature -> string -> string -> (string * Digest.t) list -> unit
-        (* Arguments: signature, module name, file name, 
+        (* Arguments: signature, module name, file name,
            imported units with their CRCs. *)
 
 (* Return the CRC of the interface of the given compilation unit *)
@@ -134,6 +134,7 @@ type error =
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
+  | Bad_module_name of string
 
 exception Error of error
 
@@ -144,4 +145,3 @@ val report_error: formatter -> error -> unit
 (* Forward declaration to break mutual recursion with Includemod. *)
 val check_modtype_inclusion:
       (t -> module_type -> Path.t -> module_type -> unit) ref
-

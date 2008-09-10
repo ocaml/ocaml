@@ -48,6 +48,7 @@ let initial_env () =
 (* Compile a .mli file *)
 
 let interface ppf sourcefile outputprefix =
+  Location.input_name := sourcefile;
   init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
@@ -81,6 +82,7 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
+  Location.input_name := sourcefile;
   init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
