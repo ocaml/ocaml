@@ -97,16 +97,20 @@ testing_function "string_of_nat && nat_of_string";;
 
 for i = 1 to 20 do
   let s = String.make i '0' in
-    String.set s 0 '1';
-    test i eq_string (string_of_nat (nat_of_string s), s)
+  String.set s 0 '1';
+  ignore (test i eq_string (string_of_nat (nat_of_string s), s))
 done;;
+
+let set_mult_digit_nat n1 d1 l1 n2 d2 l2 n3 d3 =
+  ignore (mult_digit_nat n1 d1 l1 n2 d2 l2 n3 d3)
+;;
 
 let s = "3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333" in
 test 21 equal_nat (
 nat_of_string s,
 (let nat = make_nat 15 in 
   set_digit_nat nat 0 3;
-  mult_digit_nat nat 0 15 
+  set_mult_digit_nat nat 0 15 
                  (nat_of_string (String.sub s 0 135)) 0 14 
                  (nat_of_int 10) 0;
   nat))
@@ -121,8 +125,8 @@ for i = 1 to 20 do
   and n2 = Random.int 100000 in
   let nat1 = nat_of_int n1
   and nat2 = nat_of_int n2 in
-  gcd_nat nat1 0 1 nat2 0 1;
-    test i eq (int_of_nat nat1, Int_misc.gcd_int n1 n2)
+  ignore (gcd_nat nat1 0 1 nat2 0 1);
+  ignore (test i eq (int_of_nat nat1, Int_misc.gcd_int n1 n2))
 done
 ;;
 

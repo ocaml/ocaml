@@ -9,7 +9,9 @@ let immediate_failure = ref true;;
 
 let error () =
  if !immediate_failure then exit 2 else begin
-   error_occurred := true; flush_all (); false
+   error_occurred := true;
+   flush_all ();
+   false
  end;;
 
 let success () = flush_all (); true;;
