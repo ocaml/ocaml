@@ -33,11 +33,11 @@ install::
 
 ocamlrun$(EXE): libcamlrun.a prims.o
 	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
-	          prims.o libcamlrun.a $(BYTECCLIBS)
+		  prims.o libcamlrun.a $(BYTECCLIBS)
 
 ocamlrund$(EXE): libcamlrund.a prims.o
 	$(MKEXE) -g $(BYTECCLINKOPTS) -o ocamlrund$(EXE) \
-	          prims.o libcamlrund.a $(BYTECCLIBS)
+		  prims.o libcamlrund.a $(BYTECCLIBS)
 
 libcamlrun.a: $(OBJS)
 	ar rc libcamlrun.a $(OBJS)

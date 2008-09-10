@@ -1535,6 +1535,7 @@ echo "DLLCCCOMPOPTS=$dllccompopts" >> Makefile
 echo "IFLEXDIR=$iflexdir" >> Makefile
 echo "O=o" >> Makefile
 echo "A=a" >> Makefile
+echo "SO=so" >> Makefile
 echo "EXT_OBJ=.o" >> Makefile
 echo "EXT_ASM=.s" >> Makefile
 echo "EXT_LIB=.a" >> Makefile

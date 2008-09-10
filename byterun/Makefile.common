@@ -41,8 +41,8 @@ all:: ocamlrun$(EXE) ld.conf libcamlrun.$(A)
 .PHONY: all
 
 ld.conf: ../config/Makefile
-	echo "$(STUBLIBDIR)" >ld.conf
-	echo "$(LIBDIR)" >>ld.conf
+	echo "$(STUBLIBDIR)" > ld.conf
+	echo "$(LIBDIR)" >> ld.conf
 
 install::
 	cp ocamlrun$(EXE) $(BINDIR)/ocamlrun$(EXE)
@@ -50,8 +50,8 @@ install::
 	cd $(LIBDIR); $(RANLIB) libcamlrun.$(A)
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi
 	for i in $(PUBLIC_INCLUDES); do \
-          sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; \
-        done
+	  sed -f ../tools/cleanup-header $$i > $(LIBDIR)/caml/$$i; \
+	done
 	cp ld.conf $(LIBDIR)/ld.conf
 .PHONY: install
 
@@ -84,10 +84,10 @@ jumptbl.h : instruct.h
 	       -e '/^}/q' instruct.h > jumptbl.h
 
 version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" >version.h
+	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" > version.h
 
 clean:
-	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A)
+	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
 	rm -f version.h
 .PHONY: clean
