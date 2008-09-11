@@ -179,7 +179,7 @@ Adds the directory \var{dir} to the run-time search path for shared
 C libraries.  At link-time, shared libraries are searched in the
 standard search path (the one corresponding to the "-I" option).
 The "-dllpath" option simply stores \var{dir} in the produced
-executable file, where "ocamlrun" can find it and exploit it as
+executable file, where "ocamlrun" can find it and use it as
 described in section~\ref{s-ocamlrun-dllpath}.
 
 \item["-g"]
@@ -232,7 +232,7 @@ and labelled parameters can be given in any order.  This is the default.
 \item["-linkall"]
 Force all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
-building a library ("-a" flag), setting the "-linkall" flag forces all
+building a library (option "-a"), setting the "-linkall" option forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 
@@ -339,9 +339,6 @@ See section~\ref{s:custom-runtime} for more information.
 Print the version number of the compiler and the location of the
 standard library directory, then exit.
 
-\item["-version"]
-Print the version number of the compiler, then exit.
-
 \item["-verbose"]
 Print all external commands before they are executed, in particular
 invocations of the C compiler and linker in "-custom" mode.  Useful to
@@ -378,9 +375,9 @@ have type "unit" (and that are not functions, see "F" above)
 \item[U] redundant cases in pattern matching (unused cases)
 \item[V] overriding of instance variables
 \item[Y] unused variables that are bound with "let" or "as", and don't
-start with underscore
+start with an underscore (\_) character
 \item[Z] all other cases of unused variables that don't start with
-underscore
+an underscore (\_) character
 \item[X] warnings that don't fit in the above categories
 \end{options}
 The default setting is "Aelz", enabling all warnings except fragile
@@ -391,8 +388,7 @@ the internals of the type checker.
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into
 errors.  The compiler will stop with an error when one of these
-warnings is emitted.  The \var{warning-list}
-is a string of one or several characters, with the same meaning as for
+warnings is emitted.  The \var{warning-list} has the same meaning as for
 the "-w" option: an uppercase character turns the corresponding
 warning into an error, a lowercase character leaves it as a warning.
 The default setting is "-warn-error a" (none of the warnings is treated
@@ -400,6 +396,10 @@ as an error).
 
 \item["-where"]
 Print the location of the standard library, then exit.
+
+\item["-" \var{file}]
+Process \var{file} as a file name, even if it starts with a dash (-)
+character.
 %
 \end{options}
 
