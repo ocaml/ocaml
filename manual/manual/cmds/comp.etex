@@ -2,7 +2,7 @@
 \pdfchapter{Batch compilation (ocamlc)}
 
 This chapter describes the Objective Caml batch compiler "ocamlc",
-which compiles Caml source files to bytecode object files and link
+which compiles Caml source files to bytecode object files and links
 these object files to produce standalone bytecode executable files.
 These executable files are then run by the bytecode interpreter
 "ocamlrun".
@@ -100,7 +100,7 @@ phase can be run directly, as in:
 The produced file has the executable bit set, and it manages to launch
 the bytecode interpreter by itself.
 
-\section{Options}
+\section{Options}\label{s:comp-options}
 
 The following command-line options are recognized by "ocamlc".
 The options "-pack", "-a", "-c" and "-output-obj" are mutually exclusive.
@@ -119,6 +119,15 @@ linking with this library automatically adds back the "-custom",
 "-cclib" and "-ccopt" options as if they had been provided on the
 command line, unless the "-noautolink" option is given.
 
+\item["-annot"]
+Dump detailed information about the compilation (types, bindings,
+tail-calls, etc).  The information for file \var{src}".ml"
+is put into file \var{src}".annot".  In case of a type error, dump
+all the information inferred by the type-checker before the error.
+The \var{src}".annot" file can be used with the emacs commands given in
+"emacs/caml-types.el" to display types and other annotations
+interactively.
+
 \item["-c"]
 Compile only. Suppress the linking phase of the
 compilation. Source code files are turned into compiled files, but no
@@ -126,7 +135,8 @@ executable file is produced. This option is useful to
 compile modules separately.
 
 \item["-cc" \var{ccomp}]
-Use \var{ccomp} as the C linker called by "ocamlc -custom"
+Use \var{ccomp} as the C linker when linking in ``custom runtime''
+mode (see the "-custom" option)
 and as the C compiler for compiling ".c" source files.
 
 \item["-cclib" "-l"\var{libname}]
@@ -140,6 +150,10 @@ Pass the given option to the C compiler and linker, when linking in
 "-ccopt -L"\var{dir} causes the C linker to search for C libraries in
 directory \var{dir}.
 
+\item["-config"]
+Print the version number of "ocamlc" and a detailed summary of its
+configuration, then exit.
+
 \item["-custom"]
 Link in ``custom runtime'' mode. In the default linking mode, the
 linker produces bytecode that is intended to be executed with the
@@ -151,8 +165,8 @@ installed. Moreover, the ``custom runtime'' mode enables static
 linking of Caml code with user-defined C functions, as described in
 chapter~\ref{c:intf-c}.
 \begin{unix}
-Never use the "strip" command on executables produced by "ocamlc -custom".
-This would remove the bytecode part of the executable.
+Never use the "strip" command on executables produced by "ocamlc -custom",
+this would remove the bytecode part of the executable.
 \end{unix}
 
 \item["-dllib" "-l"\var{libname}]
@@ -167,13 +181,6 @@ standard search path (the one corresponding to the "-I" option).
 The "-dllpath" option simply stores \var{dir} in the produced
 executable file, where "ocamlrun" can find it and exploit it as
 described in section~\ref{s-ocamlrun-dllpath}.
-
-\item["-dtypes"]
-Dump detailed type information.  The information for file \var{x}".ml"
-is put into file \var{x}".annot".  In case of a type error, dump
-all the information inferred by the type-checker before the error.
-The \var{x}".annot" file can be used with the emacs commands given in
-"emacs/caml-types.el" to display types interactively.
 
 \item["-g"]
 Add debugging information while compiling and linking. This option is
@@ -214,6 +221,14 @@ extension is not ".ml".
 Compile the file \var{filename} as an interface file, even if its
 extension is not ".mli".
 
+\item["-intf-suffix" \var{string}]
+Recognize file names ending with \var{string} as interface files
+(instead of the default ".mli").
+
+\item["-labels"]
+Labels are not ignored in types, labels may be used in applications,
+and labelled parameters can be given in any order.  This is the default.
+
 \item["-linkall"]
 Force all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
@@ -230,8 +245,9 @@ bytecode executables produced with the
 See section~\ref{s:custom-runtime} for more information.
 
 \item["-noassert"]
-Turn assertion checking off: assertions are not compiled.
-This flag has no effect when linking already compiled files.
+Do not compile assertion checks.  Note that the special form
+"assert false" is always compiled because it is typed specially.
+This flag has no effect when linking already-compiled files.
 
 \item["-noautolink"]
 When linking ".cma" libraries, ignore "-custom", "-cclib" and "-ccopt"
@@ -292,9 +308,9 @@ types are derived in a principal way.  When using labelled arguments
 and/or polymorphic methods, this flag is required to ensure future
 versions of the compiler will be able to infer types correctly, even
 if internal algorithms change.
-All programs accepted in "-principal" mode are also accepted in
+All programs accepted in "-principal" mode are also accepted in the
 default mode with equivalent types, but different binary signatures,
-and this may slow down type checking; yet this is a good idea to
+and this may slow down type checking; yet it is a good idea to
 use it once before publishing source code.
 
 \item["-rectypes"]
@@ -323,6 +339,9 @@ See section~\ref{s:custom-runtime} for more information.
 Print the version number of the compiler and the location of the
 standard library directory, then exit.
 
+\item["-version"]
+Print the version number of the compiler, then exit.
+
 \item["-verbose"]
 Print all external commands before they are executed, in particular
 invocations of the C compiler and linker in "-custom" mode.  Useful to
@@ -338,38 +357,36 @@ VM-level "threads" library described in chapter~\ref{c:threads}.
 
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument
-\var{warning-list}.  The argument is a string of one or several
-characters, with the following meaning for each character:
+\var{warning-list}.
+The argument is a set of letters.  If a letter is
+uppercase, it enables the corresponding warnings; lowercase disables
+the warnings.  The correspondence is the following:
 \begin{options}
-\item["A"/"a"] enable/disable all warnings.
-\item["C"/"c"] enable/disable warnings for suspicious comments.
-\item["D"/"d"] enable/disable warnings for deprecated features.
-\item["E"/"e"] enable/disable warnings for fragile pattern matchings
-(matchings that would remain complete if additional constructors are
- added to a variant type involved).
-\item["F"/"f"] enable/disable warnings for partially applied functions
-(i.e. "f x; "\var{expr} where the application "f x" has a function type).
-\item["L"/"l"] enable/disable warnings for labels omitted in application.
-\item["M"/"m"] enable/disable warnings for overriden methods.
-\item["P"/"p"] enable/disable warnings for partial matches (missing cases
-in pattern matchings).
-\item["S"/"s"] enable/disable warnings for statements that do not have
-type "unit" (e.g. \var{expr1}"; "\var{expr2} when \var{expr1} does not
-have type "unit"), and that are not functions (covered by warning "F").
-\item["U"/"u"] enable/disable warnings for unused (redundant) match cases.
-\item["V"/"v"] enable/disable warnings for hidden instance variables.
-\item["Y"/"y"] enable/disable warnings for unused variables bound with the
-"let" or "as" keywords and that don't start with an underscore.
-\item["Z"/"z"] enable/disable warnings for all other unused variables
-that don't start with an underscore.
-\item["X"/"x"] enable/disable warnings that don't fit in the above
-categories.
+\item[A] all warnings
+\item[C] start of comments that look like mistakes
+\item[D] use of deprecated features
+\item[E] fragile pattern matchings (matchings that will remain
+complete even if additional constructors are added to one of the
+variant types matched)
+\item[F] partially applied functions (expressions whose result has
+function type and is ignored)
+\item[L] omission of labels in applications
+\item[M] overriding of methods
+\item[P] missing cases in pattern matchings (i.e. partial matchings)
+\item[S] expressions in the left-hand side of a sequence that don't
+have type "unit" (and that are not functions, see "F" above)
+\item[U] redundant cases in pattern matching (unused cases)
+\item[V] overriding of instance variables
+\item[Y] unused variables that are bound with "let" or "as", and don't
+start with underscore
+\item[Z] all other cases of unused variables that don't start with
+underscore
+\item[X] warnings that don't fit in the above categories
 \end{options}
-The default setting is "-w Aelz" (all warnings enabled except fragile
-matchings, omitted labels, non-suspicious unused variables).
-Warnings "F" and "S"
-rely on the type system, thus they are not triggered when the
-type of the statement is unknown.
+The default setting is "Aelz", enabling all warnings except fragile
+pattern matchings, omitted labels, and innocuous unused variables.
+Note that warnings "F" and "S" are not always triggered, depending on
+the internals of the type checker.
 
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into

@@ -142,19 +142,44 @@ If the given directory starts with "+", it is taken relative to the
 standard library directory.  For instance, "-I +labltk" adds the
 subdirectory "labltk" of the standard library to the search path.
 
-Directories can also be added to the search path once
+Directories can also be added to the list once
 the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
+
+\item["-init" \var{file}]
+Load the given file instead of the default initialization file.
+The default file is ".ocamlinit" in the current directory if it
+exists, otherwise ".ocamlinit" in the user's home directory.
+
+\item["-labels"]
+Labels are not ignored in types, labels may be used in applications,
+and labelled parameters can be given in any order.  This is the default.
+
+\item["-noassert"]
+Do not compile assertion checks.  Note that the special form
+"assert false" is always compiled because it is typed specially.
 
 \item["-nolabels"]
 Ignore non-optional labels in types. Labels cannot be used in
 applications, and parameter order becomes strict.
 
+\item["-noprompt"]
+Do not display any prompt when waiting for input.
+
+\item["-nostdlib"]
+Do not include the standard library directory in the list of
+directories searched for source and compiled files.
+
 \item["-principal"]
 Check information path during type-checking, to make sure that all
-types are derived in a principal way. All programs accepted in
-"-principal" mode are also accepted in default mode with equivalent
-types.
+types are derived in a principal way.  When using labelled arguments
+and/or polymorphic methods, this flag is required to ensure future
+versions of the compiler will be able to infer types correctly, even
+if internal algorithms change.
+All programs accepted in "-principal" mode are also accepted in the
+default mode with equivalent types, but different binary signatures,
+and this may slow down type checking; yet it is a good idea to
+use it once before publishing source code.
 
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
@@ -169,10 +194,18 @@ slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
 
 \item["-version"]
-Print version and exit.
+Print version string and exit.
 
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument \var{warning-list}.
+See section~\ref{s:comp-options} for the syntax of the argument.
+
+\item["-warn-error" \var{warning-list}]
+Treat as errors the warnings enabled by the argument \var{warning-list}.
+See section~\ref{s:comp-options} for the syntax of the argument.
+
+\item["-help" or "--help"]
+Display a usage summary and exit.
 
 \end{options}
 
