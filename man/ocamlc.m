@@ -528,10 +528,11 @@ overriding of instance variables
 .B Y
 unused variables that are bound with
 .BR let \ or \ as ,
-and don't start with underscore
+and don't start with an underscore (_) character
 .TP
 .B Z
-all other cases of unused variables that don't start with underscore
+all other cases of unused variables that don't start with an
+underscore (_) character
 .TP
 .B X
 warnings that don't fit in the above categories
@@ -559,6 +560,14 @@ The default setting is
 .TP
 .B \-where
 Print the location of the standard library, then exit.
+.TP
+.BI \- \ file
+Process
+.I file
+as a file name, even if it starts with a dash (-) character.
+.TP
+.BR \-help \ or \ \-\-help
+Display a usage summary and exit.
 
 .SH SEE ALSO
 .BR ocamlopt (1), \ ocamlrun (1), \ ocaml (1).
