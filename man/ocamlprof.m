@@ -46,9 +46,9 @@ will annotate programs with comments of the form
 where
 .I n
 is the counter value for a profiling point. With option
-.BI \-F \ string
+.BI \-F \ s
 the annotation will be
-.BI (* \ string\ n \ *)
+.BI (* \ sn \ *)
 .TP
 .BI \-impl \ filename
 Compile the file
