@@ -1,8 +1,9 @@
+\" $Id$
+
 .TH OCAMLC 1
 
 .SH NAME
 ocamlc \- The Objective Caml bytecode compiler
-
 
 .SH SYNOPSIS
 .B ocamlc
@@ -90,7 +91,7 @@ file must come before all .cmo files that refer to the unit
 Arguments ending in .cma are taken to be libraries of object bytecode.
 A library of object bytecode packs in a single file a set of object
 bytecode files (.cmo files). Libraries are built with
-.B ocamlc \-a
+.B ocamlc\ \-a
 (see the description of the
 .B \-a
 option below). The object files
@@ -192,7 +193,7 @@ In case of a type error, dump all the information inferred by the
 type-checker before the error. The
 .IR src .annot
 file can be used with the emacs commands given in
-.B emacs/caml-types.el
+.B emacs/caml\-types.el
 to display types and other annotations interactively.
 .TP
 .B \-c
@@ -224,6 +225,11 @@ option). For instance,
 causes the C linker to search for C libraries in
 directory
 .IR dir .
+.TP
+.B \-config
+Print the version number of
+.BR ocamlc (1)
+and a detailed summary of its configuration, then exit.
 .TP
 .B \-custom
 Link in "custom runtime" mode. In the default linking mode, the
@@ -296,12 +302,12 @@ standard library directory. Directories added with
 are searched
 after the current directory, in the order in which they were given on
 the command line, but before the standard library directory.
-.IP
+
 If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I +labltk
+.B \-I\ +labltk
 adds the subdirectory
 .B labltk
 of the standard library to the search path.
@@ -331,7 +337,7 @@ flag is not given, unreferenced modules are not linked in. When
 building a library (option
 .BR \-a ),
 setting the
-.B -linkall
+.B \-linkall
 option forces all subsequent links of programs involving that library
 to link all the modules contained in the library.
 .TP
@@ -346,7 +352,7 @@ bytecode executables produced with the option
 .TP
 .B \-noassert
 Do not compile assertion checks.  Note that the special form
-.B assert false
+.B assert\ false
 is always compiled because it is typed specially.
 This flag has no effect when linking already-compiled files.
 .TP
@@ -398,7 +404,7 @@ the output .cmo file.  The name of the output .cmo file must be
 given with the
 .B \-o
 option.  For instance,
-.B ocamlc -pack -o p.cmo a.cmo b.cmo c.cmo
+.B ocamlc\ \-pack\ \-o\ p.cmo\ a.cmo\ b.cmo\ c.cmo
 generates compiled files p.cmo and p.cmi describing a compilation
 unit having three sub-modules A, B and C, corresponding to the
 contents of the object files a.cmo, b.cmo and c.cmo.  These
@@ -442,7 +448,7 @@ system "threads" library described in
 .IR The\ Objective\ Caml\ user's\ manual .
 .TP
 .B \-unsafe
-Turn bound checking off on array and string accesses (the
+Turn bound checking off for array and string accesses (the
 .BR v.(i) and s.[i]
 constructs). Programs compiled with
 .B \-unsafe
@@ -455,7 +461,7 @@ Generate a bytecode executable file that can be executed on the custom
 runtime system
 .IR runtime\-name ,
 built earlier with
-.B ocamlc -make-runtime
+.B ocamlc\ \-make\-runtime
 .IR runtime\-name .
 .TP
 .B \-v
@@ -469,7 +475,7 @@ invocations of the C compiler and linker in
 mode.  Useful to debug C library problems.
 .TP
 .B \-version
-Print the version number of the compiler in short form (e.g. 3.06),
+Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
 .B \-vmthread
@@ -483,62 +489,63 @@ Enable or disable warnings according to the argument
 The argument is a set of letters.  If a letter is
 uppercase, it enables the corresponding warnings; lowercase disables
 the warnings.  The correspondence is the following:
-.TP
+
 .B A
-all warnings
-.TP
+\ \ all warnings
+
 .B C
-start of comments that look like mistakes
-.TP
+\ \ start of comments that look like mistakes
+
 .B D
-use of deprecated features
-.TP
+\ \ use of deprecated features
+
 .B E
-fragile pattern matchings (matchings that will remain
+\ \ fragile pattern matchings (matchings that will remain
 complete even if additional constructors are added to one of the
 variant types matched)
-.TP
+
 .B F
-partially applied functions (expressions whose result has
+\ \ partially applied functions (expressions whose result has
 function type and is ignored)
-.TP
+
 .B L
-omission of labels in applications
-.TP
+\ \ omission of labels in applications
+
 .B M
-overriding of methods
-.TP
+\ \ overriding of methods
+
 .B P
-missing cases in pattern matchings (i.e. partial matchings)
-.TP
+\ \ missing cases in pattern matchings (i.e. partial matchings)
+
 .B S
-expressions in the left-hand side of a sequence that don't
+\ \ expressions in the left-hand side of a sequence that don't
 have type
 .B unit
 (and that are not functions, see
 .B F
 above)
-.TP
+
 .B U
-redundant cases in pattern matching (unused cases)
-.TP
+\ \ redundant cases in pattern matching (unused cases)
+
 .B V
-overriding of instance variables
-.TP
+\ \ overriding of instance variables
+
 .B Y
-unused variables that are bound with
+\ \ unused variables that are bound with
 .BR let \ or \ as ,
 and don't start with an underscore (_) character
-.TP
+
 .B Z
-all other cases of unused variables that don't start with an
+\ \ all other cases of unused variables that don't start with an
 underscore (_) character
-.TP
+
 .B X
-warnings that don't fit in the above categories
+\ \ warnings that don't fit in the above categories (except
+.BR A )
 .IP
 The default setting is
-.BR Aelz ,
+.BR \-w\ Aelz ,
 enabling all warnings except fragile
 pattern matchings, omitted labels, and innocuous unused variables.
 Note that warnings
@@ -555,7 +562,7 @@ has the same meaning as for
 the "-w" option: an uppercase character turns the corresponding
 warning into an error, a lowercase character leaves it as a warning.
 The default setting is
-.B \-warn\-error a
+.B \-warn\-error\ a
 (none of the warnings is treated as an error).
 .TP
 .B \-where
@@ -567,10 +574,10 @@ Process
 as a file name, even if it starts with a dash (-) character.
 .TP
 .BR \-help \ or \ \-\-help
-Display a usage summary and exit.
+Display a short usage summary and exit.
 
 .SH SEE ALSO
 .BR ocamlopt (1), \ ocamlrun (1), \ ocaml (1).
 .br
-.I The Objective Caml user's manual,
+.IR "The Objective Caml user's manual" ,
 chapter "Batch compilation".

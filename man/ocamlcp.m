@@ -1,3 +1,5 @@
+\" $Id$
+
 .TH OCAMLCP 1
 
 .SH NAME
@@ -70,9 +72,9 @@ branch of an exception catcher
 
 .PP
 For instance, compiling with
-.B ocamlcp \-pfilm
+.B ocamlcp\ \-pfilm
 profiles function calls,
-\BR if \ ... \ then \ ... \ else \ ... ,
+.BR if \ ... \ then \ ... \ else \ ...,
 loops, and pattern matching.
 
 Calling
@@ -80,7 +82,7 @@ Calling
 without the
 .B \-p
 option defaults to
-.B \-p fm
+.B \-p\ fm
 meaning that only function calls and pattern matching are profiled.
 
 Note: due to the implementation of streams and stream patterns as
@@ -93,5 +95,5 @@ streams, we recommend using
 .BR ocamlc (1),
 .BR ocamlprof (1).
 .br
-.I The Objective Caml user's manual,
+.IR "The Objective Caml user's manual" ,
 chapter "Profiling".

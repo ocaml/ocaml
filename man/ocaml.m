@@ -5,7 +5,6 @@
 .SH NAME
 ocaml \- The Objective Caml interactive toplevel
 
-
 .SH SYNOPSIS
 .B ocaml
 [
@@ -40,11 +39,8 @@ terminates
 
 If one or more
 .I object-files
-(ending in
-.B .cmo
-or
-.B .cma
- ) are given, they are loaded silently before starting the toplevel.
+(ending in .cmo or .cma) are given, they are loaded silently before
+starting the toplevel.
 
 If a
 .I script-file
@@ -72,7 +68,7 @@ If the given directory starts with
 .BR + ,
 it is taken relative to the
 standard library directory. For instance,
-.B \-I +labltk
+.B \-I\ +labltk
 adds the subdirectory
 .B labltk
 of the standard library to the search path.
@@ -96,7 +92,7 @@ and labelled parameters can be given in any order.  This is the default.
 .TP
 .B \-noassert
 Do not compile assertion checks.  Note that the special form
-.B assert false
+.B assert\ false
 is always compiled because it is typed specially.
 .TP
 .B \-nolabels
@@ -154,7 +150,7 @@ See
 for the syntax of the argument.
 .TP
 .BR \-help \ or \ \-\-help
-Display a usage summary and exit.
+Display a short usage summary and exit.
 
 .SH ENVIRONMENT VARIABLES
 .TP
