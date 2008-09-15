@@ -7,3 +7,4 @@ htmlquote
 latexscan.ml
 dvi2txt
 caml-tex2
+*.dSYM
