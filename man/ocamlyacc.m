@@ -1,3 +1,4 @@
+\" $Id$
 .TH OCAMLYACC 1
 
 .SH NAME

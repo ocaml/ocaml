@@ -243,7 +243,9 @@ can be executed directly, even if the
 .BR ocamlrun (1)
 command is not
 installed. Moreover, the "custom runtime" mode enables linking Caml
-code with user-defined C functions.  Never use the
+code with user-defined C functions.
+
+Never use the
 .BR strip (1)
 command on executables produced by
 .BR ocamlc\ \-custom ,
