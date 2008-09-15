@@ -34,7 +34,7 @@ parts of the program should be profiled:
 \begin{options}
 \item["a"] all options
 \item["f"] function calls : a count point is set at the beginning of
-function bodies
+each function body
 \item["i"] {\bf if \ldots then \ldots else \ldots} : count points are set in
 both {\bf then} branch and {\bf else} branch
 \item["l"] {\bf while, for} loops: a count point is set at the beginning of
@@ -90,25 +90,31 @@ since the profiling execution took place.
 The following options are recognized by "ocamlprof":
 
 \begin{options}
+
 \item["-f" \var{dumpfile}] 
 Specifies an alternate dump file of profiling information to be read.
+
 \item["-F" \var{string}]
 Specifies an additional string to be output with profiling information.
 By default, "ocamlprof" will annotate programs with comments of the form
 {\tt (* \var{n} *)} where \var{n} is the counter value for a profiling
 point. With option {\tt -F \var{s}}, the annotation will be
 {\tt (* \var{s}\var{n} *)}.
-\item["-impl" \var{sourcefile}]
-Treat \var{sourcefile} as an implementation file ({\em i.e.} as if its
-name ended with ".ml").
-\item["-intf" \var{sourcefile}]
-Treat \var{sourcefile} as an interface file ({\em i.e.} as if its
-name ended with ".mli").
+
+\item["-impl" \var{filename}]
+Process the file \var{filename} as an implementation file, even if its
+extension is not ".ml".
+
+\item["-intf" \var{filename}]
+Process the file \var{filename} as an interface file, even if its
+extension is not ".mli".
+
 \item["-version"]
 Print the version number of ocamlprof and exit.
-\item["-instrument"]
-\item["-m" \var{flags}]
-These options are undocumented; they are used internally by "ocamlcp".
+
+\item["-help" or "--help"]
+Display a short usage summary and exit.
+%
 \end{options}
 
 \section{Time profiling}

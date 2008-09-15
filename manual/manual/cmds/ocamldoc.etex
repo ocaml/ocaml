@@ -89,19 +89,20 @@ Add the given directory to the path where to look for custom generators.
 \begin{options}
 
 \item["-d" \var{dir}]
-Generate files in directory \var{dir}, rather than in the current directory.
+Generate files in directory \var{dir}, rather than the current directory.
 
 \item["-dump" \var{file}]
 Dump collected information into \var{file}.  This information can be
 read with the "-load" option in a subsequent invocation of "ocamldoc".
 
 \item["-hide" \var{modules}]
-Hide the given complete module names in the generated documentation
+Hide the given complete module names in the generated documentation.
 \var{modules} is a list of complete module names are separated
  by '","', without blanks.  For instance: "Pervasives,M2.M3".
 
 \item["-inv-merge-ml-mli"]
-Inverse implementations and interfaces when merging. All elements
+Reverse the precedence of implementations and interfaces when merging.
+All elements
 in implementation files are kept, and the {\bf\tt -m} option
 indicates which parts of the comments in interface files are merged
 with the comments in implementation files.
@@ -149,6 +150,18 @@ This option is meaningful only in conjunction with the
 \item["-pp" \var{command}]
 Pipe sources through preprocessor \var{command}.
 
+\item["-impl" \var{filename}]
+Process the file \var{filename} as an implementation file, even if its
+extension is not ".ml".
+
+\item["-intf" \var{filename}]
+Process the file \var{filename} as an interface file, even if its
+extension is not ".mli".
+
+\item["-text" \var{filename}]
+Process the file \var{filename} as a text file, even if its
+extension is not ".txt".
+
 \item["-sort"]
 Sort the list of top-level modules before generating the documentation.
 
@@ -166,12 +179,18 @@ For HTML, the file is used to create the whole "index.html" file.
 \item["-v"]
 Verbose mode. Display progress information.
 
+\item["-version"]
+Print the version string and exit.
+
 \item["-warn-error"]
-Treat warnings as errors.
+Treat Ocamldoc warnings as errors.
 
 \item["-hide-warnings"]
 Do not print OCamldoc warnings.
 
+\item["-help" or "--help"]
+Display a short usage summary and exit.
+%
 \end{options}
 
 \subsubsection*{Type-checking options}
@@ -226,10 +245,13 @@ The following options apply in conjunction with the "-latex" option:
 
 \begin{options}
 \item["-latex-value-prefix" \var{prefix}]
-Give a prefix to use for the labels of the values in the generated \LaTeX\ document.
+Give a prefix to use for the labels of the values in the generated
+\LaTeX\ document.
 The default prefix is the empty string. You can also use the options
-{\tt -latex-type-prefix}, {\tt -latex-exception-prefix}, {\tt -latex-module-prefix},
-{\tt -latex-module-type-prefix}, {\tt -latex-class-prefix}, {\tt -latex-class-type-prefix},
+{\tt -latex-type-prefix}, {\tt -latex-exception-prefix},
+{\tt -latex-module-prefix},
+{\tt -latex-module-type-prefix}, {\tt -latex-class-prefix},
+{\tt -latex-class-type-prefix},
 {\tt -latex-attribute-prefix} and {\tt -latex-method-prefix}.
 
 These options are useful when you have, for example, a type and a value with
@@ -320,9 +342,12 @@ The following options apply in conjunction with the "-man" option:
 Generate man pages only for modules, module types, clases and class
 types, instead of pages for all elements.
 
-\item["-man-suffix"]
-Set the suffix used for generated man filenames. Default is '"o"',
-like in "List.o".
+\item["-man-suffix" \var{suffix}]
+Set the suffix used for generated man filenames. Default is '"3o"',
+as in "List.3o".
+
+\item["-man-section" \var{section}]
+Set the section number used for generated man filenames. Default is '"3"'.
 
 \end{options}
 

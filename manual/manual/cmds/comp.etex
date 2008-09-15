@@ -297,10 +297,7 @@ of the program.
 Cause the compiler to call the given \var{command} as a preprocessor
 for each source file. The output of \var{command} is redirected to
 an intermediate file, which is compiled. If there are no compilation
-errors, the intermediate file is deleted afterwards. The name of this
-file is built from the basename of the source file with the extension
-".ppi" for an interface (".mli") file and ".ppo" for an implementation
-(".ml") file.
+errors, the intermediate file is deleted afterwards.
 
 \item["-principal"]
 Check information path during type-checking, to make sure that all
@@ -324,7 +321,7 @@ Compile or link multithreaded programs, in combination with the
 system "threads" library described in chapter~\ref{c:threads}.
 
 \item["-unsafe"]
-Turn bound checking off on array and string accesses (the "v.(i)" and
+Turn bound checking off for array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
@@ -345,7 +342,7 @@ invocations of the C compiler and linker in "-custom" mode.  Useful to
 debug C library problems.
 
 \item["-version"]
-Print the version number of the compiler in short form (e.g. "3.06"),
+Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 
 \item["-vmthread"]
@@ -400,6 +397,9 @@ Print the location of the standard library, then exit.
 \item["-" \var{file}]
 Process \var{file} as a file name, even if it starts with a dash (-)
 character.
+
+\item["-help" or "--help"]
+Display a short usage summary and exit.
 %
 \end{options}
 

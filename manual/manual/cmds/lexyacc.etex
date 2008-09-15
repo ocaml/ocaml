@@ -48,23 +48,27 @@ below.)
 The following command-line options are recognized by "ocamllex".
 
 \begin{options}
-\item["-o" \var{output-file}]
-Specify the name of the output file produced by "ocamllex".
-Default is \var{lexer}".ml", "ocamllex" being invoked as
-"ocamllex" \var{lexer}".mll".
 
 \item["-ml"]
-Output code that does not use the Caml built-in automata
+Output code that does not use OCaml's built-in automata
 interpreter. Instead, the automaton is encoded by Caml functions.
-This option is useful for debugging "ocamllex", using it for
+This option mainly is useful for debugging "ocamllex", using it for
 production lexers is not recommended.
+
+\item["-o" \var{output-file}]
+Specify the name of the output file produced by "ocamllex".
+The default is the input file name with its extension replaced by ".ml".
 
 \item["-q"]
 Quiet mode.  "ocamllex" normally outputs informational messages
 to standard output.  They are suppressed if option "-q" is used.
 
-\item["-version"] 
+\item["-v" or "-version"] 
 Print version and exit.
+
+\item["-help" or "--help"]
+Display a short usage summary and exit.
+%
 \end{options}
 
 \section{Syntax of lexer definitions}
@@ -502,6 +506,9 @@ The "ocamlyacc" command recognizes the following options:
 Name the output files {\it prefix}".ml", {\it prefix}".mli",
 {\it prefix}".output", instead of the default naming convention.
 
+\item["-q"]
+This option has not effect.
+
 \item["-v"]
 Generate a description of the parsing tables and a report on conflicts
 resulting from ambiguities in the grammar. The description is put in
@@ -509,6 +516,15 @@ file \var{grammar}".output".
 
 \item["-version"] 
 Print version and exit.
+
+\item["-"]
+Read the grammar specification from standard input.  The default
+output file names are "stdin.ml" and "stdin.mli".
+
+\item["--" \var{file}]
+Process \var{file} as the grammar specification, even if its name
+starts with a dash (-) character.  This option must be the last on the
+command line.
 
 \end{options}
 

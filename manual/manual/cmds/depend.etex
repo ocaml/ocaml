@@ -21,7 +21,7 @@ compiler "ocamlc" and with the native-code compiler "ocamlopt".
 
 \section{Options}
 
-The following command-line option is recognized by "ocamldep".
+The following command-line options are recognized by "ocamldep".
 
 \begin{options}
 
@@ -36,7 +36,7 @@ and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
 
-\item["-module"]
+\item["-modules"]
 Output raw dependencies of the form
 \begin{verbatim}
       filename: Module1 Module2 ... ModuleN
@@ -57,9 +57,21 @@ dependencies on native compiled files (".cmx") to be generated instead
 of on ".cmo" files.  (This flag makes no difference if all source files
 have explicit ".mli" interface files.)
 
+\item["-pp" \var{command}]
+Cause "ocamldep" to call the given \var{command} as a preprocessor
+for each source file.
+
+\item["-slash"]
+Under Windows, use a forward slash (/) as the path separator instead
+of the usual backward slash (\\).  Under Unix, this option does
+nothing.
+
 \item["-version"]
 Print version and exit.
 
+\item["-help" or "--help"]
+Display a short usage summary and exit.
+%
 \end{options}
 
 \section{A typical Makefile}

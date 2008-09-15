@@ -101,9 +101,18 @@ set with the "-o" option.
 
 If "-cclib" or "-ccopt" options are passed on the command
 line, these options are stored in the resulting ".cmxa" library.  Then,
-linking with this library automatically adds back the 
+linking with this library automatically adds back the
 "-cclib" and "-ccopt" options as if they had been provided on the
 command line, unless the "-noautolink" option is given.
+
+\item["-annot"]
+Dump detailed information about the compilation (types, bindings,
+tail-calls, etc).  The information for file \var{src}".ml"
+is put into file \var{src}".annot".  In case of a type error, dump
+all the information inferred by the type-checker before the error.
+The \var{src}".annot" file can be used with the emacs commands given in
+"emacs/caml-types.el" to display types and other annotations
+interactively.
 
 \item["-c"]
 Compile only. Suppress the linking phase of the
@@ -129,12 +138,9 @@ Optimize the produced code for space rather than for time. This
 results in slightly smaller but slightly slower programs. The default is to
 optimize for speed.
 
-\item["-dtypes"]
-Dump detailed type information.  The information for file \var{x}".ml"
-is put into file \var{x}".annot".  In case of a type error, dump
-all the information inferred by the type-checker before the error.
-The \var{x}".annot" file can be used with the emacs commands given in
-"emacs/caml-types.el" to display types interactively.
+\item["-config"]
+Print the version number of "ocamlopt" and a detailed summary of its
+configuration, then exit.
 
 \item["-for-pack" \var{module-path}]
 Generate an object file (".cmx" and ".o"/".obj" files) that can later be included
@@ -182,16 +188,29 @@ in a slight expansion in code size. Higher values for the "-inline"
 option cause larger and larger functions to become candidate for
 inlining, but can result in a serious increase in code size.
 
+\item["-intf" \var{filename}]
+Compile the file \var{filename} as an interface file, even if its
+extension is not ".mli".
+
+\item["-intf-suffix" \var{string}]
+Recognize file names ending with \var{string} as interface files
+(instead of the default ".mli").
+
+\item["-labels"]
+Labels are not ignored in types, labels may be used in applications,
+and labelled parameters can be given in any order.  This is the default.
+
 \item["-linkall"]
-Forces all modules contained in libraries to be linked in. If this
+Force all modules contained in libraries to be linked in. If this
 flag is not given, unreferenced modules are not linked in. When
 building a library ("-a" flag), setting the "-linkall" flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 
 \item["-noassert"]
-Turn assertion checking off: assertions are not compiled.
-This flag has no effect when linking already compiled files.
+Do not compile assertion checks.  Note that the special form
+"assert false" is always compiled because it is typed specially.
+This flag has no effect when linking already-compiled files.
 
 \item["-noautolink"]
 When linking ".cmxa" libraries, ignore "-cclib" and "-ccopt"
@@ -283,10 +302,7 @@ and "P.B".
 Cause the compiler to call the given \var{command} as a preprocessor
 for each source file. The output of \var{command} is redirected to
 an intermediate file, which is compiled. If there are no compilation
-errors, the intermediate file is deleted afterwards. The name of this
-file is built from the basename of the source file with the extension
-".ppi" for an interface (".mli") file and ".ppo" for an implementation
-(".ml") file.
+errors, the intermediate file is deleted afterwards.
 
 \item["-principal"]
 Check information path during type-checking, to make sure that all
@@ -321,7 +337,7 @@ Compile or link multithreaded programs, in combination with the
 system "threads" library described in chapter~\ref{c:threads}.
 
 \item["-unsafe"]
-Turn bound checking off on array and string accesses (the "v.(i)" and
+Turn bound checking off for array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 faster, but unsafe: anything can happen if the program accesses an
 array or string outside of its bounds.  Additionally, turn off the
@@ -339,52 +355,60 @@ Print all external commands before they are executed, in particular
 invocations of the assembler, C compiler, and linker.
 
 \item["-version"]
-Print the version number of the compiler in short form (e.g. "3.06"),
+Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument
-\var{warning-list}.  The argument is a string of one or several
-characters, with the following meaning for each character:
+\var{warning-list}.
+The argument is a set of letters.  If a letter is
+uppercase, it enables the corresponding warnings; lowercase disables
+the warnings.  The correspondence is the following:
 \begin{options}
-\item["A"/"a"] enable/disable all warnings.
-\item["C"/"c"] enable/disable warnings for suspicious comments.
-\item["D"/"d"] enable/disable warnings for deprecated features.
-\item["E"/"e"] enable/disable warnings for fragile pattern matchings
-(matchings that would remain complete if additional constructors are
- added to a variant type involved).
-\item["F"/"f"] enable/disable warnings for partially applied functions
-(i.e. "f x; "\var{expr} where the application "f x" has a function type).
-\item["L"/"l"] enable/disable warnings for labels omitted in application.
-\item["M"/"m"] enable/disable warnings for overriden methods.
-\item["P"/"p"] enable/disable warnings for partial matches (missing cases
-in pattern matchings).
-\item["S"/"s"] enable/disable warnings for statements that do not have
-type "unit" (e.g. \var{expr1}"; "\var{expr2} when \var{expr1} does not
-have type "unit").
-\item["U"/"u"] enable/disable warnings for unused (redundant) match cases.
-\item["V"/"v"] enable/disable warnings for hidden instance variables.
-\item["Y"/"y"] enable/disable warnings for unused variables bound with the
-"let" or "as" keywords and that don't start with an underscore.
-\item["Z"/"z"] enable/disable warnings for all unused variables that don't
-start with an underscore.
-\item["X"/"x"] enable/disable all other warnings.
+\item[A] all warnings
+\item[C] start of comments that look like mistakes
+\item[D] use of deprecated features
+\item[E] fragile pattern matchings (matchings that will remain
+complete even if additional constructors are added to one of the
+variant types matched)
+\item[F] partially applied functions (expressions whose result has
+function type and is ignored)
+\item[L] omission of labels in applications
+\item[M] overriding of methods
+\item[P] missing cases in pattern matchings (i.e. partial matchings)
+\item[S] expressions in the left-hand side of a sequence that don't
+have type "unit" (and that are not functions, see "F" above)
+\item[U] redundant cases in pattern matching (unused cases)
+\item[V] overriding of instance variables
+\item[Y] unused variables that are bound with "let" or "as", and don't
+start with an underscore (\_) character
+\item[Z] all other cases of unused variables that don't start with
+an underscore (\_) character
+\item[X] warnings that don't fit in the above categories
 \end{options}
-The default setting is "-w Aelyz" (all warnings enabled except fragile
-matchings, omitted labels, unused variables).
+The default setting is "Aelz", enabling all warnings except fragile
+pattern matchings, omitted labels, and innocuous unused variables.
+Note that warnings "F" and "S" are not always triggered, depending on
+the internals of the type checker.
 
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into
-errors.  The compiler will stop on an error as soon as one of these
-warnings is emitted, instead of going on.  The \var{warning-list}
-is a string of one or several characters, with the same meaning as for
+errors.  The compiler will stop with an error when one of these
+warnings is emitted.  The \var{warning-list} has the same meaning as for
 the "-w" option: an uppercase character turns the corresponding
 warning into an error, a lowercase character leaves it as a warning.
-The default setting is "-warn-error a" (all warnings are not treated
-as errors).
+The default setting is "-warn-error a" (none of the warnings is treated
+as an error).
 
 \item["-where"]
-Print the location of the standard library.
+Print the location of the standard library, then exit.
+
+\item["-" \var{file}]
+Process \var{file} as a file name, even if it starts with a dash (-)
+character.
+
+\item["-help" or "--help"]
+Display a short usage summary and exit.
 %
 \end{options}
 
@@ -396,11 +420,21 @@ following additional option:
 \item["-ffast-math"] Use the IA32 instructions to compute
 trigonometric and exponential functions, instead of calling the
 corresponding library routines.  The functions affected are:
-"atan", "atan2", "cos", "log", "log10", "sin", "sqrt", and "tan".
+"atan", "atan2", "cos", "log", "log10", "sin", "sqrt" and "tan".
 The resulting code runs faster, but the range of supported arguments
 and the precision of the result can be reduced.  In particular,
 trigonometric operations "cos", "sin", "tan" have their range reduced to
 $[-2^{64}, 2^{64}]$.
+\end{options}
+
+\paragraph{Options for the AMD64 architecture}
+The AMD64 code generator (64-bit versions of Intel Pentium and AMD
+Athlon) supports the following additional options:
+
+\begin{options}
+\item["-fPIC"] Generate position-independent machine code.  This is
+the default.
+\item["-fno-PIC"] Generate position-dependent machine code.
 \end{options}
 
 \paragraph{Options for the Sparc architecture}

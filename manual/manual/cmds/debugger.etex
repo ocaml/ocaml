@@ -40,6 +40,18 @@ command-line arguments to the program being debugged. (See also the
 
 The following command-line options are recognized:
 \begin{options}
+\item["-c " \var{count}]
+Set the maximum number of simultaneously live checkpoints to \var{count}.
+
+\item["-cd " \var{dir}]
+Run the debugger program from the working directory \var{dir},
+instead of the current directory. (See also the "cd" command.)
+
+\item["-emacs"]
+Tell the debugger it is executed under Emacs. (See
+section~\ref{s:inf-debugger} for information on how to run the
+debugger under Emacs.)
+
 \item["-I "\var{directory}]
 Add \var{directory} to the list of directories searched for source
 files and compiled files. (See also the "directory" command.)
@@ -49,20 +61,12 @@ Use \var{socket} for communicating with the debugged program. See the
 description of the command "set socket" (section~\ref{s:communication})
 for the format of \var{socket}.
 
-\item["-c " \var{count}]
-Set the maximum number of simultaneously live checkpoints to \var{count}.
-
-\item["-cd " \var{directory}]
-Run the debugger program from the working directory \var{directory},
-instead of the current directory. (See also the "cd" command.)
-
-\item["-emacs"]
-Tell the debugger it is executed under Emacs. (See
-section~\ref{s:inf-debugger} for information on how to run the
-debugger under Emacs.)
-
 \item["-version"]
 Print version and exit.
+
+\item["-help" or "--help"]
+Display a short usage summary and exit.
+%
 \end{options}
 
 \subsection{Exiting the debugger}

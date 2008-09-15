@@ -205,8 +205,8 @@ Treat as errors the warnings enabled by the argument \var{warning-list}.
 See section~\ref{s:comp-options} for the syntax of the argument.
 
 \item["-help" or "--help"]
-Display a usage summary and exit.
-
+Display a short usage summary and exit.
+%
 \end{options}
 
 \begin{unix}

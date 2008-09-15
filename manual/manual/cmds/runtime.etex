@@ -64,6 +64,9 @@ in the "OCAMLRUNPARAM" environment variable (see below).
 Search the directory \var{dir} for dynamically-loaded libraries,
 in addition to the standard search path (see
 section~\ref{s-ocamlrun-dllpath}).
+\item["-p"]
+Print the names of the primitives known to this version of
+"ocamlrun" and exit.
 \item["-v"] 
 Direct the memory manager to print some progress messages on
 standard error.  This is equivalent to setting "v=63" in the
