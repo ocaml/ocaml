@@ -70,7 +70,7 @@ CAMLprim value caml_weak_set (value ar, value n, value el)
   if (offset < 1 || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
-  if (el != None_val){
+  if (el != None_val && Is_block (el)){
                                               Assert (Wosize_val (el) == 1);
     do_set (ar, offset, Field (el, 0));
   }else{
