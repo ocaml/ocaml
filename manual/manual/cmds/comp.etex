@@ -375,7 +375,7 @@ have type "unit" (and that are not functions, see "F" above)
 start with an underscore (\_) character
 \item[Z] all other cases of unused variables that don't start with
 an underscore (\_) character
-\item[X] warnings that don't fit in the above categories
+\item[X] warnings that don't fit in the above categories (except A)
 \end{options}
 The default setting is "Aelz", enabling all warnings except fragile
 pattern matchings, omitted labels, and innocuous unused variables.
