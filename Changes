@@ -1,28 +1,56 @@
 Objective Caml 3.11.0:
 ----------------------
 
+(Changes that can break existing programs are marked with a "*"  )
+
 Language features:
-- Introduction of private abbreviation types, for abstracting the actual
-  manifest type in type abbreviations.
+- Addition of lazy patterns: "lazy <pat>" matches suspensions whose values,
+  after forcing, match the pattern <pat>.
+- Introduction of private abbreviation types "type t = private <type-expr>",
+  for abstracting the actual manifest type in type abbreviations.
 
 Compilers:
-- Check that at most one of -pack, -a, -shared, -c, -output-obj is
-  given on the command line.
-- Revised -output-obj: the output name must now be provided; its
-  extension must be one of $(EXT_OBJ), $(EXT_DLL) (or .c for the
-  bytecode compiler). The compilers can now produce a shared library
+* The file name for a compilation unit must correspond to a valid identifier
+  (no more "test-me.ml" or "my file.ml".)
+* Revised -output-obj: the output name must now be provided; its
+  extension must be one of .o/.obj, .so/.dll, or .c for the
+  bytecode compiler. The compilers can now produce a shared library
   (with all the needed -ccopts/-ccobjs options) directly.
+- With -dtypes, record (in .annot files) which function calls
+  are tail calls.
+- All compiler error messages now include a file name and location.
+- Optimized compilation of "lazy e" when the argument "e" is 
+  already evaluated.
+- Optimized compilation of equality tests with a variant constant constructor.
 - The -dllib options recorded in libraries are no longer ignored when
   -use_runtime or -use_prims is used (unless -no_auto_link is
   explicitly used).
+- Check that at most one of -pack, -a, -shared, -c, -output-obj is
+  given on the command line.
 
 Native-code compiler:
 - A new option "-shared" to produce a plugin that can be dynamically
   loaded with the native version of Dynlink.
 - A new option "-nodynlink" to enable optimizations valid only for code
   that is never dynlinked (no-op except for AMD64).
+- More aggressive unboxing of floats and boxed integers.
+- Can select with assembler and asm options to use at configuration time.
+
+Run-time system:
+- Changes in freelist management to reduce fragmentation.
+- New implementation of the page table describing the heap (a sparse
+  hashtable replaces a dense bitvector), fixes issues with address
+  space randomization on 64-bit OS (PR#4448).
+- New "generational" API for registering global memory roots with the GC,
+  enables faster scanning of global roots.
+  (The functions are caml_*_generational_global_root in <caml/memory.h>.)
+- Dynamic linking of C code: under Win32, use Alain Frisch's flexdll
+  implementation of the dlopen API; under MacOSX, use dlopen API
+  instead of MacOSX bundle API.
 
 Standard library:
+- Parsing library: new function "set_trace" to programmatically turn
+  on or off the printing of a trace during parsing.
 - Printexc library: new functions "print_backtrace" and "get_backtrace"
   to obtain a stack backtrace of the most recently raised exception.
   New function "record_backtrace" to turn the exception backtrace mechanism
@@ -30,18 +58,50 @@ Standard library:
 - Scanf library: debunking of meta format implementation.
 
 Other libraries:
-- On some platforms, the Dynlink library is now available in native code. A
-  new Boolean Dynlink.is_native allows the program to know whether it has
-  been compiled in bytecode or in native code.
-
-Run-time system:
-- New "generational" API for registering global memory roots with the GC,
-  enables faster scanning of roots.
+- Dynlink: on some platforms, the Dynlink library is now available in
+  native code. The boolean Dynlink.is_native allows the program to
+  know whether it has been compiled in bytecode or in native code.
+- Bigarrays: added "unsafe_get" and "unsafe_set" 
+  (non-bound-checking versions of "get" and "set").
+- Bigarrays: removed limitation "array dimension < 2^31".
+- Labltk: added support for TK 8.5.
+- Num: added conversions between big_int and int32, nativeint, int64.
+  More efficient implementation of Num.quo_num and Num.mod_num.
+- Threads: improved efficiency of mutex and condition variable operations.
+- Unix: added getsockopt_error returning type Unix.error.
+  Added support for TCP_NODELAY and IPV6_ONLY socket options.
+- Win32 Unix: "select" now supports all kinds of file descriptors.
 
 Tools:
+- ocamldebug now supported under Windows (MSVC and Mingw ports),
+  but without the replay feature.  (Contributed by Sylvain Le Gall
+  at OCamlCore with support from Lexifi.)
+- ocamldoc: new option -no-module-constraint-filter to include functions
+  hidden by signature constraint in documentation.
 - ocamlmklib and ocamldep.opt now available under Windows ports.
 - ocamlmklib no longer supports the -implib option.
 - ocamlnat: an experimental native toplevel (not built by default).
+
+Bug fixes:
+- Major GC and heap compaction: fixed bug involving lazy values and
+  out-of-heap pointers.
+- PR#3915: updated some man pages.
+- PR#4261: type-checking of recursive modules
+- PR#4308: better stack backtraces for "spontaneous" exceptions such as 
+  Stack_overflow, Out_of_memory, etc.
+- PR#4338: Str.global_substitute, Str.global_replace and the Str.*split*
+  functions are now tail-recursive.
+- PR#4503: fixed bug in classify_float on ARM.
+- PR#4512: type-checking of recursive modules
+- PR#4517: crash in ocamllex-generated lexers.
+- PR#4542: problem with return value of Unix.nice.
+- PR#4557: type-checking of recursive modules
+- PR#4564: add note "stack is not executable" to object files generated by
+  ocamlopt (Linux/x86, Linux/AMD64).
+- PR#4566: bug in Ratio.approx_ratio_fix and Num.approx_num_fix.
+- PR#4583: stack overflow in "ocamlopt -g" during closure conversion pass.
+- PR#4585: ocamldoc and "val virtual" declarations.
+- PR#4587: ocamldoc and escaped @ characters.
 
 
 Objective Caml 3.10.2:
