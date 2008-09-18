@@ -765,6 +765,9 @@ functions actually raise the exception:
 no argument;
 \item "caml_raise_with_arg("\var{id}", "\var{v}")" raises the exception
 \var{id} with the Caml value \var{v} as argument;
+\item "caml_raise_with_args("\var{id}", "\var{n}", "\var{v}")"
+raises the exception \var{id} with the Caml values
+\var{v}"[0]", \ldots, \var{v}"["\var{n}"-1]" as arguments;
 \item "caml_raise_with_string("\var{id}", "\var{s}")", where \var{s} is a
 null-terminated C string, raises the exception \var{id} with a copy of
 the C string \var{s} as argument.
