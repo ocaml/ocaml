@@ -147,11 +147,11 @@ of "Lazy.force" may be implicit through pattern matching.
 The pattern @"lazy" pattern@ matches values \var{v} of type "Lazy.t",
 provided @pattern@ matches the result of forcing \var{v} with
 "Lazy.force". A successful match of a pattern containing "lazy"
-sub-patterns forces the corresponding parts of the value matched, even
+sub-patterns forces the corresponding parts of the value being matched, even
 those that imply no test such as @"lazy" value-name@ or @"lazy" "_"@.
 Matching a value with a @pattern-matching@ where some patterns
 contain "lazy" sub-patterns may imply forcing parts of the value,
-even when the selected pattern has no "lazy" sub-pattern.
+even when the pattern selected in the end has no "lazy" sub-pattern.
 
 For more information, see the description of module "Lazy" in the
 standard library (see
@@ -178,46 +178,6 @@ It then returns the value of @expr@.  For example:
           StringSet.elements
             (List.fold_right StringSet.add string_list StringSet.empty)
 \end{verbatim}
-
-\section{Private types}
-\ikwd{private\@\texttt{private}}
-
-\begin{syntax}
-type-representation:
-          ...
-        | '=' 'private' constr-decl { '|' constr-decl }
-        | '=' 'private' '{' field-decl { ';' field-decl } '}'
-\end{syntax}
-Private types are variant or record types. Values of
-these types can be de-structured normally in pattern-matching or via
-the @expr '.' field@ notation for record accesses.  However, values of
-these types cannot be constructed directly by constructor application
-or record construction.  Moreover, assignment on a mutable field of a
-private record type is not allowed.
-
-The typical use of private types is in the export signature of a
-module, to ensure that construction of values of the private type always
-go through the functions provided by the module, while still allowing
-pattern-matching outside the defining module.  For example:
-\begin{verbatim}
-        module M : sig
-                     type t = private A | B of int
-                     val a : t
-                     val b : int -> t
-                   end
-                 = struct
-                     type t = A | B of int
-                     let a = A
-                     let b n = assert (n > 0); B n
-                   end
-\end{verbatim}
-Here, the "private" declaration ensures that in any value of type
-"M.t", the argument to the "B" constructor is always a positive integer.
-
-With respect to the variance of their parameters, private types are
-handled like abstract types. That is, if a private type has
-parameters, their variance is the one explicitly given by prefixing
-the parameter by a `"+"' or a `"-"', it is invariant otherwise.
 
 \section{Recursive modules} \label{s-recursive-modules}
 \ikwd{module\@\texttt{module}}
@@ -285,7 +245,97 @@ function component of a safe module is applied during this computation
 (which corresponds to an ill-founded recursive definition), the
 "Undefined_recursive_module" exception is raised.
 
-\section{Private row types} \label{s-private-rows}
+\section{Private types}
+\ikwd{private\@\texttt{private}}
+
+Private type declarations in module signatures, of the form 
+"type t = private ...", enable libraries to
+reveal some, but not all aspects of the implementation of a type to
+clients of the library.  In this respect, they strike a middle ground
+between abstract type declarations, where no information is revealed
+on the type implementation, and data type definitions and type
+abbreviations, where all aspects of the type implementation are
+publicized.  Private type declarations come in three flavors: for
+variant and record types (section~\ref{s-private-types-variant}),
+for type abbreviations (section~\ref{s-private-types-abbrev}),
+and for row types (section~\ref{s-private-row}).
+
+\subsection{Private variant and record types}
+\label{s-private-types-variant}
+
+\begin{syntax}
+type-representation:
+          ...
+        | '=' 'private' constr-decl { '|' constr-decl }
+        | '=' 'private' '{' field-decl { ';' field-decl } '}'
+\end{syntax}
+Values of a variant or record type declared "private"
+can be de-structured normally in pattern-matching or via
+the @expr '.' field@ notation for record accesses.  However, values of
+these types cannot be constructed directly by constructor application
+or record construction.  Moreover, assignment on a mutable field of a
+private record type is not allowed.
+
+The typical use of private types is in the export signature of a
+module, to ensure that construction of values of the private type always
+go through the functions provided by the module, while still allowing
+pattern-matching outside the defining module.  For example:
+\begin{verbatim}
+        module M : sig
+                     type t = private A | B of int
+                     val a : t
+                     val b : int -> t
+                   end
+                 = struct
+                     type t = A | B of int
+                     let a = A
+                     let b n = assert (n > 0); B n
+                   end
+\end{verbatim}
+Here, the "private" declaration ensures that in any value of type
+"M.t", the argument to the "B" constructor is always a positive integer.
+
+With respect to the variance of their parameters, private types are
+handled like abstract types. That is, if a private type has
+parameters, their variance is the one explicitly given by prefixing
+the parameter by a `"+"' or a `"-"', it is invariant otherwise.
+
+\subsection{Private type abbreviations} \label{s-private-types-abbrev}
+
+\begin{syntax}
+type-equation:
+          ...
+        | '=' 'private' typexpr
+\end{syntax}
+Unlike a regular type abbreviation, a private type abbreviation
+declares a type that is distinct from its implementation type @typexpr@.
+However, coercions from the type to @typexpr@ are permitted.  
+Moreover, the compiler ``knows'' the implementation type and can take
+advantage of this knowledge to perform type-directed optimizations.
+
+The following example uses a private type abbreviation to define a
+module of nonnegative integers:
+\begin{verbatim}
+        module N : sig
+                     type t = private int
+                     val of_int: int -> t
+                     val to_int: t -> int
+                   end
+                 = struct
+                     type t = int
+                     let of_int n = assert (n >= 0); n
+                     let to_int n = n
+                   end
+\end{verbatim}
+The type "N.t" is incompatible with "int", ensuring that nonnegative
+integers and regular integers are not confused.  However, if "x" has
+type "N.t", the coercion "(x :> int)" is legal and returns the
+underlying integer, just like "N.to_int x".  Deep coercions are also
+supported: if "l" has type "N.t list", the coercion "(l :> int list)"
+returns the list of underlying integers, like "List.map N.to_int l"
+but without copying the list "l".
+
+\subsection{Private row types} \label{s-private-rows}
 \ikwd{private\@\texttt{private}}
 
 \begin{syntax}
@@ -339,4 +389,4 @@ but not "(`B b)". With type "v", construction is not restricted but
 pattern-matching must have a default case.
 
 Like for abstract and private types, the variance of type parameters
-is not infered, and must be given explicitly.
+is not inferred, and must be given explicitly.
