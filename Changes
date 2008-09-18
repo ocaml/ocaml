@@ -44,9 +44,11 @@ Run-time system:
 - New "generational" API for registering global memory roots with the GC,
   enables faster scanning of global roots.
   (The functions are caml_*_generational_global_root in <caml/memory.h>.)
-- Dynamic linking of C code: under Win32, use Alain Frisch's flexdll
-  implementation of the dlopen API; under MacOSX, use dlopen API
-  instead of MacOSX bundle API.
+- New function "caml_raise_with_args" to raise an exception with several
+  arguments from C.
+- Changes in implementation of dynamic linking of C code:
+  under Win32, use Alain Frisch's flexdll implementation of the dlopen
+  API; under MacOSX, use dlopen API instead of MacOSX bundle API.
 
 Standard library:
 - Parsing library: new function "set_trace" to programmatically turn
