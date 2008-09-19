@@ -3,7 +3,7 @@
 open Camlp4.PreCast;;
 module CamlSyntax = Camlp4OCamlParser.Make(Camlp4OCamlRevisedParser.Make(Syntax));;
 
-let expr_of_string = CamlSyntax.Gram.parse_string CamlSyntax.expr_eoi;;
+let patt_of_string = CamlSyntax.Gram.parse_string CamlSyntax.patt_eoi;;
 
 module LambdaGram = MakeGram(Lexer);;
 
@@ -16,26 +16,26 @@ EXTEND LambdaGram
   GLOBAL: term term_eoi;
   term:
     [ "top"
-      [ "fun"; v = var; "->"; t = term -> <:expr< `Lam($v$, $t$) >> ]
+      [ "fun"; v = var; "->"; t = term -> <:patt< `Lam($v$, $t$) >> ]
     | "app"
-      [ t1 = SELF; t2 = SELF           -> <:expr< `App($t1$, $t2$) >> ]
+      [ t1 = SELF; t2 = SELF           -> <:patt< `App($t1$, $t2$) >> ]
     | "simple"
-      [ `ANTIQUOT((""|"term"), a)      -> expr_of_string _loc a
-      | v = var                        -> <:expr< `Var($v$) >>
+      [ `ANTIQUOT((""|"term"), a)      -> patt_of_string _loc a
+      | v = var                        -> <:patt< `Var($v$) >>
       | "("; t = term; ")"             -> t ]
     ];
   var:
-    [[ v = LIDENT               -> <:expr< $str:v$ >>
-     | `ANTIQUOT((""|"var"), a) -> expr_of_string _loc a
+    [[ v = LIDENT               -> <:patt< $str:v$ >>
+     | `ANTIQUOT((""|"var"), a) -> patt_of_string _loc a
     ]];
   term_eoi:
     [[ t = term; `EOI -> t ]];
 END;;
 
-let expand_lambda_quot_expr loc _loc_name_opt quotation_contents =
+let expand_lambda_quot_patt loc _loc_name_opt quotation_contents =
   LambdaGram.parse_string term_eoi loc quotation_contents;;
 
-(* to have this syntax <:lam< fun k -> k >> *)
-Syntax.Quotation.add "lam" Syntax.Quotation.DynAst.expr_tag expand_lambda_quot_expr;;
+(* function <:lam< fun x -> $(t|u)$ >> -> ... *)
+Syntax.Quotation.add "lam" Syntax.Quotation.DynAst.patt_tag expand_lambda_quot_patt;;
 
 Syntax.Quotation.default := "lam";;
