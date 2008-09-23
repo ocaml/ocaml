@@ -357,7 +357,7 @@ module Make (Structure : Structure.S) = struct
             fun c levn bp a strm ->
               if levn > clevn then p1 c levn bp a strm
               else
-                match strm with parser bp
+                match strm with parser
                 [ [: act = p1 c levn bp a :] -> act
                 | [: (act, loc) = add_loc c bp p2 :] ->
                     let a = Action.getf2 act a loc in
