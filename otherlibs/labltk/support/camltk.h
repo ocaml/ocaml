@@ -22,6 +22,11 @@
 #define CAMLTKextern CAMLextern
 #endif
 
+/* compatibility with earlier versions of Tcl/Tk */
+#ifndef CONST84
+#define CONST84
+#endif
+
 /* cltkMisc.c */
 /* copy a Caml string to the C heap. Must be deallocated with stat_free */
 extern char *string_to_c(value s);
