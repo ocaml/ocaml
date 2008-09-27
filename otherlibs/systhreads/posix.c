@@ -27,7 +27,6 @@
 #include <sys/time.h>
 #ifdef __linux__
 #include <unistd.h>
-#include <sys/utsname.h>
 #endif
 #include "alloc.h"
 #include "backtrace.h"
@@ -328,6 +327,44 @@ static void * caml_thread_tick(void * arg)
   return NULL;                  /* prevents compiler warning */
 }
 
+/* Reinitialize the thread machinery after a fork() (PR#4577) */
+
+static void caml_thread_reinitialize(void)
+{
+  caml_thread_t thr, next;
+  pthread_t tick_pthread;
+  pthread_attr_t attr;
+  struct channel * chan;
+
+  /* Remove all other threads (now nonexistent)
+     from the doubly-linked list of threads */
+  thr = curr_thread->next;
+  while (thr != curr_thread) {
+    next = thr->next;
+    stat_free(thr);
+    thr = next;
+  }
+  curr_thread->next = curr_thread;
+  curr_thread->prev = curr_thread;
+  /* Reinitialize the master lock machinery,
+     just in case the fork happened while other threads were doing
+     leave_blocking_section */
+  pthread_mutex_init(&caml_runtime_mutex, NULL);
+  pthread_cond_init(&caml_runtime_is_free, NULL);
+  caml_runtime_waiters = 0;     /* no other thread is waiting for the RTS */
+  caml_runtime_busy = 1;        /* normally useless */
+  /* Reinitialize all IO mutexes */
+  for (chan = caml_all_opened_channels;
+       chan != NULL;
+       chan = chan->next) {
+    if (chan->mutex != NULL) pthread_mutex_init(chan->mutex, NULL);
+  }
+  /* Fork a new tick thread */
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL);
+}
+
 /* Initialize the thread machinery */
 
 value caml_thread_initialize(value unit)   /* ML */
@@ -384,6 +421,9 @@ value caml_thread_initialize(value unit)   /* ML */
     caml_pthread_check(
         pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
         "Thread.init");
+    /* Set up fork() to reinitialize the thread machinery in the child
+       (PR#4577) */
+    pthread_atfork(NULL, NULL, caml_thread_reinitialize);
   End_roots();
   return Val_unit;
 }

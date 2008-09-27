@@ -69,7 +69,8 @@ Other libraries:
 - Labltk: added support for TK 8.5.
 - Num: added conversions between big_int and int32, nativeint, int64.
   More efficient implementation of Num.quo_num and Num.mod_num.
-- Threads: improved efficiency of mutex and condition variable operations.
+- Threads: improved efficiency of mutex and condition variable operations;
+  improved interaction with Unix.fork (PR#4577).
 - Unix: added getsockopt_error returning type Unix.error.
   Added support for TCP_NODELAY and IPV6_ONLY socket options.
 - Win32 Unix: "select" now supports all kinds of file descriptors.
