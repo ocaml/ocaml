@@ -228,50 +228,67 @@ let from_function = create "function input";;
 
 (* Scanning from an input channel. *)
 
-(* The input channel [ic] may not be allocated in this library, hence it may be
+(* Position of the problem:
+
+   We cannot prevent the scanning mechanism to use one lookahead character,
+   if needed by the semantics of the format string specifications (e.g. a
+   trailing ``skip space'' specification in the format string); in this case,
+   the mandatory lookahead character is indeed read from the input and not
+   used to return the token read. It is thus mandatory to be able to store
+   an unused lookahead character somewhere to get it as the first character
+   of the next scan.
+
+   To circumvent this problem, all the scanning functions get a low level
+   input buffer argument where they store the lookahead character when
+   needed; additionnaly, the input buffer is the only source of character of
+   a scanner. The [scanbuf] input buffers are defined in module {!Scanning}.
+
+   Now we understand that it is extremely important that related successive
+   calls to scanners inded read from the same input buffer. In effect, if a
+   scanner [scan1] is reading from [ib1] and stores an unused lookahead
+   character [c1] into its input buffer [ib1], then another scanner [scan2]
+   not reading from the same buffer [ib1] will miss the character [c],
+   seemingly vanished in the air from the point of view of [scan2].
+
+   This mechanism works perfectly to read from strings, from files, and from
+   functions, since in those cases, allocating two buffers reading from the
+   same source is unnatural.
+
+   Still, there is a difficulty in the case of scanning from an input
+   channel. In effect, when scanning from an input channel [ic], this channel
+   may not have been allocated from within this library. Hence, it may be
    shared (two functions of the user's program may successively read from
-   it). Furthermore, the user may define more than one scanning buffer reading
-   from the same [ic] channel.
+   [ic]). This is highly error prone since, one of the function may seek the
+   input channel, while the other function has still an unused lookahead
+   character in its input buffer. In conclusion, you should never mixt direct
+   low level reading and high level scanning from the same input channel.
 
-   However, we cannot prevent the scanning mechanism to use one lookahead
-   character, if needed by the semantics of the format string specifications
-   (e.g. a trailing ``skip space'' specification in the format string); in this
-   case, the mandatory lookahead character is read from the channel and stored
-   into the scanning buffer for further reading. This implies that multiple
-   functions alternatively scanning the same [ic] channel will miss characters
-   from time to time, due to unnoticed look ahead characters, silently read
-   from [ic] (hence no more available for reading) and retained inside the
-   scanning buffer to ensure the correct incremental scanning of the same
-   scanning buffer. This phenomenon is even worse if one defines more than one
-   scanning buffer reading from the same input channel [ic]. We have no simple
-   way to circumvent this problem (unless the scanning buffer allocation is a
-   memo function that never allocates two different scanning buffers for the
-   same input channel, orelse the input channel API offers a ``consider this
-   char as unread'' procedure to keep back the lookahead character as available
-   in the input channel for further reading).
+   This phenomenon of reading mess is even worse when one defines more than
+   one scanning buffer reading from the same input channel
+   [ic]. Unfortunately, we have no simple way to get rid of this problem
+   (unless the basic input channel API is modified to offer a ``consider this
+   char as unread'' procedure to keep back the unused lookahead character as
+   available in the input channel for further reading).
 
-   Hence, we do bufferize characters to create a scanning buffer from an input
-   channel in order to preserve the same semantics as other from_* functions
-   above: two successive calls to the scanner will work appropriately, since
-   the bufferized character (if any) will be retained inside the scanning
-   buffer from a call to the next one.
-
-   Otherwise, if we do not bufferize characters, we will loose the clearly
-   correct scanning behaviour even for the simple regular case, when we scan
-   the (possibly shared) channel [ic] using a unique function, while not
-   gaining anything for multiple functions reading from [ic] or multiple
-   allocation of scanning buffers reading from the same [ic].
+   To prevent some of the confusion the scanning buffer allocation function
+   is a memo function that never allocates two different scanning buffers for
+   the same input channel. This way, the user can naively perform successive
+   call to [fscanf] below, without allocating a new scanning buffer at each
+   invocation and hence preserving the expected semantics.
 
    As mentioned above, a more ambitious fix could be to change the input
-   channel API or to have a memo scanning buffer allocation for reading from
-   input channel not allocated from within Scanf's input buffer creation
-   functions. *)
+   channel API to allow arbitrary mixing of direct and formatted reading from
+   input channels. *)
 
 (* Perform bufferized input to improve efficiency. *)
 let file_buffer_size = ref 1024;;
 
-(* To close a channel at end of input. *)
+(* The scanner closes the input channel at end of input. *)
 let scan_close_at_end ic = close_in ic; raise End_of_file;;
+
+(* The scanner does not close the input channel at end of input:
+   it just raises [End_of_file]. *)
+let scan_raise_at_end _ic = raise End_of_file;;
 
 let from_ic scan_close_ic fname ic =
   let len = !file_buffer_size in
@@ -296,24 +313,32 @@ let from_ic_close_at_end = from_ic scan_close_at_end;;
 let from_file fname = from_ic_close_at_end fname (open_in fname);;
 let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
 
-let scan_raise_at_end ic = raise End_of_file;;
-
-let from_channel = from_ic scan_raise_at_end "input channel";;
-
 (* The scanning buffer reading from [stdin].
-   One could try to define stdib as a scanning buffer reading a character at a
+   One could try to define [stdib] as a scanning buffer reading a character at a
    time (no bufferization at all), but unfortunately the toplevel
    interaction would be wrong.
-   This is due to some kind of ``race condition'' when reading from stdin,
-   since the interactive compiler and scanf will simultaneously read the
-   material they need from stdin; then, confusion will result from what should
-   be read by the toplevel and what should be read by scanf.
-   This is even more complicated by the one character lookahead that scanf
+   This is due to some kind of ``race condition'' when reading from [stdin],
+   since the interactive compiler and [scanf] will simultaneously read the
+   material they need from [stdin]; then, confusion will result from what should
+   be read by the toplevel and what should be read by [scanf].
+   This is even more complicated by the one character lookahead that [scanf]
    is sometimes obliged to maintain: the lookahead character will be available
-   for the next (scanf) entry, seamingly coming from nowhere.
-   Also no End_of_file is raised when reading from stdin: if not enough
+   for the next ([scanf]) entry, seamingly coming from nowhere.
+   Also no [End_of_file] is raised when reading from stdin: if not enough
    characters have been read, we simply ask to read more. *)
 let stdib = from_ic scan_raise_at_end "stdin" stdin;;
+
+let memo_from_ic =
+  let memo = ref [] in
+  (fun scan_close_ic fname ic ->
+   try List.assq ic !memo with
+   | Not_found ->
+     let ib = from_ic scan_close_ic fname ic in
+     memo := (ic, ib) :: !memo;
+     ib)
+;;
+
+let from_channel = memo_from_ic scan_raise_at_end "input channel";;
 
 end
 ;;
@@ -432,7 +457,7 @@ let token_int_literal conv ib =
 
 (* All the functions that convert a string to a number raise the exception
    Failure when the conversion is not possible.
-   This exception is then trapped in kscanf. *)
+   This exception is then trapped in [kscanf]. *)
 let token_int conv ib = int_of_string (token_int_literal conv ib);;
 
 let token_float ib = float_of_string (Scanning.token ib);;
@@ -440,7 +465,7 @@ let token_float ib = float_of_string (Scanning.token ib);;
 (* To scan native ints, int32 and int64 integers.
    We cannot access to conversions to/from strings for those types,
    Nativeint.of_string, Int32.of_string, and Int64.of_string,
-   since those modules are not available to Scanf.
+   since those modules are not available to [Scanf].
    However, we can bind and use the corresponding primitives that are
    available in the runtime. *)
 external nativeint_of_string : string -> nativeint
@@ -848,7 +873,7 @@ let bit_not b = (lnot b) land 1;;
 
 (* Build the bit vector corresponding to the set of characters
    that belongs to the string argument [set].
-   (In the Scanf module [set] is always a sub-string of the format.) *)
+   (In the [Scanf] module [set] is always a sub-string of the format.) *)
 let make_char_bit_vect bit set =
   let r = make_range (bit_not bit) in
   let lim = String.length set - 1 in
@@ -1030,7 +1055,7 @@ let list_iter_i f l =
   loop 0 l
 ;;
 
-(* The global error report function for Scanf. *)
+(* The global error report function for [Scanf]. *)
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
     let i = Scanning.char_count ib in
@@ -1068,8 +1093,8 @@ let ascanf sc fmt =
      - a vector of user's defined readers rv,
      - and a function [f] to pass the tokens read to.
 
-   Then [scan_format] scans the format and the buffer in parallel to find
-   out tokens as specified by the format; when it founds one token, it
+   Then [scan_format] scans the format and the input buffer in parallel to
+   find out tokens as specified by the format; when it founds one token, it
    converts it as specified, remembers the converted value as a future
    argument to the function [f], and continues scanning.
 

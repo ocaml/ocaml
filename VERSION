@@ -1,4 +1,4 @@
-3.11+dev17 Private_abbrevs+natdynlink+lazy_patterns (2008-09-10)
+3.11+dev18 Private_abbrevs+natdynlink+lazy_patterns+fscanf debug (2008-09-27)
 
 # The version string is the first line of this file.
 # It must be in the format described in stdlib/sys.mli

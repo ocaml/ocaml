@@ -60,7 +60,7 @@
 
     then [bscanf stdib "%d" f] reads an integer [n] from the standard input
     and returns [f n] (that is [n + 1]). Thus, if we evaluate [bscanf stdib
-    "%d" f], and then enter [41] at the keyboard, we get [42] as a final
+    "%d" f], and then enter [41] at the keyboard, we get [42] as the final
     result. *)
 
 (** {7 Formatted input as a functional feature} *)
@@ -127,9 +127,8 @@ val from_function : (unit -> char) -> scanbuf;;
     end-of-input condition by raising the exception [End_of_file]. *)
 
 val from_channel : in_channel -> scanbuf;;
-(** [Scanning.from_channel ic] returns a scanning buffer which reads
-    one character at a time from the input channel [ic], starting at the
-    current reading position. *)
+(** [Scanning.from_channel ic] returns a scanning buffer which reads from the
+    input channel [ic], starting at the current reading position. *)
 
 val end_of_input : scanbuf -> bool;;
 (** [Scanning.end_of_input ib] tests the end-of-input condition of the given
@@ -368,20 +367,14 @@ val fscanf : in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** Same as {!Scanf.bscanf}, but reads from the given channel.
 
     Warning: since all formatted input functions operate from a scanning
-    buffer, be aware that each [fscanf] invocation must allocate a new fresh
-    scanning buffer (unless you make careful use of partial
-    application). Hence, there are chances that some characters seem to be
-    skipped (in fact they are pending in a previously defined then used
-    scanning buffer). This happens in particular when calling [fscanf] again
-    after a scan involving a format that necessitated some look ahead (such
-    as a format that ends by skipping whitespace in the input).
+    buffer, be aware that each [fscanf] invocation will operate with a
+    scanning buffer reading from the given channel. This extra level of
+    bufferization can lead to strange scanning behaviour if you use low level
+    primitives on the channel (reading characters, seeking the reading
+    position, and so on).
 
-    To avoid confusion, consider using [bscanf] with an explicitly created
-    scanning buffer. Use for instance [Scanning.from_file fname], to allocate
-    the scanning buffer reading from file [fname] once and for all.
-
-    This method is not only clearer it is also faster, since scanning
-    buffers to files are optimized for fast buffered reading. *)
+    As a consequence, never mixt direct low level reading and high level
+    scanning from the same input channel. *)
 
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner;;
 (** Same as {!Scanf.bscanf}, but reads from the given string. *)
