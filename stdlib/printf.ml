@@ -362,10 +362,15 @@ type positional_specification =
    Calling [got_spec] with appropriate arguments, we ``return'' a positional
    specification and an index to go on scanning the [fmt] format at hand.
 
-   We do not support [*$] specifications, since this would lead to type
-   checking problems: a [*$] positional specification means ``take the next
-   argument to [printf] (which must be an integer value)'', name this integer
-   value $n$; [*$] now designates parameter $n$.
+   Note that this is optimized for the regular case, i.e. no positional
+   parameter, since in this case we juste ``return'' the constant
+   [Spec_none]; in case we have a positional parameter, we ``return'' a
+   [Spec_index] [positional_specification] which a bit more costly.
+
+   Note also that we do not support [*$] specifications, since this would
+   lead to type checking problems: a [*$] positional specification means
+   ``take the next argument to [printf] (which must be an integer value)'',
+   name this integer value $n$; [*$] now designates parameter $n$.
 
    Unfortunately, the type of a parameter specified via a [*$] positional
    specification should be the type of the corresponding argument to

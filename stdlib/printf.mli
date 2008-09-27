@@ -122,6 +122,7 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
    (see module {!Buffer}). *)
 
 (** Formatted output functions with continuations. *)
+
 val kfprintf : (out_channel -> 'a) -> out_channel ->
               ('b, out_channel, unit, 'a) format4 -> 'b;;
 (** Same as [fprintf], but instead of returning immediately,
@@ -180,7 +181,10 @@ module CamlinternalPr : sig
     val sub_format :
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int) ->
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char -> int) ->
-        char -> ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> int
+        char ->
+        ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+        int ->
+        int
 
     val summarize_format_type : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
 
@@ -192,11 +196,14 @@ module CamlinternalPr : sig
         (Sformat.index -> 'i -> 'j -> int -> 'h) ->
         (Sformat.index -> 'k -> int -> 'h) ->
         (Sformat.index -> int -> 'h) ->
-        (Sformat.index -> ('l, 'm, 'n, 'o, 'p, 'q) format6 -> int -> 'h) -> 'h
+        (Sformat.index -> ('l, 'm, 'n, 'o, 'p, 'q) format6 -> int -> 'h) ->
+        'h
 
     val kapr :
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> Obj.t array -> 'g) ->
-        ('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g
+        ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+        'g
+
   end;;
 
 end;;
