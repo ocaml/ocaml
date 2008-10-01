@@ -127,10 +127,13 @@ module String = struct
   let print f s = fprintf f "%S" s
 
   let chomp s =
+    let is_nl_char = function '\n' | '\r' -> true | _ -> false in
+    let rec cut n =
+      if n = 0 then 0 else if is_nl_char s.[n-1] then cut (n-1) else n
+    in
     let ls = length s in
-    if ls = 0 then s
-    else if s.[ls-1] = '\n' then sub s 0 (ls - 1)
-    else s
+    let n = cut ls in
+    if n = ls then s else sub s 0 n
 
   let before s pos = sub s 0 pos
   let after s pos = sub s pos (length s - pos)
