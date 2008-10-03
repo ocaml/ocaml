@@ -799,6 +799,7 @@ Very old (no more supported) syntax:
     ;
     label_expr:
       [ [ b1 = SELF; ";"; b2 = SELF -> <:rec_binding< $b1$ ; $b2$ >>
+        | b1 = SELF; ";" -> b1
         | `ANTIQUOT ("rec_binding" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT (""|"anti" as n) s ->
