@@ -64,7 +64,7 @@ html: files
 	$(MLIS) ; \
 	cp -f ../style.css libref ; \
 	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff manual.hva -e macros.tex ../manual.tex ;\
-	${HACHA} manual.html ;\
+	${HACHA} -tocter manual.html ;\
 
 
 info: files

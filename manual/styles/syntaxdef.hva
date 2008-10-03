@@ -48,6 +48,8 @@
 \stx@silent{definition}%
 \stx@silent{specification}%
 \stx@silent{type-equation}%
+%%Redefined in names.etex
+\stx@silent{label-name}%
 %%Not really defined in lexyacc.etex
 \stx@silent{character-set}%
 \stx@silent{symbol}%

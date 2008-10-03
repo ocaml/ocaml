@@ -258,7 +258,7 @@ abbreviations, where all aspects of the type implementation are
 publicized.  Private type declarations come in three flavors: for
 variant and record types (section~\ref{s-private-types-variant}),
 for type abbreviations (section~\ref{s-private-types-abbrev}),
-and for row types (section~\ref{s-private-row}).
+and for row types (section~\ref{s-private-rows}).
 
 \subsection{Private variant and record types}
 \label{s-private-types-variant}
@@ -338,11 +338,11 @@ supported: if "l" has type "N.t list", the coercion "(l :> int list)"
 returns the list of underlying integers, like "List.map N.to_int l"
 but without copying the list "l".
 
-Note that the coercion "("@e@" :> "@typexp@")" is actually an abbreviated form,
+Note that the coercion "("@expr@" :> "@typexpr@")" is actually an abbreviated form,
 and will only work in presence of private abbreviations if both the
-type of @e@ and @typexp@ contain no type variables. If this is not the
-case, you must use the full form "("@e@" : "@typ\_e@" :> "@typexp@")" where
-@typ\_e@ is the expected type of @e@. Concretely, this would be "(x :
+type of @expr@ and @typexpr@ contain no type variables. If this is not the
+case, you must use the full form "("@expr@" : "@@typ\_e@@" :> "@typexpr@")" where
+@@typ\_e@@ is the expected type of @expr@. Concretely, this would be "(x :
 N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
 
 \subsection{Private row types} \label{s-private-rows}

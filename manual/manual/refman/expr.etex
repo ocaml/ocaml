@@ -293,9 +293,9 @@ match case to be selected. Guards occur just before the "->" token and
 are introduced by the "when" keyword:
 
 $$\begin{array}{rlll}
-\token{function} & {\sl pattern}_1 \; [\token{when} \; {\sl cond}_1] & \token{->} & {\sl expr}_1 \\
+\token{function} & \nt{pattern}_1 \; [\token{when} \; \nt{cond}_1] & \token{->} & \nt{expr}_1 \\
 \token{|}   & \ldots \\
-\token{|}   & {\sl pattern}_n  \; [\token{when} \; {\sl cond}_n] & \token{->} & {\sl expr}_n
+\token{|}   & \nt{pattern}_n  \; [\token{when} \; \nt{cond}_n] & \token{->} & \nt{expr}_n
 \end{array}$$
 
 
@@ -707,8 +707,8 @@ the latter operator should be used.
 Inside a class definition, coercions to the types newly defined
 introduce no subtyping (they behave just like type annotations), as
 the type abbreviations are not yet completely defined. There is an
-exception for coercing @self@ to the (exact) type of its class: this
-is allowed if the type of @self@ does not appear in a contravariant
+exception for coercing @@self@@ to the (exact) type of its class: this
+is allowed if the type of @@self@@ does not appear in a contravariant
 position in the class type, {\em i.e.} if there are no binary methods.
 
 \subsubsection*{Object duplication}
