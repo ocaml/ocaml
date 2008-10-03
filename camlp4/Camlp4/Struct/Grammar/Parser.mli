@@ -37,8 +37,6 @@ module Make (Structure : Structure.S) : sig
   value continue :
     internal_entry -> Loc.t -> Action.t -> symbol -> Context.t -> tree ->
     (Stream.t (Token.t * Loc.t) -> Action.t) -> Stream.t (Token.t * Loc.t) -> Action.t;
-  value skip_if_empty :
-    Context.t -> Loc.t -> ('a -> 'b) -> 'a -> Action.t;
   value do_recover :
     (internal_entry -> 'a -> 'b -> tree -> Context.t -> Stream.t (Token.t * Loc.t) -> Action.t) -> internal_entry ->
     'a -> 'b -> Loc.t -> Action.t -> symbol -> Context.t -> tree -> Stream.t (Token.t * Loc.t) -> Action.t;

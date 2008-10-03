@@ -80,16 +80,19 @@ module Make (Structure : Structure.S) = struct
         Action.mk (fun _ -> Action.getf act a)
   ;
 
-  value skip_if_empty c bp p strm =
-    (* if Stream.count strm == bp then Action.mk (fun _ -> p strm) *)
-    if Context.loc_ep c == bp then Action.mk (fun _ -> p strm)
-    else raise Stream.Failure
+  (* PR#4603, PR#4330, PR#4551:
+     Here Context.loc_bp replaced Context.loc_ep to fix all these bugs.
+     If you do change it again look at these bugs. *)
+  value skip_if_empty c bp _ =
+    if Context.loc_bp c = bp then Action.mk (fun _ -> raise Stream.Failure)
+    else
+      raise Stream.Failure
   ;
 
   value do_recover parser_of_tree entry nlevn alevn loc a s c son =
     parser
     [ [: a = parser_of_tree entry nlevn alevn (top_tree entry son) c :] -> a
-    | [: a = skip_if_empty c loc (parser []) :] -> a
+    | [: a = skip_if_empty c loc :] -> a
     | [: a =
           continue entry loc a s c son
             (parser_of_tree entry nlevn alevn son c) :] ->
