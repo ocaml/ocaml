@@ -704,8 +704,12 @@ type abbreviations containing objects and/or variants, keeping only
 recursion when it is explicit in the class type. In case of failure,
 the latter operator should be used.
 
-In a class definition, coercion to the type this class defines is the
-identity, as this type abbreviation is not yet completely defined.
+Inside a class definition, coercions to the types newly defined
+introduce no subtyping (they behave just like type annotations), as
+the type abbreviations are not yet completely defined. There is an
+exception for coercing @self@ to the (exact) type of its class: this
+is allowed if the type of @self@ does not appear in a contravariant
+position in the class type, {\em i.e.} if there are no binary methods.
 
 \subsubsection*{Object duplication}
 
