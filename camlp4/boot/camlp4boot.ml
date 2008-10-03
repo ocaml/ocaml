@@ -14013,8 +14013,6 @@ module B =
               load [ "Camlp4TrashRemover" ]
           | (("Filters" | ""), ("striploc" | "camlp4locationstripper.cmo"))
               -> load [ "Camlp4LocationStripper" ]
-          | (("Filters" | ""), ("tracer" | "camlp4tracer.cmo")) ->
-              load [ "Camlp4Tracer" ]
           | (("Printers" | ""),
              ("pr_r.cmo" | "r" | "ocamlr" | "camlp4ocamlrevisedprinter.cmo"))
               -> Register.enable_ocamlr_printer ()

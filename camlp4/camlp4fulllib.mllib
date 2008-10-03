@@ -30,7 +30,6 @@ Camlp4Filters/Camlp4LocationStripper
 Camlp4Filters/Camlp4MapGenerator
 Camlp4Filters/Camlp4MetaGenerator
 Camlp4Filters/Camlp4Profiler
-Camlp4Filters/Camlp4Tracer
 Camlp4Filters/Camlp4TrashRemover
 
 Camlp4Top

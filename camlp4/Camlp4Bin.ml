@@ -90,7 +90,6 @@ value rewrite_and_load n x =
     | ("Filters"|"", "meta" | "camlp4metagenerator.cmo") -> load ["Camlp4MetaGenerator"]
     | ("Filters"|"", "trash" | "camlp4trashremover.cmo") -> load ["Camlp4TrashRemover"]
     | ("Filters"|"", "striploc" | "camlp4locationstripper.cmo") -> load ["Camlp4LocationStripper"]
-    | ("Filters"|"", "tracer" | "camlp4tracer.cmo") -> load ["Camlp4Tracer"]
     | ("Printers"|"", "pr_r.cmo" | "r" | "ocamlr" | "camlp4ocamlrevisedprinter.cmo") ->
         Register.enable_ocamlr_printer ()
     | ("Printers"|"", "pr_o.cmo" | "o" | "ocaml" | "camlp4ocamlprinter.cmo") ->
