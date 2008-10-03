@@ -66,5 +66,7 @@ fv << let module M = struct value rec a = 42; value b = a + 1; end in () >> <<(+
 
 fv << let rec f x = x and g = x in y >> << x y >>;
 fv << let f x = x in x >> << x >>;
+fv << let f x = x and g x = x in x >> << x >>;
+fv << let (x, y) = (42, 44) in x y z >> << z >>;
 
 printf "@]@.";
