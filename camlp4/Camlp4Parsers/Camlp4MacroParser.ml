@@ -96,7 +96,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ SdStr of 'a
     | SdDef of string and option (list string * Ast.expr)
     | SdUnd of string
-    | SdITE of string and list (item_or_def 'a) and list (item_or_def 'a)
+    | SdITE of bool and list (item_or_def 'a) and list (item_or_def 'a)
     | SdLazy of Lazy.t 'a ];
 
   value rec list_remove x =
@@ -269,7 +269,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ SdStr i -> i
     | SdDef x eo -> do { define eo x; nil }
     | SdUnd x -> do { undef x; nil }
-    | SdITE i l1 l2 -> execute_macro_list nil cons (if is_defined i then l1 else l2)
+    | SdITE b l1 l2 -> execute_macro_list nil cons (if b then l1 else l2)
     | SdLazy l -> Lazy.force l ]
 
   and execute_macro_list nil cons = fun
@@ -279,6 +279,27 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let il2 = execute_macro_list nil cons tl in
     cons il1 il2 ]
   ;
+
+  (* Stack of conditionals. *)
+  value stack = Stack.create () ;
+
+  (* Make an SdITE value by extracting the result of the test from the stack. *)
+  value make_SdITE_result st1 st2 =
+   let test = Stack.pop stack in
+   SdITE test st1 st2 ;
+
+  type branch = [ Then | Else ];
+
+  (* Execute macro only if it belongs to the currently active branch. *)
+  value execute_macro_if_active_branch _loc nil cons branch macro_def =
+   let test = Stack.top stack in
+   let item =
+     if (test && branch=Then) || ((not test) && branch=Else) then
+      execute_macro nil cons macro_def
+     else (* ignore the macro *)
+      nil
+   in SdStr(item)
+   ;
 
   EXTEND Gram
     GLOBAL: expr patt str_item sig_item;
@@ -292,41 +313,61 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     macro_def:
       [ [ "DEFINE"; i = uident; def = opt_macro_value -> SdDef i def
-        | "UNDEF"; i = uident -> SdUnd i
-        | "IFDEF"; i = uident; "THEN"; st1 = smlist; st2 = else_macro_def ->
-            SdITE i st1 st2
-        | "IFNDEF"; i = uident; "THEN"; st2 = smlist; st1 = else_macro_def ->
-            SdITE i st1 st2
+        | "UNDEF";  i = uident -> SdUnd i
+        | "IFDEF";  uident_eval_ifdef;  "THEN"; st1 = smlist_then; st2 = else_macro_def ->
+	    make_SdITE_result st1 st2
+        | "IFNDEF"; uident_eval_ifndef; "THEN"; st1 = smlist_then; st2 = else_macro_def ->
+	    make_SdITE_result st1 st2
         | "INCLUDE"; fname = STRING ->
             SdLazy (lazy (parse_include_file str_items fname)) ] ]
     ;
     macro_def_sig:
       [ [ "DEFINE"; i = uident -> SdDef i None
-        | "UNDEF"; i = uident -> SdUnd i
-        | "IFDEF"; i = uident; "THEN"; sg1 = sglist; sg2 = else_macro_def_sig ->
-            SdITE i sg1 sg2
-        | "IFNDEF"; i = uident; "THEN"; sg2 = sglist; sg1 = else_macro_def_sig ->
-            SdITE i sg1 sg2
+        | "UNDEF";  i = uident -> SdUnd i
+        | "IFDEF";  uident_eval_ifdef;  "THEN"; sg1 = sglist_then; sg2 = else_macro_def_sig ->
+            make_SdITE_result sg1 sg2
+        | "IFNDEF"; uident_eval_ifndef; "THEN"; sg1 = sglist_then; sg2 = else_macro_def_sig ->
+            make_SdITE_result sg1 sg2
         | "INCLUDE"; fname = STRING ->
             SdLazy (lazy (parse_include_file sig_items fname)) ] ]
     ;
+    uident_eval_ifdef:
+      [ [ i = uident -> Stack.push (is_defined i) stack ]]
+    ;
+    uident_eval_ifndef:
+      [ [ i = uident -> Stack.push (not (is_defined i)) stack ]]
+    ;
     else_macro_def:
-      [ [ "ELSE"; st = smlist; endif -> st
+      [ [ "ELSE"; st = smlist_else; endif -> st
         | endif -> [] ] ]
     ;
     else_macro_def_sig:
-      [ [ "ELSE"; st = sglist; endif -> st
+      [ [ "ELSE"; st = sglist_else; endif -> st
         | endif -> [] ] ]
     ;
     else_expr:
       [ [ "ELSE"; e = expr; endif -> e
       | endif -> <:expr< () >> ] ]
     ;
-    smlist:
-      [ [ sml = LIST1 [ d = macro_def; semi -> d | si = str_item; semi -> SdStr si ] -> sml ] ]
+    smlist_then:
+      [ [ sml = LIST1 [ d = macro_def; semi ->
+			  execute_macro_if_active_branch _loc <:str_item<>> (fun a b -> <:str_item< $a$; $b$ >>) Then d
+		      | si = str_item; semi -> SdStr si ] -> sml ] ]
     ;
-    sglist:
-      [ [ sgl = LIST1 [ d = macro_def_sig; semi -> d | si = sig_item; semi -> SdStr si ] -> sgl ] ]
+    smlist_else:
+      [ [ sml = LIST1 [ d = macro_def; semi ->
+			  execute_macro_if_active_branch _loc <:str_item<>> (fun a b -> <:str_item< $a$; $b$ >>) Else d
+		      | si = str_item; semi -> SdStr si ] -> sml ] ]
+    ;
+    sglist_then:
+      [ [ sgl = LIST1 [ d = macro_def_sig; semi ->
+			  execute_macro_if_active_branch _loc <:sig_item<>> (fun a b -> <:sig_item< $a$; $b$ >>) Then d
+	              | si = sig_item; semi -> SdStr si ] -> sgl ] ]
+    ;
+    sglist_else:
+      [ [ sgl = LIST1 [ d = macro_def_sig; semi ->
+			  execute_macro_if_active_branch _loc <:sig_item<>> (fun a b -> <:sig_item< $a$; $b$ >>) Else d
+	              | si = sig_item; semi -> SdStr si ] -> sgl ] ]
     ;
     endif:
       [ [ "END" -> ()
