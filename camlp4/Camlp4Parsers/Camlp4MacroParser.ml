@@ -18,6 +18,7 @@ open Camlp4;                                             (* -*- camlp4r -*- *)
  * - Nicolas Pouillard: refactoring
  * - Aleksey Nogin: extra features and bug fixes.
  * - Christopher Conway: extra feature (-D<uident>=)
+ * - Jean-vincent Loddo: definitions inside IFs.
  *)
 
 module Id = struct
