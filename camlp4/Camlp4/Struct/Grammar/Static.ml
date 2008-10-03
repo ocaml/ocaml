@@ -16,6 +16,10 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
 *)
+
+value uncurry f (x,y) = f x y;
+value flip f x y = f y x;
+
 module Make (Lexer : Sig.Lexer)
 : Sig.Grammar.Static with module Loc = Lexer.Loc
                         and module Token = Lexer.Token
@@ -68,12 +72,7 @@ module Make (Lexer : Sig.Lexer)
   value delete_rule = Delete.delete_rule;
 
   value srules e rl =
-    let t =
-      List.fold_left
-      (fun tree (symbols, action) -> Insert.insert_tree e symbols action tree)
-      DeadEnd rl
-    in
-    Stree t;
+    Stree (List.fold_left (flip (uncurry (Insert.insert_tree e))) DeadEnd rl);
   value sfold0 = Fold.sfold0;
   value sfold1 = Fold.sfold1;
   value sfold0sep = Fold.sfold0sep;
