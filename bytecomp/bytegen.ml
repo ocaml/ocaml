@@ -379,11 +379,6 @@ let comp_primitive p args =
 
 let is_immed n = immed_min <= n && n <= immed_max
 
-let explode_isout arg l h =
-  Lprim
-    (Psequor,
-    [Lprim (Pintcomp Clt,[arg ; Lconst (Const_base (Const_int 0))]) ;
-     Lprim (Pintcomp Cgt,[arg ; Lconst (Const_base (Const_int h))])])
 
 (* Compile an expression.
    The value of the expression is left in the accumulator.
