@@ -21,13 +21,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   module S = Set.Make String;
 
-  value rec fold_binding_vars f bi acc =
-    match bi with
-    [ <:binding< $bi1$ and $bi2$ >> ->
-        fold_binding_vars f bi1 (fold_binding_vars f bi2 acc)
-    | <:binding< $lid:i$ = $_$ >> -> f i acc
-    | _ -> assert False ];
-
   class c_fold_pattern_vars ['accu] f init =
     object
       inherit Ast.fold as super;
@@ -41,6 +34,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     end;
 
   value fold_pattern_vars f p init = ((new c_fold_pattern_vars f init)#patt p)#acc;
+
+  value rec fold_binding_vars f bi acc =
+    match bi with
+    [ <:binding< $bi1$ and $bi2$ >> ->
+        fold_binding_vars f bi1 (fold_binding_vars f bi2 acc)
+    | <:binding< $p$ = $_$ >> -> fold_pattern_vars f p acc
+    | <:binding<>> -> acc
+    | <:binding< $anti:_$ >> -> assert False ];
 
   class fold_free_vars ['accu] (f : string -> 'accu -> 'accu) ?(env_init = S.empty) free_init =
     object (o)
