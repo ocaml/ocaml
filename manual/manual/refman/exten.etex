@@ -312,6 +312,9 @@ declares a type that is distinct from its implementation type @typexpr@.
 However, coercions from the type to @typexpr@ are permitted.  
 Moreover, the compiler ``knows'' the implementation type and can take
 advantage of this knowledge to perform type-directed optimizations.
+For ambiguity reasons, @typexpr@ cannot be an object or polymorphic
+variant type, but a similar behaviour can be obtained through private
+row types.
 
 The following example uses a private type abbreviation to define a
 module of nonnegative integers:
@@ -334,6 +337,13 @@ underlying integer, just like "N.to_int x".  Deep coercions are also
 supported: if "l" has type "N.t list", the coercion "(l :> int list)"
 returns the list of underlying integers, like "List.map N.to_int l"
 but without copying the list "l".
+
+Note that the coercion "("@e@" :> "@typexp@")" is actually an abbreviated form,
+and will only work in presence of private abbreviations if both the
+type of @e@ and @typexp@ contain no type variables. If this is not the
+case, you must use the full form "("@e@" : "@typ\_e@" :> "@typexp@")" where
+@typ\_e@ is the expected type of @e@. Concretely, this would be "(x :
+N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
 
 \subsection{Private row types} \label{s-private-rows}
 \ikwd{private\@\texttt{private}}
