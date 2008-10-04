@@ -551,7 +551,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:expr< let module $_$ = $_$ in $_$ >> |
       <:expr< assert $_$ >> | <:expr< assert False >> |
       <:expr< lazy $_$ >> | <:expr< new $_$ >> |
-      <:expr< object ($_$) $_$ >> ->
+      <:expr< object ($_$) $_$ end >> ->
         pp f "(%a)" o#reset#expr e ];
 
     method direction_flag f b =
