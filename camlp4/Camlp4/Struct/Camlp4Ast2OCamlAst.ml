@@ -114,10 +114,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | Ast.BFalse -> Nonrecursive
     | Ast.BAnt _ -> assert False ];
 
-  value mkli s =
-    loop (fun s -> lident s) where rec loop f =
+  value mkli s = loop lident
+    where rec loop f =
       fun
-      [ [i :: il] -> loop (fun s -> ldot (f i) s) il
+      [ [i :: il] -> loop (ldot (f i)) il
       | [] -> f s ]
   ;
 
@@ -556,7 +556,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           match sep_expr_acc [] e with
           [ [(loc, ml, <:expr< $uid:s$ >>) :: l] ->
               let ca = constructors_arity () in
-              (mkexp loc (Pexp_construct (mkli s ml) None ca), l)
+              (mkexp loc (Pexp_construct (mkli (conv_con s) ml) None ca), l)
           | [(loc, ml, <:expr< $lid:s$ >>) :: l] ->
               (mkexp loc (Pexp_ident (mkli s ml)), l)
           | [(_, [], e) :: l] -> (expr e, l)
