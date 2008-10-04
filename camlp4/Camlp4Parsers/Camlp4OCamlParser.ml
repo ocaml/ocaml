@@ -308,8 +308,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ];
     expr: BEFORE "||"
       [ ","
-        [ e = SELF; ","; el = (*FIXME comma_expr*)LIST1 NEXT SEP "," ->
-            <:expr< ( $e$, $Ast.exCom_of_list el$ ) >> ]
+        [ e1 = SELF; ","; e2 = comma_expr ->
+            <:expr< ( $e1$, $e2$ ) >> ]
       | ":=" NONA
         [ e1 = SELF; ":="; e2 = expr LEVEL "top" ->
             <:expr< $e1$.val := $e2$ >>
@@ -415,10 +415,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "`"; s = a_ident -> <:patt< ` $s$ >>
         | "#"; i = type_longident -> <:patt< # $i$ >> ] ]
     ;
-    (* comma_expr:
-      [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
-        | e = expr LEVEL ":=" -> e ] ]
-    ;                                                           *)
+    comma_expr:
+      [ [ e1 = expr LEVEL ":="; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
+        | e1 = expr LEVEL ":=" -> e1 ] ]
+    ;
     (* comma_patt:
       [ [ p1 = SELF; ","; p2 = SELF -> <:patt< $p1$, $p2$ >>
         | p = patt LEVEL ".." -> p ] ]

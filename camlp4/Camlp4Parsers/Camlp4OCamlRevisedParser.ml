@@ -734,7 +734,7 @@ Very old (no more supported) syntax:
     comma_expr:
       [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
         | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr," n s$ >>
-        | e = expr -> e ] ]
+        | e = expr LEVEL "top" -> e ] ]
     ;
     dummy:
       [ [ -> () ] ]
