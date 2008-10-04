@@ -115,6 +115,7 @@ Very old (no more supported) syntax:
   Gram.Entry.clear expr_eoi;
   Gram.Entry.clear expr_quot;
   Gram.Entry.clear field_expr;
+  Gram.Entry.clear field_expr_list;
   Gram.Entry.clear fun_binding;
   Gram.Entry.clear fun_def;
   Gram.Entry.clear ident;
@@ -125,13 +126,18 @@ Very old (no more supported) syntax:
   Gram.Entry.clear ipatt_tcon;
   Gram.Entry.clear label;
   Gram.Entry.clear label_declaration;
+  Gram.Entry.clear label_declaration_list;
+  Gram.Entry.clear label_expr_list;
   Gram.Entry.clear label_expr;
   Gram.Entry.clear label_ipatt;
+  Gram.Entry.clear label_ipatt_list;
   Gram.Entry.clear label_longident;
   Gram.Entry.clear label_patt;
+  Gram.Entry.clear label_patt_list;
   Gram.Entry.clear labeled_ipatt;
   Gram.Entry.clear let_binding;
   Gram.Entry.clear meth_list;
+  Gram.Entry.clear meth_decl;
   Gram.Entry.clear module_binding;
   Gram.Entry.clear module_binding0;
   Gram.Entry.clear module_binding_quot;
@@ -420,10 +426,11 @@ Very old (no more supported) syntax:
       comma_ctyp comma_expr comma_ipatt comma_patt comma_type_parameter
       constrain constructor_arg_list constructor_declaration
       constructor_declarations ctyp ctyp_quot cvalue_binding direction_flag
-      dummy eq_expr expr expr_eoi expr_quot field_expr fun_binding
+      dummy eq_expr expr expr_eoi expr_quot field_expr field_expr_list fun_binding
       fun_def ident ident_quot implem interf ipatt ipatt_tcon label
-      label_declaration label_expr label_ipatt label_longident label_patt
-      labeled_ipatt let_binding meth_list module_binding module_binding0
+      label_declaration label_declaration_list label_expr label_expr_list
+      label_ipatt label_ipatt_list label_longident label_patt label_patt_list
+      labeled_ipatt let_binding meth_list meth_decl module_binding module_binding0
       module_binding_quot module_declaration module_expr module_expr_quot
       module_longident module_longident_with_app module_rec_declaration
       module_type module_type_quot more_ctyp name_tags opt_as_lident
@@ -692,11 +699,11 @@ Very old (no more supported) syntax:
             mk_list <:expr< [] >>
         | "[|"; "|]" -> <:expr< [| $<:expr<>>$ |] >>
         | "[|"; el = sem_expr; "|]" -> <:expr< [| $el$ |] >>
-        | "{"; el = label_expr; "}" -> <:expr< { $el$ } >>
-        | "{"; "("; e = SELF; ")"; "with"; el = label_expr; "}" ->
+        | "{"; el = label_expr_list; "}" -> <:expr< { $el$ } >>
+        | "{"; "("; e = SELF; ")"; "with"; el = label_expr_list; "}" ->
             <:expr< { ($e$) with $el$ } >>
         | "{<"; ">}" -> <:expr< {<>} >>
-        | "{<"; fel = field_expr; ">}" -> <:expr< {< $fel$ >} >>
+        | "{<"; fel = field_expr_list; ">}" -> <:expr< {< $fel$ >} >>
         | "("; ")" -> <:expr< () >>
         | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
         | "("; e = SELF; ","; el = comma_expr; ")" -> <:expr< ( $e$, $el$ ) >>
@@ -797,10 +804,13 @@ Very old (no more supported) syntax:
         | p = patt -> p
       ] ]
     ;
+    label_expr_list:
+      [ [ b1 = label_expr; ";"; b2 = SELF -> <:rec_binding< $b1$ ; $b2$ >>
+        | b1 = label_expr; ";"            -> b1
+        | b1 = label_expr                 -> b1
+      ] ];
     label_expr:
-      [ [ b1 = SELF; ";"; b2 = SELF -> <:rec_binding< $b1$ ; $b2$ >>
-        | b1 = SELF; ";" -> b1
-        | `ANTIQUOT ("rec_binding" as n) s ->
+      [ [ `ANTIQUOT ("rec_binding" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT (""|"anti" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
@@ -853,7 +863,7 @@ Very old (no more supported) syntax:
             mk_list <:patt< [] >>
         | "[|"; "|]" -> <:patt< [| $<:patt<>>$ |] >>
         | "[|"; pl = sem_patt; "|]" -> <:patt< [| $pl$ |] >>
-        | "{"; pl = label_patt; "}" -> <:patt< { $pl$ } >>
+        | "{"; pl = label_patt_list; "}" -> <:patt< { $pl$ } >>
         | "("; ")" -> <:patt< () >>
         | "("; p = SELF; ")" -> p
         | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
@@ -896,10 +906,13 @@ Very old (no more supported) syntax:
         | p = patt -> fun acc -> <:patt< [ $p$ :: $acc$ ] >>
       ] ]
     ;
+    label_patt_list:
+      [ [ p1 = label_patt; ";"; p2 = SELF -> <:patt< $p1$ ; $p2$ >>
+        | p1 = label_patt; ";"            -> p1
+        | p1 = label_patt                 -> p1
+      ] ];
     label_patt:
-      [ LEFTA
-        [ p1 = SELF; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
-        | `ANTIQUOT (""|"pat"|"anti" as n) s ->
+      [ [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.patt_tag
         | `ANTIQUOT ("list" as n) s ->
@@ -908,7 +921,7 @@ Very old (no more supported) syntax:
       ] ]
     ;
     ipatt:
-      [ [ "{"; pl = label_ipatt; "}" -> <:patt< { $pl$ } >>
+      [ [ "{"; pl = label_ipatt_list; "}" -> <:patt< { $pl$ } >>
         | `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `ANTIQUOT ("tup" as n) s ->
@@ -931,10 +944,13 @@ Very old (no more supported) syntax:
         | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt," n s$ >>
         | p = ipatt -> p ] ]
     ;
+    label_ipatt_list:
+      [ [ p1 = label_ipatt; ";"; p2 = SELF -> <:patt< $p1$ ; $p2$ >>
+        | p1 = label_ipatt; ";"            -> p1
+        | p1 = label_ipatt                 -> p1
+      ] ];
     label_ipatt:
-      [ LEFTA
-        [ p1 = SELF; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
-        | `ANTIQUOT (""|"pat"|"anti" as n) s ->
+      [ [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.patt_tag
@@ -1037,10 +1053,9 @@ Very old (no more supported) syntax:
             <:ctyp< [ < $rfl$ ] >>
         | "[<"; rfl = row_field; ">"; ntl = name_tags; "]" ->
             <:ctyp< [ < $rfl$ > $ntl$ ] >>
-        | "{"; t = label_declaration; OPT ";"; "}" -> <:ctyp< { $t$ } >>
+        | "{"; t = label_declaration_list; "}" -> <:ctyp< { $t$ } >>
         | "#"; i = class_longident -> <:ctyp< # $i$ >>
-        | "<"; ml = opt_meth_list; v = opt_dot_dot; ">" ->
-            <:ctyp< < $ml$ $..:v$ > >>
+        | "<"; t = opt_meth_list; ">" -> t
       ] ]
     ;
     star_ctyp:
@@ -1084,10 +1099,14 @@ Very old (no more supported) syntax:
         | t = ctyp -> t
       ] ]
     ;
+    label_declaration_list:
+      [ [ t1 = label_declaration; ";"; t2 = SELF -> <:ctyp< $t1$; $t2$ >>
+        | t1 = label_declaration; ";"            -> t1
+        | t1 = label_declaration                 -> t1
+      ] ]
+    ;
     label_declaration:
-      [ LEFTA
-        [ t1 = SELF; ";"; t2 = SELF -> <:ctyp< $t1$; $t2$ >>
-        | `ANTIQUOT (""|"typ" as n) s ->
+      [ [ `ANTIQUOT (""|"typ" as n) s ->
             <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:ctyp< $anti:mk_anti ~c:"ctyp;" n s$ >>
@@ -1357,26 +1376,33 @@ Very old (no more supported) syntax:
         | ci = class_info_for_class_type; "="; ct = class_type -> <:class_type< $ci$ = $ct$ >>
       ] ]
     ;
+    field_expr_list:
+      [ [ b1 = field_expr; ";"; b2 = SELF -> <:rec_binding< $b1$ ; $b2$ >>
+        | b1 = field_expr; ";"            -> b1
+        | b1 = field_expr                 -> b1
+      ] ];
     field_expr:
-      [ LEFTA
-        [ b1 = SELF; ";"; b2 = SELF -> <:rec_binding< $b1$ ; $b2$ >>
-        | `ANTIQUOT (""|"bi"|"anti" as n) s ->
+      [ [ `ANTIQUOT (""|"bi"|"anti" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | l = label; "="; e = expr LEVEL "top" -> <:rec_binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
-      [ LEFTA
-        [ ml1 = SELF; ";"; ml2 = SELF        -> <:ctyp< $ml1$; $ml2$ >>
-        | `ANTIQUOT (""|"typ" as n) s        -> <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+      [ [ m = meth_decl; ";"; (ml, v) = SELF  -> (<:ctyp< $m$; $ml$ >>, v)
+        | m = meth_decl; ";"; v = opt_dot_dot -> (m, v)
+        | m = meth_decl; v = opt_dot_dot      -> (m, v)
+      ] ]
+    ;
+    meth_decl:
+      [ [ `ANTIQUOT (""|"typ" as n) s        -> <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
         | `ANTIQUOT ("list" as n) s          -> <:ctyp< $anti:mk_anti ~c:"ctyp;" n s$ >>
         | `QUOTATION x                       -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
         | lab = a_LIDENT; ":"; t = poly_type -> <:ctyp< $lid:lab$ : $t$ >> ] ]
     ;
     opt_meth_list:
-      [ [ ml = meth_list; OPT ";" -> ml
-        | -> <:ctyp<>>
+      [ [ (ml, v) = meth_list -> <:ctyp< < $ml$ $..:v$ > >>
+        | v = opt_dot_dot     -> <:ctyp< < $..:v$ > >>
       ] ]
     ;
     poly_type:
@@ -1615,7 +1641,7 @@ Very old (no more supported) syntax:
     ;
     ctyp_quot:
       [ [ x = more_ctyp; ","; y = comma_ctyp -> <:ctyp< $x$, $y$ >>
-        | x = more_ctyp; ";"; y = label_declaration -> <:ctyp< $x$; $y$ >>
+        | x = more_ctyp; ";"; y = label_declaration_list -> <:ctyp< $x$; $y$ >>
         | x = more_ctyp; "|"; y = constructor_declarations -> <:ctyp< $x$ | $y$ >>
         | x = more_ctyp; "of"; y = constructor_arg_list -> <:ctyp< $x$ of $y$ >>
         | x = more_ctyp; "of"; y = constructor_arg_list; "|"; z = constructor_declarations ->
@@ -1624,7 +1650,7 @@ Very old (no more supported) syntax:
         | x = more_ctyp; "of"; "&"; y = amp_ctyp; "|"; z = row_field ->
             <:ctyp< $ <:ctyp< $x$ of & $y$ >> $ | $z$ >>
         | x = more_ctyp; ":"; y = more_ctyp -> <:ctyp< $x$ : $y$ >>
-        | x = more_ctyp; ":"; y = more_ctyp; ";"; z = label_declaration ->
+        | x = more_ctyp; ":"; y = more_ctyp; ";"; z = label_declaration_list ->
             <:ctyp< $ <:ctyp< $x$ : $y$ >> $ ; $z$ >>
         | x = more_ctyp; "*"; y = star_ctyp -> <:ctyp< $x$ * $y$ >>
         | x = more_ctyp; "&"; y = amp_ctyp -> <:ctyp< $x$ & $y$ >>
@@ -1672,7 +1698,7 @@ Very old (no more supported) syntax:
       ] ]
     ;
     rec_binding_quot:
-      [ [ x = label_expr -> x
+      [ [ x = label_expr_list -> x
         | -> <:rec_binding<>> ] ]
     ;
     module_binding_quot:

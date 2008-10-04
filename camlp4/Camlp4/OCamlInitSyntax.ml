@@ -93,6 +93,7 @@ module Make (Ast     : Sig.Camlp4Ast)
   value expr = Gram.Entry.mk "expr";
   value expr_eoi = Gram.Entry.mk "expr_eoi";
   value field_expr = Gram.Entry.mk "field_expr";
+  value field_expr_list = Gram.Entry.mk "field_expr_list";
   value fun_binding = Gram.Entry.mk "fun_binding";
   value fun_def = Gram.Entry.mk "fun_def";
   value ident = Gram.Entry.mk "ident";
@@ -102,13 +103,18 @@ module Make (Ast     : Sig.Camlp4Ast)
   value ipatt_tcon = Gram.Entry.mk "ipatt_tcon";
   value label = Gram.Entry.mk "label";
   value label_declaration = Gram.Entry.mk "label_declaration";
+  value label_declaration_list = Gram.Entry.mk "label_declaration_list";
   value label_expr = Gram.Entry.mk "label_expr";
+  value label_expr_list = Gram.Entry.mk "label_expr_list";
   value label_ipatt = Gram.Entry.mk "label_ipatt";
+  value label_ipatt_list = Gram.Entry.mk "label_ipatt_list";
   value label_longident = Gram.Entry.mk "label_longident";
   value label_patt = Gram.Entry.mk "label_patt";
+  value label_patt_list = Gram.Entry.mk "label_patt_list";
   value labeled_ipatt = Gram.Entry.mk "labeled_ipatt";
   value let_binding = Gram.Entry.mk "let_binding";
   value meth_list = Gram.Entry.mk "meth_list";
+  value meth_decl = Gram.Entry.mk "meth_decl";
   value module_binding = Gram.Entry.mk "module_binding";
   value module_binding0 = Gram.Entry.mk "module_binding0";
   value module_declaration = Gram.Entry.mk "module_declaration";
