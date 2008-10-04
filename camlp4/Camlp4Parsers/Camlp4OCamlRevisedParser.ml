@@ -708,6 +708,7 @@ Very old (no more supported) syntax:
         | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
         | "("; e = SELF; ","; el = comma_expr; ")" -> <:expr< ( $e$, $el$ ) >>
         | "("; e = SELF; ";"; seq = sequence; ")" -> mksequence _loc <:expr< $e$; $seq$ >>
+        | "("; e = SELF; ";"; ")" -> mksequence _loc e
         | "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
             <:expr< ($e$ : $t$ :> $t2$ ) >>
         | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>

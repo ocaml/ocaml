@@ -287,10 +287,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ]
     ;
     expr: BEFORE "top"
-      [ ";" RIGHTA
-        [ e1 = SELF; ";"; e2 = SELF ->
+      [ ";"
+        [ e1 = expr LEVEL "top"; ";"; e2 = SELF ->
             conc_seq e1 e2
-        | e1 = SELF; ";" -> e1 ] ];
+        | e1 = expr LEVEL "top"; ";" -> e1
+        | e1 = expr LEVEL "top" -> e1 ] ];
     expr: LEVEL "top"
       [ [ "let"; r = opt_rec; bi = binding; "in";
           x = expr LEVEL ";" ->
