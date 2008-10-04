@@ -466,6 +466,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#dot_expr e
     | <:expr< let module $s$ = $me$ in $e$ >> ->
           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]" o#var s o#module_expr me o#reset_semi#expr e
+    | <:expr< object $cst$ end >> ->
+        pp f "@[<hv0>@[<hv2>object@ %a@]@ end@]" o#class_str_item cst
+    | <:expr< object ($p$ : $t$) $cst$ end >> ->
+        pp f "@[<hv0>@[<hv2>object @[<1>(%a :@ %a)@]@ %a@]@ end@]"
+          o#patt p o#ctyp t o#class_str_item cst
+    | <:expr< object ($p$) $cst$ end >> ->
+        pp f "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
+          o#patt p o#class_str_item cst
     | e -> o#apply_expr f e ];
 
     method apply_expr f e =
@@ -529,14 +537,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< ` $lid:s$ >> -> pp f "`%a" o#var s
     | <:expr< {< $b$ >} >> ->
         pp f "@[<hv0>@[<hv2>{<%a@]@ >}@]" o#record_binding b
-    | <:expr< object $cst$ end >> ->
-        pp f "@[<hv0>@[<hv2>object@ %a@]@ end@]" o#class_str_item cst
-    | <:expr< object ($p$ : $t$) $cst$ end >> ->
-        pp f "@[<hv0>@[<hv2>object @[<1>(%a :@ %a)@]@ %a@]@ end@]"
-          o#patt p o#ctyp t o#class_str_item cst
-    | <:expr< object ($p$) $cst$ end >> ->
-        pp f "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
-          o#patt p o#class_str_item cst
     | <:expr< $e1$, $e2$ >> ->
         pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
     | <:expr< $e1$; $e2$ >> ->
@@ -550,7 +550,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:expr< let $rec:_$ $_$ in $_$ >> |
       <:expr< let module $_$ = $_$ in $_$ >> |
       <:expr< assert $_$ >> | <:expr< assert False >> |
-      <:expr< lazy $_$ >> | <:expr< new $_$ >> ->
+      <:expr< lazy $_$ >> | <:expr< new $_$ >> |
+      <:expr< object ($_$) $_$ >> ->
         pp f "(%a)" o#reset#expr e ];
 
     method direction_flag f b =
