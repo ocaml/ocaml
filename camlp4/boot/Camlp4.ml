@@ -17698,6 +17698,9 @@ module Printers =
                       method mk_patt_list :
                         Ast.patt -> ((Ast.patt list) * (Ast.patt option))
                         
+                      method simple_module_expr :
+                        formatter -> Ast.module_expr -> unit
+                        
                       method module_expr :
                         formatter -> Ast.module_expr -> unit
                         
@@ -18871,8 +18874,8 @@ module Printers =
                       | Ast.StExp (_, e) ->
                           pp f "@[<2>let _ =@ %a%(%)@]" o#expr e semisep
                       | Ast.StInc (_, me) ->
-                          pp f "@[<2>include@ %a%(%)@]" o#module_expr me
-                            semisep
+                          pp f "@[<2>include@ %a%(%)@]" o#simple_module_expr
+                            me semisep
                       | Ast.StClt (_, ct) ->
                           pp f "@[<2>class type %a%(%)@]" o#class_type ct
                             semisep
@@ -18927,6 +18930,19 @@ module Printers =
                     in
                       match me with
                       | Ast.MeNil _ -> assert false
+                      | Ast.MeTyc (_, (Ast.MeStr (_, st)),
+                          (Ast.MtSig (_, sg))) ->
+                          pp f
+                            "@[<2>@[<hv2>struct@ %a@]@ end :@ @[<hv2>sig@ %a@]@ end@]"
+                            o#str_item st o#sig_item sg
+                      | _ -> o#simple_module_expr f me
+                  
+                method simple_module_expr =
+                  fun f me ->
+                    let () = o#node f me Ast.loc_of_module_expr
+                    in
+                      match me with
+                      | Ast.MeNil _ -> assert false
                       | Ast.MeId (_, i) -> o#ident f i
                       | Ast.MeAnt (_, s) -> o#anti f s
                       | Ast.MeApp (_, me1, me2) ->
@@ -18938,11 +18954,6 @@ module Printers =
                       | Ast.MeStr (_, st) ->
                           pp f "@[<hv0>@[<hv2>struct@ %a@]@ end@]" o#str_item
                             st
-                      | Ast.MeTyc (_, (Ast.MeStr (_, st)),
-                          (Ast.MtSig (_, sg))) ->
-                          pp f
-                            "@[<2>@[<hv2>struct@ %a@]@ end :@ @[<hv2>sig@ %a@]@ end@]"
-                            o#str_item st o#sig_item sg
                       | Ast.MeTyc (_, me, mt) ->
                           pp f "@[<1>(%a :@ %a)@]" o#module_expr me
                             o#module_type mt
@@ -19533,9 +19544,17 @@ module Printers =
                     in
                       match me with
                       | Ast.MeApp (_, me1, me2) ->
-                          pp f "@[<2>%a@,(%a)@]" o#module_expr me1
-                            o#module_expr me2
+                          pp f "@[<2>%a@ %a@]" o#module_expr me1
+                            o#simple_module_expr me2
                       | me -> super#module_expr f me
+                  
+                method simple_module_expr =
+                  fun f me ->
+                    let () = o#node f me Ast.loc_of_module_expr
+                    in
+                      match me with
+                      | Ast.MeApp (_, _, _) -> pp f "(%a)" o#module_expr me
+                      | _ -> super#simple_module_expr f me
                   
                 method implem = fun f st -> pp f "@[<v0>%a@]@." o#str_item st
                   

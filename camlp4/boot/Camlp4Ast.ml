@@ -20,7 +20,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
     module Loc = Loc;
     module Ast =
       struct
-        include Sig.MakeCamlp4Ast(Loc);
+        include (Sig.MakeCamlp4Ast Loc);
         value safe_string_escaped s =
           if ((String.length s) > 2) && ((s.[0] = '\\') && (s.[1] = '$'))
           then s
