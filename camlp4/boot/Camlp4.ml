@@ -809,208 +809,7 @@ module Sig =
         (** The inner module for locations *)
         module Loc : Loc
           
-        type (* i . i *)
-          (* i i *)
-          (* foo *)
-          (* Bar *)
-          (* $s$ *)
-          (* t as t *)
-          (* list 'a as 'a *)
-          (* _ *)
-          (* t t *)
-          (* list 'a *)
-          (* t -> t *)
-          (* int -> string *)
-          (* #i *)
-          (* #point *)
-          (* ~s:t *)
-          (* i *)
-          (* Lazy.t *)
-          (* t == t *)
-          (* type t = [ A | B ] == Foo.t *)
-          (* type t 'a 'b 'c = t constraint t = t constraint t = t *)
-          (* < (t)? (..)? > *)
-          (* < move : int -> 'a .. > as 'a  *)
-          (* ?s:t *)
-          (* ! t . t *)
-          (* ! 'a . list 'a -> 'a *)
-          (* 's *)
-          (* +'s *)
-          (* -'s *)
-          (* `s *)
-          (* { t } *)
-          (* { foo : int ; bar : mutable string } *)
-          (* t : t *)
-          (* t; t *)
-          (* t, t *)
-          (* [ t ] *)
-          (* [ A of int and string | B ] *)
-          (* t of t *)
-          (* A of int *)
-          (* t and t *)
-          (* t | t *)
-          (* private t *)
-          (* mutable t *)
-          (* ( t ) *)
-          (* (int * string) *)
-          (* t * t *)
-          (* [ = t ] *)
-          (* [ > t ] *)
-          (* [ < t ] *)
-          (* [ < t > t ] *)
-          (* t & t *)
-          (* t of & t *)
-          (* $s$ *)
-          (* i *)
-          (* p as p *)
-          (* (Node x y as n) *)
-          (* $s$ *)
-          (* _ *)
-          (* p p *)
-          (* fun x y -> *)
-          (* [| p |] *)
-          (* p, p *)
-          (* p; p *)
-          (* c *)
-          (* 'x' *)
-          (* ~s or ~s:(p) *)
-          (* ?s or ?s:(p) *)
-          (* ?s:(p = e) or ?(p = e) *)
-          (* p | p *)
-          (* p .. p *)
-          (* { p } *)
-          (* i = p *)
-          (* s *)
-          (* ( p ) *)
-          (* (p : t) *)
-          (* #i *)
-          (* `s *)
-          (* lazy p *)
-          (* i *)
-          (* e.e *)
-          (* $s$ *)
-          (* e e *)
-          (* e.(e) *)
-          (* [| e |] *)
-          (* e; e *)
-          (* assert False *)
-          (* assert e *)
-          (* e := e *)
-          (* 'c' *)
-          (* (e : t) or (e : t :> t) *)
-          (* 3.14 *)
-          (* for s = e to/downto e do { e } *)
-          (* fun [ mc ] *)
-          (* if e then e else e *)
-          (* 42 *)
-          (* ~s or ~s:e *)
-          (* lazy e *)
-          (* let b in e or let rec b in e *)
-          (* let module s = me in e *)
-          (* match e with [ mc ] *)
-          (* new i *)
-          (* object ((p))? (cst)? end *)
-          (* ?s or ?s:e *)
-          (* {< rb >} *)
-          (* { rb } or { (e) with rb } *)
-          (* do { e } *)
-          (* e#s *)
-          (* e.[e] *)
-          (* s *)
-          (* "foo" *)
-          (* try e with [ mc ] *)
-          (* (e) *)
-          (* e, e *)
-          (* (e : t) *)
-          (* `s *)
-          (* while e do { e } *)
-          (* i *)
-          (* A.B.C *)
-          (* functor (s : mt) -> mt *)
-          (* 's *)
-          (* sig sg end *)
-          (* mt with wc *)
-          (* $s$ *)
-          (* class cict *)
-          (* class type cict *)
-          (* sg ; sg *)
-          (* # s or # s e *)
-          (* exception t *)
-          (* external s : t = s ... s *)
-          (* include mt *)
-          (* module s : mt *)
-          (* module rec mb *)
-          (* module type s = mt *)
-          (* open i *)
-          (* type t *)
-          (* value s : t *)
-          (* $s$ *)
-          (* type t = t *)
-          (* module i = i *)
-          (* wc and wc *)
-          (* $s$ *)
-          (* bi and bi *)
-          (* let a = 42 and c = 43 *)
-          (* p = e *)
-          (* let patt = expr *)
-          (* $s$ *)
-          (* rb ; rb *)
-          (* i = e *)
-          (* $s$ *)
-          (* mb and mb *)
-          (* module rec (s : mt) = me and (s : mt) = me *)
-          (* s : mt = me *)
-          (* s : mt *)
-          (* $s$ *)
-          (* a | a *)
-          (* p (when e)? -> e *)
-          (* $s$ *)
-          (* i *)
-          (* me me *)
-          (* functor (s : mt) -> me *)
-          (* struct st end *)
-          (* (me : mt) *)
-          (* $s$ *)
-          (* class cice *)
-          (* class type cict *)
-          (* st ; st *)
-          (* # s or # s e *)
-          (* exception t or exception t = i *)
-          (*FIXME*)
-          (* e *)
-          (* external s : t = s ... s *)
-          (* include me *)
-          (* module s = me *)
-          (* module rec mb *)
-          (* module type s = mt *)
-          (* open i *)
-          (* type t *)
-          (* value (rec)? bi *)
-          (* $s$ *)
-          (* (virtual)? i ([ t ])? *)
-          (* [t] -> ct *)
-          (* object ((t))? (csg)? end *)
-          (* ct and ct *)
-          (* ct : ct *)
-          (* ct = ct *)
-          (* $s$ *)
-          (* type t = t *)
-          (* csg ; csg *)
-          (* inherit ct *)
-          (* method s : t or method private s : t *)
-          (* value (virtual)? (mutable)? s : t *)
-          (* method virtual (mutable)? s : t *)
-          (* $s$ *)
-          (* ce e *)
-          (* (virtual)? i ([ t ])? *)
-          (* fun p -> ce *)
-          (* let (rec)? bi in ce *)
-          (* object ((p))? (cst)? end *)
-          (* ce : ct *)
-          (* ce and ce *)
-          (* ce = ce *)
-          (* $s$ *)
-          loc =
+        type loc =
           Loc.
           t
           and meta_bool =
@@ -1021,223 +820,423 @@ module Sig =
           | LNil | LCons of 'a * 'a meta_list | LAnt of string
           and ident =
           | IdAcc of loc * ident * ident
-          | IdApp of loc * ident * ident
-          | IdLid of loc * string
-          | IdUid of loc * string
-          | IdAnt of loc * string
-          and ctyp =
+          | (* i . i *)
+          IdApp of loc * ident * ident
+          | (* i i *)
+          IdLid of loc * string
+          | (* foo *)
+          IdUid of loc * string
+          | (* Bar *)
+          IdAnt of loc * string
+          and (* $s$ *)
+          ctyp =
           | TyNil of loc
           | TyAli of loc * ctyp * ctyp
-          | TyAny of loc
-          | TyApp of loc * ctyp * ctyp
-          | TyArr of loc * ctyp * ctyp
-          | TyCls of loc * ident
-          | TyLab of loc * string * ctyp
-          | TyId of loc * ident
-          | TyMan of loc * ctyp * ctyp
-          | TyDcl of loc * string * ctyp list * ctyp * (ctyp * ctyp) list
-          | TyObj of loc * ctyp * meta_bool
+          | (* t as t *)
+          (* list 'a as 'a *)
+          TyAny of loc
+          | (* _ *)
+          TyApp of loc * ctyp * ctyp
+          | (* t t *)
+          (* list 'a *)
+          TyArr of loc * ctyp * ctyp
+          | (* t -> t *)
+          (* int -> string *)
+          TyCls of loc * ident
+          | (* #i *)
+          (* #point *)
+          TyLab of loc * string * ctyp
+          | (* ~s:t *)
+          TyId of loc * ident
+          | (* i *)
+          (* Lazy.t *)
+          TyMan of loc * ctyp * ctyp
+          | (* t == t *)
+          (* type t = [ A | B ] == Foo.t *)
+          (* type t 'a 'b 'c = t constraint t = t constraint t = t *)
+          TyDcl of loc * string * ctyp list * ctyp * (ctyp * ctyp) list
+          | (* < (t)? (..)? > *)
+          (* < move : int -> 'a .. > as 'a  *)
+          TyObj of loc * ctyp * meta_bool
           | TyOlb of loc * string * ctyp
-          | TyPol of loc * ctyp * ctyp
-          | TyQuo of loc * string
-          | TyQuP of loc * string
-          | TyQuM of loc * string
-          | TyVrn of loc * string
-          | TyRec of loc * ctyp
-          | TyCol of loc * ctyp * ctyp
-          | TySem of loc * ctyp * ctyp
-          | TyCom of loc * ctyp * ctyp
-          | TySum of loc * ctyp
-          | TyOf of loc * ctyp * ctyp
-          | TyAnd of loc * ctyp * ctyp
-          | TyOr of loc * ctyp * ctyp
-          | TyPrv of loc * ctyp
-          | TyMut of loc * ctyp
-          | TyTup of loc * ctyp
-          | TySta of loc * ctyp * ctyp
-          | TyVrnEq of loc * ctyp
-          | TyVrnSup of loc * ctyp
-          | TyVrnInf of loc * ctyp
-          | TyVrnInfSup of loc * ctyp * ctyp
-          | TyAmp of loc * ctyp * ctyp
-          | TyOfAmp of loc * ctyp * ctyp
-          | TyAnt of loc * string
-          and patt =
+          | (* ?s:t *)
+          TyPol of loc * ctyp * ctyp
+          | (* ! t . t *)
+          (* ! 'a . list 'a -> 'a *)
+          TyQuo of loc * string
+          | (* 's *)
+          TyQuP of loc * string
+          | (* +'s *)
+          TyQuM of loc * string
+          | (* -'s *)
+          TyVrn of loc * string
+          | (* `s *)
+          TyRec of loc * ctyp
+          | (* { t } *)
+          (* { foo : int ; bar : mutable string } *)
+          TyCol of loc * ctyp * ctyp
+          | (* t : t *)
+          TySem of loc * ctyp * ctyp
+          | (* t; t *)
+          TyCom of loc * ctyp * ctyp
+          | (* t, t *)
+          TySum of loc * ctyp
+          | (* [ t ] *)
+          (* [ A of int and string | B ] *)
+          TyOf of loc * ctyp * ctyp
+          | (* t of t *)
+          (* A of int *)
+          TyAnd of loc * ctyp * ctyp
+          | (* t and t *)
+          TyOr of loc * ctyp * ctyp
+          | (* t | t *)
+          TyPrv of loc * ctyp
+          | (* private t *)
+          TyMut of loc * ctyp
+          | (* mutable t *)
+          TyTup of loc * ctyp
+          | (* ( t ) *)
+          (* (int * string) *)
+          TySta of loc * ctyp * ctyp
+          | (* t * t *)
+          TyVrnEq of loc * ctyp
+          | (* [ = t ] *)
+          TyVrnSup of loc * ctyp
+          | (* [ > t ] *)
+          TyVrnInf of loc * ctyp
+          | (* [ < t ] *)
+          TyVrnInfSup of loc * ctyp * ctyp
+          | (* [ < t > t ] *)
+          TyAmp of loc * ctyp * ctyp
+          | (* t & t *)
+          TyOfAmp of loc * ctyp * ctyp
+          | (* t of & t *)
+          TyAnt of loc * string
+          and (* $s$ *)
+          patt =
           | PaNil of loc
           | PaId of loc * ident
-          | PaAli of loc * patt * patt
-          | PaAnt of loc * string
-          | PaAny of loc
-          | PaApp of loc * patt * patt
-          | PaArr of loc * patt
-          | PaCom of loc * patt * patt
-          | PaSem of loc * patt * patt
-          | PaChr of loc * string
-          | PaInt of loc * string
+          | (* i *)
+          PaAli of loc * patt * patt
+          | (* p as p *)
+          (* (Node x y as n) *)
+          PaAnt of loc * string
+          | (* $s$ *)
+          PaAny of loc
+          | (* _ *)
+          PaApp of loc * patt * patt
+          | (* p p *)
+          (* fun x y -> *)
+          PaArr of loc * patt
+          | (* [| p |] *)
+          PaCom of loc * patt * patt
+          | (* p, p *)
+          PaSem of loc * patt * patt
+          | (* p; p *)
+          PaChr of loc * string
+          | (* c *)
+          (* 'x' *)
+          PaInt of loc * string
           | PaInt32 of loc * string
           | PaInt64 of loc * string
           | PaNativeInt of loc * string
           | PaFlo of loc * string
           | PaLab of loc * string * patt
-          | PaOlb of loc * string * patt
-          | PaOlbi of loc * string * patt * expr
+          | (* ~s or ~s:(p) *)
+          (* ?s or ?s:(p) *)
+          PaOlb of loc * string * patt
+          | (* ?s:(p = e) or ?(p = e) *)
+          PaOlbi of loc * string * patt * expr
           | PaOrp of loc * patt * patt
-          | PaRng of loc * patt * patt
-          | PaRec of loc * patt
-          | PaEq of loc * ident * patt
-          | PaStr of loc * string
-          | PaTup of loc * patt
-          | PaTyc of loc * patt * ctyp
-          | PaTyp of loc * ident
-          | PaVrn of loc * string
-          | PaLaz of loc * patt
-          and expr =
+          | (* p | p *)
+          PaRng of loc * patt * patt
+          | (* p .. p *)
+          PaRec of loc * patt
+          | (* { p } *)
+          PaEq of loc * ident * patt
+          | (* i = p *)
+          PaStr of loc * string
+          | (* s *)
+          PaTup of loc * patt
+          | (* ( p ) *)
+          PaTyc of loc * patt * ctyp
+          | (* (p : t) *)
+          PaTyp of loc * ident
+          | (* #i *)
+          PaVrn of loc * string
+          | (* `s *)
+          PaLaz of loc * patt
+          and (* lazy p *)
+          expr =
           | ExNil of loc
           | ExId of loc * ident
-          | ExAcc of loc * expr * expr
-          | ExAnt of loc * string
-          | ExApp of loc * expr * expr
-          | ExAre of loc * expr * expr
-          | ExArr of loc * expr
-          | ExSem of loc * expr * expr
-          | ExAsf of loc
-          | ExAsr of loc * expr
-          | ExAss of loc * expr * expr
-          | ExChr of loc * string
-          | ExCoe of loc * expr * ctyp * ctyp
-          | ExFlo of loc * string
-          | ExFor of loc * string * expr * expr * meta_bool * expr
+          | (* i *)
+          ExAcc of loc * expr * expr
+          | (* e.e *)
+          ExAnt of loc * string
+          | (* $s$ *)
+          ExApp of loc * expr * expr
+          | (* e e *)
+          ExAre of loc * expr * expr
+          | (* e.(e) *)
+          ExArr of loc * expr
+          | (* [| e |] *)
+          ExSem of loc * expr * expr
+          | (* e; e *)
+          ExAsf of loc
+          | (* assert False *)
+          ExAsr of loc * expr
+          | (* assert e *)
+          ExAss of loc * expr * expr
+          | (* e := e *)
+          ExChr of loc * string
+          | (* 'c' *)
+          ExCoe of loc * expr * ctyp * ctyp
+          | (* (e : t) or (e : t :> t) *)
+          ExFlo of loc * string
+          | (* 3.14 *)
+          (* for s = e to/downto e do { e } *)
+          ExFor of loc * string * expr * expr * meta_bool * expr
           | ExFun of loc * match_case
-          | ExIfe of loc * expr * expr * expr
-          | ExInt of loc * string
-          | ExInt32 of loc * string
+          | (* fun [ mc ] *)
+          ExIfe of loc * expr * expr * expr
+          | (* if e then e else e *)
+          ExInt of loc * string
+          | (* 42 *)
+          ExInt32 of loc * string
           | ExInt64 of loc * string
           | ExNativeInt of loc * string
           | ExLab of loc * string * expr
-          | ExLaz of loc * expr
-          | ExLet of loc * meta_bool * binding * expr
-          | ExLmd of loc * string * module_expr * expr
-          | ExMat of loc * expr * match_case
-          | ExNew of loc * ident
-          | ExObj of loc * patt * class_str_item
-          | ExOlb of loc * string * expr
-          | ExOvr of loc * rec_binding
-          | ExRec of loc * rec_binding * expr
-          | ExSeq of loc * expr
-          | ExSnd of loc * expr * string
-          | ExSte of loc * expr * expr
-          | ExStr of loc * string
-          | ExTry of loc * expr * match_case
-          | ExTup of loc * expr
-          | ExCom of loc * expr * expr
-          | ExTyc of loc * expr * ctyp
-          | ExVrn of loc * string
-          | ExWhi of loc * expr * expr
+          | (* ~s or ~s:e *)
+          ExLaz of loc * expr
+          | (* lazy e *)
+          (* let b in e or let rec b in e *)
+          ExLet of loc * meta_bool * binding * expr
+          | (* let module s = me in e *)
+          ExLmd of loc * string * module_expr * expr
+          | (* match e with [ mc ] *)
+          ExMat of loc * expr * match_case
+          | (* new i *)
+          ExNew of loc * ident
+          | (* object ((p))? (cst)? end *)
+          ExObj of loc * patt * class_str_item
+          | (* ?s or ?s:e *)
+          ExOlb of loc * string * expr
+          | (* {< rb >} *)
+          ExOvr of loc * rec_binding
+          | (* { rb } or { (e) with rb } *)
+          ExRec of loc * rec_binding * expr
+          | (* do { e } *)
+          ExSeq of loc * expr
+          | (* e#s *)
+          ExSnd of loc * expr * string
+          | (* e.[e] *)
+          ExSte of loc * expr * expr
+          | (* s *)
+          (* "foo" *)
+          ExStr of loc * string
+          | (* try e with [ mc ] *)
+          ExTry of loc * expr * match_case
+          | (* (e) *)
+          ExTup of loc * expr
+          | (* e, e *)
+          ExCom of loc * expr * expr
+          | (* (e : t) *)
+          ExTyc of loc * expr * ctyp
+          | (* `s *)
+          ExVrn of loc * string
+          | (* while e do { e } *)
+          ExWhi of loc * expr * expr
           and module_type =
           | MtNil of loc
-          | MtId of loc * ident
-          | MtFun of loc * string * module_type * module_type
-          | MtQuo of loc * string
-          | MtSig of loc * sig_item
-          | MtWit of loc * module_type * with_constr
+          | (* i *)
+          (* A.B.C *)
+          MtId of loc * ident
+          | (* functor (s : mt) -> mt *)
+          MtFun of loc * string * module_type * module_type
+          | (* 's *)
+          MtQuo of loc * string
+          | (* sig sg end *)
+          MtSig of loc * sig_item
+          | (* mt with wc *)
+          MtWit of loc * module_type * with_constr
           | MtAnt of loc * string
-          and sig_item =
+          and (* $s$ *)
+          sig_item =
           | SgNil of loc
-          | SgCls of loc * class_type
-          | SgClt of loc * class_type
-          | SgSem of loc * sig_item * sig_item
-          | SgDir of loc * string * expr
-          | SgExc of loc * ctyp
-          | SgExt of loc * string * ctyp * string meta_list
-          | SgInc of loc * module_type
-          | SgMod of loc * string * module_type
-          | SgRecMod of loc * module_binding
-          | SgMty of loc * string * module_type
-          | SgOpn of loc * ident
-          | SgTyp of loc * ctyp
-          | SgVal of loc * string * ctyp
+          | (* class cict *)
+          SgCls of loc * class_type
+          | (* class type cict *)
+          SgClt of loc * class_type
+          | (* sg ; sg *)
+          SgSem of loc * sig_item * sig_item
+          | (* # s or # s e *)
+          SgDir of loc * string * expr
+          | (* exception t *)
+          SgExc of loc * ctyp
+          | (* external s : t = s ... s *)
+          SgExt of loc * string * ctyp * string meta_list
+          | (* include mt *)
+          SgInc of loc * module_type
+          | (* module s : mt *)
+          SgMod of loc * string * module_type
+          | (* module rec mb *)
+          SgRecMod of loc * module_binding
+          | (* module type s = mt *)
+          SgMty of loc * string * module_type
+          | (* open i *)
+          SgOpn of loc * ident
+          | (* type t *)
+          SgTyp of loc * ctyp
+          | (* value s : t *)
+          SgVal of loc * string * ctyp
           | SgAnt of loc * string
-          and with_constr =
+          and (* $s$ *)
+          with_constr =
           | WcNil of loc
-          | WcTyp of loc * ctyp * ctyp
-          | WcMod of loc * ident * ident
-          | WcAnd of loc * with_constr * with_constr
+          | (* type t = t *)
+          WcTyp of loc * ctyp * ctyp
+          | (* module i = i *)
+          WcMod of loc * ident * ident
+          | (* wc and wc *)
+          WcAnd of loc * with_constr * with_constr
           | WcAnt of loc * string
-          and binding =
+          and (* $s$ *)
+          binding =
           | BiNil of loc
-          | BiAnd of loc * binding * binding
-          | BiEq of loc * patt * expr
+          | (* bi and bi *)
+          (* let a = 42 and c = 43 *)
+          BiAnd of loc * binding * binding
+          | (* p = e *)
+          (* let patt = expr *)
+          BiEq of loc * patt * expr
           | BiAnt of loc * string
-          and rec_binding =
+          and (* $s$ *)
+          rec_binding =
           | RbNil of loc
-          | RbSem of loc * rec_binding * rec_binding
-          | RbEq of loc * ident * expr
+          | (* rb ; rb *)
+          RbSem of loc * rec_binding * rec_binding
+          | (* i = e *)
+          RbEq of loc * ident * expr
           | RbAnt of loc * string
-          and module_binding =
+          and (* $s$ *)
+          module_binding =
           | MbNil of loc
-          | MbAnd of loc * module_binding * module_binding
-          | MbColEq of loc * string * module_type * module_expr
-          | MbCol of loc * string * module_type
+          | (* mb and mb *)
+          (* module rec (s : mt) = me and (s : mt) = me *)
+          MbAnd of loc * module_binding * module_binding
+          | (* s : mt = me *)
+          MbColEq of loc * string * module_type * module_expr
+          | (* s : mt *)
+          MbCol of loc * string * module_type
           | MbAnt of loc * string
-          and match_case =
+          and (* $s$ *)
+          match_case =
           | McNil of loc
-          | McOr of loc * match_case * match_case
-          | McArr of loc * patt * expr * expr
+          | (* a | a *)
+          McOr of loc * match_case * match_case
+          | (* p (when e)? -> e *)
+          McArr of loc * patt * expr * expr
           | McAnt of loc * string
-          and module_expr =
+          and (* $s$ *)
+          module_expr =
           | MeNil of loc
-          | MeId of loc * ident
-          | MeApp of loc * module_expr * module_expr
-          | MeFun of loc * string * module_type * module_expr
-          | MeStr of loc * str_item
-          | MeTyc of loc * module_expr * module_type
+          | (* i *)
+          MeId of loc * ident
+          | (* me me *)
+          MeApp of loc * module_expr * module_expr
+          | (* functor (s : mt) -> me *)
+          MeFun of loc * string * module_type * module_expr
+          | (* struct st end *)
+          MeStr of loc * str_item
+          | (* (me : mt) *)
+          MeTyc of loc * module_expr * module_type
           | MeAnt of loc * string
-          and str_item =
+          and (* $s$ *)
+          str_item =
           | StNil of loc
-          | StCls of loc * class_expr
-          | StClt of loc * class_type
-          | StSem of loc * str_item * str_item
-          | StDir of loc * string * expr
-          | StExc of loc * ctyp * ident meta_option
-          | StExp of loc * expr
-          | StExt of loc * string * ctyp * string meta_list
-          | StInc of loc * module_expr
-          | StMod of loc * string * module_expr
-          | StRecMod of loc * module_binding
-          | StMty of loc * string * module_type
-          | StOpn of loc * ident
-          | StTyp of loc * ctyp
-          | StVal of loc * meta_bool * binding
+          | (* class cice *)
+          StCls of loc * class_expr
+          | (* class type cict *)
+          StClt of loc * class_type
+          | (* st ; st *)
+          StSem of loc * str_item * str_item
+          | (* # s or # s e *)
+          StDir of loc * string * expr
+          | (* exception t or exception t = i *)
+          StExc of loc * ctyp * (*FIXME*) ident meta_option
+          | (* e *)
+          StExp of loc * expr
+          | (* external s : t = s ... s *)
+          StExt of loc * string * ctyp * string meta_list
+          | (* include me *)
+          StInc of loc * module_expr
+          | (* module s = me *)
+          StMod of loc * string * module_expr
+          | (* module rec mb *)
+          StRecMod of loc * module_binding
+          | (* module type s = mt *)
+          StMty of loc * string * module_type
+          | (* open i *)
+          StOpn of loc * ident
+          | (* type t *)
+          StTyp of loc * ctyp
+          | (* value (rec)? bi *)
+          StVal of loc * meta_bool * binding
           | StAnt of loc * string
-          and class_type =
+          and (* $s$ *)
+          class_type =
           | CtNil of loc
-          | CtCon of loc * meta_bool * ident * ctyp
-          | CtFun of loc * ctyp * class_type
-          | CtSig of loc * ctyp * class_sig_item
-          | CtAnd of loc * class_type * class_type
-          | CtCol of loc * class_type * class_type
-          | CtEq of loc * class_type * class_type
-          | CtAnt of loc * string
+          | (* (virtual)? i ([ t ])? *)
+          CtCon of loc * meta_bool * ident * ctyp
+          | (* [t] -> ct *)
+          CtFun of loc * ctyp * class_type
+          | (* object ((t))? (csg)? end *)
+          CtSig of loc * ctyp * class_sig_item
+          | (* ct and ct *)
+          CtAnd of loc * class_type * class_type
+          | (* ct : ct *)
+          CtCol of loc * class_type * class_type
+          | (* ct = ct *)
+          CtEq of loc * class_type * class_type
+          | (* $s$ *)
+          CtAnt of loc * string
           and class_sig_item =
           | CgNil of loc
-          | CgCtr of loc * ctyp * ctyp
-          | CgSem of loc * class_sig_item * class_sig_item
-          | CgInh of loc * class_type
-          | CgMth of loc * string * meta_bool * ctyp
-          | CgVal of loc * string * meta_bool * meta_bool * ctyp
-          | CgVir of loc * string * meta_bool * ctyp
+          | (* type t = t *)
+          CgCtr of loc * ctyp * ctyp
+          | (* csg ; csg *)
+          CgSem of loc * class_sig_item * class_sig_item
+          | (* inherit ct *)
+          CgInh of loc * class_type
+          | (* method s : t or method private s : t *)
+          CgMth of loc * string * meta_bool * ctyp
+          | (* value (virtual)? (mutable)? s : t *)
+          CgVal of loc * string * meta_bool * meta_bool * ctyp
+          | (* method virtual (mutable)? s : t *)
+          CgVir of loc * string * meta_bool * ctyp
           | CgAnt of loc * string
-          and class_expr =
+          and (* $s$ *)
+          class_expr =
           | CeNil of loc
-          | CeApp of loc * class_expr * expr
-          | CeCon of loc * meta_bool * ident * ctyp
-          | CeFun of loc * patt * class_expr
-          | CeLet of loc * meta_bool * binding * class_expr
-          | CeStr of loc * patt * class_str_item
-          | CeTyc of loc * class_expr * class_type
-          | CeAnd of loc * class_expr * class_expr
-          | CeEq of loc * class_expr * class_expr
-          | CeAnt of loc * string
+          | (* ce e *)
+          CeApp of loc * class_expr * expr
+          | (* (virtual)? i ([ t ])? *)
+          CeCon of loc * meta_bool * ident * ctyp
+          | (* fun p -> ce *)
+          CeFun of loc * patt * class_expr
+          | (* let (rec)? bi in ce *)
+          CeLet of loc * meta_bool * binding * class_expr
+          | (* object ((p))? (cst)? end *)
+          CeStr of loc * patt * class_str_item
+          | (* ce : ct *)
+          CeTyc of loc * class_expr * class_type
+          | (* ce and ce *)
+          CeAnd of loc * class_expr * class_expr
+          | (* ce = ce *)
+          CeEq of loc * class_expr * class_expr
+          | (* $s$ *)
+          CeAnt of loc * string
           and class_str_item =
           | CrNil of loc
           | (* cst ; cst *)
@@ -2584,6 +2583,8 @@ module Sig =
           
         val field_expr : Ast.rec_binding Gram.Entry.t
           
+        val field_expr_list : Ast.rec_binding Gram.Entry.t
+          
         val fun_binding : Ast.expr Gram.Entry.t
           
         val fun_def : Ast.expr Gram.Entry.t
@@ -2600,19 +2601,29 @@ module Sig =
           
         val label_declaration : Ast.ctyp Gram.Entry.t
           
+        val label_declaration_list : Ast.ctyp Gram.Entry.t
+          
         val label_expr : Ast.rec_binding Gram.Entry.t
           
+        val label_expr_list : Ast.rec_binding Gram.Entry.t
+          
         val label_ipatt : Ast.patt Gram.Entry.t
+          
+        val label_ipatt_list : Ast.patt Gram.Entry.t
           
         val label_longident : Ast.ident Gram.Entry.t
           
         val label_patt : Ast.patt Gram.Entry.t
           
+        val label_patt_list : Ast.patt Gram.Entry.t
+          
         val labeled_ipatt : Ast.patt Gram.Entry.t
           
         val let_binding : Ast.binding Gram.Entry.t
           
-        val meth_list : Ast.ctyp Gram.Entry.t
+        val meth_list : (Ast.ctyp * Ast.meta_bool) Gram.Entry.t
+          
+        val meth_decl : Ast.ctyp Gram.Entry.t
           
         val module_binding : Ast.module_binding Gram.Entry.t
           
@@ -13421,10 +13432,8 @@ module Struct =
               
             let mkli s =
               let rec loop f =
-                function
-                | i :: il -> loop (fun s -> ldot (f i) s) il
-                | [] -> f s
-              in loop (fun s -> lident s)
+                function | i :: il -> loop (ldot (f i)) il | [] -> f s
+              in loop lident
               
             let rec ctyp_fa al =
               function
@@ -13941,7 +13950,9 @@ module Struct =
                      | (loc, ml, Ast.ExId (_, (Ast.IdUid (_, s)))) :: l ->
                          let ca = constructors_arity ()
                          in
-                           ((mkexp loc (Pexp_construct (mkli s ml, None, ca))),
+                           ((mkexp loc
+                               (Pexp_construct (mkli (conv_con s) ml, None,
+                                  ca))),
                             l)
                      | (loc, ml, Ast.ExId (_, (Ast.IdLid (_, s)))) :: l ->
                          ((mkexp loc (Pexp_ident (mkli s ml))), l)
@@ -14937,14 +14948,6 @@ module Struct =
           struct
             module S = Set.Make(String)
               
-            let rec fold_binding_vars f bi acc =
-              match bi with
-              | Ast.BiAnd (_, bi1, bi2) ->
-                  fold_binding_vars f bi1 (fold_binding_vars f bi2 acc)
-              | Ast.BiEq (_, (Ast.PaId (_, (Ast.IdLid (_, i)))), _) ->
-                  f i acc
-              | _ -> assert false
-              
             class ['accu] c_fold_pattern_vars f init =
               object inherit Ast.fold as super
                        
@@ -14963,6 +14966,14 @@ module Struct =
               
             let fold_pattern_vars f p init =
               ((new c_fold_pattern_vars f init)#patt p)#acc
+              
+            let rec fold_binding_vars f bi acc =
+              match bi with
+              | Ast.BiAnd (_, bi1, bi2) ->
+                  fold_binding_vars f bi1 (fold_binding_vars f bi2 acc)
+              | Ast.BiEq (_, p, _) -> fold_pattern_vars f p acc
+              | Ast.BiNil _ -> acc
+              | Ast.BiAnt (_, _) -> assert false
               
             class ['accu] fold_free_vars (f : string -> 'accu -> 'accu)
                     ?(env_init = S.empty) free_init =
@@ -16075,9 +16086,9 @@ module Struct =
                           (Stream.Error (Failed.tree_failed entry a s son))
                   in Action.mk (fun _ -> Action.getf act a)
                   
-                let skip_if_empty c bp p strm =
-                  if (Context.loc_ep c) == bp
-                  then Action.mk (fun _ -> p strm)
+                let skip_if_empty c bp _ =
+                  if (Context.loc_bp c) = bp
+                  then Action.mk (fun _ -> raise Stream.Failure)
                   else raise Stream.Failure
                   
                 let do_recover parser_of_tree entry nlevn alevn loc a s c son
@@ -16087,10 +16098,7 @@ module Struct =
                       __strm
                   with
                   | Stream.Failure ->
-                      (try
-                         skip_if_empty c loc
-                           (fun (__strm : _ Stream.t) -> raise Stream.Failure)
-                           __strm
+                      (try skip_if_empty c loc __strm
                        with
                        | Stream.Failure ->
                            continue entry loc a s c son
@@ -16492,8 +16500,7 @@ module Struct =
                                   if levn > clevn
                                   then p1 c levn bp a strm
                                   else
-                                    (let (__strm : _ Stream.t) = strm in
-                                     let bp = Stream.count __strm
+                                    (let (__strm : _ Stream.t) = strm
                                      in
                                        try p1 c levn bp a __strm
                                        with
@@ -17273,6 +17280,10 @@ module Struct =
           
         module Static =
           struct
+            let uncurry f (x, y) = f x y
+              
+            let flip f x y = f y x
+              
             module Make (Lexer : Sig.Lexer) :
               Sig.Grammar.Static with module Loc = Lexer.Loc
               and module Token = Lexer.Token =
@@ -17345,12 +17356,9 @@ module Struct =
                 let delete_rule = Delete.delete_rule
                   
                 let srules e rl =
-                  let t =
-                    List.fold_left
-                      (fun tree (symbols, action) ->
-                         Insert.insert_tree e symbols action tree)
-                      DeadEnd rl
-                  in Stree t
+                  Stree
+                    (List.fold_left (flip (uncurry (Insert.insert_tree e)))
+                       DeadEnd rl)
                   
                 let sfold0 = Fold.sfold0
                   
@@ -18196,13 +18204,14 @@ module Printers =
                   fun f (p, e) ->
                     let (pl, e) = expr_fun_args e
                     in
-                      pp f "%a@ ->@ %a" (list o#patt "@ ") (p :: pl) o#expr e
+                      pp f "%a@ ->@ %a" (list o#simple_patt "@ ") (p :: pl)
+                        o#expr e
                   
                 method patt_class_expr_fun_args =
                   fun f (p, ce) ->
                     let (pl, ce) = class_expr_fun_args ce
                     in
-                      pp f "%a =@]@ %a" (list o#patt "@ ") (p :: pl)
+                      pp f "%a =@]@ %a" (list o#simple_patt "@ ") (p :: pl)
                         o#class_expr ce
                   
                 method constrain =
@@ -18388,6 +18397,17 @@ module Printers =
                       | Ast.ExLmd (_, s, me, e) ->
                           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]"
                             o#var s o#module_expr me o#reset_semi#expr e
+                      | Ast.ExObj (_, (Ast.PaNil _), cst) ->
+                          pp f "@[<hv0>@[<hv2>object@ %a@]@ end@]"
+                            o#class_str_item cst
+                      | Ast.ExObj (_, (Ast.PaTyc (_, p, t)), cst) ->
+                          pp f
+                            "@[<hv0>@[<hv2>object @[<1>(%a :@ %a)@]@ %a@]@ end@]"
+                            o#patt p o#ctyp t o#class_str_item cst
+                      | Ast.ExObj (_, p, cst) ->
+                          pp f
+                            "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
+                            o#patt p o#class_str_item cst
                       | e -> o#apply_expr f e
                   
                 method apply_expr =
@@ -18469,17 +18489,6 @@ module Printers =
                       | Ast.ExOvr (_, b) ->
                           pp f "@[<hv0>@[<hv2>{<%a@]@ >}@]" o#record_binding
                             b
-                      | Ast.ExObj (_, (Ast.PaNil _), cst) ->
-                          pp f "@[<hv0>@[<hv2>object@ %a@]@ end@]"
-                            o#class_str_item cst
-                      | Ast.ExObj (_, (Ast.PaTyc (_, p, t)), cst) ->
-                          pp f
-                            "@[<hv0>@[<hv2>object @[<1>(%a :@ %a)@]@ %a@]@ end@]"
-                            o#patt p o#ctyp t o#class_str_item cst
-                      | Ast.ExObj (_, p, cst) ->
-                          pp f
-                            "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
-                            o#patt p o#class_str_item cst
                       | Ast.ExCom (_, e1, e2) ->
                           pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
                       | Ast.ExSem (_, e1, e2) ->
@@ -18491,7 +18500,8 @@ module Printers =
                           Ast.ExTry (_, _, _) | Ast.ExIfe (_, _, _, _) |
                           Ast.ExLet (_, _, _, _) | Ast.ExLmd (_, _, _, _) |
                           Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _) |
-                          Ast.ExNew (_, _) -> pp f "(%a)" o#reset#expr e
+                          Ast.ExNew (_, _) | Ast.ExObj (_, _, _) ->
+                          pp f "(%a)" o#reset#expr e
                   
                 method direction_flag =
                   fun f b ->
@@ -18955,8 +18965,8 @@ module Printers =
                           pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]"
                             o#class_params t o#var i
                       | Ast.CeFun (_, p, ce) ->
-                          pp f "@[<2>fun@ %a@ ->@ %a@]" o#patt p o#class_expr
-                            ce
+                          pp f "@[<2>fun@ %a@ ->@ %a@]" o#simple_patt p
+                            o#class_expr ce
                       | Ast.CeLet (_, r, bi, ce) ->
                           pp f "@[<2>let %a%a@]@ @[<2>in@ %a@]" o#rec_flag r
                             o#binding bi o#class_expr ce
@@ -19770,6 +19780,8 @@ module OCamlInitSyntax =
           
         let field_expr = Gram.Entry.mk "field_expr"
           
+        let field_expr_list = Gram.Entry.mk "field_expr_list"
+          
         let fun_binding = Gram.Entry.mk "fun_binding"
           
         let fun_def = Gram.Entry.mk "fun_def"
@@ -19788,19 +19800,29 @@ module OCamlInitSyntax =
           
         let label_declaration = Gram.Entry.mk "label_declaration"
           
+        let label_declaration_list = Gram.Entry.mk "label_declaration_list"
+          
         let label_expr = Gram.Entry.mk "label_expr"
           
+        let label_expr_list = Gram.Entry.mk "label_expr_list"
+          
         let label_ipatt = Gram.Entry.mk "label_ipatt"
+          
+        let label_ipatt_list = Gram.Entry.mk "label_ipatt_list"
           
         let label_longident = Gram.Entry.mk "label_longident"
           
         let label_patt = Gram.Entry.mk "label_patt"
+          
+        let label_patt_list = Gram.Entry.mk "label_patt_list"
           
         let labeled_ipatt = Gram.Entry.mk "labeled_ipatt"
           
         let let_binding = Gram.Entry.mk "let_binding"
           
         let meth_list = Gram.Entry.mk "meth_list"
+          
+        let meth_decl = Gram.Entry.mk "meth_decl"
           
         let module_binding = Gram.Entry.mk "module_binding"
           
