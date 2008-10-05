@@ -101,6 +101,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method match_case_aux : formatter -> Ast.match_case -> unit;
     method mk_expr_list : Ast.expr -> (list Ast.expr * option Ast.expr);
     method mk_patt_list : Ast.patt -> (list Ast.patt * option Ast.patt);
+    method simple_module_expr : formatter -> Ast.module_expr -> unit;
     method module_expr : formatter -> Ast.module_expr -> unit;
     method module_expr_get_functor_args :
       list (string * Ast.module_type) ->

@@ -227,6 +227,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@,(%a)@]" o#module_expr me1 o#module_expr me2
     | me -> super#module_expr f me ];
 
+    method simple_module_expr f me =
+    let () = o#node f me Ast.loc_of_module_expr in
+    match me with
+    [ <:module_expr< $_$ $_$ >> ->
+          pp f "(%a)" o#module_expr me
+    | _ -> super#simple_module_expr f me ];
+
     method implem f st = pp f "@[<v0>%a@]@." o#str_item st;
 
     method class_type f ct =

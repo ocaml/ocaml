@@ -822,7 +822,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:str_item< $exp:e$ >> ->
             pp f "@[<2>let _ =@ %a%(%)@]" o#expr e semisep
       | <:str_item< include $me$ >> ->
-            pp f "@[<2>include@ %a%(%)@]" o#module_expr me semisep
+            pp f "@[<2>include@ %a%(%)@]" o#simple_module_expr me semisep
       | <:str_item< class type $ct$ >> ->
             pp f "@[<2>class type %a%(%)@]" o#class_type ct semisep
       | <:str_item< class $ce$ >> ->
@@ -864,6 +864,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f me Ast.loc_of_module_expr in
     match me with
     [ <:module_expr<>> -> assert False
+    | <:module_expr< ( struct $st$ end : sig $sg$ end ) >> ->
+          pp f "@[<2>@[<hv2>struct@ %a@]@ end :@ @[<hv2>sig@ %a@]@ end@]"
+            o#str_item st o#sig_item sg
+    | _ -> o#simple_module_expr f me ];
+
+    method simple_module_expr f me =
+    let () = o#node f me Ast.loc_of_module_expr in
+    match me with
+    [ <:module_expr<>> -> assert False
     | <:module_expr< $id:i$ >> -> o#ident f i
     | <:module_expr< $anti:s$ >> -> o#anti f s
     | <:module_expr< $me1$ $me2$ >> ->
@@ -872,9 +881,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>functor@ @[<1>(%a :@ %a)@]@ ->@ %a@]" o#var s o#module_type mt o#module_expr me
     | <:module_expr< struct $st$ end >> ->
           pp f "@[<hv0>@[<hv2>struct@ %a@]@ end@]" o#str_item st
-    | <:module_expr< ( struct $st$ end : sig $sg$ end ) >> ->
-          pp f "@[<2>@[<hv2>struct@ %a@]@ end :@ @[<hv2>sig@ %a@]@ end@]"
-            o#str_item st o#sig_item sg
     | <:module_expr< ( $me$ : $mt$ ) >> ->
           pp f "@[<1>(%a :@ %a)@]" o#module_expr me o#module_type mt ];
 
