@@ -224,7 +224,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f me Ast.loc_of_module_expr in
     match me with
     [ <:module_expr< $me1$ $me2$ >> ->
-          pp f "@[<2>%a@,(%a)@]" o#module_expr me1 o#module_expr me2
+          pp f "@[<2>%a@ %a@]" o#module_expr me1 o#simple_module_expr me2
     | me -> super#module_expr f me ];
 
     method simple_module_expr f me =
