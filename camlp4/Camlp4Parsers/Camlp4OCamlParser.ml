@@ -286,12 +286,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
               <:str_item< let module $m$ = $mb$ in $e$ >>
       ] ]
     ;
-    expr: BEFORE "top"
-      [ ";"
-        [ e1 = expr LEVEL "top"; ";"; e2 = SELF ->
+    seq_expr:
+      [ [ e1 = expr LEVEL "top"; ";"; e2 = SELF ->
             conc_seq e1 e2
         | e1 = expr LEVEL "top"; ";" -> e1
         | e1 = expr LEVEL "top" -> e1 ] ];
+    expr: BEFORE "top"
+      [ ";" [ e = seq_expr -> e ] ];
     expr: LEVEL "top"
       [ [ "let"; r = opt_rec; bi = binding; "in";
           x = expr LEVEL ";" ->

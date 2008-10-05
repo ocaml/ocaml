@@ -1387,7 +1387,7 @@ Very old (no more supported) syntax:
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
-        | l = label; "="; e = expr LEVEL "top" -> <:rec_binding< $lid:l$ = $e$ >> ] ]
+        | l = label; "="; e = expr -> <:rec_binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
       [ [ m = meth_decl; ";"; (ml, v) = SELF  -> (<:ctyp< $m$; $ml$ >>, v)
