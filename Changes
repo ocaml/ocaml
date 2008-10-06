@@ -80,6 +80,7 @@ Other libraries:
 - Unix: added getsockopt_error returning type Unix.error.
   Added support for TCP_NODELAY and IPV6_ONLY socket options.
 - Win32 Unix: "select" now supports all kinds of file descriptors.
+  Improved emulation of "lockf" (PR#4609).
 
 Tools:
 - ocamldebug now supported under Windows (MSVC and Mingw ports),
