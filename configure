@@ -1286,11 +1286,10 @@ do
       x11_link="-lX11"
     else
       x11_libs="-L$dir"
-      if test -f /etc/ld.so.conf; then
-        x11_link="-L$dir -lX11"
-      else
-        x11_link="-R$dir -L$dir -lX11"
-      fi
+      case "$host" in
+        *-*-*bsd*) x11_link="-R$dir -L$dir -lX11";;
+        *) x11_link="-L$dir -lX11";;
+      esac
     fi
     break
   fi
@@ -1445,11 +1444,10 @@ if test $has_tk = true; then
         -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs \
                    Tcl_DoOneEvent
   then
-    if test -f /etc/ld.so.conf; then
-      tk_libs="-L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs"
-    else
-      tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs"
-    fi
+    case "$host" in
+      *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
+      *) tk_libs="-L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs";;
+    esac
   else
     echo "Tcl library not found."
     has_tk=false
@@ -1460,19 +1458,17 @@ if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     echo "Tcl/Tk libraries found."
   elif sh ./hasgot -L/sw/lib $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
-    if test -f /etc/ld.so.conf; then
-      tk_libs="-L/sw/lib $tk_libs"
-    else
-      tk_libs="-R/sw/lib -L/sw/lib $tk_libs"
-    fi
+    case "$host" in
+      *-*-*bsd*) tk_libs="-R/sw/lib -L/sw/lib $tk_libs";;
+      *) tk_libs="-L/sw/lib $tk_libs";;
+    esac
     echo "Tcl/Tk libraries found."
   elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs $tkauxlibs \
                    Tk_SetGrid; then
-    if test -f /etc/ld.so.conf; then
-      tk_libs="-L/usr/pkg/lib $tk_libs"
-    else
-      tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs"
-    fi
+    case "$host" in
+      *-*-*bsd*) tk_libs="-R/usr/pkg/lib -L/usr/pkg/lib $tk_libs";;
+      *) tk_libs="-L/usr/pkg/lib $tk_libs";;
+    esac
     echo "Tcl/Tk libraries found."
   else
     echo "Tcl library found."
