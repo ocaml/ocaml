@@ -22,6 +22,7 @@
 #include <fail.h>
 #include "unixsupport.h"
 #include <stdio.h>
+#include <signals.h>
 
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER (-1)
