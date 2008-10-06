@@ -38,6 +38,7 @@ type t =                             (* A is all *)
   | Camlp4 of string
   | All_clauses_guarded
   | Useless_record_with
+  | Bad_module_name of string
   | Unused_var of string             (* Y *)
   | Unused_var_strict of string      (* Z *)
 ;;

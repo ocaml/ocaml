@@ -28,7 +28,6 @@ type error =
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
-  | Bad_module_name of string
 
 exception Error of error
 
@@ -203,15 +202,6 @@ let reset_cache () =
   Consistbl.clear crc_units
 
 let set_unit_name name =
-  begin match name.[0] with
-  | 'A'..'Z' -> ()
-  | _ -> raise (Error (Bad_module_name name))
-  end;
-  for i = 1 to String.length name - 1 do
-    match name.[i] with
-    | 'A'..'Z' | 'a'..'z' | '0'..'9' | '_' | '\'' -> ()
-    | _ -> raise (Error (Bad_module_name name))
-  done;
   current_unit := name
 
 (* Lookup by identifier *)
@@ -870,5 +860,3 @@ let report_error ppf = function
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
         import export "The compilation flag -rectypes is required"
-  | Bad_module_name (modname) -> fprintf ppf
-      "Invalid source file name: \"%s\" is not a valid module name." modname

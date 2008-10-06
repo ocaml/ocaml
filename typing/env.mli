@@ -84,7 +84,7 @@ val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
 
-(* Check and remember the name of the current compilation unit. *)
+(* Remember the name of the current compilation unit. *)
 val set_unit_name: string -> unit
 
 (* Read, save a signature to/from a file *)
@@ -134,7 +134,6 @@ type error =
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
   | Need_recursive_types of string * string
-  | Bad_module_name of string
 
 exception Error of error
 
