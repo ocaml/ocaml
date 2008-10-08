@@ -3,7 +3,7 @@
 /*                           Objective Caml                            */
 /*                                                                     */
 /*  Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>   */
-/*  Further improvements by Omnion                                     */
+/*  Further improvements by Reed Wilson                                */
 /*                                                                     */
 /*  Copyright 2002 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
