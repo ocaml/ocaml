@@ -1471,6 +1471,9 @@ let mkvariant fields closed =
        {row_fields = fields; row_closed = closed; row_more = newvar();
         row_bound = (); row_fixed = false; row_name = None })
 
+(* force unification in Reither when one side has as non-conjunctive type *)
+let rigid_variants = ref false
+
 (**** Unification ****)
 
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
@@ -1819,7 +1822,8 @@ and unify_row_field env fixed1 fixed2 l f1 f2 =
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
       let redo =
-        (m1 || m2) &&
+        (m1 || m2 ||
+	 !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if c1 || c2 then raise (Unify []);
@@ -2241,6 +2245,12 @@ let matches env ty ty' =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
+let expand_head_rigid env ty =
+  let old = !rigid_variants in
+  rigid_variants := true;
+  let ty' = expand_head_unif env ty in
+  rigid_variants := old; ty'
+
 let normalize_subst subst =
   if List.exists
       (function {desc=Tlink _}, _ | _, {desc=Tlink _} -> true | _ -> false)
@@ -2265,8 +2275,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head_unif env t1 in
-        let t2' = expand_head_unif env t2 in
+        let t1' = expand_head_rigid env t1 in
+        let t2' = expand_head_rigid env t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
@@ -2320,10 +2330,9 @@ and eqtype_list rename type_pairs subst env tl1 tl2 =
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields2, rest2) = flatten_fields ty2 in
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  try match try_expand_head env rest2 with
+  match expand_head_rigid env rest2 with
     {desc=Tobject(ty2,_)} -> eqtype_fields rename type_pairs subst env ty1 ty2
-  | _ -> raise Cannot_expand
-  with Cannot_expand ->
+  | _ ->
   let (fields1, rest1) = flatten_fields ty1 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   eqtype rename type_pairs subst env rest1 rest2;
@@ -2346,10 +2355,9 @@ and eqtype_kind k1 k2 =
 
 and eqtype_row rename type_pairs subst env row1 row2 =
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  try match try_expand_head env (row_more row2) with
+  match expand_head_rigid env (row_more row2) with
     {desc=Tvariant row2} -> eqtype_row rename type_pairs subst env row1 row2
-  | _ -> raise Cannot_expand
-  with Cannot_expand ->
+  | _ ->
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   if row1.row_closed <> row2.row_closed
@@ -2790,6 +2798,10 @@ let rec build_subtype env visited loops posi level t =
                 ty1, tl1
             | _ -> raise Not_found
           in
+          (* Fix PR4505: do not set ty to Tvar when it appears in tl1,
+             as this occurence might break the occur check.
+             XXX not clear whether this correct anyway... *)
+          if List.exists (deep_occur ty) tl1 then raise Not_found;
           ty.desc <- Tvar;
           let t'' = newvar () in
           let loops = (ty, t'') :: loops in
@@ -3168,8 +3180,8 @@ let rec normalize_type_rec env ty =
     | Tvariant row ->
       let row = row_repr row in
       let fields = List.map
-          (fun (l,f) ->
-            let f = row_field_repr f in l,
+          (fun (l,f0) ->
+            let f = row_field_repr f0 in l,
             match f with Reither(b, ty::(_::_ as tyl), m, e) ->
               let tyl' =
                 List.fold_left
@@ -3178,10 +3190,8 @@ let rec normalize_type_rec env ty =
                     then tyl else ty::tyl)
                   [ty] tyl
               in
-              if List.length tyl' <= List.length tyl then
-                let f = Reither(b, List.rev tyl', m, ref None) in
-                set_row_field e f;
-                f
+              if f != f0 || List.length tyl' < List.length tyl then
+                Reither(b, List.rev tyl', m, e)
               else f
             | _ -> f)
           row.row_fields in

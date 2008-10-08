@@ -55,11 +55,13 @@ let float_repres f =
   | FP_infinite ->
       if f < 0.0 then "neg_infinity" else "infinity"
   | _ ->
-      let s1 = Printf.sprintf "%.12g" f in
-      if f = float_of_string s1 then valid_float_lexeme s1 else
-      let s2 = Printf.sprintf "%.15g" f in
-      if f = float_of_string s2 then valid_float_lexeme s2 else
-      Printf.sprintf "%.18g" f
+      let float_val =
+        let s1 = Printf.sprintf "%.12g" f in
+        if f = float_of_string s1 then s1 else
+        let s2 = Printf.sprintf "%.15g" f in
+        if f = float_of_string s2 then s2 else
+        Printf.sprintf "%.18g" f
+      in valid_float_lexeme float_val
 
 let parenthesize_if_neg ppf fmt v isneg =
   if isneg then pp_print_char ppf '(';
@@ -340,7 +342,7 @@ and print_out_sig_item ppf =
   | Osig_modtype (name, mty) ->
       fprintf ppf "@[<2>module type %s =@ %a@]" name !out_module_type mty
   | Osig_module (name, mty, rs) ->
-      fprintf ppf "@[<2>%s %s :@ %a@]" 
+      fprintf ppf "@[<2>%s %s :@ %a@]"
         (match rs with Orec_not -> "module"
                      | Orec_first -> "module rec"
                      | Orec_next -> "and")

@@ -62,10 +62,11 @@ type lexbuf =
    The lexer buffer holds the current state of the scanner, plus
    a function to refill the buffer from the input.
 
-   Note that the lexing engine will only change the [pos_cnum] field
+   At each token, the lexing engine will copy [lex_curr_p] to
+   [lex_start_p], then change the [pos_cnum] field
    of [lex_curr_p] by updating it with the number of characters read
-   since the start of the [lexbuf].  The other fields are copied
-   without change by the lexing engine.  In order to keep them
+   since the start of the [lexbuf].  The other fields are left
+   unchanged by the lexing engine.  In order to keep them
    accurate, they must be initialised before the first use of the
    lexbuf, and updated by the relevant lexer actions (i.e. at each
    end of line -- see also [new_line]).

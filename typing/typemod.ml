@@ -888,7 +888,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
       (str, coercion)
     end else begin
       check_nongen_schemes finalenv str;
-      normalize_signature finalenv sg;
+      normalize_signature finalenv simple_sg;
       let coercion =
         Includemod.compunit sourcefile sg
                             "(inferred signature)" simple_sg in

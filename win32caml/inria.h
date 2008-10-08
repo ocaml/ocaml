@@ -63,7 +63,7 @@
 #include "editbuffer.h"
 #include "history.h"
 
-#if _MSC_VER <= 1200
+#if _MSC_VER <= 1200 && !defined(__MINGW32__)
 #define GetWindowLongPtr GetWindowLong
 #define SetWindowLongPtr SetWindowLong
 #define DWLP_USER DWL_USER
