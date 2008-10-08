@@ -84,10 +84,10 @@ marshal.cmi: $(LIB)/marshal.cmi
 	ln -s $(LIB)/marshal.cmi marshal.cmi
 
 unix.mli: $(UNIXLIB)/unix.mli
-	ln -sf $(UNIXLIB)/unix.mli unix.mli
+	ln -s -f $(UNIXLIB)/unix.mli unix.mli
 
 unix.cmi: $(UNIXLIB)/unix.cmi
-	ln -sf $(UNIXLIB)/unix.cmi unix.cmi
+	ln -s -f $(UNIXLIB)/unix.cmi unix.cmi
 
 unix.cmo: unix.mli unix.cmi $(UNIXLIB)/unixLabels.cmo
 	$(CAMLC) ${COMPFLAGS} -c unix.ml

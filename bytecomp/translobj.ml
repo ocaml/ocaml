@@ -123,6 +123,7 @@ let transl_store_label_init glob size f arg =
 let wrapping = ref false
 let top_env = ref Env.empty
 let classes = ref []
+let method_ids = ref IdentSet.empty
 
 let oo_add_class id =
   classes := id :: !classes;
@@ -138,6 +139,7 @@ let oo_wrap env req f x =
     cache_required := req;
     top_env := env;
     classes := [];
+    method_ids := IdentSet.empty;
     let lambda = f x in
     let lambda =
       List.fold_left

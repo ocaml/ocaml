@@ -113,6 +113,8 @@ let implementation ppf sourcefile outputprefix =
   let inputfile = Pparse.preprocess sourcefile in
   let env = initial_env() in
   Compilenv.reset ?packname:!Clflags.for_package modulename;
+  let cmxfile = outputprefix ^ ".cmx" in
+  let objfile = outputprefix ^ ext_obj in
   try
     if !Clflags.print_types then ignore(
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
@@ -129,11 +131,13 @@ let implementation ppf sourcefile outputprefix =
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
       ++ Asmgen.compile_implementation outputprefix ppf;
-      Compilenv.save_unit_info (outputprefix ^ ".cmx");
+      Compilenv.save_unit_info cmxfile;
     end;
     Warnings.check_fatal ();
     Pparse.remove_preprocessed inputfile
   with x ->
+    remove_file objfile;
+    remove_file cmxfile;
     Pparse.remove_preprocessed_if_ast inputfile;
     raise x
 

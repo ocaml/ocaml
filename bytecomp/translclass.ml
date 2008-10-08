@@ -607,12 +607,20 @@ let transl_class ids cl_id arity pub_meths cl vflag =
   let meth_ids = get_class_meths cl in
   let subst env lam i0 new_ids' =
     let fv = free_variables lam in
+    (* prerr_ids "cl_id =" [cl_id]; prerr_ids "fv =" (IdentSet.elements fv); *)
     let fv = List.fold_right IdentSet.remove !new_ids' fv in
-    let fv = IdentSet.filter (fun id -> List.mem id new_ids) fv in
-    (* need to handle methods specially (PR#3576) *)
-    let fm = IdentSet.diff (free_methods lam) meth_ids in
-    let fv = IdentSet.union fv fm in
+    (* We need to handle method ids specially, as they do not appear
+       in the typing environment (PR#3576, PR#4560) *)
+    (* very hacky: we add and remove free method ids on the fly,
+       depending on the visit order... *)
+    method_ids :=
+      IdentSet.diff (IdentSet.union (free_methods lam) !method_ids) meth_ids;
+    (* prerr_ids "meth_ids =" (IdentSet.elements meth_ids);
+       prerr_ids "method_ids =" (IdentSet.elements !method_ids); *)
+    let new_ids = List.fold_right IdentSet.add new_ids !method_ids in
+    let fv = IdentSet.inter fv new_ids in
     new_ids' := !new_ids' @ IdentSet.elements fv;
+    (* prerr_ids "new_ids' =" !new_ids'; *)
     let i = ref (i0-1) in
     List.fold_left
       (fun subst id ->
