@@ -165,7 +165,7 @@ compatible with @typexpr@.
 
 Parenthesized expressions can also contain coercions
 @'(' expr [':' typexpr] ':>' typexpr')'@ (see
-subsection~\ref{s:objects} below).
+subsection~\ref{s:coercions} below).
 
 
 \subsubsection*{Function application}
@@ -687,29 +687,6 @@ evaluates to the value of the given instance variable.  The expression
 variable @inst-var-name@, which must be mutable.  The whole expression
 @inst-var-name '<-' expr@ evaluates to @"()"@.
 
-\subsubsection*{Coercion}
-
-The type of an object can be coerced (weakened) to a supertype.
-%
-The expression @'('expr ':>' typexpr')'@ coerces the expression @expr@
-to type @typexpr@.
-%
-The expression @'('expr ':' typexpr_1 ':>' typexpr_2')'@ coerces the
-expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
-%
-The former operator will sometimes fail to coerce an expression @expr@
-from a type $t_1$ to a type $t_2$ even if type $t_1$ is a subtype of type
-$t_2$: in the current implementation it only expands two levels of
-type abbreviations containing objects and/or variants, keeping only
-recursion when it is explicit in the class type. In case of failure,
-the latter operator should be used.
-
-Inside a class definition, coercions to the types newly defined
-introduce no subtyping (they behave just like type annotations), as
-the type abbreviations are not yet completely defined. There is an
-exception for coercing @@self@@ to the (exact) type of its class: this
-is allowed if the type of @@self@@ does not appear in a contravariant
-position in the class type, {\em i.e.} if there are no binary methods.
 
 \subsubsection*{Object duplication}
 
@@ -721,5 +698,100 @@ section~\ref{Oo}\fi). Inside a method, the expression
 returns a copy of self with the given instance variables replaced by
 the values of the associated expressions; other instance variables
 have the same value in the returned object as in self.
+
+\subsection{Coercions} \label{s:coercions}
+
+Expressions whose type contains object or polymorphic variant types
+can be explicitly coerced (weakened) to a supertype.
+%
+The expression @'('expr ':>' typexpr')'@ coerces the expression @expr@
+to type @typexpr@.
+%
+The expression @'('expr ':' typexpr_1 ':>' typexpr_2')'@ coerces the
+expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
+
+The former operator will sometimes fail to coerce an expression @expr@
+from a type $t_1$ to a type $t_2$ even if type $t_1$ is a subtype of type
+$t_2$: in the current implementation it only expands two levels of
+type abbreviations containing objects and/or variants, keeping only
+recursion when it is explicit in the class type (for objects). As an
+exception to the above algorithm, if both the inferred type of @expr@
+and @typexpr@ are ground ({\em i.e.} do not contain type variables), the
+former operator behaves as the latter one, taking the inferred type of
+@expr@ as @typexpr_1@. In case of failure with the former operator,
+the latter one should be used.
+
+It is only possible to coerce an expression @expr@ from type
+@typexpr_1@ to type @typexpr_2@, if the type of @expr@ is an instance of
+@typexpr_1@ (like for a type annotation), and @typexpr_1@ is a subtype
+of @typexpr_2@. The type of the coerced expression is an
+instance of @typexpr_2@. If the types contain variables,
+they may be instanciated by the subtyping algorithm, but this is only
+done after determining whether @typexpr_1@ is a potential subtype of
+@typexpr_2@. This means that typing may fail during this latter
+unification step, even if some instance of @typexpr_1@ is a subtype of
+some instance of @typexpr_2@.
+%
+In the following paragraphs we describe the subtyping relation used. 
+
+\subsubsection*{Object types}
+
+A fixed object type admits as subtype any object type including all
+its methods. The types of the methods shall be subtypes of those in
+the supertype. Namely,
+\[ "< " met_1 " : " typ_1 " ; " ... " ; " met_n " : " typ_n "> " \]
+is a supertype of
+\[ "< " met_1 " : " typ'_1 " ; " ... " ; " met_n " : " typ'_n " ; "
+met_{n+1} " : " typ'_{n+1} " ; " ... " ; " met_{n+m} " : " typ'_{n+m}
+~["; .."] " >" \]
+which may contain an ellipsis "..", if every @typ_i@ is a supertype of
+$typ'_i$.
+
+A monomorphic method type can be a supertype of a polymorphic method
+type. Namely, if @typ@ is an instance of $typ'$, then $"'"a_1
+..."'"a_n"."typ'$ is a subtype of @typ@.
+
+Inside a class definition, newly defined types are not available for
+subtyping, as the type abbreviations are not yet completely
+defined. There is an exception for coercing @@self@@ to the (exact)
+type of its class: this is allowed if the type of @@self@@ does not
+appear in a contravariant position in the class type, {\em i.e.} if
+there are no binary methods.
+
+\subsubsection*{Polymorphic variant types}
+
+A polymorphic variant type @typ@ is subtype of another polymorphic
+variant type $typ'$ if the upper bound of @typ@ ({\em i.e.} the
+maximum set of constructors that may appear in an instance of @typ@)
+is included in the lower bound of $typ'$, and the types of arguments
+for the constructors of @typ@ are subtypes of those in
+$typ'$. Namely,
+\[ "["["<"] " '"C_1 " of " typ_1 " | " ... " | '"C_n " of " typ_n " ]" \]
+which may be a shrinkable type, is a subtype of
+\[ "["[">"] " '"C_1 " of " typ'_1 " | " ... " | '"C_n " of " typ'_n
+ "| '"C_{n+1} " of " typ'_{n+1} " | " ... " | '"C_{n+m} " of "
+  typ'_{n+m} " ]" \]
+which may be an extensible type, if every @typ_i@ is a subtype of $typ'_i$.
+
+\subsubsection*{Variance}
+
+Other types do not introduce new subtyping, but they may propagate the
+subtyping of their arguments. For instance, $typ_1 " * " ... " * "
+typ_n$ is a subtype of $typ'_1 " * " ... " * " typ'_n$ when every
+$typ_i$ is a subtype of $typ'_i$. For function types, the relation is
+more subtle: $typ_1$ "->" $typ_2$ is a subtype of $typ'_1$ "->"
+$typ'_2$ if $typ_1$ is a supertype of $typ'_1$ and $typ_2$ is a
+subtype of $typ'_2$2. For this reason, function types are covariant in
+their second argument (like tuples), but contravariant in their first
+argument. Mutable types, like "array" or "ref" are neither covariant
+nor contravariant, they are nonvariant, that is they do not propagate
+subtyping.
+
+For user defined types, the variance is automatically inferred: a
+parameter is covariant if it has only covariant occurences,
+contravariant if it has only contravariant occurences, and nonvariant
+otherwise. For abstract and private types, the variance must be given
+explicitly, otherwise the default is nonvariant. This is also the case
+for constrained arguments in type definitions.
 
 %% \newpage
