@@ -781,7 +781,7 @@ typ_n$ is a subtype of $typ'_1 " * " ... " * " typ'_n$ when every
 $typ_i$ is a subtype of $typ'_i$. For function types, the relation is
 more subtle: $typ_1$ "->" $typ_2$ is a subtype of $typ'_1$ "->"
 $typ'_2$ if $typ_1$ is a supertype of $typ'_1$ and $typ_2$ is a
-subtype of $typ'_2$2. For this reason, function types are covariant in
+subtype of $typ'_2$. For this reason, function types are covariant in
 their second argument (like tuples), but contravariant in their first
 argument. Mutable types, like "array" or "ref" are neither covariant
 nor contravariant, they are nonvariant, that is they do not propagate
@@ -789,9 +789,13 @@ subtyping.
 
 For user defined types, the variance is automatically inferred: a
 parameter is covariant if it has only covariant occurences,
-contravariant if it has only contravariant occurences, and nonvariant
-otherwise. For abstract and private types, the variance must be given
-explicitly, otherwise the default is nonvariant. This is also the case
-for constrained arguments in type definitions.
+contravariant if it has only contravariant occurences,
+variance-free if it has no occurences, and nonvariant otherwise.
+A variance-free parameter may change freely through subtyping, it does
+not to be a subtype or a supertype.
+%
+For abstract and private types, the variance must be given explicitly,
+otherwise the default is nonvariant. This is also the case for
+constrained arguments in type definitions.
 
 %% \newpage
