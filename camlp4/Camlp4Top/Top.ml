@@ -54,19 +54,29 @@ module Lexer = Camlp4.Struct.Lexer.Make Token;
 
 external not_filtered : 'a -> Gram.not_filtered 'a = "%identity";
 
+value initialization = lazy begin
+  if Sys.interactive.val
+    then Format.printf "\tCamlp4 Parsing version %s\n@." Camlp4_config.version
+    else ()
+end;
+
+value lookup x xs = try Some (List.assq x xs) with [ Not_found -> None ];
+
 value wrap parse_fun =
-  let token_stream_ref = ref None in
+  let token_streams = ref [] in
+  let cleanup lb =
+    try token_streams.val := List.remove_assq lb token_streams.val
+    with [ Not_found -> () ]
+  in
   fun lb ->
+    let () = Lazy.force initialization in
     let () = Register.iter_and_take_callbacks (fun (_, f) -> f ()) in
     let token_stream =
-      match token_stream_ref.val with
+      match lookup lb token_streams.val with
       [ None ->
-        let () = if Sys.interactive.val then
-          Format.printf "\tCamlp4 Parsing version %s\n@." Camlp4_config.version
-        else () in
         let not_filtered_token_stream = Lexer.from_lexbuf lb in
         let token_stream = Gram.filter (not_filtered not_filtered_token_stream) in
-        do { token_stream_ref.val := Some token_stream; token_stream }
+        do { token_streams.val := [ (lb,token_stream) :: token_streams.val ]; token_stream }
       | Some token_stream -> token_stream ]
     in try
       match token_stream with parser
@@ -74,9 +84,8 @@ value wrap parse_fun =
       | [: :] -> parse_fun token_stream ]
     with
     [ End_of_file | Sys.Break | (Loc.Exc_located _ (End_of_file | Sys.Break))
-        as x -> raise x
+        as x -> (cleanup lb; raise x)
     | x ->
-        let () = Stream.junk token_stream in
         let x =
           match x with
           [ Loc.Exc_located loc x -> do { 
@@ -86,6 +95,7 @@ value wrap parse_fun =
           | x -> x ]
         in
         do {
+          cleanup lb;
           Format.eprintf "@[<0>%a@]@." Camlp4.ErrorHandler.print x;
           raise Exit
         } ];
