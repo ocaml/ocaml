@@ -744,12 +744,12 @@ is a supertype of
 \[ "< " met_1 " : " typ'_1 " ; " ... " ; " met_n " : " typ'_n " ; "
 met_{n+1} " : " typ'_{n+1} " ; " ... " ; " met_{n+m} " : " typ'_{n+m}
 ~["; .."] " >" \]
-which may contain an ellipsis "..", if every @typ_i@ is a supertype of
+which may contain an ellipsis "..", if every $typ_i$ is a supertype of
 $typ'_i$.
 
 A monomorphic method type can be a supertype of a polymorphic method
-type. Namely, if @typ@ is an instance of $typ'$, then $"'"a_1
-..."'"a_n"."typ'$ is a subtype of @typ@.
+type. Namely, if @@typ@@ is an instance of $typ'$, then $"'"a_1
+..."'"a_n"."typ'$ is a subtype of @@typ@@.
 
 Inside a class definition, newly defined types are not available for
 subtyping, as the type abbreviations are not yet completely
@@ -760,18 +760,18 @@ there are no binary methods.
 
 \subsubsection*{Polymorphic variant types}
 
-A polymorphic variant type @typ@ is subtype of another polymorphic
-variant type $typ'$ if the upper bound of @typ@ ({\em i.e.} the
-maximum set of constructors that may appear in an instance of @typ@)
+A polymorphic variant type @@typ@@ is subtype of another polymorphic
+variant type $typ'$ if the upper bound of @@typ@@ ({\em i.e.} the
+maximum set of constructors that may appear in an instance of @@typ@@)
 is included in the lower bound of $typ'$, and the types of arguments
-for the constructors of @typ@ are subtypes of those in
+for the constructors of @@typ@@ are subtypes of those in
 $typ'$. Namely,
 \[ "["["<"] " '"C_1 " of " typ_1 " | " ... " | '"C_n " of " typ_n " ]" \]
 which may be a shrinkable type, is a subtype of
 \[ "["[">"] " '"C_1 " of " typ'_1 " | " ... " | '"C_n " of " typ'_n
  "| '"C_{n+1} " of " typ'_{n+1} " | " ... " | '"C_{n+m} " of "
   typ'_{n+m} " ]" \]
-which may be an extensible type, if every @typ_i@ is a subtype of $typ'_i$.
+which may be an extensible type, if every $typ_i$ is a subtype of $typ'_i$.
 
 \subsubsection*{Variance}
 
