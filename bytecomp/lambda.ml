@@ -29,6 +29,8 @@ type primitive =
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
+  (* Force lazy values *)
+  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -79,9 +81,9 @@ type primitive =
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
   | Pbintcomp of boxed_integer * comparison
-  (* Operations on big arrays *)
-  | Pbigarrayref of int * bigarray_kind * bigarray_layout
-  | Pbigarrayset of int * bigarray_kind * bigarray_layout
+  (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
+  | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
+  | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -124,7 +126,7 @@ type shared_code = (int * int) list
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list
+  | Lapply of lambda * lambda list * Location.t
   | Lfunction of function_kind * Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
@@ -171,7 +173,7 @@ let rec same l1 l2 =
       Ident.same v1 v2
   | Lconst c1, Lconst c2 ->
       c1 = c2
-  | Lapply(a1, bl1), Lapply(a2, bl2) ->
+  | Lapply(a1, bl1, _), Lapply(a2, bl2, _) ->
       same a1 a2 && samelist same bl1 bl2
   | Lfunction(k1, idl1, a1), Lfunction(k2, idl2, a2) ->
       k1 = k2 && samelist Ident.same idl1 idl2 && same a1 a2
@@ -241,7 +243,7 @@ let name_lambda_list args fn =
 let rec iter f = function
     Lvar _
   | Lconst _ -> ()
-  | Lapply(fn, args) ->
+  | Lapply(fn, args, _) ->
       f fn; List.iter f args
   | Lfunction(kind, params, body) ->
       f body
@@ -375,7 +377,7 @@ let subst_lambda s lam =
     Lvar id as l ->
       begin try Ident.find_same id s with Not_found -> l end
   | Lconst sc as l -> l
-  | Lapply(fn, args) -> Lapply(subst fn, List.map subst args)
+  | Lapply(fn, args, loc) -> Lapply(subst fn, List.map subst args, loc)
   | Lfunction(kind, params, body) -> Lfunction(kind, params, subst body)
   | Llet(str, id, arg, body) -> Llet(str, id, subst arg, subst body)
   | Lletrec(decl, body) -> Lletrec(List.map subst_decl decl, subst body)
@@ -453,8 +455,9 @@ let may_raise = function
   | Pdivint | Pmodint (* Hum, not really an exception... *)
   | Pdivbint _
   | Pmodbint _
-  | Pbigarrayref (_,_,_)
-  | Pbigarrayset (_,_,_)
+  | Pbigarrayref _
+  | Pbigarrayset _
+  | Plazyforce
     -> true
   | Pidentity
   | Pignore

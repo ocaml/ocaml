@@ -27,7 +27,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 
    Conversion specifications have the following form:
 
-   [% \[positional specifier\] \[flags\] \[width\] \[.precision\] type]
+   [% \[flags\] \[width\] \[.precision\] type]
 
    In short, a conversion specification consists in the [%] character,
    followed by optional modifiers and a type which is made of one or
@@ -79,10 +79,6 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 
-   The optional [positional specifier] consists of an integer followed
-   by a [$]; the integer indicates which argument to use, the first
-   argument being denoted by 1.
-
    The optional [flags] are:
    - [-]: left-justify the output (default is right justification).
    - [0]: for numerical conversions, pad with zeroes instead of spaces.
@@ -102,10 +98,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    The integer in a [width] or [precision] can also be specified as
    [*], in which case an extra integer argument is taken to specify
    the corresponding [width] or [precision]. This integer argument
-   precedes immediately the argument to print, unless an optional
-   [positional specifier] is given to indicates which argument to
-   use. For instance, [%.*3$f] prints a [float] with as many fractional
-   digits as the value of the third argument. *)
+   precedes immediately the argument to print.
+   For instance, [%.*f] prints a [float] with as many fractional
+   digits as the value of the argument given before the float. *)
 
 val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)
@@ -127,6 +122,7 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
    (see module {!Buffer}). *)
 
 (** Formatted output functions with continuations. *)
+
 val kfprintf : (out_channel -> 'a) -> out_channel ->
               ('b, out_channel, unit, 'a) format4 -> 'b;;
 (** Same as [fprintf], but instead of returning immediately,
@@ -185,7 +181,10 @@ module CamlinternalPr : sig
     val sub_format :
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int) ->
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char -> int) ->
-        char -> ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> int
+        char ->
+        ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+        int ->
+        int
 
     val summarize_format_type : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
 
@@ -197,12 +196,14 @@ module CamlinternalPr : sig
         (Sformat.index -> 'i -> 'j -> int -> 'h) ->
         (Sformat.index -> 'k -> int -> 'h) ->
         (Sformat.index -> int -> 'h) ->
-        (Sformat.index -> ('l, 'm, 'n, 'o, 'p, 'q) format6 -> int -> 'h) -> 'h
+        (Sformat.index -> ('l, 'm, 'n, 'o, 'p, 'q) format6 -> int -> 'h) ->
+        'h
 
     val kapr :
         (('a, 'b, 'c, 'd, 'e, 'f) format6 -> Obj.t array -> 'g) ->
-        ('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g
+        ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+        'g
+
   end;;
 
 end;;
-

@@ -96,7 +96,7 @@ let rec safe_repr v = function
 
 let rec list_of_memo = function
     Mnil -> []
-  | Mcons (p, t1, t2, rem) -> p :: list_of_memo rem
+  | Mcons (priv, p, t1, t2, rem) -> p :: list_of_memo rem
   | Mlink rem -> list_of_memo !rem
 
 let visited = ref []
@@ -247,7 +247,7 @@ let rec mark_loops_rec visited ty =
           | Some(p, tyl) when namable_row row ->
               List.iter (mark_loops_rec visited) tyl
           | _ ->
-              iter_row (mark_loops_rec visited) {row with row_bound = []}
+              iter_row (mark_loops_rec visited) row
          end
     | Tobject (fi, nm) ->
         if List.memq px !visited_objects then add_alias px else
@@ -521,10 +521,10 @@ let rec tree_of_type_decl id decl =
   in
   begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant ([], _) -> ()
-  | Type_variant (cstrs, priv) ->
+  | Type_variant [] -> ()
+  | Type_variant cstrs ->
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
-  | Type_record(l, rep, priv) ->
+  | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;
 
@@ -541,8 +541,8 @@ let rec tree_of_type_decl id decl =
             None -> true
           | Some ty -> has_constr_row ty
           end
-      | Type_variant(_,p) | Type_record(_,_,p) ->
-          p = Private
+      | Type_variant _ | Type_record(_,_) ->
+          decl.type_private = Private
     in
     let vari =
       List.map2
@@ -567,13 +567,14 @@ let rec tree_of_type_decl id decl =
         begin match ty_manifest with
         | None -> (Otyp_abstract, Public)
         | Some ty ->
-            tree_of_typexp false ty,
-            (if has_constr_row ty then Private else Public)
+            tree_of_typexp false ty, decl.type_private
         end
-    | Type_variant(cstrs, priv) ->
-        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)), priv
-    | Type_record(lbls, rep, priv) ->
-        tree_of_manifest (Otyp_record (List.map tree_of_label lbls)), priv
+    | Type_variant cstrs ->
+        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
+        decl.type_private
+    | Type_record(lbls, rep) ->
+        tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
+        decl.type_private
   in
   (name, args, ty, priv, constraints)
 

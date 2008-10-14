@@ -107,7 +107,7 @@ typedef struct { uint32 l, h; } uint64, int64;
 /* Memory model parameters */
 
 /* The size of a page for memory management (in bytes) is [1 << Page_log].
-   It must be a multiple of [sizeof (value)]. */
+   It must be a multiple of [sizeof (value)] and >= 8. */
 #define Page_log 12             /* A page is 4 kilobytes. */
 
 /* Initial size of stack (bytes). */
@@ -143,12 +143,13 @@ typedef struct { uint32 l, h; } uint64, int64;
 #define Heap_chunk_min (2 * Page_size / sizeof (value))
 
 /* Default size increment when growing the heap. (words)
-   Must be a multiple of [Page_size / sizeof (value)]. */
-#define Heap_chunk_def (15 * Page_size)
+   Must be a multiple of [Page_size / sizeof (value)].
+   (Approx 512 Kb for a 32-bit platform, 1 Mb for a 64-bit platform.) */
+#define Heap_chunk_def (31 * Page_size)
 
 /* Default initial size of the major heap (words);
    same constraints as for Heap_chunk_def. */
-#define Init_heap_def (15 * Page_size)
+#define Init_heap_def (31 * Page_size)
 
 
 /* Default speed setting for the major GC.  The heap will grow until

@@ -33,23 +33,22 @@ val ccomp_type: string
 val bytecomp_c_compiler: string
         (* The C compiler to use for compiling C files 
            with the bytecode compiler *)
-val bytecomp_c_linker: string
-        (* The C compiler to use for building custom runtime systems
-           with the bytecode compiler *)
 val bytecomp_c_libraries: string
         (* The C libraries to link with custom runtimes *)
 val native_c_compiler: string
         (* The C compiler to use for compiling C files 
            with the native-code compiler *)
-val native_c_linker: string
-        (* The C compiler to use for the final linking step
-           in the native code compiler *)
 val native_c_libraries: string
         (* The C libraries to link with native-code programs *)
-val native_partial_linker: string
-        (* The linker to use for partial links (ocamlopt -output-obj) *)
 val native_pack_linker: string
-        (* The linker to use for packaging (ocamlopt -pack) *)
+        (* The linker to use for packaging (ocamlopt -pack) and for partial links
+           (ocamlopt -output-obj). *)
+val mkdll: string
+        (* The linker command line to build dynamic libraries. *)
+val mkexe: string
+        (* The linker command line to build executables. *)
+val mkmaindll: string
+        (* The linker command line to build main programs as dlls. *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
 val cc_profile : string
@@ -96,6 +95,10 @@ val model: string
         (* Name of processor submodel for the native-code compiler *)
 val system: string
         (* Name of operating system for the native-code compiler *)
+
+val asm: string
+        (* The assembler (and flags) to use for assembling
+           ocamlopt-generated code. *)
 
 val ext_obj: string
         (* Extension for object files, e.g. [.o] under Unix. *)

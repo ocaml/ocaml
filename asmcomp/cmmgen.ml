@@ -180,8 +180,15 @@ let test_bool = function
 
 let box_float c = Cop(Calloc, [alloc_float_header; c])
 
-let unbox_float = function
+let rec unbox_float = function
     Cop(Calloc, [header; c]) -> c
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_float body)
+  | Cifthenelse(cond, e1, e2) ->
+      Cifthenelse(cond, unbox_float e1, unbox_float e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_float e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map unbox_float el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_float e1, unbox_float e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_float e1, id, unbox_float e2)
   | c -> Cop(Cload Double_u, [c])
 
 (* Complex *)
@@ -469,7 +476,7 @@ let box_int bi arg =
                    Cconst_symbol(operations_boxed_int bi);
                    arg'])
 
-let unbox_int bi arg =
+let rec unbox_int bi arg =
   match arg with
     Cop(Calloc, [hdr; ops; Cop(Clsl, [contents; Cconst_int 32])])
     when bi = Pint32 && size_int = 8 && big_endian ->
@@ -481,6 +488,13 @@ let unbox_int bi arg =
       Cop(Casr, [Cop(Clsl, [contents; Cconst_int 32]); Cconst_int 32])
   | Cop(Calloc, [hdr; ops; contents]) ->
       contents
+  | Clet(id, exp, body) -> Clet(id, exp, unbox_int bi body)
+  | Cifthenelse(cond, e1, e2) ->
+      Cifthenelse(cond, unbox_int bi e1, unbox_int bi e2)
+  | Csequence(e1, e2) -> Csequence(e1, unbox_int bi e2)
+  | Cswitch(e, tbl, el) -> Cswitch(e, tbl, Array.map (unbox_int bi) el)
+  | Ccatch(n, ids, e1, e2) -> Ccatch(n, ids, unbox_int bi e1, unbox_int bi e2)
+  | Ctrywith(e1, id, e2) -> Ctrywith(unbox_int bi e1, id, unbox_int bi e2)
   | _ ->
       Cop(Cload(if bi = Pint32 then Thirtytwo_signed else Word),
           [Cop(Cadda, [arg; Cconst_int size_addr])])
@@ -507,23 +521,22 @@ let bigarray_elt_size = function
   | Pbigarray_complex32 -> 8
   | Pbigarray_complex64 -> 16
 
-let bigarray_indexing elt_kind layout b args dbg =
+let bigarray_indexing unsafe elt_kind layout b args dbg =
+  let check_bound a1 a2 k =
+    if unsafe then k else Csequence(Cop(Ccheckbound dbg, [a1;a2]), k) in
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
   | [arg] ->
       bind "idx" (untag_int arg)
         (fun idx ->
-          Csequence(
-            Cop(Ccheckbound dbg, [Cop(Cload Word,[field_address b dim_ofs]); idx]),
-            idx))
+           check_bound (Cop(Cload Word,[field_address b dim_ofs])) idx idx)
   | arg1 :: argl ->
       let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
       bind "idx" (untag_int arg1)
         (fun idx ->
           bind "bound" (Cop(Cload Word, [field_address b dim_ofs]))
           (fun bound ->
-            Csequence(Cop(Ccheckbound dbg, [bound; idx]),
-                      add_int (mul_int rem bound) idx))) in
+            check_bound bound idx (add_int (mul_int rem bound) idx))) in
   let offset =
     match layout with
       Pbigarray_unknown_layout ->
@@ -555,33 +568,33 @@ let bigarray_word_kind = function
   | Pbigarray_complex32 -> Single
   | Pbigarray_complex64 -> Double
 
-let bigarray_get elt_kind layout b args dbg =
+let bigarray_get unsafe elt_kind layout b args dbg =
   match elt_kind with
     Pbigarray_complex32 | Pbigarray_complex64 ->
       let kind = bigarray_word_kind elt_kind in
       let sz = bigarray_elt_size elt_kind / 2 in
-      bind "addr" (bigarray_indexing elt_kind layout b args dbg) (fun addr ->
+      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
         box_complex
           (Cop(Cload kind, [addr]))
           (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
   | _ ->
       Cop(Cload (bigarray_word_kind elt_kind),
-          [bigarray_indexing elt_kind layout b args dbg])
+          [bigarray_indexing unsafe elt_kind layout b args dbg])
 
-let bigarray_set elt_kind layout b args newval dbg =
+let bigarray_set unsafe elt_kind layout b args newval dbg =
   match elt_kind with
     Pbigarray_complex32 | Pbigarray_complex64 ->
       let kind = bigarray_word_kind elt_kind in
       let sz = bigarray_elt_size elt_kind / 2 in
       bind "newval" newval (fun newv ->
-      bind "addr" (bigarray_indexing elt_kind layout b args dbg) (fun addr ->
+      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
         Csequence(
           Cop(Cstore kind, [addr; complex_re newv]),
           Cop(Cstore kind,
               [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
   | _ ->
       Cop(Cstore (bigarray_word_kind elt_kind),
-          [bigarray_indexing elt_kind layout b args dbg; newval])
+          [bigarray_indexing unsafe elt_kind layout b args dbg; newval])
 
 (* Simplification of some primitives into C calls *)
 
@@ -616,9 +629,9 @@ let simplif_primitive_32bits = function
   | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "caml_greaterthan")
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
-  | Pbigarrayref(n, Pbigarray_int64, layout) ->
+  | Pbigarrayref(unsafe, n, Pbigarray_int64, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(n, Pbigarray_int64, layout) ->
+  | Pbigarrayset(unsafe, n, Pbigarray_int64, layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p -> p
 
@@ -626,13 +639,13 @@ let simplif_primitive p =
   match p with
   | Pduprecord _ ->
       Pccall (default_prim "caml_obj_dup")
-  | Pbigarrayref(n, Pbigarray_unknown, layout) ->
+  | Pbigarrayref(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(n, Pbigarray_unknown, layout) ->
+  | Pbigarrayset(unsafe, n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
-  | Pbigarrayref(n, kind, Pbigarray_unknown_layout) ->
+  | Pbigarrayref(unsafe, n, kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
-  | Pbigarrayset(n, kind, Pbigarray_unknown_layout) ->
+  | Pbigarrayset(unsafe, n, kind, Pbigarray_unknown_layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p ->
       if size_int = 8 then p else simplif_primitive_32bits p
@@ -729,11 +742,11 @@ let is_unboxed_number = function
         | Plslbint bi -> Boxed_integer bi
         | Plsrbint bi -> Boxed_integer bi
         | Pasrbint bi -> Boxed_integer bi
-        | Pbigarrayref(_, (Pbigarray_float32 | Pbigarray_float64), _) ->
+        | Pbigarrayref(_, _, (Pbigarray_float32 | Pbigarray_float64), _) ->
             Boxed_float
-        | Pbigarrayref(_, Pbigarray_int32, _) -> Boxed_integer Pint32
-        | Pbigarrayref(_, Pbigarray_int64, _) -> Boxed_integer Pint64
-        | Pbigarrayref(_, Pbigarray_native_int, _) -> Boxed_integer Pnativeint
+        | Pbigarrayref(_, _, Pbigarray_int32, _) -> Boxed_integer Pint32
+        | Pbigarrayref(_, _, Pbigarray_int64, _) -> Boxed_integer Pint64
+        | Pbigarrayref(_, _, Pbigarray_native_int, _) -> Boxed_integer Pnativeint
         | _ -> No_unboxing
       end
   | _ -> No_unboxing
@@ -869,14 +882,9 @@ let rec transl = function
             box_float
               (Cop(Cextcall(prim.prim_native_name, typ_float, false, dbg),
                    List.map transl_unbox_float args))
-          else begin
-            let name =
-              if prim.prim_native_name <> ""
-              then prim.prim_native_name
-              else prim.prim_name in
-            Cop(Cextcall(name, typ_addr, prim.prim_alloc, dbg),
+          else
+            Cop(Cextcall(Primitive.native_name prim, typ_addr, prim.prim_alloc, dbg),
                 List.map transl args)
-          end
       | (Pmakearray kind, []) ->
           transl_constant(Const_block(0, []))
       | (Pmakearray kind, args) ->
@@ -890,9 +898,9 @@ let rec transl = function
               make_float_alloc Obj.double_array_tag
                               (List.map transl_unbox_float args)
           end
-      | (Pbigarrayref(num_dims, elt_kind, layout), arg1 :: argl) ->
+      | (Pbigarrayref(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let elt =
-            bigarray_get elt_kind layout
+            bigarray_get unsafe elt_kind layout
               (transl arg1) (List.map transl argl) dbg in
           begin match elt_kind with
             Pbigarray_float32 | Pbigarray_float64 -> box_float elt
@@ -903,9 +911,9 @@ let rec transl = function
           | Pbigarray_caml_int -> force_tag_int elt
           | _ -> tag_int elt
           end
-      | (Pbigarrayset(num_dims, elt_kind, layout), arg1 :: argl) ->
+      | (Pbigarrayset(unsafe, num_dims, elt_kind, layout), arg1 :: argl) ->
           let (argidx, argnewval) = split_last argl in
-          return_unit(bigarray_set elt_kind layout
+          return_unit(bigarray_set unsafe elt_kind layout
             (transl arg1)
             (List.map transl argidx)
             (match elt_kind with
@@ -1927,6 +1935,36 @@ let curry_function arity =
   then intermediate_curry_functions arity 0
   else [tuplify_function (-arity)]
 
+
+module IntSet = Set.Make(
+  struct
+    type t = int
+    let compare = compare
+  end)
+
+let default_apply = IntSet.add 2 (IntSet.add 3 IntSet.empty)
+  (* These apply funs are always present in the main program.
+     TODO: add more, and do the same for send and curry funs
+     (maybe up to 10-15?). *)
+
+let generic_functions shared units =
+  let (apply,send,curry) =
+    List.fold_left
+      (fun (apply,send,curry) ui ->
+	 List.fold_right IntSet.add ui.Compilenv.ui_apply_fun apply,
+	 List.fold_right IntSet.add ui.Compilenv.ui_send_fun send,
+	 List.fold_right IntSet.add ui.Compilenv.ui_curry_fun curry)
+      (IntSet.empty,IntSet.empty,IntSet.empty)
+      units
+  in
+  let apply =
+    if shared then IntSet.diff apply default_apply
+    else IntSet.union apply default_apply
+  in
+  let accu = IntSet.fold (fun n accu -> apply_function n :: accu) apply [] in
+  let accu = IntSet.fold (fun n accu -> send_function n :: accu) send accu in
+  IntSet.fold (fun n accu -> curry_function n @ accu) curry accu
+
 (* Generate the entry point *)
 
 let entry_point namelist =
@@ -1961,10 +1999,16 @@ let global_table namelist =
         List.map mksym namelist @
         [cint_zero])
 
-let globals_map namelist =
-  Cdata(Cglobal_symbol "caml_globals_map" ::
-        emit_constant "caml_globals_map"
-          (Const_base (Const_string (Marshal.to_string namelist []))) [])
+let reference_symbols namelist =
+  let mksym name = Csymbol_address name in
+  Cdata(List.map mksym namelist)
+
+let global_data name v =
+  Cdata(Cglobal_symbol name ::
+          emit_constant name
+          (Const_base (Const_string (Marshal.to_string v []))) [])
+
+let globals_map v = global_data "caml_globals_map" v
 
 (* Generate the master table of frame descriptors *)
 
@@ -2006,3 +2050,33 @@ let predef_exception name =
           Cint(block_header 0 1);
           Cdefine_symbol bucketname;
           Csymbol_address symname ])
+
+(* Header for a plugin *)
+
+let mapflat f l = List.flatten (List.map f l)
+
+type dynunit = {
+  name: string;
+  crc: Digest.t;
+  imports_cmi: (string * Digest.t) list;
+  imports_cmx: (string * Digest.t) list;
+  defines: string list;
+}
+
+type dynheader = {
+  magic: string;
+  units: dynunit list;
+}
+
+let dyn_magic_number = "Caml2007D001"
+
+let plugin_header units =
+  let mk (ui,crc) =
+    { name = ui.Compilenv.ui_name;
+      crc = crc;
+      imports_cmi = ui.Compilenv.ui_imports_cmi;
+      imports_cmx = ui.Compilenv.ui_imports_cmx;
+      defines = ui.Compilenv.ui_defines 
+    } in
+  global_data "caml_plugin_header"
+    { magic = dyn_magic_number; units = List.map mk units }

@@ -202,6 +202,7 @@ let primitives_table = create_hashtable 57 [
   "%obj_field", Parrayrefu Pgenarray;
   "%obj_set_field", Parraysetu Pgenarray;
   "%obj_is_int", Pisint;
+  "%lazy_force", Plazyforce;
   "%nativeint_of_int", Pbintofint Pnativeint;
   "%nativeint_to_int", Pintofbint Pnativeint;
   "%nativeint_neg", Pnegbint Pnativeint;
@@ -250,12 +251,30 @@ let primitives_table = create_hashtable 57 [
   "%int64_to_int32", Pcvtbint(Pint64, Pint32);
   "%int64_of_nativeint", Pcvtbint(Pnativeint, Pint64);
   "%int64_to_nativeint", Pcvtbint(Pint64, Pnativeint);
-  "%caml_ba_ref_1", Pbigarrayref(1, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_ref_2", Pbigarrayref(2, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_ref_3", Pbigarrayref(3, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_set_1", Pbigarrayset(1, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_set_2", Pbigarrayset(2, Pbigarray_unknown, Pbigarray_c_layout);
-  "%caml_ba_set_3", Pbigarrayset(3, Pbigarray_unknown, Pbigarray_c_layout)
+  "%caml_ba_ref_1",
+    Pbigarrayref(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_ref_2",
+    Pbigarrayref(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_ref_3",
+    Pbigarrayref(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_set_1",
+    Pbigarrayset(false, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_set_2",
+    Pbigarrayset(false, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_set_3",
+    Pbigarrayset(false, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_ref_1",
+    Pbigarrayref(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_ref_2",
+    Pbigarrayref(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_ref_3",
+    Pbigarrayref(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_set_1",
+    Pbigarrayset(true, 1, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_set_2",
+    Pbigarrayset(true, 2, Pbigarray_unknown, Pbigarray_unknown_layout);
+  "%caml_ba_unsafe_set_3",
+    Pbigarrayset(true, 3, Pbigarray_unknown, Pbigarray_unknown_layout)
 ]
 
 let prim_makearray =
@@ -277,6 +296,12 @@ let transl_prim prim args =
       when simplify_constant_constructor ->
         intcomp
     | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
+      when simplify_constant_constructor ->
+        intcomp
+    | [arg1; {exp_desc = Texp_variant(_, None)}]
+      when simplify_constant_constructor ->
+        intcomp
+    | [{exp_desc = Texp_variant(_, None)}; exp2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_int
@@ -306,12 +331,14 @@ let transl_prim prim args =
       | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
       | (Parrayrefs Pgenarray, arg1 :: _) -> Parrayrefs(array_kind arg1)
       | (Parraysets Pgenarray, arg1 :: _) -> Parraysets(array_kind arg1)
-      | (Pbigarrayref(n, Pbigarray_unknown, _), arg1 :: _) ->
+      | (Pbigarrayref(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+                      arg1 :: _) ->
             let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayref(n, k, l)
-      | (Pbigarrayset(n, Pbigarray_unknown, _), arg1 :: _) ->
+            Pbigarrayref(unsafe, n, k, l)
+      | (Pbigarrayset(unsafe, n, Pbigarray_unknown, Pbigarray_unknown_layout),
+                      arg1 :: _) ->
             let (k, l) = bigarray_kind_and_layout arg1 in
-            Pbigarrayset(n, k, l)
+            Pbigarrayset(unsafe, n, k, l)
       | _ -> p
     end
   with Not_found ->
@@ -362,10 +389,15 @@ let transl_primitive p =
       Hashtbl.find primitives_table p.prim_name
     with Not_found ->
       Pccall p in
-  let rec make_params n =
-    if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
-  let params = make_params p.prim_arity in
-  Lfunction(Curried, params, Lprim(prim, List.map (fun id -> Lvar id) params))
+  match prim with
+    Plazyforce ->
+      let parm = Ident.create "prim" in
+      Lfunction(Curried, [parm], Matching.inline_lazy_force (Lvar parm) Location.none)
+  | _ ->
+      let rec make_params n =
+        if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
+      let params = make_params p.prim_arity in
+      Lfunction(Curried, params, Lprim(prim, List.map (fun id -> Lvar id) params))
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -610,19 +642,22 @@ and transl_exp0 e =
       ({exp_desc = Texp_ident(path, {val_kind = Val_alone id})},
        [Some arg,_])
       ->
-        Lapply (Lvar id,[transl_exp arg])
+        Lapply (Lvar id,[transl_exp arg],e.exp_loc)
   | Texp_apply
       ({exp_desc = Texp_ident(path, {val_kind = Val_channel (auto,idx)})},
        [Some arg,_])
       ->
         Transljoin.local_send_sync auto idx (transl_exp arg)
 (*<JOCAML*)
-  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
-    when List.length args >= p.prim_arity
-    && List.for_all (fun (arg,_) -> arg <> None) args ->
-      let args, args' = cut p.prim_arity args in
+  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, oargs)
+    when List.length oargs >= p.prim_arity
+    && List.for_all (fun (arg,_) -> arg <> None) oargs ->
+      let args, args' = cut p.prim_arity oargs in
       let wrap f =
-        event_after e (if args' = [] then f else transl_apply f args') in
+        if args' = []
+        then event_after e f
+        else event_after e (transl_apply f args' e.exp_loc)
+      in
       let wrap0 f =
         if args' = [] then f else wrap f in
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
@@ -643,11 +678,16 @@ and transl_exp0 e =
           (Praise, [arg1]) ->
             wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))
         | (_, _) ->
-            let p = Lprim(prim, argl) in
-            if primitive_is_ccall prim then wrap p else wrap0 p
+            begin match (prim, argl) with
+            | (Plazyforce, [a]) ->
+                wrap (Matching.inline_lazy_force a e.exp_loc)
+            | (Plazyforce, _) -> assert false
+            |_ -> let p = Lprim(prim, argl) in
+               if primitive_is_ccall prim then wrap p else wrap0 p
+            end
       end
   | Texp_apply(funct, oargs) ->
-      event_after e (transl_apply (transl_exp funct) oargs)
+      event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
   | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
       Matching.for_multiple_match (id_lam,e.exp_loc)
         (transl_list transl_exp argl)
@@ -764,7 +804,7 @@ and transl_exp0 e =
       in
       event_after e lam
   | Texp_new (cl, _) ->
-      Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
+      Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit], Location.none)
   | Texp_instvar(path_self, path) ->
       Lprim(Parrayrefu Paddrarray, [transl_path path_self; transl_path path])
   | Texp_setinstvar(path_self, path, expr) ->
@@ -772,7 +812,8 @@ and transl_exp0 e =
   | Texp_override(path_self, modifs) ->
       let cpy = Ident.create "copy" in
       Llet(Strict, cpy,
-           Lapply(Translobj.oo_prim "copy", [transl_path path_self]),
+           Lapply(Translobj.oo_prim "copy", [transl_path path_self],
+                  Location.none),
            List.fold_right
              (fun (path, expr) rem ->
                 Lsequence(transl_setinstvar (Lvar cpy) path expr, rem))
@@ -786,8 +827,55 @@ and transl_exp0 e =
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
   | Texp_lazy e ->
-      let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
-      Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+      (* when e needs no computation (constants, identifiers, ...), we
+         optimize the translation just as Lazy.lazy_from_val would
+         do *)
+      begin match e.exp_desc with
+        (* a constant expr of type <> float gets compiled as itself *)
+      | Texp_constant
+          ( Const_int _ | Const_char _ | Const_string _
+          | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
+      | Texp_function(_, _)
+      | Texp_construct ({cstr_arity = 0}, _)
+        -> transl_exp e
+      | Texp_constant(Const_float _) ->
+          Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+      | Texp_ident(_, _) -> (* according to the type *)
+          begin match e.exp_type.desc with
+	  | Tproc _ -> assert false (* By typing *)
+          (* the following may represent a float/forward/lazy: need a
+             forward_tag *)
+          | Tvar | Tlink _ | Tsubst _ | Tunivar
+          | Tpoly(_,_) | Tfield(_,_,_,_) ->
+              Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+          (* the following cannot be represented as float/forward/lazy:
+             optimize *)
+          | Tarrow(_,_,_,_) | Ttuple _ | Tobject(_,_) | Tnil | Tvariant _
+              -> transl_exp e
+          (* optimize predefined types (excepted float) *)
+          | Tconstr(_,_,_) ->
+              if has_base_type e Predef.path_int
+                || has_base_type e Predef.path_char
+                || has_base_type e Predef.path_string
+                || has_base_type e Predef.path_bool
+                || has_base_type e Predef.path_unit
+                || has_base_type e Predef.path_exn
+                || has_base_type e Predef.path_array
+                || has_base_type e Predef.path_list
+                || has_base_type e Predef.path_format6
+                || has_base_type e Predef.path_option
+                || has_base_type e Predef.path_nativeint
+                || has_base_type e Predef.path_int32
+                || has_base_type e Predef.path_int64
+              then transl_exp e
+              else
+                Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+          end
+      (* other cases compile to a lazy block holding a function *)
+      | _ ->
+          let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
+          Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+      end
   | Texp_object (cs, cty, meths) ->
       let cl = Ident.create "class" in
       !transl_object cl meths
@@ -799,7 +887,7 @@ and transl_exp0 e =
   | Texp_spawn (e) -> transl_spawn e
 (*< JOCAML *)
   | _ ->
-      Location.print Format.err_formatter e.exp_loc ;
+      Location.print_error Format.err_formatter e.exp_loc ;
       fatal_error "Translcore.transl_exp"
 
 (*> JOCAML *)
@@ -888,7 +976,7 @@ and transl_proc die sync p = match p.exp_desc with
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
   Texp_assertfalse
   ->
-    Location.print Format.err_formatter p.exp_loc ;
+    Location.print_error Format.err_formatter p.exp_loc ;
     fatal_error "Translcore.transl_proc"
 
 (*
@@ -1018,7 +1106,7 @@ and transl_dispatcher disp =
     if chan.jchannel_sync then match  chan.jchannel_id with
     | Chan (name, i) ->
         Transljoin.local_send_sync name i (Lvar z)
-    | Alone g -> Lapply (Lvar g, [Lvar z])
+    | Alone g -> Lapply (Lvar g, [Lvar z],Location.none)
     else match chan.jchannel_id with
     | Chan (name, i) ->
         Transljoin.local_tail_send_async name i
@@ -1111,17 +1199,17 @@ and transl_cases transl_exp pat_expr_list =
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, expr) -> (patl, transl_exp expr)) patl_expr_list
 
-and transl_apply lam sargs =
+and transl_apply lam sargs loc =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs) ->
         Lsend(k, lmet, lobj, largs @ args)
     | Levent(Lsend(k, lmet, lobj, largs), _) ->
         Lsend(k, lmet, lobj, largs @ args)
-    | Lapply(lexp, largs) ->
-        Lapply(lexp, largs @ args)
+    | Lapply(lexp, largs, _) ->
+        Lapply(lexp, largs @ args, loc)
     | lexp ->
-        Lapply(lexp, args)
+        Lapply(lexp, args, loc)
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->
@@ -1163,7 +1251,8 @@ and transl_apply lam sargs =
 
 and transl_function loc untuplify_fn repr partial pat_expr_list =
   match pat_expr_list with
-    [pat, ({exp_desc = Texp_function(pl,partial')} as exp)] ->
+    [pat, ({exp_desc = Texp_function(pl,partial')} as exp)]
+    when Parmatch.fluid pat ->
       let param = name_pattern "param" pat_expr_list in
       let ((_, params), body) =
         transl_function exp.exp_loc false repr partial' pl in

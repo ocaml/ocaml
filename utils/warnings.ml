@@ -38,6 +38,7 @@ type t =                             (* A is all *)
   | Camlp4 of string
   | All_clauses_guarded
   | Useless_record_with
+  | Bad_module_name of string
   | Unused_var of string             (* Y *)
   | Unused_var_strict of string      (* Z *)
 ;;
@@ -65,6 +66,7 @@ let letter = function        (* 'a' is all *)
   | Nonreturning_statement
   | Camlp4 _
   | Useless_record_with
+  | Bad_module_name _
   | All_clauses_guarded ->      'x'
   | Unused_var _ ->             'y'
   | Unused_var_strict _ ->      'z'
@@ -156,6 +158,8 @@ let message = function
   | Useless_record_with ->
       "this record is defined by a `with' expression,\n\
        but no fields are borrowed from the original."
+  | Bad_module_name (modname) ->
+      "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
 ;;
 
 let nerrors = ref 0;;

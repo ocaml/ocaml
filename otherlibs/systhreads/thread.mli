@@ -33,10 +33,10 @@ val create : ('a -> 'b) -> 'a -> t
    result of the application [funct arg] is discarded and not
    directly accessible to the parent thread. *)
 
-external self : unit -> t = "caml_thread_self"
+val self : unit -> t
 (** Return the thread currently executing. *)
 
-external id : t -> int = "caml_thread_id"
+val id : t -> int
 (** Return the identifier of the given thread. A thread identifier
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)
@@ -54,7 +54,7 @@ val delay: float -> unit
    [d] seconds. The other program threads continue to run during
    this time. *)
 
-external join : t -> unit = "caml_thread_join"
+val join : t -> unit
 (** [join th] suspends the execution of the calling thread
    until the thread [th] has terminated. *)
 

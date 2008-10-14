@@ -451,7 +451,7 @@ let print_instr ic =
         print_int nvars;
         for i = 0 to nfuncs - 1 do
           print_string ", ";
-          print_int (orig + inputu ic);
+          print_int (orig + inputs ic);
         done;
   | Pubmet
      -> let tag = inputs ic in

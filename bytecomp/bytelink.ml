@@ -45,13 +45,15 @@ let lib_ccopts = ref []
 let lib_dllibs = ref []
 
 let add_ccobjs l =
-  if not !Clflags.no_auto_link
-      && String.length !Clflags.use_runtime = 0
+  if not !Clflags.no_auto_link then begin
+    if
+      String.length !Clflags.use_runtime = 0
       && String.length !Clflags.use_prims = 0
-  then begin
-    if l.lib_custom then Clflags.custom_runtime := true;
-    lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
-    lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+    then begin
+      if l.lib_custom then Clflags.custom_runtime := true;
+      lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
+      lib_ccopts := l.lib_ccopts @ !lib_ccopts;
+    end;
     lib_dllibs := l.lib_dllibs @ !lib_dllibs
   end
 
@@ -429,43 +431,9 @@ void caml_startup(char ** argv)
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
-  match Config.ccomp_type with
-    "cc" ->
-      Ccomp.command
-       (Printf.sprintf
-          "%s -o %s %s %s %s %s %s -lcamlrun %s"
-          !Clflags.c_linker
-          (Filename.quote exec_name)
-          (Clflags.std_include_flag "-I")
-          (String.concat " " (List.rev !Clflags.ccopts))
-          prim_name
-          (Ccomp.quote_files
-            (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
-                      !load_path))
-          (Ccomp.quote_files (List.rev !Clflags.ccobjs))
-          Config.bytecomp_c_libraries)
-  | "msvc" ->
-      let retcode =
-      Ccomp.command
-       (Printf.sprintf
-          "%s /Fe%s %s %s %s %s %s %s"
-          !Clflags.c_linker
-          (Filename.quote exec_name)
-          (Clflags.std_include_flag "-I")
-          prim_name
-          (Ccomp.quote_files
-            (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-          (Filename.quote (Ccomp.expand_libname "-lcamlrun"))
-          Config.bytecomp_c_libraries
-          (Ccomp.make_link_options !Clflags.ccopts)) in
-      (* C compiler doesn't clean up after itself.  Note that the .obj
-         file is created in the current working directory. *)
-      remove_file
-        (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
-      if retcode <> 0
-      then retcode
-      else Ccomp.merge_manifest exec_name
-  | _ -> assert false
+  Ccomp.call_linker Ccomp.Exe exec_name 
+    ([prim_name] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+    Config.bytecomp_c_libraries
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -510,7 +478,7 @@ let link objfiles output_name =
       Symtable.output_primitive_table poc;
       close_out poc;
       let exec_name = fix_exec_name output_name in
-      if build_custom_runtime prim_name exec_name <> 0
+      if not (build_custom_runtime prim_name exec_name)
       then raise(Error Custom_runtime);
       if !Clflags.make_runtime
       then (remove_file bytecode_name; remove_file prim_name)
@@ -520,17 +488,28 @@ let link objfiles output_name =
       remove_file prim_name;
       raise x
   end else begin
-    let c_file =
-      Filename.chop_suffix output_name Config.ext_obj ^ ".c" in
+    let basename = Filename.chop_extension output_name in
+    let c_file = basename ^ ".c"
+    and obj_file = basename ^ Config.ext_obj in
     if Sys.file_exists c_file then raise(Error(File_exists c_file));
+    let temps = ref [] in
     try
       link_bytecode_as_c tolink c_file;
-      if Ccomp.compile_file c_file <> 0
-      then raise(Error Custom_runtime);
-      remove_file c_file
+      if not (Filename.check_suffix output_name ".c") then begin
+        temps := c_file :: !temps;
+        if Ccomp.compile_file c_file <> 0 then raise(Error Custom_runtime);
+        if not (Filename.check_suffix output_name Config.ext_obj) then begin
+          temps := obj_file :: !temps;
+          if not (
+            Ccomp.call_linker Ccomp.MainDll output_name
+              ([obj_file] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+              Config.bytecomp_c_libraries
+           ) then raise (Error Custom_runtime);
+        end
+      end;
+      List.iter remove_file !temps
     with x ->
-      remove_file c_file;
-      remove_file output_name;
+      List.iter remove_file !temps;
       raise x
   end
 

@@ -18,7 +18,7 @@ include config/Makefile
 include stdlib/StdlibModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib
+CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib -I otherlibs/dynlink
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=
 CAMLYACC=boot/ocamlyacc
@@ -28,7 +28,8 @@ CAMLDEP=boot/ocamlrun tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
+INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
+         -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
@@ -98,6 +99,11 @@ TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
+NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+  driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
+  toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
+  toplevel/opttopmain.cmo toplevel/opttopstart.cmo
+
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
@@ -114,7 +120,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out $(DEBUGGER) win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -148,7 +154,6 @@ LIBFILES=stdlib.cma std_exit.cmo *.cmi camlheader
 coldstart:
 	cd byterun ; $(MAKEREC) all
 	cp byterun/ocamlrun.exe boot/ocamlrun.exe
-	cp byterun/ocamlrun.dll boot/ocamlrun.dll
 	cd yacc ; $(MAKEREC) all
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
 	cd stdlib ; $(MAKEREC) COMPILER=../boot/ocamlc all
@@ -200,7 +205,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt ocamlbuildlib.native
 
 # Native-code versions of the tools
 opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt \
@@ -213,8 +218,6 @@ installbyt:
 	mkdir -p $(BINDIR)
 	mkdir -p $(LIBDIR)
 	cd byterun ; $(MAKEREC) install
-	echo "$(STUBLIBDIR)" > $(LIBDIR)/ld.conf
-	echo "$(LIBDIR)" >> $(LIBDIR)/ld.conf
 	cp ocamlc $(BINDIR)/ocamlc.exe
 	cp ocaml $(BINDIR)/ocaml.exe
 	cd stdlib ; $(MAKEREC) install
@@ -229,6 +232,8 @@ installbyt:
 	cd ocamldoc ; $(MAKEREC) install
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
+	if test -f debugger/ocamldebug.exe; then (cd debugger; $(MAKEREC) install); \
+	   else :; fi
 	cd win32caml ; $(MAKE) install
 	./build/partial-install.sh
 	cp config/Makefile $(LIBDIR)/Makefile.config
@@ -288,6 +293,17 @@ toplevel/toplevellib.cma: $(TOPLIB)
 partialclean::
 	rm -f ocaml
 
+# The native toplevel
+
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
+	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat $(NATTOPOBJS:.cmo=.cmx) -linkall
+
+toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+
+otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
+	cd otherlibs/dynlink && make allopt
+
+
 # The configuration file
 
 utils/config.ml: utils/config.mlp config/Makefile
@@ -296,9 +312,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e "s|%%BYTERUN%%|ocamlrun|" \
             -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
             -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
-            -e "s|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|" \
             -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
-            -e "s|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|" \
             -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
             -e "s|%%PACKLD%%|$(PACKLD)|" \
             -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
@@ -314,6 +328,11 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e "s|%%EXT_LIB%%|.$(A)|" \
             -e "s|%%EXT_DLL%%|.dll|" \
             -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
+            -e 's|%%ASM%%|$(ASM)|' \
+            -e 's|%%MKDLL%%|$(MKDLL)|' \
+            -e 's|%%MKEXE%%|$(MKEXE)|' \
+            -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+            -e 's|%%CC_PROFILE%%||' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
@@ -564,6 +583,15 @@ clean::
 alldepend::
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i depend; done
 
+# The replay debugger
+
+ocamldebugger: ocamlc ocamlyacc ocamllex
+	cd debugger; $(MAKEREC) all
+partialclean::
+	cd debugger; $(MAKEREC) clean
+alldepend::
+	cd debugger; $(MAKEREC) depend
+
 # Camlp4
 
 camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
@@ -577,6 +605,9 @@ ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
 	./build/ocamlbuild-byte-only.sh
 ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
 	./build/ocamlbuild-native-only.sh
+ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+	./build/ocamlbuildlib-native-only.sh
+
 
 .PHONY: ocamlbuild-partial-boot
 ocamlbuild-partial-boot:

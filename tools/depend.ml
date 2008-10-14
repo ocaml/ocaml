@@ -68,10 +68,10 @@ let add_type_declaration bv td =
     td.ptype_cstrs;
   add_opt add_type bv td.ptype_manifest;
   let rec add_tkind = function
-    Ptype_abstract | Ptype_private -> ()
-  | Ptype_variant (cstrs, _) ->
+    Ptype_abstract -> ()
+  | Ptype_variant cstrs ->
       List.iter (fun (c, args, _) -> List.iter (add_type bv) args) cstrs
-  | Ptype_record (lbls, _) ->
+  | Ptype_record lbls ->
       List.iter (fun (l, mut, ty, _) -> add_type bv ty) lbls in
   add_tkind td.ptype_kind
 
@@ -112,6 +112,7 @@ let rec add_pattern bv pat =
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type (li) -> add bv li
+  | Ppat_lazy p -> add_pattern bv p
 
 let rec add_expr bv exp =
   match exp.pexp_desc with
@@ -290,8 +291,8 @@ and add_class_expr bv ce =
       add bv l; List.iter (add_type bv) tyl
   | Pcl_structure(pat, fieldl) ->
       add_pattern bv pat; List.iter (add_class_field bv) fieldl
-  | Pcl_fun(_, _, pat, ce) ->
-      add_pattern bv pat; add_class_expr bv ce
+  | Pcl_fun(_, opte, pat, ce) ->
+      add_opt add_expr bv opte; add_pattern bv pat; add_class_expr bv ce
   | Pcl_apply(ce, exprl) ->
       add_class_expr bv ce; List.iter (fun (_,e) -> add_expr bv e) exprl
   | Pcl_let(_, pel, ce) ->

@@ -24,9 +24,11 @@ type 'a t
    any time.
    A weak pointer is said to be full if it points to a value,
    empty if the value was erased by the GC.
-   Note that weak arrays cannot be marshaled using
-   {!Pervasives.output_value} or the functions of the {!Marshal}
-   module.
+
+   Notes:
+   - Integers are not allocated and cannot be stored in weak arrays.
+   - Weak arrays cannot be marshaled using {!Pervasives.output_value}
+     nor the functions of the {!Marshal} module.
 *)
 
 

@@ -44,6 +44,7 @@ type summary =
 
 type t = {
   values: (Path.t * value_description) Ident.tbl;
+  annotations: (Path.t * Annot.ident) Ident.tbl;
   constrs: constructor_description Ident.tbl;
   labels: label_description Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
@@ -66,6 +67,7 @@ and module_components_repr =
 
 and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
+  mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
@@ -86,7 +88,7 @@ and functor_components = {
 }
 
 let empty = {
-  values = Ident.empty; constrs = Ident.empty;
+  values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
   labels = Ident.empty; types = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
@@ -261,11 +263,32 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+(* Find the manifest type associated to a type when appropriate:
+   - the type should be public or should have a private row,
+   - the type should have an associated manifest type. *)
 let find_type_expansion path env =
   let decl = find_type path env in
   match decl.type_manifest with
-    None      -> raise Not_found
+  | Some body when decl.type_private = Public
+              || decl.type_kind <> Type_abstract
+              || Btype.has_constr_row body -> (decl.type_params, body)
+  (* The manifest type of Private abstract data types without
+     private row are still considered unknown to the type system.
+     Hence, this case is caught by the following clause that also handles
+     purely abstract data types without manifest type definition. *)
+  | _ -> raise Not_found
+
+(* Find the manifest type information associated to a type, i.e.
+   the necessary information for the compiler's type-based optimisations.
+   In particular, the manifest type associated to a private abstract type
+   is revealed for the sake of compiler's type-based optimisations. *)
+let find_type_expansion_opt path env =
+  let decl = find_type path env in
+  match decl.type_manifest with
+  (* The manifest type of Private abstract data types can still get
+     an approximation using their manifest type. *)
   | Some body -> (decl.type_params, body)
+  | _ -> raise Not_found
 
 let find_modtype_expansion path env =
   match find_modtype path env with
@@ -392,6 +415,8 @@ let lookup_simple proj1 proj2 lid env =
 
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
+let lookup_annot id e =
+  lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
 and lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
@@ -427,20 +452,20 @@ let rec scrape_modtype mty env =
 
 let constructors_of_type ty_path decl =
   match decl.type_kind with
-    Type_variant(cstrs, priv) ->
+    Type_variant cstrs ->
       Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        cstrs priv
+        cstrs decl.type_private
   | Type_record _ | Type_abstract -> []
 
 (* Compute label descriptions *)
 
 let labels_of_type ty_path decl =
   match decl.type_kind with
-    Type_record(labels, rep, priv) ->
+    Type_record(labels, rep) ->
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        labels rep priv
+        labels rep decl.type_private
   | Type_variant _ | Type_abstract -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
@@ -488,7 +513,8 @@ let rec components_of_module env sub path mty =
   lazy(match scrape_modtype mty env with
     Tmty_signature sg ->
       let c =
-        { comp_values = Tbl.empty; comp_constrs = Tbl.empty;
+        { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+          comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
@@ -502,6 +528,11 @@ let rec components_of_module env sub path mty =
             let decl' = Subst.value_description sub decl in
             c.comp_values <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_values;
+            if !Clflags.annotations then begin
+              c.comp_annotations <-
+                Tbl.add (Ident.name id) (Annot.Iref_external, !pos)
+                        c.comp_annotations;
+            end;
             begin match decl.val_kind with
               Val_prim _ -> () | _ -> incr pos
             end
@@ -516,7 +547,7 @@ let rec components_of_module env sub path mty =
             List.iter
               (fun (name, descr) ->
                 c.comp_labels <- Tbl.add name (descr, nopos) c.comp_labels)
-              (labels_of_type path decl'); 
+              (labels_of_type path decl');
             env := store_type_infos id path decl !env
         | Tsig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
@@ -562,7 +593,8 @@ let rec components_of_module env sub path mty =
           fcomp_cache = Hashtbl.create 17 }
   | Tmty_ident p ->
         Structure_comps {
-          comp_values = Tbl.empty; comp_constrs = Tbl.empty;
+          comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+          comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
@@ -574,6 +606,12 @@ and store_value id path decl env =
   { env with
     values = Ident.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
+
+and store_annot id path annot env =
+  if !Clflags.annotations then
+    { env with
+      annotations = Ident.add id (path, annot) env.annotations }
+  else env
 
 and store_type id path info env =
   { env with
@@ -655,6 +693,9 @@ let _ =
 let add_value id desc env =
   store_value id (Pident id) desc env
 
+let add_annot id annot env =
+  store_annot id (Pident id) annot env
+
 and add_type id info env =
   store_type id (Pident id) info env
 
@@ -724,8 +765,9 @@ let open_signature root sg env =
       (fun env item p ->
         match item with
           Tsig_value(id, decl) ->
-            store_value (Ident.hide id) p
+            let e1 = store_value (Ident.hide id) p
                         (Subst.value_description sub decl) env
+            in store_annot (Ident.hide id) p (Annot.Iref_external) e1
         | Tsig_type(id, decl, _) ->
             store_type (Ident.hide id) p
                        (Subst.type_declaration sub decl) env

@@ -54,3 +54,4 @@ let final_tag = custom_tag
 
 let int_tag = 1000
 let out_of_heap_tag = 1001
+let unaligned_tag = 1002

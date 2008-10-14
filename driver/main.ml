@@ -95,15 +95,15 @@ module Options = Main_args.Make_options (struct
   let set r () = r := true
   let unset r () = r := false
   let _a = set make_archive
+  let _annot = set annotations
   let _c = set compile_only
-  let _cc s = c_compiler := s; c_linker := s
+  let _cc s = c_compiler := s
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
   let _ccopt s = ccopts := s :: !ccopts
   let _config = show_config
   let _custom = set custom_runtime
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
-  let _dtypes = set save_types
   let _g = set debug
   let _i () = print_types := true; compile_only := true
   let _I s = include_dirs := s :: !include_dirs
@@ -147,12 +147,13 @@ module Options = Main_args.Make_options (struct
   let anonymous = anonymous
 end)
 
+let fatal err =
+  prerr_endline err;
+  exit 2
+
 let extract_output = function
   | Some s -> s
-  | None ->
-      prerr_endline
-        "Please specify the name of the output file, using option -o";
-      exit 2
+  | None -> fatal "Please specify the name of the output file, using option -o"
 
 let default_output = function
   | Some s -> s
@@ -161,6 +162,12 @@ let default_output = function
 let main () =
   try
     Arg.parse Options.list anonymous usage;
+    if
+      List.length (List.filter (fun x -> !x)
+		     [make_archive;make_package;compile_only;output_c_object]) > 1
+    then
+      fatal "Please specify at most one of -pack, -a, -c, -output-obj";
+
     if !make_archive then begin
       Compile.init_path();
       Bytelibrarian.create_archive (List.rev !objfiles)
@@ -172,8 +179,24 @@ let main () =
                                  (extract_output !output_name)
     end
     else if not !compile_only && !objfiles <> [] then begin
+      let target =
+        if !output_c_object then
+          let s = extract_output !output_name in
+          if (Filename.check_suffix s Config.ext_obj
+            || Filename.check_suffix s Config.ext_dll
+            || Filename.check_suffix s ".c")
+          then s
+          else
+            fatal
+              (Printf.sprintf
+                 "The extension of the output file must be .c, %s or %s"
+                 Config.ext_obj Config.ext_dll
+              )
+        else
+          default_output !output_name
+      in
       Compile.init_path();
-      Bytelink.link (List.rev !objfiles) (default_output !output_name)
+      Bytelink.link (List.rev !objfiles) target
     end;
     exit 0
   with x ->

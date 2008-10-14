@@ -19,46 +19,50 @@ include ../../config/Makefile
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../win32unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../win32unix
 COMPFLAGS=-warn-error A -g
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+CFLAGS=-I../../byterun $(EXTRACFLAGS)
 
-THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+CAMLOBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+CMIFILES=$(CAMLOBJS:.cmo=.cmi)
+COBJS=win32_b.$(O)
+COBJS_NAT=win32_n.$(O)
 
 GENFILES=thread.ml
 
-all: dllthreads.dll libthreads.$(A) threads.cma
+LIBNAME=threads
 
-allopt: libthreadsnat.$(A) threads.cmxa
+all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
 
-dllthreads.dll: win32_b.$(DO)
-	$(call MKDLL,dllthreads.dll,tmp.$(A),win32_b.$(DO) ../../byterun/ocamlrun.$(A))
-	rm tmp.*
+allopt: lib$(LIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).cmxs $(CMIFILES)
 
-libthreads.$(A): win32_b.$(SO)
-	$(call MKLIB,libthreads.$(A),win32_b.$(SO))
+$(LIBNAME).cma: $(CAMLOBJS)
+	$(MKLIB) -o $(LIBNAME) -ocamlc "..\\..\\boot\\ocamlrun ..\\..\\ocamlc" -linkall $(CAMLOBJS) $(LINKOPTS)
 
-win32_b.$(DO): win32.c
-	$(BYTECC) -I../../byterun $(DLLCCCOMPOPTS) -c win32.c
-	mv win32.$(O) win32_b.$(DO)
+lib$(LIBNAME).$(A): $(COBJS)
+	$(MKLIB) -o $(LIBNAME) $(COBJS) $(LDOPTS)
 
-win32_b.$(SO): win32.c
-	$(BYTECC) -I../../byterun $(BYTECCCOMPOPTS) -c win32.c
-	mv win32.$(O) win32_b.$(SO)
+win32_b.$(O): win32.c
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c win32.c
+	mv win32.$(O) win32_b.$(O)
 
-libthreadsnat.$(A): win32_n.$(O)
-	$(call MKLIB,libthreadsnat.$(A),win32_n.$(O))
+
+
+$(LIBNAME).cmxa: $(CAMLOBJS:.cmo=.cmx)
+	$(MKLIB) -o $(LIBNAME)nat -ocamlopt "..\\..\\boot\\ocamlrun ..\\..\\ocamlopt" -linkall $(CAMLOBJS:.cmo=.cmx) $(LINKOPTS)
+	mv $(LIBNAME)nat.cmxa $(LIBNAME).cmxa
+	mv $(LIBNAME)nat.$(A) $(LIBNAME).$(A)
+
+$(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(LIBNAME)nat.$(A)
+	$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa -linkall
+
+lib$(LIBNAME)nat.$(A): $(COBJS_NAT)
+	$(MKLIB) -o $(LIBNAME)nat $(COBJS_NAT) $(LDOPTS)
 
 win32_n.$(O): win32.c
 	$(NATIVECC) -DNATIVE_CODE -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -c win32.c
 	mv win32.$(O) win32_n.$(O)
 
-threads.cma: $(THREAD_OBJS)
-	$(CAMLC) -a -o threads.cma $(THREAD_OBJS) \
-          -dllib -lthreads -cclib -lthreads
-
-threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat
-
-$(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
+$(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
 thread.ml: thread_win32.ml
 	cp thread_win32.ml thread.ml
@@ -74,12 +78,13 @@ install:
 	cp dllthreads.dll $(STUBLIBDIR)/dllthreads.dll
 	cp libthreads.$(A) $(LIBDIR)/libthreads.$(A)
 	mkdir -p $(LIBDIR)/threads
-	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
+	cp $(CMIFILES) threads.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
 
 installopt:
 	cp libthreadsnat.$(A) $(LIBDIR)/libthreadsnat.$(A)
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.$(A) $(LIBDIR)/threads
+	cp threads.cmxs $(LIBDIR)/threads
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

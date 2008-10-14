@@ -72,6 +72,10 @@ static void init_atoms(void)
 {
   int i;
   for(i = 0; i < 256; i++) caml_atom_table[i] = Make_header(0, i, Caml_white);
+  if (caml_page_table_add(In_static_data,
+                          caml_atom_table, caml_atom_table + 256) != 0) {
+    caml_fatal_error("Fatal error: not enough memory for the initial page table");
+  }
 }
 
 /* Read the trailer of a bytecode file */
@@ -254,7 +258,7 @@ static int parse_command_line(char **argv)
       exit(0);
       break;
     case 'b':
-      caml_init_backtrace();
+      caml_record_backtrace(Val_true);
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
@@ -307,7 +311,7 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &caml_verb_gc); break;
-      case 'b': caml_init_backtrace(); break;
+      case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
       }
     }

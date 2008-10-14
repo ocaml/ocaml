@@ -92,7 +92,13 @@ threads.cma: $(THREAD_OBJS)
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
+          -cclib -lthreadsnat $(PTHREAD_LINK)
+
+# Note: I removed "-cclib -lunix" from the line above. 
+# Indeed, if we link threads.cmxa, then we must also link unix.cmxa, 
+# which itself will pass -lunix to the C linker.  It seems more
+# modular to me this way. -- Alain
+
 
 $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx): ../../ocamlopt
 

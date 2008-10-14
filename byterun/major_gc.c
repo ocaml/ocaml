@@ -31,9 +31,7 @@
 
 uintnat caml_percent_free;
 intnat caml_major_heap_increment;
-CAMLexport char *caml_heap_start, *caml_heap_end;
-CAMLexport page_table_entry *caml_page_table;
-asize_t caml_page_low, caml_page_high;
+CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
 int caml_gc_phase;        /* always Phase_mark, Phase_sweep, or Phase_idle */
 static value *gray_vals;
@@ -50,11 +48,12 @@ extern char *caml_fl_merge;  /* Defined in freelist.c. */
 
 static char *markhp, *chunk, *limit;
 
-static int gc_subphase;     /* Subphase_main, Subphase_weak, Subphase_final */
-#define Subphase_main 10
-#define Subphase_weak 11
-#define Subphase_final 12
+int caml_gc_subphase;     /* Subphase_{main,weak1,weak2,final} */
 static value *weak_prev;
+
+#ifdef DEBUG
+static unsigned long major_gc_counter = 0;
+#endif
 
 static void realloc_gray_vals (void)
 {
@@ -113,9 +112,10 @@ static void start_cycle (void)
   caml_gc_message (0x01, "Starting new major GC cycle\n", 0);
   caml_darken_all_roots();
   caml_gc_phase = Phase_mark;
-  gc_subphase = Subphase_main;
+  caml_gc_subphase = Subphase_main;
   markhp = NULL;
 #ifdef DEBUG
+  ++ major_gc_counter;
   caml_heap_check ();
 #endif
 }
@@ -128,6 +128,7 @@ static void mark_slice (intnat work)
   mlsize_t size, i;
 
   caml_gc_message (0x40, "Marking %ld words\n", work);
+  caml_gc_message (0x40, "Subphase = %ld\n", caml_gc_subphase);
   gray_vals_ptr = gray_vals_cur;
   while (work > 0){
     if (gray_vals_ptr > gray_vals){
@@ -143,9 +144,9 @@ static void mark_slice (intnat work)
             hd = Hd_val (child);
             if (Tag_hd (hd) == Forward_tag){
               value f = Forward_val (child);
-              if (Is_block (f) && (Is_young (f) || Is_in_heap (f))
-                  && (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
-                      || Tag_val (f) == Double_tag)){
+              if (Is_block (f)
+                  && (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+                      || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag)){
                 /* Do not short-circuit the pointer. */
               }else{
                 Field (v, i) = f;
@@ -189,34 +190,34 @@ static void mark_slice (intnat work)
       chunk = caml_heap_start;
       markhp = chunk;
       limit = chunk + Chunk_size (chunk);
-    }else if (gc_subphase == Subphase_main){
-      /* The main marking phase is over.  Start removing weak pointers to
-         dead values. */
-      gc_subphase = Subphase_weak;
-      weak_prev = &caml_weak_list_head;
-    }else if (gc_subphase == Subphase_weak){
-      value cur, curfield;
-      mlsize_t sz, i;
-      header_t hd;
+    }else{
+      switch (caml_gc_subphase){
+      case Subphase_main: {
+        /* The main marking phase is over.  Start removing weak pointers to
+           dead values. */
+        caml_gc_subphase = Subphase_weak1;
+        weak_prev = &caml_weak_list_head;
+      }
+        break;
+      case Subphase_weak1: {
+        value cur, curfield;
+        mlsize_t sz, i;
+        header_t hd;
 
-      cur = *weak_prev;
-      if (cur != (value) NULL){
-        hd = Hd_val (cur);
-        if (Color_hd (hd) == Caml_white){
-          /* The whole array is dead, remove it from the list. */
-          *weak_prev = Field (cur, 0);
-        }else{
+        cur = *weak_prev;
+        if (cur != (value) NULL){
+          hd = Hd_val (cur);
           sz = Wosize_hd (hd);
           for (i = 1; i < sz; i++){
             curfield = Field (cur, i);
-           weak_again:
+          weak_again:
             if (curfield != caml_weak_none
                 && Is_block (curfield) && Is_in_heap (curfield)){
               if (Tag_val (curfield) == Forward_tag){
                 value f = Forward_val (curfield);
-                if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
-                  if (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag
-                      || Tag_val (f) == Double_tag){
+                if (Is_block (f)) {
+                  if (!Is_in_value_area(f) || Tag_val (f) == Forward_tag
+                      || Tag_val (f) == Lazy_tag || Tag_val (f) == Double_tag){
                     /* Do not short-circuit the pointer. */
                   }else{
                     Field (cur, i) = curfield = f;
@@ -230,27 +231,52 @@ static void mark_slice (intnat work)
             }
           }
           weak_prev = &Field (cur, 0);
+          work -= Whsize_hd (hd);
+        }else{
+          /* Subphase_weak1 is done.  Start removing dead weak arrays. */
+          caml_gc_subphase = Subphase_weak2;
+          weak_prev = &caml_weak_list_head;
         }
-        work -= Whsize_hd (hd);
-      }else{
-        /* Subphase_weak is done.  Handle finalised values. */
-        gray_vals_cur = gray_vals_ptr;
-        caml_final_update ();
-        gray_vals_ptr = gray_vals_cur;
-        gc_subphase = Subphase_final;
       }
-    }else{
-      Assert (gc_subphase == Subphase_final);
-      /* Initialise the sweep phase. */
-      gray_vals_cur = gray_vals_ptr;
-      caml_gc_sweep_hp = caml_heap_start;
-      caml_fl_init_merge ();
-      caml_gc_phase = Phase_sweep;
-      chunk = caml_heap_start;
-      caml_gc_sweep_hp = chunk;
-      limit = chunk + Chunk_size (chunk);
-      work = 0;
-      caml_fl_size_at_phase_change = caml_fl_cur_size;
+        break;
+      case Subphase_weak2: {
+        value cur;
+        header_t hd;
+
+        cur = *weak_prev;
+        if (cur != (value) NULL){
+          hd = Hd_val (cur);
+          if (Color_hd (hd) == Caml_white){
+            /* The whole array is dead, remove it from the list. */
+            *weak_prev = Field (cur, 0);
+          }else{
+            weak_prev = &Field (cur, 0);
+          }
+          work -= 1;
+        }else{
+          /* Subphase_weak2 is done.  Handle finalised values. */
+          gray_vals_cur = gray_vals_ptr;
+          caml_final_update ();
+          gray_vals_ptr = gray_vals_cur;
+          caml_gc_subphase = Subphase_final;
+        }
+      }
+        break;
+      case Subphase_final: {
+        /* Initialise the sweep phase. */
+        gray_vals_cur = gray_vals_ptr;
+        caml_gc_sweep_hp = caml_heap_start;
+        caml_fl_init_merge ();
+        caml_gc_phase = Phase_sweep;
+        chunk = caml_heap_start;
+        caml_gc_sweep_hp = chunk;
+        limit = chunk + Chunk_size (chunk);
+        work = 0;
+        caml_fl_size_at_phase_change = caml_fl_cur_size;
+      }
+        break;
+      default: Assert (0);
+      }
     }
   }
   gray_vals_cur = gray_vals_ptr;
@@ -354,7 +380,7 @@ intnat caml_major_collection_slice (intnat howmuch)
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
 
-  caml_gc_message (0x40, "allocated_words = %" 
+  caml_gc_message (0x40, "allocated_words = %"
                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
                    caml_allocated_words);
   caml_gc_message (0x40, "extra_heap_resources = %"
@@ -441,10 +467,6 @@ asize_t caml_round_heap_chunk_size (asize_t request)
 
 void caml_init_major_heap (asize_t heap_size)
 {
-  asize_t i;
-  asize_t page_table_size;
-  page_table_entry *page_table_block;
-
   caml_stat_heap_size = clip_heap_chunk_size (heap_size);
   caml_stat_top_heap_size = caml_stat_heap_size;
   Assert (caml_stat_heap_size % Page_size == 0);
@@ -452,23 +474,11 @@ void caml_init_major_heap (asize_t heap_size)
   if (caml_heap_start == NULL)
     caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   Chunk_next (caml_heap_start) = NULL;
-  caml_heap_end = caml_heap_start + caml_stat_heap_size;
-  Assert ((uintnat) caml_heap_end % Page_size == 0);
-
   caml_stat_heap_chunks = 1;
 
-  caml_page_low = Page (caml_heap_start);
-  caml_page_high = Page (caml_heap_end);
-
-  page_table_size = caml_page_high - caml_page_low;
-  page_table_block =
-    (page_table_entry *) malloc (page_table_size * sizeof (page_table_entry));
-  if (page_table_block == NULL){
-    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
-  }
-  caml_page_table = page_table_block - caml_page_low;
-  for (i = Page (caml_heap_start); i < Page (caml_heap_end); i++){
-    caml_page_table [i] = In_heap;
+  if (caml_page_table_add(In_heap, caml_heap_start,
+                          caml_heap_start + caml_stat_heap_size) != 0) {
+    caml_fatal_error ("Fatal error: not enough memory for the initial page table.\n");
   }
 
   caml_fl_init_merge ();
@@ -478,7 +488,7 @@ void caml_init_major_heap (asize_t heap_size)
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)
-    caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
+    caml_fatal_error ("Fatal error: not enough memory for the gray cache.\n");
   gray_vals_cur = gray_vals;
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;

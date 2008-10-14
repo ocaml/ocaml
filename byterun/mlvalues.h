@@ -188,7 +188,11 @@ typedef opcode_t * code_t;
 #define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_val(Field((val), 1))
 CAMLextern value caml_get_public_method (value obj, value tag);
-/* called as: callback(caml_get_public_method(obj, hash_variant(name)), obj) */
+/* Called as:
+   caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
+/* caml_get_public_method returns 0 if tag not in the table.
+   Note however that tags being hashed, same tag does not necessarily mean
+   same method name. */
 
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
@@ -204,7 +208,7 @@ CAMLextern value caml_get_public_method (value obj, value tag);
 /* <JOCAML */
 
 /* Another special case: variants */
-CAMLextern value caml_hash_variant(char * tag);
+CAMLextern value caml_hash_variant(char const * tag);
 
 /* 2- If tag >= No_scan_tag : a sequence of bytes. */
 
@@ -271,22 +275,6 @@ CAMLextern int64 caml_Int64_val(value v);
 
 CAMLextern header_t caml_atom_table[];
 #define Atom(tag) (Val_hp (&(caml_atom_table [(tag)])))
-
-/* Is_atom tests whether a well-formed block is statically allocated
-   outside the heap. For the bytecode system, only zero-sized block (Atoms)
-   fall in this class. For the native-code generator, data
-   emitted by the code generator (as described in the table
-   caml_data_segments) are also atoms. */
-
-#ifndef NATIVE_CODE
-#define Is_atom(v) ((v) >= Atom(0) && (v) <= Atom(255))
-#else
-CAMLextern char * caml_static_data_start, * caml_static_data_end;
-#define Is_atom(v) \
-  ((((char *)(v) >= caml_static_data_start \
-     && (char *)(v) < caml_static_data_end) \
-    || ((v) >= Atom(0) && (v) <= Atom(255))))
-#endif
 
 /* Booleans are integers 0 or 1 */
 

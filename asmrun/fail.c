@@ -94,6 +94,21 @@ void caml_raise_with_arg(value tag, value arg)
   CAMLnoreturn;
 }
 
+void caml_raise_with_args(value tag, int nargs, value args[])
+{
+  CAMLparam1 (tag);
+  CAMLxparamN (args, nargs);
+  value bucket;
+  int i;
+
+  Assert(1 + nargs <= Max_young_wosize);
+  bucket = caml_alloc_small (1 + nargs, 0);
+  Field(bucket, 0) = tag;
+  for (i = 0; i < nargs; i++) Field(bucket, 1 + i) = args[i];
+  caml_raise(bucket);
+  CAMLnoreturn;
+}
+
 void caml_raise_with_string(value tag, char const *msg)
 {
   caml_raise_with_arg(tag, caml_copy_string(msg));
@@ -170,14 +185,23 @@ static struct {
   char data[BOUND_MSG_LEN + sizeof(value)];
 } array_bound_error_msg = { 0, BOUND_MSG };
 
+static int array_bound_error_bucket_inited = 0;
+
 void caml_array_bound_error(void)
 {
-  mlsize_t wosize = (BOUND_MSG_LEN + sizeof(value)) / sizeof(value);
-  mlsize_t offset_index = Bsize_wsize(wosize) - 1;
-  array_bound_error_msg.hdr = Make_header(wosize, String_tag, Caml_white);
-  array_bound_error_msg.data[offset_index] = offset_index - BOUND_MSG_LEN;
-  array_bound_error_bucket.hdr = Make_header(2, 0, Caml_white);
-  array_bound_error_bucket.exn = (value) caml_exn_Invalid_argument;
-  array_bound_error_bucket.arg = (value) array_bound_error_msg.data;
+  if (! array_bound_error_bucket_inited) {
+    mlsize_t wosize = (BOUND_MSG_LEN + sizeof(value)) / sizeof(value);
+    mlsize_t offset_index = Bsize_wsize(wosize) - 1;
+    array_bound_error_msg.hdr = Make_header(wosize, String_tag, Caml_white);
+    array_bound_error_msg.data[offset_index] = offset_index - BOUND_MSG_LEN;
+    array_bound_error_bucket.hdr = Make_header(2, 0, Caml_white);
+    array_bound_error_bucket.exn = (value) caml_exn_Invalid_argument;
+    array_bound_error_bucket.arg = (value) array_bound_error_msg.data;
+    array_bound_error_bucket_inited = 1;
+    caml_page_table_add(In_static_data,
+                        &array_bound_error_msg,
+                        &array_bound_error_msg + 1);
+    array_bound_error_bucket_inited = 1;
+  }
   caml_raise((value) &array_bound_error_bucket.exn);
 }

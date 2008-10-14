@@ -20,7 +20,7 @@ open Asttypes
 (* Type expressions for the core language *)
 
 type type_expr =
-  { mutable desc: type_desc; 
+  { mutable desc: type_desc;
     mutable level: int;
     mutable id: int }
 
@@ -33,7 +33,7 @@ and type_desc =
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
-  | Tsubst of type_expr
+  | Tsubst of type_expr         (* for copying *)
   | Tvariant of row_desc
   | Tunivar
   | Tpoly of type_expr * type_expr list
@@ -47,7 +47,7 @@ and kont_locs = (Ident.t * Location.t) list
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
-      row_bound: type_expr list;
+      row_bound: unit;
       row_closed: bool;
       row_fixed: bool;
       row_name: (Path.t * type_expr list) option }
@@ -55,11 +55,14 @@ and row_desc =
 and row_field =
     Rpresent of type_expr option
   | Reither of bool * type_expr list * bool * row_field option ref
+        (* 1st true denotes a constant constructor *)
+        (* 2nd true denotes a tag in a pattern matching, and
+           is erased later *)
   | Rabsent
 
 and abbrev_memo =
     Mnil
-  | Mcons of Path.t * type_expr * type_expr * abbrev_memo
+  | Mcons of private_flag * Path.t * type_expr * type_expr * abbrev_memo
   | Mlink of abbrev_memo ref
 
 and field_kind =
@@ -153,14 +156,16 @@ type type_declaration =
   { type_params: type_expr list;
     type_arity: int;
     type_kind: type_kind;
+    type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: (bool * bool * bool) list }
+            (* covariant, contravariant, weakly contravariant *)
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list * private_flag
-  | Type_record of (string * mutable_flag * type_expr) list
-                 * record_representation * private_flag
+  | Type_variant of (string * type_expr list) list
+  | Type_record of
+      (string * mutable_flag * type_expr) list * record_representation
 
 type exception_declaration = type_expr list
 
@@ -216,6 +221,6 @@ and modtype_declaration =
   | Tmodtype_manifest of module_type
 
 and rec_status =
-    Trec_not
-  | Trec_first
-  | Trec_next
+    Trec_not                            (* not recursive *)
+  | Trec_first                          (* first in a recursive group *)
+  | Trec_next                           (* not first in a recursive group *)

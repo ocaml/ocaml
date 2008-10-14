@@ -203,7 +203,11 @@ let ctx_matcher p =
           let l' = all_record_args l' in
           p, List.fold_right (fun (_,p) r -> p::r) l' rem
       | _ -> p,List.fold_right (fun (_,p) r -> p::r) l rem)
-  | _ -> fatal_error "Matching.ctx_matcher"
+  | Tpat_lazy omega ->
+      (fun q rem -> match q.pat_desc with
+      | Tpat_lazy arg -> p, (arg::rem)
+      | _          -> p, (omega::rem))
+ | _ -> fatal_error "Matching.ctx_matcher"
 
 
 
@@ -616,6 +620,7 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_array pats ->
     List.fold_left extract_vars r pats
 | Tpat_variant (_,Some p, _) -> extract_vars r p
+| Tpat_lazy p -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
 
@@ -683,6 +688,10 @@ and group_array = function
   | {pat_desc=Tpat_array _} -> true
   | _ -> false
 
+and group_lazy = function
+  | {pat_desc = Tpat_lazy _} -> true
+  | _ -> false
+
 let get_group p = match p.pat_desc with
 | Tpat_any -> group_var
 | Tpat_constant _ -> group_constant
@@ -691,6 +700,7 @@ let get_group p = match p.pat_desc with
 | Tpat_record _ -> group_record
 | Tpat_array _ -> group_array
 | Tpat_variant (_,_,_) -> group_variant
+| Tpat_lazy _ -> group_lazy
 |  _ -> fatal_error "Matching.get_group"
 
 
@@ -1286,6 +1296,119 @@ let make_var_matching def = function
 
 let divide_var ctx pm =
   divide_line ctx_lshift make_var_matching get_args_var omega ctx pm
+
+(* Matching and forcing a lazy value *)
+
+let get_arg_lazy p rem = match p with
+| {pat_desc = Tpat_any} -> omega :: rem
+| {pat_desc = Tpat_lazy arg} -> arg :: rem
+| _ ->  assert false
+
+let matcher_lazy p rem = match p.pat_desc with
+| Tpat_or (_,_,_)     -> raise OrPat
+| Tpat_var _          -> get_arg_lazy omega rem
+| _                   -> get_arg_lazy p rem
+
+(* Inlining the tag tests before calling the primitive that works on
+   lazy blocks. This is alse used in translcore.ml.
+   No call other than Obj.tag when the value has been forced before.
+*)
+
+let prim_obj_tag =
+  {prim_name = "caml_obj_tag";
+   prim_arity = 1; prim_alloc = false;
+   prim_native_name = "";
+   prim_native_float = false}
+
+let get_mod_field modname field =
+  lazy (
+    try
+      let mod_ident = Ident.create_persistent modname in
+      let env = Env.open_pers_signature modname Env.initial in
+      let p = try
+        match Env.lookup_value (Longident.Lident field) env with
+        | (Path.Pdot(_,_,i), _) -> i
+        | _ -> fatal_error ("Primitive "^modname^"."^field^" not found.")
+      with Not_found -> fatal_error ("Primitive "^modname^"."^field^" not found.")
+      in
+      Lprim(Pfield p, [Lprim(Pgetglobal mod_ident, [])])
+    with Not_found -> fatal_error ("Module "^modname^" unavailable.")
+  )
+
+let code_force_lazy_block =
+  get_mod_field "CamlinternalLazy" "force_lazy_block"
+;;
+
+(* inline_lazy_force inlines the beginning of the code of Lazy.force. When
+   the value argument is tagged as:
+   - forward, take field 0
+   - lazy, call the primitive that forces (without testing again the tag)
+   - anything else, return it
+
+   Using Lswitch below relies on the fact that the GC does not shortcut
+   Forward(val_out_of_heap).
+*)
+
+let inline_lazy_force_cond arg loc =
+  let idarg = Ident.create "lzarg" in
+  let varg = Lvar idarg in
+  let tag = Ident.create "tag" in
+  let force_fun = Lazy.force code_force_lazy_block in
+  Llet(Strict, idarg, arg,
+       Llet(Alias, tag, Lprim(Pccall prim_obj_tag, [varg]),
+            Lifthenelse(
+              (* if (tag == Obj.forward_tag) then varg.(0) else ... *)
+              Lprim(Pintcomp Ceq,
+                    [Lvar tag; Lconst(Const_base(Const_int Obj.forward_tag))]),
+              Lprim(Pfield 0, [varg]),
+              Lifthenelse(
+                (* ... if (tag == Obj.lazy_tag) then Lazy.force varg else ... *)
+                Lprim(Pintcomp Ceq,
+                      [Lvar tag; Lconst(Const_base(Const_int Obj.lazy_tag))]),
+                Lapply(force_fun, [varg], loc),
+                (* ... arg *)
+                  varg))))
+
+let inline_lazy_force_switch arg loc =
+  let idarg = Ident.create "lzarg" in
+  let varg = Lvar idarg in
+  let force_fun = Lazy.force code_force_lazy_block in
+  Llet(Strict, idarg, arg,
+       Lifthenelse(
+         Lprim(Pisint, [varg]), varg,
+         (Lswitch
+            (varg,
+             { sw_numconsts = 0; sw_consts = [];   
+               sw_numblocks = (max Obj.lazy_tag Obj.forward_tag) + 1;
+               sw_blocks =
+                 [ (Obj.forward_tag, Lprim(Pfield 0, [varg]));
+                   (Obj.lazy_tag,
+                    Lapply(force_fun, [varg], loc)) ];
+               sw_failaction = Some varg } ))))
+
+let inline_lazy_force =
+  if !Clflags.native_code then
+    (* Lswitch generates compact and efficient native code *)
+    inline_lazy_force_switch
+  else
+    (* generating bytecode: Lswitch would generate too many rather big
+       tables (~ 250 elts); conditionals are better *)
+    inline_lazy_force_cond
+
+let make_lazy_matching def = function
+    [] -> fatal_error "Matching.make_lazy_matching"
+  | (arg,mut) :: argl ->
+      { cases = [];
+        args =
+          (inline_lazy_force arg Location.none, Strict) :: argl;
+        default = make_default matcher_lazy def }
+
+let divide_lazy p ctx pm =
+  divide_line
+    (filter_ctx p)
+    make_lazy_matching
+    get_arg_lazy
+    p ctx pm
 
 (* Matching against a tuple pattern *)
 
@@ -2335,10 +2458,14 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
       compile_test (compile_match repr partial) partial
         (divide_array kind) (combine_array arg kind partial)
         ctx pm
+  | Tpat_lazy _ ->
+      compile_no_test
+        (divide_lazy (normalize_pat pat))
+        ctx_combine repr partial ctx pm
   | Tpat_variant(lab, _, row) ->
       compile_test (compile_match repr partial) partial
-        (divide_variant row)
-        (combine_variant row arg partial)
+        (divide_variant !row)
+        (combine_variant !row arg partial)
         ctx pm
   | _ -> assert false
   end
@@ -2582,4 +2709,3 @@ let for_multiple_match (handler, loc) paraml pat_act_list partial =
       end
   with Unused ->
     assert false (* ; partial_function loc () *)
-

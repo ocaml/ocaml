@@ -49,6 +49,7 @@ val final_tag : int  (* DEPRECATED *)
 
 val int_tag : int
 val out_of_heap_tag : int
+val unaligned_tag : int   (* should never happen *)
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)

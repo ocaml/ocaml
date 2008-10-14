@@ -220,6 +220,14 @@ let lexeme_end lexbuf = lexbuf.lex_curr_p.pos_cnum;;
 let lexeme_start_p lexbuf = lexbuf.lex_start_p;;
 let lexeme_end_p lexbuf = lexbuf.lex_curr_p;;
 
+let new_line lexbuf =
+  let lcp = lexbuf.lex_curr_p in
+  lexbuf.lex_curr_p <- { lcp with
+    pos_lnum = lcp.pos_lnum + 1;
+    pos_bol = lcp.pos_cnum;
+  }
+;;
+
 
 (* Discard data left in lexer buffer. *)
 

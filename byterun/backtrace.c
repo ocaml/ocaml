@@ -29,6 +29,7 @@
 #include "intext.h"
 #include "exec.h"
 #include "fix_code.h"
+#include "memory.h"
 #include "startup.h"
 #include "stacks.h"
 #include "sys.h"
@@ -59,14 +60,32 @@ enum {
   POS_CNUM = 3
 };
 
-/* Initialize the backtrace machinery */
+/* Start or stop the backtrace machinery */
 
-void caml_init_backtrace(void)
+CAMLprim value caml_record_backtrace(value vflag)
 {
-  caml_backtrace_active = 1;
-  caml_register_global_root(&caml_backtrace_last_exn);
-  /* Note: lazy initialization of caml_backtrace_buffer in caml_stash_backtrace
-     to simplify the interface with the thread libraries */
+  int flag = Int_val(vflag);
+
+  if (flag != caml_backtrace_active) {
+    caml_backtrace_active = flag;
+    caml_backtrace_pos = 0;
+    if (flag) {
+      caml_register_global_root(&caml_backtrace_last_exn);
+    } else {
+      caml_remove_global_root(&caml_backtrace_last_exn);
+    }
+    /* Note: lazy initialization of caml_backtrace_buffer in
+       caml_stash_backtrace to simplify the interface with the thread
+       libraries */
+  }
+  return Val_unit;
+}
+
+/* Return the status of the backtrace machinery */
+
+CAMLprim value caml_backtrace_status(value vunit)
+{
+  return Val_bool(caml_backtrace_active);
 }
 
 /* Store the return addresses contained in the given stack fragment
@@ -166,18 +185,50 @@ static value event_for_location(value events, code_t pc)
   return Val_false;
 }
 
-/* Print the location corresponding to the given PC */
+/* Extract location information for the given PC */
 
-static void print_location(value events, int index)
+struct loc_info {
+  int loc_valid;
+  int loc_is_raise;
+  char * loc_filename;
+  int loc_lnum;
+  int loc_startchr;
+  int loc_endchr;
+};
+
+static void extract_location_info(value events, code_t pc,
+                                  /*out*/ struct loc_info * li)
 {
-   code_t pc = caml_backtrace_buffer[index];
-  char * info;
-  value ev;
+  value ev, ev_start;
 
   ev = event_for_location(events, pc);
-  if (caml_is_instruction(*pc, RAISE)) {
-    /* Ignore compiler-inserted raise */
-    if (ev == Val_false) return;
+  li->loc_is_raise = caml_is_instruction(*pc, RAISE);
+  if (ev == Val_false) {
+    li->loc_valid = 0;
+    return;
+  }
+  li->loc_valid = 1;
+  ev_start = Field (Field (ev, EV_LOC), LOC_START);
+  li->loc_filename = String_val (Field (ev_start, POS_FNAME));
+  li->loc_lnum = Int_val (Field (ev_start, POS_LNUM));
+  li->loc_startchr =
+    Int_val (Field (ev_start, POS_CNUM))
+    - Int_val (Field (ev_start, POS_BOL));
+  li->loc_endchr =
+    Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
+    - Int_val (Field (ev_start, POS_BOL));
+}
+
+/* Print location information */
+
+static void print_location(struct loc_info * li, int index)
+{
+  char * info;
+
+  /* Ignore compiler-inserted raise */
+  if (!li->loc_valid && li->loc_is_raise) return;
+
+  if (li->loc_is_raise) {
     /* Initial raise if index == 0, re-raise otherwise */
     if (index == 0)
       info = "Raised at";
@@ -189,18 +240,12 @@ static void print_location(value events, int index)
     else
       info = "Called from";
   }
-  if (ev == Val_false) {
+  if (! li->loc_valid) {
     fprintf(stderr, "%s unknown location\n", info);
   } else {
-    value ev_start = Field (Field (ev, EV_LOC), LOC_START);
-    char *fname = String_val (Field (ev_start, POS_FNAME));
-    int lnum = Int_val (Field (ev_start, POS_LNUM));
-    int startchr = Int_val (Field (ev_start, POS_CNUM))
-                   - Int_val (Field (ev_start, POS_BOL));
-    int endchr = Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
-                 - Int_val (Field (ev_start, POS_BOL));
-    fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n", info, fname,
-             lnum, startchr, endchr);
+    fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n",
+             info, li->loc_filename, li->loc_lnum,
+             li->loc_startchr, li->loc_endchr);
   }
 }
 
@@ -210,6 +255,7 @@ CAMLexport void caml_print_exception_backtrace(void)
 {
   value events;
   int i;
+  struct loc_info li;
 
   events = read_debug_info();
   if (events == Val_false) {
@@ -217,6 +263,44 @@ CAMLexport void caml_print_exception_backtrace(void)
             "(Program not linked with -g, cannot print stack backtrace)\n");
     return;
   }
-  for (i = 0; i < caml_backtrace_pos; i++)
-    print_location(events, i);
+  for (i = 0; i < caml_backtrace_pos; i++) {
+    extract_location_info(events, caml_backtrace_buffer[i], &li);
+    print_location(&li, i);
+  }
 }
+
+/* Convert the backtrace to a data structure usable from Caml */
+
+CAMLprim value caml_get_exception_backtrace(value unit)
+{
+  CAMLparam0();
+  CAMLlocal5(events, res, arr, p, fname);
+  int i;
+  struct loc_info li;
+
+  events = read_debug_info();
+  if (events == Val_false) {
+    res = Val_int(0);           /* None */
+  } else {
+    arr = caml_alloc(caml_backtrace_pos, 0);
+    for (i = 0; i < caml_backtrace_pos; i++) {
+      extract_location_info(events, caml_backtrace_buffer[i], &li);
+      if (li.loc_valid) {
+        fname = caml_copy_string(li.loc_filename);
+        p = caml_alloc_small(5, 0);
+        Field(p, 0) = Val_bool(li.loc_is_raise);
+        Field(p, 1) = fname;
+        Field(p, 2) = Val_int(li.loc_lnum);
+        Field(p, 3) = Val_int(li.loc_startchr);
+        Field(p, 4) = Val_int(li.loc_endchr);
+      } else {
+        p = caml_alloc_small(1, 1);
+        Field(p, 0) = Val_bool(li.loc_is_raise);
+      }
+      caml_modify(&Field(arr, i), p);
+    }
+    res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
+  }
+  CAMLreturn(res);
+}
+

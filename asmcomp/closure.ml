@@ -108,8 +108,8 @@ let prim_size prim args =
   | Parrayrefs kind -> if kind = Pgenarray then 18 else 8
   | Parraysets kind -> if kind = Pgenarray then 22 else 10
   | Pbittest -> 3
-  | Pbigarrayref(ndims, _, _) -> 4 + ndims * 6
-  | Pbigarrayset(ndims, _, _) -> 4 + ndims * 6
+  | Pbigarrayref(_, ndims, _, _) -> 4 + ndims * 6
+  | Pbigarrayset(_, ndims, _, _) -> 4 + ndims * 6
   | _ -> 2 (* arithmetic and comparisons *)
 
 (* Very raw approximation of switch cost *)
@@ -378,7 +378,7 @@ let rec is_pure = function
   | Lconst cst -> true
   | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
-           Parraysetu _ | Parraysets _), _) -> false
+           Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
   | Lprim(p, args) -> List.for_all is_pure args
   | Levent(lam, ev) -> is_pure lam
   | _ -> false
@@ -492,7 +492,7 @@ let rec close fenv cenv = function
       end
   | Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
-  | Lapply(funct, args) ->
+  | Lapply(funct, args, loc) ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),
@@ -767,7 +767,7 @@ and close_one_function fenv cenv id funct =
 
 and close_switch fenv cenv cases num_keys default =
   let index = Array.create num_keys 0
-  and store = mk_store Pervasives.(=) in
+  and store = mk_store Lambda.same in
 
   (* First default case *)
   begin match default with

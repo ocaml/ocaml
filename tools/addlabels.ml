@@ -62,6 +62,7 @@ let rec pattern_vars pat =
       List.concat (List.map l ~f:(fun (_,p) -> pattern_vars p))
   | Ppat_or (pat1, pat2) ->
       pattern_vars pat1 @ pattern_vars pat2
+  | Ppat_lazy pat -> pattern_vars pat
   | Ppat_any | Ppat_constant _ | Ppat_construct _ | Ppat_variant _
   | Ppat_type _ ->
       []

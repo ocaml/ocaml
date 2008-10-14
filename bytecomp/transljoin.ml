@@ -96,7 +96,7 @@ let lambda_raise_join_exit =  mk_lambda env_join "raise_join_exit"
 
 let mk_apply f args = match Lazy.force f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
-| path,_                   -> Lapply (transl_path path, args)
+| path,_                   -> Lapply (transl_path path, args, Location.none)
   
 
 let lambda_int i = Lconst (Const_base (Const_int i))
@@ -141,7 +141,8 @@ and local_send_sync2 auto idx arg =
   mk_apply lambda_local_send_sync [Lvar auto ; idx ; arg]
 
 (* Those two are inlined *)
-let local_tail_send_alone guard arg =  Lapply (Lvar guard, [arg])
+let local_tail_send_alone guard arg  = 
+  Lapply (Lvar guard, [arg],Location.none)
 
 let local_send_alone guard arg =
   create_process
@@ -258,7 +259,7 @@ let simple_prim = ref ((fun p -> assert false) : Primitive.description -> bool)
 
 let rec simple_pat p = match p.pat_desc with
 | Tpat_any | Tpat_var _ -> true
-| Tpat_alias (p,_) -> simple_pat p
+| Tpat_alias (p,_)|Tpat_lazy p -> simple_pat p
 | Tpat_tuple ps -> List.for_all simple_pat ps
 | Tpat_record lps ->  List.for_all (fun (_,p) -> simple_pat p) lps
 | Tpat_or (p1,p2,_) -> simple_pat p1 && simple_pat p2
@@ -688,6 +689,11 @@ let rec explode = function
         xs
         []
 
+(* 3.10 -> 3.11, a third argument 'Location.t' appeared here,
+   just pretend it is not useful at the moment *)
+
+let lapply (f,args) = Lapply (f,args,Location.none)
+
 (* gs is a list of compiled guarded processes *)
 
 let create_table auto gs r =
@@ -732,8 +738,8 @@ let create_table auto gs r =
             Lfunction
               (Curried, [goid],
                build_lets bds
-                 (Lapply
-                    (Lvar goid, [Lvar name ; Lapply (Lvar g, args)])))
+                 (lapply
+                    (Lvar goid, [Lvar name ; lapply (Lvar g, args)])))
           else
             let pri_kont =
               let rec find_rec bds jpats = match bds, jpats with
@@ -747,8 +753,8 @@ let create_table auto gs r =
             Lfunction
               (Curried, [goid],
                build_lets bds
-                 (Lapply
-                    (Lvar goid, [pri_kont ; Lapply (Lvar g, args)]))) in
+                 (lapply
+                    (Lvar goid, [pri_kont ; lapply (Lvar g, args)]))) in
         Lprim
           (Pmakeblock (0, Immutable),
            [build_mask n_chans names jpats ;

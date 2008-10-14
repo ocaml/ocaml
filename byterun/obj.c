@@ -66,11 +66,13 @@ CAMLprim value caml_obj_is_block(value arg)
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
-    return Val_int (1000);
-  }else if (Is_young (arg) || Is_in_heap (arg) || Is_atom (arg)){
+    return Val_int (1000);   /* int_tag */
+  }else if ((long) arg & (sizeof (value) - 1)){
+    return Val_int (1002);   /* unaligned_tag */
+  }else if (Is_in_value_area (arg)){
     return Val_int(Tag_val(arg));
   }else{
-    return Val_int (1001);
+    return Val_int (1001);   /* out_of_heap_tag */
   }
 }
 
@@ -171,7 +173,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
 
 CAMLprim value caml_lazy_follow_forward (value v)
 {
-  if (Is_block (v) && (Is_young (v) || Is_in_heap (v))
+  if (Is_block (v) && Is_in_value_area(v)
       && Tag_val (v) == Forward_tag){
     return Forward_val (v);
   }else{
@@ -189,7 +191,7 @@ CAMLprim value caml_lazy_make_forward (value v)
   CAMLreturn (res);
 }
 
-/* For camlinternalOO.ml
+/* For mlvalues.h and camlinternalOO.ml
    See also GETPUBMET in interp.c
  */
 
@@ -202,7 +204,8 @@ CAMLprim value caml_get_public_method (value obj, value tag)
     if (tag < Field(meths,mi)) hi = mi-2;
     else li = mi;
   }
-  return Field (meths, li-1);
+  /* return 0 if tag is not there */
+  return (tag == Field(meths,li) ? Field (meths, li-1) : 0);
 }
 
 /* these two functions might be useful to an hypothetical JIT */

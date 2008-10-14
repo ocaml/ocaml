@@ -24,3 +24,6 @@ type description =
 val parse_declaration: int -> string list -> description
 
 val description_list: description -> string list
+
+val native_name: description -> string
+val byte_name: description -> string

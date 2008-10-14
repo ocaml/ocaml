@@ -80,10 +80,14 @@ let check_units members =
 (* Make the .o file for the package *)
 
 let make_package_object ppf members targetobj targetname coercion =
-  (* Put the full name of the module in the temporary file name
-     to avoid collisions with MSVC's link /lib in case of successive packs *)
   let objtemp =
-    Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
+    if !Clflags.keep_asm_file
+    then chop_extension_if_any targetobj ^ ".pack" ^ Config.ext_obj
+    else 
+      (* Put the full name of the module in the temporary file name
+	 to avoid collisions with MSVC's link /lib in case of successive 
+	 packs *)
+      Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
   let components =
     List.map
       (fun m ->
@@ -99,15 +103,11 @@ let make_package_object ppf members targetobj targetname coercion =
     List.map
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
-  let ld_cmd =
-    sprintf "%s%s %s %s"
-            Config.native_pack_linker
-            (Filename.quote targetobj)
-            (Filename.quote objtemp)
-            (Ccomp.quote_files objfiles) in
-  let retcode = Ccomp.command ld_cmd in
+  let ok =
+    Ccomp.call_linker Ccomp.Partial targetobj (objtemp :: objfiles) ""
+  in
   remove_file objtemp;
-  if retcode <> 0 then raise(Error Linking_error)
+  if not ok then raise(Error Linking_error)
 
 (* Make the .cmx file for the package *)
 
@@ -146,7 +146,7 @@ let build_package_cmx members cmxfile =
       ui_send_fun =
           union(List.map (fun info -> info.ui_send_fun) units);
       ui_force_link =
-          List.exists (fun info -> info.ui_force_link) units
+          List.exists (fun info -> info.ui_force_link) units;
     } in
   Compilenv.write_unit_info pkg_infos cmxfile
 

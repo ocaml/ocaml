@@ -78,6 +78,9 @@ external parse_engine :
     parse_tables -> parser_env -> parser_input -> Obj.t -> parser_output
     = "caml_parse_engine"
 
+external set_trace: bool -> bool
+    = "caml_set_parser_trace"
+
 let env =
   { s_stack = Array.create 100 0;
     v_stack = Array.create 100 (Obj.repr ());

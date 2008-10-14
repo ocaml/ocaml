@@ -18,16 +18,18 @@
 
 open Typedtree;;
 
-type type_info =
-    Ti_pat   of pattern
+type annotation =
+  | Ti_pat   of pattern
   | Ti_expr  of expression
   | Ti_class of class_expr
   | Ti_mod   of module_expr
+  | An_call of Location.t * Annot.call
+  | An_ident of Location.t * string * Annot.ident
 ;;
 
-val record : type_info -> unit;;
+val record : annotation -> unit;;
 val record_phrase : Location.t -> unit;;
 val dump : string -> unit;;
 
-val get_location : type_info -> Location.t;;
-val get_info : unit -> type_info list;;
+val get_location : annotation -> Location.t;;
+val get_info : unit -> annotation list;;

@@ -15,6 +15,9 @@
 
 /* Unix-specific stuff */
 
+#define _GNU_SOURCE
+           /* Helps finding RTLD_DEFAULT in glibc */
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,8 +26,8 @@
 #include <fcntl.h>
 #include "config.h"
 #ifdef SUPPORT_DYNAMIC_LINKING
-#ifdef HAS_NSLINKMODULE
-#include <mach-o/dyld.h>
+#ifdef __CYGWIN32__
+#include "flexdll.h"
 #else
 #include <dlfcn.h>
 #endif
@@ -165,112 +168,34 @@ char * caml_search_dll_in_path(struct ext_table * path, char * name)
 }
 
 #ifdef SUPPORT_DYNAMIC_LINKING
-#ifdef HAS_NSLINKMODULE
-/* Use MacOSX bundles */
+#ifdef __CYGWIN32__
+/* Use flexdll */
 
-static char *dlerror_string = "No error";
-
-/* Need to emulate dlopen behaviour by caching open libraries */
-typedef struct bundle_entry {
-  struct bundle_entry *next;
-  char *name;
-  void *handle;
-  int count;
-} entry_t;
-
-entry_t bundle_list = {NULL,NULL,NULL,0};
-
-entry_t *caml_lookup_bundle(const char *name)
+void * caml_dlopen(char * libname, int for_execution, int global)
 {
-  entry_t *current = bundle_list.next, *last = &bundle_list;
-
-  while (current !=NULL) {
-    if (!strcmp(name,current->name))
-      return current;
-    last = current;
-    current = current->next;
-  }
-  current = (entry_t*) malloc(sizeof(entry_t)+strlen(name)+1);
-  current->name = (char*)(current+1);
-  strcpy(current->name, name);
-  current->count = 0;
-  current->next = NULL;
-  last->next = current;
-  return current;
-}
-
-void * caml_dlopen(char * libname, int for_execution)
-{
-  NSObjectFileImage image;
-  entry_t *bentry = caml_lookup_bundle(libname);
-  NSObjectFileImageReturnCode retCode;
-  void *result = NULL;
-
-  if (bentry->count > 0)
-    return bentry->handle;
-
-  retCode = NSCreateObjectFileImageFromFile(libname, &image);
-  switch (retCode) {
-  case NSObjectFileImageSuccess:
-    dlerror_string = NULL;
-    result = (void*)NSLinkModule(image, libname, NSLINKMODULE_OPTION_BINDNOW
-                                 | NSLINKMODULE_OPTION_RETURN_ON_ERROR);
-    if (result != NULL) {
-      bentry->count++;
-      bentry->handle = result;
-    }
-    else NSDestroyObjectFileImage(image);
-    break;
-  case NSObjectFileImageAccess:
-    dlerror_string = "cannot access this bundle"; break;
-  case NSObjectFileImageArch:
-    dlerror_string = "this bundle has wrong CPU architecture"; break;
-  case NSObjectFileImageFormat:
-  case NSObjectFileImageInappropriateFile:
-    dlerror_string = "this file is not a proper bundle"; break;
-  default:
-    dlerror_string = "could not read object file"; break;
-  }
-  return result;
+  int flags = (global ? FLEXDLL_RTLD_GLOBAL : 0);
+  if (!for_execution) flags |= FLEXDLL_RTLD_NOEXEC;
+  return flexdll_dlopen(libname, flags);
 }
 
 void caml_dlclose(void * handle)
 {
-  entry_t *current = bundle_list.next;
-  int close = 1;
-  
-  dlerror_string = NULL;
-  while (current != NULL) {
-    if (current->handle == handle) {
-      current->count--;
-      close = (current->count == 0);
-      break;
-    }
-    current = current->next;
-  }
-  if (close)
-    NSUnLinkModule((NSModule)handle, NSUNLINKMODULE_OPTION_NONE);
+  flexdll_dlclose(handle);
 }
 
 void * caml_dlsym(void * handle, char * name)
 {
-  NSSymbol sym;
-  char _name[1000] = "_";
-  strncat (_name, name, 998);
-  dlerror_string = NULL;
-  sym = NSLookupSymbolInModule((NSModule)handle, _name);
-  if (sym != NULL) return NSAddressOfSymbol(sym);
-  else return NULL;
+  return flexdll_dlsym(handle, name);
+}
+
+void * caml_globalsym(char * name)
+{
+  return flexdll_dlsym(flexdll_dlopen(NULL,0,1), name);
 }
 
 char * caml_dlerror(void)
 {
-  NSLinkEditErrors c;
-  int errnum;
-  const char *fileName, *errorString;
-  if (dlerror_string != NULL) return dlerror_string;
-  NSLinkEditError(&c,&errnum,&fileName,&errorString);
-  return (char *) errorString;
+  return flexdll_dlerror();
 }
 
 #else
@@ -283,9 +208,9 @@ char * caml_dlerror(void)
 #define RTLD_NODELETE 0
 #endif
 
-void * caml_dlopen(char * libname, int for_execution)
+void * caml_dlopen(char * libname, int for_execution, int global)
 {
-  return dlopen(libname, RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+  return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : 0) | RTLD_NODELETE);
   /* Could use RTLD_LAZY if for_execution == 0, but needs testing */
 }
 
@@ -304,15 +229,24 @@ void * caml_dlsym(void * handle, char * name)
   return dlsym(handle, name);
 }
 
+void * caml_globalsym(char * name)
+{
+#ifdef RTLD_DEFAULT
+  return caml_dlsym(RTLD_DEFAULT, name);
+#else
+  return NULL;
+#endif
+}
+
 char * caml_dlerror(void)
 {
-  return dlerror();
+  return (char*) dlerror();
 }
 
 #endif
 #else
 
-void * caml_dlopen(char * libname, int for_execution)
+void * caml_dlopen(char * libname, int for_execution, int global)
 {
   return NULL;
 }
@@ -326,57 +260,14 @@ void * caml_dlsym(void * handle, char * name)
   return NULL;
 }
 
+void * caml_globalsym(char * name)
+{
+  return NULL;
+}
+
 char * caml_dlerror(void)
 {
   return "dynamic loading not supported on this platform";
-}
-
-#endif
-
-#ifdef USE_MMAP_INSTEAD_OF_MALLOC
-
-/* The code below supports the use of mmap() rather than malloc()
-   for allocating the chunks composing the major heap.
-   This code is needed for the IA64 under Linux, where the native
-   malloc() implementation can return pointers several *exabytes* apart,
-   (some coming from mmap(), other from sbrk()); this makes the
-   page table *way* too large.
-   No other tested platform requires this hack so far.  However, it could
-   be useful for other 64-bit platforms in the future. */
-
-#include <sys/mman.h>
-
-char *caml_aligned_mmap (asize_t size, int modulo, void **block)
-{
-  char *raw_mem;
-  uintnat aligned_mem;
-  Assert (modulo < Page_size);
-  raw_mem = (char *) mmap(NULL, size + Page_size, PROT_READ | PROT_WRITE,
-                          MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  if (raw_mem == MAP_FAILED) return NULL;
-  *block = raw_mem;
-  raw_mem += modulo;                /* Address to be aligned */
-  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
-#ifdef DEBUG
-  {
-    uintnat *p;
-    uintnat *p0 = (void *) *block,
-            *p1 = (void *) (aligned_mem - modulo),
-            *p2 = (void *) (aligned_mem - modulo + size),
-            *p3 = (void *) ((char *) *block + size + Page_size);
-
-    for (p = p0; p < p1; p++) *p = Debug_filler_align;
-    for (p = p1; p < p2; p++) *p = Debug_uninit_align;
-    for (p = p2; p < p3; p++) *p = Debug_filler_align;
-  }
-#endif
-  return (char *) (aligned_mem - modulo);
-}
-
-void caml_aligned_munmap (char * addr, asize_t size)
-{
-  int retcode = munmap (addr, size + Page_size);
-  Assert(retcode == 0);
 }
 
 #endif

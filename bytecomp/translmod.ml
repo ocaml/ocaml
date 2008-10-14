@@ -47,7 +47,8 @@ let rec apply_coercion restr arg =
       name_lambda arg (fun id ->
         Lfunction(Curried, [param],
           apply_coercion cc_res
-            (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)]))))
+            (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)],
+                    Location.none))))
   | Tcoerce_primitive p ->
       transl_primitive p
 
@@ -79,8 +80,11 @@ let rec compose_coercions c1 c2 =
 
 (* Record the primitive declarations occuring in the module compiled *)
 
-let primitive_declarations = ref ([] : string list)
-
+let primitive_declarations = ref ([] : Primitive.description list)
+let record_primitive = function
+  | {val_kind=Val_prim p} -> primitive_declarations := p :: !primitive_declarations
+  | _ -> ()
+ 
 (* Keep track of the root path (from the root of the namespace to the
    currently compiled module expression).  Useful for naming exceptions. *)
 
@@ -202,7 +206,7 @@ let eval_rec_bindings bindings cont =
   | (id, None, rhs) :: rem ->
       bind_inits rem
   | (id, Some(loc, shape), rhs) :: rem ->
-      Llet(Strict, id, Lapply(mod_prim "init_mod", [loc; shape]),
+      Llet(Strict, id, Lapply(mod_prim "init_mod", [loc; shape], Location.none),
            bind_inits rem)
   and bind_strict = function
     [] ->
@@ -217,7 +221,8 @@ let eval_rec_bindings bindings cont =
   | (id, None, rhs) :: rem ->
       patch_forwards rem
   | (id, Some(loc, shape), rhs) :: rem ->
-      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs]),
+      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs],
+                       Location.none),
                 patch_forwards rem)
   in
     bind_inits bindings
@@ -258,7 +263,7 @@ let rec transl_module cc rootpath mexp =
       oo_wrap mexp.mod_env true
         (apply_coercion cc)
         (Lapply(transl_module Tcoerce_none None funct,
-                [transl_module ccarg None arg]))
+                [transl_module ccarg None arg], mexp.mod_loc))
   | Tmod_constraint(arg, mty, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
 
@@ -299,11 +304,7 @@ and transl_structure fields cc rootpath = function
          transl_structure fields cc rootpath rem)
 (*< JOCAML *)
   | Tstr_primitive(id, descr) :: rem ->
-      begin match descr.val_kind with
-        Val_prim p -> primitive_declarations :=
-                        p.Primitive.prim_name :: !primitive_declarations
-      | _ -> ()
-      end;
+      record_primitive descr;
       transl_structure fields cc rootpath rem
   | Tstr_type(decls) :: rem ->
       transl_structure fields cc rootpath rem
@@ -345,7 +346,7 @@ and transl_structure fields cc rootpath = function
       | id :: ids ->
           Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
                rebind_idents (pos + 1) (id :: newfields) ids) in
-      Llet(Alias, mid, transl_module Tcoerce_none None modl,
+      Llet(Strict, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
 
 (* Update forward declaration in Translcore *)
@@ -371,9 +372,21 @@ let transl_implementation module_name (str, cc) =
    "map" is a table from defined idents to (pos in global block, coercion).
    "prim" is a list of (pos in global block, primitive declaration). *)
 
+let transl_store_subst = ref Ident.empty
+  (** In the native toplevel, this reference is threaded through successive
+      calls of transl_store_structure *)
+
+let nat_toplevel_name id =
+  try match Ident.find_same id !transl_store_subst with
+    | Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])]) -> (glob,pos)
+    | _ -> raise Not_found
+  with Not_found ->
+    fatal_error("Translmod.nat_toplevel_name: " ^ Ident.unique_name id)
+
 let transl_store_structure glob map prims str =
   let rec transl_store subst = function
     [] ->
+      transl_store_subst := subst;
       lambda_unit
   | Tstr_eval expr :: rem ->
       Lsequence(subst_lambda subst (transl_exp expr),
@@ -399,11 +412,7 @@ let transl_store_structure glob map prims str =
       Lsequence (subst_lambda subst lam, transl_store subst rem)
 (*< JOCAML *)
   | Tstr_primitive(id, descr) :: rem ->
-      begin match descr.val_kind with
-        Val_prim p -> primitive_declarations :=
-                        p.Primitive.prim_name :: !primitive_declarations
-      | _ -> ()
-      end;
+      record_primitive descr;
       transl_store subst rem
   | Tstr_type(decls) :: rem ->
       transl_store subst rem
@@ -493,7 +502,7 @@ let transl_store_structure glob map prims str =
                     [Lprim(Pgetglobal glob, []); transl_primitive prim]),
               cont)
 
-  in List.fold_right store_primitive prims (transl_store Ident.empty str)
+  in List.fold_right store_primitive prims (transl_store !transl_store_subst str)
 
 (* Build the list of value identifiers defined by a toplevel structure
    (excluding primitive declarations). *)
@@ -557,17 +566,31 @@ let build_ident_map restr idlist =
   | _ ->
       fatal_error "Translmod.build_ident_map"
 
-(* Compile an implementation using transl_store_structure 
+(* Compile an implementation using transl_store_structure
    (for the native-code compiler). *)
 
-let transl_store_implementation module_name (str, restr) =
+let transl_store_gen module_name (str, restr) topl =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
   let (map, prims, size) = build_ident_map restr (defined_idents str) in
-  transl_store_label_init module_id size
-    (transl_store_structure module_id map prims) str
+  let f = function
+    | [ Tstr_eval expr ] when topl ->
+        assert (size = 0);
+        subst_lambda !transl_store_subst (transl_exp expr)
+    | str -> transl_store_structure module_id map prims str in
+  transl_store_label_init module_id size f str
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
+
+let transl_store_phrases module_name str =
+  transl_store_gen module_name (str,Tcoerce_none) true
+
+let transl_store_implementation module_name (str, restr) =
+  let s = !transl_store_subst in
+  transl_store_subst := Ident.empty;
+  let r = transl_store_gen module_name (str, restr) false in
+  transl_store_subst := s;
+  r
 
 (* Compile a toplevel phrase *)
 
@@ -588,12 +611,14 @@ let toplevel_name id =
 let toploop_getvalue id =
   Lapply(Lprim(Pfield toploop_getvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id)))])
+         [Lconst(Const_base(Const_string (toplevel_name id)))],
+         Location.none)
 
 let toploop_setvalue id lam =
   Lapply(Lprim(Pfield toploop_setvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id))); lam])
+         [Lconst(Const_base(Const_string (toplevel_name id))); lam],
+         Location.none)
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 
@@ -677,7 +702,7 @@ let transl_toplevel_definition str =
 
 let get_component = function
     None -> Lconst const_unit
-  | Some id -> Lprim(Pgetglobal id, []) 
+  | Some id -> Lprim(Pgetglobal id, [])
 
 let transl_package component_names target_name coercion =
   let components =

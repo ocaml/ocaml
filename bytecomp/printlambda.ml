@@ -61,9 +61,9 @@ let boxed_integer_mark name = function
 let print_boxed_integer name ppf bi =
   fprintf ppf "%s" (boxed_integer_mark name bi);;
 
-let print_bigarray name kind ppf layout =
+let print_bigarray name unsafe kind ppf layout =
   fprintf ppf "Bigarray.%s[%s,%s]"
-    name
+    (if unsafe then "unsafe_"^ name else name)
     (match kind with
      | Pbigarray_unknown -> "generic"
      | Pbigarray_float32 -> "float32"
@@ -103,6 +103,7 @@ let primitive ppf = function
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
   | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
+  | Plazyforce -> fprintf ppf "force"
   | Pccall p -> fprintf ppf "%s" p.prim_name
   | Praise -> fprintf ppf "raise"
   | Psequand -> fprintf ppf "&&"
@@ -177,15 +178,17 @@ let primitive ppf = function
   | Pbintcomp(bi, Cgt) -> print_boxed_integer ">" ppf bi
   | Pbintcomp(bi, Cle) -> print_boxed_integer "<=" ppf bi
   | Pbintcomp(bi, Cge) -> print_boxed_integer ">=" ppf bi
-  | Pbigarrayref(n, kind, layout) -> print_bigarray "get" kind ppf layout
-  | Pbigarrayset(n, kind, layout) -> print_bigarray "set" kind ppf layout
+  | Pbigarrayref(unsafe, n, kind, layout) ->
+      print_bigarray "get" unsafe kind ppf layout
+  | Pbigarrayset(unsafe, n, kind, layout) ->
+      print_bigarray "set" unsafe kind ppf layout
 
 let rec lam ppf = function
   | Lvar id ->
       Ident.print ppf id
   | Lconst cst ->
       struct_const ppf cst
-  | Lapply(lfun, largs) ->
+  | Lapply(lfun, largs, _) ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(apply@ %a%a)@]" lam lfun lams largs

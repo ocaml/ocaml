@@ -23,16 +23,19 @@ val is_nonexpansive: Typedtree.expression -> bool
 val type_binding:
         Env.t -> rec_flag ->
           (Parsetree.pattern * Parsetree.expression) list -> 
+          Annot.ident option ->
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_let:
         Env.t -> rec_flag ->
-          (Parsetree.pattern * Parsetree.expression) list -> 
+          (Parsetree.pattern * Parsetree.expression) list ->
+          Annot.ident option ->
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 (*> JOCAML *)
 val type_joindefinition:   
     Env.t -> Parsetree.joinautomaton list ->
+      Annot.ident option ->
       (Typedtree.joinautomaton list * Env.t)
 (*< JOCAML *)
 
@@ -74,7 +77,7 @@ type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
-  | Multiply_bound_variable
+  | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr

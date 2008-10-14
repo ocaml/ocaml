@@ -626,7 +626,7 @@ type 'a dfa_state =
   {final : int * ('a * int TagMap.t) ;
    others : ('a * int TagMap.t) MemMap.t}
 
-(*
+
 let dtag oc t =
   fprintf oc "%s<%s>" t.id (if t.start then "s" else "e")
 
@@ -653,7 +653,7 @@ let dstate {final=(act,(_,m)) ; others=o} =
       dtag_map (fun x -> eprintf "%d" x) (fun () -> prerr_string " ,") m)
     (fun () -> prerr_endline "")
     o
-*)
+
   
 let dfa_state_empty =
   {final=(no_action, (max_int,TagMap.empty)) ;
@@ -752,18 +752,25 @@ let tag_cells = Hashtbl.create 17
 let state_table = Table.create dfa_state_empty
 
 
-let reset_state_mem () =
-  state_map := StateMap.empty;
+(* Initial reset of state *)
+let reset_state () =
   Stack.clear todo;
   next_state_num := 0 ;  
   let _ = Table.trim state_table in
   ()
 
-(* Allocation of memory cells *)
-let reset_cell_mem ntags =
+(* Reset state before processing a given automata.
+   We clear both the memory mapping and
+   the state mapping, as state sharing beetween different
+   automata may lead to incorret estimation of the cell memory size
+   BUG ID 0004517 *)
+
+
+let reset_state_partial ntags =
   next_mem_cell := ntags ;
   Hashtbl.clear tag_cells ;
-  temp_pending := false
+  temp_pending := false ;
+  state_map := StateMap.empty
 
 let do_alloc_temp () =
   temp_pending := true ;
@@ -1095,7 +1102,6 @@ let translate_state shortest_match tags chars follow st =
     reachs chars follow st.others)
   end
 
-(*
 let dtags chan tags =
   Tags.iter
     (fun t -> fprintf chan " %a" dtag t)
@@ -1117,7 +1123,7 @@ let dfollow t =
     dtransset t.(i)
   done ;
   prerr_endline "]"
-*)
+
 
 let make_tag_entry id start act a r = match a with
   | Sum (Mem m,0) ->
@@ -1146,13 +1152,13 @@ let make_dfa lexdef =
 (*
   dfollow follow ;
 *)
-  reset_state_mem () ;
+  reset_state () ;
   let r_states = ref [] in
   let initial_states =
     List.map
       (fun (le,args,shortest) ->
         let tags = extract_tags le.lex_actions in
-        reset_cell_mem le.lex_mem_tags ;
+        reset_state_partial le.lex_mem_tags ;
         let pos_set = firstpos le.lex_regexp in
 (*
         prerr_string "trans={" ; dtransset pos_set ; prerr_endline "}" ;
@@ -1181,6 +1187,7 @@ let make_dfa lexdef =
 *)
   let actions = Array.create !next_state_num (Perform (0,[])) in
   List.iter (fun (act, i) -> actions.(i) <- act) states;
-  reset_state_mem () ;
-  reset_cell_mem  0 ;
+(* Useless state reset, so as to restrict GC roots *)
+  reset_state  () ;
+  reset_state_partial  0 ;
   (initial_states, actions)

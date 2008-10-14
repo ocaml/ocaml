@@ -70,12 +70,16 @@ val global_approx: Ident.t -> Clambda.value_approximation
         (* Return the approximation for the given global identifier *)
 val set_global_approx: Clambda.value_approximation -> unit
         (* Record the approximation of the unit being compiled *)
+val record_global_approx_toplevel: unit -> unit
+        (* Record the current approximation for the current toplevel phrase *)
+
 
 val need_curry_fun: int -> unit
 val need_apply_fun: int -> unit
 val need_send_fun: int -> unit
         (* Record the need of a currying (resp. application,
            message sending) function with the given arity *)
+
 
 val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and CRC from a [.cmx] file. *)
@@ -92,6 +96,8 @@ val cmx_not_found_crc: Digest.t
         (* Special digest used in the [ui_imports_cmx] list to signal
            that no [.cmx] file was found and used for the imported unit *)
 
+val read_library_info: string -> library_infos
+
 type error =
     Not_a_unit_info of string
   | Corrupted_unit_info of string
@@ -100,3 +106,5 @@ type error =
 exception Error of error
 
 val report_error: Format.formatter -> error -> unit
+
+

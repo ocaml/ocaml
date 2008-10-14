@@ -68,7 +68,7 @@ type lexbuf =
    without change by the lexing engine.  In order to keep them
    accurate, they must be initialised before the first use of the
    lexbuf, and updated by the relevant lexer actions (i.e. at each
-   end of line).
+   end of line -- see also [new_line]).
  *)
 
 val from_channel : in_channel -> lexbuf
@@ -128,6 +128,11 @@ val lexeme_start_p : lexbuf -> position
 val lexeme_end_p : lexbuf -> position
 (** Like [lexeme_end], but return a complete [position] instead
     of an offset. *)
+
+val new_line : lexbuf -> unit
+(** Update the [lex_curr_p] field of the lexbuf to reflect the start
+    of a new line.  You can call this function in the semantic action
+    of the rule that matches the end-of-line character. *)
 
 (** {6 Miscellaneous functions} *)
 

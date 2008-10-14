@@ -115,21 +115,18 @@ let print_filename s =
 ;;
 
 let print_dependencies target_file deps =
-  match deps with
-    [] -> ()
-  | _ ->
-    print_filename target_file; print_string depends_on;
-    let rec print_items pos = function
-      [] -> print_string "\n"
-    | dep :: rem ->
-        if pos + String.length dep <= 77 then begin
-          print_filename dep; print_string " ";
-          print_items (pos + String.length dep + 1) rem
-        end else begin
-          print_string escaped_eol; print_filename dep; print_string " ";
-          print_items (String.length dep + 5) rem
-        end in
-    print_items (String.length target_file + 2) deps
+  print_filename target_file; print_string depends_on;
+  let rec print_items pos = function
+    [] -> print_string "\n"
+  | dep :: rem ->
+      if pos + String.length dep <= 77 then begin
+        print_filename dep; print_string " ";
+        print_items (pos + String.length dep + 1) rem
+      end else begin
+        print_string escaped_eol; print_filename dep; print_string " ";
+        print_items (String.length dep + 5) rem
+      end in
+  print_items (String.length target_file + 2) deps
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string ":";
@@ -206,7 +203,7 @@ let ml_file_dependencies source_file =
     if !raw_dependencies then begin
       print_raw_dependencies source_file !Depend.free_structure_names
     end else begin
-      let basename = Filename.chop_suffix source_file ".ml" in
+      let basename = Filename.chop_extension source_file in
       let init_deps =
         if Sys.file_exists (basename ^ ".mli")
         then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
@@ -231,7 +228,7 @@ let mli_file_dependencies source_file =
     if !raw_dependencies then begin
       print_raw_dependencies source_file !Depend.free_structure_names
     end else begin
-      let basename = Filename.chop_suffix source_file ".mli" in
+      let basename = Filename.chop_extension source_file in
       let (byt_deps, opt_deps) =
         Depend.StringSet.fold find_dependency
                               !Depend.free_structure_names ([], []) in
@@ -241,21 +238,21 @@ let mli_file_dependencies source_file =
   with x ->
     close_in ic; remove_preprocessed input_file; raise x
 
-let file_dependencies source_file =
+type file_kind = ML | MLI;;
+
+let file_dependencies_as kind source_file =
   Location.input_name := source_file;
   try
     if Sys.file_exists source_file then begin
-      if Filename.check_suffix source_file ".ml" then
-        ml_file_dependencies source_file
-      else if Filename.check_suffix source_file ".mli" then
-        mli_file_dependencies source_file
-      else ()
+      match kind with
+      | ML -> ml_file_dependencies source_file
+      | MLI -> mli_file_dependencies source_file
     end
   with x ->
     let report_err = function
     | Lexer.Error(err, range) ->
         fprintf Format.err_formatter "@[%a%a@]@."
-        Location.print range  Lexer.report_error err
+        Location.print_error range  Lexer.report_error err
     | Syntaxerr.Error err ->
         fprintf Format.err_formatter "@[%a@]@."
         Syntaxerr.report_error err
@@ -267,6 +264,13 @@ let file_dependencies source_file =
     | x -> raise x in
     error_occurred := true;
     report_err x
+
+let file_dependencies source_file =
+  if Filename.check_suffix source_file ".ml" then
+    file_dependencies_as ML source_file
+  else if Filename.check_suffix source_file ".mli" then
+    file_dependencies_as MLI source_file
+  else ()
 
 (* Entry point *)
 
@@ -285,15 +289,18 @@ let _ =
        "act over pure OCaml source files" ;
      "-I", Arg.String add_to_load_path,
        "<dir>  Add <dir> to the list of include directories";
+     "-impl", Arg.String (file_dependencies_as ML),
+       "<f> Process <f> as a .ml file";
+     "-intf", Arg.String (file_dependencies_as MLI),
+       "<f> Process <f> as a .mli file";
      "-modules", Arg.Set raw_dependencies,
-       "  Print module dependencies in raw form (output is not suitable for make)";
+       " Print module dependencies in raw form (not suitable for make)";
      "-native", Arg.Set native_only,
-       "  Generate dependencies for a pure native-code project \
-       (no .cmo files)";
+       "  Generate dependencies for a pure native-code project (no .cmo files)";
      "-pp", Arg.String(fun s -> preprocessor := Some s),
-       "<command>  Pipe sources through preprocessor <command>";
+       "<cmd> Pipe sources through preprocessor <cmd>";
      "-slash", Arg.Set force_slash,
-       "  (for Windows) Use forward slash / instead of backslash \\ in file paths";
+       "   (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-version", Arg.Unit print_version,
       " Print version and exit";
     ] file_dependencies usage;

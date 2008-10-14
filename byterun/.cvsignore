@@ -14,3 +14,4 @@ ocamlrun.dbg
 interp.a.lst
 *.[sd]obj
 *.lib
+.gdb_history

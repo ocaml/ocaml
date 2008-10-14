@@ -14,5 +14,25 @@
 
 (* Reloading for the HPPA *)
 
+
+open Cmm
+open Arch
+open Reg
+open Mach
+open Proc
+
+class reload = object (self)
+
+inherit Reloadgen.reload_generic as super
+
+method reload_operation op arg res =
+  match op with
+      Iintop(Idiv | Imod)
+    | Iintop_imm((Idiv | Imod), _)  -> (arg, res)
+    | _ -> super#reload_operation op arg res
+end
+
+
+
 let fundecl f =
-  (new Reloadgen.reload_generic)#fundecl f
+  (new reload)#fundecl f

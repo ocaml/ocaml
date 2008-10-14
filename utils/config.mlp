@@ -33,24 +33,24 @@ let standard_library =
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
 let bytecomp_c_compiler = "%%BYTECC%%"
-let bytecomp_c_linker = "%%BYTELINK%%"
 let bytecomp_c_libraries = "%%BYTECCLIBS%%"
 let native_c_compiler = "%%NATIVECC%%"
-let native_c_linker = "%%NATIVELINK%%"
 let native_c_libraries = "%%NATIVECCLIBS%%"
-let native_partial_linker = "%%PARTIALLD%%"
 let native_pack_linker = "%%PACKLD%%"
 let ranlib = "%%RANLIBCMD%%"
 let cc_profile = "%%CC_PROFILE%%"
+let mkdll = "%%MKDLL%%"
+let mkexe = "%%MKEXE%%"
+let mkmaindll = "%%MKMAINDLL%%"
 
 let exec_magic_number = "Caml1999X008"
-and cmi_magic_number = "Caml1999I010"
+and cmi_magic_number = "Caml1999I011"
 and cmo_magic_number = "Caml1999O006"
 and cma_magic_number = "Caml1999A007"
 and cmx_magic_number = "Caml1999Y011"
 and cmxa_magic_number = "Caml1999Z010"
-and ast_impl_magic_number = "Caml1999M011"
-and ast_intf_magic_number = "Caml1999N010"
+and ast_impl_magic_number = "Caml1999M012"
+and ast_intf_magic_number = "Caml1999N011"
 
 let load_path = ref ([] : string list)
 
@@ -68,6 +68,8 @@ let stack_threshold = 256 (* see byterun/config.h *)
 let architecture = "%%ARCH%%"
 let model = "%%MODEL%%"
 let system = "%%SYSTEM%%"
+
+let asm = "%%ASM%%"
 
 let ext_obj = "%%EXT_OBJ%%"
 let ext_asm = "%%EXT_ASM%%"
@@ -91,17 +93,16 @@ let print_config oc =
   p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
   p "bytecomp_c_compiler" bytecomp_c_compiler;
-  p "bytecomp_c_linker" bytecomp_c_linker;
   p "bytecomp_c_libraries" bytecomp_c_libraries;
   p "native_c_compiler" native_c_compiler;
-  p "native_c_linker" native_c_linker;
   p "native_c_libraries" native_c_libraries;
-  p "native_partial_linker" native_partial_linker;
+  p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;
   p "cc_profile" cc_profile;
   p "architecture" architecture;
   p "model" model;
   p "system" system;
+  p "asm" asm;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;

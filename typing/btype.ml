@@ -140,7 +140,7 @@ let proxy ty =
       in proxy_obj ty
   | _ -> ty0
 
-(**** Utilities for private types ****)
+(**** Utilities for fixed row private types ****)
 
 let has_constr_row t =
   match (repr t).desc with
@@ -176,8 +176,7 @@ let rec iter_row f row =
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
   | Tvar | Tunivar | Tsubst _ | Tconstr _ ->
-      Misc.may (fun (_,l) -> List.iter f l) row.row_name;
-      List.iter f row.row_bound
+      Misc.may (fun (_,l) -> List.iter f l) row.row_name
   | _ -> assert false
 
 let iter_type_expr f ty =
@@ -200,11 +199,10 @@ let iter_type_expr f ty =
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
-  | Mcons(_, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
+  | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
   | Mlink rem              -> iter_abbrev f !rem
 
 let copy_row f fixed row keep more =
-  let bound = ref [] in
   let fields = List.map
       (fun (l, fi) -> l,
         match row_field_repr fi with
@@ -213,10 +211,6 @@ let copy_row f fixed row keep more =
             let e = if keep then e else ref None in
             let m = if row.row_fixed then fixed else m in
             let tl = List.map f tl in
-            bound := List.filter
-                (function {desc=Tconstr(_,[],_)} -> false | _ -> true)
-                (List.map repr tl)
-              @ !bound;
             Reither(c, tl, m, e)
         | _ -> fi)
       row.row_fields in
@@ -224,7 +218,7 @@ let copy_row f fixed row keep more =
     match row.row_name with None -> None
     | Some (path, tl) -> Some (path, List.map f tl) in
   { row_fields = fields; row_more = more;
-    row_bound = !bound; row_fixed = row.row_fixed && fixed;
+    row_bound = (); row_fixed = row.row_fixed && fixed;
     row_closed = row.row_closed; row_name = name; }
 
 let rec copy_kind = function
@@ -319,9 +313,9 @@ let unmark_type_decl decl =
   List.iter unmark_type decl.type_params;
   begin match decl.type_kind with
     Type_abstract -> ()
-  | Type_variant (cstrs, priv) ->
+  | Type_variant cstrs ->
       List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-  | Type_record(lbls, rep, priv) ->
+  | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;
   begin match decl.type_manifest with
@@ -348,11 +342,12 @@ let rec unmark_class_type =
                   (*******************************************)
 
 (* Search whether the expansion has been memorized. *)
-let rec find_expans p1 = function
+let rec find_expans priv p1 = function
     Mnil -> None
-  | Mcons (p2, ty0, ty, _) when Path.same p1 p2 -> Some ty
-  | Mcons (_, _, _, rem)   -> find_expans p1 rem
-  | Mlink {contents = rem} -> find_expans p1 rem
+  | Mcons (priv', p2, ty0, ty, _)
+    when priv' >= priv && Path.same p1 p2 -> Some ty
+  | Mcons (_, _, _, _, rem)   -> find_expans priv p1 rem
+  | Mlink {contents = rem} -> find_expans priv p1 rem
 
 (* debug: check for cycles in abbreviation. only works with -principal
 let rec check_expans visited ty =
@@ -375,9 +370,9 @@ let cleanup_abbrev () =
   List.iter (fun abbr -> abbr := Mnil) !memo;
   memo := []
 
-let memorize_abbrev mem path v v' =
+let memorize_abbrev mem priv path v v' =
         (* Memorize the expansion of an abbreviation. *)
-  mem := Mcons (path, v, v', !mem);
+  mem := Mcons (priv, path, v, v', !mem);
   (* check_expans [] v; *)
   memo := mem :: !memo
 
@@ -385,10 +380,10 @@ let rec forget_abbrev_rec mem path =
   match mem with
     Mnil ->
       assert false
-  | Mcons (path', _, _, rem) when Path.same path path' ->
+  | Mcons (_, path', _, _, rem) when Path.same path path' ->
       rem 
-  | Mcons (path', v, v', rem) ->
-      Mcons (path', v, v', forget_abbrev_rec rem path)
+  | Mcons (priv, path', v, v', rem) ->
+      Mcons (priv, path', v, v', forget_abbrev_rec rem path)
   | Mlink mem' ->
       mem' := forget_abbrev_rec !mem' path;
       raise Exit

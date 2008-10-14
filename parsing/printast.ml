@@ -202,12 +202,15 @@ and pattern i ppf x =
       line i ppf "Ppat_or\n";
       pattern i ppf p1;
       pattern i ppf p2;
+  | Ppat_lazy p ->
+      line i ppf "Ppat_lazy\n";
+      pattern i ppf p;
   | Ppat_constraint (p, ct) ->
       line i ppf "Ppat_constraint";
       pattern i ppf p;
       core_type i ppf ct;
   | Ppat_type li ->
-      line i ppf "PPat_type";
+      line i ppf "Ppat_type";
       longident i ppf li
 
 and expression i ppf x =
@@ -371,6 +374,7 @@ and type_declaration i ppf x =
   list (i+1) core_type_x_core_type_x_location ppf x.ptype_cstrs;
   line i ppf "ptype_kind =\n";
   type_kind (i+1) ppf x.ptype_kind;
+  line i ppf "ptype_private = %a\n" fmt_private_flag x.ptype_private;
   line i ppf "ptype_manifest =\n";
   option (i+1) core_type ppf x.ptype_manifest;
 
@@ -378,14 +382,12 @@ and type_kind i ppf x =
   match x with
   | Ptype_abstract ->
       line i ppf "Ptype_abstract\n"
-  | Ptype_variant (l, priv) ->
-      line i ppf "Ptype_variant %a\n" fmt_private_flag priv;
+  | Ptype_variant l ->
+      line i ppf "Ptype_variant\n";
       list (i+1) string_x_core_type_list_x_location ppf l;
-  | Ptype_record (l, priv) ->
-      line i ppf "Ptype_record %a\n" fmt_private_flag priv;
+  | Ptype_record l ->
+      line i ppf "Ptype_record\n";
       list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
-  | Ptype_private ->
-      line i ppf "Ptype_private\n"
 
 and exception_declaration i ppf x = list i core_type ppf x
 

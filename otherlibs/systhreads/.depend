@@ -17,15 +17,25 @@ posix.o: posix.c ../../byterun/alloc.h ../../byterun/compatibility.h \
   ../../byterun/memory.h ../../byterun/signals.h ../../byterun/stacks.h \
   ../../byterun/sys.h
 condition.cmi: mutex.cmi 
+event.cmi: 
+join_debug.cmi: 
 join_extern.cmi: thread.cmi 
+join_hash.cmi: 
+join_link.cmi: 
 join_message.cmi: join_types.cmi join_link.cmi 
+join_misc.cmi: 
 join_port.cmi: join_link.cmi 
 join_prim.cmi: join_types.cmi 
+join_queue.cmi: 
 join_scheduler.cmi: mutex.cmi join_types.cmi 
+join_set.cmi: 
 join_space.cmi: join_types.cmi 
 join_test.cmi: join_types.cmi 
 join_types.cmi: mutex.cmi join_set.cmi join_misc.cmi join_link.cmi \
     join_hash.cmi condition.cmi 
+mutex.cmi: 
+thread.cmi: 
+threadUnix.cmi: 
 condition.cmo: mutex.cmi condition.cmi 
 condition.cmx: mutex.cmx condition.cmi 
 event.cmo: mutex.cmi condition.cmi event.cmi 
@@ -72,5 +82,7 @@ mutex.cmo: mutex.cmi
 mutex.cmx: mutex.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
+thread_posix.cmo: 
+thread_posix.cmx: 
 threadUnix.cmo: thread.cmi threadUnix.cmi 
 threadUnix.cmx: thread.cmx threadUnix.cmi 

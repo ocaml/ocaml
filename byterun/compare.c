@@ -104,7 +104,7 @@ static intnat compare_val(value v1, value v2, int total)
       if (Is_long(v2))
         return Long_val(v1) - Long_val(v2);
       /* Subtraction above cannot overflow and cannot result in UNORDERED */
-      if ((Is_atom(v2) || Is_young(v2) || Is_in_heap(v2)) &&
+      if (Is_in_value_area(v2) &&
           Tag_val(v2) == Forward_tag) {
         v2 = Forward_val(v2);
         continue;
@@ -112,7 +112,7 @@ static intnat compare_val(value v1, value v2, int total)
       return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
-      if ((Is_atom(v1) || Is_young(v1) || Is_in_heap(v1)) &&
+      if (Is_in_value_area(v1) &&
           Tag_val(v1) == Forward_tag) {
         v1 = Forward_val(v1);
         continue;
@@ -122,8 +122,7 @@ static intnat compare_val(value v1, value v2, int total)
     /* If one of the objects is outside the heap (but is not an atom),
        use address comparison. Since both addresses are 2-aligned,
        shift lsb off to avoid overflow in subtraction. */
-    if ((!Is_atom(v1) && !Is_young(v1) && !Is_in_heap(v1)) ||
-        (!Is_atom(v2) && !Is_young(v2) && !Is_in_heap(v2))) {
+    if (! Is_in_value_area(v1) || ! Is_in_value_area(v2)) {
       if (v1 == v2) goto next_item;
       return (v1 >> 1) - (v2 >> 1);
       /* Subtraction above cannot result in UNORDERED */
@@ -269,14 +268,14 @@ CAMLprim value caml_lessthan(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
-  return Val_int(res - 1 < -1);
+  return Val_int(res < 0 && res != UNORDERED);
 }
 
 CAMLprim value caml_lessequal(value v1, value v2)
 {
   intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
-  return Val_int(res - 1 <= -1);
+  return Val_int(res <= 0 && res != UNORDERED);
 }
 
 CAMLprim value caml_greaterthan(value v1, value v2)

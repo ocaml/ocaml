@@ -59,6 +59,13 @@ exception Parse_error
    Can also be raised from the action part of a grammar rule,
    to initiate error recovery. *)
 
+val set_trace: bool -> bool
+(** Control debugging support for [ocamlyacc]-generated parsers.
+    After [Parsing.set_trace true], the pushdown automaton that
+    executes the parsers prints a trace of its actions (reading a token,
+    shifting a state, reducing by a rule) on standard output.
+    [Parsing.set_trace false] turns this debugging trace off.
+    The boolean returned is the previous state of the trace flag. *)
 
 (**/**)
 

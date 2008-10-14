@@ -70,14 +70,14 @@ let check_consistency file_name unit crc =
   with Not_found -> ()
   end;
   Consistbl.set crc_implementations unit.ui_name crc file_name;
-  implementations_defined := 
+  implementations_defined :=
     (unit.ui_name, file_name) :: !implementations_defined;
   if unit.ui_symbol <> unit.ui_name then
     cmx_required := unit.ui_name :: !cmx_required
 
 let extract_crc_interfaces () =
   Consistbl.extract crc_interfaces
-let extract_crc_implementations () = 
+let extract_crc_implementations () =
   List.fold_left
     (fun ncl n ->
       if List.mem_assoc n ncl then ncl else (n, cmx_not_found_crc) :: ncl)
@@ -95,6 +95,30 @@ let add_ccobjs l =
     lib_ccobjs := l.lib_ccobjs @ !lib_ccobjs;
     lib_ccopts := l.lib_ccopts @ !lib_ccopts
   end
+
+let runtime_lib () =
+  let libname =
+    if !Clflags.gprofile
+    then "libasmrunp" ^ ext_lib
+    else "libasmrun" ^ ext_lib in
+  try
+    if !Clflags.nopervasives then []
+    else [ find_in_path !load_path libname ]
+  with Not_found ->
+    raise(Error(File_not_found libname))
+
+let object_file_name name =
+  let file_name =
+    try
+      find_in_path !load_path name
+    with Not_found ->
+      fatal_error "Asmlink.object_file_name: not found" in
+  if Filename.check_suffix file_name ".cmx" then
+    Filename.chop_suffix file_name ".cmx" ^ ext_obj
+  else if Filename.check_suffix file_name ".cmxa" then
+    Filename.chop_suffix file_name ".cmxa" ^ ext_lib
+  else
+    fatal_error "Asmlink.object_file_name: bad ext"
 
 (* First pass: determine which units are needed *)
 
@@ -119,7 +143,11 @@ let extract_missing_globals () =
   Hashtbl.iter (fun md rq -> mg := (md, !rq) :: !mg) missing_globals;
   !mg
 
-let scan_file obj_name tolink =
+type file =
+  | Unit of string * Compilenv.unit_infos * Digest.t
+  | Library of string * Compilenv.library_infos
+
+let read_file obj_name =
   let file_name =
     try
       find_in_path !load_path obj_name
@@ -129,45 +157,44 @@ let scan_file obj_name tolink =
     (* This is a .cmx file. It must be linked in any case.
        Read the infos to see which modules it requires. *)
     let (info, crc) = Compilenv.read_unit_info file_name in
-    remove_required info.ui_name;
-    List.iter (add_required file_name) info.ui_imports_cmx;
-    (info, file_name, crc) :: tolink
+    Unit (file_name,info,crc)
   end
   else if Filename.check_suffix file_name ".cmxa" then begin
-    (* This is an archive file. Each unit contained in it will be linked
-       in only if needed. *)
-    let ic = open_in_bin file_name in
-    let buffer = String.create (String.length cmxa_magic_number) in
-    really_input ic buffer 0 (String.length cmxa_magic_number);
-    if buffer <> cmxa_magic_number then
-      raise(Error(Not_an_object_file file_name));
-    let infos = (input_value ic : library_infos) in
-    close_in ic;
-    add_ccobjs infos;
-    List.fold_right
-      (fun (info, crc) reqd ->
-        if info.ui_force_link
-        || !Clflags.link_everything
-        || is_required info.ui_name
-        then begin
-          remove_required info.ui_name;
-          List.iter (add_required (Printf.sprintf "%s(%s)"
-                                                  file_name info.ui_name))
-                    info.ui_imports_cmx;
-          (info, file_name, crc) :: reqd
-        end else
-          reqd)
-    infos.lib_units tolink
+    let infos =
+      try Compilenv.read_library_info file_name
+      with Compilenv.Error(Not_a_unit_info _) ->
+        raise(Error(Not_an_object_file file_name))
+    in
+    Library (file_name,infos)
   end
   else raise(Error(Not_an_object_file file_name))
 
-(* Second pass: generate the startup file and link it with everything else *)
+let scan_file obj_name tolink = match read_file obj_name with
+  | Unit (file_name,info,crc) ->
+      (* This is a .cmx file. It must be linked in any case. *)
+      remove_required info.ui_name;
+      List.iter (add_required file_name) info.ui_imports_cmx;
+      (info, file_name, crc) :: tolink
+  | Library (file_name,infos) ->
+      (* This is an archive file. Each unit contained in it will be linked
+         in only if needed. *)
+      add_ccobjs infos;
+      List.fold_right
+        (fun (info, crc) reqd ->
+           if info.ui_force_link
+             || !Clflags.link_everything
+             || is_required info.ui_name
+           then begin
+             remove_required info.ui_name;
+             List.iter (add_required (Printf.sprintf "%s(%s)"
+                                        file_name info.ui_name))
+               info.ui_imports_cmx;
+             (info, file_name, crc) :: reqd
+           end else
+             reqd)
+        infos.lib_units tolink
 
-module IntSet = Set.Make(
-  struct
-    type t = int
-    let compare = compare
-  end)
+(* Second pass: generate the startup file and link it with everything else *)
 
 let make_startup_file ppf filename units_list =
   let compile_phrase p = Asmgen.compile_phrase ppf p in
@@ -179,126 +206,94 @@ let make_startup_file ppf filename units_list =
   let name_list =
     List.flatten (List.map (fun (info,_,_) -> info.ui_defines) units_list) in
   compile_phrase (Cmmgen.entry_point name_list);
-  let apply_functions = ref (IntSet.add 2 (IntSet.add 3 IntSet.empty)) in
-  (* The callback functions always reference caml_apply[23] *)
-  let send_functions = ref IntSet.empty in
-  let curry_functions = ref IntSet.empty in
-  List.iter
-    (fun (info,_,_) ->
-      List.iter
-        (fun n -> apply_functions := IntSet.add n !apply_functions)
-        info.ui_apply_fun;
-      List.iter
-        (fun n -> send_functions := IntSet.add n !send_functions)
-        info.ui_send_fun;
-      List.iter
-        (fun n -> curry_functions := IntSet.add n !curry_functions)
-        info.ui_curry_fun)
-    units_list;
-  IntSet.iter
-    (fun n -> compile_phrase (Cmmgen.apply_function n))
-    !apply_functions;
-  IntSet.iter
-    (fun n -> compile_phrase (Cmmgen.send_function n))
-    !send_functions;
-  IntSet.iter
-    (fun n -> List.iter (compile_phrase) (Cmmgen.curry_function n))
-    !curry_functions;
+  let units = List.map (fun (info,_,_) -> info) units_list in
+  List.iter compile_phrase (Cmmgen.generic_functions false units);
   Array.iter
     (fun name -> compile_phrase (Cmmgen.predef_exception name))
     Runtimedef.builtin_exceptions;
   compile_phrase (Cmmgen.global_table name_list);
   compile_phrase
     (Cmmgen.globals_map
-      (List.map
-        (fun (unit,_,_) ->
-          try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi)
-          with Not_found -> assert false)
-        units_list));
+       (List.map
+          (fun (unit,_,crc) ->
+             try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi,
+                  crc,
+                  unit.ui_defines)
+             with Not_found -> assert false)
+          units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));
   compile_phrase(Cmmgen.code_segment_table ("_startup" :: name_list));
   compile_phrase
     (Cmmgen.frame_table("_startup" :: "_system" :: name_list));
+
   Emit.end_assembly();
   close_out oc
 
-let call_linker file_list startup_file output_name =
-  let libname =
-    if !Clflags.gprofile
-    then "libasmrunp" ^ ext_lib
-    else "libasmrun" ^ ext_lib in
-  let runtime_lib =
-    try
-      if !Clflags.nopervasives then ""
-      else find_in_path !load_path libname
-    with Not_found ->
-      raise(Error(File_not_found libname)) in
-  let c_lib =
-    if !Clflags.nopervasives then "" else Config.native_c_libraries in
-  match Config.ccomp_type with
-  | "cc" ->
-      let cmd =
-        if not !Clflags.output_c_object then
-          Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
-            !Clflags.c_linker
-            (if !Clflags.gprofile then Config.cc_profile else "")
-            (Filename.quote output_name)
-            (Clflags.std_include_flag "-I")
-            (String.concat " " (List.rev !Clflags.ccopts))
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-            (Ccomp.quote_files
-              (List.map (fun dir -> if dir = "" then "" else "-L" ^ dir)
-                        !load_path))
-            (Ccomp.quote_files (List.rev !Clflags.ccobjs))
-            (Filename.quote runtime_lib)
-            c_lib
-        else
-          Printf.sprintf "%s -o %s %s %s"
-            Config.native_partial_linker
-            (Filename.quote output_name)
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-      in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
-  | "msvc" ->
-      if not !Clflags.output_c_object then begin
-        let cmd =
-          Printf.sprintf "%s /Fe%s %s %s %s %s %s %s %s"
-            !Clflags.c_linker
-            (Filename.quote output_name)
-            (Clflags.std_include_flag "-I")
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-            (Ccomp.quote_files 
-              (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
-            (Filename.quote runtime_lib)
-            c_lib
-            (Ccomp.make_link_options !Clflags.ccopts) in
-        if Ccomp.command cmd <> 0 then raise(Error Linking_error);
-        if Ccomp.merge_manifest output_name <> 0 then raise(Error Linking_error)
-      end else begin
-        let cmd =
-          Printf.sprintf "%s /out:%s %s %s"
-            Config.native_partial_linker
-            (Filename.quote output_name)
-            (Filename.quote startup_file)
-            (Ccomp.quote_files (List.rev file_list))
-        in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
-      end
-  | _ -> assert false
+let make_shared_startup_file ppf units filename =
+  let compile_phrase p = Asmgen.compile_phrase ppf p in
+  let oc = open_out filename in
+  Emitaux.output_channel := oc;
+  Location.input_name := "caml_startup";
+  Compilenv.reset "_shared_startup";
+  Emit.begin_assembly();
+  List.iter compile_phrase
+    (Cmmgen.generic_functions true (List.map fst units));
+  compile_phrase (Cmmgen.plugin_header units);
+  compile_phrase
+    (Cmmgen.global_table
+       (List.map (fun (ui,_) -> ui.Compilenv.ui_symbol) units));
+  (* this is to force a reference to all units, otherwise the linker
+     might drop some of them (in case of libraries) *)
 
-let object_file_name name =
-  let file_name =
-    try
-      find_in_path !load_path name
-    with Not_found ->
-      fatal_error "Asmlink.object_file_name: not found" in
-  if Filename.check_suffix file_name ".cmx" then
-    Filename.chop_suffix file_name ".cmx" ^ ext_obj
-  else if Filename.check_suffix file_name ".cmxa" then
-    Filename.chop_suffix file_name ".cmxa" ^ ext_lib
-  else
-    fatal_error "Asmlink.object_file_name: bad ext"
+  Emit.end_assembly();
+  close_out oc
+
+
+let call_linker_shared file_list output_name =
+  if not (Ccomp.call_linker Ccomp.Dll output_name file_list "")
+  then raise(Error Linking_error)
+
+let link_shared ppf objfiles output_name =
+  let units_tolink = List.fold_right scan_file objfiles [] in
+  List.iter
+    (fun (info, file_name, crc) -> check_consistency file_name info crc)
+    units_tolink;
+  Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
+  let objfiles = List.rev (List.map object_file_name objfiles) @
+    !Clflags.ccobjs in
+
+  let startup =
+    if !Clflags.keep_startup_file
+    then output_name ^ ".startup" ^ ext_asm
+    else Filename.temp_file "camlstartup" ext_asm in
+  make_shared_startup_file ppf
+    (List.map (fun (ui,_,crc) -> (ui,crc)) units_tolink) startup;
+  let startup_obj = output_name ^ ".startup" ^ ext_obj in
+  if Proc.assemble_file startup startup_obj <> 0
+  then raise(Error(Assembler_error startup));
+  if not !Clflags.keep_startup_file then remove_file startup;
+  call_linker_shared (startup_obj :: objfiles) output_name;
+  remove_file startup_obj
+
+let call_linker file_list startup_file output_name =
+  let main_dll = !Clflags.output_c_object
+                 && Filename.check_suffix output_name Config.ext_dll
+  in
+  let files = startup_file :: (List.rev file_list) in
+  let files, c_lib =
+    if (not !Clflags.output_c_object) || main_dll then
+      files @ (List.rev !Clflags.ccobjs) @ runtime_lib (),
+      (if !Clflags.nopervasives then "" else Config.native_c_libraries)
+    else
+      files, ""
+  in
+  let mode =
+    if main_dll then Ccomp.MainDll
+    else if !Clflags.output_c_object then Ccomp.Partial
+    else Ccomp.Exe
+  in
+  if not (Ccomp.call_linker mode output_name files c_lib)
+  then raise(Error Linking_error)
 
 (* Main entry point *)
 
@@ -325,7 +320,9 @@ let link ppf objfiles output_name =
     units_tolink;
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
-  let startup = Filename.temp_file "camlstartup" ext_asm in
+  let startup =
+    if !Clflags.keep_startup_file then output_name ^ ".startup" ^ ext_asm
+    else Filename.temp_file "camlstartup" ext_asm in
   make_startup_file ppf startup units_tolink;
   let startup_obj = Filename.temp_file "camlstartup" ext_obj in
   if Proc.assemble_file startup startup_obj <> 0 then

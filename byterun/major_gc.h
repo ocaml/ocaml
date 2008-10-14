@@ -33,6 +33,7 @@ typedef struct {
 #define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
 
 extern int caml_gc_phase;
+extern int caml_gc_subphase;
 extern uintnat caml_allocated_words;
 extern double caml_extra_heap_resources;
 extern uintnat caml_dependent_size, caml_dependent_allocated;
@@ -41,27 +42,14 @@ extern uintnat caml_fl_size_at_phase_change;
 #define Phase_mark 0
 #define Phase_sweep 1
 #define Phase_idle 2
-
-#ifdef __alpha
-typedef int page_table_entry;
-#else
-typedef char page_table_entry;
-#endif
+#define Subphase_main 10
+#define Subphase_weak1 11
+#define Subphase_weak2 12
+#define Subphase_final 13
 
 CAMLextern char *caml_heap_start;
-CAMLextern char *caml_heap_end;
 extern uintnat total_heap_size;
-CAMLextern page_table_entry *caml_page_table;
-extern asize_t caml_page_low, caml_page_high;
 extern char *caml_gc_sweep_hp;
-
-#define In_heap 1
-#define Not_in_heap 0
-#define Page(p) ((uintnat) (p) >> Page_log)
-#define Is_in_heap(p) \
-  (Assert (Is_block ((value) (p))), \
-   (addr)(p) >= (addr)caml_heap_start && (addr)(p) < (addr)caml_heap_end \
-   && caml_page_table [Page (p)])
 
 void caml_init_major_heap (asize_t);           /* size in bytes */
 asize_t caml_round_heap_chunk_size (asize_t);  /* size in bytes */

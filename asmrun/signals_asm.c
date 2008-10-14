@@ -47,9 +47,10 @@ extern void caml_win32_overflow_detection();
 
 extern char * caml_code_area_start, * caml_code_area_end;
 
-#define In_code_area(pc) \
-  ((char *)(pc) >= caml_code_area_start && \
-   (char *)(pc) <= caml_code_area_end)
+#define Is_in_code_area(pc) \
+ ( ((char *)(pc) >= caml_code_area_start && \
+    (char *)(pc) <= caml_code_area_end)     \
+   || (Classify_addr(pc) & In_code_area) )
 
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to Caml code.
@@ -84,7 +85,7 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
      Use the signal context to modify that register too, but only if
      we are inside Caml code (not inside C code). */
 #if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-    if (In_code_area(CONTEXT_PC))
+    if (Is_in_code_area(CONTEXT_PC))
       CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
 #endif
   }
@@ -190,7 +191,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
       && fault_addr < system_stack_top
       && fault_addr >= system_stack_top - limit.rlim_cur - 0x2000
 #ifdef CONTEXT_PC
-      && In_code_area(CONTEXT_PC)
+      && Is_in_code_area(CONTEXT_PC)
 #endif
       ) {
     /* Turn this into a Stack_overflow exception */
@@ -238,7 +239,7 @@ void caml_init_signals(void)
   /* Stack overflow handling */
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   {
-    struct sigaltstack stk;
+    stack_t stk;
     struct sigaction act;
     stk.ss_sp = sig_alt_stack;
     stk.ss_size = SIGSTKSZ;

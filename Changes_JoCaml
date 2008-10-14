@@ -1,0 +1,12 @@
+
+- Several alteration of scheduling, so as to
+  limit pending signals, <= threads in pool and <= tasks in pool.
+ 
+- Added 'JoinFifo' and 'JoinCount' in standard library.
+
+
+JoCaml 3.10.0:
+--------------
+Initial release
+
+$Id$

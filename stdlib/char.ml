@@ -29,23 +29,26 @@ external string_unsafe_set : string -> int -> char -> unit
                            = "%string_unsafe_set"
 
 let escaped = function
-    '\'' -> "\\'"
+  | '\'' -> "\\'"
   | '\\' -> "\\\\"
   | '\n' -> "\\n"
   | '\t' -> "\\t"
-  | c ->  if is_printable c then begin
-            let s = string_create 1 in
-            string_unsafe_set s 0 c;
-            s
-          end else begin
-            let n = code c in
-            let s = string_create 4 in
-            string_unsafe_set s 0 '\\';
-            string_unsafe_set s 1 (unsafe_chr (48 + n / 100));
-            string_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
-            string_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
-            s
-          end
+  | '\r' -> "\\r"
+  | '\b' -> "\\b"
+  | c ->
+    if is_printable c then begin
+      let s = string_create 1 in
+      string_unsafe_set s 0 c;
+      s
+    end else begin
+      let n = code c in
+      let s = string_create 4 in
+      string_unsafe_set s 0 '\\';
+      string_unsafe_set s 1 (unsafe_chr (48 + n / 100));
+      string_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
+      string_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
+      s
+    end
 
 let lowercase c =
   if (c >= 'A' && c <= 'Z')

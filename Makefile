@@ -21,7 +21,7 @@ include otherlibs/systhreads/JoinModules
 include otherlibs/join/StdJoinModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot  $(NOJOIN)
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib $(NOJOIN)
+CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink $(NOJOIN)
 COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=
 
@@ -110,6 +110,11 @@ TOPOBJS=$(TOPLEVELLIB)\
  otherlibs/join/join.cma\
  $(TOPLEVELSTART)
 
+NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+  driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
+  toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
+  toplevel/opttopmain.cmo toplevel/opttopstart.cmo
+
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
@@ -135,14 +140,26 @@ center:runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 # Recompile the system using the bootstrap compiler
 all: center camlp4out $(DEBUGGER) ocamldoc
 
-# The compilation of ocaml will fail if the runtime has changed.
-# Never mind, just do make bootstrap to reach fixpoint again.
-
 # Compile everything the first time
-world: coldstart all
+world:
+	$(MAKE) coldstart
+	$(MAKE) all
 
 # Compile also native code compiler and libraries, fast
-world.opt: coldstart opt.opt
+world.opt:
+	$(MAKE) coldstart
+	$(MAKE) opt.opt
+
+# Hard bootstrap how-to:
+# (only necessary in some cases, for example if you remove some primitive)
+#
+# make coreboot     [old system -- you were in a stable state]
+# <change the source>
+# make core         [cross-compiler]
+# make partialclean [if you get "inconsistent assumptions"]
+# <debug your changes>
+# make core         [cross-compiler]
+# make coreboot     [new system -- now you are in a stable state]
 
 # Core bootstrapping cycle
 coreboot:
@@ -166,6 +183,8 @@ coreboot:
 	$(MAKE) compare
 
 # Bootstrap and rebuild the whole system.
+# The compilation of ocaml will fail if the runtime has changed.
+# Never mind, just do make bootstrap to reach fixpoint again.
 bootstrap:
 	$(MAKE) coreboot
 	$(MAKE) all
@@ -187,7 +206,10 @@ coldstart:
           ln -s ../byterun stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core : coldstart ocamlc ocamllex ocamlyacc ocamltools library
+core: coldstart ocamlc ocamllex ocamlyacc ocamltools library
+
+# Recompile the core system using the bootstrap compiler
+coreall: ocamlc ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -198,7 +220,8 @@ backup:
 	mkdir boot/Saved
 	mv boot/Saved.prev boot/Saved/Saved.prev
 	cp boot/ocamlrun$(EXE) boot/Saved
-	mv boot/ocamlc boot/ocamllex boot/ocamlyacc$(EXE) boot/ocamldep boot/Saved
+	mv boot/ocamlc boot/ocamllex boot/ocamlyacc$(EXE) boot/ocamldep \
+	   boot/Saved
 	cd boot; cp $(LIBFILES) Saved
 
 # Promote the newly compiled system to the rank of cross compiler
@@ -223,7 +246,8 @@ restore:
 
 # Check if fixpoint reached
 compare:
-	@if cmp boot/ocamlc ocamlc && cmp boot/ocamllex lex/ocamllex && cmp boot/ocamldep tools/ocamldep; \
+	@if cmp boot/ocamlc ocamlc && cmp boot/ocamllex lex/ocamllex \
+	    && cmp boot/ocamldep tools/ocamldep; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
         else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
@@ -233,6 +257,7 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
+
 opt-core:runtimeopt ocamlopt libraryopt
 opt-center:opt-core otherlibrariesopt
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
@@ -243,11 +268,12 @@ opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 ocamllex.opt ocamltoolsopt.opt camlp4opt ocamldoc.opt
 
 # Installation
-install: FORCE
+install:
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
 	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
-#	- if test -d $(MANDIR)/man$(MANEXT); then : ; else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
+#	if test -d $(MANDIR)/man$(MANEXT); then : ; \
+#	  else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
 	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
           dllthreads.so dllunix.so dllgraphics.so dllmldbm.so dllstr.so \
           dlltkanim.so
@@ -261,7 +287,8 @@ install: FORCE
 	cp expunge $(LIBDIR)/expunge$(EXE)
 	cp typing/outcometree.cmi typing/outcometree.mli $(LIBDIR)
 	cp toplevel/topstart.cmo $(LIBDIR)
-	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi $(LIBDIR)
+	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi \
+	   $(LIBDIR)
 	cd tools; $(MAKE) install
 #	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
@@ -282,7 +309,8 @@ installopt:
 	cp ocamlopt $(BINDIR)/jocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
 #	cd ocamldoc; $(MAKE) installopt
-	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
+	for i in $(OTHERLIBRARIES); \
+	  do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; \
 	  then cp ocamlc.opt $(BINDIR)/jocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; \
@@ -341,6 +369,17 @@ toplevel/toplevellib.cma: $(TOPLIB)
 partialclean::
 	rm -f ocaml toplevel/toplevellib.cma
 
+# The native toplevel
+
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
+	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat \
+	           $(NATTOPOBJS:.cmo=.cmx) -linkall
+
+toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
+
+otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
+	cd otherlibs/dynlink && make allopt
+
 # The configuration file
 
 utils/config.ml: utils/config.mlp config/Makefile
@@ -350,11 +389,8 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTERUN%%|$(BINDIR)/jocamlrun|' \
             -e 's|%%CCOMPTYPE%%|cc|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
-            -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
-            -e 's|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
-            -e 's|%%PARTIALLD%%|$(PARTIALLD) $(NATIVECCLINKOPTS)|' \
-            -e 's|%%PACKLD%%|$(PARTIALLD) $(NATIVECCLINKOPTS) -o |' \
+            -e 's|%%PACKLD%%|$(PACKLD)|' \
             -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
@@ -367,6 +403,10 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_LIB%%|.a|' \
             -e 's|%%EXT_DLL%%|.so|' \
             -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
+            -e 's|%%ASM%%|$(ASM)|' \
+            -e 's|%%MKDLL%%|$(MKDLL)|' \
+            -e 's|%%MKEXE%%|$(MKEXE)|' \
+            -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
@@ -533,10 +573,12 @@ runtime:
 	cd byterun; $(MAKE) all
 	if test -f stdlib/libcamlrun.a; then :; else \
           ln -s ../byterun/libcamlrun.a stdlib/libcamlrun.a; fi
+
 clean::
 	cd byterun; $(MAKE) clean
 	rm -f stdlib/libcamlrun.a
 	rm -f stdlib/caml
+
 alldepend::
 	cd byterun; $(MAKE) depend
 
@@ -546,9 +588,11 @@ runtimeopt:
 	cd asmrun; $(MAKE) all
 	if test -f stdlib/libasmrun.a; then :; else \
           ln -s ../asmrun/libasmrun.a stdlib/libasmrun.a; fi
+
 clean::
 	cd asmrun; $(MAKE) clean
 	rm -f stdlib/libasmrun.a
+
 alldepend::
 	cd asmrun; $(MAKE) depend
 
@@ -556,12 +600,16 @@ alldepend::
 
 library: ocamlc
 	cd stdlib; $(MAKE) all
+
 library-cross:
 	cd stdlib; $(MAKE) RUNTIME=../byterun/ocamlrun all
+
 libraryopt:
 	cd stdlib; $(MAKE) allopt
+
 partialclean::
 	cd stdlib; $(MAKE) clean
+
 alldepend::
 	cd stdlib; $(MAKE) depend
 
@@ -569,15 +617,19 @@ alldepend::
 
 ocamllex: ocamlyacc ocamlc
 	cd lex; $(MAKE) all
+
 ocamllex.opt: ocamlopt
 	cd lex; $(MAKE) allopt
+
 partialclean::
 	cd lex; $(MAKE) clean
+
 alldepend::
 	cd lex; $(MAKE) depend
 
 ocamlyacc:
 	cd yacc; $(MAKE) all
+
 clean::
 	cd yacc; $(MAKE) clean
 
@@ -585,68 +637,95 @@ clean::
 
 ocamltools: ocamlc ocamlyacc ocamllex
 	cd tools; $(MAKE) all
+
 ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex
 	cd tools; $(MAKE) opt.opt
+
 partialclean::
 	cd tools; $(MAKE) clean
+
 alldepend::
 	cd tools; $(MAKE) depend
 
 # OCamldoc
 
-ocamldoc ocamldoc.opt:
-#ocamldoc: ocamlc ocamlyacc ocamllex
+#ocamldoc: ocamlc ocamlyacc ocamllex otherlibraries
 #	cd ocamldoc && $(MAKE) all
+#
 #ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 #	cd ocamldoc && $(MAKE) opt.opt
+#
 #partialclean::
 #	cd ocamldoc && $(MAKE) clean
+#
 #alldepend::
 #	cd ocamldoc && $(MAKE) depend
 
 # The extra libraries
 
-otherlibraries:
+otherlibraries: ocamltools
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
         done
+
 otherlibrariesopt:
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
         done
+
 partialclean::
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) partialclean); \
         done
+
 clean::
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) clean); done
+
 alldepend::
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) depend); done
 
 # The replay debugger
 
 ocamldebugger:
-#ocamldebugger: ocamlc ocamlyacc ocamllex
+# ocamlc ocamlyacc ocamllex otherlibraries
 #	cd debugger; $(MAKE) all
+#
 #partialclean::
 #	cd debugger; $(MAKE) clean
+#
 #alldepend::
 #	cd debugger; $(MAKE) depend
+
 
 # Camlp4
 
 camlp4out camlp4opt camlp4optopt:
 
-#camlp4out: ocamlc
-#	cd camlp4; $(MAKE) all
-#camlp4opt: ocamlopt
-#	cd camlp4; $(MAKE) opt
-#camlp4optopt: ocamlopt
-#	cd camlp4; $(MAKE) opt.opt
+#camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
+#	./build/camlp4-byte-only.sh
+#
+#camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
+#	./build/camlp4-native-only.sh
+
+# Ocamlbuild
+ocamlbuild.byte ocamlbuild.native:
+#ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
+#	./build/ocamlbuild-byte-only.sh
+#
+#ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+#	./build/ocamlbuild-native-only.sh
+#ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+#	./build/ocamlbuildlib-native-only.sh
+#
+#ocamlbuild-partial-boot: ocamlc otherlibraries
+#	./build/partial-boot.sh
+#
 #partialclean::
-#	cd camlp4; $(MAKE) clean
-#alldepend::
-#	cd camlp4; $(MAKE) depend
+#	rm -rf _build
+#	if test -d test; then \
+#	 (cd test; $(MAKE) clean); \
+#	fi
+
 
 # Check that the stack limit is reasonable.
 
@@ -659,14 +738,9 @@ checkstack:
 
 # Make MacOS X package
 
-.PHONY: package-macosx
-
 package-macosx:
 	sudo rm -rf package-macosx/root
-	make BINDIR="`pwd`"/package-macosx/root/bin \
-	     LIBDIR="`pwd`"/package-macosx/root/lib/jocaml \
-	     MANDIR="`pwd`"/package-macosx/root/man \
-             install
+	make PREFIX="`pwd`"/package-macosx/root install
 	tools/make-package-macosx
 	sudo rm -rf package-macosx/root
 
@@ -704,6 +778,18 @@ depend: beforedepend
 
 alldepend:: depend
 
-FORCE:
+distclean:
+	./build/distclean.sh
+
+.PHONY: all backup bootstrap camlp4opt camlp4out checkstack clean
+.PHONY: partialclean beforedepend alldepend cleanboot coldstart
+.PHONY: compare core coreall
+.PHONY: coreboot defaultentry depend distclean install installopt
+.PHONY: library library-cross libraryopt ocamlbuild-partial-boot
+.PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
+.PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
+.PHONY: ocamlyacc opt-core opt opt.opt otherlibraries
+.PHONY: otherlibrariesopt package-macosx promote promote-cross
+.PHONY: restore runtime runtimeopt world world.opt
 
 include .depend

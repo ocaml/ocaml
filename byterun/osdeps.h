@@ -41,8 +41,10 @@ extern char * caml_search_dll_in_path(struct ext_table * path, char * name);
    can be called.  If [for_execution] is false, functions from this
    shared library will not be called, but just checked for presence,
    so symbol resolution can be skipped.
+   If [global] is true, symbols from the shared library can be used
+   to resolve for other libraries to be opened later on.
    Return [NULL] on error. */
-extern void * caml_dlopen(char * libname, int for_execution);
+extern void * caml_dlopen(char * libname, int for_execution, int global);
 
 /* Close a shared library handle */
 extern void caml_dlclose(void * handle);
@@ -50,6 +52,8 @@ extern void caml_dlclose(void * handle);
 /* Look up the given symbol in the given shared library.
    Return [NULL] if not found, or symbol value if found. */
 extern void * caml_dlsym(void * handle, char * name);
+
+extern void * caml_globalsym(char * name);
 
 /* Return an error message describing the most recent dynlink failure. */
 extern char * caml_dlerror(void);

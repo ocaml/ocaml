@@ -45,7 +45,7 @@ ld.conf: ../config/Makefile
 	echo "$(LIBDIR)" >> ld.conf
 
 install::
-	cp ocamlrun$(EXE) $(BINDIR)/ocamlrun$(EXE)
+	cp ocamlrun$(EXE) $(BINDIR)/jocamlrun$(EXE)
 	cp libcamlrun.$(A) $(LIBDIR)/libcamlrun.$(A)
 	cd $(LIBDIR); $(RANLIB) libcamlrun.$(A)
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi

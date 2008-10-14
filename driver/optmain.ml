@@ -32,11 +32,8 @@ let process_implementation_file ppf name =
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then begin
-    let opref = output_prefix name in
-    Optcompile.implementation ppf name opref;
-    objfiles := (opref ^ ".cmx") :: !objfiles
-  end
+  || Filename.check_suffix name ".mlt" then 
+    process_implementation_file ppf name
   else if Filename.check_suffix name !Config.interface_suffix then begin
     let opref = output_prefix name in
     Optcompile.interface ppf name opref;
@@ -77,12 +74,14 @@ let print_version_string () =
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
 
+let fatal err =
+  prerr_endline err;
+  exit 2
+
 let extract_output = function
   | Some s -> s
   | None ->
-      prerr_endline
-        "Please specify the name of the output file, using option -o";
-      exit 2
+      fatal "Please specify the name of the output file, using option -o"
 
 let default_output = function
   | Some s -> s
@@ -98,13 +97,14 @@ let show_config () =
 let main () =
   native_code := true;
   c_compiler := Config.native_c_compiler;
-  c_linker := Config.native_c_linker;
   let ppf = Format.err_formatter in
   try
     Arg.parse (Arch.command_line_options @ [
        "-a", Arg.Set make_archive, " Build a library";
+       "-annot", Arg.Set annotations,
+             " Save information in <filename>.annot";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
-       "-cc", Arg.String(fun s -> c_compiler := s; c_linker := s),
+       "-cc", Arg.String(fun s -> c_compiler := s),
              "<comp>  Use <comp> as the C compiler and linker";
        "-cclib", Arg.String(fun s ->
                               ccobjs := Misc.rev_split_words s @ !ccobjs),
@@ -115,12 +115,13 @@ let main () =
              " Optimize code size rather than speed";
        "-config", Arg.Unit show_config,
              " print configuration values and exit";
-       "-dtypes", Arg.Set save_types,
-             " Save type information in <filename>.annot";
+       "-dtypes", Arg.Set annotations,
+             " (deprecated) same as -annot";
        "-for-pack", Arg.String (fun s -> for_package := Some s),
              "<ident>  Generate code that can later be `packed' with\n\
          \     ocamlopt -pack -o <ident>.cmx";
-       "-g", Arg.Set debug, " Record debugging information for exception backtrace";
+       "-g", Arg.Set debug,
+             " Record debugging information for exception backtrace";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
              " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
@@ -140,7 +141,9 @@ let main () =
              " Link all modules, even unused ones";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-noautolink", Arg.Set no_auto_link,
-             " Don't automatically link C libraries specified in .cma files";
+             " Don't automatically link C libraries specified in .cmxa files";
+       "-nodynlink", Arg.Clear dlcode,
+             " Enable optimizations for code that will not be dynlinked";
        "-nolabels", Arg.Set classic, " Ignore non-optional labels in types";
        "-nostdlib", Arg.Set no_std_include,
            " do not add standard directory to the list of include directories";
@@ -159,6 +162,8 @@ let main () =
              " Check principality of type inference";
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
+       "-shared", Arg.Unit (fun () -> shared := true; dlcode := true), 
+             " Produce a dynlinkable plugin";
 (*> JOCAML *)
        "-nojoin", Arg.Unit (fun () -> nojoin := true ; use_threads := false),
                " Be a ocaml compiler";
@@ -219,19 +224,44 @@ let main () =
        "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
       ]) (process_file ppf) usage;
+    if
+      List.length (List.filter (fun x -> !x)
+		     [make_archive;make_package;shared;compile_only;output_c_object]) > 1
+    then
+      fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
     if !make_archive then begin
       Optcompile.init_path();
-      Asmlibrarian.create_archive (List.rev !objfiles)
-                                  (extract_output !output_name)
+      let target = extract_output !output_name in
+      Asmlibrarian.create_archive (List.rev !objfiles) target;
     end
     else if !make_package then begin
       Optcompile.init_path();
-      Asmpackager.package_files ppf (List.rev !objfiles)
-                                    (extract_output !output_name)
+      let target = extract_output !output_name in
+      Asmpackager.package_files ppf (List.rev !objfiles) target;
+    end
+    else if !shared then begin
+      Optcompile.init_path();
+      let target = extract_output !output_name in
+      Asmlink.link_shared ppf (List.rev !objfiles) target;
     end
     else if not !compile_only && !objfiles <> [] then begin
+      let target =
+        if !output_c_object then
+          let s = extract_output !output_name in
+          if (Filename.check_suffix s Config.ext_obj
+            || Filename.check_suffix s Config.ext_dll)
+          then s
+          else
+            fatal
+              (Printf.sprintf
+                 "The extension of the output file must be %s or %s"
+                 Config.ext_obj Config.ext_dll
+              )
+        else
+          default_output !output_name
+      in
       Optcompile.init_path();
-      Asmlink.link ppf (List.rev !objfiles) (default_output !output_name)
+      Asmlink.link ppf (List.rev !objfiles) target
     end;
     exit 0
   with x ->

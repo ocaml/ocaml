@@ -23,7 +23,7 @@ INSTALLATION INSTRUCTION
 
         ./configure
 
-With respect to Objective Caml the ""configure" script options are modified
+With respect to Objective Caml the "configure" script options are modified
 as follows.
 
 Suppressed options.
@@ -66,7 +66,7 @@ Caml compilers, you can compile them with the native-code compiler
 
         make opt.opt
 
-6- You can now install the Objective Caml system. This will create the
+6- You can now install the JoCaml system. This will create the
 JoCaml commands (in the binary directory selected during
 autoconfiguration).
 
@@ -88,4 +88,4 @@ ocamlprof, ocamlcp, ocamldoc.
 
 IF SOMETHING GOES WRONG:
 
-Refer to the same section in file INSTALL_OCAML
+Refer to the same section in file INSTALL_OCAML.

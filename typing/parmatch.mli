@@ -61,3 +61,8 @@ val useful: pattern list -> bool list
 (* replace all variables by wildcards (and rewrite p as x into  p) *)
 val remove_binders : pattern -> pattern
 (*<JOCAML*)
+
+(* Irrefutability tests *)
+val irrefutable : pattern -> bool
+val fluid : pattern -> bool
+

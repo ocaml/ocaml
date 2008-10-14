@@ -298,7 +298,9 @@ have caml-electric-indent on, which see.")
     (define-key caml-mode-map "\177" 'backward-delete-char-untabify))
 
   ;; caml-types
-  (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)
+  (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)  ; "type"
+  (define-key caml-mode-map [?\C-c?\C-f] 'caml-types-show-call)  ; "function"
+  (define-key caml-mode-map [?\C-c?\C-l] 'caml-types-show-ident) ; "let"
   ;; must be a mouse-down event. Can be any button and any prefix
   (define-key caml-mode-map [?\C-c down-mouse-1] 'caml-types-explore)
   ;; caml-help
@@ -544,12 +546,14 @@ have caml-electric-indent on, which see.")
   (run-hooks 'caml-mode-hook))
 
 (defun caml-set-compile-command ()
-  "Hook to set compile-command locally, unless there is a Makefile in the 
-   current directory." 
+  "Hook to set compile-command locally, unless there is a Makefile or
+   a _build directory or a _tags file in the current directory."
   (interactive)
   (unless (or (null buffer-file-name)
               (file-exists-p "makefile")
-              (file-exists-p "Makefile"))
+              (file-exists-p "Makefile")
+              (file-exists-p "_build")
+              (file-exists-p "_tags"))
     (let* ((filename (file-name-nondirectory buffer-file-name))
            (basename (file-name-sans-extension filename))
            (command nil))
@@ -565,7 +569,7 @@ have caml-electric-indent on, which see.")
         (setq command "ocamlyacc"))
        )
       (if command
-          (progn 
+          (progn
             (make-local-variable 'compile-command)
             (setq compile-command (concat command " " filename))))
       )))
@@ -592,7 +596,7 @@ have caml-electric-indent on, which see.")
   (inferior-caml-eval-region start end))
 
 ;; old version ---to be deleted later
-; 
+;
 ; (defun caml-eval-phrase ()
 ;   "Send the current Caml phrase to the inferior Caml process."
 ;   (interactive)
@@ -602,15 +606,15 @@ have caml-electric-indent on, which see.")
 
 (defun caml-eval-phrase (arg &optional min max)
   "Send the phrase containing the point to the CAML process.
-With prefix-arg send as many phrases as its numeric value, 
+With prefix-arg send as many phrases as its numeric value,
 If an error occurs during evalutaion, stop at this phrase and
-repport the error. 
+repport the error.
 
 Return nil if noerror and position of error if any.
 
 If arg's numeric value is zero or negative, evaluate the current phrase
-or as many as prefix arg, ignoring evaluation errors. 
-This allows to jump other erroneous phrases. 
+or as many as prefix arg, ignoring evaluation errors.
+This allows to jump other erroneous phrases.
 
 Optional arguments min max defines a region within which the phrase
 should lies."
@@ -809,6 +813,10 @@ from an error message produced by camlc.")
 ;; Wrapper around next-error.
 
 (defvar caml-error-overlay nil)
+(defvar caml-next-error-skip-warnings-flag nil)
+
+(defun caml-string-to-int (x)
+  (if (fboundp 'string-to-number) (string-to-number x) (string-to-int x)))
 
 ;;itz 04-21-96 somebody didn't get the documetation for next-error
 ;;right. When the optional argument is a number n, it should move
@@ -825,7 +833,7 @@ fragment. The erroneous fragment is also temporarily highlighted if
 possible."
 
  (if (eq major-mode 'caml-mode)
-     (let (bol beg end)
+     (let (skip bol beg end)
        (save-excursion
          (set-buffer
           (if (boundp 'compilation-last-buffer)
@@ -835,12 +843,19 @@ possible."
            (goto-char (window-point (get-buffer-window (current-buffer))))
            (if (looking-at caml-error-chars-regexp)
                (setq beg
-                     (string-to-int
+                     (caml-string-to-int
                       (buffer-substring (match-beginning 1) (match-end 1)))
                      end
-                     (string-to-int
-                      (buffer-substring (match-beginning 2) (match-end 2)))))))
-       (cond (beg
+                     (caml-string-to-int
+                      (buffer-substring (match-beginning 2) (match-end 2)))))
+           (next-line)
+           (beginning-of-line)
+           (if (and (looking-at "Warning")
+                    caml-next-error-skip-warnings-flag)
+               (setq skip 't))))
+       (cond
+        (skip (next-error))
+        (beg
               (setq end (- end beg))
               (beginning-of-line)
               (forward-byte beg)
@@ -859,6 +874,14 @@ possible."
                                          beg end (current-buffer))
                            (sit-for 60))
                        (delete-overlay caml-error-overlay)))))))))
+
+(defun caml-next-error-skip-warnings (&rest args)
+  (let ((old-flag caml-next-error-skip-warnings-flag))
+    (unwind-protect
+        (progn (setq caml-next-error-skip-warnings-flag 't)
+               (apply 'next-error args))
+      (setq caml-next-error-skip-warnings-flag old-flag))))
+
 
 ;; Usual match-string doesn't work properly with font-lock-mode
 ;; on some emacs.
@@ -973,7 +996,7 @@ to the end.
     (push-mark)
     (goto-char beg)
     (cons beg end)))
-    
+
 ;;itz Fri Sep 25 12:58:13 PDT 1998 support for adding change-log entries
 (defun caml-current-defun ()
   (save-excursion
@@ -1764,7 +1787,7 @@ by |, insert one."
 
 ;; to mark phrases, so that repeated calls will take several of them
 ;; knows little about Ocaml appart literals and comments, so it should work
-;; with other dialects as long as ;; marks the end of phrase. 
+;; with other dialects as long as ;; marks the end of phrase.
 
 (defun caml-indent-phrase (arg)
   "Indent current phrase

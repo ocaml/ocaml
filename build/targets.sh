@@ -1,4 +1,18 @@
+
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#       Nicolas Pouillard, projet Gallium, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 2007 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
 # $Id$
+
 . config/config.sh
 . build/otherlibs-targets.sh
 . build/camlp4-targets.sh
@@ -38,8 +52,9 @@ OCAMLOPT_NATIVE=ocamlopt.opt$EXE
 OCAMLLEX_NATIVE=lex/ocamllex.opt$EXE
 TOOLS_NATIVE=tools/ocamldep.native$EXE
 OCAMLDOC_NATIVE="ocamldoc/ocamldoc.opt$EXE ocamldoc/odoc_info.cmxa ocamldoc/stdlib_man/Pervasives.3o"
-OCAMLBUILD_NATIVE="ocamlbuild/ocamlbuildlib.cmxa \
-                   ocamlbuild/ocamlbuildlightlib.cmxa \
+OCAMLBUILDLIB_NATIVE="ocamlbuild/ocamlbuildlib.cmxa \
+                      ocamlbuild/ocamlbuildlightlib.cmxa"
+OCAMLBUILD_NATIVE="$OCAMLBUILDLIB_NATIVE \
                    ocamlbuild/ocamlbuild.native$EXE \
                    ocamlbuild/ocamlbuildlight.native$EXE"
 if [ -x boot/myocamlbuild.native ]; then

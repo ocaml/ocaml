@@ -52,7 +52,7 @@ struct channel {
 };
 
 enum {
-  CHANNEL_FLAG_FROM_SOCKET = 1,   /* For Windows */
+  CHANNEL_FLAG_FROM_SOCKET = 1  /* For Windows */
 };
 
 /* For an output channel:
@@ -101,6 +101,8 @@ CAMLextern void (*caml_channel_mutex_free) (struct channel *);
 CAMLextern void (*caml_channel_mutex_lock) (struct channel *);
 CAMLextern void (*caml_channel_mutex_unlock) (struct channel *);
 CAMLextern void (*caml_channel_mutex_unlock_exn) (void);
+
+CAMLextern struct channel * caml_all_opened_channels;
 
 #define Lock(channel) \
   if (caml_channel_mutex_lock != NULL) (*caml_channel_mutex_lock)(channel)

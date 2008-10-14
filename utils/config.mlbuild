@@ -40,28 +40,26 @@ let standard_runtime =
   else C.bindir^"/ocamlrun"
 let ccomp_type = C.ccomptype
 let bytecomp_c_compiler = sf "%s %s %s" C.bytecc C.bytecccompopts C.sharedcccompopts
-let bytecomp_c_linker = sf "%s %s" C.bytecc C.bytecclinkopts
+let bytecomp_c_linker = if windows then "flexlink" else sf "%s %s" C.bytecc C.bytecclinkopts
 let bytecomp_c_libraries = C.bytecclibs
 let native_c_compiler = sf "%s %s" C.nativecc C.nativecccompopts
-let native_c_linker = sf "%s %s" C.nativecc C.nativecclinkopts
+let native_c_linker = if windows then "flexlink" else sf "%s %s" C.nativecc C.nativecclinkopts
 let native_c_libraries = C.nativecclibs
-let native_partial_linker =
-  if ccomp_type = "msvc" then "link /lib /nologo"
-  else sf "%s %s" C.partialld C.nativecclinkopts
-let native_pack_linker =
-  if ccomp_type = "msvc" then "link /lib /nologo /out:"
-  else sf "%s %s -o " C.partialld C.nativecclinkopts
+let native_pack_linker = C.packld
 let ranlib = C.ranlibcmd
 let cc_profile = C.cc_profile
+let mkdll = C.mkdll
+let mkexe = C.mkexe
+let mkmaindll = C.mkmaindll
 
 let exec_magic_number = "Caml1999X008"
-and cmi_magic_number = "Caml1999I010"
+and cmi_magic_number = "Caml1999I011"
 and cmo_magic_number = "Caml1999O006"
 and cma_magic_number = "Caml1999A007"
 and cmx_magic_number = "Caml1999Y011"
 and cmxa_magic_number = "Caml1999Z010"
-and ast_impl_magic_number = "Caml1999M011"
-and ast_intf_magic_number = "Caml1999N010"
+and ast_impl_magic_number = "Caml1999M012"
+and ast_intf_magic_number = "Caml1999N011"
 
 let load_path = ref ([] : string list)
 
@@ -79,6 +77,8 @@ let stack_threshold = 256 (* see byterun/config.h *)
 let architecture = C.arch
 let model = C.model
 let system = C.system
+
+let asm = C.asm
 
 let ext_obj = C.ext_obj
 let ext_asm = C.ext_asm
@@ -107,12 +107,13 @@ let print_config oc =
   p "native_c_compiler" native_c_compiler;
   p "native_c_linker" native_c_linker;
   p "native_c_libraries" native_c_libraries;
-  p "native_partial_linker" native_partial_linker;
+  p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;
   p "cc_profile" cc_profile;
   p "architecture" architecture;
   p "model" model;
   p "system" system;
+  p "asm" asm;
   p "ext_obj" ext_obj;
   p "ext_asm" ext_asm;
   p "ext_lib" ext_lib;

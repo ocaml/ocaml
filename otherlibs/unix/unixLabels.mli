@@ -153,7 +153,7 @@ type wait_flag = Unix.wait_flag =
     WNOHANG (** do not block if no child has
                died yet, but immediately return with a pid equal to 0.*)
   | WUNTRACED (** report also the children that receive stop signals. *)
-(** Flags for {!Unix.waitpid}. *)
+(** Flags for {!UnixLabels.waitpid}. *)
 
 val execv : prog:string -> args:string array -> 'a
 (** [execv prog args] execute the program in file [prog], with
@@ -383,7 +383,7 @@ module LargeFile :
 (** File operations on large files.
   This sub-module provides 64-bit variants of the functions
   {!UnixLabels.lseek} (for positioning a file descriptor),
-  {!UnixLabels.truncate} and {!UnixLabels.ftruncate} 
+  {!UnixLabels.truncate} and {!UnixLabels.ftruncate}
   (for changing the size of a file),
   and {!UnixLabels.stat}, {!UnixLabels.lstat} and {!UnixLabels.fstat}
   (for obtaining information on files).  These alternate functions represent
@@ -577,23 +577,23 @@ val open_process_full :
    and standard error of the command. *)
 
 val close_process_in : in_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process_in}, 
+(** Close channels opened by {!UnixLabels.open_process_in},
    wait for the associated command to terminate,
    and return its termination status. *)
 
 val close_process_out : out_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process_out}, 
+(** Close channels opened by {!UnixLabels.open_process_out},
    wait for the associated command to terminate,
    and return its termination status. *)
 
 val close_process : in_channel * out_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process}, 
+(** Close channels opened by {!UnixLabels.open_process},
    wait for the associated command to terminate,
    and return its termination status. *)
 
 val close_process_full :
   in_channel * out_channel * in_channel -> process_status
-(** Close channels opened by {!UnixLabels.open_process_full}, 
+(** Close channels opened by {!UnixLabels.open_process_full},
    wait for the associated command to terminate,
    and return its termination status. *)
 
@@ -675,7 +675,7 @@ val kill : pid:int -> signal:int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
    with id [pid]. *)
 
-type sigprocmask_command = Unix.sigprocmask_command = 
+type sigprocmask_command = Unix.sigprocmask_command =
     SIG_SETMASK
   | SIG_BLOCK
   | SIG_UNBLOCK
@@ -913,7 +913,7 @@ type socket_type = Unix.socket_type =
 (** The type of socket kinds, specifying the semantics of
    communications. *)
 
-type sockaddr = Unix.sockaddr = 
+type sockaddr = Unix.sockaddr =
     ADDR_UNIX of string
   | ADDR_INET of inet_addr * int
 (** The type of socket addresses. [ADDR_UNIX name] is a socket
@@ -971,11 +971,11 @@ val getsockname : file_descr -> sockaddr
 val getpeername : file_descr -> sockaddr
 (** Return the address of the host connected to the given socket. *)
 
-type msg_flag = Unix.msg_flag = 
+type msg_flag = Unix.msg_flag =
     MSG_OOB
   | MSG_DONTROUTE
   | MSG_PEEK
-(** The flags for {!UnixLabels.recv},  {!UnixLabels.recvfrom}, 
+(** The flags for {!UnixLabels.recv},  {!UnixLabels.recvfrom},
    {!UnixLabels.send} and {!UnixLabels.sendto}. *)
 
 val recv :
@@ -1009,6 +1009,8 @@ type socket_bool_option =
   | SO_DONTROUTE   (** Bypass the standard routing algorithms *)
   | SO_OOBINLINE   (** Leave out-of-band data in line *)
   | SO_ACCEPTCONN  (** Report whether socket listening is enabled *)
+  | TCP_NODELAY    (** Control the Nagle algorithm for TCP sockets *)
+  | IPV6_ONLY      (** Forbid binding an IPv6 socket to an IPv4 address *)
 (** The socket options that can be consulted with {!UnixLabels.getsockopt}
    and modified with {!UnixLabels.setsockopt}.  These options have a boolean
    ([true]/[false]) value. *)
@@ -1016,7 +1018,7 @@ type socket_bool_option =
 type socket_int_option =
     SO_SNDBUF      (** Size of send buffer *)
   | SO_RCVBUF      (** Size of received buffer *)
-  | SO_ERROR       (** Report the error status and clear it *)
+  | SO_ERROR       (** Deprecated.  Use {!Unix.getsockopt_error} instead. *)
   | SO_TYPE        (** Report the socket type *)
   | SO_RCVLOWAT    (** Minimum number of bytes to process for input operations *)
   | SO_SNDLOWAT    (** Minimum number of bytes to process for output operations *)
@@ -1047,31 +1049,28 @@ val getsockopt : file_descr -> socket_bool_option -> bool
 val setsockopt : file_descr -> socket_bool_option -> bool -> unit
 (** Set or clear a boolean-valued option in the given socket. *)
 
-external getsockopt_int :
-  file_descr -> socket_int_option -> int = "unix_getsockopt_int"
-(** Same as {!UnixLabels.getsockopt} for an integer-valued socket option. *)
+val getsockopt_int : file_descr -> socket_int_option -> int
+(** Same as {!Unix.getsockopt} for an integer-valued socket option. *)
 
-external setsockopt_int :
-  file_descr -> socket_int_option -> int -> unit = "unix_setsockopt_int"
-(** Same as {!UnixLabels.setsockopt} for an integer-valued socket option. *)
+val setsockopt_int : file_descr -> socket_int_option -> int -> unit
+(** Same as {!Unix.setsockopt} for an integer-valued socket option. *)
 
-external getsockopt_optint :
-  file_descr -> socket_optint_option -> int option = "unix_getsockopt_optint"
-(** Same as {!UnixLabels.getsockopt} for a socket option whose value is an [int option]. *)
+val getsockopt_optint : file_descr -> socket_optint_option -> int option
+(** Same as {!Unix.getsockopt} for a socket option whose value is an [int option]. *)
 
-external setsockopt_optint :
-  file_descr -> socket_optint_option -> int option ->
-    unit = "unix_setsockopt_optint"
-(** Same as {!UnixLabels.setsockopt} for a socket option whose value is an [int option]. *)
+val setsockopt_optint :
+      file_descr -> socket_optint_option -> int option -> unit
+(** Same as {!Unix.setsockopt} for a socket option whose value is an [int option]. *)
 
-external getsockopt_float :
-  file_descr -> socket_float_option -> float = "unix_getsockopt_float"
-(** Same as {!UnixLabels.getsockopt} for a socket option whose value is a floating-point number. *)
+val getsockopt_float : file_descr -> socket_float_option -> float
+(** Same as {!Unix.getsockopt} for a socket option whose value is a floating-point number. *)
 
-external setsockopt_float :
-  file_descr -> socket_float_option -> float -> unit = "unix_setsockopt_float"
-(** Same as {!UnixLabels.setsockopt} for a socket option whose value is a floating-point number. *)
+val setsockopt_float : file_descr -> socket_float_option -> float -> unit
+(** Same as {!Unix.setsockopt} for a socket option whose value is a floating-point number. *)
 
+val getsockopt_error : file_descr -> error option
+(** Return the error condition associated with the given socket,
+    and clear it. *)
 
 (** {6 High-level network connection functions} *)
 
@@ -1271,7 +1270,7 @@ val tcgetattr : file_descr -> terminal_io
 (** Return the status of the terminal referred to by the given
    file descriptor. *)
 
-type setattr_when = Unix.setattr_when = 
+type setattr_when = Unix.setattr_when =
     TCSANOW
   | TCSADRAIN
   | TCSAFLUSH
@@ -1295,7 +1294,7 @@ val tcdrain : file_descr -> unit
 (** Waits until all output written on the given file descriptor
    has been transmitted. *)
 
-type flush_queue = Unix.flush_queue = 
+type flush_queue = Unix.flush_queue =
     TCIFLUSH
   | TCOFLUSH
   | TCIOFLUSH
@@ -1307,7 +1306,7 @@ val tcflush : file_descr -> mode:flush_queue -> unit
    [TCOFLUSH] flushes data written but not transmitted, and
    [TCIOFLUSH] flushes both. *)
 
-type flow_action = Unix.flow_action = 
+type flow_action = Unix.flow_action =
     TCOOFF
   | TCOON
   | TCIOFF

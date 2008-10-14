@@ -29,6 +29,8 @@ type primitive =
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
+  (* Force lazy values *)
+  | Plazyforce
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -79,9 +81,9 @@ type primitive =
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
   | Pbintcomp of boxed_integer * comparison
-  (* Operations on big arrays *)
-  | Pbigarrayref of int * bigarray_kind * bigarray_layout
-  | Pbigarrayset of int * bigarray_kind * bigarray_layout
+  (* Operations on big arrays: (unsafe, #dimensions, kind, layout) *)
+  | Pbigarrayref of bool * int * bigarray_kind * bigarray_layout
+  | Pbigarrayset of bool * int * bigarray_kind * bigarray_layout
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -133,7 +135,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list
+  | Lapply of lambda * lambda list * Location.t
   | Lfunction of function_kind * Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda

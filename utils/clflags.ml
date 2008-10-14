@@ -33,7 +33,7 @@ and ccopts = ref ([] : string list)     (* -ccopt *)
 and classic = ref false                 (* -nolabels *)
 and nopervasives = ref false            (* -nopervasives *)
 and preprocessor = ref(None : string option) (* -pp *)
-let save_types = ref false              (* -stypes *)
+let annotations = ref false             (* -annot *)
 (*> JOCAML *)
 and nojoin = ref false                  (* -nojoin *)
 (*< JOCAML *)
@@ -50,7 +50,6 @@ and recursive_types = ref false         (* -rectypes *)
 and make_runtime = ref false            (* -make_runtime *)
 and gprofile = ref false                (* -p *)
 and c_compiler = ref Config.bytecomp_c_compiler (* -cc *)
-and c_linker = ref Config.bytecomp_c_linker (* -cc *)
 and no_auto_link = ref false            (* -noautolink *)
 and dllpaths = ref ([] : string list)   (* -dllpath *)
 and make_package = ref false            (* -pack *)
@@ -94,3 +93,7 @@ let std_include_dir () =
   | None -> [Config.standard_library]
   | Some s -> [Config.standard_library; s]    
 ;;
+
+let shared = ref false (* -shared *)
+let dlcode = ref true (* not -nodynlink *)
+

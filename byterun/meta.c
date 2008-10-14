@@ -155,6 +155,12 @@ value caml_invoke_traced_function(value codeptr, value env, value arg)
   return Val_unit; /* not reached */
 }
 
+value caml_reify_bytecode(value prog, value len)
+{
+  caml_invalid_argument("Meta.reify_bytecode");
+  return Val_unit; /* not reached */
+}
+
 value * caml_stack_low;
 value * caml_stack_high;
 value * caml_stack_threshold;

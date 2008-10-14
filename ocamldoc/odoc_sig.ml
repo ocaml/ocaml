@@ -172,9 +172,9 @@ module Analyser =
 
     let name_comment_from_type_kind pos_end pos_limit tk =
       match tk with
-        Parsetree.Ptype_abstract | Parsetree.Ptype_private ->
+        Parsetree.Ptype_abstract ->
           (0, [])
-      | Parsetree.Ptype_variant (cons_core_type_list_list, _) ->
+      | Parsetree.Ptype_variant cons_core_type_list_list ->
           let rec f acc cons_core_type_list_list =
             match cons_core_type_list_list with
               [] ->
@@ -197,7 +197,7 @@ module Analyser =
           in
           f [] cons_core_type_list_list
 
-      | Parsetree.Ptype_record (name_mutable_type_list, _) (* of (string * mutable_flag * core_type) list*) ->
+      | Parsetree.Ptype_record name_mutable_type_list (* of (string * mutable_flag * core_type) list*) ->
           let rec f = function
               [] ->
                 []
@@ -220,7 +220,7 @@ module Analyser =
         Types.Type_abstract ->
           Odoc_type.Type_abstract
 
-      | Types.Type_variant (l, priv) ->
+      | Types.Type_variant l ->
           let f (constructor_name, type_expr_list) =
             let comment_opt =
               try
@@ -235,9 +235,9 @@ module Analyser =
               vc_text = comment_opt
             }
           in
-          Odoc_type.Type_variant (List.map f l, priv = Asttypes.Private)
+          Odoc_type.Type_variant (List.map f l)
 
-      | Types.Type_record (l, _, priv) ->
+      | Types.Type_record (l, _) ->
           let f (field_name, mutable_flag, type_expr) =
             let comment_opt =
               try
@@ -253,17 +253,12 @@ module Analyser =
               rf_text = comment_opt
             }
           in
-          Odoc_type.Type_record (List.map f l, priv = Asttypes.Private)
+          Odoc_type.Type_record (List.map f l)
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
        signature. @return the couple (inherited_class list, elements).*)
     let analyse_class_elements env current_class_name last_pos pos_limit
         class_type_field_list class_signature =
-      print_DEBUG "Types.Tcty_signature class_signature";
-      let f_DEBUG var (mutable_flag, type_exp) = print_DEBUG var in
-      Types.Vars.iter f_DEBUG class_signature.Types.cty_vars;
-      print_DEBUG ("Type de la classe "^current_class_name^" : ");
-      print_DEBUG (Odoc_print.string_of_type_expr class_signature.Types.cty_self);
       let get_pos_limit2 q =
         match q with
           [] -> pos_limit
@@ -330,7 +325,7 @@ module Analyser =
             in
             ([], ele_comments)
 
-        | Parsetree.Pctf_val (name, mutable_flag, _, loc) :: q ->
+        | Parsetree.Pctf_val (name, mutable_flag, virtual_flag, _, loc) :: q ->
             (* of (string * mutable_flag * core_type option * Location.t)*)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let complete_name = Name.concat current_class_name name in
@@ -353,6 +348,7 @@ module Analyser =
                   val_loc = { loc_impl = None ; loc_inter = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum)} ;
                 } ;
                 att_mutable = mutable_flag = Asttypes.Mutable ;
+                att_virtual = virtual_flag = Asttypes.Virtual ;
               }
             in
             let pos_limit2 = get_pos_limit2 q in
@@ -603,13 +599,14 @@ module Analyser =
                       ty_name = Name.concat current_module_name name ;
                       ty_info = assoc_com ;
                       ty_parameters =
-		        List.map2 (fun p (co,cn,_) ->
-			             (Odoc_env.subst_type new_env p,
-				      co, cn)
-				  )
-			sig_type_decl.Types.type_params
-			sig_type_decl.Types.type_variance;
-                      ty_kind = type_kind ;
+                        List.map2 (fun p (co,cn,_) ->
+                                     (Odoc_env.subst_type new_env p,
+                                      co, cn)
+                                  )
+                        sig_type_decl.Types.type_params
+                        sig_type_decl.Types.type_variance;
+                      ty_kind = type_kind;
+                      ty_private = sig_type_decl.Types.type_private;
                       ty_manifest =
                       (match sig_type_decl.Types.type_manifest with
                         None -> None
@@ -1178,11 +1175,6 @@ module Analyser =
            ([], k)
 
       | (Parsetree.Pcty_signature (_, class_type_field_list), Types.Tcty_signature class_signature) ->
-          print_DEBUG "Types.Tcty_signature class_signature";
-          let f_DEBUG var (mutable_flag, type_exp) = print_DEBUG var in
-          Types.Vars.iter f_DEBUG class_signature.Types.cty_vars;
-          print_DEBUG ("Type de la classe "^current_class_name^" : ");
-          print_DEBUG (Odoc_print.string_of_type_expr class_signature.Types.cty_self);
           (* we get the elements of the class in class_type_field_list *)
           let (inher_l, ele) = analyse_class_elements env current_class_name
               last_pos
@@ -1232,11 +1224,6 @@ module Analyser =
            k
 
       | (Parsetree.Pcty_signature (_, class_type_field_list), Types.Tcty_signature class_signature) ->
-          print_DEBUG "Types.Tcty_signature class_signature";
-          let f_DEBUG var (mutable_flag, type_exp) = print_DEBUG var in
-          Types.Vars.iter f_DEBUG class_signature.Types.cty_vars;
-          print_DEBUG ("Type de la classe "^current_class_name^" : ");
-          print_DEBUG (Odoc_print.string_of_type_expr class_signature.Types.cty_self);
           (* we get the elements of the class in class_type_field_list *)
           let (inher_l, ele) = analyse_class_elements env current_class_name
               last_pos

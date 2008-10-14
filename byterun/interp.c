@@ -66,9 +66,12 @@ sp is a local copy of the global variable caml_extern_sp. */
 
 #define Setup_for_gc \
   { sp -= 2; sp[0] = accu; sp[1] = env; caml_extern_sp = sp; }
-#define Restore_after_gc { accu = sp[0]; env = sp[1]; sp += 2; }
-#define Setup_for_c_call { saved_pc = pc; *--sp = env; caml_extern_sp = sp; }
-#define Restore_after_c_call { sp = caml_extern_sp; env = *sp++; }
+#define Restore_after_gc \
+  { accu = sp[0]; env = sp[1]; sp += 2; }
+#define Setup_for_c_call \
+  { saved_pc = pc; *--sp = env; caml_extern_sp = sp; }
+#define Restore_after_c_call \
+  { sp = caml_extern_sp; env = *sp++; saved_pc = NULL; }
 
 /* An event frame must look like accu + a C_CALL frame + a RETURN 1 frame */
 #define Setup_for_event \
@@ -211,7 +214,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
   /* volatile ensures that initial_local_roots and saved_pc
      will keep correct value across longjmp */
   struct caml__roots_block * volatile initial_local_roots;
-  volatile code_t saved_pc;
+  volatile code_t saved_pc = NULL;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
 #ifndef THREADED_CODE
@@ -245,7 +248,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
     caml_local_roots = initial_local_roots;
     sp = caml_extern_sp;
     accu = caml_exn_bucket;
-    pc = saved_pc + 2; /* +2 adjustement for the sole purpose of backtraces */
+    pc = saved_pc; saved_pc = NULL;
+    if (pc != NULL) pc += 2;
+        /* +2 adjustement for the sole purpose of backtraces */
     goto raise_exception;
   }
   caml_external_raise = &raise_buf;

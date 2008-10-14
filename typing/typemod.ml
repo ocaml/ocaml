@@ -87,13 +87,14 @@ let merge_constraint initial_env loc sg lid constr =
       ([], _, _) ->
         raise(Error(loc, With_no_component lid))
     | (Tsig_type(id, decl, rs) :: rem, [s],
-       Pwith_type ({ptype_kind = Ptype_private} as sdecl))
-      when Ident.name id = s ->
+       Pwith_type ({ptype_kind = Ptype_abstract} as sdecl))
+      when Ident.name id = s && Typedecl.is_fixed_type sdecl ->
         let decl_row =
           { type_params =
               List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
             type_arity = List.length sdecl.ptype_params;
             type_kind = Type_abstract;
+            type_private = Private;
             type_manifest = None;
             type_variance =
               List.map (fun (c,n) -> (not n, not c, not c))
@@ -152,87 +153,83 @@ let rec map_rec' fn decls rem =
    components of signatures.  For types, retain only their arity,
    making them abstract otherwise. *)
 
-let approx_modtype transl_mty init_env smty =
+let rec approx_modtype env smty =
+  match smty.pmty_desc with
+    Pmty_ident lid ->
+      begin try
+        let (path, info) = Env.lookup_modtype lid env in
+        Tmty_ident path
+      with Not_found ->
+        raise(Error(smty.pmty_loc, Unbound_modtype lid))
+      end
+  | Pmty_signature ssg ->
+      Tmty_signature(approx_sig env ssg)
+  | Pmty_functor(param, sarg, sres) ->
+      let arg = approx_modtype env sarg in
+      let (id, newenv) = Env.enter_module param arg env in
+      let res = approx_modtype newenv sres in
+      Tmty_functor(id, arg, res)
+  | Pmty_with(sbody, constraints) ->
+      approx_modtype env sbody
 
-  let rec approx_mty env smty =
-    match smty.pmty_desc with
-      Pmty_ident lid ->
-        begin try
-          let (path, info) = Env.lookup_modtype lid env in
-          Tmty_ident path
-        with Not_found ->
-          raise(Error(smty.pmty_loc, Unbound_modtype lid))
-        end
-    | Pmty_signature ssg ->
-        Tmty_signature(approx_sig env ssg)
-    | Pmty_functor(param, sarg, sres) ->
-        let arg = approx_mty env sarg in
-        let (id, newenv) = Env.enter_module param arg env in
-        let res = approx_mty newenv sres in
-        Tmty_functor(id, arg, res)
-    | Pmty_with(sbody, constraints) ->
-        approx_mty env sbody
+and approx_sig env ssg =
+  match ssg with
+    [] -> []
+  | item :: srem ->
+      match item.psig_desc with
+      | Psig_type sdecls ->
+          let decls = Typedecl.approx_type_decl env sdecls in
+          let rem = approx_sig env srem in
+          map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
+      | Psig_module(name, smty) ->
+          let mty = approx_modtype env smty in
+          let (id, newenv) = Env.enter_module name mty env in
+          Tsig_module(id, mty, Trec_not) :: approx_sig newenv srem
+      | Psig_recmodule sdecls ->
+          let decls =
+            List.map
+              (fun (name, smty) ->
+                (Ident.create name, approx_modtype env smty))
+              sdecls in
+          let newenv =
+            List.fold_left (fun env (id, mty) -> Env.add_module id mty env)
+            env decls in
+          map_rec (fun rs (id, mty) -> Tsig_module(id, mty, rs)) decls
+                  (approx_sig newenv srem)
+      | Psig_modtype(name, sinfo) ->
+          let info = approx_modtype_info env sinfo in
+          let (id, newenv) = Env.enter_modtype name info env in
+          Tsig_modtype(id, info) :: approx_sig newenv srem
+      | Psig_open lid ->
+          let (path, mty) = type_module_path env item.psig_loc lid in
+          let sg = extract_sig_open env item.psig_loc mty in
+          let newenv = Env.open_signature path sg env in
+          approx_sig newenv srem
+      | Psig_include smty ->
+          let mty = approx_modtype env smty in
+          let sg = Subst.signature Subst.identity
+                     (extract_sig env smty.pmty_loc mty) in
+          let newenv = Env.add_signature sg env in
+          sg @ approx_sig newenv srem
+      | Psig_class sdecls | Psig_class_type sdecls ->
+          let decls = Typeclass.approx_class_declarations env sdecls in
+          let rem = approx_sig env srem in
+          List.flatten
+            (map_rec
+              (fun rs (i1, d1, i2, d2, i3, d3) ->
+                [Tsig_cltype(i1, d1, rs);
+                 Tsig_type(i2, d2, rs);
+                 Tsig_type(i3, d3, rs)])
+              decls [rem])
+      | _ ->
+          approx_sig env srem
 
-  and approx_sig env ssg =
-    match ssg with
-      [] -> []
-    | item :: srem ->
-        match item.psig_desc with
-        | Psig_type sdecls ->
-            let decls = Typedecl.approx_type_decl env sdecls in
-            let rem = approx_sig env srem in
-            map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
-        | Psig_module(name, smty) ->
-            let mty = approx_mty env smty in
-            let (id, newenv) = Env.enter_module name mty env in
-            Tsig_module(id, mty, Trec_not) :: approx_sig newenv srem
-        | Psig_recmodule sdecls ->
-            let decls =
-              List.map
-                (fun (name, smty) ->
-                  (Ident.create name, approx_mty env smty))
-                sdecls in
-            let newenv =
-              List.fold_left (fun env (id, mty) -> Env.add_module id mty env)
-              env decls in
-            map_rec (fun rs (id, mty) -> Tsig_module(id, mty, rs)) decls
-                    (approx_sig newenv srem)
-        | Psig_modtype(name, sinfo) ->
-            let info = approx_mty_info env sinfo in
-            let (id, newenv) = Env.enter_modtype name info env in
-            Tsig_modtype(id, info) :: approx_sig newenv srem
-        | Psig_open lid ->
-            let (path, mty) = type_module_path env item.psig_loc lid in
-            let sg = extract_sig_open env item.psig_loc mty in
-            let newenv = Env.open_signature path sg env in
-            approx_sig newenv srem
-        | Psig_include smty ->
-            let mty = transl_mty init_env smty in
-            let sg = Subst.signature Subst.identity
-                       (extract_sig env smty.pmty_loc mty) in
-            let newenv = Env.add_signature sg env in
-            sg @ approx_sig newenv srem
-        | Psig_class sdecls | Psig_class_type sdecls ->
-            let decls = Typeclass.approx_class_declarations env sdecls in
-            let rem = approx_sig env srem in
-            List.flatten
-              (map_rec
-                (fun rs (i1, d1, i2, d2, i3, d3) ->
-                  [Tsig_cltype(i1, d1, rs);
-                   Tsig_type(i2, d2, rs);
-                   Tsig_type(i3, d3, rs)])
-                decls [rem])
-        | _ ->
-            approx_sig env srem
-
-  and approx_mty_info env sinfo =
-    match sinfo with
-      Pmodtype_abstract ->
-        Tmodtype_abstract
-    | Pmodtype_manifest smty ->
-        Tmodtype_manifest(approx_mty env smty)
-
-  in approx_mty init_env smty
+and approx_modtype_info env sinfo =
+  match sinfo with
+    Pmodtype_abstract ->
+      Tmodtype_abstract
+  | Pmodtype_manifest smty ->
+      Tmodtype_manifest(approx_modtype env smty)
 
 (* Additional validity checks on type definitions arising from
    recursive modules *)
@@ -408,13 +405,22 @@ and transl_recmodule_modtypes loc env sdecls =
   let init =
     List.map
       (fun (name, smty) ->
-        (Ident.create name, approx_modtype transl_modtype env smty))
+        (Ident.create name, approx_modtype env smty))
       sdecls in
-  let first = transition (make_env init) init in
-  let final_env = make_env first in
-  let final_decl = transition final_env init in
-  check_recmod_typedecls final_env sdecls final_decl;
-  (final_decl, final_env)
+  let env0 = make_env init in
+  let dcl1 = transition env0 init in
+  let env1 = make_env dcl1 in
+  check_recmod_typedecls env1 sdecls dcl1;
+  let dcl2 = transition env1 dcl1 in
+(*
+  List.iter
+    (fun (id, mty) ->
+      Format.printf "%a: %a@." Printtyp.ident id Printtyp.modtype mty)
+    dcl2;
+*)
+  let env2 = make_env dcl2 in
+  check_recmod_typedecls env2 sdecls dcl2;
+  (dcl2, env2)
 
 (* Try to convert a module expression to a module path. *)
 
@@ -503,6 +509,79 @@ let enrich_module_type anchor name mty env =
     None -> mty
   | Some p -> Mtype.enrich_modtype env (Pdot(p, name, nopos)) mty
 
+let check_recmodule_inclusion env bindings =
+  (* PR#4450, PR#4470: consider
+        module rec X : DECL = MOD  where MOD has inferred type ACTUAL
+     The "natural" typing condition
+        E, X: ACTUAL |- ACTUAL <: DECL
+     leads to circularities through manifest types.  
+     Instead, we "unroll away" the potential circularities a finite number
+     of times.  The (weaker) condition we implement is:
+        E, X: DECL,
+           X1: ACTUAL,
+           X2: ACTUAL{X <- X1}/X1
+           ...
+           Xn: ACTUAL{X <- X(n-1)}/X(n-1)
+        |- ACTUAL{X <- Xn}/Xn <: DECL{X <- Xn}
+     so that manifest types rooted at X(n+1) are expanded in terms of X(n),
+     avoiding circularities.  The strengthenings ensure that
+     Xn.t = X(n-1).t = ... = X2.t = X1.t.
+     N can be chosen arbitrarily; larger values of N result in more
+     recursive definitions being accepted.  A good choice appears to be
+     the number of mutually recursive declarations. *)
+
+  let subst_and_strengthen env s id mty =
+    Mtype.strengthen env (Subst.modtype s mty)
+                         (Subst.module_path s (Pident id)) in
+
+  let rec check_incl first_time n env s =
+    if n > 0 then begin
+      (* Generate fresh names Y_i for the rec. bound module idents X_i *)
+      let bindings1 =
+        List.map
+          (fun (id, mty_decl, modl, mty_actual) ->
+             (id, Ident.rename id, mty_actual))
+          bindings in
+      (* Enter the Y_i in the environment with their actual types substituted
+         by the input substitution s *)
+      let env' =
+        List.fold_left
+          (fun env (id, id', mty_actual) ->
+             let mty_actual' =
+               if first_time
+               then mty_actual
+               else subst_and_strengthen env s id mty_actual in
+             Env.add_module id' mty_actual' env)
+          env bindings1 in
+      (* Build the output substitution Y_i <- X_i *)
+      let s' =
+        List.fold_left
+          (fun s (id, id', mty_actual) ->
+             Subst.add_module id (Pident id') s)
+          Subst.identity bindings1 in
+      (* Recurse with env' and s' *)
+      check_incl false (n-1) env' s'
+    end else begin
+      (* Base case: check inclusion of s(mty_actual) in s(mty_decl)
+         and insert coercion if needed *)
+      let check_inclusion (id, mty_decl, modl, mty_actual) =
+        let mty_decl' = Subst.modtype s mty_decl
+        and mty_actual' = subst_and_strengthen env s id mty_actual in
+        let coercion =
+          try
+            Includemod.modtypes env mty_actual' mty_decl'
+          with Includemod.Error msg ->
+            raise(Error(modl.mod_loc, Not_included msg)) in
+        let modl' =
+          { mod_desc = Tmod_constraint(modl, mty_decl, coercion);
+            mod_type = mty_decl;
+            mod_env = env;
+            mod_loc = modl.mod_loc } in
+        (id, modl') in
+      List.map check_inclusion bindings
+    end
+  in check_incl true (List.length bindings) env Subst.identity
+
 (* Type a module value expression *)
 
 let rec type_module anchor env smod =
@@ -514,7 +593,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
-      let (str, sg, finalenv) = type_structure anchor env sstr in
+      let (str, sg, finalenv) = type_structure anchor env sstr smod.pmod_loc in
       rm { mod_desc = Tmod_structure str;
            mod_type = Tmty_signature sg;
            mod_env = env;
@@ -569,7 +648,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
 
-and type_structure anchor env sstr =
+and type_structure anchor env sstr scope =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
@@ -582,9 +661,20 @@ and type_structure anchor env sstr =
         let expr = Typecore.type_expression env sexpr in
         let (str_rem, sig_rem, final_env) = type_struct env srem in
         (Tstr_eval expr :: str_rem, sig_rem, final_env)
-    | {pstr_desc = Pstr_value(rec_flag, sdefs)} :: srem ->
+    | {pstr_desc = Pstr_value(rec_flag, sdefs); pstr_loc = loc} :: srem ->
+        let scope =
+          match rec_flag with
+          | Recursive -> Some (Annot.Idef {scope with
+                                 Location.loc_start = loc.Location.loc_start})
+          | Nonrecursive ->
+              let start = match srem with
+                | [] -> loc.Location.loc_end
+                | {pstr_loc = loc2} :: _ -> loc2.Location.loc_start
+              in Some (Annot.Idef {scope with Location.loc_start = start})
+          | Default -> None
+        in
         let (defs, newenv) =
-          Typecore.type_binding env rec_flag sdefs in
+          Typecore.type_binding env rec_flag sdefs scope in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = let_bound_idents defs in
         let make_sig_value id =
@@ -593,9 +683,14 @@ and type_structure anchor env sstr =
          map_end make_sig_value bound_idents sig_rem,
          final_env)
 (*> JOCAML *)
-    | {pstr_desc = Pstr_def (sdefs)} :: srem ->
+    | {pstr_desc = Pstr_def (sdefs) ; pstr_loc = loc} :: srem ->
+	let scope =
+	  let start = match srem with
+	  | [] -> loc.Location.loc_end
+	  | {pstr_loc = loc2} :: _ -> loc2.Location.loc_start in
+	  Some (Annot.Idef {scope with Location.loc_start = start}) in
         let (defs, newenv) =
-          Typecore.type_joindefinition env sdefs in
+          Typecore.type_joindefinition env sdefs scope in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = Typedtree.def_bound_idents defs in
         (Tstr_def (defs) :: str_rem,
@@ -656,27 +751,21 @@ and type_structure anchor env sstr =
         let (decls, newenv) =
           transl_recmodule_modtypes loc env
             (List.map (fun (name, smty, smodl) -> (name, smty)) sbind) in
-        let type_recmodule_binding (id, mty) (name, smty, smodl) =
-          let modl =
-            type_module (anchor_recmodule id anchor) newenv smodl in
-          let coercion =
-            try
-              Includemod.modtypes newenv
-                 (Mtype.strengthen env modl.mod_type (Pident id))
-                 mty
-            with Includemod.Error msg ->
-              raise(Error(smodl.pmod_loc, Not_included msg)) in
-          let modl' =
-            { mod_desc = Tmod_constraint(modl, mty, coercion);
-              mod_type = mty;
-              mod_env = newenv;
-              mod_loc = smodl.pmod_loc } in
-          (id, modl') in
-        let bind = List.map2 type_recmodule_binding decls sbind in
+        let bindings1 =
+          List.map2
+            (fun (id, mty) (name, smty, smodl) ->
+              let modl =
+                type_module (anchor_recmodule id anchor) newenv smodl in
+              let mty' =
+                enrich_module_type anchor (Ident.name id) modl.mod_type newenv in
+              (id, mty, modl, mty'))
+           decls sbind in
+        let bindings2 =
+          check_recmodule_inclusion newenv bindings1 in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (Tstr_recmodule bind :: str_rem,
+        (Tstr_recmodule bindings2 :: str_rem,
          map_rec (fun rs (id, modl) -> Tsig_module(id, modl.mod_type, rs))
-                 bind sig_rem,
+                 bindings2 sig_rem,
          final_env)
     | {pstr_desc = Pstr_modtype(name, smty); pstr_loc = loc} :: srem ->
         check "module type" loc modtype_names name;
@@ -750,7 +839,7 @@ and type_structure anchor env sstr =
          sg @ sig_rem,
          final_env)
   in
-  if !Clflags.save_types
+  if !Clflags.annotations
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   type_struct env sstr
 
@@ -811,10 +900,7 @@ and simplify_signature sg =
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
-  let (str, sg, finalenv) =
-    Misc.try_finally (fun () -> type_structure initial_env ast)
-                     (fun () -> Stypes.dump (outputprefix ^ ".annot"))
-  in
+  let (str, sg, finalenv) = type_structure initial_env ast Location.none in
   let simple_sg = simplify_signature sg in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then begin

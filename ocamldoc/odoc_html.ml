@@ -1331,25 +1331,27 @@ class html =
       self#html_of_type_expr_param_list b father t;
       (match t.ty_parameters with [] -> () | _ -> bs b " ");
       bs b ((Name.simple t.ty_name)^" ");
+      let priv = t.ty_private = Asttypes.Private in
       (
        match t.ty_manifest with
 	 None -> ()
        | Some typ ->
-	   bs b "= ";
-	   self#html_of_type_expr b father typ;
-	   bs b " "
+           bs b "= ";
+           if priv then bs b "private ";
+           self#html_of_type_expr b father typ;
+           bs b " "
       );
       (match t.ty_kind with
         Type_abstract -> bs b "</pre>"
-      | Type_variant (l, priv) ->
+      | Type_variant l ->
           bs b "= ";
-	  if priv then bs b "private" ;
-	  bs b
-	    (
-	     match t.ty_manifest with
-	       None -> "</code>"
-	     | Some _ -> "</pre>"
-	    );
+          if priv then bs b "private ";
+          bs b
+            (
+             match t.ty_manifest with
+               None -> "</code>"
+             | Some _ -> "</pre>"
+            );
           bs b "<table class=\"typetable\">\n";
 	  let print_one constr =
             bs b "<tr>\n<td align=\"left\" valign=\"top\" >\n";
@@ -1387,7 +1389,7 @@ class html =
 	  print_concat b "\n" print_one l;
           bs b "</table>\n"
 
-      | Type_record (l, priv) ->
+      | Type_record l ->
           bs b "= ";
 	  if priv then bs b "private " ;
 	  bs b "{";
@@ -1438,12 +1440,17 @@ class html =
       (* html mark *)
       bp b "<a name=\"%s\"></a>" (Naming.attribute_target a);
       (
+       if a.att_virtual then
+         bs b ((self#keyword "virtual")^ " ")
+       else
+         ()
+      );
+      (
        if a.att_mutable then
 	 bs b ((self#keyword Odoc_messages.mutab)^ " ")
        else
-	 ()
-      );
-      (
+         ()
+      );(
        match a.att_value.val_code with
          None -> bs b (Name.simple a.att_value.val_name)
        | Some c ->
@@ -1452,7 +1459,7 @@ class html =
            bp b "<a href=\"%s\">%s</a>" file (Name.simple a.att_value.val_name);
       );
       bs b " : ";
-      self#html_of_type_expr b module_name  a.att_value.val_type;
+      self#html_of_type_expr b module_name a.att_value.val_type;
       bs b "</pre>";
       self#html_of_info b a.att_value.val_info
 
@@ -1773,7 +1780,7 @@ class html =
         (Naming.type_target
            { ty_name = c.cl_name ;
              ty_info = None ; ty_parameters = [] ;
-             ty_kind = Type_abstract ; ty_manifest = None ;
+             ty_kind = Type_abstract ; ty_private = Asttypes.Public; ty_manifest = None ;
              ty_loc = Odoc_info.dummy_loc ;
 	     ty_code = None ;
 	   }
@@ -1820,7 +1827,7 @@ class html =
         (Naming.type_target
            { ty_name = ct.clt_name ;
              ty_info = None ; ty_parameters = [] ;
-             ty_kind = Type_abstract ; ty_manifest = None ;
+             ty_kind = Type_abstract ; ty_private = Asttypes.Public; ty_manifest = None ;
              ty_loc = Odoc_info.dummy_loc ;
 	     ty_code = None ;
 	   }

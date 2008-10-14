@@ -181,9 +181,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
   fprintf (f, "%#lx", v);
   if (!v)
     return;
-  if (Is_atom (v))
-    fprintf (f, "=atom%ld", v - Atom (0));
-  else if (prog && v % sizeof (int) == 0
+  if (prog && v % sizeof (int) == 0
 	   && (code_t) v >= prog
 	   && (code_t) v < (code_t) ((char *) prog + proglen))
     fprintf (f, "=code@%d", (code_t) v - prog);

@@ -78,7 +78,7 @@ static void check_block (char *hp)
   mlsize_t i;
   value v = Val_hp (hp);
   value f;
-  
+
   check_head (v);
   switch (Tag_hp (hp)){
   case Abstract_tag: break;
@@ -93,7 +93,7 @@ static void check_block (char *hp)
   case Custom_tag:
     Assert (!Is_in_heap (Custom_ops_val (v)));
     break;
-  
+
   case Infix_tag:
     Assert (0);
     break;
@@ -102,7 +102,10 @@ static void check_block (char *hp)
     Assert (Tag_hp (hp) < No_scan_tag);
     for (i = 0; i < Wosize_hp (hp); i++){
       f = Field (v, i);
-      if (Is_block (f) && Is_in_heap (f)) check_head (f);
+      if (Is_block (f) && Is_in_heap (f)){
+        check_head (f);
+        Assert (Color_val (f) != Caml_blue);
+      }
     }
   }
 }
@@ -454,10 +457,7 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
 {
   uintnat major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
-#ifdef DEBUG
-  caml_gc_message (-1, "### O'Caml runtime: debug mode ###\n", 0);
-#endif
-
+  caml_page_table_initialize(Bsize_wsize(minor_size) + major_heap_size);
   caml_set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
   caml_major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
   caml_percent_free = norm_pfree (percent_fr);

@@ -228,10 +228,6 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command ("ml64 /nologo /Cp /c /Fo" ^
+  Ccomp.command (Config.asm ^
                  Filename.quote outfile ^ " " ^ 
                  Filename.quote infile ^ "> NUL")
-
-  (* /Cp preserve case of all used identifiers
-     /c  assemble only
-     /Fo output file name *)
