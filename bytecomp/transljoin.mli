@@ -17,29 +17,35 @@
 (* Basic join operations from the module Join *)
 (**********************************************)
 
-val create_process : Lambda.lambda -> Lambda.lambda
-val send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
-val tail_send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
+val create_process : Lambda.lambda -> Location.t -> Lambda.lambda
+val send_async : Lambda.lambda -> Lambda.lambda ->  Location.t -> Lambda.lambda
+val tail_send_async : Lambda.lambda -> Lambda.lambda ->  Location.t -> Lambda.lambda
 
 (* Direct calls *)
-val local_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
-val local_tail_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
-val local_send_sync : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
-val local_send_alone : Ident.t -> Lambda.lambda -> Lambda.lambda
-val local_tail_send_alone : Ident.t -> Lambda.lambda -> Lambda.lambda
+val local_send_async :
+    Ident.t -> int -> Lambda.lambda -> Location.t -> Lambda.lambda
+val local_tail_send_async :
+    Ident.t -> int -> Lambda.lambda -> Location.t -> Lambda.lambda
+val local_send_sync :
+    Ident.t -> int -> Lambda.lambda -> Location.t -> Lambda.lambda
+val local_send_alone :
+    Ident.t -> Lambda.lambda ->  Location.t -> Lambda.lambda
+val local_tail_send_alone :
+    Ident.t -> Lambda.lambda -> Location.t -> Lambda.lambda
 
+(* Those two are used to generate calls in dispatchers rhs *)
 val local_send_sync2 :
     Ident.t -> Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 val local_tail_send_async2 :
     Ident.t -> Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 (* Call reply to primitive *)
-val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
+val reply_to : Lambda.lambda -> Lambda.lambda ->  Location.t -> Lambda.lambda
 
 (* Insert reply_to_exn for the non-principal continuations *)
 val get_replies :
     Ident.t option -> Typedtree.expression -> bool * Ident.t list 
 
-val do_spawn : Lambda.lambda -> Lambda.lambda
+val do_spawn : Lambda.lambda ->  Location.t -> Lambda.lambda
 
 (* Is an expression simple enough (no exception, guaranteed to terminate) ? *)
 val simple_prim :  (Primitive.description -> bool) ref

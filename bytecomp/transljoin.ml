@@ -94,9 +94,9 @@ let lambda_reply_to = mk_lambda env_join "reply_to"
 let lambda_reply_to_exn = mk_lambda env_join "reply_to_exn"
 let lambda_raise_join_exit =  mk_lambda env_join "raise_join_exit"
 
-let mk_apply f args = match Lazy.force f with
+let mk_apply f args loc = match Lazy.force f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
-| path,_                   -> Lapply (transl_path path, args, Location.none)
+| path,_                   -> Lapply (transl_path path, args, loc)
   
 
 let lambda_int i = Lconst (Const_base (Const_int i))
@@ -105,7 +105,7 @@ and lambda_string s = Lconst (Const_base (Const_string s))
 let init_unit_queue auto idx =
   mk_apply lambda_init_unit_queue [Lvar auto ; lambda_int idx]
 
-let create_process p =  mk_apply lambda_create_process [p]
+let create_process p loc =  mk_apply lambda_create_process [p] loc
 
 let do_send send auto num arg =
  mk_apply send [Lvar auto ; lambda_int  num ; arg]
@@ -133,21 +133,25 @@ and local_tail_send_async auto idx arg =
 
 and local_tail_send_async2 auto idx arg =
   mk_apply lambda_local_tail_send_async [Lvar auto ; idx ; arg]
+    Location.none
 
 and local_send_sync auto idx arg =
-  mk_apply lambda_local_send_sync [Lvar auto ; lambda_int idx ; arg]
+  mk_apply lambda_local_send_sync [Lvar auto ; lambda_int idx ; arg]    
 
 and local_send_sync2 auto idx arg =
   mk_apply lambda_local_send_sync [Lvar auto ; idx ; arg]
+    Location.none
 
 (* Those two are inlined *)
-let local_tail_send_alone guard arg  = 
-  Lapply (Lvar guard, [arg],Location.none)
+let local_tail_send_alone guard arg loc  = 
+  Lapply (Lvar guard, [arg],loc)
 
-let local_send_alone guard arg =
+let local_send_alone guard arg loc =
   create_process
     (Lfunction
-       (Curried, [Ident.create "_x"], local_tail_send_alone guard arg))
+       (Curried, [Ident.create "_x"],
+	local_tail_send_alone guard arg Location.none))
+    loc
 
 let lambda_string s = Lconst (Const_base (Const_string s))
 
@@ -157,7 +161,7 @@ let create_sync auto num =
 and create_sync_alone id name =
   mk_apply lambda_create_sync_alone [Lvar id; lambda_string name]
 
-let alloc_stub_guard () =
+let alloc_stub_guard =
   mk_apply lambda_alloc_stub_guard [lambda_unit]
 
 and alloc_sync_alone id name =
@@ -175,7 +179,7 @@ let reply_to lam1 lam2 = mk_apply lambda_reply_to [lam1; lam2]
 and reply_to_exn exn kont =
   mk_apply lambda_reply_to_exn [Lvar exn ; Lvar kont]
 
-let raise_join_exit () = mk_apply lambda_raise_join_exit [lambda_unit]
+let raise_join_exit = mk_apply lambda_raise_join_exit [lambda_unit]
 
 let get_replies sync p =
   let reps = Typejoin.get_replies p in
@@ -185,12 +189,12 @@ let get_replies sync p =
   | _, _ -> false, List.map fst reps
 
   
-let do_spawn p =
+let do_spawn p loc =
  if p = lambda_unit then
    p
  else
    let param = Ident.create "_x" in
-   create_process (Lfunction (Curried, [param], p))
+   create_process (Lfunction (Curried, [param], p)) loc
 
 let do_get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
 
@@ -362,10 +366,10 @@ let do_reply_handler pri kids lam =
         (lam,
          param,
          List.fold_right
-           (fun kid k -> Lsequence (reply_to_exn param kid, k))
+           (fun kid k -> Lsequence (reply_to_exn param kid Location.none, k))
            kids
            (if pri then Lprim (Praise, [Lvar param]) else
-           raise_join_exit ()))
+           raise_join_exit Location.none))
 
 let lambda_reply_handler sync p lam =
   let pri, kids = get_replies sync p in
@@ -474,9 +478,11 @@ let create_auto
   if nchans > 0 then
     Llet
       (Strict, auto_name,
-       create_automaton nchans (names_block nchans names),
+       create_automaton
+	 nchans (names_block nchans names)
+	 Location.none,
        Llet
-         (Strict, wrapped_name, wrap_automaton auto_name, k))
+         (Strict, wrapped_name, wrap_automaton auto_name Location.none, k))
   else k
 
 let create_channels {jauto_name=(raw_name, name) ; jauto_names=names} k =
@@ -487,17 +493,16 @@ let create_channels {jauto_name=(raw_name, name) ; jauto_names=names} k =
       | Chan (_,num) ->
 	  Llet
 	    (StrictOpt, id,
-	     begin if sync then
-               create_sync name num
+	     (if sync then
+               create_sync
 	     else
-               create_async name num
-	     end,
+               create_async) name num Location.none,
 	     if
                Typeopt.is_unit_channel_type
                  jc.jchannel_type
                  jc.jchannel_env
 	     then
-               Lsequence (init_unit_queue raw_name num, k)
+               Lsequence (init_unit_queue raw_name num Location.none, k)
 	     else k)
       | _ -> k)
     names k
@@ -511,7 +516,7 @@ let create_dispatchers disps k =
          Llet
            (StrictOpt, chan.jchannel_ident,
             (if chan.jchannel_sync then create_sync_alone
-	    else create_alone) id name, k)))
+	    else create_alone) id name Location.none, k)))
     disps k
 
 let make_g caller chan g =
@@ -549,9 +554,9 @@ let create_forwarders autos dispss fwdss r =
       (fun (id,(sync,g)) r ->
         match sync with
         | Some stub ->
-            Lsequence (patch_sync_alone stub g, r)
+            Lsequence (patch_sync_alone stub g Location.none, r)
         | None ->
-            Lsequence (patch_alone id g, r))
+            Lsequence (patch_alone id g Location.none, r))
        id2g r in
 (* Big let rec of guards *)
    let d =
@@ -574,12 +579,17 @@ let create_forwarders autos dispss fwdss r =
          match sync with
          | Some stub ->
              Llet
-               (Strict, stub, alloc_stub_guard (),
+               (Strict, stub, alloc_stub_guard Location.none,
                 Llet
 		  (StrictOpt,
-		   id, alloc_sync_alone stub (Ident.unique_name id), r))
+		   id,
+		   alloc_sync_alone stub (Ident.unique_name id) Location.none,
+		   r))
          |  None ->
-             Llet (StrictOpt,id,alloc_alone (Ident.unique_name id),r))
+             Llet
+	       (StrictOpt,
+		id,alloc_alone (Ident.unique_name id) Location.none,
+		r))
        id2g r in
    r
              
@@ -596,10 +606,10 @@ let get_queue names jpat =
      let k = !(jpat.jpat_kont) in
      match k with
      | None ->
-         None, do_get_queue (Lvar name) i
+         None, do_get_queue (Lvar name) i Location.none
      | Some kid ->
          let y = Ident.create "_y" in
-         Some y, do_get_queue (Lvar name) i
+         Some y, do_get_queue (Lvar name) i Location.none
 
 
 
@@ -766,7 +776,7 @@ let create_table auto gs r =
     let _, reacs, _ = auto.jauto_desc in
     Lsequence
       (patch_table name
-         (List.fold_right2 do_guard reacs gs []),
+         (List.fold_right2 do_guard reacs gs []) Location.none,
        r)
 
 (*********************)
@@ -779,4 +789,6 @@ let lambda_exn_global =  mk_lambda env_join "exn_global"
    so as give a source position in case of failure *)
 
 let transl_exn_global loc path =
-  mk_apply lambda_exn_global [transl_location loc ; transl_path path]
+  mk_apply
+    lambda_exn_global [transl_location loc ; transl_path path]
+    Location.none

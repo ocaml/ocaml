@@ -647,7 +647,9 @@ and transl_exp0 e =
       ({exp_desc = Texp_ident(path, {val_kind = Val_channel (auto,idx)})},
        [Some arg,_])
       ->
-        Transljoin.local_send_sync auto idx (transl_exp arg)
+        Transljoin.local_send_sync
+	  auto idx (transl_exp arg)
+	  e.exp_loc
 (*<JOCAML*)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, oargs)
     when List.length oargs >= p.prim_arity
@@ -1030,22 +1032,22 @@ and transl_simple_proc die sync p = match p.exp_desc with
     ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
       (if die then Transljoin.local_tail_send_async
       else Transljoin.local_send_async)
-        auto num (transl_exp e2)
+        auto num (transl_exp e2) p.exp_loc
 | Texp_asyncsend
     ({exp_desc=Texp_ident (_,{val_kind=Val_alone (guard)})},e2) ->
       (if die then Transljoin.local_tail_send_alone
       else Transljoin.local_send_alone)
-        guard (transl_exp e2)
+        guard (transl_exp e2) p.exp_loc
 | Texp_asyncsend (e1,e2) ->
     (if die then Transljoin.tail_send_async else Transljoin.send_async)
-      (transl_exp e1) (transl_exp e2)
+      (transl_exp e1) (transl_exp e2) p.exp_loc
 | Texp_reply (e, id) ->
     begin match sync with
     | Some main_id when main_id = id -> transl_exp e
     | _ ->
         Transljoin.reply_to
           (Transljoin.reply_handler sync p transl_exp e)
-          (transl_path (Pident id))
+          (transl_path (Pident id)) p.exp_loc
     end
 | Texp_null -> lambda_unit
 (* Plain expression are errors *)
@@ -1105,14 +1107,14 @@ and transl_dispatcher disp =
   let rhs chan =
     if chan.jchannel_sync then match  chan.jchannel_id with
     | Chan (name, i) ->
-        Transljoin.local_send_sync name i (Lvar z)
+        Transljoin.local_send_sync name i (Lvar z) Location.none
     | Alone g -> Lapply (Lvar g, [Lvar z],Location.none)
     else match chan.jchannel_id with
     | Chan (name, i) ->
         Transljoin.local_tail_send_async name i
-          (Lvar z)
+          (Lvar z)  Location.none
     | Alone g ->
-        Transljoin.local_tail_send_alone g (Lvar z) in
+        Transljoin.local_tail_send_alone g (Lvar z)  Location.none in
 
   let body =
     try
@@ -1174,7 +1176,7 @@ and transl_spawn e =
 (* Do perform a fork *)
 and transl_fork e k = 
   make_sequence
-    (Transljoin.do_spawn (transl_proc true None e))
+    (Transljoin.do_spawn (transl_proc true None e) Location.none)
     k
 
 (* Sequence for processes *)    
