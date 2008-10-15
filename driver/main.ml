@@ -91,7 +91,7 @@ module Options = Main_args.Make_options (struct
   let _a = set make_archive
   let _annot = set annotations
   let _c = set compile_only
-  let _cc s = c_compiler := s
+  let _cc s = c_compiler := Some s
   let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
   let _ccopt s = ccopts := s :: !ccopts
   let _config = show_config
