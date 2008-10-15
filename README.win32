@@ -49,8 +49,7 @@ The remainder of this document gives more information on each port.
 
 REQUIREMENTS:
 
-This port runs under MS Windows NT, 2000 and XP.  
-Windows 95, 98 and ME are no longer supported.
+This port runs under MS Windows Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -172,8 +171,7 @@ by Jacob Navia, then significantly improved by Christopher A. Watford.
 
 REQUIREMENTS:
 
-This port runs under MS Windows NT, 2000 and XP.  
-Windows 95, 98 and ME are also supported, but less reliably.
+This port runs under MS Windows Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
