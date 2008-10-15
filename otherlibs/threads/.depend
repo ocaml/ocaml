@@ -22,6 +22,8 @@ scheduler.o: scheduler.c ../../byterun/alloc.h \
   ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/sys.h \
   ../../byterun/misc.h
 condition.cmi: mutex.cmi 
+event.cmi: 
+mutex.cmi: 
 thread.cmi: unix.cmo 
 threadUnix.cmi: unix.cmo 
 condition.cmo: thread.cmi mutex.cmi condition.cmi 
@@ -38,3 +40,5 @@ thread.cmo: unix.cmo thread.cmi
 thread.cmx: unix.cmx thread.cmi 
 threadUnix.cmo: unix.cmo thread.cmi threadUnix.cmi 
 threadUnix.cmx: unix.cmx thread.cmx threadUnix.cmi 
+unix.cmo: 
+unix.cmx: 

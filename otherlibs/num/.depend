@@ -27,7 +27,11 @@ nat_stubs.o: nat_stubs.c ../../byterun/alloc.h \
   ../../byterun/freelist.h ../../byterun/misc.h ../../byterun/mlvalues.h \
   ../../byterun/misc.h ../../byterun/minor_gc.h ../../byterun/misc.h \
   ../../byterun/misc.h ../../byterun/mlvalues.h bng.h nat.h
+arith_flags.cmi: 
+arith_status.cmi: 
 big_int.cmi: nat.cmi 
+int_misc.cmi: 
+nat.cmi: 
 num.cmi: ratio.cmi nat.cmi big_int.cmi 
 ratio.cmi: nat.cmi big_int.cmi 
 arith_flags.cmo: arith_flags.cmi 
