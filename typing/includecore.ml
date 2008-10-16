@@ -55,11 +55,8 @@ let is_absrow env ty =
   | _ -> false
 
 let type_manifest env ty1 params1 ty2 params2 priv2 =
-  let expand =
-    (* if the target is private, then we must expand private abbreviations *)
-    if priv2 = Private then Ctype.expand_head_opt env else Ctype.repr in
-  let ty1 = expand ty1 and ty2 = expand ty2 in
-  match ty1.desc, ty2.desc with
+  let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
+  match ty1'.desc, ty2'.desc with
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
       let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
@@ -100,7 +97,13 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
 	List.split (List.map (fun (_,_,t1,_,t2) -> t1, t2) pairs) in
       Ctype.equal env true (params1 @ tl1) (params2 @ tl2)
   | _ ->
-      Ctype.equal env true (ty1 :: params1) (ty2 :: params2)
+      let rec check_super ty1 =
+        Ctype.equal env true (ty1 :: params1) (ty2 :: params2) ||
+        priv2 = Private &&
+        try check_super
+              (Ctype.try_expand_once_opt env (Ctype.expand_head env ty1))
+        with Ctype.Cannot_expand -> false
+      in check_super ty1
 
 (* Inclusion between type declarations *)
 
