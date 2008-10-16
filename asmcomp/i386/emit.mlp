@@ -962,6 +962,7 @@ let begin_assembly() =
 let end_assembly() =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
+  if macosx then `	NOP\n`; (* suppress "ld warning: atom sorting error" *)
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.data\n`;
