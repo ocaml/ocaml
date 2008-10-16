@@ -118,7 +118,7 @@ let call_linker mode output_name files extra =
         )
         (Filename.quote output_name)
         (if !Clflags.gprofile then Config.cc_profile else "")
-        (Clflags.std_include_flag "-I")
+        ""  (*(Clflags.std_include_flag "-I")*)
         (quote_prefixed "-L" !Config.load_path)
         files
         extra
