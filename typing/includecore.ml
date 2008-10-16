@@ -54,9 +54,12 @@ let is_absrow env ty =
       end
   | _ -> false
 
-let type_manifest env ty1 params1 ty2 params2 =
-  let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
-  match ty1'.desc, ty2'.desc with
+let type_manifest env ty1 params1 ty2 params2 priv2 =
+  let expand =
+    (* if the target is private, then we must expand private abbreviations *)
+    if priv2 = Private then Ctype.expand_head_opt env else Ctype.repr in
+  let ty1 = expand ty1 and ty2 = expand ty2 in
+  match ty1.desc, ty2.desc with
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
       let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
@@ -131,6 +134,7 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env true decl1.type_params decl2.type_params
     | (Some ty1, Some ty2) ->
 	type_manifest env ty1 decl1.type_params ty2 decl2.type_params
+          decl2.type_private
     | (None, Some ty2) ->
         let ty1 =
           Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
