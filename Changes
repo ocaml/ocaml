@@ -8,6 +8,8 @@ Language features:
   after forcing, match the pattern <pat>.
 - Introduction of private abbreviation types "type t = private <type-expr>",
   for abstracting the actual manifest type in type abbreviations.
+- Subtyping is now allowed between a private abbreviation and its definition,
+  and between a polymorphic method and its monomorphic instance.
 
 Compilers:
 - The file name for a compilation unit should correspond to a valid
