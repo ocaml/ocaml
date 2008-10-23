@@ -16,8 +16,7 @@
 
 set -ex
 cd `dirname $0`/..
-OCAMLBUILD_PARTIAL="true"
-export OCAMLBUILD_PARTIAL
+touch build/ocamlbuild_mixed_mode
 mkdir -p _build
 cp -rf boot _build/
 ./build/mkconfig.sh
