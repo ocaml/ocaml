@@ -110,21 +110,21 @@ let full_ocamlrun = P((Sys.getcwd ()) / "boot/ocamlrun")
 
 let boot_ocamlc = S[ocamlrun; A"boot/ocamlc"; A"-I"; A"boot"; A"-nostdlib"]
 
-let partial = bool_of_string (getenv ~default:"false" "OCAMLBUILD_PARTIAL");;
+let mixed = Pathname.exists "build/ocamlbuild_mixed_mode";;
 
-let if_partial_dir dir =
-  if partial then ".."/dir else dir;;
+let if_mixed_dir dir =
+  if mixed then ".."/dir else dir;;
 
 let unix_dir =
   match Sys.os_type with
-  | "Win32" -> if_partial_dir "otherlibs/win32unix"
-  | _       -> if_partial_dir "otherlibs/unix";;
+  | "Win32" -> if_mixed_dir "otherlibs/win32unix"
+  | _       -> if_mixed_dir "otherlibs/unix";;
 
-let threads_dir    = if_partial_dir "otherlibs/threads";;
-let systhreads_dir = if_partial_dir "otherlibs/systhreads";;
-let dynlink_dir    = if_partial_dir "otherlibs/dynlink";;
-let str_dir        = if_partial_dir "otherlibs/str";;
-let toplevel_dir   = if_partial_dir "toplevel";;
+let threads_dir    = if_mixed_dir "otherlibs/threads";;
+let systhreads_dir = if_mixed_dir "otherlibs/systhreads";;
+let dynlink_dir    = if_mixed_dir "otherlibs/dynlink";;
+let str_dir        = if_mixed_dir "otherlibs/str";;
+let toplevel_dir   = if_mixed_dir "toplevel";;
 
 let ocamlc_solver =
   let native_deps = ["ocamlc.opt"; "stdlib/stdlib.cmxa";
@@ -156,7 +156,7 @@ let ar = A"ar";;
 
 dispatch begin function
 | Before_hygiene ->
-    if partial then
+    if mixed then
       let patt = String.concat ","
         ["asmcomp"; "bytecomp"; "debugger"; "driver";
          "lex"; "ocamldoc"; "otherlibs"; "parsing"; "stdlib"; "tools";
@@ -364,8 +364,8 @@ let import_stdlib_contents build exts =
   List.iter Outcome.ignore_good res
 ;;
 
-rule "byte stdlib in partial mode"
-  ~stamp:"byte_stdlib_partial_mode"
+rule "byte stdlib in mixed mode"
+  ~stamp:"byte_stdlib_mixed_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cma";
          "stdlib/std_exit.cmo"; "stdlib/libcamlrun"-.-C.a;
          "stdlib/camlheader"; "stdlib/camlheader_ur"]
@@ -378,8 +378,8 @@ rule "byte stdlib in partial mode"
     Nop
   end;;
 
-rule "native stdlib in partial mode"
-  ~stamp:"native_stdlib_partial_mode"
+rule "native stdlib in mixed mode"
+  ~stamp:"native_stdlib_mixed_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cmxa";
          "stdlib/stdlib"-.-C.a; "stdlib/std_exit.cmx";
          "stdlib/std_exit"-.-C.o; "stdlib/libasmrun"-.-C.a;
@@ -785,7 +785,7 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
     then A"unix.cma", A"unix.cmxa", S[A"-I"; P unix_dir]
     else N,N,N in
   let dep_unix_byte, dep_unix_native =
-    if link_unix && not partial
+    if link_unix && not mixed
     then [unix_dir/"unix.cma"],
          [unix_dir/"unix.cmxa"; unix_dir/"unix"-.-C.a]
     else [],[] in
@@ -794,7 +794,7 @@ let mk_camlp4_bin name ?unix:(link_unix=true) modules =
   let cmxs = add_extensions ["cmx"] deps in
   let objs = add_extensions [C.o] deps in
   let dep_dynlink_byte, dep_dynlink_native =
-    if partial
+    if mixed
     then [], []
     else [dynlink_dir/"dynlink.cma"],
          [dynlink_dir/"dynlink.cmxa"; dynlink_dir/"dynlink"-.-C.a]

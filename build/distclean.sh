@@ -19,6 +19,7 @@ set -ex
 (cd byterun && make clean) || :
 (cd asmrun && make clean)  || :
 (cd yacc && make clean)    || :
+rm -f build/ocamlbuild_mixed_mode
 rm -rf _build
 rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
       boot/myocamlbuild boot/myocamlbuild.native boot/myocamlbuild.native.exe \
