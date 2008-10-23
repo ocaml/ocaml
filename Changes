@@ -118,7 +118,8 @@ Bug fixes:
 - PR#4583: stack overflow in "ocamlopt -g" during closure conversion pass.
 - PR#4585: ocamldoc and "val virtual" declarations.
 - PR#4587: ocamldoc and escaped @ characters.
-- PR#4605: Buffer.add_substitute was sometime wrong when target string had backslashes.
+- PR#4605: Buffer.add_substitute was sometime wrong when target string had
+           backslashes.
 - PR#4614: Inconsistent declaration of CamlCBCmd in LablTk library.
 
 
