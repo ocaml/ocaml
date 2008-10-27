@@ -1,5 +1,5 @@
 (* camlp4r q_MLast.cmo *)
-(* $Id$ *)
+
 
 (* FIXME FIXME *)
 value _loc = Loc.mk "FIXME parserify.ml";

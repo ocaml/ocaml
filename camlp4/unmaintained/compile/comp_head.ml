@@ -1,5 +1,5 @@
 (* camlp4r q_MLast.cmo pa_extend.cmo *)
-(* $Id$ *)
+
 
 module P =
   struct

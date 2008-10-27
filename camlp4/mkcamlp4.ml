@@ -17,7 +17,7 @@
  * - Nicolas Pouillard: rewriting in OCaml
  *)
 
-(* $Id$ *)
+
 
 open Camlp4;
 open Camlp4_config;

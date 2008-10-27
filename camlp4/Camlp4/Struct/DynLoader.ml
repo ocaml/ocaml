@@ -19,7 +19,7 @@
  *)
 
 
-(* $Id$ *)
+
 
 type t = Queue.t string;
 

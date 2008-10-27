@@ -14216,7 +14216,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id$ *)
+    
     open Camlp4
       
     open PreCast.Syntax

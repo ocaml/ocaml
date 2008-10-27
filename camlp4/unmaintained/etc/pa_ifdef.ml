@@ -1,5 +1,5 @@
 (* camlp4r pa_extend.cmo q_MLast.cmo *)
-(* $Id$ *)
+
 
 (* This module is deprecated since version 3.07; use pa_macro.ml instead *)
 

@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 
 datatype 'a option = SOME of 'a | NONE
 exception Fail of string
