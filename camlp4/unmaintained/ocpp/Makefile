@@ -1,4 +1,4 @@
-# $Id$
+
 
 include ../config/Makefile.cnf
 
