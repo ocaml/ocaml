@@ -19,7 +19,7 @@
 
 module Id = struct
   value name = "Camlp4.PreCast";
-  value version = "$Id$";
+  value version = Sys.ocaml_version;
 end;
 
 type camlp4_token = Sig.camlp4_token ==
