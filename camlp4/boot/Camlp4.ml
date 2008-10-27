@@ -17462,7 +17462,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
               
-            let version = "$Id$"
+            let version = Sys.ocaml_version
               
           end
           
@@ -17505,7 +17505,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
               
-            let version = "$Id$"
+            let version = Sys.ocaml_version
               
           end
           
@@ -17556,7 +17556,7 @@ module Printers =
       struct
         module Id =
           struct let name = "Camlp4.Printers.Null"
-                    let version = "$Id$"
+                    let version = Sys.ocaml_version
                        end
           
         module Make (Syntax : Sig.Syntax) =
@@ -17821,7 +17821,7 @@ module Printers =
           
         module Id =
           struct let name = "Camlp4.Printers.OCaml"
-                    let version = "$Id$"
+                    let version = Sys.ocaml_version
                        end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
@@ -19255,7 +19255,7 @@ module Printers =
           
         module Id =
           struct let name = "Camlp4.Printers.OCamlr"
-                    let version = "$Id$"
+                    let version = Sys.ocaml_version
                        end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
@@ -20204,7 +20204,7 @@ module PreCast :
   end =
   struct
     module Id = struct let name = "Camlp4.PreCast"
-                          let version = "$Id$"
+                          let version = Sys.ocaml_version
                              end
       
     type camlp4_token =

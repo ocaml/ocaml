@@ -19,7 +19,7 @@
 
 module Id = struct
   value name = "Camlp4Printers.DumpCamlp4Ast";
-  value version = "$Id$";
+  value version = Sys.ocaml_version;
 end;
 
 module Make (Syntax : Sig.Syntax)

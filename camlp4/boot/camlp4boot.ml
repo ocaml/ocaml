@@ -22,7 +22,7 @@ module R =
  *)
     module Id =
       struct let name = "Camlp4OCamlRevisedParser"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                    end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
@@ -8525,7 +8525,7 @@ module Camlp4QuotationCommon =
  *)
     module Id =
       struct let name = "Camlp4QuotationCommon"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                    end
       
     module Make
@@ -9224,7 +9224,7 @@ module Q =
  *)
     module Id =
       struct let name = "Camlp4QuotationExpander"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                    end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
@@ -9263,7 +9263,7 @@ module Rp =
  *)
     module Id : Sig.Id =
       struct let name = "Camlp4OCamlRevisedParserParser"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                   
       end
       
@@ -10194,7 +10194,7 @@ module G =
  *)
     module Id =
       struct let name = "Camlp4GrammarParser"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                    end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
@@ -12593,7 +12593,7 @@ module M =
  *)
     module Id =
       struct let name = "Camlp4MacroParser"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                    end
       
     (*
@@ -13648,7 +13648,7 @@ module D =
  *)
     module Id =
       struct let name = "Camlp4DebugParser"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                    end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
@@ -13841,7 +13841,7 @@ module L =
  *)
     module Id =
       struct let name = "Camlp4ListComprenhsion"
-                let version = "$Id$"
+                let version = Sys.ocaml_version
                    end
       
     module Make (Syntax : Sig.Camlp4Syntax) =

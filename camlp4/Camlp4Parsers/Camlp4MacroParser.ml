@@ -23,7 +23,7 @@ open Camlp4;                                             (* -*- camlp4r -*- *)
 
 module Id = struct
   value name = "Camlp4MacroParser";
-  value version = "$Id$";
+  value version = Sys.ocaml_version;
 end;
 
 (*

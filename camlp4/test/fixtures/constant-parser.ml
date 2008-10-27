@@ -2,7 +2,7 @@ open Camlp4
 
 module Id = struct
   let name = "Camlp4Parsers.LoadCamlp4Ast"
-  let version = "$Id$"
+  let version = Sys.ocaml_version
 end
 
 module Make (Ast : Camlp4.Sig.Camlp4Ast.S) = struct
