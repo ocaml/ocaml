@@ -1,5 +1,5 @@
 (* camlp4r *)
-(* $Id$ *)
+
 (* Copyright 2001 INRIA *)
 
 (* Extensible Functions *)

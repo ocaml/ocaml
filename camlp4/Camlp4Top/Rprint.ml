@@ -18,7 +18,7 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-(* $Id$ *)
+
 
 (* There is a few Obj.magic due to the fact that we no longer have compiler
    files like Parsetree, Location, Longident but Camlp4_import that wrap them to

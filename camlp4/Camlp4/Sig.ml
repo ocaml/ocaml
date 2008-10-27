@@ -18,7 +18,7 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-(* $Id$ *)
+
 
 (** Camlp4 signature repository *)
 

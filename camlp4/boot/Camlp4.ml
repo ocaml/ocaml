@@ -372,7 +372,7 @@ module Sig =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id$ *)
+    
     (** Camlp4 signature repository *)
     (** {6 Basic signatures} *)
     (** Signature with just a type. *)

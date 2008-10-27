@@ -1,5 +1,5 @@
 (* camlp4r *)
-(* $Id$ *)
+
 (* Copyright 2001 INRIA *)
 
 type t 'a = { count : int; data : Lazy.t (data 'a) }

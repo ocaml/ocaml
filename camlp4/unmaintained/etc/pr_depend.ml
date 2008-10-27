@@ -1,5 +1,5 @@
 (* camlp4r *)
-(* $Id$ *)
+
 
 open MLast;
 

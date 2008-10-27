@@ -1,5 +1,5 @@
 (* camlp4r pa_extend.cmo q_MLast.cmo *)
-(* $Id$ *)
+
 
 open Pcaml;
 open Pa_extend;

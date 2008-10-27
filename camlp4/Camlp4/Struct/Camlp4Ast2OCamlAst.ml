@@ -18,7 +18,7 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-(* $Id$ *)
+
 
 module Make (Ast : Sig.Camlp4Ast) = struct
   open Format;

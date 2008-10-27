@@ -1,5 +1,5 @@
 (* camlp4r *)
-(* $Id$ *)
+
 
 (* Module [Fstream]: functional streams *)
 

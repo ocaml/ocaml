@@ -1,5 +1,5 @@
 (* camlp4r *)
-(* $Id$ *)
+
 
 type spc =
   [ SPCterm of (MLast.patt * option MLast.expr)

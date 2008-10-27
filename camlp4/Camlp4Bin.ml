@@ -18,7 +18,7 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-(* $Id$ *)
+
 
 open Camlp4;
 open PreCast.Syntax;
