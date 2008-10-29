@@ -421,8 +421,8 @@ as a preprocessor for each source file. The output of
 is redirected to
 an intermediate file, which is compiled. If there are no compilation
 errors, the intermediate file is deleted afterwards. The name of this
-file is built from the basename of the source file with the extension
-.ppi for an interface (.mli) file and .ppo for an implementation
+file is built from the basename of the source file with the extension .ppi
+for an interface (.mli) file and .ppo for an implementation
 (.ml) file.
 .TP
 .B \-principal
@@ -561,7 +561,7 @@ into errors.  The compiler will stop with an error when one of these
 warnings is emitted.  The
 .I warning\-list
 has the same meaning as for
-the "-w" option: an uppercase character turns the corresponding
+the "\-w" option: an uppercase character turns the corresponding
 warning into an error, a lowercase character leaves it as a warning.
 The default setting is
 .B \-warn\-error\ a
