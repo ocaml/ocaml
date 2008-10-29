@@ -88,8 +88,8 @@ Other libraries:
 
 Tools:
 - ocamldebug now supported under Windows (MSVC and Mingw ports),
-  but without the replay feature.  (Contributed by Sylvain Le Gall
-  at OCamlCore with support from Lexifi.)
+  but without the replay feature.  (Contributed by Dmitry Bely
+  and Sylvain Le Gall at OCamlCore with support from Lexifi.)
 - ocamldoc: new option -no-module-constraint-filter to include functions
   hidden by signature constraint in documentation.
 - ocamlmklib and ocamldep.opt now available under Windows ports.
