@@ -791,7 +791,7 @@ variable caml-mode-indentation."
 ;; Hence we add a regexp.
 
 (defconst caml-error-regexp
-  "^[A-\377]+ \"\\([^\"\n]+\\)\", [A-\377]+ \\([0-9]+\\)[-,:]"
+  "^[ A-\377]+ \"\\([^\"\n]+\\)\", [A-\377]+ \\([0-9]+\\)[-,:]"
   "Regular expression matching the error messages produced by camlc.")
 
 (if (boundp 'compilation-error-regexp-alist)
@@ -804,7 +804,7 @@ variable caml-mode-indentation."
 ;; A regexp to extract the range info
 
 (defconst caml-error-chars-regexp
-  ".*, .*, [A-\377]+ \\([0-9]+\\)-\\([0-9]+\\):"
+  ".*, .*, [A-\377]+ \\([0-9]+\\)-\\([0-9]+\\):?"
   "Regular expression extracting the character numbers
 from an error message produced by camlc.")
 
@@ -816,7 +816,7 @@ from an error message produced by camlc.")
 (defun caml-string-to-int (x)
   (if (fboundp 'string-to-number) (string-to-number x) (string-to-int x)))
 
-;;itz 04-21-96 somebody didn't get the documetation for next-error
+;;itz 04-21-96 somebody didn't get the documentation for next-error
 ;;right. When the optional argument is a number n, it should move
 ;;forward n errors, not reparse.
 
