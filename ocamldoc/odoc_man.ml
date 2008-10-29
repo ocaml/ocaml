@@ -204,6 +204,8 @@ class man =
         match s.[i] with
           '\\' -> Buffer.add_string b "\\(rs"
         | '.' -> Buffer.add_string b "\\&."
+        | '\'' -> Buffer.add_string b "\\&'"
+        | '-' -> Buffer.add_string b "\\-"
         | c -> Buffer.add_char b c
       done;
       Buffer.contents b
@@ -633,15 +635,15 @@ class man =
 
     (** Print groff string for a module comment.*)
     method man_of_module_comment b text =
-      bs b "\n.pp\n";
+      bs b "\n.PP\n";
       self#man_of_text b [Code ("=== "^(Odoc_misc.string_of_text text)^" ===")];
-      bs b "\n.pp\n"
+      bs b "\n.PP\n"
 
     (** Print groff string for a class comment.*)
     method man_of_class_comment b text =
-      bs b "\n.pp\n";
+      bs b "\n.PP\n";
       self#man_of_text b [Code ("=== "^(Odoc_misc.string_of_text text)^" ===")];
-      bs b "\n.pp\n"
+      bs b "\n.PP\n"
 
     (** Print groff string for an included module. *)
     method man_of_included_module b m_name im =
