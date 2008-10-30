@@ -22,6 +22,10 @@ fun x -> (x : M3.t :> M1.t);;
 fun x -> (x : M3.t :> M.t);;
 module M4 : sig type t = private M3.t end = M2;; (* fails *)
 module M4 : sig type t = private M3.t end = M;; (* fails *)
-module M4 : sig type t = private M3.t end = M1;;
+module M4 : sig type t = private M3.t end = M1;; (* might be ok *)
 module M5 : sig type t = private M1.t end = M3;;
 module M6 : sig type t = private < n:int; .. > end = M1;; (* fails *)
+
+module Bar : sig type t = private Foobar.t val f : int -> t end =
+  struct type t = int let f (x : int) = (x : t) end;; (* must fail *)
+
