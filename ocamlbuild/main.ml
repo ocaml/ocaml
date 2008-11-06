@@ -24,6 +24,7 @@ exception Exit_build_error of string
 exception Exit_silently
 
 let clean () =
+  Log.finish ();
   Shell.rm_rf !Options.build_dir;
   if !Options.make_links then begin
     let entry =

@@ -61,7 +61,7 @@ type display_line =
 
 type display = {
           di_log_level    : int;
-          di_log_channel  : (Format.formatter * out_channel) option;
+  mutable di_log_channel  : (Format.formatter * out_channel) option;
           di_channel      : out_channel;
           di_formatter    : Format.formatter;
           di_display_line : display_line;
@@ -274,7 +274,8 @@ let finish ?(how=`Success) di =
     call_if di.di_log_channel
       begin fun (fmt, oc) ->
         Format.fprintf fmt "# Compilation %ssuccessful.@." (if how = `Error then "un" else "");
-        close_out oc
+        close_out oc;
+        di.di_log_channel <- None
       end;
     match di.di_display_line with
     | Classic -> ()
