@@ -98,6 +98,7 @@ module Make(U:sig end) =
           if not !Options.just_plugin then
             let spec = S[!Options.ocamlrun; P(!Options.build_dir/plugin);
                          A"-no-plugin"; atomize (List.tl (Array.to_list Sys.argv))] in
+            let () = Log.finish () in
             raise (Exit_silently_with_code (sys_command (Command.string_of_command_spec spec)))
         end
       else
