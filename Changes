@@ -36,6 +36,7 @@ Compilers:
    float fields).
 
 Native-code compiler:
+- New port: Mac OS X / Intel in 64-bit mode (configure with -cc "gcc -m64").
 - A new option "-shared" to produce a plugin that can be dynamically
   loaded with the native version of Dynlink.
 - A new option "-nodynlink" to enable optimizations valid only for code
@@ -45,8 +46,8 @@ Native-code compiler:
 
 Run-time system:
 - Changes in freelist management to reduce fragmentation.
-- New implementation of the page table describing the heap (a sparse
-  hashtable replaces a dense bitvector), fixes issues with address
+- New implementation of the page table describing the heap (two-level
+  array in 32 bits, sparse hashtable in 64 bits), fixes issues with address
   space randomization on 64-bit OS (PR#4448).
 - New "generational" API for registering global memory roots with the GC,
   enables faster scanning of global roots.
@@ -2381,12 +2382,4 @@ Caml Special Light 1.06:
 
 * First public release.
 
-<<<<<<< Changes
-<<<<<<< Changes
 $Id$
-=======
-$Id$
->>>>>>> 1.168.2.7
-=======
-$Id$
->>>>>>> 1.168.2.13
