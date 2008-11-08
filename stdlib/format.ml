@@ -794,7 +794,7 @@ let pp_set_margin state n =
          new margin, if it is greater than 1. *)
        max (max (state.pp_margin - state.pp_min_space_left)
                 (state.pp_margin / 2)) 1 in
-  (* Rebuild invariants. *)
+    (* Rebuild invariants. *)
     pp_set_max_indent state new_max_indent
 ;;
 
@@ -842,7 +842,8 @@ let pp_make_formatter f g h i =
   add_queue sys_tok pp_q;
   let sys_scan_stack =
       (Scan_elem (1, sys_tok)) :: scan_stack_bottom in
-  {pp_scan_stack = sys_scan_stack;
+  {
+   pp_scan_stack = sys_scan_stack;
    pp_format_stack = [];
    pp_tbox_stack = [];
    pp_tag_stack = [];
