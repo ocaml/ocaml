@@ -596,7 +596,8 @@ let emit_instr fallthrough i =
         end else begin
           `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 8)\n`
         end;
-        if macosx then `	.const\n`
+        if macosx
+        then `	.const\n`
         else `	.section .rodata\n`;
         emit_align 8;
         `{emit_label lbl}:`;
@@ -679,10 +680,16 @@ let fundecl fundecl =
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
   if !float_constants <> [] then begin
-    if macosx then `	.literal8\n`
+    if macosx
+    then `	.literal8\n`
     else `	.section	.rodata.cst8,\"a\",@progbits\n`;
     List.iter emit_float_constant !float_constants
-  end
+  end;
+  match Config.system with
+    "linux" | "gnu" ->
+      `	.type	{emit_symbol fundecl.fun_name},@function\n`;
+      `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
+  | _ -> ()
 
 (* Emission of data *)
 
