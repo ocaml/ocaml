@@ -56,7 +56,7 @@ int caml_ba_element_size[] =
 
 /* Compute the number of bytes for the elements of a big array */
 
-uintnat caml_ba_byte_size(struct caml_ba_array * b)
+CAMLexport uintnat caml_ba_byte_size(struct caml_ba_array * b)
 {
   return caml_ba_num_elts(b)
          * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
