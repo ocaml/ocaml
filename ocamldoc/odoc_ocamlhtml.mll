@@ -202,7 +202,7 @@ let reset_string_buffer () = Buffer.reset string_buffer
 let store_string_char = Buffer.add_char string_buffer
 let get_stored_string () =
   let s = Buffer.contents string_buffer in
-  String.escaped s
+  s
 
 (** To translate escape sequences *)
 
@@ -217,6 +217,11 @@ let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
                 (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
+  Char.chr(c land 0xFF)
+
+let char_for_hexa_code lexbuf i =
+  let c = 16 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
+                (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) in
   Char.chr(c land 0xFF)
 
 (** To store the position of the beginning of a string and comment *)
@@ -426,6 +431,7 @@ and comment = parse
             comment_start_pos := l;
             comment lexbuf;
        }
+(* These filters are useless
   | "\""
       { reset_string_buffer();
         string_start_pos := Lexing.lexeme_start lexbuf;
@@ -436,11 +442,6 @@ and comment = parse
           let st = List.hd !comment_start_pos in
           raise (Error (Unterminated_string_in_comment, st, st + 2))
         end;
-        comment lexbuf }
-  | "''"
-      {
-        store_comment_char '\'';
-        store_comment_char '\'';
         comment lexbuf }
   | "'" [^ '\\' '\''] "'"
       {
@@ -455,13 +456,20 @@ and comment = parse
         store_comment_char(char_for_backslash(Lexing.lexeme_char lexbuf 1)) ;
         store_comment_char '\'';
         comment lexbuf }
-  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+  | "\\" ['0'-'9'] ['0'-'9'] ['0'-'9']
+      {
+        store_comment_char(char_for_decimal_code lexbuf 1);
+        comment lexbuf }
+  | "\\x" ['0'-'9' 'A'-'Z' 'a'-'z' ] ['0'-'9' 'A'-'Z' 'a'-'z']
+      {
+        store_comment_char(char_for_hexa_code lexbuf 2);
+        string lexbuf }
+  | "''"
       {
         store_comment_char '\'';
-        store_comment_char '\\';
-        store_comment_char(char_for_decimal_code lexbuf 1);
         store_comment_char '\'';
         comment lexbuf }
+*)
   | eof
       { let st = List.hd !comment_start_pos in
         raise (Error (Unterminated_comment, st, st + 2));
@@ -475,11 +483,16 @@ and string = parse
       { () }
   | '\\' ("\010" | "\013" | "\013\010") [' ' '\009'] *
       { string lexbuf }
-  | '\\' ['\\' '"' 'n' 't' 'b' 'r']
-      { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
+  | '\\' ['\\' '"' 'n' 't' 'b' 'r' ]
+      { Buffer.add_string string_buffer (Lexing.lexeme lexbuf) ;
         string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
-      { store_string_char(char_for_decimal_code lexbuf 1);
+      {
+        Buffer.add_string string_buffer (Lexing.lexeme lexbuf) ;
+        string lexbuf
+      }
+  | '\\' 'x' ['0'-'9' 'A'-'Z' 'a'-'z' ] ['0'-'9' 'A'-'Z' 'a'-'z']
+      {  Buffer.add_string string_buffer (Lexing.lexeme lexbuf) ;
          string lexbuf }
   | eof
       { raise (Error (Unterminated_string,
