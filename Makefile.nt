@@ -594,24 +594,24 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
+camlp4out: ocamlc otherlibraries ocamlbuild-mixed-boot ocamlbuild.byte
 	./build/camlp4-byte-only.sh
-camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
+camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
 	./build/camlp4-native-only.sh
 
 # Ocamlbuild
 
-ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
+ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
 	./build/ocamlbuild-byte-only.sh
-ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
 	./build/ocamlbuild-native-only.sh
-ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
 	./build/ocamlbuildlib-native-only.sh
 
 
-.PHONY: ocamlbuild-partial-boot
-ocamlbuild-partial-boot:
-	./build/partial-boot.sh
+.PHONY: ocamlbuild-mixed-boot
+ocamlbuild-mixed-boot:
+	./build/mixed-boot.sh
 partialclean::
 	rm -rf _build
 
