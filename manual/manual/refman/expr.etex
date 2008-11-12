@@ -776,11 +776,12 @@ which may be an extensible type, if every $typ_i$ is a subtype of $typ'_i$.
 \subsubsection*{Variance}
 
 Other types do not introduce new subtyping, but they may propagate the
-subtyping of their arguments. For instance, $typ_1 " * " ... " * "
-typ_n$ is a subtype of $typ'_1 " * " ... " * " typ'_n$ when every
-$typ_i$ is a subtype of $typ'_i$. For function types, the relation is
-more subtle: $typ_1$ "->" $typ_2$ is a subtype of $typ'_1$ "->"
-$typ'_2$ if $typ_1$ is a supertype of $typ'_1$ and $typ_2$ is a
+subtyping of their arguments. For instance, $typ_1 " * " typ_2$ is a
+subtype of $typ'_1 " * " typ'_2$ when $typ_1$ and $typ_2$ are
+respectively subtypes of $typ'_1$ and $typ'_2$.
+For function types, the relation is more subtle:
+$typ_1$ "->" $typ_2$ is a subtype of $typ'_1$ "->" $typ'_2$
+if $typ_1$ is a supertype of $typ'_1$ and $typ_2$ is a
 subtype of $typ'_2$. For this reason, function types are covariant in
 their second argument (like tuples), but contravariant in their first
 argument. Mutable types, like "array" or "ref" are neither covariant
@@ -792,7 +793,7 @@ parameter is covariant if it has only covariant occurences,
 contravariant if it has only contravariant occurences,
 variance-free if it has no occurences, and nonvariant otherwise.
 A variance-free parameter may change freely through subtyping, it does
-not to be a subtype or a supertype.
+not have to be a subtype or a supertype.
 %
 For abstract and private types, the variance must be given explicitly,
 otherwise the default is nonvariant. This is also the case for
