@@ -125,7 +125,7 @@ precedence come first. For infix and prefix symbols, we write
 \entree{"+"\ldots"   -"\ldots}{left}
 \entree{"::"}{right}
 \entree{{\tt \char64}\ldots "   ^"\ldots}{right}
-\entree{comparisons ("=  ==  < " etc.), all other infix symbols}{left}
+\entree{"="\ldots"   <"\ldots"   >"\ldots"   |"\ldots"   &"\ldots"   $"\ldots}{left}
 \entree{"&   &&"}{right}
 \entree{"or  ||"}{right}
 \entree{","}{--}
