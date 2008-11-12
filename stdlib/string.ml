@@ -154,7 +154,7 @@ let index s c = index_rec s (length s) 0 c;;
 
 let index_from s i c =
   let l = length s in
-  if i < 0 || i >= l then invalid_arg "String.index_from" else
+  if i < 0 || i > l then invalid_arg "String.index_from" else
   index_rec s l i c;;
 
 let rec rindex_rec s i c =
@@ -164,22 +164,18 @@ let rec rindex_rec s i c =
 let rindex s c = rindex_rec s (length s - 1) c;;
 
 let rindex_from s i c =
-  let l = length s in
-  if i < 0 || i >= l then invalid_arg "String.rindex_from" else
+  if i < -1 || i >= length s then invalid_arg "String.rindex_from" else
   rindex_rec s i c;;
 
 let contains_from s i c =
   let l = length s in
-  if i < 0 || i >= l then invalid_arg "String.contains_from" else
+  if i < 0 || i > l then invalid_arg "String.contains_from" else
   try ignore (index_rec s l i c); true with Not_found -> false;;
 
-let contains s c =
-  let l = length s in
-  l <> 0 && contains_from s 0 c;;
+let contains s c = contains_from s 0 c;;
 
 let rcontains_from s i c =
-  let l = length s in
-  if i < 0 || i >= l then invalid_arg "String.rcontains_from" else
+  if i < 0 || i >= length s then invalid_arg "String.rcontains_from" else
   try ignore (rindex_rec s i c); true with Not_found -> false;;
 
 type t = string
