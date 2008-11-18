@@ -30,6 +30,7 @@ void caml_fl_reset (void);
 char *caml_fl_merge_block (char *);
 void caml_fl_add_blocks (char *);
 void caml_make_free_blocks (value *, mlsize_t, int);
+void caml_set_allocation_policy (uintnat);
 
 
 #endif /* CAML_FREELIST_H */

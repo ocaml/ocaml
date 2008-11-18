@@ -13,6 +13,11 @@
 
 /* $Id$ */
 
+#define FREELIST_DEBUG 0
+#if FREELIST_DEBUG
+#include <stdio.h>
+#endif
+
 #include <string.h>
 
 #include "config.h"
@@ -43,6 +48,7 @@ static struct {
 } sentinel = {0, Make_header (0, 0, Caml_blue), 0, 0};
 
 #define Fl_head ((char *) (&(sentinel.first_bp)))
+static char *fl_prev = Fl_head;  /* Current allocation pointer. */
 static char *fl_last = NULL;     /* Last block in the list.  Only valid
                                  just after [caml_fl_allocate] returns NULL. */
 char *caml_fl_merge = Fl_head;   /* Current insertion pointer.  Managed
@@ -57,13 +63,17 @@ static char *beyond = NULL;
 
 #define Next(b) (((block *) (b))->next_bp)
 
+#define Policy_next_fit 0
+#define Policy_first_fit 1
+uintnat caml_allocation_policy = Policy_next_fit;
+#define policy caml_allocation_policy
+
 #ifdef DEBUG
 static void fl_check (void)
 {
   char *cur, *prev;
-  int merge_found = 0;
+  int prev_found = 0, flp_found = 0, merge_found = 0;
   uintnat size_found = 0;
-  int flp_found = 0;
   int sz = 0;
 
   prev = Fl_head;
@@ -71,7 +81,8 @@ static void fl_check (void)
   while (cur != NULL){
     size_found += Whsize_bp (cur);
     Assert (Is_in_heap (cur));
-    if (Wosize_bp (cur) > sz){
+    if (cur == fl_prev) prev_found = 1;
+    if (policy == Policy_first_fit && Wosize_bp (cur) > sz){
       sz = Wosize_bp (cur);
       if (flp_found < flp_size){
         Assert (Next (flp[flp_found]) == cur);
@@ -84,7 +95,8 @@ static void fl_check (void)
     prev = cur;
     cur = Next (prev);
   }
-  Assert (flp_found == flp_size);
+  if (policy == Policy_next_fit) Assert (prev_found || fl_prev == Fl_head);
+  if (policy == Policy_first_fit) Assert (flp_found == flp_size);
   Assert (merge_found || caml_fl_merge == Fl_head);
   Assert (size_found == caml_fl_cur_size);
 }
@@ -121,16 +133,19 @@ static char *allocate_block (mlsize_t wh_sz, int flpi, char *prev, char *cur)
          In case 0, it gives an invalid header to the block.  The function
          calling [caml_fl_allocate] will overwrite it. */
     Hd_op (cur) = Make_header (0, 0, Caml_white);
-    if (flpi + 1 < flp_size && flp[flpi + 1] == cur){
-      flp[flpi + 1] = prev;
-    }else if (flpi == flp_size - 1){
-      beyond = (prev == Fl_head) ? NULL : prev;
-      -- flp_size;
+    if (policy == Policy_first_fit){
+      if (flpi + 1 < flp_size && flp[flpi + 1] == cur){
+        flp[flpi + 1] = prev;
+      }else if (flpi == flp_size - 1){
+        beyond = (prev == Fl_head) ? NULL : prev;
+        -- flp_size;
+      }
     }
   }else{                                                        /* Case 2. */
     caml_fl_cur_size -= wh_sz;
     Hd_op (cur) = Make_header (Wosize_hd (h) - wh_sz, 0, Caml_blue);
   }
+  if (policy == Policy_next_fit) fl_prev = prev;
   return cur + Bosize_hd (h) - Bsize_wsize (wh_sz);
 }
 
@@ -145,124 +160,180 @@ char *caml_fl_allocate (mlsize_t wo_sz)
   mlsize_t sz, prevsz;
                                   Assert (sizeof (char *) == sizeof (value));
                                   Assert (wo_sz >= 1);
-  /* Search in the flp array. */
-  for (i = 0; i < flp_size; i++){
-    sz = Wosize_bp (Next (flp[i]));
-    if (sz >= wo_sz){
-      result = allocate_block (Whsize_wosize (wo_sz), i, flp[i], Next (flp[i]));
-      goto update_flp;
+  switch (policy){
+  case Policy_next_fit:
+                                  Assert (fl_prev != NULL);
+    /* Search from [fl_prev] to the end of the list. */
+    prev = fl_prev;
+    cur = Next (prev);
+    while (cur != NULL){                             Assert (Is_in_heap (cur));
+      if (Wosize_bp (cur) >= wo_sz){
+        return allocate_block (Whsize_wosize (wo_sz), 0, prev, cur);
+      }
+      prev = cur;
+      cur = Next (prev);
     }
-  }
-  /* Extend the flp array. */
-  if (flp_size == 0){
+    fl_last = prev;
+    /* Search from the start of the list to [fl_prev]. */
     prev = Fl_head;
-    prevsz = 0;
-  }else{
-    prev = Next (flp[flp_size - 1]);
-    prevsz = Wosize_bp (prev);
-    if (beyond != NULL) prev = beyond;
-  }
-  while (flp_size < FLP_MAX){
     cur = Next (prev);
-    if (cur == NULL){
-      fl_last = prev;
-      beyond = (prev == Fl_head) ? NULL : prev;
-      return NULL;
-    }else{
-      sz = Wosize_bp (cur);
-      if (sz > prevsz){
-        flp[flp_size] = prev;
-        ++ flp_size;
-        if (sz >= wo_sz){
-          beyond = cur;
-          i = flp_size - 1;
-          result = allocate_block (Whsize_wosize (wo_sz), flp_size - 1, prev,
-                                   cur);
-          goto update_flp;
-        }
-        prevsz = sz;
+    while (prev != fl_prev){
+      if (Wosize_bp (cur) >= wo_sz){
+        return allocate_block (Whsize_wosize (wo_sz), 0, prev, cur);
+      }
+      prev = cur;
+      cur = Next (prev);
+    }
+    /* No suitable block was found. */
+    return NULL;
+    break;
+
+  case Policy_first_fit: {
+    /* Search in the flp array. */
+    for (i = 0; i < flp_size; i++){
+      sz = Wosize_bp (Next (flp[i]));
+      if (sz >= wo_sz){
+#if FREELIST_DEBUG
+        if (i > 5) fprintf (stderr, "FLP: found at %d  size=%d\n", i, wo_sz);
+#endif
+        result = allocate_block (Whsize_wosize (wo_sz), i, flp[i], Next(flp[i]));
+        goto update_flp;
       }
     }
-    prev = cur;
-  }
-  beyond = cur;
-
-  /* The flp table is full.  Do a slow first-fit search. */
-
-  if (beyond != NULL){
-    prev = beyond;
-  }else{
-    prev = flp[flp_size - 1];
-  }
-  prevsz = Wosize_bp (Next (flp[FLP_MAX-1]));
-  Assert (prevsz < wo_sz);
-  cur = Next (prev);
-  while (cur != NULL){
-    Assert (Is_in_heap (cur));
-    sz = Wosize_bp (cur);
-    if (sz < prevsz){
-      beyond = cur;
-    }else if (sz >= wo_sz){
-      return allocate_block (Whsize_wosize (wo_sz), flp_size, prev, cur);
-    }
-    prev = cur;
-    cur = Next (prev);
-  }
-  fl_last = prev;
-  return NULL;
-
- update_flp: /* (i, sz) */
-  /* The block at [i] was removed or reduced.  Update the table. */
-  Assert (0 <= i && i < flp_size + 1);
-  if (i < flp_size){
-    if (i > 0){
-      prevsz = Wosize_bp (Next (flp[i-1]));
-    }else{
+    /* Extend the flp array. */
+    if (flp_size == 0){
+      prev = Fl_head;
       prevsz = 0;
-    }
-    if (i == flp_size - 1){
-      if (Wosize_bp (Next (flp[i])) <= prevsz){
-        beyond = Next (flp[i]);
-        -- flp_size;
-      }else{
-        beyond = NULL;
-      }
     }else{
-      char *buf [FLP_MAX];
-      int j = 0;
-      mlsize_t oldsz = sz;
-
-      prev = flp[i];
-      while (prev != flp[i+1]){
-        cur = Next (prev);
+      prev = Next (flp[flp_size - 1]);
+      prevsz = Wosize_bp (prev);
+      if (beyond != NULL) prev = beyond;
+    }
+    while (flp_size < FLP_MAX){
+      cur = Next (prev);
+      if (cur == NULL){
+        fl_last = prev;
+        beyond = (prev == Fl_head) ? NULL : prev;
+        return NULL;
+      }else{
         sz = Wosize_bp (cur);
         if (sz > prevsz){
-          buf[j++] = prev;
-          prevsz = sz;
-          if (sz >= oldsz){
-            Assert (sz == oldsz);
-            break;
+          flp[flp_size] = prev;
+          ++ flp_size;
+          if (sz >= wo_sz){
+            beyond = cur;
+            i = flp_size - 1;
+#if FREELIST_DEBUG
+            if (flp_size > 5){
+              fprintf (stderr, "FLP: extended to %d\n", flp_size);
+            }
+#endif
+            result = allocate_block (Whsize_wosize (wo_sz), flp_size - 1, prev,
+                                     cur);
+            goto update_flp;
           }
+          prevsz = sz;
         }
-        prev = cur;
       }
-      if (FLP_MAX >= flp_size + j - 1){
-        memmove (&flp[i+j], &flp[i+1], sizeof (block *) * (flp_size - i - 1));
-        memmove (&flp[i], &buf[0], sizeof (block *) * j);
-        flp_size += j - 1;
+      prev = cur;
+    }
+    beyond = cur;
+
+    /* The flp table is full.  Do a slow first-fit search. */
+#if FREELIST_DEBUG
+    fprintf (stderr, "FLP: table is full -- slow first-fit\n");
+#endif
+    if (beyond != NULL){
+      prev = beyond;
+    }else{
+      prev = flp[flp_size - 1];
+    }
+    prevsz = Wosize_bp (Next (flp[FLP_MAX-1]));
+    Assert (prevsz < wo_sz);
+    cur = Next (prev);
+    while (cur != NULL){
+      Assert (Is_in_heap (cur));
+      sz = Wosize_bp (cur);
+      if (sz < prevsz){
+        beyond = cur;
+      }else if (sz >= wo_sz){
+        return allocate_block (Whsize_wosize (wo_sz), flp_size, prev, cur);
+      }
+      prev = cur;
+      cur = Next (prev);
+    }
+    fl_last = prev;
+    return NULL;
+
+  update_flp: /* (i, sz) */
+    /* The block at [i] was removed or reduced.  Update the table. */
+    Assert (0 <= i && i < flp_size + 1);
+    if (i < flp_size){
+      if (i > 0){
+        prevsz = Wosize_bp (Next (flp[i-1]));
       }else{
-        if (FLP_MAX > i + j){
-          memmove (&flp[i+j], &flp[i+1], sizeof (block *) * (FLP_MAX - i - j));
-          memmove (&flp[i], &buf[0], sizeof (block *) * j);
+        prevsz = 0;
+      }
+      if (i == flp_size - 1){
+        if (Wosize_bp (Next (flp[i])) <= prevsz){
+          beyond = Next (flp[i]);
+          -- flp_size;
         }else{
-          memmove (&flp[i], &buf[0], sizeof (block *) * (FLP_MAX - i));
+          beyond = NULL;
         }
-        flp_size = FLP_MAX - 1;
-        beyond = Next (flp[FLP_MAX - 1]);
+      }else{
+        char *buf [FLP_MAX];
+        int j = 0;
+        mlsize_t oldsz = sz;
+
+        prev = flp[i];
+        while (prev != flp[i+1]){
+          cur = Next (prev);
+          sz = Wosize_bp (cur);
+          if (sz > prevsz){
+            buf[j++] = prev;
+            prevsz = sz;
+            if (sz >= oldsz){
+              Assert (sz == oldsz);
+              break;
+            }
+          }
+          prev = cur;
+        }
+#if FREELIST_DEBUG
+        if (j > 2) fprintf (stderr, "FLP: update; buf size = %d\n", j);
+#endif
+        if (FLP_MAX >= flp_size + j - 1){
+          if (j != 1){
+            memmove (&flp[i+j], &flp[i+1], sizeof (block *) * (flp_size-i-1));
+          }
+          if (j > 0) memmove (&flp[i], &buf[0], sizeof (block *) * j);
+          flp_size += j - 1;
+        }else{
+          if (FLP_MAX > i + j){
+            if (j != 1){
+              memmove (&flp[i+j], &flp[i+1], sizeof (block *) * (FLP_MAX-i-j));
+            }
+            if (j > 0) memmove (&flp[i], &buf[0], sizeof (block *) * j);
+          }else{
+            if (i != FLP_MAX){
+              memmove (&flp[i], &buf[0], sizeof (block *) * (FLP_MAX - i));
+            }
+          }
+          flp_size = FLP_MAX - 1;
+          beyond = Next (flp[FLP_MAX - 1]);
+        }
       }
     }
+    return result;
   }
-  return result;
+  break;
+
+  default:
+    Assert (0);   /* unknown policy */
+    break;
+  }
+  return NULL;  /* NOT REACHED */
 }
 
 static char *last_fragment;
@@ -291,7 +362,17 @@ static void truncate_flp (char *changed)
 void caml_fl_reset (void)
 {
   Next (Fl_head) = NULL;
-  truncate_flp (Fl_head);
+  switch (policy){
+  case Policy_next_fit:
+    fl_prev = Fl_head;
+    break;
+  case Policy_first_fit:
+    truncate_flp (Fl_head);
+    break;
+  default:
+    Assert (0);
+    break;
+  }
   caml_fl_cur_size = 0;
   caml_fl_init_merge ();
 }
@@ -316,7 +397,7 @@ char *caml_fl_merge_block (char *bp)
   Assert (prev < bp || prev == Fl_head);
   Assert (cur > bp || cur == NULL);
 
-  truncate_flp (prev);
+  if (policy == Policy_first_fit) truncate_flp (prev);
 
   /* If [last_fragment] and [bp] are adjacent, merge them. */
   if (last_fragment == Hp_bp (bp)){
@@ -338,6 +419,7 @@ char *caml_fl_merge_block (char *bp)
 
     if (Wosize_hd (hd) + cur_whsz <= Max_wosize){
       Next (prev) = next_cur;
+      if (policy == Policy_next_fit && fl_prev == cur) fl_prev = prev;
       hd = Make_header (Wosize_hd (hd) + cur_whsz, 0, Caml_blue);
       Hd_bp (bp) = hd;
       adj = bp + Bosize_hd (hd);
@@ -395,7 +477,9 @@ void caml_fl_add_blocks (char *bp)
     if (fl_last == caml_fl_merge && bp < caml_gc_sweep_hp){
       caml_fl_merge = (char *) Field (bp, 1);
     }
-    if (flp_size < FLP_MAX) flp [flp_size++] = fl_last;
+    if (policy == Policy_first_fit && flp_size < FLP_MAX){
+      flp [flp_size++] = fl_last;
+    }
   }else{
     char *cur, *prev;
 
@@ -415,7 +499,7 @@ void caml_fl_add_blocks (char *bp)
     if (prev == caml_fl_merge && bp < caml_gc_sweep_hp){
       caml_fl_merge = (char *) Field (bp, 1);
     }
-    truncate_flp (bp);
+    if (policy == Policy_first_fit) truncate_flp (bp);
   }
 }
 
@@ -441,4 +525,21 @@ void caml_make_free_blocks (value *p, mlsize_t size, int do_merge)
     size -= sz;
     p += sz;
   }
+}
+
+void caml_set_allocation_policy (uintnat p)
+{
+  switch (p){
+  case Policy_next_fit:
+    fl_prev = Fl_head;
+    break;
+  case Policy_first_fit:
+    flp_size = 0;
+    beyond = NULL;
+    break;
+  default:
+    Assert (0);
+    break;
+  }
+  policy = p;
 }

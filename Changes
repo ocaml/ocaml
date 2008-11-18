@@ -45,7 +45,6 @@ Native-code compiler:
 - Can select which assembler and asm options to use at configuration time.
 
 Run-time system:
-- Changes in freelist management to reduce fragmentation.
 - New implementation of the page table describing the heap (two-level
   array in 32 bits, sparse hashtable in 64 bits), fixes issues with address
   space randomization on 64-bit OS (PR#4448).
@@ -57,6 +56,9 @@ Run-time system:
 - Changes in implementation of dynamic linking of C code:
   under Win32, use Alain Frisch's flexdll implementation of the dlopen
   API; under MacOSX, use dlopen API instead of MacOSX bundle API.
+- Programs may now choose a first-fit allocation policy instead of
+  the default next-fit.  First-fit reduces fragmentation but is
+  slightly slower in some cases.
 
 Standard library:
 - Parsing library: new function "set_trace" to programmatically turn
