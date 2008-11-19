@@ -31,7 +31,7 @@ all: ocamlbrowser$(EXE)
 
 ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
 			../support/lib$(LIBNAME).$(A) $(XTRAOBJ)
-	$(CAMLC) -verbose -o ocamlbrowser$(EXE) $(INCLUDES) \
+	$(CAMLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma $(XTRALIBS) $(LIBNAME).cma jglib.cma \
                 $(OBJ) $(XTRAOBJ)
