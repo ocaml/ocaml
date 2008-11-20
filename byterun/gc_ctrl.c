@@ -390,6 +390,11 @@ CAMLprim value caml_gc_set(value v)
     caml_gc_message (0x20, "New heap increment size: %luk bytes\n",
                      caml_major_heap_increment/1024);
   }
+  newpolicy = norm_policy (Long_val (Field (v, 6)));
+  if (newpolicy != caml_allocation_policy){
+    caml_gc_message (0x20, "New allocation policy: %d\n", newpolicy);
+    caml_set_allocation_policy (newpolicy);
+  }
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
@@ -398,11 +403,6 @@ CAMLprim value caml_gc_set(value v)
     caml_gc_message (0x20, "New minor heap size: %luk bytes\n",
                      newminsize/1024);
     caml_set_minor_heap_size (newminsize);
-  }
-  newpolicy = norm_policy (Long_val (Field (v, 6)));
-  if (newpolicy != caml_allocation_policy){
-    caml_gc_message (0x20, "New allocation policy: %d\n", newpolicy);
-    caml_set_allocation_policy (newpolicy);
   }
   return Val_unit;
 }
