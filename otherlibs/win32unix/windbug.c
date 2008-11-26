@@ -14,9 +14,9 @@
 /* $Id$ */
 
 #include <windows.h>
-#include <windbug.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include "windbug.h"
 
 #ifdef DBUG
 

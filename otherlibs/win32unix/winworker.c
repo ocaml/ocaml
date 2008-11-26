@@ -205,10 +205,10 @@ LPWORKER worker_pop (void)
   nWorkersMax = (nWorkersCurrent > nWorkersMax ? nWorkersCurrent : nWorkersMax);
 #ifdef DBUG
   dbug_print("Workers running current/runnning max/waiting: %d/%d/%d",
-#endif
       nWorkersCurrent,
       nWorkersMax,
       list_length((LPLIST)lpWorkers));
+#endif
   ReleaseMutex(hWorkersMutex);
 
   if (lpWorkerFree == NULL)
@@ -253,10 +253,10 @@ void worker_push(LPWORKER lpWorker)
   nWorkersCurrent--;
 #ifdef DBUG
   dbug_print("Workers running current/runnning max/waiting: %d/%d/%d",
-#endif
       nWorkersCurrent,
       nWorkersMax,
       list_length((LPLIST)lpWorkers));
+#endif
   ReleaseMutex(hWorkersMutex);
 
   if (bFreeWorker)
