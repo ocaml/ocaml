@@ -535,7 +535,7 @@ class ref (x_init:int) =
     method set y = x <- y
   end;;
 \end{caml_example}
-Note that since immediate objects do not define a class type, the have
+Note that since immediate objects do not define a class type, they have
 no such restriction.
 \begin{caml_example}
 let new_ref x_init =
