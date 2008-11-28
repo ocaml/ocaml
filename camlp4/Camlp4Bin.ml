@@ -176,7 +176,7 @@ Options:
 <file>.ml        Parse this implementation file
 <file>.mli       Parse this interface file
 <file>.%s Load this module inside the Camlp4 core@."
-(if DynLoader.is_native then "cmx      " else "(cmo|cma)")
+(if DynLoader.is_native then "cmxs     " else "(cmo|cma)")
 ;
     Options.print_usage_list ini_sl;
     (* loop (ini_sl @ ext_sl) where rec loop =
@@ -268,11 +268,11 @@ value initial_spec_list =
     "Don't parse quotations, allowing to use, e.g. \"<:>\" as token.");
   ("-loaded-modules", Arg.Set print_loaded_modules, "Print the list of loaded modules.");
   ("-parser", Arg.String (rewrite_and_load "Parsers"),
-    "<name>  Load the parser Camlp4Parsers/<name>.cmo");
+    "<name>  Load the parser Camlp4Parsers/<name>.cm(o|a|xs)");
   ("-printer", Arg.String (rewrite_and_load "Printers"),
-    "<name>  Load the printer Camlp4Printers/<name>.cmo");
+    "<name>  Load the printer Camlp4Printers/<name>.cm(o|a|xs)");
   ("-filter", Arg.String (rewrite_and_load "Filters"),
-    "<name>  Load the filter Camlp4Filters/<name>.cmo");
+    "<name>  Load the filter Camlp4Filters/<name>.cm(o|a|xs)");
   ("-ignore", Arg.String ignore, "ignore the next argument");
   ("--", Arg.Unit ignore, "Deprecated, does nothing")
 ];
