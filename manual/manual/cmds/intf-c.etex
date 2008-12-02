@@ -887,7 +887,7 @@ collection triggered by the evaluation of the other arguments will not
 invalidate the first argument after it is computed.
 
 \begin{gcrule} Global variables containing values must be registered
-with the garbage collector using the "register_global_root" function.
+with the garbage collector using the "caml_register_global_root" function.
 \end{gcrule}
 
 Registration of a global variable "v" is achieved by calling
@@ -897,7 +897,15 @@ for the first time.
 A registered global variable "v" can be un-registered by calling
 "caml_remove_global_root(&v)".
 
-{\bf Note:} The "CAML" macros use identifiers (local variables, type
+If the contents of the global variable "v" are not modified after
+registration, better performance can be achieved by calling
+"caml_register_generational_global_root(&v)" to register "v",
+and "caml_remove_generational_global_root(&v)" to un-register it.
+The garbage collector takes advantage of the guarantee that "v" is not
+modified to scan it less often.  This improves performance if many
+global variables need to be registered.
+
+\paragraph{Note:} The "CAML" macros use identifiers (local variables, type
 identifiers, structure tags) that start with "caml__".  Do not use any
 identifier starting with "caml__" in your programs.
 
