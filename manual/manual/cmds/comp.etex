@@ -145,10 +145,10 @@ Pass the "-l"\var{libname} option to the C linker when linking in
 given C library to be linked with the program.
 
 \item["-ccopt" \var{option}]
-Pass the given option to the C compiler and linker, when linking in
-``custom runtime'' mode (see the "-custom" option). For instance,
+Pass the given option to the C compiler and linker. When linking in
+``custom runtime'' mode, for instance,
 "-ccopt -L"\var{dir} causes the C linker to search for C libraries in
-directory \var{dir}.
+directory \var{dir}.   (See the "-custom" option.) 
 
 \item["-config"]
 Print the version number of "ocamlc" and a detailed summary of its
