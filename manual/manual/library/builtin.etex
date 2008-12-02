@@ -233,10 +233,8 @@ exception Division_by_zero
 \end{ocamldoccode}
 \index{Divisionbyzero@\verb`Division_by_zero`}
 \begin{ocamldocdescription}
-   Exception raised by division and remainder operations
-   when their second argument is null.
-   (Not fully implemented by the native-code compiler;
-    see section~\ref{s:compat-native-bytecode}.)
+   Exception raised by integer division and remainder operations
+   when their second argument is zero.
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
