@@ -1,4 +1,5 @@
 \" $Id$
+
 .TH OCAMLOPT 1
 
 .SH NAME
@@ -222,7 +223,7 @@ and edit that file to remove all declarations of unexported names.
 Add the given directory to the list of directories searched for
 compiled interface files (.cmi) and compiled object code files
 (.cmo). By default, the current directory is searched first, then the
-standard library directory. Directories added with -I are searched
+standard library directory. Directories added with \-I are searched
 after the current directory, in the order in which they were given on
 the command line, but before the standard library directory.
 
@@ -536,7 +537,7 @@ into errors.  The compiler will stop with an error when one of these
 warnings is emitted.  The
 .I warning\-list
 has the same meaning as for
-the "-w" option: an uppercase character turns the corresponding
+the "\-w" option: an uppercase character turns the corresponding
 warning into an error, a lowercase character leaves it as a warning.
 The default setting is
 .B \-warn\-error\ a
@@ -577,7 +578,7 @@ trigonometric operations
 .BR cos ,
 .BR sin ,
 .B tan
-have their range reduced to [-2^64, 2^64].
+have their range reduced to [\-2^64, 2^64].
 
 .SH OPTIONS FOR THE AMD64 ARCHITECTURE
 

@@ -34,7 +34,10 @@ extern uintnat caml_percent_free;                   /* major_gc.c */
 #define Page(p) ((uintnat) (p) >> Page_log)
 #define Page_mask ((uintnat) -1 << Page_log)
 
-/* The page table is represented sparsely as a hash table
+#ifdef ARCH_SIXTYFOUR
+
+/* 64-bit implementation:
+   The page table is represented sparsely as a hash table
    with linear probing */
 
 struct page_table {
@@ -160,6 +163,38 @@ static int caml_page_table_modify(uintnat page, int toclear, int toset)
   }
   return 0;
 }
+
+#else
+
+/* 32-bit implementation:
+   The page table is represented as a 2-level array of unsigned char */
+
+CAMLexport unsigned char * caml_page_table[Pagetable1_size];
+static unsigned char caml_page_table_empty[Pagetable2_size] = { 0, };
+
+int caml_page_table_initialize(mlsize_t bytesize)
+{
+  int i;
+  for (i = 0; i < Pagetable1_size; i++)
+    caml_page_table[i] = caml_page_table_empty;
+  return 0;
+}
+
+static int caml_page_table_modify(uintnat page, int toclear, int toset)
+{
+  uintnat i = Pagetable_index1(page);
+  uintnat j = Pagetable_index2(page);
+
+  if (caml_page_table[i] == caml_page_table_empty) {
+    unsigned char * new_tbl = calloc(Pagetable2_size, 1);
+    if (new_tbl == 0) return -1;
+    caml_page_table[i] = new_tbl;
+  }
+  caml_page_table[i][j] = (caml_page_table[i][j] & ~toclear) | toset;
+  return 0;
+}
+
+#endif
 
 int caml_page_table_add(int kind, void * start, void * end)
 {

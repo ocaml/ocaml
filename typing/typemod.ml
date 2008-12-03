@@ -503,7 +503,7 @@ let check_recmodule_inclusion env bindings =
         module rec X : DECL = MOD  where MOD has inferred type ACTUAL
      The "natural" typing condition
         E, X: ACTUAL |- ACTUAL <: DECL
-     leads to circularities through manifest types.  
+     leads to circularities through manifest types.
      Instead, we "unroll away" the potential circularities a finite number
      of times.  The (weaker) condition we implement is:
         E, X: DECL,

@@ -23,6 +23,10 @@ posix.o: posix.c ../../byterun/alloc.h ../../byterun/compatibility.h \
   ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/sys.h \
   ../../byterun/misc.h
 condition.cmi: mutex.cmi 
+event.cmi: 
+mutex.cmi: 
+thread.cmi: 
+threadUnix.cmi: 
 condition.cmo: mutex.cmi condition.cmi 
 condition.cmx: mutex.cmx condition.cmi 
 event.cmo: mutex.cmi condition.cmi event.cmi 
@@ -33,3 +37,7 @@ thread.cmo: thread.cmi
 thread.cmx: thread.cmi 
 threadUnix.cmo: thread.cmi threadUnix.cmi 
 threadUnix.cmx: thread.cmx threadUnix.cmi 
+thread_posix.cmo: 
+thread_posix.cmx: 
+thread_win32.cmo: 
+thread_win32.cmx: 

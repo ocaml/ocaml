@@ -275,7 +275,7 @@ class virtual text =
               None
             else
               match s.[n] with
-              |        '\n' -> iter_first (n+1)
+              | '\n' -> iter_first (n+1)
               | _ -> Some n
           in
           match iter_first 0 with

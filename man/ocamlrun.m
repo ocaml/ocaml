@@ -1,4 +1,5 @@
 \" $Id$
+
 .TH OCAMLRUN 1
 
 .SH NAME
@@ -104,17 +105,23 @@ record documented in
 .IR "The Objective Caml user's manual",
 chapter "Standard Library", section "Gc".
 .TP
-.BR b
+.B b
 Trigger the printing of a stack backtrace
 when an uncaught exception aborts the program.
 This option takes no argument.
 .TP
-.BR p
+.B p
 Turn on debugging support for
 .BR ocamlyacc -generated
 parsers.  When this option is on,
 the pushdown automaton that executes the parsers prints a
 trace of its actions.  This option takes no argument.
+.TP
+.BR a \ (allocation_policy)
+The policy used for allocating in the OCaml heap.  Possible values
+are 0 for the next-fit policy, and 1 for the first-fit
+policy.  Next-fit is somewhat faster, but first-fit is better for
+avoiding fragmentation and the associated heap compactions.
 .TP
 .BR s \ (minor_heap_size)
 The size of the minor heap (in words).

@@ -98,21 +98,24 @@ module Win32 = struct
     let b = Buffer.create (l + 20) in
     Buffer.add_char b '\"';
     let rec loop i =
-      if i = l then () else
+      if i = l then Buffer.add_char b '\"' else
       match s.[i] with
       | '\"' -> loop_bs 0 i;
       | '\\' -> loop_bs 0 i;
       | c    -> Buffer.add_char b c; loop (i+1);
     and loop_bs n i =
-      if i = l then add_bs (2*n) else
-      match s.[i] with
-      | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
-      | '\\' -> loop_bs (n+1) (i+1);
-      | c    -> add_bs n; loop i
+      if i = l then begin
+        Buffer.add_char b '\"';
+        add_bs n;
+      end else begin
+        match s.[i] with
+        | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
+        | '\\' -> loop_bs (n+1) (i+1);
+        | c    -> add_bs n; loop i
+      end
     and add_bs n = for j = 1 to n do Buffer.add_char b '\\'; done
     in
     loop 0;
-    Buffer.add_char b '\"';
     Buffer.contents b
   let has_drive s =
     let is_letter = function

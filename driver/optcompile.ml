@@ -134,11 +134,13 @@ let implementation ppf sourcefile outputprefix =
       Compilenv.save_unit_info cmxfile;
     end;
     Warnings.check_fatal ();
-    Pparse.remove_preprocessed inputfile
+    Pparse.remove_preprocessed inputfile;
+    Stypes.dump (outputprefix ^ ".annot");
   with x ->
     remove_file objfile;
     remove_file cmxfile;
     Pparse.remove_preprocessed_if_ast inputfile;
+    Stypes.dump (outputprefix ^ ".annot");
     raise x
 
 let c_file name =

@@ -1,14 +1,19 @@
+# $Id$
+
 OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 
 CCFLAGS=-I../../../byterun $(TK_DEFS)
 
+include ../support/Makefile.common
+
 ifeq ($(CCOMPTYPE),cc)
-WINDOWS_APP=-ccopt "-Wl,--subsystem,windows"
+WINDOWS_APP=-ccopt "-link -Wl,--subsystem,windows"
 else
-WINDOWS_APP=-ccopt "/link /subsystem:windows"
+WINDOWS_APP=-ccopt "-link /subsystem:windows"
 endif
 
-OCAMLBR=threads.cma winmain.$(O) $(WINDOWS_APP)
+XTRAOBJ=winmain.$(O)
+XTRALIBS=threads.cma -custom $(WINDOWS_APP)
 
 include Makefile.shared
 

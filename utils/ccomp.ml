@@ -24,7 +24,7 @@ let command cmdline =
 
 let run_command cmdline = ignore(command cmdline)
 
-(* Build @responsefile to work around Windows limitations on 
+(* Build @responsefile to work around Windows limitations on
    command-line length *)
 let build_diversion lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
@@ -54,7 +54,12 @@ let compile_file name =
   command
     (Printf.sprintf
        "%s -c %s %s %s %s"
-       !Clflags.c_compiler
+       (match !Clflags.c_compiler with
+        | Some cc -> cc
+        | None ->
+            if !Clflags.native_code
+            then Config.native_c_compiler
+            else Config.bytecomp_c_compiler)
        (String.concat " " (List.rev !Clflags.ccopts))
        (quote_prefixed "-I" (List.rev !Clflags.include_dirs))
        (Clflags.std_include_flag "-I")
@@ -104,15 +109,16 @@ let call_linker mode output_name files extra =
         extra
     else
       Printf.sprintf "%s -o %s %s %s %s %s %s %s"
-        (match mode with
-        | Exe -> Config.mkexe
-        | Dll -> Config.mkdll
-        | MainDll -> Config.mkmaindll
-        | Partial -> assert false
+        (match !Clflags.c_compiler, mode with
+        | Some cc, _ -> cc
+        | None, Exe -> Config.mkexe
+        | None, Dll -> Config.mkdll
+        | None, MainDll -> Config.mkmaindll
+        | None, Partial -> assert false
         )
         (Filename.quote output_name)
         (if !Clflags.gprofile then Config.cc_profile else "")
-        (Clflags.std_include_flag "-I")
+        ""  (*(Clflags.std_include_flag "-I")*)
         (quote_prefixed "-L" !Config.load_path)
         files
         extra

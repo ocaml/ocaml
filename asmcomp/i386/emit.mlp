@@ -98,7 +98,7 @@ let use_ascii_dir =
     "solaris" -> false
   | _ -> true
 
-(* MacOSX has its own way to reference symbols potentially defined in 
+(* MacOSX has its own way to reference symbols potentially defined in
    shared objects *)
 
 let macosx =
@@ -875,15 +875,6 @@ let emit_profile () =
       `	popl	%eax\n`
   | _ -> () (*unsupported yet*)
 
-(* Declare a global function symbol *)
-
-let declare_function_symbol name =
-  `	.globl	{emit_symbol name}\n`;
-  match Config.system with
-    "linux_elf" | "bsd_elf" | "gnu" ->
-      `	.type	{emit_symbol name},@function\n`
-  | _ -> ()
-
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -897,7 +888,7 @@ let fundecl fundecl =
   bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
-  declare_function_symbol fundecl.fun_name;
+  `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   if !Clflags.gprofile then emit_profile();
   let n = frame_size() - 4 in
@@ -907,7 +898,13 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
-  List.iter emit_float_constant !float_constants
+  List.iter emit_float_constant !float_constants;
+  match Config.system with
+    "linux_elf" | "bsd_elf" | "gnu" ->
+      `	.type	{emit_symbol fundecl.fun_name},@function\n`;
+      `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
+  | _ -> ()
+
 
 (* Emission of data *)
 
@@ -962,6 +959,7 @@ let begin_assembly() =
 let end_assembly() =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   `	.text\n`;
+  if macosx then `	NOP\n`; (* suppress "ld warning: atom sorting error" *)
   `	.globl	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end}:\n`;
   `	.data\n`;
@@ -981,7 +979,7 @@ let end_assembly() =
       efa_label_rel = (fun lbl ofs ->
                            `	.long	{emit_label lbl} - . + {emit_int32 ofs}\n`);
       efa_def_label = (fun l -> `{emit_label l}:\n`);
-      efa_string = (fun s -> 
+      efa_string = (fun s ->
         let s = s ^ "\000" in
         if use_ascii_dir
         then emit_string_directive "	.ascii	" s

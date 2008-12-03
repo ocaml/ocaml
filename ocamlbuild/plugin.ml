@@ -10,6 +10,7 @@
 (***********************************************************************)
 
 (* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 open My_std
 open Format
@@ -77,7 +78,7 @@ module Make(U:sig end) =
         let ocamlbuildlib = ocamlbuildlib-.-cma in
         let ocamlbuild = ocamlbuild-.-cmo in
         let dir = !Ocamlbuild_where.libdir in
-        if not (sys_file_exists (dir/ocamlbuildlib)) then 
+        if not (sys_file_exists (dir/ocamlbuildlib)) then
           failwith (sprintf "Cannot find %S in ocamlbuild -where directory" ocamlbuildlib);
         let dir = if Pathname.is_implicit dir then Pathname.pwd/dir else dir in
         let cmd =

@@ -32,14 +32,14 @@ let process_implementation_file ppf name =
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
-  || Filename.check_suffix name ".mlt" then 
+  || Filename.check_suffix name ".mlt" then
     process_implementation_file ppf name
   else if Filename.check_suffix name !Config.interface_suffix then begin
     let opref = output_prefix name in
     Optcompile.interface ppf name opref;
     if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   end
-  else if Filename.check_suffix name ".cmx" 
+  else if Filename.check_suffix name ".cmx"
        || Filename.check_suffix name ".cmxa" then
     objfiles := name :: !objfiles
   else if Filename.check_suffix name ".cmi" && !make_package then
@@ -90,7 +90,6 @@ let show_config () =
 
 let main () =
   native_code := true;
-  c_compiler := Config.native_c_compiler;
   let ppf = Format.err_formatter in
   try
     Arg.parse (Arch.command_line_options @ [
@@ -98,7 +97,7 @@ let main () =
        "-annot", Arg.Set annotations,
              " Save information in <filename>.annot";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
-       "-cc", Arg.String(fun s -> c_compiler := s),
+       "-cc", Arg.String(fun s -> c_compiler := Some s),
              "<comp>  Use <comp> as the C compiler and linker";
        "-cclib", Arg.String(fun s ->
                               ccobjs := Misc.rev_split_words s @ !ccobjs),
@@ -156,7 +155,7 @@ let main () =
              " Check principality of type inference";
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
-       "-shared", Arg.Unit (fun () -> shared := true; dlcode := true), 
+       "-shared", Arg.Unit (fun () -> shared := true; dlcode := true),
              " Produce a dynlinkable plugin";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
        "-thread", Arg.Set use_threads,

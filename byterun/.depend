@@ -117,8 +117,8 @@ stacks.o: stacks.c config.h ../config/m.h ../config/s.h compatibility.h \
   minor_gc.h
 startup.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
   alloc.h misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h \
-  dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
-  intext.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h osdeps.h \
+  dynlink.h exec.h fail.h fix_code.h freelist.h gc_ctrl.h instrtrace.h \
+  interp.h intext.h io.h memory.h gc.h major_gc.h minor_gc.h osdeps.h \
   prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h \
   version.h
 str.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
@@ -255,8 +255,8 @@ stacks.d.o: stacks.c config.h ../config/m.h ../config/s.h compatibility.h \
   minor_gc.h
 startup.d.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
   alloc.h misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h \
-  dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
-  intext.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h osdeps.h \
+  dynlink.h exec.h fail.h fix_code.h freelist.h gc_ctrl.h instrtrace.h \
+  interp.h intext.h io.h memory.h gc.h major_gc.h minor_gc.h osdeps.h \
   prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h \
   version.h
 str.d.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \
@@ -379,20 +379,20 @@ printexc.pic.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
 roots.pic.o: roots.c finalise.h roots.h misc.h compatibility.h config.h \
   ../config/m.h ../config/s.h memory.h gc.h mlvalues.h major_gc.h \
   freelist.h minor_gc.h globroots.h stacks.h
-signals_byt.pic.o: signals_byt.c config.h ../config/m.h ../config/s.h \
-  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
-  minor_gc.h osdeps.h signals.h signals_machdep.h
 signals.pic.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h signals_machdep.h \
   sys.h
+signals_byt.pic.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
+  minor_gc.h osdeps.h signals.h signals_machdep.h
 stacks.pic.o: stacks.c config.h ../config/m.h ../config/s.h compatibility.h \
   fail.h misc.h mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h
 startup.pic.o: startup.c config.h ../config/m.h ../config/s.h compatibility.h \
   alloc.h misc.h mlvalues.h backtrace.h callback.h custom.h debugger.h \
-  dynlink.h exec.h fail.h fix_code.h gc_ctrl.h instrtrace.h interp.h \
-  intext.h io.h memory.h gc.h major_gc.h freelist.h minor_gc.h osdeps.h \
+  dynlink.h exec.h fail.h fix_code.h freelist.h gc_ctrl.h instrtrace.h \
+  interp.h intext.h io.h memory.h gc.h major_gc.h minor_gc.h osdeps.h \
   prims.h printexc.h reverse.h signals.h stacks.h sys.h startup.h \
   version.h
 str.pic.o: str.c alloc.h compatibility.h misc.h config.h ../config/m.h \

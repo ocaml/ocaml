@@ -10,6 +10,7 @@
 (***********************************************************************)
 
 (* $Id$ *)
+
 (* Original author: Berke Durak *)
 open My_std
 open Log
@@ -279,7 +280,7 @@ let main () =
       | e ->
           try
             Log.eprintf "%a" My_unix.report_error e;
-            exit 100 
+            exit 100
           with
           | e ->
             Log.eprintf "Exception@ %s." (Printexc.to_string e);

@@ -56,7 +56,7 @@ int caml_ba_element_size[] =
 
 /* Compute the number of bytes for the elements of a big array */
 
-uintnat caml_ba_byte_size(struct caml_ba_array * b)
+CAMLexport uintnat caml_ba_byte_size(struct caml_ba_array * b)
 {
   return caml_ba_num_elts(b)
          * caml_ba_element_size[b->flags & CAML_BA_KIND_MASK];
@@ -201,7 +201,7 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
     caml_invalid_argument("Bigarray.create: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
-    if (dim[i] < 0) 
+    if (dim[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");
   }
   flags = Int_val(vkind) | Int_val(vlayout);
@@ -697,7 +697,7 @@ static void caml_ba_serialize_longarray(void * data,
     caml_serialize_block_8(data, num_elts);
   } else {
     caml_serialize_int_1(0);
-    for (n = 0, p = data; n < num_elts; n++, p++) 
+    for (n = 0, p = data; n < num_elts; n++, p++)
       caml_serialize_int_4((int32) *p);
   }
 #else
@@ -765,7 +765,7 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
     caml_deserialize_block_8(dest, num_elts);
   } else {
     intnat * p, n;
-    for (n = 0, p = dest; n < num_elts; n++, p++) 
+    for (n = 0, p = dest; n < num_elts; n++, p++)
       *p = caml_deserialize_sint_4();
   }
 #else

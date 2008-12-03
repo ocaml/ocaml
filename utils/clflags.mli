@@ -43,7 +43,7 @@ val principal : bool ref
 val recursive_types : bool ref
 val make_runtime : bool ref
 val gprofile : bool ref
-val c_compiler : string ref
+val c_compiler : string option ref
 val no_auto_link : bool ref
 val dllpaths : string list ref
 val make_package : bool ref
