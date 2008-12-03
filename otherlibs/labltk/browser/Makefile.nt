@@ -2,7 +2,7 @@ OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 
 CCFLAGS=-I../../../byterun $(TK_DEFS)
 
-include Makefile.shared
+include ../support/Makefile.common
 
 ifeq ($(CCOMPTYPE),cc)
 WINDOWS_APP=-ccopt "-link -Wl,--subsystem,windows"
@@ -12,6 +12,8 @@ endif
 
 XTRAOBJ=winmain.$(O)
 XTRALIBS=threads.cma -custom $(WINDOWS_APP)
+
+include Makefile.shared
 
 dummy.mli:
 	cp dummyWin.mli dummy.mli
