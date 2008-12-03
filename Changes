@@ -99,6 +99,9 @@ Tools:
 - ocamlmklib no longer supports the -implib option.
 - ocamlnat: an experimental native toplevel (not built by default).
 
+Camlp4:
+* programs linked with camlp4lib.cma now also need dynlink.cma.
+
 Bug fixes:
 - Major GC and heap compaction: fixed bug involving lazy values and
   out-of-heap pointers.

@@ -80,11 +80,12 @@
     (cond
      (in-string 'font-lock-string-face)
      (in-comment
-      (goto-char start)
-      (cond
-       ((looking-at "(\\*\\*/\\*\\*)") 'caml-font-stop-face)
-       ((looking-at "(\\*\\*[^*]")     'caml-font-doccomment-face)
-       (t                              'font-lock-comment-face))))))
+      (save-excursion
+        (goto-char start)
+        (cond
+         ((looking-at "(\\*\\*/\\*\\*)") 'caml-font-stop-face)
+         ((looking-at "(\\*\\*[^*]")     'caml-font-doccomment-face)
+         (t                              'font-lock-comment-face)))))))
 
 
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
