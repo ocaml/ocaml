@@ -10,13 +10,9 @@ CONTEXT
   Caml installation.
 
 
-PREREQUISITES
-
 * They are the same as the ones of Objective Caml,
 
 * plus: the POSIX threads library 'phreads' is required.
-
-INSTALLATION INSTRUCTION
 
 
 1- Configure the system. From the top directory, do:

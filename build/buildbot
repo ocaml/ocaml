@@ -72,7 +72,7 @@ esac
 
 ( ./build/distclean.sh || : ) 2>&1 | log distclean
 
-(cvs -q up -dP -r release310 || bad) 2>&1 | log cvs up
+(cvs -q up -dP -r release311 || bad) 2>&1 | log cvs up
 finish_if_bad
 
 case "$opt_win" in

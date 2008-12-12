@@ -54,7 +54,7 @@ let is_absrow env ty =
       end
   | _ -> false
 
-let type_manifest env ty1 params1 ty2 params2 =
+let type_manifest env ty1 params1 ty2 params2 priv2 =
   let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
   match ty1'.desc, ty2'.desc with
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
@@ -97,7 +97,13 @@ let type_manifest env ty1 params1 ty2 params2 =
 	List.split (List.map (fun (_,_,t1,_,t2) -> t1, t2) pairs) in
       Ctype.equal env true (params1 @ tl1) (params2 @ tl2)
   | _ ->
-      Ctype.equal env true (ty1 :: params1) (ty2 :: params2)
+      let rec check_super ty1 =
+        Ctype.equal env true (ty1 :: params1) (ty2 :: params2) ||
+        priv2 = Private &&
+        try check_super
+              (Ctype.try_expand_once_opt env (Ctype.expand_head env ty1))
+        with Ctype.Cannot_expand -> false
+      in check_super ty1
 
 (* Inclusion between type declarations *)
 
@@ -131,6 +137,7 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env true decl1.type_params decl2.type_params
     | (Some ty1, Some ty2) ->
 	type_manifest env ty1 decl1.type_params ty2 decl2.type_params
+          decl2.type_private
     | (None, Some ty2) ->
         let ty1 =
           Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))

@@ -48,7 +48,7 @@ libcamlrund.a: $(DOBJS)
 	$(RANLIB) libcamlrund.a
 
 libcamlrun_shared.so: $(PICOBJS)
-	$(MKDLL) -o libcamlrun_shared.so $(PICOBJS)
+	$(MKDLL) -o libcamlrun_shared.so $(PICOBJS) $(BYTECCLIBS)
 
 .SUFFIXES: .d.o .pic.o
 
