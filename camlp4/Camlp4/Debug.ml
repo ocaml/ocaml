@@ -29,7 +29,7 @@ value out_channel =
     open_out_gen [Open_wronly; Open_creat; Open_append; Open_text]
                  0o666 f
   with
-  [ Not_found -> stderr ];
+  [ Not_found -> Pervasives.stderr ];
 
 module StringSet = Set.Make String;
 

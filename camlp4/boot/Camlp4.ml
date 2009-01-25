@@ -57,7 +57,7 @@ module Debug :
         in
           open_out_gen [ Open_wronly; Open_creat; Open_append; Open_text ]
             0o666 f
-      with | Not_found -> stderr
+      with | Not_found -> Pervasives.stderr
       
     module StringSet = Set.Make(String)
       
@@ -16587,7 +16587,7 @@ module Struct =
                            (eprintf
                               "<W> Changing associativity of level \"%s\"\n"
                               n;
-                            flush stderr)
+                            flush Pervasives.stderr)
                          else ();
                          a)
                   in
@@ -16598,7 +16598,7 @@ module Struct =
                               !(entry.egram.warning_verbose)
                           then
                             (eprintf "<W> Level label \"%s\" ignored\n" n;
-                             flush stderr)
+                             flush Pervasives.stderr)
                           else ()
                       | None -> ());
                      {
@@ -16622,7 +16622,7 @@ module Struct =
                              (eprintf
                                 "No level labelled \"%s\" in entry \"%s\"\n"
                                 n entry.ename;
-                              flush stderr;
+                              flush Pervasives.stderr;
                               failwith "Grammar.extend")
                          | lev :: levs ->
                              if Tools.is_level_labelled n lev
@@ -16638,7 +16638,7 @@ module Struct =
                              (eprintf
                                 "No level labelled \"%s\" in entry \"%s\"\n"
                                 n entry.ename;
-                              flush stderr;
+                              flush Pervasives.stderr;
                               failwith "Grammar.extend")
                          | lev :: levs ->
                              if Tools.is_level_labelled n lev
@@ -16654,7 +16654,7 @@ module Struct =
                              (eprintf
                                 "No level labelled \"%s\" in entry \"%s\"\n"
                                 n entry.ename;
-                              flush stderr;
+                              flush Pervasives.stderr;
                               failwith "Grammar.extend")
                          | lev :: levs ->
                              if Tools.is_level_labelled n lev
@@ -16678,7 +16678,7 @@ module Struct =
                            "\
   Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
                            entry.ename e.ename;
-                         flush stderr;
+                         flush Pervasives.stderr;
                          failwith "Grammar.extend error")
                       else ()
                   | Snterml (e, _) ->
@@ -16688,7 +16688,7 @@ module Struct =
                            "\
   Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
                            entry.ename e.ename;
-                         flush stderr;
+                         flush Pervasives.stderr;
                          failwith "Grammar.extend error")
                       else ()
                   | Smeta (_, sl, _) -> List.iter (check_gram entry) sl
@@ -16842,7 +16842,7 @@ module Struct =
                     | Dparser _ ->
                         (eprintf "Error: entry not extensible: \"%s\"\n"
                            entry.ename;
-                         flush stderr;
+                         flush Pervasives.stderr;
                          failwith "Grammar.extend")
                   in
                     if rules = []

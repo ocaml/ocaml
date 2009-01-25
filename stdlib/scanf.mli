@@ -80,7 +80,10 @@
 (** {6 Scanning buffers} *)
 module Scanning : sig
 
-type scanbuf;;
+type input_channel;;
+(* The notion of input channel for the [Scanf] module.
+   The type [scanbuf] is an alias for [input_channel]. *)
+type scanbuf = input_channel;;
 (** The type of scanning buffers. A scanning buffer is the source from which a
     formatted input function gets characters. The scanning buffer holds the
     current state of the scan, plus a function to get the next char from the
@@ -91,14 +94,18 @@ type scanbuf;;
     it is stored back in the scanning buffer and becomes the next
     character read. *)
 
-val stdib : scanbuf;;
-(** The scanning buffer reading from [stdin].
-    [stdib] is equivalent to [Scanning.from_channel stdin].
+val stdin : scanbuf;;
+(** The standard input notion for the module [Scanf].
+    [stdin] is equivalent to [Scanning.from_channel Pervasives.stdin].
 
     Note: when input is read interactively from [stdin], the newline character
     that triggers the evaluation is incorporated in the input; thus, scanning
     specifications must properly skip this character (simply add a ['\n']
     as the last character of the format string). *)
+
+val stdib : scanbuf;;
+(** An alias for [Scanf.stdin], the scanning buffer reading from
+    [Pervasives.stdin]. *)
 
 val from_string : string -> scanbuf;;
 (** [Scanning.from_string s] returns a scanning buffer which reads from the
@@ -359,7 +366,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 
     - as a consequence, scanning a [%s] conversion never raises exception
     [End_of_file]: if the end of input is reached the conversion succeeds and
-    simply returns the characters read so far, or [""] if none were read. *)
+    simply returns the characters read so far, or [""] if none were ever read. *)
 
 (** {6 Specialized formatted input functions} *)
 
@@ -390,7 +397,7 @@ val kscanf :
     [ef] that is called in case of error: if the scanning process or
     some conversion fails, the scanning function aborts and calls the
     error handling function [ef] with the scanning buffer and the
-    exception that aborted the scanning process. *)
+    exception that aborted the scanning process as arguments. *)
 
 (** {6 Reading format strings from input} *)
 

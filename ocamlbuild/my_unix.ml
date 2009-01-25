@@ -35,7 +35,7 @@ type implem =
     mutable execute_many  : ?max_jobs:int ->
                             ?ticker:(unit -> unit) ->
                             ?period:float ->
-                            ?display:((out_channel -> unit) -> unit) ->
+                            ?display:((Pervasives.out_channel -> unit) -> unit) ->
                             ((unit -> string) list list) ->
                             (bool list * exn) option;
     mutable report_error  : Format.formatter -> exn -> unit;

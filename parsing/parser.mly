@@ -1169,6 +1169,8 @@ type_kind:
       { (Ptype_abstract, Public, None) }
   | EQUAL core_type
       { (Ptype_abstract, Public, Some $2) }
+  | EQUAL PRIVATE core_type
+      { (Ptype_abstract, Private, Some $3) }
   | EQUAL constructor_declarations
       { (Ptype_variant(List.rev $2), Public, None) }
   | EQUAL PRIVATE constructor_declarations
@@ -1181,8 +1183,6 @@ type_kind:
       { (Ptype_variant(List.rev $6), $4, Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $6), $4, Some $2) }
-  | EQUAL PRIVATE core_type
-      { (Ptype_abstract, Private, Some $3) }
 ;
 type_parameters:
     /*empty*/                                   { [] }

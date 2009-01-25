@@ -143,7 +143,7 @@ let preprocess sourcefile =
   match !preprocessor with
     None -> sourcefile
   | Some pp ->
-      flush stdout;
+      flush Pervasives.stdout;
       let tmpfile = Filename.temp_file "camlpp" "" in
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Sys.command comm <> 0 then begin

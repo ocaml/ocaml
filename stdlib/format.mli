@@ -439,7 +439,21 @@ val get_all_formatter_output_functions :
 
 (** {6 Multiple formatted output} *)
 
-type formatter;;
+type out_channel;;
+(** The notion of output channel for the [Format module].
+    This is a much mode complex notion than [Pervasives.stdout], since it
+    provides the machinery necessary for a pretty-printer specific to
+    this [Format.out_channel] value.
+    An alias for [Format.formatter] defined below. *)
+
+val stdout : out_channel;;
+(** The notion of standard output for the [Format] module.
+    An alias for [std_formatter]. *)
+val stderr : out_channel;;
+(** The notion of standard error for the [Format] module.
+    An alias for [err_formatter]. *)
+
+type formatter = out_channel;;
 (** Abstract data type corresponding to a pretty-printer (also called a
    formatter) and all its machinery.
    Defining new pretty-printers permits the output of
@@ -454,18 +468,18 @@ type formatter;;
    formatter with explicit output and flushing functions
    (convenient to output material to strings for instance). *)
 
-val formatter_of_out_channel : out_channel -> formatter;;
+val formatter_of_out_channel : Pervasives.out_channel -> formatter;;
 (** [formatter_of_out_channel oc] returns a new formatter that
    writes to the corresponding channel [oc]. *)
 
 val std_formatter : formatter;;
 (** The standard formatter used by the formatting functions
-   above. It is defined as [formatter_of_out_channel stdout]. *)
+   above. It is defined as [formatter_of_out_channel Pervasives.stdout]. *)
 
 val err_formatter : formatter;;
 (** A formatter to use with formatting functions below for
    output to standard error. It is defined as
-   [formatter_of_out_channel stderr]. *)
+   [formatter_of_out_channel Pervasives.stderr]. *)
 
 val formatter_of_buffer : Buffer.t -> formatter;;
 (** [formatter_of_buffer b] returns a new formatter writing to
@@ -534,7 +548,7 @@ val pp_get_max_boxes : formatter -> unit -> int;;
 val pp_over_max_boxes : formatter -> unit -> bool;;
 val pp_set_ellipsis_text : formatter -> string -> unit;;
 val pp_get_ellipsis_text : formatter -> unit -> string;;
-val pp_set_formatter_out_channel : formatter -> out_channel -> unit;;
+val pp_set_formatter_out_channel : formatter -> Pervasives.out_channel -> unit;;
 val pp_set_formatter_output_functions :
   formatter -> (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
 val pp_get_formatter_output_functions :

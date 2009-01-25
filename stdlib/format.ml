@@ -113,7 +113,7 @@ type formatter_tag_functions = {
 ;;
 
 (* A formatter with all its machinery. *)
-type formatter = {
+type out_channel = {
   mutable pp_scan_stack : pp_scan_elem list;
   mutable pp_format_stack : pp_format_elem list;
   mutable pp_tbox_stack : tblock list;
@@ -166,6 +166,8 @@ type formatter = {
   mutable pp_queue : pp_queue_elem queue;
 }
 ;;
+
+type formatter = out_channel;;
 
 (**************************************************************
 
@@ -906,9 +908,14 @@ let formatter_of_buffer b =
 let stdbuf = Buffer.create 512;;
 
 (* Predefined formatters. *)
+(* The standard output channels notion for the [Format] module. *)
+let stdout = formatter_of_out_channel Pervasives.stdout
+and stderr = formatter_of_out_channel Pervasives.stderr
+;;
+
 let str_formatter = formatter_of_buffer stdbuf
-and std_formatter = formatter_of_out_channel stdout
-and err_formatter = formatter_of_out_channel stderr
+and std_formatter = stdout
+and err_formatter = stderr
 ;;
 
 let flush_str_formatter () =

@@ -18,11 +18,17 @@
 (* Scanning buffers. *)
 module type SCANNING = sig
 
-type scanbuf;;
+type input_channel;;
+
+type scanbuf = input_channel;;
+
+val stdin : input_channel;;
+(* The scanning buffer reading from [Pervasives.stdin].
+    [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
 
 val stdib : scanbuf;;
-(* The scanning buffer reading from [stdin].
-    [stdib] is equivalent to [Scanning.from_channel stdin]. *)
+(* An alias for [Scanf.stdin], the scanning buffer reading from
+   [Pervasives.stdin]. *)
 
 val next_char : scanbuf -> char;;
 (* [Scanning.next_char ib] advance the scanning buffer for
@@ -112,7 +118,7 @@ module Scanning : SCANNING = struct
 (* The run-time library for scanf. *)
 type file_name = string;;
 
-type scanbuf = {
+type input_channel = {
   mutable eof : bool;
   mutable current_char : char;
   mutable current_char_is_valid : bool;
@@ -124,6 +130,8 @@ type scanbuf = {
   file_name : file_name;
 }
 ;;
+
+type scanbuf = input_channel;;
 
 let null_char = '\000';;
 
@@ -313,20 +321,21 @@ let from_ic_close_at_end = from_ic scan_close_at_end;;
 let from_file fname = from_ic_close_at_end fname (open_in fname);;
 let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
 
-(* The scanning buffer reading from [stdin].
+(* The scanning buffer reading from [Pervasives.stdin].
    One could try to define [stdib] as a scanning buffer reading a character at a
    time (no bufferization at all), but unfortunately the toplevel
    interaction would be wrong.
-   This is due to some kind of ``race condition'' when reading from [stdin],
+   This is due to some kind of ``race condition'' when reading from [Pervasives.stdin],
    since the interactive compiler and [scanf] will simultaneously read the
-   material they need from [stdin]; then, confusion will result from what should
+   material they need from [Pervasives.stdin]; then, confusion will result from what should
    be read by the toplevel and what should be read by [scanf].
    This is even more complicated by the one character lookahead that [scanf]
    is sometimes obliged to maintain: the lookahead character will be available
    for the next ([scanf]) entry, seamingly coming from nowhere.
    Also no [End_of_file] is raised when reading from stdin: if not enough
    characters have been read, we simply ask to read more. *)
-let stdib = from_ic scan_raise_at_end "stdin" stdin;;
+let stdin = from_ic scan_raise_at_end "stdin" Pervasives.stdin;;
+let stdib = stdin;;
 
 let memo_from_ic =
   let memo = ref [] in
