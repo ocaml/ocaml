@@ -668,7 +668,11 @@ let fundecl fundecl =
   bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
-  `	.globl	{emit_symbol fundecl.fun_name}\n`;
+  if macosx && is_generic_function fundecl.fun_name
+  then (* PR#4690 *)
+    `	.private_extern	{emit_symbol fundecl.fun_name}\n`
+  else
+    `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   if !Clflags.gprofile then emit_profile();
   if frame_required() then begin
