@@ -1,3 +1,10 @@
+Standard library:
+* To prevent confusion when mixing Format printing functions and direct low
+  level output, values Format.stdout and Format.stderr have been added.
+
+* To prevent confusion when mixing Scanf scanning functions and direct low
+  level input, value Scanf.stdin has been added.
+
 Objective Caml 3.11.0:
 ----------------------
 
