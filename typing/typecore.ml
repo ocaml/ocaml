@@ -1263,10 +1263,11 @@ let rec type_exp env sexp =
             begin match arg.exp_desc, !self_coercion, (repr ty').desc with
               Texp_ident(_, {val_kind=Val_self _}), (path,r) :: _,
               Tconstr(path',_,_) when Path.same path path' ->
+                prerr_endline "self coercion";
                 r := sexp.pexp_loc :: !r;
                 force ()
-            | _ when free_variables arg.exp_type = []
-                  && free_variables ty' = [] ->
+            | _ when free_variables ~env arg.exp_type = []
+                  && free_variables ~env ty' = [] ->
                 if not gen && (* first try a single coercion *)
                   let snap = snapshot () in
                   let ty, b = enlarge_type env ty' in
@@ -1282,6 +1283,7 @@ let rec type_exp env sexp =
                     Location.prerr_warning sexp.pexp_loc
                       (Warnings.Not_principal "this ground coercion");
                 with Subtype (tr1, tr2) ->
+                  prerr_endline "coercion failed";
                   raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
                 end;
             | _ ->
