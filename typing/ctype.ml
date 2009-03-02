@@ -2030,7 +2030,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         with Not_found ->
           TypePairs.add type_pairs (t1', t2') ();
           match (t1'.desc, t2'.desc) with
-            (Tvar, _) when may_instantiate inst_nongen t1 ->
+            (Tvar, _) when may_instantiate inst_nongen t1' ->
               moregen_occur env t1'.level t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
