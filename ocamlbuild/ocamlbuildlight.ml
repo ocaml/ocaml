@@ -9,6 +9,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 Ocamlbuild_pack.Main.main ();;
