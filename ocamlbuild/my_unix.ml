@@ -12,7 +12,6 @@
 (* $Id$ *)
 (* Original author: Nicolas Pouillard *)
 open My_std
-open Format
 
 type file_kind =
 | FK_dir
@@ -35,7 +34,7 @@ type implem =
     mutable execute_many  : ?max_jobs:int ->
                             ?ticker:(unit -> unit) ->
                             ?period:float ->
-                            ?display:((Pervasives.out_channel -> unit) -> unit) ->
+                            ?display:((out_channel -> unit) -> unit) ->
                             ((unit -> string) list list) ->
                             (bool list * exn) option;
     mutable report_error  : Format.formatter -> exn -> unit;
@@ -60,7 +59,7 @@ let stat f =
 
 let run_and_open s kont =
   with_temp_file "ocamlbuild" "out" begin fun tmp ->
-    let s = sprintf "%s > '%s'" s tmp in
+    let s = Printf.sprintf "%s > '%s'" s tmp in
     let st = sys_command s in
     if st <> 0 then failwith (Printf.sprintf "Error while running: %s" s);
     with_input_file tmp kont
