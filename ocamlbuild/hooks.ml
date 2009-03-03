@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 type message =
   | Before_hygiene

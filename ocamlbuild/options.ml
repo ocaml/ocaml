@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 
 let version = "ocamlbuild "^(Sys.ocaml_version);;

@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 val is_simple_filename : string -> bool
 val quote_filename_if_needed : string -> string

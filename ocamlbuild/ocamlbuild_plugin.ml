@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 
 open Ocamlbuild_pack

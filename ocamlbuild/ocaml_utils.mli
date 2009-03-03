@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 val stdlib_dir : Pathname.t Lazy.t
 val module_name_of_filename : Pathname.t -> string

@@ -9,7 +9,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
 val of_tags : Tags.t -> Command.spec
 val of_tag_list : Tags.elt list -> Command.spec
