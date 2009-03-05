@@ -123,7 +123,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@ when@ %a@ ->@ %a@]"
             o#patt p o#under_pipe#expr w o#under_pipe#expr e ];
 
-    method sum_type f t = pp f "@[<hv0>[ %a ]@]" o#ctyp t;
+    method sum_type f =
+      fun
+      [ <:ctyp<>> -> pp f "[]"
+      | t -> pp f "@[<hv0>[ %a ]@]" o#ctyp t
+      ];
 
     method ident f i =
     let () = o#node f i Ast.loc_of_ident in
