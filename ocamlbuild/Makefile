@@ -24,6 +24,7 @@ ifdef O
 OCAMLBUILD_OPTIONS := $(OCAMLBUILD_OPTIONS) $(O)
 endif
 
+ifeq ($(wildcard ./ocamlbuild_Myocamlbuil*_config.ml),./ocamlbuild_Myocamlbuild_config.ml)
 ifeq ($(wildcard ./boot/oc*build),./boot/ocamlbuild)
 OCAMLBUILD=INSTALL_LIB=$(INSTALL_LIB) INSTALL_BIN=$(INSTALL_BIN) $(OCAMLBUILDCMD) -build-dir $(BUILDDIR) -no-links $(OCAMLBUILD_OPTIONS)
 LIBS=ocamlbuildlib ocamlbuildlightlib
@@ -35,6 +36,8 @@ all:
 	$(OCAMLBUILD) $(BYTE) $(NATIVE)
 byte:
 	$(OCAMLBUILD) $(BYTE)
+native:
+	$(OCAMLBUILD) $(NATIVE)
 profile:
 	$(OCAMLBUILD) $(LIBS:=.p.cmxa) $(PROGRAMS:=.p.native)
 debug:
@@ -51,6 +54,13 @@ all byte native: ocamlbuild.byte.start
 	$(MAKE) $(MFLAGS) $(MAKECMDGOALS)
 	cp $(BUILDDIR)/ocamlbuild.native boot/ocamlbuild
 	$(MAKE) $(MFLAGS) $(MAKECMDGOALS) OCAMLBUILD_OPTIONS="-nothing-should-be-rebuilt -verbose -1"
+endif
+else
+all byte native:
+	@echo "Please copy the myocamlbuild_config.ml of the OCaml source distribution"
+	@echo "  as ocamlbuild_Myocamlbuild_config.ml"
+	@echo
+	@echo "$$ cp ../myocamlbuild_config.ml ocamlbuild_Myocamlbuild_config.ml"
 endif
 
 ocamlbuild.byte.start:
