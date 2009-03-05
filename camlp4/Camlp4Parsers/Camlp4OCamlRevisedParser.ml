@@ -1040,6 +1040,7 @@ Very old (no more supported) syntax:
         | "("; t = SELF; "*"; tl = star_ctyp; ")" ->
             <:ctyp< ( $t$ * $tl$ ) >>
         | "("; t = SELF; ")" -> t
+        | "["; "]" -> <:ctyp< [ ] >>
         | "["; t = constructor_declarations; "]" -> <:ctyp< [ $t$ ] >>
         | "["; "="; rfl = row_field; "]" ->
             <:ctyp< [ = $rfl$ ] >>
