@@ -344,6 +344,8 @@ copy_rule' "ocamldoc/odoc.byte" "ocamldoc/ocamldoc";;
 copy_rule' "ocamldoc/odoc_opt.native" "ocamldoc/ocamldoc.opt";;
 copy_rule' "tools/ocamlmklib.byte" "tools/ocamlmklib";;
 copy_rule' "otherlibs/dynlink/extract_crc.byte" "otherlibs/dynlink/extract_crc";;
+copy_rule' "myocamlbuild_config.mli" "ocamlbuild/ocamlbuild_Myocamlbuild_config.mli";;
+copy_rule' "myocamlbuild_config.ml" "ocamlbuild/ocamlbuild_Myocamlbuild_config.ml";;
 
 copy_rule' ~insert:`bottom "%" "%.exe";;
 
