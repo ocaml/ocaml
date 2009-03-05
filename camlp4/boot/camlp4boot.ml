@@ -21,9 +21,12 @@ module R =
  * - Nicolas Pouillard: refactoring
  *)
     module Id =
-      struct let name = "Camlp4OCamlRevisedParser"
-                let version = Sys.ocaml_version
-                   end
+      struct
+        let name = "Camlp4OCamlRevisedParser"
+          
+        let version = Sys.ocaml_version
+          
+      end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -4393,6 +4396,10 @@ Very old (no more supported) syntax:
                              (fun _ (t : 'constructor_declarations) _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.TySum (_loc, t) : 'ctyp))));
+                         ([ Gram.Skeyword "["; Gram.Skeyword "]" ],
+                          (Gram.Action.mk
+                             (fun _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.TySum (_loc, Ast.TyNil _loc) : 'ctyp))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (t : 'ctyp) _ (_loc : Gram.Loc.t) ->
@@ -8524,9 +8531,12 @@ module Camlp4QuotationCommon =
  * - Nicolas Pouillard: initial version
  *)
     module Id =
-      struct let name = "Camlp4QuotationCommon"
-                let version = Sys.ocaml_version
-                   end
+      struct
+        let name = "Camlp4QuotationCommon"
+          
+        let version = Sys.ocaml_version
+          
+      end
       
     module Make
       (Syntax : Sig.Camlp4Syntax)
@@ -9223,9 +9233,12 @@ module Q =
  * - Nicolas Pouillard: refactoring
  *)
     module Id =
-      struct let name = "Camlp4QuotationExpander"
-                let version = Sys.ocaml_version
-                   end
+      struct
+        let name = "Camlp4QuotationExpander"
+          
+        let version = Sys.ocaml_version
+          
+      end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -9262,9 +9275,11 @@ module Rp =
  * - Nicolas Pouillard: refactoring
  *)
     module Id : Sig.Id =
-      struct let name = "Camlp4OCamlRevisedParserParser"
-                let version = Sys.ocaml_version
-                  
+      struct
+        let name = "Camlp4OCamlRevisedParserParser"
+          
+        let version = Sys.ocaml_version
+          
       end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
@@ -10195,7 +10210,8 @@ module G =
     module Id =
       struct let name = "Camlp4GrammarParser"
                 let version = Sys.ocaml_version
-                   end
+                  
+      end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -12594,7 +12610,8 @@ module M =
     module Id =
       struct let name = "Camlp4MacroParser"
                 let version = Sys.ocaml_version
-                   end
+                  
+      end
       
     (*
 Added statements:
@@ -13649,7 +13666,8 @@ module D =
     module Id =
       struct let name = "Camlp4DebugParser"
                 let version = Sys.ocaml_version
-                   end
+                  
+      end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -13840,9 +13858,12 @@ module L =
  * - Nicolas Pouillard: revised syntax version
  *)
     module Id =
-      struct let name = "Camlp4ListComprenhsion"
-                let version = Sys.ocaml_version
-                   end
+      struct
+        let name = "Camlp4ListComprenhsion"
+          
+        let version = Sys.ocaml_version
+          
+      end
       
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -14216,7 +14237,6 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    
     open Camlp4
       
     open PreCast.Syntax
@@ -14434,7 +14454,7 @@ Options:
 <file>.ml        Parse this implementation file
 <file>.mli       Parse this interface file
 <file>.%s Load this module inside the Camlp4 core@."
-         (if DynLoader.is_native then "cmx      " else "(cmo|cma)");
+         (if DynLoader.is_native then "cmxs     " else "(cmo|cma)");
        Options.print_usage_list ini_sl;
        (* loop (ini_sl @ ext_sl) where rec loop =
       fun
@@ -14527,11 +14547,11 @@ You should give the -noassert option to the ocaml compiler instead.@."
         ("-loaded-modules", (Arg.Set print_loaded_modules),
          "Print the list of loaded modules.");
         ("-parser", (Arg.String (rewrite_and_load "Parsers")),
-         "<name>  Load the parser Camlp4Parsers/<name>.cmo");
+         "<name>  Load the parser Camlp4Parsers/<name>.cm(o|a|xs)");
         ("-printer", (Arg.String (rewrite_and_load "Printers")),
-         "<name>  Load the printer Camlp4Printers/<name>.cmo");
+         "<name>  Load the printer Camlp4Printers/<name>.cm(o|a|xs)");
         ("-filter", (Arg.String (rewrite_and_load "Filters")),
-         "<name>  Load the filter Camlp4Filters/<name>.cmo");
+         "<name>  Load the filter Camlp4Filters/<name>.cm(o|a|xs)");
         ("-ignore", (Arg.String ignore), "ignore the next argument");
         ("--", (Arg.Unit ignore), "Deprecated, does nothing") ]
       

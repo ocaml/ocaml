@@ -372,7 +372,6 @@ module Sig =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    
     (** Camlp4 signature repository *)
     (** {6 Basic signatures} *)
     (** Signature with just a type. *)
@@ -1954,10 +1953,15 @@ module Sig =
           
         val register_str_item_filter : Ast.str_item filter -> unit
           
+        val register_topphrase_filter : Ast.str_item filter -> unit
+          
         val fold_interf_filters :
           ('a -> Ast.sig_item filter -> 'a) -> 'a -> 'a
           
         val fold_implem_filters :
+          ('a -> Ast.str_item filter -> 'a) -> 'a -> 'a
+          
+        val fold_topphrase_filters :
           ('a -> Ast.str_item filter -> 'a) -> 'a -> 'a
           
       end
@@ -13301,9 +13305,15 @@ module Struct =
               
             let fold_implem_filters f i = Queue.fold f i implem_filters
               
+            let topphrase_filters = Queue.create ()
+              
+            let fold_topphrase_filters f i = Queue.fold f i topphrase_filters
+              
             let register_sig_item_filter f = Queue.add f interf_filters
               
             let register_str_item_filter f = Queue.add f implem_filters
+              
+            let register_topphrase_filter f = Queue.add f topphrase_filters
               
           end
           
@@ -17555,9 +17565,12 @@ module Printers =
       end =
       struct
         module Id =
-          struct let name = "Camlp4.Printers.Null"
-                    let version = Sys.ocaml_version
-                       end
+          struct
+            let name = "Camlp4.Printers.Null"
+              
+            let version = Sys.ocaml_version
+              
+          end
           
         module Make (Syntax : Sig.Syntax) =
           struct
@@ -17820,9 +17833,12 @@ module Printers =
         open Format
           
         module Id =
-          struct let name = "Camlp4.Printers.OCaml"
-                    let version = Sys.ocaml_version
-                       end
+          struct
+            let name = "Camlp4.Printers.OCaml"
+              
+            let version = Sys.ocaml_version
+              
+          end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -19254,9 +19270,12 @@ module Printers =
         open Format
           
         module Id =
-          struct let name = "Camlp4.Printers.OCamlr"
-                    let version = Sys.ocaml_version
-                       end
+          struct
+            let name = "Camlp4.Printers.OCamlr"
+              
+            let version = Sys.ocaml_version
+              
+          end
           
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -20203,9 +20222,10 @@ module PreCast :
       
   end =
   struct
-    module Id = struct let name = "Camlp4.PreCast"
-                          let version = Sys.ocaml_version
-                             end
+    module Id =
+      struct let name = "Camlp4.PreCast"
+                let version = Sys.ocaml_version
+                   end
       
     type camlp4_token =
       Sig.camlp4_token =
