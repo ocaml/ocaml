@@ -509,7 +509,7 @@ let compute_variance_decl env check decl (required, loc) =
   in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
-      if ty.desc <> Tvar || priv = Private then begin
+      if ty.desc <> Tvar then begin
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
       end)
@@ -528,6 +528,7 @@ let compute_variance_decl env check decl (required, loc) =
       incr pos;
       if !co && not c || !cn && not n
       then raise (Error(loc, Bad_variance (!pos, (!co,!cn), (c,n))));
+      if priv = Private then (c, n, n) else
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
