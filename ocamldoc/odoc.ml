@@ -25,17 +25,18 @@ let print_DEBUG s = print_string s ; print_newline ()
 
 (* we check if we must load a module given on the command line *)
 let arg_list = Array.to_list Sys.argv
-let (cmo_or_cma_opt, paths) =
+let (cm_opt, paths) =
   let rec iter (f_opt, inc) = function
       [] | _ :: [] -> (f_opt, inc)
     | "-g" :: file :: q when
         ((Filename.check_suffix file "cmo") or
-         (Filename.check_suffix file "cma")) &
+         (Filename.check_suffix file "cma") or
+           (Filename.check_suffix file "cmxs")) &
         (f_opt = None) ->
-          iter (Some file, inc) q
-    | "-i" :: dir :: q ->
-        iter (f_opt, inc @ [dir]) q
-    | _ :: q ->
+      iter (Some file, inc) q
+  | "-i" :: dir :: q ->
+      iter (f_opt, inc @ [dir]) q
+  | _ :: q ->
         iter (f_opt, inc) q
   in
   iter (None, []) arg_list
@@ -63,12 +64,11 @@ let get_real_filename name =
      )
 
 let _ =
-  match cmo_or_cma_opt with
+  match cm_opt with
     None ->
       ()
   | Some file ->
-      (* initializations for dynamic loading *)
-      Dynlink.init ();
+      let file = Dynlink.adapt_filename file in
       Dynlink.allow_unsafe_modules true;
       try
         let real_file = get_real_filename file in

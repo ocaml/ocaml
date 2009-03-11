@@ -22,10 +22,6 @@ type source_file =
 (** The include_dirs in the OCaml compiler. *)
 val include_dirs : string list ref
 
-(** Indicate if we are in bytecode mode or not.
-   (For the [ocamldoc] command).*)
-val bytecode_mode : bool ref
-
 (** The class type of documentation generators. *)
 class type doc_generator =
   object method generate : Odoc_module.t_module list -> unit end

@@ -24,8 +24,6 @@ type source_file =
 
 let include_dirs = Clflags.include_dirs
 
-let bytecode_mode = ref true
-
 class type doc_generator =
     object
       method generate : Odoc_module.t_module list -> unit
@@ -254,10 +252,8 @@ let options = ref [
   "-dot", Arg.Unit (fun () -> set_doc_generator !default_dot_generator), M.generate_dot ;
   "-customdir", Arg.Unit (fun () -> Printf.printf "%s\n" Odoc_config.custom_generators_path; exit 0),
   M.display_custom_generators_dir ;
-  "-i", Arg.String (fun s -> if !bytecode_mode then () else (prerr_endline (M.option_not_in_native_code "-i"); exit 1)),
-  M.add_load_dir ;
-  "-g", Arg.String (fun s -> if !bytecode_mode then () else (prerr_endline (M.option_not_in_native_code "-g"); exit 1)),
-  M.load_file ^
+  "-i", Arg.String (fun s -> ()), M.add_load_dir ;
+  "-g", Arg.String (fun s -> ()), M.load_file ^
   "\n\n *** HTML options ***\n";
 
 (* html only options *)
