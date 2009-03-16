@@ -113,6 +113,7 @@ and compats ps qs = match ps,qs with
 
 exception Empty (* Empty pattern *)
 
+(* May need a clean copy, cf. PR#4745 *)
 let clean_copy ty =
   if ty.level = Btype.generic_level then ty
   else Subst.type_expr Subst.identity ty
