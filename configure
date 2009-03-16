@@ -1103,7 +1103,7 @@ case "$arch,$system" in
     echo "Cannot detect system stack overflow.";;
 esac
 
-x# Determine the target architecture for the "num" library
+# Determine the target architecture for the "num" library
 
 case "$arch" in
   alpha)    bng_arch=alpha; bng_asm_level=1;;
