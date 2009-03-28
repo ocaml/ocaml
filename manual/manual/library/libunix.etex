@@ -84,8 +84,8 @@ functions; use threads instead of non-blocking I/O}
 \entree{"setuid", "setgid"}{not implemented}
 \entree{"getpwnam", "getpwuid"}{always raise "Not_found"}
 \entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
-\entree{type "socket_domain"}{the domain "PF_UNIX" is not supported;
-"PF_INET" is fully supported}
+\entree{type "socket_domain"}{the domains "PF_UNIX" and "PF_INET6" 
+are not supported; "PF_INET" is fully supported}
 \entree{"establish_server"}{not implemented; use threads}
 \entree{terminal functions ("tc*")}{not implemented}
 \end{tableau}
