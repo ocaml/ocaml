@@ -500,7 +500,7 @@ are represented as arrays of floating-point numbers, with tag
 
 Arrays of integers and pointers are represented like tuples, 
 that is, as pointers to blocks tagged~0.  They are accessed with the
-"Field" macro for reading and the "modify" function for writing.
+"Field" macro for reading and the "caml_modify" function for writing.
 
 Arrays of floating-point numbers (type "float array")
 have a special, unboxed, more efficient representation.
@@ -739,7 +739,7 @@ can also be smaller, but in this case it is more efficient to call
 "caml_alloc_small" instead of "caml_alloc_shr".) 
 If this block is a structured block (i.e. if $t < \hbox{"No_scan_tag"}$), then 
 the fields of the block (initially containing garbage) must be initialized
-with legal values (using the "initialize" function described below)
+with legal values (using the "caml_initialize" function described below)
 before the next allocation.
 \end{itemize}
 
@@ -1042,7 +1042,7 @@ value alloc_list_int(int i1, int i2)
 \end{verbatim}
 In the two examples above, the list is built bottom-up. Here is an
 alternate way, that proceeds top-down. It is less efficient, but
-illustrates the use of "modify".
+illustrates the use of "caml_modify".
 \begin{verbatim}
 value alloc_list_int(int i1, int i2)
 {
@@ -1699,7 +1699,7 @@ stored in the custom block.
 The contents of custom blocks are not scanned by the garbage
 collector, and must therefore not contain any pointer inside the Caml
 heap.  In other terms, never store a Caml "value" in a custom block,
-and do not use "Field", "Store_field" nor "modify" to access the data
+and do not use "Field", "Store_field" nor "caml_modify" to access the data
 part of a custom block.  Conversely, any C data structure (not
 containing heap pointers) can be stored in a custom block.
 
