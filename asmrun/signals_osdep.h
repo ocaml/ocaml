@@ -76,6 +76,25 @@
   #define CONTEXT_SP (CONTEXT_STATE.CONTEXT_REG(rsp))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
+/****************** AMD64, Solaris x86 */
+
+#elif defined(TARGET_amd64) && defined (SYS_solaris)
+
+  #include <ucontext.h>
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, siginfo_t * info, ucontext_t * context)
+
+  #define SET_SIGACT(sigact,name) \
+    sigact.sa_sigaction = (void (*)(int,siginfo_t *,void *)) (name); \
+    sigact.sa_flags = SA_SIGINFO
+
+  typedef greg_t context_reg;
+  #define CONTEXT_PC (context->uc_mcontext.gregs[REG_RIP])
+  #define CONTEXT_EXCEPTION_POINTER (context->uc_mcontext.gregs[REG_R14])
+  #define CONTEXT_YOUNG_PTR (context->uc_mcontext.gregs[REG_R15])
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
 /****************** I386, Linux */
 
 #elif defined(TARGET_i386) && defined(SYS_linux_elf)
@@ -124,6 +143,19 @@
 
   #define CONTEXT_STATE (((ucontext_t *)context)->uc_mcontext->CONTEXT_REG(ss))
   #define CONTEXT_PC (CONTEXT_STATE.CONTEXT_REG(eip))
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/****************** I386, Solaris x86 */
+
+#elif defined(TARGET_i386) && defined(SYS_solaris)
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, siginfo_t * info, void * context)
+
+  #define SET_SIGACT(sigact,name) \
+    sigact.sa_sigaction = (name); \
+    sigact.sa_flags = SA_SIGINFO
+
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** MIPS, all OS */
