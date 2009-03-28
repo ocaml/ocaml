@@ -4,7 +4,7 @@ FILES=allfiles.tex biblio.tex foreword.tex version.tex
 TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
-CSLDIR=../../cslrel
+CSLDIR=../../release
 OCAMLDOC=$(CSLDIR)/ocamldoc/ocamldoc.opt -hide Pervasives 
 HEVEA=hevea
 HACHA=hacha
@@ -102,7 +102,7 @@ clean:
 
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
-	dvips -Php11rv -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
+	dvips -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
 	cp htmlman/manual.html $(RELEASE)refman.html
 	rm -f htmlman/manual.html
 	tar cf - htmlman/*.* htmlman/libref | gzip > $(RELEASE)refman.html.tar.gz
