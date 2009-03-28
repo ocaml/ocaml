@@ -393,6 +393,7 @@ value caml_thread_initialize(value unit)   /* ML */
     curr_thread->descr = descr;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
+    curr_thread->backtrace_last_exn = Val_unit;
 #ifdef NATIVE_CODE
     curr_thread->exit_buf = &caml_termination_jmpbuf;
 #endif
