@@ -39,8 +39,8 @@ module Sformat = struct
 
   let add_int_index i idx = index_of_int (i + int_of_index idx);;
   let succ_index = add_int_index 1;;
-  (* Litteral position are one-based (hence pred p instead of p). *)
-  let index_of_litteral_position p = index_of_int (pred p);;
+  (* Literal position are one-based (hence pred p instead of p). *)
+  let index_of_literal_position p = index_of_int (pred p);;
 
   external length : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int
     = "%string_length"
@@ -122,12 +122,12 @@ let extract_format fmt start stop widths =
   let skip_positional_spec start =
     match Sformat.unsafe_get fmt start with
     | '0'..'9' ->
-      let rec skip_int_litteral i =
+      let rec skip_int_literal i =
         match Sformat.unsafe_get fmt i with
-        | '0'..'9' -> skip_int_litteral (succ i)
+        | '0'..'9' -> skip_int_literal (succ i)
         | '$' -> succ i
         | _ -> start in
-      skip_int_litteral (succ start)
+      skip_int_literal (succ start)
     | _ -> start in
   let start = skip_positional_spec (succ start) in
   let b = Buffer.create (stop - start + 10) in
@@ -159,7 +159,7 @@ let extract_format_int conv fmt start stop widths =
 (* Returns the position of the next character following the meta format
    string, starting from position [i], inside a given format [fmt].
    According to the character [conv], the meta format string is
-   enclosed by the delimitors %{ and %} (when [conv = '{']) or %( and
+   enclosed by the delimiters %{ and %} (when [conv = '{']) or %( and
    %) (when [conv = '(']). Hence, [sub_format] returns the index of
    the character following the [')'] or ['}'] that ends the meta format,
    according to the character [conv]. *)
@@ -297,7 +297,8 @@ let ac_of_format fmt =
 
 let count_arguments_of_format fmt =
   let ac = ac_of_format fmt in
-  ac.ac_rglr + ac.ac_skip + ac.ac_rdrs
+  (* For printing only regular arguments have to be counted. *)
+  ac.ac_rglr
 ;;
 
 let list_iter_i f l =
@@ -311,7 +312,7 @@ let list_iter_i f l =
 (* ``Abstracting'' version of kprintf: returns a (curried) function that
    will print when totally applied.
    Note: in the following, we are careful not to be badly caught
-   by the compiler optimizations for the representation of arrays. *)
+   by the compiler optimisations for the representation of arrays. *)
 let kapr kpr fmt =
   match count_arguments_of_format fmt with
   | 0 -> kpr fmt [||]
@@ -362,7 +363,7 @@ type positional_specification =
    Calling [got_spec] with appropriate arguments, we ``return'' a positional
    specification and an index to go on scanning the [fmt] format at hand.
 
-   Note that this is optimized for the regular case, i.e. no positional
+   Note that this is optimised for the regular case, i.e. no positional
    parameter, since in this case we juste ``return'' the constant
    [Spec_none]; in case we have a positional parameter, we ``return'' a
    [Spec_index] [positional_specification] which a bit more costly.
@@ -374,7 +375,7 @@ type positional_specification =
 
    Unfortunately, the type of a parameter specified via a [*$] positional
    specification should be the type of the corresponding argument to
-   [printf], hence this sould be the type of the $n$-th argument to [printf]
+   [printf], hence this should be the type of the $n$-th argument to [printf]
    with $n$ being the {\em value} of the integer argument defining [*]; we
    clearly cannot statically guess the value of this parameter in the general
    case. Put it another way: this means type dependency, which is completely
@@ -383,19 +384,19 @@ type positional_specification =
 let scan_positional_spec fmt got_spec n i =
   match Sformat.unsafe_get fmt i with
   | '0'..'9' as d ->
-    let rec get_int_litteral accu j =
+    let rec get_int_literal accu j =
       match Sformat.unsafe_get fmt j with
       | '0'..'9' as d ->
-        get_int_litteral (10 * accu + (int_of_char d - 48)) (succ j)
+        get_int_literal (10 * accu + (int_of_char d - 48)) (succ j)
       | '$' ->
         if accu = 0 then
           failwith "printf: bad positional specification (0)." else
-        got_spec (Spec_index (Sformat.index_of_litteral_position accu)) (succ j)
+        got_spec (Spec_index (Sformat.index_of_literal_position accu)) (succ j)
       (* Not a positional specification: tell so the caller, and go back to
          scanning the format from the original [i] position we were called at
          first. *)
       | _ -> got_spec Spec_none i in
-    get_int_litteral (int_of_char d - 48) (succ i)
+    get_int_literal (int_of_char d - 48) (succ i)
   (* No positional specification: tell so the caller, and go back to scanning
      the format from the original [i] position. *)
   | _ -> got_spec Spec_none i
@@ -435,8 +436,8 @@ let get_index spec n =
 
 (* Note: here, rather than test explicitly against [Sformat.length fmt]
    to detect the end of the format, we use [Sformat.unsafe_get] and
-   rely on the fact that we'll get a "nul" character if we access
-   one past the end of the string.  These "nul" characters are then
+   rely on the fact that we'll get a "null" character if we access
+   one past the end of the string.  These "null" characters are then
    caught by the [_ -> bad_conversion] clauses below.
    Don't do this at home, kids. *)
 let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
@@ -467,7 +468,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let (x : string) = get_arg spec n in
       let x = if conv = 's' then x else "\"" ^ String.escaped x ^ "\"" in
       let s =
-        (* optimize for common case %s *)
+        (* optimise for common case %s *)
         if i = succ pos then x else
         format_string (extract_format fmt pos i widths) x in
       cont_s (next_index spec n) s (succ i)
