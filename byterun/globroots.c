@@ -232,6 +232,28 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
     caml_delete_global_root(&caml_global_roots_old, r);
     caml_insert_global_root(&caml_global_roots_young, r);
   }
+  /* PR#4704 */
+  else if (!Is_block(oldval) && Is_block(newval)) {
+    /* The previous value in the root was unboxed but now it is boxed.
+       The root won't appear in any of the root lists thus far (by virtue
+       of the operation of [caml_register_generational_global_root]), so we
+       need to make sure it gets in, or else it will never be scanned. */
+    if (Is_young(newval))
+      caml_insert_global_root(&caml_global_roots_young, r);
+    else if (Is_in_heap(newval))
+      caml_insert_global_root(&caml_global_roots_old, r);
+  }
+  else if (Is_block(oldval) && !Is_block(newval)) {
+    /* The previous value in the root was boxed but now it is unboxed, so
+       the root should be removed. If [oldval] is young, this will happen
+       anyway at the next minor collection, but it is safer to delete it
+       here. */
+    if (Is_young(oldval))
+      caml_delete_global_root(&caml_global_roots_young, r);
+    else if (Is_in_heap(oldval))
+      caml_delete_global_root(&caml_global_roots_old, r);
+  }
+  /* end PR#4704 */
   *r = newval;
 }
 
