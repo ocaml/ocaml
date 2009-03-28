@@ -669,25 +669,35 @@ CAMLprim value caml_nativeint_sub(value v1, value v2)
 CAMLprim value caml_nativeint_mul(value v1, value v2)
 { return caml_copy_nativeint(Nativeint_val(v1) * Nativeint_val(v2)); }
 
+#define Nativeint_min_int ((intnat) 1 << (sizeof(intnat) * 8 - 1))
+
 CAMLprim value caml_nativeint_div(value v1, value v2)
 {
+  intnat dividend = Nativeint_val(v1);
   intnat divisor = Nativeint_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
+  /* PR#4740: on some processors, modulus crashes if division overflows.
+     Implement the same behavior as for type "int". */
+  if (dividend == Nativeint_min_int && divisor == -1) return v1;
 #ifdef NONSTANDARD_DIV_MOD
-  return caml_copy_nativeint(caml_safe_div(Nativeint_val(v1), divisor));
+  return caml_copy_nativeint(caml_safe_div(dividend, divisor));
 #else
-  return caml_copy_nativeint(Nativeint_val(v1) / divisor);
+  return caml_copy_nativeint(dividend / divisor);
 #endif
 }
 
 CAMLprim value caml_nativeint_mod(value v1, value v2)
 {
+  intnat dividend = Nativeint_val(v1);
   intnat divisor = Nativeint_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
+  /* PR#4740: on some processors, modulus crashes if division overflows.
+     Implement the same behavior as for type "int". */
+  if (dividend == Nativeint_min_int && divisor == -1) return caml_copy_nativeint(0);
 #ifdef NONSTANDARD_DIV_MOD
-  return caml_copy_nativeint(caml_safe_mod(Nativeint_val(v1), divisor));
+  return caml_copy_nativeint(caml_safe_mod(dividend, divisor));
 #else
-  return caml_copy_nativeint(Nativeint_val(v1) % divisor);
+  return caml_copy_nativeint(dividend % divisor);
 #endif
 }
 
