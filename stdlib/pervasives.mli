@@ -100,8 +100,7 @@ val max : 'a -> 'a -> 'a
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** [e1 == e2] tests for physical equality of [e1] and [e2].
-   On integers and characters, physical equality is identical to structural
-   equality. On mutable structures, [e1 == e2] is true if and only if
+   On mutable structures, [e1 == e2] is true if and only if
    physical modification of [e1] also affects [e2].
    On non-mutable structures, the behavior of [(==)] is
    implementation-dependent; however, it is guaranteed that
