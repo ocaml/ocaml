@@ -61,11 +61,8 @@ fully implemented and behave as described previously in this chapter.
 \entree{"waitpid"}{can only wait for a given PID, not any child process}
 \entree{"getppid"}{not implemented (meaningless under Windows)}
 \entree{"nice"}{not implemented}
-\entree{"in_channel_of_descr"}{does not work on sockets under Windows
-95, 98, ME; works fine under NT, 2000, XP}
 \entree{"out_channel_of_descr"}{ditto}
 \entree{"truncate", "ftruncate"}{not implemented}
-\entree{"lstat", "fstat"}{not implemented}
 \entree{"link", "symlink", "readlink"}{not implemented (no links under
 Windows)}
 \entree{"access"}{execute permission "X_OK" cannot be tested,
@@ -78,8 +75,6 @@ file system)}
 functions; use threads instead of non-blocking I/O}
 \entree{"rewinddir"}{not implemented; re-open the directory instead}
 \entree{"mkfifo"}{not implemented}
-\entree{"select"}{implemented, but works only for sockets; use threads
-                  if you need to wait on other kinds of file descriptors}
 \entree{"lockf"}{not implemented}
 \entree{"kill", "pause"}{not implemented (no inter-process signals in Windows)}
 \entree{"alarm", "times"}{not implemented}
@@ -91,8 +86,6 @@ functions; use threads instead of non-blocking I/O}
 \entree{"getgrnam", "getgrgid"}{always raise "Not_found"}
 \entree{type "socket_domain"}{the domain "PF_UNIX" is not supported;
 "PF_INET" is fully supported}
-\entree{"open_connection"}{does not work under Windows
-95, 98, ME; works fine under NT, 2000, XP}
 \entree{"establish_server"}{not implemented; use threads}
 \entree{terminal functions ("tc*")}{not implemented}
 \end{tableau}
