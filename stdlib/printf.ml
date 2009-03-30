@@ -297,7 +297,7 @@ let ac_of_format fmt =
 
 let count_arguments_of_format fmt =
   let ac = ac_of_format fmt in
-  ac.ac_rglr + ac.ac_skip + ac.ac_rdrs
+  ac.ac_rglr
 ;;
 
 let list_iter_i f l =
