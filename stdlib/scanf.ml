@@ -744,7 +744,7 @@ let scan_backslash_char max ib =
     let c1 = get_digit () in
     let c2 = get_digit () in
     Scanning.store_char ib (char_for_decimal_code c0 c1 c2) (max - 2)
-  | c -> bad_input_char c
+  | c -> bad_input_escape c
 ;;
 
 let scan_Char max ib =
@@ -753,16 +753,16 @@ let scan_Char max ib =
    let c = Scanning.checked_peek_char ib in
    if Scanning.eof ib then bad_input "a char" else
    match c, s with
-   (* Looking for the '\'' at the beginning of the delimited char. *)
+   (* Found the '\'' at the beginning of the delimited char. *)
    | '\'', 3 -> loop 2 (Scanning.ignore_char ib max)
-   (* Looking for the '\'' at the end of the delimited char. *)
+   (* Found the '\'' at the end of the delimited char. *)
    | '\'', 1 -> Scanning.ignore_char ib max
    (* Any other char at the beginning or end of the delimited char should be
       '\''. *)
    | c, (3 | 1) -> character_mismatch '\'' c
    (* Found a '\\': check and read this escape char. *)
    | '\\', 2 -> loop 1 (scan_backslash_char (Scanning.ignore_char ib max) ib)
-   (* The regular case, remember the char, then look for the terminal '\\'. *)
+   (* The regular case, remember the char, then look for the terminal '\''. *)
    | c, 2 -> loop 1 (Scanning.store_char ib c max)
    (* Any other case is an error, *)
    | c, _ -> bad_input_char c in
