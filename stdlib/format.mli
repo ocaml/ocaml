@@ -441,7 +441,7 @@ val get_all_formatter_output_functions :
 
 type out_channel;;
 (** The notion of output channel for the [Format module].
-    This is a much mode complex notion than [Pervasives.stdout], since it
+    This is a much more complex notion than [Pervasives.stdout], since it
     provides the machinery necessary for a pretty-printer specific to
     this [Format.out_channel] value.
     An alias for [Format.formatter] defined below. *)
