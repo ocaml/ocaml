@@ -791,8 +791,7 @@ let scan_String max ib =
     | '\n', true
     | ' ', false ->
       skip_spaces false (Scanning.ignore_char ib max)
-    | '\\', false -> loop false max
-    | c, false -> loop false (Scanning.store_char ib c max)
+    | c, false -> loop false max
     | _, _ -> loop false (scan_backslash_char (max - 1) ib) in
   loop true max
 ;;
