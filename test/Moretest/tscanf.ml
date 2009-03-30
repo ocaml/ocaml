@@ -169,7 +169,7 @@ test (test8 ())
 
 (* %S and %s styles. *)
 let unit fmt s =
-  let ib = Scanning.from_string (Printf.sprintf "%S" s) in
+  let ib = Scanning.from_string (Printf.sprintf "\"%S\"" s) in
   Scanf.bscanf ib fmt id
 ;;
 
@@ -197,11 +197,24 @@ test (test9 ())
 ;;
 
 let test10 () =
+  let unit s =
+    let ib = Scanning.from_string s in
+  Scanf.bscanf ib "%S" id in
+
   let res =
     sscanf "Une chaîne: \"celle-ci\" et \"celle-là\"!"
            "%s %s %S %s %S %s"
            (fun s1 s2 s3 s4 s5 s6 -> s1 ^ s2 ^ s3 ^ s4 ^ s5 ^ s6) in
-  res = "Unechaîne:celle-cietcelle-là!"
+  res = "Unechaîne:celle-cietcelle-là!" &&
+  (* Testing the result of reading a %S string. *)
+  unit "\"a\\\n  b\"" = "ab" &&
+  unit "\"\\\n  ab\"" = "ab" &&
+  unit "\"\n\\\n  ab\"" = "\nab" &&
+  unit "\"\n\\\n  a\nb\"" = "\na\nb" &&
+  unit "\"\n\\\n  \\\n  a\nb\"" = "\na\nb" &&
+  unit "\"\n\\\n  a\n\\\nb\\\n\"" = "\na\nb" &&
+  unit "\"a\\\n  \"" = "a" &&
+  true
 ;;
 
 test (test10 ())
