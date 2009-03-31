@@ -49,11 +49,12 @@ clean::
 
 nucleic.out: nucleic.ml
 	case $(ARCH) in \
-          i386) sed -e '/<HAND_CSE>/,/<\/HAND_CSE>/d' -e '/NO_CSE>/d' \
-                nucleic.ml > nucleic.mlt; \
-	        $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt;\
-	        rm -f nucleic.mlt;; \
-             *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml; \
+          i386|arm) \
+             sed -e '/<HAND_CSE>/,/<\/HAND_CSE>/d' -e '/NO_CSE>/d' \
+             nucleic.ml > nucleic.mlt; \
+             $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt;\
+	     rm -f nucleic.mlt;; \
+          *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml; \
         esac
 
 # KB
