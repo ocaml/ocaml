@@ -18,9 +18,6 @@
 trap_ptr        .req    r11
 alloc_ptr       .req    r8
 alloc_limit     .req    r9
-sp              .req    r13
-lr              .req    r14
-pc              .req    r15
 
         .text
 
@@ -106,15 +103,11 @@ caml_allocN:
         ldr     r10, .Lcaml_bottom_of_stack
         str     sp, [r10, #0]
     /* Save integer registers and return address on stack */
+        sub     sp, sp, #4     /* preserve 8-alignment */
         stmfd   sp!, {r0,r1,r2,r3,r4,r5,r6,r7,r10,r12,lr}
     /* Store pointer to saved integer registers in caml_gc_regs */
         ldr     r10, .Lcaml_gc_regs
         str     sp, [r10, #0]
-    /* Save non-callee-save float registers */
-        stfd    f0, [sp, #-8]!
-        stfd    f1, [sp, #-8]!
-        stfd    f2, [sp, #-8]!
-        stfd    f3, [sp, #-8]!
     /* Save current allocation pointer for debugging purposes */
         ldr     r10, .Lcaml_young_ptr
         str     alloc_ptr, [r10, #0]
@@ -124,10 +117,6 @@ caml_allocN:
     /* Call the garbage collector */
         bl      caml_garbage_collection
     /* Restore the registers from the stack */
-        ldfd    f4, [sp], #8
-        ldfd    f5, [sp], #8
-        ldfd    f6, [sp], #8
-        ldfd    f7, [sp], #8
         ldmfd   sp!, {r0,r1,r2,r3,r4,r5,r6,r7,r10,r12}
     /* Reload return address */
         ldr     r10, .Lcaml_last_return_address
@@ -140,7 +129,9 @@ caml_allocN:
         ldr     alloc_ptr, [r10, #0]
         ldr     alloc_limit, .Lcaml_young_limit
     /* Return to caller */
-        ldmfd   sp!, {pc}
+        ldr     r10, [sp, #0]
+        add     sp, sp, #8
+        mov     pc, r10
 
 /* Call a C function from Caml */
 /* Function to call is in r10 */
@@ -182,13 +173,9 @@ caml_start_program:
 
 .Ljump_to_caml:
     /* Save return address and callee-save registers */
-        stmfd   sp!, {r4,r5,r6,r7,r8,r9,r11,lr}
-        stfd    f7, [sp, #-8]!
-        stfd    f6, [sp, #-8]!
-        stfd    f5, [sp, #-8]!
-        stfd    f4, [sp, #-8]!
+        stmfd   sp!, {r4,r5,r6,r7,r8,r9,r11,lr} /* 8-alignment */
     /* Setup a callback link on the stack */
-        sub     sp, sp, #4*3
+        sub     sp, sp, #4*4                    /* 8-alignment */
         ldr     r4, .Lcaml_bottom_of_stack
         ldr     r4, [r4, #0]
         str     r4, [sp, #0]
@@ -234,15 +221,11 @@ caml_start_program:
         ldr     r4, .Lcaml_gc_regs
         ldr     r5, [sp, #8]
         str     r5, [r4, #0]
-        add     sp, sp, #4*3
+        add     sp, sp, #4*4
     /* Update allocation pointer */
         ldr     r4, .Lcaml_young_ptr
         str     alloc_ptr, [r4, #0]
     /* Reload callee-save registers and return */
-        ldfd    f4, [sp], #8
-        ldfd    f5, [sp], #8
-        ldfd    f6, [sp], #8
-        ldfd    f7, [sp], #8
         ldmfd   sp!, {r4,r5,r6,r7,r8,r9,r11,pc}
 
     /* The trap handler */
