@@ -12,12 +12,6 @@
 
 /* $Id$ */
 
-fp      .req    r11
-ip      .req    r12
-sp      .req    r13
-lr      .req    r14
-pc      .req    r15
-
         .text
 
         .global call_gen_code
@@ -43,3 +37,4 @@ call_gen_code:
 caml_c_call:
     @ function to call is in r10
         mov     pc, r10
+

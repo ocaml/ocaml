@@ -180,8 +180,10 @@ expr:
   | LBRACKET RBRACKET { Ctuple [] }
   | LPAREN LET letdef sequence RPAREN { make_letdef $3 $4 }
   | LPAREN ASSIGN IDENT expr RPAREN { Cassign(find_ident $3, $4) }
-  | LPAREN APPLY expr exprlist machtype RPAREN { Cop(Capply $5, $3 :: List.rev $4) }
-  | LPAREN EXTCALL STRING exprlist machtype RPAREN { Cop(Cextcall($3, $5, false), List.rev $4) }
+  | LPAREN APPLY expr exprlist machtype RPAREN
+                { Cop(Capply($5, Debuginfo.none), $3 :: List.rev $4) }
+  | LPAREN EXTCALL STRING exprlist machtype RPAREN
+                { Cop(Cextcall($3, $5, false, Debuginfo.none), List.rev $4) }
   | LPAREN SUBF expr RPAREN { Cop(Cnegf, [$3]) }
   | LPAREN SUBF expr expr RPAREN { Cop(Csubf, [$3; $4]) }
   | LPAREN unaryop expr RPAREN { Cop($2, [$3]) }
@@ -246,7 +248,7 @@ unaryop:
   | ALLOC                       { Calloc }
   | FLOATOFINT                  { Cfloatofint }
   | INTOFFLOAT                  { Cintoffloat }
-  | RAISE                       { Craise }
+  | RAISE                       { Craise Debuginfo.none }
   | ABSF                        { Cabsf }
 ;
 binaryop:
@@ -285,7 +287,7 @@ binaryop:
   | LEF                         { Ccmpf Cle }
   | GTF                         { Ccmpf Cgt }
   | GEF                         { Ccmpf Cge }
-  | CHECKBOUND                  { Ccheckbound }
+  | CHECKBOUND                  { Ccheckbound Debuginfo.none }
 ;
 sequence:
     expr sequence               { Csequence($1, $2) }

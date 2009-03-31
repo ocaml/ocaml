@@ -33,29 +33,45 @@ PROGS=fib.out tak.out quicksort.out quicksort2.out soli.out integr.out \
 
 all: codegen $(PROGS)
 
-INCLUDES=-I ../utils -I ../typing -I ../asmcomp
+INCLUDES=-I ../utils -I ../typing -I ../bytecomp -I ../asmcomp
 
-OTHEROBJS=../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
-  ../utils/clflags.cmo ../utils/ccomp.cmo \
-  ../utils/config.cmo ../utils/clflags.cmo ../utils/warnings.cmo \
+OTHEROBJS=\
+  ../utils/misc.cmo ../utils/tbl.cmo ../utils/config.cmo \
+  ../utils/clflags.cmo ../utils/terminfo.cmo ../utils/ccomp.cmo ../utils/warnings.cmo \
   ../utils/consistbl.cmo \
-  ../parsing/linenum.cmo ../parsing/location.cmo \
-  ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
-  ../typing/btype.cmo ../typing/subst.cmo ../typing/primitive.cmo \
-  ../typing/predef.cmo ../typing/datarepr.cmo ../typing/env.cmo \
-  ../bytecomp/lambda.cmo ../bytecomp/switch.cmo \
-  ../asmcomp/arch.cmo ../asmcomp/cmm.cmo ../asmcomp/printcmm.cmo \
-  ../asmcomp/clambda.cmo ../asmcomp/compilenv.cmo \
+  ../parsing/linenum.cmo ../parsing/location.cmo ../parsing/longident.cmo \
+  ../parsing/syntaxerr.cmo ../parsing/parser.cmo \
+  ../parsing/lexer.cmo ../parsing/parse.cmo ../parsing/printast.cmo \
+  ../typing/unused_var.cmo ../typing/ident.cmo ../typing/path.cmo \
+  ../typing/primitive.cmo ../typing/types.cmo \
+  ../typing/btype.cmo ../typing/oprint.cmo \
+  ../typing/subst.cmo ../typing/predef.cmo \
+  ../typing/datarepr.cmo ../typing/env.cmo \
+  ../typing/typedtree.cmo ../typing/ctype.cmo \
+  ../typing/printtyp.cmo ../typing/includeclass.cmo \
+  ../typing/mtype.cmo ../typing/includecore.cmo \
+  ../typing/includemod.cmo ../typing/parmatch.cmo \
+  ../typing/typetexp.cmo ../typing/stypes.cmo ../typing/typecore.cmo \
+  ../typing/typedecl.cmo ../typing/typeclass.cmo \
+  ../typing/typemod.cmo \
+  ../bytecomp/lambda.cmo ../bytecomp/printlambda.cmo \
+  ../bytecomp/typeopt.cmo ../bytecomp/switch.cmo ../bytecomp/matching.cmo \
+  ../bytecomp/translobj.cmo ../bytecomp/translcore.cmo \
+  ../bytecomp/translclass.cmo ../bytecomp/translmod.cmo \
+  ../bytecomp/simplif.cmo ../bytecomp/runtimedef.cmo \
+  ../asmcomp/arch.cmo ../asmcomp/debuginfo.cmo \
+  ../asmcomp/cmm.cmo ../asmcomp/printcmm.cmo \
   ../asmcomp/reg.cmo ../asmcomp/mach.cmo ../asmcomp/proc.cmo \
+  ../asmcomp/clambda.cmo ../asmcomp/compilenv.cmo \
   ../asmcomp/closure.cmo ../asmcomp/cmmgen.cmo \
-  ../asmcomp/printmach.cmo \
-  ../asmcomp/selectgen.cmo ../asmcomp/selection.cmo ../asmcomp/comballoc.cmo \
-  ../asmcomp/liveness.cmo ../asmcomp/spill.cmo ../asmcomp/split.cmo \
+  ../asmcomp/printmach.cmo ../asmcomp/selectgen.cmo ../asmcomp/selection.cmo \
+  ../asmcomp/comballoc.cmo ../asmcomp/liveness.cmo \
+  ../asmcomp/spill.cmo ../asmcomp/split.cmo \
   ../asmcomp/interf.cmo ../asmcomp/coloring.cmo \
   ../asmcomp/reloadgen.cmo ../asmcomp/reload.cmo \
-  ../asmcomp/linearize.cmo ../asmcomp/schedgen.cmo ../asmcomp/scheduling.cmo \
-  ../asmcomp/printlinear.cmo ../asmcomp/emitaux.cmo \
-  ../asmcomp/emit.cmo ../asmcomp/asmgen.cmo
+  ../asmcomp/printlinear.cmo ../asmcomp/linearize.cmo \
+  ../asmcomp/schedgen.cmo ../asmcomp/scheduling.cmo \
+  ../asmcomp/emitaux.cmo ../asmcomp/emit.cmo ../asmcomp/asmgen.cmo
 
 OBJS=parsecmmaux.cmo parsecmm.cmo lexcmm.cmo main.cmo
 

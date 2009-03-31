@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void caml_array_bound_error(void)
+void caml_ml_array_bound_error(void)
 {
   fprintf(stderr, "Fatal error: out-of-bound access in array or string\n");
   exit(2);
