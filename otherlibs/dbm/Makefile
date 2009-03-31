@@ -21,6 +21,7 @@ CAMLOBJS=dbm.cmo
 COBJS=cldbm.o
 EXTRACFLAGS=$(DBM_INCLUDES)
 LINKOPTS=$(DBM_LINK)
+LDOPTS=-ldopt "$(DBM_LINK)"
 
 include ../Makefile
 
