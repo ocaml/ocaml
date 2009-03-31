@@ -80,25 +80,6 @@ let load_symbol_addr s =
   then `leaq	{emit_symbol s}(%rip)`
   else `movq	${emit_symbol s}`
 
-
-let emit_call s =
-  if !Clflags.dlcode
-  then `call	{emit_symbol s}@PLT`
-  else `call	{emit_symbol s}`
-
-let emit_jump s =
-  if !Clflags.dlcode
-  then `jmp	{emit_symbol s}@PLT`
-  else `jmp	{emit_symbol s}`
-
-let load_symbol_addr s =
-  if !Clflags.dlcode
-  then `movq	{emit_symbol s}@GOTPCREL(%rip)`
-  else if !pic_code
-  then `leaq	{emit_symbol s}(%rip)`
-  else `movq	${emit_symbol s}`
-
-
 (* Output a label *)
 
 let emit_label lbl =
