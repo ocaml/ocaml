@@ -59,6 +59,12 @@ let createv tyv =
   for i = 0 to n-1 do rv.(i) <- create tyv.(i) done;
   rv
 
+let createv_like rv =
+  let n = Array.length rv in
+  let rv' = Array.create n dummy in
+  for i = 0 to n-1 do rv'.(i) <- create rv.(i).typ done;
+  rv'
+
 let clone r =
   let nr = create r.typ in
   nr.name <- r.name;

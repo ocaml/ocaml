@@ -39,6 +39,11 @@ class virtual selector_generic : object
   method select_store :
     Arch.addressing_mode -> Cmm.expression -> Mach.operation * Cmm.expression
     (* Can be overriden to deal with special store constant instructions *)
+  method regs_for : Cmm.machtype -> Reg.t array
+    (* Return an array of fresh registers of the given type.
+       Default implementation is like Reg.createv.
+       Can be overriden if float values are stored as pairs of
+       integer registers. *)
   method insert_op :
     Mach.operation -> Reg.t array -> Reg.t array -> Reg.t array
     (* Can be overriden to deal with 2-address instructions
