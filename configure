@@ -808,7 +808,14 @@ else
   fi
 fi
 
-# For the sys module
+# For the Pervasives module
+
+if sh ./trycompile expm1.c $mathlib; then
+  echo "expm1() and log1p() found."
+  echo "#define HAS_EXPM1_LOG1P" >> s.h
+fi
+
+# For the Sys module
 
 if sh ./hasgot getrusage; then
   echo "getrusage() found."

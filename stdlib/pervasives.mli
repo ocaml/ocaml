@@ -264,45 +264,59 @@ external log : float -> float = "caml_log_float" "log" "float"
 external log10 : float -> float = "caml_log10_float" "log10" "float"
 (** Base 10 logarithm. *)
 
+external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+(** [expm1 x] computes [exp x -. 1.0], giving numerically-accurate results
+    even if [x] is close to [0.0]. *)
+
+external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
+(** [log1p x] computes [log(1.0 +. x)] (natural logarithm),
+    giving numerically-accurate results even if [x] is close to [0.0]. *)
+
 external cos : float -> float = "caml_cos_float" "cos" "float"
-(** See {!Pervasives.atan2}. *)
+(** Cosine.  Argument is in radians. *)
 
 external sin : float -> float = "caml_sin_float" "sin" "float"
-(** See {!Pervasives.atan2}. *)
+(** Sine.  Argument is in radians. *)
 
 external tan : float -> float = "caml_tan_float" "tan" "float"
-(** See {!Pervasives.atan2}. *)
+(** Tangent.  Argument is in radians. *)
 
 external acos : float -> float = "caml_acos_float" "acos" "float"
-(** See {!Pervasives.atan2}. *)
+(** Arc cosine.  The argument must fall within the range [[-1.0, 1.0]]. 
+    Result is in radians and is between [0.0] and [pi]. *)
 
 external asin : float -> float = "caml_asin_float" "asin" "float"
-(** See {!Pervasives.atan2}. *)
+(** Arc sine.  The argument must fall within the range [[-1.0, 1.0]]. 
+    Result is in radians and is between [-pi/2] and [pi/2]. *)
 
 external atan : float -> float = "caml_atan_float" "atan" "float"
-(** See {!Pervasives.atan2}. *)
+(** Arc tangent.  
+    Result is in radians and is between [-pi/2] and [pi/2]. *)
 
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
-(** The usual trigonometric functions. *)
+(** [atan x y] returns the arc tangent of [y /. x].  The signs of [x]
+    and [y] are used to determine the quadrant of the result.
+    Result is in radians and is between [-pi] and [pi]. *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
-(** See {!Pervasives.tanh}. *)
+(** Hyperbolic cosine. *)
 
 external sinh : float -> float = "caml_sinh_float" "sinh" "float"
-(** See {!Pervasives.tanh}. *)
+(** Hyperbolic sine. *)
 
 external tanh : float -> float = "caml_tanh_float" "tanh" "float"
-(** The usual hyperbolic trigonometric functions. *)
+(** Hyperbolic tangent. *)
 
 external ceil : float -> float = "caml_ceil_float" "ceil" "float"
-(** See {!Pervasives.floor}. *)
+(** Round above to an integer value.
+    [ceil f] returns the least integer value greater than or equal to [f].
+    The result is returned as a float. *)
 
 external floor : float -> float = "caml_floor_float" "floor" "float"
-(** Round the given float to an integer value.
-   [floor f] returns the greatest integer value less than or
-   equal to [f].
-   [ceil f] returns the least integer value greater than or
-   equal to [f]. *)
+(** Round below to an integer value.
+    [floor f] returns the greatest integer value less than or
+    equal to [f].
+    The result is returned as a float. *)
 
 external abs_float : float -> float = "%absfloat"
 (** Return the absolute value of the argument. *)
