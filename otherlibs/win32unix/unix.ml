@@ -435,6 +435,8 @@ let getegid = getgid
 let setgid id = invalid_arg "Unix.setgid not implemented"
 
 let getgroups () = [|1|]
+let setgroups _ = invalid_arg "Unix.setgroups not implemented"
+let initgroups _ _ = invalid_arg "Unix.initgroups not implemented"
 
 type passwd_entry =
   { pw_name : string;

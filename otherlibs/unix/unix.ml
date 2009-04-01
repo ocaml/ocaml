@@ -365,6 +365,8 @@ external getgid : unit -> int = "unix_getgid"
 external getegid : unit -> int = "unix_getegid"
 external setgid : int -> unit = "unix_setgid"
 external getgroups : unit -> int array = "unix_getgroups"
+external setgroups : int array -> unit = "unix_setgroups"
+external initgroups : string -> int -> unit = "unix_initgroups"
 
 type passwd_entry =
   { pw_name : string;

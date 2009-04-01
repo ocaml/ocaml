@@ -983,6 +983,16 @@ if sh ./hasgot -i limits.h && sh ./runtest getgroups.c; then
   echo "#define HAS_GETGROUPS" >> s.h
 fi
 
+if sh ./hasgot -i limits.h -i grp.h && sh ./runtest setgroups.c; then
+  echo "setgroups() found."
+  echo "#define HAS_SETGROUPS" >> s.h
+fi
+
+if sh ./hasgot -i limits.h -i grp.h && sh ./runtest initgroups.c; then
+  echo "initgroups() found."
+  echo "#define HAS_INITGROUPS" >> s.h
+fi
+
 if sh ./hasgot -i termios.h &&
    sh ./hasgot tcgetattr tcsetattr tcsendbreak tcflush tcflow; then
   echo "POSIX termios found."

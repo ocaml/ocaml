@@ -144,6 +144,14 @@
 
 /* Define HAS_GETGROUPS if you have getgroups(). */
 
+#define HAS_SETGROUPS
+
+/* Define HAS_SETGROUPS if you have setgroups(). */
+
+#define HAS_INITGROUPS
+
+/* Define HAS_INITGROUPS if you have initgroups(). */
+
 #define HAS_TERMIOS
 
 /* Define HAS_TERMIOS if you have /usr/include/termios.h and it is
