@@ -260,7 +260,7 @@ val set_tab : unit -> unit;;
 (** Sets a tabulation mark at the current insertion point. *)
 
 val print_tab : unit -> unit;;
-(** [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
+(** [print_tab ()] is equivalent to [print_tbreak 0 0]. *)
 
 
 (** {6 Ellipsis} *)
