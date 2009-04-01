@@ -152,6 +152,32 @@ val float_of_big_int : big_int -> float
         (** Returns a floating-point number approximating the
            given big integer. *)
 
+(** {6 Bit-oriented operations} *)
+
+val and_big_int : big_int -> big_int -> big_int
+        (** Bitwise logical ``and''.
+            The arguments must be positive or zero. *)
+val or_big_int : big_int -> big_int -> big_int
+        (** Bitwise logical ``or''.
+            The arguments must be positive or zero. *)
+val xor_big_int : big_int -> big_int -> big_int
+        (** Bitwise logical ``exclusive or''.
+            The arguments must be positive or zero. *)
+val shift_left_big_int : big_int -> int -> big_int
+        (** [shift_left_big_int b n] returns [b] shifted left by [n] bits.
+            Equivalent to multiplication by [2^n]. *)
+val shift_right_big_int : big_int -> int -> big_int
+        (** [shift_right_big_int b n] returns [b] shifted right by [n] bits.
+            The shift is performed on the absolute value of [b].
+            The result has the same sign as [b].
+            Equivalent to division by [2^n] with the result being
+            rounded towards zero. *)
+val extract_big_int : big_int -> int -> int -> big_int
+        (** [extract_big_int bi ofs n] returns a nonnegative number
+            corresponding to bits [ofs] to [ofs + n - 1] of the
+            binary representation of [bi].  If [bi] is negative,
+            a two's complement representation is used. *)
+
 (**/**)
 
 (** {6 For internal use} *)

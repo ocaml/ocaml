@@ -770,3 +770,132 @@ test 5 eq_int
   (should_fail "-9223372036854775809", 1);;
 test 6 eq_int
   (should_fail "18446744073709551616", 1);;
+
+(* build a 128-bit big int from two int64 *)
+
+let big_int_128 hi lo =
+  add_big_int (mult_big_int (big_int_of_int64 hi)
+                            (big_int_of_string "18446744073709551616"))
+              (big_int_of_int64 lo);;
+let h1 = 0x7fd05b7ee46a29f8L
+and h2 = 0x64b28b8ee70b6e6dL
+and h3 = 0x58546e563f5b44f0L
+and h4 = 0x1db72f6377ff3ec6L
+and h5 = 0x4f9bb0a19c543cb1L;;
+
+testing_function "and_big_int";;
+
+test 1 eq_big_int
+  (and_big_int unit_big_int zero_big_int, zero_big_int);;
+test 2 eq_big_int
+  (and_big_int zero_big_int unit_big_int, zero_big_int);;
+test 3 eq_big_int
+  (and_big_int unit_big_int unit_big_int, unit_big_int);;
+test 4 eq_big_int
+  (and_big_int (big_int_128 h1 h2) (big_int_128 h3 h4),
+   big_int_128 (Int64.logand h1 h3) (Int64.logand h2 h4));;
+test 5 eq_big_int
+  (and_big_int (big_int_128 h1 h2) (big_int_of_int64 h5),
+   big_int_of_int64 (Int64.logand h2 h5));;
+test 6 eq_big_int
+  (and_big_int (big_int_of_int64 h5) (big_int_128 h3 h4) ,
+   big_int_of_int64 (Int64.logand h5 h4));;
+
+testing_function "or_big_int";;
+
+test 1 eq_big_int
+  (or_big_int unit_big_int zero_big_int, unit_big_int);;
+test 2 eq_big_int
+  (or_big_int zero_big_int unit_big_int, unit_big_int);;
+test 3 eq_big_int
+  (or_big_int unit_big_int unit_big_int, unit_big_int);;
+test 4 eq_big_int
+  (or_big_int (big_int_128 h1 h2) (big_int_128 h3 h4),
+   big_int_128 (Int64.logor h1 h3) (Int64.logor h2 h4));;
+test 5 eq_big_int
+  (or_big_int (big_int_128 h1 h2) (big_int_of_int64 h5),
+   big_int_128 h1 (Int64.logor h2 h5));;
+test 6 eq_big_int
+  (or_big_int (big_int_of_int64 h5) (big_int_128 h3 h4) ,
+   big_int_128 h3 (Int64.logor h5 h4));;
+
+testing_function "xor_big_int";;
+
+test 1 eq_big_int
+  (xor_big_int unit_big_int zero_big_int, unit_big_int);;
+test 2 eq_big_int
+  (xor_big_int zero_big_int unit_big_int, unit_big_int);;
+test 3 eq_big_int
+  (xor_big_int unit_big_int unit_big_int, zero_big_int);;
+test 4 eq_big_int
+  (xor_big_int (big_int_128 h1 h2) (big_int_128 h3 h4),
+   big_int_128 (Int64.logxor h1 h3) (Int64.logxor h2 h4));;
+test 5 eq_big_int
+  (xor_big_int (big_int_128 h1 h2) (big_int_of_int64 h5),
+   big_int_128 h1 (Int64.logxor h2 h5));;
+test 6 eq_big_int
+  (xor_big_int (big_int_of_int64 h5) (big_int_128 h3 h4) ,
+   big_int_128 h3 (Int64.logxor h5 h4));;
+
+testing_function "shift_left_big_int";;
+
+test 1 eq_big_int
+  (shift_left_big_int unit_big_int 0,
+   unit_big_int);;
+test 2 eq_big_int
+  (shift_left_big_int unit_big_int 1,
+   big_int_of_int 2);;
+test 2 eq_big_int
+  (shift_left_big_int unit_big_int 31,
+   big_int_of_string "2147483648");;
+test 3 eq_big_int
+  (shift_left_big_int unit_big_int 64,
+   big_int_of_string "18446744073709551616");;
+test 4 eq_big_int
+  (shift_left_big_int unit_big_int 95,
+   big_int_of_string "39614081257132168796771975168");;
+test 5 eq_big_int
+  (shift_left_big_int (big_int_of_string "39614081257132168796771975168") 67,
+   big_int_of_string "5846006549323611672814739330865132078623730171904");;
+test 6 eq_big_int
+  (shift_left_big_int (big_int_of_string "-39614081257132168796771975168") 67,
+   big_int_of_string "-5846006549323611672814739330865132078623730171904");;
+
+testing_function "shift_right_big_int";;
+
+test 1 eq_big_int
+  (shift_right_big_int unit_big_int 0,
+   unit_big_int);;
+test 2 eq_big_int
+  (shift_right_big_int (big_int_of_int 12345678) 3,
+   big_int_of_int 1543209);;
+test 3 eq_big_int
+  (shift_right_big_int (big_int_of_string "5299989648942") 32,
+   big_int_of_int 1234);;
+test 4 eq_big_int
+  (shift_right_big_int (big_int_of_string "5846006549323611672814739330865132078623730171904") 67,
+   big_int_of_string "39614081257132168796771975168");;
+test 5 eq_big_int
+  (shift_right_big_int (big_int_of_string "-5299989648942") 32,
+   big_int_of_int (-1234));;
+
+testing_function "extract_big_int";;
+
+test 1 eq_big_int
+  (extract_big_int (big_int_of_int64 0x123456789ABCDEFL) 3 13,
+   big_int_of_int 6589);;
+test 2 eq_big_int
+  (extract_big_int (big_int_128 h1 h2) 67 12,
+   big_int_of_int 1343);;
+test 3 eq_big_int
+  (extract_big_int (big_int_of_string "-1844674407370955178") 37 9,
+   big_int_of_int 307);;
+test 4 eq_big_int
+  (extract_big_int unit_big_int 2048 254,
+   zero_big_int);;
+test 5 eq_big_int
+  (extract_big_int (big_int_of_int64 0x123456789ABCDEFL) 0 32,
+   big_int_of_int64 2309737967L);;
+test 6 eq_big_int
+  (extract_big_int (big_int_of_int (-1)) 2048 254,
+   zero_big_int);;
