@@ -459,6 +459,11 @@ information it may have cached about the files.
 Add the given directories to the search path. These directories are
 added at the front, and will therefore be searched first.
 
+\item["directory" \var{directorynames} "for" \var{modulename}]
+Same as "directory" \var{directorynames}, but the given directories will be
+searched only when looking for the source file of a module that has 
+been packed into \var{modulename}.
+
 \item["directory"]
 Reset the search path. This requires confirmation.
 \end{options}
