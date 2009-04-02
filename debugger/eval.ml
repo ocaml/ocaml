@@ -42,7 +42,9 @@ let abstract_type =
 let rec path event = function
     Pident id ->
       if Ident.global id then
-        Debugcom.Remote_value.global (Symtable.get_global_position id)
+        try
+          Debugcom.Remote_value.global (Symtable.get_global_position id)
+        with Symtable.Error _ -> raise(Error(Unbound_identifier id))
       else
         begin match event with
           Some ev ->
@@ -52,7 +54,7 @@ let rec path event = function
             with Not_found ->
             try
               let pos = Ident.find_same id ev.ev_compenv.ce_heap in
-              Debugcom.Remote_value.from_environment pos
+              Debugcom.Remote_v<alue.from_environment pos
             with Not_found ->
               raise(Error(Unbound_identifier id))
             end
