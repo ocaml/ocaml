@@ -34,6 +34,7 @@ type error =
   | Corrupted_interface of string
   | File_not_found of string
   | Cannot_open_dll of string
+  | Inconsistent_implementation of string
 
 exception Error of error
 
@@ -96,9 +97,20 @@ let default_available_units () =
 
 (* Initialize the linker tables and everything *)
 
+let inited = ref false
+
 let init () =
-  default_crcs := Symtable.init_toplevel();
-  default_available_units ()
+  if not !inited then begin
+    default_crcs := Symtable.init_toplevel();
+    default_available_units ();
+    inited := true;
+  end
+
+let clear_available_units () = init(); clear_available_units ()
+let allow_only l = init(); allow_only l
+let prohibit l = init(); prohibit l
+let add_available_units l = init(); add_available_units l
+let default_available_units () = init(); default_available_units ()
 
 (* Read the CRC of an interface from its .cmi file *)
 
@@ -186,6 +198,7 @@ let load_compunit ic file_name compunit =
   end
 
 let loadfile file_name =
+  init();
   let ic = open_in_bin file_name in
   try
     let buffer = String.create (String.length Config.cmo_magic_number) in
@@ -213,6 +226,7 @@ let loadfile file_name =
     close_in ic; raise exc
 
 let loadfile_private file_name =
+  init();
   let initial_symtable = Symtable.current_state()
   and initial_crc = !crc_interfaces in
   try
@@ -250,3 +264,8 @@ let error_message = function
       "cannot find file " ^ name ^ " in search path"
   | Cannot_open_dll reason ->
       "error loading shared library: " ^ reason
+  | Inconsistent_implementation name ->
+      "implementation mismatch on " ^ name
+
+let is_native = false
+let adapt_filename f = f
