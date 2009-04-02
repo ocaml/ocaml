@@ -16,9 +16,7 @@
 (***************************** Frames **********************************)
 
 open Instruct
-open Primitives
 open Debugcom
-open Checkpoints
 open Events
 open Symbols
 

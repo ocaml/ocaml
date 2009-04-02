@@ -20,7 +20,6 @@ open Debugcom
 open Instruct
 open Primitives
 open Printf
-open Source
 
 (*** Debugging. ***)
 let debug_breakpoints = ref false
@@ -68,7 +67,7 @@ let rec breakpoints_at_pc pc =
    []
   end
     @
-  List.map fst (filter (function (_, {ev_pos = pos}) -> pos = pc) !breakpoints)
+  List.map fst (List.filter (function (_, {ev_pos = pos}) -> pos = pc) !breakpoints)
 
 (* Is there a breakpoint at `pc' ? *)
 let breakpoint_at_pc pc =
@@ -155,7 +154,7 @@ let remove_position pos =
   let count = List.assoc pos !positions in
     decr count;
     if !count = 0 then begin
-      positions := assoc_remove !positions pos;
+      positions := List.remove_assoc pos !positions;
       new_version ()
     end
 
@@ -181,7 +180,7 @@ let remove_breakpoint number =
     let pos = ev.ev_pos in
       Exec.protect
         (function () ->
-           breakpoints := assoc_remove !breakpoints number;
+           breakpoints := List.remove_assoc number !breakpoints;
            remove_position pos;
            printf "Removed breakpoint %d at %d : %s" number ev.ev_pos
                   (Pos.get_desc ev);
@@ -210,7 +209,7 @@ let exec_with_temporary_breakpoint pc funct =
       let count = List.assoc pc !positions in
         decr count;
         if !count = 0 then begin
-          positions := assoc_remove !positions pc;
+          positions := List.remove_assoc pc !positions;
           reset_instr pc;
           Symbols.set_event_at_pc pc
         end

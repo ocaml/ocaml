@@ -13,8 +13,6 @@
 
 (* $Id$ *)
 
-open Primitives
-open Misc
 open Input_handling
 open Question
 open Command_line

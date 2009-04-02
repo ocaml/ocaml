@@ -29,12 +29,6 @@ val except : 'a -> 'a list -> 'a list
 (* Position of an element in a list. Head of list has position 0. *)
 val index : 'a -> 'a list -> int
 
-(* Remove on element from an association list. *)
-val assoc_remove : ('a * 'b) list -> 'a -> ('a * 'b) list
-
-(* Nth element of a list. *)
-val list_nth : 'a list -> int -> 'a
-
 (* Return the `n' first elements of `l'. *)
 (* ### n l -> l' *)
 val list_truncate : int -> 'a list -> 'a list
@@ -47,22 +41,7 @@ val list_truncate2 : int -> 'a list -> 'a list * 'a list
 (* ### x y l -> l' *)
 val list_replace : 'a -> 'a -> 'a list -> 'a list
 
-(* Filter `list' according to `predicate'. *)
-(* ### predicate list -> list' *)
-val filter : ('a -> bool) -> 'a list -> 'a list
-
-(* Find the first element `element' of `list' *)
-(* so that `predicate element' holds. *)
-(* Raise `Not_found' if no such element. *)
-(* ### predicate list -> element *)
-val find : ('a -> bool) -> 'a list -> 'a
-
 (*** Operations on strings. ***)
-
-(* Return the position of the first occurence of char `c' in string `s' *)
-(* Raise `Not_found' if `s' does not contain `c'. *)
-(* ### c s -> pos *)
-val string_pos : string -> char -> int
 
 (* Remove blanks (spaces and tabs) at beginning and end of a string. *)
 val string_trim : string -> string

@@ -36,26 +36,6 @@ let index a l =
   | b::l -> if a = b then i else index_rec (i + 1) l
  in index_rec 0 l
 
-(* Remove an element from an association list *)
-let assoc_remove lst elem =
-  let rec remove =
-    function
-      [] -> []
-    | ((a, _) as c::t) ->
-      if a = elem then t
-      else c::(remove t)
-  in remove lst
-
-(* Nth element of a list. *)
-let rec list_nth p0 p1 =
-  match (p0,p1) with
-    ([], _) ->
-      invalid_arg "list_nth"
-  | ((a::_), 0) ->
-      a
-  | ((_::l), n) ->
-      list_nth l (n - 1)
-
 (* Return the `n' first elements of `l' *)
 (* ### n l -> l' *)
 let rec list_truncate =
@@ -87,43 +67,7 @@ let list_replace x y =
         else a::(repl l)
   in repl
 
-(* Filter `list' according to `predicate'. *)
-(* ### predicate list -> list' *)
-let filter p =
-  let rec filter2 =
-    function
-      [] ->
-        []
-    | a::l ->
-        if p a then
-          a::(filter2 l)
-        else
-          filter2 l
-  in filter2
-
-(* Find the first element `element' of `list' *)
-(* so that `predicate element' holds. *)
-(* ### predicate list -> element *)
-let find p =
-  let rec find2 =
-    function
-      [] ->
-        raise Not_found
-    | a::l ->
-        if p a then a
-        else find2 l
-  in find2
-
 (*** Operations on strings. ***)
-
-(* Return the position of the first occurence of char `c' in string `s' *)
-(* Raise `Not_found' if `s' does not contain `c'. *)
-(* ### c s -> pos *)
-let string_pos s c =
-  let i = ref 0 and l = String.length s in
-    while !i < l && String.get s !i != c do i := !i + 1 done;
-    if !i = l then raise Not_found;
-    !i
 
 (* Remove blanks (spaces and tabs) at beginning and end of a string. *)
 let is_space = function

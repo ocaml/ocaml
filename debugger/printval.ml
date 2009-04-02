@@ -15,8 +15,6 @@
 
 (* To print values *)
 
-open Misc
-open Obj
 open Format
 open Parser_aux
 open Path

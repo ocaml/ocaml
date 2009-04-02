@@ -19,13 +19,10 @@ open Int64ops
 open Unix
 open Unix_tools
 open Debugger_config
-open Misc
-open Instruct
 open Primitives
 open Parameters
 open Input_handling
 open Question
-open Debugcom
 open Program_loading
 open Time_travel
 

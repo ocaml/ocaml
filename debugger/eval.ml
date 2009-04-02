@@ -13,7 +13,6 @@
 
 (* $Id$ *)
 
-open Debugger_config
 open Misc
 open Path
 open Instruct

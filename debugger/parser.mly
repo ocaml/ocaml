@@ -16,7 +16,6 @@
 %{
 
 open Int64ops
-open Primitives
 open Input_handling
 open Longident
 open Parser_aux

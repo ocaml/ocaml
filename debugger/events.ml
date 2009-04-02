@@ -16,8 +16,6 @@
 (********************************* Events ******************************)
 
 open Instruct
-open Primitives
-open Checkpoints
 
 let get_pos ev =
   match ev.ev_kind with

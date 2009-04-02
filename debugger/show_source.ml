@@ -15,7 +15,6 @@
 
 open Debugger_config
 open Instruct
-open Misc
 open Parameters
 open Primitives
 open Printf

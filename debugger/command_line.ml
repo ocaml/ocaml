@@ -87,7 +87,7 @@ let eol =
   end_of_line Lexer.lexeme
 
 let matching_elements list name instr =
-  filter (function a -> isprefix instr (name a)) !list
+  List.filter (function a -> isprefix instr (name a)) !list
 
 let all_matching_instructions =
   matching_elements instruction_list (fun i -> i.instr_name)
@@ -97,7 +97,7 @@ let all_matching_instructions =
 
 let matching_instructions instr =
   let all = all_matching_instructions instr in
-  let prio = filter (fun i -> i.instr_prio) all in
+  let prio = List.filter (fun i -> i.instr_prio) all in
   if prio = [] then all else prio
 
 let matching_variables =
