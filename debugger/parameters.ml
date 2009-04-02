@@ -17,7 +17,7 @@
 
 open Primitives
 open Config
-open Misc
+open Debugger_config
 
 let program_loaded = ref false
 let program_name = ref ""
@@ -30,6 +30,10 @@ let default_load_path =
 let add_path dir =
   load_path := dir :: except dir !load_path;
   Envaux.reset_cache()
+
+let add_path_for mdl dir =
+  let old = try Hashtbl.find load_path_for mdl with Not_found -> [] in
+  Hashtbl.replace load_path_for mdl (dir :: old)
 
 (* Used by emacs ? *)
 let emacs = ref false

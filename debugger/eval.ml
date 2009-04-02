@@ -88,8 +88,8 @@ let rec expression event env = function
       end
   | E_result ->
       begin match event with
-        Some {ev_kind = Event_after ty} when !Frames.current_frame = 0 ->
-          (Debugcom.Remote_value.accu(), ty)
+        Some {ev_kind = Event_after ty; ev_typsubst = subst} when !Frames.current_frame = 0 ->
+          (Debugcom.Remote_value.accu(), Subst.type_expr subst ty)
       | _ ->
           raise(Error(No_result))
       end

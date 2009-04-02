@@ -23,7 +23,7 @@ type error =
 exception Error of error
 
 let env_cache =
-  (Hashtbl.create 59 : (Env.summary, Env.t) Hashtbl.t)
+  (Hashtbl.create 59 : ((Env.summary * Subst.t), Env.t) Hashtbl.t)
 
 let reset_cache () =
   Hashtbl.clear env_cache;
@@ -34,45 +34,46 @@ let extract_sig env mty =
     Tmty_signature sg -> sg
   | _ -> fatal_error "Envaux.extract_sig"
 
-let rec env_from_summary sum =
+let rec env_from_summary sum subst =
   try
-    Hashtbl.find env_cache sum
+    Hashtbl.find env_cache (sum, subst)
   with Not_found ->
     let env =
       match sum with
         Env_empty ->
           Env.empty
       | Env_value(s, id, desc) ->
-          Env.add_value id desc (env_from_summary s)
+          Env.add_value id (Subst.value_description subst desc) (env_from_summary s subst)
       | Env_type(s, id, desc) ->
-          Env.add_type id desc (env_from_summary s)
+          Env.add_type id (Subst.type_declaration subst desc) (env_from_summary s subst)
       | Env_exception(s, id, desc) ->
-          Env.add_exception id desc (env_from_summary s)
+          Env.add_exception id (Subst.exception_declaration subst desc) (env_from_summary s subst)
       | Env_module(s, id, desc) ->
-          Env.add_module id desc (env_from_summary s)
+          Env.add_module id (Subst.modtype subst desc) (env_from_summary s subst)
       | Env_modtype(s, id, desc) ->
-          Env.add_modtype id desc (env_from_summary s)
+          Env.add_modtype id (Subst.modtype_declaration subst desc) (env_from_summary s subst)
       | Env_class(s, id, desc) ->
-          Env.add_class id desc (env_from_summary s)
+          Env.add_class id (Subst.class_declaration subst desc) (env_from_summary s subst)
       | Env_cltype (s, id, desc) ->
-          Env.add_cltype id desc (env_from_summary s)
+          Env.add_cltype id (Subst.cltype_declaration subst desc) (env_from_summary s subst)
       | Env_open(s, path) ->
-          let env = env_from_summary s in
+          let env = env_from_summary s subst in
+          let path' = Subst.module_path subst path in
           let mty =
             try 
-              Env.find_module path env
+              Env.find_module path' env
             with Not_found ->
-              raise (Error (Module_not_found path))
+              raise (Error (Module_not_found path'))
           in
-          Env.open_signature path (extract_sig env mty) env
+          Env.open_signature path' (extract_sig env mty) env
     in
-      Hashtbl.add env_cache sum env;
+      Hashtbl.add env_cache (sum, subst) env;
       env
 
 let env_of_event =
   function
     None    -> Env.empty
-  | Some ev -> env_from_summary ev.Instruct.ev_typenv
+  | Some ev -> env_from_summary ev.Instruct.ev_typenv ev.Instruct.ev_typsubst
 
 (* Error report *)
 

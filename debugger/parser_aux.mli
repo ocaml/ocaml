@@ -28,7 +28,7 @@ type break_arg =
     BA_none                             (* break *)
   | BA_pc of int                        (* break PC *)
   | BA_function of expression           (* break FUNCTION *)
-  | BA_pos1 of string option * int * int option
+  | BA_pos1 of Longident.t option * int * int option
                                         (* break @ [MODULE] LINE [POS] *)
-  | BA_pos2 of string option * int      (* break @ [MODULE] # OFFSET *)
+  | BA_pos2 of Longident.t option * int (* break @ [MODULE] # OFFSET *)
 
