@@ -289,7 +289,7 @@ install:
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi \
 	   $(LIBDIR)
 	cd tools; $(MAKE) install
-	-$(MAKE) -C man install
+	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done

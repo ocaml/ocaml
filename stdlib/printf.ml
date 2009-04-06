@@ -159,7 +159,7 @@ let extract_format_int conv fmt start stop widths =
 (* Returns the position of the next character following the meta format
    string, starting from position [i], inside a given format [fmt].
    According to the character [conv], the meta format string is
-   enclosed by the delimiters %{ and %} (when [conv = '{']) or %( and
+   enclosed by the delimitors %{ and %} (when [conv = '{']) or %( and
    %) (when [conv = '(']). Hence, [sub_format] returns the index of
    the character following the [')'] or ['}'] that ends the meta format,
    according to the character [conv]. *)
@@ -312,7 +312,7 @@ let list_iter_i f l =
 (* ``Abstracting'' version of kprintf: returns a (curried) function that
    will print when totally applied.
    Note: in the following, we are careful not to be badly caught
-   by the compiler optimisations for the representation of arrays. *)
+   by the compiler optimizations for the representation of arrays. *)
 let kapr kpr fmt =
   match count_arguments_of_format fmt with
   | 0 -> kpr fmt [||]
@@ -363,7 +363,7 @@ type positional_specification =
    Calling [got_spec] with appropriate arguments, we ``return'' a positional
    specification and an index to go on scanning the [fmt] format at hand.
 
-   Note that this is optimised for the regular case, i.e. no positional
+   Note that this is optimized for the regular case, i.e. no positional
    parameter, since in this case we juste ``return'' the constant
    [Spec_none]; in case we have a positional parameter, we ``return'' a
    [Spec_index] [positional_specification] which a bit more costly.
@@ -468,7 +468,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let (x : string) = get_arg spec n in
       let x = if conv = 's' then x else "\"" ^ String.escaped x ^ "\"" in
       let s =
-        (* optimise for common case %s *)
+        (* Optimize for common case %s *)
         if i = succ pos then x else
         format_string (extract_format fmt pos i widths) x in
       cont_s (next_index spec n) s (succ i)
