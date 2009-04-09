@@ -111,16 +111,17 @@ CMOFILES= odoc_config.cmo \
 CMXFILES= $(CMOFILES:.cmo=.cmx)
 CMIFILES= $(CMOFILES:.cmo=.cmi)
 
-EXECMOFILES=$(CMOFILES)\
-	odoc_dag2html.cmo\
-	odoc_to_text.cmo\
-	odoc_ocamlhtml.cmo\
-	odoc_html.cmo\
-	odoc_man.cmo\
+EXECMOFILES=$(CMOFILES) \
+	odoc_dag2html.cmo \
+	odoc_to_text.cmo \
+	odoc_ocamlhtml.cmo \
+	odoc_html.cmo \
+	odoc_man.cmo \
 	odoc_latex_style.cmo \
-	odoc_latex.cmo\
-	odoc_texi.cmo\
-	odoc_dot.cmo
+	odoc_latex.cmo \
+	odoc_texi.cmo \
+	odoc_dot.cmo \
+	odoc.cmo
 
 EXECMXFILES= $(EXECMOFILES:.cmo=.cmx)
 EXECMIFILES= $(EXECMOFILES:.cmo=.cmi)
@@ -199,10 +200,10 @@ libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 debug:
 	make OCAMLPP=""
 
-$(OCAMLDOC): $(EXECMOFILES) odoc.cmo
-	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES) odoc.cmo
-$(OCAMLDOC_OPT): $(EXECMXFILES) odoc_opt.cmx
-	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES) odoc_opt.cmx
+$(OCAMLDOC): $(EXECMOFILES)
+	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
+$(OCAMLDOC_OPT): $(EXECMXFILES)
+	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa dynlink.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
@@ -211,7 +212,7 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
 
-dot: $(EXECMOFILES) odoc.cmo
+dot: $(EXECMOFILES)
 	$(OCAMLDOC_RUN) -dot -dot-reduce -o ocamldoc.dot $(INCLUDES) \
 	odoc*.ml
 
