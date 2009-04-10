@@ -3183,10 +3183,11 @@ let cyclic_abbrev env id ty =
   in check_cycle [] ty
 
 (* Normalize a type before printing, saving... *)
-let rec normalize_type_rec env ty =
+(* Cannot use mark_type because deep_occur uses it too *)
+let rec normalize_type_rec env visited ty =
   let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    mark_type_node ty;
+  if not (TypeSet.mem ty !visited) then begin
+    visited := TypeSet.add ty !visited;
     begin match ty.desc with
     | Tvariant row ->
       let row = row_repr row in
@@ -3215,11 +3216,15 @@ let rec normalize_type_rec env ty =
         begin match !nm with
         | None -> ()
         | Some (n, v :: l) ->
-            let v' = repr v in
+	    if deep_occur ty (newgenty (Ttuple l)) then
+	      (* The abbreviation may be hiding something, so remove it *)
+	      set_name nm None
+	    else let v' = repr v in
             begin match v'.desc with
             | Tvar|Tunivar ->
                 if v' != v then set_name nm (Some (n, v' :: l))
-            | Tnil -> log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
+            | Tnil ->
+		log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
             | _ -> set_name nm None
             end
         | _ ->
@@ -3232,12 +3237,11 @@ let rec normalize_type_rec env ty =
         log_type ty; fi.desc <- fi'.desc
     | _ -> ()
     end;
-    iter_type_expr (normalize_type_rec env) ty
+    iter_type_expr (normalize_type_rec env visited) ty
   end
 
 let normalize_type env ty =
-  normalize_type_rec env ty;
-  unmark_type ty
+  normalize_type_rec env (ref TypeSet.empty) ty
 
 
                               (*************************)
