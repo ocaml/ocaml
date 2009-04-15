@@ -181,7 +181,8 @@ longident_eol :
     longident end_of_line       { $1 };
 
 opt_longident :
-    longident                   { Some $1 }
+    UIDENT                      { Some (Lident $1) }
+  | module_path DOT UIDENT      { Some (Ldot($1, $3)) }
   |                             { None };
 
 opt_longident_eol :
