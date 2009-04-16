@@ -30,7 +30,7 @@
 CAMLprim value unix_initgroups(value user, value group)
 {
   if (initgroups(String_val(user), Int_val(group)) == -1) {
-    uerror("setgroups", Nothing);
+    uerror("initgroups", Nothing);
   }
   return Val_unit;
 }
