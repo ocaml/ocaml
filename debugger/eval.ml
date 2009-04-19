@@ -179,15 +179,14 @@ let report_error ppf = function
   | Tuple_index(ty, len, pos) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf
-        "@[Cannot extract field number %i from a %i-components \
-           tuple of type@ %a@]@."
+        "@[Cannot extract field number %i from a %i-tuple of type@ %a@]@."
         pos len Printtyp.type_expr ty
   | Array_index(len, pos) ->
       fprintf ppf
-        "@[Cannot extract element number %i from array of length %i@]@." pos len
+        "@[Cannot extract element number %i from an array of length %i@]@." pos len
   | List_index(len, pos) ->
       fprintf ppf
-        "@[Cannot extract element number %i from list of length %i@]@." pos len
+        "@[Cannot extract element number %i from a list of length %i@]@." pos len
   | String_index(s, len, pos) ->
       fprintf ppf
         "@[Cannot extract character number %i@ \

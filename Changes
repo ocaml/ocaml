@@ -1,3 +1,22 @@
+Objective Caml 3.11.1:
+----------------------
+
+Bug fixes:
+- PR#4740: guard against possible processor error in
+    {Int32,Int64,Nativeint}.{div,rem}
+- PR#4766: incorrect simplification of some type abbreviations.
+- PR#4699: in otherlibs/dbm, fixed construction of dlldbm.so.
+- PR#4722: typo in configure script
+- PR#4745: type inference wrongly produced non-generalizable type variables.
+- PR#4708: (ocamldoc) improved printing of infix identifiers such as "lor".
+- PR#4730: incorrect typing involving abbreviation "type 'a t = 'a"
+- PR#4692: wrong error message with options -i and -pack passed to ocamlc
+
+Other changes:
+- Improved wording of various error messages
+  (contributed by Jonathan Davies, Citrix).
+
+
 Objective Caml 3.11.0:
 ----------------------
 
