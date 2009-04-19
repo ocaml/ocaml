@@ -2,20 +2,30 @@ Objective Caml 3.11.1:
 ----------------------
 
 Bug fixes:
-- PR#4740: guard against possible processor error in
-    {Int32,Int64,Nativeint}.{div,rem}
-- PR#4766: incorrect simplification of some type abbreviations.
-- PR#4699: in otherlibs/dbm, fixed construction of dlldbm.so.
-- PR#4722: typo in configure script
-- PR#4745: type inference wrongly produced non-generalizable type variables.
-- PR#4708: (ocamldoc) improved printing of infix identifiers such as "lor".
-- PR#4730: incorrect typing involving abbreviation "type 'a t = 'a"
+- PR#4403: ocamldebug: improved handling of packed modules
+- PR#4650: Str.regexp_case_fold mis-handling complemented character sets [^a]
+- PR#4666: Unix.exec* failure in multi-threaded programs under MacOS X and FreeBSD
+- PR#4690: issue with dynamic loading under MacOS 10.5
 - PR#4692: wrong error message with options -i and -pack passed to ocamlc
+- PR#4699: in otherlibs/dbm, fixed construction of dlldbm.so.
+- PR#4704: error in caml_modify_generational_global_root()
+- PR#4708: (ocamldoc) improved printing of infix identifiers such as "lor".
+- PR#4722: typo in configure script
+- PR#4730: incorrect typing involving abbreviation "type 'a t = 'a"
+- PR#4735: Unix.LargeFile.fstat cannot report size over 32bits on Win32
+- PR#4740: guard against possible processor error in {Int32,Int64,Nativeint}.{div,rem}
+- PR#4745: type inference wrongly produced non-generalizable type variables.
+- PR#4756: printf: no error reported for wrong format '%_s'
+- PR#4758: scanf: handling of \<newline> by format '%S'
+- PR#4766: incorrect simplification of some type abbreviations.
+- Module Parsing: improved computation of locations when an ocamlyacc rule starts with an empty nonterminal
+- Type-checker: fixed wrong variance computation for private types
+- x86-64 code generator: incorrect quoting of arguments passed to the assembler.- x86-32 code generator, MSVC port: wrong "fld" instruction generated.
 
 Other changes:
 - Improved wording of various error messages
   (contributed by Jonathan Davies, Citrix).
-
+- Support for 64-bit mode in Solaris/x86.
 
 Objective Caml 3.11.0:
 ----------------------
