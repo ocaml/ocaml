@@ -92,19 +92,29 @@ let empty = {
   cltypes = Ident.empty;
   summary = Env_empty }
 
-let diff_keys tbl1 tbl2 =
+let diff_keys is_local tbl1 tbl2 =
   let keys2 = Ident.keys tbl2 in
   List.filter
     (fun id ->
-      match Ident.find_same id tbl2 with Pident _, _ ->
-        (try ignore (Ident.find_same id tbl1); false with Not_found -> true)
-      | _ -> false)
+      is_local (Ident.find_same id tbl2) &&
+      try ignore (Ident.find_same id tbl1); false with Not_found -> true)
     keys2
 
+let is_ident = function
+    Pident _ -> true
+  | Pdot _ | Papply _ -> false
+
+let is_local (p, _) = is_ident p
+
+let is_local_exn = function
+    {cstr_tag = Cstr_exception p} -> is_ident p
+  | _ -> false
+
 let diff env1 env2 =
-  diff_keys env1.values env2.values @
-  diff_keys env1.modules env2.modules @
-  diff_keys env1.classes env2.classes
+  diff_keys is_local env1.values env2.values @
+  diff_keys is_local_exn env1.constrs env2.constrs @
+  diff_keys is_local env1.modules env2.modules @
+  diff_keys is_local env1.classes env2.classes
 
 (* Forward declarations *)
 
