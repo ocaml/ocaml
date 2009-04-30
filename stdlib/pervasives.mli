@@ -24,6 +24,7 @@
    name, without prefixing them by [Pervasives].
 *)
 
+
 (** {6 Exceptions} *)
 
 external raise : exn -> 'a = "%raise"
@@ -41,7 +42,6 @@ exception Exit
 
 
 (** {6 Comparisons} *)
-
 
 external ( = ) : 'a -> 'a -> bool = "%equal"
 (** [e1 = e2] tests for structural equality of [e1] and [e2].
@@ -111,7 +111,6 @@ external ( != ) : 'a -> 'a -> bool = "%noteq"
 
 
 (** {6 Boolean operations} *)
-
 
 external not : bool -> bool = "%boolnot"
 (** The boolean negation. *)
@@ -185,9 +184,7 @@ val min_int : int
 (** The smallest representable integer. *)
 
 
-
 (** {7 Bitwise operations} *)
-
 
 external ( land ) : int -> int -> int = "%andint"
 (** Bitwise logical and. *)
@@ -249,10 +246,10 @@ external ( /. ) : float -> float -> float = "%divfloat"
 (** Floating-point division. *)
 
 external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
-(** Exponentiation *)
+(** Exponentiation. *)
 
 external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
-(** Square root *)
+(** Square root. *)
 
 external exp : float -> float = "caml_exp_float" "exp" "float"
 (** Exponential. *)
@@ -264,47 +261,57 @@ external log10 : float -> float = "caml_log10_float" "log10" "float"
 (** Base 10 logarithm. *)
 
 external cos : float -> float = "caml_cos_float" "cos" "float"
-(** See {!Pervasives.atan2}. *)
+(** [cos a] returns the cosine of angle [a] measured in radians. *)
 
 external sin : float -> float = "caml_sin_float" "sin" "float"
-(** See {!Pervasives.atan2}. *)
+(** [sin a] returns the sine of angle [a] measured in radians. *)
 
 external tan : float -> float = "caml_tan_float" "tan" "float"
-(** See {!Pervasives.atan2}. *)
+(** [tan a] returns the tangent of angle [a] measured in radians. *)
 
 external acos : float -> float = "caml_acos_float" "acos" "float"
-(** See {!Pervasives.atan2}. *)
+(** [acos f] returns the arc cosine of [f]. The return angle is measured
+    in radians. *)
 
 external asin : float -> float = "caml_asin_float" "asin" "float"
-(** See {!Pervasives.atan2}. *)
+(** [asin f] returns the arc sine of [f]. The return angle is measured
+    in radians. *)
 
 external atan : float -> float = "caml_atan_float" "atan" "float"
-(** See {!Pervasives.atan2}. *)
+(** [atan f] returns the arc tangent of [f]. The return angle is measured
+    in radians. *)
 
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
-(** The usual trigonometric functions. *)
+(** [atan2 y x] returns the principal value of the arc tangent of
+     [y / x], using the signs of both arguments to determine the quadrant of the
+     result. The return angle is measured in radians. *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
-(** See {!Pervasives.tanh}. *)
+(** [cosh a] returns the hyperbolic cosine of angle [a] measured
+    in radians. *)
 
 external sinh : float -> float = "caml_sinh_float" "sinh" "float"
-(** See {!Pervasives.tanh}. *)
+(** [sinh a] returns the hyperbolic sine of angle [a] measured
+    in radians. *)
 
 external tanh : float -> float = "caml_tanh_float" "tanh" "float"
-(** The usual hyperbolic trigonometric functions. *)
+(** [tanh f] returns the hyperbolic tangent of angle [a] measured
+    in radians. *)
 
 external ceil : float -> float = "caml_ceil_float" "ceil" "float"
-(** See {!Pervasives.floor}. *)
+(** Round the given float to an integer value.
+   [ceil f] returns the least integer value greater than or
+   equal to [f].
+   See also {!Pervasives.floor}. *)
 
 external floor : float -> float = "caml_floor_float" "floor" "float"
 (** Round the given float to an integer value.
    [floor f] returns the greatest integer value less than or
    equal to [f].
-   [ceil f] returns the least integer value greater than or
-   equal to [f]. *)
+   See also {!Pervasives.ceil}. *)
 
 external abs_float : float -> float = "%absfloat"
-(** Return the absolute value of the argument. *)
+(** [abs_float f] returns the absolute value of [f]. *)
 
 external mod_float : float -> float -> float = "caml_fmod_float" "fmod" "float"
 (** [mod_float a b] returns the remainder of [a] with respect to
@@ -441,7 +448,6 @@ external float_of_string : string -> float = "caml_float_of_string"
    if the given string is not a valid representation of a float. *)
 
 
-
 (** {6 Pair operations} *)
 
 external fst : 'a * 'b -> 'a = "%field0"
@@ -543,8 +549,8 @@ val read_float : unit -> float
    The result is unspecified if the line read is not a valid
    representation of a floating-point number. *)
 
-(** {7 General output functions} *)
 
+(** {7 General output functions} *)
 
 type open_flag =
     Open_rdonly      (** open for reading. *)
@@ -770,6 +776,7 @@ val set_binary_mode_in : in_channel -> bool -> unit
    This function has no effect under operating systems that
    do not distinguish between text mode and binary mode. *)
 
+
 (** {7 Operations on large files} *)
 
 module LargeFile :
@@ -787,6 +794,7 @@ module LargeFile :
   positions and sizes by 64-bit integers (type [int64]) instead of
   regular integers (type [int]), these alternate functions allow
   operating on files whose sizes are greater than [max_int]. *)
+
 
 (** {6 References} *)
 
@@ -851,7 +859,6 @@ val ( ^^ ) :
 
 
 (** {6 Program termination} *)
-
 
 val exit : int -> 'a
 (** Terminate the process, returning the given status code
