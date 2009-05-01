@@ -1164,6 +1164,39 @@ let test56 () =
 test (test56 ())
 ;;
 
+(* Testing the scanning of formats. *)
+let test48 () =
+  (* Testing format_from_string. *)
+  let test_format_scan s fmt efmt =
+    format_from_string s fmt = efmt in
+  (* Test if format %i is indeed read as %i. *)
+  let s, fmt = " %i ", format_of_string "%i" in
+  test_format_scan s fmt " %i " &&
+  (* Test if format %i is compatible with %d and indeed read as %i. *)
+  let s, fmt = "%i", format_of_string "%d" in
+  test_format_scan s fmt "%i" &&
+
+  let s, fmt =
+    "Read an int %i then a string %s.",
+    format_of_string "Spec%difi%scation" in
+  test_format_scan s fmt "Read an int %i then a string %s." &&
+
+  let s, fmt =
+    "Read an int %i then a string \"%s\".",
+    format_of_string "Spec%difi%Scation" in
+  test_format_scan s fmt "Read an int %i then a string \"%s\"." &&
+
+  let s, fmt =
+    "Read an int %i then a string \"%s\".",
+    format_of_string "Spec%difi%scation" in
+  test_format_scan s fmt "Read an int %i then a string \"%s\"." &&
+
+  (* Complex test of scanning a meta format specified in the scanner input
+     format string and extraction of its specification from a string. *)
+  sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
+    (fun i f s -> i = 12 && f = "%i" && s = "89")
+;;
+
 (* To be continued ...
 (* Trying to scan records. *)
 let rec scan_fields ib scan_field accu =
