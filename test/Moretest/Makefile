@@ -14,9 +14,9 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../../otherlibs/unix
 BYTEFLAGS=-g
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../../otherlibs/unix
 OPTFLAGS=-S -g
 CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
