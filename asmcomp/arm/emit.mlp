@@ -184,16 +184,23 @@ let decompose_intconst n fn =
   done;
   !ninstr
 
-(* Emit a non-immediate integer constant *)
+(* Load an integer constant into a register *)
 
-let emit_complex_intconst r n =
-  let first = ref true in
-  decompose_intconst n
-    (fun bits ->
-      if !first
-      then `	mov	{emit_reg r}, #{emit_nativeint bits} @ {emit_nativeint n}\n`
-      else `	add	{emit_reg r}, {emit_reg r}, #{emit_nativeint bits}\n`;
-      first := false)
+let emit_intconst r n =
+  let nr = Nativeint.lognot n in
+  if is_immediate n then begin
+    `	mov	{emit_reg r}, #{emit_nativeint n}\n`; 1
+  end else if is_immediate nr then begin
+    `	mvn	{emit_reg r}, #{emit_nativeint nr}\n`; 1
+  end else begin
+    let first = ref true in
+    decompose_intconst n
+      (fun bits ->
+        if !first
+        then `	mov	{emit_reg r}, #{emit_nativeint bits} @ {emit_nativeint n}\n`
+        else `	add	{emit_reg r}, {emit_reg r}, #{emit_nativeint bits}\n`;
+        first := false)
+  end
 
 (* Adjust sp (up or down) by the given byte amount *)
 
@@ -202,13 +209,6 @@ let emit_stack_adjustment instr n =
     decompose_intconst (Nativeint.of_int n)
       (fun bits ->
         `	{emit_string instr}	sp, sp, #{emit_nativeint bits}\n`)
-
-(* Adjust alloc_ptr down by the given byte amount *)
-
-let emit_alloc_decrement n =
-  decompose_intconst (Nativeint.of_int n)
-    (fun bits ->
-       `	sub	alloc_ptr, alloc_ptr, #{emit_nativeint bits}\n`)
 
 (* Name of current function *)
 let function_name = ref ""
@@ -265,14 +265,7 @@ let emit_instr i =
               assert false
         end
     | Lop(Iconst_int n) ->
-        let r = i.res.(0) in
-        let nr = Nativeint.lognot n in
-        if is_immediate n then begin
-          `	mov	{emit_reg r}, #{emit_nativeint n}\n`; 1
-        end else if is_immediate nr then begin
-          `	mvn	{emit_reg r}, #{emit_nativeint nr}\n`; 1
-        end else
-          emit_complex_intconst r n
+        emit_intconst i.res.(0) n
     | Lop(Iconst_float s) ->
         let bits = Int64.bits_of_float (float_of_string s) in
         let high_bits = Int64.to_nativeint (Int64.shift_right_logical bits 32)
@@ -292,7 +285,7 @@ let emit_instr i =
         `	ldr	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_symbol s}\n`; 1
     | Lop(Icall_ind) ->
         `	mov	lr, pc\n`;
-        `{record_frame i.live}  mov     pc, {emit_reg i.arg.(0)}\n`; 2
+        `{record_frame i.live}  bx	{emit_reg i.arg.(0)}\n`; 2
     | Lop(Icall_imm s) ->
         `{record_frame i.live}  bl      {emit_symbol s}\n`; 1
     | Lop(Itailcall_ind) ->
@@ -300,7 +293,7 @@ let emit_instr i =
         if !contains_calls then
           `	ldr	lr, [sp, #{emit_int (n-4)}]\n`;
         let ninstr = emit_stack_adjustment "add" n in
-        `	mov	pc, {emit_reg i.arg.(0)}\n`;
+        `	bx	{emit_reg i.arg.(0)}\n`;
         2 + ninstr
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
@@ -316,7 +309,7 @@ let emit_instr i =
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           let lbl = label_constant symbol_constants s 1 in
-          `	ldr	r10, {emit_label lbl} @ {emit_symbol s}\n`;
+          `	ldr	r12, {emit_label lbl} @ {emit_symbol s}\n`;
           `{record_frame i.live}	bl	caml_c_call\n`; 2
         end else begin
           `	bl	{emit_symbol s}\n`; 1
@@ -366,25 +359,20 @@ let emit_instr i =
         1
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
-          `	ldr	r10, [alloc_limit, #0]\n`;
-          let ni = emit_alloc_decrement n in
-          `	cmp	alloc_ptr, r10\n`;
+          let ni = emit_intconst (phys_reg 8 (*r12*)) (Nativeint.of_int n) in
+          `	sub	alloc_ptr, alloc_ptr, r12\n`;
+          `	cmp	alloc_ptr, alloc_limit\n`;
           `{record_frame i.live}	blcc    caml_call_gc\n`;
           `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
           4 + ni
         end else if n = 8 || n = 12 || n = 16 then begin
-            `{record_frame i.live}	bl	caml_alloc{emit_int ((n-4)/4)}\n`;
-            `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 2
+          `{record_frame i.live}	bl	caml_alloc{emit_int ((n-4)/4)}\n`;
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 2
         end else begin
-            let nn = Nativeint.of_int n in
-            let ni =
-              if is_immediate nn then begin
-                `	mov	r10, #{emit_int n}\n`; 1
-              end else
-                emit_complex_intconst (phys_reg 8 (*r10*)) nn in
-            `{record_frame i.live}	bl	caml_allocN\n`;
-            `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
-            2 + ni
+          let ni = emit_intconst (phys_reg 8 (*r12*)) (Nativeint.of_int n) in
+          `{record_frame i.live}	bl	caml_allocN\n`;
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
+          2 + ni
         end
     | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
         let shift = name_for_shift_operation op in
@@ -460,7 +448,7 @@ let emit_instr i =
         `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
     | Lreturn ->
         let ninstr = emit_stack_adjustment "add" (frame_size()) in
-        `	mov	pc, lr\n`;
+        `	bx	lr\n`;
         ninstr + 1
     | Llabel lbl ->
         `{emit_label lbl}:\n`; 0
@@ -619,7 +607,7 @@ let data l =
 let begin_assembly() =
   `trap_ptr     .req    r11\n`;
   `alloc_ptr    .req    r8\n`;
-  `alloc_limit  .req    r9\n`;
+  `alloc_limit  .req    r10\n`;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   `	.global	{emit_symbol lbl_begin}\n`;

@@ -27,26 +27,27 @@ let word_addressed = false
 (* Registers available for register allocation *)
 
 (* Register map:
-    r0 - r7                     general purpose (r4 - r7 preserved by C)
-    r8                          allocation pointer (preserved by C)
-    r9                          allocation limit (preserved by C)
-    r10                         general purpose
-    r11                         trap pointer (preserved by C)
-    r12                         general purpose
+    r0 - r3                     general purpose (not preserved by C)
+    r4 - r7                     general purpose (preserved)
+    r8                          allocation pointer (preserved)
+    r9                          platform register, usually reserved
+    r10                         allocation limit (preserved)
+    r11                         trap pointer (preserved)
+    r12                         general purpose (not preserved by C)
     r13                         stack pointer
     r14                         return address
     r15                         program counter
 *)
 
 let int_reg_name = [|
-  "r0"; "r1"; "r2"; "r3"; "r4"; "r5"; "r6"; "r7"; "r10"; "r12"
+  "r0"; "r1"; "r2"; "r3"; "r4"; "r5"; "r6"; "r7"; "r12"
 |]
 
 let num_register_classes = 1
 
 let register_class r = assert (r.typ <> Float); 0
 
-let num_available_registers = [| 10 |]
+let num_available_registers = [| 9 |]
 
 let first_available_register = [| 0 |]
 
@@ -57,8 +58,8 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.create 10 Reg.dummy in
-  for i = 0 to 9 do v.(i) <- Reg.at_location Int (Reg i) done;
+  let v = Array.create 9 Reg.dummy in
+  for i = 0 to 8 do v.(i) <- Reg.at_location Int (Reg i) done;
   v
 
 let all_phys_regs = hard_int_reg
@@ -113,13 +114,13 @@ let loc_exn_bucket = phys_reg 0
 
 (* Registers destroyed by operations *)
 
-let destroyed_at_c_call =               (* r4-r9 preserved *)
-  Array.of_list(List.map phys_reg [0;1;2;3;8;9])
+let destroyed_at_c_call =               (* r4-r7 preserved *)
+  Array.of_list(List.map phys_reg [0;1;2;3;8])
 
 let destroyed_at_oper = function
     Iop(Icall_ind | Icall_imm _ | Iextcall(_, true)) -> all_phys_regs
   | Iop(Iextcall(_, false)) -> destroyed_at_c_call
-  | Iop(Ialloc(_)) -> [|phys_reg 8|]    (* r10 destroyed *)
+  | Iop(Ialloc(_)) -> [|phys_reg 8|]    (* r12 destroyed *)
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
@@ -128,10 +129,10 @@ let destroyed_at_raise = all_phys_regs
 
 let safe_register_pressure = function
     Iextcall(_, _) -> 4
-  | _ -> 10
+  | _ -> 9
 let max_register_pressure = function
     Iextcall(_, _) -> [| 4 |]
-  | _ -> [| 10 |]
+  | _ -> [| 9 |]
 
 (* Layout of the stack *)
 
