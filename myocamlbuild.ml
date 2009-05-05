@@ -343,7 +343,7 @@ copy_rule' "lex/main.byte" "lex/ocamllex";;
 copy_rule' "lex/main.native" "lex/ocamllex.opt";;
 copy_rule' "debugger/main.byte" "debugger/ocamldebug";;
 copy_rule' "ocamldoc/odoc.byte" "ocamldoc/ocamldoc";;
-copy_rule' "ocamldoc/odoc_opt.native" "ocamldoc/ocamldoc.opt";;
+copy_rule' "ocamldoc/odoc.native" "ocamldoc/ocamldoc.opt";;
 copy_rule' "tools/ocamlmklib.byte" "tools/ocamlmklib";;
 copy_rule' "otherlibs/dynlink/extract_crc.byte" "otherlibs/dynlink/extract_crc";;
 copy_rule' "myocamlbuild_config.mli" "ocamlbuild/ocamlbuild_Myocamlbuild_config.mli";;
