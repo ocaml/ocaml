@@ -28,8 +28,8 @@ SHARED_LIBRARIES_DEPS=$(TMP_SHARED_LIBRARIES:true=libcamlrun_shared.so)
 all:: $(SHARED_LIBRARIES_DEPS)
 
 install::
-	if test -f libcamlrun_shared.so;
-	  then cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so; else :; fi
+	if test -f libcamlrun_shared.so; then \
+	  cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so; fi
 
 ocamlrun$(EXE): libcamlrun.a prims.o
 	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
