@@ -750,6 +750,16 @@ test 2 eq_big_int
   (big_int_of_int64 9223372036854775807L, big_int_of_string "9223372036854775807");;
 test 3 eq_big_int
   (big_int_of_int64 (-9223372036854775808L), big_int_of_string "-9223372036854775808");;
+test 4 eq_big_int (*PR#4792*)
+  (big_int_of_int64 (Int64.of_int32 Int32.min_int), big_int_of_string "-2147483648");;
+test 5 eq_big_int
+  (big_int_of_int64 1234L, big_int_of_string "1234");;
+test 6 eq_big_int
+  (big_int_of_int64 0x1234567890ABCDEFL, big_int_of_string "1311768467294899695");;
+test 7 eq_big_int
+  (big_int_of_int64 (-1234L), big_int_of_string "-1234");;
+test 8 eq_big_int
+  (big_int_of_int64 (-0x1234567890ABCDEFL), big_int_of_string "-1311768467294899695");;
 
 testing_function "int64_of_big_int";;
 
