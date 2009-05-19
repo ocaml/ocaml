@@ -17,7 +17,7 @@
 (**               WARNING WARNING WARNING                             **)
 (**                                                                   **)
 (** When you change this file, you must make the parallel change      **)
-(** in config.mlbuild                                                 **)
+(** in config.mlp                                                     **)
 (**                                                                   **)
 (***********************************************************************)
 
