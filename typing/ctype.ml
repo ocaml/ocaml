@@ -3282,8 +3282,8 @@ let rec nondep_type_rec env id ty =
                  (recursive type), so one cannot just take its
                  description.
                *)
-            with Cannot_expand ->
-              raise Not_found
+            with Cannot_expand | Unify _ -> (* expand_abbrev failed *)
+              raise Not_found               (* cf. PR4775 for Unify *)
             end
           else
             Tconstr(p, List.map (nondep_type_rec env id) tl, ref Mnil)
