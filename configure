@@ -305,8 +305,13 @@ case "$bytecc,$host" in
     dllccompopts="-D_WIN32 -DCAML_DLL"
     flexlink="flexlink -chain cygwin -merge-manifest"
     flexdir=`$flexlink -where | dos2unix`
-    iflexdir="-I\"$flexdir\""
-    mkexe="$flexlink -exe"
+    if test -z "$flexdir"; then
+      echo "flexlink not found: native shared libraries won't be available"
+      withsharedlibs=no
+    else
+      iflexdir="-I\"$flexdir\""
+      mkexe="$flexlink -exe"
+    fi
     exe=".exe"
     ostype="Cygwin";;
   gcc*,x86_64-*-linux*)
