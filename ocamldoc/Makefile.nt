@@ -24,7 +24,7 @@ OCAMLBIN = $(BINDIR)
 
 OCAMLPP=-pp "grep -v DEBUG"
 
-# For installation 
+# For installation
 ##############
 MKDIR=mkdir
 CP=cp
@@ -179,18 +179,18 @@ OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 
 all: exe lib
 exe: $(OCAMLDOC)
-lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) 
+lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI)
 
 opt.opt: exeopt libopt
 exeopt: $(OCAMLDOC_OPT)
-libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI) 
-debug: 
+libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
+debug:
 	make OCAMLPP=""
 
-$(OCAMLDOC): $(EXECMOFILES) 
+$(OCAMLDOC): $(EXECMOFILES)
 	$(OCAMLC) -o $@ -linkall unix.cma str.cma dynlink.cma $(LINKFLAGS) $(OCAMLCMOFILES) $(EXECMOFILES)
 $(OCAMLDOC_OPT): $(EXECMXFILES)
-	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
+	$(OCAMLOPT) -o $@ unix.cmxa str.cmxa dynlink.cmxa $(LINKFLAGS) $(OCAMLCMXFILES) $(EXECMXFILES)
 
 $(OCAMLDOC_LIBCMA): $(LIBCMOFILES)
 	$(OCAMLC) -a -o $@ $(LINKFLAGS) $(OCAMLCMOFILES) $(LIBCMOFILES)
