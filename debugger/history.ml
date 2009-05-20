@@ -15,7 +15,6 @@
 
 open Int64ops
 open Checkpoints
-open Misc
 open Primitives
 open Debugger_config
 

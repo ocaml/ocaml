@@ -16,7 +16,6 @@
 %{
 
 open Int64ops
-open Primitives
 open Input_handling
 open Longident
 open Parser_aux
@@ -93,13 +92,19 @@ open Parser_aux
 %type <Parser_aux.break_arg> break_argument_eol
 
 %start list_arguments_eol
-%type <string option * int option * int option> list_arguments_eol
+%type <Longident.t option * int option * int option> list_arguments_eol
 
 %start end_of_line
 %type <unit> end_of_line
 
 %start longident_eol
 %type <Longident.t> longident_eol
+
+%start opt_longident
+%type <Longident.t option> opt_longident
+
+%start opt_longident_eol
+%type <Longident.t option> opt_longident_eol
 
 %%
 
@@ -173,7 +178,15 @@ module_path :
 ;
 
 longident_eol :
-    longident end_of_line      { $1 };
+    longident end_of_line       { $1 };
+
+opt_longident :
+    UIDENT                      { Some (Lident $1) }
+  | module_path DOT UIDENT      { Some (Ldot($1, $3)) }
+  |                             { None };
+
+opt_longident_eol :
+    opt_longident end_of_line   { $1 }; 
 
 identifier :
     LIDENT                      { $1 }
@@ -220,16 +233,16 @@ break_argument_eol :
     end_of_line                                 { BA_none }
   | integer_eol                                 { BA_pc $1 }
   | expression end_of_line                      { BA_function $1 }
-  | AT opt_identifier INTEGER opt_integer_eol   { BA_pos1 ($2, (to_int $3), $4)}
-  | AT opt_identifier SHARP integer_eol         { BA_pos2 ($2, $4) }
+  | AT opt_longident INTEGER opt_integer_eol    { BA_pos1 ($2, (to_int $3), $4)}
+  | AT opt_longident SHARP integer_eol          { BA_pos2 ($2, $4) }
 ;
 
 /* Arguments for list */
 
 list_arguments_eol :
-    opt_identifier integer opt_integer_eol
+    opt_longident integer opt_integer_eol
       { ($1, Some $2, $3) }
-  | opt_identifier_eol
+  | opt_longident_eol
       { ($1, None, None) };
 
 /* End of line */

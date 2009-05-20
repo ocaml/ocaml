@@ -142,7 +142,8 @@ let extract_format fmt start stop widths =
       | ('*', []) ->
         assert false (* should not happen *)
       | (c, _) ->
-        Buffer.add_char b c; fill_format (succ i) widths in
+        Buffer.add_char b c;
+        fill_format (succ i) widths in
   fill_format start (List.rev widths);
   Buffer.contents b
 ;;
@@ -152,6 +153,15 @@ let extract_format_int conv fmt start stop widths =
    match conv with
    | 'n' | 'N' ->
      sfmt.[String.length sfmt - 1] <- 'u';
+     sfmt
+   | _ -> sfmt
+;;
+
+let extract_format_float conv fmt start stop widths =
+   let sfmt = extract_format fmt start stop widths in
+   match conv with
+   | 'F' ->
+     sfmt.[String.length sfmt - 1] <- 'f';
      sfmt
    | _ -> sfmt
 ;;
@@ -418,6 +428,31 @@ let get_index spec n =
   | Spec_index p -> p
 ;;
 
+(* Format a float argument as a valid Caml lexem. *)
+let format_float_lexem =
+  let valid_float_lexem sfmt s =
+    let l = String.length s in
+    if l = 0 then "nan" else
+      let add_dot sfmt s =
+        if s.[0] = ' ' || s.[0] = '+' || s.[0] = '0'
+        then String.sub s 1 (l - 1) ^ "."
+        else String.sub s 0 (l - 1) ^ "." in
+
+      let rec loop i =
+        if i >= l then add_dot sfmt s else
+        match s.[i] with
+        | '.' -> s
+        | _ -> loop (i + 1) in
+
+      loop 0 in
+
+   (fun sfmt x ->
+    let s = format_float sfmt x in
+    match classify_float x with
+    | FP_normal | FP_subnormal | FP_zero -> valid_float_lexem sfmt s
+    | FP_nan | FP_infinite -> s)
+;;
+
 (* Decode a format string and act on it.
    [fmt] is the [printf] format string, and [pos] points to a [%] character in
    the format string.
@@ -486,9 +521,11 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let (x : float) = get_arg spec n in
       let s = format_float (extract_format fmt pos i widths) x in
       cont_s (next_index spec n) s (succ i)
-    | 'F' ->
+    | 'F' as conv ->
       let (x : float) = get_arg spec n in
-      cont_s (next_index spec n) (string_of_float x) (succ i)
+      let s =
+        format_float_lexem (extract_format_float conv fmt pos i widths) x in
+      cont_s (next_index spec n) s (succ i)
     | 'B' | 'b' ->
       let (x : bool) = get_arg spec n in
       cont_s (next_index spec n) (string_of_bool x) (succ i)

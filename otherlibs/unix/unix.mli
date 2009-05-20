@@ -910,7 +910,8 @@ type socket_domain =
     PF_UNIX                     (** Unix domain *)
   | PF_INET                     (** Internet domain (IPv4) *)
   | PF_INET6                    (** Internet domain (IPv6) *)
-(** The type of socket domains. *)
+(** The type of socket domains.  Not all platforms support
+    IPv6 sockets (type [PF_INET6]).  *)
 
 type socket_type =
     SOCK_STREAM                 (** Stream socket *)

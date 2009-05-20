@@ -1,8 +1,20 @@
+(*************************************************************************)
+(*                                                                       *)
+(*                            Objective Caml                             *)
+(*                                                                       *)
+(*            Pierre Weis, projet Cristal, INRIA Rocquencourt            *)
+(*                                                                       *)
+(*   Copyright 2002 Institut National de Recherche en Informatique et    *)
+(*   en Automatique.  All rights reserved.  This file is distributed     *)
+(*   under the terms of the Q Public License version 1.0.                *)
+(*                                                                       *)
+(*************************************************************************)
+
 (* $Id$
 
-A testbed file for module Scanf.
+A testbed file for the module Scanf.
 
- *)
+*)
 
 open Testing;;
 
@@ -1163,6 +1175,39 @@ let test56 () =
 ;;
 
 test (test56 ())
+;;
+
+(* Testing the scanning of formats. *)
+let test48 () =
+  (* Testing format_from_string. *)
+  let test_format_scan s fmt efmt =
+    format_from_string s fmt = efmt in
+  (* Test if format %i is indeed read as %i. *)
+  let s, fmt = " %i ", format_of_string "%i" in
+  test_format_scan s fmt " %i " &&
+  (* Test if format %i is compatible with %d and indeed read as %i. *)
+  let s, fmt = "%i", format_of_string "%d" in
+  test_format_scan s fmt "%i" &&
+
+  let s, fmt =
+    "Read an int %i then a string %s.",
+    format_of_string "Spec%difi%scation" in
+  test_format_scan s fmt "Read an int %i then a string %s." &&
+
+  let s, fmt =
+    "Read an int %i then a string \"%s\".",
+    format_of_string "Spec%difi%Scation" in
+  test_format_scan s fmt "Read an int %i then a string \"%s\"." &&
+
+  let s, fmt =
+    "Read an int %i then a string \"%s\".",
+    format_of_string "Spec%difi%scation" in
+  test_format_scan s fmt "Read an int %i then a string \"%s\"." &&
+
+  (* Complex test of scanning a meta format specified in the scanner input
+     format string and extraction of its specification from a string. *)
+  sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
+    (fun i f s -> i = 12 && f = "%i" && s = "89")
 ;;
 
 (* To be continued ...

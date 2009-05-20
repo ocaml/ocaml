@@ -1,9 +1,64 @@
+Objective Caml 3.12.0:
+----------------------
+
 Standard library:
 * To prevent confusion when mixing Format printing functions and direct low
   level output, values Format.stdout and Format.stderr have been added.
 
 * To prevent confusion when mixing Scanf scanning functions and direct low
   level input, value Scanf.stdin has been added.
+
+Bug Fixes:
+- PR#4775: compiler crash on crazy types (temporary fix)
+
+
+Objective Caml 3.11.1:
+----------------------
+
+Bug fixes:
+- PR#4095: ocamldebug: strange behaviour of control-C
+- PR#4403: ocamldebug: improved handling of packed modules
+- PR#4650: Str.regexp_case_fold mis-handling complemented character sets [^a]
+- PR#4660: Scanf.format_from_string: handling of double quote
+- PR#4666: Unix.exec* failure in multithread programs under MacOS X and FreeBSD
+- PR#4667: debugger out of sync with dynlink changes
+- PR#4678: random "out of memory" error with systhreads
+- PR#4690: issue with dynamic loading under MacOS 10.5
+- PR#4692: wrong error message with options -i and -pack passed to ocamlc
+- PR#4699: in otherlibs/dbm, fixed construction of dlldbm.so.
+- PR#4704: error in caml_modify_generational_global_root()
+- PR#4708: (ocamldoc) improved printing of infix identifiers such as "lor".
+- PR#4722: typo in configure script
+- PR#4729: documented the fact that PF_INET6 is not available on all platforms
+- PR#4730: incorrect typing involving abbreviation "type 'a t = 'a"
+- PR#4731: incorrect quoting of arguments passed to the assembler on x86-64
+- PR#4735: Unix.LargeFile.fstat cannot report size over 32bits on Win32
+- PR#4740: guard against possible processor error in
+           {Int32,Int64,Nativeint}.{div,rem}
+- PR#4745: type inference wrongly produced non-generalizable type variables.
+- PR#4749: better pipe size for win32unix
+- PR#4756: printf: no error reported for wrong format '%_s'
+- PR#4758: scanf: handling of \<newline> by format '%S'
+- PR#4766: incorrect simplification of some type abbreviations.
+- PR#4768: printf: %F does not respect width and precision specifications
+- PR#4769: Format.bprintf fails to flush
+- PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4776: bad interaction between exceptions and classes
+- PR#4780: labltk build problem under Windows.
+- PR#4790: under Windows, map ERROR_NO_DATA Win32 error to EPIPE Unix error.
+- PR#4792: bug in Big_int.big_int_of_int64 on 32-bit platforms.
+- Module Parsing: improved computation of locations when an ocamlyacc rule
+                  starts with an empty nonterminal
+- Type-checker: fixed wrong variance computation for private types
+- x86-32 code generator, MSVC port: wrong "fld" instruction generated.
+- ocamlbuild: incorrectly using the compile-time value of $OCAMLLIB
+- Makefile problem when configured with -no-shared-libs
+- ocamldoc: use dynamic loading in native code
+
+Other changes:
+- Improved wording of various error messages
+  (contributed by Jonathan Davies, Citrix).
+- Support for 64-bit mode in Solaris/x86 (PR#4670).
 
 Objective Caml 3.11.0:
 ----------------------

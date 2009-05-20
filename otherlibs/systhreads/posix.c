@@ -111,6 +111,9 @@ static pthread_mutex_t caml_runtime_mutex = PTHREAD_MUTEX_INITIALIZER;
 /* Condition signaled when caml_runtime_busy becomes 0 */
 static pthread_cond_t caml_runtime_is_free = PTHREAD_COND_INITIALIZER;
 
+/* Whether the ``tick'' thread is already running */
+static int caml_tick_thread_running = 0;
+
 /* The key used for storing the thread descriptor in the specific data
    of the corresponding Posix thread. */
 static pthread_key_t thread_descriptor_key;
@@ -332,8 +335,6 @@ static void * caml_thread_tick(void * arg)
 static void caml_thread_reinitialize(void)
 {
   caml_thread_t thr, next;
-  pthread_t tick_pthread;
-  pthread_attr_t attr;
   struct channel * chan;
 
   /* Remove all other threads (now nonexistent)
@@ -353,24 +354,21 @@ static void caml_thread_reinitialize(void)
   pthread_cond_init(&caml_runtime_is_free, NULL);
   caml_runtime_waiters = 0;     /* no other thread is waiting for the RTS */
   caml_runtime_busy = 1;        /* normally useless */
+  /* Tick thread is not currently running in child process, will be
+     re-created at next Thread.create */
+  caml_tick_thread_running = 0;
   /* Reinitialize all IO mutexes */
   for (chan = caml_all_opened_channels;
        chan != NULL;
        chan = chan->next) {
     if (chan->mutex != NULL) pthread_mutex_init(chan->mutex, NULL);
   }
-  /* Fork a new tick thread */
-  pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL);
 }
 
 /* Initialize the thread machinery */
 
 value caml_thread_initialize(value unit)   /* ML */
 {
-  pthread_t tick_pthread;
-  pthread_attr_t attr;
   value mu = Val_unit;
   value descr;
 
@@ -395,6 +393,7 @@ value caml_thread_initialize(value unit)   /* ML */
     curr_thread->descr = descr;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
+    curr_thread->backtrace_last_exn = Val_unit;
 #ifdef NATIVE_CODE
     curr_thread->exit_buf = &caml_termination_jmpbuf;
 #endif
@@ -415,12 +414,6 @@ value caml_thread_initialize(value unit)   /* ML */
     caml_channel_mutex_lock = caml_io_mutex_lock;
     caml_channel_mutex_unlock = caml_io_mutex_unlock;
     caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
-    /* Fork the tick thread */
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-    caml_pthread_check(
-        pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
-        "Thread.init");
     /* Set up fork() to reinitialize the thread machinery in the child
        (PR#4577) */
     pthread_atfork(NULL, NULL, caml_thread_reinitialize);
@@ -488,6 +481,7 @@ value caml_thread_new(value clos)          /* ML */
 {
   pthread_attr_t attr;
   caml_thread_t th;
+  pthread_t tick_pthread;
   value mu = Val_unit;
   value descr;
   int err;
@@ -526,12 +520,12 @@ value caml_thread_new(value clos)          /* ML */
     th->prev = curr_thread;
     curr_thread->next->prev = th;
     curr_thread->next = th;
-    /* Fork the new thread */
+    /* Create the new thread */
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     err = pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th);
     if (err != 0) {
-      /* Fork failed, remove thread info block from list of threads */
+      /* Creation failed, remove thread info block from list of threads */
       th->next->prev = curr_thread;
       curr_thread->next = th->next;
 #ifndef NATIVE_CODE
@@ -541,6 +535,16 @@ value caml_thread_new(value clos)          /* ML */
       caml_pthread_check(err, "Thread.create");
     }
   End_roots();
+  /* Create the tick thread if not already done.  
+     Because of PR#4666, we start the tick thread late, only when we create
+     the first additional thread in the current process*/
+  if (! caml_tick_thread_running) {
+    caml_tick_thread_running = 1;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+    err = pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL);
+    caml_pthread_check(err, "Thread.create");
+  }
   return descr;
 }
 

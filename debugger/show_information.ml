@@ -15,7 +15,6 @@
 
 open Instruct
 open Format
-open Primitives
 open Debugcom
 open Checkpoints
 open Events

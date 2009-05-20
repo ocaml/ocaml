@@ -289,6 +289,18 @@ let automated_test() =
   test_search_forward r n "babababc"
     [||];
 
+  start_test "Search for /[^a]/";
+  let r = Str.regexp "[^a]" in
+  let n = 0 in
+  test_search_forward r n "athing" [|"t"|];
+  test_search_forward r n "Athing" [|"A"|];
+
+  start_test "Search for /[^a]/ (case-insensitive)";
+  let r = Str.regexp_case_fold "[^a]" in
+  let n = 0 in
+  test_search_forward r n "athing" [|"t"|];
+  test_search_forward r n "Athing" [|"t"|];
+
   start_test "Search for /^[]abcde]/";
   let r = Str.regexp "^[]abcde]" in
   let n = 0 in

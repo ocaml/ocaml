@@ -29,6 +29,9 @@
 #define I64_mul(x,y) ((x) * (y))
 #define I64_is_zero(x) ((x) == 0)
 #define I64_is_negative(x) ((x) < 0)
+#define I64_is_min_int(x) ((x) == ((int64)1 << 63))
+#define I64_is_minus_one(x) ((x) == -1)
+
 #define I64_div(x,y) ((x) / (y))
 #define I64_mod(x,y) ((x) % (y))
 #define I64_udivmod(x,y,quo,rem) \

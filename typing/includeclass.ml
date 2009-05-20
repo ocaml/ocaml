@@ -47,7 +47,7 @@ let include_err ppf =
       fprintf ppf "@[%a@]"
       (Printtyp.unification_error false trace
         (function ppf ->
-          fprintf ppf "One type parameter has type"))
+          fprintf ppf "A type parameter has type"))
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Class_type_mismatch (cty1, cty2) ->
@@ -58,7 +58,7 @@ let include_err ppf =
       fprintf ppf "@[%a@]"
       (Printtyp.unification_error false trace
         (function ppf ->
-          fprintf ppf "One parameter has type"))
+          fprintf ppf "A parameter has type"))
         (function ppf ->
           fprintf ppf "but is expected to have type")
   | CM_Val_type_mismatch (lab, trace) ->
@@ -92,7 +92,7 @@ let include_err ppf =
   | CM_Public_method lab ->
       fprintf ppf "@[The public method %s cannot become private" lab
   | CM_Virtual_method lab ->
-      fprintf ppf "@[The virtual method %s  cannot become concrete" lab
+      fprintf ppf "@[The virtual method %s cannot become concrete" lab
   | CM_Private_method lab ->
       fprintf ppf "The private method %s cannot become public" lab
 

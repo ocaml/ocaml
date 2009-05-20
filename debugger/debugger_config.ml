@@ -62,6 +62,8 @@ let runtime_program = "ocamlrun"
 (* Time history size (for `last') *)
 let history_size = ref 30
 
+let load_path_for = Hashtbl.create 7
+
 (*** Time travel parameters. ***)
 
 (* Step between checkpoints for long displacements.*)

@@ -35,12 +35,13 @@ type t = string
 
 let parens_if_infix name =
   match name with
-    "" -> ""
-  | s -> 
-      if List.mem s.[0] infix_chars then 
-        "("^s^")" 
-      else 
-        s
+  | "" -> ""
+  | s when s.[0] = '*' || s.[String.length s - 1] = '*' -> "( " ^ s ^ " )"
+  | s when List.mem s.[0] infix_chars -> "(" ^ s ^ ")"
+  | "or" | "mod" | "land" | "lor" | "lxor" | "lsl" | "lsr" | "asr" ->
+     "(" ^ name ^ ")"
+  | _ -> name
+;;
 
 let cut name =
   match name with

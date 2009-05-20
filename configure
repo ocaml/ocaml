@@ -305,8 +305,13 @@ case "$bytecc,$host" in
     dllccompopts="-D_WIN32 -DCAML_DLL"
     flexlink="flexlink -chain cygwin -merge-manifest"
     flexdir=`$flexlink -where | dos2unix`
-    iflexdir="-I\"$flexdir\""
-    mkexe="$flexlink -exe"
+    if test -z "$flexdir"; then
+      echo "flexlink not found: native shared libraries won't be available"
+      withsharedlibs=no
+    else
+      iflexdir="-I\"$flexdir\""
+      mkexe="$flexlink -exe"
+    fi
     exe=".exe"
     ostype="Cygwin";;
   gcc*,x86_64-*-linux*)
@@ -617,7 +622,11 @@ case "$host" in
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
-  i[3456]86-*-solaris*)         arch=i386; system=solaris;;
+  i[3456]86-*-solaris*)         if $arch64; then
+                                  arch=amd64; system=solaris
+                                else
+                                  arch=i386; system=solaris
+                                fi;;
   i[3456]86-*-beos*)            arch=i386; system=beos;;
   i[3456]86-*-cygwin*)          arch=i386; system=cygwin;;
   i[3456]86-*-darwin*)          if $arch64; then
@@ -686,6 +695,7 @@ case "$arch,$nativecc,$system,$host_type" in
                        if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   amd64,gcc*,macosx,*) partialld="ld -r -arch x86_64";;
+  amd64,gcc*,solaris,*) partialld="ld -r -m elf_x86_64";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
 
@@ -699,6 +709,8 @@ case "$arch,$model,$system" in
                     aspp='gcc -c';;
   amd64,*,macosx)   as='as -arch x86_64'
                     aspp='gcc -arch x86_64 -c';;
+  amd64,*,solaris)  as='as --64'
+                    aspp='gcc -m64 -c';;
   amd64,*,*)        as='as'
                     aspp='gcc -c';;
   arm,*,*)          as='as';

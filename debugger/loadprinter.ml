@@ -15,7 +15,6 @@
 (* Loading and installation of user-defined printer functions *)
 
 open Misc
-open Debugger_config
 open Longident
 open Path
 open Types

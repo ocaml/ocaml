@@ -16,7 +16,6 @@
 (* Program loading *)
 
 open Unix
-open Misc
 open Debugger_config
 open Parameters
 open Input_handling

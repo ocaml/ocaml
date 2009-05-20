@@ -248,23 +248,31 @@ CAMLprim value caml_int32_mul(value v1, value v2)
 
 CAMLprim value caml_int32_div(value v1, value v2)
 {
+  int32 dividend = Int32_val(v1);
   int32 divisor = Int32_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
+  /* PR#4740: on some processors, division crashes on overflow.
+     Implement the same behavior as for type "int". */
+  if (dividend == (1<<31) && divisor == -1) return v1;
 #ifdef NONSTANDARD_DIV_MOD
-  return caml_copy_int32(caml_safe_div(Int32_val(v1), divisor));
+  return caml_copy_int32(caml_safe_div(dividend, divisor));
 #else
-  return caml_copy_int32(Int32_val(v1) / divisor);
+  return caml_copy_int32(dividend / divisor);
 #endif
 }
 
 CAMLprim value caml_int32_mod(value v1, value v2)
 {
+  int32 dividend = Int32_val(v1);
   int32 divisor = Int32_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
+  /* PR#4740: on some processors, modulus crashes if division overflows.
+     Implement the same behavior as for type "int". */
+  if (dividend == (1<<31) && divisor == -1) return caml_copy_int32(0);
 #ifdef NONSTANDARD_DIV_MOD
-  return caml_copy_int32(caml_safe_mod(Int32_val(v1), divisor));
+  return caml_copy_int32(caml_safe_mod(dividend, divisor));
 #else
-  return caml_copy_int32(Int32_val(v1) % divisor);
+  return caml_copy_int32(dividend % divisor);
 #endif
 }
 
@@ -430,15 +438,26 @@ CAMLprim value caml_int64_mul(value v1, value v2)
 
 CAMLprim value caml_int64_div(value v1, value v2)
 {
+  int64 dividend = Int64_val(v1);
   int64 divisor = Int64_val(v2);
   if (I64_is_zero(divisor)) caml_raise_zero_divide();
+  /* PR#4740: on some processors, division crashes on overflow.
+     Implement the same behavior as for type "int". */
+  if (I64_is_min_int(dividend) && I64_is_minus_one(divisor)) return v1;
   return caml_copy_int64(I64_div(Int64_val(v1), divisor));
 }
 
 CAMLprim value caml_int64_mod(value v1, value v2)
 {
+  int64 dividend = Int64_val(v1);
   int64 divisor = Int64_val(v2);
   if (I64_is_zero(divisor)) caml_raise_zero_divide();
+  /* PR#4740: on some processors, division crashes on overflow.
+     Implement the same behavior as for type "int". */
+  if (I64_is_min_int(dividend) && I64_is_minus_one(divisor)) {
+    int64 zero = I64_literal(0,0);
+    return caml_copy_int64(zero);
+  }
   return caml_copy_int64(I64_mod(Int64_val(v1), divisor));
 }
 
@@ -650,25 +669,35 @@ CAMLprim value caml_nativeint_sub(value v1, value v2)
 CAMLprim value caml_nativeint_mul(value v1, value v2)
 { return caml_copy_nativeint(Nativeint_val(v1) * Nativeint_val(v2)); }
 
+#define Nativeint_min_int ((intnat) 1 << (sizeof(intnat) * 8 - 1))
+
 CAMLprim value caml_nativeint_div(value v1, value v2)
 {
+  intnat dividend = Nativeint_val(v1);
   intnat divisor = Nativeint_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
+  /* PR#4740: on some processors, modulus crashes if division overflows.
+     Implement the same behavior as for type "int". */
+  if (dividend == Nativeint_min_int && divisor == -1) return v1;
 #ifdef NONSTANDARD_DIV_MOD
-  return caml_copy_nativeint(caml_safe_div(Nativeint_val(v1), divisor));
+  return caml_copy_nativeint(caml_safe_div(dividend, divisor));
 #else
-  return caml_copy_nativeint(Nativeint_val(v1) / divisor);
+  return caml_copy_nativeint(dividend / divisor);
 #endif
 }
 
 CAMLprim value caml_nativeint_mod(value v1, value v2)
 {
+  intnat dividend = Nativeint_val(v1);
   intnat divisor = Nativeint_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
+  /* PR#4740: on some processors, modulus crashes if division overflows.
+     Implement the same behavior as for type "int". */
+  if (dividend == Nativeint_min_int && divisor == -1) return caml_copy_nativeint(0);
 #ifdef NONSTANDARD_DIV_MOD
-  return caml_copy_nativeint(caml_safe_mod(Nativeint_val(v1), divisor));
+  return caml_copy_nativeint(caml_safe_mod(dividend, divisor));
 #else
-  return caml_copy_nativeint(Nativeint_val(v1) % divisor);
+  return caml_copy_nativeint(dividend % divisor);
 #endif
 }
 

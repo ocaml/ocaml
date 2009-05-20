@@ -14,10 +14,10 @@ OBJS=tkanim.cmo
 COBJS= cltkaniminit.$(O) tkAnimGIF.$(O)
 
 tkanim.cma: $(OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o tkanim $(OBJS)
+	$(MKLIB) -ocamlc '$(CAMLCB)' -o tkanim $(OBJS)
 
 tkanim.cmxa: $(OBJS:.cmo=.cmx)
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o tkanim $(OBJS:.cmo=.cmx)
+	$(MKLIB) -ocamlopt '$(CAMLOPTB)' -o tkanim $(OBJS:.cmo=.cmx)
 
 libtkanim.$(A): $(COBJS)
 	$(MKLIB) -o tkanim $(COBJS)

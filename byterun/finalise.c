@@ -139,7 +139,7 @@ void caml_final_do_calls (void)
       -- to_do_hd->size;
       f = to_do_hd->item[to_do_hd->size];
       running_finalisation_function = 1;
-      caml_callback (f.fun, f.val + f.offset);
+      caml_callback (f.fun, f.val + f.offset);   /* FIXME PR#4742 */
       running_finalisation_function = 0;
     }
     caml_gc_message (0x80, "Done calling finalisation functions.\n", 0);

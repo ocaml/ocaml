@@ -13,8 +13,10 @@ INSTALLDIR=$(LIBDIR)/$(LIBNAME)
 ## Tools from the Objective Caml distribution
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
-CAMLC=$(CAMLRUN) $(TOPDIR)/ocamlc -nostdlib -I $(TOPDIR)/stdlib 
-CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -nostdlib -I $(TOPDIR)/stdlib 
+CAMLC=$(TOPDIR)/ocamlcomp.sh
+CAMLOPT=$(TOPDIR)/ocamlcompopt.sh
+CAMLCB=$(CAMLRUN) $(TOPDIR)/ocamlc
+CAMLOPTB=$(CAMLRUN) $(TOPDIR)/ocamlopt
 CAMLCOMP=$(CAMLC) -c -warn-error A
 CAMLYACC=$(TOPDIR)/boot/ocamlyacc -v
 CAMLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex

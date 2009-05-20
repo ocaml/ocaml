@@ -87,7 +87,7 @@ let eol =
   end_of_line Lexer.lexeme
 
 let matching_elements list name instr =
-  filter (function a -> isprefix instr (name a)) !list
+  List.filter (function a -> isprefix instr (name a)) !list
 
 let all_matching_instructions =
   matching_elements instruction_list (fun i -> i.instr_name)
@@ -97,7 +97,7 @@ let all_matching_instructions =
 
 let matching_instructions instr =
   let all = all_matching_instructions instr in
-  let prio = filter (fun i -> i.instr_prio) all in
+  let prio = List.filter (fun i -> i.instr_prio) all in
   if prio = [] then all else prio
 
 let matching_variables =
@@ -142,6 +142,11 @@ let add_breakpoint_after_pc pc =
         "Can't add breakpoint at beginning of function: no event there"
     end
   in try_add 0
+
+let module_of_longident id =
+  match id with
+  | Some x -> Some (String.concat "." (Longident.flatten x))
+  | None -> None
 
 let convert_module mdle =
   match mdle with
@@ -235,14 +240,24 @@ let instr_dir ppf lexbuf =
       if yes_or_no "Reinitialize directory list" then begin
         Config.load_path := !default_load_path;
         Envaux.reset_cache ();
+        Hashtbl.clear Debugger_config.load_path_for;
         flush_buffer_list ()
         end
       end
-    else
-      List.iter (function x -> add_path (expand_path x))
-                (List.rev new_directory);
+    else begin
+      let new_directory' = List.rev new_directory in
+      match new_directory' with
+      | mdl :: for_keyw :: tl when (String.lowercase for_keyw) = "for" && (List.length tl) > 0 ->
+          List.iter (function x -> add_path_for mdl (expand_path x)) tl
+      | _ ->
+          List.iter (function x -> add_path (expand_path x)) new_directory'
+    end;
     let print_dirs ppf l = List.iter (function x -> fprintf ppf "@ %s" x) l in
-    fprintf ppf "@[<2>Directories :%a@]@." print_dirs !Config.load_path
+    fprintf ppf "@[<2>Directories :%a@]@." print_dirs !Config.load_path;
+    Hashtbl.iter
+      (fun mdl dirs ->
+        fprintf ppf "@[<2>Source directories for %s :%a@]@." mdl print_dirs dirs)
+      Debugger_config.load_path_for
 
 let instr_kill ppf lexbuf =
   eol lexbuf;
@@ -562,7 +577,7 @@ let instr_break ppf lexbuf =
             raise Toplevel
         end
     | BA_pos1 (mdle, line, column) ->         (* break @ [MODULE] LINE [COL] *)
-        let module_name = convert_module mdle in
+        let module_name = convert_module (module_of_longident mdle) in
         new_breakpoint
           (try
              let buffer =
@@ -585,7 +600,7 @@ let instr_break ppf lexbuf =
                raise Toplevel)
     | BA_pos2 (mdle, position) ->             (* break @ [MODULE] # POSITION *)
         try
-          new_breakpoint (event_near_pos (convert_module mdle) position)
+          new_breakpoint (event_near_pos (convert_module (module_of_longident mdle)) position)
         with
         | Not_found ->
             eprintf "Can't find any event there.@."
@@ -697,7 +712,7 @@ let instr_list ppf lexbuf =
       | Not_found ->
           ("", -1)
     in
-      let mdle = convert_module mo in
+      let mdle = convert_module (module_of_longident mo) in
       let pos = Lexing.dummy_pos in
         let beginning =
           match beg with
@@ -841,7 +856,7 @@ let info_breakpoints ppf lexbuf =
 
 let info_events ppf lexbuf =
   ensure_loaded ();
-  let mdle = convert_module (opt_identifier_eol Lexer.lexeme lexbuf) in
+  let mdle = convert_module (module_of_longident (opt_longident_eol Lexer.lexeme lexbuf)) in
     print_endline ("Module : " ^ mdle);
     print_endline "   Address  Characters        Kind      Repr.";
     List.iter

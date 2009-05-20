@@ -556,7 +556,7 @@ let report_error ppf = function
         Printtyp.type_expr ty
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
-        "Variant tags `%s@ and `%s have same hash value.@ Change one of them."
+        "Variant tags `%s@ and `%s have the same hash value.@ Change one of them."
         lab1 lab2
   | Invalid_variable_name name ->
       fprintf ppf "The type variable name %s is not allowed in programs" name

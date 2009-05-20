@@ -22,7 +22,7 @@ open Primitives
 (*** Convert a socket name into a socket address. ***)
 let convert_address address =
   try
-    let n = string_pos address ':' in
+    let n = String.index address ':' in
       let host = String.sub address 0 n
       and port = String.sub address (n + 1) (String.length address - n - 1)
       in
@@ -90,7 +90,7 @@ let search_in_path name =
 let rec expand_path ch =
   let rec subst_variable ch =
     try
-      let pos = string_pos ch '$' in
+      let pos = String.index ch '$' in
         if (pos + 1 < String.length ch) && (ch.[pos + 1] = '$') then
           (String.sub ch 0 (pos + 1))
             ^ (subst_variable
@@ -121,7 +121,7 @@ let rec expand_path ch =
       in
         if ch.[0] = '~' then
           try
-            match string_pos ch '/' with
+            match String.index ch '/' with
               1 ->
                 (let tail = String.sub ch 2 (String.length ch - 2)
                  in

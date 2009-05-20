@@ -1280,22 +1280,29 @@ let scanf fmt = bscanf Scanning.stdib fmt;;
 
 let bscanf_format ib fmt f =
   let fmt = Sformat.unsafe_to_string fmt in
-  let fmt1 = ignore (scan_String max_int ib); token_string ib in
+  let fmt1 =
+    ignore (scan_String max_int ib);
+    token_string ib in
   if not (compatible_format_type fmt1 fmt) then
     format_mismatch fmt1 fmt else
   f (string_to_format fmt1)
 ;;
 
-let sscanf_format s fmt f = bscanf_format (Scanning.from_string s) fmt f;;
+let sscanf_format s fmt = bscanf_format (Scanning.from_string s) fmt;;
 
-let quote_string s =
-  let b = Buffer.create (String.length s + 2) in
+let string_to_String s =
+  let l = String.length s in
+  let b = Buffer.create (l + 2) in
   Buffer.add_char b '\"';
-  Buffer.add_string b s;
+  for i = 0 to l - 1 do
+    let c = s.[i] in
+    if c = '\"' then Buffer.add_char b '\\';
+    Buffer.add_char b c;
+  done;
   Buffer.add_char b '\"';
   Buffer.contents b
 ;;
 
 let format_from_string s fmt =
-  sscanf_format (quote_string s) fmt (fun x -> x)
+  sscanf_format (string_to_String s) fmt (fun x -> x)
 ;;

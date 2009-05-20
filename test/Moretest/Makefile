@@ -14,9 +14,9 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../../otherlibs/unix
 BYTEFLAGS=-g
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../../otherlibs/unix
 OPTFLAGS=-S -g
 CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
 CAMLRUN=../../byterun/ocamlrun
@@ -151,6 +151,15 @@ tprintf.bin: testing.cmx tprintf.cmx
 printf: tprintf.byt tprintf.bin
 	./tprintf.byt
 	./tprintf.bin
+
+tformat.byt: testing.cmo tformat.cmo
+	${CAMLC} -o tformat.byt testing.cmo tformat.cmo
+tformat.bin: testing.cmx tformat.cmx
+	${CAMLOPT} -o tformat.bin testing.cmx tformat.cmx
+
+format: tformat.byt tformat.bin
+	./tformat.byt
+	./tformat.bin
 
 tbuffer.byt: testing.cmo tbuffer.cmo
 	${CAMLC} -o tbuffer.byt testing.cmo tbuffer.cmo

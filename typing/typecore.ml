@@ -1263,10 +1263,11 @@ let rec type_exp env sexp =
             begin match arg.exp_desc, !self_coercion, (repr ty').desc with
               Texp_ident(_, {val_kind=Val_self _}), (path,r) :: _,
               Tconstr(path',_,_) when Path.same path path' ->
+                (* prerr_endline "self coercion"; *)
                 r := sexp.pexp_loc :: !r;
                 force ()
-            | _ when free_variables arg.exp_type = []
-                  && free_variables ty' = [] ->
+            | _ when free_variables ~env arg.exp_type = []
+                  && free_variables ~env ty' = [] ->
                 if not gen && (* first try a single coercion *)
                   let snap = snapshot () in
                   let ty, b = enlarge_type env ty' in
@@ -1282,6 +1283,7 @@ let rec type_exp env sexp =
                     Location.prerr_warning sexp.pexp_loc
                       (Warnings.Not_principal "this ground coercion");
                 with Subtype (tr1, tr2) ->
+                  (* prerr_endline "coercion failed"; *)
                   raise(Error(sexp.pexp_loc, Not_subtype(tr1, tr2)))
                 end;
             | _ ->
@@ -2105,7 +2107,7 @@ let report_error ppf = function
   | Constructor_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
        "@[The constructor %a@ expects %i argument(s),@ \
-        but is here applied to %i argument(s)@]"
+        but is applied here to %i argument(s)@]"
        longident lid expected provided
   | Label_mismatch(lid, trace) ->
       report_unification_error ppf trace
@@ -2113,13 +2115,13 @@ let report_error ppf = function
            fprintf ppf "The record field label %a@ belongs to the type"
                    longident lid)
         (function ppf ->
-           fprintf ppf "but is here mixed with labels of type")
+           fprintf ppf "but is mixed here with labels of type")
   | Pattern_type_clash trace ->
       report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "This pattern matches values of type")
         (function ppf ->
-           fprintf ppf "but is here used to match values of type")
+           fprintf ppf "but a pattern was expected which matches values of type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
   | Orpat_vars id ->
@@ -2130,15 +2132,15 @@ let report_error ppf = function
         (function ppf ->
            fprintf ppf "This expression has type")
         (function ppf ->
-           fprintf ppf "but is here used with type")
+           fprintf ppf "but an expression was expected of type")
   | Apply_non_function typ ->
       begin match (repr typ).desc with
         Tarrow _ ->
-          fprintf ppf "This function is applied to too many arguments,@ ";
+          fprintf ppf "This function is applied to too many arguments;@ ";
           fprintf ppf "maybe you forgot a `;'"
       | _ ->
           fprintf ppf
-            "This expression is not a function, it cannot be applied"
+            "This expression is not a function; it cannot be applied"
       end
   | Apply_wrong_label (l, ty) ->
       let print_label ppf = function
@@ -2148,7 +2150,7 @@ let report_error ppf = function
       in
       reset_and_mark_loops ty;
       fprintf ppf
-        "@[<v>@[<2>Expecting function has type@ %a@]@.\
+        "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
           This argument cannot be applied %a@]"
         type_expr ty print_label l
   | Label_multiply_defined lid ->
@@ -2176,14 +2178,14 @@ let report_error ppf = function
   | Unbound_class cl ->
       fprintf ppf "Unbound class %a" longident cl
   | Virtual_class cl ->
-      fprintf ppf "One cannot create instances of the virtual class %a"
+      fprintf ppf "Cannot instantiate the virtual class %a"
         longident cl
   | Unbound_instance_variable v ->
       fprintf ppf "Unbound instance variable %s" v
   | Instance_variable_not_mutable v ->
       fprintf ppf "The instance variable %s is not mutable" v
   | Not_subtype(tr1, tr2) ->
-      report_subtyping_error ppf tr1 "is not a subtype of type" tr2
+      report_subtyping_error ppf tr1 "is not a subtype of" tr2
   | Outside_class ->
       fprintf ppf "This object duplication occurs outside a method definition"
   | Value_multiply_overridden v ->
@@ -2214,8 +2216,8 @@ let report_error ppf = function
       end
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
-        | "" -> "but its first argument is not labeled"
-        |  l -> sprintf "but its first argument is labeled ~%s" l in
+        | "" -> "but its first argument is not labelled"
+        |  l -> sprintf "but its first argument is labelled ~%s" l in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)

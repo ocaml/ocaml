@@ -66,9 +66,11 @@ let rename_relocation objfile mapping defined base (rel, ofs) =
 
 (* Record and relocate a debugging event *)
 
-let relocate_debug base ev =
-  ev.ev_pos <- base + ev.ev_pos;
-  events := ev :: !events
+let relocate_debug base prefix subst ev =
+  let ev' = { ev with ev_pos = base + ev.ev_pos;
+                      ev_module = prefix ^ "." ^ ev.ev_module;
+                      ev_typsubst = Subst.compose ev.ev_typsubst subst } in
+  events := ev' :: !events
 
 (* Read the unit information from a .cmo file. *)
 
@@ -110,7 +112,7 @@ let read_member_info file =
    Accumulate relocs, debug info, etc.
    Return size of bytecode. *)
 
-let rename_append_bytecode oc mapping defined ofs objfile compunit =
+let rename_append_bytecode oc mapping defined ofs prefix subst objfile compunit =
   let ic = open_in_bin objfile in
   try
     Bytelink.check_consistency objfile compunit;
@@ -123,7 +125,7 @@ let rename_append_bytecode oc mapping defined ofs objfile compunit =
     Misc.copy_file_chunk ic oc compunit.cu_codesize;
     if !Clflags.debug && compunit.cu_debug > 0 then begin
       seek_in ic compunit.cu_debug;
-      List.iter (relocate_debug ofs) (input_value ic);
+      List.iter (relocate_debug ofs prefix subst) (input_value ic);
     end;
     close_in ic;
     compunit.cu_codesize
@@ -134,20 +136,22 @@ let rename_append_bytecode oc mapping defined ofs objfile compunit =
 (* Same, for a list of .cmo and .cmi files.
    Return total size of bytecode. *)
 
-let rec rename_append_bytecode_list oc mapping defined ofs = function
+let rec rename_append_bytecode_list oc mapping defined ofs prefix subst = function
     [] ->
       ofs
   | m :: rem ->
       match m.pm_kind with
       | PM_intf ->
-          rename_append_bytecode_list oc mapping defined ofs rem
+          rename_append_bytecode_list oc mapping defined ofs prefix subst rem
       | PM_impl compunit ->
           let size =
-            rename_append_bytecode oc mapping defined ofs 
+            rename_append_bytecode oc mapping defined ofs prefix subst
                                    m.pm_file compunit in
+          let id = Ident.create_persistent m.pm_name in
+          let root = Path.Pident (Ident.create_persistent prefix) in
           rename_append_bytecode_list
-            oc mapping (Ident.create_persistent m.pm_name :: defined)
-            (ofs + size) rem
+            oc mapping (id :: defined)
+            (ofs + size) prefix (Subst.add_module id (Path.Pdot (root, Ident.name id, Path.nopos)) subst) rem
 
 (* Generate the code that builds the tuple representing the package module *)
 
@@ -187,7 +191,7 @@ let package_object_files files targetfile targetname coercion =
     let pos_depl = pos_out oc in
     output_binary_int oc 0;
     let pos_code = pos_out oc in
-    let ofs = rename_append_bytecode_list oc mapping [] 0 members in
+    let ofs = rename_append_bytecode_list oc mapping [] 0 targetname Subst.identity members in
     build_global_target oc targetname members mapping ofs coercion;
     let pos_debug = pos_out oc in
     if !Clflags.debug && !events <> [] then

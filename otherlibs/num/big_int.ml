@@ -367,8 +367,8 @@ let big_int_of_int64 i =
       else if i > 0L then (1, i)
       else (-1, Int64.neg i) in
     let res = create_nat 2 in
-    set_digit_nat_native res 0 (Int64.to_nativeint i);
-    set_digit_nat_native res 1 (Int64.to_nativeint (Int64.shift_right i 32));
+    set_digit_nat_native res 0 (Int64.to_nativeint absi);
+    set_digit_nat_native res 1 (Int64.to_nativeint (Int64.shift_right absi 32));
     { sign = sg; abs_value = res }
   end
 

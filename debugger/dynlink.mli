@@ -13,19 +13,20 @@
 
 (* $Id$ *)
 
-(** Dynamic loading of bytecode object files. *)
+(** Dynamic loading of object files. *)
 
-(** {6 Initialization} *)
+val is_native: bool
+(** [true] if the program is native,
+    [false] if the program is bytecode. *)
 
-val init : unit -> unit
-(** Initialize the [Dynlink] library.
-    Must be called before any other function in this module. *)
-
-(** {6 Dynamic loading of compiled bytecode files} *)
+(** {6 Dynamic loading of compiled files} *)
 
 val loadfile : string -> unit
-(** Load the given bytecode object file ([.cmo] file) or
-    bytecode library file ([.cma] file), and link it with the running program.
+(** In bytecode: load the given bytecode object file ([.cmo] file) or
+    bytecode library file ([.cma] file), and link it with the running 
+    program. In native code: load the given OCaml plugin file (usually
+    [.cmxs]), and link it with the running 
+    program.
     All toplevel expressions in the loaded compilation units
     are evaluated. No facilities are provided to
     access value names defined by the unit. Therefore, the unit
@@ -36,6 +37,10 @@ val loadfile_private : string -> unit
 (** Same as [loadfile], except that the compilation units just loaded
     are hidden (cannot be referenced) from other modules dynamically
     loaded afterwards. *)
+
+val adapt_filename : string -> string
+(** In bytecode, the identity function. In native code, replace the last
+    extension with [.cmxs]. *)
 
 (** {6 Access control} *)
 
@@ -68,7 +73,8 @@ val allow_unsafe_modules : bool -> unit
     dynamically linked. A compilation unit is ``unsafe'' if it contains
     declarations of external functions, which can break type safety.
     By default, dynamic linking of unsafe object files is
-    not allowed. *)
+    not allowed. In native code, this function does nothing; object files
+    with external functions are always allowed to be dynamically linked. *)
 
 (** {6 Deprecated, low-level API for access control} *)
 
@@ -77,7 +83,8 @@ val allow_unsafe_modules : bool -> unit
     since the default initialization of allowed units, along with the
     [allow_only] and [prohibit] function, provides a better, safer
     mechanism to control access to program units.  The three functions
-    below are provided for backward compatibility only. *)
+    below are provided for backward compatibility only and are not
+    available in native code. *)
 
 val add_interfaces : string list -> string list -> unit
 (** [add_interfaces units path] grants dynamically-linked object
@@ -97,6 +104,12 @@ val clear_available_units : unit -> unit
 (** Empty the list of compilation units accessible to dynamically-linked
     programs. *)
 
+(** {6 Deprecated, initialization} *)
+
+val init : unit -> unit
+(** @deprecated Initialize the [Dynlink] library. This function is called
+    automatically when needed. *)
+
 (** {6 Error reporting} *)
 
 type linking_error =
@@ -113,6 +126,7 @@ type error =
   | Corrupted_interface of string
   | File_not_found of string
   | Cannot_open_dll of string
+  | Inconsistent_implementation of string
 
 exception Error of error
 (** Errors in dynamic linking are reported by raising the [Error]

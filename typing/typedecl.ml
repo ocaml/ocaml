@@ -509,14 +509,13 @@ let compute_variance_decl env check decl (required, loc) =
           compute_variance env tvl true cn cn ty)
         ftl
   end;
-  let priv = decl.type_private
-  and required =
+  let required =
     List.map (fun (c,n as r) -> if c || n then r else (true,true))
       required
   in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
-      if ty.desc <> Tvar || priv = Private then begin
+      if ty.desc <> Tvar then begin
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
       end)
@@ -535,6 +534,7 @@ let compute_variance_decl env check decl (required, loc) =
       incr pos;
       if !co && not c || !cn && not n
       then raise (Error(loc, Bad_variance (!pos, (!co,!cn), (c,n))));
+      if decl.type_private = Private then (c,n,n) else
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
@@ -848,12 +848,12 @@ let report_error ppf = function
         (function ppf ->
            fprintf ppf "This type constructor expands to type")
         (function ppf ->
-           fprintf ppf "but is here used with type")
+           fprintf ppf "but is used here with type")
   | Null_arity_external ->
       fprintf ppf "External identifiers must be functions"
   | Missing_native_external ->
       fprintf ppf "@[<hv>An external function with more than 5 arguments \
-                   requires second stub function@ \
+                   requires a second stub function@ \
                    for native-code compilation@]"
   | Unbound_type_var (ty, decl) ->
       fprintf ppf "A type variable is unbound in this type declaration";
@@ -910,16 +910,24 @@ let report_error ppf = function
         | (false,true)  -> "contravariant"
         | (false,false) -> "unrestricted"
       in
+      let suffix n =
+        let teen = (n mod 100)/10 = 1 in
+        match n mod 10 with
+        | 1 when not teen -> "st"
+        | 2 when not teen -> "nd"
+        | 3 when not teen -> "rd"
+        | _ -> "th"
+      in
       if n < 1 then
         fprintf ppf "%s@ %s@ %s"
           "In this definition, a type variable"
           "has a variance that is not reflected"
-          "by its occurence in type parameters."
+          "by its occurrence in type parameters."
       else
         fprintf ppf "%s@ %s@ %s %d%s %s %s,@ %s %s"
           "In this definition, expected parameter"
           "variances are not satisfied."
-          "The" n (match n with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th")
+          "The" n (suffix n)
           "type parameter was expected to be" (variance v2)
           "but it is" (variance v1)
   | Unavailable_type_constructor p ->

@@ -92,7 +92,7 @@ let read_symbols bytecode_file =
           modules := md :: !modules;
           Hashtbl.add all_events_by_module md sorted_evl;
           let real_evl =
-            Primitives.filter
+            List.filter
               (function
                  {ev_kind = Event_pseudo} -> false
                | _                        -> true)

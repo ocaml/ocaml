@@ -19,7 +19,8 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
-#define SIZEBUF 1024
+/* PR#4749: pick a size that matches that of I/O buffers */
+#define SIZEBUF 4096
 
 CAMLprim value unix_pipe(value unit)
 {

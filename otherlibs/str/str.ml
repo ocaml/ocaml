@@ -96,7 +96,7 @@ module Charset =
 type re_syntax =
     Char of char
   | String of string
-  | CharClass of Charset.t
+  | CharClass of Charset.t * bool  (* true = complemented, false = normal *)
   | Seq of re_syntax list
   | Alt of re_syntax * re_syntax
   | Star of re_syntax
@@ -156,7 +156,7 @@ let displ dest from = dest - from - 1
 let rec is_nullable = function
     Char c -> false
   | String s -> s = ""
-  | CharClass cl -> false
+  | CharClass(cl, cmpl) -> false
   | Seq rl -> List.for_all is_nullable rl
   | Alt (r1, r2) -> is_nullable r1 || is_nullable r2
   | Star r -> true
@@ -175,7 +175,7 @@ let rec is_nullable = function
 let rec first = function
     Char c -> Charset.singleton c
   | String s -> if s = "" then Charset.full else Charset.singleton s.[0]
-  | CharClass cl -> cl
+  | CharClass(cl, cmpl) -> if cmpl then Charset.complement cl else cl
   | Seq rl -> first_seq rl
   | Alt (r1, r2) -> Charset.union (first r1) (first r2)
   | Star r -> Charset.full
@@ -197,12 +197,13 @@ and first_seq = function
 (* Transform a Char or CharClass regexp into a character class *)
 
 let charclass_of_regexp fold_case re =
-  let cl =
+  let (cl1, compl) =
     match re with
-      Char c -> Charset.singleton c
-    | CharClass cl -> cl
+    | Char c -> (Charset.singleton c, false)
+    | CharClass(cl, compl) -> (cl, compl)
     | _ -> assert false in
-  if fold_case then Charset.fold_case cl else cl
+  let cl2 = if fold_case then Charset.fold_case cl1 else cl1 in
+  if compl then Charset.complement cl2 else cl2
 
 (* The case fold table: maps characters to their lowercase equivalent *)
 
@@ -289,9 +290,10 @@ let compile fold_case re =
           else
             emit_instr op_STRING (cpool_index s)
       end
-  | CharClass cl ->
-      let cl' = if fold_case then Charset.fold_case cl else cl in
-      emit_instr op_CHARCLASS (cpool_index cl')
+  | CharClass(cl, compl) ->
+      let cl1 = if fold_case then Charset.fold_case cl else cl in
+      let cl2 = if compl then Charset.complement cl1 else cl1 in
+      emit_instr op_CHARCLASS (cpool_index cl2)
   | Seq rl ->
       emit_seq_code rl
   | Alt(r1, r2) ->
@@ -492,10 +494,11 @@ let parse s =
   and regexp3 i =
     match s.[i] with
       '\\' -> regexpbackslash (i+1)
-    | '['  -> let (c, j) = regexpclass0 (i+1) in (CharClass c, j)
+    | '['  -> let (c, compl, j) = regexpclass0 (i+1) in
+              (CharClass(c, compl), j)
     | '^'  -> (Bol, i+1)
     | '$'  -> (Eol, i+1)
-    | '.'  -> (CharClass dotclass, i+1)
+    | '.'  -> (CharClass(dotclass, false), i+1)
     | c    -> (Char c, i+1)
   and regexpbackslash i =
     if i >= len then (Char '\\', i) else
@@ -520,8 +523,8 @@ let parse s =
           (Char c, i + 1)
   and regexpclass0 i =
     if i < len && s.[i] = '^'
-    then let (c, j) = regexpclass1 (i+1) in (Charset.complement c, j)
-    else regexpclass1 i
+    then let (c, j) = regexpclass1 (i+1) in (c, true, j)
+    else let (c, j) = regexpclass1 i in (c, false, j)
   and regexpclass1 i =
     let c = Charset.make_empty() in
     let j = regexpclass2 c i i in

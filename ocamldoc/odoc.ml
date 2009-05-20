@@ -145,6 +145,3 @@ let _ =
   )
   else
     exit 0
-
-
-(* eof $Id$ *)

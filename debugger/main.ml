@@ -13,8 +13,6 @@
 
 (* $Id$ *)
 
-open Primitives
-open Misc
 open Input_handling
 open Question
 open Command_line
@@ -47,12 +45,12 @@ let rec protect ppf restart loop =
           !current_checkpoint.c_pid;
         pp_print_flush ppf ();
         stop_user_input ();
-        loop ppf)
+        restart ppf)
   | Toplevel ->
       protect ppf restart (function ppf ->
         pp_print_flush ppf ();
         stop_user_input ();
-        loop ppf)
+        restart ppf)
   | Sys.Break ->
       protect ppf restart (function ppf ->
         fprintf ppf "Interrupted.@.";
@@ -62,7 +60,7 @@ let rec protect ppf restart loop =
             try_select_frame 0;
             show_current_event ppf;
           end);
-        loop ppf)
+        restart ppf)
   | Current_checkpoint_lost ->
       protect ppf restart (function ppf ->
         fprintf ppf "Trying to recover...@.";
@@ -70,7 +68,7 @@ let rec protect ppf restart loop =
         recover ();
         try_select_frame 0;
         show_current_event ppf;
-        loop ppf)
+        restart ppf)
   | Current_checkpoint_lost_start_at (time, init_duration) ->
       protect ppf restart (function ppf ->
         let b =

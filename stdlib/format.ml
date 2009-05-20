@@ -1048,9 +1048,9 @@ let get_buffer_out b =
   s
 ;;
 
-(* [ppf] is supposed to be a pretty-printer that outputs in buffer [b]:
-   to extract contents of [ppf] as a string we flush [ppf] and get the string
-   out of [b]. *)
+(* [ppf] is supposed to be a pretty-printer that outputs to buffer [b]:
+   to extract the contents of [ppf] as a string we flush [ppf] and get the
+   string out of [b]. *)
 let string_out b ppf =
   pp_flush_queue ppf false;
   get_buffer_out b
@@ -1319,7 +1319,10 @@ let kbprintf k b =
   mkprintf false (fun _ -> formatter_of_buffer b) k
 ;;
 
-let bprintf b = kbprintf ignore b;;
+let bprintf b =
+  let k ppf = pp_flush_queue ppf false in
+  kbprintf k b
+;;
 
 let ksprintf k =
   let b = Buffer.create 512 in

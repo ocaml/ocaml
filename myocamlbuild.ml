@@ -131,6 +131,7 @@ let ocamlc_solver =
                     "stdlib/std_exit.cmx"; "stdlib/std_exit"-.-C.o] in
   let byte_deps = ["ocamlc"; "stdlib/stdlib.cma"; "stdlib/std_exit.cmo"] in
   fun () ->
+    if Pathname.exists "../ocamlcomp.sh" then S[A"../ocamlcomp.sh"] else
     if List.for_all Pathname.exists native_deps then
       S[A"./ocamlc.opt"; A"-nostdlib"]
     else if List.for_all Pathname.exists byte_deps then
@@ -141,7 +142,8 @@ Command.setup_virtual_command_solver "OCAMLC" ocamlc_solver;;
 Command.setup_virtual_command_solver "OCAMLCWIN" (convert_for_windows_shell ocamlc_solver);;
 
 let ocamlopt_solver () =
-  S[if Pathname.exists "ocamlopt.opt" && Pathname.exists ("stdlib/stdlib.cmxa")
+  S[if Pathname.exists "../ocamlcompopt.sh" then S[A"../ocamlcompopt.sh"] else
+    if Pathname.exists "ocamlopt.opt" && Pathname.exists ("stdlib/stdlib.cmxa")
     then A"./ocamlopt.opt"
     else S[ocamlrun; A"./ocamlopt"];
     A"-nostdlib"];;
@@ -341,7 +343,7 @@ copy_rule' "lex/main.byte" "lex/ocamllex";;
 copy_rule' "lex/main.native" "lex/ocamllex.opt";;
 copy_rule' "debugger/main.byte" "debugger/ocamldebug";;
 copy_rule' "ocamldoc/odoc.byte" "ocamldoc/ocamldoc";;
-copy_rule' "ocamldoc/odoc_opt.native" "ocamldoc/ocamldoc.opt";;
+copy_rule' "ocamldoc/odoc.native" "ocamldoc/ocamldoc.opt";;
 copy_rule' "tools/ocamlmklib.byte" "tools/ocamlmklib";;
 copy_rule' "otherlibs/dynlink/extract_crc.byte" "otherlibs/dynlink/extract_crc";;
 copy_rule' "myocamlbuild_config.mli" "ocamlbuild/ocamlbuild_Myocamlbuild_config.mli";;

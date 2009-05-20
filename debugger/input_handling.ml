@@ -30,7 +30,7 @@ let add_file file controller =
 
 (* Remove a file from the list of actives files. *)
 let remove_file file =
-  active_files := assoc_remove !active_files file.io_fd
+  active_files := List.remove_assoc file.io_fd !active_files
 
 (* Change the controller for the given file. *)
 let change_controller file controller =

@@ -13,7 +13,6 @@
 
 (* $Id$ *)
 
-open Debugger_config
 open Misc
 open Path
 open Instruct
@@ -42,7 +41,9 @@ let abstract_type =
 let rec path event = function
     Pident id ->
       if Ident.global id then
-        Debugcom.Remote_value.global (Symtable.get_global_position id)
+        try
+          Debugcom.Remote_value.global (Symtable.get_global_position id)
+        with Symtable.Error _ -> raise(Error(Unbound_identifier id))
       else
         begin match event with
           Some ev ->
@@ -88,8 +89,8 @@ let rec expression event env = function
       end
   | E_result ->
       begin match event with
-        Some {ev_kind = Event_after ty} when !Frames.current_frame = 0 ->
-          (Debugcom.Remote_value.accu(), ty)
+        Some {ev_kind = Event_after ty; ev_typsubst = subst} when !Frames.current_frame = 0 ->
+          (Debugcom.Remote_value.accu(), Subst.type_expr subst ty)
       | _ ->
           raise(Error(No_result))
       end
@@ -178,15 +179,14 @@ let report_error ppf = function
   | Tuple_index(ty, len, pos) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf
-        "@[Cannot extract field number %i from a %i-components \
-           tuple of type@ %a@]@."
+        "@[Cannot extract field number %i from a %i-tuple of type@ %a@]@."
         pos len Printtyp.type_expr ty
   | Array_index(len, pos) ->
       fprintf ppf
-        "@[Cannot extract element number %i from array of length %i@]@." pos len
+        "@[Cannot extract element number %i from an array of length %i@]@." pos len
   | List_index(len, pos) ->
       fprintf ppf
-        "@[Cannot extract element number %i from list of length %i@]@." pos len
+        "@[Cannot extract element number %i from a list of length %i@]@." pos len
   | String_index(s, len, pos) ->
       fprintf ppf
         "@[Cannot extract character number %i@ \
