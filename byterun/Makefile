@@ -22,10 +22,18 @@ OBJS=$(COMMONOBJS) unix.o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 PICOBJS=$(OBJS:.o=.pic.o)
 
-TMP_SHARED_LIBRARIES=$(SUPPORTS_SHARED_LIBRARIES:false=)
-SHARED_LIBRARIES_DEPS=$(TMP_SHARED_LIBRARIES:true=libcamlrun_shared.so)
+#TMP_SHARED_LIBRARIES=$(SUPPORTS_SHARED_LIBRARIES:false=)
+#SHARED_LIBRARIES_DEPS=$(TMP_SHARED_LIBRARIES:true=libcamlrun_shared.so)
 
-all:: $(SHARED_LIBRARIES_DEPS)
+all:: shared_libs
+
+shared_libs:
+	if test $(SUPPORTS_SHARED_LIBRARIES); then \
+	  if test -f libcamlrun_shared.so; then \
+	    :; else \
+	    $(MAKE) libcamlrun_shared.so; \
+	  fi; \
+	fi
 
 install::
 	if test -f libcamlrun_shared.so; then \
