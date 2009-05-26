@@ -400,6 +400,7 @@ rule "native stdlib in mixed mode"
 copy_rule' ~insert:`top "otherlibs/dynlink/natdynlink.ml" "otherlibs/dynlink/nat/dynlink.ml";;
 copy_rule' ~insert:`top "otherlibs/dynlink/dynlink.mli" "otherlibs/dynlink/nat/dynlink.mli";;
 copy_rule' ~insert:`top "otherlibs/dynlink/nat/dynlink.cmx" "otherlibs/dynlink/dynlink.cmx";;
+copy_rule' ~insert:`top ("otherlibs/dynlink/nat/dynlink"-.-C.o) ("otherlibs/dynlink/dynlink"-.-C.o);;
 copy_rule' ~insert:`top "otherlibs/dynlink/nat/dynlink.cmxa" "otherlibs/dynlink/dynlink.cmxa";;
 copy_rule' ~insert:`top ("otherlibs/dynlink/nat/dynlink"-.-C.a) ("otherlibs/dynlink/dynlink"-.-C.a);;
 dep ["ocaml"; "compile"; "native"; "file:otherlibs/dynlink/nat/dynlink.cmx"] ["otherlibs/dynlink/nat/dynlink.cmi"];;
@@ -1090,7 +1091,7 @@ rule "labltk.cma"
 
 let labltk_cmxa_contents = labltk_contents "cmx" in
 rule "labltk.cmxa"
-  ~prod:"otherlibs/labltk/lib/labltk.cmxa"
+  ~prods:["otherlibs/labltk/lib/labltk.cmxa"; "otherlibs/labltk/lib/labltk"-.-C.a]
   ~deps:labltk_cmxa_contents
   (Ocamlbuild_pack.Ocaml_compiler.native_library_link_modules
       labltk_lib_contents "otherlibs/labltk/lib/labltk.cmxa");;
