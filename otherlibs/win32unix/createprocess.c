@@ -35,15 +35,14 @@ value win_create_process_native(value cmd, value cmdline, value env,
     envp = NULL;
   }
   /* Prepare stdin/stdout/stderr redirection */
-  GetStartupInfo(&si);
-  si.dwFlags |= STARTF_USESTDHANDLES;
+  ZeroMemory(&si, sizeof(STARTUPINFO));
+  si.cb = sizeof(STARTUPINFO);
+  si.dwFlags = STARTF_USESTDHANDLES;
   si.hStdInput = Handle_val(fd1);
   si.hStdOutput = Handle_val(fd2);
   si.hStdError = Handle_val(fd3);
   /* If we do not have a console window, then we must create one
      before running the process (keep it hidden for apparence).
-     Also one must suppress spurious flags in si.dwFlags.
-     Otherwise the redirections are ignored.
      If we are starting a GUI application, the newly created
      console should not matter. */
   if (win_has_console())
