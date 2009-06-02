@@ -35,6 +35,7 @@ Bug fixes:
 - PR#4792: bug in Big_int.big_int_of_int64 on 32-bit platforms.
 - PR#4804: bug in Big_int.int64_of_big_int on 32-bit platforms.
 - PR#4805: improving compatibility with the clang C compiler
+- PR#4809: issue with Unix.create_process under Win32
 - Module Parsing: improved computation of locations when an ocamlyacc rule
                   starts with an empty nonterminal
 - Type-checker: fixed wrong variance computation for private types
