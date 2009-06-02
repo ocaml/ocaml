@@ -1,4 +1,4 @@
-include ../support/Makefile.common.nt
+include ../support/Makefile.common
 
 # We are using the non-installed library !
 COMPFLAGS= -I ../lib -I ../camltk -I ../support
