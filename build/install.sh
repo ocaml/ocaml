@@ -116,6 +116,7 @@ mkdir -p $MANDIR/man$MANEXT
 echo "Installing core libraries..."
 installlibdir byterun/libcamlrun.$A asmrun/libasmrun.$A asmrun/libasmrunp.$A \
               $LIBDIR
+installdir byterun/libcamlrun_shared$EXT_DLL $LIBDIR
 
 PUBLIC_INCLUDES="\
   alloc.h callback.h config.h custom.h fail.h intext.h \
@@ -161,96 +162,96 @@ installdir \
   stdlib/stdlib.cmxa stdlib/stdlib.p.cmxa \
   stdlib/camlheader \
   stdlib/camlheader_ur \
-  stdlib/std_exit.cm[io] \
-  stdlib/arg.cmi stdlib/arg.mli \
-  stdlib/array.cmi stdlib/array.mli \
-  stdlib/arrayLabels.cmi stdlib/arrayLabels.mli \
-  stdlib/buffer.cmi stdlib/buffer.mli \
-  stdlib/callback.cmi stdlib/callback.mli \
-  stdlib/camlinternalLazy.cmi stdlib/camlinternalLazy.mli \
-  stdlib/camlinternalMod.cmi stdlib/camlinternalMod.mli \
-  stdlib/camlinternalOO.cmi stdlib/camlinternalOO.mli \
-  stdlib/char.cmi stdlib/char.mli \
-  stdlib/complex.cmi stdlib/complex.mli \
-  stdlib/digest.cmi stdlib/digest.mli \
-  stdlib/filename.cmi stdlib/filename.mli \
-  stdlib/format.cmi stdlib/format.mli \
-  stdlib/gc.cmi stdlib/gc.mli \
-  stdlib/genlex.cmi stdlib/genlex.mli \
-  stdlib/hashtbl.cmi stdlib/hashtbl.mli \
-  stdlib/int32.cmi stdlib/int32.mli \
-  stdlib/int64.cmi stdlib/int64.mli \
-  stdlib/lazy.cmi stdlib/lazy.mli \
-  stdlib/lexing.cmi stdlib/lexing.mli \
-  stdlib/list.cmi stdlib/list.mli \
-  stdlib/listLabels.cmi stdlib/listLabels.mli \
-  stdlib/map.cmi stdlib/map.mli \
-  stdlib/marshal.cmi stdlib/marshal.mli \
-  stdlib/moreLabels.cmi stdlib/moreLabels.mli \
-  stdlib/nativeint.cmi stdlib/nativeint.mli \
-  stdlib/obj.cmi stdlib/obj.mli \
-  stdlib/oo.cmi stdlib/oo.mli \
-  stdlib/parsing.cmi stdlib/parsing.mli \
-  stdlib/pervasives.cmi stdlib/pervasives.mli \
-  stdlib/printexc.cmi stdlib/printexc.mli \
-  stdlib/printf.cmi stdlib/printf.mli \
-  stdlib/queue.cmi stdlib/queue.mli \
-  stdlib/random.cmi stdlib/random.mli \
-  stdlib/scanf.cmi stdlib/scanf.mli \
-  stdlib/sort.cmi stdlib/sort.mli \
-  stdlib/stack.cmi stdlib/stack.mli \
-  stdlib/stdLabels.cmi stdlib/stdLabels.mli \
-  stdlib/stream.cmi stdlib/stream.mli \
-  stdlib/string.cmi stdlib/string.mli \
-  stdlib/stringLabels.cmi stdlib/stringLabels.mli \
-  stdlib/sys.cmi stdlib/sys.mli \
-  stdlib/weak.cmi stdlib/weak.mli \
-  stdlib/$set.cmi stdlib/$set.mli \
- stdlib/arg.cmx stdlib/arg.p.cmx stdlib/arg.$O stdlib/arg.p.$O \
- stdlib/array.cmx stdlib/array.p.cmx stdlib/array.$O stdlib/array.p.$O \
- stdlib/arrayLabels.cmx stdlib/arrayLabels.p.cmx stdlib/arrayLabels.$O stdlib/arrayLabels.p.$O \
- stdlib/buffer.cmx stdlib/buffer.p.cmx stdlib/buffer.$O stdlib/buffer.p.$O \
- stdlib/callback.cmx stdlib/callback.p.cmx stdlib/callback.$O stdlib/callback.p.$O \
- stdlib/camlinternalLazy.cmx stdlib/camlinternalLazy.p.cmx stdlib/camlinternalLazy.$O stdlib/camlinternalLazy.p.$O \
- stdlib/camlinternalMod.cmx stdlib/camlinternalMod.p.cmx stdlib/camlinternalMod.$O stdlib/camlinternalMod.p.$O \
- stdlib/camlinternalOO.cmx stdlib/camlinternalOO.p.cmx stdlib/camlinternalOO.$O stdlib/camlinternalOO.p.$O \
- stdlib/char.cmx stdlib/char.p.cmx stdlib/char.$O stdlib/char.p.$O \
- stdlib/complex.cmx stdlib/complex.p.cmx stdlib/complex.$O stdlib/complex.p.$O \
- stdlib/digest.cmx stdlib/digest.p.cmx stdlib/digest.$O stdlib/digest.p.$O \
- stdlib/filename.cmx stdlib/filename.p.cmx stdlib/filename.$O stdlib/filename.p.$O \
- stdlib/format.cmx stdlib/format.p.cmx stdlib/format.$O stdlib/format.p.$O \
- stdlib/gc.cmx stdlib/gc.p.cmx stdlib/gc.$O stdlib/gc.p.$O \
- stdlib/genlex.cmx stdlib/genlex.p.cmx stdlib/genlex.$O stdlib/genlex.p.$O \
- stdlib/hashtbl.cmx stdlib/hashtbl.p.cmx stdlib/hashtbl.$O stdlib/hashtbl.p.$O \
- stdlib/int32.cmx stdlib/int32.p.cmx stdlib/int32.$O stdlib/int32.p.$O \
- stdlib/int64.cmx stdlib/int64.p.cmx stdlib/int64.$O stdlib/int64.p.$O \
- stdlib/lazy.cmx stdlib/lazy.p.cmx stdlib/lazy.$O stdlib/lazy.p.$O \
- stdlib/lexing.cmx stdlib/lexing.p.cmx stdlib/lexing.$O stdlib/lexing.p.$O \
- stdlib/list.cmx stdlib/list.p.cmx stdlib/list.$O stdlib/list.p.$O \
- stdlib/listLabels.cmx stdlib/listLabels.p.cmx stdlib/listLabels.$O stdlib/listLabels.p.$O \
- stdlib/map.cmx stdlib/map.p.cmx stdlib/map.$O stdlib/map.p.$O \
- stdlib/marshal.cmx stdlib/marshal.p.cmx stdlib/marshal.$O stdlib/marshal.p.$O \
- stdlib/moreLabels.cmx stdlib/moreLabels.p.cmx stdlib/moreLabels.$O stdlib/moreLabels.p.$O \
- stdlib/nativeint.cmx stdlib/nativeint.p.cmx stdlib/nativeint.$O stdlib/nativeint.p.$O \
- stdlib/obj.cmx stdlib/obj.p.cmx stdlib/obj.$O stdlib/obj.p.$O \
- stdlib/oo.cmx stdlib/oo.p.cmx stdlib/oo.$O stdlib/oo.p.$O \
- stdlib/parsing.cmx stdlib/parsing.p.cmx stdlib/parsing.$O stdlib/parsing.p.$O \
- stdlib/pervasives.cmx stdlib/pervasives.p.cmx stdlib/pervasives.$O stdlib/pervasives.p.$O \
- stdlib/printexc.cmx stdlib/printexc.p.cmx stdlib/printexc.$O stdlib/printexc.p.$O \
- stdlib/printf.cmx stdlib/printf.p.cmx stdlib/printf.$O stdlib/printf.p.$O \
- stdlib/queue.cmx stdlib/queue.p.cmx stdlib/queue.$O stdlib/queue.p.$O \
- stdlib/random.cmx stdlib/random.p.cmx stdlib/random.$O stdlib/random.p.$O \
- stdlib/scanf.cmx stdlib/scanf.p.cmx stdlib/scanf.$O stdlib/scanf.p.$O \
- stdlib/sort.cmx stdlib/sort.p.cmx stdlib/sort.$O stdlib/sort.p.$O \
- stdlib/stack.cmx stdlib/stack.p.cmx stdlib/stack.$O stdlib/stack.p.$O \
- stdlib/stdLabels.cmx stdlib/stdLabels.p.cmx stdlib/stdLabels.$O stdlib/stdLabels.p.$O \
+  stdlib/std_exit.cm[io] stdlib/std_exit.ml \
+  stdlib/arg.cmi stdlib/arg.ml stdlib/arg.mli \
+  stdlib/array.cmi stdlib/array.ml stdlib/array.mli \
+  stdlib/arrayLabels.cmi stdlib/arrayLabels.ml stdlib/arrayLabels.mli \
+  stdlib/buffer.cmi stdlib/buffer.ml stdlib/buffer.mli \
+  stdlib/callback.cmi stdlib/callback.ml stdlib/callback.mli \
+  stdlib/camlinternalLazy.cmi stdlib/camlinternalLazy.ml stdlib/camlinternalLazy.mli \
+  stdlib/camlinternalMod.cmi stdlib/camlinternalMod.ml stdlib/camlinternalMod.mli \
+  stdlib/camlinternalOO.cmi stdlib/camlinternalOO.ml stdlib/camlinternalOO.mli \
+  stdlib/char.cmi stdlib/char.ml stdlib/char.mli \
+  stdlib/complex.cmi stdlib/complex.ml stdlib/complex.mli \
+  stdlib/digest.cmi stdlib/digest.ml stdlib/digest.mli \
+  stdlib/filename.cmi stdlib/filename.ml stdlib/filename.mli \
+  stdlib/format.cmi stdlib/format.ml stdlib/format.mli \
+  stdlib/gc.cmi stdlib/gc.ml stdlib/gc.mli \
+  stdlib/genlex.cmi stdlib/genlex.ml stdlib/genlex.mli \
+  stdlib/hashtbl.cmi stdlib/hashtbl.ml stdlib/hashtbl.mli \
+  stdlib/int32.cmi stdlib/int32.ml stdlib/int32.mli \
+  stdlib/int64.cmi stdlib/int64.ml stdlib/int64.mli \
+  stdlib/lazy.cmi stdlib/lazy.ml stdlib/lazy.mli \
+  stdlib/lexing.cmi stdlib/lexing.ml stdlib/lexing.mli \
+  stdlib/list.cmi stdlib/list.ml stdlib/list.mli \
+  stdlib/listLabels.cmi stdlib/listLabels.ml stdlib/listLabels.mli \
+  stdlib/map.cmi stdlib/map.ml stdlib/map.mli \
+  stdlib/marshal.cmi stdlib/marshal.ml stdlib/marshal.mli \
+  stdlib/moreLabels.cmi stdlib/moreLabels.ml stdlib/moreLabels.mli \
+  stdlib/nativeint.cmi stdlib/nativeint.ml stdlib/nativeint.mli \
+  stdlib/obj.cmi stdlib/obj.ml stdlib/obj.mli \
+  stdlib/oo.cmi stdlib/oo.ml stdlib/oo.mli \
+  stdlib/parsing.cmi stdlib/parsing.ml stdlib/parsing.mli \
+  stdlib/pervasives.cmi stdlib/pervasives.ml stdlib/pervasives.mli \
+  stdlib/printexc.cmi stdlib/printexc.ml stdlib/printexc.mli \
+  stdlib/printf.cmi stdlib/printf.ml stdlib/printf.mli \
+  stdlib/queue.cmi stdlib/queue.ml stdlib/queue.mli \
+  stdlib/random.cmi stdlib/random.ml stdlib/random.mli \
+  stdlib/scanf.cmi stdlib/scanf.ml stdlib/scanf.mli \
+  stdlib/sort.cmi stdlib/sort.ml stdlib/sort.mli \
+  stdlib/stack.cmi stdlib/stack.ml stdlib/stack.mli \
+  stdlib/stdLabels.cmi stdlib/stdLabels.ml stdlib/stdLabels.mli \
+  stdlib/stream.cmi stdlib/stream.ml stdlib/stream.mli \
+  stdlib/string.cmi stdlib/string.ml stdlib/string.mli \
+  stdlib/stringLabels.cmi stdlib/stringLabels.ml stdlib/stringLabels.mli \
+  stdlib/sys.cmi stdlib/sys.ml stdlib/sys.mli \
+  stdlib/weak.cmi stdlib/weak.ml stdlib/weak.mli \
+  stdlib/$set.cmi stdlib/$set.ml stdlib/$set.mli \
+ stdlib/arg.cmx stdlib/arg.p.cmx \
+ stdlib/array.cmx stdlib/array.p.cmx \
+ stdlib/arrayLabels.cmx stdlib/arrayLabels.p.cmx \
+ stdlib/buffer.cmx stdlib/buffer.p.cmx \
+ stdlib/callback.cmx stdlib/callback.p.cmx \
+ stdlib/camlinternalLazy.cmx stdlib/camlinternalLazy.p.cmx \
+ stdlib/camlinternalMod.cmx stdlib/camlinternalMod.p.cmx \
+ stdlib/camlinternalOO.cmx stdlib/camlinternalOO.p.cmx \
+ stdlib/char.cmx stdlib/char.p.cmx \
+ stdlib/complex.cmx stdlib/complex.p.cmx \
+ stdlib/digest.cmx stdlib/digest.p.cmx \
+ stdlib/filename.cmx stdlib/filename.p.cmx \
+ stdlib/format.cmx stdlib/format.p.cmx \
+ stdlib/gc.cmx stdlib/gc.p.cmx \
+ stdlib/genlex.cmx stdlib/genlex.p.cmx \
+ stdlib/hashtbl.cmx stdlib/hashtbl.p.cmx \
+ stdlib/int32.cmx stdlib/int32.p.cmx \
+ stdlib/int64.cmx stdlib/int64.p.cmx \
+ stdlib/lazy.cmx stdlib/lazy.p.cmx \
+ stdlib/lexing.cmx stdlib/lexing.p.cmx \
+ stdlib/list.cmx stdlib/list.p.cmx \
+ stdlib/listLabels.cmx stdlib/listLabels.p.cmx \
+ stdlib/map.cmx stdlib/map.p.cmx \
+ stdlib/marshal.cmx stdlib/marshal.p.cmx \
+ stdlib/moreLabels.cmx stdlib/moreLabels.p.cmx \
+ stdlib/nativeint.cmx stdlib/nativeint.p.cmx \
+ stdlib/obj.cmx stdlib/obj.p.cmx \
+ stdlib/oo.cmx stdlib/oo.p.cmx \
+ stdlib/parsing.cmx stdlib/parsing.p.cmx \
+ stdlib/pervasives.cmx stdlib/pervasives.p.cmx \
+ stdlib/printexc.cmx stdlib/printexc.p.cmx \
+ stdlib/printf.cmx stdlib/printf.p.cmx \
+ stdlib/queue.cmx stdlib/queue.p.cmx \
+ stdlib/random.cmx stdlib/random.p.cmx \
+ stdlib/scanf.cmx stdlib/scanf.p.cmx \
+ stdlib/sort.cmx stdlib/sort.p.cmx \
+ stdlib/stack.cmx stdlib/stack.p.cmx \
+ stdlib/stdLabels.cmx stdlib/stdLabels.p.cmx \
  stdlib/std_exit.cmx stdlib/std_exit.p.cmx stdlib/std_exit.$O stdlib/std_exit.p.$O \
- stdlib/stream.cmx stdlib/stream.p.cmx stdlib/stream.$O stdlib/stream.p.$O \
- stdlib/string.cmx stdlib/string.p.cmx stdlib/string.$O stdlib/string.p.$O \
- stdlib/stringLabels.cmx stdlib/stringLabels.p.cmx stdlib/stringLabels.$O stdlib/stringLabels.p.$O \
- stdlib/sys.cmx stdlib/sys.p.cmx stdlib/sys.$O stdlib/sys.p.$O \
- stdlib/weak.cmx stdlib/weak.p.cmx stdlib/weak.$O stdlib/weak.p.$O \
- stdlib/$set.cmx stdlib/$set.p.cmx stdlib/$set.$O stdlib/$set.p.$O \
+ stdlib/stream.cmx stdlib/stream.p.cmx \
+ stdlib/string.cmx stdlib/string.p.cmx \
+ stdlib/stringLabels.cmx stdlib/stringLabels.p.cmx \
+ stdlib/sys.cmx stdlib/sys.p.cmx \
+ stdlib/weak.cmx stdlib/weak.p.cmx \
+ stdlib/$set.cmx stdlib/$set.p.cmx \
   $LIBDIR
 
 installlibdir \
@@ -274,7 +275,6 @@ installbin tools/addlabels.byte $LIBDIR/addlabels
 installbin tools/scrapelabels.byte $LIBDIR/scrapelabels
 installbin otherlibs/dynlink/extract_crc.byte $LIBDIR/extract_crc
 installbin otherlibs/labltk/lib/labltk$EXE $BINDIR/labltk$EXE
-installbin otherlibs/labltk/compiler/tkcompiler$EXE $BINDIR/tkcompiler$EXE
 installbin otherlibs/labltk/browser/ocamlbrowser$EXE $BINDIR/ocamlbrowser$EXE
 installbin otherlibs/labltk/compiler/pp$EXE $LIBDIR/labltk/pp$EXE
 installbin otherlibs/labltk/lib/labltktop$EXE $LIBDIR/labltk/labltktop$EXE
@@ -290,6 +290,7 @@ installdir \
   otherlibs/"$WIN32"unix/unix.cma \
   otherlibs/bigarray/bigarray.cmxa \
   otherlibs/dbm/dbm.cmxa \
+  otherlibs/dynlink/dynlink.cmxa \
   otherlibs/"$WIN32"graph/graphics.cmxa \
   otherlibs/num/nums.cmxa \
   otherlibs/str/str.cmxa \
@@ -325,17 +326,17 @@ installdir \
   otherlibs/labltk/support/tkthread.cmi \
   otherlibs/labltk/support/tkthread.cmo \
   otherlibs/labltk/support/tkthread.$O \
-  otherlibs/labltk/labltk/*.mli \
+  otherlibs/labltk/support/tkthread.cmx \
+  otherlibs/labltk/labltk/[^_]*.mli \
   otherlibs/labltk/labltk/*.cmi \
   otherlibs/labltk/labltk/*.cmx \
-  otherlibs/labltk/camltk/*.mli \
+  otherlibs/labltk/camltk/[^_]*.mli \
   otherlibs/labltk/camltk/*.cmi \
   otherlibs/labltk/camltk/*.cmx \
   otherlibs/labltk/frx/frxlib.cma \
   otherlibs/labltk/frx/frxlib.cmxa \
-  otherlibs/labltk/frx/*.mli \
+  ../otherlibs/labltk/frx/*.mli \
   otherlibs/labltk/frx/*.cmi \
-  otherlibs/labltk/frx/*.cmx \
   otherlibs/labltk/jpf/jpflib.cma \
   otherlibs/labltk/jpf/jpflib.cmxa \
   otherlibs/labltk/jpf/*.mli \
@@ -343,20 +344,27 @@ installdir \
   otherlibs/labltk/jpf/*.cmx \
   otherlibs/labltk/lib/labltk.cma \
   otherlibs/labltk/lib/labltk.cmxa \
+  otherlibs/labltk/lib/labltk.cmx \
   otherlibs/labltk/tkanim/*.mli \
   otherlibs/labltk/tkanim/*.cmi \
   otherlibs/labltk/tkanim/tkanim.cma \
   otherlibs/labltk/tkanim/tkanim.cmxa \
+  otherlibs/labltk/compiler/tkcompiler \
   $LIBDIR/labltk
 
 installdir \
   otherlibs/systhreads/threads.cma \
   otherlibs/systhreads/threads.cmxa \
   otherlibs/systhreads/thread.cmi \
+  otherlibs/systhreads/thread.cmx \
   otherlibs/systhreads/mutex.cmi \
+  otherlibs/systhreads/mutex.cmx \
   otherlibs/systhreads/condition.cmi \
+  otherlibs/systhreads/condition.cmx \
   otherlibs/systhreads/event.cmi \
+  otherlibs/systhreads/event.cmx \
   otherlibs/systhreads/threadUnix.cmi \
+  otherlibs/systhreads/threadUnix.cmx \
   $LIBDIR/threads
 
 installdir \
@@ -420,50 +428,54 @@ installdir \
   toplevel/topdirs.cmi \
   toplevel/topmain.cmi \
   typing/outcometree.cmi \
+  typing/outcometree.mli \
   otherlibs/graph/graphicsX11.cmi \
+  otherlibs/graph/graphicsX11.mli \
   otherlibs/dynlink/dynlink.cmi \
+  otherlibs/dynlink/dynlink.mli \
   otherlibs/num/arith_status.cmi \
+  otherlibs/num/arith_status.mli \
   otherlibs/num/big_int.cmi \
+  otherlibs/num/big_int.mli \
   otherlibs/num/nat.cmi \
+  otherlibs/num/nat.mli \
   otherlibs/num/num.cmi \
+  otherlibs/num/num.mli \
   otherlibs/num/ratio.cmi \
+  otherlibs/num/ratio.mli \
   otherlibs/bigarray/bigarray.cmi \
+  otherlibs/bigarray/bigarray.mli \
   otherlibs/dbm/dbm.cmi \
+  otherlibs/dbm/dbm.mli \
+  otherlibs/dynlink/dynlink.cmx \
   otherlibs/"$WIN32"graph/graphics.cmi \
+  otherlibs/"$WIN32"graph/graphics.mli \
   otherlibs/str/str.cmi \
+  otherlibs/str/str.mli \
   otherlibs/"$WIN32"unix/unix.cmi \
+  otherlibs/"$WIN32"unix/unix.mli \
   otherlibs/"$WIN32"unix/unixLabels.cmi \
+  otherlibs/"$WIN32"unix/unixLabels.mli \
   otherlibs/num/arith_flags.cmx \
-  otherlibs/num/arith_flags.$O \
   otherlibs/num/int_misc.cmx \
-  otherlibs/num/int_misc.$O \
   otherlibs/num/arith_status.cmx \
-  otherlibs/num/arith_status.$O \
   otherlibs/num/big_int.cmx \
-  otherlibs/num/big_int.$O \
   otherlibs/num/nat.cmx \
-  otherlibs/num/nat.$O \
   otherlibs/num/num.cmx \
-  otherlibs/num/num.$O \
   otherlibs/num/ratio.cmx \
-  otherlibs/num/ratio.$O \
   otherlibs/bigarray/bigarray.cmx \
-  otherlibs/bigarray/bigarray.$O \
   otherlibs/dbm/dbm.cmx \
-  otherlibs/dbm/dbm.$O \
   otherlibs/"$WIN32"graph/graphics.cmx \
-  otherlibs/"$WIN32"graph/graphics.$O \
+  otherlibs/graph/graphicsX11.cmx \
   otherlibs/str/str.cmx \
-  otherlibs/str/str.$O \
   otherlibs/"$WIN32"unix/unix.cmx \
-  otherlibs/"$WIN32"unix/unix.$O \
   otherlibs/"$WIN32"unix/unixLabels.cmx \
-  otherlibs/"$WIN32"unix/unixLabels.$O \
   $LIBDIR
 
 installlibdir \
   otherlibs/bigarray/bigarray.$A \
   otherlibs/dbm/dbm.$A \
+  otherlibs/dynlink/dynlink.$A \
   otherlibs/"$WIN32"graph/graphics.$A \
   otherlibs/num/nums.$A \
   otherlibs/str/str.$A \
