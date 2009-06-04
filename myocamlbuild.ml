@@ -1073,14 +1073,18 @@ let labltk_lib_contents =
  @  "tk"
  :: labltk_generated_modules
  @  "cTk"
- :: camltk_generated_modules;;
+ :: camltk_generated_modules
+ @  ["labltk"; "camltk"];;
 
 let labltk_contents obj_ext =
     List.map (fun x -> "otherlibs/labltk/support"/x-.-obj_ext) labltk_support
  @  "otherlibs/labltk/labltk/tk"-.-obj_ext
  :: List.map (fun x -> "otherlibs/labltk/labltk"/x-.-obj_ext) labltk_generated_modules
  @  "otherlibs/labltk/camltk/cTk"-.-obj_ext
- :: List.map (fun x -> "otherlibs/labltk/camltk"/x-.-obj_ext) camltk_generated_modules;;
+ :: List.map (fun x -> "otherlibs/labltk/camltk"/x-.-obj_ext) camltk_generated_modules
+ @  ["otherlibs/labltk/labltk/labltk"-.-obj_ext;
+     "otherlibs/labltk/camltk/camltk"-.-obj_ext]
+;;
 
 let labltk_cma_contents = labltk_contents "cmo" in
 rule "labltk.cma"
