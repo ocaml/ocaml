@@ -355,12 +355,8 @@ let rec transl_type env policy styp =
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =
-        if static then row else
-        match policy with
-          Fixed ->
-            raise (Error (styp.ptyp_loc, Unbound_type_variable ".."))
-        | Extensible -> row
-        | Univars -> { row with row_more = new_pre_univar () }
+        if static || policy <> Univars then row
+        else { row with row_more = new_pre_univar () }
       in
       newty (Tvariant row)
   | Ptyp_poly(vars, st) ->
@@ -392,12 +388,8 @@ and transl_fields env policy =
   function
     [] ->
       newty Tnil
-  | ({pfield_desc = Pfield_var} as pf)::_ ->
-      begin match policy with
-        Fixed -> raise (Error (pf.pfield_loc, Unbound_type_variable ".."))
-      | Extensible -> newvar ()
-      | Univars -> new_pre_univar ()
-      end
+  | {pfield_desc = Pfield_var}::_ ->
+      if policy = Univars then new_pre_univar () else newvar ()
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy e in
       let ty2 = transl_fields env policy l in
