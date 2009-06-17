@@ -705,26 +705,30 @@ let instr_last ppf lexbuf =
 
 let instr_list ppf lexbuf =
   let (mo, beg, e) = list_arguments_eol Lexer.lexeme lexbuf in
-    let (curr_mod, point) =
+    let (curr_mod, line, column) =
       try
         selected_point ()
       with
       | Not_found ->
-          ("", -1)
+          ("", -1, -1)
     in
       let mdle = convert_module (module_of_longident mo) in
       let pos = Lexing.dummy_pos in
+      let buffer =
+        try get_buffer pos mdle with
+        | Not_found -> error ("No source file for " ^ mdle ^ ".") in
+      let point =
+        if column <> -1 then
+          (point_of_coord buffer line 1) + column
+        else
+          -1 in
         let beginning =
           match beg with
-          | None when (mo <> None) || (point = -1) ->
+          | None when (mo <> None) || (line = -1) ->
               1
           | None ->
-              let buffer =
-                try get_buffer pos mdle with
-                | Not_found -> error ("No source file for " ^ mdle ^ ".")
-              in
               begin try
-                max 1 ((snd (line_of_pos buffer point)) - 10)
+                max 1 (line - 10)
               with Out_of_range ->
                 1
               end
@@ -861,11 +865,19 @@ let info_events ppf lexbuf =
     print_endline "   Address  Characters        Kind      Repr.";
     List.iter
       (function ev ->
-         Printf.printf
+        let start_char, end_char =
+          try
+            let buffer = get_buffer (Events.get_pos ev) ev.ev_module in
+            (snd (start_and_cnum buffer ev.ev_loc.Location.loc_start)),
+            (snd (start_and_cnum buffer ev.ev_loc.Location.loc_end))
+          with _ ->
+            ev.ev_loc.Location.loc_start.Lexing.pos_cnum,
+            ev.ev_loc.Location.loc_end.Lexing.pos_cnum in
+        Printf.printf
            "%10d %6d-%-6d  %10s %10s\n"
            ev.ev_pos
-           ev.ev_loc.Location.loc_start.Lexing.pos_cnum
-           ev.ev_loc.Location.loc_end.Lexing.pos_cnum
+           start_char
+           end_char
            ((match ev.ev_kind with
                Event_before   -> "before"
              | Event_after _  -> "after"

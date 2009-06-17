@@ -20,6 +20,7 @@ open Checkpoints
 open Events
 open Symbols
 open Frames
+open Source
 open Show_source
 open Breakpoints
 
@@ -68,9 +69,15 @@ let show_current_event ppf =
 (* Display short information about one frame. *)
 
 let show_one_frame framenum ppf event =
+  let pos = Events.get_pos event in
+  let cnum =
+    try
+      let buffer = get_buffer pos event.ev_module in
+      snd (start_and_cnum buffer pos)
+    with _ -> pos.Lexing.pos_cnum in
   fprintf ppf "#%i  Pc : %i  %s char %i@."
          framenum event.ev_pos event.ev_module
-         (Events.get_pos event).Lexing.pos_cnum
+         cnum
 
 (* Display information about the current frame. *)
 (* --- `select frame' must have succeded before calling this function. *)
