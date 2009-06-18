@@ -377,11 +377,34 @@ let output_data_string outchan data =
     end
   done
 
+(* Output a debug stub *)
+
+let output_cds_file outfile =
+  Misc.remove_file outfile;
+  let outchan =
+    open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
+      0o777 outfile in
+  try
+    Bytesections.init_record outchan;
+    (* The map of global identifiers *)
+    Symtable.output_global_map outchan;
+    Bytesections.record outchan "SYMB";
+    (* Debug info *)
+    output_debug_info outchan;
+    Bytesections.record outchan "DBUG";
+    (* The table of contents and the trailer *)
+    Bytesections.write_toc_and_trailer outchan;
+    close_out outchan
+  with x ->
+    close_out outchan;
+    remove_file outfile;
+    raise x
+
 (* Output a bytecode executable as a C file *)
 
 let link_bytecode_as_c tolink outfile =
   let outchan = open_out outfile in
-  try
+  begin try
     (* The bytecode *)
     output_string outchan "#include <caml/mlvalues.h>\n";
     output_string outchan "\
@@ -393,8 +416,11 @@ CAMLextern void caml_startup_code(
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     Consistbl.clear crc_interfaces;
-    let output_fun = output_code_string outchan
-    and currpos_fun () = 0 in
+    let currpos = ref 0 in
+    let output_fun code =
+      output_code_string outchan code;
+      currpos := !currpos + String.length code
+    and currpos_fun () = !currpos in
     List.iter (link_file output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
     Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
@@ -427,6 +453,9 @@ void caml_startup(char ** argv)
   with x ->
     close_out outchan;
     raise x
+  end;
+  if !Clflags.debug then
+    output_cds_file ((Filename.chop_extension outfile) ^ ".cds")
 
 (* Build a custom runtime *)
 
