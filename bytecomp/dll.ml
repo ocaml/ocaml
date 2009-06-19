@@ -85,13 +85,16 @@ let close_all_dlls () =
    Raise [Not_found] if not found. *)
 
 let find_primitive prim_name =
-  let rec find = function
+  let rec find seen = function
     [] ->
       raise Not_found
   | dll :: rem ->
       let addr = dll_sym dll prim_name in
-      if addr == Obj.magic () then find rem else addr in
-  find !opened_dlls
+      if addr == Obj.magic () then find (dll :: seen) rem else begin
+        if seen <> [] then opened_dlls := dll :: List.rev_append seen rem;
+        addr
+      end in
+  find [] !opened_dlls
 
 (* If linking in core (dynlink or toplevel), synchronize the VM
    table of primitive with the linker's table of primitive

@@ -12,6 +12,16 @@
 
 (* $Id$ *)
 
+(***********************************************************************)
+(**                                                                   **)
+(**               WARNING WARNING WARNING                             **)
+(**                                                                   **)
+(** When you change this file, you must make the parallel change      **)
+(** in config.mlp                                                     **)
+(**                                                                   **)
+(***********************************************************************)
+
+
 (* The main OCaml version string has moved to ../VERSION *)
 let version = Sys.ocaml_version
 
@@ -40,10 +50,8 @@ let standard_runtime =
   else C.bindir^"/ocamlrun"
 let ccomp_type = C.ccomptype
 let bytecomp_c_compiler = sf "%s %s %s" C.bytecc C.bytecccompopts C.sharedcccompopts
-let bytecomp_c_linker = if windows then "flexlink" else sf "%s %s" C.bytecc C.bytecclinkopts
 let bytecomp_c_libraries = C.bytecclibs
 let native_c_compiler = sf "%s %s" C.nativecc C.nativecccompopts
-let native_c_linker = if windows then "flexlink" else sf "%s %s" C.nativecc C.nativecclinkopts
 let native_c_libraries = C.nativecclibs
 let native_pack_linker = C.packld
 let ranlib = C.ranlibcmd
@@ -54,8 +62,8 @@ let mkmaindll = C.mkmaindll
 
 let exec_magic_number = "Caml1999X008"
 and cmi_magic_number = "Caml1999I011"
-and cmo_magic_number = "Caml1999O006"
-and cma_magic_number = "Caml1999A007"
+and cmo_magic_number = "Caml1999O007"
+and cma_magic_number = "Caml1999A008"
 and cmx_magic_number = "Caml1999Y011"
 and cmxa_magic_number = "Caml1999Z010"
 and ast_impl_magic_number = "Caml1999M012"
@@ -102,10 +110,8 @@ let print_config oc =
   p "standard_runtime" standard_runtime;
   p "ccomp_type" ccomp_type;
   p "bytecomp_c_compiler" bytecomp_c_compiler;
-  p "bytecomp_c_linker" bytecomp_c_linker;
   p "bytecomp_c_libraries" bytecomp_c_libraries;
   p "native_c_compiler" native_c_compiler;
-  p "native_c_linker" native_c_linker;
   p "native_c_libraries" native_c_libraries;
   p "native_pack_linker" native_pack_linker;
   p "ranlib" ranlib;

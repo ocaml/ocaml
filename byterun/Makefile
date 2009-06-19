@@ -22,14 +22,10 @@ OBJS=$(COMMONOBJS) unix.o main.o
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 PICOBJS=$(OBJS:.o=.pic.o)
 
-#ifeq ($(SUPPORTS_SHARED_LIBRARIES),true)
+SHARED_LIBS_TMP=$(SUPPORTS_SHARED_LIBRARIES:%false=)
+SHARED_LIBS_DEPS=$(SHARED_LIBS_TMP:%true=libcamlrun_shared.so)
 
-all:: libcamlrun_shared.so
-
-install::
-	cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so
-
-#endif
+all:: $(SHARED_LIBS_DEPS)
 
 ocamlrun$(EXE): libcamlrun.a prims.o
 	$(MKEXE) $(BYTECCLINKOPTS) -o ocamlrun$(EXE) \
@@ -49,6 +45,14 @@ libcamlrund.a: $(DOBJS)
 
 libcamlrun_shared.so: $(PICOBJS)
 	$(MKDLL) -o libcamlrun_shared.so $(PICOBJS) $(BYTECCLIBS)
+
+install::
+	if test -f libcamlrun_shared.so; then \
+	  cp libcamlrun_shared.so $(LIBDIR)/libcamlrun_shared.so; fi
+
+clean::
+	rm -f libcamlrun_shared.so
+
 
 .SUFFIXES: .d.o .pic.o
 

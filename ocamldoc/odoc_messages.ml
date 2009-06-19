@@ -24,7 +24,6 @@ let message_version = software^" "^config_version
 let usage = "Usage : "^(Sys.argv.(0))^" [options] <files>\n"
 let options_are = "Options are :"
 let option_version = "\tPrint version and exit"
-let bytecode_only = "(bytecode version only)"
 let latex_only = "(LaTeX only)"
 let texi_only = "(TeXinfo only)"
 let latex_texi_only = "(LaTeX and TeXinfo only)"
@@ -40,8 +39,8 @@ let option_impl ="<file>\tConsider <file> as a .ml file"
 let option_intf ="<file>\tConsider <file> as a .mli file"
 let display_custom_generators_dir = "\tDisplay custom generators standard directory and exit"
 let add_load_dir = "<dir>\tAdd the given directory to the search path for custom\n"^
-  "\t\tgenerators "^bytecode_only
-let load_file = "<file.cm[o|a]>\n\t\tLoad file defining a new documentation generator\n\t\t"^bytecode_only
+  "\t\tgenerators"
+let load_file = "<file.cm[o|a|xs]>\n\t\tLoad file defining a new documentation generator"
 let nolabels = "\tIgnore non-optional labels in types"
 let werr = "\tTreat ocamldoc warnings as errors"
 let target_dir = "<dir>\tGenerate files in directory <dir>, rather than in current\n"^

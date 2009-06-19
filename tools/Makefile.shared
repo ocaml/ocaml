@@ -23,8 +23,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels \
-     dumpobj
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj
 .PHONY: all
 
 opt.opt: ocamldep.opt
@@ -51,9 +50,9 @@ clean::
 	rm -f ocamldep.opt
 
 install::
-	cp ocamldep $(BINDIR)/ocamldep$(EXE)
+	cp ocamldep $(BINDIR)/jocamldep$(EXE)
 	if test -f ocamldep.opt; \
-	  then cp ocamldep.opt $(BINDIR)/ocamldep.opt$(EXE); else :; fi
+	  then cp ocamldep.opt $(BINDIR)/jocamldep.opt$(EXE); else :; fi
 
 # The profiler
 
@@ -69,15 +68,15 @@ ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp main_args.cmo ocamlcp.cmo
 
 install::
-	cp ocamlprof $(BINDIR)/ocamlprof$(EXE)
-	cp ocamlcp $(BINDIR)/ocamlcp$(EXE)
+	cp ocamlprof $(BINDIR)/jocamlprof$(EXE)
+	cp ocamlcp $(BINDIR)/jocamlcp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
 	rm -f ocamlprof ocamlcp
 
 install::
-	cp ocamlmktop $(BINDIR)/ocamlmktop$(EXE)
+	cp ocamlmktop $(BINDIR)/jocamlmktop$(EXE)
 
 clean::
 	rm -f ocamlmktop
@@ -97,7 +96,7 @@ myocamlbuild_config.ml: ../config/Makefile ../build/mkmyocamlbuild_config.sh
 	cp ../myocamlbuild_config.ml .
 
 install::
-	cp ocamlmklib $(BINDIR)/ocamlmklib$(EXE)
+	cp ocamlmklib $(BINDIR)/jocamlmklib$(EXE)
 
 clean::
 	rm -f ocamlmklib
@@ -121,7 +120,7 @@ clean::
 # To make custom toplevels (see Makefile/Makefile.nt)
 
 install::
-	cp ocamlmktop $(BINDIR)/ocamlmktop$(EXE)
+	cp ocamlmktop $(BINDIR)/jocamlmktop$(EXE)
 
 clean::
 	rm -f ocamlmktop
@@ -154,8 +153,8 @@ scrapelabels: $(SCRAPELABELS)
 lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
-install::
-	cp scrapelabels $(LIBDIR)
+#install::
+#	cp scrapelabels $(LIBDIR)
 
 clean::
 	rm -f scrapelabels lexer301.ml
@@ -170,8 +169,8 @@ addlabels: addlabels.ml
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
 		$(ADDLABELS_IMPORTS) addlabels.ml
 
-install::
-	cp addlabels $(LIBDIR)
+#install::
+#	cp addlabels $(LIBDIR)
 
 clean::
 	rm -f addlabels

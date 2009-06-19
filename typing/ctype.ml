@@ -385,23 +385,32 @@ let closed_schema ty =
 exception Non_closed of type_expr * bool
 
 let free_variables = ref []
+let really_closed = ref None
 
 let rec free_vars_rec real ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
     ty.level <- pivot_level - ty.level;
-    begin match ty.desc with
-      Tvar ->
+    begin match ty.desc, !really_closed with
+      Tvar, _ ->
         free_variables := (ty, real) :: !free_variables
+    | Tconstr (path, tl, _), Some env ->
+        begin try
+          let (_, body) = Env.find_type_expansion path env in
+          if (repr body).level <> generic_level then
+            free_variables := (ty, real) :: !free_variables
+        with Not_found -> ()
+        end;
+        List.iter (free_vars_rec true) tl
 (* Do not count "virtual" free variables
     | Tobject(ty, {contents = Some (_, p)}) ->
         free_vars_rec false ty; List.iter (free_vars_rec true) p
 *)
-    | Tobject (ty, _) ->
+    | Tobject (ty, _), _ ->
         free_vars_rec false ty
-    | Tfield (_, _, ty1, ty2) ->
+    | Tfield (_, _, ty1, ty2), _ ->
         free_vars_rec true ty1; free_vars_rec false ty2
-    | Tvariant row ->
+    | Tvariant row, _ ->
         let row = row_repr row in
         iter_row (free_vars_rec true) row;
         if not (static_row row) then free_vars_rec false row.row_more
@@ -410,15 +419,17 @@ let rec free_vars_rec real ty =
     end;
   end
 
-let free_vars ty =
+let free_vars ?env ty =
   free_variables := [];
+  really_closed := env;
   free_vars_rec true ty;
   let res = !free_variables in
   free_variables := [];
+  really_closed := None;
   res
 
-let free_variables ty =
-  let tl = List.map fst (free_vars ty) in
+let free_variables ?env ty =
+  let tl = List.map fst (free_vars ?env ty) in
   unmark_type ty;
   tl
 
@@ -2074,7 +2085,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         with Not_found ->
           TypePairs.add type_pairs (t1', t2') ();
           match (t1'.desc, t2'.desc) with
-            (Tvar, _) when may_instantiate inst_nongen t1 ->
+            (Tvar, _) when may_instantiate inst_nongen t1' ->
               moregen_occur env t1'.level t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -3217,10 +3228,11 @@ let cyclic_abbrev env id ty =
   in check_cycle [] ty
 
 (* Normalize a type before printing, saving... *)
-let rec normalize_type_rec env ty =
+(* Cannot use mark_type because deep_occur uses it too *)
+let rec normalize_type_rec env visited ty =
   let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    mark_type_node ty;
+  if not (TypeSet.mem ty !visited) then begin
+    visited := TypeSet.add ty !visited;
     begin match ty.desc with
     | Tvariant row ->
       let row = row_repr row in
@@ -3249,11 +3261,15 @@ let rec normalize_type_rec env ty =
         begin match !nm with
         | None -> ()
         | Some (n, v :: l) ->
-            let v' = repr v in
+	    if deep_occur ty (newgenty (Ttuple l)) then
+	      (* The abbreviation may be hiding something, so remove it *)
+	      set_name nm None
+	    else let v' = repr v in
             begin match v'.desc with
             | Tvar|Tunivar ->
                 if v' != v then set_name nm (Some (n, v' :: l))
-            | Tnil -> log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
+            | Tnil ->
+		log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
             | _ -> set_name nm None
             end
         | _ ->
@@ -3266,12 +3282,11 @@ let rec normalize_type_rec env ty =
         log_type ty; fi.desc <- fi'.desc
     | _ -> ()
     end;
-    iter_type_expr (normalize_type_rec env) ty
+    iter_type_expr (normalize_type_rec env visited) ty
   end
 
 let normalize_type env ty =
-  normalize_type_rec env ty;
-  unmark_type ty
+  normalize_type_rec env (ref TypeSet.empty) ty
 
 
                               (*************************)
@@ -3312,8 +3327,8 @@ let rec nondep_type_rec env id ty =
                  (recursive type), so one cannot just take its
                  description.
                *)
-            with Cannot_expand ->
-              raise Not_found
+            with Cannot_expand | Unify _ -> (* expand_abbrev failed *)
+              raise Not_found               (* cf. PR4775 for Unify *)
             end
           else
             Tconstr(p, List.map (nondep_type_rec env id) tl, ref Mnil)

@@ -95,6 +95,10 @@ let rec iter f = function
   | Node(l, v, d, r, _) ->
       iter f l; f v d; iter f r
 
+let rec map f = function
+    Empty -> Empty
+  | Node(l, v, d, r, h) -> Node(map f l, v, f v d, map f r, h)
+
 open Format
 
 let print print_key print_data ppf tbl =

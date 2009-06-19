@@ -1574,12 +1574,12 @@ let report_error ppf = function
       fprintf ppf
         "@[The type of self cannot be coerced to@ \
            the type of the current class:@ %a.@.\
-           Some occurences are contravariant@]"
+           Some occurrences are contravariant@]"
         Printtyp.type_scheme ty
   | Non_collapsable_conjunction (id, clty, trace) ->
       fprintf ppf
         "@[The type of this class,@ %a,@ \
-           contains non-collapsable conjunctive types in constraints@]"
+           contains non-collapsible conjunctive types in constraints@]"
         (Printtyp.class_declaration id) clty;
       Printtyp.report_unification_error ppf trace
         (fun ppf -> fprintf ppf "Type")
@@ -1589,11 +1589,11 @@ let report_error ppf = function
         (function ppf ->
            fprintf ppf "This object is expected to have type")
         (function ppf ->
-           fprintf ppf "but has actually type")
+           fprintf ppf "but actually has type")
   | Mutability_mismatch (lab, mut) ->
       let mut1, mut2 =
         if mut = Immutable then "mutable", "immutable"
         else "immutable", "mutable" in
       fprintf ppf
-        "@[The instance variable is %s,@ it cannot be redefined as %s@]"
+        "@[The instance variable is %s;@ it cannot be redefined as %s@]"
         mut1 mut2

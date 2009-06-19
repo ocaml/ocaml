@@ -1,3 +1,6 @@
+JoCaml 3.11.1
+
+- Corrected bug in installation (all tools now installed with 'jo' prefix)
 
 JoCaml 3.11.0:
 -------------
