@@ -506,7 +506,11 @@ let rec scan_int_list ib =
   List.rev accu
 ;;
 
-(* The general HO list scanner. *)
+(* The general HO list scanner.
+   This version does not fix the separator, nor the spacing before and after
+   the separator (it uses the functional argument [scan_elem] to parse the
+   separator, its spacing, and the item).
+ *)
 let rec scan_elems ib scan_elem accu =
   try scan_elem ib (fun i s ->
     let accu = i :: accu in
@@ -629,16 +633,30 @@ let test30 () =
 test (test30 ())
 ;;
 
-(* A generic scan_elem, *)
+(* A generic polymorphic item scanner, *)
 let scan_elem fmt ib f ek = kscanf ib ek fmt f;;
 
-(* Derivation of list scanners from the generic polymorphic scanners. *)
+(* Derivation of list scanners from the generic polymorphic item scanner
+   applications. *)
 let scan_int_list = scan_list (scan_elem " %i %1[;]");;
 let scan_string_list = scan_list (scan_elem " %S %1[;]");;
 let scan_bool_list = scan_list (scan_elem " %B %1[;]");;
 let scan_char_list = scan_list (scan_elem " %C %1[;]");;
 let scan_float_list = scan_list (scan_elem " %f %1[;]");;
 
+(* In this version the [scan_elem] function should be a [kscanf] like
+   scanning function: we give it an error continuation.
+
+   The [scan_elem] argument, probably use some partial application of the
+   following generic [scan_elem]:
+
+   let scan_elem fmt ib f ek = kscanf ib ek fmt f;;
+
+   For instance, a suitable [scan_elem] for integers could be:
+
+   let scan_integer_elem = scan_elem " %i";;
+
+*)
 let rec scan_elems ib scan_elem accu =
   scan_elem ib
     (fun i ->
@@ -687,15 +705,21 @@ let test32 () =
 test (test32 ())
 ;;
 
-(* Using kscanf only.
-   Using formats as ``functional'' specifications to scan elements of
-   lists. *)
+(* Using [kscanf] only.
+
+   We use format values to stand for ``functional'' specifications to scan
+   the elements of lists.
+
+   The list item separator and the separator spacing are builtin into the
+   [scan_elems] iterator and thus are conveniently omitted from the
+   definitional format for item scanning.
+*)
 let rec scan_elems ib scan_elem_fmt accu =
   kscanf ib (fun ib exc -> accu)
     scan_elem_fmt
     (fun i ->
      let accu = i :: accu in
-     kscanf ib (fun ib exc -> accu)
+     bscanf ib
        " %1[;] "
        (function
         | "" -> accu
@@ -737,8 +761,16 @@ let test34 () =
     (Scanning.from_string "[\"1\"; \"2\"; \"3\"; \"4\";]") =
     ["1"; "2"; "3"; "4"];;
 
+test (test34 ())
+;;
+
 (* Using kscanf only.
-   Using functions to scan elements of lists. *)
+
+   Same as the preceding functional, except that we no more use format values
+   to scan items: we use scanners that scan elements of the list on the
+   fly.
+*)
+(* This version cannot handle empty lists!
 let rec scan_elems ib scan_elem accu =
   scan_elem ib
     (fun elem ->
@@ -749,6 +781,44 @@ let rec scan_elems ib scan_elem accu =
         | "" -> accu
         | _ -> scan_elems ib scan_elem accu))
 ;;
+*)
+
+(* We use [kscanf] with a [%r] format ! *)
+let rec scan_elems ib scan_elem accu =
+  kscanf ib (fun ib exc -> accu)
+    "%r"
+    (function ib ->
+     scan_elem ib
+       (function elem ->
+        let accu = elem :: accu in
+        bscanf ib
+          " %1[;] "
+          (function
+           | "" -> accu
+           | _ -> scan_elems ib scan_elem accu)))
+    (function l -> l)
+;;
+
+(* We may also try a version with only one format:
+   We also changed the type of [scan_elem] to partially apply it to its
+   ``natural'' continuation.
+let rec scan_elems ib scan_elem accu =
+  (* We use [kscanf], so that:
+     if the element reader fails, we can return the list of elements read so
+     far. *)
+  kscanf ib (fun ib exc -> accu)
+    (* The format string for [kscanf]: we read an element using [scan_elem],
+       then find a semi-colon if any, in order to decide if we stop reading
+       or go on with other elements. *)
+    "%r %1[;] "
+    (* The reader: once an element has been read it returns the new accu. *)
+    (scan_elem (function elem -> elem :: accu))
+    (fun accu s ->
+     (* Cannot find a semi-colon: no more elements to read. *)
+     if s = "" then accu
+     (* We found a semi-colon: go on with the new accu. *)
+     else scan_elems ib scan_elem accu)
+;;
 
 let scan_list scan_elem ib =
   bscanf ib "[ " ();
@@ -757,15 +827,45 @@ let scan_list scan_elem ib =
   List.rev accu
 ;;
 
-let scan_float ib = Scanf.bscanf ib "%f";;
+let scan_float f ib = Scanf.bscanf ib "%f" f;;
+# scan_list scan_float;;
+- : Scanf.Scanning.scanbuf -> float list = <fun>
 
+let make_scan_elem fmt f ib = Scanf.bscanf ib fmt f;;
+
+let scan_float = make_scan_elem "%f";;
+
+scan_list scan_float;;
+
+list_scanner "%f";;
+- : Scanf.Scanning.scanbuf -> float list = <fun>
+*)
+
+let scan_list scan_elem ib =
+  bscanf ib "[ " ();
+  let accu = scan_elems ib scan_elem [] in
+  bscanf ib " ]" ();
+  List.rev accu
+;;
+
+(* The prototype of a [scan_elem] function for the generic [scan_list]
+   functional.
+   This [scan_elem] scans a floating point number. *)
+let scan_float ib = Scanf.bscanf ib "%f";;
+let scan_float_list = scan_list scan_float;;
+
+(* In the following list scanners, we directly give the [scan_elem] function
+   as an immediate function value argument to the polymorphic
+   [scan_list]. *)
 let scan_int_list = scan_list (fun ib -> Scanf.bscanf ib "%i");;
 let scan_string_list = scan_list (fun ib -> Scanf.bscanf ib "%S");;
 let scan_bool_list = scan_list (fun ib -> Scanf.bscanf ib "%B");;
 let scan_char_list = scan_list (fun ib -> Scanf.bscanf ib "%C");;
-let scan_float_list = scan_list scan_float;;
 
-(* Scanning list of lists of floats. *)
+(* [scan_list] is truely polymorphic: scanning a list of lists of items
+   is a one liner!
+
+   Here we scan list of lists of floats. *)
 let scan_float_list_list =
   scan_list
     (fun ib k -> k (scan_list (fun ib -> Scanf.bscanf ib "%f") ib))
@@ -781,6 +881,15 @@ let scan_float_list_list =
     (fun ib k -> k (scan_float_list ib))
 ;;
 
+(* The killer way to define [scan_float_list_list]. *)
+let scan_float_list_list = scan_list scan_float_list;;
+
+test (
+  scan_float_list_list
+   (Scanning.from_string "[[1.0] ; []; [2.0; 3; 5.0; 6.];]") =
+ [[1.]; []; [2.; 3.; 5.; 6.]])
+;;
+
 (* A general scan_list_list functional. *)
 let scan_list_list scan_elems ib =
   scan_list
@@ -793,9 +902,6 @@ let scan_float_list_list = scan_list_list scan_float_list;;
 let scan_float_item ib k = k (scan_float ib (fun x -> x));;
 let scan_float_list ib k = k (scan_list scan_float_item ib);;
 let scan_float_list_list ib k = k (scan_list scan_float_list ib);;
-
-test (test34 ())
-;;
 
 (* Testing the %N format. *)
 let test35 () =
@@ -1020,7 +1126,8 @@ let test50 () = go () = 100;;
 test (test50 ())
 ;;
 
-(* Simple tests may also fail! *)
+(* Simple tests may also fail!
+   Ensure this is not the case with the current version for module [Scanf]. *)
 let test51 () =
  sscanf "Hello" "%s" id = "Hello" &&
  sscanf "Hello\n" "%s\n" id = "Hello" &&
@@ -1039,10 +1146,10 @@ let test51 () =
 test (test51 ())
 ;;
 
-(* Tests that indeed %s@c format works properly.
-   Also tests the difference between \n and @\n.
-   In particular, tests that if no c character can be found in the
-   input, then the token obtained for %s@c spreads to the end of
+(* Tests that indeed the [%s@c] format works properly.
+   Also tests the difference between [\n] and [@\n] is correctly handled.
+   In particular, tests that if no [c] character can be found in the
+   input, then the token obtained for [%s@c] spreads to the end of
    input. *)
 let test52 () =
  sscanf "Hello\n" "%s@\n" id = "Hello" &&
@@ -1056,7 +1163,17 @@ let test52 () =
  sscanf "Hello\n" "%s@\n%s" (fun s1 s2 ->
    s1 = "Hello" && s2 = "") &&
  sscanf "Hello \n" "%s%s@\n" (fun s1 s2 ->
-   s1 = "Hello" && s2 = " ")
+   s1 = "Hello" && s2 = " ") &&
+sscanf "Hello \n" "%s%s%_1[ ]\n" (fun s1 s2 ->
+         s1 = "Hello" && s2 = "") &&
+ sscanf "Hello \n" "%s%_1[ ]%s\n" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "") &&
+ sscanf "Hello\nWorld" "%s\n%s%!" (fun s1 s2 ->
+      s1 = "Hello" && s2 = "World") &&
+ sscanf "Hello\nWorld!" "%s\n%s%!" (fun s1 s2 ->
+      s1 = "Hello" && s2 = "World!") &&
+ sscanf "Hello\nWorld!" "%s\n%s@!%!" (fun s1 s2 ->
+      s1 = "Hello" && s2 = "World")
 ;;
 
 test (test52 ())
@@ -1106,9 +1223,12 @@ let tscanf_data_file_lines = [
 write_tscanf_data_file tscanf_data_file tscanf_data_file_lines
 ;;
 
-(* Then we verify that its contents is indeed correct. *)
+(* Then we verify that its contents is indeed correct:
+   the lines written into the [tscanf_data] file should be the same as the
+   lines read from it. *)
 
-(* Reading back tscanf_data_file_lines (hence testing data file reading). *)
+(* Reading back tscanf_data_file_lines (hence, testing data file reading as
+   well). *)
 let get_lines fname =
   let ib = Scanf.Scanning.from_file fname in
   let l = ref [] in
@@ -1125,6 +1245,8 @@ let get_lines fname =
     failwith (Printf.sprintf "in file %s, unexpected end of file" fname)
 ;;
 
+(* Simpy test that the list of lines read from the file are the list of lines
+   written to it!. *)
 let test54 () =
   get_lines tscanf_data_file = tscanf_data_file_lines
 ;;
@@ -1140,9 +1262,8 @@ let add_digest_ib ob ib =
     Buffer.add_string ob s;
     Buffer.add_char ob '#'; Buffer.add_string ob (digest s);
     Buffer.add_char ob '\n' in
-  try
-   while true do scan_line ib output_line_digest done;
-  with End_of_file -> ()
+  try while true do scan_line ib output_line_digest done; with
+  | End_of_file -> ()
 ;;
 
 let digest_file fname =
