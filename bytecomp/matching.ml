@@ -2650,7 +2650,7 @@ let compile_flattened repr partial ctx _ pmh = match pmh with
     compile_orhandlers (compile_match repr partial) lam total ctx hs
 | PmVar _ -> assert false
 
-let for_multiple_match loc paraml pat_act_list partial =
+let do_for_multiple_match loc paraml pat_act_list partial =
   let repr = None in
   let partial = check_partial pat_act_list partial in
   let raise_num,pm1 =
@@ -2704,3 +2704,28 @@ let for_multiple_match loc paraml pat_act_list partial =
       end
   with Unused ->
     assert false (* ; partial_function loc () *)
+
+(* #PR4828: Believe it or not, the 'paraml' argument below
+   may not be side effect free. *)
+
+let arg_to_var arg cls = match arg with
+| Lvar v -> v,arg
+| _ ->
+    let v = name_pattern "match" cls in
+    v,Lvar v
+
+
+let rec param_to_var param = match param with
+| Lvar v -> v,None
+| _ -> Ident.create "match",Some param
+
+let bind_opt (v,eo) k = match eo with
+| None -> k
+| Some e ->  Lambda.bind Strict v e k
+
+let for_multiple_match loc paraml pat_act_list partial =
+  let v_paraml = List.map param_to_var paraml in
+  let paraml = List.map (fun (v,_) -> Lvar v) v_paraml in
+  List.fold_right bind_opt v_paraml
+    (do_for_multiple_match loc paraml pat_act_list partial)
+  
