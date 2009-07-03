@@ -784,7 +784,7 @@ let rec scan_elems ib scan_elem accu =
 *)
 
 (* We use [kscanf] with a [%r] format ! *)
-let rec scan_elems ib scan_elem accu =
+let rec scan_elems scan_elem accu ib =
   kscanf ib (fun ib exc -> accu)
     "%r"
     (function ib ->
@@ -795,14 +795,21 @@ let rec scan_elems ib scan_elem accu =
           " %1[;] "
           (function
            | "" -> accu
-           | _ -> scan_elems ib scan_elem accu)))
+           | _ -> scan_elems scan_elem accu ib)))
     (function l -> l)
+;;
+
+let scan_list scan_elem ib =
+  bscanf ib "[ " ();
+  let accu = scan_elems scan_elem [] ib in
+  bscanf ib " ]" ();
+  List.rev accu
 ;;
 
 (* We may also try a version with only one format:
    We also changed the type of [scan_elem] to partially apply it to its
    ``natural'' continuation.
-let rec scan_elems ib scan_elem accu =
+let rec scan_elems scan_elem accu ib =
   (* We use [kscanf], so that:
      if the element reader fails, we can return the list of elements read so
      far. *)
@@ -817,21 +824,24 @@ let rec scan_elems ib scan_elem accu =
      (* Cannot find a semi-colon: no more elements to read. *)
      if s = "" then accu
      (* We found a semi-colon: go on with the new accu. *)
-     else scan_elems ib scan_elem accu)
+     else scan_elems scan_elem accu ib)
 ;;
 
 let scan_list scan_elem ib =
-  bscanf ib "[ " ();
-  let accu = scan_elems ib scan_elem [] in
-  bscanf ib " ]" ();
-  List.rev accu
+  bscanf ib "[ %r ]" (scan_elems scan_elem []) List.rev
 ;;
 
+(* For instance:
 let scan_float f ib = Scanf.bscanf ib "%f" f;;
 # scan_list scan_float;;
 - : Scanf.Scanning.scanbuf -> float list = <fun>
+*)
 
+(* The element scanner builder. *)
 let make_scan_elem fmt f ib = Scanf.bscanf ib fmt f;;
+
+(* Promote an element reader format to an element list reader. *)
+let list_scanner fmt = scan_list (make_scan_elem fmt);;
 
 let scan_float = make_scan_elem "%f";;
 
@@ -840,13 +850,6 @@ scan_list scan_float;;
 list_scanner "%f";;
 - : Scanf.Scanning.scanbuf -> float list = <fun>
 *)
-
-let scan_list scan_elem ib =
-  bscanf ib "[ " ();
-  let accu = scan_elems ib scan_elem [] in
-  bscanf ib " ]" ();
-  List.rev accu
-;;
 
 (* The prototype of a [scan_elem] function for the generic [scan_list]
    functional.
@@ -913,6 +916,49 @@ let test35 () =
 
 test (test35 ())
 ;;
+
+(* The prefered reader functionnals. *)
+
+(* To read a list as in Caml (elements are ``blank + semicolon + blank''
+   separated, and the list is enclosed in brackets). *)
+let rec read_elems read_elem accu ib =
+  kscanf ib (fun ib exc -> accu)
+    "%r %1[;] "
+    (read_elem (function elem -> elem :: accu))
+    (fun accu s -> if s = "" then accu else read_elems read_elem accu ib)
+;;
+
+let read_list read_elem ib =
+  bscanf ib "[ %r ]" (read_elems read_elem []) List.rev
+;;
+
+(* The element reader builder. *)
+let make_read_elem fmt f ib = Scanf.bscanf ib fmt f;;
+
+(* Promote an element reader format to an element list reader. *)
+let scan_List fmt = read_list (make_read_elem fmt);;
+
+(* Example for list of floatting point numbers. *)
+scan_List "%f";;
+- : Scanf.Scanning.scanbuf -> float list = <fun>
+
+(* To read a list as a succession of elements separated by a blank. *)
+let rec read_elems read_elem accu ib =
+  kscanf ib (fun ib exc -> accu)
+    "%r "
+    (read_elem (function elem -> elem :: accu))
+    (fun accu -> read_elems read_elem accu ib)
+;;
+
+let read_list read_elem ib =
+   List.rev (read_elems read_elem [] ib)
+;;
+
+(* Promote an element reader format to an element list reader. *)
+let scan_list fmt = read_list (make_read_elem fmt);;
+
+scan_list "%f";;
+*)
 
 (* Testing the %n format. *)
 let test36 () =
