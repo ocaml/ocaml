@@ -348,7 +348,7 @@ val get_mark_tags : unit -> bool;;
 
 (** {6 Redirecting formatter output} *)
 
-val set_formatter_out_channel : out_channel -> unit;;
+val set_formatter_out_channel : Pervasives.out_channel -> unit;;
 (** Redirect the pretty-printer output to the given channel. *)
 
 val set_formatter_output_functions :
@@ -521,8 +521,7 @@ val make_formatter :
   (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
 (** [make_formatter out flush] returns a new formatter that writes
   according to the output function [out], and the flushing function
-  [flush]. Hence, a formatter to the output channel [oc]
-  is returned by
+  [flush]. Hence, a formatter to the output channel [oc] is returned by
   [make_formatter (Pervasives.output oc) (fun () -> Pervasives.flush oc)]. *)
 
 (** {6 Basic functions to use with formatters} *)
