@@ -17,7 +17,7 @@
 
    This module provides the basic operations over the built-in types
    (numbers, booleans, strings, exceptions, references, lists, arrays,
-   input-output channels, ...)
+   input-output channels, ...).
 
    This module is automatically opened at the beginning of each compilation.
    All components of this module can therefore be referred by their short
@@ -881,8 +881,8 @@ val at_exit : (unit -> unit) -> unit
    The functions are called in ``last in, first out'' order:
    the function most recently added with [at_exit] is called first. *)
 
-
 (**/**)
+
 
 (** {6 For system use only, not for the casual user} *)
 
