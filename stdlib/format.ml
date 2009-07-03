@@ -911,19 +911,22 @@ let stdbuf = Buffer.create 512;;
 (* The standard output channels notion for the [Format] module. *)
 let stdout = formatter_of_out_channel Pervasives.stdout
 and stderr = formatter_of_out_channel Pervasives.stderr
+and stdstr = formatter_of_buffer stdbuf
 ;;
 
-let str_formatter = formatter_of_buffer stdbuf
-and std_formatter = stdout
+let std_formatter = stdout
 and err_formatter = stderr
+and str_formatter = stdstr
 ;;
 
-let flush_str_formatter () =
-  pp_flush_queue str_formatter false;
+let flush_stdstr () =
+  pp_flush_queue stdstr false;
   let s = Buffer.contents stdbuf in
   Buffer.reset stdbuf;
   s
 ;;
+
+let flush_str_formatter = flush_stdstr
 
 (**************************************************************
 
