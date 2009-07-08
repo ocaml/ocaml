@@ -118,8 +118,8 @@ let execute_file_if_any () =
           base
         else
           Filename.concat (Sys.getenv "HOME") base in
-      fprintf Format.std_formatter "Executing file %s@." file;
       let ch = open_in file in
+      fprintf Format.std_formatter "Executing file %s@." file;
       while true do
         let line = string_trim (input_line ch) in
         if line <> ""  && line.[0] <> '#' then begin
