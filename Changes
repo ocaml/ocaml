@@ -53,6 +53,7 @@ Other changes:
   (contributed by Jonathan Davies, Citrix).
 - Support for 64-bit mode in Solaris/x86 (PR#4670).
 
+
 Objective Caml 3.11.0:
 ----------------------
 
@@ -200,6 +201,7 @@ Bug fixes:
 - Big performance bug in Weak hashtables
 - Small bugs in the make-package-macosx script
 - Bug in typing of polymorphic variants (reported on caml-list)
+
 
 Objective Caml 3.10.1:
 ----------------------
