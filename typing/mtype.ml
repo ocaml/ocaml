@@ -36,7 +36,7 @@ let rec strengthen env mty p =
   match scrape env mty with
     Tmty_signature sg ->
       Tmty_signature(strengthen_sig env sg p)
-  | Tmty_functor(param, arg, res) ->
+  | Tmty_functor(param, arg, res) when !Clflags.applicative_functors ->
       Tmty_functor(param, arg, strengthen env res (Papply(p, Pident param)))
   | mty ->
       mty

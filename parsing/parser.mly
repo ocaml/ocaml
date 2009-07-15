@@ -185,6 +185,12 @@ let bigarray_set arr arg newval =
                        ["", arr;
                         "", ghexp(Pexp_array coords);
                         "", newval]))
+
+let lapply p1 p2 =
+  if !Clflags.applicative_functors
+  then Lapply(p1, p2)
+  else raise (Syntaxerr.Error(Syntaxerr.Applicative_path (symbol_rloc())))
+
 %}
 
 /* Tokens */
@@ -1470,7 +1476,7 @@ mod_longident:
 mod_ext_longident:
     UIDENT                                      { Lident $1 }
   | mod_ext_longident DOT UIDENT                { Ldot($1, $3) }
-  | mod_ext_longident LPAREN mod_ext_longident RPAREN { Lapply($1, $3) }
+  | mod_ext_longident LPAREN mod_ext_longident RPAREN { lapply $1 $3 }
 ;
 mty_longident:
     ident                                       { Lident $1 }

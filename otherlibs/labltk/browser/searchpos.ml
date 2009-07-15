@@ -392,6 +392,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
         let l =
           match e with
             Syntaxerr.Unclosed(l,_,_,_) -> l
+          | Syntaxerr.Applicative_path l -> l
           | Syntaxerr.Other l -> l
         in
         Jg_text.tag_and_see  tw ~start:(tpos l.loc_start.Lexing.pos_cnum)

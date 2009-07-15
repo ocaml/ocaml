@@ -33,6 +33,7 @@ module Make_options (F :
      val _labels : unit -> unit
      val _linkall : unit -> unit
      val _make_runtime : unit -> unit
+     val _no_app_funct : unit -> unit
      val _noassert : unit -> unit
      val _noautolink : unit -> unit
      val _nolabels : unit -> unit
@@ -99,6 +100,8 @@ struct
     "-make_runtime", Arg.Unit F._make_runtime,
            " (deprecated) same as -make-runtime";
     "-modern", Arg.Unit F._labels, " (deprecated) same as -labels";
+    "-no-app-funct", Arg.Unit F._no_app_funct,
+           " Deactivate applicative functors";
     "-noassert", Arg.Unit F._noassert, " Don't compile assertion checks";
     "-noautolink", Arg.Unit F._noautolink,
            " Don't automatically link C libraries specified in .cma files";

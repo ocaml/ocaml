@@ -108,6 +108,7 @@ module Options = Main_args.Make_options (struct
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
   let _noautolink = set no_auto_link

@@ -133,6 +133,7 @@ let f txt =
           Syntaxerr.report_error Format.std_formatter err;
           begin match err with
             Syntaxerr.Unclosed(l,_,_,_) -> l
+          | Syntaxerr.Applicative_path l -> l
           | Syntaxerr.Other l -> l
           end
       | Typecore.Error (l,err) ->

@@ -62,6 +62,7 @@ module Options = Main_args.Make_options (struct
   let _labels = option "-labels"
   let _linkall = option "-linkall"
   let _make_runtime = option "-make-runtime"
+  let _no_app_funct = option "-no-app-funct"
   let _noassert = option "-noassert"
   let _nolabels = option "-nolabels"
   let _noautolink = option "-noautolink"

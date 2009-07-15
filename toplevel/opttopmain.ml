@@ -65,6 +65,8 @@ let main () =
      "-init", Arg.String (fun s -> init_file := Some s),
            "<file>  Load <file> instead of default init file";
      "-labels", Arg.Clear classic, " Labels commute (default)";
+     "-no-app-funct", Arg.Clear applicative_functors,
+           " Deactivate applicative functors";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
      "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
      "-noprompt", Arg.Set noprompt, " Suppress all prompts";

@@ -132,6 +132,8 @@ let main () =
        "-labels", Arg.Clear classic, " Use commuting label mode";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
+       "-no-app-funct", Arg.Clear applicative_functors,
+           " Deactivate applicative functors";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-noautolink", Arg.Set no_auto_link,
              " Don't automatically link C libraries specified in .cmxa files";
