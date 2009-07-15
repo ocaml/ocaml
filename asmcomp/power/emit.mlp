@@ -902,9 +902,11 @@ let emit_item = function
   | Cint n ->
       `	{emit_string datag}	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.float	0d{emit_string f}\n`
+      emit_float32_directive ".long" f
   | Cdouble f ->
-      `	.double	0d{emit_string f}\n`
+      if ppc64
+      then emit_float64_directive ".quad" f
+      else emit_float64_split_directive ".long" f
   | Csymbol_address s ->
       `	{emit_string datag}	{emit_symbol s}\n`
   | Clabel_address lbl ->
