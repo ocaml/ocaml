@@ -66,7 +66,7 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
   intnat ofs, len, written;
   DWORD numbytes, numwritten;
   char iobuf[UNIX_BUFFER_SIZE];
-  DWORD err;
+  DWORD err = 0;
 
   Begin_root (buf);
     ofs = Long_val(vofs);
