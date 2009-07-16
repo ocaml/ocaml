@@ -18,6 +18,7 @@
 
 LIBNAME=str
 COBJS=strstubs.$(O)
+CLIBNAME=camlstr
 CAMLOBJS=str.cmo
 
 include ../Makefile
