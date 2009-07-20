@@ -378,7 +378,9 @@ let int64_of_big_int bi =
   else begin
     let i =
       match num_digits_big_int bi with
-      | 1 -> Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0)
+      | 1 -> Int64.logand
+               (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))
+               0xFFFFFFFFL
       | 2 -> Int64.logor
                (Int64.logand
                  (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))

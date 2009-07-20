@@ -51,11 +51,13 @@ and strengthen_sig env sg p =
         match decl.type_manifest with
           Some ty when decl.type_private = Public -> decl
         | _ ->
-            { decl with
-              type_private = Public;
-              type_manifest =
-                Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
-                                            decl.type_params, ref Mnil))) }
+            let manif =
+              Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
+                                          decl.type_params, ref Mnil))) in
+            if decl.type_kind = Type_abstract then
+              { decl with type_private = Public; type_manifest = manif }
+            else
+              { decl with type_manifest = manif }
       in
       Tsig_type(id, newdecl, rs) :: strengthen_sig env rem p
   | (Tsig_exception(id, d) as sigelt) :: rem ->

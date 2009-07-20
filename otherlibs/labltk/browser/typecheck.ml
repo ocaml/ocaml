@@ -46,8 +46,12 @@ let preprocess ~pp ~ext text =
 exception Outdated_version
 
 let parse_pp ~parse ~wrap ~ext text =
+  Location.input_name := "";
   match !Clflags.preprocessor with
-    None -> parse (Lexing.from_string text)
+    None ->
+      let buffer = Lexing.from_string text in
+      Location.init buffer "";
+      parse buffer
   | Some pp ->
       let tmpfile = preprocess ~pp ~ext text in
       let ast_magic =
@@ -72,7 +76,9 @@ let parse_pp ~parse ~wrap ~ext text =
             failwith "Ocaml and preprocessor have incompatible versions"
         | _ ->
             seek_in ic 0;
-            parse (Lexing.from_channel ic)
+            let buffer = Lexing.from_channel ic in
+            Location.init buffer "";
+            parse buffer
       in
       close_in ic;
       Sys.remove tmpfile;

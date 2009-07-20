@@ -1215,6 +1215,12 @@ x11_link="not found"
 for dir in \
     $x11_include_dir          \
                               \
+    /usr/X11R7/include        \
+    /usr/include/X11R7        \
+    /usr/local/X11R7/include  \
+    /usr/local/include/X11R7  \
+    /opt/X11R7/include        \
+                              \
     /usr/X11R6/include        \
     /usr/include/X11R6        \
     /usr/local/X11R6/include  \

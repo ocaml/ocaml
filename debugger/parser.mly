@@ -182,6 +182,7 @@ longident_eol :
 
 opt_longident :
     UIDENT                      { Some (Lident $1) }
+  | LIDENT                      { Some (Lident $1) }
   | module_path DOT UIDENT      { Some (Ldot($1, $3)) }
   |                             { None };
 

@@ -52,11 +52,18 @@ Bug fixes:
 - PR#4766: incorrect simplification of some type abbreviations.
 - PR#4768: printf: %F does not respect width and precision specifications
 - PR#4769: Format.bprintf fails to flush
-- PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4775: fatal error Ctype.Unify during module type-checking (temporary fix)
 - PR#4776: bad interaction between exceptions and classes
 - PR#4780: labltk build problem under Windows.
 - PR#4790: under Windows, map ERROR_NO_DATA Win32 error to EPIPE Unix error.
 - PR#4792: bug in Big_int.big_int_of_int64 on 32-bit platforms.
+- PR#4796: ocamlyacc: missing NUL termination of string
+- PR#4804: bug in Big_int.int64_of_big_int on 32-bit platforms.
+- PR#4805: improving compatibility with the clang C compiler
+- PR#4809: issue with Unix.create_process under Win32
+- PR#4814: ocamlbrowser: crash when editing comments
+- PR#4816: module abbreviations remove 'private' type restrictions
+- PR#4817: Object type gives error "Unbound type parameter .."
 - Module Parsing: improved computation of locations when an ocamlyacc rule
                   starts with an empty nonterminal
 - Type-checker: fixed wrong variance computation for private types

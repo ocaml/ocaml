@@ -41,6 +41,7 @@ type error =
   | Bad_variance of int * (bool * bool) * (bool * bool)
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
+  | Unbound_type_var_exc of type_expr * type_expr
 
 exception Error of Location.t * error
 
@@ -686,10 +687,16 @@ let transl_type_decl env name_sdecl_list =
   (final_decls, final_env)
 
 (* Translate an exception declaration *)
+let transl_closed_type env sty =
+  let ty = transl_simple_type env true sty in
+  match Ctype.free_variables ty with
+  | []      -> ty
+  | tv :: _ -> raise (Error (sty.ptyp_loc, Unbound_type_var_exc (tv, ty)))
+
 let transl_exception env excdecl =
   reset_type_variables();
   Ctype.begin_def();
-  let types = List.map (transl_simple_type env true) excdecl in
+  let types = List.map (transl_closed_type env) excdecl in
   Ctype.end_def();
   List.iter Ctype.generalize types;
   types
@@ -808,6 +815,38 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format
 
+let explain_unbound ppf tv tl typ kwd lab =
+  try
+    let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
+    let ty0 = (* Hack to force aliasing when needed *)
+      Btype.newgenty (Tobject(tv, ref None)) in
+    Printtyp.reset_and_mark_loops_list [typ ti; ty0];
+    fprintf ppf
+      ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
+      kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr tv
+  with Not_found -> ()
+
+let explain_unbound_single ppf tv ty =
+  let trivial ty =
+    explain_unbound ppf tv [ty] (fun t -> t) "type" (fun _ -> "") in
+  match (Ctype.repr ty).desc with
+    Tobject(fi,_) ->
+      let (tl, rv) = Ctype.flatten_fields fi in
+      if rv == tv then trivial ty else
+      explain_unbound ppf tv tl (fun (_,_,t) -> t)
+        "method" (fun (lab,_,_) -> lab ^ ": ")
+  | Tvariant row ->
+      let row = Btype.row_repr row in
+      if row.row_more == tv then trivial ty else
+      explain_unbound ppf tv row.row_fields
+        (fun (l,f) -> match Btype.row_field_repr f with
+          Rpresent (Some t) -> t
+        | Reither (_,[t],_,_) -> t
+        | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
+        | _ -> Btype.newgenty (Ttuple[]))
+        "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
+  | _ -> trivial ty
+
 let report_error ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
@@ -858,46 +897,20 @@ let report_error ppf = function
   | Unbound_type_var (ty, decl) ->
       fprintf ppf "A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
-      let explain tl typ kwd lab =
-        let ti = List.find (fun ti -> Ctype.deep_occur ty (typ ti)) tl in
-        let ty0 = (* Hack to force aliasing when needed *)
-          Btype.newgenty (Tobject(ty, ref None)) in
-        Printtyp.reset_and_mark_loops_list [typ ti; ty0];
-        fprintf ppf
-          ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
-          kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr ty
-      in
-      begin try match decl.type_kind, decl.type_manifest with
+      begin match decl.type_kind, decl.type_manifest with
         Type_variant tl, _ ->
-          explain tl (fun (_,tl) -> Btype.newgenty (Ttuple tl))
+          explain_unbound ppf ty tl (fun (_,tl) -> Btype.newgenty (Ttuple tl))
             "case" (fun (lab,_) -> lab ^ " of ")
       | Type_record (tl, _), _ ->
-          explain tl (fun (_,_,t) -> t)
+          explain_unbound ppf ty tl (fun (_,_,t) -> t)
             "field" (fun (lab,_,_) -> lab ^ ": ")
       | Type_abstract, Some ty' ->
-          let trivial ty =
-            explain [ty] (fun t -> t) "definition" (fun _ -> "") in
-          begin match (Ctype.repr ty').desc with
-            Tobject(fi,_) ->
-              let (tl, rv) = Ctype.flatten_fields fi in
-              if rv == ty then trivial ty' else
-              explain tl (fun (_,_,t) -> t)
-                "method" (fun (lab,_,_) -> lab ^ ": ")
-          | Tvariant row ->
-              let row = Btype.row_repr row in
-              if row.row_more == ty then trivial ty' else
-              explain row.row_fields
-                (fun (l,f) -> match Btype.row_field_repr f with
-                  Rpresent (Some t) -> t
-                | Reither (_,[t],_,_) -> t
-                | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
-                | _ -> Btype.newgenty (Ttuple[]))
-                "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
-          | _ -> trivial ty'
-          end
+          explain_unbound_single ppf ty ty'
       | _ -> ()
-      with Not_found -> ()
       end
+  | Unbound_type_var_exc (tv, ty) ->
+      fprintf ppf "A type variable is unbound in this exception declaration";
+      explain_unbound_single ppf (Ctype.repr tv) ty
   | Unbound_exception lid ->
       fprintf ppf "Unbound exception constructor@ %a" Printtyp.longident lid
   | Not_an_exception lid ->

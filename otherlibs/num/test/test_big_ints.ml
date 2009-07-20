@@ -771,14 +771,16 @@ test 3 eq_int64
   (int64_of_big_int (big_int_of_string "-9223372036854775808"), -9223372036854775808L);;
 test 4 eq_int64
   (int64_of_big_int (big_int_of_string "-9223372036854775"), -9223372036854775L);;
+test 5 eq_int64 (* PR#4804 *)
+  (int64_of_big_int (big_int_of_string "2147483648"), 2147483648L);;
 let should_fail s =
   try ignore (int64_of_big_int (big_int_of_string s)); 0
   with Failure _ -> 1;;
-test 4 eq_int
-  (should_fail "9223372036854775808", 1);;
-test 5 eq_int
-  (should_fail "-9223372036854775809", 1);;
 test 6 eq_int
+  (should_fail "9223372036854775808", 1);;
+test 7 eq_int
+  (should_fail "-9223372036854775809", 1);;
+test 8 eq_int
   (should_fail "18446744073709551616", 1);;
 
 (* build a 128-bit big int from two int64 *)

@@ -3,3 +3,4 @@ ocamlrun
 ocamlyacc
 camlheader
 myocamlbuild
+myocamlbuild.native

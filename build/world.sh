@@ -25,7 +25,7 @@ fi
 ./mkconfig.sh
 ./mkmyocamlbuild_config.sh
 . ../config/config.sh
-if [ "x$EXE" = "x.exe" ]; then
+if [ "x$EXE" = "x.exe" -a "x$SYSTEM" != "xcygwin" ]; then
   ./boot-c-parts-windows.sh
 else
   ./boot-c-parts.sh
