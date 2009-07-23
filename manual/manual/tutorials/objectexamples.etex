@@ -270,7 +270,7 @@ let my_int =
 Let-bindings within class definitions are evaluated before the object
 is constructed. It is also possible to evaluate an expression
 immediately after the object has been built. Such code is written as
-an anonymous hidden method called an initializer. Therefore, is can
+an anonymous hidden method called an initializer. Therefore, it can
 access self and the instance variables.
 \begin{caml_example}
 class printable_point x_init =
