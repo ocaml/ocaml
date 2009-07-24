@@ -72,3 +72,18 @@ module M6 : sig
   type t = private T of int
   val mk : int -> t
 end = M;;
+
+module M' : sig
+  type t_priv = private T of int
+  type t = t_priv
+  val mk : int -> t
+end = struct
+  type t_priv = T of int
+  type t = t_priv
+  let mk x = T(x)
+end;;
+
+module M3' : sig
+  type t = M'.t
+  val mk : int -> t
+end = M';;
