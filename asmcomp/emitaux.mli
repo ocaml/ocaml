@@ -45,3 +45,5 @@ type emit_frame_actions =
     efa_string: string -> unit }
 
 val emit_frames: emit_frame_actions -> unit
+
+val is_generic_function: string -> bool

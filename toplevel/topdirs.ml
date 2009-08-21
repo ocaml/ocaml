@@ -294,6 +294,9 @@ let _ =
   Hashtbl.add directive_table "principal"
              (Directive_bool(fun b -> Clflags.principal := b));
 
+  Hashtbl.add directive_table "rectypes"
+             (Directive_none(fun () -> Clflags.recursive_types := true));
+
   Hashtbl.add directive_table "warnings"
              (Directive_string (parse_warnings std_out false));
 

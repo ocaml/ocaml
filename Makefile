@@ -290,7 +290,7 @@ install:
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi \
 	   $(LIBDIR)
 	cd tools; $(MAKE) install
-#	-cd man; $(MAKE) install
+#	-$(MAKE) -C man install
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
@@ -700,15 +700,9 @@ ocamldebugger:
 # Camlp4
 
 camlp4out camlp4opt camlp4optopt:
-
-#camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
-#	./build/camlp4-byte-only.sh
-#
-#camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
-#	./build/camlp4-native-only.sh
+camlp4opt:
 
 # Ocamlbuild
-ocamlbuild.byte ocamlbuild.native:
 #ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
 #	./build/ocamlbuild-byte-only.sh
 #
@@ -761,14 +755,8 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 partialclean::
-	rm -f utils/*.cm[iox] utils/*.[so] utils/*~
-	rm -f parsing/*.cm[iox] parsing/*.[so] parsing/*~
-	rm -f typing/*.cm[iox] typing/*.[so] typing/*~
-	rm -f bytecomp/*.cm[iox] bytecomp/*.[so] bytecomp/*~
-	rm -f asmcomp/*.cm[iox] asmcomp/*.[so] asmcomp/*~
-	rm -f driver/*.cm[iox] driver/*.[so] driver/*~
-	rm -f toplevel/*.cm[iox] toplevel/*.[so] toplevel/*~
-	rm -f tools/*.cm[iox] tools/*.[so] tools/*~
+	for d in utils parsing typing bytecomp asmcomp driver toplevel tools; \
+	  do rm -f $$d/*.cm[iox] $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
 
 depend: beforedepend
@@ -785,7 +773,7 @@ distclean:
 .PHONY: partialclean beforedepend alldepend cleanboot coldstart
 .PHONY: compare core coreall
 .PHONY: coreboot defaultentry depend distclean install installopt
-.PHONY: library library-cross libraryopt ocamlbuild-partial-boot
+.PHONY: library library-cross libraryopt ocamlbuild-mixed-boot
 .PHONY: ocamlbuild.byte ocamlbuild.native ocamldebugger ocamldoc
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
 .PHONY: ocamlyacc opt-core opt opt.opt otherlibraries

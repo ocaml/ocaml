@@ -126,18 +126,19 @@ let dump_info chan g s print_info =
 
 module Bag = struct
 
-type 'a t = 'a Stack.t
+  type 'a t = 'a Stack.t
 
-exception Empty
+  exception Empty
 
-let create () = Stack.create ()
-let put b x = Stack.push x b
-let get b = 
-  try
-    Stack.pop b
-  with
-    Stack.Empty -> raise Empty
-let is_empty b = Stack.is_empty b
+  let create () = Stack.create ()
+  let put b x = Stack.push x b
+  let get b = 
+    try
+      Stack.pop b
+    with
+      Stack.Empty -> raise Empty
+  let is_empty b = Stack.is_empty b
+
 end
 
 

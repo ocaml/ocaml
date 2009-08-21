@@ -133,6 +133,7 @@ val apply:
 
 val expand_head_once: Env.t -> type_expr -> type_expr
 val expand_head: Env.t -> type_expr -> type_expr
+val try_expand_once_opt: Env.t -> type_expr -> type_expr
 val expand_head_opt: Env.t -> type_expr -> type_expr
 (** The compiler's own version of [expand_head] necessary for type-based
     optimisations. *)
@@ -229,7 +230,8 @@ val closed_schema: type_expr -> bool
         (* Check whether the given type scheme contains no non-generic
            type variables *)
 
-val free_variables: type_expr -> type_expr list
+val free_variables: ?env:Env.t -> type_expr -> type_expr list
+        (* If env present, then check for incomplete definitions too *)
 val closed_type_decl: type_declaration -> type_expr option
 type closed_class_failure =
     CC_Method of type_expr * bool * string * type_expr

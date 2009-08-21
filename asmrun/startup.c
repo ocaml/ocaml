@@ -21,6 +21,7 @@
 #include "backtrace.h"
 #include "custom.h"
 #include "fail.h"
+#include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "memory.h"
@@ -55,7 +56,7 @@ static void init_atoms(void)
     caml_fatal_error("Fatal error: not enough memory for the initial page table");
 
   for (i = 0; caml_data_segments[i].begin != 0; i++) {
-    if (caml_page_table_add(In_static_data, 
+    if (caml_page_table_add(In_static_data,
                             caml_data_segments[i].begin,
                             caml_data_segments[i].end) != 0)
       caml_fatal_error("Fatal error: not enough memory for the initial page table");
@@ -106,6 +107,7 @@ static void scanmult (char *opt, uintnat *var)
 static void parse_camlrunparam(void)
 {
   char *opt = getenv ("OCAMLRUNPARAM");
+  uintnat p;
 
   if (opt == NULL) opt = getenv ("CAMLRUNPARAM");
 
@@ -121,6 +123,7 @@ static void parse_camlrunparam(void)
       case 'v': scanmult (opt, &caml_verb_gc); break;
       case 'b': caml_record_backtrace(Val_true); break;
       case 'p': caml_parser_trace = 1; break;
+      case 'a': scanmult (opt, &p); caml_set_allocation_policy (p); break;
       }
     }
   }

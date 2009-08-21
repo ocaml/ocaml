@@ -385,23 +385,32 @@ let closed_schema ty =
 exception Non_closed of type_expr * bool
 
 let free_variables = ref []
+let really_closed = ref None
 
 let rec free_vars_rec real ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
     ty.level <- pivot_level - ty.level;
-    begin match ty.desc with
-      Tvar ->
+    begin match ty.desc, !really_closed with
+      Tvar, _ ->
         free_variables := (ty, real) :: !free_variables
+    | Tconstr (path, tl, _), Some env ->
+        begin try
+          let (_, body) = Env.find_type_expansion path env in
+          if (repr body).level <> generic_level then
+            free_variables := (ty, real) :: !free_variables
+        with Not_found -> ()
+        end;
+        List.iter (free_vars_rec true) tl
 (* Do not count "virtual" free variables
     | Tobject(ty, {contents = Some (_, p)}) ->
         free_vars_rec false ty; List.iter (free_vars_rec true) p
 *)
-    | Tobject (ty, _) ->
+    | Tobject (ty, _), _ ->
         free_vars_rec false ty
-    | Tfield (_, _, ty1, ty2) ->
+    | Tfield (_, _, ty1, ty2), _ ->
         free_vars_rec true ty1; free_vars_rec false ty2
-    | Tvariant row ->
+    | Tvariant row, _ ->
         let row = row_repr row in
         iter_row (free_vars_rec true) row;
         if not (static_row row) then free_vars_rec false row.row_more
@@ -410,15 +419,17 @@ let rec free_vars_rec real ty =
     end;
   end
 
-let free_vars ty =
+let free_vars ?env ty =
   free_variables := [];
+  really_closed := env;
   free_vars_rec true ty;
   let res = !free_variables in
   free_variables := [];
+  really_closed := None;
   res
 
-let free_variables ty =
-  let tl = List.map fst (free_vars ty) in
+let free_variables ?env ty =
+  let tl = List.map fst (free_vars ?env ty) in
   unmark_type ty;
   tl
 
@@ -1484,6 +1495,9 @@ let mkvariant fields closed =
        {row_fields = fields; row_closed = closed; row_more = newvar();
         row_bound = (); row_fixed = false; row_name = None })
 
+(* force unification in Reither when one side has as non-conjunctive type *)
+let rigid_variants = ref false
+
 (**** Unification ****)
 
 (* Return whether [t0] occurs in [ty]. Objects are also traversed. *)
@@ -1832,7 +1846,8 @@ and unify_row_field env fixed1 fixed2 l f1 f2 =
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
       let redo =
-        (m1 || m2) &&
+        (m1 || m2 ||
+	 !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if c1 || c2 then raise (Unify []);
@@ -2070,7 +2085,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
         with Not_found ->
           TypePairs.add type_pairs (t1', t2') ();
           match (t1'.desc, t2'.desc) with
-            (Tvar, _) when may_instantiate inst_nongen t1 ->
+            (Tvar, _) when may_instantiate inst_nongen t1' ->
               moregen_occur env t1'.level t2;
               link_type t1' t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -2285,6 +2300,12 @@ let matches env ty ty' =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
+let expand_head_rigid env ty =
+  let old = !rigid_variants in
+  rigid_variants := true;
+  let ty' = expand_head_unif env ty in
+  rigid_variants := old; ty'
+
 let normalize_subst subst =
   if List.exists
       (function {desc=Tlink _}, _ | _, {desc=Tlink _} -> true | _ -> false)
@@ -2309,8 +2330,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head_unif env t1 in
-        let t2' = expand_head_unif env t2 in
+        let t1' = expand_head_rigid env t1 in
+        let t2' = expand_head_rigid env t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
@@ -2364,10 +2385,9 @@ and eqtype_list rename type_pairs subst env tl1 tl2 =
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields2, rest2) = flatten_fields ty2 in
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  try match try_expand_head env rest2 with
+  match expand_head_rigid env rest2 with
     {desc=Tobject(ty2,_)} -> eqtype_fields rename type_pairs subst env ty1 ty2
-  | _ -> raise Cannot_expand
-  with Cannot_expand ->
+  | _ ->
   let (fields1, rest1) = flatten_fields ty1 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   eqtype rename type_pairs subst env rest1 rest2;
@@ -2390,10 +2410,9 @@ and eqtype_kind k1 k2 =
 
 and eqtype_row rename type_pairs subst env row1 row2 =
   (* Try expansion, needed when called from Includecore.type_manifest *)
-  try match try_expand_head env (row_more row2) with
+  match expand_head_rigid env (row_more row2) with
     {desc=Tvariant row2} -> eqtype_row rename type_pairs subst env row1 row2
-  | _ -> raise Cannot_expand
-  with Cannot_expand ->
+  | _ ->
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   if row1.row_closed <> row2.row_closed
@@ -2834,6 +2853,10 @@ let rec build_subtype env visited loops posi level t =
                 ty1, tl1
             | _ -> raise Not_found
           in
+          (* Fix PR4505: do not set ty to Tvar when it appears in tl1,
+             as this occurence might break the occur check.
+             XXX not clear whether this correct anyway... *)
+          if List.exists (deep_occur ty) tl1 then raise Not_found;
           ty.desc <- Tvar;
           let t'' = newvar () in
           let loops = (ty, t'') :: loops in
@@ -3205,16 +3228,17 @@ let cyclic_abbrev env id ty =
   in check_cycle [] ty
 
 (* Normalize a type before printing, saving... *)
-let rec normalize_type_rec env ty =
+(* Cannot use mark_type because deep_occur uses it too *)
+let rec normalize_type_rec env visited ty =
   let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    mark_type_node ty;
+  if not (TypeSet.mem ty !visited) then begin
+    visited := TypeSet.add ty !visited;
     begin match ty.desc with
     | Tvariant row ->
       let row = row_repr row in
       let fields = List.map
-          (fun (l,f) ->
-            let f = row_field_repr f in l,
+          (fun (l,f0) ->
+            let f = row_field_repr f0 in l,
             match f with Reither(b, ty::(_::_ as tyl), m, e) ->
               let tyl' =
                 List.fold_left
@@ -3223,10 +3247,8 @@ let rec normalize_type_rec env ty =
                     then tyl else ty::tyl)
                   [ty] tyl
               in
-              if List.length tyl' <= List.length tyl then
-                let f = Reither(b, List.rev tyl', m, ref None) in
-                set_row_field e f;
-                f
+              if f != f0 || List.length tyl' < List.length tyl then
+                Reither(b, List.rev tyl', m, e)
               else f
             | _ -> f)
           row.row_fields in
@@ -3239,11 +3261,15 @@ let rec normalize_type_rec env ty =
         begin match !nm with
         | None -> ()
         | Some (n, v :: l) ->
-            let v' = repr v in
+	    if deep_occur ty (newgenty (Ttuple l)) then
+	      (* The abbreviation may be hiding something, so remove it *)
+	      set_name nm None
+	    else let v' = repr v in
             begin match v'.desc with
             | Tvar|Tunivar ->
                 if v' != v then set_name nm (Some (n, v' :: l))
-            | Tnil -> log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
+            | Tnil ->
+		log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
             | _ -> set_name nm None
             end
         | _ ->
@@ -3256,12 +3282,11 @@ let rec normalize_type_rec env ty =
         log_type ty; fi.desc <- fi'.desc
     | _ -> ()
     end;
-    iter_type_expr (normalize_type_rec env) ty
+    iter_type_expr (normalize_type_rec env visited) ty
   end
 
 let normalize_type env ty =
-  normalize_type_rec env ty;
-  unmark_type ty
+  normalize_type_rec env (ref TypeSet.empty) ty
 
 
                               (*************************)
@@ -3302,8 +3327,8 @@ let rec nondep_type_rec env id ty =
                  (recursive type), so one cannot just take its
                  description.
                *)
-            with Cannot_expand ->
-              raise Not_found
+            with Cannot_expand | Unify _ -> (* expand_abbrev failed *)
+              raise Not_found               (* cf. PR4775 for Unify *)
             end
           else
             Tconstr(p, List.map (nondep_type_rec env id) tl, ref Mnil)

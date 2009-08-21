@@ -835,6 +835,10 @@ let fundecl fundecl =
   call_gc_label := 0;
   float_literals := [];
   int_literals := [];
+  if Config.system = "rhapsody" && is_generic_function fundecl.fun_name
+  then (* PR#4690 *)
+    `	.private_extern	{emit_symbol fundecl.fun_name}\n`
+  else
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   begin match Config.system with
   | "elf" | "bsd" ->

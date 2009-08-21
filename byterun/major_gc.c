@@ -358,13 +358,25 @@ intnat caml_major_collection_slice (intnat howmuch)
                  MW = caml_stat_heap_size * 100 / (100 + caml_percent_free)
      Amount of sweeping work for the GC cycle:
                  SW = caml_stat_heap_size
-     Amount of marking work for this slice:
-                 MS = P * MW
-                 MS = P * caml_stat_heap_size * 100 / (100 + caml_percent_free)
-     Amount of sweeping work for this slice:
-                 SS = P * SW
-                 SS = P * caml_stat_heap_size
-     This slice will either mark 2*MS words or sweep 2*SS words.
+
+     In order to finish marking with a non-empty free list, we will
+     use 40% of the time for marking, and 60% for sweeping.
+
+     If TW is the total work for this cycle,
+                 MW = 40/100 * TW
+                 SW = 60/100 * TW
+
+     Amount of work to do for this slice:
+                 W  = P * TW
+
+     Amount of marking work for a marking slice:
+                 MS = P * MW / (40/100)
+                 MS = P * caml_stat_heap_size * 250 / (100 + caml_percent_free)
+     Amount of sweeping work for a sweeping slice:
+                 SS = P * SW / (60/100)
+                 SS = P * caml_stat_heap_size * 5 / 3
+
+     This slice will either mark MS words or sweep SS words.
   */
 
   if (caml_gc_phase == Phase_idle) start_cycle ();
@@ -391,10 +403,10 @@ intnat caml_major_collection_slice (intnat howmuch)
                    (uintnat) (p * 1000000));
 
   if (caml_gc_phase == Phase_mark){
-    computed_work = 2 * (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 100
-                                / (100 + caml_percent_free));
+    computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 250
+                              / (100 + caml_percent_free));
   }else{
-    computed_work = 2 * (intnat) (p * Wsize_bsize (caml_stat_heap_size));
+    computed_work = (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 5 / 3);
   }
   caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);

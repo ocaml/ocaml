@@ -39,6 +39,7 @@ add_c_lib() {
 
 add_ocaml_lib() {
   add_native "$1.cmxa"
+  add_native "$1.$A"
   add_byte "$1.cma"
 }
 
@@ -94,7 +95,7 @@ for lib in $OTHERLIBRARIES; do
     add_c_lib mldbm;;
   dynlink)
     add_ocaml_lib dynlink
-    add_native dynlink.cmx
+    add_native dynlink.cmx dynlink.$O
     add_file $lib.cmi extract_crc;;
   win32unix)
     UNIXDIR="otherlibs/win32unix"

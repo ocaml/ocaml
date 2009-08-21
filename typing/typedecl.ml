@@ -41,6 +41,7 @@ type error =
   | Bad_variance of int * (bool * bool) * (bool * bool)
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
+  | Unbound_type_var_exc of type_expr * type_expr
 
 exception Error of Location.t * error
 
@@ -510,14 +511,13 @@ let compute_variance_decl env check decl (required, loc) =
           compute_variance env tvl true cn cn ty)
         ftl
   end;
-  let priv = decl.type_private
-  and required =
+  let required =
     List.map (fun (c,n as r) -> if c || n then r else (true,true))
       required
   in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
-      if ty.desc <> Tvar || priv = Private then begin
+      if ty.desc <> Tvar then begin
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
       end)
@@ -536,6 +536,7 @@ let compute_variance_decl env check decl (required, loc) =
       incr pos;
       if !co && not c || !cn && not n
       then raise (Error(loc, Bad_variance (!pos, (!co,!cn), (c,n))));
+      if decl.type_private = Private then (c,n,n) else
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
@@ -687,10 +688,16 @@ let transl_type_decl env name_sdecl_list =
   (final_decls, final_env)
 
 (* Translate an exception declaration *)
+let transl_closed_type env sty =
+  let ty = transl_simple_type env true sty in
+  match Ctype.free_variables ty with
+  | []      -> ty
+  | tv :: _ -> raise (Error (sty.ptyp_loc, Unbound_type_var_exc (tv, ty)))
+
 let transl_exception env excdecl =
   reset_type_variables();
   Ctype.begin_def();
-  let types = List.map (transl_simple_type env true) excdecl in
+  let types = List.map (transl_closed_type env) excdecl in
   Ctype.end_def();
   List.iter Ctype.generalize types;
   types
@@ -820,6 +827,38 @@ let check_recmod_typedecl env loc recmod_ids path decl =
 
 open Format
 
+let explain_unbound ppf tv tl typ kwd lab =
+  try
+    let ti = List.find (fun ti -> Ctype.deep_occur tv (typ ti)) tl in
+    let ty0 = (* Hack to force aliasing when needed *)
+      Btype.newgenty (Tobject(tv, ref None)) in
+    Printtyp.reset_and_mark_loops_list [typ ti; ty0];
+    fprintf ppf
+      ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
+      kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr tv
+  with Not_found -> ()
+
+let explain_unbound_single ppf tv ty =
+  let trivial ty =
+    explain_unbound ppf tv [ty] (fun t -> t) "type" (fun _ -> "") in
+  match (Ctype.repr ty).desc with
+    Tobject(fi,_) ->
+      let (tl, rv) = Ctype.flatten_fields fi in
+      if rv == tv then trivial ty else
+      explain_unbound ppf tv tl (fun (_,_,t) -> t)
+        "method" (fun (lab,_,_) -> lab ^ ": ")
+  | Tvariant row ->
+      let row = Btype.row_repr row in
+      if row.row_more == tv then trivial ty else
+      explain_unbound ppf tv row.row_fields
+        (fun (l,f) -> match Btype.row_field_repr f with
+          Rpresent (Some t) -> t
+        | Reither (_,[t],_,_) -> t
+        | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
+        | _ -> Btype.newgenty (Ttuple[]))
+        "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
+  | _ -> trivial ty
+
 let report_error ppf = function
   | Repeated_parameter ->
       fprintf ppf "A type parameter occurs several times"
@@ -860,56 +899,30 @@ let report_error ppf = function
         (function ppf ->
            fprintf ppf "This type constructor expands to type")
         (function ppf ->
-           fprintf ppf "but is here used with type")
+           fprintf ppf "but is used here with type")
   | Null_arity_external ->
       fprintf ppf "External identifiers must be functions"
   | Missing_native_external ->
       fprintf ppf "@[<hv>An external function with more than 5 arguments \
-                   requires second stub function@ \
+                   requires a second stub function@ \
                    for native-code compilation@]"
   | Unbound_type_var (ty, decl) ->
       fprintf ppf "A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
-      let explain tl typ kwd lab =
-        let ti = List.find (fun ti -> Ctype.deep_occur ty (typ ti)) tl in
-        let ty0 = (* Hack to force aliasing when needed *)
-          Btype.newgenty (Tobject(ty, ref None)) in
-        Printtyp.reset_and_mark_loops_list [typ ti; ty0];
-        fprintf ppf
-          ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
-          kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr ty
-      in
-      begin try match decl.type_kind, decl.type_manifest with
+      begin match decl.type_kind, decl.type_manifest with
         Type_variant tl, _ ->
-          explain tl (fun (_,tl) -> Btype.newgenty (Ttuple tl))
+          explain_unbound ppf ty tl (fun (_,tl) -> Btype.newgenty (Ttuple tl))
             "case" (fun (lab,_) -> lab ^ " of ")
       | Type_record (tl, _), _ ->
-          explain tl (fun (_,_,t) -> t)
+          explain_unbound ppf ty tl (fun (_,_,t) -> t)
             "field" (fun (lab,_,_) -> lab ^ ": ")
       | Type_abstract, Some ty' ->
-          let trivial ty =
-            explain [ty] (fun t -> t) "definition" (fun _ -> "") in
-          begin match (Ctype.repr ty').desc with
-            Tobject(fi,_) ->
-              let (tl, rv) = Ctype.flatten_fields fi in
-              if rv == ty then trivial ty' else
-              explain tl (fun (_,_,t) -> t)
-                "method" (fun (lab,_,_) -> lab ^ ": ")
-          | Tvariant row ->
-              let row = Btype.row_repr row in
-              if row.row_more == ty then trivial ty' else
-              explain row.row_fields
-                (fun (l,f) -> match Btype.row_field_repr f with
-                  Rpresent (Some t) -> t
-                | Reither (_,[t],_,_) -> t
-                | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
-                | _ -> Btype.newgenty (Ttuple[]))
-                "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
-          | _ -> trivial ty'
-          end
+          explain_unbound_single ppf ty ty'
       | _ -> ()
-      with Not_found -> ()
       end
+  | Unbound_type_var_exc (tv, ty) ->
+      fprintf ppf "A type variable is unbound in this exception declaration";
+      explain_unbound_single ppf (Ctype.repr tv) ty
   | Unbound_exception lid ->
       fprintf ppf "Unbound exception constructor@ %a" Printtyp.longident lid
   | Not_an_exception lid ->
@@ -922,16 +935,24 @@ let report_error ppf = function
         | (false,true)  -> "contravariant"
         | (false,false) -> "unrestricted"
       in
+      let suffix n =
+        let teen = (n mod 100)/10 = 1 in
+        match n mod 10 with
+        | 1 when not teen -> "st"
+        | 2 when not teen -> "nd"
+        | 3 when not teen -> "rd"
+        | _ -> "th"
+      in
       if n < 1 then
         fprintf ppf "%s@ %s@ %s"
           "In this definition, a type variable"
           "has a variance that is not reflected"
-          "by its occurence in type parameters."
+          "by its occurrence in type parameters."
       else
         fprintf ppf "%s@ %s@ %s %d%s %s %s,@ %s %s"
           "In this definition, expected parameter"
           "variances are not satisfied."
-          "The" n (match n with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th")
+          "The" n (suffix n)
           "type parameter was expected to be" (variance v2)
           "but it is" (variance v1)
   | Unavailable_type_constructor p ->

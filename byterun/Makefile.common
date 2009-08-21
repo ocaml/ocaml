@@ -86,7 +86,7 @@ jumptbl.h : instruct.h
 version.h : ../VERSION
 	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" > version.h
 
-clean:
+clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)
 	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
 	rm -f version.h

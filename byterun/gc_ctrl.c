@@ -17,6 +17,7 @@
 #include "compact.h"
 #include "custom.h"
 #include "finalise.h"
+#include "freelist.h"
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "major_gc.h"
@@ -41,8 +42,9 @@ intnat caml_stat_minor_collections = 0,
        caml_stat_heap_chunks = 0;
 
 extern asize_t caml_major_heap_increment;  /* bytes; see major_gc.c */
-extern uintnat caml_percent_free;    /*        see major_gc.c */
-extern uintnat caml_percent_max;     /*        see compact.c */
+extern uintnat caml_percent_free;          /*        see major_gc.c */
+extern uintnat caml_percent_max;           /*        see compact.c */
+extern uintnat caml_allocation_policy;     /*        see freelist.c */
 
 #define Next(hp) ((hp) + Bhsize_hp (hp))
 
@@ -306,7 +308,7 @@ CAMLprim value caml_gc_get(value v)
   CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  res = caml_alloc_tuple (6);
+  res = caml_alloc_tuple (7);
   Store_field (res, 0, Val_long (Wsize_bsize (caml_minor_heap_size)));  /* s */
   Store_field (res, 1,Val_long(Wsize_bsize(caml_major_heap_increment)));/* i */
   Store_field (res, 2, Val_long (caml_percent_free));                   /* o */
@@ -317,6 +319,7 @@ CAMLprim value caml_gc_get(value v)
 #else
   Store_field (res, 5, Val_long (0));
 #endif
+  Store_field (res, 6, Val_long (caml_allocation_policy));              /* a */
   CAMLreturn (res);
 }
 
@@ -347,11 +350,21 @@ static intnat norm_minsize (intnat s)
   return s;
 }
 
+static intnat norm_policy (intnat p)
+{
+  if (p >= 0 && p <= 1){
+    return p;
+  }else{
+    return 1;
+  }
+}
+
 CAMLprim value caml_gc_set(value v)
 {
   uintnat newpf, newpm;
   asize_t newheapincr;
   asize_t newminsize;
+  uintnat newpolicy;
 
   caml_verb_gc = Long_val (Field (v, 3));
 
@@ -376,6 +389,11 @@ CAMLprim value caml_gc_set(value v)
     caml_major_heap_increment = newheapincr;
     caml_gc_message (0x20, "New heap increment size: %luk bytes\n",
                      caml_major_heap_increment/1024);
+  }
+  newpolicy = norm_policy (Long_val (Field (v, 6)));
+  if (newpolicy != caml_allocation_policy){
+    caml_gc_message (0x20, "New allocation policy: %d\n", newpolicy);
+    caml_set_allocation_policy (newpolicy);
   }
 
     /* Minor heap size comes last because it will trigger a minor collection
@@ -471,4 +489,6 @@ void caml_init_gc (uintnat minor_size, uintnat major_size,
   caml_gc_message (0x20, "Initial max overhead: %lu%%\n", caml_percent_max);
   caml_gc_message (0x20, "Initial heap increment: %luk bytes\n",
                    caml_major_heap_increment / 1024);
+  caml_gc_message (0x20, "Initial allocation policy: %d\n",
+                   caml_allocation_policy);
 }

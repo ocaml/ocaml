@@ -23,6 +23,7 @@ val find: 'a -> ('a, 'b) t -> 'b
 val mem: 'a -> ('a, 'b) t -> bool
 val remove: 'a -> ('a,  'b) t -> ('a, 'b) t
 val iter: ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
+val map: ('a -> 'b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
 
 open Format
 
