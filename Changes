@@ -3,6 +3,10 @@ Objective Caml 3.12.0:
 
 (Changes that can break existing programs are marked with a "*"  )
 
+Language features:
+- Shorthand notation for records: in expressions and patterns,
+    { lbl } stands for { lbl = lbl } and { M.lbl } for { M.lbl = lbl }
+
 Compilers and toplevel:
 - Added option '-no-app-funct' to turn applicative functors off.
   This option can help working around mysterious type incompatibilities

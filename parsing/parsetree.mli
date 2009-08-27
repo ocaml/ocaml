@@ -46,7 +46,7 @@ and row_field =
     Rtag of label * bool * core_type list
   | Rinherit of core_type
 
-(* XXX Type expressions for the class language *)
+(* Type expressions for the class language *)
 
 type 'a class_infos =
   { pci_virt: virtual_flag;

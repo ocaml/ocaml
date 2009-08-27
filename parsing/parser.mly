@@ -191,6 +191,12 @@ let lapply p1 p2 =
   then Lapply(p1, p2)
   else raise (Syntaxerr.Error(Syntaxerr.Applicative_path (symbol_rloc())))
 
+let exp_of_label lbl =
+  mkexp (Pexp_ident(Lident(Longident.last lbl)))
+
+let pat_of_label lbl =
+  mkpat (Ppat_var(Longident.last lbl))
+
 %}
 
 /* Tokens */
@@ -1043,8 +1049,12 @@ record_expr:
 lbl_expr_list:
     label_longident EQUAL expr
       { [$1,$3] }
+  | label_longident
+      { [$1, exp_of_label $1] }
   | lbl_expr_list SEMI label_longident EQUAL expr
       { ($3, $5) :: $1 }
+  | lbl_expr_list SEMI label_longident
+      { ($3, exp_of_label $3) :: $1 }
 ;
 field_expr_list:
     label EQUAL expr
@@ -1137,7 +1147,9 @@ pattern_semi_list:
 ;
 lbl_pattern_list:
     label_longident EQUAL pattern               { [($1, $3)] }
+  | label_longident                             { [($1, pat_of_label $1)] }
   | lbl_pattern_list SEMI label_longident EQUAL pattern { ($3, $5) :: $1 }
+  | lbl_pattern_list SEMI label_longident       { ($3, pat_of_label $3) :: $1 }
 ;
 
 /* Primitive declarations */
