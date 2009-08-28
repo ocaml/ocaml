@@ -93,10 +93,14 @@ external compare : 'a -> 'a -> int = "%compare"
    the {!List.sort} and {!Array.sort} functions. *)
 
 val min : 'a -> 'a -> 'a
-(** Return the smaller of the two arguments. *)
+(** Return the smaller of the two arguments. 
+    The result is unspecified if one of the arguments contains
+    the float value [nan]. *)
 
 val max : 'a -> 'a -> 'a
-(** Return the greater of the two arguments. *)
+(** Return the greater of the two arguments.
+    The result is unspecified if one of the arguments contains
+    the float value [nan]. *)
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** [e1 == e2] tests for physical equality of [e1] and [e2].
@@ -226,8 +230,8 @@ external ( asr ) : int -> int -> int = "%asrint"
    [neg_infinity] for [-1.0 /. 0.0], and [nan] (``not a number'')
    for [0.0 /. 0.0].  These special numbers then propagate through
    floating-point computations as expected: for instance,
-   [1.0 /. infinity] is [0.0], and any operation with [nan] as
-   argument returns [nan] as result.
+   [1.0 /. infinity] is [0.0], and any arithmetic operation with [nan]
+   as argument returns [nan] as result.
 *)
 
 external ( ~-. ) : float -> float = "%negfloat"
