@@ -72,7 +72,6 @@
    the evaluation order of printing commands.
 *)
 
-
 (** {6 Boxes} *)
 
 val open_box : int -> unit;;
@@ -111,7 +110,6 @@ val print_char : char -> unit;;
 
 val print_bool : bool -> unit;;
 (** Prints a boolean in the current box. *)
-
 
 (** {6 Break hints} *)
 
@@ -156,7 +154,6 @@ val print_if_newline : unit -> unit;;
    has just been split. Otherwise, ignore the next formatting
    command. *)
 
-
 (** {6 Margin} *)
 
 val set_margin : int -> unit;;
@@ -169,7 +166,6 @@ val set_margin : int -> unit;;
 
 val get_margin : unit -> int;;
 (** Returns the position of the right margin. *)
-
 
 (** {6 Maximum indentation limit} *)
 
@@ -200,7 +196,6 @@ val get_max_boxes : unit -> int;;
 
 val over_max_boxes : unit -> bool;;
 (** Tests if the maximum number of boxes allowed have already been opened. *)
-
 
 (** {6 Advanced formatting} *)
 
@@ -235,7 +230,6 @@ val open_hovbox : int -> unit;;
    When a new line is printed in the box, [d] is added to the
    current indentation. *)
 
-
 (** {6 Tabulations} *)
 
 val open_tbox : unit -> unit;;
@@ -262,7 +256,6 @@ val set_tab : unit -> unit;;
 val print_tab : unit -> unit;;
 (** [print_tab ()] is equivalent to [print_tbreak 0 0]. *)
 
-
 (** {6 Ellipsis} *)
 
 val set_ellipsis_text : string -> unit;;
@@ -271,7 +264,6 @@ val set_ellipsis_text : string -> unit;;
 
 val get_ellipsis_text : unit -> string;;
 (** Return the text of the ellipsis. *)
-
 
 (** {6 Tags} *)
 
@@ -344,7 +336,6 @@ val set_mark_tags : bool -> unit;;
 val get_print_tags : unit -> bool;;
 val get_mark_tags : unit -> bool;;
 (** Return the current status of tags printing and tags marking. *)
-
 
 (** {6 Redirecting formatter output} *)
 
@@ -435,7 +426,6 @@ val get_all_formatter_output_functions :
   (int -> unit);;
 (** Return the current output functions of the pretty-printer,
    including line breaking and indentation functions. *)
-
 
 (** {6 Multiple formatted output} *)
 
@@ -586,7 +576,6 @@ val pp_get_formatter_tag_functions :
    operating on the standard formatter are defined via partial
    evaluation of these primitives. For instance,
    [print_string] is equal to [pp_print_string std_formatter]. *)
-
 
 (** {6 [printf] like functions for pretty-printing.} *)
 

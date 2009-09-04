@@ -8,6 +8,8 @@ Language features:
     { lbl } stands for { lbl = lbl } and { M.lbl } for { M.lbl = lbl }
 
 Compilers and toplevel:
+- Better error report in case of qualified unbound identifier: if the module
+  is unbound this error is reported first.
 - Added option '-no-app-funct' to turn applicative functors off.
   This option can help working around mysterious type incompatibilities
   caused by the incomplete comparison of applicative paths F(X).t.

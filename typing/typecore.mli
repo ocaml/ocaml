@@ -22,7 +22,7 @@ val is_nonexpansive: Typedtree.expression -> bool
 
 val type_binding:
         Env.t -> rec_flag ->
-          (Parsetree.pattern * Parsetree.expression) list -> 
+          (Parsetree.pattern * Parsetree.expression) list ->
           Annot.ident option ->
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_let:
@@ -66,6 +66,8 @@ type error =
     Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
+  | Unbound_module of Longident.t
+  | Unbound_functor of Longident.t
   | Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
