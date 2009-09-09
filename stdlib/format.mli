@@ -640,15 +640,15 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a;;
    It prints [x = 1] within a pretty-printing box.
 *)
 
+val ifprintf : out_channel -> ('a, out_channel, unit) format -> 'a;;
+(** Same as [fprintf] above, but does not print anything.
+   Useful to ignore some material when conditionally printing. *)
+
 val printf : ('a, out_channel, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [std_formatter]. *)
 
 val eprintf : ('a, out_channel, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [err_formatter]. *)
-
-val ifprintf : out_channel -> ('a, out_channel, unit) format -> 'a;;
-(** Same as [fprintf] above, but does not print anything.
-   Useful to ignore some material when conditionally printing. *)
 
 val sprintf : ('a, unit, string) format -> 'a;;
 (** Same as [printf] above, but instead of printing on a formatter,
@@ -677,6 +677,11 @@ val kfprintf : (out_channel -> 'a) -> out_channel ->
               ('b, out_channel, unit, 'a) format4 -> 'b;;
 (** Same as [fprintf] above, but instead of returning immediately,
    passes the formatter to its first argument at the end of printing. *)
+
+val ikfprintf : (out_channel -> 'a) -> out_channel ->
+              ('b, out_channel, unit, 'a) format4 -> 'b;;
+(** Same as [kfprintf] above, but does not print anything.
+   Useful to ignore some material when conditionally printing. *)
 
 val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** Same as [sprintf] above, but instead of returning the string,

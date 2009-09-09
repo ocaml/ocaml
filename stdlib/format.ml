@@ -1077,8 +1077,8 @@ let implode_rev s0 = function
 (* [mkprintf] is the printf-like function generator: given the
    - [to_s] flag that tells if we are printing into a string,
    - the [get_out] function that has to be called to get a [ppf] function to
-   output onto.
-   It generates a [kprintf] function that takes as arguments a [k]
+     output onto,
+   it generates a [kprintf] function that takes as arguments a [k]
    continuation function to be called at the end of formatting,
    and a printing format string to print the rest of the arguments
    according to the format string.
@@ -1313,6 +1313,7 @@ let mkprintf to_s get_out =
 
 let kfprintf k ppf = mkprintf false (fun _ -> ppf) k;;
 let ifprintf ppf = Tformat.kapr (fun _ -> Obj.magic ignore);;
+let ikfprintf k ppf = Tformat.kapr (fun _ _ -> Obj.magic (k ppf));;
 
 let fprintf ppf = kfprintf ignore ppf;;
 let printf fmt = fprintf std_formatter fmt;;
