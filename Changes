@@ -8,21 +8,24 @@ Language features:
     { lbl } stands for { lbl = lbl } and { M.lbl } for { M.lbl = lbl }
 
 Compilers and toplevel:
-- Better error report in case of qualified unbound identifier: if the module
-  is unbound this error is reported first.
+- Better error report in case of unbound qualified identifier: if the module
+  is unbound this error is reported in the first place.
 - Added option '-no-app-funct' to turn applicative functors off.
   This option can help working around mysterious type incompatibilities
   caused by the incomplete comparison of applicative paths F(X).t.
 
 Standard library:
+- Format: new function ikfprintf analoguous to ifprintf with a continuation
+  argument.
 - PR#4210, #4245: stricter range checking in string->integer conversion
   functions (int_of_string, Int32.of_string, Int64.of_string,
   Nativeint.of_string).  The decimal string corresponding to
   max_int + 1 is no longer accepted.
-- To prevent confusion when mixing Format printing functions and direct low
-  level output, values Format.stdout and Format.stderr have been added.
-- To prevent confusion when mixing Scanf scanning functions and direct low
-  level input, value Scanf.stdin has been added.
+- Format: to prevent confusion when mixing Format printing functions and
+  direct low level output, values Format.stdout and Format.stderr have been
+  added.
+- Scanf: to prevent confusion when mixing Scanf scanning functions and direct
+  low level input, value Scanf.stdin has been added.
 
 Bug Fixes:
 - PR#4775: compiler crash on crazy types (temporary fix)
