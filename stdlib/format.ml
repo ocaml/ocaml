@@ -1312,10 +1312,10 @@ let mkprintf to_s get_out =
  **************************************************************)
 
 let kfprintf k ppf = mkprintf false (fun _ -> ppf) k;;
-let ifprintf ppf = Tformat.kapr (fun _ -> Obj.magic ignore);;
 let ikfprintf k ppf = Tformat.kapr (fun _ _ -> Obj.magic (k ppf));;
 
 let fprintf ppf = kfprintf ignore ppf;;
+let ifprintf ppf = ikfprintf ignore ppf;;
 let printf fmt = fprintf std_formatter fmt;;
 let eprintf fmt = fprintf err_formatter fmt;;
 
@@ -1334,9 +1334,10 @@ let ksprintf k =
   mkprintf true (fun _ -> formatter_of_buffer b) k
 ;;
 
-let kprintf = ksprintf;;
-
 let sprintf fmt = ksprintf (fun s -> s) fmt;;
+
+(* Obsolete alias for ksprintf. *)
+let kprintf = ksprintf;;
 
 at_exit print_flush
 ;;
