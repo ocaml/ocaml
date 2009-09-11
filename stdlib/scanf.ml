@@ -210,7 +210,7 @@ let default_token_buffer_size = 1024;;
 
 let create fname next = {
   eof = false;
-  current_char = '\000';
+  current_char = null_char;
   current_char_is_valid = false;
   char_count = 0;
   line_count = 0;
@@ -1098,17 +1098,17 @@ let ascanf sc fmt =
      - an input buffer [ib] from which to read characters,
      - an error handling function [ef],
      - a format [fmt] that specifies what to read in the input,
-     - a vector of user's defined readers rv,
+     - a vector of user's defined readers [rv],
      - and a function [f] to pass the tokens read to.
 
    Then [scan_format] scans the format and the input buffer in parallel to
-   find out tokens as specified by the format; when it founds one token, it
+   find out tokens as specified by the format; when it finds one token, it
    converts it as specified, remembers the converted value as a future
    argument to the function [f], and continues scanning.
 
    If the entire scanning succeeds (i.e. the format string has been
    exhausted and the buffer has provided tokens according to the
-   format string), [f] is applied to the tokens.
+   format string), [f] is applied to the tokens read.
 
    If the scanning or some conversion fails, the main scanning function
    aborts and applies the scanning buffer and a string that explains
