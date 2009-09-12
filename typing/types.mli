@@ -118,7 +118,8 @@ and constructor_tag =
 (* Record label descriptions *)
 
 type label_description =
-  { lbl_res: type_expr;                 (* Type of the result *)
+  { lbl_name: string;                   (* Short name *)
+    lbl_res: type_expr;                 (* Type of the result *)
     lbl_arg: type_expr;                 (* Type of the argument *)
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
     lbl_pos: int;                       (* Position in block *)

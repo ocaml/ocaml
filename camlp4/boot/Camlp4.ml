@@ -13890,7 +13890,7 @@ module Struct =
                        error loc "range pattern allowed only for characters")
               | PaRec (loc, p) ->
                   mkpat loc
-                    (Ppat_record (List.map mklabpat (list_of_patt p [])))
+                    (Ppat_record (List.map mklabpat (list_of_patt p []), Closed))
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant

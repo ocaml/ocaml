@@ -19,6 +19,7 @@ type t =                             (* A is all *)
   | Comment_not_end
   | Deprecated                       (* D *)
   | Fragile_match of string            (* E *)
+  | Non_closed_record_pattern of string
   | Partial_application              (* F *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)

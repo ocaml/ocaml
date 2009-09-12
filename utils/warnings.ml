@@ -19,6 +19,7 @@ type t =                             (* A is all *)
   | Comment_not_end
   | Deprecated                       (* D *)
   | Fragile_match of string          (* E *)
+  | Non_closed_record_pattern of string
   | Partial_application              (* F *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)
@@ -48,6 +49,7 @@ let letter = function        (* 'a' is all *)
   | Comment_not_end ->          'c'
   | Deprecated ->               'd'
   | Fragile_match _ ->          'e'
+  | Non_closed_record_pattern _ -> 'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
@@ -120,6 +122,9 @@ let message = function
   | Fragile_match s ->
       "this pattern-matching is fragile.\n\
        It will remain exhaustive when constructors are added to type " ^ s ^ "."
+  | Non_closed_record_pattern s ->
+      "the following labels are not bound in this record pattern:\n" ^ s ^
+      "\nEither bind these labels explicitly or add `; _' to the pattern."
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override [lab] ->

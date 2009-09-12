@@ -1113,8 +1113,8 @@ simple_pattern:
       { mkpat(Ppat_variant($1, None)) }
   | SHARP type_longident
       { mkpat(Ppat_type $2) }
-  | LBRACE lbl_pattern_list opt_semi RBRACE
-      { mkpat(Ppat_record(List.rev $2)) }
+  | LBRACE lbl_pattern_list record_pattern_end RBRACE
+      { mkpat(Ppat_record(List.rev $2, $3)) }
   | LBRACE lbl_pattern_list opt_semi error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
@@ -1151,7 +1151,11 @@ lbl_pattern_list:
   | lbl_pattern_list SEMI label_longident EQUAL pattern { ($3, $5) :: $1 }
   | lbl_pattern_list SEMI label_longident       { ($3, pat_of_label $3) :: $1 }
 ;
-
+record_pattern_end:
+    opt_semi                                    { Closed }
+  | SEMI UNDERSCORE opt_semi                    { Open }
+;
+  
 /* Primitive declarations */
 
 primitive_declaration:

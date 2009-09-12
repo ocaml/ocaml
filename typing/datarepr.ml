@@ -57,7 +57,7 @@ let exception_descr path_exc decl =
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)
 let dummy_label =
-  { lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
+  { lbl_name = ""; lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular;
     lbl_private = Public }
 
@@ -67,7 +67,8 @@ let label_descrs ty_res lbls repres priv =
       [] -> []
     | (name, mut_flag, ty_arg) :: rest ->
         let lbl =
-          { lbl_res = ty_res;
+          { lbl_name = name;
+            lbl_res = ty_res;
             lbl_arg = ty_arg;
             lbl_mut = mut_flag;
             lbl_pos = num;

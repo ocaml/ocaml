@@ -414,7 +414,7 @@ let rec bound_variables pat =
   | Ppat_construct (_,Some pat,_) -> bound_variables pat
   | Ppat_variant (_,None) -> []
   | Ppat_variant (_,Some pat) -> bound_variables pat
-  | Ppat_record l ->
+  | Ppat_record (l, _) ->
       List2.flat_map l ~f:(fun (_,pat) -> bound_variables pat)
   | Ppat_array l ->
       List2.flat_map l ~f:bound_variables

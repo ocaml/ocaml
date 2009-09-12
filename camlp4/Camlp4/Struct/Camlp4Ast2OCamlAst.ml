@@ -490,7 +490,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
             mkrangepat loc c1 c2
         | _ -> error loc "range pattern allowed only for characters" ]
     | PaRec loc p ->
-        mkpat loc (Ppat_record (List.map mklabpat (list_of_patt p [])))
+        mkpat loc (Ppat_record (List.map mklabpat (list_of_patt p []), Closed))
     | PaStr loc s ->
         mkpat loc (Ppat_constant (Const_string (string_of_string_token loc s)))
     | <:patt@loc< ($p1$, $p2$) >> ->

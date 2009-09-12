@@ -364,6 +364,36 @@ let type_label_a_list type_lid_a lid_a_list =
          | lid_a -> type_lid_a lid_a)
         lid_a_list
 
+(* Checks over the labels mentioned in a record pattern:
+   no duplicate definitions (error); properly closed (warning) *)
+
+let check_recordpat_labels loc lbl_pat_list closed =
+  match lbl_pat_list with
+  | [] -> ()                            (* should not happen *)
+  | (label1, _) :: _ ->
+      let all = label1.lbl_all in
+      let defined = Array.make (Array.length all) false in
+      let check_defined (label, _) =
+        if defined.(label.lbl_pos)
+        then raise(Error(loc, Label_multiply_defined
+                                       (Longident.Lident label.lbl_name)))
+        else defined.(label.lbl_pos) <- true in
+      List.iter check_defined lbl_pat_list;
+      if closed = Closed
+      && Warnings.is_active (Warnings.Non_closed_record_pattern "")
+      then begin
+        let undefined = ref [] in
+        for i = 0 to Array.length all - 1 do
+          if not defined.(i) then undefined := all.(i).lbl_name :: !undefined
+        done;
+        if !undefined <> [] then begin
+          let u = String.concat ", " (List.rev !undefined) in
+          Location.prerr_warning loc (Warnings.Non_closed_record_pattern u)
+        end
+      end
+
+(* Typing of patterns *)
+
 let rec type_pat env sp =
   let loc = sp.ppat_loc in
   match sp.ppat_desc with
@@ -446,14 +476,7 @@ let rec type_pat env sp =
         pat_loc = loc;
         pat_type = newty (Tvariant row);
         pat_env = env }
-  | Ppat_record lid_sp_list ->
-      let rec check_duplicates = function
-        [] -> ()
-      | (lid, sarg) :: remainder ->
-          if List.mem_assoc lid remainder
-          then raise(Error(loc, Label_multiply_defined lid))
-          else check_duplicates remainder in
-      check_duplicates lid_sp_list;
+  | Ppat_record(lid_sp_list, closed) ->
       let ty = newvar() in
       let type_label_pat (lid, sarg) =
         let label =
@@ -483,8 +506,10 @@ let rec type_pat env sp =
         end;
         (label, arg)
       in
+      let lbl_pat_list = type_label_a_list type_label_pat lid_sp_list in
+      check_recordpat_labels loc lbl_pat_list closed;
       rp {
-        pat_desc = Tpat_record(type_label_a_list type_label_pat lid_sp_list);
+        pat_desc = Tpat_record lbl_pat_list;
         pat_loc = loc;
         pat_type = ty;
         pat_env = env }
