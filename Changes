@@ -6,8 +6,13 @@ Objective Caml 3.12.0:
 Language features:
 - Shorthand notation for records: in expressions and patterns,
     { lbl } stands for { lbl = lbl } and { M.lbl } for { M.lbl = lbl }
+- Record patterns of the form { lbl = pat; _ } to mark that not all
+  labels are listed, purposefully.  (See new warning below.)
 
 Compilers and toplevel:
+- New warning (activated by 'E', the fragile match warning) to signal
+  record patterns without "; _" where some labels of the record type
+  are not listed in the pattern.
 - Better error report in case of unbound qualified identifier: if the module
   is unbound this error is reported in the first place.
 - Added option '-no-app-funct' to turn applicative functors off.
