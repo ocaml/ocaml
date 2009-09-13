@@ -888,7 +888,9 @@ let fundecl fundecl =
   bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
-  if macosx && is_generic_function fundecl.fun_name
+  if macosx
+  && not !Clflags.output_c_object
+  && is_generic_function fundecl.fun_name
   then (* PR#4690 *)
     `	.private_extern	{emit_symbol fundecl.fun_name}\n`
   else
