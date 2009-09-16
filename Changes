@@ -3,6 +3,7 @@ Objective Caml 3.11.2:
 
 Bug fixes:
 - PR#123, PR#4477: custom exception printers
+- PR#3456: Obj.double_field and Obj.set_double_field functions added
 - PR#4813: issue with parsing of float literals by the GNU assembler
 - PR#4818: missed opportunity for type-based optimization of bigarray accesses
 - PR#4836: spurious errors raised by Unix.single_write under Windows

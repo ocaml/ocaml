@@ -31,6 +31,8 @@ external size : t -> int = "%obj_size"
 external truncate : t -> int -> unit = "caml_obj_truncate"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
+val double_field : t -> int -> float
+val set_double_field : t -> int -> float -> unit
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 
