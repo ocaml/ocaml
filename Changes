@@ -2,9 +2,10 @@ Objective Caml 3.11.2:
 ----------------------
 
 Bug fixes:
-- PR#4841, PR#4860: problem with ocamlopt -output-obj under Mac OS X
 - PR#4813: issue with parsing of float literals by the GNU assembler
+- PR#4818: missed opportunity for type-based optimization of bigarray accesses
 - PR#4836: spurious errors raised by Unix.single_write under Windows
+- PR#4841, PR#4860: problem with ocamlopt -output-obj under Mac OS X
 
 Objective Caml 3.11.1:
 ----------------------
