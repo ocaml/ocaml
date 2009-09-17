@@ -12,7 +12,7 @@
 
 /* $Id$ */
 
-/* Asm part of the runtime system, Alpha processor */
+/* Asm part of the runtime system, IA64 processor */
 
 #undef BROKEN_POSTINCREMENT
 
@@ -68,15 +68,8 @@ caml_allocN:
         sub     r4 = r4, r2 ;;
         cmp.ltu p0, p6 = r4, r5
         (p6) br.ret.sptk b0 ;;
-        /* Stash return address at sp (in stack scratch area) */
-        mov     r3 = b0 ;;
-        st8     [sp] = r3
-        /* Call GC */
-        br.call.sptk b0 = caml_call_gc# ;;
-        /* Return to caller */
-        ld8     r3 = [sp] ;;
-        mov     b0 = r3 ;;
-        br.ret.sptk b0
+        /* Fall through caml_call_gc */
+        br.sptk.many    caml_call_gc#
 
         .endp   caml_allocN#
 
