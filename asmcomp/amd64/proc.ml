@@ -92,7 +92,6 @@ let phys_reg n =
 let rax = phys_reg 0
 let rcx = phys_reg 5
 let rdx = phys_reg 4
-let r11 = phys_reg 9
 let rxmm15 = phys_reg 115
 
 let stack_slot slot ty =
@@ -170,7 +169,7 @@ let destroyed_at_oper = function
   | Iop(Istore(Single, _)) -> [| rxmm15 |]
   | Iop(Ialloc _ | Iintop(Icomp _) | Iintop_imm((Idiv|Imod|Icomp _), _))
         -> [| rax |]
-  | Iswitch(_, _) when !pic_code -> [| r11 |]
+  | Iswitch(_, _) -> [| rax; rdx |]
   | _ -> [||]
 
 let destroyed_at_raise = all_phys_regs
