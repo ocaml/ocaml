@@ -576,33 +576,26 @@ let emit_instr fallthrough i =
             end
     | Lswitch jumptbl ->
         let lbl = new_label() in
-        if !pic_code || !Clflags.dlcode then begin
-          (* PR#4424: r11 is known to be clobbered by the Lswitch,
-             meaning that no variable that is live across the Lswitch
-             is assigned to r11.  However, the argument to Lswitch
-             can still be assigned to r11, so we need to special-case 
-             this situation. *)
-          if i.arg.(0).loc = Reg 9 (* ie r11, cf amd64/proc.ml *) then begin
-            `	salq	$3, %r11\n`;
-            `	pushq	%r11\n`;
-            `	leaq	{emit_label lbl}(%rip), %r11\n`;
-            `	addq	0(%rsp), %r11\n`;
-            `	addq	$8, %rsp\n`;
-            `	jmp	*(%r11)\n`
-          end else begin
-            `	leaq	{emit_label lbl}(%rip), %r11\n`;
-            `	jmp	*(%r11, {emit_reg i.arg.(0)}, 8)\n`
-          end
-        end else begin
-          `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 8)\n`
-        end;
+        (* rax and rdx are clobbered by the Lswitch,
+           meaning that no variable that is live across the Lswitch
+           is assigned to rax or rdx.  However, the argument to Lswitch
+           can still be assigned to one of these two registers, so
+           we must be careful not to clobber it before use. *)
+        let (tmp1, tmp2) =
+          if i.arg.(0).loc = Reg 0 (* rax *)
+          then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
+          else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
+        `	leaq	{emit_label lbl}(%rip), {emit_reg tmp1}\n`;
+        `	movslq	({emit_reg tmp1}, {emit_reg i.arg.(0)}, 4), {emit_reg tmp2}\n`;
+        `	addq	{emit_reg tmp2}, {emit_reg tmp1}\n`;
+        `	jmp	*{emit_reg tmp1}\n`;
         if macosx
         then `	.const\n`
         else `	.section .rodata\n`;
-        emit_align 8;
+        emit_align 4;
         `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	.quad	{emit_label jumptbl.(i)}\n`
+          `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
         done;
         `	.text\n`
     | Lsetuptrap lbl ->
