@@ -681,9 +681,12 @@ let scan_Float max ib =
   | c -> bad_float ()
 ;;
 
-(* Scan a regular string: stops when encountering a space or one of the
-   characters in stp. It also stops when the maximum number of
-   characters has been read.*)
+(* Scan a regular string:
+   stops when encountering a space, if no scanning indication has been given;
+   otherwise, stops when encountering one of the characters in the scanning
+   indication list [stp].
+   It also stops at end of file or when the maximum number of characters has
+   been read.*)
 let scan_string stp max ib =
   let rec loop max =
     if max = 0 then max else
