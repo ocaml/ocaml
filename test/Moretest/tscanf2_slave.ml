@@ -7,7 +7,7 @@
    - send back the string "OK, bye!" on stdout,
    - and die.
 
-   Use the communication module Test_scanf_io. *)
+   Use the communication module Test_scanf2_io. *)
 
 open Tscanf2_io;;
 
@@ -24,4 +24,5 @@ while true do
   | " Ping" -> Printf.eprintf "-pong"; flush stderr; send_string_pong ob
   | "stop" -> Printf.eprintf "!\n"; flush stderr; send_string_okbye ob; exit 0
   | s -> failwith ("Slave: unbound string " ^ s)
-done;;
+done
+;;

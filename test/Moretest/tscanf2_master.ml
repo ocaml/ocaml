@@ -7,9 +7,9 @@
    - finally send the string "stop" to the slave
      and wait for its answer "OK, bye!"
      and die.
-   
-   Use the communication module Test_scanf_io.
-   
+
+   Use the communication module Tscanf2_io.
+
    Usage: test_master <slave_name> *)
 
 open Tscanf2_io;;
@@ -26,15 +26,23 @@ let interact i =
   Printf.eprintf " Ping"; flush stderr;
   send_string_ping ob;
   let s = receive_string ib in
-  if s <> "-pong" then failwith ("Master: unbound string " ^ s);;
-  
-Random.self_init ();
-let n = max (Random.int 8) 1 in
-let rec loop i =
-  if i > 0 then (interact i; loop (i - 1)) in
-loop n;;
+  if s <> "-pong" then failwith ("Master: unbound string " ^ s)
+;;
 
-send_string_stop ob;
-let ack = receive_string ib in
-if ack = "OK, bye!" then (prerr_endline "Test OK."; exit 0) else
-(prerr_endline "Test Failed!"; exit 2);;
+begin
+  Random.self_init ();
+  let n = max (Random.int 8) 1 in
+  let rec loop i =
+    if i > 0 then (interact i; loop (i - 1)) in
+  loop n
+end
+;;
+
+begin
+  send_string_stop ob;
+  let ack = receive_string ib in
+  if ack = "OK, bye!"
+  then (prerr_endline "Test OK."; exit 0)
+  else (prerr_endline "Test Failed!"; exit 2)
+end
+;;

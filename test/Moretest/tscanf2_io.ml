@@ -5,7 +5,8 @@ let send_flush send ob oc t =
   send ob t;
   Buffer.output_buffer oc ob;
   Buffer.clear ob;
-  flush oc;;
+  flush oc
+;;
 
 (* The correct sending format for the test should be "%S\n",
    but to avoid problems when Scanf ask too early for the next character,
