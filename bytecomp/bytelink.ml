@@ -406,8 +406,11 @@ let link_bytecode_as_c tolink outfile =
   let outchan = open_out outfile in
   begin try
     (* The bytecode *)
-    output_string outchan "#include <caml/mlvalues.h>\n";
     output_string outchan "\
+#ifdef __cplusplus
+extern \"C\" {
+#endif
+#include <caml/mlvalues.h>
 CAMLextern void caml_startup_code(
            code_t code, asize_t code_size,
            char *data, asize_t data_size,
@@ -441,14 +444,17 @@ CAMLextern void caml_startup_code(
     (* The table of primitives *)
     Symtable.output_primitive_table outchan;
     (* The entry point *)
-    output_string outchan "\n
+    output_string outchan "\n\
 void caml_startup(char ** argv)
 {
   caml_startup_code(caml_code, sizeof(caml_code),
                     caml_data, sizeof(caml_data),
                     caml_sections, sizeof(caml_sections),
                     argv);
-}\n";
+}
+#ifdef __cplusplus
+}
+#endif\n";
     close_out outchan
   with x ->
     close_out outchan;
@@ -462,7 +468,7 @@ void caml_startup(char ** argv)
 let build_custom_runtime prim_name exec_name =
   Ccomp.call_linker Ccomp.Exe exec_name 
     ([prim_name] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
-    Config.bytecomp_c_libraries
+    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -501,7 +507,16 @@ let link objfiles output_name =
     try
       link_bytecode tolink bytecode_name false;
       let poc = open_out prim_name in
+      output_string poc "\
+        #ifdef __cplusplus\n\
+        extern \"C\" {\n\
+        #endif\n\
+        #include <caml/mlvalues.h>\n";
       Symtable.output_primitive_table poc;
+      output_string poc "\
+        #ifdef __cplusplus\n\
+        }\n\
+        #endif\n";
       close_out poc;
       let exec_name = fix_exec_name output_name in
       if not (build_custom_runtime prim_name exec_name)
