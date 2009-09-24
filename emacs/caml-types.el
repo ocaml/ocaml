@@ -256,9 +256,9 @@ See `caml-types-location-re' for annotation file format.
           (let* ((loc-re (concat caml-types-position-re " "
                                  caml-types-position-re))
                  (end-re (concat caml-types-position-re " --"))
-                 (def-re (concat "def \\([^ ]\\)* " loc-re))
-                 (def-end-re (concat "def \\([^ ]\\)* " end-re))
-                 (internal-re (concat "int_ref \\([^ ]\\)* " loc-re))
+                 (def-re (concat "def \\([^ ]*\\) " loc-re))
+                 (def-end-re (concat "def \\([^ ]*\\) " end-re))
+                 (internal-re (concat "int_ref \\([^ ]*\\) " loc-re))
                  (external-re "ext_ref \\(.*\\)"))
             (cond
              ((string-match def-re kind)
