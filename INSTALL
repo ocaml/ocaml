@@ -188,9 +188,9 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5- (Optional) If you want to compile fast versions of the Objective
-Caml compilers, you can compile them with the native-code compiler
-(they are compiled to bytecode by default).  Just do:
+5- Compile fast versions of the Objective Caml compilers, by
+compiling them with the native-code compiler (you have only compiled
+them to bytecode so far).  Just do:
 
         make opt.opt
 
