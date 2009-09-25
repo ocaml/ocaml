@@ -14,14 +14,14 @@
 
 (** Counting {i n} asynchronous events
 
-  The following submodules are succesive refinements of
+  The following submodules are successive refinements of
   the {e count {i n} events} programming idiom.
   Here an event is a message sent on an asynchronous channel.
 
     - {!Down} just counts {i n} messages sent on a [tick] channel.
-    - {!Collector} additionnaly computes a resut from the nessages
+    - {!Collector} additionnaly computes a resut from the messages
       sent on a [collect] channel.
-    - {!Dynamic} is a refinment of [Collector] where {i n} is not
+    - {!Dynamic} is a refinement of [Collector] where {i n} is not
       known in advance.
 *)
 

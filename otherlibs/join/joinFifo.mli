@@ -22,7 +22,7 @@
   one agent ({e producer}) is putting elements,
   while another agent ({e consumer}) is getting them.
   Then the following guarantees hold:
-    - The consumer see the elements in producing order.
+    - The consumer sees the elements in producing order.
     - If the producer closes the fifo, and does not put any additional
       elements, then the consumer will
       have retrieved all elements when the call to [close] returns.
