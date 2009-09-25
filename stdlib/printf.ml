@@ -169,7 +169,7 @@ let extract_format_float conv fmt start stop widths =
 (* Returns the position of the next character following the meta format
    string, starting from position [i], inside a given format [fmt].
    According to the character [conv], the meta format string is
-   enclosed by the delimitors %{ and %} (when [conv = '{']) or %( and
+   enclosed by the delimiters %{ and %} (when [conv = '{']) or %( and
    %) (when [conv = '(']). Hence, [sub_format] returns the index of
    the character following the [')'] or ['}'] that ends the meta format,
    according to the character [conv]. *)
@@ -428,13 +428,13 @@ let get_index spec n =
   | Spec_index p -> p
 ;;
 
-(* Format a float argument as a valid Caml lexem. *)
-let format_float_lexem =
+(* Format a float argument as a valid Caml lexeme. *)
+let format_float_lexeme =
 
-  let lexem_buff = Buffer.create 32 in
+  let lexeme_buff = Buffer.create 32 in
 
   (* To be revised: this procedure should be a unique loop that performs the
-     validity check and the string lexem modification at the same time.
+     validity check and the string lexeme modification at the same time.
      Otherwise, it is too difficult to handle the strange padding facilities
      given by printf. Let alone handling the correct widths indication,
      knowing that we have sometime to add a '.' at the end of the result!
@@ -445,38 +445,38 @@ let format_float_lexem =
      We can also ignore the + flag formatting using a %F.
   *)
 
-  let make_valid_float_lexem s =
+  let make_valid_float_lexeme s =
     let l = String.length s in
     (* This should never occur. *)
     if l = 0 then "nan" else
 
     let add_dot s i =
       let rec add_dot_loop i =
-        if i >= l then Buffer.add_char lexem_buff '.' else
+        if i >= l then Buffer.add_char lexeme_buff '.' else
         match s.[i] with
         | '+' ->
           (* Depending of the ``style'' this should be a space or a 0.
              Let start by using a space. *)
-          Buffer.add_char lexem_buff ' ';
+          Buffer.add_char lexeme_buff ' ';
           add_dot_loop (i + 1)
         | c ->
-          Buffer.add_char lexem_buff c;
+          Buffer.add_char lexeme_buff c;
           add_dot_loop (i + 1) in
       add_dot_loop i in
 
-    (* Check if s is already a valid lexem:
+    (* Check if s is already a valid lexeme:
        in this case do nothing (we should still remove a leading +!),
-       otherwise turn s into a valid Caml lexem. *)
+       otherwise turn s into a valid Caml lexeme. *)
     let rec valid_float_loop i =
       if i >= l then begin
-        Buffer.clear lexem_buff;
+        Buffer.clear lexeme_buff;
         add_dot s 0;
-        let res = Buffer.contents lexem_buff in
-        Buffer.clear lexem_buff;
+        let res = Buffer.contents lexeme_buff in
+        Buffer.clear lexeme_buff;
         res
       end else
       match s.[i] with
-      (* Sure, this is already a valid float lexem. *)
+      (* Sure, this is already a valid float lexeme. *)
       | '.' | 'e' | 'E'  -> s
       | _ -> valid_float_loop (i + 1) in
 
@@ -485,7 +485,7 @@ let format_float_lexem =
   (fun sfmt x ->
    let s = format_float sfmt x in
    match classify_float x with
-   | FP_normal | FP_subnormal | FP_zero -> make_valid_float_lexem s
+   | FP_normal | FP_subnormal | FP_zero -> make_valid_float_lexeme s
    | FP_nan | FP_infinite -> s)
 ;;
 
@@ -561,7 +561,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let (x : float) = get_arg spec n in
       let s =
         if widths = [] then Pervasives.string_of_float x else
-        format_float_lexem (extract_format_float conv fmt pos i widths) x in
+        format_float_lexeme (extract_format_float conv fmt pos i widths) x in
       cont_s (next_index spec n) s (succ i)
     | 'B' | 'b' ->
       let (x : bool) = get_arg spec n in
