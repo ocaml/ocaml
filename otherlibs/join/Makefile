@@ -21,7 +21,7 @@ JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
 COMPFLAGS=-warn-error A
 
-STDJOIN_OBJS=joinProc.cmo joinFifo.cmo joinCount.cmo
+STDJOIN_OBJS=joinProc.cmo joinFifo.cmo joinCount.cmo joinHelper.cmo
 STDJOIN_MLI=$(STDJOIN_OBJS:.cmo=.mli)
 STDJOIN_CMI=$(STDJOIN_OBJS:.cmo=.cmi)
 JOIN_OBJS=site.cmo ns.cmo join.cmo $(STDJOIN_OBJS)
