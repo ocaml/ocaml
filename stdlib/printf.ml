@@ -39,8 +39,8 @@ module Sformat = struct
 
   let add_int_index i idx = index_of_int (i + int_of_index idx);;
   let succ_index = add_int_index 1;;
-  (* Litteral position are one-based (hence pred p instead of p). *)
-  let index_of_litteral_position p = index_of_int (pred p);;
+  (* Literal position are one-based (hence pred p instead of p). *)
+  let index_of_literal_position p = index_of_int (pred p);;
 
   external length : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int
     = "%string_length"
@@ -122,12 +122,12 @@ let extract_format fmt start stop widths =
   let skip_positional_spec start =
     match Sformat.unsafe_get fmt start with
     | '0'..'9' ->
-      let rec skip_int_litteral i =
+      let rec skip_int_literal i =
         match Sformat.unsafe_get fmt i with
-        | '0'..'9' -> skip_int_litteral (succ i)
+        | '0'..'9' -> skip_int_literal (succ i)
         | '$' -> succ i
         | _ -> start in
-      skip_int_litteral (succ start)
+      skip_int_literal (succ start)
     | _ -> start in
   let start = skip_positional_spec (succ start) in
   let b = Buffer.create (stop - start + 10) in
@@ -140,7 +140,7 @@ let extract_format fmt start stop widths =
         let i = skip_positional_spec (succ i) in
         fill_format i t
       | ('*', []) ->
-        assert false (* should not happen *)
+        assert false (* Should not happen since this is ill-typed. *)
       | (c, _) ->
         Buffer.add_char b c;
         fill_format (succ i) widths in
@@ -161,7 +161,7 @@ let extract_format_float conv fmt start stop widths =
    let sfmt = extract_format fmt start stop widths in
    match conv with
    | 'F' ->
-     sfmt.[String.length sfmt - 1] <- 'f';
+     sfmt.[String.length sfmt - 1] <- 'g';
      sfmt
    | _ -> sfmt
 ;;
@@ -169,7 +169,7 @@ let extract_format_float conv fmt start stop widths =
 (* Returns the position of the next character following the meta format
    string, starting from position [i], inside a given format [fmt].
    According to the character [conv], the meta format string is
-   enclosed by the delimitors %{ and %} (when [conv = '{']) or %( and
+   enclosed by the delimiters %{ and %} (when [conv = '{']) or %( and
    %) (when [conv = '(']). Hence, [sub_format] returns the index of
    the character following the [')'] or ['}'] that ends the meta format,
    according to the character [conv]. *)
@@ -307,6 +307,7 @@ let ac_of_format fmt =
 
 let count_arguments_of_format fmt =
   let ac = ac_of_format fmt in
+  (* For printing only regular arguments have to be counted. *)
   ac.ac_rglr
 ;;
 
@@ -384,7 +385,7 @@ type positional_specification =
 
    Unfortunately, the type of a parameter specified via a [*$] positional
    specification should be the type of the corresponding argument to
-   [printf], hence this sould be the type of the $n$-th argument to [printf]
+   [printf], hence this should be the type of the $n$-th argument to [printf]
    with $n$ being the {\em value} of the integer argument defining [*]; we
    clearly cannot statically guess the value of this parameter in the general
    case. Put it another way: this means type dependency, which is completely
@@ -393,19 +394,19 @@ type positional_specification =
 let scan_positional_spec fmt got_spec n i =
   match Sformat.unsafe_get fmt i with
   | '0'..'9' as d ->
-    let rec get_int_litteral accu j =
+    let rec get_int_literal accu j =
       match Sformat.unsafe_get fmt j with
       | '0'..'9' as d ->
-        get_int_litteral (10 * accu + (int_of_char d - 48)) (succ j)
+        get_int_literal (10 * accu + (int_of_char d - 48)) (succ j)
       | '$' ->
         if accu = 0 then
           failwith "printf: bad positional specification (0)." else
-        got_spec (Spec_index (Sformat.index_of_litteral_position accu)) (succ j)
+        got_spec (Spec_index (Sformat.index_of_literal_position accu)) (succ j)
       (* Not a positional specification: tell so the caller, and go back to
          scanning the format from the original [i] position we were called at
          first. *)
       | _ -> got_spec Spec_none i in
-    get_int_litteral (int_of_char d - 48) (succ i)
+    get_int_literal (int_of_char d - 48) (succ i)
   (* No positional specification: tell so the caller, and go back to scanning
      the format from the original [i] position. *)
   | _ -> got_spec Spec_none i
@@ -427,9 +428,9 @@ let get_index spec n =
   | Spec_index p -> p
 ;;
 
-(* Format a float argument as a valid Caml lexem. *)
-let format_float_lexem =
-  let valid_float_lexem sfmt s =
+(* Format a float argument as a valid Caml lexeme. *)
+let format_float_lexeme =
+  let valid_float_lexeme sfmt s =
     let l = String.length s in
     if l = 0 then "nan" else
       let add_dot sfmt s =
@@ -448,7 +449,7 @@ let format_float_lexem =
    (fun sfmt x ->
     let s = format_float sfmt x in
     match classify_float x with
-    | FP_normal | FP_subnormal | FP_zero -> valid_float_lexem sfmt s
+    | FP_normal | FP_subnormal | FP_zero -> valid_float_lexeme sfmt s
     | FP_nan | FP_infinite -> s)
 ;;
 
@@ -470,8 +471,8 @@ let format_float_lexem =
 
 (* Note: here, rather than test explicitly against [Sformat.length fmt]
    to detect the end of the format, we use [Sformat.unsafe_get] and
-   rely on the fact that we'll get a "nul" character if we access
-   one past the end of the string.  These "nul" characters are then
+   rely on the fact that we'll get a "null" character if we access
+   one past the end of the string.  These "null" characters are then
    caught by the [_ -> bad_conversion] clauses below.
    Don't do this at home, kids. *)
 let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
@@ -502,7 +503,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let (x : string) = get_arg spec n in
       let x = if conv = 's' then x else "\"" ^ String.escaped x ^ "\"" in
       let s =
-        (* optimize for common case %s *)
+        (* Optimize for common case %s *)
         if i = succ pos then x else
         format_string (extract_format fmt pos i widths) x in
       cont_s (next_index spec n) s (succ i)
@@ -523,7 +524,8 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
     | 'F' as conv ->
       let (x : float) = get_arg spec n in
       let s =
-        format_float_lexem (extract_format_float conv fmt pos i widths) x in
+        if widths = [] then Pervasives.string_of_float x else
+        format_float_lexeme (extract_format_float conv fmt pos i widths) x in
       cont_s (next_index spec n) s (succ i)
     | 'B' | 'b' ->
       let (x : bool) = get_arg spec n in

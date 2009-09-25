@@ -7,6 +7,8 @@ Bug fixes:
 - PR#4836: spurious errors raised by Unix.single_write under Windows
 - PR#4841, PR#4860: problem with ocamlopt -output-obj under Mac OS X
 - PR#4847: C compiler error with ocamlc -output-obj under Win64
+- Module Printf: the simple conversion %F (without width indication) was not
+           treated properly.
 
 Feature wishes:
 - PR#123, PR#4477: custom exception printers
