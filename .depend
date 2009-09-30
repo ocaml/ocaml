@@ -336,8 +336,8 @@ bytecomp/transljoin.cmi: typing/typedtree.cmi typing/primitive.cmi \
 bytecomp/translmod.cmi: typing/typedtree.cmi typing/primitive.cmi \
     parsing/location.cmi bytecomp/lambda.cmi typing/ident.cmi 
 bytecomp/translobj.cmi: bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi 
-bytecomp/typeopt.cmi: typing/typedtree.cmi typing/path.cmi \
-    bytecomp/lambda.cmi 
+bytecomp/typeopt.cmi: typing/types.cmi typing/typedtree.cmi typing/path.cmi \
+    bytecomp/lambda.cmi typing/env.cmi 
 bytecomp/bytegen.cmo: typing/types.cmi bytecomp/switch.cmi typing/subst.cmi \
     typing/stypes.cmi typing/primitive.cmi utils/misc.cmi bytecomp/lambda.cmi \
     bytecomp/instruct.cmi typing/ident.cmi utils/config.cmi \

@@ -1,11 +1,14 @@
 joinCount.cmi: join.cmi 
 joinFifo.cmi: join.cmi 
+joinHelper.cmi: join.cmi 
 join.cmi: 
 joinProc.cmi: 
 joinCount.cmo: join.cmi joinCount.cmi 
 joinCount.cmx: join.cmx joinCount.cmi 
 joinFifo.cmo: join.cmi joinFifo.cmi 
 joinFifo.cmx: join.cmx joinFifo.cmi 
+joinHelper.cmo: join.cmi joinHelper.cmi 
+joinHelper.cmx: join.cmx joinHelper.cmi 
 join.cmo: site.cmo ns.cmo join.cmi 
 join.cmx: site.cmx ns.cmx join.cmi 
 joinProc.cmo: joinProc.cmi 
