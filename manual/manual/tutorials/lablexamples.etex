@@ -421,7 +421,7 @@ let eval2 eval = function
 let rec eval x = eval2 eval x ;;
 \end{caml_example}
 
-To make this even more confortable, you may use type definitions as
+To make this even more comfortable, you may use type definitions as
 abbreviations for or-patterns. That is, if you have defined "type
 myvariant = [`Tag1 int | `Tag2 bool]", then the pattern "#myvariant" is
 equivalent to writing "(`Tag1(_ : int) | `Tag2(_ : bool))".
@@ -448,7 +448,7 @@ let g = function
 After seeing the power of polymorphic variants, one may wonder why
 they were added to core language variants, rather than replacing them.
 
-The answer is two fold. One first aspect is that while being pretty
+The answer is twofold. One first aspect is that while being pretty
 efficient, the lack of static type information allows for less
 optimizations, and makes polymorphic variants slightly heavier than
 core language ones. However noticeable differences would only
