@@ -90,7 +90,7 @@ let may_define_unix = if windows then [] else ["-D UNIX"]
 
 let () =
   !options.ocaml_Flags ^= "-w Ale -warn-error Ale"^^
-                            (if getenv "DTYPES" "" <> "" then "-dtypes"
+                            (if getenv "DTYPES" "" <> "" then "-annot"
                              else "");
   !options.ocaml_P4     := camlp4boot_may_debug may_define_unix;
   !options.ocaml_P4_opt := camlp4boot_may_debug ("-D OPT" :: may_define_unix);

@@ -359,7 +359,7 @@ See `caml-types-location-re' for annotation file format.
                            (expand-file-name "_build" project-dir)))))
          (if (equal project-dir (parent-dir project-dir))
              (error (concat "No annotation file. "
-                            "You should compile with option \"-dtypes\".")))
+                            "You should compile with option \"-annot\".")))
          (setq project-dir (parent-dir project-dir)))
        type-path))))
 
