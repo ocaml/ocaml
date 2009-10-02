@@ -123,9 +123,8 @@ let parse_arguments argv =
   done;
   List.iter
     (fun r -> r := List.rev !r)
-    [ bytecode_objs; native_objs; c_objs; caml_libs; caml_opts; 
+    [ bytecode_objs; native_objs; caml_libs; caml_opts;
       c_libs; c_objs; c_opts; ld_opts; rpath ];
-  (* On retourne deux fois c_objs ??  -- AF *)
 
   if !output_c = "" then output_c := !output
 
@@ -184,7 +183,7 @@ let make_rpath flag =
   else flag ^ String.concat ":" (make_set !rpath)
 
 let make_rpath_ccopt flag =
-  if !rpath = [] || flag = "" 
+  if !rpath = [] || flag = ""
   then ""
   else "-ccopt " ^ flag ^ String.concat ":" (make_set !rpath)
 
@@ -200,10 +199,10 @@ let prepostfix pre name post =
 let transl_path s =
   match Sys.os_type with
     | "Win32" ->
-	let rec aux i = 
-	  if i = String.length s || s.[i] = ' ' then s
-	  else (if s.[i] = '/' then s.[i] <- '\\'; aux (i + 1))
-	in aux 0
+        let rec aux i =
+          if i = String.length s || s.[i] = ' ' then s
+          else (if s.[i] = '/' then s.[i] <- '\\'; aux (i + 1))
+        in aux 0
     | _ -> s
 
 let build_libs () =
