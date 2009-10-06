@@ -305,6 +305,9 @@ and expression i ppf x =
   | Pexp_object s ->
       line i ppf "Pexp_object";
       class_structure i ppf s
+  | Pexp_newtype (s, e) ->
+      line i ppf "Pexp_newtype \"%s\"\n" s;
+      expression i ppf e
 
 and value_description i ppf x =
   line i ppf "value_description\n";

@@ -112,6 +112,7 @@ and expression_desc =
   | Pexp_lazy of expression
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
+  | Pexp_newtype of string * expression
 
 (* Value descriptions *)
 

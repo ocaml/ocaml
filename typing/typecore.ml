@@ -1596,6 +1596,42 @@ let rec type_exp env sexp =
       }
   | Pexp_poly _ ->
       assert false
+  | Pexp_newtype(name, sbody) ->
+      (* Create a fake abstract type declaration for name. *)
+      let decl = {
+        type_params = [];
+        type_arity = 0;
+        type_kind = Type_abstract;
+        type_private = Public;
+        type_manifest = None;
+        type_variance = [];
+      }
+      in
+
+      let ty = newvar () in
+      Ident.set_current_time ty.level;
+      let (id, new_env) = Env.enter_type name decl env in
+      Ctype.init_def(Ident.current_time());
+
+      let body = type_exp new_env sbody in
+      (* Replace every instance of this type constructor in the resulting type. *)
+      let seen = Hashtbl.create 8 in
+      let rec replace t =
+        if Hashtbl.mem seen t.id then ()
+        else begin
+          Hashtbl.add seen t.id ();
+          match t.desc with
+          | Tconstr (Path.Pident id', _, _) when id == id' -> link_type t ty
+          | _ -> Btype.iter_type_expr replace t
+        end
+      in
+      let ety = Subst.type_expr Subst.identity body.exp_type in
+      replace ety;
+
+      (* non-expansive if the body is non-expansive, so we don't introduce
+         any new extra node in the typed AST. *)
+      re { body with exp_loc = sexp.pexp_loc; exp_type = ety }
+
 
 and type_argument env sarg ty_expected' =
   (* ty_expected' may be generic *)
