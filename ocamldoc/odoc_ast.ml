@@ -332,7 +332,7 @@ module Analyser =
                       in
                       (new_param, func_body2)
                   | _ ->
-                      print_DEBUG3 "Pas le bon filtre pour le paramètre optionnel avec valeur par défaut.";
+                      print_DEBUG3 "Pas le bon filtre pour le parametre optionnel avec valeur par defaut.";
                       (parameter, func_body)
                  )
                 )
@@ -477,7 +477,7 @@ module Analyser =
                                   in
                                   (new_param, body2)
                               | _ ->
-                                  print_DEBUG3 "Pas le bon filtre pour le paramètre optionnel avec valeur par défaut.";
+                                  print_DEBUG3 "Pas le bon filtre pour le parametre optionnel avec valeur par defaut.";
                                   (parameter, body)
                              )
                             )

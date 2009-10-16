@@ -81,11 +81,11 @@ let _ =
           prerr_endline (Odoc_messages.load_file_error file "Not_found");
           exit 1
       | Sys_error s
-      |	Failure s ->
+      | Failure s ->
           prerr_endline (Odoc_messages.load_file_error file s);
           exit 1
 
-let _ = print_DEBUG "Fin du chargement dynamique éventuel"
+let _ = print_DEBUG "Fin du chargement dynamique eventuel"
 
 let default_html_generator = new Odoc_html.html
 let default_latex_generator = new Odoc_latex.latex
