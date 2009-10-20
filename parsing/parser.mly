@@ -825,12 +825,12 @@ expr:
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule($3, $4, $6)) }
-  | LET NEW TYPE LIDENT IN seq_expr
-      { mkexp(Pexp_newtype($4, $6)) }
   | FUNCTION opt_bar match_cases
       { mkexp(Pexp_function("", None, List.rev $3)) }
   | FUN labeled_simple_pattern fun_def
       { let (l,o,p) = $2 in mkexp(Pexp_function(l, o, [p, $3])) }
+  | FUN LPAREN TYPE LIDENT RPAREN fun_def
+      { mkexp(Pexp_newtype($4, $6)) }
   | MATCH seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_match($2, List.rev $5)) }
   | TRY seq_expr WITH opt_bar match_cases
@@ -1026,6 +1026,8 @@ strict_binding:
       { $2 }
   | labeled_simple_pattern fun_binding
       { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
+  | LPAREN TYPE LIDENT RPAREN fun_binding
+      { mkexp(Pexp_newtype($3, $5)) }
 ;
 match_cases:
     pattern match_action                        { [$1, $2] }
@@ -1035,6 +1037,8 @@ fun_def:
     match_action                                { $1 }
   | labeled_simple_pattern fun_def
       { let (l,o,p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
+  | LPAREN TYPE LIDENT RPAREN fun_def
+      { mkexp(Pexp_newtype($3, $5)) }
 ;
 match_action:
     MINUSGREATER seq_expr                       { $2 }
