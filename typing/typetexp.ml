@@ -481,6 +481,7 @@ let transl_simple_type_univars env styp =
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;
   let typ = transl_type env Extensible styp in
+  make_fixed_univars typ;
   (typ, globalize_used_variables env false)
 
 let transl_type_scheme env styp =
