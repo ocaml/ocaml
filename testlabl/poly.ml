@@ -597,3 +597,16 @@ let zero = {f = `Int 0} ;; (* fails *)
 (* Yet another example *)
 let rec id : 'a. 'a -> 'a = fun x -> x
 and neg i b = (id (-i), id (not b));;
+
+(* De Xavier *)
+
+type t = A of int | B of (int*t) list | C of (string*t) list
+
+let rec transf f = function
+  | A x -> f x
+  | B l -> B (transf_alist f l)
+  | C l -> C (transf_alist f l)
+and transf_alist : 'a. _ -> ('a*t) list -> ('a*t) list = fun f -> function
+  | [] -> []
+  | (k,v)::tl -> (k, transf f v) :: transf_alist f tl
+;;
