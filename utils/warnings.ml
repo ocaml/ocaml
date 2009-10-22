@@ -19,11 +19,11 @@ type t =                             (* A is all *)
   | Comment_not_end
   | Deprecated                       (* D *)
   | Fragile_match of string          (* E *)
-  | Non_closed_record_pattern of string
   | Partial_application              (* F *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)
   | Partial_match of string          (* P *)
+  | Non_closed_record_pattern of string (* R *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
   | Unused_pat
@@ -49,11 +49,11 @@ let letter = function        (* 'a' is all *)
   | Comment_not_end ->          'c'
   | Deprecated ->               'd'
   | Fragile_match _ ->          'e'
-  | Non_closed_record_pattern _ -> 'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
   | Partial_match _ ->          'p'
+  | Non_closed_record_pattern _ -> 'r'
   | Statement_type ->           's'
   | Unused_match
   | Unused_pat ->               'u'
@@ -108,7 +108,7 @@ let parse_options iserr s =
   done
 ;;
 
-let () = parse_options false "elz";;
+let () = parse_options false "elrz";;
 
 let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."

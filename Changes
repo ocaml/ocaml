@@ -8,14 +8,15 @@ Language features:
     { lbl } stands for { lbl = lbl } and { M.lbl } for { M.lbl = lbl }
 - Record patterns of the form { lbl = pat; _ } to mark that not all
   labels are listed, purposefully.  (See new warning below.)
-- Explicit naming of a generic type;  in an expression like "fun ... (type t) ... -> e",
-  the type t is considered abstract in its scope (the arguments that follow it and the body
-  of the function), and then replaced by a fresh type variable. In particular, the type t
-  can be used in contexts where a type variable is not allowed (e.g. for defining
-  an exception in a local module).
+- Explicit naming of a generic type; in an expression
+  "fun ... (type t) ... -> e", the type t is considered abstract in its
+  scope (the arguments that follow it and the body of the function),
+  and then replaced by a fresh type variable. In particular, the type
+  t can be used in contexts where a type variable is not allowed
+  (e.g. for defining an exception in a local module).
 
 Compilers and toplevel:
-- New warning (activated by 'E', the fragile match warning) to signal
+- New warning (activated by the warning code 'R') to signal
   record patterns without "; _" where some labels of the record type
   are not listed in the pattern.
 - Better error report in case of unbound qualified identifier: if the module

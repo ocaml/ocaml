@@ -432,7 +432,7 @@ let ocaml_warn_flag c =
   flag ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase c)]
        (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
 
-List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'L'; 'M'; 'P'; 'S'; 'U'; 'V'; 'Y'; 'Z'; 'X'];;
+List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'Y'; 'Z'; 'X'];;
 
 flag ["ocaml"; "doc"; "docdir"; "extension:html"] (A"-html");;
 flag ["ocaml"; "doc"; "docdir"; "manpage"] (A"-man");;
