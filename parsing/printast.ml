@@ -525,12 +525,14 @@ and signature_item i ppf x =
   | Psig_include (mt) ->
       line i ppf "Psig_include\n";
       module_type i ppf mt;
-  | Psig_class (l) ->
+  | Psig_class (l, l') ->
       line i ppf "Psig_class\n";
       list i class_description ppf l;
-  | Psig_class_type (l) ->
+      list i string_x_type_declaration ppf l';
+  | Psig_class_type (l, l') ->
       line i ppf "Psig_class_type\n";
       list i class_type_declaration ppf l;
+      list i string_x_type_declaration ppf l';
 
 and modtype_declaration i ppf x =
   match x with
@@ -600,12 +602,14 @@ and structure_item i ppf x =
       line i ppf "Pstr_modtype \"%s\"\n" s;
       module_type i ppf mt;
   | Pstr_open (li) -> line i ppf "Pstr_open %a\n" fmt_longident li;
-  | Pstr_class (l) ->
+  | Pstr_class (l, l') ->
       line i ppf "Pstr_class\n";
       list i class_declaration ppf l;
-  | Pstr_class_type (l) ->
+      list i string_x_type_declaration ppf l';
+  | Pstr_class_type (l, l') ->
       line i ppf "Pstr_class_type\n";
       list i class_type_declaration ppf l;
+      list i string_x_type_declaration ppf l';
   | Pstr_include me ->
       line i ppf "Pstr_include";
       module_expr i ppf me

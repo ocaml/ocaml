@@ -33,7 +33,7 @@ val transl_with_constraint:
     Env.t -> Ident.t -> Path.t option ->
     Parsetree.type_declaration -> type_declaration
 
-val abstract_type_decl: int -> type_declaration
+val abstract_type_decl: (bool * bool) list -> type_declaration
 val approx_type_decl:
     Env.t -> (string * Parsetree.type_declaration) list ->
                                   (Ident.t * type_declaration) list
@@ -44,12 +44,15 @@ val check_recmod_typedecl:
 val is_fixed_type : Parsetree.type_declaration -> bool
 
 (* for typeclass.ml *)
-val compute_variance_decls:
-    Env.t ->
-    (Ident.t * type_declaration * type_declaration * class_declaration *
-       cltype_declaration * ((bool * bool) list * Location.t)) list ->
-    (type_declaration * type_declaration * class_declaration *
-       cltype_declaration) list
+val add_type_decl : Env.t -> (Ident.t * Types.type_declaration) list -> Env.t
+val transl_type_decl_with_classes :
+  Env.t ->
+  (string * Parsetree.type_declaration) list ->
+  Ident.t list ->
+  (Ident.t * type_declaration * type_declaration * class_declaration
+   * cltype_declaration * ((bool * bool) list * Location.t)) list ->
+  (type_declaration * type_declaration * class_declaration * cltype_declaration)
+  list * (Ident.t * type_declaration) list
     
 type error =
     Repeated_parameter

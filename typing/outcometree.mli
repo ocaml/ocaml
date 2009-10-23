@@ -97,6 +97,7 @@ and out_rec_status =
   | Orec_not
   | Orec_first
   | Orec_next
+  | Orec_with
 
 type out_phrase =
   | Ophr_eval of out_value * out_type

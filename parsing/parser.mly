@@ -474,9 +474,13 @@ structure_item:
   | OPEN mod_longident
       { mkstr(Pstr_open $2) }
   | CLASS class_declarations
-      { mkstr(Pstr_class (List.rev $2)) }
+      { mkstr(Pstr_class (List.rev $2, [])) }
+  | CLASS class_declarations WITH TYPE type_declarations
+      { mkstr(Pstr_class (List.rev $2, List.rev $5)) }
   | CLASS TYPE class_type_declarations
-      { mkstr(Pstr_class_type (List.rev $3)) }
+      { mkstr(Pstr_class_type (List.rev $3, [])) }
+  | CLASS TYPE class_type_declarations WITH TYPE type_declarations
+      { mkstr(Pstr_class_type (List.rev $3, List.rev $6)) }
   | INCLUDE module_expr
       { mkstr(Pstr_include $2) }
 ;
@@ -542,9 +546,13 @@ signature_item:
   | INCLUDE module_type
       { mksig(Psig_include $2) }
   | CLASS class_descriptions
-      { mksig(Psig_class (List.rev $2)) }
+      { mksig(Psig_class (List.rev $2, [])) }
+  | CLASS class_descriptions WITH TYPE type_declarations
+      { mksig(Psig_class (List.rev $2, List.rev $5)) }
   | CLASS TYPE class_type_declarations
-      { mksig(Psig_class_type (List.rev $3)) }
+      { mksig(Psig_class_type (List.rev $3, [])) }
+  | CLASS TYPE class_type_declarations WITH TYPE type_declarations
+      { mksig(Psig_class_type (List.rev $3, List.rev $6)) }
 ;
 
 module_declaration:

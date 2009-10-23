@@ -19,33 +19,41 @@ open Format
 
 val class_declarations:
   Env.t -> Parsetree.class_declaration list ->
+  (string * Parsetree.type_declaration) list ->
   (Ident.t * class_declaration *
    Ident.t * cltype_declaration *
    Ident.t * type_declaration *
    Ident.t * type_declaration *
-   int * string list * class_expr) list * Env.t
+   int * string list * class_expr) list *
+  (Ident.t * type_declaration) list * Env.t
 
 val class_descriptions:
   Env.t -> Parsetree.class_description list ->
+  (string * Parsetree.type_declaration) list ->
   (Ident.t * class_declaration *
    Ident.t * cltype_declaration *
    Ident.t * type_declaration *
    Ident.t * type_declaration *
-   int * string list * class_type) list * Env.t
+   int * string list * class_type) list *
+  (Ident.t * type_declaration) list *  Env.t
 
 val class_type_declarations:
   Env.t -> Parsetree.class_description list ->
+  (string * Parsetree.type_declaration) list ->
   (Ident.t * cltype_declaration *
    Ident.t * type_declaration *
-   Ident.t * type_declaration) list * Env.t
+   Ident.t * type_declaration) list *
+  (Ident.t * type_declaration) list *  Env.t
 
 val approx_class_declarations:
   Env.t -> Parsetree.class_description list ->
+  (string * Parsetree.type_declaration) list ->
   (Ident.t * cltype_declaration *
    Ident.t * type_declaration *
-   Ident.t * type_declaration) list
+   Ident.t * type_declaration) list *
+  (Ident.t * type_declaration) list
 
-val virtual_methods: Types.class_signature -> label list
+val virtual_methods: class_signature -> label list
 
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
@@ -69,10 +77,10 @@ type error =
   | Unbound_val of string
   | Unbound_type_var of (formatter -> unit) * Ctype.closed_class_failure
   | Make_nongen_seltype of type_expr
-  | Non_generalizable_class of Ident.t * Types.class_declaration
+  | Non_generalizable_class of Ident.t * class_declaration
   | Cannot_coerce_self of type_expr
   | Non_collapsable_conjunction of
-      Ident.t * Types.class_declaration * (type_expr * type_expr) list
+      Ident.t * class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
   | Mutability_mismatch of string * mutable_flag
 

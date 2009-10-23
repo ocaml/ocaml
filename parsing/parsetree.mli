@@ -218,8 +218,9 @@ and signature_item_desc =
   | Psig_modtype of string * modtype_declaration
   | Psig_open of Longident.t
   | Psig_include of module_type
-  | Psig_class of class_description list
-  | Psig_class_type of class_type_declaration list
+  | Psig_class of class_description list * (string * type_declaration) list
+  | Psig_class_type of
+      class_type_declaration list * (string * type_declaration) list
 
 and modtype_declaration =
     Pmodtype_abstract
@@ -259,8 +260,9 @@ and structure_item_desc =
   | Pstr_recmodule of (string * module_type * module_expr) list
   | Pstr_modtype of string * module_type
   | Pstr_open of Longident.t
-  | Pstr_class of class_declaration list
-  | Pstr_class_type of class_type_declaration list
+  | Pstr_class of class_declaration list * (string * type_declaration) list
+  | Pstr_class_type of
+      class_type_declaration list * (string * type_declaration) list
   | Pstr_include of module_expr
 
 (* Toplevel phrases *)

@@ -1338,7 +1338,7 @@ let check_coercions env
 
 (*******************************)
 
-let type_classes define_class approx kind env cls =
+let type_classes define_class approx kind env cls name_sdecls =
   let cls =
     List.map
       (function cl ->
@@ -1347,6 +1347,8 @@ let type_classes define_class approx kind env cls =
           Ident.create cl.pci_name, Ident.create ("#" ^ cl.pci_name)))
       cls
   in
+  let id_decls = Typedecl.approx_type_decl env name_sdecls in
+  let env = Typedecl.add_type_decl env id_decls in
   Ctype.init_def (Ident.current_time ());
   Ctype.begin_class_def ();
   let (res, env) =
@@ -1358,11 +1360,14 @@ let type_classes define_class approx kind env cls =
   Ctype.end_def ();
   let res = List.rev_map (final_decl env define_class) res in
   let decls = List.fold_right extract_type_decls res [] in
-  let decls = Typedecl.compute_variance_decls env decls in
+  let decls, id_decls =
+    Typedecl.transl_type_decl_with_classes env name_sdecls
+      (List.map fst id_decls) decls in
   let res = List.map2 merge_type_decls res decls in
   let env = List.fold_left (final_env define_class) env res in
+  let env = Typedecl.add_type_decl env id_decls in
   let res = List.map (check_coercions env) res in
-  (res, env)
+  (res, id_decls, env)
 
 let class_num = ref 0
 let class_declaration env sexpr =
@@ -1374,21 +1379,22 @@ let class_description env sexpr =
   let expr = class_type env sexpr in
   (expr, expr)
 
-let class_declarations env cls =
-  type_classes true approx_declaration class_declaration env cls
+let class_declarations =
+  type_classes true approx_declaration class_declaration
 
-let class_descriptions env cls =
-  type_classes true approx_description class_description env cls
+let class_descriptions =
+  type_classes true approx_description class_description
 
-let class_type_declarations env cls =
-  let (decl, env) =
-    type_classes false approx_description class_description env cls
+let class_type_declarations env cls sdecls =
+  let (cldecls, tdecls, env) =
+    type_classes false approx_description class_description env cls sdecls
   in
   (List.map
      (function
        (_, _, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr, _, _, _) ->
         (ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr))
-     decl,
+     cldecls,
+   tdecls,
    env)
 
 let rec unify_parents env ty cl =
@@ -1436,8 +1442,11 @@ let approx_class sdecl =
       pcty_loc = sdecl.pci_expr.pcty_loc } in
   { sdecl with pci_expr = clty' }
 
-let approx_class_declarations env sdecls =
-  fst (class_type_declarations env (List.map approx_class sdecls))
+let approx_class_declarations env cls sdecls =
+  let (cldecls, tdecls, _) =
+    class_type_declarations env (List.map approx_class cls) sdecls
+  in
+  (cldecls, tdecls)
 
 (*******************************)
 

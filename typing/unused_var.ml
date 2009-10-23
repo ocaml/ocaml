@@ -103,7 +103,7 @@ and structure_item ppf tbl s =
       List.iter (fun (_, _, me) -> module_expr ppf tbl me) stml;
   | Pstr_modtype _ -> ()
   | Pstr_open _ -> ()
-  | Pstr_class cdl -> List.iter (class_declaration ppf tbl) cdl;
+  | Pstr_class (cdl, _) -> List.iter (class_declaration ppf tbl) cdl;
   | Pstr_class_type _ -> ()
   | Pstr_include _ -> ()
 

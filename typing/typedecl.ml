@@ -480,11 +480,14 @@ let whole_type decl =
         Some ty -> ty
       | _ -> Btype.newgenty (Ttuple [])
 
+let abstract_variance =
+  List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
+
+let is_abstract decl =
+  decl.type_kind = Type_abstract && decl.type_manifest = None
+
 let compute_variance_decl env check decl (required, loc) =
-  if decl.type_kind = Type_abstract && decl.type_manifest = None then
-    List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
-      required
-  else
+  if is_abstract decl then abstract_variance required else
   let params = List.map Btype.repr decl.type_params in
   let tvl0 = List.map make_variance params in
   let fvl = if check then Ctype.free_variables (whole_type decl) else [] in
@@ -544,16 +547,16 @@ let is_sharp id =
   let s = Ident.name id in
   String.length s > 0 && s.[0] = '#'
 
+let add_type_decl env decls =
+  List.fold_right (fun (id, decl) -> Env.add_type id decl) decls env
+
 let rec compute_variance_fixpoint env decls required variances =
   let new_decls =
     List.map2
       (fun (id, decl) variance -> id, {decl with type_variance = variance})
       decls variances
   in
-  let new_env =
-    List.fold_right (fun (id, decl) env -> Env.add_type id decl env)
-      new_decls env
-  in
+  let new_env = add_type_decl env new_decls in
   let new_variances =
     List.map2
       (fun (id, decl) -> compute_variance_decl new_env false decl)
@@ -570,29 +573,11 @@ let rec compute_variance_fixpoint env decls required variances =
       (fun (id, decl) req -> if not (is_sharp id) then
         ignore (compute_variance_decl new_env true decl req))
       new_decls required;
-    new_decls, new_env
+    new_decls
   end
 
 let init_variance (id, decl) =
   List.map (fun _ -> (false, false, false)) decl.type_params
-
-(* for typeclass.ml *)
-let compute_variance_decls env cldecls =
-  let decls, required =
-    List.fold_right
-      (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) (decls, req) ->
-        (obj_id, obj_abbr) :: decls, required :: req)
-      cldecls ([],[])
-  in
-  let variances = List.map init_variance decls in
-  let (decls, _) = compute_variance_fixpoint env decls required variances in
-  List.map2
-    (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
-      let variance = List.map (fun (c,n,t) -> (c,n)) decl.type_variance in
-      (decl, {cl_abbr with type_variance = decl.type_variance},
-       {clty with cty_variance = variance},
-       {cltydef with clty_variance = variance}))
-    decls cldecls
 
 (* Force recursion to go through id for private types*)
 let name_recursion sdecl id decl =
@@ -610,23 +595,22 @@ let name_recursion sdecl id decl =
   | _ -> decl
 
 (* Translate a set of mutually recursive type declarations *)
-let transl_type_decl env name_sdecl_list =
+let transl_type_decl_with_defs env name_sdecl_list id_list cldecls =
   (* Add dummy types for fixed rows *)
   let fixed_types =
     List.filter (fun (_, sd) -> is_fixed_type sd) name_sdecl_list
   in
-  let name_sdecl_list =
+  let fixed_list =
     List.map
       (fun (name,sdecl) ->
         name^"#row",
         {sdecl with ptype_kind = Ptype_abstract; ptype_manifest = None})
       fixed_types
-    @ name_sdecl_list
   in
   (* Create identifiers. *)
   let id_list =
-    List.map (fun (name, _) -> Ident.create name) name_sdecl_list
-  in
+    List.map (fun (name, _) -> Ident.create name) fixed_list @ id_list
+  and name_sdecl_list = fixed_list @ name_sdecl_list in
   (*
      Since we've introduced fresh idents, make sure the definition
      level is at least the binding time of these events. Otherwise,
@@ -636,16 +620,13 @@ let transl_type_decl env name_sdecl_list =
   Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   (* Enter types. *)
+  let (cldecls, clreq) = List.split cldecls in
   let temp_env = List.fold_left2 enter_type env name_sdecl_list id_list in
+  let temp_env = add_type_decl temp_env cldecls in
   (* Translate each declaration. *)
-  let decls =
-    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  let decls = List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
   (* Build the final env. *)
-  let newenv =
-    List.fold_right
-      (fun (id, decl) env -> Env.add_type id decl env)
-      decls env
-  in
+  let newenv = add_type_decl env (decls @ cldecls) in
   (* Update stubs *)
   List.iter2
     (fun id (_, sdecl) -> update_type temp_env newenv id sdecl.ptype_loc)
@@ -677,14 +658,45 @@ let transl_type_decl env name_sdecl_list =
   in
   (* Add variances to the environment *)
   let required =
-    List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
-      name_sdecl_list
+    clreq @ List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
+              name_sdecl_list
+  and decls =
+    cldecls @ decls
   in
-  let final_decls, final_env =
-    compute_variance_fixpoint env decls required (List.map init_variance decls)
+  compute_variance_fixpoint env decls required (List.map init_variance decls)
+
+let transl_type_decl env name_sdecl_list =
+  let id_list =
+    List.map (fun (name, _) -> Ident.create name) name_sdecl_list in
+  let final_decls =
+    transl_type_decl_with_defs env name_sdecl_list id_list [] in
+  (final_decls, add_type_decl env final_decls)
+
+let rec split_length l1 l2 =
+  match l1 , l2 with
+  | [], l2 -> ([], l2)
+  | _::l1, a::l2 ->
+      let l', l'' = split_length l1 l2 in (a::l', l'')
+  |_ -> invalid_arg "Typedecl.split_length"
+
+let transl_type_decl_with_classes env name_sdecl_list id_list cldecls =
+  let cldecls' =
+    List.map
+      (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) ->
+        (obj_id, obj_abbr), required)
+      cldecls
   in
-  (* Done *)
-  (final_decls, final_env)
+  let final_decls =
+    transl_type_decl_with_defs env name_sdecl_list id_list cldecls' in
+  let cldecls', tdecls = split_length cldecls final_decls in
+  (List.map2
+    (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
+      let variance = List.map (fun (c,n,t) -> (c,n)) decl.type_variance in
+      (decl, {cl_abbr with type_variance = decl.type_variance},
+       {clty with cty_variance = variance},
+       {cltydef with clty_variance = variance}))
+    cldecls' cldecls,
+   tdecls)
 
 (* Translate an exception declaration *)
 let transl_closed_type env sty =
@@ -779,17 +791,15 @@ let transl_with_constraint env id row_path sdecl =
 
 (* Approximate a type declaration: just make all types abstract *)
 
-let abstract_type_decl arity =
-  let rec make_params n =
-    if n <= 0 then [] else Ctype.newvar() :: make_params (n-1) in
+let abstract_type_decl variance =
   Ctype.begin_def();
   let decl =
-    { type_params = make_params arity;
-      type_arity = arity;
+    { type_params = List.map (fun _ -> Ctype.newvar()) variance;
+      type_arity = List.length variance;
       type_kind = Type_abstract;
       type_private = Public;
       type_manifest = None;
-      type_variance = replicate_list (true, true, true) arity } in
+      type_variance = abstract_variance variance } in
   Ctype.end_def();
   generalize_decl decl;
   decl
@@ -797,8 +807,7 @@ let abstract_type_decl arity =
 let approx_type_decl env name_sdecl_list =
   List.map
     (fun (name, sdecl) ->
-      (Ident.create name,
-       abstract_type_decl (List.length sdecl.ptype_params)))
+      (Ident.create name, abstract_type_decl sdecl.ptype_variance))
     name_sdecl_list
 
 (* Variant of check_abbrev_recursion to check the well-formedness

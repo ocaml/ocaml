@@ -345,11 +345,14 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>%s %s :@ %a@]"
         (match rs with Orec_not -> "module"
                      | Orec_first -> "module rec"
-                     | Orec_next -> "and")
+                     | Orec_next -> "and"
+                     | Orec_with -> "with module")
         name !out_module_type mty
   | Osig_type(td, rs) ->
         print_out_type_decl
-          (if rs = Orec_next then "and" else "type")
+          (match rs with Orec_not | Orec_first -> "type"
+                       | Orec_next -> "and"
+                       | Orec_with -> "with type")
           ppf td
   | Osig_value (name, ty, prims) ->
       let kwd = if prims = [] then "val" else "external" in

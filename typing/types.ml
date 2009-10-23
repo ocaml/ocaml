@@ -207,3 +207,4 @@ and rec_status =
     Trec_not                            (* not recursive *)
   | Trec_first                          (* first in a recursive group *)
   | Trec_next                           (* not first in a recursive group *)
+  | Trec_with                           (* first prefixed by "with" *)

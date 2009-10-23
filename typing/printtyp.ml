@@ -65,6 +65,7 @@ let tree_of_rec = function
   | Trec_not -> Orec_not
   | Trec_first -> Orec_first
   | Trec_next -> Orec_next
+  | Trec_with -> Orec_with
 
 (* Print a raw type expression, with sharing *)
 
