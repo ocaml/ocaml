@@ -37,6 +37,7 @@ and type_desc =
   | Tvariant of row_desc
   | Tunivar
   | Tpoly of type_expr * type_expr list
+  | Tpackage of Path.t * string list * type_expr list
 
 and row_desc =
     { row_fields: (label * row_field) list;

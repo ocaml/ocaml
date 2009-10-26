@@ -456,6 +456,8 @@ let compute_variance env tvl nega posi cntr ty =
       | Tpoly (ty, _) ->
           compute_same ty
       | Tvar | Tnil | Tlink _ | Tunivar -> ()
+      | Tpackage (_, _, tyl) ->
+          List.iter (compute_variance_rec true true true) tyl
     end
   in
   compute_variance_rec nega posi cntr ty;

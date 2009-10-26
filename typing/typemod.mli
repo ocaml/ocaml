@@ -51,6 +51,7 @@ type error =
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
+  | Not_allowed_in_functor_body
 
 exception Error of Location.t * error
 

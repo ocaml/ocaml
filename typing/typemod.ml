@@ -39,6 +39,7 @@ type error =
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
+  | Not_allowed_in_functor_body
 
 exception Error of Location.t * error
 
@@ -265,15 +266,17 @@ let check_sig_item type_names module_names modtype_names loc = function
 
 (* Check and translate a module type expression *)
 
+let transl_modtype_longident loc env lid =
+  try
+    let (path, info) = Env.lookup_modtype lid env in
+    path
+  with Not_found ->
+    raise(Error(loc, Unbound_modtype lid))
+
 let rec transl_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
-      begin try
-        let (path, info) = Env.lookup_modtype lid env in
-        Tmty_ident path
-      with Not_found ->
-        raise(Error(smty.pmty_loc, Unbound_modtype lid))
-      end
+      Tmty_ident (transl_modtype_longident smty.pmty_loc env lid)
   | Pmty_signature ssg ->
       Tmty_signature(transl_signature env ssg)
   | Pmty_functor(param, sarg, sres) ->
@@ -573,7 +576,7 @@ let check_recmodule_inclusion env bindings =
 
 (* Type a module value expression *)
 
-let rec type_module anchor env smod =
+let rec type_module funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let (path, mty) = type_module_path env smod.pmod_loc lid in
@@ -582,7 +585,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
-      let (str, sg, finalenv) = type_structure anchor env sstr smod.pmod_loc in
+      let (str, sg, finalenv) = type_structure funct_body anchor env sstr smod.pmod_loc in
       rm { mod_desc = Tmod_structure str;
            mod_type = Tmty_signature sg;
            mod_env = env;
@@ -590,14 +593,14 @@ let rec type_module anchor env smod =
   | Pmod_functor(name, smty, sbody) ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_module name mty env in
-      let body = type_module None newenv sbody in
+      let body = type_module true None newenv sbody in
       rm { mod_desc = Tmod_functor(id, mty, body);
            mod_type = Tmty_functor(id, mty, body.mod_type);
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
-      let funct = type_module None env sfunct in
-      let arg = type_module None env sarg in
+      let funct = type_module funct_body None env sfunct in
+      let arg = type_module funct_body None env sarg in
       begin match Mtype.scrape env funct.mod_type with
         Tmty_functor(param, mty_param, mty_res) as mty_functor ->
           let coercion =
@@ -625,7 +628,7 @@ let rec type_module anchor env smod =
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
       end
   | Pmod_constraint(sarg, smty) ->
-      let arg = type_module anchor env sarg in
+      let arg = type_module funct_body anchor env sarg in
       let mty = transl_modtype env smty in
       let coercion =
         try
@@ -637,7 +640,17 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
 
-and type_structure anchor env sstr scope =
+  | Pmod_unpack (sexp, (p, l)) ->
+      if funct_body then raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
+      let l, mty = Typetexp.create_package_mty smod.pmod_loc env (p, l) in
+      let mty = transl_modtype env mty in
+      let exp = Typecore.type_expect env sexp (Typecore.create_package_type smod.pmod_loc env (p, l)) in
+      rm { mod_desc = Tmod_unpack(exp, mty);
+           mod_type = mty;
+           mod_env = env;
+           mod_loc = smod.pmod_loc }
+
+and type_structure funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
@@ -705,7 +718,7 @@ and type_structure anchor env sstr scope =
          final_env)
     | {pstr_desc = Pstr_module(name, smodl); pstr_loc = loc} :: srem ->
         check "module" loc module_names name;
-        let modl = type_module  (anchor_submodule name anchor) env smodl in
+        let modl = type_module funct_body (anchor_submodule name anchor) env smodl in
         let mty = enrich_module_type anchor name modl.mod_type env in
         let (id, newenv) = Env.enter_module name mty env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
@@ -723,7 +736,7 @@ and type_structure anchor env sstr scope =
           List.map2
             (fun (id, mty) (name, smty, smodl) ->
               let modl =
-                type_module (anchor_recmodule id anchor) newenv smodl in
+                type_module funct_body (anchor_recmodule id anchor) newenv smodl in
               let mty' =
                 enrich_module_type anchor (Ident.name id) modl.mod_type newenv in
               (id, mty, modl, mty'))
@@ -795,7 +808,7 @@ and type_structure anchor env sstr scope =
               classes [sig_rem]),
          final_env)
     | {pstr_desc = Pstr_include smodl; pstr_loc = loc} :: srem ->
-        let modl = type_module None env smodl in
+        let modl = type_module funct_body None env smodl in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
                    (extract_sig_open env smodl.pmod_loc modl.mod_type) in
@@ -811,12 +824,14 @@ and type_structure anchor env sstr scope =
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   type_struct env sstr
 
-let type_module = type_module None
-let type_structure = type_structure None
+let type_module = type_module false None
+let type_structure = type_structure false None
 
 (* Fill in the forward declaration *)
-let _ =
-  Typecore.type_module := type_module
+let () =
+  Typecore.type_module := type_module;
+  Typetexp.transl_modtype_longident := transl_modtype_longident;
+  Typetexp.transl_modtype := transl_modtype
 
 (* Normalize types in a signature *)
 
@@ -1005,3 +1020,6 @@ let report_error ppf = function
   | Interface_not_compiled intf_name ->
       fprintf ppf
         "@[Could not find the .cmi file for interface@ %s.@]" intf_name
+  | Not_allowed_in_functor_body ->
+      fprintf ppf
+        "This kind of expression is not allowed within the body of a functor."

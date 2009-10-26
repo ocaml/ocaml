@@ -45,6 +45,18 @@ let rec module_path s = function
   | Papply(p1, p2) ->
       Papply(module_path s p1, module_path s p2)
 
+let rec modtype_path s = function
+    Pident id as p ->
+      begin try
+        match Tbl.find id s.modtypes with
+          | Tmty_ident p -> p
+          | _ -> fatal_error "Subst.modtype_path"
+      with Not_found -> p end
+  | Pdot(p, n, pos) ->
+      Pdot(module_path s p, n, pos)
+  | Papply(p1, p2) ->
+      fatal_error "Subst.modtype_path"
+
 let type_path s = function
     Pident id as p ->
       begin try Tbl.find id s.types with Not_found -> p end
@@ -88,6 +100,8 @@ let rec typexp s ty =
       begin match desc with
       | Tconstr(p, tl, abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
+      | Tpackage(p, n, tl) ->
+          Tpackage(modtype_path s p, n, List.map (typexp s) tl)
       | Tobject (t1, name) ->
           Tobject (typexp s t1,
                  ref (match !name with

@@ -153,6 +153,9 @@ and raw_type_desc ppf = function
           match row.row_name with None -> fprintf ppf "None"
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
+  | Tpackage (p, _, tl) ->
+      fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
+        raw_type_list tl
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -234,7 +237,7 @@ let rec mark_loops_rec visited ty =
     | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
-    | Tconstr(_, tyl, _) ->
+    | Tconstr(_, tyl, _) | Tpackage (_, _, tyl) ->
         List.iter (mark_loops_rec visited) tyl
     | Tvariant row ->
         if List.memq px !visited_objects then add_alias px else
@@ -383,6 +386,8 @@ let rec tree_of_typexp sch ty =
         end
     | Tunivar ->
         Otyp_var (false, name_of_type ty)
+    | Tpackage (p, n, tyl) ->
+        Otyp_module (Path.name p, n, tree_of_typlist sch tyl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && aliasable ty then begin

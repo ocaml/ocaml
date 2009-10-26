@@ -20,6 +20,12 @@ Language features:
   and recursive calls may use the polymorphism.
   The syntax is the same as for polymorphic methods:
     "let [rec] <ident> : 'a1 ... 'an. <typexp> = ..."
+- First-class packages modules.
+  New kind of type expression, for packaged modules: (module PT).
+  New kind of expression, to pack a module as a first-class value: (module MODEXPR : PT).
+  New kind of module expression, to unpack a first-class value as a module: (val EXPR : PT).
+  PT is a package type of the form "S" or
+  "S with type t1 = ... and ... and type tn = ..." (S refers to a module type).
 
 Compilers and toplevel:
 - New warning (activated by the warning code 'R') to signal

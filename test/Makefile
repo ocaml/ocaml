@@ -29,7 +29,7 @@ BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
   fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
   nucleic.byt bdd.byt hamming.byt sorts.byt \
   almabench.byt almabench.fast.byt weaktest.byt \
-  newtype.byt
+  newtype.byt fstclassmod.byt
 
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 

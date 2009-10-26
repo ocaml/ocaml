@@ -846,7 +846,8 @@ module Analyser =
       | Typedtree.Tmod_constraint (m_exp, _, _) -> tt_name_from_module_expr m_exp
       | Typedtree.Tmod_structure _
       | Typedtree.Tmod_functor _
-      | Typedtree.Tmod_apply _ ->
+      | Typedtree.Tmod_apply _ 
+      | Typedtree.Tmod_unpack _ ->
           Odoc_messages.struct_end
 
     (** Get the list of included modules in a module structure of a typed tree. *)

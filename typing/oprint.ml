@@ -209,6 +209,16 @@ and print_simple_out_type ppf =
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
   | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_module (p, n, tyl) ->
+      fprintf ppf "@[<1>(module %s" p;
+      let first = ref true in
+      List.iter2
+        (fun s t ->
+          let sep = if !first then (first := false; "with") else "and" in
+          fprintf ppf " %s type %s = %a" sep s print_out_type t
+        )
+        n tyl;
+      fprintf ppf ")@]"
 and print_fields rest ppf =
   function
     [] ->

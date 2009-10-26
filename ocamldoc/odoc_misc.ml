@@ -479,7 +479,8 @@ let remove_option typ =
     | Types.Tobject _
     | Types.Tfield _
     | Types.Tnil
-    | Types.Tvariant _ -> t
+    | Types.Tvariant _
+    | Types.Tpackage _ -> t
     | Types.Tlink t2
     | Types.Tsubst t2 -> iter t2.Types.desc
   in

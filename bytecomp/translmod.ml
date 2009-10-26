@@ -266,6 +266,8 @@ let rec transl_module cc rootpath mexp =
                 [transl_module ccarg None arg], mexp.mod_loc))
   | Tmod_constraint(arg, mty, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
+  | Tmod_unpack(arg, _) ->
+      Translcore.transl_exp arg
 
 and transl_structure fields cc rootpath = function
     [] ->

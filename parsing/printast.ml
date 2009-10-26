@@ -146,6 +146,13 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
+  | Ptyp_package (s, l) ->
+      line i ppf "Ptyp_package %a\n" fmt_longident s;
+      list i package_with ppf l
+
+and package_with i ppf (s, t) =
+  line i ppf "with type %s\n" s;
+  core_type i ppf t
 
 and core_field_type i ppf x =
   line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
@@ -308,6 +315,10 @@ and expression i ppf x =
   | Pexp_newtype (s, e) ->
       line i ppf "Pexp_newtype \"%s\"\n" s;
       expression i ppf e
+  | Pexp_pack (me, (p,l)) ->
+      line i ppf "Pexp_pack %a" fmt_longident p;
+      list i package_with ppf l;
+      module_expr i ppf me
 
 and value_description i ppf x =
   line i ppf "value_description\n";
@@ -566,6 +577,10 @@ and module_expr i ppf x =
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;
       module_type i ppf mt;
+  | Pmod_unpack (e, (p, l)) ->
+      line i ppf "Pmod_unpack %a\n" fmt_longident p;
+      list i package_with ppf l;
+      expression i ppf e;
 
 and structure i ppf x = list i structure_item ppf x
 

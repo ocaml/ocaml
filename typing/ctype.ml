@@ -616,6 +616,8 @@ let rec update_level env level ty =
           (* +++ Levels should be restored... *)
           raise (Unify [(ty, newvar2 level)])
         end
+    | Tpackage (p, _, _) when level < Path.binding_time p ->
+        raise (Unify [(ty, newvar2 level)])
     | Tobject(_, ({contents=Some(p, tl)} as nm))
       when level < Path.binding_time p ->
         set_name nm None;
@@ -657,6 +659,8 @@ let rec generalize_expansive env var_level ty =
               if ct then update_level env var_level t
               else generalize_expansive env var_level t)
             variance tyl
+      | Tpackage (_, _, tyl) ->
+          List.iter (update_level env var_level) tyl
       | Tarrow (_, t1, t2, _) ->
           update_level env var_level t1;
           generalize_expansive env var_level t2
@@ -953,7 +957,7 @@ let rec copy_sep fixed free bound visited ty =
     let t = newvar() in          (* Stub *)
     let visited =
       match ty.desc with
-        Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ ->
+        Tarrow _ | Ttuple _ | Tvariant _ | Tconstr _ | Tobject _ | Tpackage _ ->
           (ty,(t,bound)) :: visited
       | _ -> visited in
     let copy_rec = copy_sep fixed free bound visited in
@@ -1653,6 +1657,8 @@ and unify3 env t1 t1' t2 t2' =
         unify env t1 t2
     | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
         enter_poly env univar_pairs t1 tl1 t2 tl2 (unify env)
+    | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when Path.same p1 p2 && n1 = n2 ->
+        unify_list env tl1 tl2
     | (_, _) ->
         raise (Unify [])
     end;
@@ -2053,6 +2059,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
+          | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2) when Path.same p1 p2 && n1 = n2 ->
+              moregen_list inst_nongen type_pairs env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
               moregen_row inst_nongen type_pairs env row1 row2
           | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
@@ -2311,6 +2319,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               eqtype_list rename type_pairs subst env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
+              eqtype_list rename type_pairs subst env tl1 tl2
+          | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2) when Path.same p1 p2 && n1 = n2 ->
               eqtype_list rename type_pairs subst env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
               eqtype_row rename type_pairs subst env row1 row2
@@ -2918,7 +2928,7 @@ let rec build_subtype env visited loops posi level t =
       let (t1', c) = build_subtype env visited loops posi level t1 in
       if c > Unchanged then (newty (Tpoly(t1', tl)), c)
       else (t, Unchanged)
-  | Tunivar ->
+  | Tunivar | Tpackage _ ->
       (t, Unchanged)
 
 let enlarge_type env ty =

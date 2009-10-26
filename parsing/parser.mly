@@ -440,6 +440,8 @@ module_expr:
       { $2 }
   | LPAREN module_expr error
       { unclosed "(" 1 ")" 3 }
+  | LPAREN VAL expr COLON package_type RPAREN
+      { mkmod(Pmod_unpack($3, $5)) }
 ;
 structure:
     structure_tail                              { $1 }
@@ -915,6 +917,8 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
+  | LPAREN MODULE module_expr COLON package_type RPAREN
+      { mkexp (Pexp_pack ($3, $5)) }
 ;
 simple_expr:
     val_longident
@@ -1361,6 +1365,19 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, Some [])) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
+  | LPAREN MODULE package_type RPAREN
+      { mktyp(Ptyp_package $3) }
+;
+package_type:
+    mty_longident { ($1, []) }
+  | mty_longident WITH package_type_cstrs { ($1, $3) }
+
+package_type_cstr:
+    TYPE LIDENT EQUAL core_type { ($2, $4) }
+;
+package_type_cstrs:
+    package_type_cstr { [$1] }
+  | package_type_cstr AND package_type_cstrs { $1::$3 }
 ;
 row_field_list:
     row_field                                   { [$1] }

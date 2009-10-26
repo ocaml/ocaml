@@ -84,6 +84,7 @@ let parameter_list_from_arrows typ =
     | Types.Tfield _
     | Types.Tnil
     | Types.Tunivar
+    | Types.Tpackage _
     | Types.Tvariant _ ->
         []
   in

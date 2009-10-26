@@ -762,6 +762,8 @@ and transl_exp0 e =
              (Lvar cpy))
   | Texp_letmodule(id, modl, body) ->
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
+  | Texp_pack modl ->
+      !transl_module Tcoerce_none None modl
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
@@ -790,7 +792,7 @@ and transl_exp0 e =
               Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
-          | Tarrow(_,_,_,_) | Ttuple _ | Tobject(_,_) | Tnil | Tvariant _
+          | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil | Tvariant _
               -> transl_exp e
           (* optimize predefined types (excepted float) *)
           | Tconstr(_,_,_) ->

@@ -966,6 +966,13 @@ let generalizable level ty =
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
+(* Helpers for packaged modules. *)
+let create_package_type loc env (p, l) =
+  let s = !Typetexp.transl_modtype_longident loc env p in
+  newty (Tpackage (s,
+                   List.map fst l,
+                   List.map (Typetexp.transl_simple_type env false) (List.map snd l)))
+
 (* Typing of expressions *)
 
 let unify_exp env exp expected_ty =
@@ -1650,6 +1657,18 @@ let rec type_exp env sexp =
          any new extra node in the typed AST. *)
       re { body with exp_loc = sexp.pexp_loc; exp_type = ety }
 
+  | Pexp_pack (m, (p, l)) ->
+      let loc = sexp.pexp_loc in
+      let l, mty = Typetexp.create_package_mty loc env (p, l) in
+      let m = {pmod_desc = Pmod_constraint (m, mty); pmod_loc = loc} in
+      let context = Typetexp.narrow () in
+      let modl = !type_module env m in
+      Typetexp.widen context;
+      re {
+        exp_desc = Texp_pack modl;
+        exp_loc = loc;
+        exp_type = create_package_type loc env (p, l);
+        exp_env = env }
 
 and type_argument env sarg ty_expected' =
   (* ty_expected' may be generic *)
