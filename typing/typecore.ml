@@ -411,6 +411,24 @@ let rec type_pat env sp =
         pat_loc = loc;
         pat_type = ty;
         pat_env = env }
+  | Ppat_constraint({ppat_desc=Ppat_var name; ppat_loc=loc},
+                    ({ptyp_desc=Ptyp_poly _} as sty)) ->
+      (* explicitly polymorphic type *)
+      let ty, force = Typetexp.transl_simple_type_delayed env sty in
+      pattern_force := force :: !pattern_force;
+      begin match ty.desc with
+      | Tpoly (body, tyl) ->
+          begin_def ();
+          let _, ty' = instance_poly false tyl body in
+          end_def ();
+          generalize ty';
+          let id = enter_variable loc name ty' in
+          rp { pat_desc = Tpat_var id;
+               pat_loc = loc;
+               pat_type = ty;
+               pat_env = env }
+      | _ -> assert false
+      end      
   | Ppat_alias(sq, name) ->
       let q = type_pat env sq in
       begin_def ();
@@ -857,6 +875,8 @@ let rec approx_type env sty =
         newconstr path tyl
       with Not_found -> newvar ()
       end
+  | Ptyp_poly (_, sty) ->
+      approx_type env sty
   | _ -> newvar ()
 
 let rec type_approx env sexp =
@@ -899,7 +919,9 @@ let rec list_labels_aux env visited ls ty_fun =
 let list_labels env ty = list_labels_aux env [] [] ty
 
 (* Check that all univars are safe in a type *)
-let check_univars env kind exp ty_expected vars =
+let check_univars env expans kind exp ty_expected vars =
+  if expans && not (is_nonexpansive exp) then
+    generalize_expansive env exp.exp_type;
   (* need to expand twice? cf. Ctype.unify2 *)
   let vars = List.map (expand_head env) vars in
   let vars = List.map (expand_head env) vars in
@@ -1142,9 +1164,7 @@ let rec type_exp env sexp =
         end;
         let arg = type_argument env sarg ty_arg in
         end_def ();
-        if vars <> [] && not (is_nonexpansive arg) then
-          generalize_expansive env arg.exp_type;
-        check_univars env "field value" arg label.lbl_arg vars;
+        check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
         num_fields := Array.length label.lbl_all;
         if label.lbl_private = Private then
           raise(Error(loc, Private_type ty));
@@ -1225,9 +1245,7 @@ let rec type_exp env sexp =
       unify_exp env record ty_res;
       let newval = type_expect env snewval ty_arg in
       end_def ();
-      if vars <> [] && not (is_nonexpansive newval) then
-        generalize_expansive env newval.exp_type;
-      check_univars env "field value" newval label.lbl_arg vars;
+      check_univars env (vars <> []) "field value" newval label.lbl_arg vars;
       if label.lbl_private = Private then
         raise(Error(loc, Private_label(lid, ty_res)));
       re {
@@ -2062,7 +2080,7 @@ and type_expect ?in_function env sexp ty_expected =
             let vars, ty'' = instance_poly true tl ty' in
             let exp = type_expect env sbody ty'' in
             end_def ();
-            check_univars env "method" exp ty_expected vars;
+            check_univars env false "method" exp ty_expected vars;
             re { exp with exp_type = ty }
         | _ -> assert false
       end
@@ -2152,7 +2170,13 @@ and type_let env rec_flag spat_sexp_list scope =
   let (pat_list, new_env, force) = type_pattern_list env spatl scope in
   if rec_flag = Recursive then
     List.iter2
-      (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
+      (fun pat (_, sexp) ->
+        let pat =
+          match pat.pat_type.desc with
+          | Tpoly (ty, tl) ->
+              {pat with pat_type = snd (instance_poly false tl ty)}
+          | _ -> pat
+        in unify_pat env pat (type_approx env sexp))
       pat_list spat_sexp_list;
   let pat_list =
     if !Clflags.principal then begin
@@ -2177,7 +2201,16 @@ and type_let env rec_flag spat_sexp_list scope =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
   let exp_list =
     List.map2
-      (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)
+      (fun (spat, sexp) pat ->
+        match pat.pat_type.desc with
+        | Tpoly (ty, tl) ->
+            begin_def ();
+            let vars, ty' = instance_poly true tl ty in
+            let exp = type_expect exp_env sexp ty' in
+            end_def ();
+            check_univars env true "definition" exp pat.pat_type vars;
+            {exp with exp_type = instance exp.exp_type}
+        | _ -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_list in
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))

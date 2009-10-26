@@ -452,6 +452,8 @@ type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b]
 and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
 
 (* PR#1917: expanding may change original in Ctype.unify2 *)
+(* Note: since 3.11, the abbreviations are not used when printing
+   a type where they occur recursively inside. *)
 class type ['a, 'b] a = object
   method b: ('a, 'b) #b as 'b
   method as_a: ('a, 'b) a
@@ -568,23 +570,45 @@ let h x =
   let x = List.hd [Some x; none] in (just x)#id;;
 
 (* polymorphic recursion *)
-(*
-let rec 'a. f : 'a -> _ = fun x -> 1 and g x = f x;;
+
+let rec f : 'a. 'a -> _ = fun x -> 1 and g x = f x;;
 type 'a t = Leaf of 'a | Node of ('a * 'a) t;;
-let rec 'a. depth : 'a t -> _ =
-  function Leaf _ -> 1 | Node x -> 1 + d x
-and d x = depth x;;
-let rec 'a. depth : 'a t -> _ =
+let rec depth : 'a. 'a t -> _ =
   function Leaf _ -> 1 | Node x -> 1 + depth x;;
-let rec 'a. depth : 'a t -> _ =
-  function Leaf x -> x | Node x -> 1 + depth x;;
-let rec 'a. depth : 'a t -> _ =
-  function Leaf x -> x | Node x -> depth x;;
-let rec 'a 'b. depth : 'a t -> 'b =
-  function Leaf x -> x | Node x -> depth x;;
-let rec 'a. r : 'a list * 'b list ref = [], ref []
+let rec depth : 'a. 'a t -> _ =
+  function Leaf _ -> 1 | Node x -> 1 + d x
+and d x = depth x;; (* fails *)
+let rec depth : 'a. 'a t -> _ =
+  function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
+let rec depth : 'a. 'a t -> _ =
+  function Leaf x -> x | Node x -> depth x;; (* fails *)
+let rec depth : 'a 'b. 'a t -> 'b =
+  function Leaf x -> x | Node x -> depth x;; (* fails *)
+let rec r : 'a. 'a list * 'b list ref = [], ref []
 and q () = r;;
-let rec 'a. f : _ -> _ = fun x -> x;;
-let 'a as [> `Int of int | `B of 'b] 'b. zero : 'a = `Int 0;;
-let 'a as [< `Int of int]. zero : 'a = `Int 0;;
-*)
+let f : 'a. _ -> _ = fun x -> x;;
+let zero : 'a. [> `Int of int | `B of 'a] as 'a  = `Int 0;; (* ok *)
+let zero : 'a. [< `Int of int] as 'a = `Int 0;; (* fails *)
+
+(* compare with records (should be the same) *)
+type t = {f: 'a. [> `Int of int | `B of 'a] as 'a}
+let zero = {f = `Int 0} ;;
+type t = {f: 'a. [< `Int of int] as 'a}
+let zero = {f = `Int 0} ;; (* fails *)
+
+(* Yet another example *)
+let rec id : 'a. 'a -> 'a = fun x -> x
+and neg i b = (id (-i), id (not b));;
+
+(* De Xavier *)
+
+type t = A of int | B of (int*t) list | C of (string*t) list
+
+let rec transf f = function
+  | A x -> f x
+  | B l -> B (transf_alist f l)
+  | C l -> C (transf_alist f l)
+and transf_alist : 'a. _ -> ('a*t) list -> ('a*t) list = fun f -> function
+  | [] -> []
+  | (k,v)::tl -> (k, transf f v) :: transf_alist f tl
+;;

@@ -14,6 +14,12 @@ Language features:
   and then replaced by a fresh type variable. In particular, the type
   t can be used in contexts where a type variable is not allowed
   (e.g. for defining an exception in a local module).
+- Explicit polymorphic types and polymorphic recursion. In let
+  definitions, one can write an explicit polymorphic type just
+  immediately the function name; the polymorphism will be enforced,
+  and recursive calls may use the polymorphism.
+  The syntax is the same as for polymorphic methods:
+    "let [rec] <ident> : 'a1 ... 'an. <typexp> = ..."
 
 Compilers and toplevel:
 - New warning (activated by the warning code 'R') to signal

@@ -1012,6 +1012,10 @@ let_bindings:
 let_binding:
     val_ident fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
+  | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
+      { (ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
+                               ghtyp(Ptyp_poly($3,$5)))),
+         $7) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
 ;
