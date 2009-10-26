@@ -43,6 +43,13 @@ end = struct
   type ('a,'b) sub_control = SubControl of 'a control constraint 'b = int
 end
 
+module rec TC : sig
+  class type ['a] control = object
+    method sub: 'b. ('a, 'b) type_path -> ('b,int) TC.sub_control
+  end
+  type ('a,'b) sub_control = SubControl of 'a control constraint 'b = int
+end = TC
+
 (* Oops, recursive module didn't propagate variance correctly.
    Work now with explicit variances. *)
 module rec A : sig
@@ -109,3 +116,21 @@ end
 let l = new olist [1;2;3]
 let Olist.W l' = l#map float
 let l'' = l#map_self succ
+
+type 'a get_n = 'b constraint 'a = <n : 'b; ..>
+
+class type c = object method m : t method n : int end
+with type t = c get_n
+
+module rec M : sig
+  type t = M.c get_n
+  class type c = object method m : t method n : int end
+end = struct
+  type t = M.c get_n
+  class type c = object method m : t method n : int end
+end
+
+module rec M : sig
+  class type c = object method m : M.t method n : int end
+  type t = c get_n
+end = M
