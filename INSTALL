@@ -109,7 +109,7 @@ The "configure" script accepts the following options:
 -as <assembler and options>     (default: determined automatically)
         The assembler to use for assembling ocamlopt-generated code.
 
--aspp <assembler and options>   (default: determined automatically>
+-aspp <assembler and options>   (default: determined automatically)
         The assembler to use for assembling the parts of the
         run-time system manually written in assembly language.
         This assembler must preprocess its input with the C preprocessor.
