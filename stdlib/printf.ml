@@ -436,7 +436,7 @@ let format_float_lexeme =
       let add_dot sfmt s =
         if s.[0] = ' ' || s.[0] = '+' || s.[0] = '0'
         then String.sub s 1 (l - 1) ^ "."
-        else String.sub s 0 (l - 1) ^ "." in
+        else s ^ "." in
 
       let rec loop i =
         if i >= l then add_dot sfmt s else
