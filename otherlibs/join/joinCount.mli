@@ -23,6 +23,8 @@
       sent on a [collect] channel.
     - {!Dynamic} is a refinement of [Collector] where {i n} is not
       known in advance.
+    - {!Monitor} is an enhancement of [Dynamic] adding the ability
+      to access the list of pending computations.
 *)
 
 (** Simple countdowns. *)
@@ -86,11 +88,52 @@ module Dynamic :
 
      Then the call [c.wait()] will return the combined result
           [comb x1 (comb x2 (... (comb xn y0)))], once all the announced
-          events have occured. Observe that at most one such call is allowed.
+          events have occurred. Observe that at most one such call is allowed.
     *)
 
     val create : ('a -> 'b -> 'b) -> 'b -> ('a, 'b) t
   (** [create comb y0] returns a dynamic  collector
 	of events of type ['a],  with combining function [comb] and initial
         result [y0]. *)  
+  end
+
+module Monitor :
+  sig
+    type key
+    (** Type for identifiers of pending computations. *)
+
+    type ('a,'b,'c) t = {
+      enter : 'a -> key;
+      leave : key * 'b -> unit;
+      is_pending : key -> bool;
+      get_pendings : unit -> (key * 'a) list;
+      wait : unit -> 'c;
+      finished : unit Join.chan;
+    }
+    (** Monitiors are enhancements of dynamic collectors adding the
+        ability to access the list of pending computations.
+
+        Given a monitor [m], defined as [create comb y0]:
+          - [m] is informed of the start of a computation by sending
+            a message [m.enter xi] where [xi] is the input of the
+            computation, an identifier for the computation being returned.
+          - [m] is informed of the end of a computation by sending
+            a message [m.leave (id, yi)] where [id] is the computation
+            identifier as previously returned by [enter], and [yi] is
+            the result of the computation.
+          - [m.is_pending id] returns whether the computation whose
+            identifier is passed is pending (a computation is pending
+            if it has been "entered" but not yet "leaved").
+          - [m.get_pendings ()] returns the list of pending computations.
+          - [m] is informed that no more computation will be entered
+            by sending a message [m.finished ()].
+
+        The call [m.wait ()] will return the combined result
+        [comb y1 (comb y2 (... (comb yn y0)))], once all the announced
+        events have occurred. Observe that at most one such call is allowed. *)
+
+    val create : ('b -> 'c -> 'c) -> 'c -> ('a, 'b, 'c) t
+    (** [create comb y0] returns a monitor for computations of type
+        ['a -> 'b], [comb] being used to combine results with initial
+        result [y0]. *)
   end
