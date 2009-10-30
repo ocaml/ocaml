@@ -13,7 +13,7 @@
 (* $Id$ *)
 
 
-(* Configuration *)
+(* Fork utilities *)
 
 type fork_args =
 | No_argument
@@ -33,20 +33,41 @@ let get_args = function
   | Same_arguments a -> a
   | Argument_generator f -> f ()
 
-let rec do_forks name args = function
-  | 0 -> []
-  | n ->
-      match Unix.fork () with
-      | 0 ->
-          let args = prepend name (get_args args) in
-          (try Unix.execv name args with _ -> exit 127)
-      | pid -> pid :: (do_forks name args (pred n))
+let filter_clients a =
+  let a' = Array.copy a in
+  let len = Array.length a in
+  let i = ref 0 in
+  let i' = ref 0 in
+  while (!i < len) do
+    if a.(!i) = "-clients" then begin
+      i := !i + 2
+    end else begin
+      a'.(!i') <- a.(!i);
+      incr i;
+      incr i'
+    end
+  done;
+  Array.sub a' 0 !i'
+
+let do_forks name args n =
+  let rec df = function
+    | 0 -> []
+    | n ->
+        match Unix.fork () with
+        | 0 ->
+            let args = prepend name (get_args args) in
+            (try Unix.execv name args with _ -> exit 127)
+        | pid -> pid :: (df (pred n)) in
+  df (max 0 n)
+
+
+(* Configuration *)
 
 type configuration = {
     mutable host : string;
     mutable port : int;
     mutable clients : int;
-    mutable client_name : string;
+    mutable forked_program : string;
     mutable fork_args : fork_args;
     mutable magic_id : string;
     mutable magic_value : string;
@@ -58,11 +79,15 @@ let default_port = 12345
 
 let default_clients = 0
 
-let default_client_name = String.copy Sys.argv.(0)
+let default_forked_program =
+  if Array.length Sys.argv > 0 then
+    String.copy Sys.argv.(0)
+  else
+    ""
 
 let default_fork_args =
   let len = Array.length Sys.argv in
-  Same_arguments (Array.init (pred len) (fun i -> String.copy Sys.argv.(succ i)))
+  Same_arguments (filter_clients (Array.sub Sys.argv 1 (pred len)))
 
 let default_magic_id = "magic-number"
 
@@ -72,7 +97,7 @@ let default_configuration () = {
   host = String.copy default_host;
   port = default_port;
   clients = default_clients;
-  client_name = String.copy default_client_name;
+  forked_program = String.copy default_forked_program;
   fork_args = default_fork_args;
   magic_id = String.copy default_magic_id;
   magic_value = String.copy default_magic_value;
@@ -88,9 +113,9 @@ let split_addr s =
   with
   | Not_found -> String.copy s, default_port
 
-let make_configuration ?(key_prefix="-join") () =
+let make_configuration () =
   let cfg = default_configuration () in
-  cfg, [ key_prefix ^ "-host",
+  cfg, [ "-host",
          Arg.String
            (fun s ->
              let h, p = split_addr s in
@@ -98,31 +123,13 @@ let make_configuration ?(key_prefix="-join") () =
              cfg.port <- p),
          "<name:port>  Set host name and port" ;
 
-         key_prefix ^ "-clients",
+         "-clients",
          Arg.Int (fun i -> cfg.clients <- i),
          "<n>  Set number of clients to launch";
 
-         key_prefix ^ "-client-name",
-         Arg.String (fun s -> cfg.client_name <- String.copy s),
+         "-forked-program",
+         Arg.String (fun s -> cfg.forked_program <- String.copy s),
          "<name>  Set executable for clients" ]
-
-let parse_configuration ?(key_prefix="-join") ?(merge_args=false) ?(argv=Sys.argv) ?(start=0) speclist anon_fun usage_msg =
-  try
-    let res, args = make_configuration ~key_prefix:key_prefix () in
-    let args' =
-      if merge_args then
-        List.merge (fun (x, _, _) (y, _, _) -> compare x y) speclist args
-      else
-        speclist @ args in
-    Arg.parse_argv ~current:(ref start) argv args' anon_fun usage_msg;
-    res
-  with
-  | Arg.Bad msg ->
-      prerr_string msg;
-      exit 2
-  | Arg.Help msg ->
-      print_string msg;
-      exit 0
 
 
 (* Client-related functions *)
@@ -160,19 +167,20 @@ let exit_at_fail = exit_at_fail_with_code 0
 
 exception Invalid_magic of string * string
 
-let init_client ?(at_fail=do_nothing_at_fail) ?(lookup=lookup_once) cfg =
+let init_client ?(at_fail=do_nothing_at_fail) cfg =
   let inet_addr = (Unix.gethostbyname cfg.host).Unix.h_addr_list.(0) in
   let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
   let server_site = Join.Site.there server_addr in
   let ns = Join.Ns.of_site server_site in
   Join.Site.at_fail server_site at_fail;
-  let magic : string = Obj.magic (lookup ns cfg.magic_id) in
+  let lookup_magic = lookup_times ~-1 1.0 in
+  let magic : string = lookup_magic ns cfg.magic_id in
   if magic <> cfg.magic_value then
     raise (Invalid_magic (cfg.magic_value, magic));
-  ignore (do_forks cfg.client_name cfg.fork_args (max 0 cfg.clients));
+  ignore (do_forks cfg.forked_program cfg.fork_args cfg.clients);
   ns
 
-let init_client_with_lookup ?(at_fail=do_nothing_at_fail) ?(lookup=lookup_once) cfg id =
+let init_client_with_lookup ?(at_fail=do_nothing_at_fail) ?(lookup=(lookup_times ~-1 1.0)) cfg id =
   let ns = init_client ~at_fail:at_fail cfg in
   let v = lookup ns id in
   ns, v
@@ -185,7 +193,7 @@ let init_server cfg =
   let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
   Join.Ns.register Join.Ns.here cfg.magic_id cfg.magic_value;
   Join.Site.listen server_addr;
-  let pids = do_forks cfg.client_name cfg.fork_args (max 0 cfg.clients) in
+  let pids = do_forks cfg.forked_program cfg.fork_args (max 0 cfg.clients) in
   Join.Ns.here, pids
 
 let init_server_with_register cfg id v =
@@ -198,4 +206,5 @@ let init_server_with_register cfg id v =
 
 let wait_forever () =
   def wait() & never_sent() = reply to wait in
-  wait ()
+  wait ();
+  Obj.magic 0 (* never reached *)
