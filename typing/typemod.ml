@@ -63,6 +63,13 @@ let type_module_path env loc lid =
   with Not_found ->
     raise(Error(loc, Unbound_module lid))
 
+(* Compute the environment after opening a module *)
+
+let type_open env loc lid =
+  let (path, mty) = type_module_path env loc lid in
+  let sg = extract_sig_open env loc mty in
+  Env.open_signature path sg env
+
 (* Record a module type *)
 let rm node =
   Stypes.record (Stypes.Ti_mod node);
@@ -202,10 +209,7 @@ and approx_sig env ssg =
           let (id, newenv) = Env.enter_modtype name info env in
           Tsig_modtype(id, info) :: approx_sig newenv srem
       | Psig_open lid ->
-          let (path, mty) = type_module_path env item.psig_loc lid in
-          let sg = extract_sig_open env item.psig_loc mty in
-          let newenv = Env.open_signature path sg env in
-          approx_sig newenv srem
+          approx_sig (type_open env item.psig_loc lid) srem
       | Psig_include smty ->
           let mty = approx_modtype env smty in
           let sg = Subst.signature Subst.identity
@@ -343,10 +347,7 @@ and transl_signature env sg =
             let rem = transl_sig newenv srem in
             Tsig_modtype(id, info) :: rem
         | Psig_open lid ->
-            let (path, mty) = type_module_path env item.psig_loc lid in
-            let sg = extract_sig_open env item.psig_loc mty in
-            let newenv = Env.open_signature path sg env in
-            transl_sig newenv srem
+            transl_sig (type_open env item.psig_loc lid) srem
         | Psig_include smty ->
             let mty = transl_modtype env smty in
             let sg = Subst.signature Subst.identity
@@ -757,9 +758,7 @@ and type_structure funct_body anchor env sstr scope =
          Tsig_modtype(id, Tmodtype_manifest mty) :: sig_rem,
          final_env)
     | {pstr_desc = Pstr_open lid; pstr_loc = loc} :: srem ->
-        let (path, mty) = type_module_path env loc lid in
-        let sg = extract_sig_open env loc mty in
-        type_struct (Env.open_signature path sg env) srem
+        type_struct (type_open env loc lid) srem
     | {pstr_desc = Pstr_class cl; pstr_loc = loc} :: srem ->
          List.iter
            (fun {pci_name = name} -> check "type" loc type_names name)
@@ -831,7 +830,8 @@ let type_structure = type_structure false None
 let () =
   Typecore.type_module := type_module;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
-  Typetexp.transl_modtype := transl_modtype
+  Typetexp.transl_modtype := transl_modtype;
+  Typecore.type_open := type_open
 
 (* Normalize types in a signature *)
 

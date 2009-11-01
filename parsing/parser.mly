@@ -827,6 +827,10 @@ expr:
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule($3, $4, $6)) }
+  | LET OPEN mod_longident IN seq_expr
+      { mkexp(Pexp_open($3, $5)) }
+  | mod_longident DOT LPAREN seq_expr RPAREN
+      { mkexp(Pexp_open($1, $4)) }
   | FUNCTION opt_bar match_cases
       { mkexp(Pexp_function("", None, List.rev $3)) }
   | FUN labeled_simple_pattern fun_def

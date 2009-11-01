@@ -26,6 +26,8 @@ Language features:
   New kind of module expression, to unpack a first-class value as a module: (val EXPR : PT).
   PT is a package type of the form "S" or
   "S with type t1 = ... and ... and type tn = ..." (S refers to a module type).
+- Local opening of modules in a subexpression.
+  Syntax: "let open M in e", or "M.(e)"
 
 Compilers and toplevel:
 - New warning (activated by the warning code 'R') to signal

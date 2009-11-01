@@ -319,6 +319,9 @@ and expression i ppf x =
       line i ppf "Pexp_pack %a" fmt_longident p;
       list i package_with ppf l;
       module_expr i ppf me
+  | Pexp_open (m, e) ->
+      line i ppf "Pexp_open \"%a\"\n" fmt_longident m;
+      expression i ppf e
 
 and value_description i ppf x =
   line i ppf "value_description\n";
