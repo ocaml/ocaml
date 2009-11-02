@@ -134,26 +134,18 @@ struct
            " Generate code that supports the threads library with VM-level\n\
       \     scheduling";
     "-w", Arg.String F._w,
-      "<flags>  Enable or disable warnings according to <flags>:\n\
-      \032    C/c enable/disable suspicious comment\n\
-      \032    D/d enable/disable deprecated features\n\
-      \032    E/e enable/disable fragile match\n\
-      \032    F/f enable/disable partially applied function\n\
-      \032    L/l enable/disable labels omitted in application\n\
-      \032    M/m enable/disable overriden methods\n\
-      \032    P/p enable/disable partial match\n\
-      \032    S/s enable/disable non-unit statement\n\
-      \032    U/u enable/disable unused match case\n\
-      \032    V/v enable/disable overriden instance variables\n\
-      \032    Y/y enable/disable suspicious unused variables\n\
-      \032    Z/z enable/disable all other unused variables\n\
-      \032    X/x enable/disable all other warnings\n\
-      \032    A/a enable/disable all warnings\n\
-      \032    default setting is \"Aelz\"";
+      "<list>  Enable or disable warnings according to <list>:\n\
+      \032    +<num>    enable warning <num>\n\
+      \032    +<letter> enable set <letter>\n\
+      \032    -<num>    disable warning <num>\n\
+      \032    -<letter> disable set <letter>\n\
+      \032    @<num>    enable warning <num> and treat it as an error\n\
+      \032    @<letter> enable set <letter> and treat them as errors\n\
+      \032    default setting is \"+a-4-6-9-27\"";
     "-warn-error" , Arg.String F._warn_error,
-     "<flags>  Treat the warnings of <flags> as errors, if they are\n\
-      \     enabled.  See option -w for the list of flags.\n\
-      \     Default setting is \"a\" (warnings are not errors)";
+     "<list>  Enable or disable error status for warnings according\n\
+      \     to <list>.  See option -w for the syntax of <list>.\n\
+      \     Default setting is \"-a\"";
     "-where", Arg.Unit F._where,
            " Print location of standard library and exit";
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
