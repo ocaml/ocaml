@@ -41,7 +41,7 @@ intnat caml_stat_minor_collections = 0,
        caml_stat_compactions = 0,
        caml_stat_heap_chunks = 0;
 
-extern asize_t caml_major_heap_increment;  /* bytes; see major_gc.c */
+extern uintnat caml_major_heap_increment;  /* bytes; see major_gc.c */
 extern uintnat caml_percent_free;          /*        see major_gc.c */
 extern uintnat caml_percent_max;           /*        see compact.c */
 extern uintnat caml_allocation_policy;     /*        see freelist.c */
