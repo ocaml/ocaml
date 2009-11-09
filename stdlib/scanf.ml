@@ -407,11 +407,18 @@ let compatible_format_type fmt1 fmt2 =
    In this case, the character c has been explicitely specified in the
    format as being mandatory in the input; hence we should fail with
    End_of_file in case of end_of_input.
-   That's why we use checked_peek_char here. *)
-let check_char ib c =
+   That's why we use checked_peek_char here.
+   We are also careful to treat "\r\n" in the input as a end of line marker: it
+   always matches a '\n' specification in the input format string.
+ *)
+let rec check_char ib c =
   let ci = Scanning.checked_peek_char ib in
-  if ci = c then Scanning.invalidate_current_char ib else
-    character_mismatch c ci
+  if ci = c then Scanning.invalidate_current_char ib else begin
+    match ci with
+    | '\r' when c = '\n' ->
+      Scanning.invalidate_current_char ib; check_char ib '\n'
+    | _ -> character_mismatch c ci
+  end
 ;;
 
 (* Checks that the current char is indeed one of the stopper characters,
@@ -779,6 +786,8 @@ let scan_String max ib =
     let c = Scanning.checked_peek_char ib in
     if Scanning.eof ib then bad_input "a string" else
     match c, s with
+    | '\r', true ->
+      skip_spaces true (Scanning.ignore_char ib max)
     | '\n', true
     | ' ', false ->
       skip_spaces false (Scanning.ignore_char ib max)
@@ -1194,6 +1203,8 @@ let scan_format ib ef fmt rv f =
       | '!' ->
         if Scanning.end_of_input ib then scan_fmt ir f (succ i)
         else bad_input "end of input not found"
+      | ',' ->
+        scan_fmt ir f (succ i)
       | '_' ->
         if i > lim then incomplete_format fmt else
         scan_conversion true max ir f (succ i)

@@ -215,7 +215,7 @@ let iter_on_format_args fmt add_conv add_char =
   and scan_conv skip i =
     if i > lim then incomplete_format fmt else
     match Sformat.unsafe_get fmt i with
-    | '%' | '!' -> succ i
+    | '%' | '!' | ',' -> succ i
     | 's' | 'S' | '[' -> add_conv skip i 's'
     | 'c' | 'C' -> add_conv skip i 'c'
     | 'd' | 'i' |'o' | 'u' | 'x' | 'X' | 'N' -> add_conv skip i 'i'
@@ -433,10 +433,7 @@ let format_float_lexeme =
   let valid_float_lexeme sfmt s =
     let l = String.length s in
     if l = 0 then "nan" else
-      let add_dot sfmt s =
-        if s.[0] = ' ' || s.[0] = '+' || s.[0] = '0'
-        then String.sub s 1 (l - 1) ^ "."
-        else s ^ "." in
+      let add_dot sfmt s = s ^ "." in
 
       let rec loop i =
         if i >= l then add_dot sfmt s else
@@ -562,6 +559,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
         let s = format_int (extract_format_int 'n' fmt pos i widths) x in
         cont_s (next_index spec n) s (succ i)
       end
+    | ',' -> cont_s n "" (succ i)
     | '!' -> cont_f n (succ i)
     | '{' | '(' as conv (* ')' '}' *) ->
       let (xf : ('a, 'b, 'c, 'd, 'e, 'f) format6) = get_arg spec n in

@@ -197,12 +197,15 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 (** {7 The space character in format strings} *)
 
 (** As mentioned above, a plain character in the format string is just
-    matched with the characters of the input; however, one character is a
-    special exception to this simple rule: the space character (ASCII code
-    32) does not match a single space character, but any amount of
+    matched with the next character of the input; however, two characters are
+    special exceptions to this rule: the space character ([' '] or ASCII code
+    32) and the line feed character (['\n'] or ASCII code 10).
+    A space does not match a single space character, but any amount of
     ``whitespace'' in the input. More precisely, a space inside the format
     string matches {e any number} of tab, space, line feed and carriage
-    return characters.
+    return characters. Similarly, a line feed character in the format string
+    matches either a single line feed or a carriage return followed by a line
+    feed.
 
     Matching {e any} amount of whitespace, a space in the format string
     also matches no amount of whitespace at all; hence, the call [bscanf ib
@@ -287,6 +290,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     - [N] or [L]: returns the number of tokens read so far.
     - [!]: matches the end of input condition.
     - [%]: matches one [%] character in the input.
+    - [,]: does nothing (useful to delimit a conversion specification).
 
     Following the [%] character that introduces a conversion, there may be
     the special flag [_]: the conversion that follows occurs as usual,

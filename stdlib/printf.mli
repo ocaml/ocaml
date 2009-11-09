@@ -78,6 +78,8 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      type as [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
+   - [,]: take no argument and do nothing (useful to delimit a conversion
+     specification).
 
    The optional [flags] are:
    - [-]: left-justify the output (default is right justification).

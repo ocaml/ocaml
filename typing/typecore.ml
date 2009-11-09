@@ -752,7 +752,7 @@ let type_format loc fmt =
       and scan_conversion i j =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
-        | '%' | '!' -> scan_format (j + 1)
+        | '%' | '!' | ',' -> scan_format (j + 1)
         | 's' | 'S' -> conversion j Predef.type_string
         | '[' ->
           let j = range_closing_index fmt j in
