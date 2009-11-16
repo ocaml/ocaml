@@ -511,7 +511,11 @@ let link objfiles output_name =
         #ifdef __cplusplus\n\
         extern \"C\" {\n\
         #endif\n\
-        #include <caml/mlvalues.h>\n";
+        #ifdef _WIN64\n\
+        typedef __int64 value;\n\
+        #else\n\
+        typedef long value;\n\
+        #endif\n";
       Symtable.output_primitive_table poc;
       output_string poc "\
         #ifdef __cplusplus\n\
