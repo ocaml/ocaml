@@ -95,6 +95,8 @@ while : ; do
         pthread_wanted=no;;
     -no-tk|--no-tk)
         tk_wanted=no;;
+    -partialld|--partialld)
+        partialld="$2"; shift;;
     -tkdefs*|--tkdefs*)
         tk_defs=$2; shift;;
     -tklibs*|--tklibs*)
