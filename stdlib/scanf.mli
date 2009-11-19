@@ -290,7 +290,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     - [N] or [L]: returns the number of tokens read so far.
     - [!]: matches the end of input condition.
     - [%]: matches one [%] character in the input.
-    - [,]: the no-op delimiter for conversion specification.
+    - [,]: the no-op delimiter for conversion specifications.
 
     Following the [%] character that introduces a conversion, there may be
     the special flag [_]: the conversion that follows occurs as usual,
