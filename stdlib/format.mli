@@ -72,7 +72,6 @@
    the evaluation order of printing commands.
 *)
 
-
 (** {6 Boxes} *)
 
 val open_box : int -> unit;;
@@ -111,7 +110,6 @@ val print_char : char -> unit;;
 
 val print_bool : bool -> unit;;
 (** Prints a boolean in the current box. *)
-
 
 (** {6 Break hints} *)
 
@@ -156,7 +154,6 @@ val print_if_newline : unit -> unit;;
    has just been split. Otherwise, ignore the next formatting
    command. *)
 
-
 (** {6 Margin} *)
 
 val set_margin : int -> unit;;
@@ -169,7 +166,6 @@ val set_margin : int -> unit;;
 
 val get_margin : unit -> int;;
 (** Returns the position of the right margin. *)
-
 
 (** {6 Maximum indentation limit} *)
 
@@ -200,7 +196,6 @@ val get_max_boxes : unit -> int;;
 
 val over_max_boxes : unit -> bool;;
 (** Tests if the maximum number of boxes allowed have already been opened. *)
-
 
 (** {6 Advanced formatting} *)
 
@@ -235,7 +230,6 @@ val open_hovbox : int -> unit;;
    When a new line is printed in the box, [d] is added to the
    current indentation. *)
 
-
 (** {6 Tabulations} *)
 
 val open_tbox : unit -> unit;;
@@ -260,8 +254,7 @@ val set_tab : unit -> unit;;
 (** Sets a tabulation mark at the current insertion point. *)
 
 val print_tab : unit -> unit;;
-(** [print_tab ()] is equivalent to [print_tbreak (0,0)]. *)
-
+(** [print_tab ()] is equivalent to [print_tbreak 0 0]. *)
 
 (** {6 Ellipsis} *)
 
@@ -272,14 +265,13 @@ val set_ellipsis_text : string -> unit;;
 val get_ellipsis_text : unit -> string;;
 (** Return the text of the ellipsis. *)
 
-
-(** {6 Tags} *)
+(** {6 Semantics Tags} *)
 
 type tag = string;;
 
-(** Tags are used to decorate printed entities for user's defined
-   purposes, e.g. setting font and giving size indications for a
-   display device, or marking delimitations of semantics entities
+(** {i Semantics tags} (or simply {e tags}) are used to decorate printed
+   entities for user's defined purposes, e.g. setting font and giving size
+   indications for a display device, or marking delimitation of semantics entities
    (e.g. HTML or TeX elements or terminal escape sequences).
 
    By default, those tags do not influence line breaking calculation:
@@ -293,7 +285,7 @@ type tag = string;;
    material or richer decorated output depending on the treatment of
    tags. By default, tags are not active, hence the output is not
    decorated with tag information.  Once [set_tags] is set to [true],
-   the pretty printer engine honors tags and decorates the output
+   the pretty printer engine honours tags and decorates the output
    accordingly.
 
    When a tag has been opened (or closed), it is both and successively
@@ -345,10 +337,9 @@ val get_print_tags : unit -> bool;;
 val get_mark_tags : unit -> bool;;
 (** Return the current status of tags printing and tags marking. *)
 
+(** {6 Redirecting the standard formatter output} *)
 
-(** {6 Redirecting formatter output} *)
-
-val set_formatter_out_channel : out_channel -> unit;;
+val set_formatter_out_channel : Pervasives.out_channel -> unit;;
 (** Redirect the pretty-printer output to the given channel. *)
 
 val set_formatter_output_functions :
@@ -356,17 +347,56 @@ val set_formatter_output_functions :
 (** [set_formatter_output_functions out flush] redirects the
    pretty-printer output to the functions [out] and [flush].
 
-   The [out] function performs the pretty-printer output. It is called
+   The [out] function performs the pretty-printer string output. It is called
    with a string [s], a start position [p], and a number of characters
    [n]; it is supposed to output characters [p] to [p + n - 1] of
    [s]. The [flush] function is called whenever the pretty-printer is
-   flushed using [print_flush] or [print_newline]. *)
+   flushed (via conversion [%!], pretty-printing indications [@?] or [@.],
+   or using low level function [print_flush] or [print_newline]). *)
 
 val get_formatter_output_functions :
   unit -> (string -> int -> int -> unit) * (unit -> unit);;
 (** Return the current output functions of the pretty-printer. *)
 
-(** {6 Changing the meaning of printing tags} *)
+(** {6 Changing the meaning of standard formatter pretty printing} *)
+
+(** The [Format] module is versatile enough to let you completely redefine
+ the meaning of pretty printing: you may provide your own functions to define
+ how to handle indentation, line breaking, and even printing of all the
+ characters that have to be printed! *)
+
+val set_all_formatter_output_functions :
+  out:(string -> int -> int -> unit) ->
+  flush:(unit -> unit) ->
+  newline:(unit -> unit) ->
+  spaces:(int -> unit) ->
+  unit;;
+(** [set_all_formatter_output_functions out flush outnewline outspace]
+   redirects the pretty-printer output to the functions [out] and
+   [flush] as described in [set_formatter_output_functions]. In
+   addition, the pretty-printer function that outputs a newline is set
+   to the function [outnewline] and the function that outputs
+   indentation spaces is set to the function [outspace].
+
+   This way, you can change the meaning of indentation (which can be
+   something else than just printing space characters) and the
+   meaning of new lines opening (which can be connected to any other
+   action needed by the application at hand). The two functions
+   [outspace] and [outnewline] are normally connected to [out] and
+   [flush]: respective default values for [outspace] and [outnewline]
+   are [out (String.make n ' ') 0 n] and [out "\n" 0 1]. *)
+
+val get_all_formatter_output_functions :
+  unit ->
+  (string -> int -> int -> unit) *
+  (unit -> unit) *
+  (unit -> unit) *
+  (int -> unit);;
+(** Return the current output functions of the pretty-printer,
+   including line breaking and indentation functions. Useful to record the
+  current setting and restore it afterwards. *)
+
+(** {6 Changing the meaning of printing semantics tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
@@ -403,56 +433,22 @@ val get_formatter_tag_functions :
   unit -> formatter_tag_functions;;
 (** Return the current tag functions of the pretty-printer. *)
 
-(** {6 Changing the meaning of pretty printing (indentation, line breaking,
- and printing material)} *)
-
-val set_all_formatter_output_functions :
-  out:(string -> int -> int -> unit) ->
-  flush:(unit -> unit) ->
-  newline:(unit -> unit) ->
-  spaces:(int -> unit) ->
-  unit;;
-(** [set_all_formatter_output_functions out flush outnewline outspace]
-   redirects the pretty-printer output to the functions [out] and
-   [flush] as described in [set_formatter_output_functions]. In
-   addition, the pretty-printer function that outputs a newline is set
-   to the function [outnewline] and the function that outputs
-   indentation spaces is set to the function [outspace].
-
-   This way, you can change the meaning of indentation (which can be
-   something else than just printing space characters) and the
-   meaning of new lines opening (which can be connected to any other
-   action needed by the application at hand). The two functions
-   [outspace] and [outnewline] are normally connected to [out] and
-   [flush]: respective default values for [outspace] and [outnewline]
-   are [out (String.make n ' ') 0 n] and [out "\n" 0 1]. *)
-
-val get_all_formatter_output_functions :
-  unit ->
-  (string -> int -> int -> unit) *
-  (unit -> unit) *
-  (unit -> unit) *
-  (int -> unit);;
-(** Return the current output functions of the pretty-printer,
-   including line breaking and indentation functions. *)
-
-
 (** {6 Multiple formatted output} *)
 
 type formatter;;
 (** Abstract data type corresponding to a pretty-printer (also called a
-   formatter) and all its machinery.
-   Defining new pretty-printers permits the output of
-   material in parallel on several channels.
-   Parameters of a pretty-printer are local to this pretty-printer:
-   margin, maximum indentation limit, maximum number of boxes
-   simultaneously opened, ellipsis, and so on, are specific to
-   each pretty-printer and may be fixed independently.
-   Given an output channel [oc], a new formatter writing to
-   that channel is obtained by calling [formatter_of_out_channel oc].
-   Alternatively, the [make_formatter] function allocates a new
-   formatter with explicit output and flushing functions
-   (convenient to output material to strings for instance). *)
+  formatter) and all its machinery.
+  Defining new pretty-printers permits the output of
+  material in parallel on several channels.
+  Parameters of a pretty-printer are local to this pretty-printer:
+  margin, maximum indentation limit, maximum number of boxes
+  simultaneously opened, ellipsis, and so on, are specific to
+  each pretty-printer and may be fixed independently.
+  Given an output channel [oc], a new formatter writing to
+  that channel is obtained by calling [formatter_of_out_channel oc].
+  Alternatively, the [make_formatter] function allocates a new
+  formatter with explicit output and flushing functions
+  (convenient to output material to strings for instance). *)
 
 val formatter_of_out_channel : out_channel -> formatter;;
 (** [formatter_of_out_channel oc] returns a new formatter that
