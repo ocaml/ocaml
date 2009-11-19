@@ -42,6 +42,7 @@ type t =
   | Bad_module_name of string               (* 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
+  | Wildcard_arg_to_constant_constr         (* 28 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

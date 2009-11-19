@@ -169,27 +169,19 @@ let main () =
        "-version", Arg.Unit print_version_string,
              " Print compiler version and exit";
        "-verbose", Arg.Set verbose, " Print calls to external commands";
-       "-w", Arg.String (Warnings.parse_options false),
-             "<flags>  Enable or disable warnings according to <flags>:\n\
-         \032    C/c enable/disable suspicious comment\n\
-         \032    D/d enable/disable deprecated features\n\
-         \032    E/e enable/disable fragile match\n\
-         \032    F/f enable/disable partially applied function\n\
-         \032    L/l enable/disable labels omitted in application\n\
-         \032    M/m enable/disable overriden methods\n\
-         \032    P/p enable/disable partial match\n\
-         \032    S/s enable/disable non-unit statement\n\
-         \032    U/u enable/disable unused match case\n\
-         \032    V/v enable/disable overriden instance variables\n\
-         \032    Y/y enable/disable suspicious unused variables\n\
-         \032    Z/z enable/disable all other unused variables\n\
-         \032    X/x enable/disable all other warnings\n\
-         \032    A/a enable/disable all warnings\n\
-         \032    default setting is \"Aelz\"";
-       "-warn-error" , Arg.String (Warnings.parse_options true),
-        "<flags>  Treat the warnings of <flags> as errors, if they are\n\
-         \     enabled.  See option -w for the list of flags.\n\
-         \     Default setting is \"a\" (warnings are not errors)";
+    "-w", Arg.String (Warnings.parse_options true),
+      "<list>  Enable or disable warnings according to <list>:\n\
+      \032    +<num>    enable warning <num>\n\
+      \032    +<letter> enable set <letter>\n\
+      \032    -<num>    disable warning <num>\n\
+      \032    -<letter> disable set <letter>\n\
+      \032    @<num>    enable warning <num> and treat it as an error\n\
+      \032    @<letter> enable set <letter> and treat them as errors\n\
+      \032    default setting is \"+a-4-6-9-27\"";
+    "-warn-error" , Arg.String (Warnings.parse_options false),
+     "<list>  Enable or disable error status for warnings according\n\
+      \     to <list>.  See option -w for the syntax of <list>.\n\
+      \     Default setting is \"-a\"";
        "-where", Arg.Unit print_standard_library,
          " Print location of standard library and exit";
 
@@ -217,7 +209,8 @@ let main () =
       ]) (process_file ppf) usage;
     if
       List.length (List.filter (fun x -> !x)
-		     [make_archive;make_package;shared;compile_only;output_c_object]) > 1
+                     [make_package; make_archive; shared;
+                      compile_only; output_c_object]) > 1
     then
       fatal "Please specify at most one of -pack, -a, -shared, -c, -output-obj";
     if !make_archive then begin

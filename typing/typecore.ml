@@ -434,7 +434,7 @@ let rec type_pat env sp =
                pat_type = ty;
                pat_env = env }
       | _ -> assert false
-      end      
+      end
   | Ppat_alias(sq, name) ->
       let q = type_pat env sq in
       begin_def ();
@@ -472,6 +472,9 @@ let rec type_pat env sp =
         | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
         | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
+            if constr.cstr_arity = 0 then
+              Location.prerr_warning sp.ppat_loc
+                                     Warnings.Wildcard_arg_to_constant_constr;
             replicate_list sp constr.cstr_arity
         | Some sp -> [sp] in
       if List.length sargs <> constr.cstr_arity then

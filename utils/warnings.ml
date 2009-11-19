@@ -47,6 +47,7 @@ type t =
   | Bad_module_name of string               (* 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
+  | Wildcard_arg_to_constant_constr         (* 28 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -83,9 +84,10 @@ let number = function
   | All_clauses_guarded -> 25
   | Unused_var _ -> 26
   | Unused_var_strict _ -> 27
+  | Wildcard_arg_to_constant_constr -> 28
 ;;
 
-let last_warning_number = 27;;
+let last_warning_number = 28;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -177,7 +179,7 @@ let parse_opt flags s =
 
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
-let defaults_w = "+a-4-6-9-27";;
+let defaults_w = "+a-4-6-9-27-28";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -238,6 +240,8 @@ let message = function
        but no fields are borrowed from the original."
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
+  | Wildcard_arg_to_constant_constr ->
+     "wildcard pattern given as argument to a constant constructor"
 ;;
 
 let nerrors = ref 0;;

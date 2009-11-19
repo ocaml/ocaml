@@ -141,7 +141,7 @@ struct
       \032    -<letter> disable set <letter>\n\
       \032    @<num>    enable warning <num> and treat it as an error\n\
       \032    @<letter> enable set <letter> and treat them as errors\n\
-      \032    default setting is \"+a-4-6-9-27\"";
+      \032    default setting is \"+a-4-6-9-27-28\"";
     "-warn-error" , Arg.String F._warn_error,
      "<list>  Enable or disable error status for warnings according\n\
       \     to <list>.  See option -w for the syntax of <list>.\n\
