@@ -214,7 +214,9 @@ let test9 () =
   Scanf.sscanf "\"\xef\xbb\xbf\"" "%S" (fun s -> s) =
                   "﻿" &&
   Scanf.sscanf "\"\\\\xef\\\\xbb\\\\xbf\"" "%S" (fun s -> s) =
-                  "\\xef\\xbb\\xbf"
+                  "\\xef\\xbb\\xbf" &&
+  Scanf.sscanf "\"\ \"" "%S" (fun s -> s) =
+                  "\ "
 ;;
 
 test (test9 ())
