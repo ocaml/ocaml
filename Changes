@@ -6,7 +6,7 @@ Bug fixes:
 - PR#4813: issue with parsing of float literals by the GNU assembler
 - PR#4818: missed opportunity for type-based optimization of bigarray accesses
 - PR#4836: spurious errors raised by Unix.single_write under Windows
-- PR#4841, PR#4860: problem with ocamlopt -output-obj under Mac OS X
+- PR#4930, PR#4841, PR#4860: problem with ocamlopt -output-obj under Mac OS X
 - PR#4847: C compiler error with ocamlc -output-obj under Win64
 - PR#4900: small bug triggering automatic compaction even if max_overhead = 1M
 - PR#4902: bug in %.0F printf format
