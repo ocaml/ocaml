@@ -804,10 +804,20 @@ let type_format loc fmt =
         ty_uresult,
         if skip then ty_result else ty_arrow ty_arg ty_result
 
+      and conversion_a j ty_e ty_arg =
+        let ty_uresult, ty_result = conversion j ty_arg in
+        let ty_a = ty_arrow ty_input (ty_arrow ty_e ty_aresult) in
+        ty_uresult, ty_arrow ty_a ty_result
+
+      and conversion_r j ty_e ty_arg =
+        let ty_uresult, ty_result = conversion j ty_arg in
+        let ty_r = ty_arrow ty_input ty_e in
+        ty_arrow ty_r ty_uresult, ty_result
+
       and scan_conversion i j =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
-        | '%' | '!' -> scan_format (j + 1)
+        | '%' | '!' | ',' -> scan_format (j + 1)
         | 's' | 'S' -> conversion j Predef.type_string
         | '[' ->
           let j = range_closing_index fmt j in
@@ -817,16 +827,26 @@ let type_format loc fmt =
           conversion j Predef.type_int
         | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
         | 'B' | 'b' -> conversion j Predef.type_bool
-        | 'a' ->
-          let ty_arg = newvar () in
-          let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in
-          let ty_uresult, ty_result = conversion j ty_arg in
-          ty_uresult, ty_arrow ty_a ty_result
-        | 'r' ->
-          let ty_arg = newvar () in
-          let ty_r = ty_arrow ty_input ty_arg in
-          let ty_uresult, ty_result = conversion j ty_arg in
-          ty_arrow ty_r ty_uresult, ty_result
+        | 'a' | 'r' as conv ->
+          let conversion =
+            if conv = 'a' then conversion_a else conversion_r in
+          let ty_e = newvar () in
+          let j = j + 1 in
+          if j >= len then conversion (j - 1) ty_e ty_e else begin
+            match fmt.[j] with
+(*            | 'a' | 'A' -> conversion j ty_e (Predef.type_array ty_e)
+            | 'l' | 'L' -> conversion j ty_e (Predef.type_list ty_e)
+            | 'o' | 'O' -> conversion j ty_e (Predef.type_option ty_e)*)
+            | _ -> conversion (j - 1) ty_e ty_e end
+(*        | 'r' ->
+          let ty_e = newvar () in
+          let j = j + 1 in
+          if j >= len then conversion_r (j - 1) ty_e ty_e else begin
+            match fmt.[j] with
+            | 'a' | 'A' -> conversion_r j ty_e (Pref.type_array ty_e)
+            | 'l' | 'L' -> conversion_r j ty_e (Pref.type_list ty_e)
+            | 'o' | 'O' -> conversion_r j ty_e (Pref.type_option ty_e)
+            | _ -> conversion_r (j - 1) ty_e ty_e end *)
         | 't' -> conversion j (ty_arrow ty_input ty_aresult)
         | 'l' | 'n' | 'L' as c ->
           let j = j + 1 in
