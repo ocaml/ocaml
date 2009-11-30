@@ -18,15 +18,15 @@
 (* Scanning buffers. *)
 module type SCANNING = sig
 
-type input_channel;;
+type in_channel;;
 
-type scanbuf = input_channel;;
+type scanbuf = in_channel;;
 
-val stdin : input_channel;;
+val stdin : in_channel;;
 (* The scanning buffer reading from [Pervasives.stdin].
     [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
 
-val stdib : scanbuf;;
+val stdib : in_channel;;
 (* An alias for [Scanf.stdin], the scanning buffer reading from
    [Pervasives.stdin]. *)
 
@@ -105,7 +105,7 @@ val name_of_input : scanbuf -> string;;
     source for input buffer [ib]. *)
 
 val from_string : string -> scanbuf;;
-val from_channel : in_channel -> scanbuf;;
+val from_channel : Pervasives.in_channel -> scanbuf;;
 val from_file : string -> scanbuf;;
 val from_file_bin : string -> scanbuf;;
 val from_function : (unit -> char) -> scanbuf;;
@@ -118,7 +118,7 @@ module Scanning : SCANNING = struct
 (* The run-time library for scanf. *)
 type file_name = string;;
 
-type input_channel = {
+type in_channel = {
   mutable eof : bool;
   mutable current_char : char;
   mutable current_char_is_valid : bool;
@@ -131,7 +131,7 @@ type input_channel = {
 }
 ;;
 
-type scanbuf = input_channel;;
+type scanbuf = in_channel;;
 
 let null_char = '\000';;
 
@@ -355,7 +355,7 @@ end
 (* Formatted input functions. *)
 
 type ('a, 'b, 'c, 'd) scanner =
-     ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c
 ;;
 
 external string_to_format :
