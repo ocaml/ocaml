@@ -215,7 +215,7 @@ let iter_on_format_args fmt add_conv add_char =
   and scan_conv skip i =
     if i > lim then incomplete_format fmt else
     match Sformat.unsafe_get fmt i with
-    | '%' | '!' -> succ i
+    | '%' | '!' | ',' -> succ i
     | 's' | 'S' | '[' -> add_conv skip i 's'
     | 'c' | 'C' -> add_conv skip i 'c'
     | 'd' | 'i' |'o' | 'u' | 'x' | 'X' | 'N' -> add_conv skip i 'i'
@@ -431,8 +431,6 @@ let get_index spec n =
 (* Format a float argument as a valid Caml lexeme. *)
 let format_float_lexeme =
 
-  let lexeme_buff = Buffer.create 32 in
-
   (* To be revised: this procedure should be a unique loop that performs the
      validity check and the string lexeme modification at the same time.
      Otherwise, it is too difficult to handle the strange padding facilities
@@ -446,35 +444,12 @@ let format_float_lexeme =
   *)
 
   let make_valid_float_lexeme s =
-    let l = String.length s in
-    (* This should never occur. *)
-    if l = 0 then "nan" else
-
-    let add_dot s i =
-      let rec add_dot_loop i =
-        if i >= l then Buffer.add_char lexeme_buff '.' else
-        match s.[i] with
-        | '+' ->
-          (* Depending of the ``style'' this should be a space or a 0.
-             Let start by using a space. *)
-          Buffer.add_char lexeme_buff ' ';
-          add_dot_loop (i + 1)
-        | c ->
-          Buffer.add_char lexeme_buff c;
-          add_dot_loop (i + 1) in
-      add_dot_loop i in
-
     (* Check if s is already a valid lexeme:
        in this case do nothing (we should still remove a leading +!),
        otherwise turn s into a valid Caml lexeme. *)
+    let l = String.length s in
     let rec valid_float_loop i =
-      if i >= l then begin
-        Buffer.clear lexeme_buff;
-        add_dot s 0;
-        let res = Buffer.contents lexeme_buff in
-        Buffer.clear lexeme_buff;
-        res
-      end else
+      if i >= l then s ^ "." else
       match s.[i] with
       (* Sure, this is already a valid float lexeme. *)
       | '.' | 'e' | 'E'  -> s
@@ -598,6 +573,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
         let s = format_int (extract_format_int 'n' fmt pos i widths) x in
         cont_s (next_index spec n) s (succ i)
       end
+    | ',' -> cont_s n "" (succ i)
     | '!' -> cont_f n (succ i)
     | '{' | '(' as conv (* ')' '}' *) ->
       let (xf : ('a, 'b, 'c, 'd, 'e, 'f) format6) = get_arg spec n in
