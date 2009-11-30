@@ -112,6 +112,14 @@ type formatter_tag_functions = {
 }
 ;;
 
+type formatter_output_meaning = {
+  output_string: string -> int -> int -> unit;
+  output_flush : unit -> unit;
+  output_line_break : unit -> unit;
+  output_indentation : int -> unit;
+}
+;;
+
 (* A formatter with all its machinery. *)
 type out_channel = {
   mutable pp_scan_stack : pp_scan_elem list;
@@ -811,8 +819,8 @@ let pp_get_formatter_output_functions state () =
 let pp_set_all_formatter_output_functions state
     ~out:f ~flush:g ~newline:h ~spaces:i =
   pp_set_formatter_output_functions state f g;
-  state.pp_output_newline <- (function () -> h ());
-  state.pp_output_spaces <- (function n -> i n)
+  state.pp_output_newline <- h;
+  state.pp_output_spaces <- i;
 ;;
 let pp_get_all_formatter_output_functions state () =
   (state.pp_output_function, state.pp_flush_function,
@@ -822,6 +830,22 @@ let pp_get_all_formatter_output_functions state () =
 let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
   state.pp_flush_function <- (fun () -> flush os)
+;;
+
+let get_formatter_output_meaning state = {
+  output_string = state.pp_output_function;
+  output_flush = state.pp_flush_function;
+  output_line_break = state.pp_output_newline;
+  output_indentation = state.pp_output_spaces;
+}
+;;
+
+let set_formatter_output_meaning state = function
+  | { output_string; output_flush; output_line_break; output_indentation; } ->
+      state.pp_output_function <- output_string;
+      state.pp_flush_function <- output_flush;
+      state.pp_output_newline <- output_line_break;
+      state.pp_output_spaces <- output_indentation
 ;;
 
 (**************************************************************
