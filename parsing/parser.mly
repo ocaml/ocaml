@@ -169,7 +169,7 @@ let bigarray_get arr arg =
                        ["", arr; "", ghexp(Pexp_array coords)]))
 
 let bigarray_set arr arg newval =
-  let set = if !Clflags.fast then "unsafe_set" else "set" in 
+  let set = if !Clflags.fast then "unsafe_set" else "set" in
   match bigarray_untuplify arg with
     [c1] ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Array1" set)),
@@ -1456,7 +1456,13 @@ signed_constant:
   | MINUS INT32                                 { Const_int32(Int32.neg $2) }
   | MINUS INT64                                 { Const_int64(Int64.neg $2) }
   | MINUS NATIVEINT                             { Const_nativeint(Nativeint.neg $2) }
+  | PLUS INT                                    { Const_int $2 }
+  | PLUS FLOAT                                  { Const_float $2 }
+  | PLUS INT32                                  { Const_int32 $2 }
+  | PLUS INT64                                  { Const_int64 $2 }
+  | PLUS NATIVEINT                              { Const_nativeint $2 }
 ;
+
 /* Identifiers and long identifiers */
 
 ident:
