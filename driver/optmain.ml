@@ -169,7 +169,7 @@ let main () =
        "-version", Arg.Unit print_version_string,
              " Print compiler version and exit";
        "-verbose", Arg.Set verbose, " Print calls to external commands";
-    "-w", Arg.String (Warnings.parse_options true),
+    "-w", Arg.String (Warnings.parse_options false),
       "<list>  Enable or disable warnings according to <list>:\n\
       \032    +<num>    enable warning <num>\n\
       \032    +<letter> enable set <letter>\n\
@@ -178,7 +178,7 @@ let main () =
       \032    @<num>    enable warning <num> and treat it as an error\n\
       \032    @<letter> enable set <letter> and treat them as errors\n\
       \032    default setting is \"+a-4-6-9-27\"";
-    "-warn-error" , Arg.String (Warnings.parse_options false),
+    "-warn-error" , Arg.String (Warnings.parse_options true),
      "<list>  Enable or disable error status for warnings according\n\
       \     to <list>.  See option -w for the syntax of <list>.\n\
       \     Default setting is \"-a\"";
