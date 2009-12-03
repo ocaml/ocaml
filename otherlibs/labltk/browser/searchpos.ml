@@ -130,6 +130,8 @@ let rec search_pos_type t ~pos ~env =
       add_found_sig (`Type, lid) ~env ~loc:t.ptyp_loc
   | Ptyp_alias (t, _)
   | Ptyp_poly (_, t) -> search_pos_type ~pos ~env t
+  | Ptyp_package (_, stl) ->
+     List.iter stl ~f:(fun (_, ty) -> search_pos_type ty ~pos ~env)
   end
 
 let rec search_pos_class_type cl ~pos ~env =
@@ -705,7 +707,7 @@ and search_pos_class_expr ~pos cl =
         add_found_str (`Class (path, cl.cl_type))
           ~env:!start_env ~loc:cl.cl_loc
     | Tclass_structure cls ->
-	search_pos_class_structure ~pos cls
+        search_pos_class_structure ~pos cls
     | Tclass_fun (pat, iel, cl, _) ->
         search_pos_pat pat ~pos ~env:pat.pat_env;
         List.iter iel ~f:(fun (_,exp) -> search_pos_expr exp ~pos);
@@ -813,7 +815,9 @@ and search_pos_expr ~pos exp =
   | Texp_lazy exp ->
       search_pos_expr exp ~pos
   | Texp_object (cls, _, _) ->
-      	search_pos_class_structure ~pos cls
+      search_pos_class_structure ~pos cls
+  | Texp_pack modexp ->
+      search_pos_module_expr modexp ~pos
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc
   end
@@ -858,6 +862,7 @@ and search_pos_module_expr ~pos m =
     | Tmod_apply (a, b, _) ->
         search_pos_module_expr a ~pos; search_pos_module_expr b ~pos
     | Tmod_constraint (m, _, _) -> search_pos_module_expr m ~pos
+    | Tmod_unpack (e, _) -> search_pos_expr e ~pos
     end;
     add_found_str (`Module (Pident (Ident.create "M"), m.mod_type))
       ~env:m.mod_env ~loc:m.mod_loc
