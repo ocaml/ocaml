@@ -3336,39 +3336,29 @@ let nondep_type env id ty =
 let nondep_type_decl env mid id is_covariant decl =
   try
     let params = List.map (nondep_type_rec env mid) decl.type_params in
-    let decl =
-      { type_params = params;
-        type_arity = decl.type_arity;
-        type_kind =
-          begin try
-            match decl.type_kind with
-              Type_abstract ->
-                Type_abstract
-            | Type_variant cstrs ->
-                Type_variant(List.map
-                  (fun (c, tl) -> (c, List.map (nondep_type_rec env mid) tl))
-                  cstrs)
-            | Type_record(lbls, rep) ->
-                Type_record(
-                  List.map
-                    (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
-                    lbls,
-                  rep)
-          with Not_found when is_covariant ->
-            Type_abstract
-          end;
-        type_manifest =
-          begin try
-            match decl.type_manifest with
-              None -> None
-            | Some ty ->
-                Some (unroll_abbrev id params (nondep_type_rec env mid ty))
-          with Not_found when is_covariant ->
-            None
-          end;
-        type_private = decl.type_private;
-        type_variance = decl.type_variance;
-      }
+    let tk =
+      try match decl.type_kind with
+        Type_abstract ->
+          Type_abstract
+      | Type_variant cstrs ->
+          Type_variant
+            (List.map
+               (fun (c, tl) -> (c, List.map (nondep_type_rec env mid) tl))
+               cstrs)
+      | Type_record(lbls, rep) ->
+          Type_record
+            (List.map
+               (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
+               lbls,
+             rep)
+      with Not_found when is_covariant -> Type_abstract
+    and tm =
+      try match decl.type_manifest with
+        None -> None
+      | Some ty ->
+          Some (unroll_abbrev id params (nondep_type_rec env mid ty))
+      with Not_found when is_covariant ->
+        None
     in
     cleanup_types ();
     List.iter unmark_type decl.type_params;
@@ -3383,7 +3373,18 @@ let nondep_type_decl env mid id is_covariant decl =
       None    -> ()
     | Some ty -> unmark_type ty
     end;
-    decl
+    let priv =
+      match tm with
+      | Some ty when Btype.has_constr_row ty -> Private
+      | _ -> decl.type_private
+    in
+    { type_params = params;
+      type_arity = decl.type_arity;
+      type_kind = tk;
+      type_manifest = tm;
+      type_private = priv;
+      type_variance = decl.type_variance;
+    }
   with Not_found ->
     cleanup_types ();
     raise Not_found
