@@ -416,6 +416,8 @@ flag ["ocaml"; "compile"; "thread"] (A "-thread");;
 flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);;
 flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);;
 flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "native"; "toplevel"] (S[A "threads.cmxa"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "byte"; "toplevel"] (S[A "threads.cma"; A "-thread"]);;
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
 flag ["ocaml"; "compile"; "nolabels"] (A"-nolabels");;
 
