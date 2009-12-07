@@ -397,6 +397,7 @@ module type OPTIONS = sig
   val ext_obj : string ref
   val ext_lib : string ref
   val ext_dll : string ref
+  val exe : string ref
 end
 
 module type ARCH = sig

@@ -53,6 +53,7 @@ val ext_asm : string
 val ext_dll : string
 val o : string
 val a : string
+val so : string
 val toolchain : string
 val ccomptype : string
 val extralibs : string

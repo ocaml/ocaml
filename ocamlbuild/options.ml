@@ -76,9 +76,10 @@ let program_to_execute = ref false
 let must_clean = ref false
 let show_documentation = ref false
 let recursive = ref false
-let ext_lib = ref "a"
-let ext_obj = ref "o"
-let ext_dll = ref "so"
+let ext_lib = ref Ocamlbuild_Myocamlbuild_config.a
+let ext_obj = ref Ocamlbuild_Myocamlbuild_config.o
+let ext_dll = ref Ocamlbuild_Myocamlbuild_config.so
+let exe = ref Ocamlbuild_Myocamlbuild_config.exe
 
 let targets_internal = ref []
 let ocaml_libs_internal = ref []
