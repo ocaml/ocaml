@@ -10,6 +10,7 @@ Bug fixes:
 - PR#4847: C compiler error with ocamlc -output-obj under Win64
 - PR#4900: small bug triggering automatic compaction even if max_overhead = 1M
 - PR#4902: bug in %.0F printf format
+- PR#4922: ocamlbuild recompiles too many files
 - Module Printf: the simple conversion %F (without width indication) was not
            treated properly.
 

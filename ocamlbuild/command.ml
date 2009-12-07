@@ -278,7 +278,7 @@ let execute_many ?(quiet=false) ?(pretend=false) cmds =
                 | Some _ -> false :: acc_res, acc_exn
               end ([], None) konts
             in match opt_exn with
-            | Some(exn) -> Some(res, exn)
+            | Some(exn) -> Some(List.rev res, exn)
             | None -> None
           else
             My_unix.execute_many ~ticker ?max_jobs ~display konts
