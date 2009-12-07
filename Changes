@@ -11,6 +11,7 @@ Bug fixes:
 - PR#4847: C compiler error with ocamlc -output-obj under Win64
 - PR#4856: ocamlbuild uses ocamlrun to execute a native plugin
 - PR#4873: ocamlbuild ignores "thread" tag when building a custom toplevel
+- PR#4896: ocamlbuild should always pass -I to tools for external libraries
 - PR#4900: small bug triggering automatic compaction even if max_overhead = 1M
 - PR#4902: bug in %.0F printf format
 - PR#4922: ocamlbuild recompiles too many files
