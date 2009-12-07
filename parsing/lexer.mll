@@ -250,7 +250,8 @@ rule token = parse
       { token lexbuf }
   | "_"
       { UNDERSCORE }
-  | "~"  { TILDE }
+  | "~"
+      { TILDE }
   | "~" lowercase identchar * ':'
       { let s = Lexing.lexeme lexbuf in
         let name = String.sub s 1 (String.length s - 2) in
@@ -382,6 +383,7 @@ rule token = parse
 
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
+  | "+." { PLUSDOT }
   | "-"  { MINUS }
   | "-." { MINUSDOT }
 

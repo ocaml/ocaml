@@ -445,14 +445,15 @@ let format_float_lexeme =
 
   let make_valid_float_lexeme s =
     (* Check if s is already a valid lexeme:
-       in this case do nothing (we should still remove a leading +!),
+       in this case do nothing (unless we got a leading '+' character that we
+       should remove ?),
        otherwise turn s into a valid Caml lexeme. *)
     let l = String.length s in
     let rec valid_float_loop i =
       if i >= l then s ^ "." else
       match s.[i] with
       (* Sure, this is already a valid float lexeme. *)
-      | '.' | 'e' | 'E'  -> s
+      | '.' | 'e' | 'E' -> s
       | _ -> valid_float_loop (i + 1) in
 
     valid_float_loop 0 in

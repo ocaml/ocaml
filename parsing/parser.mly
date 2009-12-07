@@ -98,6 +98,12 @@ let mkuminus name arg =
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
+let mkuplus name arg =
+  match name, arg.pexp_desc with
+  | "+", desc -> mkexp desc
+  | _ ->
+      mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
+
 let rec mktailexp = function
     [] ->
       ghexp(Pexp_construct(Lident "[]", None, false))
@@ -281,6 +287,7 @@ let pat_of_label lbl =
 %token OR
 /* %token PARSER */
 %token PLUS
+%token PLUSDOT
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
@@ -356,10 +363,10 @@ The precedences must be listed from low to high.
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
 %right    INFIXOP1                      /* expr (e OP e OP e) */
 %right    COLONCOLON                    /* expr (e :: e :: e) */
-%left     INFIXOP2 PLUS MINUS MINUSDOT  /* expr (e OP e OP e) */
+%left     INFIXOP2 PLUS PLUSDOT MINUS MINUSDOT  /* expr (e OP e OP e) */
 %left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
-%nonassoc prec_unary_minus              /* unary - */
+%nonassoc prec_unary_minus prec_unary_plus /* unary - */
 %nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
 %nonassoc prec_constr_appl              /* above AS BAR COLONCOLON COMMA */
 %nonassoc below_SHARP
@@ -877,6 +884,8 @@ expr:
       { mkinfix $1 $2 $3 }
   | expr PLUS expr
       { mkinfix $1 "+" $3 }
+  | expr PLUSDOT expr
+      { mkinfix $1 "+." $3 }
   | expr MINUS expr
       { mkinfix $1 "-" $3 }
   | expr MINUSDOT expr
@@ -901,6 +910,8 @@ expr:
       { mkinfix $1 ":=" $3 }
   | subtractive expr %prec prec_unary_minus
       { mkuminus $1 $2 }
+  | additive expr %prec prec_unary_plus
+      { mkuplus $1 $2 }
   | simple_expr DOT label_longident LESSMINUS expr
       { mkexp(Pexp_setfield($1, $3, $5)) }
   | simple_expr DOT LPAREN seq_expr RPAREN LESSMINUS expr
@@ -1481,6 +1492,7 @@ operator:
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
   | PLUS                                        { "+" }
+  | PLUSDOT                                     { "+." }
   | MINUS                                       { "-" }
   | MINUSDOT                                    { "-." }
   | STAR                                        { "*" }
@@ -1591,5 +1603,9 @@ opt_semi:
 subtractive:
   | MINUS                                       { "-" }
   | MINUSDOT                                    { "-." }
+;
+additive:
+  | PLUS                                        { "+" }
+  | PLUSDOT                                     { "+." }
 ;
 %%
