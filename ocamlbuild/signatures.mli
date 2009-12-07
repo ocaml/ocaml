@@ -520,6 +520,9 @@ module type PLUGIN = sig
     ?insert:[`top | `before of string | `after of string | `bottom] ->
     string -> string -> unit
 
+  (** Empties the list of rules of the ocamlbuild engine. *)
+  val clear_rules : unit -> unit
+
   (** [dep tags deps] Will build [deps] when all [tags] will be activated. *)
   val dep : Tags.elt list -> Pathname.t list -> unit
 

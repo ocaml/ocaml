@@ -73,6 +73,7 @@ val print_rule_name : Format.formatter -> 'a gen_rule -> unit
 val print_rule_contents : 'a rule_printer
 
 val get_rules : unit -> rule_scheme list
+val clear_rules : unit -> unit
 
 val call : builder -> rule -> unit
 
