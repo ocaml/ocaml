@@ -96,7 +96,8 @@ module Make(U:sig end) =
           rebuild_plugin_if_needed ();
           Shell.chdir Pathname.pwd;
           if not !Options.just_plugin then
-            let spec = S[!Options.ocamlrun; P(!Options.build_dir/plugin);
+            let runner = if !Options.native_plugin then N else !Options.ocamlrun in
+            let spec = S[runner; P(!Options.build_dir/plugin);
                          A"-no-plugin"; atomize (List.tl (Array.to_list Sys.argv))] in
             let () = Log.finish () in
             raise (Exit_silently_with_code (sys_command (Command.string_of_command_spec spec)))
