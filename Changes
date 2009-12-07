@@ -3,7 +3,6 @@ Objective Caml 3.11.2:
 
 Bug fixes:
 - PR#4421: ocamlbuild uses wrong compiler for C files
-- PR#4723: "clear_rules" function to empty the set of ocamlbuild rules
 - PR#4810: BSD problem with socket addresses, e.g. in Unix.getnameinfo
 - PR#4813: issue with parsing of float literals by the GNU assembler
 - PR#4818: missed opportunity for type-based optimization of bigarray accesses
@@ -24,6 +23,7 @@ Feature wishes:
 - PR#4003: destination directory can be given to Filename.[open_]temp_file
 - PR#4647: Buffer.blit function
 - PR#4685: access to Filename.dir_sep
+- PR#4723: "clear_rules" function to empty the set of ocamlbuild rules
 
 Objective Caml 3.11.1:
 ----------------------
