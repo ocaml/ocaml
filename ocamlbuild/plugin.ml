@@ -56,6 +56,12 @@ module Make(U:sig end) =
         () (* Up to date *)
            (* FIXME: remove ocamlbuild_config.ml in _build/ if removed in parent *)
       else begin
+        if !Options.native_plugin
+            && not (sys_file_exists ((!Ocamlbuild_where.libdir)/"ocamlbuildlib.cmxa")) then
+          begin
+            Options.native_plugin := false;
+            eprintf "Warning: Won't be able to compile a native plugin"
+          end;
         let plugin_config =
           if we_have_a_config_file then
             if we_have_a_config_file_interface then
