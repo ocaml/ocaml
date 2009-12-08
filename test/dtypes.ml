@@ -17,6 +17,9 @@ let iteri f =
   in
   aux 0
 
+(* An extensible printer of dynamic values. It fails by default on
+    abstract values but it can be extended to deal with them. *)
+
 let printers = ref []
 let add_printer f = printers := f :: !printers
 
@@ -118,6 +121,7 @@ let () =
   ()
 
 
+(* An universal variant type. *)
 
 type variant =
   | V_int of int
@@ -250,7 +254,7 @@ let () =
   ()
 
 
-
+(* Demonstrating custom abstract type. *)
 
 module MyModule : sig
   type t
