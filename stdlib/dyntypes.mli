@@ -138,3 +138,5 @@ module DArray: TYPE1 with type 'a t = 'a array
 module DInt: TYPE0 with type t = int
 module DString: TYPE0 with type t = string
 module DFloat: TYPE0 with type t = float
+
+module DBool: TYPE0 with type t = bool

@@ -56,8 +56,7 @@ let rec print ppf d =
   | DV_constructor (c, []) ->
       Format.fprintf ppf "%s" c
   | DV_constructor (c, l) ->
-      Format.fprintf ppf "%s " c;
-      Format.fprintf ppf "(";
+      Format.fprintf ppf "(%s " c;
       iteri (fun i x -> if i <> 0 then Format.fprintf ppf ", "; print ppf x) l;
       Format.fprintf ppf ")"
 
@@ -66,7 +65,7 @@ type 'a t = A of 'a | B of ('a * 'a) t
 let () =
   add_printer0 DInt.inspect (fun ppf x -> Format.fprintf ppf "%i" x);
   add_printer0 DFloat.inspect (fun ppf x -> Format.fprintf ppf "%f" x);
-  add_printer0 DString.inspect (fun ppf x -> Format.fprintf ppf "%s" x);
+  add_printer0 DString.inspect (fun ppf x -> Format.fprintf ppf "%S" x);
 
   let module PList = Printer1(DList)(struct
     let print ppf t l =
@@ -109,4 +108,41 @@ let () =
   f (dyn (type _) (B (A (3, 4))));
   f (dyn (type _) (stype_of_ttype (type int option)));
   f (dyn (type _) [| (3, false); (0, true) |]);
+  ()
+
+
+
+type variant =
+  | V_int of int
+  | V_string of string
+  | V_float of float
+  | V_bool of bool
+  | V_list of variant list
+  | V_tuple of variant list
+  | V_array of variant list
+  | V_option of variant option
+  | V_record of (string * variant) list
+  | V_constructor of string * variant list
+
+let rec variantize d =
+  match DInt.inspect d with Some x -> V_int x | None ->
+  match DFloat.inspect d with Some x -> V_float x | None ->
+  match DString.inspect d with Some x -> V_string x | None ->
+  match DBool.inspect d with Some x -> V_bool x | None ->
+  match DList.inspect d with Some v -> let module V = (val v : DList.V) in V_list (List.map (fun e -> variantize (dyn V.b e)) V.x) | None ->
+  match DArray.inspect d with Some v -> let module V = (val v : DArray.V) in V_array (List.map (fun e -> variantize (dyn V.b e)) (Array.to_list V.x)) | None ->
+  match DOption.inspect d with Some v -> let module V = (val v : DOption.V) in V_option (match V.x with None -> None | Some x -> Some (variantize (dyn V.b x))) | None ->
+    match inspect d with
+    | DV_tuple l -> V_tuple (List.map variantize l)
+    | DV_record l -> V_record (List.map (fun (s, x) -> (s, variantize x)) l)
+    | DV_constructor (c, l) -> V_constructor (c, List.map variantize l)
+
+let print_variant ppf (v : variant) =
+  print ppf (dyn (type _) v)
+
+let () =
+  let f t x = Format.printf "%a@." print_variant (variantize (dyn t x)) in
+  f (type _) 10;
+  f (type _) [| "A"; "B" |];
+  f (type _) (true, Some 10, (None : int option));
   ()

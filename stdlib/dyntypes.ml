@@ -60,13 +60,21 @@ module NodePairHash = Hashtbl.Make
         Hashtbl.hash (n1.node_id, n2.node_id)
     end)
 
-module TypEq = struct
+module TypEq : sig
+  type ('a, 'b) t
+  val refl: ('a, 'a) t
+  val trans: ('a, 'b) t -> ('b, 'c) t -> ('a, 'c) t
+  val sym: ('a, 'b) t -> ('b, 'a) t
+  val app: ('a, 'b) t -> 'a -> 'b
+  val unsafe: ('a, 'b) t
+end = struct
   type ('a, 'b) t = unit
   let refl = ()
   let trans () () = ()
   let sym () = ()
 
   let app () x = Obj.magic x
+  let unsafe = ()
 end
 
 let stype_equality t1 t2 =
@@ -107,7 +115,7 @@ let stype_equality t1 t2 =
   with Exit -> false
 
 let equal t1 t2 =
-  if stype_equality t1 t2 then Some () else None
+  if stype_equality t1 t2 then Some TypEq.unsafe else None
 
 let node_equal n1 n2 =
   stype_equality (DT_node (n1, [])) (DT_node (n2, []))
@@ -246,7 +254,7 @@ module MkType1(X : sig val node: node type 'a t end) = struct
           type a = a_
           type b
           let b = b
-          let eq = ()
+          let eq = TypEq.unsafe
         end : T with type a = a_) in
         Some m
     | _ ->
@@ -314,3 +322,11 @@ module DOption = MkType1(struct
 end)
 
 module DArray = Builtin1(struct let name = "array" type 'a t = 'a array end)
+
+module DBool = MkType0(struct
+  type t = bool
+  let node = {node_id = "bool";
+              node_definition =
+              DT_variant {variant_constructors = ["false", []; "true", []]}
+             }
+end)
