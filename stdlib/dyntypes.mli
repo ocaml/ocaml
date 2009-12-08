@@ -86,13 +86,14 @@ val tuple: dyn list -> dyn
 
 (** {2 Inspection of values.} *)
 
-type head =
-  | DV_tuple of dyn list
-  | DV_record of (string * dyn) list
-  | DV_constructor of string * dyn list
+type 'a head =
+  | DV_tuple of 'a list
+  | DV_record of (string * 'a) list
+  | DV_constructor of string * 'a list
 
 exception AbstractValue of node
-val inspect: dyn -> head
+val inspect: dyn -> dyn head
+val build: 'a ttype -> < toval: 'b. 'b ttype -> 'b > head -> 'a
 
 
 (** {2 Abstract types.} *)

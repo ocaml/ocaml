@@ -137,10 +137,10 @@ let dyn (type s) t x =
   in
   (module M : DYN)
 
-type head =
-  | DV_tuple of dyn list
-  | DV_record of (string * dyn) list
-  | DV_constructor of string * dyn list
+type 'a head =
+  | DV_tuple of 'a list
+  | DV_record of (string * 'a) list
+  | DV_constructor of string * 'a list
 
 let subst s =
   if Array.length s = 0 then fun t -> t
@@ -182,6 +182,70 @@ let inspect d =
           DV_constructor (c, args)
       end
   | DT_var _ -> assert false
+
+let build : 'a ttype -> < toval: 'b. 'b ttype -> 'b > head -> 'a = fun t h ->
+  let tuple tag tl vl =
+    let n = List.length tl in
+    let o = Obj.new_block tag n in
+    let vl = Array.of_list vl and tl = Array.of_list tl in
+    for i = 0 to n - 1 do
+      let v : < toval: 'b. 'b ttype -> 'b > = vl.(i) in
+      Obj.set_field o i (Obj.repr (v # toval tl.(i)))
+    done;
+    Obj.magic o
+  in
+  match t with
+  | DT_tuple tl ->
+      begin match h with DV_tuple vl ->
+        if List.length tl <> List.length vl then failwith (Printf.sprintf "Wrong number of components %i (expecting %i)" (List.length vl) (List.length tl));
+        tuple 0 tl vl
+      | _ -> failwith "Tuple expected."
+      end
+  | DT_node (node, tyl) ->
+      let s = subst (Array.of_list tyl) in
+      begin match node.node_definition with
+      | DT_record {record_fields = tl; record_representation = r} ->
+          begin match h with
+          | DV_record vl ->
+              if List.length tl <> List.length vl then failwith (Printf.sprintf "Wrong number of fields %i (expecting %i)" (List.length vl) (List.length tl));
+              let l =
+                List.map2
+                  (fun (tf, _, t) (vf, v) ->
+                    if tf <> vf then failwith (Printf.sprintf "Wrong label %s (expecting %s)" vf tf);
+                    s t, v) tl vl
+              in
+              let tl, vl = List.split l in
+              let o = tuple 0 tl vl in
+              let o = match r with
+              | Record_float ->
+                  Obj.repr (Array.init (Obj.size o) (fun i -> (Obj.magic (Obj.field o i) : float)))
+              | Record_regular ->
+                  o
+              in
+              Obj.magic o
+          | _ -> failwith "Record expected."
+          end
+      | DT_variant {variant_constructors = constrs} ->
+          begin match h with
+          | DV_constructor (c, vl) ->
+              let cst = vl == [] in
+              let tag = ref (-1) in
+              let (_, tl) =
+                try List.find (fun (c0, tl) -> if cst = (tl == []) then incr tag; c = c0) constrs
+                with Not_found -> failwith (Printf.sprintf "Unexpected constructor %S" c)
+              in
+              if List.length tl <> List.length vl then failwith (Printf.sprintf "Wrong arity %i (expecting %i)" (List.length vl) (List.length tl));
+              if tl == [] then
+                Obj.magic !tag
+              else
+                let tl = List.map s tl in
+                tuple !tag tl vl
+          | _ -> failwith "Constructor expected."
+          end
+      | _ -> assert false (* TODO *)
+      end
+  | DT_var _ -> assert false
+
 
 let tuple l =
   let l = List.map (fun d -> let module M = (val d : DYN) in stype_of_ttype M.t, Obj.magic M.x) l in

@@ -56,7 +56,7 @@ let rec print ppf d =
   | DV_constructor (c, []) ->
       Format.fprintf ppf "%s" c
   | DV_constructor (c, l) ->
-      Format.fprintf ppf "(%s " c;
+      Format.fprintf ppf "%s (" c;
       iteri (fun i x -> if i <> 0 then Format.fprintf ppf ", "; print ppf x) l;
       Format.fprintf ppf ")"
 
@@ -145,4 +145,75 @@ let () =
   f (type _) 10;
   f (type _) [| "A"; "B" |];
   f (type _) (true, Some 10, (None : int option));
+  ()
+
+
+module Devariantizer1(X : TYPE1)(D : sig val f: 'a ttype -> variant -> 'a X.t end) = struct
+  let f (type t) t v =
+    match X.check t with
+    | None -> None
+    | Some m ->
+        let module M = (val m : X.T with type a = t) in
+        Some (TypEq.app (TypEq.sym M.eq) (D.f M.b v))
+end
+
+let rec devariantize: 'a. 'a ttype -> variant -> 'a = fun (type t) t v ->
+  let simple tt f () = match equal tt t with Some eq -> Some (TypEq.app eq (f v)) | None -> None in
+  let (||) f1 f2 () = match f1 () with Some x -> x | None -> f2 () in
+  let module DevariantizeList =
+    Devariantizer1(DList)(struct let f t = function
+      | V_list x -> List.map (devariantize t) x
+      | _ -> failwith "list expected"
+    end)
+  in
+  let module DevariantizeArray =
+    Devariantizer1(DArray)(struct let f t = function
+      | V_array x -> Array.map (devariantize t) (Array.of_list x)
+      | _ -> failwith "array expected"
+    end)
+  in
+  let module DevariantizeOption =
+    Devariantizer1(DOption)(struct let f t = function
+      | V_option None -> None
+      | V_option (Some x) -> Some (devariantize t x)
+      | _ -> failwith "array expected"
+    end)
+  in
+  let ofv v = object method toval: 'b. 'b ttype -> 'b = fun t -> devariantize t v end in
+  begin
+    simple DInt.ttype (function V_int x -> x | _ -> failwith "int expected") ||
+    simple DBool.ttype (function V_bool x -> x | _ -> failwith "bool expected") ||
+    simple DString.ttype (function V_string x -> x | _ -> failwith "string expected") ||
+    simple DFloat.ttype (function V_float x -> x | _ -> failwith "float expected") ||
+    (fun () -> DevariantizeList.f t v) ||
+    (fun () -> DevariantizeArray.f t v) ||
+    (fun () -> DevariantizeOption.f t v) ||
+    (fun () ->
+      let h = match v with
+      | V_tuple vl ->
+          DV_tuple (List.map ofv vl)
+      | V_constructor (c, vl) ->
+          DV_constructor (c, List.map ofv vl)
+      | V_record l ->
+          DV_record (List.map (fun (s, v) -> s, ofv v) l)
+      | _ -> assert false
+      in
+      build t h
+    )
+  end ()
+
+type fr = {x: float; y: float}
+type t = A of int * string | B | C | D of bool
+
+let () =
+  let f t v =
+    Format.printf "=> %a@." print (dyn t (devariantize t v))
+  in
+  f (type string * string * int) (V_tuple [V_string "A"; V_string "B"; V_int 3]);
+  f (type string ref) (V_record ["contents", V_string "X"]);
+  f (type fr) (V_record ["x", V_float 3.; "y", V_float 4.]);
+  f (type t list) (V_list [V_constructor ("A", [V_int 2; V_string "A"]);
+                           V_constructor ("B", []);
+                           V_constructor ("C", []);
+                           V_constructor ("D", [V_bool true])]);
   ()
