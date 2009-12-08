@@ -112,6 +112,7 @@ module Typedtree_search =
       | Typedtree.Tstr_open _ -> ()
       | Typedtree.Tstr_include _ -> ()
       | Typedtree.Tstr_eval _ -> ()
+      | Typedtree.Tstr_use_type _ -> ()
 
     let tables typedtree =
       let t = Hashtbl.create 13 in
@@ -1020,7 +1021,7 @@ module Analyser =
         table table_values =
       print_DEBUG "Odoc_ast:analyse_struture_item";
       match parsetree_item_desc with
-        Parsetree.Pstr_eval _ ->
+        Parsetree.Pstr_eval _ | Parsetree.Pstr_use_type _ ->
           (* don't care *)
           (0, env, [])
       | Parsetree.Pstr_value (rec_flag, pat_exp_list) ->

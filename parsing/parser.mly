@@ -481,6 +481,8 @@ structure_item:
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr
       { mkstr(Pstr_include $2) }
+  | LET TYPE EQUAL expr
+      { mkstr(Pstr_use_type $4) }
 ;
 module_binding:
     EQUAL module_expr

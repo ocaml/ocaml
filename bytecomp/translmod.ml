@@ -338,6 +338,8 @@ and transl_structure fields cc rootpath = function
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
+  | Tstr_use_type (id, expr) :: rem ->
+      Llet(Strict, id, transl_exp expr, transl_structure fields cc rootpath rem)
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -446,6 +448,9 @@ let transl_store_structure glob map prims str =
       Llet(Strict, mid,
            subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
+  | Tstr_use_type (id, expr) :: rem ->
+      Llet(Strict, id, subst_lambda subst (transl_exp expr),
+           transl_store subst rem)
 
   and store_ident id =
     try
@@ -499,6 +504,7 @@ let rec defined_idents = function
       List.map (fun (i, _, _, _, _) -> i) cl_list @ defined_idents rem
   | Tstr_cltype cl_list :: rem -> defined_idents rem
   | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
+  | Tstr_use_type (id, _) :: rem -> id :: defined_idents rem (* ?? *)
 
 (* Transform a coercion and the list of value identifiers defined by
    a toplevel structure into a table [id -> (pos, coercion)],
@@ -650,6 +656,9 @@ let transl_toplevel_item = function
           Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
+  | Tstr_use_type (id, expr) ->
+      toploop_setvalue id (transl_exp expr)
+
 
 let transl_toplevel_item_and_close itm =
   close_toplevel_term (transl_label_init (transl_toplevel_item itm))

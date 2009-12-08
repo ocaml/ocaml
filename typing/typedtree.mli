@@ -151,6 +151,7 @@ and structure_item =
       (Ident.t * int * string list * class_expr * virtual_flag) list
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
+  | Tstr_use_type of Ident.t * expression
 
 and module_coercion =
     Tcoerce_none

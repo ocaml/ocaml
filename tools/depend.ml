@@ -266,6 +266,8 @@ and add_struct_item bv item =
       List.iter (add_class_type_declaration bv) cdtl; bv
   | Pstr_include modl ->
       add_module bv modl; bv
+  | Pstr_use_type e ->
+      add_expr bv e; bv
 
 and add_use_file bv top_phrs =
   ignore (List.fold_left add_top_phrase bv top_phrs)

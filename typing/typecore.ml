@@ -1718,15 +1718,20 @@ let rec type_exp env sexp =
         exp_type = ttype ty;
         exp_env = env }
   | Pexp_use_type (e1, e2) ->
-      let id = Ident.create "ttype" in
-      let ty = newvar () in
-      let e1 = type_expect env e1 (ttype ty) in
-      let e2 = type_exp (Env.add_available_ttype id ty env) e2 in
+      let id, e1, nenv = type_use_type env e1 in
+      let e2 = type_exp nenv e2 in
       re {
         exp_desc = Texp_use_type (id, e1, e2);
         exp_loc = loc;
         exp_type = e2.exp_type;
         exp_env = env }
+
+and type_use_type env e =
+  let id = Ident.create "ttype" in
+  let ty = newvar () in
+  let e = type_expect env e (ttype ty) in
+  let env = Env.add_available_ttype id ty env in
+  id, e, env
 
 and type_argument env sarg ty_expected' =
   (* ty_expected' may be generic *)

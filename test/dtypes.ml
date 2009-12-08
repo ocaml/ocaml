@@ -249,3 +249,41 @@ let () =
   Format.printf "%a@." print_variant (match v with V_arrow (_, f) -> f (V_int 10) | _ -> assert false);
   ()
 
+
+
+
+module MyModule : sig
+  type t
+  val t: t ttype
+  val x: t
+
+  module Abstract: TYPE0 with type t = t
+end = struct
+  type t = int * int
+  let t = (type _)
+  let x = (2, 3)
+
+  type t_ = t
+  module Abstract = Abstract0(struct let name = "MyModule.t"  type t = t_ end)
+  let () =
+    add_printer0 Abstract.inspect (fun ppf (x, y) -> Format.fprintf ppf "< %i | %i >" x y)
+end
+
+let () =
+  Format.printf "%a@." print (dyn MyModule.t MyModule.x)
+
+let () =
+  let type = MyModule.t in
+  Format.printf "%a@." print (dyn (type _) (Some MyModule.x))
+
+let () =
+  let module M = struct
+    let type = MyModule.t
+    let () = Format.printf "%a@." print (dyn (type _) (Some MyModule.x))
+  end
+  in
+  ()
+
+let () =
+  let type = MyModule.Abstract.ttype in
+  Format.printf "%a@." print (dyn (type _) (Some MyModule.x))

@@ -52,6 +52,8 @@ val type_approx:
         Env.t -> Parsetree.expression -> type_expr
 val type_argument:
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+val type_use_type:
+        Env.t -> Parsetree.expression -> Ident.t * Typedtree.expression * Env.t
 
 val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression

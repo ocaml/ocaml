@@ -645,6 +645,7 @@ let rec type_module funct_body anchor env smod =
       if funct_body then raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
       let l, mty = Typetexp.create_package_mty smod.pmod_loc env (p, l) in
       let mty = transl_modtype env mty in
+      Typetexp.reset_type_variables();
       let exp = Typecore.type_expect env sexp (Typecore.create_package_type smod.pmod_loc env (p, l)) in
       rm { mod_desc = Tmod_unpack(exp, mty);
            mod_type = mty;
@@ -818,6 +819,11 @@ and type_structure funct_body anchor env sstr scope =
         (Tstr_include (modl, bound_value_identifiers sg) :: str_rem,
          sg @ sig_rem,
          final_env)
+    | {pstr_desc = Pstr_use_type sexpr} :: srem ->
+        Typetexp.reset_type_variables();
+        let id, expr, nenv = Typecore.type_use_type env sexpr in
+        let (str_rem, sig_rem, final_env) = type_struct nenv srem in
+        (Tstr_use_type (id, expr) :: str_rem, sig_rem, final_env)
   in
   if !Clflags.annotations
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;

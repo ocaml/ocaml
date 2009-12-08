@@ -634,6 +634,9 @@ and structure_item i ppf x =
   | Pstr_include me ->
       line i ppf "Pstr_include";
       module_expr i ppf me
+  | Pstr_use_type e ->
+      line i ppf "Pstr_use_type";
+      expression i ppf e;
 
 and string_x_type_declaration i ppf (s, td) =
   string i ppf s;

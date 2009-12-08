@@ -270,6 +270,7 @@ and structure_item_desc =
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr
+  | Pstr_use_type of expression
 
 (* Toplevel phrases *)
 
