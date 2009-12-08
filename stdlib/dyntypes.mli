@@ -44,6 +44,7 @@ and node = {
 and node_definition =
   | DT_record of record_definition
   | DT_variant of variant_definition
+  | DT_abstract
 
 and record_definition = {
     record_representation:  record_representation;
@@ -69,8 +70,8 @@ module TypEq : sig
   val app: ('a, 'b) t -> 'a -> 'b
 end
 
-val stype_equality: unit -> stype -> stype -> bool
-val equal: unit -> 'a ttype -> 'b ttype -> ('a, 'b) TypEq.t option
+val stype_equality: stype -> stype -> bool
+val equal: 'a ttype -> 'b ttype -> ('a, 'b) TypEq.t option
 
 (** {2 Dynamic values.} *)
 
@@ -95,4 +96,40 @@ type head =
   | DV_record of (string * dyn) list
   | DV_constructor of string * dyn list
 
+exception AbstractValue of node
 val inspect: dyn -> head
+
+
+(** {2 Abstract types.} *)
+
+val make_abstract: unit -> 'a ttype
+
+
+module type T1 = sig
+  type 'a t
+  module type S = sig
+    type a
+    type b
+    val b: b ttype
+    val eq: (a, b t) TypEq.t
+  end
+
+  val node: node
+  val ttype: 'a ttype -> 'a t ttype
+  val decompose: 'a t ttype -> 'a ttype
+
+  val check: 'a ttype -> (module S with type a = 'a) option
+
+  module type V = sig
+    type b
+    val b: b ttype
+    val x: b t
+  end
+  val inspect: dyn -> (module V) option
+end
+
+
+module Abstract1(X : sig type 'a t end) : T1 with type 'a t = 'a X.t
+module DList: T1 with type 'a t = 'a list
+module DOption: T1 with type 'a t = 'a option
+module DArray: T1 with type 'a t = 'a array

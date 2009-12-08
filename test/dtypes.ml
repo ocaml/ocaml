@@ -5,7 +5,7 @@ module X : sig
 end = struct
   let static t d =
     let module M = (val d : DYN) in
-    match equal () M.t t with
+    match equal M.t t with
     | None -> None
     | Some eq -> Some (TypEq.app eq M.x)
 end
@@ -18,7 +18,7 @@ let iteri f =
   aux 0
 
 let rec print ppf d =
-  match inspect d with
+  try match inspect d with
   | DV_int i -> Format.fprintf ppf "%i" i
   | DV_string s -> Format.fprintf ppf "%S" s
   | DV_float f -> Format.fprintf ppf "%f" f
@@ -52,18 +52,38 @@ let rec print ppf d =
       Format.fprintf ppf "(";
       iteri (fun i x -> if i <> 0 then Format.fprintf ppf ", "; print ppf x) l;
       Format.fprintf ppf ")"
+  with AbstractValue n when n == DArray.node ->
+    match DArray.inspect d with
+    | None -> assert false
+    | Some a ->
+        let module A = (val a : DArray.V) in
+        Format.fprintf ppf "[|";
+        Array.iteri
+          (fun i x ->
+            if i > 0 then Format.fprintf ppf "; ";
+            print ppf (dyn A.b x)
+          ) A.x;
+        Format.fprintf ppf "|]"
 
 type 'a t = A of 'a | B of ('a * 'a) t
 
 let () =
-  let f d =
+  let rec f d =
     Format.printf "--> %a@." print d;
     (match X.static (type _) d with None -> print_endline "None" | Some s -> print_endline s);
-    (match X.static (type _) d with None -> print_endline "None" | Some i -> print_endline (string_of_int i))
+    (match X.static (type _) d with None -> print_endline "None" | Some i -> print_endline (string_of_int i));
+
+    match DList.inspect d with
+    | None -> print_endline "Not a list"
+    | Some w ->
+        let module W = (val w : DList.V) in
+        List.iter f (List.map (dyn W.b) W.x)
   in
   f (dyn (type _) "ABC");
   f (dyn (type _) 3);
+  f (dyn (type _) [["X"; "Y"];[]]);
   f (dyn (type _) (Some (ref (2, "X"))));
   f (dyn (type _) (B (A (3, 4))));
   f (dyn (type _) (stype_of_ttype (type int option)));
+  f (dyn (type _) [| (3, false); (0, true) |]);
   ()

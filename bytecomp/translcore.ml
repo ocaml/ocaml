@@ -879,8 +879,12 @@ and transl_exp0 e =
           | Tconstr (p, [], _) when Path.same p Predef.path_float -> constr "Dyntypes.DT_float" []
           | Ttuple tyl -> constr "Dyntypes.DT_tuple" [list (List.map (stype_of_type args) tyl)]
           | Tconstr (p, tyl, _) ->
-              let i = id_of_path p in
-              constr "Dyntypes.DT_node" [Lvar i; list (List.map (stype_of_type args) tyl)]
+              let node =
+                if Path.same p Predef.path_array
+                then transl_path (fst (Env.lookup_value (Longident.parse "Dyntypes.DArray.node") Env.initial))
+                else Lvar (id_of_path p)
+              in
+              constr "Dyntypes.DT_node" [node; list (List.map (stype_of_type args) tyl)]
           | Tvar when List.mem_assoc t.id args ->
               List.assoc t.id args
           | _ ->
