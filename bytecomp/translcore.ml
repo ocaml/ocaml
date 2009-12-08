@@ -885,6 +885,8 @@ and transl_exp0 e =
               constr "Dyntypes.DT_node" [node; list (List.map (stype_of_type args) tyl)]
           | Tvar when List.mem_assoc t.id args ->
               List.assoc t.id args
+          | Tarrow (lab, t1, t2, _) ->
+              constr "Dyntypes.DT_arrow" [Lconst (Const_immstring lab); stype_of_type args t1; stype_of_type args t2]
           | _ ->
               err ""
       in

@@ -14,6 +14,7 @@
 (* $Id$ *)
 
 type stype =
+  | DT_arrow of string * stype * stype
   | DT_tuple of stype list
   | DT_node of node * stype list
   | DT_var of int
@@ -45,7 +46,6 @@ and record_definition = {
 and variant_definition = {
     variant_constructors: (string * stype list) list;
    }
-
 
 type 'a ttype = stype
 
@@ -88,6 +88,7 @@ let stype_equality t1 t2 =
     else
     match t1, t2 with
     | DT_tuple tyl1, DT_tuple tyl2 -> list aux tyl1 tyl2
+    | DT_arrow (l1, t1, s1), DT_arrow (l2, t2, s2) when l1 = l2 -> aux t1 t2; aux s1 s2
     | DT_node (n1, tyl1), DT_node (n2, tyl2) -> node n1 n2; list aux tyl1 tyl2
     | DT_var i1, DT_var i2 when i1 = i2 -> ()
     | _ -> raise Exit
@@ -146,12 +147,13 @@ let subst s =
   if Array.length s = 0 then fun t -> t
   else let rec aux = function
     | DT_tuple tl -> DT_tuple (List.map aux tl)
+    | DT_arrow (l, t, s) -> DT_arrow (l, aux t, aux s)
     | DT_node (node, tl) -> DT_node (node, List.map aux tl)
     | DT_var i -> s.(i)
   in
   aux
 
-exception AbstractValue of node
+exception AbstractValue
 
 let inspect d =
   let module M = (val d : DYN) in
@@ -161,7 +163,7 @@ let inspect d =
       let s = subst (Array.of_list tyl) in
       begin match node.node_definition with
       | DT_abstract | DT_builtin ->
-          raise (AbstractValue node)
+          raise AbstractValue
       | DT_record {record_fields = l} ->
           DV_record (List.map2 (fun (lab, _mut, t) x -> lab, dyn (s t) x) l (Array.to_list (Obj.magic M.x)))
       | DT_variant {variant_constructors = l} ->
@@ -182,6 +184,7 @@ let inspect d =
           DV_constructor (c, args)
       end
   | DT_var _ -> assert false
+  | DT_arrow _ -> raise AbstractValue
 
 let build : 'a ttype -> < toval: 'b. 'b ttype -> 'b > head -> 'a = fun t h ->
   let tuple tag tl vl =
@@ -245,9 +248,10 @@ let build : 'a ttype -> < toval: 'b. 'b ttype -> 'b > head -> 'a = fun t h ->
       | _ -> assert false (* TODO *)
       end
   | DT_var _ -> assert false
+  | DT_arrow _ -> assert false
 
 
-let tuple l =
+let dyn_tuple l =
   let l = List.map (fun d -> let module M = (val d : DYN) in stype_of_ttype M.t, Obj.magic M.x) l in
   let tl, vl = List.split l in
   dyn (DT_tuple tl) (Array.of_list vl)
@@ -394,3 +398,64 @@ module DBool = MkType0(struct
               DT_variant {variant_constructors = ["false", []; "true", []]}
              }
 end)
+
+module DArrow = struct
+  module type T = sig
+    type a
+    type dom
+    type codom
+    val lab: string
+    val dom: dom ttype
+    val codom: codom ttype
+    val eq: (a, (dom -> codom)) TypEq.t
+  end
+
+  let ttype l t s = DT_arrow (l, t, s)
+  let decompose = function
+    | DT_arrow (l, t, s) -> l, t, s
+    | _ -> assert false
+
+  let check (type a_) = function
+    | DT_arrow (l, t, s) ->
+        let module M = struct
+          type a = a_
+          type dom
+          type codom
+          let lab = l
+          let dom = t
+          let codom = s
+          let eq = TypEq.unsafe
+        end
+        in
+        let m = (module M : T with type a = a_) in
+        Some m
+    | _ ->
+        None
+
+  module type V = sig
+    type dom
+    type codom
+    val lab: string
+    val dom: dom ttype
+    val codom: codom ttype
+    val f: dom -> codom
+  end
+
+  let inspect d =
+    let module M = (val d : DYN) in
+    match check M.t with
+    | None -> None
+    | Some w ->
+        let module W = (val w : T with type a = M.t) in
+        let module N = struct
+          type dom = W.dom
+          type codom = W.codom
+          let dom = W.dom
+          let codom = W.codom
+          let lab = W.lab
+          let f = TypEq.app W.eq M.x
+        end
+        in
+        let n = (module N : V) in
+        Some n
+end

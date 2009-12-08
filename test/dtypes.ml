@@ -87,6 +87,12 @@ let () =
         ) l;
       Format.fprintf ppf "|]"
    end) in
+  add_printer
+    (fun ppf d ->
+      match DArrow.inspect d with
+      | None -> false
+      | Some _ -> Format.fprintf ppf "<fun>"; true
+    );
   ()
 
 let () =
@@ -108,6 +114,7 @@ let () =
   f (dyn (type _) (B (A (3, 4))));
   f (dyn (type _) (stype_of_ttype (type int option)));
   f (dyn (type _) [| (3, false); (0, true) |]);
+  f (dyn (type _) succ);
   ()
 
 
@@ -123,6 +130,10 @@ type variant =
   | V_option of variant option
   | V_record of (string * variant) list
   | V_constructor of string * variant list
+  | V_arrow of string * (variant -> variant)
+
+let devariantize_forward = ref (object method toval: 'a. 'a ttype -> variant -> 'a = fun _ _ -> assert false end)
+let devariantize t v = (!devariantize_forward) # toval t v
 
 let rec variantize d =
   match DInt.inspect d with Some x -> V_int x | None ->
@@ -132,6 +143,7 @@ let rec variantize d =
   match DList.inspect d with Some v -> let module V = (val v : DList.V) in V_list (List.map (fun e -> variantize (dyn V.b e)) V.x) | None ->
   match DArray.inspect d with Some v -> let module V = (val v : DArray.V) in V_array (List.map (fun e -> variantize (dyn V.b e)) (Array.to_list V.x)) | None ->
   match DOption.inspect d with Some v -> let module V = (val v : DOption.V) in V_option (match V.x with None -> None | Some x -> Some (variantize (dyn V.b x))) | None ->
+  match DArrow.inspect d with Some v -> let module V = (val v : DArrow.V) in V_arrow (V.lab, fun arg -> variantize (dyn V.codom (V.f (devariantize V.dom arg)))) | None ->
     match inspect d with
     | DV_tuple l -> V_tuple (List.map variantize l)
     | DV_record l -> V_record (List.map (fun (s, x) -> (s, variantize x)) l)
@@ -145,6 +157,7 @@ let () =
   f (type _) 10;
   f (type _) [| "A"; "B" |];
   f (type _) (true, Some 10, (None : int option));
+  f (type _) succ;
   ()
 
 
@@ -189,18 +202,32 @@ let rec devariantize: 'a. 'a ttype -> variant -> 'a = fun (type t) t v ->
     (fun () -> DevariantizeArray.f t v) ||
     (fun () -> DevariantizeOption.f t v) ||
     (fun () ->
-      let h = match v with
+      match v with
       | V_tuple vl ->
-          DV_tuple (List.map ofv vl)
+          build t (DV_tuple (List.map ofv vl))
       | V_constructor (c, vl) ->
-          DV_constructor (c, List.map ofv vl)
+          build t (DV_constructor (c, List.map ofv vl))
       | V_record l ->
-          DV_record (List.map (fun (s, v) -> s, ofv v) l)
+          build t (DV_record (List.map (fun (s, v) -> s, ofv v) l))
+      | V_arrow (lab, f) ->
+          begin match DArrow.check t with
+          | None -> failwith "arrow type expected"
+          | Some m ->
+              let module M = (val m : DArrow.T with type a = t) in
+              if lab <> M.lab then failwith "wrong function label";
+              let f arg =
+                devariantize M.codom (f (variantize (dyn M.dom arg)))
+              in
+              TypEq.app (TypEq.sym M.eq) f
+          end
       | _ -> assert false
-      in
-      build t h
     )
   end ()
+
+let () =
+  devariantize_forward := object
+    method toval: 'a. 'a ttype -> variant -> 'a = devariantize
+  end
 
 type fr = {x: float; y: float}
 type t = A of int * string | B | C | D of bool
@@ -216,4 +243,9 @@ let () =
                            V_constructor ("B", []);
                            V_constructor ("C", []);
                            V_constructor ("D", [V_bool true])]);
+  let u = devariantize (type int -> int) (V_arrow ("", function V_int x -> V_int (x * 2) | _ -> assert false)) in
+  Format.printf "%i // %i@." (u 10) (u 3);
+  let v = variantize (dyn (type _) succ) in
+  Format.printf "%a@." print_variant (match v with V_arrow (_, f) -> f (V_int 10) | _ -> assert false);
   ()
+

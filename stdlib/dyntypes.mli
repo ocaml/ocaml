@@ -17,10 +17,14 @@
 
 
 type 'a ttype
+      (** A value of type ['a ttype] is a runtime representation of
+          the type ['a]. Values of this type can be constructed with
+          [(type ...)] expressions. *)
 
 (** {2 Structure of types.} *)
 
 type stype =
+  | DT_arrow of string * stype * stype
   | DT_tuple of stype list
   | DT_node of node * stype list
   | DT_var of int
@@ -55,6 +59,8 @@ and variant_definition = {
 
 
 val stype_of_ttype: 'a ttype -> stype
+    (** This function returns a term that represents the known part of a type structure. *)
+
 
 (** {2 Equality.} *)
 
@@ -69,7 +75,12 @@ module TypEq : sig
 end
 
 val stype_equality: stype -> stype -> bool
+    (** Checks whether two stypes are structurally equal. Abstract
+        (non built-in) nodes are compared with physical equalities. *)
+
 val equal: 'a ttype -> 'b ttype -> ('a, 'b) TypEq.t option
+    (** Checks whether two ttypes have the same structure; when this is the case,
+        this function returns a witness of equality between the two corresponding static types. *)
 
 (** {2 Dynamic values.} *)
 
@@ -80,9 +91,16 @@ module type DYN = sig
 end
 
 type dyn = (module DYN)
+      (** A dynamic value is a pair of a value and of a ttype corresponding to the
+          static type of the value. *)
+
 
 val dyn: 'a ttype -> 'a -> dyn
-val tuple: dyn list -> dyn
+    (** Build a dynamic value. *)
+
+val dyn_tuple: dyn list -> dyn
+    (** Create a tuple of dynamic values from individual components. *)
+
 
 (** {2 Inspection of values.} *)
 
@@ -91,10 +109,15 @@ type 'a head =
   | DV_record of (string * 'a) list
   | DV_constructor of string * 'a list
 
-exception AbstractValue of node
-val inspect: dyn -> dyn head
-val build: 'a ttype -> < toval: 'b. 'b ttype -> 'b > head -> 'a
+exception AbstractValue
 
+val inspect: dyn -> dyn head
+    (** Inspect the head of the structure of a dynamic value. Raises [AbstractValue]
+        for abstract and builtin nodes. *)
+
+val build: 'a ttype -> < toval: 'b. 'b ttype -> 'b > head -> 'a
+    (** Build a typed value from its ttypes and a value representing the head
+        of its structure. *)
 
 (** {2 Abstract types.} *)
 
@@ -141,3 +164,32 @@ module DString: TYPE0 with type t = string
 module DFloat: TYPE0 with type t = float
 
 module DBool: TYPE0 with type t = bool
+
+
+(** {2 Function types.} *)
+
+module DArrow: sig
+  module type T = sig
+    type a
+    type dom
+    type codom
+    val lab: string
+    val dom: dom ttype
+    val codom: codom ttype
+    val eq: (a, (dom -> codom)) TypEq.t
+  end
+
+  val ttype: string -> 'a ttype -> 'b ttype -> ('a -> 'b) ttype
+  val decompose: ('a -> 'b) ttype -> string * 'a ttype * 'b ttype
+  val check: 'a ttype -> (module T with type a = 'a) option
+
+  module type V = sig
+    type dom
+    type codom
+    val lab: string
+    val dom: dom ttype
+    val codom: codom ttype
+    val f: dom -> codom
+  end
+  val inspect: dyn -> (module V) option
+end
