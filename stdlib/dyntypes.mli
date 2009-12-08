@@ -21,9 +21,6 @@ type 'a ttype
 (** {2 Structure of types.} *)
 
 type stype =
-  | DT_int
-  | DT_string
-  | DT_float
   | DT_tuple of stype list
   | DT_node of node * stype list
   | DT_var of int
@@ -45,6 +42,7 @@ and node_definition =
   | DT_record of record_definition
   | DT_variant of variant_definition
   | DT_abstract
+  | DT_builtin
 
 and record_definition = {
     record_representation:  record_representation;
@@ -89,9 +87,6 @@ val tuple: dyn list -> dyn
 (** {2 Inspection of values.} *)
 
 type head =
-  | DV_int of int
-  | DV_string of string
-  | DV_float of float
   | DV_tuple of dyn list
   | DV_record of (string * dyn) list
   | DV_constructor of string * dyn list
@@ -102,12 +97,16 @@ val inspect: dyn -> head
 
 (** {2 Abstract types.} *)
 
-val make_abstract: unit -> 'a ttype
+module type TYPE0 = sig
+  type t
+  val node: node
+  val ttype: t ttype
+  val inspect: dyn -> t option
+end
 
-
-module type T1 = sig
+module type TYPE1 = sig
   type 'a t
-  module type S = sig
+  module type T = sig
     type a
     type b
     val b: b ttype
@@ -118,7 +117,7 @@ module type T1 = sig
   val ttype: 'a ttype -> 'a t ttype
   val decompose: 'a t ttype -> 'a ttype
 
-  val check: 'a ttype -> (module S with type a = 'a) option
+  val check: 'a ttype -> (module T with type a = 'a) option
 
   module type V = sig
     type b
@@ -129,7 +128,13 @@ module type T1 = sig
 end
 
 
-module Abstract1(X : sig type 'a t end) : T1 with type 'a t = 'a X.t
-module DList: T1 with type 'a t = 'a list
-module DOption: T1 with type 'a t = 'a option
-module DArray: T1 with type 'a t = 'a array
+module Abstract0(X : sig val name: string type t end) : TYPE0 with type t = X.t
+module Abstract1(X : sig val name: string type 'a t end) : TYPE1 with type 'a t = 'a X.t
+
+module DList: TYPE1 with type 'a t = 'a list
+module DOption: TYPE1 with type 'a t = 'a option
+module DArray: TYPE1 with type 'a t = 'a array
+
+module DInt: TYPE0 with type t = int
+module DString: TYPE0 with type t = string
+module DFloat: TYPE0 with type t = float

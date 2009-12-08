@@ -17,11 +17,34 @@ let iteri f =
   in
   aux 0
 
+let printers = ref []
+let add_printer f = printers := f :: !printers
+
+let add_printer0 extr pr =
+  add_printer
+    (fun ppf d ->
+      match extr d with
+      | None -> false
+      | Some x -> pr ppf x; true
+    )
+
+module Printer1(X : TYPE1)(P : sig val print: Format.formatter -> 'a ttype -> 'a X.t -> unit end) =
+  struct
+    let () =
+      add_printer
+        (fun ppf d ->
+          match X.inspect d with
+          | None -> false
+          | Some a ->
+              let module A = (val a : X.V) in
+              P.print ppf A.b A.x;
+              true
+        )
+  end
+
 let rec print ppf d =
-  try match inspect d with
-  | DV_int i -> Format.fprintf ppf "%i" i
-  | DV_string s -> Format.fprintf ppf "%S" s
-  | DV_float f -> Format.fprintf ppf "%f" f
+  if List.exists (fun f -> f ppf d) !printers then ()
+  else match inspect d with
   | DV_tuple l ->
       Format.fprintf ppf "(";
       iteri (fun i x -> if i <> 0 then Format.fprintf ppf ", "; print ppf x) l;
@@ -30,42 +53,42 @@ let rec print ppf d =
       Format.fprintf ppf "{";
       iteri (fun i (s, x) -> if i <> 0 then Format.fprintf ppf "; "; Format.fprintf ppf "%s=%a" s print x) l;
       Format.fprintf ppf "}"
-  | DV_constructor ("[]", []) ->
-      Format.fprintf ppf "[]"
   | DV_constructor (c, []) ->
       Format.fprintf ppf "%s" c
-  | DV_constructor ("::", [hd; tl]) ->
-      Format.fprintf ppf "[%a" print hd;
-      let rec loop d =
-        match inspect d with
-        | DV_constructor ("::", [hd; tl]) ->
-            Format.fprintf ppf "; %a" print hd;
-            loop tl
-        | DV_constructor ("[]", []) ->
-            Format.fprintf ppf "]"
-        | _ ->
-            assert false
-      in
-      loop tl
   | DV_constructor (c, l) ->
       Format.fprintf ppf "%s " c;
       Format.fprintf ppf "(";
       iteri (fun i x -> if i <> 0 then Format.fprintf ppf ", "; print ppf x) l;
       Format.fprintf ppf ")"
-  with AbstractValue n when n == DArray.node ->
-    match DArray.inspect d with
-    | None -> assert false
-    | Some a ->
-        let module A = (val a : DArray.V) in
-        Format.fprintf ppf "[|";
-        Array.iteri
-          (fun i x ->
-            if i > 0 then Format.fprintf ppf "; ";
-            print ppf (dyn A.b x)
-          ) A.x;
-        Format.fprintf ppf "|]"
 
 type 'a t = A of 'a | B of ('a * 'a) t
+
+let () =
+  add_printer0 DInt.inspect (fun ppf x -> Format.fprintf ppf "%i" x);
+  add_printer0 DFloat.inspect (fun ppf x -> Format.fprintf ppf "%f" x);
+  add_printer0 DString.inspect (fun ppf x -> Format.fprintf ppf "%s" x);
+
+  let module PList = Printer1(DList)(struct
+    let print ppf t l =
+      Format.fprintf ppf "[";
+      iteri
+        (fun i x ->
+          if i > 0 then Format.fprintf ppf "; ";
+          print ppf (dyn t x)
+        ) l;
+      Format.fprintf ppf "]"
+  end) in
+  let module PArray = Printer1(DArray)(struct
+    let print ppf t l =
+      Format.fprintf ppf "[|";
+      Array.iteri
+        (fun i x ->
+          if i > 0 then Format.fprintf ppf "; ";
+          print ppf (dyn t x)
+        ) l;
+      Format.fprintf ppf "|]"
+   end) in
+  ()
 
 let () =
   let rec f d =

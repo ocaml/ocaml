@@ -201,3 +201,14 @@ let builtin_values =
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
        ident_division_by_zero; ident_sys_blocked_io;
        ident_assert_failure; ident_undefined_recursive_module ]
+
+let dtypes = [
+  path_int, "Dyntypes.DInt.node";
+  path_string, "Dyntypes.DString.node";
+  path_float, "Dyntypes.DFloat.node";
+  path_array, "Dyntypes.DArray.node";
+ ]
+
+let dtype p =
+  try Some (snd (List.find (fun (p0, _) -> Path.same p p0) dtypes))
+  with Not_found -> None

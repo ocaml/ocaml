@@ -14,9 +14,6 @@
 (* $Id$ *)
 
 type stype =
-  | DT_int
-  | DT_string
-  | DT_float
   | DT_tuple of stype list
   | DT_node of node * stype list
   | DT_var of int
@@ -38,6 +35,7 @@ and node_definition =
   | DT_record of record_definition
   | DT_variant of variant_definition
   | DT_abstract
+  | DT_builtin
 
 and record_definition = {
     record_representation:  record_representation;
@@ -94,6 +92,8 @@ let stype_equality t1 t2 =
           list field r1.record_fields r2.record_fields
       | DT_variant v1, DT_variant v2 ->
           list constructor v1.variant_constructors v2.variant_constructors
+      | DT_builtin, DT_builtin when n1.node_id = n2.node_id ->
+          ()
       | _ -> raise Exit
     end
   and constructor (c1, tl1) (c2, tl2) =
@@ -130,9 +130,6 @@ let dyn (type s) t x =
   (module M : DYN)
 
 type head =
-  | DV_int of int
-  | DV_string of string
-  | DV_float of float
   | DV_tuple of dyn list
   | DV_record of (string * dyn) list
   | DV_constructor of string * dyn list
@@ -140,7 +137,6 @@ type head =
 let subst s =
   if Array.length s = 0 then fun t -> t
   else let rec aux = function
-    | DT_int _ | DT_string _ | DT_float _ as t -> t
     | DT_tuple tl -> DT_tuple (List.map aux tl)
     | DT_node (node, tl) -> DT_node (node, List.map aux tl)
     | DT_var i -> s.(i)
@@ -152,14 +148,11 @@ exception AbstractValue of node
 let inspect d =
   let module M = (val d : DYN) in
   match M.t with
-  | DT_int -> DV_int (Obj.magic M.x)
-  | DT_string -> DV_string (Obj.magic M.x)
-  | DT_float -> DV_float (Obj.magic M.x)
   | DT_tuple tl -> DV_tuple (List.map2 dyn tl (Array.to_list (Obj.magic M.x)))
   | DT_node (node, tyl) ->
       let s = subst (Array.of_list tyl) in
       begin match node.node_definition with
-      | DT_abstract ->
+      | DT_abstract | DT_builtin ->
           raise (AbstractValue node)
       | DT_record {record_fields = l} ->
           DV_record (List.map2 (fun (lab, _mut, t) x -> lab, dyn (s t) x) l (Array.to_list (Obj.magic M.x)))
@@ -187,20 +180,19 @@ let tuple l =
   let tl, vl = List.split l in
   dyn (DT_tuple tl) (Array.of_list vl)
 
-let make_abstract_node =
-  let seq = ref 0 in
-  fun () ->
-    incr seq;
-    let id = Printf.sprintf "abstract/%i" !seq in
-    {node_id = id; node_definition = DT_abstract}
+let make_abstract_node name = {node_id = name; node_definition = DT_abstract}
+let make_builtin_node name = {node_id = name; node_definition = DT_builtin}
 
-let make_abstract () =
-  let n = make_abstract_node () in
-  DT_node (n, [])
+module type TYPE0 = sig
+  type t
+  val node: node
+  val ttype: t ttype
+  val inspect: dyn -> t option
+end
 
-module type T1 = sig
+module type TYPE1 = sig
   type 'a t
-  module type S = sig
+  module type T = sig
     type a
     type b
     val b: b ttype
@@ -211,7 +203,7 @@ module type T1 = sig
   val ttype: 'a ttype -> 'a t ttype
   val decompose: 'a t ttype -> 'a ttype
 
-  val check: 'a ttype -> (module S with type a = 'a) option
+  val check: 'a ttype -> (module T with type a = 'a) option
 
   module type V = sig
     type b
@@ -221,11 +213,20 @@ module type T1 = sig
   val inspect: dyn -> (module V) option
 end
 
+module MkType0(X : sig val node: node type t end) = struct
+  include X
+  let ttype = DT_node (X.node, [])
+  let inspect d =
+    let module M = (val d : DYN) in
+    match equal M.t ttype with
+    | None -> None
+    | Some eq -> Some (TypEq.app eq M.x)
+end
 
-module MkParam1(X : sig val node: node type 'a t end) = struct
+module MkType1(X : sig val node: node type 'a t end) = struct
   include X
 
-  module type S = sig
+  module type T = sig
     type a
     type b
     val b: b ttype
@@ -246,7 +247,7 @@ module MkParam1(X : sig val node: node type 'a t end) = struct
           type b
           let b = b
           let eq = ()
-        end : S with type a = a_) in
+        end : T with type a = a_) in
         Some m
     | _ ->
         None
@@ -262,7 +263,7 @@ module MkParam1(X : sig val node: node type 'a t end) = struct
     match check M.t with
     | None -> None
     | Some w ->
-        let module W = (val w : S with type a = M.t) in
+        let module W = (val w : T with type a = M.t) in
         let module N = struct
           type b = W.b
           let b = W.b
@@ -273,10 +274,23 @@ module MkParam1(X : sig val node: node type 'a t end) = struct
         Some n
 end
 
-module Abstract1(X : sig type 'a t end) =
-  MkParam1(struct let node = make_abstract_node () type 'a t = 'a X.t end)
+module Abstract0(X : sig val name: string type t end) =
+  MkType0(struct let node = make_abstract_node X.name type t = X.t end)
 
-module DList = MkParam1(struct
+module Abstract1(X : sig val name: string type 'a t end) =
+  MkType1(struct let node = make_abstract_node X.name type 'a t = 'a X.t end)
+
+module Builtin0(X : sig val name: string type t end) =
+  MkType0(struct let node = make_abstract_node X.name type t = X.t end)
+
+module Builtin1(X : sig val name: string type 'a t end) =
+  MkType1(struct let node = make_builtin_node X.name type 'a t = 'a X.t end)
+
+module DInt = Builtin0(struct let name = "int" type t = int end)
+module DString = Builtin0(struct let name = "string" type t = string end)
+module DFloat = Builtin0(struct let name = "float" type t = float end)
+
+module DList = MkType1(struct
   type 'a t = 'a list
   let rec node = {node_id = "list";
                   node_definition =
@@ -291,7 +305,7 @@ module DList = MkParam1(struct
      this module depends on the new features and make bootstrap more complicated. *)
 end)
 
-module DOption = MkParam1(struct
+module DOption = MkType1(struct
   type 'a t = 'a option
   let rec node = {node_id = "option";
                   node_definition =
@@ -299,4 +313,4 @@ module DOption = MkParam1(struct
                  }
 end)
 
-module DArray = Abstract1(struct type 'a t = 'a array end)
+module DArray = Builtin1(struct let name = "array" type 'a t = 'a array end)

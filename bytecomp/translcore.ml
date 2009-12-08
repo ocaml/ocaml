@@ -874,15 +874,13 @@ and transl_exp0 e =
           let t = Ctype.full_expand e.exp_env t in
           let err s = raise(Error(e.exp_loc, Dynamic_type (s, t))) in
           match t.desc with
-          | Tconstr (p, [], _) when Path.same p Predef.path_int -> constr "Dyntypes.DT_int" []
-          | Tconstr (p, [], _) when Path.same p Predef.path_string -> constr "Dyntypes.DT_string" []
-          | Tconstr (p, [], _) when Path.same p Predef.path_float -> constr "Dyntypes.DT_float" []
-          | Ttuple tyl -> constr "Dyntypes.DT_tuple" [list (List.map (stype_of_type args) tyl)]
+          | Ttuple tyl ->
+              constr "Dyntypes.DT_tuple" [list (List.map (stype_of_type args) tyl)]
           | Tconstr (p, tyl, _) ->
               let node =
-                if Path.same p Predef.path_array
-                then transl_path (fst (Env.lookup_value (Longident.parse "Dyntypes.DArray.node") Env.initial))
-                else Lvar (id_of_path p)
+                match Predef.dtype p with
+                | Some li -> transl_path (fst (Env.lookup_value (Longident.parse li) Env.initial))
+                | None -> Lvar (id_of_path p)
               in
               constr "Dyntypes.DT_node" [node; list (List.map (stype_of_type args) tyl)]
           | Tvar when List.mem_assoc t.id args ->
