@@ -3456,3 +3456,6 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
+
+let find_available_ttype env t =
+  snd (List.find (fun (t0, _) -> equal env false [t] [t0]) (Env.available_ttypes env))

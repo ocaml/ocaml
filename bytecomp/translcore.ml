@@ -28,6 +28,8 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Dynamic_type of string * type_expr
+  | Dynamic_type_path of string * Path.t
 
 exception Error of Location.t * error
 
@@ -653,19 +655,7 @@ and transl_exp0 e =
         Lprim(Pmakeblock(0, Immutable), ll)
       end
   | Texp_construct(cstr, args) ->
-      let ll = transl_list args in
-      begin match cstr.cstr_tag with
-        Cstr_constant n ->
-          Lconst(Const_pointer n)
-      | Cstr_block n ->
-          begin try
-            Lconst(Const_block(n, List.map extract_constant ll))
-          with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable), ll)
-          end
-      | Cstr_exception path ->
-          Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
-      end
+      transl_construct cstr (transl_list args)
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
@@ -825,6 +815,96 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
+  | Texp_type_of ty ->
+      let constr s args =
+        let c =
+          try Env.lookup_constructor (Longident.parse s) Env.initial
+          with Not_found -> fatal_error ("Cannot find constructor " ^ s)
+        in
+        transl_construct c args
+      in
+      let rec list = function
+        | [] -> constr "[]" []
+        | hd :: tl -> constr "::" [hd; list tl]
+      in
+      let nodes = ref [] in
+      let node_ids = ref [] in
+      let rec id_of_path p =
+        let err s = raise(Error(e.exp_loc, Dynamic_type_path (s, p))) in
+        try snd (List.find (fun (p0, _) -> Path.same p p0) !node_ids)
+        with Not_found ->
+          let i = Ident.create (Path.name p) in
+          node_ids := (p, i) :: !node_ids;
+          let decl = Env.find_type p e.exp_env in
+          let nargs =
+            Array.mapi
+              (fun i x -> x.id, constr "Dyntypes.DT_var" [Lconst (Const_base (Const_int i))])
+              (Array.of_list decl.type_params)
+          in
+          let nargs = Array.to_list nargs in
+          let def =
+            match decl.type_kind with
+            | Type_abstract _ -> err " (abstract type)"
+            | Type_variant constrs ->
+                let mk (s, tl) =
+                  transl_block 0 [Lconst (Const_immstring s); list (List.map (stype_of_type nargs) tl)]
+                in
+                constr "Dyntypes.DT_variant" [transl_block 0 [list (List.map mk constrs)]]
+            | Type_record (fields, repr) ->
+                let repr =
+                  match repr with
+                  | Record_regular -> constr "Dyntypes.Record_regular" []
+                  | Record_float -> constr "Dyntypes.Record_float" []
+                in
+                let field (lab, mut, t) =
+                  let mut =
+                    match mut with
+                    | Mutable -> constr "Dyntypes.Mutable" []
+                    | Immutable -> constr "Dyntypes.Immutable" []
+                  in
+                  transl_block 0 [Lconst (Const_immstring lab); mut; stype_of_type nargs t]
+                in
+                constr "Dyntypes.DT_record" [transl_block 0 [repr; list (List.map field fields)]]
+          in
+          nodes := (i, transl_block 0 [Lconst (Const_immstring (Path.unique_name p)); def]) :: !nodes;
+          i
+      and stype_of_type args t =
+        try Lvar (Ctype.find_available_ttype e.exp_env t)
+        with Not_found ->
+          let t = Ctype.full_expand e.exp_env t in
+          let err s = raise(Error(e.exp_loc, Dynamic_type (s, t))) in
+          match t.desc with
+          | Tconstr (p, [], _) when Path.same p Predef.path_int -> constr "Dyntypes.DT_int" []
+          | Tconstr (p, [], _) when Path.same p Predef.path_string -> constr "Dyntypes.DT_string" []
+          | Tconstr (p, [], _) when Path.same p Predef.path_float -> constr "Dyntypes.DT_float" []
+          | Ttuple tyl -> constr "Dyntypes.DT_tuple" [list (List.map (stype_of_type args) tyl)]
+          | Tconstr (p, tyl, _) ->
+              let i = id_of_path p in
+              constr "Dyntypes.DT_node" [Lvar i; list (List.map (stype_of_type args) tyl)]
+          | Tvar when List.mem_assoc t.id args ->
+              List.assoc t.id args
+          | _ ->
+              err ""
+      in
+      let st = stype_of_type [] ty in
+      if !nodes = [] then st else Lletrec (!nodes, st)
+  | Texp_use_type (id, e1, e2) ->
+      Llet(Strict, id, transl_exp e1, transl_exp e2)
+
+and transl_construct cstr ll =
+  match cstr.cstr_tag with
+  | Cstr_constant n ->
+      Lconst(Const_pointer n)
+  | Cstr_block n ->
+      transl_block n ll
+  | Cstr_exception path ->
+      Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
+
+and transl_block n ll =
+  try
+    Lconst(Const_block(n, List.map extract_constant ll))
+  with Not_constant ->
+    Lprim(Pmakeblock(n, Immutable), ll)
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -1048,3 +1128,13 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Dynamic_type (s, ty) ->
+      fprintf ppf
+        "This type expression does not support dynamic representation%s: %a"
+        s
+        Printtyp.type_expr ty
+  | Dynamic_type_path (s, p) ->
+      fprintf ppf
+        "This type declaration does not support dynamic representation%s: %a"
+        s
+        Printtyp.path p

@@ -53,6 +53,7 @@ type t = {
   components: (Path.t * module_components) Ident.tbl;
   classes: (Path.t * class_declaration) Ident.tbl;
   cltypes: (Path.t * cltype_declaration) Ident.tbl;
+  available_ttypes: (type_expr * Ident.t) list;
   summary: summary
 }
 
@@ -90,6 +91,7 @@ let empty = {
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty;
+  available_ttypes = [];
   summary = Env_empty }
 
 let diff_keys is_local tbl1 tbl2 =
@@ -713,6 +715,12 @@ and add_class id ty env =
 
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
+
+let add_available_ttype id t env =
+  { env with available_ttypes = (t, id) :: env.available_ttypes }
+
+let available_ttypes env =
+  env.available_ttypes
 
 (* Insertion of bindings by name *)
 

@@ -60,6 +60,11 @@ val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> cltype_declaration -> t -> t
 
+(* Dynamic types *)
+
+val add_available_ttype: Ident.t -> type_expr -> t -> t
+val available_ttypes: t -> (type_expr * Ident.t) list
+
 (* Insertion of all fields of a signature. *)
 
 val add_item: signature_item -> t -> t

@@ -1,8 +1,6 @@
-let property =
-  let new type t in
-  fun () ->
-    let module M = struct exception E of t end in
-    (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
+let property (type t) () =
+  let module M = struct exception E of t end in
+  (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
 
 let () =
   let (int_inj, int_proj) = property () in
@@ -19,11 +17,9 @@ let () =
 
 
 
-let sort_uniq =
-  let new type s in
-  fun cmp l ->
-    let module S = Set.Make(struct type t = s let compare = cmp end) in
-    S.elements (List.fold_right S.add l S.empty)
+let sort_uniq (type s) cmp l =
+  let module S = Set.Make(struct type t = s let compare = cmp end) in
+  S.elements (List.fold_right S.add l S.empty)
 
 let () =
   print_endline (String.concat "," (sort_uniq compare [ "abc"; "xyz"; "abc" ]))

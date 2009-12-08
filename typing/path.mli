@@ -27,3 +27,5 @@ val nopos: int
 
 val name: t -> string
 val head: t -> Ident.t
+
+val unique_name: t -> string

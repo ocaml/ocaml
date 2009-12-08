@@ -9,8 +9,9 @@ camlinternalOO.cmi: obj.cmi
 char.cmi: 
 complex.cmi: 
 digest.cmi: 
+dyntypes.cmi: digest.cmi 
 filename.cmi: 
-format.cmi: buffer.cmi 
+format.cmi: pervasives.cmi buffer.cmi 
 gc.cmi: 
 genlex.cmi: stream.cmi 
 hashtbl.cmi: 
@@ -32,7 +33,7 @@ printexc.cmi:
 printf.cmi: obj.cmi buffer.cmi 
 queue.cmi: 
 random.cmi: nativeint.cmi int64.cmi int32.cmi 
-scanf.cmi: 
+scanf.cmi: pervasives.cmi 
 set.cmi: 
 sort.cmi: 
 stack.cmi: 
@@ -66,12 +67,16 @@ complex.cmo: complex.cmi
 complex.cmx: complex.cmi 
 digest.cmo: string.cmi printf.cmi digest.cmi 
 digest.cmx: string.cmx printf.cmx digest.cmi 
+dyntypes.cmo: digest.cmi dyntypes.cmi 
+dyntypes.cmx: digest.cmx dyntypes.cmi 
 filename.cmo: sys.cmi string.cmi random.cmi printf.cmi buffer.cmi \
     filename.cmi 
 filename.cmx: sys.cmx string.cmx random.cmx printf.cmx buffer.cmx \
     filename.cmi 
-format.cmo: string.cmi printf.cmi obj.cmi list.cmi buffer.cmi format.cmi 
-format.cmx: string.cmx printf.cmx obj.cmx list.cmx buffer.cmx format.cmi 
+format.cmo: string.cmi printf.cmi pervasives.cmi obj.cmi list.cmi buffer.cmi \
+    format.cmi 
+format.cmx: string.cmx printf.cmx pervasives.cmx obj.cmx list.cmx buffer.cmx \
+    format.cmi 
 gc.cmo: sys.cmi printf.cmi gc.cmi 
 gc.cmx: sys.cmx printf.cmx gc.cmi 
 genlex.cmo: string.cmi stream.cmi list.cmi hashtbl.cmi char.cmi genlex.cmi 
@@ -108,20 +113,20 @@ pervasives.cmo: pervasives.cmi
 pervasives.cmx: pervasives.cmi 
 printexc.cmo: printf.cmi obj.cmi buffer.cmi array.cmi printexc.cmi 
 printexc.cmx: printf.cmx obj.cmx buffer.cmx array.cmx printexc.cmi 
-printf.cmo: string.cmi obj.cmi list.cmi char.cmi buffer.cmi array.cmi \
-    printf.cmi 
-printf.cmx: string.cmx obj.cmx list.cmx char.cmx buffer.cmx array.cmx \
-    printf.cmi 
+printf.cmo: string.cmi pervasives.cmi obj.cmi list.cmi char.cmi buffer.cmi \
+    array.cmi printf.cmi 
+printf.cmx: string.cmx pervasives.cmx obj.cmx list.cmx char.cmx buffer.cmx \
+    array.cmx printf.cmi 
 queue.cmo: obj.cmi queue.cmi 
 queue.cmx: obj.cmx queue.cmi 
 random.cmo: string.cmi pervasives.cmi nativeint.cmi int64.cmi int32.cmi \
     digest.cmi char.cmi array.cmi random.cmi 
 random.cmx: string.cmx pervasives.cmx nativeint.cmx int64.cmx int32.cmx \
     digest.cmx char.cmx array.cmx random.cmi 
-scanf.cmo: string.cmi printf.cmi obj.cmi list.cmi hashtbl.cmi buffer.cmi \
-    array.cmi scanf.cmi 
-scanf.cmx: string.cmx printf.cmx obj.cmx list.cmx hashtbl.cmx buffer.cmx \
-    array.cmx scanf.cmi 
+scanf.cmo: string.cmi printf.cmi pervasives.cmi obj.cmi list.cmi hashtbl.cmi \
+    buffer.cmi array.cmi scanf.cmi 
+scanf.cmx: string.cmx printf.cmx pervasives.cmx obj.cmx list.cmx hashtbl.cmx \
+    buffer.cmx array.cmx scanf.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: array.cmi sort.cmi 

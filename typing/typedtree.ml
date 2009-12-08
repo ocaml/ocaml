@@ -80,6 +80,8 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
   | Texp_pack of module_expr
+  | Texp_type_of of type_expr
+  | Texp_use_type of Ident.t * expression * expression
 
 and meth =
     Tmeth_name of string

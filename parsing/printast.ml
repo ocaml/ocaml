@@ -322,6 +322,13 @@ and expression i ppf x =
   | Pexp_open (m, e) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_longident m;
       expression i ppf e
+  | Pexp_type_of t ->
+      line i ppf "Pexp_type_of\n";
+      core_type i ppf t
+  | Pexp_use_type (e1, e2) ->
+      line i ppf "Pexp_use_type\n";
+      expression i ppf e1;
+      expression i ppf e2
 
 and value_description i ppf x =
   line i ppf "value_description\n";

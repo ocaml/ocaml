@@ -36,7 +36,8 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
   filename.cmo complex.cmo \
-  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
+  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo \
+  dyntypes.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 

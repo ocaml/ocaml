@@ -37,6 +37,8 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Dynamic_type of string * type_expr
+  | Dynamic_type_path of string * Path.t
 
 exception Error of Location.t * error
 

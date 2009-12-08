@@ -243,3 +243,5 @@ val arity: type_expr -> int
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
+
+val find_available_ttype: Env.t -> type_expr -> Ident.t

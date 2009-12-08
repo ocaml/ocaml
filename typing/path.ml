@@ -47,3 +47,8 @@ let rec head = function
   | Pdot(p, s, pos) -> head p
   | Papply(p1, p2) -> assert false
 
+let rec unique_name = function
+    Pident id -> Ident.unique_name id
+  | Pdot(p, s, pos) -> unique_name p ^ "." ^ s
+  | Papply(p1, p2) -> unique_name p1 ^ "(" ^ unique_name p2 ^ ")"
+

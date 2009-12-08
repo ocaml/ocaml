@@ -827,6 +827,8 @@ expr:
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule($3, $4, $6)) }
+  | LET TYPE EQUAL expr IN seq_expr
+      { mkexp(Pexp_use_type ($4, $6)) }
   | LET OPEN mod_longident IN seq_expr
       { mkexp(Pexp_open($3, $5)) }
   | mod_longident DOT LPAREN seq_expr RPAREN
@@ -933,6 +935,8 @@ simple_expr:
       { mkexp(Pexp_construct($1, None, false)) }
   | name_tag %prec prec_constant_constructor
       { mkexp(Pexp_variant($1, None)) }
+  | LPAREN TYPE core_type RPAREN
+      { mkexp(Pexp_type_of $3) }
   | LPAREN seq_expr RPAREN
       { reloc_exp $2 }
   | LPAREN seq_expr error

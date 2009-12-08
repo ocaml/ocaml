@@ -98,6 +98,17 @@ let rp node =
   node
 ;;
 
+(* Helpers for dynamic types *)
+
+let lookup_type s =
+  try fst (Env.lookup_type (Longident.parse s) Env.initial)
+  with Not_found -> fatal_error ("Cannot find definition for type " ^ s)
+
+let ttype_path = lazy (lookup_type "Dyntypes.ttype")
+
+let ttype ty =
+  newty (Tconstr(Lazy.force ttype_path, [ty], ref Mnil))
+
 
 (* Typing of constants *)
 
@@ -1699,6 +1710,23 @@ let rec type_exp env sexp =
         exp_env = env }
   | Pexp_open (lid, e) ->
       type_exp (!type_open env sexp.pexp_loc lid) e
+  | Pexp_type_of sty ->
+      let ty = Typetexp.transl_simple_type env false sty in
+      re {
+        exp_desc = Texp_type_of ty;
+        exp_loc = loc;
+        exp_type = ttype ty;
+        exp_env = env }
+  | Pexp_use_type (e1, e2) ->
+      let id = Ident.create "ttype" in
+      let ty = newvar () in
+      let e1 = type_expect env e1 (ttype ty) in
+      let e2 = type_exp (Env.add_available_ttype id ty env) e2 in
+      re {
+        exp_desc = Texp_use_type (id, e1, e2);
+        exp_loc = loc;
+        exp_type = e2.exp_type;
+        exp_env = env }
 
 and type_argument env sarg ty_expected' =
   (* ty_expected' may be generic *)

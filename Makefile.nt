@@ -594,19 +594,29 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc otherlibraries ocamlbuild-mixed-boot ocamlbuild.byte
-	./build/camlp4-byte-only.sh
-camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
-	./build/camlp4-native-only.sh
+camlp4out:
+
+camlp4opt:
+
+#camlp4out: ocamlc otherlibraries ocamlbuild-mixed-boot ocamlbuild.byte
+#	./build/camlp4-byte-only.sh
+#camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
+#	./build/camlp4-native-only.sh
 
 # Ocamlbuild
 
-ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
-	./build/ocamlbuild-byte-only.sh
-ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	./build/ocamlbuild-native-only.sh
-ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	./build/ocamlbuildlib-native-only.sh
+ocamlbuild.byte:
+
+ocamlbuild.native:
+
+ocamlbuildlib.native:
+
+#ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
+#	./build/ocamlbuild-byte-only.sh
+#ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
+#	./build/ocamlbuild-native-only.sh
+#ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
+#	./build/ocamlbuildlib-native-only.sh
 
 
 .PHONY: ocamlbuild-mixed-boot

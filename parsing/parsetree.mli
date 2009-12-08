@@ -118,6 +118,8 @@ and expression_desc =
   | Pexp_newtype of string * expression
   | Pexp_pack of module_expr * package_type
   | Pexp_open of Longident.t * expression
+  | Pexp_type_of of core_type
+  | Pexp_use_type of expression * expression
 
 (* Value descriptions *)
 
