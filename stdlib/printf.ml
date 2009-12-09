@@ -436,17 +436,11 @@ let format_float_lexeme =
      Otherwise, it is too difficult to handle the strange padding facilities
      given by printf. Let alone handling the correct widths indication,
      knowing that we have sometime to add a '.' at the end of the result!
-
-     We may also prevent the + flag in case of a F conversion specification,
-     either here when scanning the format string, or statically by the type
-     checker ?
-     We can also ignore the + flag formatting using a %F.
   *)
 
   let make_valid_float_lexeme s =
     (* Check if s is already a valid lexeme:
-       in this case do nothing (unless we got a leading '+' character that we
-       should remove ?),
+       in this case do nothing,
        otherwise turn s into a valid Caml lexeme. *)
     let l = String.length s in
     let rec valid_float_loop i =
