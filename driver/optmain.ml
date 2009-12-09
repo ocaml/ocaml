@@ -157,6 +157,8 @@ let main () =
              " Check principality of type inference";
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
+       "-strict-sequence", Arg.Set strict_sequence,
+             " Left hand part of a sequence must have type unit";
        "-shared", Arg.Unit (fun () -> shared := true; dlcode := true),
              " Produce a dynlinkable plugin";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";

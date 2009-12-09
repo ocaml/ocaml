@@ -44,6 +44,7 @@ module Make_options (F :
       val _pp : string -> unit
       val _principal : unit -> unit
       val _rectypes : unit -> unit
+      val _strict_sequence : unit -> unit
       val _thread : unit -> unit
       val _vmthread : unit -> unit
       val _unsafe : unit -> unit

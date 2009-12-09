@@ -44,6 +44,7 @@ module Make_options (F :
      val _pp : string -> unit
      val _principal : unit -> unit
      val _rectypes : unit -> unit
+     val _strict_sequence : unit -> unit
      val _thread : unit -> unit
      val _vmthread : unit -> unit
      val _unsafe : unit -> unit
@@ -118,6 +119,8 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
+    "-strict-sequence", Arg.Unit F._strict_sequence,
+           " Left hand part of a sequence must have type unit";
     "-thread", Arg.Unit F._thread,
            " Generate code that supports the system threads library";
     "-unsafe", Arg.Unit F._unsafe,

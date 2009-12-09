@@ -35,6 +35,8 @@ Compilers and toplevel:
   are not listed in the pattern.
 - Better error report in case of unbound qualified identifier: if the module
   is unbound this error is reported in the first place.
+- Added option '-strict-sequence' to force left hand part of sequence to have
+  type unit.
 - Added option '-no-app-funct' to turn applicative functors off.
   This option can help working around mysterious type incompatibilities
   caused by the incomplete comparison of applicative paths F(X).t.

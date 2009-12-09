@@ -41,6 +41,7 @@ val use_prims : string ref
 val use_runtime : string ref
 val principal : bool ref
 val recursive_types : bool ref
+val strict_sequence : bool ref
 val applicative_functors : bool ref
 val make_runtime : bool ref
 val gprofile : bool ref
