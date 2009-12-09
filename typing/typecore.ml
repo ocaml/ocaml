@@ -2146,8 +2146,8 @@ and type_statement env sexp =
   let exp = type_exp env sexp in
   end_def();
   if !Clflags.strict_sequence then
-    let expected_type = instance Predef.type_unit in
-    unify env expected_type exp.exp_type;
+    let expected_ty = instance Predef.type_unit in
+    unify_exp env exp expected_ty;
     exp else
   let ty = expand_head env exp.exp_type and tv = newvar() in
   begin match ty.desc with
