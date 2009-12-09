@@ -68,7 +68,7 @@ let main () =
            " do not add default directory to the list of include directories";
      "-principal", Arg.Set principal, " Check principality of type inference";
      "-rectypes", Arg.Set recursive_types, " Allow arbitrary recursive types";
-     "-strict-sequence", Arg.Set recursive_types,
+     "-strict-sequence", Arg.Set strict_sequence,
            " Left hand part of a sequence must have type unit";
      "-unsafe", Arg.Set fast, " No bound checking on array and string access";
      "-version", Arg.Unit print_version, " Print version and exit";
