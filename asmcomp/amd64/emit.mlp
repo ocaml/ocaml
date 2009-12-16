@@ -628,7 +628,8 @@ let rec emit_all fallthrough i =
 (* Emission of the floating-point constants *)
 
 let emit_float_constant (lbl, cst) =
-  `{emit_label lbl}:	.double	{emit_string cst}\n`
+  `{emit_label lbl}:`;
+  emit_float64_directive ".quad" cst
 
 (* Emission of the profiling prelude *)
 

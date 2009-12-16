@@ -873,7 +873,10 @@ let fundecl fundecl =
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
-        `{emit_label lbl}:	.double	0d{emit_string f}\n`)
+        `{emit_label lbl}:`;
+        if ppc64
+        then emit_float64_directive ".quad" f
+        else emit_float64_split_directive ".long" f)
       !float_literals;
     List.iter
       (fun (n, lbl) ->

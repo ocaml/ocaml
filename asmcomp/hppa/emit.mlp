@@ -299,7 +299,9 @@ let emit_float_constants () =
     `	.text\n`;
   emit_align 8;
   List.iter
-    (fun (lbl, cst) -> `{emit_label lbl}:	.double	{emit_string cst}\n`)
+    (fun (lbl, cst) ->
+      `{emit_label lbl}:`;
+      emit_float64_split_directive ".long" cst)
     !float_constants;
   float_constants := []
 

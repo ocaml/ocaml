@@ -815,7 +815,8 @@ let rec emit_all fallthrough i =
 
 let emit_float_constant (lbl, cst) =
   `	.data\n`;
-  `{emit_label lbl}:	.double	{emit_string cst}\n`
+  `{emit_label lbl}:`;
+  emit_float64_split_directive ".long" cst
 
 (* Emission of external symbol references (for MacOSX) *)
 

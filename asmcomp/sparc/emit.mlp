@@ -195,7 +195,8 @@ let float_constants = ref ([] : (int * string) list)
 let emit_float_constant (lbl, cst) =
   rodata ();
   `	.align	8\n`;
-  `{emit_label lbl}:	.double	0r{emit_string cst}\n`
+  `{emit_label lbl}:`;
+  emit_float64_split_directive ".word" cst
 
 (* Emission of the profiling prelude *)
 let emit_profile () =
