@@ -567,10 +567,11 @@ alldepend::
 
 # The runtime system for the native-code compiler
 
-runtimeopt:
+runtimeopt: makeruntimeopt
+	cp asmrun/libasmrun.a stdlib/libasmrun.a
+
+makeruntimeopt:
 	cd asmrun; $(MAKE) all
-	if test -f stdlib/libasmrun.a; then :; else \
-          ln -s ../asmrun/libasmrun.a stdlib/libasmrun.a; fi
 
 clean::
 	cd asmrun; $(MAKE) clean
@@ -762,6 +763,6 @@ distclean:
 .PHONY: ocamldoc.opt ocamllex ocamllex.opt ocamltools ocamltools.opt
 .PHONY: ocamlyacc opt-core opt opt.opt otherlibraries
 .PHONY: otherlibrariesopt package-macosx promote promote-cross
-.PHONY: restore runtime runtimeopt world world.opt
+.PHONY: restore runtime runtimeopt makeruntimeopt world world.opt
 
 include .depend
