@@ -294,7 +294,7 @@ class text =
       | Block t -> self#texi_of_Block t
       | Title (n, _, t) -> self#texi_of_Title n t
       | Link (s, t) -> self#texi_of_Link s t
-      | Ref (name, kind) ->self#texi_of_Ref name kind
+      | Ref (name, kind, _) ->self#texi_of_Ref name kind
       | Superscript t -> self#texi_of_Superscript t
       | Subscript t -> self#texi_of_Subscript t
       | Odoc_info.Module_list _ -> ""
@@ -716,7 +716,7 @@ class texi =
                 then " = " ^ (resolve_alias_name m)
                 else "" ) ] ] ;
           ( if is_alias_there m
-          then [ Ref (resolve_alias_name m, Some RK_module) ;
+          then [ Ref (resolve_alias_name m, Some RK_module, None) ;
                  Newline ; ]
           else [] ) ;
           ( if is_alias m
@@ -745,7 +745,7 @@ class texi =
                 then " = " ^ (resolve_alias_name mt)
                 else "" ) ] ] ;
           ( if is_alias_there mt
-          then [ Ref (resolve_alias_name mt, Some RK_module_type) ;
+          then [ Ref (resolve_alias_name mt, Some RK_module_type, None) ;
                  Newline ; ]
           else [] ) ;
           ( if is_alias mt
@@ -764,10 +764,10 @@ class texi =
                         [ Raw im.im_name ]
                     | Some (Mod { m_name = name }) ->
                         [ Raw name ; Raw "\n     " ;
-                          Ref (name, Some RK_module) ]
+                          Ref (name, Some RK_module, None) ]
                     | Some (Modtype { mt_name = name }) ->
                         [ Raw name ; Raw "\n     " ;
-                          Ref (name, Some RK_module_type) ]
+                          Ref (name, Some RK_module_type, None) ]
                     ) @
                    [ Newline ] @
                    (self#text_of_info im.im_info)
@@ -782,7 +782,7 @@ class texi =
       let t = [ self#fixedblock
                   [ Newline ; minus ; Raw "class " ;
                     Raw (Name.simple c.cl_name) ] ;
-                Ref (c.cl_name, Some RK_class) ; Newline ;
+                Ref (c.cl_name, Some RK_class, None) ; Newline ;
                 Newline ] @ (self#text_of_info c.cl_info) in
       self#texi_of_text t
 
@@ -792,7 +792,7 @@ class texi =
       let t = [ self#fixedblock
                   [ Newline ; minus ; Raw "class type " ;
                     Raw (Name.simple ct.clt_name) ] ;
-                Ref (ct.clt_name, Some RK_class_type) ; Newline ;
+                Ref (ct.clt_name, Some RK_class_type, None) ; Newline ;
                 Newline ] @ (self#text_of_info ct.clt_info) in
       self#texi_of_text t
 
@@ -836,7 +836,7 @@ class texi =
               | Cl _ -> Some RK_class
               | Cltype _ -> Some RK_class_type in
             (Code inh.ic_name) ::
-            (Ref (inh.ic_name, kind)) ::
+            (Ref (inh.ic_name, kind, None)) ::
             ( match inh.ic_text with
             | None -> []
             | Some t -> Newline :: t)

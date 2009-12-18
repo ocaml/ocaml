@@ -66,7 +66,7 @@ module Search =
       | T.CodePre _
       | T.Latex _
       | T.Verbatim _
-      | T.Ref (_, _) -> []
+      | T.Ref (_, _, _) -> []
       | T.Bold t
       | T.Italic t
       | T.Center t

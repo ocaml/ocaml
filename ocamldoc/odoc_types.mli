@@ -45,8 +45,9 @@ and text_element =
               (** Style number, optional label, and text. *)
   | Latex of string (** A string for latex. *)
   | Link of string * text (** A reference string and the link text. *)
-  | Ref of string * ref_kind option
-       (** A reference to an element. Complete name and kind. *)
+  | Ref of string * ref_kind option * text option
+    (** A reference to an element. Complete name and kind. An optional
+        text can be given to display this text instead of the element name.*)
   | Superscript of text (** Superscripts. *)
   | Subscript of text (** Subscripts. *)
   | Module_list of string list

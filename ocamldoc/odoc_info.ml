@@ -43,7 +43,7 @@ and text_element = Odoc_types.text_element =
   | Title of int * string option * text
   | Latex of string
   | Link of string * text
-  | Ref of string * ref_kind option
+  | Ref of string * ref_kind option * text option
   | Superscript of text
   | Subscript of text
   | Module_list of string list

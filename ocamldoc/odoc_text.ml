@@ -114,24 +114,33 @@ module Texter =
 	  p b "{{:%s}" s;
 	  p_text b t ;
 	  p b "}"
-      | Ref (s,None) ->
-	  p b "{!%s}" s
-      |	Ref (s, Some k) ->
-	  (
-	   let sk = match k with
-	     RK_module -> "module"
-	   | RK_module_type -> "modtype"
-	   | RK_class -> "class"
-	   | RK_class_type -> "classtype"
-	   | RK_value -> "val"
-	   | RK_type -> "type"
-	   | RK_exception -> "exception"
-	   | RK_attribute -> "attribute"
-	   | RK_method -> "method"
-	   | RK_section _ -> "section"
-	   in
-	   p b "{!%s:%s}" sk s
-	  )
+      | Ref (name, kind_opt, text_opt) ->
+        begin
+          p b "%s{!%s%s}"
+            (match text_opt with None -> "" | Some _ -> "{")
+            (match kind_opt with
+               None -> ""
+             | Some k ->
+                 let s =
+                   match k with
+                     RK_module -> "module"
+                   | RK_module_type -> "modtype"
+                   | RK_class -> "class"
+                   | RK_class_type -> "classtype"
+                   | RK_value -> "val"
+                   | RK_type -> "type"
+                   | RK_exception -> "exception"
+                   | RK_attribute -> "attribute"
+                   | RK_method -> "method"
+                   | RK_section _ -> "section"
+                 in
+                 s^":"
+            )
+            name;
+          match text_opt with
+            None -> ()
+          | Some t -> p_text b t; p b "}"
+        end
       | Superscript t -> p b "{^" ; p_text b t ; p b "}"
       | Subscript t -> p b "{_" ; p_text b t ; p b "}"
       | Module_list l ->

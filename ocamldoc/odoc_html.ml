@@ -244,7 +244,8 @@ class virtual text =
       | Odoc_info.Title (n, l_opt, t) -> self#html_of_Title b n l_opt t
       | Odoc_info.Latex s -> self#html_of_Latex b s
       | Odoc_info.Link (s, t) -> self#html_of_Link b s t
-      | Odoc_info.Ref (name, ref_opt) -> self#html_of_Ref b name ref_opt
+      | Odoc_info.Ref (name, ref_opt, text_opt) ->
+          self#html_of_Ref b name ref_opt text_opt
       | Odoc_info.Superscript t -> self#html_of_Superscript b t
       | Odoc_info.Subscript t -> self#html_of_Subscript b t
       | Odoc_info.Module_list l -> self#html_of_Module_list b l
@@ -394,10 +395,15 @@ class virtual text =
       self#html_of_text b t;
       bs b "</a>"
 
-    method html_of_Ref b name ref_opt =
+    method html_of_Ref b name ref_opt text_opt =
       match ref_opt with
         None ->
-          self#html_of_text_element b (Odoc_info.Code name)
+          let text =
+            match text_opt with
+              None -> [Odoc_info.Code name]
+            | Some t -> t
+          in
+          self#html_of_text b text
       | Some kind ->
           let h name = Odoc_info.Code (Odoc_info.use_hidden_modules name) in
           let (target, text) =
@@ -416,8 +422,13 @@ class virtual text =
             | Odoc_info.RK_section t -> (Naming.complete_label_target name,
                                          Odoc_info.Italic [Raw (Odoc_info.string_of_text t)])
           in
+          let text =
+            match text_opt with
+              None -> [text]
+            | Some text -> text
+          in
           bs b ("<a href=\""^target^"\">");
-          self#html_of_text_element b text;
+          self#html_of_text b text;
           bs b "</a>"
 
     method html_of_Superscript b t =

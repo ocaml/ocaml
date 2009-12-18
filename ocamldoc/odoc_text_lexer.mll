@@ -768,7 +768,7 @@ rule main = parse
       if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        ERROR
+        LBRACE
     }
 | _
     {

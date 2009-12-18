@@ -124,7 +124,9 @@ let rec string_of_text t =
       | Odoc_types.Latex s -> "{% "^s^" %}"
       | Odoc_types.Link (s, t) ->
           "["^s^"]"^(string_of_text t)
-      | Odoc_types.Ref (name, _) ->
+      | Odoc_types.Ref (name, _, Some text) ->
+          Printf.sprintf "[%s]" (string_of_text text)
+      | Odoc_types.Ref (name, _, None) ->
           iter (Odoc_types.Code name)
       | Odoc_types.Superscript t ->
           "^{"^(string_of_text t)^"}"
@@ -274,7 +276,7 @@ let rec text_no_title_no_list t =
     | Odoc_types.Module_list l ->
         list_concat (Odoc_types.Raw ", ")
           (List.map
-             (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module))
+             (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module, None))
              l
           )
     | Odoc_types.Index_list -> []

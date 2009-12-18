@@ -611,7 +611,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
   | Subscript t -> Subscript (assoc_comments_text parent_name module_list t)
   | Title (n, l_opt, t) -> Title (n, l_opt, (assoc_comments_text parent_name module_list t))
   | Link (s, t) -> Link (s, (assoc_comments_text parent_name module_list t))
-  | Ref (initial_name, None) ->
+  | Ref (initial_name, None, text_option) ->
       (
        let rec iter_parent ?parent_name name =
          let res =
@@ -647,12 +647,12 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
                (name, Some kind)
          in
          match res with
-         | (name, Some k) -> Ref (name, Some k)
+         | (name, Some k) -> Ref (name, Some k, text_option)
          | (_, None) ->
              match parent_name with
                None ->
                  Odoc_messages.pwarning (Odoc_messages.cross_element_not_found initial_name);
-                 Ref (initial_name, None)
+                 Ref (initial_name, None, text_option)
              | Some p ->
                  let parent_name =
                    match Name.father p with
@@ -663,12 +663,12 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
        in
        iter_parent ~parent_name initial_name
       )
-  | Ref (initial_name, Some kind) ->
+  | Ref (initial_name, Some kind, text_option) ->
       (
        let rec iter_parent ?parent_name name =
          let v = (name, Some kind) in
          if was_verified v then
-           Ref (name, Some kind)
+           Ref (name, Some kind, text_option)
          else
            let res =
              match kind with
@@ -708,12 +708,12 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
                    (name, None)
            in
            match res with
-           | (name, Some k) -> Ref (name, Some k)
+           | (name, Some k) -> Ref (name, Some k, text_option)
            | (_, None) ->
                match parent_name with
                  None ->
                    Odoc_messages.pwarning (not_found_of_kind kind initial_name);
-                   Ref (initial_name, None)
+                   Ref (initial_name, None, text_option)
                | Some p ->
                    let parent_name =
                      match Name.father p with

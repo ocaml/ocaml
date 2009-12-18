@@ -273,7 +273,7 @@ class man =
           ()
       | Odoc_info.Link (s, t) ->
           self#man_of_text2 b t
-      | Odoc_info.Ref (name, _) ->
+      | Odoc_info.Ref (name, _, _) ->
           self#man_of_text_element b
             (Odoc_info.Code (Odoc_info.use_hidden_modules name))
       | Odoc_info.Superscript t ->
