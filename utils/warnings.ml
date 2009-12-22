@@ -129,13 +129,14 @@ let is_active x = active.(number x);;
 let is_error x = error.(number x);;
 
 let parse_opt flags s =
+  let check i =
+    if i < 1 || i > last_warning_number then
+      raise (Arg.Bad "Bad warning number");
+  in
   let set i = flags.(i) <- true in
   let clear i = flags.(i) <- false in
   let set_all i = active.(i) <- true; error.(i) <- true in
-  let error () =
-    let msg = Printf.sprintf "Ill-formed list of warnings" in
-    raise (Arg.Bad msg)
-  in
+  let error () = raise (Arg.Bad "Ill-formed list of warnings") in
   let rec loop i =
     if i >= String.length s then () else
     match s.[i] with
@@ -161,17 +162,12 @@ let parse_opt flags s =
        loop (i+1)
     | _ -> error ()
   and loop_num myset i n =
-    if i >= String.length s then begin
-      if n < 1 || n > last_warning_number then begin
-        let msg = Printf.sprintf "Bad warning number %d" n in
-        raise (Arg.Bad msg)
-      end else begin
-        myset n
-      end
-    end else
+    if i >= String.length s then myset n else
     match s.[i] with
     | '0' .. '9' ->
-       loop_num myset (i+1) (10 * n + Char.code s.[i] - Char.code '0')
+       let nn = 10 * n + Char.code s.[i] - Char.code '0' in
+       check nn;
+       loop_num myset (i+1) nn
     | _ -> myset n; loop i
   in
   loop 0
