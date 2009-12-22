@@ -10,7 +10,7 @@ char.cmi:
 complex.cmi: 
 digest.cmi: 
 filename.cmi: 
-format.cmi: buffer.cmi 
+format.cmi: pervasives.cmi buffer.cmi 
 gc.cmi: 
 genlex.cmi: stream.cmi 
 hashtbl.cmi: 
@@ -98,8 +98,8 @@ moreLabels.cmo: set.cmi map.cmi hashtbl.cmi moreLabels.cmi
 moreLabels.cmx: set.cmx map.cmx hashtbl.cmx moreLabels.cmi 
 nativeint.cmo: sys.cmi pervasives.cmi nativeint.cmi 
 nativeint.cmx: sys.cmx pervasives.cmx nativeint.cmi 
-obj.cmo: marshal.cmi obj.cmi 
-obj.cmx: marshal.cmx obj.cmi 
+obj.cmo: marshal.cmi array.cmi obj.cmi 
+obj.cmx: marshal.cmx array.cmx obj.cmi 
 oo.cmo: camlinternalOO.cmi oo.cmi 
 oo.cmx: camlinternalOO.cmx oo.cmi 
 parsing.cmo: obj.cmi lexing.cmi array.cmi parsing.cmi 
@@ -108,10 +108,10 @@ pervasives.cmo: pervasives.cmi
 pervasives.cmx: pervasives.cmi 
 printexc.cmo: printf.cmi obj.cmi buffer.cmi array.cmi printexc.cmi 
 printexc.cmx: printf.cmx obj.cmx buffer.cmx array.cmx printexc.cmi 
-printf.cmo: string.cmi obj.cmi list.cmi char.cmi buffer.cmi array.cmi \
-    printf.cmi 
-printf.cmx: string.cmx obj.cmx list.cmx char.cmx buffer.cmx array.cmx \
-    printf.cmi 
+printf.cmo: string.cmi pervasives.cmi obj.cmi list.cmi char.cmi buffer.cmi \
+    array.cmi printf.cmi 
+printf.cmx: string.cmx pervasives.cmx obj.cmx list.cmx char.cmx buffer.cmx \
+    array.cmx printf.cmi 
 queue.cmo: obj.cmi queue.cmi 
 queue.cmx: obj.cmx queue.cmi 
 random.cmo: string.cmi pervasives.cmi nativeint.cmi int64.cmi int32.cmi \

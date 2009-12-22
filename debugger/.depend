@@ -121,13 +121,13 @@ loadprinter.cmx: ../typing/types.cmx ../bytecomp/symtable.cmx printval.cmx \
     ../parsing/longident.cmx ../typing/ident.cmx ../typing/env.cmx \
     dynlink.cmx ../typing/ctype.cmx ../utils/config.cmx loadprinter.cmi 
 main.cmo: unix_tools.cmi ../otherlibs/unix/unix.cmi time_travel.cmi \
-    show_information.cmi question.cmi program_management.cmi parameters.cmi \
-    ../utils/misc.cmi input_handling.cmi frames.cmi exec.cmi \
+    show_information.cmi question.cmi program_management.cmi primitives.cmi \
+    parameters.cmi ../utils/misc.cmi input_handling.cmi frames.cmi exec.cmi \
     ../typing/env.cmi debugger_config.cmi ../utils/config.cmi \
     command_line.cmi ../utils/clflags.cmi checkpoints.cmi 
 main.cmx: unix_tools.cmx ../otherlibs/unix/unix.cmx time_travel.cmx \
-    show_information.cmx question.cmx program_management.cmx parameters.cmx \
-    ../utils/misc.cmx input_handling.cmx frames.cmx exec.cmx \
+    show_information.cmx question.cmx program_management.cmx primitives.cmx \
+    parameters.cmx ../utils/misc.cmx input_handling.cmx frames.cmx exec.cmx \
     ../typing/env.cmx debugger_config.cmx ../utils/config.cmx \
     command_line.cmx ../utils/clflags.cmx checkpoints.cmx 
 parameters.cmo: primitives.cmi envaux.cmi debugger_config.cmi \
@@ -172,10 +172,10 @@ program_management.cmx: unix_tools.cmx ../otherlibs/unix/unix.cmx \
     debugger_config.cmx breakpoints.cmx program_management.cmi 
 question.cmo: primitives.cmi lexer.cmi input_handling.cmi question.cmi 
 question.cmx: primitives.cmx lexer.cmx input_handling.cmx question.cmi 
-show_information.cmo: symbols.cmi show_source.cmi printval.cmi \
+show_information.cmo: symbols.cmi source.cmi show_source.cmi printval.cmi \
     ../utils/misc.cmi ../bytecomp/instruct.cmi frames.cmi events.cmi \
     debugcom.cmi checkpoints.cmi breakpoints.cmi show_information.cmi 
-show_information.cmx: symbols.cmx show_source.cmx printval.cmx \
+show_information.cmx: symbols.cmx source.cmx show_source.cmx printval.cmx \
     ../utils/misc.cmx ../bytecomp/instruct.cmx frames.cmx events.cmx \
     debugcom.cmx checkpoints.cmx breakpoints.cmx show_information.cmi 
 show_source.cmo: source.cmi primitives.cmi parameters.cmi \
@@ -188,12 +188,12 @@ source.cmo: primitives.cmi ../utils/misc.cmi debugger_config.cmi \
     ../utils/config.cmi source.cmi 
 source.cmx: primitives.cmx ../utils/misc.cmx debugger_config.cmx \
     ../utils/config.cmx source.cmi 
-symbols.cmo: ../bytecomp/symtable.cmi ../bytecomp/instruct.cmi events.cmi \
-    debugger_config.cmi debugcom.cmi checkpoints.cmi \
-    ../bytecomp/bytesections.cmi symbols.cmi 
-symbols.cmx: ../bytecomp/symtable.cmx ../bytecomp/instruct.cmx events.cmx \
-    debugger_config.cmx debugcom.cmx checkpoints.cmx \
-    ../bytecomp/bytesections.cmx symbols.cmi 
+symbols.cmo: ../bytecomp/symtable.cmi program_loading.cmi \
+    ../bytecomp/instruct.cmi events.cmi debugger_config.cmi debugcom.cmi \
+    checkpoints.cmi ../bytecomp/bytesections.cmi symbols.cmi 
+symbols.cmx: ../bytecomp/symtable.cmx program_loading.cmx \
+    ../bytecomp/instruct.cmx events.cmx debugger_config.cmx debugcom.cmx \
+    checkpoints.cmx ../bytecomp/bytesections.cmx symbols.cmi 
 time_travel.cmo: trap_barrier.cmi symbols.cmi question.cmi \
     program_loading.cmi primitives.cmi ../utils/misc.cmi int64ops.cmi \
     ../bytecomp/instruct.cmi input_handling.cmi exec.cmi events.cmi \
