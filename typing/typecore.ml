@@ -16,6 +16,7 @@
 
 open Misc
 open Asttypes
+open Reftypes
 open Parsetree
 open Types
 open Typedtree
@@ -24,30 +25,32 @@ open Ctype
 
 type error =
     Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
+  | Unbound_constructor_ref of Reftypes.constructor_ref
+  | Unbound_label_ref of Reftypes.label_ref
+  | Unbound_type of Longident.t
   | Unbound_module of Longident.t
   | Unbound_functor of Longident.t
-  | Polymorphic_label of Longident.t
-  | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * (type_expr * type_expr) list
+  | Polymorphic_label_ref of label_ref
+  | Constructor_ref_arity_mismatch of constructor_ref * int * int
+  | Label_ref_mismatch of label_ref * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
-  | Label_multiply_defined of Longident.t
+  | Label_ref_multiply_defined of label_ref
   | Label_missing of string list
-  | Label_not_mutable of Longident.t
+  | Label_ref_not_mutable of label_ref
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
-  | Private_type of type_expr
-  | Private_label of Longident.t * type_expr
+  | Private_type_constructor_ref of constructor_ref * type_expr
+  | Private_type_label_ref of label_ref * type_expr
+  | Private_type_field_assignment of label_ref * type_expr
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
@@ -98,6 +101,69 @@ let rp node =
   node
 ;;
 
+(* Narrowing type errors for identifiers: report unbound functors first, then
+   unbound modules, then unbound identifier, instead of blindly reporting an
+   unbound error on a complex longident as a whole. *)
+let rec narrow_unbound_lid_error env lid make_error =
+  let module_is_bound mlid =
+    ignore (Env.lookup_module mlid env) in
+  match lid with
+  | Longident.Lident _ -> make_error lid
+  | Longident.Ldot (mlid, _) ->
+    begin
+      try
+        module_is_bound mlid;
+        make_error lid with
+      | Not_found -> Unbound_module mlid
+    end
+  | Longident.Lapply (flid, mlid) ->
+    begin
+      try
+        module_is_bound flid;
+        begin
+          try
+            module_is_bound mlid;
+            make_error lid with
+          | Not_found -> Unbound_module mlid
+        end with
+      | Not_found -> Unbound_functor flid
+    end
+;;
+
+let unbound_ident_error loc env lid make_error =
+  let err = narrow_unbound_lid_error env lid make_error in
+  raise (Error (loc, err))
+;;
+
+let narrow_ref_error env tlid rname make_error =
+  narrow_unbound_lid_error env tlid
+    (fun tlid ->
+       try
+         ignore (Env.lookup_type_declaration tlid env);
+         make_error rname
+       with
+       | Not_found -> Unbound_type tlid)
+;;
+
+let unbound_label_ref_error loc env lref make_error =
+  let err =
+    match lref with
+    | Plabel llid -> narrow_unbound_lid_error env llid make_error
+    | Plabel_ty (tlid, lname) ->
+        narrow_ref_error env tlid lname
+         (fun name -> make_error (Longident.Lident name)) in
+  raise (Error (loc, err))
+;;
+
+let unbound_constr_ref_error loc env cref make_error =
+  let err =
+    match cref with
+    | Pconstr clid -> narrow_unbound_lid_error env clid make_error
+    | Pconstr_ty (tlid, cname) ->
+        narrow_ref_error env tlid cname
+          (fun name -> make_error (Longident.Lident name)) in
+  raise (Error (loc, err))
+;;
 
 (* Typing of constants *)
 
@@ -116,12 +182,16 @@ let type_option ty =
   newty (Tconstr(Predef.path_option,[ty], ref Mnil))
 
 let option_none ty loc =
-  let cnone = Env.lookup_constructor (Longident.Lident "None") Env.initial in
+  let cnone =
+    Env.lookup_constructor_ref
+      (Pconstr (Longident.Lident "None")) Env.initial in
   { exp_desc = Texp_construct(cnone, []);
     exp_type = ty; exp_loc = loc; exp_env = Env.initial }
 
 let option_some texp =
-  let csome = Env.lookup_constructor (Longident.Lident "Some") Env.initial in
+  let csome =
+    Env.lookup_constructor_ref
+      (Pconstr (Longident.Lident "Some")) Env.initial in
   { exp_desc = Texp_construct(csome, [texp]); exp_loc = texp.exp_loc;
     exp_type = type_option texp.exp_type; exp_env = texp.exp_env }
 
@@ -134,10 +204,10 @@ let rec extract_label_names sexp env ty =
   let ty = repr ty in
   match ty.desc with
   | Tconstr (path, _, _) ->
-      let td = Env.find_type path env in
+      let td = Env.find_type_declaration path env in
       begin match td.type_kind with
-      | Type_record (fields, _) ->
-          List.map (fun (name, _, _) -> name) fields
+      | Type_record (lbls, _repr) ->
+          List.map (fun (lname, _, _) -> lname) lbls
       | Type_abstract when td.type_manifest <> None ->
           extract_label_names sexp env (expand_head env ty)
       | _ -> assert false
@@ -240,7 +310,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
             with
             | Unify trace ->
                 raise(Error(loc, Pattern_type_clash(trace)))
-            end ;
+            end;
           (x2,x1)::unify_vars rem1 rem2
           end
       | [],[] -> []
@@ -255,7 +325,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
 
 let rec build_as_type env p =
   match p.pat_desc with
-    Tpat_alias(p1, _) -> build_as_type env p1
+    Tpat_alias(p, _) -> build_as_type env p
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
@@ -268,9 +338,10 @@ let rec build_as_type env p =
       ty_res
   | Tpat_variant(l, p', _) ->
       let ty = may_map (build_as_type env) p' in
-      newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
-                      row_bound=(); row_name=None;
-                      row_fixed=false; row_closed=false})
+      newty (Tvariant {
+               row_fields=[l, Rpresent ty]; row_more=newvar();
+               row_bound=(); row_name=None;
+               row_fixed=false; row_closed=false})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
       if lbl.lbl_private = Private then p.pat_type else
@@ -307,7 +378,7 @@ let rec build_as_type env p =
 
 let build_or_pat env loc lid =
   let path, decl =
-    try Env.lookup_type lid env
+    try Env.lookup_type_declaration lid env
     with Not_found ->
       raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
@@ -344,7 +415,7 @@ let build_or_pat env loc lid =
                             pat_env=env; pat_type=ty})
       pats
   in
-  match pats with
+   match pats with
     [] -> raise(Error(loc, Not_a_variant_type lid))
   | pat :: pats ->
       let r =
@@ -354,21 +425,29 @@ let build_or_pat env loc lid =
           pat pats in
       rp { r with pat_loc = loc }
 
-let rec find_record_qual = function
-  | [] -> None
-  | (Longident.Ldot (modname, _), _) :: _ -> Some modname
-  | _ :: rest -> find_record_qual rest
+let add_modname_to_lref modname = function
+  | Plabel (Longident.Lident id) -> Plabel (Longident.Ldot (modname, id))
+  | lref -> lref
 
-let type_label_a_list type_lid_a lid_a_list =
-  match find_record_qual lid_a_list with
-  | None -> List.map type_lid_a lid_a_list
-  | Some modname ->
-      List.map
-        (function
-         | (Longident.Lident id), sarg ->
-              type_lid_a (Longident.Ldot (modname, id), sarg)
-         | lid_a -> type_lid_a lid_a)
-        lid_a_list
+let add_typename_to_lref ty_lid = function
+  | Plabel (Longident.Lident lname) -> Plabel_ty (ty_lid, lname)
+  | lref -> lref
+
+let rec find_record_label_qualifier = function
+  | [] -> (fun lref -> lref)
+  | (Plabel (Longident.Lident _lbl_name), _) :: rest ->
+    find_record_label_qualifier rest
+  | (Plabel (Longident.Ldot (modname, _lblname)), _) :: _ ->
+    (fun lref -> add_modname_to_lref modname lref)
+  | (Plabel_ty (ty_lid, _lbl_name), _) :: _ ->
+    (fun lref -> add_typename_to_lref ty_lid lref)
+  | (_, _) :: rest -> find_record_label_qualifier rest
+
+let type_record_fields type_field fields =
+  let make_record_label_ref = find_record_label_qualifier fields in
+   List.map
+     (fun (lref, sarg) -> type_field (make_record_label_ref lref, sarg))
+     fields
 
 (* Checks over the labels mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)
@@ -380,17 +459,22 @@ let check_recordpat_labels loc lbl_pat_list closed =
       let all = label1.lbl_all in
       let defined = Array.make (Array.length all) false in
       let check_defined (label, _) =
-        if defined.(label.lbl_pos)
-        then raise(Error(loc, Label_multiply_defined
-                                       (Longident.Lident label.lbl_name)))
-        else defined.(label.lbl_pos) <- true in
+        if defined.(label.lbl_pos) then
+          raise
+            (Error (loc,
+               Label_ref_multiply_defined
+                 (Plabel (Longident.Lident label.lbl_name)))) else
+        defined.(label.lbl_pos) <- true in
+
       List.iter check_defined lbl_pat_list;
+
       if closed = Closed
       && Warnings.is_active (Warnings.Non_closed_record_pattern "")
       then begin
         let undefined = ref [] in
         for i = 0 to Array.length all - 1 do
-          if not defined.(i) then undefined := all.(i).lbl_name :: !undefined
+          if not defined.(i) then
+            undefined := all.(i).lbl_name :: !undefined
         done;
         if !undefined <> [] then begin
           let u = String.concat ", " (List.rev !undefined) in
@@ -460,37 +544,49 @@ let rec type_pat env sp =
         pat_loc = loc;
         pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
         pat_env = env }
-  | Ppat_construct(lid, sarg, explicit_arity) ->
-      let constr =
-        try
-          Env.lookup_constructor lid env
-        with Not_found ->
-          raise(Error(loc, Unbound_constructor lid)) in
+  | Ppat_construct(cref, sarg, explicit_arity) ->
+      let cdesc =
+        try Env.lookup_constructor_ref cref env with
+        | Not_found ->
+          unbound_constr_ref_error loc env cref
+            (fun clid -> Unbound_constructor_ref (Pconstr clid)) in
+
       let sargs =
         match sarg with
-          None -> []
-        | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
-        | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
-        | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity <> 1 ->
-            if constr.cstr_arity = 0 then
+        | None -> []
+        | Some { ppat_desc = Ppat_tuple spl }
+            when explicit_arity -> spl
+        | Some { ppat_desc = Ppat_tuple spl }
+            when cdesc.cstr_arity > 1 -> spl
+        | Some ({ ppat_desc = Ppat_any } as sp)
+            when cdesc.cstr_arity <> 1 ->
+            if cdesc.cstr_arity = 0 then
               Location.prerr_warning sp.ppat_loc
-                                     Warnings.Wildcard_arg_to_constant_constr;
-            replicate_list sp constr.cstr_arity
-        | Some sp -> [sp] in
-      if List.length sargs <> constr.cstr_arity then
-        raise(Error(loc, Constructor_arity_mismatch(lid,
-                                     constr.cstr_arity, List.length sargs)));
+                Warnings.Wildcard_arg_to_constant_constr;
+            replicate_list sp cdesc.cstr_arity
+        | Some sp -> [ sp ] in
+
+      if List.length sargs <> cdesc.cstr_arity then
+        raise
+          (Error (loc,
+             Constructor_ref_arity_mismatch
+               (cref, cdesc.cstr_arity, List.length sargs)));
+
       let args = List.map (type_pat env) sargs in
-      let (ty_args, ty_res) = instance_constructor constr in
+
+      let (ty_args, ty_res) = instance_constructor cdesc in
+
       List.iter2 (unify_pat env) args ty_args;
+
       rp {
-        pat_desc = Tpat_construct(constr, args);
+        pat_desc = Tpat_construct(cdesc, args);
         pat_loc = loc;
         pat_type = ty_res;
         pat_env = env }
   | Ppat_variant(l, sarg) ->
       let arg = may_map (type_pat env) sarg in
-      let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
+      let arg_type =
+        match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields =
                     [l, Reither(arg = None, arg_type, true, ref None)];
                   row_bound = ();
@@ -503,24 +599,28 @@ let rec type_pat env sp =
         pat_loc = loc;
         pat_type = newty (Tvariant row);
         pat_env = env }
-  | Ppat_record(lid_sp_list, closed) ->
-      let ty = newvar() in
-      let type_label_pat (lid, sarg) =
-        let label =
-          try
-            Env.lookup_label lid env
-          with Not_found ->
-            raise(Error(loc, Unbound_label lid)) in
+  | Ppat_record(fields, closed) ->
+      let ty = newvar () in
+
+      let type_field (lref, sarg) =
+        let ldesc =
+          try Env.lookup_label_ref lref env with
+          | Not_found ->
+            unbound_label_ref_error loc env lref
+              (fun llid -> Unbound_label_ref (Plabel llid)) in
+
         begin_def ();
-        let (vars, ty_arg, ty_res) = instance_label false label in
+        let (vars, ty_arg, ty_res) = instance_label false ldesc in
         if vars = [] then end_def ();
         begin try
           unify env ty_res ty
         with Unify trace ->
-          raise(Error(loc, Label_mismatch(lid, trace)))
+          raise (Error (loc, Label_ref_mismatch (lref, trace)))
         end;
+
         let arg = type_pat env sarg in
         unify_pat env arg ty_arg;
+
         if vars <> [] then begin
           end_def ();
           generalize ty_arg;
@@ -529,17 +629,20 @@ let rec type_pat env sp =
             let tv = expand_head env tv in
             tv.desc <> Tvar || tv.level <> generic_level in
           if List.exists instantiated vars then
-            raise (Error(loc, Polymorphic_label lid))
+            raise (Error (loc, Polymorphic_label_ref lref))
         end;
-        (label, arg)
-      in
-      let lbl_pat_list = type_label_a_list type_label_pat lid_sp_list in
-      check_recordpat_labels loc lbl_pat_list closed;
+
+        (ldesc, arg) in
+
+      let ldesc_arg_list = type_record_fields type_field fields in
+
+      check_recordpat_labels loc ldesc_arg_list closed;
+
       rp {
-        pat_desc = Tpat_record lbl_pat_list;
+        pat_desc = Tpat_record ldesc_arg_list;
         pat_loc = loc;
         pat_type = ty;
-        pat_env = env }
+        pat_env = env; }
   | Ppat_array spl ->
       let pl = List.map (type_pat env) spl in
       let ty_elt = newvar() in
@@ -553,13 +656,13 @@ let rec type_pat env sp =
       let initial_pattern_variables = !pattern_variables in
       let p1 = type_pat env sp1 in
       let p1_variables = !pattern_variables in
-      pattern_variables := initial_pattern_variables ;
+      pattern_variables := initial_pattern_variables;
       let p2 = type_pat env sp2 in
       let p2_variables = !pattern_variables in
       unify_pat env p2 p1.pat_type;
       let alpha_env =
         enter_orpat_variables loc env p1_variables p2_variables in
-      pattern_variables := p1_variables ;
+      pattern_variables := p1_variables;
       rp {
         pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
         pat_loc = loc;
@@ -582,7 +685,9 @@ let rec type_pat env sp =
       build_or_pat env loc lid
 
 let get_ref r =
-  let v = !r in r := []; v
+  let v = !r in
+  r := [];
+  v
 
 let add_pattern_variables env =
   let pv = get_ref pattern_variables in
@@ -898,7 +1003,7 @@ let rec approx_type env sty =
       newty (Ttuple (List.map (approx_type env) args))
   | Ptyp_constr (lid, ctl) ->
       begin try
-        let (path, decl) = Env.lookup_type lid env in
+        let (path, decl) = Env.lookup_type_declaration lid env in
         if List.length ctl <> decl.type_arity then raise Not_found;
         let tyl = List.map (approx_type env) ctl in
         newconstr path tyl
@@ -998,9 +1103,13 @@ let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 (* Helpers for packaged modules. *)
 let create_package_type loc env (p, l) =
   let s = !Typetexp.transl_modtype_longident loc env p in
-  newty (Tpackage (s,
-                   List.map fst l,
-                   List.map (Typetexp.transl_simple_type env false) (List.map snd l)))
+  newty
+    (Tpackage (
+       s,
+       List.map fst l,
+       List.map
+         (Typetexp.transl_simple_type env false)
+         (List.map snd l)))
 
 (* Typing of expressions *)
 
@@ -1015,42 +1124,13 @@ let unify_exp env exp expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
 
-let rec narrow_unbound_lid_error env make_error lid =
-  let module_is_bound mlid =
-    ignore (Env.lookup_module mlid env) in
-  match lid with
-  | Longident.Lident _ -> make_error lid
-  | Longident.Ldot (mlid, _) ->
-    begin
-      try
-        module_is_bound mlid;
-        make_error lid with
-      | Not_found -> Unbound_module mlid
-    end
-  | Longident.Lapply (flid, mlid) ->
-    begin
-      try
-        module_is_bound flid;
-        begin
-          try
-            module_is_bound mlid;
-            make_error lid with
-          | Not_found -> Unbound_module mlid
-        end with
-      | Not_found -> Unbound_functor flid
-    end
-;;
-
-let unbound_ident_error loc env make_error lid =
-  let err = narrow_unbound_lid_error env make_error lid in
-  raise (Error (loc, err))
-;;
 
 let rec type_exp env sexp =
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
   | Pexp_ident lid ->
-      begin try
+      begin
+      try
         if !Clflags.annotations then begin
           try let (path, annot) = Env.lookup_annot lid env in
               Stypes.record
@@ -1072,15 +1152,17 @@ let rec type_exp env sexp =
                 in
                 Texp_ident(path, desc)
             | Val_unbound ->
-                raise(Error(loc, Masked_instance_variable lid))
+                raise (Error(loc, Masked_instance_variable lid))
             | _ ->
                 Texp_ident(path, desc)
             end;
           exp_loc = loc;
           exp_type = instance desc.val_type;
           exp_env = env }
-      with Not_found ->
-        unbound_ident_error loc env (fun lid -> Unbound_value lid) lid
+      with
+      | Not_found ->
+        unbound_ident_error loc env lid
+          (fun lid -> Unbound_value lid)
       end
   | Pexp_constant cst ->
       re {
@@ -1161,134 +1243,155 @@ let rec type_exp env sexp =
         exp_loc = loc;
         exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl));
         exp_env = env }
-  | Pexp_construct(lid, sarg, explicit_arity) ->
-      type_construct env loc lid sarg explicit_arity (newvar ())
+  | Pexp_construct(cref, sarg, explicit_arity) ->
+      type_construct env loc cref sarg explicit_arity (newvar ())
   | Pexp_variant(l, sarg) ->
       let arg = may_map (type_exp env) sarg in
       let arg_type = may_map (fun arg -> arg.exp_type) arg in
       re {
         exp_desc = Texp_variant(l, arg);
         exp_loc = loc;
-        exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
-                                  row_more = newvar ();
-                                  row_bound = ();
-                                  row_closed = false;
-                                  row_fixed = false;
-                                  row_name = None});
-        exp_env = env }
-  | Pexp_record(lid_sexp_list, opt_sexp) ->
-      let ty = newvar() in
+        exp_type =
+          newty (
+            Tvariant {
+              row_fields = [ l, Rpresent arg_type ];
+              row_more = newvar ();
+              row_bound = ();
+              row_closed = false;
+              row_fixed = false;
+              row_name = None;
+            });
+        exp_env = env;
+      }
+  | Pexp_record (fields, opt_sexp) ->
+      let ty = newvar () in
       let num_fields = ref 0 in
-      let type_label_exp (lid, sarg) =
-        let label =
-          try
-            Env.lookup_label lid env
-          with Not_found ->
-            raise(Error(loc, Unbound_label lid)) in
+
+      let type_field (lref, sarg) =
+        let ldesc =
+          try Env.lookup_label_ref lref env with
+          | Not_found ->
+            unbound_label_ref_error loc env lref
+              (fun llid -> Unbound_label_ref (Plabel llid)) in
         begin_def ();
         if !Clflags.principal then begin_def ();
-        let (vars, ty_arg, ty_res) = instance_label true label in
+        let (vars, ty_arg, ty_res) = instance_label true ldesc in
         if !Clflags.principal then begin
           end_def ();
           generalize_structure ty_arg;
-          generalize_structure ty_res
+          generalize_structure ty_res;
         end;
-        begin try
-          unify env (instance ty_res) ty
-        with Unify trace ->
-          raise(Error(loc, Label_mismatch(lid, trace)))
+        begin
+          try unify env (instance ty_res) ty with
+          | Unify trace ->
+            raise (Error (loc, Label_ref_mismatch (lref, trace)))
         end;
         let arg = type_argument env sarg ty_arg in
         end_def ();
-        check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
-        num_fields := Array.length label.lbl_all;
-        if label.lbl_private = Private then
-          raise(Error(loc, Private_type ty));
-        (label, {arg with exp_type = instance arg.exp_type}) in
-      let lbl_exp_list = type_label_a_list type_label_exp lid_sexp_list in
-      let rec check_duplicates seen_pos lid_sexp lbl_exp =
-        match (lid_sexp, lbl_exp) with
-          ((lid, _) :: rem1, (lbl, _) :: rem2) ->
-            if List.mem lbl.lbl_pos seen_pos
-            then raise(Error(loc, Label_multiply_defined lid))
-            else check_duplicates (lbl.lbl_pos :: seen_pos) rem1 rem2
-        | (_, _) -> () in
-      check_duplicates [] lid_sexp_list lbl_exp_list;
+        check_univars env (vars <> []) "field value" arg ldesc.lbl_arg vars;
+
+        num_fields := Array.length ldesc.lbl_all;
+
+        if ldesc.lbl_private = Private then
+          raise (Error (loc, Private_type_label_ref (lref, ty)));
+        (ldesc, {arg with exp_type = instance arg.exp_type}) in
+
+      let ldesc_arg_list = type_record_fields type_field fields in
+
+      let rec check_duplicate_fields seen_pos fields ldesc_arg_list =
+        match fields, ldesc_arg_list with
+        | (lref, _sarg) :: fields, (ldesc, _arg) :: ldesc_arg_list ->
+            if List.mem ldesc.lbl_pos seen_pos then
+              raise (Error (loc, Label_ref_multiply_defined lref)) else
+            check_duplicate_fields
+              (ldesc.lbl_pos :: seen_pos)
+              fields ldesc_arg_list
+        | _, _ -> () in
+
+      check_duplicate_fields [] fields ldesc_arg_list;
+
       let opt_exp =
-        match opt_sexp, lbl_exp_list with
-          None, _ -> None
-        | Some sexp, (lbl, _) :: _ ->
+        match opt_sexp, ldesc_arg_list with
+        | None, _ -> None
+        | Some sexp, (ldesc, _arg) :: _ ->
             let ty_exp = newvar () in
-            let unify_kept lbl =
-              if List.for_all (fun (lbl',_) -> lbl'.lbl_pos <> lbl.lbl_pos)
-                  lbl_exp_list
+            let unify_kept ldesc =
+              if List.for_all
+                   (fun (other_ldesc, _other_arg) ->
+                    other_ldesc.lbl_pos <> ldesc.lbl_pos)
+                   ldesc_arg_list
               then begin
-                let _, ty_arg1, ty_res1 = instance_label false lbl
-                and _, ty_arg2, ty_res2 = instance_label false lbl in
+                let _, ty_arg1, ty_res1 = instance_label false ldesc
+                and _, ty_arg2, ty_res2 = instance_label false ldesc in
                 unify env ty_exp ty_res1;
                 unify env ty ty_res2;
-                unify env ty_arg1 ty_arg2
+                unify env ty_arg1 ty_arg2;
               end in
-            Array.iter unify_kept lbl.lbl_all;
-            Some(type_expect env sexp ty_exp)
-        | _ -> assert false
-      in
-      if opt_sexp = None && List.length lid_sexp_list <> !num_fields then begin
+            Array.iter unify_kept ldesc.lbl_all;
+            Some (type_expect env sexp ty_exp)
+        | _ -> assert false in
+
+      if opt_sexp = None && List.length fields <> !num_fields then
         let present_indices =
-          List.map (fun (lbl, _) -> lbl.lbl_pos) lbl_exp_list in
+          List.map (fun (ldesc, _arg) -> ldesc.lbl_pos) ldesc_arg_list in
         let label_names = extract_label_names sexp env ty in
         let rec missing_labels n = function
-            [] -> []
+          | [] -> []
           | lbl :: rem ->
               if List.mem n present_indices then missing_labels (n + 1) rem
               else lbl :: missing_labels (n + 1) rem
         in
         let missing = missing_labels 0 label_names in
         raise(Error(loc, Label_missing missing))
-      end
-      else if opt_sexp <> None && List.length lid_sexp_list = !num_fields then
+      else if opt_sexp <> None && List.length fields = !num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
       re {
-        exp_desc = Texp_record(lbl_exp_list, opt_exp);
+        exp_desc = Texp_record(ldesc_arg_list, opt_exp);
         exp_loc = loc;
         exp_type = ty;
-        exp_env = env }
-  | Pexp_field(sarg, lid) ->
+        exp_env = env; }
+  | Pexp_field(sarg, lref) ->
       let arg = type_exp env sarg in
-      let label =
-        try
-          Env.lookup_label lid env
-        with Not_found ->
-          raise(Error(loc, Unbound_label lid)) in
-      let (_, ty_arg, ty_res) = instance_label false label in
+      let ldesc =
+        try Env.lookup_label_ref lref env with
+        | Not_found ->
+          unbound_label_ref_error loc env lref
+            (fun llid -> Unbound_label_ref (Plabel llid)) in
+
+      let (_, ty_arg, ty_res) = instance_label false ldesc in
       unify_exp env arg ty_res;
       re {
-        exp_desc = Texp_field(arg, label);
+        exp_desc = Texp_field(arg, ldesc);
         exp_loc = loc;
         exp_type = ty_arg;
-        exp_env = env }
-  | Pexp_setfield(srecord, lid, snewval) ->
+        exp_env = env;
+      }
+  | Pexp_setfield(srecord, lref, snewval) ->
       let record = type_exp env srecord in
-      let label =
-        try
-          Env.lookup_label lid env
-        with Not_found ->
-          raise(Error(loc, Unbound_label lid)) in
-      if label.lbl_mut = Immutable then
-        raise(Error(loc, Label_not_mutable lid));
+      let ldesc =
+        try Env.lookup_label_ref lref env with
+        | Not_found ->
+          unbound_label_ref_error loc env lref
+            (fun llid -> Unbound_label_ref (Plabel llid)) in
+
+      if ldesc.lbl_mut = Immutable then
+        raise (Error (loc, Label_ref_not_mutable lref));
+
       begin_def ();
-      let (vars, ty_arg, ty_res) = instance_label true label in
-      unify_exp env record ty_res;
-      let newval = type_expect env snewval ty_arg in
+        let (vars, ty_arg, ty_res) = instance_label true ldesc in
+        unify_exp env record ty_res;
+        let newval = type_expect env snewval ty_arg in
       end_def ();
-      check_univars env (vars <> []) "field value" newval label.lbl_arg vars;
-      if label.lbl_private = Private then
-        raise(Error(loc, Private_label(lid, ty_res)));
+
+      check_univars env (vars <> []) "field value" newval ldesc.lbl_arg vars;
+      if ldesc.lbl_private = Private then
+        raise (Error (loc, Private_type_field_assignment (lref, ty_res)));
       re {
-        exp_desc = Texp_setfield(record, label, newval);
+        exp_desc = Texp_setfield(record, ldesc, newval);
         exp_loc = loc;
         exp_type = instance Predef.type_unit;
-        exp_env = env }
+        exp_env = env;
+      }
   | Pexp_array(sargl) ->
       let ty = newvar() in
       let argl = List.map (fun sarg -> type_expect env sarg ty) sargl in
@@ -1668,7 +1771,8 @@ let rec type_exp env sexp =
       Ctype.init_def(Ident.current_time());
 
       let body = type_exp new_env sbody in
-      (* Replace every instance of this type constructor in the resulting type. *)
+      (* Replace every instance of this type constructor
+         in the resulting type. *)
       let seen = Hashtbl.create 8 in
       let rec replace t =
         if Hashtbl.mem seen t.id then ()
@@ -1941,23 +2045,24 @@ and type_application env funct sargs =
       else
         type_args [] [] ty ty sargs []
 
-and type_construct env loc lid sarg explicit_arity ty_expected =
-  let constr =
-    try
-      Env.lookup_constructor lid env
-    with Not_found ->
-      raise(Error(loc, Unbound_constructor lid)) in
+and type_construct env loc cref sarg explicit_arity ty_expected =
+  let cdesc =
+    try Env.lookup_constructor_ref cref env with
+    | Not_found ->
+      unbound_constr_ref_error loc env cref
+        (fun clid -> Unbound_constructor_ref (Pconstr clid)) in
   let sargs =
     match sarg with
-      None -> []
+    | None -> []
     | Some {pexp_desc = Pexp_tuple sel} when explicit_arity -> sel
-    | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
+    | Some {pexp_desc = Pexp_tuple sel} when cdesc.cstr_arity > 1 -> sel
     | Some se -> [se] in
-  if List.length sargs <> constr.cstr_arity then
-    raise(Error(loc, Constructor_arity_mismatch
-                  (lid, constr.cstr_arity, List.length sargs)));
+  if List.length sargs <> cdesc.cstr_arity then
+    raise (Error (loc,
+      Constructor_ref_arity_mismatch
+        (cref, cdesc.cstr_arity, List.length sargs)));
   if !Clflags.principal then begin_def ();
-  let (ty_args, ty_res) = instance_constructor constr in
+  let (ty_args, ty_res) = instance_constructor cdesc in
   if !Clflags.principal then begin
     end_def ();
     List.iter generalize_structure ty_args;
@@ -1965,15 +2070,15 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   end;
   let texp =
     re {
-      exp_desc = Texp_construct(constr, []);
+      exp_desc = Texp_construct(cdesc, []);
       exp_loc = loc;
       exp_type = instance ty_res;
       exp_env = env } in
   unify_exp env texp ty_expected;
   let args = List.map2 (type_argument env) sargs ty_args in
-  if constr.cstr_private = Private then
-    raise(Error(loc, Private_type ty_res));
-  { texp with exp_desc = Texp_construct(constr, args) }
+  if cdesc.cstr_private = Private then
+    raise (Error (loc, Private_type_constructor_ref (cref, ty_res)));
+  { texp with exp_desc = Texp_construct(cdesc, args) }
 
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
@@ -1996,10 +2101,11 @@ and type_expect ?in_function env sexp ty_expected =
           exp_env = env } in
       unify_exp env exp ty_expected;
       exp
-  | Pexp_construct(lid, sarg, explicit_arity) ->
-      type_construct env loc lid sarg explicit_arity ty_expected
+  | Pexp_construct(cref, sarg, explicit_arity) ->
+      type_construct env loc cref sarg explicit_arity ty_expected
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
-      let (pat_exp_list, new_env) = type_let env rec_flag spat_sexp_list None in
+      let (pat_exp_list, new_env) =
+        type_let env rec_flag spat_sexp_list None in
       let body = type_expect new_env sbody ty_expected in
       re {
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
@@ -2017,16 +2123,23 @@ and type_expect ?in_function env sexp ty_expected =
   | Pexp_function (l, Some default, [spat, sbody]) ->
       let default_loc = default.pexp_loc in
       let scases = [
-         {ppat_loc = default_loc;
-          ppat_desc =
-            Ppat_construct
-              (Longident.Lident "Some",
-               Some {ppat_loc = default_loc; ppat_desc = Ppat_var "*sth*"},
-               false)},
-         {pexp_loc = default_loc;
-          pexp_desc = Pexp_ident(Longident.Lident "*sth*")};
-         {ppat_loc = default_loc;
-          ppat_desc = Ppat_construct(Longident.Lident "None", None, false)},
+         { ppat_loc = default_loc;
+           ppat_desc =
+             Ppat_construct
+               (Pconstr (Longident.Lident "Some"),
+                Some {
+                  ppat_loc = default_loc;
+                  ppat_desc = Ppat_var "*sth*";
+                },
+                false);
+         },
+         { pexp_loc = default_loc;
+           pexp_desc = Pexp_ident (Longident.Lident "*sth*");
+         };
+         { ppat_loc = default_loc;
+           ppat_desc =
+             Ppat_construct (Pconstr (Longident.Lident "None"), None, false);
+         },
          default;
       ] in
       let smatch = {
@@ -2046,14 +2159,16 @@ and type_expect ?in_function env sexp ty_expected =
          Pexp_function (
            l,
            None,
-           [ {ppat_loc = loc;
-              ppat_desc = Ppat_var "*opt*"},
-             {pexp_loc = loc;
-              pexp_desc =
-                Pexp_let(Default, [spat, smatch], sbody);
-             }
+           [
+             { ppat_loc = loc;
+               ppat_desc = Ppat_var "*opt*";
+             },
+             { pexp_loc = loc;
+               pexp_desc =
+                 Pexp_let (Default, [ spat, smatch ], sbody);
+             };
            ]
-         )
+         );
       } in
       type_expect ?in_function env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
@@ -2304,35 +2419,39 @@ open Printtyp
 let report_error ppf = function
   | Unbound_value lid ->
       fprintf ppf "Unbound value %a" longident lid
+  | Unbound_type lid ->
+      fprintf ppf "Unbound type %a" longident lid
   | Unbound_module lid ->
       fprintf ppf "Unbound module %a" longident lid
   | Unbound_functor lid ->
       fprintf ppf "Unbound functor %a" longident lid
-  | Unbound_constructor lid ->
-      fprintf ppf "Unbound constructor %a" longident lid
-  | Unbound_label lid ->
-      fprintf ppf "Unbound record field label %a" longident lid
-  | Polymorphic_label lid ->
+  | Unbound_constructor_ref cref ->
+      fprintf ppf "Unbound value constructor %a" Printtyp.constructor_ref cref
+  | Unbound_label_ref lref ->
+      fprintf ppf "Unbound record field label %a" Printtyp.label_ref lref
+  | Polymorphic_label_ref lref ->
       fprintf ppf "@[The record field label %a is polymorphic.@ %s@]"
-        longident lid "You cannot instantiate it in a pattern."
-  | Constructor_arity_mismatch(lid, expected, provided) ->
+        label_ref lref "You cannot instantiate it in a pattern."
+  | Constructor_ref_arity_mismatch (cref, expected, provided) ->
       fprintf ppf
-       "@[The constructor %a@ expects %i argument(s),@ \
+       "@[The value constructor %a@ expects %i argument(s),@ \
         but is applied here to %i argument(s)@]"
-       longident lid expected provided
-  | Label_mismatch(lid, trace) ->
+       constructor_ref cref expected provided
+  | Label_ref_mismatch (lref, trace) ->
       report_unification_error ppf trace
         (function ppf ->
            fprintf ppf "The record field label %a@ belongs to the type"
-                   longident lid)
+                   label_ref lref)
         (function ppf ->
            fprintf ppf "but is mixed here with labels of type")
   | Pattern_type_clash trace ->
       report_unification_error ppf trace
         (function ppf ->
-           fprintf ppf "This pattern matches values of type")
+           fprintf ppf "%s"
+             "This pattern matches values of type")
         (function ppf ->
-           fprintf ppf "but a pattern was expected which matches values of type")
+           fprintf ppf "%s"
+             "but a pattern was expected which matches values of type")
   | Multiply_bound_variable name ->
       fprintf ppf "Variable %s is bound several times in this matching" name
   | Orpat_vars id ->
@@ -2364,15 +2483,15 @@ let report_error ppf = function
         "@[<v>@[<2>The function applied to this argument has type@ %a@]@.\
           This argument cannot be applied %a@]"
         type_expr ty print_label l
-  | Label_multiply_defined lid ->
+  | Label_ref_multiply_defined lref ->
       fprintf ppf "The record field label %a is defined several times"
-              longident lid
+              label_ref lref
   | Label_missing labels ->
       let print_labels ppf = List.iter (fun lbl -> fprintf ppf "@ %s" lbl) in
       fprintf ppf "@[<hov>Some record field labels are undefined:%a@]"
         print_labels labels
-  | Label_not_mutable lid ->
-      fprintf ppf "The record field label %a is not mutable" longident lid
+  | Label_ref_not_mutable lref ->
+      fprintf ppf "The record field label %a is not mutable" label_ref lref
   | Incomplete_format s ->
       fprintf ppf "Premature end of format string ``%S''" s
   | Bad_conversion (fmt, i, c) ->
@@ -2443,11 +2562,17 @@ let report_error ppf = function
         "The instance variable %a@ \
          cannot be accessed from the definition of another instance variable"
         longident lid
-  | Private_type ty ->
-      fprintf ppf "Cannot create values of the private type %a" type_expr ty
-  | Private_label (lid, ty) ->
+  | Private_type_constructor_ref (cref, ty) ->
+      fprintf ppf
+        "Cannot use constructor %a to create a value of the private type %a"
+        constructor_ref cref type_expr ty
+  | Private_type_label_ref (lref, ty) ->
+      fprintf ppf
+        "Cannot use label field %a to create a value of the private type %a"
+        label_ref lref type_expr ty
+  | Private_type_field_assignment (lref, ty) ->
       fprintf ppf "Cannot assign field %a of the private type %a"
-        longident lid type_expr ty
+        label_ref lref type_expr ty
   | Not_a_variant_type lid ->
       fprintf ppf "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->

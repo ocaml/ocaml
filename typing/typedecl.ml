@@ -64,7 +64,7 @@ let enter_type env (name, sdecl) id =
 
 let update_type temp_env env id loc =
   let path = Path.Pident id in
-  let decl = Env.find_type path temp_env in
+  let decl = Env.find_type_declaration path temp_env in
   match decl.type_manifest with None -> ()
   | Some ty ->
       let params = List.map (fun _ -> Ctype.newvar ()) decl.type_params in
@@ -312,7 +312,7 @@ let check_abbrev env (_, sdecl) (id, decl) =
       begin match (Ctype.repr ty).desc with
         Tconstr(path, args, _) ->
           begin try
-            let decl' = Env.find_type path env in
+            let decl' = Env.find_type_declaration path env in
             if List.length args = List.length decl.type_params
             && Ctype.equal env false args decl.type_params
             && Includecore.type_declarations env id
@@ -422,7 +422,7 @@ let compute_variance env tvl nega posi cntr ty =
       | Tconstr (path, tl, _) ->
           if tl = [] then () else begin
             try
-              let decl = Env.find_type path env in
+              let decl = Env.find_type_declaration path env in
               List.iter2
                 (fun ty (co,cn,ct) ->
                   compute_variance_rec
@@ -707,9 +707,9 @@ let transl_exception env excdecl =
 let transl_exn_rebind env loc lid =
   let cdescr =
     try
-      Env.lookup_constructor lid env
+      Env.lookup_constructor_ref (Reftypes.Pconstr lid) env
     with Not_found ->
-      raise(Error(loc, Unbound_exception lid)) in
+      raise (Error (loc, Unbound_exception lid)) in
   match cdescr.cstr_tag with
     Cstr_exception path -> (path, cdescr.cstr_args)
   | _ -> raise(Error(loc, Not_an_exception lid))

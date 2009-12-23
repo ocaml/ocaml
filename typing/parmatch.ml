@@ -126,7 +126,7 @@ let get_type_path ty tenv =
 
 let rec get_type_descr ty tenv =
   match (Ctype.repr ty).desc with
-  | Tconstr (path,_,_) -> Env.find_type path tenv
+  | Tconstr (path,_,_) -> Env.find_type_declaration path tenv
   | _ -> fatal_error "Parmatch.get_type_descr"
 
 let rec get_constr tag ty tenv =

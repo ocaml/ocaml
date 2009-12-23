@@ -59,6 +59,21 @@ let rec path ppf = function
   | Papply(p1, p2) ->
       fprintf ppf "%a(%a)" path p1 path p2
 
+(* Print label and constructor references *)
+let constructor_ref ppf cstr_ref =
+  match cstr_ref with
+  | Reftypes.Pconstr lid ->  fprintf ppf "%a" longident lid
+  | Reftypes.Pconstr_ty (lid_ty, constr_name) ->
+     fprintf ppf "%a.^%s" longident lid_ty constr_name
+;;
+
+let label_ref ppf lbl_ref =
+  match lbl_ref with
+  | Reftypes.Plabel lid ->  fprintf ppf "%a" longident lid
+  | Reftypes.Plabel_ty (lid_ty, cstr_name) ->
+     fprintf ppf "%a.^%s" longident lid_ty cstr_name
+;;
+
 (* Print a recursive annotation *)
 
 let tree_of_rec = function
@@ -524,10 +539,18 @@ let rec tree_of_type_decl id decl =
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant [] -> ()
+(*
+  | Type_variant cstrs ->
+      List.iter
+        (fun (_cname, cdesc) -> List.iter mark_loops cdesc.cstr_args) cstrs *)
   | Type_variant cstrs ->
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
   | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
+(*
+  | Type_record(lbls, _rep) ->
+      List.iter
+        (fun (_lname, ldesc) -> mark_loops ldesc.lbl_arg) lbls*)
   end;
 
   let type_param =
@@ -580,8 +603,14 @@ let rec tree_of_type_decl id decl =
   in
   (name, args, ty, priv, constraints)
 
+(*and tree_of_constructor (cname, cdesc) =
+  (cname, tree_of_typlist false cdesc.cstr_args) *)
+
 and tree_of_constructor (name, args) =
   (name, tree_of_typlist false args)
+
+(*and tree_of_label (lname, ldesc) =
+  (lname, ldesc.lbl_mut = Mutable, tree_of_typexp false ldesc.lbl_arg) *)
 
 and tree_of_label (name, mut, arg) =
   (name, mut = Mutable, tree_of_typexp false arg)
@@ -895,7 +924,8 @@ let has_explanation unif t3 t4 =
     Tfield _, _ | _, Tfield _
   | Tunivar, Tvar | Tvar, Tunivar
   | Tvariant _, Tvariant _ -> true
-  | Tconstr (p, _, _), Tvar | Tvar, Tconstr (p, _, _) ->
+  | Tconstr (p, _, _), Tvar
+  | Tvar, Tconstr (p, _, _) ->
       unif && min t3.level t4.level < Path.binding_time p
   | _ -> false
 

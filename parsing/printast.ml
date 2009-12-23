@@ -13,6 +13,7 @@
 (* $Id$ *)
 
 open Asttypes;;
+open Reftypes;;
 open Format;;
 open Lexing;;
 open Location;;
@@ -41,6 +42,20 @@ let rec fmt_longident_aux f x =
 ;;
 
 let fmt_longident f x = fprintf f "\"%a\"" fmt_longident_aux x;;
+
+let fmt_constructor_ref f cstr_ref =
+  match cstr_ref with
+  | Reftypes.Pconstr lid ->  fprintf f "Pconstr %a" fmt_longident lid
+  | Reftypes.Pconstr_ty (lid_ty, constr_name) ->
+     fprintf f "Pconstr_ty (%a, %S)" fmt_longident lid_ty constr_name
+;;
+
+let fmt_record_label_ref f lbl_ref =
+  match lbl_ref with
+  | Reftypes.Plabel lid ->  fprintf f "Plabel %a" fmt_longident lid
+  | Reftypes.Plabel_ty (lid_ty, lbl_name) ->
+     fprintf f "Plabel_ty (%a, %S)" fmt_longident lid_ty lbl_name
+;;
 
 let fmt_constant f x =
   match x with
@@ -177,7 +192,7 @@ and pattern i ppf x =
       line i ppf "Ppat_tuple\n";
       list i pattern ppf l;
   | Ppat_construct (li, po, b) ->
-      line i ppf "Ppat_construct %a\n" fmt_longident li;
+      line i ppf "Ppat_construct %a\n" fmt_constructor_ref li;
       option i pattern ppf po;
       bool i ppf b;
   | Ppat_variant (l, po) ->
@@ -185,7 +200,7 @@ and pattern i ppf x =
       option i pattern ppf po;
   | Ppat_record (l, c) ->
       line i ppf "Ppat_record\n";
-      list i longident_x_pattern ppf l;
+      list i record_label_ref_x_pattern ppf l;
   | Ppat_array (l) ->
       line i ppf "Ppat_array\n";
       list i pattern ppf l;
@@ -234,7 +249,7 @@ and expression i ppf x =
       line i ppf "Pexp_tuple\n";
       list i expression ppf l;
   | Pexp_construct (li, eo, b) ->
-      line i ppf "Pexp_construct %a\n" fmt_longident li;
+      line i ppf "Pexp_construct %a\n" fmt_constructor_ref li;
       option i expression ppf eo;
       bool i ppf b;
   | Pexp_variant (l, eo) ->
@@ -242,16 +257,16 @@ and expression i ppf x =
       option i expression ppf eo;
   | Pexp_record (l, eo) ->
       line i ppf "Pexp_record\n";
-      list i longident_x_expression ppf l;
+      list i record_label_ref_x_expression ppf l;
       option i expression ppf eo;
   | Pexp_field (e, li) ->
       line i ppf "Pexp_field\n";
       expression i ppf e;
-      longident i ppf li;
+      fmt_record_label_ref ppf li;
   | Pexp_setfield (e1, li, e2) ->
       line i ppf "Pexp_setfield\n";
       expression i ppf e1;
-      longident i ppf li;
+      fmt_record_label_ref ppf li;
       expression i ppf e2;
   | Pexp_array (l) ->
       line i ppf "Pexp_array\n";
@@ -662,8 +677,8 @@ and string_list_x_location i ppf (l, loc) =
   line i ppf "<params> %a\n" fmt_location loc;
   list (i+1) string ppf l;
 
-and longident_x_pattern i ppf (li, p) =
-  line i ppf "%a\n" fmt_longident li;
+and record_label_ref_x_pattern i ppf (li, p) =
+  line i ppf "%a\n" fmt_record_label_ref li;
   pattern (i+1) ppf p;
 
 and pattern_x_expression_case i ppf (p, e) =
@@ -680,8 +695,8 @@ and string_x_expression i ppf (s, e) =
   line i ppf "<override> \"%s\"\n" s;
   expression (i+1) ppf e;
 
-and longident_x_expression i ppf (li, e) =
-  line i ppf "%a\n" fmt_longident li;
+and record_label_ref_x_expression i ppf (li, e) =
+  line i ppf "%a\n" fmt_record_label_ref li;
   expression (i+1) ppf e;
 
 and label_x_expression i ppf (l,e) =

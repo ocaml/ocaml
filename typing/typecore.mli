@@ -15,6 +15,7 @@
 (* Type inference for the core language *)
 
 open Asttypes
+open Reftypes
 open Types
 open Format
 
@@ -64,30 +65,32 @@ val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
     Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
+  | Unbound_constructor_ref of Reftypes.constructor_ref
+  | Unbound_label_ref of Reftypes.label_ref
+  | Unbound_type of Longident.t
   | Unbound_module of Longident.t
   | Unbound_functor of Longident.t
-  | Polymorphic_label of Longident.t
-  | Constructor_arity_mismatch of Longident.t * int * int
-  | Label_mismatch of Longident.t * (type_expr * type_expr) list
+  | Polymorphic_label_ref of label_ref
+  | Constructor_ref_arity_mismatch of constructor_ref * int * int
+  | Label_ref_mismatch of label_ref * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable of string
   | Orpat_vars of Ident.t
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
-  | Label_multiply_defined of Longident.t
+  | Label_ref_multiply_defined of label_ref
   | Label_missing of string list
-  | Label_not_mutable of Longident.t
+  | Label_ref_not_mutable of label_ref
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
-  | Private_type of type_expr
-  | Private_label of Longident.t * type_expr
+  | Private_type_constructor_ref of constructor_ref * type_expr
+  | Private_type_label_ref of label_ref * type_expr
+  | Private_type_field_assignment of label_ref * type_expr
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list

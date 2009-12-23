@@ -42,7 +42,7 @@ and type_desc =
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
-      row_bound: unit;
+      row_bound: unit; (* kept for compatibility *)
       row_closed: bool;
       row_fixed: bool;
       row_name: (Path.t * type_expr list) option }
@@ -105,7 +105,8 @@ and value_kind =
 (* Constructor descriptions *)
 
 type constructor_description =
-  { cstr_res: type_expr;                (* Type of the result *)
+  { cstr_name: string;                  (* Short name *)
+    cstr_res: type_expr;                (* Type of the result *)
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
@@ -150,6 +151,14 @@ and type_kind =
   | Type_variant of (string * type_expr list) list
   | Type_record of
       (string * mutable_flag * type_expr) list * record_representation
+
+type type_kind_description =
+  | Kind_abstract
+  | Kind_variant of constructor_description list
+  | Kind_record of label_description list
+;;
+
+type type_description = type_declaration * type_kind_description;;
 
 type exception_declaration = type_expr list
 

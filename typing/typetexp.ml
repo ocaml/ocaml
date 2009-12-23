@@ -27,7 +27,7 @@ type error =
   | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
-  | Recursive_type
+(*  | Recursive_type*)
   | Unbound_class of Longident.t
   | Unbound_row_variable of Longident.t
   | Type_mismatch of (type_expr * type_expr) list
@@ -37,7 +37,7 @@ type error =
   | Constructor_mismatch of type_expr * type_expr
   | Not_a_variant of type_expr
   | Variant_tags of string * string
-  | Invalid_variable_name of string
+  | Invalid_type_variable_name of string
   | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of string
 
@@ -68,9 +68,10 @@ let create_package_mty fake loc env (p, l) =
                ptype_manifest = if fake then None else Some t;
                ptype_variance = [];
                ptype_loc = loc} in
-      {pmty_desc=Pmty_with (mty, [ Longident.Lident s, Pwith_type d ]); pmty_loc=loc}
+      { pmty_desc = Pmty_with (mty, [ Longident.Lident s, Pwith_type d ]);
+        pmty_loc = loc; }
     )
-    {pmty_desc=Pmty_ident p; pmty_loc=loc}
+    { pmty_desc = Pmty_ident p; pmty_loc = loc }
     l
 
 (* Translation of type expressions *)
@@ -91,10 +92,14 @@ let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
 
+let check_type_variable_name loc name =
+  if name <> "" && name.[0] = '_' then
+    raise (Error (loc, Invalid_type_variable_name ("'" ^ name)))
+;;
+
 let enter_type_variable strict loc name =
   try
-    if name <> "" && name.[0] = '_' then
-      raise (Error (loc, Invalid_variable_name ("'" ^ name)));
+    check_type_variable_name loc name;
     let v = Tbl.find name !type_variables in
     if strict then raise Already_bound;
     v
@@ -115,7 +120,8 @@ let wrap_method ty =
   | _ -> Ctype.newty (Tpoly (ty, []))
 
 let new_pre_univar () =
-  let v = newvar () in pre_univars := v :: !pre_univars; v
+  let v = newvar () in
+  pre_univars := v :: !pre_univars; v
 
 let rec swap_list = function
     x :: y :: l -> y :: x :: swap_list l
@@ -131,8 +137,7 @@ let rec transl_type env policy styp =
         raise (Error (styp.ptyp_loc, Unbound_type_variable "_"))
       else newvar ()
   | Ptyp_var name ->
-      if name <> "" && name.[0] = '_' then
-        raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
+      check_type_variable_name styp.ptyp_loc name;
       begin try
         instance (List.assoc name !univars)
       with Not_found -> try
@@ -151,14 +156,14 @@ let rec transl_type env policy styp =
       newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl) ->
       let (path, decl) =
-	let lid, env =
-	  match lid with
-	  | Longident.Ldot (Longident.Lident "*predef*", lid) -> 
-	      Longident.Lident lid, Env.initial
-	  | _ -> lid, env
-	in
+        let lid, env =
+          match lid with
+          | Longident.Ldot (Longident.Lident "*predef*", lid) ->
+              Longident.Lident lid, Env.initial
+          | _ -> lid, env
+        in
         try
-          Env.lookup_type lid env
+          Env.lookup_type_declaration lid env
         with Not_found ->
           raise(Error(styp.ptyp_loc, Unbound_type_constructor lid)) in
       if List.length stl <> decl.type_arity then
@@ -189,7 +194,7 @@ let rec transl_type env policy styp =
   | Ptyp_class(lid, stl, present) ->
       let (path, decl, is_variant) =
         try
-          let (path, decl) = Env.lookup_type lid env in
+          let (path, decl) = Env.lookup_type_declaration lid env in
           let rec check decl =
             match decl.type_manifest with
               None -> raise Not_found
@@ -197,7 +202,7 @@ let rec transl_type env policy styp =
                 match (repr ty).desc with
                   Tvariant row when Btype.static_row row -> ()
                 | Tconstr (path, _, _) ->
-                    check (Env.find_type path env)
+                    check (Env.find_type_declaration path env)
                 | _ -> raise Not_found
           in check decl;
           Location.prerr_warning styp.ptyp_loc Warnings.Deprecated;
@@ -210,7 +215,7 @@ let rec transl_type env policy styp =
             | Longident.Ldot(r, s)   -> Longident.Ldot (r, "#" ^ s)
             | Longident.Lapply(_, _) -> fatal_error "Typetexp.transl_type"
           in
-          let (path, decl) = Env.lookup_type lid2 env in
+          let (path, decl) = Env.lookup_type_declaration lid2 env in
           (path, decl, false)
         with Not_found ->
           raise(Error(styp.ptyp_loc, Unbound_class lid))
@@ -348,7 +353,7 @@ let rec transl_type env policy styp =
                 let row = Btype.row_repr row in
                 row.row_fields
             | {desc=Tvar}, Some(p, _) ->
-                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
+                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p))
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
@@ -511,7 +516,7 @@ let transl_simple_type_univars env styp =
       (fun acc v ->
         let v = repr v in
         if v.level <> Btype.generic_level || v.desc <> Tvar then acc
-        else (v.desc <- Tunivar ; v :: acc))
+        else (v.desc <- Tunivar; v :: acc))
       [] !pre_univars
   in
   make_fixed_univars typ;
@@ -551,8 +556,8 @@ let report_error ppf = function
        longident lid expected provided
   | Bound_type_variable name ->
       fprintf ppf "Already bound type parameter '%s" name
-  | Recursive_type ->
-      fprintf ppf "This type is recursive"
+(*  | Recursive_type ->
+      fprintf ppf "%s" "This type is recursive" *)
   | Unbound_class lid ->
       fprintf ppf "Unbound class %a" longident lid
   | Unbound_row_variable lid ->
@@ -560,17 +565,17 @@ let report_error ppf = function
   | Type_mismatch trace ->
       Printtyp.unification_error true trace
         (function ppf ->
-           fprintf ppf "This type")
+           fprintf ppf "%s" "This type")
         ppf
         (function ppf ->
-           fprintf ppf "should be an instance of type")
+           fprintf ppf "%s" "should be an instance of type")
   | Alias_type_mismatch trace ->
       Printtyp.unification_error true trace
         (function ppf ->
-           fprintf ppf "This alias is bound to type")
+           fprintf ppf "%s" "This alias is bound to type")
         ppf
         (function ppf ->
-           fprintf ppf "but is used as an instance of type")
+           fprintf ppf "%s" "but is used as an instance of type")
   | Present_has_conjunction l ->
       fprintf ppf "The present constructor %s has a conjunctive type" l
   | Present_has_no_type l ->
@@ -590,7 +595,7 @@ let report_error ppf = function
       fprintf ppf
         "Variant tags `%s@ and `%s have the same hash value.@ Change one of them."
         lab1 lab2
-  | Invalid_variable_name name ->
+  | Invalid_type_variable_name name ->
       fprintf ppf "The type variable name %s is not allowed in programs" name
   | Cannot_quantify (name, v) ->
       fprintf ppf "This type scheme cannot quantify '%s :@ %s." name

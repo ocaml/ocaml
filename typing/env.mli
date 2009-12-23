@@ -25,7 +25,8 @@ val diff: t -> t -> Ident.t list
 (* Lookup by paths *)
 
 val find_value: Path.t -> t -> value_description
-val find_type: Path.t -> t -> type_declaration
+val find_type: Path.t -> t -> type_description
+val find_type_declaration: Path.t -> t -> type_declaration
 val find_module: Path.t -> t -> module_type
 val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
@@ -41,9 +42,16 @@ val find_modtype_expansion: Path.t -> t -> Types.module_type
 
 val lookup_value: Longident.t -> t -> Path.t * value_description
 val lookup_annot: Longident.t -> t -> Path.t * Annot.ident
+(*
 val lookup_constructor: Longident.t -> t -> constructor_description
 val lookup_label: Longident.t -> t -> label_description
-val lookup_type: Longident.t -> t -> Path.t * type_declaration
+*)
+val lookup_constructor_ref :
+  Reftypes.constructor_ref -> t -> constructor_description
+val lookup_label_ref :
+  Reftypes.label_ref -> t -> label_description
+val lookup_type: Longident.t -> t -> Path.t * type_description
+val lookup_type_declaration: Longident.t -> t -> Path.t * type_declaration
 val lookup_module: Longident.t -> t -> Path.t * module_type
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
@@ -116,7 +124,7 @@ val crc_units: Consistbl.t
 type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
-  | Env_type of summary * Ident.t * type_declaration
+  | Env_type of summary * Ident.t * type_description
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration

@@ -103,7 +103,8 @@ and value_kind =
 (* Constructor descriptions *)
 
 type constructor_description =
-  { cstr_res: type_expr;                (* Type of the result *)
+  { cstr_name: string;                  (* Short name *)
+    cstr_res: type_expr;                (* Type of the result *)
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
@@ -148,6 +149,13 @@ and type_kind =
   | Type_variant of (string * type_expr list) list
   | Type_record of
       (string * mutable_flag * type_expr) list * record_representation
+
+and type_kind_description =
+  | Kind_abstract
+  | Kind_variant of constructor_description list
+  | Kind_record of label_description list
+
+and type_description = type_declaration * type_kind_description
 
 type exception_declaration = type_expr list
 

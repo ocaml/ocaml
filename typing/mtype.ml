@@ -145,7 +145,7 @@ let enrich_typedecl env p decl =
     Some ty -> decl
   | None ->
       try
-        let orig_decl = Env.find_type p env in
+        let orig_decl = Env.find_type_declaration p env in
         if orig_decl.type_arity <> decl.type_arity 
         then decl
         else {decl with type_manifest =

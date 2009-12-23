@@ -245,8 +245,9 @@ let check_recmod_typedecls env sdecls decls =
     (fun (_, smty) (id, mty) ->
       List.iter
         (fun path ->
-          Typedecl.check_recmod_typedecl env smty.pmty_loc recmod_ids
-                                         path (Env.find_type path env))
+          Typedecl.check_recmod_typedecl 
+            env smty.pmty_loc recmod_ids path
+            (Env.find_type_declaration path env))
         (Mtype.type_paths env (Pident id) mty))
     sdecls decls
 

@@ -651,7 +651,7 @@ let rec generalize_expansive env var_level ty =
       match ty.desc with
         Tconstr (path, tyl, abbrev) ->
           let variance =
-            try (Env.find_type path env).type_variance
+            try (Env.find_type_declaration path env).type_variance
             with Not_found -> List.map (fun _ -> (true,true,true)) tyl in
           abbrev := Mnil;
           List.iter2
@@ -1202,7 +1202,7 @@ let expand_head_opt env ty =
 let enforce_constraints env ty =
   match ty with
     {desc = Tconstr (path, args, abbrev); level = level} ->
-      let decl = Env.find_type path env in
+      let decl = Env.find_type_declaration path env in
       ignore
         (subst env level Public (ref Mnil) None decl.type_params args
            (newvar2 level))
@@ -1377,7 +1377,7 @@ let occur_univar env ty =
       | Tconstr (_, [], _) -> ()
       | Tconstr (p, tl, _) ->
           begin try
-            let td = Env.find_type p env in
+            let td = Env.find_type_declaration p env in
             List.iter2
               (fun t (pos,neg,_) -> if pos || neg then occur_rec bound t)
               tl td.type_variance
@@ -1424,7 +1424,7 @@ let univars_escape env univar_pairs vl ty =
       | Tconstr (_, [], _) -> ()
       | Tconstr (p, tl, _) ->
           begin try
-            let td = Env.find_type p env in
+            let td = Env.find_type_declaration p env in
             List.iter2 (fun t (pos,neg,_) -> if pos || neg then occur t)
               tl td.type_variance
           with Not_found ->
@@ -2759,7 +2759,7 @@ let rec lid_of_path sharp = function
       Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
 
 let find_cltype_for_path env p =
-  let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
+  let path, cl_abbr = Env.lookup_type_declaration (lid_of_path "#" p) env in
   match cl_abbr.type_manifest with
     Some ty ->
       begin match (repr ty).desc with
@@ -2841,14 +2841,14 @@ let rec build_subtype env visited loops posi level t =
         if c > Unchanged then (t'',c)
         else (t, Unchanged)
       end
-  | Tconstr(p, tl, abbrev) ->
+  | Tconstr(path, tl, abbrev) ->
       (* Must check recursion on constructors, since we do not always
          expand them *)
       if memq_warn t visited then (t, Unchanged) else
       let visited = t :: visited in
       begin try
-        let decl = Env.find_type p env in
-        if level = 0 && generic_abbrev env p && safe_abbrev env t
+        let td = Env.find_type_declaration path env in
+        if level = 0 && generic_abbrev env path && safe_abbrev env t
         && not (has_constr_row' env t)
         then warn := true;
         let tl' =
@@ -2860,10 +2860,10 @@ let rec build_subtype env visited loops posi level t =
               else
                 if co then build_subtype env visited loops posi level t
                 else (newvar(), Changed))
-            decl.type_variance tl
+            td.type_variance tl
         in
         let c = collect tl' in
-        if c > Unchanged then (newconstr p (List.map fst tl'), c)
+        if c > Unchanged then (newconstr path (List.map fst tl'), c)
         else (t, Unchanged)
       with Not_found ->
         (t, Unchanged)
@@ -2960,8 +2960,8 @@ let subtype_error env trace =
 
 let private_abbrev env path =
   try
-    let decl = Env.find_type path env in
-    decl.type_private = Private && decl.type_manifest <> None
+    let td = Env.find_type_declaration path env in
+    td.type_private = Private && td.type_manifest <> None
   with Not_found -> false
 
 let rec subtype_rec env trace t1 t2 cstrs =
@@ -2993,7 +2993,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
         begin try
-          let decl = Env.find_type p1 env in
+          let td = Env.find_type_declaration p1 env in
           List.fold_left2
             (fun cstrs (co, cn, _) (t1, t2) ->
               if co then
@@ -3004,7 +3004,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
               else
                 if cn then subtype_rec env ((t2, t1)::trace) t2 t1 cstrs
                 else cstrs)
-            cstrs decl.type_variance (List.combine tl1 tl2)
+            cstrs td.type_variance (List.combine tl1 tl2)
         with Not_found ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end

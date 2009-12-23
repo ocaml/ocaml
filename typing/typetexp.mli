@@ -42,7 +42,7 @@ type error =
   | Unbound_type_constructor_2 of Path.t
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
-  | Recursive_type
+(*  | Recursive_type *)
   | Unbound_class of Longident.t
   | Unbound_row_variable of Longident.t
   | Type_mismatch of (Types.type_expr * Types.type_expr) list
@@ -52,7 +52,7 @@ type error =
   | Constructor_mismatch of Types.type_expr * Types.type_expr
   | Not_a_variant of Types.type_expr
   | Variant_tags of string * string
-  | Invalid_variable_name of string
+  | Invalid_type_variable_name of string
   | Cannot_quantify of string * Types.type_expr
   | Multiple_constraints_on_type of string
 

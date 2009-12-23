@@ -15,6 +15,7 @@
 (* Abstract syntax tree produced by parsing *)
 
 open Asttypes
+open Reftypes
 
 (* Type expressions for the core language *)
 
@@ -22,7 +23,7 @@ type core_type =
   { ptyp_desc: core_type_desc;
     ptyp_loc: Location.t }
 
-and core_type_desc = 
+and core_type_desc =
     Ptyp_any
   | Ptyp_var of string
   | Ptyp_arrow of label * core_type * core_type
@@ -71,9 +72,9 @@ and pattern_desc =
   | Ppat_alias of pattern * string
   | Ppat_constant of constant
   | Ppat_tuple of pattern list
-  | Ppat_construct of Longident.t * pattern option * bool
+  | Ppat_construct of Reftypes.constructor_ref * pattern option * bool
   | Ppat_variant of label * pattern option
-  | Ppat_record of (Longident.t * pattern) list * closed_flag
+  | Ppat_record of (Reftypes.label_ref * pattern) list * closed_flag
   | Ppat_array of pattern list
   | Ppat_or of pattern * pattern
   | Ppat_constraint of pattern * core_type
@@ -93,11 +94,11 @@ and expression_desc =
   | Pexp_match of expression * (pattern * expression) list
   | Pexp_try of expression * (pattern * expression) list
   | Pexp_tuple of expression list
-  | Pexp_construct of Longident.t * expression option * bool
+  | Pexp_construct of constructor_ref * expression option * bool
   | Pexp_variant of label * expression option
-  | Pexp_record of (Longident.t * expression) list * expression option
-  | Pexp_field of expression * Longident.t
-  | Pexp_setfield of expression * Longident.t * expression
+  | Pexp_record of (label_ref * expression) list * expression option
+  | Pexp_field of expression * label_ref
+  | Pexp_setfield of expression * label_ref * expression
   | Pexp_array of expression list
   | Pexp_ifthenelse of expression * expression * expression option
   | Pexp_sequence of expression * expression

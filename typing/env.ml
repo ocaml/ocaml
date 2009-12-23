@@ -17,10 +17,10 @@
 open Config
 open Misc
 open Asttypes
+open Reftypes
 open Longident
 open Path
 open Types
-
 
 type error =
     Not_an_interface of string
@@ -34,7 +34,7 @@ exception Error of error
 type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
-  | Env_type of summary * Ident.t * type_declaration
+  | Env_type of summary * Ident.t * type_description
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration
@@ -47,7 +47,7 @@ type t = {
   annotations: (Path.t * Annot.ident) Ident.tbl;
   constrs: constructor_description Ident.tbl;
   labels: label_description Ident.tbl;
-  types: (Path.t * type_declaration) Ident.tbl;
+  types: (Path.t * type_description) Ident.tbl;
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
@@ -67,7 +67,7 @@ and structure_components = {
   mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
-  mutable comp_types: (string, (type_declaration * int)) Tbl.t;
+  mutable comp_types: (string, (type_description * int)) Tbl.t;
   mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
@@ -251,7 +251,8 @@ let find proj1 proj2 path env =
   | Pdot(p, s, pos) ->
       begin match Lazy.force(find_module_descr p env) with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s (proj2 c) in data
+          let (data, pos) = Tbl.find s (proj2 c) in
+          data
       | Functor_comps f ->
           raise Not_found
       end
@@ -269,11 +270,13 @@ and find_class =
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+let find_type_declaration path env = fst (find_type path env);;
+
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
    - the type should have an associated manifest type. *)
 let find_type_expansion path env =
-  let decl = find_type path env in
+  let decl = find_type_declaration path env in
   match decl.type_manifest with
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
@@ -289,7 +292,7 @@ let find_type_expansion path env =
    In particular, the manifest type associated to a private abstract type
    is revealed for the sake of compiler's type-based optimisations. *)
 let find_type_expansion_opt path env =
-  let decl = find_type path env in
+  let decl = find_type_declaration path env in
   match decl.type_manifest with
   (* The manifest type of Private abstract data types can still get
      an approximation using their manifest type. *)
@@ -316,7 +319,8 @@ let find_module path env =
   | Pdot(p, s, pos) ->
       begin match Lazy.force (find_module_descr p env) with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s c.comp_modules in Lazy.force data
+          let (data, pos) = Tbl.find s c.comp_modules in
+          Lazy.force data
       | Functor_comps f ->
           raise Not_found
       end
@@ -427,6 +431,10 @@ and lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
   lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
+and lookup_constructor_lid =
+  lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
+and lookup_label_lid =
+  lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
 and lookup_type =
   lookup (fun env -> env.types) (fun sc -> sc.comp_types)
 and lookup_modtype =
@@ -435,6 +443,48 @@ and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
+
+let lookup_type_kind_description lid_ty env =
+  let path, (_, kind_desc) = lookup_type lid_ty env in
+  kind_desc
+;;
+
+let lookup_type_declaration lid_ty env =
+  let path, (ty_decl, _ty_desc) = lookup_type lid_ty env in
+  path, ty_decl
+;;
+
+let lookup_constructor_of_type cname kind_desc =
+  match kind_desc with
+  | Kind_abstract -> raise Not_found
+  | Kind_variant cdescs ->
+    List.find (fun cdesc -> cdesc.Types.cstr_name = cname) cdescs
+  | Kind_record _ldescs -> raise Not_found
+;;
+
+let lookup_constructor_ref cref env =
+  match cref with
+  | Pconstr lid -> lookup_constructor_lid lid env
+  | Pconstr_ty (lid_ty, cname) ->
+    let kind_desc = lookup_type_kind_description lid_ty env in
+    lookup_constructor_of_type cname kind_desc
+;;
+
+let lookup_label_of_type lname ty_desc =
+  match ty_desc with
+  | Kind_abstract -> raise Not_found
+  | Kind_variant _cdescs -> raise Not_found
+  | Kind_record ldescs ->
+    List.find (fun ldesc -> ldesc.Types.lbl_name = lname) ldescs
+;;
+
+let lookup_label_ref lbl_ref env =
+  match lbl_ref with
+  | Plabel lid -> lookup_label_lid lid env
+  | Plabel_ty (lid_ty, lname) ->
+    let kind_desc = lookup_type_kind_description lid_ty env in
+    lookup_label_of_type lname kind_desc
+;;
 
 (* Expand manifest module type names at the top of the given module type *)
 
@@ -450,20 +500,20 @@ let rec scrape_modtype mty env =
 
 (* Compute constructor descriptions *)
 
-let constructors_of_type ty_path decl =
+let constructor_descs_of_type ty_path decl =
   match decl.type_kind with
-    Type_variant cstrs ->
-      Datarepr.constructor_descrs
+  | Type_variant cstrs ->
+      Datarepr.constructor_descriptions
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         cstrs decl.type_private
   | Type_record _ | Type_abstract -> []
 
 (* Compute label descriptions *)
 
-let labels_of_type ty_path decl =
+let label_descs_of_type ty_path decl =
   match decl.type_kind with
     Type_record(labels, rep) ->
-      Datarepr.label_descrs
+      Datarepr.label_descriptions
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private
   | Type_variant _ | Type_abstract -> []
@@ -479,7 +529,7 @@ let rec prefix_idents root pos sub = function
       let (pl, final_sub) = prefix_idents root nextpos sub rem in
       (p::pl, final_sub)
   | Tsig_type(id, decl, _) :: rem ->
-      let p = Pdot(root, Ident.name id, nopos) in
+      let p = Pdot(root, Ident.name id, Path.nopos) in
       let (pl, final_sub) =
         prefix_idents root pos (Subst.add_type id p sub) rem in
       (p::pl, final_sub)
@@ -538,20 +588,42 @@ let rec components_of_module env sub path mty =
             end
         | Tsig_type(id, decl, _) ->
             let decl' = Subst.type_declaration sub decl in
-            c.comp_types <-
-              Tbl.add (Ident.name id) (decl', nopos) c.comp_types;
-            List.iter
-              (fun (name, descr) ->
-                c.comp_constrs <- Tbl.add name (descr, nopos) c.comp_constrs)
-              (constructors_of_type path decl');
-            List.iter
-              (fun (name, descr) ->
-                c.comp_labels <- Tbl.add name (descr, nopos) c.comp_labels)
-              (labels_of_type path decl');
-            env := store_type_infos id path decl !env
+            begin match decl.type_kind with
+            | Type_abstract ->
+                let ty_kind_desc = Kind_abstract in
+                let ty_desc = (decl', ty_kind_desc) in
+                c.comp_types <-
+                  Tbl.add (Ident.name id) (ty_desc, nopos) c.comp_types;
+                env := store_type_infos id path (decl, ty_kind_desc) !env
+            | Type_variant cstrs ->
+                let cdescs = constructor_descs_of_type path decl' in
+                let ty_kind_desc = Kind_variant cdescs in
+                let ty_desc = (decl', ty_kind_desc) in
+                c.comp_types <-
+                  Tbl.add (Ident.name id) (ty_desc, nopos) c.comp_types;
+                List.iter
+                  (fun desc ->
+                     c.comp_constrs <-
+                       Tbl.add desc.cstr_name (desc, nopos) c.comp_constrs)
+                cdescs;
+                env := store_type_infos id path (decl, ty_kind_desc) !env
+            | Type_record (labls, repres) ->
+                let ldescs = label_descs_of_type path decl' in
+                let ty_kind_desc = Kind_record ldescs in
+                let ty_desc = (decl', ty_kind_desc) in
+                c.comp_types <-
+                  Tbl.add (Ident.name id) (ty_desc, nopos) c.comp_types;
+                List.iter
+                  (fun desc ->
+                    c.comp_labels <-
+                      Tbl.add desc.lbl_name (desc, nopos) c.comp_labels)
+                  ldescs;
+                env := store_type_infos id path (decl, ty_kind_desc) !env
+            end
         | Tsig_exception(id, decl) ->
-            let decl' = Subst.exception_declaration sub decl in
-            let cstr = Datarepr.exception_descr path decl' in
+            let ty_list = Subst.exception_declaration sub decl in
+            let cstr =
+              Datarepr.exception_descr path (Ident.name id, ty_list) in
             c.comp_constrs <-
               Tbl.add (Ident.name id) (cstr, !pos) c.comp_constrs;
             incr pos
@@ -613,22 +685,44 @@ and store_annot id path annot env =
       annotations = Ident.add id (path, annot) env.annotations }
   else env
 
-and store_type id path info env =
-  { env with
-    constrs =
-      List.fold_right
-        (fun (name, descr) constrs ->
-          Ident.add (Ident.create name) descr constrs)
-        (constructors_of_type path info)
-        env.constrs;
-    labels =
-      List.fold_right
-        (fun (name, descr) labels ->
-          Ident.add (Ident.create name) descr labels)
-        (labels_of_type path info)
-        env.labels;
-    types = Ident.add id (path, info) env.types;
-    summary = Env_type(env.summary, id, info) }
+and store_type id path ty_decl env =
+  let ty_decl' = ty_decl in
+  match ty_decl.type_kind with
+  | Type_abstract ->
+      let ty_kind_desc = Kind_abstract in
+      let ty_desc = (ty_decl', ty_kind_desc) in
+      { env with
+        types = Ident.add id (path, ty_desc) env.types;
+        summary = Env_type(env.summary, id, ty_desc);
+      }
+  | Type_variant cstrs ->
+      let cdescs = constructor_descs_of_type path ty_decl in
+      let ty_kind_desc = Kind_variant cdescs in
+      let ty_desc = (ty_decl', ty_kind_desc) in
+      { env with
+        constrs =
+          List.fold_right
+            (fun cdesc constrs ->
+              Ident.add (Ident.create cdesc.cstr_name) cdesc constrs)
+            cdescs
+            env.constrs;
+        types = Ident.add id (path, ty_desc) env.types;
+        summary = Env_type(env.summary, id, ty_desc);
+      }
+  | Type_record (labls, repres) ->
+      let ldescs = label_descs_of_type path ty_decl' in
+      let ty_kind_desc = Kind_record ldescs in
+      let ty_desc = (ty_decl', ty_kind_desc) in
+      { env with
+        labels =
+          List.fold_right
+            (fun ldesc labels ->
+               Ident.add (Ident.create ldesc.lbl_name) ldesc labels)
+          ldescs
+           env.labels;
+        types = Ident.add id (path, ty_desc) env.types;
+        summary = Env_type(env.summary, id, ty_desc);
+      }
 
 and store_type_infos id path info env =
   (* Simplified version of store_type that doesn't compute and store
@@ -642,15 +736,19 @@ and store_type_infos id path info env =
 
 and store_exception id path decl env =
   { env with
-    constrs = Ident.add id (Datarepr.exception_descr path decl) env.constrs;
+    constrs =
+      Ident.add id
+        (Datarepr.exception_descr path (Ident.name id, decl))
+        env.constrs;
     summary = Env_exception(env.summary, id, decl) }
 
 and store_module id path mty env =
   { env with
     modules = Ident.add id (path, mty) env.modules;
     components =
-      Ident.add id (path, components_of_module env Subst.identity path mty)
-                   env.components;
+      Ident.add id
+        (path, components_of_module env Subst.identity path mty)
+        env.components;
     summary = Env_module(env.summary, id, mty) }
 
 and store_modtype id path info env =
@@ -675,7 +773,7 @@ let components_of_functor_appl f p1 p2 =
     Hashtbl.find f.fcomp_cache p2
   with Not_found ->
     let p = Papply(p1, p2) in
-    let mty = 
+    let mty =
       Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
                     f.fcomp_res in
     let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
@@ -696,8 +794,8 @@ let add_value id desc env =
 let add_annot id annot env =
   store_annot id (Pident id) annot env
 
-and add_type id info env =
-  store_type id (Pident id) info env
+and add_type id ty_decl env =
+  store_type id (Pident id) ty_decl env
 
 and add_exception id decl env =
   store_exception id (Pident id) decl env
@@ -717,7 +815,8 @@ and add_cltype id ty env =
 (* Insertion of bindings by name *)
 
 let enter store_fun name data env =
-  let id = Ident.create name in (id, store_fun id (Pident id) data env)
+  let id = Ident.create name in
+  (id, store_fun id (Pident id) data env)
 
 let enter_value = enter store_value
 and enter_type = enter store_type
@@ -777,7 +876,7 @@ let open_signature root sg env =
                          (Subst.cltype_declaration sub decl) env)
       env sg pl in
   { newenv with summary = Env_open(env.summary, root) }
-  
+
 (* Open a signature from a file *)
 
 let open_pers_signature name env =
@@ -787,7 +886,8 @@ let open_pers_signature name env =
 (* Read a signature from a file *)
 
 let read_signature modname filename =
-  let ps = read_pers_struct modname filename in ps.ps_sig
+  let ps = read_pers_struct modname filename in
+  ps.ps_sig
 
 (* Return the CRC of the interface of the given compilation unit *)
 
@@ -844,7 +944,7 @@ let save_signature sg modname filename =
 
 (* Make the initial environment *)
 
-let initial = Predef.build_initial_env add_type add_exception empty
+let initial = Builtin.build_initial_env add_type add_exception empty
 
 (* Return the environment summary *)
 

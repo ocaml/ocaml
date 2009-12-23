@@ -47,19 +47,18 @@ val path_int32: Path.t
 val path_int64: Path.t
 val path_lazy_t: Path.t
 
-val path_match_failure: Path.t
-val path_assert_failure : Path.t
-val path_undefined_recursive_module : Path.t
-
-(* To build the initial environment. Since there is a nasty mutual
-   recursion between predef and env, we break it by parameterizing
-   over Env.t, Env.add_type and Env.add_exception. *)
-
-val build_initial_env:
-  (Ident.t -> type_declaration -> 'a -> 'a) ->
-  (Ident.t -> exception_declaration -> 'a -> 'a) ->
-  'a -> 'a
-
-(* To initialize linker tables *)
-
-val builtin_values: (string * Ident.t) list
+val ident_int: Ident.t
+val ident_char: Ident.t
+val ident_string: Ident.t
+val ident_float: Ident.t
+val ident_bool: Ident.t
+val ident_unit: Ident.t
+val ident_exn: Ident.t
+val ident_array: Ident.t
+val ident_list: Ident.t
+val ident_format6: Ident.t
+val ident_option: Ident.t
+val ident_nativeint: Ident.t
+val ident_int32: Ident.t
+val ident_int64: Ident.t
+val ident_lazy_t: Ident.t
