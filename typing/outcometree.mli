@@ -26,10 +26,19 @@ type out_ident =
   | Oide_dot of out_ident * string
   | Oide_ident of string
 
+type out_value_constructor =
+  | Oconstr of out_ident
+  | Oconstr_ty of out_ident * string
+
+and out_record_label =
+  | Olabel of out_ident
+  | Olabel_ty of out_ident * string
+;;
+
 type out_value =
   | Oval_array of out_value list
   | Oval_char of char
-  | Oval_constr of out_ident * out_value list
+  | Oval_constr of out_value_constructor * out_value list
   | Oval_ellipsis
   | Oval_float of float
   | Oval_int of int
@@ -38,7 +47,7 @@ type out_value =
   | Oval_nativeint of nativeint
   | Oval_list of out_value list
   | Oval_printer of (Format.formatter -> unit)
-  | Oval_record of (out_ident * out_value) list
+  | Oval_record of (out_record_label * out_value) list
   | Oval_string of string
   | Oval_stuff of string
   | Oval_tuple of out_value list
@@ -93,7 +102,8 @@ and out_sig_item =
   | Osig_type of out_type_decl * out_rec_status
   | Osig_value of string * out_type * string list
 and out_type_decl =
-  string * (string * (bool * bool)) list * out_type * Asttypes.private_flag *
+  string * (string * (bool * bool)) list * out_type *
+  Asttypes.private_flag *
   (out_type * out_type) list
 and out_rec_status =
   | Orec_not

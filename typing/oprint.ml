@@ -19,14 +19,26 @@ exception Ellipsis
 
 let cautious f ppf arg =
   try f ppf arg with
-    Ellipsis -> fprintf ppf "..."
+  | Ellipsis -> fprintf ppf "..."
 
 let rec print_ident ppf =
   function
-    Oide_ident s -> fprintf ppf "%s" s
+  | Oide_ident s -> fprintf ppf "%s" s
   | Oide_dot (id, s) -> fprintf ppf "%a.%s" print_ident id s
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
+
+let print_value_constructor ppf =
+  function
+  | Oconstr id -> fprintf ppf "%a" print_ident id
+  | Oconstr_ty (id, s) -> fprintf ppf "%a.^%s" print_ident id s
+;;
+
+let print_record_label ppf =
+  function
+  | Olabel id -> fprintf ppf "%a" print_ident id
+  | Olabel_ty (id, s) -> fprintf ppf "%a.^%s" print_ident id s
+;;
 
 let value_ident ppf name =
   if List.mem name
@@ -51,7 +63,7 @@ let valid_float_lexeme s =
 
 let float_repres f =
   match classify_float f with
-    FP_nan -> "nan"
+  | FP_nan -> "nan"
   | FP_infinite ->
       if f < 0.0 then "neg_infinity" else "infinity"
   | _ ->
@@ -72,9 +84,10 @@ let print_out_value ppf tree =
   let rec print_tree_1 ppf =
     function
     | Oval_constr (name, [param]) ->
-        fprintf ppf "@[<1>%a@ %a@]" print_ident name print_constr_param param
+        fprintf ppf "@[<1>%a@ %a@]"
+          print_value_constructor name print_constr_param param
     | Oval_constr (name, (_ :: _ as params)) ->
-        fprintf ppf "@[<1>%a@ (%a)@]" print_ident name
+        fprintf ppf "@[<1>%a@ (%a)@]" print_value_constructor name
           (print_tree_list print_tree_1 ",") params
     | Oval_variant (name, Some param) ->
         fprintf ppf "@[<2>`%s@ %a@]" name print_constr_param param
@@ -102,28 +115,33 @@ let print_out_value ppf tree =
         fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree_1 ";") tl
     | Oval_array tl ->
         fprintf ppf "@[<2>[|%a|]@]" (print_tree_list print_tree_1 ";") tl
-    | Oval_constr (name, []) -> print_ident ppf name
+    | Oval_constr (name, []) -> print_value_constructor ppf name
     | Oval_variant (name, None) -> fprintf ppf "`%s" name
     | Oval_stuff s -> fprintf ppf "%s" s
-    | Oval_record fel ->
-        fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true)) fel
+    | Oval_record fields ->
+        fprintf ppf "@[<1>{%a}@]"
+          (cautious (print_record_value_fields true))
+          fields
     | Oval_ellipsis -> raise Ellipsis
     | Oval_printer f -> f ppf
     | Oval_tuple tree_list ->
-        fprintf ppf "@[<1>(%a)@]" (print_tree_list print_tree_1 ",") tree_list
+        fprintf ppf "@[<1>(%a)@]"
+          (print_tree_list print_tree_1 ",")
+          tree_list
     | tree -> fprintf ppf "@[<1>(%a)@]" (cautious print_tree_1) tree
-  and print_fields first ppf =
+  and print_record_value_fields first ppf =
     function
-      [] -> ()
+    | [] -> ()
     | (name, tree) :: fields ->
         if not first then fprintf ppf ";@ ";
-        fprintf ppf "@[<1>%a@ =@ %a@]" print_ident name (cautious print_tree_1)
+        fprintf ppf "@[<1>%a@ =@ %a@]"
+          print_record_label name (cautious print_tree_1)
           tree;
-        print_fields false ppf fields
+        print_record_value_fields false ppf fields
   and print_tree_list print_item sep ppf tree_list =
     let rec print_list first ppf =
       function
-        [] -> ()
+      | [] -> ()
       | tree :: tree_list ->
           if not first then fprintf ppf "%s@ " sep;
           print_item ppf tree;
@@ -139,12 +157,12 @@ let out_value = ref print_out_value
 
 let rec print_list_init pr sep ppf =
   function
-    [] -> ()
+  | [] -> ()
   | a :: l -> sep ppf; pr ppf a; print_list_init pr sep ppf l
 
 let rec print_list pr sep ppf =
   function
-    [] -> ()
+  | [] -> ()
   | [a] -> pr ppf a
   | a :: l -> pr ppf a; sep ppf; print_list pr sep ppf l
 
@@ -184,7 +202,7 @@ and print_simple_out_type ppf =
   | Otyp_constr (id, tyl) ->
       fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
   | Otyp_object (fields, rest) ->
-      fprintf ppf "@[<2>< %a >@]" (print_fields rest) fields
+      fprintf ppf "@[<2>< %a >@]" (print_object_fields rest) fields
   | Otyp_stuff s -> fprintf ppf "%s" s
   | Otyp_var (ng, s) -> fprintf ppf "'%s%s" (if ng then "_" else "") s
   | Otyp_variant (non_gen, row_fields, closed, tags) ->
@@ -219,7 +237,7 @@ and print_simple_out_type ppf =
         )
         n tyl;
       fprintf ppf ")@]"
-and print_fields rest ppf =
+and print_object_fields rest ppf =
   function
     [] ->
       begin match rest with
@@ -232,9 +250,10 @@ and print_fields rest ppf =
         Some _ -> fprintf ppf ";@ "
       | None -> ()
       end;
-      print_fields rest ppf []
+      print_object_fields rest ppf []
   | (s, t) :: l ->
-      fprintf ppf "%s : %a;@ %a" s print_out_type t (print_fields rest) l
+      fprintf ppf "%s : %a;@ %a" s print_out_type t
+        (print_object_fields rest) l
 and print_row_field ppf (l, opt_amp, tyl) =
   let pr_of ppf =
     if opt_amp then fprintf ppf " of@ &@ "
@@ -254,7 +273,8 @@ and print_typargs ppf =
   function
     [] -> ()
   | [ty1] -> fprintf ppf "%a@ " print_simple_out_type ty1
-  | tyl -> fprintf ppf "@[<1>(%a)@]@ " (print_typlist print_out_type ",") tyl
+  | tyl -> fprintf ppf "@[<1>(%a)@]@ "
+             (print_typlist print_out_type ",") tyl
 
 let out_type = ref print_out_type
 
@@ -346,7 +366,8 @@ and print_out_sig_item ppf =
         (if vir_flag then " virtual" else "") print_out_class_params params
         name !out_class_type clt
   | Osig_exception (id, tyl) ->
-      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl)
+      fprintf ppf "@[<2>exception %a@]"
+        print_out_constructor_definition (id, tyl)
   | Osig_modtype (name, Omty_abstract) ->
       fprintf ppf "@[<2>module type %s@]" name
   | Osig_modtype (name, mty) ->
@@ -403,18 +424,22 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
     | _ -> ty
   in
   let print_private ppf = function
-    Asttypes.Private -> fprintf ppf " private"
+  | Asttypes.Private -> fprintf ppf " private"
   | Asttypes.Public -> () in
   let rec print_out_tkind ppf = function
   | Otyp_abstract -> ()
-  | Otyp_record lbls ->
+  | Otyp_record fields ->
       fprintf ppf " =%a {%a@;<1 -2>}"
         print_private priv
-        (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
+        (print_list_init print_out_label_definition
+           (fun ppf -> fprintf ppf "@ "))
+        fields
   | Otyp_sum constrs ->
       fprintf ppf " =%a@;<1 2>%a"
         print_private priv
-        (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
+        (print_list print_out_constructor_definition
+           (fun ppf -> fprintf ppf "@ | "))
+        constrs
   | ty ->
       fprintf ppf " =%a@;<1 2>%a"
         print_private priv
@@ -424,13 +449,13 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
     print_name_args
     print_out_tkind ty
     print_constraints constraints
-and print_out_constr ppf (name, tyl) =
+and print_out_constructor_definition ppf (name, tyl) =
   match tyl with
     [] -> fprintf ppf "%s" name
   | _ ->
       fprintf ppf "@[<2>%s of@ %a@]" name
         (print_typlist print_simple_out_type " *") tyl
-and print_out_label ppf (name, mut, arg) =
+and print_out_label_definition ppf (name, mut, arg) =
   fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
     !out_type arg
 
