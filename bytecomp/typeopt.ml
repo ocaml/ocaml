@@ -37,7 +37,7 @@ let maybe_pointer exp =
       not (Path.same p Predef.path_int) &&
       not (Path.same p Predef.path_char) &&
       begin try
-        match Env.find_type p exp.exp_env with
+        match Env.find_type_declaration p exp.exp_env with
           {type_kind = Type_variant []} -> true (* type exn *)
         | {type_kind = Type_variant cstrs} ->
             List.exists (fun (name, args) -> args <> []) cstrs
@@ -67,7 +67,7 @@ let array_element_kind env ty =
         Paddrarray
       else begin
         try
-          match Env.find_type p env with
+          match Env.find_type_declaration p env with
             {type_kind = Type_abstract} ->
               Pgenarray
           | {type_kind = Type_variant cstrs}

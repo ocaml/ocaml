@@ -144,7 +144,7 @@ let init () =
   Array.iter 
     (fun name -> 
       let id =
-        try List.assoc name Predef.builtin_values
+        try List.assoc name Builtin.builtin_values
         with Not_found -> fatal_error "Symtable.init" in
       let c = slot_for_setglobal id in
       let cst = Const_block(0, [Const_base(Const_string name)]) in

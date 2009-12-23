@@ -15,6 +15,7 @@
 open Format
 open Location
 open Longident
+open Reftypes
 open Parsetree
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
@@ -33,8 +34,20 @@ let rec addmodule bv lid =
 
 let add bv lid =
   match lid with
-    Ldot(l, s) -> addmodule bv l
+    Ldot (l, _s) -> addmodule bv l
   | _ -> ()
+
+let add_lref bv lref =
+  match lref with
+  | Reftypes.Plabel _lid -> ()
+  | Reftypes.Plabel_ty (lid, _s) -> add bv lid
+;;
+
+let add_cref bv cref =
+  match cref with
+  | Reftypes.Pconstr _lid -> ()
+  | Reftypes.Pconstr_ty (lid, _s) -> add bv lid
+;;
 
 let rec add_type bv ty =
   match ty.ptyp_desc with
@@ -105,9 +118,10 @@ let rec add_pattern bv pat =
   | Ppat_alias(p, _) -> add_pattern bv p
   | Ppat_constant _ -> ()
   | Ppat_tuple pl -> List.iter (add_pattern bv) pl
-  | Ppat_construct(c, op, _) -> add bv c; add_opt add_pattern bv op
+  | Ppat_construct(cref, op, _) ->
+      add_cref bv cref; add_opt add_pattern bv op
   | Ppat_record(pl, _) ->
-      List.iter (fun (lbl, p) -> add bv lbl; add_pattern bv p) pl
+      List.iter (fun (lref, p) -> add_lref bv lref; add_pattern bv p) pl
   | Ppat_array pl -> List.iter (add_pattern bv) pl
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
@@ -127,13 +141,15 @@ let rec add_expr bv exp =
   | Pexp_match(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
   | Pexp_try(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
   | Pexp_tuple el -> List.iter (add_expr bv) el
-  | Pexp_construct(c, opte, _) -> add bv c; add_opt add_expr bv opte
+  | Pexp_construct(cref, opte, _) ->
+      add_cref bv cref; add_opt add_expr bv opte
   | Pexp_variant(_, opte) -> add_opt add_expr bv opte
   | Pexp_record(lblel, opte) ->
-      List.iter (fun (lbl, e) -> add bv lbl; add_expr bv e) lblel;
+      List.iter (fun (lref, e) -> add_lref bv lref; add_expr bv e) lblel;
       add_opt add_expr bv opte
-  | Pexp_field(e, fld) -> add_expr bv e; add bv fld
-  | Pexp_setfield(e1, fld, e2) -> add_expr bv e1; add bv fld; add_expr bv e2
+  | Pexp_field(e, lref) -> add_expr bv e; add_lref bv lref
+  | Pexp_setfield(e1, lref, e2) ->
+      add_expr bv e1; add_lref bv lref; add_expr bv e2
   | Pexp_array el -> List.iter (add_expr bv) el
   | Pexp_ifthenelse(e1, e2, opte3) ->
       add_expr bv e1; add_expr bv e2; add_opt add_expr bv opte3
