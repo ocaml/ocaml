@@ -3061,9 +3061,9 @@ module Struct =
         let pos_to_lexing_position p file_name =
           {
             Lexing.pos_fname = file_name;
-            pos_lnum = p.line;
-            pos_bol = p.bol;
-            pos_cnum = p.off;
+            Lexing.pos_lnum = p.line;
+            Lexing.pos_bol = p.bol;
+            Lexing.pos_cnum = p.off;
           }
           
         let better_file_name a b =

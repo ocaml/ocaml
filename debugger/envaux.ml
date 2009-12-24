@@ -44,8 +44,8 @@ let rec env_from_summary sum subst =
           Env.empty
       | Env_value(s, id, desc) ->
           Env.add_value id (Subst.value_description subst desc) (env_from_summary s subst)
-      | Env_type(s, id, desc) ->
-          Env.add_type id (Subst.type_declaration subst desc) (env_from_summary s subst)
+      | Env_type(s, id, (ty_decl, kdesc)) ->
+          Env.add_type id (Subst.type_declaration subst ty_decl) (env_from_summary s subst)
       | Env_exception(s, id, desc) ->
           Env.add_exception id (Subst.exception_declaration subst desc) (env_from_summary s subst)
       | Env_module(s, id, desc) ->

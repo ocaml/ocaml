@@ -134,11 +134,11 @@ let rec expression event env = function
       let (v, ty) = expression event env arg in
       begin match (Ctype.repr(Ctype.expand_head_opt env ty)).desc with
         Tconstr(path, args, _) ->
-          let tydesc = Env.find_type path env in
-          begin match tydesc.type_kind with
+          let ty_decl = Env.find_type_declaration path env in
+          begin match ty_decl.type_kind with
             Type_record(lbl_list, repr) ->
               let (pos, ty_res) =
-                find_label lbl env ty path tydesc 0 lbl_list in
+                find_label lbl env ty path ty_decl 0 lbl_list in
               (Debugcom.Remote_value.field v pos, ty_res)
           | _ -> raise(Error(Not_a_record ty))
           end

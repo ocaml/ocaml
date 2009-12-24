@@ -449,7 +449,7 @@ and view_module_id id ~env =
   view_module path ~env
 
 and view_type_decl path ~env =
-  let td = find_type path env in
+  let td = find_type_declaration path env in
   try match td.type_manifest with None -> raise Not_found
     | Some ty -> match Ctype.repr ty with
         {desc = Tobject _} ->
@@ -531,7 +531,7 @@ and view_decl_menu lid ~kind ~env ~parent =
       Printtyp.type_declaration
         (ident_of_path path ~default:"t")
         Format.std_formatter
-        (find_type path env)
+        (find_type_declaration path env)
     else
       Printtyp.modtype_declaration
         (ident_of_path path ~default:"S")

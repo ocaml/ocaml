@@ -63,13 +63,13 @@ let view_symbol ~kind ~env ?path id =
       let path, vd = lookup_value id env in
       view_signature_item ~path ~env [Tsig_value (Ident.create name, vd)]
   | Ptype -> view_type_id id ~env
-  | Plabel -> let ld = lookup_label id env in
+  | Plabel -> let ld = lookup_label_ref (Reftypes.Plabel id) env in
       begin match ld.lbl_res.desc with
         Tconstr (path, _, _) -> view_type_decl path ~env
       | _ -> ()
       end
   | Pconstructor ->
-      let cd = lookup_constructor id env in
+      let cd = lookup_constructor_ref (Reftypes.Pconstr id) env in
       begin match cd.cstr_res.desc with
         Tconstr (cpath, _, _) ->
         if Path.same cpath Predef.path_exn then

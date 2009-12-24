@@ -394,6 +394,10 @@ let search_string_symbol text =
     try let _ = f lid Env.initial in [lid, k]
     with Not_found | Env.Error _ -> []
   in
+  let lookup_constructor id =
+    lookup_constructor_ref (Reftypes. Pconstr id)
+  and lookup_label id =
+    lookup_label_ref (Reftypes.Plabel id) in
   try_lookup lookup_constructor Pconstructor @
   try_lookup lookup_module Pmodule @
   try_lookup lookup_modtype Pmodtype @

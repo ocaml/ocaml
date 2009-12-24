@@ -289,12 +289,12 @@ install:
 	cp toplevel/topstart.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi \
 	   $(LIBDIR)
-	cd tools; $(MAKE) install
-	-cd man; $(MAKE) install
+	cd tools && $(MAKE) install
+	-cd man && $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
-	cd ocamldoc; $(MAKE) install
+	cd ocamldoc && $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
@@ -671,13 +671,13 @@ alldepend::
 # The replay debugger
 
 ocamldebugger: ocamlc ocamlyacc ocamllex otherlibraries
-	cd debugger; $(MAKE) all
+	cd debugger && $(MAKE) all
 
 partialclean::
-	cd debugger; $(MAKE) clean
+	cd debugger && $(MAKE) clean
 
 alldepend::
-	cd debugger; $(MAKE) depend
+	cd debugger && $(MAKE) depend
 
 # Camlp4
 

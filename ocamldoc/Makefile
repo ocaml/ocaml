@@ -152,6 +152,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/btype.cmo \
 	$(OCAMLSRCDIR)/typing/predef.cmo \
 	$(OCAMLSRCDIR)/typing/datarepr.cmo \
+	$(OCAMLSRCDIR)/typing/builtin.cmo \
 	$(OCAMLSRCDIR)/typing/subst.cmo \
 	$(OCAMLSRCDIR)/typing/env.cmo \
 	$(OCAMLSRCDIR)/typing/ctype.cmo \
