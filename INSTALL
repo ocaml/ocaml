@@ -126,9 +126,12 @@ Examples:
   Installation in /usr, man pages in section "l":
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
 
-  On a MacOSX/Intel Core 2 or MacOSX/PowerPC host, to build a 64-bit version
-  of OCaml:
+  On a MacOSX 10.5/Intel Core 2 or MacOSX 10.5/PowerPC host,
+  to build a 64-bit version of OCaml:
     ./configure -cc "gcc -m64"
+
+  On a MacOSX 10.6/Intel Core 2, to build a 32-bit version of OCaml:
+    ./configure -cc "gcc -m32" -as "as -arch i386" -aspp "gcc -m32 -c"
 
   On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
     ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c"
