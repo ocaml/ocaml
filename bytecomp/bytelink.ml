@@ -407,14 +407,14 @@ let link_bytecode_as_c tolink outfile =
   begin try
     (* The bytecode *)
     output_string outchan "\
-#ifdef __cplusplus
-extern \"C\" {
-#endif
-#include <caml/mlvalues.h>
-CAMLextern void caml_startup_code(
-           code_t code, asize_t code_size,
-           char *data, asize_t data_size,
-           char *section_table, asize_t section_table_size,
+#ifdef __cplusplus\n\
+extern \"C\" {\n\
+#endif\n\
+#include <caml/mlvalues.h>\n\
+CAMLextern void caml_startup_code(\n\
+           code_t code, asize_t code_size,\n\
+           char *data, asize_t data_size,\n\
+           char *section_table, asize_t section_table_size,\n\
            char **argv);\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
@@ -445,15 +445,15 @@ CAMLextern void caml_startup_code(
     Symtable.output_primitive_table outchan;
     (* The entry point *)
     output_string outchan "\n\
-void caml_startup(char ** argv)
-{
-  caml_startup_code(caml_code, sizeof(caml_code),
-                    caml_data, sizeof(caml_data),
-                    caml_sections, sizeof(caml_sections),
-                    argv);
-}
-#ifdef __cplusplus
-}
+void caml_startup(char ** argv)\n\
+{\n\
+  caml_startup_code(caml_code, sizeof(caml_code),\n\
+                    caml_data, sizeof(caml_data),\n\
+                    caml_sections, sizeof(caml_sections),\n\
+                    argv);\n\
+}\n\
+#ifdef __cplusplus\n\
+}\n\
 #endif\n";
     close_out outchan
   with x ->
@@ -466,7 +466,7 @@ void caml_startup(char ** argv)
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
-  Ccomp.call_linker Ccomp.Exe exec_name 
+  Ccomp.call_linker Ccomp.Exe exec_name
     ([prim_name] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
     (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
 
