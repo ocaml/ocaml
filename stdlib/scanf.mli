@@ -108,22 +108,27 @@ val stdin : in_channel;;
     specifications must properly skip this character (simply add a ['\n']
     as the last character of the format string). *)
 
+val open_in : string -> in_channel;;
+(** Bufferized file reading in text mode. The efficient and usual
+    way to scan text mode files (in effect, [from_file] returns a
+    scanning buffer that reads characters in large chunks, rather than one
+    character at a time as buffers returned by [from_channel] below do).
+    [Scanning.from_file fname] returns a scanning buffer which reads
+    from the given file [fname] in text mode. *)
+
+val open_in_bin : string -> in_channel;;
+(** Bufferized file reading in binary mode. *)
+
+val from_file : string -> in_channel;;
+(** An alias for [open_in] above. *)
+val from_file_bin : string -> in_channel;;
+(** An alias for [open_in_bin] above. *)
+
 val from_string : string -> in_channel;;
 (** [Scanning.from_string s] returns a formatted input channel which reads
     from the given string.
     Reading starts from the first character in the string.
     The end-of-input condition is set when the end of the string is reached. *)
-
-val from_file : string -> in_channel;;
-(** Bufferized file reading in text mode. The efficient and usual
-    way to scan text mode files (in effect, [from_file] returns a
-    scanning buffer that reads characters in large chunks, rather than one
-    character at a time as buffers returned by [from_channel] do).
-    [Scanning.from_file fname] returns a scanning buffer which reads
-    from the given file [fname] in text mode. *)
-
-val from_file_bin : string -> in_channel;;
-(** Bufferized file reading in binary mode. *)
 
 val from_function : (unit -> char) -> in_channel;;
 (** [Scanning.from_function f] returns a scanning buffer with the given

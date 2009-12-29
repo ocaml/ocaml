@@ -104,11 +104,15 @@ val name_of_input : scanbuf -> string;;
 (* [Scanning.name_of_input ib] returns the name of the character
     source for input buffer [ib]. *)
 
-val from_string : string -> scanbuf;;
-val from_channel : Pervasives.in_channel -> scanbuf;;
+val open_in : string -> scanbuf;;
+val open_in_bin : string -> scanbuf;;
 val from_file : string -> scanbuf;;
 val from_file_bin : string -> scanbuf;;
+val from_string : string -> scanbuf;;
 val from_function : (unit -> char) -> scanbuf;;
+val from_channel : Pervasives.in_channel -> scanbuf;;
+
+val close_in : scanbuf -> unit;;
 
 end
 ;;
@@ -116,7 +120,12 @@ end
 module Scanning : SCANNING = struct
 
 (* The run-time library for scanf. *)
-type file_name = string;;
+type in_channel_name =
+  | From_file of string * Pervasives.in_channel
+  | From_string
+  | From_function
+  | From_channel of Pervasives.in_channel
+;;
 
 type in_channel = {
   mutable eof : bool;
@@ -127,7 +136,7 @@ type in_channel = {
   mutable token_count : int;
   mutable get_next_char : unit -> char;
   tokbuf : Buffer.t;
-  file_name : file_name;
+  input_name : in_channel_name;
 }
 ;;
 
@@ -176,7 +185,14 @@ let end_of_input ib =
 let eof ib = ib.eof;;
 
 let beginning_of_input ib = ib.char_count = 0;;
-let name_of_input ib = ib.file_name;;
+let name_of_input ib =
+  match ib.input_name with
+  | From_file (fname, _ic) -> fname
+  | From_string -> "unnamed character string"
+  | From_function -> "unnamed function"
+  | From_channel _ic -> "unnamed pervasives input channel"
+;;
+
 let char_count ib =
   if ib.current_char_is_valid then ib.char_count - 1 else ib.char_count
 ;;
@@ -208,7 +224,7 @@ let store_char max ib c =
 
 let default_token_buffer_size = 1024;;
 
-let create fname next = {
+let create iname next = {
   eof = false;
   current_char = null_char;
   current_char_is_valid = false;
@@ -217,7 +233,7 @@ let create fname next = {
   token_count = 0;
   get_next_char = next;
   tokbuf = Buffer.create default_token_buffer_size;
-  file_name = fname;
+  input_name = iname;
 }
 ;;
 
@@ -229,10 +245,10 @@ let from_string s =
     let c = s.[!i] in
     incr i;
     c in
-  create "string input" next
+  create From_string next
 ;;
 
-let from_function = create "function input";;
+let from_function = create From_function;;
 
 (* Scanning from an input channel. *)
 
@@ -248,11 +264,11 @@ let from_function = create "function input";;
 
    To circumvent this problem, all the scanning functions get a low level
    input buffer argument where they store the lookahead character when
-   needed; additionnaly, the input buffer is the only source of character of
+   needed; additionally, the input buffer is the only source of character of
    a scanner. The [scanbuf] input buffers are defined in module {!Scanning}.
 
    Now we understand that it is extremely important that related successive
-   calls to scanners inded read from the same input buffer. In effect, if a
+   calls to scanners indeed read from the same input buffer. In effect, if a
    scanner [scan1] is reading from [ib1] and stores an unused lookahead
    character [c1] into its input buffer [ib1], then another scanner [scan2]
    not reading from the same buffer [ib1] will miss the character [c],
@@ -268,7 +284,7 @@ let from_function = create "function input";;
    shared (two functions of the user's program may successively read from
    [ic]). This is highly error prone since, one of the function may seek the
    input channel, while the other function has still an unused lookahead
-   character in its input buffer. In conclusion, you should never mixt direct
+   character in its input buffer. In conclusion, you should never mix direct
    low level reading and high level scanning from the same input channel.
 
    This phenomenon of reading mess is even worse when one defines more than
@@ -298,7 +314,7 @@ let scan_close_at_end ic = close_in ic; raise End_of_file;;
    it just raises [End_of_file]. *)
 let scan_raise_at_end _ic = raise End_of_file;;
 
-let from_ic scan_close_ic fname ic =
+let from_ic scan_close_ic iname ic =
   let len = !file_buffer_size in
   let buf = String.create len in
   let i = ref 0 in
@@ -313,41 +329,68 @@ let from_ic scan_close_ic fname ic =
         buf.[0]
       end
     end in
-  create fname next
+  create iname next
 ;;
 
 let from_ic_close_at_end = from_ic scan_close_at_end;;
 
-let from_file fname = from_ic_close_at_end fname (open_in fname);;
-let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
-
 (* The scanning buffer reading from [Pervasives.stdin].
    One could try to define [stdib] as a scanning buffer reading a character at a
-   time (no bufferization at all), but unfortunately the toplevel
+   time (no bufferization at all), but unfortunately the top-level
    interaction would be wrong.
    This is due to some kind of ``race condition'' when reading from [Pervasives.stdin],
    since the interactive compiler and [scanf] will simultaneously read the
    material they need from [Pervasives.stdin]; then, confusion will result from what should
-   be read by the toplevel and what should be read by [scanf].
+   be read by the top-level and what should be read by [scanf].
    This is even more complicated by the one character lookahead that [scanf]
    is sometimes obliged to maintain: the lookahead character will be available
-   for the next ([scanf]) entry, seamingly coming from nowhere.
+   for the next ([scanf]) entry, seemingly coming from nowhere.
    Also no [End_of_file] is raised when reading from stdin: if not enough
    characters have been read, we simply ask to read more. *)
-let stdin = from_ic scan_raise_at_end "stdin" Pervasives.stdin;;
+let stdin =
+  from_ic scan_raise_at_end
+    (From_file ("-", Pervasives.stdin)) Pervasives.stdin
+;;
+
 let stdib = stdin;;
+
+let open_in fname =
+  match fname with
+  | "-" -> stdin
+  | fname ->
+    let ic = open_in fname in
+    from_ic_close_at_end (From_file (fname, ic)) ic
+;;
+
+let open_in_bin fname =
+  match fname with
+  | "-" -> stdin
+  | fname ->
+    let ic = open_in_bin fname in
+    from_ic_close_at_end (From_file (fname, ic)) ic
+;;
+
+let from_file = open_in;;
+let from_file_bin = open_in_bin;;
 
 let memo_from_ic =
   let memo = ref [] in
-  (fun scan_close_ic fname ic ->
+  (fun scan_close_ic ic ->
    try List.assq ic !memo with
    | Not_found ->
-     let ib = from_ic scan_close_ic fname ic in
+     let ib = from_ic scan_close_ic (From_channel ic) ic in
      memo := (ic, ib) :: !memo;
      ib)
 ;;
 
-let from_channel = memo_from_ic scan_raise_at_end "input channel";;
+let from_channel = memo_from_ic scan_raise_at_end;;
+
+let close_in ib =
+  match ib.input_name with
+  | From_file (_fname, ic) -> Pervasives.close_in ic
+  | From_string | From_function -> ()
+  | From_channel ic -> Pervasives.close_in ic
+;;
 
 end
 ;;
@@ -444,7 +487,7 @@ let ignore_stoppers stps ib =
     (Printf.sprintf "looking for one of range %S, found %C" sr ci)
 ;;
 
-(* Extracting tokens from ouput token buffer. *)
+(* Extracting tokens from the output token buffer. *)
 
 let token_char ib = (Scanning.token ib).[0];;
 
@@ -897,7 +940,7 @@ let read_char_set fmt i =
     j, Pos_set (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
 ;;
 
-(* Char sets are now represented as bitvects that are represented as
+(* Char sets are now represented as bit vectors that are represented as
    byte strings. *)
 
 (* Bit manipulations into bytes. *)
@@ -922,7 +965,7 @@ let get_bit_of_range r c =
   get_bit_of_byte (int_of_char byte) idx
 ;;
 
-(* Char sets represented as bitvects represented as fixed length byte
+(* Char sets represented as bit vectors represented as fixed length byte
    strings. *)
 (* Create a full or empty set of chars. *)
 let make_range bit =
