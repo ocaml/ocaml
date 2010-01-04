@@ -7,6 +7,7 @@ Bug fixes:
 - PR#4710, PR#4720: ocamlbuild does not use properly configuration information
 - PR#4750: under some Windows installations, high start-up times for Unix lib
 - PR#4777: problem with scanf and CRLF
+- PR#4783: ocamlmklib problem under Windows
 - PR#4810: BSD problem with socket addresses, e.g. in Unix.getnameinfo
 - PR#4813: issue with parsing of float literals by the GNU assembler
 - PR#4816: problem with modules and private types
