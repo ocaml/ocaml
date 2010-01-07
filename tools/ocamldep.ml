@@ -82,7 +82,7 @@ let find_dependency modname (byt_deps, opt_deps) =
   with Not_found ->
     (byt_deps, opt_deps)
 
-let (depends_on, escaped_eol) = (": ", "\\\n    ")
+let (depends_on, escaped_eol) = (":", " \\\n    ")
 
 let print_filename s =
   let s = if !force_slash then fix_slash s else s in
@@ -117,14 +117,14 @@ let print_dependencies target_file deps =
   let rec print_items pos = function
     [] -> print_string "\n"
   | dep :: rem ->
-      if pos + String.length dep <= 77 then begin
-        print_filename dep; print_string " ";
+      if pos + 1 + String.length dep <= 77 then begin
+        print_string " "; print_filename dep;
         print_items (pos + String.length dep + 1) rem
       end else begin
-        print_string escaped_eol; print_filename dep; print_string " ";
-        print_items (String.length dep + 5) rem
+        print_string escaped_eol; print_filename dep;
+        print_items (String.length dep + 4) rem
       end in
-  print_items (String.length target_file + 2) deps
+  print_items (String.length target_file + 1) deps
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string ":";
