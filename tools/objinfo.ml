@@ -48,7 +48,8 @@ let print_library_info lib =
   print_string (if lib.lib_custom then "YES" else "no");
   print_newline();
   print_string "  Extra C object files:";
-  List.iter print_spaced_string lib.lib_ccobjs; print_newline();
+  (* PR#4949: print in linking order *)
+  List.iter print_spaced_string (List.rev lib.lib_ccobjs); print_newline();
   print_string "  Extra C options:";
   List.iter print_spaced_string lib.lib_ccopts; print_newline();
   List.iter print_info lib.lib_units
