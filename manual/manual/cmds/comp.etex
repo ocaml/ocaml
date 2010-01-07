@@ -352,46 +352,146 @@ Compile or link multithreaded programs, in combination with the
 VM-level "threads" library described in chapter~\ref{c:threads}.
 
 \item["-w" \var{warning-list}]
-Enable or disable warnings according to the argument
+Enable, disable, or mark as errors the warnings specified by the argument
 \var{warning-list}.
-The argument is a set of letters.  If a letter is
-uppercase, it enables the corresponding warnings; lowercase disables
-the warnings.  The correspondence is the following:
+Each warning can be {\em enabled} or {\em disabled}, and each warning
+can be {\em marked} or {\em unmarked}.
+If a warning is disabled, it isn't displayed and doesn't affect
+compilation in any way (even if it is marked).  If a warning is
+enabled, it is displayed normally by the compiler whenever the source
+code triggers it.  If it is enabled and marked, the compiler will stop
+with an error after displaying that warning if the source code
+triggers it.
+
+The \var{warning-list} argument is a sequence of warning specifiers,
+with no separators between them.  A warning specifier is one of the
+following:
+
+\begin{options}
+\item["+"\var{num}] Enable warning number \var{num}.
+\item["-"\var{num}] Disable warning number \var{num}.
+\item["@"\var{num}] Enable and mark warning number \var{num}.
+\item["+"\var{letter}] Enable the set of warnings corresponding to
+\var{letter}. The letter may be uppercase or lowercase.
+\item["-"\var{letter}] Disable the set of warnings corresponding to
+\var{letter}. The letter may be uppercase or lowercase.
+\item["@"\var{letter}] Enable and mark the set of warnings
+corresponding to \var{letter}. The letter may be uppercase or
+lowercase.
+\item[\var{uppercase-letter}] Enable the set of warnings corresponding
+to \var{uppercase-letter}.
+\item[\var{lowercase-letter}] Disable the set of warnings corresponding
+to \var{lowercase-letter}.
+\end{options}
+
+The warning numbers are as follows.
+\begin{options}
+
+\item[1] Suspicious-looking start-of-comment mark.
+
+\item[2] Suspicious-looking end-of-comment mark.
+
+\item[3] Deprecated syntax.
+
+\item[4] Fragile pattern matching: matching that will remain
+complete even if additional constructors are added to one of the
+variant types matched.
+
+\item[5] Partially applied function: expression whose result has
+function type and is ignored.
+
+\item[6] Label omitted in function application.
+
+\item[7] Some methods are overriden in the class where they are defined.
+
+\item[8] Partial match: missing cases in pattern-matching.
+
+\item[9] Missing fields in a record pattern.
+
+\item[10] Expression on the left-hand side of a sequence that doesn't
+have type "unit" (and that is not a function, see warning number 5).
+
+\item[11] Redundant case in a pattern matching (unused match case).
+
+\item[12] Redundant sub-pattern in a pattern-matching.
+
+\item[13] Override of an instance variable.
+
+\item[14] Illegal backslash escape in a string constant.
+
+\item[15] Private method made public implicitly.
+
+\item[16] Unerasable optional argument.
+
+\item[17] Undeclared virtual method.
+
+\item[18] Non-principal type.
+
+\item[19] Type without principality.
+
+\item[20] Unused function argument.
+
+\item[21] Non-returning statement.
+
+\item[22] Camlp4 warning.
+
+\item[23] Useless record "with" clause.
+
+\item[24] Bad module name: the source file name is not a valid OCaml
+module name.
+
+\item[25] Pattern-matching with all clauses guarded.
+
+\item[26] Suspicious unused variable: unused variable that is bound with
+"let" or "as", and doesn't start with an underscore ("_") character.
+
+\item[27] Innocuous unused variable: unused variable that is not bound with
+"let" nor "as", and doesn't start with an underscore ("_") character.
+\end{options}
+
+The letters stand for the following sets of warnings.  Any letter not
+mentioned here corresponds to the empty set.
+
 \begin{options}
 \item[A] all warnings
-\item[C] start of comments that look like mistakes
-\item[D] use of deprecated features
-\item[E] fragile pattern matchings (matchings that will remain
-complete even if additional constructors are added to one of the
-variant types matched)
-\item[F] partially applied functions (expressions whose result has
-function type and is ignored)
-\item[L] omission of labels in applications
-\item[M] overriding of methods
-\item[P] missing cases in pattern matchings (i.e. partial matchings)
-\item[S] expressions in the left-hand side of a sequence that don't
-have type "unit" (and that are not functions, see "F" above)
-\item[U] redundant cases in pattern matching (unused cases)
-\item[V] overriding of instance variables
-\item[Y] unused variables that are bound with "let" or "as", and don't
-start with an underscore (\_) character
-\item[Z] all other cases of unused variables that don't start with
-an underscore (\_) character
-\item[X] warnings that don't fit in the above categories (except A)
+\item[C] 1, 2
+\item[D] 3
+\item[E] 4
+\item[F] 5
+\item[L] 6
+\item[M] 7
+\item[P] 8
+\item[R] 9
+\item[S] 10
+\item[U] 11, 12
+\item[V] 13
+\item[X] 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+\item[Y] 26
+\item[Z] 27
 \end{options}
-The default setting is "Aelz", enabling all warnings except fragile
-pattern matchings, omitted labels, and innocuous unused variables.
-Note that warnings "F" and "S" are not always triggered, depending on
+
+The default setting is "-w +a-4-6-9-27", enabling all warnings except fragile
+pattern matchings, omitted labels, missing fields in record patterns,
+and innocuous unused variables.
+Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
 
 \item["-warn-error" \var{warning-list}]
-Turn the warnings indicated in the argument \var{warning-list} into
-errors.  The compiler will stop with an error when one of these
-warnings is emitted.  The \var{warning-list} has the same meaning as for
-the "-w" option: an uppercase character turns the corresponding
-warning into an error, a lowercase character leaves it as a warning.
-The default setting is "-warn-error a" (none of the warnings is treated
-as an error).
+Mark as errors the warnings specified in the argument \var{warning-list}.
+The compiler will stop with an error when one of these warnings is
+emitted. The \var{warning-list} has the same meaning as for
+the "-w" option: a "+" sign (or an uppercase letter) turns the
+corresponding warnings into errors, a "-"
+sign (or a lowercase letter) turns them back into warnings, and a
+"@" sign both enables and marks the corresponding warnings.
+
+Note: it is not recommended to use warning sets (i.e. letters) as
+arguments to "-warn-error"
+in production code, because this can break your build when future versions
+of OCaml add some new warnings.
+
+The default setting is "-warn-error +a"
+(none of the warnings is treated as an error).
 
 \item["-where"]
 Print the location of the standard library, then exit.
