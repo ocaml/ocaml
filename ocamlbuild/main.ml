@@ -71,15 +71,15 @@ let proceed () =
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
   Configuration.parse_string
-    "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml
-     <**/*.byte>: ocaml, byte, program
-     <**/*.odoc>: ocaml, doc
-     <**/*.native>: ocaml, native, program
-     <**/*.cma>: ocaml, byte, library
-     <**/*.cmxa>: ocaml, native, library
-     <**/*.cmo>: ocaml, byte
-     <**/*.cmi>: ocaml, byte, native
-     <**/*.cmx>: ocaml, native
+    "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml\n\
+     <**/*.byte>: ocaml, byte, program\n\
+     <**/*.odoc>: ocaml, doc\n\
+     <**/*.native>: ocaml, native, program\n\
+     <**/*.cma>: ocaml, byte, library\n\
+     <**/*.cmxa>: ocaml, native, library\n\
+     <**/*.cmo>: ocaml, byte\n\
+     <**/*.cmi>: ocaml, byte, native\n\
+     <**/*.cmx>: ocaml, native\n\
     ";
 
   Configuration.tag_any !Options.tags;

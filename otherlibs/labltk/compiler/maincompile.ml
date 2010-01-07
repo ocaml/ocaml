@@ -277,14 +277,14 @@ let compile () =
     let oc = open_out_bin (destfile "camltk.ml") in
     Copyright.write ~w:(output_string oc);
     output_string oc 
-"(** This module Camltk provides the module name spaces of the CamlTk API.
-
-  The users of the CamlTk API should open this module first to access
-  the types, functions and modules of the CamlTk API easier. 
-  For the documentation of each sub modules such as [Button] and [Toplevel],
-  refer to its defintion file,  [cButton.mli], [cToplevel.mli], etc. 
- *)
-
+"(** This module Camltk provides the module name spaces of the CamlTk API.\n\
+\n\
+  The users of the CamlTk API should open this module first to access\n\
+  the types, functions and modules of the CamlTk API easier.\n\
+  For the documentation of each sub modules such as [Button] and [Toplevel],\n\
+  refer to its defintion file,  [cButton.mli], [cToplevel.mli], etc.\n\
+ *)\n\
+\n\
 ";
     output_string oc "include CTk\n";
     output_string oc "module Tk = CTk\n";
@@ -297,17 +297,17 @@ let compile () =
   end else begin
     let oc = open_out_bin (destfile "labltk.ml") in
     Copyright.write ~w:(output_string oc);
-    output_string oc 
-"(** This module Labltk provides the module name spaces of the LablTk API,
-  useful to call LablTk functions inside CamlTk programs. 100% LablTk users
-  do not need to use this. *)
-
+    output_string oc
+"(** This module Labltk provides the module name spaces of the LablTk API,\n\
+  useful to call LablTk functions inside CamlTk programs. 100% LablTk users\n\
+  do not need to use this. *)\n\
+\n\
 ";
-    output_string oc "module Widget = Widget;;
-module Protocol = Protocol;;
-module Textvariable = Textvariable;;
-module Fileevent = Fileevent;;
-module Timer = Timer;;
+    output_string oc "module Widget = Widget;;\n\
+module Protocol = Protocol;;\n\
+module Textvariable = Textvariable;;\n\
+module Fileevent = Fileevent;;\n\
+module Timer = Timer;;\n\
 ";
     Hashtbl.iter (fun name _ ->
       let cname = realname name in

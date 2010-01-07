@@ -43,6 +43,7 @@ type t =
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
+  | Eol_in_string                           (* 29 *)
 ;;
 
 val parse_options : bool -> string -> unit;;

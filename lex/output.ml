@@ -74,10 +74,10 @@ let output_tables oc tbl =
 
 let output_entry sourcefile ic oc oci e =
   let init_num, init_moves = e.auto_initial_state in
-  fprintf oc "%s %alexbuf =
+  fprintf oc "%s %alexbuf =\n\
   %a%a  __ocaml_lex_%s_rec %alexbuf %d\n"
     e.auto_name
-    output_args  e.auto_args 
+    output_args  e.auto_args
     (fun oc x ->
       if x > 0 then
         fprintf oc "lexbuf.Lexing.lex_mem <- Array.create %d (-1) ; " x)

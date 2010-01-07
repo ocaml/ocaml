@@ -20,31 +20,31 @@ open Lexgen
 open Common
 
 let output_auto_defs oc =
-  fprintf oc "let __ocaml_lex_init_lexbuf lexbuf mem_size =
-  let pos = lexbuf.Lexing.lex_curr_pos in
-  lexbuf.Lexing.lex_mem <- Array.create mem_size (-1) ;
-  lexbuf.Lexing.lex_start_pos <- pos ;
-  lexbuf.Lexing.lex_last_pos <- pos ;
-  lexbuf.Lexing.lex_last_action <- -1
-
+  fprintf oc "let __ocaml_lex_init_lexbuf lexbuf mem_size =\n\
+  let pos = lexbuf.Lexing.lex_curr_pos in\n\
+  lexbuf.Lexing.lex_mem <- Array.create mem_size (-1) ;\n\
+  lexbuf.Lexing.lex_start_pos <- pos ;\n\
+  lexbuf.Lexing.lex_last_pos <- pos ;\n\
+  lexbuf.Lexing.lex_last_action <- -1\n\
+\n\
 " ;
-  
-  output_string oc
-    "let rec __ocaml_lex_next_char lexbuf =
-  if lexbuf.Lexing.lex_curr_pos >= lexbuf.Lexing.lex_buffer_len then begin
-    if lexbuf.Lexing.lex_eof_reached then
-      256
-    else begin
-      lexbuf.Lexing.refill_buff lexbuf ;
-      __ocaml_lex_next_char lexbuf
-    end
-  end else begin
-    let i = lexbuf.Lexing.lex_curr_pos in
-    let c = lexbuf.Lexing.lex_buffer.[i] in
-    lexbuf.Lexing.lex_curr_pos <- i+1 ;
-    Char.code c
-  end
 
+  output_string oc
+    "let rec __ocaml_lex_next_char lexbuf =\n\
+  if lexbuf.Lexing.lex_curr_pos >= lexbuf.Lexing.lex_buffer_len then begin\n\
+    if lexbuf.Lexing.lex_eof_reached then\n\
+      256\n\
+    else begin\n\
+      lexbuf.Lexing.refill_buff lexbuf ;\n\
+      __ocaml_lex_next_char lexbuf\n\
+    end\n\
+  end else begin\n\
+    let i = lexbuf.Lexing.lex_curr_pos in\n\
+    let c = lexbuf.Lexing.lex_buffer.[i] in\n\
+    lexbuf.Lexing.lex_curr_pos <- i+1 ;\n\
+    Char.code c\n\
+  end\n\
+\n\
 "
 
 
@@ -74,7 +74,7 @@ let output_clause oc pats mems r =
 
 let output_default_clause oc mems r =
   fprintf oc "  | _ ->\n" ; output_action oc mems r
-  
+
 
 let output_moves oc moves =
   let t = Hashtbl.create 17 in
@@ -104,7 +104,7 @@ let output_moves oc moves =
     t ;
   output_default_clause oc !most_mems !most_frequent
 
-  
+
 let output_tag_actions pref oc mvs =
   output_string oc "(*" ;
   List.iter
@@ -122,7 +122,7 @@ let output_tag_actions pref oc mvs =
         fprintf oc "%s%a <- -1 ;\n"
           pref output_mem_access t)
     mvs
-  
+
 let output_trans pref oc i trans =
   fprintf oc "%s __ocaml_lex_state%d lexbuf = " pref i ;
   match trans with
@@ -140,7 +140,7 @@ let output_trans pref oc i trans =
       end ;
       fprintf oc "  match __ocaml_lex_next_char lexbuf with\n" ;
       output_moves oc move
-    
+
 let output_automata oc auto =
   output_auto_defs oc ;
   let n = Array.length auto in
@@ -155,12 +155,12 @@ let output_automata oc auto =
 
 let output_entry sourcefile ic oc tr e =
   let init_num, init_moves = e.auto_initial_state in
-  fprintf oc "%s %alexbuf =
-  __ocaml_lex_init_lexbuf lexbuf %d; %a
-  let __ocaml_lex_result = __ocaml_lex_state%d lexbuf in
-  lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;
-  lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with
-    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos + lexbuf.Lexing.lex_curr_pos};
+  fprintf oc "%s %alexbuf =\n\
+  __ocaml_lex_init_lexbuf lexbuf %d; %a\n\
+  let __ocaml_lex_result = __ocaml_lex_state%d lexbuf in\n\
+  lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;\n\
+  lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with\n\
+    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos + lexbuf.Lexing.lex_curr_pos};\n\
   match __ocaml_lex_result with\n"
       e.auto_name output_args e.auto_args
       e.auto_mem_size (output_memory_actions "  ") init_moves init_num ;

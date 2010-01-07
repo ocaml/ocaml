@@ -40,18 +40,18 @@ module R =
         let help_sequences () =
           (Printf.eprintf
              "\
-New syntax:
-    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end
-    while e do e1; e2; ... ; en done
-    for v = v1 to/downto v2 do e1; e2; ... ; en done
-Old syntax (still supported):
-    do {e1; e2; ... ; en}
-    while e do {e1; e2; ... ; en}
-    for v = v1 to/downto v2 do {e1; e2; ... ; en}
-Very old (no more supported) syntax:
-    do e1; e2; ... ; en-1; return en
-    while e do e1; e2; ... ; en; done
-    for v = v1 to/downto v2 do e1; e2; ... ; en; done
+New syntax:\n\
+    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\n\
+    while e do e1; e2; ... ; en done\n\
+    for v = v1 to/downto v2 do e1; e2; ... ; en done\n\
+Old syntax (still supported):\n\
+    do {e1; e2; ... ; en}\n\
+    while e do {e1; e2; ... ; en}\n\
+    for v = v1 to/downto v2 do {e1; e2; ... ; en}\n\
+Very old (no more supported) syntax:\n\
+    do e1; e2; ... ; en-1; return en\n\
+    while e do e1; e2; ... ; en; done\n\
+    for v = v1 to/downto v2 do e1; e2; ... ; en; done\n\
   ";
            flush stderr;
            exit 1)
@@ -14449,10 +14449,10 @@ module B =
     let usage ini_sl ext_sl =
       (eprintf
          "\
-Usage: camlp4 [load-options] [--] [other-options]
-Options:
-<file>.ml        Parse this implementation file
-<file>.mli       Parse this interface file
+Usage: camlp4 [load-options] [--] [other-options]\n\
+Options:\n\
+<file>.ml        Parse this implementation file\n\
+<file>.mli       Parse this interface file\n\
 <file>.%s Load this module inside the Camlp4 core@."
          (if DynLoader.is_native then "cmxs     " else "(cmo|cma)");
        Options.print_usage_list ini_sl;
@@ -14470,7 +14470,7 @@ Options:
     let warn_noassert () =
       eprintf
         "\
-camlp4 warning: option -noassert is obsolete
+camlp4 warning: option -noassert is obsolete\n\
 You should give the -noassert option to the ocaml compiler instead.@."
       
     type file_kind =

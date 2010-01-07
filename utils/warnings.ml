@@ -48,6 +48,7 @@ type t =
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
+  | Eol_in_string                           (* 29 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -85,9 +86,10 @@ let number = function
   | Unused_var _ -> 26
   | Unused_var_strict _ -> 27
   | Wildcard_arg_to_constant_constr -> 28
+  | Eol_in_string -> 29
 ;;
 
-let last_warning_number = 28;;
+let last_warning_number = 29;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -130,8 +132,9 @@ let is_error x = error.(number x);;
 
 let parse_opt flags s =
   let check i =
-    if i < 1 || i > last_warning_number then
-      raise (Arg.Bad "Bad warning number");
+    if i < 1 then raise (Arg.Bad "Bad warning number 0");
+    if i > last_warning_number then
+      raise (Arg.Bad "Bad warning number (too large)");
   in
   let set i = flags.(i) <- true in
   let clear i = flags.(i) <- false in
@@ -238,6 +241,8 @@ let message = function
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
   | Wildcard_arg_to_constant_constr ->
      "wildcard pattern given as argument to a constant constructor"
+  | Eol_in_string ->
+     "unescaped end-of-line in a string constant (non-portable code)"
 ;;
 
 let nerrors = ref 0;;

@@ -323,9 +323,9 @@ let write_type ~intf:w ~impl:w' name ~def:typdef =
 let rec converterTKtoCAML ~arg = function
   | Int -> "int_of_string " ^ arg
   | Float -> "float_of_string " ^ arg
-  | Bool -> "(match " ^ arg ^ " with
-            | \"1\" -> true
-            | \"0\" -> false
+  | Bool -> "(match " ^ arg ^ " with\n\
+            | \"1\" -> true\n\
+            | \"0\" -> false\n\
             | s -> Pervasives.raise (Invalid_argument (\"cTKtoCAMLbool\" ^ s)))"
   | Char -> "String.get " ^ arg ^ " 0"
   | String -> arg

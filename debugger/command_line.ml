@@ -1053,7 +1053,7 @@ using \"load_printer\"." };
        var_action = loading_mode_variable ppf;
        var_help =
 "mode of loading.\n\
-It can be either :
+It can be either :\n\
   direct : the program is directly called by the debugger.\n\
   runtime : the debugger execute `ocamlrun programname arguments'.\n\
   manual : the program is not launched by the debugger,\n\
@@ -1063,7 +1063,7 @@ It can be either :
                                      checkpoint_max_count;
        var_help =
 "maximum number of process to keep." };
-     { var_name = "checkpoints"; 
+     { var_name = "checkpoints";
        var_action = boolean_variable false make_checkpoints;
        var_help =
 "whether to make checkpoints or not." };

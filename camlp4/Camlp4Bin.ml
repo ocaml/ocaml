@@ -171,10 +171,10 @@ value print_stdlib () =
 value usage ini_sl ext_sl =
   do {
     eprintf "\
-Usage: camlp4 [load-options] [--] [other-options]
-Options:
-<file>.ml        Parse this implementation file
-<file>.mli       Parse this interface file
+Usage: camlp4 [load-options] [--] [other-options]\n\
+Options:\n\
+<file>.ml        Parse this implementation file\n\
+<file>.mli       Parse this interface file\n\
 <file>.%s Load this module inside the Camlp4 core@."
 (if DynLoader.is_native then "cmxs     " else "(cmo|cma)")
 ;
@@ -194,7 +194,7 @@ Options:
 value warn_noassert () =
   do {
     eprintf "\
-camlp4 warning: option -noassert is obsolete
+camlp4 warning: option -noassert is obsolete\n\
 You should give the -noassert option to the ocaml compiler instead.@.";
   };
 
