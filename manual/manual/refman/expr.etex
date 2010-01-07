@@ -593,8 +593,8 @@ interpreted as the application @'(' infix-symbol ')' expr_1 expr_2@.
 %% is interpreted as the application @ident expr_1 expr_2@.
 
 The table below lists the symbols defined in the initial environment
-and their initial meaning. (See the description of the standard
-library module "Pervasive" in chapter~\ref{c:stdlib} for more
+and their initial meaning. (See the description of the core
+library module "Pervasives" in chapter~\ref{c:corelib} for more
 details). Their meaning may be changed at any time using
 @"let" "(" infix-op ")" name_1 name_2 "=" \ldots@
 
