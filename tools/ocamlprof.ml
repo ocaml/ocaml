@@ -480,19 +480,17 @@ let main () =
   with x ->
     let report_error ppf = function
     | Lexer.Error(err, range) ->
-        fprintf ppf "@[%a%a@]@."
-        Location.print_error range  Lexer.report_error err
+        Format.eprintf "@[%a%a@]@."
+          Location.print_error range Lexer.report_error err
     | Syntaxerr.Error err ->
-        fprintf ppf "@[%a@]@."
-        Syntaxerr.report_error err
-(* FIXME should restore this code!
+        eprintf ppf "@[%a@]@." Syntaxerr.report_error err
     | Profiler msg ->
-        fprintf ppf "@[%s@]@." msg
+        eprintf "@[%s@]@." msg
     | Sys_error msg ->
-        fprintf ppf "@[I/O error:@ %s@]@." msg
-*)
+        eprintf "@[I/O error:@ %s@]@." msg
     | x -> raise x in
-    report_error Format.err_formatter x;
+
+    report_error x;
     exit 2
 
 let _ = main ()

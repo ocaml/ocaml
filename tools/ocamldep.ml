@@ -44,7 +44,7 @@ let add_to_load_path dir =
     let contents = Sys.readdir dir in
     load_path := !load_path @ [dir, contents]
   with Sys_error msg ->
-    fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
+    eprintf "@[Bad -I option: %s@]@." msg;
     error_occurred := true
 
 let find_file name =
@@ -249,18 +249,14 @@ let file_dependencies_as kind source_file =
   with x ->
     let report_err = function
     | Lexer.Error(err, range) ->
-        fprintf Format.err_formatter "@[%a%a@]@."
-        Location.print_error range  Lexer.report_error err
+        eprintf "@[%a%a@]@."
+          Location.print_error range  Lexer.report_error err
     | Syntaxerr.Error err ->
-        fprintf Format.err_formatter "@[%a@]@."
-        Syntaxerr.report_error err
-(* FIXME: should restore this code!
+        eprintf "@[%a@]@." Syntaxerr.report_error err
     | Sys_error msg ->
-        fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
+        eprintf "@[I/O error:@ %s@]@." msg
     | Preprocessing_error ->
-        fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
-            source_file
-*)
+        eprintf "@[Preprocessing error on file %s@]@." source_file
     | x -> raise x in
     error_occurred := true;
     report_err x

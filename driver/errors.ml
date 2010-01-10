@@ -70,11 +70,9 @@ let report_error ppf exn =
   | Bytepackager.Error code ->
       Location.print_error_cur_file ppf;
       Bytepackager.report_error ppf code
-(* FIXME should restore this code!
   | Sys_error msg ->
       Location.print_error_cur_file ppf;
       fprintf ppf "I/O error: %s" msg
-*)
   | Warnings.Errors (n) ->
       Location.print_error_cur_file ppf;
       fprintf ppf "Error-enabled warnings (%d occurrences)" n
