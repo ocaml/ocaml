@@ -478,12 +478,12 @@ let main () =
       ] process_anon_file usage;
     exit 0
   with x ->
-    let report_error ppf = function
+    let report_error = function
     | Lexer.Error(err, range) ->
         Format.eprintf "@[%a%a@]@."
           Location.print_error range Lexer.report_error err
     | Syntaxerr.Error err ->
-        eprintf ppf "@[%a@]@." Syntaxerr.report_error err
+        eprintf "@[%a@]@." Syntaxerr.report_error err
     | Profiler msg ->
         eprintf "@[%s@]@." msg
     | Sys_error msg ->
