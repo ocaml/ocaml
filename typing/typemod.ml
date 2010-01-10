@@ -271,7 +271,7 @@ let check_sig_item type_names module_names modtype_names loc = function
 
 (* Check and translate a module type expression *)
 
-let transl_modtype_longident loc env lid =
+let transl_modtype_longident env loc lid =
   try
     let (path, info) = Env.lookup_modtype lid env in
     path
@@ -281,7 +281,7 @@ let transl_modtype_longident loc env lid =
 let rec transl_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
-      Tmty_ident (transl_modtype_longident smty.pmty_loc env lid)
+      Tmty_ident (transl_modtype_longident env smty.pmty_loc lid)
   | Pmty_signature ssg ->
       Tmty_signature(transl_signature env ssg)
   | Pmty_functor(param, sarg, sres) ->
@@ -644,9 +644,10 @@ let rec type_module funct_body anchor env smod =
 
   | Pmod_unpack (sexp, (p, l)) ->
       if funct_body then raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
-      let l, mty = Typetexp.create_package_mty smod.pmod_loc env (p, l) in
+      let l, mty = Typetexp.create_package_mty env smod.pmod_loc (p, l) in
       let mty = transl_modtype env mty in
-      let exp = Typecore.type_expect env sexp (Typecore.create_package_type smod.pmod_loc env (p, l)) in
+      let exp =
+        Typecore.type_expect env sexp (Typecore.create_package_type env smod.pmod_loc (p, l)) in
       rm { mod_desc = Tmod_unpack(exp, mty);
            mod_type = mty;
            mod_env = env;

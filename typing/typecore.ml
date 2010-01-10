@@ -82,7 +82,7 @@ let type_open =
 
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 let type_object =
-  ref (fun env s -> assert false :
+  ref (fun env loc -> assert false :
        Env.t -> Location.t -> Parsetree.class_structure ->
          class_structure * class_signature * string list)
 
@@ -130,7 +130,7 @@ let rec narrow_unbound_lid_error env lid make_error =
     end
 ;;
 
-let unbound_ident_error loc env lid make_error =
+let unbound_ident_error env loc lid make_error =
   let err = narrow_unbound_lid_error env lid make_error in
   raise (Error (loc, err))
 ;;
@@ -145,7 +145,7 @@ let narrow_ref_error env tlid rname make_error =
        | Not_found -> Unbound_type tlid)
 ;;
 
-let unbound_label_ref_error loc env lref make_error =
+let unbound_label_ref_error env loc lref make_error =
   let err =
     match lref with
     | Plabel llid -> narrow_unbound_lid_error env llid make_error
@@ -155,7 +155,7 @@ let unbound_label_ref_error loc env lref make_error =
   raise (Error (loc, err))
 ;;
 
-let unbound_constr_ref_error loc env cref make_error =
+let unbound_constr_ref_error env loc cref make_error =
   let err =
     match cref with
     | Pconstr clid -> narrow_unbound_lid_error env clid make_error
@@ -164,6 +164,21 @@ let unbound_constr_ref_error loc env cref make_error =
           (fun name -> make_error (Longident.Lident name)) in
   raise (Error (loc, err))
 ;;
+
+let find_label_ref_description env loc lref =
+   try Env.lookup_label_ref lref env with
+   | Not_found ->
+     unbound_label_ref_error env loc lref
+       (fun llid -> Unbound_label_ref (Plabel llid))
+;;
+
+let find_constructor_ref_description env loc cref =
+   try Env.lookup_constructor_ref cref env with
+   | Not_found ->
+     unbound_constr_ref_error env loc cref
+       (fun clid -> Unbound_constructor_ref (Pconstr clid))
+;;
+
 
 (* Typing of constants *)
 
@@ -196,8 +211,9 @@ let option_some texp =
     exp_type = type_option texp.exp_type; exp_env = texp.exp_env }
 
 let extract_option_type env ty =
-  match expand_head env ty with {desc = Tconstr(path, [ty], _)}
-    when Path.same path Predef.path_option -> ty
+  match expand_head env ty with
+  | {desc = Tconstr(path, [ty], _)}
+     when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
 let rec extract_label_names sexp env ty =
@@ -210,7 +226,7 @@ let rec extract_label_names sexp env ty =
           List.map (fun (lname, _, _) -> lname) lbls
       | Type_abstract when td.type_manifest <> None ->
           extract_label_names sexp env (expand_head env ty)
-      | _ -> assert false
+      | Type_abstract | Type_variant _ -> assert false
       end
   | _ ->
       assert false
@@ -291,18 +307,19 @@ let enter_variable loc name ty =
 
 let sort_pattern_variables vs =
   List.sort
-    (fun (x,_,_) (y,_,_) -> Pervasives.compare (Ident.name x) (Ident.name y))
+    (fun (x, _, _) (y, _, _) -> Pervasives.compare (Ident.name x) (Ident.name y))
     vs
 
-let enter_orpat_variables loc env  p1_vs p2_vs =
+let enter_orpat_variables env loc  p1_vs p2_vs =
   (* unify_vars operate on sorted lists *)
 
   let p1_vs = sort_pattern_variables p1_vs
   and p2_vs = sort_pattern_variables p2_vs in
 
-  let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with
-      | (x1,t1,l1)::rem1, (x2,t2,l2)::rem2 when Ident.equal x1 x2 ->
-          if x1==x2 then
+  let rec unify_vars p1_vs p2_vs =
+    match p1_vs, p2_vs with
+      | (x1, t1, l1) :: rem1, (x2, t2, l2) :: rem2 when Ident.equal x1 x2 ->
+          if x1 == x2 then
             unify_vars rem1 rem2
           else begin
             begin try
@@ -311,12 +328,12 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
             | Unify trace ->
                 raise(Error(loc, Pattern_type_clash(trace)))
             end;
-          (x2,x1)::unify_vars rem1 rem2
+          (x2, x1) :: unify_vars rem1 rem2
           end
-      | [],[] -> []
-      | (x,_,_)::_, [] -> raise (Error (loc, Orpat_vars x))
-      | [],(x,_,_)::_  -> raise (Error (loc, Orpat_vars x))
-      | (x,_,_)::_, (y,_,_)::_ ->
+      | [], [] -> []
+      | (x, _, _) :: _, [] -> raise (Error (loc, Orpat_vars x))
+      | [], (x, _, _) :: _  -> raise (Error (loc, Orpat_vars x))
+      | (x, _, _) :: _, (y, _, _) :: _ ->
           let min_var =
             if Ident.name x < Ident.name y then x
             else y in
@@ -545,12 +562,7 @@ let rec type_pat env sp =
         pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
         pat_env = env }
   | Ppat_construct(cref, sarg, explicit_arity) ->
-      let cdesc =
-        try Env.lookup_constructor_ref cref env with
-        | Not_found ->
-          unbound_constr_ref_error loc env cref
-            (fun clid -> Unbound_constructor_ref (Pconstr clid)) in
-
+      let cdesc = find_constructor_ref_description env loc cref in
       let sargs =
         match sarg with
         | None -> []
@@ -603,11 +615,7 @@ let rec type_pat env sp =
       let ty = newvar () in
 
       let type_field (lref, sarg) =
-        let ldesc =
-          try Env.lookup_label_ref lref env with
-          | Not_found ->
-            unbound_label_ref_error loc env lref
-              (fun llid -> Unbound_label_ref (Plabel llid)) in
+        let ldesc = find_label_ref_description env loc lref in
 
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false ldesc in
@@ -661,7 +669,7 @@ let rec type_pat env sp =
       let p2_variables = !pattern_variables in
       unify_pat env p2 p1.pat_type;
       let alpha_env =
-        enter_orpat_variables loc env p1_variables p2_variables in
+        enter_orpat_variables env loc p1_variables p2_variables in
       pattern_variables := p1_variables;
       rp {
         pat_desc = Tpat_or(p1, alpha_pat alpha_env p2, None);
@@ -1016,15 +1024,15 @@ let rec approx_type env sty =
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_function (p,_,(_,e)::_) when is_optional p ->
+  | Pexp_function (p, _, (_, e) :: _) when is_optional p ->
        newty (Tarrow(p, type_option (newvar ()), type_approx env e, Cok))
-  | Pexp_function (p,_,(_,e)::_) ->
+  | Pexp_function (p, _, (_, e) :: _) ->
        newty (Tarrow(p, newvar (), type_approx env e, Cok))
-  | Pexp_match (_, (_,e)::_) -> type_approx env e
+  | Pexp_match (_, (_, e) :: _) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
-  | Pexp_ifthenelse (_,e,_) -> type_approx env e
-  | Pexp_sequence (_,e) -> type_approx env e
+  | Pexp_ifthenelse (_, e, _) -> type_approx env e
+  | Pexp_sequence (_, e) -> type_approx env e
   | Pexp_constraint (e, sty1, sty2) ->
       let approx_ty_opt = function
         | None -> newvar ()
@@ -1046,7 +1054,7 @@ let rec list_labels_aux env visited ls ty_fun =
     List.rev ls, false
   else match ty.desc with
     Tarrow (l, _, ty_res, _) ->
-      list_labels_aux env (ty::visited) (l::ls) ty_res
+      list_labels_aux env (ty :: visited) (l :: ls) ty_res
   | _ ->
       List.rev ls, ty.desc = Tvar
 
@@ -1101,8 +1109,8 @@ let generalizable level ty =
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
 
 (* Helpers for packaged modules. *)
-let create_package_type loc env (p, l) =
-  let s = !Typetexp.transl_modtype_longident loc env p in
+let create_package_type env loc (p, l) =
+  let s = !Typetexp.transl_modtype_longident env loc p in
   newty
     (Tpackage (
        s,
@@ -1161,7 +1169,7 @@ let rec type_exp env sexp =
           exp_env = env }
       with
       | Not_found ->
-        unbound_ident_error loc env lid
+        unbound_ident_error env loc lid
           (fun lid -> Unbound_value lid)
       end
   | Pexp_constant cst ->
@@ -1268,11 +1276,7 @@ let rec type_exp env sexp =
       let num_fields = ref 0 in
 
       let type_field (lref, sarg) =
-        let ldesc =
-          try Env.lookup_label_ref lref env with
-          | Not_found ->
-            unbound_label_ref_error loc env lref
-              (fun llid -> Unbound_label_ref (Plabel llid)) in
+        let ldesc = find_label_ref_description env loc lref in
         begin_def ();
         if !Clflags.principal then begin_def ();
         let (vars, ty_arg, ty_res) = instance_label true ldesc in
@@ -1288,12 +1292,13 @@ let rec type_exp env sexp =
         end;
         let arg = type_argument env sarg ty_arg in
         end_def ();
-        check_univars env (vars <> []) "field value" arg ldesc.lbl_arg vars;
+        check_univars env (vars <> []) "record field value" arg ldesc.lbl_arg vars;
 
         num_fields := Array.length ldesc.lbl_all;
 
         if ldesc.lbl_private = Private then
           raise (Error (loc, Private_type_label_ref (lref, ty)));
+
         (ldesc, {arg with exp_type = instance arg.exp_type}) in
 
       let ldesc_arg_list = type_record_fields type_field fields in
@@ -1339,53 +1344,45 @@ let rec type_exp env sexp =
           | [] -> []
           | lbl :: rem ->
               if List.mem n present_indices then missing_labels (n + 1) rem
-              else lbl :: missing_labels (n + 1) rem
-        in
+              else lbl :: missing_labels (n + 1) rem in
         let missing = missing_labels 0 label_names in
-        raise(Error(loc, Label_missing missing))
-      else if opt_sexp <> None && List.length fields = !num_fields then
+        raise(Error(loc, Label_missing missing)) else
+      if opt_sexp <> None && List.length fields = !num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
+
       re {
         exp_desc = Texp_record(ldesc_arg_list, opt_exp);
         exp_loc = loc;
         exp_type = ty;
         exp_env = env; }
-  | Pexp_field(sarg, lref) ->
-      let arg = type_exp env sarg in
-      let ldesc =
-        try Env.lookup_label_ref lref env with
-        | Not_found ->
-          unbound_label_ref_error loc env lref
-            (fun llid -> Unbound_label_ref (Plabel llid)) in
+  | Pexp_field(srecord, lref) ->
+      let record = type_exp env srecord in
+      let ldesc = find_label_ref_description env loc lref in
 
       let (_, ty_arg, ty_res) = instance_label false ldesc in
-      unify_exp env arg ty_res;
+      unify_exp env record ty_res;
       re {
-        exp_desc = Texp_field(arg, ldesc);
+        exp_desc = Texp_field(record, ldesc);
         exp_loc = loc;
         exp_type = ty_arg;
         exp_env = env;
       }
   | Pexp_setfield(srecord, lref, snewval) ->
       let record = type_exp env srecord in
-      let ldesc =
-        try Env.lookup_label_ref lref env with
-        | Not_found ->
-          unbound_label_ref_error loc env lref
-            (fun llid -> Unbound_label_ref (Plabel llid)) in
+      let ldesc = find_label_ref_description env loc lref in
 
       if ldesc.lbl_mut = Immutable then
         raise (Error (loc, Label_ref_not_mutable lref));
 
       begin_def ();
         let (vars, ty_arg, ty_res) = instance_label true ldesc in
+        if ldesc.lbl_private = Private then
+          raise (Error (loc, Private_type_field_assignment (lref, ty_res)));
         unify_exp env record ty_res;
         let newval = type_expect env snewval ty_arg in
       end_def ();
 
-      check_univars env (vars <> []) "field value" newval ldesc.lbl_arg vars;
-      if ldesc.lbl_private = Private then
-        raise (Error (loc, Private_type_field_assignment (lref, ty_res)));
+      check_univars env (vars <> []) "record field value" newval ldesc.lbl_arg vars;
       re {
         exp_desc = Texp_setfield(record, ldesc, newval);
         exp_loc = loc;
@@ -1791,7 +1788,7 @@ let rec type_exp env sexp =
       re { body with exp_loc = sexp.pexp_loc; exp_type = ety }
   | Pexp_pack (m, (p, l)) ->
       let loc = sexp.pexp_loc in
-      let l, mty = Typetexp.create_package_mty loc env (p, l) in
+      let l, mty = Typetexp.create_package_mty env loc (p, l) in
       let m = {pmod_desc = Pmod_constraint (m, mty); pmod_loc = loc} in
       let context = Typetexp.narrow () in
       let modl = !type_module env m in
@@ -1799,7 +1796,7 @@ let rec type_exp env sexp =
       re {
         exp_desc = Texp_pack modl;
         exp_loc = loc;
-        exp_type = create_package_type loc env (p, l);
+        exp_type = create_package_type env loc (p, l);
         exp_env = env }
   | Pexp_open (lid, e) ->
       type_exp (!type_open env sexp.pexp_loc lid) e
@@ -2046,11 +2043,7 @@ and type_application env funct sargs =
         type_args [] [] ty ty sargs []
 
 and type_construct env loc cref sarg explicit_arity ty_expected =
-  let cdesc =
-    try Env.lookup_constructor_ref cref env with
-    | Not_found ->
-      unbound_constr_ref_error loc env cref
-        (fun clid -> Unbound_constructor_ref (Pconstr clid)) in
+  let cdesc = find_constructor_ref_description env loc cref in
   let sargs =
     match sarg with
     | None -> []

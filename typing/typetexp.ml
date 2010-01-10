@@ -50,7 +50,7 @@ type variable_context = int * (string, type_expr) Tbl.t
 let transl_modtype_longident = ref (fun _ -> assert false)
 let transl_modtype = ref (fun _ -> assert false)
 
-let create_package_mty fake loc env (p, l) =
+let create_package_mty fake env loc (p, l) =
   let l =
     List.sort
       (fun (s1, t1) (s2, t2) ->
@@ -418,11 +418,11 @@ let rec transl_type env policy styp =
       unify_var env (newvar()) ty';
       ty'
   | Ptyp_package (p, l) ->
-      let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
+      let l, mty = create_package_mty true env styp.ptyp_loc (p, l) in
       let z = narrow () in
       ignore (!transl_modtype env mty);
       widen z;
-      newty (Tpackage (!transl_modtype_longident styp.ptyp_loc env p,
+      newty (Tpackage (!transl_modtype_longident env styp.ptyp_loc p,
                        List.map fst l,
                        List.map (transl_type env policy) (List.map snd l)))
 

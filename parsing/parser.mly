@@ -1559,7 +1559,12 @@ val_longident:
 ;
 
 val_longident_ref:
-  | val_longident { $1 }
+  | val_longident
+      { (* Reftypes.Pvalue $1 *) $1 }
+  | LIDENT DOTHAT val_ident
+      { (* Reftypes.Pvalue_ty (Lident $1, $3) *) Lident $3 }
+  | mod_longident DOT LIDENT DOTHAT val_ident
+      { (* Reftypes.Pvalue_ty (Ldot ($1, $3), $5) *) Lident $5}
 ;
 
 /* Value constructors identifiers and long identifiers */

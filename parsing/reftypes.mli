@@ -12,8 +12,7 @@
 
 (* $Id: $ *)
 
-(* Auxiliary used by parsetree and typedtree for value, record label, and
-   constructor references. *)
+(* References to record label, constructor, and value identifiers. *)
 
 type value_ref =
    | Pvalue of Longident.t

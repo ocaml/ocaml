@@ -61,6 +61,8 @@ exception Error of Location.t * error
 val report_error: formatter -> error -> unit
 
 (* Support for first-class modules. *)
-val transl_modtype_longident: (Location.t -> Env.t -> Longident.t -> Path.t) ref  (* from Typemod *)
+val transl_modtype_longident: (Env.t -> Location.t -> Longident.t -> Path.t) ref  (* from Typemod *)
 val transl_modtype: (Env.t -> Parsetree.module_type -> Types.module_type) ref (* from Typemod *)
-val create_package_mty: Location.t -> Env.t -> Parsetree.package_type -> (string * Parsetree.core_type) list * Parsetree.module_type
+val create_package_mty:
+  Env.t -> Location.t -> Parsetree.package_type ->
+  (string * Parsetree.core_type) list * Parsetree.module_type

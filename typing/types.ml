@@ -112,7 +112,7 @@ type constructor_description =
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
     cstr_nonconsts: int;                (* Number of non-const constructors *)
-    cstr_private: private_flag }        (* Read-only constructor? *)
+    cstr_private: private_flag }        (* Constructor of a private type? *)
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)
@@ -129,7 +129,7 @@ type label_description =
     lbl_pos: int;                       (* Position in block *)
     lbl_all: label_description array;   (* All the labels in this type *)
     lbl_repres: record_representation;  (* Representation for this record *)
-    lbl_private: private_flag }         (* Read-only field? *)
+    lbl_private: private_flag }         (* Label of a private type? *)
 
 and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
@@ -141,7 +141,7 @@ type type_declaration =
   { type_params: type_expr list;
     type_arity: int;
     type_kind: type_kind;
-    type_private: private_flag;
+    type_private: private_flag;        (* Is this a private type? *)
     type_manifest: type_expr option;
     type_variance: (bool * bool * bool) list }
             (* covariant, contravariant, weakly contravariant *)

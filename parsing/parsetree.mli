@@ -139,7 +139,8 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list * Location.t) list
+  | Ptype_variant of
+      (string * core_type list * Location.t) list
   | Ptype_record of
       (string * mutable_flag * core_type * Location.t) list
 
