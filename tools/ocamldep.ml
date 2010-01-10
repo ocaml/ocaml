@@ -254,11 +254,13 @@ let file_dependencies_as kind source_file =
     | Syntaxerr.Error err ->
         fprintf Format.err_formatter "@[%a@]@."
         Syntaxerr.report_error err
+(* FIXME: should restore this code!
     | Sys_error msg ->
         fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
     | Preprocessing_error ->
         fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
             source_file
+*)
     | x -> raise x in
     error_occurred := true;
     report_err x

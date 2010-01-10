@@ -485,10 +485,12 @@ let main () =
     | Syntaxerr.Error err ->
         fprintf ppf "@[%a@]@."
         Syntaxerr.report_error err
+(* FIXME should restore this code!
     | Profiler msg ->
         fprintf ppf "@[%s@]@." msg
     | Sys_error msg ->
         fprintf ppf "@[I/O error:@ %s@]@." msg
+*)
     | x -> raise x in
     report_error Format.err_formatter x;
     exit 2

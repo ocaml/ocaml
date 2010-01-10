@@ -148,7 +148,8 @@ let narrow_ref_error env tlid rname make_error =
 let unbound_label_ref_error env loc lref make_error =
   let err =
     match lref with
-    | Plabel llid -> narrow_unbound_lid_error env llid make_error
+    | Plabel llid ->
+        narrow_unbound_lid_error env llid make_error
     | Plabel_ty (tlid, lname) ->
         narrow_ref_error env tlid lname
          (fun name -> make_error (Longident.Lident name)) in
@@ -158,7 +159,8 @@ let unbound_label_ref_error env loc lref make_error =
 let unbound_constr_ref_error env loc cref make_error =
   let err =
     match cref with
-    | Pconstr clid -> narrow_unbound_lid_error env clid make_error
+    | Pconstr clid ->
+        narrow_unbound_lid_error env clid make_error
     | Pconstr_ty (tlid, cname) ->
         narrow_ref_error env tlid cname
           (fun name -> make_error (Longident.Lident name)) in
@@ -442,13 +444,16 @@ let build_or_pat env loc lid =
           pat pats in
       rp { r with pat_loc = loc }
 
+(* Typing a list of record fields. *)
 let add_modname_to_lref modname = function
   | Plabel (Longident.Lident id) -> Plabel (Longident.Ldot (modname, id))
   | lref -> lref
+;;
 
 let add_typename_to_lref ty_lid = function
   | Plabel (Longident.Lident lname) -> Plabel_ty (ty_lid, lname)
   | lref -> lref
+;;
 
 let rec find_record_label_qualifier = function
   | [] -> (fun lref -> lref)
@@ -459,12 +464,134 @@ let rec find_record_label_qualifier = function
   | (Plabel_ty (ty_lid, _lbl_name), _) :: _ ->
     (fun lref -> add_typename_to_lref ty_lid lref)
   | (_, _) :: rest -> find_record_label_qualifier rest
+;;
 
 let type_record_fields type_field fields =
   let make_record_label_ref = find_record_label_qualifier fields in
-   List.map
-     (fun (lref, sarg) -> type_field (make_record_label_ref lref, sarg))
-     fields
+  List.map
+    (fun (lref, sarg) -> type_field (make_record_label_ref lref, sarg))
+    fields
+;;
+
+(* Typing a list of pattern matching clauses. *)
+let rewrite_spat rdesc spat =
+  { spat with
+    ppat_desc = rdesc spat.ppat_desc;
+  }
+;;
+
+let rewrite_clause rdesc (spat, sexp) =
+  (rewrite_spat rdesc spat, sexp)
+;;
+
+let rec make_modqual_cref mod_lid cname =
+  Pconstr (Longident.Ldot (mod_lid, cname));;
+
+let rec make_typqual_cref ty_lid cname =
+  Pconstr_ty (ty_lid, cname);;
+
+let rec list_find_option f = function
+  | [] -> None
+  | x :: rest ->
+    match f x with
+    | None -> list_find_option f rest
+    | Some _ as r -> r
+;;
+
+let list_find_some f l =
+  match list_find_option f l with
+  | None -> raise Not_found
+  | Some r -> r
+;;
+
+let rewrite_ppat_desc make_constr_ref ppat_desc =
+
+  let rec rewrite_desc = function
+  | Ppat_construct (Pconstr (Longident.Lident cname), arg, b) ->
+      Ppat_construct (make_constr_ref cname, arg, b)
+  | Ppat_alias (spat, id) ->
+      Ppat_alias (rewrite_spat_rec spat, id)
+  | Ppat_array spatl ->
+      Ppat_array (List.map rewrite_spat_rec spatl)
+  | Ppat_or (spat1, spat2) ->
+      Ppat_or (rewrite_spat_rec spat1, rewrite_spat_rec spat2)
+  | Ppat_constraint (spat, ty) ->
+      Ppat_constraint (rewrite_spat_rec spat, ty)
+  | Ppat_lazy spat ->
+      Ppat_lazy (rewrite_spat_rec spat)
+  | ppat_desc -> ppat_desc
+
+  and rewrite_spat_rec spat = rewrite_spat rewrite_desc spat in
+
+  rewrite_desc ppat_desc
+;;
+
+(* Determine if a type is (an abbreviation for) the predefined type "exn"
+   We use the Ctype.expand_head_opt version of expand_head to get access
+   to the manifest type of private abbreviations. *)
+let is_exn env ty =
+  match Ctype.repr (Ctype.expand_head_opt env ty) with
+  | { desc = Tconstr (p, _, _); _} -> Path.same p Predef.path_exn
+  | _ -> false
+;;
+
+let find_constructor_qualifier env clauses =
+
+  let rec find_qualifier_desc loc = function
+    | Ppat_construct (Pconstr (Longident.Ldot (mod_lid, _cname)) as cref, _, _) ->
+        let cdesc = find_constructor_ref_description env loc cref in
+        if is_exn env cdesc.cstr_res
+        then None
+        else Some (make_modqual_cref mod_lid)
+    | Ppat_construct (Pconstr_ty (ty_lid, _cname), _, _) ->
+        Some (make_typqual_cref ty_lid)
+    | Ppat_alias (spat, _id) -> find_qualifier_spat spat
+    | Ppat_array spatl -> list_find_option find_qualifier_spat spatl
+    | Ppat_or (spat1, spat2) ->
+        let qual1 = find_qualifier_spat spat1 in
+        if qual1 = None then find_qualifier_spat spat2 else qual1
+    | Ppat_constraint (spat, ty) -> find_qualifier_spat spat
+    | Ppat_lazy spat -> find_qualifier_spat spat
+    (* Rem:
+       For real completeness, we could also treat all other cases of
+       patterns, but this would also add complexity to the function
+       rewrite_ppat_desc; is it worth the burden ?
+
+       For instance, if we admit that we only propagate the qualification of
+       the first ``relevant'' sub-pattern of the clause at hand, we could
+       write some additional code along those lines:
+
+    | Ppat_any | Ppat_vat _ -> None
+    | Ppat_constant _ | Ppat_tuple [] -> None
+    | Ppat_tuple (spat :: _) -> find_qualifier_spat spat
+    | Ppat_variant None -> None
+    | Ppat_variant (Some spat) -> find_qualifier_spat spat
+    | Ppat_record ([], _) -> None
+    | Ppat_record ((_lbl_ref, spat) :: _, _) -> find_qualifier_spat spat
+    | Ppat_array [] -> None
+    | Ppat_type _lid -> None *)
+
+    | _ -> None
+
+  and find_qualifier_spat spat = find_qualifier_desc spat.ppat_loc spat.ppat_desc in
+
+  list_find_option (fun (spat, _) -> find_qualifier_spat spat) clauses
+;;
+
+let type_match_clauses env is_exn_arg type_clause clauses =
+  (* Type exn is extensible, hence its constructor may be defined in more
+     than one Module. Therefore we cannot propagate module annotations. *)
+  if is_exn_arg then List.map type_clause clauses else
+  match find_constructor_qualifier env clauses with
+  | None ->
+      List.map type_clause clauses
+  | Some constr_qualifier ->
+      let make_qualified_cref_clause =
+        rewrite_clause (rewrite_ppat_desc constr_qualifier) in
+      List.map
+        (fun clause -> type_clause (make_qualified_cref_clause clause))
+      clauses
+;;
 
 (* Checks over the labels mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)
@@ -2275,50 +2402,52 @@ and type_statement env sexp =
 (* Typing of match cases *)
 
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
-  let ty_arg' = newvar () in
-  let pattern_force = ref [] in
-  let pat_env_list =
-    List.map
-      (fun (spat, sexp) ->
-        let loc = sexp.pexp_loc in
-        if !Clflags.principal then begin_def ();
-        let scope = Some (Annot.Idef loc) in
-        let (pat, ext_env, force) = type_pattern env spat scope in
-        pattern_force := force @ !pattern_force;
-        let pat =
-          if !Clflags.principal then begin
-            end_def ();
-            iter_pattern (fun {pat_type=t} -> generalize_structure t) pat;
-            { pat with pat_type = instance pat.pat_type }
-          end else pat
-        in
-        unify_pat env pat ty_arg';
-        (pat, ext_env))
-      caselist in
+  let ty_arg' = newvar ()
+  and pattern_force = ref [] in
+
+  let type_clause (spat, sexp) =
+    let loc = sexp.pexp_loc in
+    if !Clflags.principal then begin_def ();
+    let scope = Some (Annot.Idef loc) in
+    let (pat, ext_env, force) = type_pattern env spat scope in
+    pattern_force := force @ !pattern_force;
+    let pat =
+      if !Clflags.principal then begin
+        end_def ();
+        iter_pattern (fun {pat_type = t; _} -> generalize_structure t) pat;
+        { pat with pat_type = instance pat.pat_type }
+      end else pat in
+    unify_pat env pat ty_arg';
+    (pat, ext_env) in
+
+  let pat_env_list = type_match_clauses env (is_exn env ty_arg) type_clause caselist in
+
   (* Check for polymorphic variants to close *)
   let patl = List.map fst pat_env_list in
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
     List.iter (iter_pattern finalize_variant) patl
   end;
+
   (* `Contaminating' unifications start here *)
-  List.iter (fun f -> f()) !pattern_force;
-  begin match pat_env_list with [] -> ()
+  List.iter (fun f -> f ()) !pattern_force;
+  begin match pat_env_list with
+  | [] -> ()
   | (pat, _) :: _ -> unify_pat env pat ty_arg
   end;
+
   let in_function = if List.length caselist = 1 then in_function else None in
   let cases =
     List.map2
       (fun (pat, ext_env) (spat, sexp) ->
         let exp = type_expect ?in_function ext_env sexp ty_res in
         (pat, exp))
-      pat_env_list caselist
-  in
+      pat_env_list caselist in
   let partial =
     match partial_loc with
     | None -> Partial
-    | Some partial_loc -> Parmatch.check_partial partial_loc cases
-  in
+    | Some partial_loc -> Parmatch.check_partial partial_loc cases in
+
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
 

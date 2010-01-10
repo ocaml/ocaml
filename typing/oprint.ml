@@ -465,9 +465,11 @@ let _ = out_sig_item := print_out_sig_item
 
 (* Phrases *)
 
+(* FIXME *)
+open Sys;;
 let print_out_exception ppf exn outv =
   match exn with
-    Sys.Break -> fprintf ppf "Interrupted.@."
+    Break -> fprintf ppf "Interrupted.@."
   | Out_of_memory -> fprintf ppf "Out of memory during evaluation.@."
   | Stack_overflow ->
       fprintf ppf "Stack overflow during evaluation (looping recursion?).@."
