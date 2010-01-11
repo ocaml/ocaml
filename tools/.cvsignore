@@ -1,6 +1,7 @@
 *.cm*
 *.o
 ocamldep
+ocamldep.bak
 ocamldep.opt
 ocamlprof
 opnames.ml
@@ -8,6 +9,7 @@ dumpobj
 dumpapprox
 objinfo
 cvt_emit
+cvt_emit.bak
 cvt_emit.ml
 ocamlcp
 ocamlmktop
