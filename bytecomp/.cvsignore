@@ -1,2 +1,5 @@
+## after changing, run "svn propset svn:ignore -F .cvsignore -R ."
 runtimedef.ml
 opcodes.ml
+*.cm*
+*.o

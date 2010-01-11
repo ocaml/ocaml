@@ -1,3 +1,4 @@
+## after changing, run "svn propset svn:ignore -F .cvsignore ."
 m.h
 s.h
 Makefile

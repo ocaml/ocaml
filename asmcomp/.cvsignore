@@ -1,3 +1,6 @@
+## after changing, run "svn propset svn:ignore -F .svnignore ."
+*.cm*
+*.o
 emit.ml
 arch.ml
 proc.ml

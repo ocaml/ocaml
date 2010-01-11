@@ -1,3 +1,5 @@
+*.cm*
+*.o
 ocamldoc
 ocamldoc.opt
 odoc_crc.ml

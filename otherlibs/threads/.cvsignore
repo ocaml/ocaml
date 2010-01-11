@@ -1,3 +1,5 @@
+*.cm*
+*.o
 marshal.mli
 pervasives.mli
 unix.mli

@@ -1,3 +1,5 @@
+*.cm*
+*.o
 lexer.ml
 parser.ml
 parser.mli

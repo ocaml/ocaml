@@ -1,4 +1,9 @@
-labltktop labltk mltktop mltk
+*.cm*
+*.o
+labltktop
+labltk
+mltktop
+mltk
 .depend
 *.ml
 *.mli

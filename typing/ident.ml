@@ -150,6 +150,22 @@ let rec find_stamp s = function
   | Some k ->
       if k.ident.stamp = s then k.data else find_stamp s k.previous
 
+let rec mem_stamp s = function
+  | None ->
+      false
+  | Some k ->
+      k.ident.stamp = s || mem_stamp s k.previous
+
+let rec mem id = function
+  | Empty -> false
+  | Node(l, k, r, _) ->
+      let c = compare id.name k.ident.name in
+      if c = 0 then
+        id.stamp = k.ident.stamp ||
+        mem_stamp id.stamp k.previous
+      else
+        mem id (if c < 0 then l else r)
+
 let rec find_same id = function
     Empty ->
       raise Not_found

@@ -1,3 +1,4 @@
+## after changing, run "svn propset svn:ignore -F .cvsignore ."
 main.c
 misc.c
 freelist.c

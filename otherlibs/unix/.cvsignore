@@ -1,1 +1,3 @@
+*.cm*
+*.o
 so_locations

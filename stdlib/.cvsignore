@@ -1,6 +1,9 @@
+## after changing, run "svn propset svn:ignore -F .cvsignore -R ."
 camlheader
 camlheader_ur
 labelled-*
 caml
 *.annot
 sys.ml
+*.cm*
+*.o

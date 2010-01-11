@@ -554,7 +554,7 @@ let find_constructor_qualifier env clauses =
     | Ppat_lazy spat -> find_qualifier_spat spat
     (* Rem:
        For real completeness, we could also treat all other cases of
-       patterns, but this would also add complexity to the function
+       patterns, but this would also add some complexity to the function
        rewrite_ppat_desc; is it worth the burden ?
 
        For instance, if we admit that we only propagate the qualification of

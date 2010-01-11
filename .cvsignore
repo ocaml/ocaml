@@ -1,5 +1,8 @@
+## after changing, run "svn propset svn:ignore -F .cvsignore -R ."
 .cvsignore
 .depend
+*.cm*
+*.o
 configure
 ocamlc
 ocamlc.opt

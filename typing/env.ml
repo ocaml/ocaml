@@ -95,9 +95,7 @@ let empty = {
 let diff_keys is_local tbl1 tbl2 =
   let keys2 = Ident.keys tbl2 in
   List.filter
-    (fun id ->
-      is_local (Ident.find_same id tbl2) &&
-      try ignore (Ident.find_same id tbl1); false with Not_found -> true)
+    (fun id -> is_local (Ident.find_same id tbl2) && Ident.mem id tbl1)
     keys2
 
 let is_ident = function
