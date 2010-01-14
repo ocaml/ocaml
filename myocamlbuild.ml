@@ -643,7 +643,7 @@ rule "camlheader"
 
 rule "ocaml C stubs on windows: dlib & d.o* -> dll"
   ~prod:"%.dll"
-  ~deps:["%.dlib"(*; "byterun/ocamlrun"-.-C.a*)]
+  ~deps:["%.dlib"(*; "byterun/libcamlrun"-.-C.a*)]
   ~insert:`top
   begin fun env build ->
     let dlib = env "%.dlib" in
@@ -659,7 +659,7 @@ rule "ocaml C stubs on windows: dlib & d.o* -> dll"
       | Outcome.Good d_o -> d_o
       | Outcome.Bad exn -> raise exn
     end resluts in
-    mkdll dll (S[atomize objs; P("byterun/ocamlrun"-.-C.a)])
+    mkdll dll (S[atomize objs; P("byterun/libcamlrun"-.-C.a)])
           (T(tags_of_pathname dll++"dll"++"link"++"c"))
   end;;
 
