@@ -99,7 +99,8 @@ clean::
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) *.mli *.ml \
+	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 lexer.ml: lexer.mll
 	$(CAMLLEX) lexer.mll

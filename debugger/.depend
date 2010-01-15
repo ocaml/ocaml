@@ -21,7 +21,7 @@ parser.cmi: parser_aux.cmi ../parsing/longident.cmi
 parser_aux.cmi: primitives.cmi ../parsing/longident.cmi 
 pattern_matching.cmi: ../typing/typedtree.cmi parser_aux.cmi debugcom.cmi 
 pos.cmi: ../bytecomp/instruct.cmi 
-primitives.cmi: ../otherlibs/unix/unix.cmi 
+primitives.cmi: $(UNIXDIR)/unix.cmi 
 printval.cmi: ../typing/types.cmi ../typing/path.cmi parser_aux.cmi \
     ../typing/env.cmi debugcom.cmi 
 program_loading.cmi: primitives.cmi 
@@ -33,14 +33,14 @@ source.cmi:
 symbols.cmi: ../bytecomp/instruct.cmi 
 time_travel.cmi: primitives.cmi 
 trap_barrier.cmi: 
-unix_tools.cmi: ../otherlibs/unix/unix.cmi 
+unix_tools.cmi: $(UNIXDIR)/unix.cmi 
 breakpoints.cmo: symbols.cmi primitives.cmi pos.cmi ../bytecomp/instruct.cmi \
     exec.cmi debugcom.cmi checkpoints.cmi breakpoints.cmi 
 breakpoints.cmx: symbols.cmx primitives.cmx pos.cmx ../bytecomp/instruct.cmx \
     exec.cmx debugcom.cmx checkpoints.cmx breakpoints.cmi 
 checkpoints.cmo: primitives.cmi int64ops.cmi debugcom.cmi checkpoints.cmi 
 checkpoints.cmx: primitives.cmx int64ops.cmx debugcom.cmx checkpoints.cmi 
-command_line.cmo: unix_tools.cmi ../otherlibs/unix/unix.cmi \
+command_line.cmo: unix_tools.cmi $(UNIXDIR)/unix.cmi \
     ../typing/types.cmi time_travel.cmi symbols.cmi source.cmi \
     show_source.cmi show_information.cmi question.cmi program_management.cmi \
     program_loading.cmi printval.cmi primitives.cmi pos.cmi parser_aux.cmi \
@@ -50,7 +50,7 @@ command_line.cmo: unix_tools.cmi ../otherlibs/unix/unix.cmi \
     events.cmi eval.cmi envaux.cmi debugger_config.cmi debugcom.cmi \
     ../typing/ctype.cmi ../utils/config.cmi checkpoints.cmi breakpoints.cmi \
     command_line.cmi 
-command_line.cmx: unix_tools.cmx ../otherlibs/unix/unix.cmx \
+command_line.cmx: unix_tools.cmx $(UNIXDIR)/unix.cmx \
     ../typing/types.cmx time_travel.cmx symbols.cmx source.cmx \
     show_source.cmx show_information.cmx question.cmx program_management.cmx \
     program_loading.cmx printval.cmx primitives.cmx pos.cmx parser_aux.cmi \
@@ -104,9 +104,9 @@ history.cmo: primitives.cmi int64ops.cmi debugger_config.cmi checkpoints.cmi \
     history.cmi 
 history.cmx: primitives.cmx int64ops.cmx debugger_config.cmx checkpoints.cmx \
     history.cmi 
-input_handling.cmo: ../otherlibs/unix/unix.cmi primitives.cmi \
+input_handling.cmo: $(UNIXDIR)/unix.cmi primitives.cmi \
     input_handling.cmi 
-input_handling.cmx: ../otherlibs/unix/unix.cmx primitives.cmx \
+input_handling.cmx: $(UNIXDIR)/unix.cmx primitives.cmx \
     input_handling.cmi 
 int64ops.cmo: int64ops.cmi 
 int64ops.cmx: int64ops.cmi 
@@ -120,12 +120,12 @@ loadprinter.cmx: ../typing/types.cmx ../bytecomp/symtable.cmx printval.cmx \
     ../typing/printtyp.cmx ../typing/path.cmx ../utils/misc.cmx \
     ../parsing/longident.cmx ../typing/ident.cmx ../typing/env.cmx \
     dynlink.cmx ../typing/ctype.cmx ../utils/config.cmx loadprinter.cmi 
-main.cmo: unix_tools.cmi ../otherlibs/unix/unix.cmi time_travel.cmi \
+main.cmo: unix_tools.cmi $(UNIXDIR)/unix.cmi time_travel.cmi \
     show_information.cmi question.cmi program_management.cmi primitives.cmi \
     parameters.cmi ../utils/misc.cmi input_handling.cmi frames.cmi exec.cmi \
     ../typing/env.cmi debugger_config.cmi ../utils/config.cmi \
     command_line.cmi ../utils/clflags.cmi checkpoints.cmi 
-main.cmx: unix_tools.cmx ../otherlibs/unix/unix.cmx time_travel.cmx \
+main.cmx: unix_tools.cmx $(UNIXDIR)/unix.cmx time_travel.cmx \
     show_information.cmx question.cmx program_management.cmx primitives.cmx \
     parameters.cmx ../utils/misc.cmx input_handling.cmx frames.cmx exec.cmx \
     ../typing/env.cmx debugger_config.cmx ../utils/config.cmx \
@@ -148,8 +148,8 @@ pos.cmo: source.cmi primitives.cmi ../parsing/location.cmi \
     ../bytecomp/instruct.cmi pos.cmi 
 pos.cmx: source.cmx primitives.cmx ../parsing/location.cmx \
     ../bytecomp/instruct.cmx pos.cmi 
-primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 
-primitives.cmx: ../otherlibs/unix/unix.cmx primitives.cmi 
+primitives.cmo: $(UNIXDIR)/unix.cmi primitives.cmi 
+primitives.cmx: $(UNIXDIR)/unix.cmx primitives.cmi 
 printval.cmo: ../typing/types.cmi ../bytecomp/symtable.cmi \
     ../typing/printtyp.cmi ../typing/path.cmi parser_aux.cmi \
     ../typing/outcometree.cmi ../typing/oprint.cmi \
@@ -158,15 +158,15 @@ printval.cmx: ../typing/types.cmx ../bytecomp/symtable.cmx \
     ../typing/printtyp.cmx ../typing/path.cmx parser_aux.cmi \
     ../typing/outcometree.cmi ../typing/oprint.cmx \
     ../toplevel/genprintval.cmx debugcom.cmx printval.cmi 
-program_loading.cmo: unix_tools.cmi ../otherlibs/unix/unix.cmi primitives.cmi \
+program_loading.cmo: unix_tools.cmi $(UNIXDIR)/unix.cmi primitives.cmi \
     parameters.cmi input_handling.cmi debugger_config.cmi program_loading.cmi 
-program_loading.cmx: unix_tools.cmx ../otherlibs/unix/unix.cmx primitives.cmx \
+program_loading.cmx: unix_tools.cmx $(UNIXDIR)/unix.cmx primitives.cmx \
     parameters.cmx input_handling.cmx debugger_config.cmx program_loading.cmi 
-program_management.cmo: unix_tools.cmi ../otherlibs/unix/unix.cmi \
+program_management.cmo: unix_tools.cmi $(UNIXDIR)/unix.cmi \
     time_travel.cmi symbols.cmi question.cmi program_loading.cmi \
     primitives.cmi parameters.cmi int64ops.cmi input_handling.cmi history.cmi \
     debugger_config.cmi breakpoints.cmi program_management.cmi 
-program_management.cmx: unix_tools.cmx ../otherlibs/unix/unix.cmx \
+program_management.cmx: unix_tools.cmx $(UNIXDIR)/unix.cmx \
     time_travel.cmx symbols.cmx question.cmx program_loading.cmx \
     primitives.cmx parameters.cmx int64ops.cmx input_handling.cmx history.cmx \
     debugger_config.cmx breakpoints.cmx program_management.cmi 
@@ -206,7 +206,7 @@ time_travel.cmx: trap_barrier.cmx symbols.cmx question.cmx \
     time_travel.cmi 
 trap_barrier.cmo: exec.cmi debugcom.cmi checkpoints.cmi trap_barrier.cmi 
 trap_barrier.cmx: exec.cmx debugcom.cmx checkpoints.cmx trap_barrier.cmi 
-unix_tools.cmo: ../otherlibs/unix/unix.cmi primitives.cmi ../utils/misc.cmi \
+unix_tools.cmo: $(UNIXDIR)/unix.cmi primitives.cmi ../utils/misc.cmi \
     unix_tools.cmi 
-unix_tools.cmx: ../otherlibs/unix/unix.cmx primitives.cmx ../utils/misc.cmx \
+unix_tools.cmx: $(UNIXDIR)/unix.cmx primitives.cmx ../utils/misc.cmx \
     unix_tools.cmi 
