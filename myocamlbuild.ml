@@ -469,7 +469,7 @@ rule "Standard library manual"
     Seq[Cmd(S[A"mkdir"; A"-p"; P"ocamldoc/stdlib_man"]);
         Cmd(S[ocamldoc; A"-man"; A"-d"; P"ocamldoc/stdlib_man";
               A"-I"; P "stdlib"; A"-I"; P"otherlibs/unix"; A"-I"; P"otherlibs/num";
-              A"-t"; A"Ocaml library"; A"-man-mini"; atomize stdlib_mlis])]
+              A"-t"; A"OCaml library"; A"-man-mini"; atomize stdlib_mlis])]
   end;;
 
 flag ["ocaml"; "compile"; "bootstrap_thread"]
