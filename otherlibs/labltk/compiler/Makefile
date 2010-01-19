@@ -31,7 +31,7 @@ ppyac.ml ppyac.mli: ppyac.mly
 
 copyright.ml: copyright
 	(echo "let copyright=\"\\"; \
-	sed -e 's/$/\\n\\/' copyright; \
+	sed -e 's/$$/\\n\\/' copyright; \
 	echo "\""; \
 	echo "let write ~w = w copyright;;") > copyright.ml
 
