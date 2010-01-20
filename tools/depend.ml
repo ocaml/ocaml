@@ -52,7 +52,11 @@ let rec add_type bv ty =
           | Rinherit sty -> add_type bv sty)
         fl
   | Ptyp_poly(_, t) -> add_type bv t
-  | Ptyp_package (_, l) -> List.iter (add_type bv) (List.map snd l)
+  | Ptyp_package pt -> add_package_type bv pt
+
+and add_package_type bv (lid, l) =
+  add bv lid;
+  List.iter (add_type bv) (List.map snd l)
 
 and add_field_type bv ft =
   match ft.pfield_desc with
@@ -159,7 +163,7 @@ let rec add_expr bv exp =
   | Pexp_object (pat, fieldl) ->
       add_pattern bv pat; List.iter (add_class_field bv) fieldl
   | Pexp_newtype (_, e) -> add_expr bv e
-  | Pexp_pack (m, _) -> add_module bv m
+  | Pexp_pack (m, pt) -> add_package_type bv pt; add_module bv m
   | Pexp_open (m, e) -> addmodule bv m; add_expr bv e
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel
@@ -221,9 +225,8 @@ and add_module bv modl =
       add_module bv mod1; add_module bv mod2
   | Pmod_constraint(modl, mty) ->
       add_module bv modl; add_modtype bv mty
-  | Pmod_unpack(e, (lid, l)) ->
-      add bv lid;
-      List.iter (fun (_, ty) -> add_type bv ty) l;
+  | Pmod_unpack(e, pt) ->
+      add_package_type bv pt;
       add_expr bv e
 
 and add_structure bv item_list =
