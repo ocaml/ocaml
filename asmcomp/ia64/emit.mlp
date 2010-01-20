@@ -1287,9 +1287,9 @@ let emit_item = function
   | Cint n ->
       `	data8	{emit_nativeint n}\n`
   | Csingle f ->
-      `	real4	{emit_string f}\n`
+      emit_float32_directive "data4" f
   | Cdouble f ->
-      `	real8	{emit_string f}\n`
+      emit_float64_directive "data8" f
   | Csymbol_address s ->
       `	data8	{emit_symbol s}#\n`
   | Clabel_address lbl ->

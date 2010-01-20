@@ -30,7 +30,7 @@ module Make(U:sig end) =
 
     let we_have_a_config_file = sys_file_exists plugin_config_file
     let we_need_a_plugin      = !Options.plugin && sys_file_exists plugin_file
-    let we_have_a_plugin      = sys_file_exists (!Options.build_dir/plugin)
+    let we_have_a_plugin      = sys_file_exists ((!Options.build_dir/plugin)^(!Options.exe))
     let we_have_a_config_file_interface = sys_file_exists plugin_config_file_interface
 
     let up_to_date_or_copy fn =
@@ -56,6 +56,12 @@ module Make(U:sig end) =
         () (* Up to date *)
            (* FIXME: remove ocamlbuild_config.ml in _build/ if removed in parent *)
       else begin
+        if !Options.native_plugin
+            && not (sys_file_exists ((!Ocamlbuild_where.libdir)/"ocamlbuildlib.cmxa")) then
+          begin
+            Options.native_plugin := false;
+            eprintf "Warning: Won't be able to compile a native plugin"
+          end;
         let plugin_config =
           if we_have_a_config_file then
             if we_have_a_config_file_interface then
@@ -83,10 +89,10 @@ module Make(U:sig end) =
         let cmd =
           Cmd(S[compiler; A"-I"; P dir; libs; more_options;
                 P(dir/ocamlbuildlib); plugin_config; P plugin_file;
-                P(dir/ocamlbuild); A"-o"; Px plugin])
+                P(dir/ocamlbuild); A"-o"; Px (plugin^(!Options.exe))])
         in
         Shell.chdir !Options.build_dir;
-        Shell.rm_f plugin;
+        Shell.rm_f (plugin^(!Options.exe));
         Command.execute cmd
       end
 
@@ -96,7 +102,8 @@ module Make(U:sig end) =
           rebuild_plugin_if_needed ();
           Shell.chdir Pathname.pwd;
           if not !Options.just_plugin then
-            let spec = S[!Options.ocamlrun; P(!Options.build_dir/plugin);
+            let runner = if !Options.native_plugin then N else !Options.ocamlrun in
+            let spec = S[runner; P(!Options.build_dir/plugin^(!Options.exe));
                          A"-no-plugin"; atomize (List.tl (Array.to_list Sys.argv))] in
             let () = Log.finish () in
             raise (Exit_silently_with_code (sys_command (Command.string_of_command_spec spec)))

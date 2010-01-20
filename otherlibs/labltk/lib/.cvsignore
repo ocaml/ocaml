@@ -5,4 +5,4 @@ labltktop labltk mltktop mltk
 modules
 labltk.cma
 labltk.cmxa
-
+*.a

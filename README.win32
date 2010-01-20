@@ -61,7 +61,7 @@ Microsoft Visual C++ compiler (items [1] and [2] in the section
 The native-code compiler (ocamlopt) requires Visual C++ (items [1], [2]),
 the Microsoft assembler MASM (item [3]) and the flexdll tool (item [5]).
 
-The LablTk GUI requires Tcl/Tk 8.4 (item [4]).
+The LablTk GUI requires Tcl/Tk 8.5 (item [4]).
 
 
 INSTALLATION:
@@ -70,33 +70,34 @@ The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
 
 To run programs that use the LablTK GUI, the directory where the
-DLLs tk84.dll and tcl84.dll were installed (by the Tcl/Tk
+DLLs tk85.dll and tcl85.dll were installed (by the Tcl/Tk
 installer) must be added to the PATH environment variable.
 
 To compile programs that use the LablTK GUI, the directory where the
-libraries tk84.lib and tcl84.lib were installed (by the Tcl/Tk
+libraries tk85.lib and tcl85.lib were installed (by the Tcl/Tk
 installer) must be added to the library search path in the LIB
 environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 "C:\tcl\lib" to the LIB environment variable.
 
 THIRD-PARTY SOFTWARE:
 
-[1] Visual C++ version 2005, 2003, or 6.
-    We use Visual C++ 2005 Express Edition, which can be downloaded for free
+[1] Visual C++ version 2008, 2005, 2003, or 6.
+    We use Visual C++ 2008 Express Edition, which can be downloaded for free
     from http://www.microsoft.com.
 
-[2] Windows header files and development libraries.  We found them in
-    the Microsoft Windows Server 2003 SP1 Platform SDK, which can
-    be downloaded for free from http://www.microsoft.com/.
+[2] Windows header files and development libraries.  They are included
+    in the Visual C++ 2008 Express Edition distribution.
+    Otherwise, you can find them in the Windows Platform SDK,
+    which can be downloaded for free from http://www.microsoft.com/.
 
 [3] MASM version 6.11 or later. The full distribution of Visual C++ 2005
-    contains MASM version 8.  Users of the Express Edition of Visual C++
+    or 2008 contains MASM version 8.  Users of the Express Edition of Visual C++
     2005 can download MASM version 8 from
 http://www.microsoft.com/downloads/details.aspx?FamilyID=7A1C9DA0-0510-44A2-B042-7EF370530C64&displaylang=en
     To obtain MASM version 6.11, see
     http://users.easystreet.com/jkirwan/new/pctools.html. 
 
-[4] TCL/TK version 8.4.  Windows binaries are available as part of the
+[4] TCL/TK version 8.5.  Windows binaries are available as part of the
     ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
 
 [5] flexdll.
@@ -190,7 +191,7 @@ Do *not* install the Mingw/MSYS development tools from www.mingw.org:
 these are not compatible with this Caml port (@responsefile not
 recognized on the command line).
 
-The LablTk GUI requires Tcl/Tk 8.4.  Windows binaries are available 
+The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available 
 as part of the ActiveTCL distribution at
 http://www.activestate.com/products/ActiveTcl/
 
@@ -200,11 +201,11 @@ The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
 
 To run programs that use the LablTK GUI, the directory where the
-DLLs tk84.dll and tcl84.dll were installed (by the Tcl/Tk
+DLLs tk85.dll and tcl85.dll were installed (by the Tcl/Tk
 installer) must be added to the PATH environment variable.
 
 To compile programs that use the LablTK GUI, the directory where the
-libraries tk84.lib and tcl84.lib were installed (by the Tcl/Tk
+libraries tk85.lib and tcl85.lib were installed (by the Tcl/Tk
 installer) must be added to the library search path in the LIB
 environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 "C:\tcl\lib" to the LIB environment variable.
@@ -217,7 +218,7 @@ You will need the following software components to perform the recompilation:
 - Cygwin: http://sourceware.cygnus.com/cygwin/
   Install at least the following packages: binutils, diffutils, 
     gcc-core, gcc-mingw-core, make, mingw-runtime, ncurses, w32-api.
-- TCL/TK version 8.4 (see above).
+- TCL/TK version 8.5 (see above).
 - The flexdll tool (see above).
 
 Do *not* install the standalone distribution of MinGW, nor the

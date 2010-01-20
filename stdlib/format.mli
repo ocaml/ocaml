@@ -359,7 +359,45 @@ val get_formatter_output_functions :
   unit -> (string -> int -> int -> unit) * (unit -> unit);;
 (** Return the current output functions of the pretty-printer. *)
 
-(** {6 Changing the meaning of printing tags} *)
+(** {6 Changing the meaning of standard formatter pretty printing} *)
+
+(** The [Format] module is versatile enough to let you completely redefine
+ the meaning of pretty printing: you may provide your own functions to define
+ how to handle indentation, line breaking, and even printing of all the
+ characters that have to be printed! *)
+
+val set_all_formatter_output_functions :
+  out:(string -> int -> int -> unit) ->
+  flush:(unit -> unit) ->
+  newline:(unit -> unit) ->
+  spaces:(int -> unit) ->
+  unit;;
+(** [set_all_formatter_output_functions out flush outnewline outspace]
+   redirects the pretty-printer output to the functions [out] and
+   [flush] as described in [set_formatter_output_functions]. In
+   addition, the pretty-printer function that outputs a newline is set
+   to the function [outnewline] and the function that outputs
+   indentation spaces is set to the function [outspace].
+
+   This way, you can change the meaning of indentation (which can be
+   something else than just printing space characters) and the
+   meaning of new lines opening (which can be connected to any other
+   action needed by the application at hand). The two functions
+   [outspace] and [outnewline] are normally connected to [out] and
+   [flush]: respective default values for [outspace] and [outnewline]
+   are [out (String.make n ' ') 0 n] and [out "\n" 0 1]. *)
+
+val get_all_formatter_output_functions :
+  unit ->
+  (string -> int -> int -> unit) *
+  (unit -> unit) *
+  (unit -> unit) *
+  (int -> unit);;
+(** Return the current output functions of the pretty-printer,
+   including line breaking and indentation functions. Useful to record the
+  current setting and restore it afterwards. *)
+
+(** {6 Changing the meaning of printing semantics tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
@@ -429,10 +467,10 @@ type formatter_output_meaning = {
 (** {6 Changing the meaning of the standard output pretty printer} *)
 
 val set_formatter_output_meaning : formatter_output_meaning -> unit
- (** Set the output functions according to the given meaning. *) 
+ (** Set the output functions according to the given meaning. *)
 ;;
 val get_formatter_output_meaning : formatter_output_meaning
- (** Get the current meaning of the output functions. *) 
+ (** Get the current meaning of the output functions. *)
 ;;
 
 (** An alternative way to modify the behaviour of output functions in an

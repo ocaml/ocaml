@@ -202,7 +202,21 @@ let test9 () =
           \\\n\
           b \\\n\
           c\010\\\n\
-          b"
+          b" &&
+  test_S "\xef" &&
+  test_S "\\xef" &&
+  Scanf.sscanf "\"\\xef\"" "%S" (fun s -> s) =
+                  "\xef" &&
+  Scanf.sscanf "\"\\xef\\xbb\\xbf\"" "%S" (fun s -> s) =
+                  "﻿" &&
+  Scanf.sscanf "\"\\xef\\xbb\\xbf\"" "%S" (fun s -> s) =
+                  "\239\187\191" &&
+  Scanf.sscanf "\"\xef\xbb\xbf\"" "%S" (fun s -> s) =
+                  "﻿" &&
+  Scanf.sscanf "\"\\\\xef\\\\xbb\\\\xbf\"" "%S" (fun s -> s) =
+                  "\\xef\\xbb\\xbf" &&
+  Scanf.sscanf "\"\ \"" "%S" (fun s -> s) =
+                  "\ "
 ;;
 
 test (test9 ())

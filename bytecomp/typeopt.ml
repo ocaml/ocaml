@@ -22,18 +22,17 @@ open Types
 open Typedtree
 open Lambda
 
+let scrape env ty =
+  (Ctype.repr (Ctype.expand_head_opt env (Ctype.correct_levels ty))).desc
+
 let has_base_type exp base_ty_path =
-  let exp_ty =
-    Ctype.expand_head_opt exp.exp_env (Ctype.correct_levels exp.exp_type) in
-  match Ctype.repr exp_ty with
-    {desc = Tconstr(p, _, _)} -> Path.same p base_ty_path
+  match scrape exp.exp_env exp.exp_type with
+  | Tconstr(p, _, _) -> Path.same p base_ty_path
   | _ -> false
 
 let maybe_pointer exp =
-  let exp_ty =
-    Ctype.expand_head_opt exp.exp_env (Ctype.correct_levels exp.exp_type) in
-  match (Ctype.repr exp_ty).desc with
-    Tconstr(p, args, abbrev) ->
+  match scrape exp.exp_env exp.exp_type with
+  | Tconstr(p, args, abbrev) ->
       not (Path.same p Predef.path_int) &&
       not (Path.same p Predef.path_char) &&
       begin try
@@ -50,9 +49,8 @@ let maybe_pointer exp =
   | _ -> true
 
 let array_element_kind env ty =
-  let ty = Ctype.repr (Ctype.expand_head_opt env ty) in
-  match ty.desc with
-    Tvar | Tunivar ->
+  match scrape env ty with
+  | Tvar | Tunivar ->
       Pgenarray
   | Tconstr(p, args, abbrev) ->
       if Path.same p Predef.path_int || Path.same p Predef.path_char then
@@ -85,9 +83,8 @@ let array_element_kind env ty =
       Paddrarray
 
 let array_kind_gen ty env =
-  let array_ty = Ctype.expand_head_opt env (Ctype.correct_levels ty) in
-  match (Ctype.repr array_ty).desc with
-    Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
+  match scrape env ty with
+  | Tconstr(p, [elt_ty], _) | Tpoly({desc = Tconstr(p, [elt_ty], _)}, _)
     when Path.same p Predef.path_array ->
       array_element_kind env elt_ty
   | _ ->
@@ -98,9 +95,9 @@ let array_kind exp = array_kind_gen exp.exp_type exp.exp_env
 
 let array_pattern_kind pat = array_kind_gen pat.pat_type pat.pat_env
 
-let bigarray_decode_type ty tbl dfl =
-  match (Ctype.repr ty).desc with
-    Tconstr(Pdot(Pident mod_id, type_name, _), [], _)
+let bigarray_decode_type env ty tbl dfl =
+  match scrape env ty with
+  | Tconstr(Pdot(Pident mod_id, type_name, _), [], _)
     when Ident.name mod_id = "Bigarray" ->
       begin try List.assoc type_name tbl with Not_found -> dfl end
   | _ ->
@@ -125,10 +122,9 @@ let layout_table =
    "fortran_layout", Pbigarray_fortran_layout]
 
 let bigarray_kind_and_layout exp =
-  let ty = Ctype.repr (Ctype.expand_head_opt exp.exp_env exp.exp_type) in
-  match ty.desc with
-    Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
-      (bigarray_decode_type elt_type kind_table Pbigarray_unknown,
-       bigarray_decode_type layout_type layout_table Pbigarray_unknown_layout)
+  match scrape exp.exp_env exp.exp_type with
+  | Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
+      (bigarray_decode_type exp.exp_env elt_type kind_table Pbigarray_unknown,
+       bigarray_decode_type exp.exp_env layout_type layout_table Pbigarray_unknown_layout)
   | _ ->
       (Pbigarray_unknown, Pbigarray_unknown_layout)

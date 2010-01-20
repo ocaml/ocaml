@@ -123,7 +123,10 @@ let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir ?tag_name libpath
   end;
   match dir with
   | None -> ()
-  | Some dir -> flag ["ocaml"; tag_name; "compile"] (S[A"-I"; P dir])
+  | Some dir ->
+      List.iter
+        (fun x -> flag ["ocaml"; tag_name; x] (S[A"-I"; P dir]))
+        ["compile"; "doc"; "infer_interface"]
 
 let cmi_of = Pathname.update_extensions "cmi"
 

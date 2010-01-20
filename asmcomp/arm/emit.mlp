@@ -585,6 +585,9 @@ let emit_item = function
   | Csingle f ->
       `	.float	{emit_string	f}\n`
   | Cdouble f ->
+      (* FIXME: this version of the ARM port is mixed-endian, so we
+         use .double instead of emit_float64_directive.  The next
+         version is little-endian, so we'll use emit_float64 then. *)
       `	.align	0\n`;
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->

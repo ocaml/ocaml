@@ -469,7 +469,7 @@ rule "Standard library manual"
     Seq[Cmd(S[A"mkdir"; A"-p"; P"ocamldoc/stdlib_man"]);
         Cmd(S[ocamldoc; A"-man"; A"-d"; P"ocamldoc/stdlib_man";
               A"-I"; P "stdlib"; A"-I"; P"otherlibs/unix"; A"-I"; P"otherlibs/num";
-              A"-t"; A"Ocaml library"; A"-man-mini"; atomize stdlib_mlis])]
+              A"-t"; A"OCaml library"; A"-man-mini"; atomize stdlib_mlis])]
   end;;
 
 flag ["ocaml"; "compile"; "bootstrap_thread"]
@@ -643,7 +643,7 @@ rule "camlheader"
 
 rule "ocaml C stubs on windows: dlib & d.o* -> dll"
   ~prod:"%.dll"
-  ~deps:["%.dlib"(*; "byterun/ocamlrun"-.-C.a*)]
+  ~deps:["%.dlib"(*; "byterun/libcamlrun"-.-C.a*)]
   ~insert:`top
   begin fun env build ->
     let dlib = env "%.dlib" in
@@ -659,7 +659,7 @@ rule "ocaml C stubs on windows: dlib & d.o* -> dll"
       | Outcome.Good d_o -> d_o
       | Outcome.Bad exn -> raise exn
     end resluts in
-    mkdll dll (S[atomize objs; P("byterun/ocamlrun"-.-C.a)])
+    mkdll dll (S[atomize objs; P("byterun/libcamlrun"-.-C.a)])
           (T(tags_of_pathname dll++"dll"++"link"++"c"))
   end;;
 

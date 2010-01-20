@@ -527,10 +527,9 @@ let emit_item = function
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.float	{emit_string f}\n`
+      emit_float32_directive ".word" f
   | Cdouble f ->
-      `	.align	0\n`; (* Prevent alignment on 8-byte boundary *)
-      `	.double	{emit_string f}\n`
+      emit_float64_split_directive ".word" f
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
   | Clabel_address lbl ->

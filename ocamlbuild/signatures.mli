@@ -397,6 +397,7 @@ module type OPTIONS = sig
   val ext_obj : string ref
   val ext_lib : string ref
   val ext_dll : string ref
+  val exe : string ref
 end
 
 module type ARCH = sig
@@ -519,6 +520,9 @@ module type PLUGIN = sig
   val copy_rule : string ->
     ?insert:[`top | `before of string | `after of string | `bottom] ->
     string -> string -> unit
+
+  (** Empties the list of rules of the ocamlbuild engine. *)
+  val clear_rules : unit -> unit
 
   (** [dep tags deps] Will build [deps] when all [tags] will be activated. *)
   val dep : Tags.elt list -> Pathname.t list -> unit

@@ -227,7 +227,7 @@ let call builder r =
   then thunk ()
   else List.iter (fun x -> Resource.Cache.suspend_resource x action.command thunk r.prods) r.prods
 
-let (get_rules, add_rule) =
+let (get_rules, add_rule, clear_rules) =
   let rules = ref [] in
   (fun () -> !rules),
   begin fun pos r ->
@@ -248,7 +248,8 @@ let (get_rules, add_rule) =
             List.fold_right begin fun x acc ->
               if x.name = s then r :: x :: acc else x :: acc
             end !rules []
-  end
+  end,
+  (fun () -> rules := [])
 
 let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?stamp ?(insert = `bottom) code =
   let res_add import xs xopt =

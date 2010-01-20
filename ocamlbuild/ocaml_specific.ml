@@ -305,7 +305,8 @@ rule "ocaml C stubs: c -> o"
   begin fun env _build ->
     let c = env "%.c" in
     let o = env x_o in
-    let cc = Cmd(S[!Options.ocamlc; T(tags_of_pathname c++"c"++"compile"); A"-c"; Px c]) in
+    let comp = if Tags.mem "native" (tags_of_pathname c) then !Options.ocamlopt else !Options.ocamlc in
+    let cc = Cmd(S[comp; T(tags_of_pathname c++"c"++"compile"); A"-c"; Px c]) in
     if Pathname.dirname o = Pathname.current_dir_name then cc
     else Seq[cc; mv (Pathname.basename o) o]
   end;;
@@ -416,6 +417,8 @@ flag ["ocaml"; "compile"; "thread"] (A "-thread");;
 flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);;
 flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);;
 flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "native"; "toplevel"] (S[A "threads.cmxa"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "byte"; "toplevel"] (S[A "threads.cma"; A "-thread"]);;
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
 flag ["ocaml"; "compile"; "nolabels"] (A"-nolabels");;
 

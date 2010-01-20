@@ -61,6 +61,7 @@ let stdout_isatty () =
   Unix.isatty Unix.stdout
 
 let execute_many =
+  let exit i = raise (My_std.Exit_with_code i) in
   let exit = function
     | Ocamlbuild_executor.Subcommand_failed -> exit Exit_codes.rc_executor_subcommand_failed
     | Ocamlbuild_executor.Subcommand_got_signal -> exit Exit_codes.rc_executor_subcommand_got_signal

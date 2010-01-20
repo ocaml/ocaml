@@ -4,3 +4,4 @@ labelled-*
 caml
 *.annot
 sys.ml
+*.a

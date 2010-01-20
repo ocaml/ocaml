@@ -185,3 +185,8 @@ let pos_of_line buffer line =
 (* --- The first line and column are line 1 and column 1. *)
 let point_of_coord buffer line column =
   fst (pos_of_line buffer line) + (pred column)
+
+let start_and_cnum buffer pos =
+  let line_number = pos.Lexing.pos_lnum in
+  let start = point_of_coord buffer line_number 1 in
+  start, start + (pos.Lexing.pos_cnum - pos.Lexing.pos_bol)

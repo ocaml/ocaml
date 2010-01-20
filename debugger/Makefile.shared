@@ -60,11 +60,11 @@ OBJS=\
 	pos.cmo \
 	checkpoints.cmo \
 	events.cmo \
+	program_loading.cmo \
 	symbols.cmo \
 	breakpoints.cmo \
 	trap_barrier.cmo \
 	history.cmo \
-	program_loading.cmo \
 	printval.cmo \
 	show_source.cmo \
 	time_travel.cmo \
@@ -72,7 +72,7 @@ OBJS=\
 	frames.cmo \
 	eval.cmo \
 	show_information.cmo \
-        loadprinter.cmo \
+	loadprinter.cmo \
 	parser.cmo \
 	command_line.cmo \
 	main.cmo
@@ -99,7 +99,8 @@ clean::
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend: beforedepend
-	$(CAMLDEP) $(DEPFLAGS) *.mli *.ml > .depend
+	$(CAMLDEP) $(DEPFLAGS) *.mli *.ml \
+	| sed -e 's,$(UNIXDIR)/,$$(UNIXDIR)/,' > .depend
 
 lexer.ml: lexer.mll
 	$(CAMLLEX) lexer.mll

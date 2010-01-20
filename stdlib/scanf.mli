@@ -215,12 +215,15 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** {7 The space character in format strings} *)
 
 (** As mentioned above, a plain character in the format string is just
-    matched with the characters of the input; however, one character is a
-    special exception to this simple rule: the space character (ASCII code
-    32) does not match a single space character, but any amount of
+    matched with the next character of the input; however, two characters are
+    special exceptions to this rule: the space character ([' '] or ASCII code
+    32) and the line feed character (['\n'] or ASCII code 10).
+    A space does not match a single space character, but any amount of
     ``whitespace'' in the input. More precisely, a space inside the format
     string matches {e any number} of tab, space, line feed and carriage
-    return characters.
+    return characters. Similarly, a line feed character in the format string
+    matches either a single line feed or a carriage return followed by a line
+    feed.
 
     Matching {e any} amount of whitespace, a space in the format string
     also matches no amount of whitespace at all; hence, the call [bscanf ib
@@ -305,6 +308,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [N] or [L]: returns the number of tokens read so far.
     - [!]: matches the end of input condition.
     - [%]: matches one [%] character in the input.
+    - [,]: the no-op delimiter for conversion specifications.
 
     Following the [%] character that introduces a conversion, there may be
     the special flag [_]: the conversion that follows occurs as usual,
@@ -379,7 +383,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     [End_of_file]: if the end of input is reached the conversion succeeds and
     simply returns the characters read so far, or [""] if none were ever read. *)
 
-(** {6 Specialized formatted input functions} *)
+(** {6 Specialised formatted input functions} *)
 
 val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** Same as {!Scanf.bscanf}, but reads from the given regular input channel.
@@ -416,8 +420,8 @@ val bscanf_format :
   Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
 (** [bscanf_format ic fmt f] reads a format string token from the formatted
-    input channel [ic], according to the given format string [fmt], and applies [f] to
-    the resulting format string value.
+    input channel [ic], according to the given format string [fmt], and
+    applies [f] to the resulting format string value.
     Raise [Scan_failure] if the format string value read does not have the
     same type as [fmt]. *)
 

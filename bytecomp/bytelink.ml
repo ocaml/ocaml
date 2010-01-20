@@ -377,14 +377,40 @@ let output_data_string outchan data =
     end
   done
 
+(* Output a debug stub *)
+
+let output_cds_file outfile =
+  Misc.remove_file outfile;
+  let outchan =
+    open_out_gen [Open_wronly; Open_trunc; Open_creat; Open_binary]
+      0o777 outfile in
+  try
+    Bytesections.init_record outchan;
+    (* The map of global identifiers *)
+    Symtable.output_global_map outchan;
+    Bytesections.record outchan "SYMB";
+    (* Debug info *)
+    output_debug_info outchan;
+    Bytesections.record outchan "DBUG";
+    (* The table of contents and the trailer *)
+    Bytesections.write_toc_and_trailer outchan;
+    close_out outchan
+  with x ->
+    close_out outchan;
+    remove_file outfile;
+    raise x
+
 (* Output a bytecode executable as a C file *)
 
 let link_bytecode_as_c tolink outfile =
   let outchan = open_out outfile in
-  try
+  begin try
     (* The bytecode *)
-    output_string outchan "#include <caml/mlvalues.h>\n";
     output_string outchan "\
+#ifdef __cplusplus\n\
+extern \"C\" {\n\
+#endif\n\
+#include <caml/mlvalues.h>\n\
 CAMLextern void caml_startup_code(\n\
            code_t code, asize_t code_size,\n\
            char *data, asize_t data_size,\n\
@@ -393,8 +419,11 @@ CAMLextern void caml_startup_code(\n\
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     Consistbl.clear crc_interfaces;
-    let output_fun = output_code_string outchan
-    and currpos_fun () = 0 in
+    let currpos = ref 0 in
+    let output_fun code =
+      output_code_string outchan code;
+      currpos := !currpos + String.length code
+    and currpos_fun () = !currpos in
     List.iter (link_file output_fun currpos_fun) tolink;
     (* The final STOP instruction *)
     Printf.fprintf outchan "\n0x%x};\n\n" Opcodes.opSTOP;
@@ -422,18 +451,24 @@ void caml_startup(char ** argv)\n\
                     caml_data, sizeof(caml_data),\n\
                     caml_sections, sizeof(caml_sections),\n\
                     argv);\n\
-}\n";
+}\n\
+#ifdef __cplusplus\n\
+}\n\
+#endif\n";
     close_out outchan
   with x ->
     close_out outchan;
     raise x
+  end;
+  if !Clflags.debug then
+    output_cds_file ((Filename.chop_extension outfile) ^ ".cds")
 
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
   Ccomp.call_linker Ccomp.Exe exec_name
     ([prim_name] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
-    Config.bytecomp_c_libraries
+    (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
   let oc = open_out_gen [Open_wronly; Open_append; Open_binary] 0 exec_name in
@@ -472,7 +507,20 @@ let link objfiles output_name =
     try
       link_bytecode tolink bytecode_name false;
       let poc = open_out prim_name in
+      output_string poc "\
+        #ifdef __cplusplus\n\
+        extern \"C\" {\n\
+        #endif\n\
+        #ifdef _WIN64\n\
+        typedef __int64 value;\n\
+        #else\n\
+        typedef long value;\n\
+        #endif\n";
       Symtable.output_primitive_table poc;
+      output_string poc "\
+        #ifdef __cplusplus\n\
+        }\n\
+        #endif\n";
       close_out poc;
       let exec_name = fix_exec_name output_name in
       if not (build_custom_runtime prim_name exec_name)

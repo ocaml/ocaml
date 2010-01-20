@@ -31,6 +31,7 @@ type env = Pathname.t -> Pathname.t
 type builder = Pathname.t list list -> (Pathname.t, exn) Ocamlbuild_pack.My_std.Outcome.t list
 type action = env -> builder -> Command.t
 let rule = Rule.rule
+let clear_rules = Rule.clear_rules
 let dep = Command.dep
 let copy_rule = Rule.copy_rule
 let ocaml_lib = Ocamlbuild_pack.Ocaml_utils.ocaml_lib

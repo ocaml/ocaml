@@ -22,8 +22,10 @@ Language features:
     "let [rec] <ident> : 'a1 ... 'an. <typexp> = ..."
 - First-class packages modules.
   New kind of type expression, for packaged modules: (module PT).
-  New kind of expression, to pack a module as a first-class value: (module MODEXPR : PT).
-  New kind of module expression, to unpack a first-class value as a module: (val EXPR : PT).
+  New kind of expression, to pack a module as a first-class value:
+    (module MODEXPR : PT).
+  New kind of module expression, to unpack a first-class value as a module:
+    (val EXPR : PT).
   PT is a package type of the form "S" or
   "S with type t1 = ... and ... and type tn = ..." (S refers to a module type).
 - Local opening of modules in a subexpression.
@@ -57,6 +59,55 @@ Standard library:
 Bug Fixes:
 - PR#4775: compiler crash on crazy types (temporary fix)
 
+
+Objective Caml 3.11.2:
+----------------------
+
+Bug fixes:
+- PR#4151: better documentation for min and max w.r.t. NaN
+- PR#4421: ocamlbuild uses wrong compiler for C files
+- PR#4710, PR#4720: ocamlbuild does not use properly configuration information
+- PR#4750: under some Windows installations, high start-up times for Unix lib
+- PR#4777: problem with scanf and CRLF
+- PR#4783: ocamlmklib problem under Windows
+- PR#4810: BSD problem with socket addresses, e.g. in Unix.getnameinfo
+- PR#4813: issue with parsing of float literals by the GNU assembler
+- PR#4816: problem with modules and private types
+- PR#4818: missed opportunity for type-based optimization of bigarray accesses
+- PR#4821: check for duplicate method names in classes
+- PR#4823: build problem on Mac OS X
+- PR#4836: spurious errors raised by Unix.single_write under Windows
+- PR#4841, PR#4860, PR#4930: problem with ocamlopt -output-obj under Mac OS X
+- PR#4847: C compiler error with ocamlc -output-obj under Win64
+- PR#4856: ocamlbuild uses ocamlrun to execute a native plugin
+- PR#4867, PR#4760: ocamlopt -shared fails on Mac OS X 64bit
+- PR#4873: ocamlbuild ignores "thread" tag when building a custom toplevel
+- PR#4890: ocamlbuild tries to use native plugin on bytecode-only arch
+- PR#4896: ocamlbuild should always pass -I to tools for external libraries
+- PR#4900: small bug triggering automatic compaction even if max_overhead = 1M
+- PR#4902: bug in %.0F printf format
+- PR#4910: problem with format concatenation
+- PR#4922: ocamlbuild recompiles too many files
+- PR#4923: missing \xff for scanf %S
+- PR#4933: functors not handling private types correctly
+- PR#4940: problem with end-of-line in DOS text mode, tentative fix
+- PR#4953: problem compiling bytecode interpreter on ARM in Thumb mode.
+- PR#4955: compiler crash when typing recursive type expression with constraint
+- Module Printf: the simple conversion %F (without width indication) was not
+           treated properly.
+- Makefile: problem with cygwin, flexdll, and symbolic links
+- Various build problems with ocamlbuild under Windows with msvc
+
+Feature wishes:
+- PR#9: (tentative implementation) make ocamldebug use #linenum annotations
+- PR#123, PR#4477: custom exception printers
+- PR#3456: Obj.double_field and Obj.set_double_field functions
+- PR#4003: destination directory can be given to Filename.[open_]temp_file
+- PR#4647: Buffer.blit function
+- PR#4685: access to Filename.dir_sep
+- PR#4703: support for debugging embedded applications
+- PR#4723: "clear_rules" function to empty the set of ocamlbuild rules
+- PR#4921: configure option to help cross-compilers
 
 Objective Caml 3.11.1:
 ----------------------
@@ -112,6 +163,7 @@ Other changes:
 - Improved wording of various error messages
   (contributed by Jonathan Davies, Citrix).
 - Support for 64-bit mode in Solaris/x86 (PR#4670).
+
 
 Objective Caml 3.11.0:
 ----------------------
@@ -260,6 +312,7 @@ Bug fixes:
 - Big performance bug in Weak hashtables
 - Small bugs in the make-package-macosx script
 - Bug in typing of polymorphic variants (reported on caml-list)
+
 
 Objective Caml 3.10.1:
 ----------------------

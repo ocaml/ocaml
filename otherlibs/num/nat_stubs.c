@@ -368,14 +368,24 @@ static uintnat deserialize_nat(void * dst)
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
   { uint32 * p;
     mlsize_t i;
-    for (i = len, p = dst; i > 0; i -= 2, p += 2) {
+    for (i = len, p = dst; i > 1; i -= 2, p += 2) {
       p[1] = deserialize_uint_4();   /* low 32 bits of 64-bit digit */
       p[0] = deserialize_uint_4();   /* high 32 bits of 64-bit digit */
+    }
+    if (i > 0){
+      p[1] = deserialize_uint_4();   /* low 32 bits of 64-bit digit */
+      p[0] = 0;                      /* high 32 bits of 64-bit digit */
+      ++ len;
     }
   }
 #else
   deserialize_block_4(dst, len);
+#if defined(ARCH_SIXTYFOUR)
+  if (len & 1){
+    ((uint32 *) dst)[len] = 0;
+    ++ len;
+  }
+#endif
 #endif
   return len * 4;
 }
-

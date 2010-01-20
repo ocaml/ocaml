@@ -33,7 +33,9 @@ let selected_point () =
     None ->
       raise Not_found
   | Some ev ->
-      (ev.ev_module, (Events.get_pos ev).Lexing.pos_cnum)
+      (ev.ev_module,
+       (Events.get_pos ev).Lexing.pos_lnum,
+       (Events.get_pos ev).Lexing.pos_cnum - (Events.get_pos ev).Lexing.pos_bol)
 
 let selected_event_is_before () =
   match !selected_event with

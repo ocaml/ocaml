@@ -299,7 +299,9 @@ let emit_float_constants () =
     `	.text\n`;
   emit_align 8;
   List.iter
-    (fun (lbl, cst) -> `{emit_label lbl}:	.double	{emit_string cst}\n`)
+    (fun (lbl, cst) ->
+      `{emit_label lbl}:`;
+      emit_float64_split_directive ".long" cst)
     !float_constants;
   float_constants := []
 
@@ -972,9 +974,9 @@ let emit_item = function
   | Cint n ->
       `	.long	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.float	{emit_string f}\n`
+      emit_float32_directive ".long" f
   | Cdouble f ->
-      `	.double	{emit_string f}\n`
+      emit_float64_split_directive ".long" f
   | Csymbol_address s ->
       use_symbol s;
       `	.long	{emit_symbol s}\n`

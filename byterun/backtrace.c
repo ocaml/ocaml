@@ -39,6 +39,7 @@ CAMLexport int caml_backtrace_active = 0;
 CAMLexport int caml_backtrace_pos = 0;
 CAMLexport code_t * caml_backtrace_buffer = NULL;
 CAMLexport value caml_backtrace_last_exn = Val_unit;
+CAMLexport char * caml_cds_file = NULL;
 #define BACKTRACE_BUFFER_SIZE 1024
 
 /* Location of fields in the Instruct.debug_event record */
@@ -135,7 +136,11 @@ static value read_debug_info(void)
   uint32 num_events, orig, i;
   value evl, l;
 
-  exec_name = caml_exe_name;
+  if (caml_cds_file != NULL) {
+    exec_name = caml_cds_file;
+  } else {
+    exec_name = caml_exe_name;
+  }
   fd = caml_attempt_open(&exec_name, &trail, 1);
   if (fd < 0) CAMLreturn(Val_false);
   caml_read_section_descriptors(fd, &trail);

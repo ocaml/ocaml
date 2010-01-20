@@ -575,33 +575,26 @@ let emit_instr fallthrough i =
             end
     | Lswitch jumptbl ->
         let lbl = new_label() in
-        if !pic_code || !Clflags.dlcode then begin
-          (* PR#4424: r11 is known to be clobbered by the Lswitch,
-             meaning that no variable that is live across the Lswitch
-             is assigned to r11.  However, the argument to Lswitch
-             can still be assigned to r11, so we need to special-case 
-             this situation. *)
-          if i.arg.(0).loc = Reg 9 (* ie r11, cf amd64/proc.ml *) then begin
-            `	salq	$3, %r11\n`;
-            `	pushq	%r11\n`;
-            `	leaq	{emit_label lbl}(%rip), %r11\n`;
-            `	addq	0(%rsp), %r11\n`;
-            `	addq	$8, %rsp\n`;
-            `	jmp	*(%r11)\n`
-          end else begin
-            `	leaq	{emit_label lbl}(%rip), %r11\n`;
-            `	jmp	*(%r11, {emit_reg i.arg.(0)}, 8)\n`
-          end
-        end else begin
-          `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 8)\n`
-        end;
+        (* rax and rdx are clobbered by the Lswitch,
+           meaning that no variable that is live across the Lswitch
+           is assigned to rax or rdx.  However, the argument to Lswitch
+           can still be assigned to one of these two registers, so
+           we must be careful not to clobber it before use. *)
+        let (tmp1, tmp2) =
+          if i.arg.(0).loc = Reg 0 (* rax *)
+          then (phys_reg 4 (*rdx*), phys_reg 0 (*rax*))
+          else (phys_reg 0 (*rax*), phys_reg 4 (*rdx*)) in
+        `	leaq	{emit_label lbl}(%rip), {emit_reg tmp1}\n`;
+        `	movslq	({emit_reg tmp1}, {emit_reg i.arg.(0)}, 4), {emit_reg tmp2}\n`;
+        `	addq	{emit_reg tmp2}, {emit_reg tmp1}\n`;
+        `	jmp	*{emit_reg tmp1}\n`;
         if macosx
         then `	.const\n`
         else `	.section .rodata\n`;
-        emit_align 8;
+        emit_align 4;
         `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	.quad	{emit_label jumptbl.(i)}\n`
+          `	.long	{emit_label jumptbl.(i)} - {emit_label lbl}\n`
         done;
         `	.text\n`
     | Lsetuptrap lbl ->
@@ -634,7 +627,8 @@ let rec emit_all fallthrough i =
 (* Emission of the floating-point constants *)
 
 let emit_float_constant (lbl, cst) =
-  `{emit_label lbl}:	.double	{emit_string cst}\n`
+  `{emit_label lbl}:`;
+  emit_float64_directive ".quad" cst
 
 (* Emission of the profiling prelude *)
 
@@ -667,7 +661,9 @@ let fundecl fundecl =
   bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
-  if macosx && is_generic_function fundecl.fun_name
+  if macosx
+  && not !Clflags.output_c_object
+  && is_generic_function fundecl.fun_name
   then (* PR#4690 *)
     `	.private_extern	{emit_symbol fundecl.fun_name}\n`
   else
@@ -712,9 +708,9 @@ let emit_item = function
   | Cint n ->
       `	.quad	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.float	{emit_string f}\n`
+      emit_float32_directive ".long" f
   | Cdouble f ->
-      `	.double	{emit_string f}\n`
+      emit_float64_directive ".quad" f
   | Csymbol_address s ->
       `	.quad	{emit_symbol s}\n`
   | Clabel_address lbl ->

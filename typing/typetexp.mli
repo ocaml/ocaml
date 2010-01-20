@@ -55,6 +55,7 @@ type error =
   | Invalid_variable_name of string
   | Cannot_quantify of string * Types.type_expr
   | Multiple_constraints_on_type of string
+  | Repeated_method_label of string
 
 exception Error of Location.t * error
 

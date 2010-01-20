@@ -12,6 +12,6 @@ strstubs.o: strstubs.c ../../byterun/mlvalues.h \
   ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/fail.h \
   ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/mlvalues.h
-str.cmi: 
-str.cmo: str.cmi 
-str.cmx: str.cmi 
+str.cmi:
+str.cmo: str.cmi
+str.cmx: str.cmi

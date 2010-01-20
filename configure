@@ -95,6 +95,8 @@ while : ; do
         pthread_wanted=no;;
     -no-tk|--no-tk)
         tk_wanted=no;;
+    -partialld|--partialld)
+        partialld="$2"; shift;;
     -tkdefs*|--tkdefs*)
         tk_defs=$2; shift;;
     -tklibs*|--tklibs*)
@@ -303,14 +305,16 @@ case "$bytecc,$host" in
   gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-D_WIN32 -DCAML_DLL"
-    flexlink="flexlink -chain cygwin -merge-manifest"
-    flexdir=`$flexlink -where | dos2unix`
-    if test -z "$flexdir"; then
-      echo "flexlink not found: native shared libraries won't be available"
-      withsharedlibs=no
-    else
-      iflexdir="-I\"$flexdir\""
-      mkexe="$flexlink -exe"
+    if test $withsharedlibs = yes; then
+      flexlink="flexlink -chain cygwin -merge-manifest"
+      flexdir=`$flexlink -where | dos2unix`
+      if test -z "$flexdir"; then
+        echo "flexlink not found: native shared libraries won't be available"
+        withsharedlibs=no
+      else
+        iflexdir="-I\"$flexdir\""
+        mkexe="$flexlink -exe"
+      fi
     fi
     exe=".exe"
     ostype="Cygwin";;

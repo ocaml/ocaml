@@ -166,7 +166,7 @@ slide "The tags, our way to specify exceptions", 'fragile=singleslide' do
   end
   code_tags do
     : "funny.ml":           rectypes
-      ~<**/*.ml*>~:           warn_A, warn_error_A, debug, dtypes
+      ~<**/*.ml*>~:           warn_A, warn_error_A, debug, annot
       "foo.ml" or "bar.ml": warn_v, warn_error_v
       "vendor.ml":          -warn_A, -warn_error_A
       <main.{byte,native}>: use_unix

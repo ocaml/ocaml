@@ -835,7 +835,9 @@ let fundecl fundecl =
   call_gc_label := 0;
   float_literals := [];
   int_literals := [];
-  if Config.system = "rhapsody" && is_generic_function fundecl.fun_name
+  if Config.system = "rhapsody"
+  && not !Clflags.output_c_object
+  && is_generic_function fundecl.fun_name
   then (* PR#4690 *)
     `	.private_extern	{emit_symbol fundecl.fun_name}\n`
   else
@@ -871,7 +873,10 @@ let fundecl fundecl =
     `	.align	3\n`;
     List.iter
       (fun (f, lbl) ->
-        `{emit_label lbl}:	.double	0d{emit_string f}\n`)
+        `{emit_label lbl}:`;
+        if ppc64
+        then emit_float64_directive ".quad" f
+        else emit_float64_split_directive ".long" f)
       !float_literals;
     List.iter
       (fun (n, lbl) ->
@@ -902,9 +907,11 @@ let emit_item = function
   | Cint n ->
       `	{emit_string datag}	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.float	0d{emit_string f}\n`
+      emit_float32_directive ".long" f
   | Cdouble f ->
-      `	.double	0d{emit_string f}\n`
+      if ppc64
+      then emit_float64_directive ".quad" f
+      else emit_float64_split_directive ".long" f
   | Csymbol_address s ->
       `	{emit_string datag}	{emit_symbol s}\n`
   | Clabel_address lbl ->

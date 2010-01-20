@@ -195,7 +195,8 @@ let float_constants = ref ([] : (int * string) list)
 let emit_float_constant (lbl, cst) =
   rodata ();
   `	.align	8\n`;
-  `{emit_label lbl}:	.double	0r{emit_string cst}\n`
+  `{emit_label lbl}:`;
+  emit_float64_split_directive ".word" cst
 
 (* Emission of the profiling prelude *)
 let emit_profile () =
@@ -723,9 +724,9 @@ let emit_item = function
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.single	0r{emit_string f}\n`
+      emit_float32_directive ".word" f
   | Cdouble f ->
-      `	.double	0r{emit_string f}\n`
+      emit_float64_split_directive ".word" f
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
   | Clabel_address lbl ->

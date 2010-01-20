@@ -109,7 +109,7 @@ The "configure" script accepts the following options:
 -as <assembler and options>     (default: determined automatically)
         The assembler to use for assembling ocamlopt-generated code.
 
--aspp <assembler and options>   (default: determined automatically>
+-aspp <assembler and options>   (default: determined automatically)
         The assembler to use for assembling the parts of the
         run-time system manually written in assembly language.
         This assembler must preprocess its input with the C preprocessor.
@@ -126,9 +126,12 @@ Examples:
   Installation in /usr, man pages in section "l":
     ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
 
-  On a MacOSX/Intel Core 2 or MacOSX/PowerPC host, to build a 64-bit version
-  of OCaml:
+  On a MacOSX 10.5/Intel Core 2 or MacOSX 10.5/PowerPC host,
+  to build a 64-bit version of OCaml:
     ./configure -cc "gcc -m64"
+
+  On a MacOSX 10.6/Intel Core 2, to build a 32-bit version of OCaml:
+    ./configure -cc "gcc -m32" -as "as -arch i386" -aspp "gcc -m32 -c"
 
   On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
     ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c"
@@ -188,9 +191,9 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5- (Optional) If you want to compile fast versions of the Objective
-Caml compilers, you can compile them with the native-code compiler
-(they are compiled to bytecode by default).  Just do:
+5- Compile fast versions of the Objective Caml compilers, by
+compiling them with the native-code compiler (you have only compiled
+them to bytecode so far).  Just do:
 
         make opt.opt
 

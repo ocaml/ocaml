@@ -25,6 +25,9 @@ val emit_char: char -> unit
 val emit_string_literal: string -> unit
 val emit_string_directive: string -> string -> unit
 val emit_bytes_directive: string -> string -> unit
+val emit_float64_directive: string -> string -> unit
+val emit_float64_split_directive: string -> string -> unit
+val emit_float32_directive: string -> string -> unit
 
 type frame_descr =
   { fd_lbl: int;                        (* Return address *)

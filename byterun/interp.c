@@ -157,7 +157,8 @@ sp is a local copy of the global variable caml_extern_sp. */
 #define SP_REG asm("a4")
 #define ACCU_REG asm("d7")
 #endif
-#ifdef __arm__
+/* PR#4953: these specific registers not available in Thumb mode */
+#if defined (__arm__) && !defined(__thumb__)
 #define PC_REG asm("r6")
 #define SP_REG asm("r8")
 #define ACCU_REG asm("r7")

@@ -29,3 +29,61 @@ module M6 : sig type t = private < n:int; .. > end = M1;; (* fails *)
 module Bar : sig type t = private Foobar.t val f : int -> t end =
   struct type t = int let f (x : int) = (x : t) end;; (* must fail *)
 
+module M : sig
+  type t = private T of int
+  val mk : int -> t
+end = struct
+  type t = T of int
+  let mk x = T(x)
+end;;
+
+module M1 : sig
+  type t = M.t
+  val mk : int -> t
+end = struct
+  type t = M.t
+  let mk = M.mk
+end;;
+
+module M2 : sig
+  type t = M.t
+  val mk : int -> t
+end = struct
+  include M
+end;;
+
+module M3 : sig
+  type t = M.t
+  val mk : int -> t
+end = M;;
+
+module M4 : sig   
+    type t = M.t = T of int
+    val mk : int -> t
+  end = M;;
+(* Error: The variant or record definition does not match that of type M.t *)
+
+module M5 : sig   
+  type t = M.t = private T of int
+  val mk : int -> t
+end = M;;
+
+module M6 : sig   
+  type t = private T of int
+  val mk : int -> t
+end = M;;
+
+module M' : sig
+  type t_priv = private T of int
+  type t = t_priv
+  val mk : int -> t
+end = struct
+  type t_priv = T of int
+  type t = t_priv
+  let mk x = T(x)
+end;;
+
+module M3' : sig
+  type t = M'.t
+  val mk : int -> t
+end = M';;
