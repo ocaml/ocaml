@@ -30,9 +30,11 @@ Bug fixes:
 - PR#4933: functors not handling private types correctly
 - PR#4940: problem with end-of-line in DOS text mode, tentative fix
 - PR#4953: problem compiling bytecode interpreter on ARM in Thumb mode.
+- PR#4955: compiler crash when typing recursive type expression with constraint
 - Module Printf: the simple conversion %F (without width indication) was not
            treated properly.
 - Makefile: problem with cygwin, flexdll, and symbolic links
+- Various build problems with ocamlbuild under Windows with msvc
 
 Feature wishes:
 - PR#9: (tentative implementation) make ocamldebug use #linenum annotations
