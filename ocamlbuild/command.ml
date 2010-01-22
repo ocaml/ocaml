@@ -365,6 +365,10 @@ let set_deps_of_tags tags deps =
 
 let dep tags deps = set_deps_of_tags (Tags.of_list tags) deps
 
+let pdep tags ptag deps =
+  Param_tags.declare ptag
+    (fun param -> dep (Param_tags.make ptag param :: tags) (deps param))
+
 (*
 let to_string_for_digest x =
   let rec cmd_of_spec =

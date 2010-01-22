@@ -14,6 +14,5 @@
 (* Tools *)
 
 val tags_of_pathname : Pathname.t -> Tags.t
-val flags_of_pathname : Pathname.t -> Command.spec
 val path_and_context_of_string : Pathname.t -> Pathname.t list
 val pp_l : Format.formatter -> string list -> unit

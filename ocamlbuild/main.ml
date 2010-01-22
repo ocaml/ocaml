@@ -142,6 +142,8 @@ let proceed () =
   Ocaml_specific.init ();
   Hooks.call_hook Hooks.After_rules;
 
+  Param_tags.init ();
+
   Sys.chdir newpwd;
   (*let () = dprintf 0 "source_dir_path_set:@ %a" StringSet.print source_dir_path_set*)
 

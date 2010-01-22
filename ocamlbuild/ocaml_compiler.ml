@@ -31,23 +31,22 @@ let forpack_flags arg tags =
 let ocamlc_c tags arg out =
   let tags = tags++"ocaml"++"byte" in
   Cmd (S [!Options.ocamlc; A"-c"; T(tags++"compile");
-          ocaml_ppflags tags; flags_of_pathname arg;
-          ocaml_include_flags arg; A"-o"; Px out; P arg])
+          ocaml_ppflags tags; ocaml_include_flags arg; A"-o"; Px out; P arg])
 
 let ocamlc_link flag tags deps out =
   Cmd (S [!Options.ocamlc; flag; T tags;
-          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+          atomize_paths deps; A"-o"; Px out])
 
 let ocamlc_link_lib = ocamlc_link (A"-a")
 let ocamlc_link_prog = ocamlc_link N
 
 let ocamlmklib tags deps out =
   Cmd (S [!Options.ocamlmklib; T tags;
-          atomize_paths deps; flags_of_pathname out; A"-o"; Px (Pathname.remove_extensions out)])
+          atomize_paths deps; A"-o"; Px (Pathname.remove_extensions out)])
 
 let ocamlmktop tags deps out =
-  Cmd( S [!Options.ocamlmktop; T tags;
-          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+  Cmd( S [!Options.ocamlmktop; T (tags++"mktop");
+          atomize_paths deps; A"-o"; Px out])
 
 let byte_lib_linker tags =
   if Tags.mem "ocamlmklib" tags then
@@ -59,18 +58,17 @@ let byte_lib_linker_tags tags = tags++"ocaml"++"link"++"byte"++"library"
 
 let ocamlc_p tags deps out =
   Cmd (S [!Options.ocamlc; A"-pack"; T tags;
-          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+          atomize_paths deps; A"-o"; Px out])
 
 let ocamlopt_c tags arg out =
   let tags = tags++"ocaml"++"native" in
   Cmd (S [!Options.ocamlopt; A"-c"; Ocaml_arch.forpack_flags_of_pathname arg;
-          T(tags++"compile"); ocaml_ppflags tags; flags_of_pathname arg;
-          flags_of_pathname out; ocaml_include_flags arg;
+          T(tags++"compile"); ocaml_ppflags tags; ocaml_include_flags arg;
           A"-o"; Px out (* FIXME ocamlopt bug -o cannot be after the input file *); P arg])
 
 let ocamlopt_link flag tags deps out =
   Cmd (S [!Options.ocamlopt; flag; forpack_flags out tags; T tags;
-          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+          atomize_paths deps; A"-o"; Px out])
 
 let ocamlopt_link_lib = ocamlopt_link (A"-a")
 let ocamlopt_link_prog = ocamlopt_link N
@@ -81,7 +79,7 @@ let ocamlopt_p tags deps out =
   let mli = Pathname.update_extensions "mli" out in
   let cmd =
     S [!Options.ocamlopt; A"-pack"; forpack_flags out tags; T tags;
-       S include_flags; atomize_paths deps; flags_of_pathname out;
+       S include_flags; atomize_paths deps;
        A"-o"; Px out] in
   if (*FIXME true ||*) Pathname.exists mli then Cmd cmd
   else
@@ -151,7 +149,7 @@ let native_compile_ocaml_implem ?tag ?(cmx_ext="cmx") ml env build =
   let cmi = Pathname.update_extensions "cmi" ml in
   let cmx = Pathname.update_extensions cmx_ext ml in
   prepare_link cmx cmi [cmx_ext; "cmi"] build;
-  ocamlopt_c (tags_of_pathname ml++"implem"+++tag) ml cmx
+  ocamlopt_c (Tags.union (tags_of_pathname ml) (tags_of_pathname cmx)++"implem"+++tag) ml cmx
 
 let libs_of_use_lib tags =
   Tags.fold begin fun tag acc ->

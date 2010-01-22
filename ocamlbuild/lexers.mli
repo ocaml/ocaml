@@ -15,9 +15,7 @@ exception Error of string
 
 type conf_values =
   { plus_tags   : string list;
-    minus_tags  : string list;
-    plus_flags  : (string * string) list;
-    minus_flags : (string * string) list }
+    minus_tags  : string list }
 
 type conf = (Glob.globber * conf_values) list
 
@@ -26,6 +24,7 @@ val space_sep_strings : Lexing.lexbuf -> string list
 val blank_sep_strings : Lexing.lexbuf -> string list
 val comma_sep_strings : Lexing.lexbuf -> string list
 val comma_or_blank_sep_strings : Lexing.lexbuf -> string list
+val trim_blanks : Lexing.lexbuf -> string
 
 (* Parse a colon separated string.
    Note: successive colons are ignored.
@@ -37,3 +36,8 @@ val path_scheme : bool -> Lexing.lexbuf ->
   [ `Word of string
   | `Var of (string * Glob.globber)
   ] list
+
+val ocamlfind_query : Lexing.lexbuf ->
+  string * string * string * string * string * string
+
+val tag_gen : Lexing.lexbuf -> string * string option

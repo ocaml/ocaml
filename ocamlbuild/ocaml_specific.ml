@@ -357,6 +357,21 @@ flag ["ocaml"; "native"; "link"] begin
   S (List.map (fun x -> A (x^".cmxa")) !Options.ocaml_libs)
 end;;
 
+(* parameterized tags *)
+let () =
+  pflag ["ocaml"; "native"; "compile"] "for-pack"
+    (fun param -> S [A "-for-pack"; A param]);
+  pflag ["ocaml"; "compile"] "inline"
+    (fun param -> S [A "-inline"; A param]);
+  pflag ["ocaml"; "compile"] "pp"
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml"; "ocamldep"] "pp"
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml"; "doc"] "pp"
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml"; "infer_interface"] "pp"
+    (fun param -> S [A "-pp"; A param])
+
 let camlp4_flags camlp4s =
   List.iter begin fun camlp4 ->
     flag ["ocaml"; "pp"; camlp4] (A camlp4)

@@ -26,7 +26,6 @@ let tags_of_pathname p =
   Configuration.tags_of_filename (Pathname.to_string p)
   ++("file:"^p)
   ++("extension:"^Pathname.get_extension p)
-let flags_of_pathname p = Configuration.flags_of_filename (Pathname.to_string p)
 
 let opt_print elt ppf =
   function

@@ -58,7 +58,8 @@ let run_and_open s kont =
   in close (); res
 
 let stdout_isatty () =
-  Unix.isatty Unix.stdout
+  Unix.isatty Unix.stdout &&
+    try Unix.getenv "TERM" <> "dumb" with Not_found -> true
 
 let execute_many =
   let exit i = raise (My_std.Exit_with_code i) in

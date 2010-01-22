@@ -66,6 +66,10 @@ ocamlc -c plugin.mli
 ocamlc -c plugin.ml
 ocamlc -c ocaml_dependencies.ml
 ocamlc -c exit_codes.ml
+ocamllex lexers.mll
+ocamlc -c lexers.ml
+ocamlc -c param_tags.mli
+ocamlc -c param_tags.ml
 ocamlc -c main.ml
 ocamlc -c ocaml_specific.ml
 ocamlc -c display.ml
@@ -82,8 +86,6 @@ ocamlc -c ocaml_utils.ml
 ocamlc -c ocaml_tools.ml
 ocamlc -c ocaml_compiler.ml
 ocamlc -c hooks.ml
-ocamllex lexers.mll
-ocamlc -c lexers.ml
 ocamllex glob_lexer.mll
 ocamlc -c glob_lexer.ml
 ocamlc -c bool.ml
@@ -100,7 +102,7 @@ ocamlc -c rule.ml
 ocamlc -c report.ml
 ocamlc -c solver.ml
 ocamlc -c ocamlbuildlight.mli
-ocamlc -pack discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo digest_cache.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo ocaml_specific.cmo exit_codes.cmo main.cmo -o ocamlbuild_pack.cmo
+ocamlc -pack discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo param_tags.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo digest_cache.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo ocaml_specific.cmo exit_codes.cmo main.cmo -o ocamlbuild_pack.cmo
 ocamlc -c ocamlbuildlight.ml
 ocamlc ocamlbuild_pack.cmo ocamlbuildlight.cmo -o ../ocamlbuild.byte.start
 cd ..

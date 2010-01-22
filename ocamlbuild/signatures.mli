@@ -527,9 +527,28 @@ module type PLUGIN = sig
   (** [dep tags deps] Will build [deps] when all [tags] will be activated. *)
   val dep : Tags.elt list -> Pathname.t list -> unit
 
+  (** [pdep tags ptag deps] is equivalent to [dep tags deps], with an additional
+      parameterized tag [ptag]. [deps] is now a function which takes the
+      parameter of the tag [ptag] as an argument.
+
+      Example:
+        [pdep ["ocaml"; "compile"] "autodep" (fun param -> param)]
+      says that the tag [autodep(file)] can now be used to automatically
+      add [file] as a dependency when compiling an OCaml program. *)
+  val pdep : Tags.elt list -> Tags.elt -> (string -> Pathname.t list) -> unit
+
   (** [flag tags command_spec] Will inject the given piece of command
       ([command_spec]) when all [tags] will be activated. *)
   val flag : Tags.elt list -> Command.spec -> unit
+
+  (** Allows to use [flag] with a parameterized tag (as [pdep] for [dep]).
+
+      Example:
+        [pflag ["ocaml"; "compile"] "inline"
+           (fun count -> S [A "-inline"; A count])]
+      says that command line option ["-inline 42"] should be added
+      when compiling files tagged with tag ["inline(42)"]. *)
+  val pflag : Tags.elt list -> Tags.elt -> (string -> Command.spec) -> unit
 
   (** [flag_and_dep tags command_spec]
       Combines [flag] and [dep] function.
@@ -538,6 +557,11 @@ module type PLUGIN = sig
       Pathnames selected are those in the constructor [P] or [Px], or the
       pathname argument of builtins like [Echo]. *)
   val flag_and_dep : Tags.elt list -> Command.spec -> unit
+
+  (** Allows to use [flag_and_dep] with a parameterized tag
+      (as [pdep] for [dep]). *)
+  val pflag_and_dep : Tags.elt list -> Tags.elt ->
+    (string -> Command.spec) -> unit
 
   (** [non_dependency module_path module_name]
        Example:

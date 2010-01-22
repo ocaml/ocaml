@@ -6,5 +6,5 @@ true: debug
 <*.byte> or <*.native> or <*.top>: use_unix
 "ocamlbuildlight.byte": -use_unix
 <*.cmx>: for-pack(Ocamlbuild_pack)
-<{ocamlbuild_{pack,plugin},my_unix_with_unix,ppcache,executor}{,.p}.cmx>: -for-pack(Ocamlbuild_pack)
+<{ocamlbuild_{pack,unix_plugin,plugin,executor},ppcache}{,.p}.cmx>: -for-pack(Ocamlbuild_pack)
 "doc": not_hygienic
