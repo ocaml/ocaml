@@ -52,7 +52,7 @@ examples_labltk:
 examples_camltk:
 	cd examples_camltk; $(MAKE) all
 
-install: 
+install:
 	cd support; $(MAKE) install
 	cd lib; $(MAKE) install
 	cd labltk; $(MAKE) install
@@ -72,7 +72,7 @@ installopt:
 	cd frx; $(MAKE) installopt
 	cd tkanim; $(MAKE) installopt
 
-partialclean clean: 
+partialclean clean:
 	for d in $(SUBDIRS); do \
 	    cd $$d; $(MAKE) -f Makefile clean; cd ..; \
 	done

@@ -114,7 +114,7 @@
    ((fboundp 'global-font-lock-mode)
     (make-local-variable 'font-lock-defaults)
     (setq font-lock-defaults
-	  '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
+          '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
    (t
     (setq font-lock-keywords caml-font-lock-keywords)))
   (make-local-variable 'font-lock-keywords-only)

@@ -159,5 +159,5 @@ TK_LINK=tk85.lib tcl85.lib ws2_32.lib
 
 ############# Aliases for common commands
 
-MAKEREC=$(MAKE) -f Makefile.nt 
+MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)

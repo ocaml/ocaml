@@ -17,8 +17,8 @@ open Camltk
 
 let version = "$Id$"
 
-(* 
- * convert an integer to an absolute index 
+(*
+ * convert an integer to an absolute index
 *)
 let abs_index n =
   TextIndex (LineChar(0,0), [CharOffset n])
@@ -35,8 +35,8 @@ let textEnd =
 let textBegin =
   TextIndex (LineChar(0,0), [])
 
-(* 
- * Link a scrollbar and a text widget 
+(*
+ * Link a scrollbar and a text widget
 *)
 let scroll_link sb tx =
   Text.configure tx [YScrollCommand (Scrollbar.set sb)];
@@ -64,7 +64,7 @@ let navigation_keys tx =
 
 let new_scrollable_text top options navigation =
   let f = Frame.create top [] in
-  let tx = Text.create f options 
+  let tx = Text.create f options
   and sb = Scrollbar.create f [] in
     scroll_link sb tx;
     (* IN THIS ORDER -- RESIZING *)
@@ -85,11 +85,11 @@ let topsearch t =
   Wm.title_set top "Text search";
     let f = Frame.create_named top "fpattern" [] in
       let m = Label.create_named f "search" [Text "Search pattern"]
-      and e = Entry.create_named f "pattern" 
+      and e = Entry.create_named f "pattern"
         [Relief Sunken; TextVariable (patternv()) ] in
   let hgroup = Frame.create top []
   and bgroup = Frame.create top [] in
-    let fdir = Frame.create hgroup [] 
+    let fdir = Frame.create hgroup []
     and fmisc = Frame.create hgroup [] in
     let direction = Textvariable.create_temporary fdir
     and exactv = Textvariable.create_temporary fdir
@@ -101,11 +101,11 @@ let topsearch t =
       and exact = Checkbutton.create_named fmisc "exact"
              [Text "Exact match"; Variable exactv]
       and case = Checkbutton.create_named fmisc "case"
-             [Text "Fold Case"; Variable (casev())] 
+             [Text "Fold Case"; Variable (casev())]
       and searchb = Button.create_named bgroup "search" [Text "Search"]
       and contb = Button.create_named bgroup "continue" [Text "Continue"]
       and dismissb = Button.create_named bgroup "dismiss"
-         [Text "Dismiss"; 
+         [Text "Dismiss";
          Command (fun () -> Text.tag_delete t ["search"]; destroy top)] in
 
       Radiobutton.invoke forw;
@@ -131,24 +131,24 @@ let topsearch t =
      try
        let forward = Textvariable.get direction = "f" in
        let i = Text.search t !opts (Entry.get e)
-          (if cont then !current_index 
+          (if cont then !current_index
            else if forward then textBegin
            else TextIndex(End, [CharOffset (-1)])) (* does not work with end *)
-          (if forward then textEnd 
+          (if forward then textEnd
            else textBegin) in
        let found = TextIndex (i, []) in
-         current_index := 
+         current_index :=
            TextIndex(i, [CharOffset (if forward then 1 else (-1))]);
          Text.tag_delete t ["search"];
          Text.tag_add t "search" found (TextIndex (i, [WordEnd]));
-         Text.tag_configure t "search" 
+         Text.tag_configure t "search"
                 [Relief Raised; BorderWidth (Pixels 1);
                  Background Red];
          Text.see t found
      with
        Invalid_argument _ -> Bell.ring() in
-    
-   bind e [[], KeyPressDetail "Return"] 
+
+   bind e [[], KeyPressDetail "Return"]
          (BindSet ([], fun _ -> search false ()));
    Button.configure searchb [Command (search false)];
    Button.configure contb [Command (search true)];
@@ -163,10 +163,10 @@ let addsearch tx =
     | _ -> ()
 
 (* We use Mod1 instead of Meta or Alt *)
-let init () = 
+let init () =
   List.iter (function ev ->
-             tag_bind "TEXT_RO" ev 
-                  (BindSetBreakable ([Ev_Widget], 
+             tag_bind "TEXT_RO" ev
+                  (BindSetBreakable ([Ev_Widget],
                                  (fun ei -> page_up ei.ev_Widget; break()))))
            [
             [[], KeyPressDetail "BackSpace"];
@@ -176,8 +176,8 @@ let init () =
             [[Mod1], KeyPressDetail "v"]
            ];
   List.iter (function ev ->
-             tag_bind "TEXT_RO" ev 
-                  (BindSetBreakable ([Ev_Widget], 
+             tag_bind "TEXT_RO" ev
+                  (BindSetBreakable ([Ev_Widget],
                                  (fun ei -> page_down ei.ev_Widget; break()))))
            [
             [[], KeyPressDetail "space"];
@@ -185,16 +185,16 @@ let init () =
             [[Control], KeyPressDetail "v"]
            ];
   List.iter (function ev ->
-             tag_bind "TEXT_RO" ev 
-                  (BindSetBreakable ([Ev_Widget], 
+             tag_bind "TEXT_RO" ev
+                  (BindSetBreakable ([Ev_Widget],
                                  (fun ei -> line_up ei.ev_Widget; break()))))
            [
             [[], KeyPressDetail "Up"];
             [[Mod1], KeyPressDetail "z"]
            ];
   List.iter (function ev ->
-             tag_bind "TEXT_RO" ev 
-                  (BindSetBreakable ([Ev_Widget], 
+             tag_bind "TEXT_RO" ev
+                  (BindSetBreakable ([Ev_Widget],
                                  (fun ei -> line_down ei.ev_Widget; break()))))
            [
             [[], KeyPressDetail "Down"];
@@ -202,8 +202,8 @@ let init () =
            ];
 
   List.iter (function ev ->
-             tag_bind "TEXT_RO" ev 
-                  (BindSetBreakable ([Ev_Widget], 
+             tag_bind "TEXT_RO" ev
+                  (BindSetBreakable ([Ev_Widget],
                                  (fun ei -> top ei.ev_Widget; break()))))
            [
             [[], KeyPressDetail "Home"];
@@ -211,8 +211,8 @@ let init () =
            ];
 
   List.iter (function ev ->
-             tag_bind "TEXT_RO" ev 
-                  (BindSetBreakable ([Ev_Widget], 
+             tag_bind "TEXT_RO" ev
+                  (BindSetBreakable ([Ev_Widget],
                                  (fun ei -> bottom ei.ev_Widget; break()))))
            [
             [[], KeyPressDetail "End"];
@@ -226,4 +226,3 @@ let init () =
            [
             [[Control], KeyPressDetail "s"]
            ]
-

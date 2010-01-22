@@ -48,4 +48,3 @@ CAMLprim value unix_execvpe(value path, value args, value env)
   return Val_unit;                  /* never reached, but suppress warnings */
                                 /* from smart compilers */
 }
-

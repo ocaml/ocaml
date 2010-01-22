@@ -8,10 +8,10 @@ all: addition$(EXE) helloworld$(EXE) winskel$(EXE) fileinput$(EXE) \
 	eyes$(EXE) tetris$(EXE) mytext$(EXE) fileopen$(EXE)
 
 addition$(EXE): addition.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma addition.cmo 
+	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma addition.cmo
 
 helloworld$(EXE): helloworld.cmo
-	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma helloworld.cmo 
+	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma helloworld.cmo
 
 winskel$(EXE): winskel.cmo
 	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma winskel.cmo
@@ -33,13 +33,13 @@ mytext$(EXE): mytext.cmo
 
 # graph$(EXE): graphics.cmo graphics_test.cmo
 # 	  $(CAMLC) -o $@ graphics.cmo graphics_test.cmo
-# 
+#
 # graphics_test.cmo: graphics.cmo
 
 fileopen$(EXE): fileopen.cmo
 	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma fileopen.cmo
 
-clean : 
+clean :
 	rm -f *.cm? $(EXECS) addition eyes fileinput fileopen helloworld jptest mytext tetris winskel
 
 .SUFFIXES :

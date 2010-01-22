@@ -29,4 +29,3 @@ val merge_info_opt :
 val merge :
   Odoc_types.merge_option list ->
   Odoc_module.t_module list -> Odoc_module.t_module list
-

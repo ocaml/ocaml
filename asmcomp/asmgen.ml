@@ -90,7 +90,7 @@ let compile_genfuns ppf f =
   List.iter
     (function
        | (Cfunction {fun_name = name}) as ph when f name ->
-	   compile_phrase ppf ph
+           compile_phrase ppf ph
        | _ -> ())
     (Cmmgen.generic_functions true [Compilenv.current_unit_infos ()])
 

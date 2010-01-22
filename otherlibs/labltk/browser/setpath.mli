@@ -22,4 +22,4 @@ val exec_update_hooks : unit -> unit
 
 val set : dir:string -> unit
 val f : dir:string -> toplevel widget
-    (* edit the load path *)  
+    (* edit the load path *)

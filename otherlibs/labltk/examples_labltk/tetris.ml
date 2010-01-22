@@ -104,7 +104,7 @@ let blocks = [
   [ [|"0000";
       "0111";
       "0100";
-      "0000" |]; 
+      "0000" |];
 
     [|"0000";
       "0110";
@@ -124,7 +124,7 @@ let blocks = [
   [ [|"0000";
       "0100";
       "0111";
-      "0000" |]; 
+      "0000" |];
 
     [|"0000";
       "0110";
@@ -245,11 +245,11 @@ class cell t1 t2 t3 ~canvas ~x ~y = object
         Canvas.move canvas t3
           ~x: (block_size * (x+1)+10+ cell_border*2)
           ~y: (block_size * (y+1)+10+ cell_border*2)
-      end     
+      end
     end;
     color <- col
 end
-    
+
 let cell_get (c, cf) x y = cf.(y).(x) #get
 
 let cell_set (c, cf) ~x ~y ~color =
@@ -290,7 +290,7 @@ let init fw =
   let lnl = Label.create r ~text: "Lines" ~font: "variable" in
   let ln = Label.create r ~textvariable: linev ~font: "variable" in
   let levl = Label.create r ~text: "Level" ~font: "variable" in
-  let lev = Label.create r ~textvariable: levv ~font: "variable" in 
+  let lev = Label.create r ~textvariable: levv ~font: "variable" in
   let newg = Button.create r ~text: "New Game" ~font: "variable" in
 
   pack [f];
@@ -305,11 +305,11 @@ let init fw =
       (Array.map ~f:
          begin fun (x,y) ->
            let t1 =
-             Canvas.create_rectangle c 
+             Canvas.create_rectangle c
                ~x1:(-block_size - 8) ~y1:(-block_size - 8)
                ~x2:(-9)              ~y2:(-9)
            and t2 =
-             Canvas.create_rectangle c 
+             Canvas.create_rectangle c
                ~x1:(-block_size - 10) ~y1:(-block_size - 10)
                ~x2:(-11)              ~y2:(-11)
            and t3 =
@@ -329,15 +329,15 @@ let init fw =
       (Array.map ~f:
          begin fun (x,y) ->
            let t1 =
-             Canvas.create_rectangle nc 
+             Canvas.create_rectangle nc
                ~x1:(-block_size - 8) ~y1:(-block_size - 8)
                ~x2:(-9)              ~y2:(-9)
            and t2 =
-             Canvas.create_rectangle nc 
+             Canvas.create_rectangle nc
                ~x1:(-block_size - 10) ~y1:(-block_size - 10)
                ~x2:(-11)              ~y2:(-11)
            and t3 =
-             Canvas.create_rectangle nc 
+             Canvas.create_rectangle nc
                ~x1:(-block_size - 12) ~y1:(-block_size - 12)
                ~x2:(-13)              ~y2:(-13)
            in
@@ -350,10 +350,10 @@ let init fw =
   let game_over () = ()
   in
     (* What a mess ! *)
-  [ coe f; coe c; coe r; coe nl; coe nc; coe scl; coe sc; coe levl; coe lev; 
+  [ coe f; coe c; coe r; coe nl; coe nc; coe scl; coe sc; coe levl; coe lev;
     coe lnl; coe ln ],
   newg, (c, cells), (nc, nexts), scorev, linev, levv, game_over
-  
+
 
 let draw_block field ~color ~block ~x ~y =
   for iy = 0 to 3 do
@@ -367,7 +367,7 @@ let draw_block field ~color ~block ~x ~y =
   done
 
 let timer_ref = (ref None : Timer.t option ref)
-(* I know, this should be timer ref, but I'm not sure what should be 
+(* I know, this should be timer ref, but I'm not sure what should be
    the initial value ... *)
 
 let remove_timer () =
@@ -378,13 +378,13 @@ let remove_timer () =
 let do_after ~ms ~callback =
   timer_ref := Some (Timer.add ~ms ~callback)
 
-let copy_block c = 
+let copy_block c =
   { pattern= !c.pattern;
     bcolor= !c.bcolor;
     x= !c.x;
     y= !c.y;
     d= !c.d;
-    alive= !c.alive } 
+    alive= !c.alive }
 
 let _ =
   let top = openTk () in
@@ -392,7 +392,7 @@ let _ =
   and fw = Frame.create top
   in
   let set_message s = Label.configure lb ~text:s in
-  pack [coe lb; coe fw] ~side: `Top; 
+  pack [coe lb; coe fw] ~side: `Top;
   let score = ref 0 in
   let line = ref 0 in
   let level = ref 0 in
@@ -402,7 +402,7 @@ let _ =
   let widgets, button, cell_field, next_field, scorev, linev, levv, game_over
       = init fw in
   let canvas = fst cell_field in
-  
+
   let init_field () =
     for i = 0 to 25 do
       field.(i) <- line_empty
@@ -417,19 +417,19 @@ let _ =
       for j = 0 to 3 do
         cell_set next_field ~x:j ~y:i ~color:0
       done
-    done 
+    done
   in
-  
+
   let draw_falling_block fb =
-    draw_block cell_field ~color: fb.bcolor 
-      ~block: (List.nth fb.pattern fb.d) 
-      ~x:     (fb.x - 3) 
+    draw_block cell_field ~color: fb.bcolor
+      ~block: (List.nth fb.pattern fb.d)
+      ~x:     (fb.x - 3)
       ~y:     (fb.y - 3)
-    
+
   and erase_falling_block fb =
-    draw_block cell_field ~color: 0 
-      ~block: (List.nth fb.pattern fb.d) 
-      ~x:     (fb.x - 3) 
+    draw_block cell_field ~color: 0
+      ~block: (List.nth fb.pattern fb.d)
+      ~x:     (fb.x - 3)
       ~y:     (fb.y - 3)
   in
 
@@ -446,21 +446,21 @@ let _ =
   and clear fb =
     let l = ref 0 in
     for i = 0 to 3 do
-      if i + fb.y >= 3 && i + fb.y <= 22 then 
+      if i + fb.y >= 3 && i + fb.y <= 22 then
         if field.(i + fb.y) = line_full then
           begin
             incr l;
             field.(i + fb.y) <- line_empty;
             for j = 0 to 9 do
-              cell_set cell_field ~x:j ~y:(i + fb.y - 3) ~color:0 
+              cell_set cell_field ~x:j ~y:(i + fb.y - 3) ~color:0
             done
-          end  
+          end
     done;
     !l
-    
+
   and fall_lines () =
     let eye = ref 22 (* bottom *)
-    and cur = ref 22 (* bottom *) 
+    and cur = ref 22 (* bottom *)
     in
     try
       while !eye >= 3 do
@@ -470,11 +470,11 @@ let _ =
         done;
         field.(!cur) <- field.(!eye);
         for j = 0 to 9 do
-          cell_set cell_field ~x:j ~y:(!cur-3) 
+          cell_set cell_field ~x:j ~y:(!cur-3)
             ~color:(cell_get cell_field j (!eye-3))
         done;
         decr eye;
-        decr cur 
+        decr cur
       done
     with Done -> ();
       for i = 3 to !cur do
@@ -489,20 +489,20 @@ let _ =
   and current =
     ref { pattern= [[|0;0;0;0|]]; bcolor=0; x=0; y=0; d=0; alive= false}
   in
-     
+
   let draw_next () =
-    draw_block next_field ~color: (!next+1) 
-      ~block: (List.hd (List.nth blocks !next)) 
-      ~x: 0 ~y: 0 
-     
+    draw_block next_field ~color: (!next+1)
+      ~block: (List.hd (List.nth blocks !next))
+      ~x: 0 ~y: 0
+
   and erase_next () =
-    draw_block next_field ~color: 0 
-      ~block: (List.hd (List.nth blocks !next)) 
-      ~x: 0 ~y: 0 
+    draw_block next_field ~color: 0
+      ~block: (List.hd (List.nth blocks !next))
+      ~x: 0 ~y: 0
   in
 
   let set_nextblock () =
-    current := 
+    current :=
        { pattern= (List.nth blocks !next);
          bcolor= !next+1;
          x=6; y= 1; d= 0; alive= true};
@@ -510,22 +510,22 @@ let _ =
     next := Random.int 7;
     draw_next ()
   in
- 
+
   let death_check fb =
     try
       for i=0 to 3 do
         let cur = field.(i + fb.y) in
-        if cur land ((List.nth fb.pattern fb.d).(i) lsl fb.x) <> 0 
+        if cur land ((List.nth fb.pattern fb.d).(i) lsl fb.x) <> 0
         then raise Done
       done;
       false
-    with 
+    with
       Done -> true
   in
-    
+
   let try_to_move m =
     if !current.alive then
-      let sub m = 
+      let sub m =
         if death_check m then false
         else
           begin
@@ -536,32 +536,32 @@ let _ =
           end
       in
       if sub m then true
-      else        
+      else
         begin
           m.x <- m.x + 1;
           if sub m then true
           else
-            begin 
+            begin
               m.x <- m.x - 2;
               sub m
-            end  
+            end
         end
-    else false 
+    else false
   in
 
   let image_load =
-    let i = Canvas.create_image canvas 
+    let i = Canvas.create_image canvas
         ~x: (block_size * 5 + block_size / 2)
         ~y: (block_size * 10 + block_size / 2)
         ~anchor: `Center in
     Canvas.lower canvas i;
     let img = Imagephoto.create () in
     fun file ->
-      try 
+      try
         Imagephoto.configure img ~file: file;
-        Canvas.configure_image canvas i ~image: img 
+        Canvas.configure_image canvas i ~image: img
       with
-        _ -> 
+        _ ->
           begin
             Printf.eprintf "%s : No such image...\n" file;
             flush stderr
@@ -572,14 +572,14 @@ let _ =
     let pline = !line in
     if l <> 0 then
       begin
-        line := !line + l; 
+        line := !line + l;
         score := !score + l * l;
         set_message (Printf.sprintf "%d pts" (1 lsl ((l - 1) * 2)))
-      end; 
+      end;
     Textvariable.set linev (string_of_int !line);
-    Textvariable.set scorev (string_of_int !score); 
+    Textvariable.set scorev (string_of_int !score);
 
-    if !line /10 <> pline /10 then 
+    if !line /10 <> pline /10 then
       (* update the background every 10 lines. *)
       begin
         let num_image = List.length backgrounds - 1 in
@@ -587,16 +587,16 @@ let _ =
         let n = if n > num_image then num_image else n in
         let file = List.nth backgrounds n in
         image_load file;
-        incr level; 
-        Textvariable.set levv (string_of_int !level) 
+        incr level;
+        Textvariable.set levv (string_of_int !level)
       end
   in
 
-  let rec newblock () = 
+  let rec newblock () =
     set_message "TETRIS";
     set_nextblock ();
     draw_falling_block !current;
-    if death_check !current then 
+    if death_check !current then
       begin
         !current.alive <- false;
         set_message "GAME OVER";
@@ -608,7 +608,7 @@ let _ =
         if !time < 60 - !level * 3 then time := 60 - !level * 3;
         do_after ~ms:stop_a_bit ~callback:loop
       end
-   
+
   and loop () =
     let m = copy_block current in
     m.y <- m.y + 1;
@@ -641,7 +641,7 @@ let _ =
 
   let bind_game w =
     bind w ~events:[`KeyPress] ~fields:[`KeySymString] ~action:
-      begin fun e -> 
+      begin fun e ->
         match e.ev_KeySymString with
         | "h"|"Left" ->
             let m = copy_block current in
@@ -669,7 +669,7 @@ let _ =
               begin
                 let m = copy_block current
                 and n = copy_block current in
-                while 
+                while
                   m.y <- m.y + 1;
                   if death_check m then false
                   else begin n.y <- m.y; true end
@@ -679,8 +679,8 @@ let _ =
                 current := n;
                 remove_timer ();
                 loop ()
-              end  
-        | _ -> ()          
+              end
+        | _ -> ()
       end
   in
 
@@ -693,9 +693,9 @@ let _ =
     score := 0;
     line := 0;
     level := 1;
-    add_score 0; 
+    add_score 0;
     init_field ();
-    next := Random.int 7;       
+    next := Random.int 7;
     set_message "Welcome to TETRIS";
     set_nextblock ();
     draw_falling_block !current;
@@ -703,7 +703,7 @@ let _ =
   in
     (* As an applet, it was required... *)
     (* List.iter f: bind_game widgets; *)
-  bind_game top; 
+  bind_game top;
   Button.configure button ~command: game_init;
   game_init ()
 

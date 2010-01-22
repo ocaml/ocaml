@@ -230,7 +230,7 @@ and add_module bv modl =
       add_expr bv e
 
 and add_structure bv item_list =
-  List.fold_left add_struct_item bv item_list 
+  List.fold_left add_struct_item bv item_list
 
 and add_struct_item bv item =
   match item.pstr_desc with
@@ -253,7 +253,7 @@ and add_struct_item bv item =
         List.fold_right StringSet.add
           (List.map (fun (id,_,_) -> id) bindings) bv in
       List.iter
-        (fun (id, mty, modl) -> add_modtype bv' mty; add_module bv' modl) 
+        (fun (id, mty, modl) -> add_modtype bv' mty; add_module bv' modl)
         bindings;
       bv'
   | Pstr_modtype(id, mty) ->
@@ -301,4 +301,3 @@ and add_class_field bv = function
 
 and add_class_declaration bv decl =
   add_class_expr bv decl.pci_expr
-

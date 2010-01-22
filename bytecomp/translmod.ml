@@ -84,7 +84,7 @@ let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
   | {val_kind=Val_prim p} -> primitive_declarations := p :: !primitive_declarations
   | _ -> ()
- 
+
 (* Keep track of the root path (from the root of the namespace to the
    currently compiled module expression).  Useful for naming exceptions. *)
 

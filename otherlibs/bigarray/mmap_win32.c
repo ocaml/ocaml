@@ -111,7 +111,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   delta = (uintnat) (startpos % sysinfo.dwPageSize);
   /* Map the mapping in memory */
   li.QuadPart = startpos - delta;
-  addr = 
+  addr =
     MapViewOfFile(fmap, mode, li.HighPart, li.LowPart, array_size + delta);
   if (addr == NULL) caml_ba_sys_error();
   addr = (void *) ((uintnat) addr + delta);

@@ -28,15 +28,15 @@ let scrollbar = Scrollbar.create f []
 (* kill buffer *)
 let buffer = ref ""
 
-(* Note: for the text widgets, the insertion cursor is 
+(* Note: for the text widgets, the insertion cursor is
     not TextIndex(Insert, []),
-    but TextIndex(Mark  "insert", []) 
-*) 
+    but TextIndex(Mark  "insert", [])
+*)
 let insertMark = TextIndex(Mark "insert", [])
 let eol_insertMark = TextIndex(Mark "insert", [LineEnd])
 
 let kill () =
-  buffer := 
+  buffer :=
      Text.get text insertMark eol_insertMark;
   prerr_endline ("Killed: " ^ !buffer);
   Text.delete text insertMark eol_insertMark
@@ -60,4 +60,3 @@ let _ =
 
   mainLoop ()
 ;;
-

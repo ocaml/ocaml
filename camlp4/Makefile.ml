@@ -275,8 +275,8 @@ let file ppf f =
     loop ()
   in try loop () with End_of_file -> ()
 let ext_split f = split '.' f
-  
-  
+
+
 let print_packed_sources ppf ?(skip = fun _ -> false) package_dir =
   let _ =
   fold_units_sources [package_dir] (fun name sources k (skip, inside) ->
@@ -356,4 +356,3 @@ let just_doc () =
 
 let doc () =
   pack (); just_doc ()
-

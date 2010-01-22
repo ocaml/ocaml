@@ -18,12 +18,12 @@
 #define _WIN32_WINNT 0x0400
 #include <windows.h>
 
-/* Pool of worker threads. 
+/* Pool of worker threads.
  *
  * These functions help to manage a pool of worker thread and submit task to
  * the pool. It helps to reduce the number of thread creation.
  *
- * Each worker are started in alertable wait state and jobs are submitted as 
+ * Each worker are started in alertable wait state and jobs are submitted as
  * APC (asynchronous procedure call).
  */
 
@@ -42,16 +42,16 @@ typedef WORKER *LPWORKER;
  */
 typedef void (*WORKERFUNC) (HANDLE, void *);
 
-/* Initialize global data structure for worker 
+/* Initialize global data structure for worker
  */
 void worker_init (void);
 
-/* Free global data structure for worker 
+/* Free global data structure for worker
  */
 void worker_cleanup (void);
 
 /* Submit a job to worker. Use returned data to synchronize with the procedure
- * submitted. 
+ * submitted.
  */
 LPWORKER worker_job_submit (WORKERFUNC f, void *data);
 
@@ -63,7 +63,7 @@ HANDLE worker_job_event_done (LPWORKER);
  */
 void worker_job_stop (LPWORKER);
 
-/* End a job submitted to worker. 
+/* End a job submitted to worker.
  */
 void worker_job_finish (LPWORKER);
 

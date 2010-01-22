@@ -17,5 +17,3 @@ let _ =
   Thread.create receiver "A";
   receiver "B";
   exit 0
-
-

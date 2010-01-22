@@ -37,7 +37,7 @@ let copy_compunit ic oc compunit =
   end
 
 (* Add C objects and options and "custom" info from a library descriptor *)
-  
+
 let lib_sharedobjs = ref []
 let lib_ccobjs = ref []
 let lib_ccopts = ref []
@@ -119,4 +119,3 @@ let report_error ppf = function
       fprintf ppf "Cannot find file %s" name
   | Not_an_object_file name ->
       fprintf ppf "The file %s is not a bytecode object file" name
-

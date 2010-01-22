@@ -91,7 +91,7 @@ CAMLprim value caml_string_compare(value s1, value s2)
 
   if (s1 == s2) return Val_int(0);
   len1 = caml_string_length(s1);
-  len2 = caml_string_length(s2); 
+  len2 = caml_string_length(s2);
   res = memcmp(String_val(s1), String_val(s2), len1 <= len2 ? len1 : len2);
   if (res < 0) return Val_int(-1);
   if (res > 0) return Val_int(1);
@@ -104,22 +104,22 @@ CAMLprim value caml_string_lessthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
 }
-  
+
 CAMLprim value caml_string_lessequal(value s1, value s2)
 {
   return caml_string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
 }
-  
+
 CAMLprim value caml_string_greaterthan(value s1, value s2)
 {
   return caml_string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
 }
-  
+
 CAMLprim value caml_string_greaterequal(value s1, value s2)
 {
   return caml_string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
 }
-  
+
 CAMLprim value caml_blit_string(value s1, value ofs1, value s2, value ofs2,
                                 value n)
 {
@@ -153,4 +153,3 @@ CAMLprim value caml_bitvect_test(value bv, value n)
   int pos = Int_val(n);
   return Val_int(Byte_u(bv, pos >> 3) & (1 << (pos & 7)));
 }
-

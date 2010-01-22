@@ -54,4 +54,3 @@ let dump_counters () =
   end
 
 let _ = at_exit dump_counters
-

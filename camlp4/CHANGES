@@ -160,8 +160,8 @@ Camlp4 Version 3.05
   (Jacques Garrigue's idea):
         old syntax      new syntax
         [| ... |]       [ = ... ]
-        [| < ... |]     [ < ... ]     
-        [| > ... |]     [ > ... ]     
+        [| < ... |]     [ < ... ]
+        [| > ... |]     [ > ... ]
   This applies also in predefined quotations of syntax tree for types
   <:ctyp< ... >>
 - [05 Jun 02] Added option -ss in pr_o.cmo: print with double semicolons;
@@ -600,7 +600,7 @@ Grammar interface
   is now:
        Grammar.tokens g ""
 
-Missing features added 
+Missing features added
 * Added "lazy" statement (pa_r.cmo, pa_o.cmo, pr_r.cmo, pr_o.cmo)
 * Added print "assert" statement (pr_o.cmo, pr_r.cmo)
 * Added parsing of infix operators like in Ocaml (e.g. |||) in pa_o.cmo
@@ -690,7 +690,7 @@ Errors and missings in normal and righteous syntaxes.
 
 Grammars, EXTEND, DELETE_RULE
 
-* Added functorial version for grammars (started in version 1.07.1, 
+* Added functorial version for grammars (started in version 1.07.1,
   completed in this version).
 * Added statements GEXTEND and GDELETE_RULE in pa_extend.cmo for functorial
   version.

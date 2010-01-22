@@ -31,8 +31,8 @@ let new_vertical parent w h =
             [FillColor okcolor; Outline okcolor]
   in
     c, (function
-           0 -> Canvas.configure_rectangle c i [FillColor okcolor; 
-                                                Outline okcolor]; 
+           0 -> Canvas.configure_rectangle c i [FillColor okcolor;
+                                                Outline okcolor];
                 Canvas.coords_set c i [Pixels 0; Pixels 0;
                                         Pixels w; Pixels 0]
          | -1 -> Canvas.configure_rectangle c i [FillColor kocolor;
@@ -52,8 +52,8 @@ let new_horizontal parent w h =
             [FillColor okcolor; Outline okcolor]
   in
     c, (function
-           0 -> Canvas.configure_rectangle c i [FillColor okcolor; 
-                                                Outline okcolor]; 
+           0 -> Canvas.configure_rectangle c i [FillColor okcolor;
+                                                Outline okcolor];
                 Canvas.coords_set c i [Pixels 0; Pixels 0;
                                         Pixels 0; Pixels h]
          | -1 -> Canvas.configure_rectangle c i [FillColor kocolor;

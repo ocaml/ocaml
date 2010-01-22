@@ -56,7 +56,7 @@ CAMLprim value unix_setitimer(value which, value newval)
     uerror("setitimer", Nothing);
   return unix_convert_itimer(&old);
 }
-     
+
 CAMLprim value unix_getitimer(value which)
 {
   struct itimerval val;

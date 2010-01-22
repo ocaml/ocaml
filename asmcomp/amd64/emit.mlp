@@ -60,7 +60,7 @@ let slot_offset loc cl =
 (* Symbols *)
 
 let emit_symbol s =
-    if macosx then emit_string "_"; 
+    if macosx then emit_string "_";
     Emitaux.emit_symbol '$' s
 
 let emit_call s =
@@ -791,4 +791,3 @@ let end_assembly() =
   if Config.system = "linux" then
     (* Mark stack as non-executable, PR#4564 *)
     `	.section .note.GNU-stack,\"\",%progbits\n`
-

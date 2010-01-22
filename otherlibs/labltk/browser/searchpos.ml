@@ -180,7 +180,7 @@ let search_pos_type_decl td ~pos ~env =
         search_pos_type t2 ~pos ~env
       end
   end
-  
+
 let rec search_pos_signature l ~pos ~env =
   ignore (
   List.fold_left l ~init:env ~f:
@@ -205,7 +205,7 @@ let rec search_pos_signature l ~pos ~env =
       | Psig_exception (_, l) ->
           List.iter l ~f:(search_pos_type ~pos ~env);
           add_found_sig (`Type, Lident "exn") ~env ~loc:pt.psig_loc
-      | Psig_module (_, t) -> 
+      | Psig_module (_, t) ->
           search_pos_module t ~pos ~env
       | Psig_recmodule decls ->
           List.iter decls ~f:(fun (_, t) -> search_pos_module t ~pos ~env)
@@ -218,7 +218,7 @@ let rec search_pos_signature l ~pos ~env =
       | Psig_class_type l ->
           List.iter l
             ~f:(fun ci -> search_pos_class_type ci.pci_expr ~pos ~env)
-      (* The last cases should not happen in generated interfaces *) 
+      (* The last cases should not happen in generated interfaces *)
       | Psig_open lid -> add_found_sig (`Module, lid) ~env ~loc:pt.psig_loc
       | Psig_include t -> search_pos_module t ~pos ~env
       end;
@@ -237,7 +237,7 @@ and search_pos_module m ~pos ~env =
         search_pos_module m ~pos ~env;
         List.iter l ~f:
           begin function
-              _, Pwith_type t -> search_pos_type_decl t ~pos ~env 
+              _, Pwith_type t -> search_pos_type_decl t ~pos ~env
             | _ -> ()
           end
     end
@@ -438,7 +438,7 @@ and view_signature_item sign ~path ~env =
 
 and view_module path ~env =
   match find_module path env with
-    Tmty_signature sign -> 
+    Tmty_signature sign ->
       !view_defined_ref (Searchid.longident_of_path path) ~env
   | modtype ->
       let id = ident_of_path path ~default:"M" in

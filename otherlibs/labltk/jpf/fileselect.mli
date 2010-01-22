@@ -26,12 +26,12 @@ val f :
   action:(string list -> unit) ->
   filter:string -> file:string -> multi:bool -> sync:bool -> unit
 
-(* action 
+(* action
       []  means canceled
       if multi select is false, then the list is null or a singleton *)
 
-(* multi select 
+(* multi select
       if true then more than one file are selectable *)
 
-(* sync it 
+(* sync it
       if true then in synchronous mode *)

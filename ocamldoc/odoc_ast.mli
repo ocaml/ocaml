@@ -42,7 +42,7 @@ module Typedtree_search :
       val search_exception : tab -> string -> Types.exception_declaration
 
       (** This function returns the [Path.t] associated to the given exception rebind name,
-         in the table. 
+         in the table.
          @raise Not_found if the exception rebind was not found.*)
       val search_exception_rebind : tab -> string -> Path.t
 
@@ -51,7 +51,7 @@ module Typedtree_search :
          @raise Not_found if the type was not found. *)
       val search_type_declaration : tab -> string -> Types.type_declaration
 
-      (** This function returns the [Typedtree.class_expr] and type parameters 
+      (** This function returns the [Typedtree.class_expr] and type parameters
          associated to the given class name, in the given table.
          @raise Not_found if the class was not found. *)
       val search_class_exp : tab -> string -> (Typedtree.class_expr * (Types.type_expr list))
@@ -61,23 +61,23 @@ module Typedtree_search :
          @raise Not_found if the class type was not found. *)
       val search_class_type_declaration : tab -> string -> Types.cltype_declaration
 
-      (** This function returns the couple (pat, exp) for the given value name, in the 
+      (** This function returns the couple (pat, exp) for the given value name, in the
          given table of values.
          @raise Not found if no value matches the name.*)
       val search_value : tab_values -> string -> Typedtree.pattern * Typedtree.expression
 
-      (** This function returns the [type_expr] for the given primitive name, in the 
+      (** This function returns the [type_expr] for the given primitive name, in the
          given table.
          @raise Not found if no value matches the name.*)
       val search_primitive : tab -> string -> Types.type_expr
 
-      (** This function returns the [Typedtree.class_expr] associated to 
-         the n'th inherit in the given class structure of typed tree. 
+      (** This function returns the [Typedtree.class_expr] associated to
+         the n'th inherit in the given class structure of typed tree.
          @raise Not_found if the class expression could not be found.*)
       val get_nth_inherit_class_expr :
           Typedtree.class_structure -> int -> Typedtree.class_expr
 
-      (** This function returns the [Types.type_expr] of the attribute 
+      (** This function returns the [Types.type_expr] of the attribute
          whose name is given, in a given class structure.
          @raise Not_found if the class attribute could not be found.*)
       val search_attribute_type :
@@ -88,15 +88,15 @@ module Typedtree_search :
       val search_method_expression :
           Typedtree.class_structure -> string -> Typedtree.expression
     end
-    
-(** The module which performs the analysis of a typed tree. 
+
+(** The module which performs the analysis of a typed tree.
    The module uses the module {!Odoc_sig.Analyser}.
    @param My_ir The module used to retrieve comments and special comments.*)
 module Analyser :
   functor (My_ir : Odoc_sig.Info_retriever) ->
     sig
-      (** This function takes a file name, a file containg the code and 
-         the typed tree obtained from the compiler. 
+      (** This function takes a file name, a file containg the code and
+         the typed tree obtained from the compiler.
          It goes through the tree, creating values for encountered
          functions, modules, ..., and looking in the source file for comments.*)
       val analyse_typed_tree :

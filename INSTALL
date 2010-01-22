@@ -78,7 +78,7 @@ The "configure" script accepts the following options:
         LablTk. "-tkdefs" helps to find the headers, and "-tklibs"
         the C libraries. "-tklibs" may contain either only -L/path and
         -Wl,... flags, in which case the library names are determined
-        automatically, or the actual libraries, which are used as given. 
+        automatically, or the actual libraries, which are used as given.
         Example: for a Japanese tcl/tk whose headers are in specific
         directories and libraries in /usr/local/lib, you can use
         ./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"

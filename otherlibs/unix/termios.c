@@ -39,7 +39,7 @@ enum { Input, Output };
 #define NFIELDS 38
 
 /* Structure of the terminal_io record. Cf. unix.mli */
-  
+
 static long terminal_io_descr[] = {
   /* Input modes */
   Bool, iflags, IGNBRK,
@@ -314,4 +314,3 @@ CAMLprim value unix_tcflow(value fd, value action)
 { invalid_argument("tcflow not implemented"); }
 
 #endif
-

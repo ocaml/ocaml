@@ -166,7 +166,7 @@ method select_operation op args =
 method select_condition = function
   | Cop(Ccmpf cmp, args) ->
       (Iinttest_imm(Isigned cmp, 0),
-       Cop(Cextcall(float_comparison_function cmp, 
+       Cop(Cextcall(float_comparison_function cmp,
                     typ_int, false, Debuginfo.none),
            args))
   | expr ->
@@ -198,4 +198,3 @@ method insert_op_debug op dbg rs rd =
 end
 
 let fundecl f = (new selector)#emit_fundecl f
-

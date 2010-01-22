@@ -32,12 +32,12 @@ type textVariable = string
 (* List of handles *)
 let handles = Hashtbl.create 401
 
-let add_handle var cbid = 
+let add_handle var cbid =
   try
     let r = Hashtbl.find handles var in
     r := cbid :: !r
   with
-    Not_found -> 
+    Not_found ->
       Hashtbl.add handles var (ref [cbid])
 
 let exceptq x =
@@ -92,10 +92,10 @@ let memo = Hashtbl.create 101
 (* Added a variable v referenced by widget w *)
 let add w v =
   let w = Widget.forget_type w in
-  let r = 
-    try Hashtbl.find memo w 
+  let r =
+    try Hashtbl.find memo w
     with
-      Not_found -> 
+      Not_found ->
         let r = ref StringSet.empty in
           Hashtbl.add memo w r;
           r in
@@ -111,7 +111,7 @@ let freew w =
   try
     let r = Hashtbl.find memo w in
     StringSet.iter free !r;
-    Hashtbl.remove memo w 
+    Hashtbl.remove memo w
   with
     Not_found -> ()
 
@@ -119,10 +119,10 @@ let _ = add_destroy_hook freew
 
 (* Allocate a new variable *)
 let counter = ref 0
-let getv () = 
-  let v = 
+let getv () =
+  let v =
     if StringSet.is_empty !freelist then begin
-      incr counter; 
+      incr counter;
       "camlv("^ string_of_int !counter ^")"
       end
     else
@@ -149,4 +149,3 @@ let cCAMLtoTKtextVariable s = TkToken s
 
 let name s = s
 let coerce s = s
-

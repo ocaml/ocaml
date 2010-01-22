@@ -22,7 +22,7 @@ open Support
 type animatedGif
 
     (* This data type contains all the information of an animation of
-       gif89a format. It is still test implementation, so I should 
+       gif89a format. It is still test implementation, so I should
        keep it abstract. --- JPF *)
 
 type imageType =
@@ -35,7 +35,7 @@ type imageType =
 
 (*** Flags ***)
 
-val debug : bool ref 
+val debug : bool ref
 
 (*** Library availability check ***)
 
@@ -57,8 +57,8 @@ val create : string -> imageType
 
       (* [create file] loads a gif87 or gif89 image file and parse it,
          and returns [Animated animated_gif] if the image file has
-         more than one images. Otherwise, it returns 
-         [Still (ImagePhoto image_photo)] *) 
+         more than one images. Otherwise, it returns
+         [Still (ImagePhoto image_photo)] *)
 
 val delete : animatedGif -> unit
 
@@ -72,7 +72,7 @@ val height : animatedGif -> int
          given animated gif. *)
 
 val images : animatedGif -> imagePhoto list
-      (* [images anim] returns the list of still images used in the 
+      (* [images anim] returns the list of still images used in the
          animation *)
 
 val animate : widget -> animatedGif -> bool -> unit

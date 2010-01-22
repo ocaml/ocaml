@@ -180,7 +180,7 @@ CAMLprim value caml_format_int(value fmt, value arg)
   value res;
 
   buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
-			format_string, default_format_buffer, &conv);
+                       format_string, default_format_buffer, &conv);
   switch (conv) {
   case 'u': case 'x': case 'X': case 'o':
     sprintf(buffer, format_string, Unsigned_long_val(arg));
@@ -492,7 +492,7 @@ CAMLprim value caml_int64_of_float(value v)
 { return caml_copy_int64(I64_of_double(Double_val(v))); }
 
 CAMLprim value caml_int64_to_float(value v)
-{ 
+{
   int64 i = Int64_val(v);
   return caml_copy_double(I64_to_double(i));
 }

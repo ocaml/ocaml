@@ -396,7 +396,7 @@ module Make (Token : Sig.Camlp4Token)
                                                         SYMBOL(beginning ^ tok) }
 
   and maybe_quotation_at c = parse
-    | (ident as loc) '<'      
+    | (ident as loc) '<'
       { mk_quotation quotation c "" loc (1 + String.length loc)                 }
     | symbolchar* as tok                                   { SYMBOL("<@" ^ tok) }
 
@@ -434,7 +434,7 @@ module Make (Token : Sig.Camlp4Token)
     | _                                         { store_parse (antiquot name) c }
 
   {
-    
+
   let lexing_store s buff max =
     let rec self n s =
       if n >= max then n

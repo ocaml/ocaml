@@ -20,7 +20,7 @@ let mk_store same =
   let r_acts = ref [] in
   let store act =
     let rec store_rec i = function
-      | [] -> i,[act] 
+      | [] -> i,[act]
       | act0::rem ->
           if same act0 act then raise (Found i)
           else
@@ -256,7 +256,7 @@ let coupe_inter i j cases =
   Array.sub cases i (j-i+1),
   case_append (Array.sub cases 0 i) (Array.sub cases (j+1) (lcases-(j+1)))
 
-type kind = Kvalue of int | Kinter of int | Kempty 
+type kind = Kvalue of int | Kinter of int | Kempty
 
 let pkind chan = function
   | Kvalue i ->Printf.fprintf chan "V%d" i
@@ -281,7 +281,7 @@ let make_key  cases =
         incr count ;
         r
     | (act0,index) :: rem ->
-        if act0 = act then 
+        if act0 = act then
           index
         else
           got_it act rem in
@@ -291,7 +291,7 @@ let make_key  cases =
       Kvalue (got_it act !seen)
     else
       Kinter (got_it act !seen) in
-  
+
   let rec make_rec i pl =
     if i < 0 then
       []
@@ -303,8 +303,8 @@ let make_key  cases =
         Kempty::make_one l h act::make_rec (i-1) l in
 
   let l,h,act = cases.(Array.length cases-1) in
-  make_one l h act::make_rec (Array.length cases-2) l 
-                       
+  make_one l h act::make_rec (Array.length cases-2) l
+
 
     let same_act t =
       let len = Array.length t in
@@ -330,7 +330,7 @@ let make_key  cases =
 
    This condition is checked by zyva
 *)
-  
+
 let inter_limit = 1 lsl 16
 
 let ok_inter = ref false
@@ -356,7 +356,7 @@ let rec opt_count top cases =
               divide top cases in
       Hashtbl.add t key r ;
       r
-        
+
 and divide top cases =
   let lcases = Array.length cases in
   let m = lcases/2 in
@@ -372,12 +372,12 @@ and divide top cases =
   else
     add_test cm cml ;
   Sep m,(cm, ci)
-    
+
 and heuristic top cases =
   let lcases = Array.length cases in
-  
+
   let sep,csep = divide false cases
-      
+
   and inter,cinter =
     if !ok_inter then begin
       let _,_,act0 = cases.(0)
@@ -398,18 +398,18 @@ and heuristic top cases =
       end else
         Inter (-1,-1),(too_much, too_much)
     end else
-      Inter (-1,-1),(too_much, too_much) in          
+      Inter (-1,-1),(too_much, too_much) in
   if less2tests csep cinter then
     sep,csep
   else
     inter,cinter
-      
-      
+
+
 and enum top cases =
   let lcases = Array.length cases in
   let lim, with_sep =
     let best = ref (-1) and best_cost = ref (too_much,too_much) in
-    
+
     for i = 1 to lcases-(1) do
       let _,left,right = coupe cases i in
       let ci = {n=1 ; ni=0}
@@ -422,7 +422,7 @@ and enum top cases =
         add_test cm cmr
       else
         add_test cm cml ;
-      
+
       if
         less2tests (cm,ci) !best_cost
       then begin
@@ -488,45 +488,45 @@ and enum top cases =
     r := Sep lim ; rc := with_sep
   end ;
   !r, !rc
-    
+
     let make_if_test konst test arg i ifso ifnot =
       Arg.make_if
         (Arg.make_prim test [arg ; konst i])
         ifso ifnot
-        
+
     let make_if_lt konst arg i  ifso ifnot = match i with
     | 1 ->
         make_if_test konst Arg.leint arg 0 ifso ifnot
     | _ ->
         make_if_test konst Arg.ltint arg i ifso ifnot
-          
+
     and make_if_le konst arg i ifso ifnot = match i with
     | -1 ->
         make_if_test konst Arg.ltint arg 0 ifso ifnot
     | _ ->
         make_if_test konst Arg.leint arg i ifso ifnot
-          
+
     and make_if_gt konst arg i  ifso ifnot = match i with
     | -1 ->
         make_if_test konst Arg.geint arg 0 ifso ifnot
     | _ ->
         make_if_test konst Arg.gtint arg i ifso ifnot
-          
+
     and make_if_ge konst arg i  ifso ifnot = match i with
     | 1 ->
         make_if_test konst Arg.gtint arg 0 ifso ifnot
     | _ ->
         make_if_test konst Arg.geint arg i ifso ifnot
-          
+
     and make_if_eq  konst arg i ifso ifnot =
       make_if_test konst Arg.eqint arg i ifso ifnot
-        
+
     and make_if_ne  konst arg i ifso ifnot =
       make_if_test konst Arg.neint arg i ifso ifnot
-        
+
     let do_make_if_out h arg ifso ifno =
       Arg.make_if (Arg.make_isout h arg) ifso ifno
-        
+
     let make_if_out konst ctx l d mk_ifso mk_ifno = match l with
     | 0 ->
         do_make_if_out
@@ -538,10 +538,10 @@ and enum top cases =
             let ctx = {off= (-l+ctx.off) ; arg=arg} in
             do_make_if_out
               (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
-          
+
     let do_make_if_in h arg ifso ifno =
       Arg.make_if (Arg.make_isin h arg) ifso ifno
-        
+
     let make_if_in konst ctx l d mk_ifso mk_ifno = match l with
     | 0 ->
         do_make_if_in
@@ -553,15 +553,15 @@ and enum top cases =
             let ctx = {off= (-l+ctx.off) ; arg=arg} in
             do_make_if_in
               (konst d) arg (mk_ifso ctx) (mk_ifno ctx))
-          
-          
+
+
     let rec c_test konst ctx ({cases=cases ; actions=actions} as s) =
       let lcases = Array.length cases in
       assert(lcases > 0) ;
       if lcases = 1 then
         actions.(get_act cases 0) ctx
       else begin
-        
+
         let w,c = opt_count false cases in
 (*
   Printf.fprintf stderr
@@ -624,7 +624,7 @@ and enum top cases =
           make_if_ge konst
              ctx.arg (lim+ctx.off)
             (c_test konst ctx right) (c_test konst ctx left)
-        
+
   end
 
 
@@ -687,7 +687,7 @@ let comp_clusters ({cases=cases ; actions=actions} as s) =
         get_min (j-1) + 1 < min_clusters.(i)
       then begin
         k.(i) <- j ;
-        min_clusters.(i) <- get_min (j-1) + 1             
+        min_clusters.(i) <- get_min (j-1) + 1
       end
     done ;
   done ;
@@ -766,15 +766,15 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
       r.(ir) <- (l,h,add_index (make_switch s i j))
     end ;
     if i > 0 then zyva (i-1) (ir-1) in
-  
+
   zyva (len-1) (n_clusters-1) ;
   let acts = Array.create !index (fun _ -> assert false) in
   Hashtbl.iter (fun _ (i,act) -> acts.(i) <- act) t ;
   {cases = r ; actions = acts}
 ;;
 
-  
-let zyva (low,high) konst arg cases actions = 
+
+let zyva (low,high) konst arg cases actions =
   let old_ok = !ok_inter in
   ok_inter := (abs low <= inter_limit && abs high <= inter_limit) ;
   if !ok_inter <> old_ok then Hashtbl.clear t ;
@@ -793,7 +793,7 @@ let zyva (low,high) konst arg cases actions =
 
 
 and test_sequence konst arg cases actions =
-  let old_ok = !ok_inter in  
+  let old_ok = !ok_inter in
   ok_inter := false ;
   if !ok_inter <> old_ok then Hashtbl.clear t ;
   let s =

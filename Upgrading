@@ -97,7 +97,7 @@ A8: The new default mode is more flexible than the original commuting
     interface must also be present in the implementation.
     The addlabels tool can help you to do that. Suppose that you have
     mymod.ml and mymod.mli, where mymod.mli adds some labels. Then
-    doing 
+    doing
           $CAMLLIB/addlabels mymod.ml
     will insert labels from the interface inside the implementation.
     It also takes care of inserting them in recursive calls, as

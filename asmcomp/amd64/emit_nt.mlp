@@ -39,10 +39,10 @@ let frame_required () =
 
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
-    let sz = 
+    let sz =
       (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
     in Misc.align sz 16
-  end else 
+  end else
     !stack_offset + 8
 
 let slot_offset loc cl =
@@ -63,7 +63,7 @@ let emit_int32 n = emit_printf "0%lxh" n
 let emit_symbol s =
   Emitaux.emit_symbol '$' s
 
-(* Record symbols used and defined - at the end generate extern for those 
+(* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
 let symbols_defined = ref StringSet.empty
@@ -84,11 +84,11 @@ let emit_label lbl =
 
 let emit_align n =
   `	ALIGN	{emit_int n}\n`
-  
+
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then emit_align 4;
   emit_label lbl
-  
+
 (* Output a pseudo-register *)
 
 let emit_reg = function
@@ -106,13 +106,13 @@ let emit_reg = function
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name =
-  [| "al"; "bl"; "dil"; "sil"; "dl"; "cl"; "r8b"; "r9b"; 
+  [| "al"; "bl"; "dil"; "sil"; "dl"; "cl"; "r8b"; "r9b";
      "r10b"; "r11b"; "bpl"; "r12b"; "r13b" |]
 let reg_low_16_name =
-  [| "ax"; "bx"; "di"; "si"; "dx"; "cx"; "r8w"; "r9w"; 
+  [| "ax"; "bx"; "di"; "si"; "dx"; "cx"; "r8w"; "r9w";
      "r10w"; "r11w"; "bp"; "r12w"; "r13w" |]
 let reg_low_32_name =
-  [| "eax"; "ebx"; "edi"; "esi"; "edx"; "ecx"; "r8d"; "r9d"; 
+  [| "eax"; "ebx"; "edi"; "esi"; "edx"; "ecx"; "r8d"; "r9d";
      "r10d"; "r11d"; "ebp"; "r12d"; "r13d" |]
 
 let emit_subreg tbl pref r =
@@ -253,7 +253,7 @@ let name_for_cond_branch = function
   | Iunsigned Ceq -> "e"   | Iunsigned Cne -> "ne"
   | Iunsigned Cle -> "be"  | Iunsigned Cgt -> "a"
   | Iunsigned Clt -> "b"  | Iunsigned Cge -> "ae"
-    
+
 (* Output an = 0 or <> 0 test. *)
 
 let output_test_zero arg =
@@ -544,7 +544,7 @@ let emit_instr fallthrough i =
             `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
-        | Iinttest_imm((Isigned Ceq | Isigned Cne | 
+        | Iinttest_imm((Isigned Ceq | Isigned Cne |
                         Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
             output_test_zero i.arg.(0);
             let b = name_for_cond_branch cmp in

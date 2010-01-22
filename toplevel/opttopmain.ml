@@ -122,4 +122,3 @@ let main () =
     ]) file_argument usage;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter
-

@@ -19,7 +19,7 @@ CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
 CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
-         -I ../driver
+	 -I ../driver
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
@@ -105,13 +105,13 @@ clean::
 ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
 	echo '(* THIS FILE IS GENERATED FROM ocamlmklib.mlp *)' >ocamlmklib.ml
 	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
-            -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
-            -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
-            -e "s|%%BYTECCRPATH%%|$(BYTECCRPATH)|" \
-            -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
-            -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
-            -e "s|%%RANLIB%%|$(RANLIB)|" \
-          ocamlmklib.mlp >> ocamlmklib.ml
+	    -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
+	    -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
+	    -e "s|%%BYTECCRPATH%%|$(BYTECCRPATH)|" \
+	    -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
+	    -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
+	    -e "s|%%RANLIB%%|$(RANLIB)|" \
+	  ocamlmklib.mlp >> ocamlmklib.ml
 
 beforedepend:: ocamlmklib.ml
 
@@ -213,12 +213,12 @@ opnames.ml: ../byterun/instruct.h
 	unset LC_CTYPE || : ; \
 	unset LC_COLLATE LANG || : ; \
 	sed -e '/\/\*/d' \
-            -e '/^#/d' \
-            -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
-            -e 's/};$$/ |]/' \
-            -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
-            -e 's/,/;/g' \
-        ../byterun/instruct.h > opnames.ml
+	    -e '/^#/d' \
+	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
+	    -e 's/};$$/ |]/' \
+	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
+	    -e 's/,/;/g' \
+	../byterun/instruct.h > opnames.ml
 
 clean::
 	rm -f opnames.ml

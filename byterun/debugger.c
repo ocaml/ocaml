@@ -72,7 +72,7 @@ static union {                  /* Socket address for the debugger */
   struct sockaddr s_gen;
 #ifndef _WIN32
   struct sockaddr_un s_unix;
-#endif    
+#endif
   struct sockaddr_in s_inet;
 } sock_addr;
 static int sock_addr_len;       /* Length of sock_addr */
@@ -98,7 +98,7 @@ static void open_connection(void)
       setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                  (char *) &newvalue, sizeof(newvalue));
   }
-#endif    
+#endif
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
 #ifdef _WIN32
   if (retcode == 0) {
@@ -106,7 +106,7 @@ static void open_connection(void)
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                (char *) &oldvalue, oldvaluelen);
   }
-#endif    
+#endif
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
     caml_fatal_error_arg2 ("cannot connect to debugger at %s", dbg_addr,
@@ -181,7 +181,7 @@ void caml_debugger_init(void)
         + strlen(address);
 #else
     caml_fatal_error("Unix sockets not supported");
-#endif    
+#endif
   } else {
     /* Internet domain */
     sock_domain = PF_INET;
@@ -318,7 +318,7 @@ void caml_debugger(enum event_kind event)
 #else
       caml_fatal_error("error: REQ_CHECKPOINT command");
       exit(-1);
-#endif      
+#endif
       break;
     case REQ_GO:
       caml_event_count = caml_getword(dbg_in);
@@ -332,7 +332,7 @@ void caml_debugger(enum event_kind event)
 #else
       caml_fatal_error("Fatal error: REQ_WAIT command");
       exit(-1);
-#endif      
+#endif
       break;
     case REQ_INITIAL_FRAME:
       frame = caml_extern_sp + 1;

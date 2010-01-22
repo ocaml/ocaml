@@ -34,7 +34,7 @@ CAMLprim value caml_array_get_float(value array, value index)
   double d;
   value res;
 
-  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize) 
+  if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   d = Double_field(array, idx);
 #define Setup_for_gc

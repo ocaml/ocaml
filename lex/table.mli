@@ -13,7 +13,7 @@
 (* Table used for code emission, ie extensible arrays *)
 type 'a t
 
-val create : 'a -> 'a t  
+val create : 'a -> 'a t
 
 val emit : 'a t -> 'a -> unit
 
@@ -29,5 +29,3 @@ val get : 'a t -> int -> 'a
 
 
 val size : 'a t -> int
-
-

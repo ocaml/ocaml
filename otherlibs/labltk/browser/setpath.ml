@@ -55,7 +55,7 @@ let add_to_path ~dirs ?(base="") box =
     if dirs = [] then [base] else
     List.map dirs ~f:
       begin function
-          "." -> base 
+          "." -> base
         | ".." -> Filename.dirname base
         | x -> Filename.concat base x
       end
@@ -129,7 +129,7 @@ let f ~dir =
   in
   bind dirbox ~events:[`KeyPressDetail "Insert"] ~action:add_paths;
   bind pathbox ~events:[`KeyPressDetail "Delete"] ~action:remove_paths;
-  
+
   let dirlab = Label.create dirs ~text:"Directories"
   and pathlab = Label.create path ~text:"Load path"
   and addbutton = Button.create dirs ~text:"Add to path" ~command:add_paths

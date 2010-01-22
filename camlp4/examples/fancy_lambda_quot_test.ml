@@ -3,7 +3,7 @@ let _loc = Camlp4.PreCast.Loc.ghost;;
 let rec propagate = function
   | << $f$ $x$ $y$ >> ->
       begin match propagate f, propagate x, propagate y with
-      | f, << $int:i$ >>, << $int:j$ >> -> 
+      | f, << $int:i$ >>, << $int:j$ >> ->
           begin match f with
           | << plus >>  -> << $int:i + j$ >>
           | << minus >> -> << $int:i - j$ >>

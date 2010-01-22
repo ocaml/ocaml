@@ -10,4 +10,3 @@ let rec_nat =
 let plus = << fun n -> fun m -> $rec_nat$ n (fun n -> fun p -> $succ$ p) m >>
 let times = << fun n -> fun m -> $rec_nat$ n (fun n -> fun p -> $plus$ m p) $zero$ >>
 let fact = << fun n -> $rec_nat$ n (fun n -> fun p -> $times$ ($succ$ n) p) $one$ >>
-

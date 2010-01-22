@@ -42,9 +42,9 @@ let _ =
       (BindExtend ([Ev_MouseX; Ev_MouseY],
         (fun e ->
           let nx, ny =
-            let xdiff = e.ev_MouseX - cx 
+            let xdiff = e.ev_MouseX - cx
             and ydiff = e.ev_MouseY - cy in
-            let diff = sqrt ((float xdiff /. (float wx *. bnd)) ** 2.0 +. 
+            let diff = sqrt ((float xdiff /. (float wx *. bnd)) ** 2.0 +.
                                (float ydiff /. (float wy *. bnd)) ** 2.0) in
             if diff > 1.0 then
               truncate ((float xdiff) *. (1.0 /. diff)) + cx,
@@ -61,7 +61,3 @@ let _ =
   pack [c] []
 
 let _ = Printexc.print mainLoop ()
-
-
-
-

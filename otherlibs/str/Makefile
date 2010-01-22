@@ -25,8 +25,8 @@ include ../Makefile
 
 depend:
 
-str.cmo: str.cmi 
-str.cmx: str.cmi 
+str.cmo: str.cmi
+str.cmx: str.cmi
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend

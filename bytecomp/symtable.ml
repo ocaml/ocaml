@@ -133,8 +133,8 @@ let output_primitive_table outchan =
 
 let init () =
   (* Enter the predefined exceptions *)
-  Array.iter 
-    (fun name -> 
+  Array.iter
+    (fun name ->
       let id =
         try List.assoc name Predef.builtin_values
         with Not_found -> fatal_error "Symtable.init" in
@@ -180,7 +180,7 @@ let patch_int buff pos n =
   String.unsafe_set buff (pos + 2) (Char.unsafe_chr (n asr 16));
   String.unsafe_set buff (pos + 3) (Char.unsafe_chr (n asr 24))
 
-let patch_object buff patchlist = 
+let patch_object buff patchlist =
   List.iter
     (function
         (Reloc_literal sc, pos) ->
@@ -249,7 +249,7 @@ let update_global_table () =
 (* Recover data for toplevel initialization.  Data can come either from
    executable file (normal case) or from linked-in data (-output-obj). *)
 
-type section_reader = { 
+type section_reader = {
   read_string: string -> string;
   read_struct: string -> Obj.t;
   close_reader: unit -> unit
@@ -262,7 +262,7 @@ let read_sections () =
         (fun name -> (Obj.magic(List.assoc name sections) : string));
       read_struct =
         (fun name -> List.assoc name sections);
-      close_reader = 
+      close_reader =
         (fun () -> ()) }
   with Not_found ->
     let ic = open_in_bin Sys.executable_name in

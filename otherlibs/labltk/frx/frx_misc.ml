@@ -31,12 +31,12 @@ let create_photo options =
   let hasopt = ref None in
   (* Check options *)
   List.iter (function
-      Data s -> 
+      Data s ->
         begin match !hasopt with
           None -> hasopt := Some (Data s)
         | Some _ -> raise (Protocol.TkError "two data sources in options")
         end
-    | File f -> 
+    | File f ->
         begin match !hasopt with
           None -> hasopt := Some (File f)
         | Some _ -> raise (Protocol.TkError "two data sources in options")
@@ -51,8 +51,8 @@ let create_photo options =
         let oc = open_out_bin tmpfile in
         output_string oc s;
         close_out oc;
-        let newopts = 
-          List.map (function 
+        let newopts =
+          List.map (function
             | Data s -> File tmpfile
             | o -> o)
             options in

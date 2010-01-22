@@ -44,7 +44,7 @@ OTHEROBJS=\
 
 
 OBJS=\
-        dynlink.cmo \
+	dynlink.cmo \
 	int64ops.cmo \
 	primitives.cmo \
 	unix_tools.cmo \

@@ -531,7 +531,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
               [ <:expr< $lid:i$ >> -> i
               | _ -> failwith "internal error in the Grammar extension" ]
             in <:binding< $lid:i$ =
-                 (grammar_entry_create $str:i$ : $uid:gm$.Entry.t '$x$) >> in 
+                 (grammar_entry_create $str:i$ : $uid:gm$.Entry.t '$x$) >> in
           let expr_of_name {expr = e; tvar = x; loc = _loc} =
             <:expr< ($e$ : $uid:gm$.Entry.t '$x$) >> in
           let e =
@@ -710,7 +710,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     rule_list:
       [ [ "["; "]" -> []
-        | "["; rules = LIST1 rule SEP "|"; "]" -> 
+        | "["; rules = LIST1 rule SEP "|"; "]" ->
             retype_rule_list_without_patterns _loc rules ] ]
     ;
     rule:

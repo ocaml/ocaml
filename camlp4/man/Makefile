@@ -12,9 +12,9 @@ install-local:
 	  $(MKDIR) $(MANDIR)/man1 ; \
 	  cp $(TARGET) $(MANDIR)/man1/. ; \
 	  for i in $(ALIASES); do \
-            rm -f $(MANDIR)/man1/$$i; \
-            echo '.so man1/$(TARGET)' > $(MANDIR)/man1/$$i; \
-          done; \
+	    rm -f $(MANDIR)/man1/$$i; \
+	    echo '.so man1/$(TARGET)' > $(MANDIR)/man1/$$i; \
+	  done; \
 	fi
 
 camlp4.1: camlp4.1.tpl

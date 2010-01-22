@@ -6,7 +6,7 @@ There are no less than four ports of Objective Caml for MS Windows available:
   - a native Win32 port, built with the Cygwin/MinGW development tools;
   - a port consisting of the Unix sources compiled under the Cygwin
     Unix-like environment for Windows;
-  - a native Win64 port (64-bit Windows), built with the Microsoft 
+  - a native Win64 port (64-bit Windows), built with the Microsoft
     development tools.
 
 Here is a summary of the main differences between these ports:
@@ -95,7 +95,7 @@ THIRD-PARTY SOFTWARE:
     2005 can download MASM version 8 from
 http://www.microsoft.com/downloads/details.aspx?FamilyID=7A1C9DA0-0510-44A2-B042-7EF370530C64&displaylang=en
     To obtain MASM version 6.11, see
-    http://users.easystreet.com/jkirwan/new/pctools.html. 
+    http://users.easystreet.com/jkirwan/new/pctools.html.
 
 [4] TCL/TK version 8.5.  Windows binaries are available as part of the
     ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
@@ -152,7 +152,7 @@ performance of bytecode programs is about 2/3 of that obtained under
 Unix/GCC or Cygwin or Mingw on similar hardware.
 
 * Libraries available in this port: "num", "str", "threads", "graphics",
-"labltk", and large parts of "unix". 
+"labltk", and large parts of "unix".
 
 * The replay debugger is partially supported (no reverse execution).
 
@@ -178,7 +178,7 @@ The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
 The native-code compiler (ocamlopt), as well as static linking of
-Caml bytecode with C code (ocamlc -custom), require 
+Caml bytecode with C code (ocamlc -custom), require
 the Cygwin development tools, available at
         http://www.cygwin.com/
 and the flexdll tool, available at
@@ -191,7 +191,7 @@ Do *not* install the Mingw/MSYS development tools from www.mingw.org:
 these are not compatible with this Caml port (@responsefile not
 recognized on the command line).
 
-The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available 
+The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available
 as part of the ActiveTCL distribution at
 http://www.activestate.com/products/ActiveTcl/
 
@@ -216,7 +216,7 @@ RECOMPILATION FROM THE SOURCES:
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, XP, or Vista.
 - Cygwin: http://sourceware.cygnus.com/cygwin/
-  Install at least the following packages: binutils, diffutils, 
+  Install at least the following packages: binutils, diffutils,
     gcc-core, gcc-mingw-core, make, mingw-runtime, ncurses, w32-api.
 - TCL/TK version 8.5 (see above).
 - The flexdll tool (see above).
@@ -238,7 +238,7 @@ Normally, the only variables that need to be changed are
         PREFIX      where to install everything
         TK_ROOT     where TCL/TK was installed
 
-Finally, use "make -f Makefile.nt" to build the system, e.g. 
+Finally, use "make -f Makefile.nt" to build the system, e.g.
 
         make -f Makefile.nt world
         make -f Makefile.nt bootstrap
@@ -250,7 +250,7 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
 NOTES:
 
 * Libraries available in this port: "num", "str", "threads", "graphics",
-  "labltk", and large parts of "unix". 
+  "labltk", and large parts of "unix".
 
 * The replay debugger is partially supported (no reverse execution).
 
@@ -357,7 +357,7 @@ compiler for AMD64 instead of the Platform SDK compiler, replace the line
 by
         EXTRALIBS=
 
-Finally, use "make -f Makefile.nt" to build the system, e.g. 
+Finally, use "make -f Makefile.nt" to build the system, e.g.
 
         make -f Makefile.nt world
         make -f Makefile.nt bootstrap
@@ -369,7 +369,7 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
 NOTES:
 
 * Libraries available in this port: "num", "str", "threads", "graphics",
-  and large parts of "unix". 
+  and large parts of "unix".
 
 * The replay debugger is partially supported (no reverse execution).
 

@@ -24,7 +24,7 @@ type lex_tables =
     tbl_backtrk_code : int array;        (* nothing / code when Remember *)
 (* moves to execute before transitions (compacted) *)
     tbl_default_code : int array;
-    tbl_trans_code : int array;  
+    tbl_trans_code : int array;
     tbl_check_code : int array;
 (* byte code itself *)
     tbl_code: int array;}

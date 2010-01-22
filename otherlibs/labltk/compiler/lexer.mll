@@ -40,7 +40,7 @@ let _ = List.iter
   "string", TYSTRING;
   "list", LIST;
   "as", AS;
-  "variant", VARIANT;  
+  "variant", VARIANT;
   "widget", WIDGET;
   "option", OPTION;
   "type", TYPE;
@@ -127,12 +127,12 @@ rule main = parse
   | "?" {QUESTION}
   | "/" {SLASH}
   | "%" { comment lexbuf; main lexbuf }
-  | "##line" { line lexbuf; main lexbuf }  
+  | "##line" { line lexbuf; main lexbuf }
   | eof { EOF }
   | _
       { raise (Lexical_error("illegal character")) }
 
- 
+
 and string = parse
     '"'
       { () }
@@ -160,7 +160,7 @@ and comment = parse
  | _ { comment lexbuf }
 
 and linenum = parse
- | ['0'-'9']+ { 
+ | ['0'-'9']+ {
             let next_line = int_of_string (Lexing.lexeme lexbuf) in
             current_line := next_line - 1
           }

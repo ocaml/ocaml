@@ -25,32 +25,32 @@ open Format;
    handling:
 
    type pos = ... the same ...
-   
+
    1/
-   
+
    type loc = {
      file_name : string;
      start     : pos;
      stop      : pos
    };
-   
+
    type t =
      [ Nowhere
      | Ghost of loc (* the closest non ghost loc *)
      | Concrete of loc ];
-   
+
    2/
-   
+
    type loc = {
      file_name : string;
      start     : pos;
      stop      : pos
    };
-   
+
    type t = option loc;
-   
+
    3/
-   
+
    type t = {
      file_name : option string;
      start     : pos;
@@ -195,7 +195,7 @@ value merge a b =
     debug loc "trivial merge@\n" in
     a
   else
-    let r = 
+    let r =
       match (a.ghost, b.ghost) with
       [ (False, False) ->
         (* FIXME if a.file_name <> b.file_name then

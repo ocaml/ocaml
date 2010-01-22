@@ -28,4 +28,3 @@ val from_location: kind -> Location.t -> t
 
 val from_call: Lambda.lambda_event -> t
 val from_raise: Lambda.lambda_event -> t
-

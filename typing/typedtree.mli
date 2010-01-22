@@ -166,4 +166,3 @@ val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
 
 (* Alpha conversion of patterns *)
 val alpha_pat : (Ident.t * Ident.t) list -> pattern -> pattern
-

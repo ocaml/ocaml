@@ -227,4 +227,3 @@ let gifdata s =
           anim
       with
         e -> begin Unix.unlink fname; raise e end
-

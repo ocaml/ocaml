@@ -83,10 +83,10 @@ let make_package_object ppf members targetobj targetname coercion =
   let objtemp =
     if !Clflags.keep_asm_file
     then chop_extension_if_any targetobj ^ ".pack" ^ Config.ext_obj
-    else 
+    else
       (* Put the full name of the module in the temporary file name
-	 to avoid collisions with MSVC's link /lib in case of successive 
-	 packs *)
+         to avoid collisions with MSVC's link /lib in case of successive
+         packs *)
       Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
   let components =
     List.map

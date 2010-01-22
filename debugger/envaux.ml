@@ -60,7 +60,7 @@ let rec env_from_summary sum subst =
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
           let mty =
-            try 
+            try
               Env.find_module path' env
             with Not_found ->
               raise (Error (Module_not_found path'))

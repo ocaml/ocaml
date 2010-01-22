@@ -14,4 +14,3 @@
 
 UNIXDIR=../otherlibs/win32unix
 include Makefile.shared
-

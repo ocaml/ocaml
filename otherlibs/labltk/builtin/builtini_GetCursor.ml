@@ -15,7 +15,7 @@ let cTKtoCAMLcolor = function  s -> NamedColor s
 
 let cCAMLtoTKcursor = function
    XCursor s -> TkToken s
- | XCursorFg (s,fg) -> 
+ | XCursorFg (s,fg) ->
     TkQuote(TkTokenList [TkToken s; cCAMLtoTKcolor fg])
  | XCursortFgBg (s,fg,bg) ->
     TkQuote(TkTokenList [TkToken s; cCAMLtoTKcolor fg; cCAMLtoTKcolor bg])
@@ -42,7 +42,7 @@ let cTKtoCAMLcolor = function  s -> `Color s
 
 let cCAMLtoTKcursor : cursor -> tkArgs = function
  | `Xcursor s -> TkToken s
- | `Xcursorfg (s,fg) -> 
+ | `Xcursorfg (s,fg) ->
     TkQuote(TkTokenList [TkToken s; cCAMLtoTKcolor fg])
  | `Xcursorfgbg (s,fg,bg) ->
     TkQuote(TkTokenList [TkToken s; cCAMLtoTKcolor fg; cCAMLtoTKcolor bg])

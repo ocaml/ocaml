@@ -493,4 +493,3 @@ void AfficheBitmap(char *filename,HDC hDC,int x,int y)
         DessinerBitmap(hdib,hDC,&rc);
         GlobalFree(hdib);
 }
-

@@ -44,7 +44,7 @@ static void add_string(struct stringbuf *buf, char *s)
   if (len > 0) memmove(buf->ptr, s, len);
   buf->ptr += len;
 }
-  
+
 CAMLexport char * caml_format_exception(value exn)
 {
   mlsize_t start, i;

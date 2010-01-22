@@ -35,7 +35,7 @@ exception Cyclic
 
 let find_entry order node =
   let rec search_entry =
-    function 
+    function
       [] -> raise Not_found
     | x::l -> if x.node = node then x else search_entry l
   in
@@ -48,7 +48,7 @@ let find_entry order node =
                   order := entry::!order;
                   entry
 
-let create () = ref [] 
+let create () = ref []
 
 (* Inverted args because Sort.list builds list in reverse order *)
 let add_relation order (succ,pred) =
@@ -62,28 +62,26 @@ let add_element order e =
   ignore (find_entry order e)
 
 let sort order =
-    let q = Queue.create () 
+    let q = Queue.create ()
     and result = ref [] in
     List.iter !order
       ~f:(function {pred_count = n} as node ->
                 if n = 0 then Queue.add node q);
-    begin try 
+    begin try
       while true do
         let t = Queue.take q in
           result := t.node :: !result;
           List.iter t.successors ~f:
-            begin fun s -> 
+            begin fun s ->
               let n = s.pred_count - 1 in
               s.pred_count <- n;
               if n = 0 then Queue.add s q
             end
         done
     with
-      Queue.Empty -> 
+      Queue.Empty ->
          List.iter !order
            ~f:(fun node -> if node.pred_count <> 0
                               then raise Cyclic)
     end;
     !result
-                         
-    

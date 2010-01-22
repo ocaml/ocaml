@@ -193,7 +193,7 @@
 
 #define HAS_LOCALE
 
-/* Define HAS_LOCALE if you have the include file <locale.h> and the 
+/* Define HAS_LOCALE if you have the include file <locale.h> and the
    setlocale() function. */
 
 #define HAS_MMAP
@@ -204,13 +204,13 @@
 #define HAS_GETHOSTBYNAME_R 6
 
 /* Define HAS_GETHOSTBYNAME_R if gethostbyname_r() is available.
-   The value of this symbol is the number of arguments of 
+   The value of this symbol is the number of arguments of
    gethostbyname_r(): either 5 or 6 depending on prototype.
    (5 is the Solaris version, 6 is the Linux version). */
 
 #define HAS_GETHOSTBYADDR_R 8
 
 /* Define HAS_GETHOSTBYADDR_R if gethostbyname_r() is available.
-   The value of this symbol is the number of arguments of 
+   The value of this symbol is the number of arguments of
    gethostbyaddr_r(): either 7 or 8 depending on prototype.
    (7 is the Solaris version, 8 is the Linux version). */

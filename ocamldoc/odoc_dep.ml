@@ -33,12 +33,12 @@ let intf_dependencies ast =
   set_to_list !Depend.free_structure_names
 
 
-module Dep = 
+module Dep =
   struct
     type id = string
 
     module S = Set.Make (struct type t = string let compare = compare end)
-  
+
     let set_to_list s =
       let l = ref [] in
       S.iter (fun e -> l := e :: !l) s;
@@ -48,7 +48,7 @@ module Dep =
         id : id ;
         mutable near : S.t ; (** fils directs *)
         mutable far : (id * S.t) list ; (** fils indirects, par quel fils *)
-        reflex : bool ; (** reflexive or not, we keep 
+        reflex : bool ; (** reflexive or not, we keep
                            information here to remove the node itself from its direct children *)
       }
 
@@ -58,17 +58,17 @@ module Dep =
       let set = List.fold_right
           S.add
           children
-          S.empty 
+          S.empty
       in
-      { id = s; 
+      { id = s;
         near = S.remove s set ;
         far = [] ;
         reflex = List.mem s children ;
       }
 
-    let get_node graph s = 
+    let get_node graph s =
       try List.find (fun n -> n.id = s) graph
-      with Not_found ->  
+      with Not_found ->
         make_node s []
 
     let rec trans_closure graph acc n =
@@ -81,10 +81,10 @@ module Dep =
             trans_closure graph acc2 (get_node graph child))
           n.near
           (S.add n.id acc)
-      
+
     let node_trans_closure graph n =
       let far = List.map
-          (fun child -> 
+          (fun child ->
             let set = trans_closure graph S.empty (get_node graph child) in
             (child, set)
           )
@@ -118,8 +118,8 @@ module Dep =
             ()
         )
         node.near;
-      if node.reflex then 
-        node.near <- S.add node.id node.near 
+      if node.reflex then
+        node.near <- S.add node.id node.near
       else
         ()
 
@@ -140,9 +140,9 @@ let type_deps t =
   let module T = Odoc_type in
   let l = ref [] in
   let re = Str.regexp "\\([A-Z]\\([a-zA-Z_'0-9]\\)*\\.\\)+\\([a-z][a-zA-Z_'0-9]*\\)" in
-  let f s = 
+  let f s =
     let s2 = Str.matched_string s in
-    l := s2 :: !l ; 
+    l := s2 :: !l ;
     s2
   in
   (match t.T.ty_kind with
@@ -150,8 +150,8 @@ let type_deps t =
   | T.Type_variant cl ->
       List.iter
         (fun c ->
-          List.iter 
-            (fun e -> 
+          List.iter
+            (fun e ->
               let s = Odoc_print.string_of_type_expr e in
               ignore (Str.global_substitute re f s)
             )
@@ -184,10 +184,10 @@ let kernel_deps_of_modules modules =
       modules
   in
   let k = Dep.kernel graph in
-  List.iter 
+  List.iter
     (fun m ->
       let node = Dep.get_node k m.Module.m_name in
-      m.Module.m_top_deps <- 
+      m.Module.m_top_deps <-
         List.filter (fun m2 -> Dep.S.mem m2 node.Dep.near) m.Module.m_top_deps)
     modules
 

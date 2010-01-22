@@ -187,7 +187,7 @@ opt_longident :
   |                             { None };
 
 opt_longident_eol :
-    opt_longident end_of_line   { $1 }; 
+    opt_longident end_of_line   { $1 };
 
 identifier :
     LIDENT                      { $1 }

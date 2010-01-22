@@ -8,11 +8,11 @@ let cTKtoCAMLtextTag x = x;;
 
 (* TextModifiers are never returned by Tk *)
 let ppTextModifier = function
-   CharOffset n -> 
+   CharOffset n ->
       if n > 0 then "+" ^ (string_of_int n) ^ "chars"
       else if n = 0 then ""
       else (string_of_int n) ^ "chars"
- | LineOffset n -> 
+ | LineOffset n ->
       if n > 0 then "+" ^ (string_of_int n) ^ "lines"
       else if n = 0 then ""
       else (string_of_int n) ^ "lines"
@@ -24,13 +24,13 @@ let ppTextModifier = function
 
 let ppTextIndex = function
  | TextIndexNone -> ""
- | TextIndex (base, ml) -> 
+ | TextIndex (base, ml) ->
      match cCAMLtoTKindex index_text_table base with
      | TkToken ppbase -> List.fold_left (^) ppbase (List.map ppTextModifier ml)
      | _ -> assert false
 ;;
 
-let cCAMLtoTKtextIndex i = 
+let cCAMLtoTKtextIndex i =
   TkToken (ppTextIndex i)
 ;;
 
@@ -39,11 +39,11 @@ let cCAMLtoTKtextIndex i =
 (* TextModifiers are never returned by Tk *)
 let cCAMLtoTKtextIndex (i : textIndex) =
   let ppTextModifier = function
-    | `Char n -> 
+    | `Char n ->
         if n > 0 then "+" ^ (string_of_int n) ^ "chars"
         else if n = 0 then ""
         else (string_of_int n) ^ "chars"
-    | `Line n -> 
+    | `Line n ->
         if n > 0 then "+" ^ (string_of_int n) ^ "lines"
         else if n = 0 then ""
         else (string_of_int n) ^ "lines"

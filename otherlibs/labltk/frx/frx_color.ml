@@ -25,7 +25,7 @@ let check s =
   if StringSet.mem s !available_colors then true
   else begin
     try
-      let f = Frame.create_named Widget.default_toplevel "frxcolorcheck" 
+      let f = Frame.create_named Widget.default_toplevel "frxcolorcheck"
           [Background (NamedColor s)] in
       available_colors := StringSet.add s !available_colors;
       destroy f;

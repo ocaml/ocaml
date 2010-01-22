@@ -29,7 +29,7 @@ DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
-         -I toplevel
+	 -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
@@ -295,7 +295,7 @@ partialclean::
 
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat $(NATTOPOBJS:.cmo=.cmx) -linkall
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
@@ -309,31 +309,31 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e "s|%%LIBDIR%%|$(LIBDIR)|" \
-            -e "s|%%BYTERUN%%|ocamlrun|" \
-            -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
-            -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
-            -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
-            -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
-            -e "s|%%PACKLD%%|$(PACKLD)|" \
-            -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
-            -e "s|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|" \
-            -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-            -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
-            -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
-            -e "s|%%ARCH%%|$(ARCH)|" \
-            -e "s|%%MODEL%%|$(MODEL)|" \
-            -e "s|%%SYSTEM%%|$(SYSTEM)|" \
-            -e "s|%%EXT_OBJ%%|.$(O)|" \
-            -e "s|%%EXT_ASM%%|.$(S)|" \
-            -e "s|%%EXT_LIB%%|.$(A)|" \
-            -e "s|%%EXT_DLL%%|.dll|" \
-            -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
-            -e 's|%%ASM%%|$(ASM)|' \
-            -e 's|%%MKDLL%%|$(MKDLL)|' \
-            -e 's|%%MKEXE%%|$(MKEXE)|' \
-            -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
-            -e 's|%%CC_PROFILE%%||' \
-            utils/config.mlp > utils/config.ml
+	    -e "s|%%BYTERUN%%|ocamlrun|" \
+	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
+	    -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
+	    -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
+	    -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
+	    -e "s|%%PACKLD%%|$(PACKLD)|" \
+	    -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
+	    -e "s|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|" \
+	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
+	    -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
+	    -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
+	    -e "s|%%ARCH%%|$(ARCH)|" \
+	    -e "s|%%MODEL%%|$(MODEL)|" \
+	    -e "s|%%SYSTEM%%|$(SYSTEM)|" \
+	    -e "s|%%EXT_OBJ%%|.$(O)|" \
+	    -e "s|%%EXT_ASM%%|.$(S)|" \
+	    -e "s|%%EXT_LIB%%|.$(A)|" \
+	    -e "s|%%EXT_DLL%%|.dll|" \
+	    -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
+	    -e 's|%%ASM%%|$(ASM)|' \
+	    -e 's|%%MKDLL%%|$(MKDLL)|' \
+	    -e 's|%%MKEXE%%|$(MKEXE)|' \
+	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+	    -e 's|%%CC_PROFILE%%||' \
+	    utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
 partialclean::
@@ -394,7 +394,7 @@ $(OPTOBJS:.cmo=.cmx): ocamlopt
 
 bytecomp/opcodes.ml: byterun/instruct.h
 	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun/instruct.h | \
-        gawk -f tools/make-opcodes > bytecomp/opcodes.ml
+	gawk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
@@ -410,9 +410,9 @@ bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
 	(echo 'let builtin_exceptions = [|'; \
 	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
 	 sed -e '$$s/;$$//'; \
-         echo '|]'; \
-         echo 'let builtin_primitives = [|'; \
-         sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
+	 echo '|]'; \
+	 echo 'let builtin_primitives = [|'; \
+	 sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
 	 echo '|]') > bytecomp/runtimedef.ml
 
 partialclean::
@@ -561,9 +561,9 @@ alldepend::
 
 # OCamldoc
 
-ocamldoc.byte: 
+ocamldoc.byte:
 	cd ocamldoc ; $(MAKEREC) all
-ocamldoc.opt: 
+ocamldoc.opt:
 	cd ocamldoc ; $(MAKEREC) opt.opt
 partialclean::
 	cd ocamldoc ; $(MAKEREC) clean

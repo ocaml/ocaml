@@ -342,9 +342,9 @@ rule token = parse
   | "*)"
       { lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
         lexbuf.Lexing.lex_curr_p <-
-	  { lexbuf.Lexing.lex_curr_p with
-	    pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1
-	  } ;
+          { lexbuf.Lexing.lex_curr_p with
+            pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1
+          } ;
         print (Lexing.lexeme lexbuf) ;
         token lexbuf
       }

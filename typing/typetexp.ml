@@ -152,12 +152,12 @@ let rec transl_type env policy styp =
       newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl) ->
       let (path, decl) =
-	let lid, env =
-	  match lid with
-	  | Longident.Ldot (Longident.Lident "*predef*", lid) -> 
-	      Longident.Lident lid, Env.initial
-	  | _ -> lid, env
-	in
+        let lid, env =
+          match lid with
+          | Longident.Ldot (Longident.Lident "*predef*", lid) ->
+              Longident.Lident lid, Env.initial
+          | _ -> lid, env
+        in
         try
           Env.lookup_type lid env
         with Not_found ->
@@ -349,7 +349,7 @@ let rec transl_type env policy styp =
                 let row = Btype.row_repr row in
                 row.row_fields
             | {desc=Tvar}, Some(p, _) ->
-                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
+                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p))
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in

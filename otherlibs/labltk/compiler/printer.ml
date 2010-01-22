@@ -121,7 +121,7 @@ let rec print_component_type = function
 (* Full definition of a component *)
 let rec print_fullcomponent = function
   {component = c; ml_name = s; var_name = s0; template = t; result = m;
-   safe = b; 
+   safe = b;
   } ->
     printf "@[<1>{"; printf "@[<1>component =@ "; print_component_type c;
     printf ";@]@ "; printf "@[<1>ml_name =@ "; print_quoted_string s;
@@ -137,7 +137,7 @@ let rec print_component = function
      printf "@[<1>(%s@ " "Abbrev"; print_quoted_string s; printf ")@]";;
 
 (* A type definition *)
-(* 
+(*
  requires_widget_context: the converter of the type MUST be passed
    an additional argument of type Widget.
 *)
@@ -146,7 +146,7 @@ let rec print_parser_arity = function
 
 let rec print_type_def = function
   {parser_arity = p; constructors = l_f; subtypes = l_t_s_l_f;
-   requires_widget_context = b; variant = b0; 
+   requires_widget_context = b; variant = b0;
   } ->
     printf "@[<1>{"; printf "@[<1>parser_arity =@ "; print_parser_arity p;
     printf ";@]@ "; printf "@[<1>constructors =@ ";

@@ -62,7 +62,7 @@ class virtual selector_generic : object
 
   (* The following method is the entry point and should not be overriden *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
-  
+
   (* The following methods should not be overriden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)

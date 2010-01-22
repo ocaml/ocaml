@@ -1,7 +1,7 @@
 (* POSIX threads and fork() *)
 
 let compute_thread c =
-  while true do 
+  while true do
     print_char c; flush stdout;
     for i = 1 to 100000 do ignore(ref []) done
   done
@@ -26,5 +26,3 @@ let main () =
       exit 0
 
 let _ = main()
-
-      

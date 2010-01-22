@@ -449,7 +449,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ [ i = lident_colon; t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
         | "?"; i = a_LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
-            <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
+            <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
         | i = OPTLABEL (* FIXME inline a_OPTLABEL *); t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
         | test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->

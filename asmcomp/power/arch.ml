@@ -84,4 +84,3 @@ let print_specific_operation printreg op ppf arg =
         printreg arg.(0) printreg arg.(1) printreg arg.(2)
   | Ialloc_far n ->
       fprintf ppf "alloc_far %d" n
-

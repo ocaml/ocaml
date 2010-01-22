@@ -24,7 +24,7 @@ type textVariable
       (* TextVariable is an abstract type *)
 
 val create : ?on: 'a widget -> unit -> textVariable
-      (* Allocation of a textVariable with lifetime associated to widget 
+      (* Allocation of a textVariable with lifetime associated to widget
          if a widget is specified *)
 val set : textVariable -> string -> unit
       (* Setting the val of a textVariable *)

@@ -274,7 +274,7 @@ let emit_instr i =
           `	mov	{emit_reg i.res.(0)}, #{emit_nativeint low_bits} @ {emit_string s}\n`;
           `	mov	{emit_reg i.res.(1)}, #{emit_nativeint high_bits}\n`;
           2
-        end else begin      
+        end else begin
           let lbl = label_constant float_constants s 2 in
           `	ldr	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string s}\n`;
           `	ldr	{emit_reg i.res.(1)}, {emit_label lbl} + 4\n`;

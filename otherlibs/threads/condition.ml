@@ -33,4 +33,3 @@ let broadcast cond =
   let w = cond.waiting in                  (* atomic *)
   cond.waiting <- [];                      (* atomic *)
   List.iter Thread.wakeup w
-

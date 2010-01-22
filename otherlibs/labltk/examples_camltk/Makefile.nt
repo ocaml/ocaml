@@ -11,11 +11,11 @@ all: addition.exe helloworld.exe winskel.exe socketinput.exe
 
 addition.exe: addition.cmo
 	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
-		-o $@ addition.cmo 
+		-o $@ addition.cmo
 
 helloworld.exe: helloworld.cmo
 	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
-		-o $@ helloworld.cmo 
+		-o $@ helloworld.cmo
 
 winskel.exe: winskel.cmo
 	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) \
@@ -25,7 +25,7 @@ socketinput.exe: socketinput.cmo
 	$(CAMLC) -custom $(LINKFLAGS) $(TKLINKOPT) unix.cma \
 		-o $@ socketinput.cmo
 
-clean : 
+clean :
 	rm -f *.cm? *.exe
 
 .SUFFIXES :

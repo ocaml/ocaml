@@ -21,7 +21,7 @@ external window_id : unit -> window_id = "caml_gr_window_id"
 
 let subwindows = Hashtbl.create 13
 
-external open_subwindow : int -> int -> int -> int -> window_id 
+external open_subwindow : int -> int -> int -> int -> window_id
     = "caml_gr_open_subwindow"
 external close_subwindow : window_id -> unit
     = "caml_gr_close_subwindow"
@@ -31,7 +31,7 @@ let open_subwindow ~x ~y ~width ~height =
   Hashtbl.add subwindows wid ();
   wid
 ;;
-  
+
 let close_subwindow wid =
   if Hashtbl.mem subwindows wid then begin
     close_subwindow wid;
@@ -39,4 +39,3 @@ let close_subwindow wid =
   end else
     raise (Graphics.Graphic_failure ("close_subwindow: no such subwindow: " ^ wid))
 ;;
-

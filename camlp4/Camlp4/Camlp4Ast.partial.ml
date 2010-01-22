@@ -160,7 +160,7 @@
       (* sig sg end *)
     | MtSig of loc and sig_item
       (* mt with wc *)
-    | MtWit of loc and module_type and with_constr 
+    | MtWit of loc and module_type and with_constr
     | MtAnt of loc and string (* $s$ *) ]
   and sig_item =
     [ SgNil of loc

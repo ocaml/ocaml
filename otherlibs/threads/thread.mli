@@ -101,7 +101,7 @@ val wait_signal : int list -> int
    until the process receives one of the signals specified in the
    list [sigs].  It then returns the number of the signal received.
    Signal handlers attached to the signals in [sigs] will not
-   be invoked.  Do not call [wait_signal] concurrently 
+   be invoked.  Do not call [wait_signal] concurrently
    from several threads on the same signals. *)
 
 val yield : unit -> unit
@@ -114,7 +114,7 @@ val yield : unit -> unit
 
 (** {6 Synchronization primitives}
 
-   The following primitives provide the basis for implementing 
+   The following primitives provide the basis for implementing
    synchronization functions between threads. Their direct use is
    discouraged, as they are very low-level and prone to race conditions
    and deadlocks. The modules {!Mutex}, {!Condition} and {!Event}
@@ -138,4 +138,3 @@ val sleep : unit -> unit
 val wakeup : t -> unit
 (** Reactivate the given thread. After the call to [wakeup],
    the suspended thread will resume execution at some future time. *)
-

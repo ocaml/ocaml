@@ -131,7 +131,7 @@ static void extract_location_info(frame_descr * d,
   uint32 info1, info2;
 
   /* If no debugging information available, print nothing.
-     When everything is compiled with -g, this corresponds to 
+     When everything is compiled with -g, this corresponds to
      compiler-inserted re-raise operations. */
   if ((d->frame_size & 1) == 0) {
     li->loc_valid = 0;
@@ -147,7 +147,7 @@ static void extract_location_info(frame_descr * d,
   info2 = ((uint32 *)infoptr)[1];
   /* Format of the two info words:
        llllllllllllllllllll aaaaaaaa bbbbbbbbbb nnnnnnnnnnnnnnnnnnnnnnnn kk
-                          44       36         26                       2  0 
+                          44       36         26                       2  0
                        (32+12)    (32+4)
      k ( 2 bits): 0 if it's a call, 1 if it's a raise
      n (24 bits): offset (in 4-byte words) of file name relative to infoptr
@@ -222,4 +222,3 @@ CAMLprim value caml_get_exception_backtrace(value unit)
   res = caml_alloc_small(1, 0); Field(res, 0) = arr; /* Some */
   CAMLreturn(res);
 }
-

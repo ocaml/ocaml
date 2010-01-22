@@ -16,17 +16,17 @@
 open Arith_flags;;
 
 let get_error_when_null_denominator () =
-  !error_when_null_denominator_flag 
+  !error_when_null_denominator_flag
 and set_error_when_null_denominator choice =
  error_when_null_denominator_flag := choice;;
 
-let get_normalize_ratio () = !normalize_ratio_flag 
-and set_normalize_ratio choice = normalize_ratio_flag := choice;; 
+let get_normalize_ratio () = !normalize_ratio_flag
+and set_normalize_ratio choice = normalize_ratio_flag := choice;;
 
-let get_normalize_ratio_when_printing () = 
+let get_normalize_ratio_when_printing () =
   !normalize_ratio_when_printing_flag
-and set_normalize_ratio_when_printing choice = 
- normalize_ratio_when_printing_flag := choice;; 
+and set_normalize_ratio_when_printing choice =
+ normalize_ratio_when_printing_flag := choice;;
 
 let get_floating_precision () = !floating_precision
 and set_floating_precision i = floating_precision := i;;

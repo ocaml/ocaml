@@ -29,7 +29,7 @@
  * It takes the following parameters into account:
  * - limitation on number of objects is mostly due to limitation
  *   a WaitForMultipleObjects
- * - there is always an event "hStop" to watch 
+ * - there is always an event "hStop" to watch
  *
  * This lead to pick the following value as the biggest possible
  * value
@@ -115,7 +115,7 @@ typedef enum _SELECTHANDLETYPE {
 typedef enum _SELECTMODE {
   SELECT_MODE_NONE = 0,
   SELECT_MODE_READ,
-  SELECT_MODE_WRITE, 
+  SELECT_MODE_WRITE,
   SELECT_MODE_EXCEPT,
 } SELECTMODE;
 
@@ -188,13 +188,13 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
   /* Allocate the data structure */
   LPSELECTDATA res;
   DWORD        i;
-  
+
   if (!HeapLock(GetProcessHeap()))
   {
     win32_maperr(GetLastError());
     uerror("select", Nothing);
   }
-  res = (LPSELECTDATA)HeapAlloc(GetProcessHeap(), 0, sizeof(SELECTDATA)); 
+  res = (LPSELECTDATA)HeapAlloc(GetProcessHeap(), 0, sizeof(SELECTDATA));
   HeapUnlock(GetProcessHeap());
 
   /* Init common data */
@@ -202,10 +202,10 @@ LPSELECTDATA select_data_new (LPSELECTDATA lpSelectData, SELECTTYPE EType)
   list_next_set((LPLIST)res, (LPLIST)lpSelectData);
   res->EType         = EType;
   res->nResultsCount = 0;
-        
+
 
   /* Data following are dedicated to APC like call, they
-     will be initialized if required. For now they are set to 
+     will be initialized if required. For now they are set to
      invalid values.
      */
   res->funcWorker    = NULL;
@@ -269,7 +269,7 @@ DWORD select_data_result_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, LPVOI
 DWORD select_data_query_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, HANDLE hFileDescr, LPVOID lpOrig)
 {
   DWORD res;
-  DWORD i; 
+  DWORD i;
 
   res = 0;
   if (lpSelectData->nQueriesCount < MAXIMUM_SELECT_OBJECTS)
@@ -286,15 +286,16 @@ DWORD select_data_query_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, HANDLE
 }
 
 /* Search for a job that has available query slots and that match provided type.
- * If none is found, create a new one. Return the corresponding SELECTDATA, and 
+ * If none is found, create a new one. Return the corresponding SELECTDATA, and
  * update provided SELECTDATA head, if required.
  */
-LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData, SELECTTYPE EType)
+LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData,
+                                     SELECTTYPE EType)
 {
   LPSELECTDATA res;
-  
+
   res = NULL;
-  
+
   /* Search for job */
 #ifdef DBUG
   dbug_print("Searching an available job for type %d", EType);
@@ -303,7 +304,7 @@ LPSELECTDATA select_data_job_search (LPSELECTDATA *lppSelectData, SELECTTYPE ETy
   while (
       res != NULL
       && !(
-        res->EType == EType 
+        res->EType == EType
         && res->nQueriesCount < MAXIMUM_SELECT_OBJECTS
         )
       )
@@ -336,7 +337,7 @@ void read_console_poll(HANDLE hStop, void *_data)
   DWORD n;
   LPSELECTDATA  lpSelectData;
   LPSELECTQUERY lpQuery;
-  
+
 #ifdef DBUG
   dbug_print("Waiting for data on console");
 #endif
@@ -350,7 +351,7 @@ void read_console_poll(HANDLE hStop, void *_data)
   events[0] = hStop;
   events[1] = lpQuery->hFileDescr;
   while (lpSelectData->EState == SELECT_STATE_NONE)
-  {    
+  {
     waitRes = WaitForMultipleObjects(2, events, FALSE, INFINITE);
     if (waitRes == WAIT_OBJECT_0 || check_error(lpSelectData, waitRes == WAIT_FAILED))
     {
@@ -371,7 +372,7 @@ void read_console_poll(HANDLE hStop, void *_data)
       lpSelectData->EState = SELECT_STATE_SIGNALED;
       break;
     }
-    else 
+    else
     {
       /* discard everything else and try again */
       if (check_error(lpSelectData, ReadConsoleInput(lpQuery->hFileDescr, &record, 1, &n) == 0))
@@ -421,13 +422,13 @@ void read_pipe_poll (HANDLE hStop, void *_data)
     {
       iterQuery = &(lpSelectData->aQueries[i]);
       if (check_error(
-            lpSelectData, 
+            lpSelectData,
             PeekNamedPipe(
-              iterQuery->hFileDescr, 
-              NULL, 
-              0, 
-              NULL, 
-              &n, 
+              iterQuery->hFileDescr,
+              NULL,
+              0,
+              NULL,
+              &n,
               NULL) == 0))
       {
         break;
@@ -441,7 +442,7 @@ void read_pipe_poll (HANDLE hStop, void *_data)
     };
 
     /* Alas, nothing except polling seems to work for pipes.
-       Check the state & stop_worker_event every 10 ms 
+       Check the state & stop_worker_event every 10 ms
      */
     if (lpSelectData->EState == SELECT_STATE_NONE)
     {
@@ -462,17 +463,17 @@ LPSELECTDATA read_pipe_poll_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, HA
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
-  
+
   hd = lpSelectData;
   /* Polling pipe is a non blocking operation by default. This means that each
-     worker can handle many pipe. We begin to try to find a worker that is 
+     worker can handle many pipe. We begin to try to find a worker that is
      polling pipe, but for which there is under the limit of pipe per worker.
      */
 #ifdef DBUG
   dbug_print("Searching an available worker handling pipe");
 #endif
   res = select_data_job_search(&hd, SELECT_TYPE_PIPE_READ);
-  
+
   /* Add a new pipe to poll */
   res->funcWorker = read_pipe_poll;
   select_data_query_add(res, EMode, hFileDescr, lpOrig);
@@ -516,22 +517,22 @@ void socket_poll (HANDLE hStop, void *_data)
     }
     check_error(lpSelectData,
         WSAEventSelect(
-          (SOCKET)(iterQuery->hFileDescr), 
-          aEvents[nEvents], 
+          (SOCKET)(iterQuery->hFileDescr),
+          aEvents[nEvents],
           maskEvents) == SOCKET_ERROR);
   }
-  
+
   /* Add stop event */
   aEvents[nEvents]  = hStop;
   nEvents++;
 
   if (lpSelectData->nError == 0)
   {
-    check_error(lpSelectData, 
+    check_error(lpSelectData,
         WaitForMultipleObjects(
-          nEvents, 
-          aEvents, 
-          FALSE, 
+          nEvents,
+          aEvents,
+          FALSE,
           INFINITE) == WAIT_FAILED);
   };
 
@@ -568,7 +569,7 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, HANDL
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
-  
+
   hd = lpSelectData;
   /* Polling socket can be done mulitple handle at the same time. You just
      need one worker to use it. Try to find if there is already a worker
@@ -578,7 +579,7 @@ LPSELECTDATA socket_poll_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, HANDL
   dbug_print("Scanning list of worker to find one that already handle socket");
 #endif
   res = select_data_job_search(&hd, SELECT_TYPE_SOCKET);
-  
+
   /* Add a new socket to poll */
   res->funcWorker = socket_poll;
 #ifdef DBUG
@@ -601,11 +602,11 @@ LPSELECTDATA static_poll_add (LPSELECTDATA lpSelectData, SELECTMODE EMode, HANDL
 {
   LPSELECTDATA res;
   LPSELECTDATA hd;
-  
+
   /* Look for an already initialized static element */
   hd = lpSelectData;
   res = select_data_job_search(&hd, SELECT_TYPE_STATIC);
-  
+
   /* Add a new query/result */
   select_data_query_add(res, EMode, hFileDescr, lpOrig);
   select_data_result_add(res, EMode, lpOrig);
@@ -636,7 +637,7 @@ static SELECTHANDLETYPE get_handle_type(value fd)
   {
     switch(GetFileType(Handle_val(fd)))
     {
-      case FILE_TYPE_DISK: 
+      case FILE_TYPE_DISK:
         res = SELECT_HANDLE_DISK;
         break;
 
@@ -685,8 +686,8 @@ LPSELECTDATA select_data_dispatch (LPSELECTDATA lpSelectData, SELECTMODE EMode, 
 #ifdef DBUG
   dbug_print("Waiting for %d on handle %x", EMode, hFileDescr);
 #endif
-  
-  /* There is only 2 way to have except mode: transmission of OOB data through 
+
+  /* There is only 2 way to have except mode: transmission of OOB data through
      a socket TCP/IP and through a strange interaction with a TTY.
      With windows, we only consider the TCP/IP except condition
   */
@@ -795,12 +796,12 @@ static DWORD caml_list_length (value lst)
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value timeout)
-{  
+{
   /* Event associated to handle */
   DWORD   nEventsCount;
   DWORD   nEventsMax;
   HANDLE *lpEventsDone;
-  
+
   /* Data for all handles */
   LPSELECTDATA lpSelectData;
   LPSELECTDATA iterSelectData;
@@ -861,8 +862,8 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
     uerror("select", Nothing);
   }
   hdsData = (HANDLE *)HeapAlloc(
-      GetProcessHeap(), 
-      0, 
+      GetProcessHeap(),
+      0,
       sizeof(HANDLE) * hdsMax);
   HeapUnlock(GetProcessHeap());
 
@@ -973,12 +974,12 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
     /* Execute APC */
     if (iterSelectData->funcWorker != NULL)
     {
-      iterSelectData->lpWorker = 
+      iterSelectData->lpWorker =
         worker_job_submit(
-            iterSelectData->funcWorker, 
+            iterSelectData->funcWorker,
             (void *)iterSelectData);
 #ifdef DBUG
-      dbug_print("Job submitted to worker %x", iterSelectData->lpWorker); 
+      dbug_print("Job submitted to worker %x", iterSelectData->lpWorker);
 #endif
       lpEventsDone[nEventsCount] = worker_job_event_done(iterSelectData->lpWorker);
       nEventsCount++;
@@ -1034,7 +1035,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
       };
       iterSelectData = LIST_NEXT(LPSELECTDATA, iterSelectData);
     };
-      
+
 #ifdef DBUG
     dbug_print("Waiting for every select worker to be done");
 #endif
@@ -1067,7 +1068,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
 #ifdef DBUG
     dbug_print("Building result");
 #endif
-    read_list = Val_unit; 
+    read_list = Val_unit;
     write_list = Val_unit;
     except_list = Val_unit;
 
@@ -1116,7 +1117,7 @@ CAMLprim value unix_select(value readfds, value writefds, value exceptfds, value
     select_data_free(lpSelectData);
   }
   lpSelectData = NULL;
-  
+
   /* Free allocated events/handle set array */
 #ifdef DBUG
   dbug_print("Free local allocated resources");

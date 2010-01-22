@@ -251,7 +251,7 @@ module type GLOB = sig
       A basic expression can be a constant string enclosed in double quotes, in which
       double quotes must be preceded by backslashes, or a glob pattern enclosed between a [<] and a [>],
       - ["]{i string}["] matches the literal string {i string},
-      - [<]{i glob}[>] matches the glob pattern {i glob}. 
+      - [<]{i glob}[>] matches the glob pattern {i glob}.
 
       A glob pattern is an anchored regular expression in a shell-like syntax.  Most characters stand for themselves.
       Character ranges are given in usual shell syntax between brackets.  The star [*] stands for any sequence of
@@ -540,7 +540,7 @@ module type PLUGIN = sig
   val flag_and_dep : Tags.elt list -> Command.spec -> unit
 
   (** [non_dependency module_path module_name]
-       Example: 
+       Example:
          [non_dependency "foo/bar/baz" "Goo"]
        Says that the module [Baz] in the file [foo/bar/baz.*] does not depend on [Goo]. *)
   val non_dependency : Pathname.t -> string -> unit
@@ -556,7 +556,7 @@ module type PLUGIN = sig
         At link time it will include:
           foo/bar.cma or foo/bar.cmxa
         If you supply the ~dir:"boo" option -I boo
-          will be added at link and compile time. 
+          will be added at link and compile time.
         Use ~extern:true for non-ocamlbuild handled libraries.
         Use ~byte:false or ~native:false to disable byte or native mode.
         Use ~tag_name:"usebar" to override the default tag name. *)
@@ -627,7 +627,7 @@ module type PLUGIN = sig
   (** Here is the list of hooks that the dispatch function have to handle.
       Generally one respond to one or two hooks (like After_rules) and do
       nothing in the default case. *)
-  type hook = 
+  type hook =
     | Before_hygiene
     | After_hygiene
     | Before_options

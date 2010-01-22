@@ -4,7 +4,7 @@ type filePattern = {
     typename : string;
     extensions : string list;
     mactypes : string list
-  } 
+  }
 (* /type *)
 
 let cCAMLtoTKfilePattern fp =

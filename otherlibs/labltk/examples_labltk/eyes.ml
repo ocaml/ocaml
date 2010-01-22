@@ -26,12 +26,12 @@ let _ =
   let create_eye cx cy wx wy ewx ewy bnd =
     let o2 = Canvas.create_oval
         ~x1:(cx - wx) ~y1:(cy - wy)
-        ~x2:(cx + wx) ~y2:(cy + wy) 
+        ~x2:(cx + wx) ~y2:(cy + wy)
         ~outline: `Black ~width: 7
         ~fill: `White
         c
     and o = Canvas.create_oval
-        ~x1:(cx - ewx) ~y1:(cy - ewy) 
+        ~x1:(cx - ewx) ~y1:(cy - ewy)
         ~x2:(cx + ewx) ~y2:(cy + ewy)
         ~fill:`Black
         c in
@@ -40,14 +40,14 @@ let _ =
     bind ~events:[`Motion] ~extend:true ~fields:[`MouseX; `MouseY]
       ~action:(fun e ->
         let nx, ny =
-          let xdiff = e.ev_MouseX - cx 
+          let xdiff = e.ev_MouseX - cx
           and ydiff = e.ev_MouseY - cy in
-          let diff = sqrt ((float xdiff /. (float wx *. bnd)) ** 2.0 +. 
+          let diff = sqrt ((float xdiff /. (float wx *. bnd)) ** 2.0 +.
                              (float ydiff /. (float wy *. bnd)) ** 2.0) in
           if diff > 1.0 then
             truncate ((float xdiff) *. (1.0 /. diff)) + cx,
             truncate ((float ydiff) *. (1.0 /. diff)) + cy
-          else 
+          else
             e.ev_MouseX, e.ev_MouseY
         in
         Canvas.move c o ~x: (nx - !curx) ~y: (ny - !cury);
@@ -57,9 +57,6 @@ let _ =
   in
   create_eye 60 100 30 40 5 6 0.6;
   create_eye 140 100 30 40 5 6 0.6;
-  pack [c] 
+  pack [c]
 
 let _ = Printexc.print mainLoop ()
-
-
-

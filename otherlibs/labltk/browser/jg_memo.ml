@@ -31,5 +31,3 @@ let fast ~f =
       let data = f key in
       memo := Cons(key, data, !memo);
       data
-  
-  

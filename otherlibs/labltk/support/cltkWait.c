@@ -23,13 +23,13 @@
 #include <callback.h>
 #include "camltk.h"
 
-/* The following are replacements for 
+/* The following are replacements for
     tkwait visibility
     tkwait window
    in the case where we use threads (tkwait internally calls an event loop,
    and thus prevents thread scheduling from taking place).
 
-   Instead, one should set up a callback, wait for a signal, and signal 
+   Instead, one should set up a callback, wait for a signal, and signal
    from inside the callback
 */
 
@@ -45,7 +45,7 @@ struct WinCBData {
 };
 
 static void WaitVisibilityProc(clientData, eventPtr)
-    ClientData clientData;      
+    ClientData clientData;
     XEvent *eventPtr;           /* Information about event (not used). */
 {
   struct WinCBData *vis = clientData;

@@ -183,4 +183,4 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   Ccomp.command (Config.asm ^
                  Filename.quote outfile ^ " " ^ Filename.quote infile ^
-		 (if !Clflags.verbose then "" else ">NUL"))
+                 (if !Clflags.verbose then "" else ">NUL"))

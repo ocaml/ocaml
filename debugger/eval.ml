@@ -197,7 +197,7 @@ let report_error ppf = function
         "@[Cannot extract item number %i from a value of type@ %a@]@."
         pos Printtyp.type_expr ty
   | Wrong_label(ty, lbl) ->
-      fprintf ppf 
+      fprintf ppf
         "@[The record type@ %a@ has no label named %s@]@."
         Printtyp.type_expr ty lbl
   | Not_a_record ty ->

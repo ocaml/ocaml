@@ -13,5 +13,3 @@ let _ =
   Thread.create (f "A") "hello";
   f "B" "world";
   exit 0
-
-

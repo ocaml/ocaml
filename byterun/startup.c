@@ -176,7 +176,7 @@ int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 {
   int32 len = caml_seek_optional_section(fd, trail, name);
-  if (len == -1) 
+  if (len == -1)
     caml_fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
   return len;
 }

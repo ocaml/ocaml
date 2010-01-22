@@ -475,7 +475,7 @@ static void * caml_thread_start(void * arg)
 #endif
   /* The thread now stops running */
   return NULL;
-}  
+}
 
 value caml_thread_new(value clos)          /* ML */
 {
@@ -535,7 +535,7 @@ value caml_thread_new(value clos)          /* ML */
       caml_pthread_check(err, "Thread.create");
     }
   End_roots();
-  /* Create the tick thread if not already done.  
+  /* Create the tick thread if not already done.
      Because of PR#4666, we start the tick thread late, only when we create
      the first additional thread in the current process*/
   if (! caml_tick_thread_running) {
@@ -905,7 +905,7 @@ value caml_wait_signal(value sigs) /* ML */
   return Val_int(signo);
 #else
   invalid_argument("Thread.wait_signal not implemented");
-  return Val_int(0);		/* not reached */
+  return Val_int(0);            /* not reached */
 #endif
 }
 
@@ -927,4 +927,3 @@ static void caml_pthread_check(int retcode, char *msg)
   memmove (&Byte(str, msglen + 2), err, errlen);
   raise_sys_error(str);
 }
-

@@ -82,7 +82,7 @@ let first_virtual_reg_stamp = ref (-1)
 let reset() =
   (* When reset() is called for the first time, the current stamp reflects
      all hard pseudo-registers that have been allocated by Proc, so
-     remember it and use it as the base stamp for allocating 
+     remember it and use it as the base stamp for allocating
      soft pseudo-registers *)
   if !first_virtual_reg_stamp = -1 then first_virtual_reg_stamp := !currstamp;
   currstamp := !first_virtual_reg_stamp;

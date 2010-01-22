@@ -43,4 +43,3 @@ let main() =
   stdin_thread()
 
 let _ = main()
-

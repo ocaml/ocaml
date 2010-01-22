@@ -31,19 +31,19 @@ let get_x p = p#get_x;;
 let set_x p = p#set_x;;
 List.map get_x l;;
 
-class ref x_init = 
+class ref x_init =
   val mutable x = x_init
   method get = x
   method set y = x <- y
 end;;
 
-class ref (x_init:int) = 
+class ref (x_init:int) =
   val mutable x = x_init
   method get = x
   method set y = x <- y
 end;;
 
-class 'a ref x_init = 
+class 'a ref x_init =
   val mutable x = (x_init : 'a)
   method get = x
   method set y = x <- y
@@ -135,7 +135,7 @@ class virtual 'a lst () as self =
       f self#hd;
       self#tl#iter f
     end
-  method print (f : 'a -> unit) = 
+  method print (f : 'a -> unit) =
     print_string "(";
     self#iter (fun x -> f x; print_string "::");
     print_string "[]";
@@ -160,8 +160,8 @@ l1#print print_int;;
 let l2 = l1#map (fun x -> x + 1);;
 l2#print print_int;;
 
-let rec map_list f (x:'a lst) = 
-  if x#null then new nil() 
+let rec map_list f (x:'a lst) =
+  if x#null then new nil()
   else new cons (f x#hd) (map_list f x#tl);;
 
 let p1 = (map_list (fun x -> new printable_color_point x "red") l1);;

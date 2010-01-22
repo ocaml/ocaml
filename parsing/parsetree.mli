@@ -22,7 +22,7 @@ type core_type =
   { ptyp_desc: core_type_desc;
     ptyp_loc: Location.t }
 
-and core_type_desc = 
+and core_type_desc =
     Ptyp_any
   | Ptyp_var of string
   | Ptyp_arrow of label * core_type * core_type

@@ -40,7 +40,7 @@ examples_labltk:
 examples_camltk:
 	cd examples_camltk; $(MAKE) all
 
-install: 
+install:
 	cd labltk ; $(MAKEREC) install
 	cd camltk ; $(MAKEREC) install
 	cd lib ; $(MAKEREC) install
@@ -60,5 +60,5 @@ installopt:
 	cd frx ; $(MAKEREC) installopt
 	cd tkanim ; $(MAKEREC) installopt
 
-partialclean clean: 
+partialclean clean:
 	for d in $(SUBDIRS); do $(MAKEREC) -C $$d clean; done

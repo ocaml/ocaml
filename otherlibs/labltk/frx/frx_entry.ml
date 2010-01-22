@@ -25,7 +25,7 @@ let new_label_entry parent txt action =
   let f = Frame.create parent [] in
   let m = Label.create f [Text txt]
   and e = Entry.create f [Relief Sunken; TextWidth 0] in
-   Camltk.bind e [[], KeyPressDetail "Return"] 
+   Camltk.bind e [[], KeyPressDetail "Return"]
        (BindSet ([], fun _ -> action(Entry.get e)));
   pack [m][Side Side_Left];
   pack [e][Side Side_Right; Fill Fill_X; Expand true];
@@ -38,5 +38,3 @@ let new_labelm_entry parent txt memo =
   pack [m][Side Side_Left];
   pack [e][Side Side_Right; Fill Fill_X; Expand true];
   f,e
-
-

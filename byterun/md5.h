@@ -32,7 +32,7 @@ struct MD5Context {
 };
 
 CAMLextern void caml_MD5Init (struct MD5Context *context);
-CAMLextern void caml_MD5Update (struct MD5Context *context, unsigned char *buf, 
+CAMLextern void caml_MD5Update (struct MD5Context *context, unsigned char *buf,
                                 uintnat len);
 CAMLextern void caml_MD5Final (unsigned char *digest, struct MD5Context *ctx);
 CAMLextern void caml_MD5Transform (uint32 *buf, uint32 *in);

@@ -19,7 +19,7 @@ type t
 (** The type of file descriptors opened on NDBM databases. *)
 
 
-type open_flag = 
+type open_flag =
     Dbm_rdonly
   | Dbm_wronly
   | Dbm_rdwr
@@ -77,4 +77,3 @@ val iter : (string -> string -> 'a) -> t -> unit
 (** [iter f db] applies [f] to each ([key], [data]) pair in
    the database [db]. [f] receives [key] as first argument
    and [data] as second argument. *)
-

@@ -11,7 +11,7 @@ let cCAMLtoTKscrollValue = function
 
 (* str l -> scrllv -> str l *)
 let cTKtoCAMLscrollValue = function
-   "scroll"::n::"pages"::l -> 
+   "scroll"::n::"pages"::l ->
      ScrollPage (int_of_string n), l
  | "scroll"::n::"units"::l ->
      ScrollUnit (int_of_string n), l
@@ -33,7 +33,7 @@ let cCAMLtoTKscrollValue : scrollValue -> tkArgs = function
 
 (* str l -> scrllv -> str l *)
 let cTKtoCAMLscrollValue = function
- | "scroll" :: n :: "pages" :: l -> 
+ | "scroll" :: n :: "pages" :: l ->
      `Page (int_of_string n), l
  | "scroll" :: n :: "units" :: l ->
      `Unit (int_of_string n), l

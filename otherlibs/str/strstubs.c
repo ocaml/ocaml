@@ -65,7 +65,7 @@ enum {
   SIMPLESTAR, /* match a character class 0, 1 or several times */
   SIMPLEPLUS, /* match a character class 1 or several times */
   GOTO,       /* unconditional branch */
-  PUSHBACK,   /* record a backtrack point -- 
+  PUSHBACK,   /* record a backtrack point --
                  where to jump in case of failure */
   SETMARK,    /* remember current position in given register # */
   CHECKPROGRESS /* backtrack if no progress was made w.r.t. reg # */
@@ -116,7 +116,7 @@ static unsigned char re_word_letters[32] = {
 #define Is_word_letter(c) ((re_word_letters[(c) >> 3] >> ((c) & 7)) & 1)
 
 /* The bytecode interpreter for the NFA */
-static int re_match(value re, 
+static int re_match(value re,
                     unsigned char * starttxt,
                     register unsigned char * txt,
                     register unsigned char * endtxt,
@@ -196,7 +196,7 @@ static int re_match(value re,
       /* At beginning and end of text: no
          At beginning of text: OK if current char is a letter
          At end of text: OK if previous char is a letter
-         Otherwise: 
+         Otherwise:
            OK if previous char is a letter and current char not a letter
            or previous char is not a letter and current char is a letter */
       if (txt == starttxt) {
@@ -290,7 +290,7 @@ static int re_match(value re,
   push:
     /* Push an item on the backtrack stack and continue with next instr */
     if (sp == stack->point + BACKTRACK_STACK_BLOCK_SIZE) {
-      struct backtrack_stack * newstack = 
+      struct backtrack_stack * newstack =
         stat_alloc(sizeof(struct backtrack_stack));
       newstack->previous = stack;
       stack = newstack;
@@ -521,4 +521,3 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
   }
   CAMLreturn(res);
 }
-

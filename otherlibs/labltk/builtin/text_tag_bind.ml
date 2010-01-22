@@ -2,7 +2,7 @@
 
 let tag_bind widget tag eventsequence action =
   check_class widget widget_text_table;
-  tkCommand [| 
+  tkCommand [|
     cCAMLtoTKwidget widget_text_table widget;
     TkToken "tag";
     TkToken "bind";
@@ -29,7 +29,7 @@ let tag_bind widget tag eventsequence action =
 
 let tag_bind ~tag ~events ?(extend = false) ?(breakable = false)
     ?(fields = []) ?action widget =
-  tkCommand [| 
+  tkCommand [|
     cCAMLtoTKwidget widget;
     TkToken "tag";
     TkToken "bind";
@@ -43,7 +43,7 @@ let tag_bind ~tag ~events ?(extend = false) ?(breakable = false)
         let cb = if extend then "+camlcb " else "camlcb " in
         let cb = cb ^ cbId ^ writeeventField fields in
         let cb =
-          if breakable then 
+          if breakable then
             cb ^ " ; if { $BreakBindingsSequence == 1 } then { break ;}"
             ^ " ; set BreakBindingsSequence 0"
           else cb in

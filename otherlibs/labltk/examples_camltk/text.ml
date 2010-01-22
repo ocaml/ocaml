@@ -28,7 +28,7 @@ let scrollbar = Scrollbar.create f []
 let buffer = ref ""
 
 let kill () =
-  buffer := 
+  buffer :=
      Text.get text (TextIndex (Insert, []))
                    (TextIndex (Insert, [LineEnd]));
      Text.delete text (TextIndex (Insert, []))
@@ -36,7 +36,7 @@ let kill () =
 ;;
 
 let yank () =
-  Text.insert text (TextIndex (Insert, [])) !buffer [] 
+  Text.insert text (TextIndex (Insert, [])) !buffer []
 
 let _ = bind text [[Control], KeyPressDetail "y"] (BindSet ([], fun _ ->
   yank () ))
@@ -52,4 +52,3 @@ let _ =
   pack [f][];
   mainLoop ()
 ;;
-

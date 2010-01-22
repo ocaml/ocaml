@@ -19,7 +19,7 @@ open Path
 open Types
 open Btype
 
-type t = 
+type t =
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
@@ -258,7 +258,7 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Tsig_value(id, _) | Tsig_exception(id, _) | 
+  | (Tsig_value(id, _) | Tsig_exception(id, _) |
      Tsig_class(id, _, _) | Tsig_cltype(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
@@ -309,7 +309,7 @@ and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract
   | Tmodtype_manifest mty -> Tmodtype_manifest(modtype s mty)
 
-(* Composition of substitutions:  
+(* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =

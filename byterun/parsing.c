@@ -83,7 +83,7 @@ int caml_parser_trace = 0;
 
 /* Output codes */
 /* Mirrors parser_output in ../stdlib/parsing.ml */
-#define READ_TOKEN Val_int(0) 
+#define READ_TOKEN Val_int(0)
 #define RAISE_PARSE_ERROR Val_int(1)
 #define GROW_STACKS_1 Val_int(2)
 #define GROW_STACKS_2 Val_int(3)
@@ -133,8 +133,8 @@ static void print_token(struct parser_tables *tables, int state, value tok)
     else
       fprintf(stderr, "_");
     fprintf(stderr, ")\n");
-  }          
-}      
+  }
+}
 
 /* The pushdown automata */
 
@@ -171,7 +171,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
       caml_modify(&env->lval, Val_long(0));
     }
     if (caml_parser_trace) print_token(tables, state, arg);
-    
+
   testshift:
     n1 = Short(tables->sindex, state);
     n2 = n1 + Int_val(env->curr_char);
@@ -199,7 +199,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
         n2 = n1 + ERRCODE;
         if (n1 != 0 && n2 >= 0 && n2 <= Int_val(tables->tablesize) &&
             Short(tables->check, n2) == ERRCODE) {
-          if (caml_parser_trace) 
+          if (caml_parser_trace)
             fprintf(stderr, "Recovering in state %d\n", state1);
           goto shift_recover;
         } else {
@@ -222,7 +222,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
       env->curr_char = Val_int(-1);
       goto loop;
     }
-    
+
   shift:
     env->curr_char = Val_int(-1);
     if (errflag > 0) errflag--;
@@ -289,7 +289,7 @@ CAMLprim value caml_parse_engine(struct parser_tables *tables,
     Assert(0);
     return RAISE_PARSE_ERROR;   /* Keeps gcc -Wall happy */
   }
-  
+
 }
 
 /* Control printing of debugging info */

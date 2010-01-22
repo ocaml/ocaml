@@ -108,7 +108,7 @@ let rec expr ppf = function
   | Clet(id, def, body) ->
      fprintf ppf
       "@[<2>(let@ @[<2>%a@ %a@]@ %a)@]"
-      Ident.print id expr def sequence body 
+      Ident.print id expr def sequence body
   | Cassign(id, exp) ->
       fprintf ppf "@[<2>(assign @[<2>%a@ %a@])@]" Ident.print id expr exp
   | Ctuple el ->
@@ -142,7 +142,7 @@ let rec expr ppf = function
        for i = 0 to Array.length cases - 1 do
         fprintf ppf "@ @[<2>%t@ %a@]" (print_case i) sequence cases.(i)
        done in
-      fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases 
+      fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases
   | Cloop e ->
       fprintf ppf "@[<2>(loop@ %a)@]" sequence e
   | Ccatch(i, ids, e1, e2) ->
@@ -172,7 +172,7 @@ let fundecl ppf f =
   let print_cases ppf cases =
     let first = ref true in
     List.iter
-     (fun (id, ty) -> 
+     (fun (id, ty) ->
        if !first then first := false else fprintf ppf "@ ";
        fprintf ppf "%a: %a" Ident.print id machtype ty)
      cases in

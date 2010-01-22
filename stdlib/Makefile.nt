@@ -29,4 +29,3 @@ camlheader camlheader_ur: headernt.c ../config/Makefile
 
 # TODO: do not call flexlink to build tmpheader.exe (we don't need
 # the export table)
-

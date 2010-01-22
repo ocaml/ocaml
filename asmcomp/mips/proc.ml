@@ -50,7 +50,7 @@ let int_reg_name = [|
   (* 6-13 *)   "$8"; "$9"; "$10"; "$11"; "$12"; "$13"; "$14"; "$15";
   (* 14-19 *)  "$16"; "$17"; "$18"; "$19"; "$20"; "$21"
 |]
-  
+
 let float_reg_name = [|
   "$f0"; "$f1"; "$f2"; "$f3"; "$f4";
   "$f5"; "$f6"; "$f7"; "$f8"; "$f9";
@@ -143,7 +143,7 @@ let loc_results res =
    or float regs $f12...$f19.  Each argument "consumes" both one slot
    in the int register file and one slot in the float register file.
    Extra arguments are passed on stack, in a 64-bits slot, right-justified
-   (i.e. at +4 from natural address). *)   
+   (i.e. at +4 from natural address). *)
 
 let loc_external_arguments arg =
   let loc = Array.create (Array.length arg) Reg.dummy in

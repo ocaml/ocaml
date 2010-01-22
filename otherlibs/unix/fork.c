@@ -23,4 +23,3 @@ CAMLprim value unix_fork(value unit)
   if (ret == -1) uerror("fork", Nothing);
   return Val_int(ret);
 }
-

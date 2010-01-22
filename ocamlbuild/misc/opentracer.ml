@@ -60,7 +60,7 @@ module Driver (T : TRACER) = struct
   let main () =
     let log = "opentracer.log" in
     let oc =
-      if sys_file_exists log then 
+      if sys_file_exists log then
         open_out_gen [Open_wronly;Open_append;Open_text] 0 log
       else
         let oc = open_out log in

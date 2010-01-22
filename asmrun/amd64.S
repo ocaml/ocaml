@@ -52,7 +52,7 @@ FUNCTION(G(caml_call_gc))
         movq    %rax, G(caml_last_return_address)(%rip)
         leaq    8(%rsp), %rax
         movq    %rax, G(caml_bottom_of_stack)(%rip)
-.L105:  
+.L105:
     /* Save caml_young_ptr, caml_exception_pointer */
 	movq	%r15, G(caml_young_ptr)(%rip)
 	movq	%r14, G(caml_exception_pointer)(%rip)

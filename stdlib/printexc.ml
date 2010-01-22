@@ -86,7 +86,7 @@ type loc_info =
                     * int    (* end char *)
   | Unknown_location of bool (*is_raise*)
 
-external get_exception_backtrace: 
+external get_exception_backtrace:
   unit -> loc_info array option = "caml_get_exception_backtrace"
 
 let format_loc_info pos li =

@@ -49,7 +49,7 @@ and instruction_desc =
 let has_fallthrough = function
   | Lreturn | Lbranch _ | Lswitch _ | Lraise
   | Lop Itailcall_ind | Lop (Itailcall_imm _) -> false
-  | _ -> true 
+  | _ -> true
 
 type fundecl =
   { fun_name: string;
@@ -84,13 +84,13 @@ let rec end_instr =
 (* Cons an instruction (live, debug empty) *)
 
 let instr_cons d a r n =
-  { desc = d; next = n; arg = a; res = r; 
+  { desc = d; next = n; arg = a; res = r;
     dbg = Debuginfo.none; live = Reg.Set.empty }
 
 (* Cons a simple instruction (arg, res, live empty) *)
 
 let cons_instr d n =
-  { desc = d; next = n; arg = [||]; res = [||]; 
+  { desc = d; next = n; arg = [||]; res = [||];
     dbg = Debuginfo.none; live = Reg.Set.empty }
 
 (* Build an instruction with arg, res, dbg, live taken from
@@ -98,7 +98,7 @@ let cons_instr d n =
 
 let copy_instr d i n =
   { desc = d; next = n;
-    arg = i.Mach.arg; res = i.Mach.res; 
+    arg = i.Mach.arg; res = i.Mach.res;
     dbg = i.Mach.dbg; live = i.Mach.live }
 
 (*
@@ -187,7 +187,7 @@ let rec linear i n =
           copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
       | _, Iend, Lbranch lbl ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
-      | Iexit nfail1, Iexit nfail2, _ 
+      | Iexit nfail1, Iexit nfail2, _
             when is_next_catch nfail1 ->
           let lbl2 = find_exit_label nfail2 in
           copy_instr

@@ -17,4 +17,3 @@ AstFilters.register_str_item_filter begin fun st ->
   <:str_item@ghost< try let module Main = struct $st$ end in ()
                     with e -> $global_handler_ref.val$ e >>
 end;
-

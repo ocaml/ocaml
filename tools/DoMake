@@ -41,7 +41,7 @@ if "{domake_files}" == ""
   else
     set domake_main "Makefile"
   end
-  
+
   if "`exists "{domake_main}".depend`" != ""
     set domake_files "-f {domake_main} -f {domake_main}.depend"
   else

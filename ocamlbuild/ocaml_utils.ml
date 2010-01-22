@@ -144,7 +144,7 @@ let read_path_dependencies =
       let deps =
         List.fold_right begin fun (path, deps) acc ->
           let module_name' = module_name_of_pathname path in
-          if module_name' = module_name 
+          if module_name' = module_name
           then List.union deps acc
           else raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: multiple files in ocamldep output (%s not expected)" path))
         end ocamldep_output [] in

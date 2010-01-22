@@ -112,8 +112,8 @@ let default_available_units () =
       (fun st (name,crc_intf,crc_impl,syms) ->
         rank := !rank + List.length syms;
         {
-	 ifaces = StrMap.add name (crc_intf,exe) st.ifaces;
-	 implems = StrMap.add name (crc_impl,exe,Check_inited !rank) st.implems;
+         ifaces = StrMap.add name (crc_intf,exe) st.ifaces;
+         implems = StrMap.add name (crc_impl,exe,Check_inited !rank) st.implems;
         }
       )
       empty_state
@@ -130,44 +130,44 @@ let add_check_ifaces allow_ext filename ui ifaces =
        if name = ui.name
        then StrMap.add name (crc,filename) ifaces
        else
-	 try
-	   let (old_crc,old_src) = StrMap.find name ifaces in
-	   if old_crc <> crc
-	   then raise(Error(Inconsistent_import(name)))
-	   else ifaces
-	 with Not_found ->
-	   if allow_ext then StrMap.add name (crc,filename) ifaces
-	   else raise (Error(Unavailable_unit name))
+         try
+           let (old_crc,old_src) = StrMap.find name ifaces in
+           if old_crc <> crc
+           then raise(Error(Inconsistent_import(name)))
+           else ifaces
+         with Not_found ->
+           if allow_ext then StrMap.add name (crc,filename) ifaces
+           else raise (Error(Unavailable_unit name))
     ) ifaces ui.imports_cmi
 
 let check_implems filename ui implems =
   List.iter
     (fun (name, crc) ->
        match name with
-	 |"Out_of_memory"
-	 |"Sys_error"
-	 |"Failure"
-	 |"Invalid_argument"
-	 |"End_of_file"
-	 |"Division_by_zero"
-	 |"Not_found"
-	 |"Match_failure"
-	 |"Stack_overflow"
-	 |"Sys_blocked_io"
-	 |"Assert_failure"
-	 |"Undefined_recursive_module" -> ()
-	 | _ ->
+         |"Out_of_memory"
+         |"Sys_error"
+         |"Failure"
+         |"Invalid_argument"
+         |"End_of_file"
+         |"Division_by_zero"
+         |"Not_found"
+         |"Match_failure"
+         |"Stack_overflow"
+         |"Sys_blocked_io"
+         |"Assert_failure"
+         |"Undefined_recursive_module" -> ()
+         | _ ->
        try
-	 let (old_crc,old_src,state) = StrMap.find name implems in
-	 if crc <> cmx_not_found_crc && old_crc <> crc
-	 then raise(Error(Inconsistent_implementation(name)))
-	 else match state with
-	   | Check_inited i ->
-	       if ndl_globals_inited() < i
-	       then raise(Error(Unavailable_unit name))
-	   | Loaded -> ()
+         let (old_crc,old_src,state) = StrMap.find name implems in
+         if crc <> cmx_not_found_crc && old_crc <> crc
+         then raise(Error(Inconsistent_implementation(name)))
+         else match state with
+           | Check_inited i ->
+               if ndl_globals_inited() < i
+               then raise(Error(Unavailable_unit name))
+           | Loaded -> ()
        with Not_found ->
-	 raise (Error(Unavailable_unit name))
+         raise (Error(Unavailable_unit name))
     ) ui.imports_cmx
 
 let loadunits filename handle units state =
@@ -178,8 +178,8 @@ let loadunits filename handle units state =
   let new_implems =
     List.fold_left
       (fun accu ui ->
-	 check_implems filename ui accu;
-	 StrMap.add ui.name (ui.crc,filename,Loaded) accu)
+         check_implems filename ui accu;
+         StrMap.add ui.name (ui.crc,filename,Loaded) accu)
       state.implems units in
 
   let defines = List.flatten (List.map (fun ui -> ui.defines) units) in
@@ -203,8 +203,8 @@ let allow_only names =
   let ifaces =
     List.fold_left
       (fun ifaces name ->
-	 try StrMap.add name (StrMap.find name old) ifaces
-	 with Not_found -> ifaces)
+         try StrMap.add name (StrMap.find name old) ifaces
+         with Not_found -> ifaces)
       StrMap.empty names in
   global_state := { !global_state with ifaces = ifaces };
   allow_extension := false

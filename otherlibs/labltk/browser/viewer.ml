@@ -30,7 +30,7 @@ open Searchid
 let list_modules ~path =
   List.fold_left path ~init:[] ~f:
   begin fun modules dir ->
-    let l = 
+    let l =
       List.filter (Useunix.get_files_in_directory dir)
         ~f:(fun x -> Filename.check_suffix x ".cmi") in
     let l = List.map l ~f:
@@ -489,7 +489,7 @@ object (self)
     (* Help menu *)
     helpmenu#add_command "Manual..." ~command:show_help;
 
-    pack [search_frame] ~fill:`X;      
+    pack [search_frame] ~fill:`X;
     pack [boxes_frame] ~fill:`Both ~expand:true;
     pack [buttons] ~fill:`X ~side:`Bottom;
     pack [view] ~fill:`Both ~side:`Bottom ~expand:true;
@@ -576,7 +576,7 @@ object (self)
         end;
       see_path path ~box:(self#get_box path) ~sign
     end
-        
+
   method choose_symbol ~title ~env ?signature ?path l =
     let n =
       match path with None -> 1

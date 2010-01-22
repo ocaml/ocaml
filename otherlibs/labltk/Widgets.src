@@ -3,14 +3,14 @@ type Widget external
 
 % cget will probably never be implemented with verifications
 function (string) cgets [widget; "cget"; string]
-% another version with some hack is 
+% another version with some hack is
 type options_constrs external
 function (string) cget [widget; "cget"; options_constrs]
-% constructors of type options_constrs are of the form C<c> 
+% constructors of type options_constrs are of the form C<c>
 % where <c> is an option constructor  (e.g. CBackground)
 
 %%%%% Some types for standard options of widgets
-type Anchor { 
+type Anchor {
     NW ["nw"]       N ["n"]           NE ["ne"]
     W  ["w"]   Center ["center"]      E  ["e"]
     SW ["sw"]       S ["s"]           SE ["se"]
@@ -44,18 +44,18 @@ variant type Image {
 
 ##endif
 
-type Justification { 
+type Justification {
    Justify_Left   ["left"]
    Justify_Center ["center"]
    Justify_Right  ["right"]
 }
 
-type Orientation { 
+type Orientation {
     Vertical ["vertical"]
-    Horizontal ["horizontal"] 
+    Horizontal ["horizontal"]
 }
 
-type Relief { 
+type Relief {
    Raised ["raised"]
    Sunken ["sunken"]
    Flat   ["flat"]
@@ -183,7 +183,7 @@ module Imagebitmap {
 
 %%%%% button(n)
 
-type State { 
+type State {
    Normal ["normal"]
    Active ["active"]
    Disabled ["disabled"]
@@ -222,7 +222,7 @@ widget button {
    option WrapLength
    % Widget specific options
    option Command ["-command"; function ()]
-   option Default ["-default"; State]   
+   option Default ["-default"; State]
    option Height ["-height"; Units/int]
    option State ["-state"; State]
    option Width ["-width"; Units/int]
@@ -258,7 +258,7 @@ type SearchSpec {
   Withtag ["withtag"; TagOrId]
 }
 
-type ColorMode { 
+type ColorMode {
    Color ["color"]
    Gray ["gray"]
    Mono ["mono"]
@@ -326,20 +326,20 @@ subtype option(image) {
 }
 
 % Line item configuration
-type ArrowStyle { 
+type ArrowStyle {
    Arrow_None ["none"]
    Arrow_First ["first"]
    Arrow_Last ["last"]
    Arrow_Both ["both"]
 }
 
-type CapStyle { 
+type CapStyle {
    Cap_Butt ["butt"]
    Cap_Projecting ["projecting"]
    Cap_Round ["round"]
 }
 
-type JoinStyle { 
+type JoinStyle {
    Join_Bevel ["bevel"]
    Join_Miter ["miter"]
    Join_Round ["round"]
@@ -379,7 +379,7 @@ subtype option(rectangle) {
 
 ##ifndef CAMLTK
 % Only for Labltk. CanvasTextState is unified as State in Camltk
-type CanvasTextState { 
+type CanvasTextState {
    Normal ["normal"]
    Disabled ["disabled"]
    Hidden ["hidden"]
@@ -545,7 +545,7 @@ widget canvas {
 
 
 %%%%% checkbutton(n)
-widget checkbutton {    
+widget checkbutton {
    % Standard options
    option ActiveBackground
    option ActiveForeground
@@ -628,7 +628,7 @@ module Dialog {
 
 ##ifndef CAMLTK
 % Only for Labltk. InputState is unified as State in Camltk
-type InputState { 
+type InputState {
    Normal ["normal"]
    Disabled ["disabled"]
 }
@@ -721,7 +721,7 @@ type slant {
 
 type fontMetrics {
   Ascent ["-ascent"]
-  Descent ["-descent"]  
+  Descent ["-descent"]
   Linespace ["-linespace"]
   Fixed ["-fixed"]
 }
@@ -738,25 +738,25 @@ subtype options(font) {
 %% Beware of the order of Compound ! Put it as the first option
 % Compound                      ["-compound"; [font list]]
 % Copy                          ["-copy"; string]
-}               
+}
 
 module Font {
-  function (string) actual_family ["font"; "actual"; font; 
+  function (string) actual_family ["font"; "actual"; font;
                                    ?displayof:["-displayof"; widget];
                                    "-family"]
-  function (int) actual_size ["font"; "actual"; font; 
+  function (int) actual_size ["font"; "actual"; font;
                                    ?displayof:["-displayof"; widget];
                                    "-size"]
-  function (string) actual_weight ["font"; "actual"; font; 
+  function (string) actual_weight ["font"; "actual"; font;
                                    ?displayof:["-displayof"; widget];
                                    "-weight"]
-  function (string) actual_slant ["font"; "actual"; font; 
+  function (string) actual_slant ["font"; "actual"; font;
                                    ?displayof:["-displayof"; widget];
                                    "-slant"]
-  function (bool) actual_underline ["font"; "actual"; font; 
+  function (bool) actual_underline ["font"; "actual"; font;
                                    ?displayof:["-displayof"; widget];
                                    "-underline"]
-  function (bool) actual_overstrike ["font"; "actual"; font; 
+  function (bool) actual_overstrike ["font"; "actual"; font;
                                    ?displayof:["-displayof"; widget];
                                    "-overstrike"]
 
@@ -767,22 +767,22 @@ module Font {
 ##endif
   function () delete ["font"; "delete"; font]
   function (string list) families ["font"; "families";
-                                ?displayof:["-displayof"; widget]] 
+                                ?displayof:["-displayof"; widget]]
 ##ifdef CAMLTK
   function (string list) families_displayof ["font"; "families";
                                                 "-displayof"; widget]
 ##endif
   function (int) measure ["font"; "measure"; font; string;
-                                ?displayof:["-displayof"; widget]] 
+                                ?displayof:["-displayof"; widget]]
 ##ifdef CAMLTK
   function (int) measure_displayof ["font"; "measure"; font;
                                     "-displayof"; widget; string ]
 ##endif
   function (int) metrics ["font"; "metrics"; font;
                                 ?displayof:["-displayof"; widget];
-                                fontMetrics ] 
+                                fontMetrics ]
 ##ifdef CAMLTK
-  function (int) metrics_displayof ["font"; "metrics"; font; 
+  function (int) metrics_displayof ["font"; "metrics"; font;
                                     "-displayof"; widget;
                                     fontMetrics ]
 ##endif
@@ -800,7 +800,7 @@ type Colormap {
 % Visual classes are: directcolor, grayscale, greyscale, pseudocolor,
 %                     staticcolor, staticgray, staticgrey, truecolor
 type Visual {
-  ClassVisual (Clas) [[string; int]]  
+  ClassVisual (Clas) [[string; int]]
   DefaultVisual ["default"]
   WidgetVisual (Widget) [widget]
   BestDepth (Bestdepth) [["best"; int]]
@@ -825,7 +825,7 @@ widget frame {
    option Clas  ["-class"; string]
 ##endif
    option Colormap ["-colormap"; Colormap]
-   option Container ["-container"; bool]        
+   option Container ["-container"; bool]
    option Height
    option Visual ["-visual"; Visual]
    option Width
@@ -862,7 +862,7 @@ module Grab {
 subtype option(rowcolumnconfigure) {
   Minsize ["-minsize"; Units/int]
   Weight  ["-weight"; int]
-  Pad ["-pad"; Units/int]       
+  Pad ["-pad"; Units/int]
 }
 
 subtype option(grid) {
@@ -873,8 +873,8 @@ subtype option(grid) {
    IPadY ["-ipady"; Units/int]
    PadX
    PadY
-   Row ["-row"; int]   
-   RowSpan ["-rowspan"; int]   
+   Row ["-row"; int]
+   RowSpan ["-rowspan"; int]
    Sticky ["-sticky"; string]
    }
 
@@ -885,7 +885,7 @@ module Grid {
    function (int,int,int,int) bbox ["grid"; "bbox"; widget]
    function (int,int,int,int) bbox_cell ["grid"; "bbox"; widget; column: int; row: int]
    function (int,int,int,int) bbox_span ["grid"; "bbox"; widget; column1: int; row1: int; column2: int; row2: int]
-   function () column_configure 
+   function () column_configure
        ["grid"; "columnconfigure"; widget; int;
          option(rowcolumnconfigure) list]
    function () configure ["grid"; "configure"; widget list; option(grid) list]
@@ -898,7 +898,7 @@ module Grid {
    function (int,int) location ["grid"; "location"; widget; x:Units/int; y:Units/int]
    function (bool) propagate_get ["grid"; "propagate"; widget]
    function () propagate_set ["grid"; "propagate"; widget; bool]
-   function () row_configure 
+   function () row_configure
        ["grid"; "rowconfigure"; widget; int; option(rowcolumnconfigure) list]
    function (string) row_configure_get ["grid"; "rowconfigure"; widget; int]
    function (int,int) size ["grid"; "size"; widget]
@@ -1056,7 +1056,7 @@ subtype option(menuentry) {
    ActiveBackground
    ActiveForeground
    Accelerator ["-accelerator"; string]
-   Background    
+   Background
    Bitmap
    ColumnBreak ["-columnbreak"; bool]
    Command
@@ -1093,7 +1093,7 @@ subtype option(menucascade) {
    Background Bitmap ColumnBreak Command Font Foreground
    HideMargin
 ##ifdef CAMLTK
-   ImageBitmap ImagePhoto 
+   ImageBitmap ImagePhoto
 ##else
    Image
 ##endif
@@ -1109,7 +1109,7 @@ subtype option(menuradio) {
 ##else
    Image SelectImage
 ##endif
-   IndicatorOn Label SelectColor 
+   IndicatorOn Label SelectColor
    State UnderlinedChar Value Variable
    }
 
@@ -1120,7 +1120,7 @@ subtype option(menucheck) {
 ##ifdef CAMLTK
    ImageBitmap SelectImageBitmap ImagePhoto SelectImagePhoto
 ##else
-   Image SelectImage    
+   Image SelectImage
 ##endif
    IndicatorOn Label
    OffValue OnValue SelectColor
@@ -1143,7 +1143,7 @@ type menuType {
   Menu_Menubar ["menubar"]
   Menu_Tearoff ["tearoff"]
   Menu_Normal ["normal"]
-}        
+}
 
 % Separators and tearoffs don't have options
 
@@ -1212,7 +1212,7 @@ type menubuttonDirection {
    Dir_Above ["above"]
    Dir_Below ["below"]
    Dir_Left  ["left"]
-   Dir_Right ["right"] 
+   Dir_Right ["right"]
 }
 
 widget menubutton {
@@ -1246,7 +1246,7 @@ widget menubutton {
    option UnderlinedChar
    option WrapLength
    % Widget specific options
-   option Direction ["-direction"; menubuttonDirection ] 
+   option Direction ["-direction"; menubuttonDirection ]
    option Height
    option IndicatorOn
    option Menu ["-menu"; widget(menu)]
@@ -1330,14 +1330,14 @@ module Optionmenu {
 
 
 %%%%% pack(n)
-type Side { 
+type Side {
    Side_Left ["left"]
    Side_Right ["right"]
    Side_Top ["top"]
    Side_Bottom ["bottom"]
 }
 
-type FillMode { 
+type FillMode {
    Fill_None ["none"]
    Fill_X ["x"]
    Fill_Y ["y"]
@@ -1415,7 +1415,7 @@ subtype photo(copy) {
   }
 
 subtype photo(put) {
-  ImgTo 
+  ImgTo
   }
 
 subtype photo(read) {
@@ -1464,8 +1464,8 @@ type BorderMode {
 }
 
 subtype option(place) {
-  In 
-  X 
+  In
+  X
   RelX ["-relx"; float]
   Y
   RelY ["-rely"; float]
@@ -1699,15 +1699,15 @@ subtype icccm(selection_ownset) {
   }
 
 subtype icccm(selection_handle) {
-  Selection 
-  ICCCMType 
+  Selection
+  ICCCMType
   ICCCMFormat ["-format"; string]
   }
 
 module Selection {
    function () clear ["selection"; "clear"; icccm(selection_clear) list]
    function (string) get ["selection"; "get"; icccm(selection_get) list]
-   
+
    % function () handle_set ["selection"; "handle"; icccm(selection_handle) list; widget; function(int,int)]
    external handle_set "builtin/selection_handle_set"
    unsafe function (widget) own_get ["selection"; "own"; icccm(selection_clear) list]
@@ -1720,7 +1720,7 @@ module Selection {
 %%%%% send(n)
 type SendOption {
   SendDisplayOf ["-displayof"; widget] % DisplayOf is used for icccm !
-  SendAsync ["-async"]          
+  SendAsync ["-async"]
 }
 
 unsafe function () send ["send"; SendOption list; "--"; app: string; command: string list]
@@ -1739,13 +1739,13 @@ type TabType {
   TabNumeric [Units/int; "numeric"]
   }
 
-type WrapMode { 
+type WrapMode {
   WrapNone ["none"]
   WrapChar ["char"]
   WrapWord ["word"]
 }
 
-type Comparison { 
+type Comparison {
   LT (Lt) ["<"]
   LE (Le) ["<="]
   EQ (Eq) ["=="]
@@ -1802,7 +1802,7 @@ type text_dump {
   DumpMark ["-mark"]
   DumpTag ["-tag"]
   DumpText ["-text"]
-  DumpWindow ["-window"] 
+  DumpWindow ["-window"]
   }
 
 widget text {
@@ -1858,7 +1858,7 @@ widget text {
    % require result parser
    function (string list) dump [widget(text); "dump"; text_dump list; start: TextIndex; stop: TextIndex]
    function (string list) dump_char [widget(text); "dump"; text_dump list; index: TextIndex]
-        
+
    function (string) get [widget(text); "get"; start: TextIndex; stop: TextIndex]
    function (string) get_char [widget(text); "get"; index: TextIndex]
    function () image_configure
@@ -1874,7 +1874,7 @@ widget text {
 ##else
    function () insert [widget(text); "insert"; index: TextIndex; text: string; ?tags: [TextTag list]]
 ##endif
-   % Mark 
+   % Mark
    function () mark_gravity_set [widget(text); "mark"; "gravity"; mark: TextMark; direction: MarkDirection]
    function (MarkDirection) mark_gravity_get [widget(text); "mark"; "gravity"; mark: TextMark]
    function (TextMark list) mark_names [widget(text); "mark"; "names"]
@@ -1882,7 +1882,7 @@ widget text {
    function (TextMark) mark_previous [widget(text); "mark"; "previous"; index: TextIndex]
    function () mark_set [widget(text); "mark"; "set"; mark: TextMark; index: TextIndex]
    function () mark_unset [widget(text); "mark"; "unset"; marks: TextMark list]
-   % Scan 
+   % Scan
    function () scan_mark [widget(text); "scan"; "mark"; x: int; y: int]
    function () scan_dragto [widget(text); "scan"; "dragto"; x: int; y: int]
 ##ifdef CAMLTK
@@ -1963,7 +1963,7 @@ subtype option(texttag) {
    Spacing1
    Spacing2
    Spacing3
-   Tabs 
+   Tabs
    Underline ["-underline"; bool]
    Wrap ["-wrap"; WrapMode]
    }
@@ -1980,9 +1980,9 @@ unsafe function () scaling_set ["tk"; "scaling"; ?displayof:["-displayof"; widge
 subtype option(chooseColor){
     InitialColor ["-initialcolor"; Color]
     Parent ["-parent"; widget]
-    Title ["-title"; string]    
+    Title ["-title"; string]
     }
-function (Color) chooseColor ["tk_chooseColor"; option(chooseColor) list] 
+function (Color) chooseColor ["tk_chooseColor"; option(chooseColor) list]
 
 %%%%% tkwait(n)
 module Tkwait {
@@ -2015,7 +2015,7 @@ widget toplevel {
    option Colormap
    option Container ["-container"; bool]
    option Height
-   option Menu 
+   option Menu
    option Screen ["-screen"; string]
    option Use ["-use"; string] % must be hexadecimal "0x????"
    option Visual
@@ -2095,7 +2095,7 @@ module Winfo {
    function (bool) viewable ["winfo"; "viewable"; widget]
    function (string) visual ["winfo"; "visual"; widget]
    function (int) visualid ["winfo"; "visualid"; widget]
-   % need special parser 
+   % need special parser
    function (string) visualsavailable ["winfo"; "visualsavailable"; widget; ?includeids: [int list]]
    function (int) vrootheight ["winfo"; "vrootheight"; widget]
    function (int) vrootwidth ["winfo"; "vrootwidth"; widget]
@@ -2128,7 +2128,7 @@ module Wm {
    function () client_set ["wm"; "client"; widget(toplevel); name: string]
    function (string) client_get ["wm"; "client"; widget(toplevel)]
 %%% WM_COLORMAP_WINDOWS
-   function () colormapwindows_set 
+   function () colormapwindows_set
         ["wm"; "colormapwindows"; widget(toplevel); [windows: widget list]]
    unsafe function (widget list) colormapwindows_get
         ["wm"; "colormapwindows"; widget(toplevel)]
@@ -2225,7 +2225,7 @@ type FilePattern external
 
 subtype option(getFile) {
   DefaultExtension ["-defaultextension"; string]
-  FileTypes ["-filetypes"; [FilePattern list]] 
+  FileTypes ["-filetypes"; [FilePattern list]]
   InitialDir ["-initialdir"; string]
   InitialFile ["-initialfile"; string]
   Parent ["-parent"; widget]
@@ -2247,7 +2247,7 @@ type MessageType {
    Ok ["ok"]
    OkCancel ["okcancel"]
    RetryCancel ["retrycancel"]
-   YesNo ["yesno"] 
+   YesNo ["yesno"]
    YesNoCancel ["yesnocancel"]
 }
 subtype option(messageBox) {
@@ -2255,12 +2255,12 @@ subtype option(messageBox) {
   MessageIcon  ["-icon"; MessageIcon]
   Message ["-message"; string]
   Parent
-  Title 
+  Title
   MessageType ["-type"; MessageType]
 }
 
 function (string) messageBox ["tk_messageBox"; option(messageBox) list]
- 
+
 module Tkvars {
   function (string) library ["$tk_library"]
   function (string) patchLevel ["$tk_patchLevel"]
@@ -2278,11 +2278,11 @@ module Pixmap {
 %%% encodings : require if you want write your application international
 
 module Encoding {
-  function (string) convertfrom ["encoding"; "convertfrom"; 
+  function (string) convertfrom ["encoding"; "convertfrom";
                                  ?encoding: [string]; string]
   function (string) convertto ["encoding"; "convertto";
-                                ?encoding: [string]; string]    
+                                ?encoding: [string]; string]
   function (string list) names ["encoding"; "names"]
   function () system_set ["encoding"; "system"; string]
   function (string) system_get ["encoding"; "system"]
-}       
+}

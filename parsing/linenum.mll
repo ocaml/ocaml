@@ -30,7 +30,7 @@ let parse_sharp_line s =
     linenum := int_of_string(String.sub s !l1 (!l2 - !l1));
     let f1 = ref (!l2 + 1) in
     while !f1 < String.length s && s.[!f1] <> '"' do incr f1 done;
-    let f2 = ref (!f1 + 1) in 
+    let f2 = ref (!f1 + 1) in
     while !f2 < String.length s && s.[!f2] <> '"' do incr f2 done;
     if !f1 < String.length s then
       filename := String.sub s (!f1 + 1) (!f2 - !f1 - 1)

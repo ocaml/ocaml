@@ -39,7 +39,7 @@ CAMLprim value camltk_getvar(value var)
 
   if (s == NULL)
     tk_error(cltclinterp->result);
-  else 
+  else
     return(tcl_string_to_caml(s));
 }
 
@@ -47,7 +47,7 @@ CAMLprim value camltk_setvar(value var, value contents)
 {
   char *s;
   char *stable_var = NULL;
-  char *utf_contents; 
+  char *utf_contents;
   CheckInit();
 
   /* SetVar makes a copy of the contents. */
@@ -58,14 +58,14 @@ CAMLprim value camltk_setvar(value var, value contents)
   s = Tcl_SetVar(cltclinterp,stable_var, utf_contents,
                    TCL_GLOBAL_ONLY|TCL_LEAVE_ERR_MSG);
   stat_free(stable_var);
-  if( s == utf_contents ){ 
+  if( s == utf_contents ){
     tk_error("camltk_setvar: Tcl_SetVar returned strange result. Call the author of mlTk!");
   }
   stat_free(utf_contents);
 
   if (s == NULL)
     tk_error(cltclinterp->result);
-  else 
+  else
     return(Val_unit);
 }
 

@@ -21,5 +21,3 @@ val create :
      with "pixel scrolling". Based on a trick learned from Steve Ball.
      Returns (frame widget, text widget).
    *)
-
-

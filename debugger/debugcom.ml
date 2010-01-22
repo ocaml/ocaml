@@ -183,7 +183,7 @@ exception Marshalling_error
 module Remote_value =
   struct
     type t = Remote of string | Local of Obj.t
-    
+
     let obj = function
     | Local obj -> Obj.obj obj
     | Remote v ->

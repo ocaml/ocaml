@@ -126,10 +126,10 @@ static struct socket_option sockopt_int[] = {
   { SOL_SOCKET, SO_SNDLOWAT } };
 
 static struct socket_option sockopt_linger[] = {
-  { SOL_SOCKET, SO_LINGER } 
+  { SOL_SOCKET, SO_LINGER }
 };
 
-static struct socket_option sockopt_timeval[] = { 
+static struct socket_option sockopt_timeval[] = {
   { SOL_SOCKET, SO_RCVTIMEO },
   { SOL_SOCKET, SO_SNDTIMEO }
 };
@@ -226,7 +226,7 @@ unix_getsockopt_aux(char * name,
   }
 }
 
-CAMLexport value 
+CAMLexport value
 unix_setsockopt_aux(char * name,
                     enum option_type ty, int level, int option,
                     value socket, value val)

@@ -65,4 +65,3 @@ module Make (Structure : Structure.S) : sig
   value continue_parser_of_entry :
     internal_entry -> int -> Loc.t -> Action.t -> Context.t -> Stream.t (Token.t * Loc.t) -> Action.t;
 end;
-

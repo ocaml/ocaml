@@ -62,14 +62,14 @@ static Tcl_File tcl_filehandle(value fd)
 CAMLprim value camltk_add_file_input(value fd, value cbid)
 {
   CheckInit();
-  Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_READABLE, 
+  Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_READABLE,
                        FileProc, (ClientData)(Long_val(cbid)));
   return Val_unit;
 }
 
 /* We have to free the Tcl handle when we are finished using it (Tcl
  * asks us to, and moreover it is probably dangerous to keep the same
- * handle over two allocations of the same fd by the kernel). 
+ * handle over two allocations of the same fd by the kernel).
  * But we don't know when we are finished with the fd, so we free it
  * in rem_file (it doesn't close the fd anyway). For fds for which we
  * repeatedly add/rem, this will cause some overhead.
@@ -87,7 +87,7 @@ CAMLprim value camltk_rem_file_input(value fd, value cbid)
 CAMLprim value camltk_add_file_output(value fd, value cbid)
 {
   CheckInit();
-  Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_WRITABLE, 
+  Tcl_CreateFileHandler(tcl_filehandle(fd), TCL_WRITABLE,
                        FileProc, (ClientData) (Long_val(cbid)));
   return Val_unit;
 }

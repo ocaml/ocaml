@@ -42,6 +42,3 @@ CAMLprim value win_system(cmd)
   Field(st, 0) = Val_int(ret);
   return st;
 }
-
-
-

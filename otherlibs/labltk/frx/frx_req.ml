@@ -16,14 +16,14 @@
 open Camltk
 
 (*
- * Some standard requesters (in Amiga techspeak) or dialog boxes (in Apple 
+ * Some standard requesters (in Amiga techspeak) or dialog boxes (in Apple
  * jargon).
 *)
 
 let version = "$Id$"
 
 (*
- * Simple requester 
+ * Simple requester
  *  an entry field, unrestricted, with emacs-like bindings
  * Note: grabs focus, thus always unique at one given moment, and we
  *  shouldn't have to worry about toplevel widget name.
@@ -51,7 +51,7 @@ let open_simple title action notaction memory =
   let f = Frame.create t [] in
   let bok = Button.create f [Text "Ok"; Command activate] in
   let bcancel = Button.create f
-            [Text "Cancel"; 
+            [Text "Cancel";
              Command (fun () -> notaction(); Grab.release t; destroy t)] in
 
     bind e [[], KeyPressDetail "Escape"]
@@ -76,7 +76,7 @@ let open_simple_synchronous title memory =
     Entry.create t [Relief Sunken; TextVariable memory; TextWidth len] in
 
   let waiting = Textvariable.create_temporary t in
-  
+
   let activate _ =
      Grab.release t;                    (* because of wm *)
      destroy t;                         (* so action can call open_simple *)
@@ -86,10 +86,10 @@ let open_simple_synchronous title memory =
 
   let f = Frame.create t [] in
   let bok = Button.create f [Text "Ok"; Command activate] in
-  let bcancel = 
+  let bcancel =
      Button.create f
-        [Text "Cancel"; 
-         Command (fun () -> 
+        [Text "Cancel";
+         Command (fun () ->
                    Grab.release t; destroy t; Textvariable.set waiting "0")] in
 
     bind e [[], KeyPressDetail "Escape"]
@@ -118,7 +118,7 @@ let open_list title elements action notaction =
   Wm.title_set t title;
 
   let tit = Label.create t [Text title] in
-  let fls = Frame.create t [Relief Sunken; BorderWidth (Pixels 2)] in 
+  let fls = Frame.create t [Relief Sunken; BorderWidth (Pixels 2)] in
   let lb = Listbox.create fls [SelectMode Extended] in
   let sb = Scrollbar.create fls [] in
     Frx_listbox.scroll_link sb lb;
@@ -135,12 +135,12 @@ let open_list title elements action notaction =
 
   bind lb [[Double], ButtonPressDetail 1] (BindSetBreakable ([], activate));
 
-  Frx_listbox.add_completion lb activate; 
+  Frx_listbox.add_completion lb activate;
 
   let f = Frame.create t [] in
   let bok = Button.create f [Text "Ok"; Command activate] in
-  let bcancel = Button.create f 
-            [Text "Cancel"; 
+  let bcancel = Button.create f
+            [Text "Cancel";
              Command (fun () -> notaction(); Grab.release t; destroy t)] in
 
     pack [bok; bcancel] [Side Side_Left; Fill Fill_X; Expand true];
@@ -167,8 +167,8 @@ let open_passwd title =
   and fp,ep = Frx_entry.new_label_entry t "Password" (fun s -> ())
   in
   let fb = Frame.create t [] in
-   let bok = Button.create fb 
-              [Text "Ok"; Command (fun _ -> 
+   let bok = Button.create fb
+              [Text "Ok"; Command (fun _ ->
                                     username := Entry.get eu;
                                     password := Entry.get ep;
                                     Grab.release t; (* because of wm *)
@@ -183,8 +183,8 @@ let open_passwd title =
     bind eu [[], KeyPressDetail "Return"]
       (BindSetBreakable ([], (fun _ -> Focus.set ep; break())));
     bind ep [[], KeyPressDetail "Return"]
-      (BindSetBreakable ([], (fun _ -> Button.flash bok; 
-                                       Button.invoke bok; 
+      (BindSetBreakable ([], (fun _ -> Button.flash bok;
+                                       Button.invoke bok;
                                        break())));
 
     pack [bok] [Side Side_Left; Expand true];

@@ -193,4 +193,3 @@ static void bng_amd64_setup_ops(void)
 }
 
 #define BNG_SETUP_OPS bng_amd64_setup_ops()
-

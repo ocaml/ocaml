@@ -306,4 +306,3 @@ let copy_rule name ?insert src dest =
       Shell.mkdir_p (Pathname.dirname dest);
       cp_p src dest
     end
-

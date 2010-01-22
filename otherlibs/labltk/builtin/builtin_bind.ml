@@ -31,7 +31,7 @@ type xEvent =
   | Property
   | Reparent
   | Unmap
-  | Visibility 
+  | Visibility
   | Virtual of string (* Virtual event. Must be without modifiers *)
 ;;
 (* /type *)
@@ -54,7 +54,7 @@ type modifier =
   | Mod4
   | Mod5
   | Meta
-  | Alt 
+  | Alt
 ;;
 (* /type *)
 
@@ -95,7 +95,7 @@ type eventInfo =
 (* /type *)
 
 
-(* To avoid collision with other constructors (Width, State), 
+(* To avoid collision with other constructors (Width, State),
    use Ev_ prefix *)
 (* type *)
 type eventField =
@@ -110,7 +110,7 @@ type eventField =
   | Ev_OverrideRedirect
   | Ev_Place
   | Ev_State
-  | Ev_Time 
+  | Ev_Time
   | Ev_Width
   | Ev_MouseX
   | Ev_MouseY
@@ -128,7 +128,7 @@ type eventField =
 ;;
 (* /type *)
 
-let filleventInfo ev v = function 
+let filleventInfo ev v = function
   | Ev_Above    ->      ev.ev_Above <- int_of_string v
   | Ev_ButtonNumber ->  ev.ev_ButtonNumber <- int_of_string v
   | Ev_Count ->         ev.ev_Count <- int_of_string v
@@ -227,7 +227,7 @@ let rec writeeventField = function
     | Ev_Widget ->" %W"
     | Ev_RootX ->     " %X"
     | Ev_RootY ->     " %Y"
-    end 
+    end
     ^ writeeventField rest
 ;;
 
@@ -287,7 +287,7 @@ and modifier = [
   | `Mod4
   | `Mod5
   | `Meta
-  | `Alt 
+  | `Alt
 ]
 ;;
 (* /type *)
@@ -328,7 +328,7 @@ type eventInfo = {
 (* /type *)
 
 
-(* To avoid collision with other constructors (Width, State), 
+(* To avoid collision with other constructors (Width, State),
    use Ev_ prefix *)
 (* type *)
 type eventField = [
@@ -343,7 +343,7 @@ type eventField = [
   | `OverrideRedirect
   | `Place
   | `State
-  | `Time 
+  | `Time
   | `Width
   | `MouseX
   | `MouseY
@@ -362,7 +362,7 @@ type eventField = [
 ;;
 (* /type *)
 
-let filleventInfo ev v : eventField -> unit = function 
+let filleventInfo ev v : eventField -> unit = function
   | `Above    ->        ev.ev_Above <- int_of_string v
   | `ButtonNumber ->    ev.ev_ButtonNumber <- int_of_string v
   | `Count ->           ev.ev_Count <- int_of_string v
@@ -462,7 +462,7 @@ let rec writeeventField : eventField list -> string = function
     | `Widget ->    " %W"
     | `RootX ->     " %X"
     | `RootY ->     " %Y"
-    end 
+    end
     ^ writeeventField rest
 ;;
 

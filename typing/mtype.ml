@@ -146,7 +146,7 @@ let enrich_typedecl env p decl =
   | None ->
       try
         let orig_decl = Env.find_type p env in
-        if orig_decl.type_arity <> decl.type_arity 
+        if orig_decl.type_arity <> decl.type_arity
         then decl
         else {decl with type_manifest =
                 Some(Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil)))}
@@ -197,7 +197,7 @@ let rec no_code_needed env mty =
   match scrape env mty with
     Tmty_ident p -> false
   | Tmty_signature sg -> no_code_needed_sig env sg
-  | Tmty_functor(_, _, _) -> false  
+  | Tmty_functor(_, _, _) -> false
 
 and no_code_needed_sig env sg =
   match sg with

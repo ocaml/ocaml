@@ -22,4 +22,3 @@ CFLAGS=-I$(ROOTDIR)/byterun $(SHAREDCCCOMPOPTS) $(EXTRACFLAGS)
 include ../Makefile.shared
 # Note .. is the current directory (this makefile is included from
 # a subdirectory)
-

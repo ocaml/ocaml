@@ -23,7 +23,7 @@ val generic_functions: bool -> Compilenv.unit_infos list -> Cmm.phrase list
 val entry_point: string list -> Cmm.phrase
 val global_table: string list -> Cmm.phrase
 val reference_symbols: string list -> Cmm.phrase
-val globals_map: (string * Digest.t * Digest.t * string list) list -> 
+val globals_map: (string * Digest.t * Digest.t * string list) list ->
   Cmm.phrase
 val frame_table: string list -> Cmm.phrase
 val data_segment_table: string list -> Cmm.phrase

@@ -81,7 +81,7 @@ let test_trunc_line ofile =
     else print_string "FAILED";
     print_newline()
   with End_of_file ->
-    print_string "FAILED"; print_newline()  
+    print_string "FAILED"; print_newline()
 
 (* The test *)
 

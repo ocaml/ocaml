@@ -25,7 +25,7 @@ val open_simple :
 
 val open_simple_synchronous : string -> Textvariable.textVariable -> bool
  (* [open_simple_synchronous title memory]
-    A synchronous dialog with a message and an entry field (with 
+    A synchronous dialog with a message and an entry field (with
     memory between invocations). Returns true if the user clicks Ok
     or false if the user clicks Cancel.
   *)

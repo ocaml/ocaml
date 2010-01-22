@@ -93,7 +93,7 @@ external compare : 'a -> 'a -> int = "%compare"
    the {!List.sort} and {!Array.sort} functions. *)
 
 val min : 'a -> 'a -> 'a
-(** Return the smaller of the two arguments. 
+(** Return the smaller of the two arguments.
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
 

@@ -37,5 +37,5 @@ CAMLprim value unix_getpeername(value sock)
 
 CAMLprim value unix_getpeername(value sock)
 { invalid_argument("getpeername not implemented"); }
-  
+
 #endif

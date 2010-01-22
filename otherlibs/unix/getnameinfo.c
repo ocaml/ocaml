@@ -46,7 +46,7 @@ CAMLprim value unix_getnameinfo(value vaddr, value vopts)
   get_sockaddr(vaddr, &addr, &addr_len);
   opts = convert_flag_list(vopts, getnameinfo_flag_table);
   enter_blocking_section();
-  retcode = 
+  retcode =
     getnameinfo((const struct sockaddr *) &addr.s_gen, addr_len,
                 host, sizeof(host), serv, sizeof(serv), opts);
   leave_blocking_section();

@@ -19,4 +19,3 @@ let _ =
   let _ = Thread.create somethread ("B", 8, false) in
   let _ = Thread.create somethread ("C", 11, true) in
   somethread ("Main", 3, false)
-

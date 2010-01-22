@@ -346,7 +346,7 @@ let nativeint_of_big_int bi =
   if bi.sign >= 0 then
     if i >= 0n then i else failwith "nativeint_of_big_int"
   else
-    if i >= 0n || i = Nativeint.min_int 
+    if i >= 0n || i = Nativeint.min_int
     then Nativeint.neg i
     else failwith "nativeint_of_big_int"
 
@@ -385,7 +385,7 @@ let int64_of_big_int bi =
                (Int64.logand
                  (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))
                  0xFFFFFFFFL)
-               (Int64.shift_left 
+               (Int64.shift_left
                  (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 1))
                  32)
       | _ -> failwith "int64_of_big_int" in
@@ -395,7 +395,7 @@ let int64_of_big_int bi =
       if i >= 0L || i = Int64.min_int
       then Int64.neg i
       else failwith "int64_of_big_int"
-  end  
+  end
 
 (* Coercion with nat type *)
 let nat_of_big_int bi =
@@ -833,7 +833,3 @@ let xor_big_int a b =
     then zero_big_int
     else { sign = 1; abs_value = res }
   end
-
-
-    
-

@@ -46,7 +46,7 @@ enum debugger_request {
   REQ_RESET_INSTR = 'i',        /* uint32 pos */
   /* Clear an event or breapoint at position pos, restores initial instr. */
   REQ_CHECKPOINT = 'c',         /* no args */
-  /* Checkpoint the runtime system by forking a child process. 
+  /* Checkpoint the runtime system by forking a child process.
      Reply is pid of child process or -1 if checkpoint failed. */
   REQ_GO = 'g',                 /* uint32 n */
   /* Run the program for n events.

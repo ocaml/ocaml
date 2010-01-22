@@ -139,7 +139,7 @@ module CurrentParser = struct
   value parse_interf ?directive_handler loc strm =
     sig_item_parser.val ?directive_handler loc strm;
   value parse_implem ?directive_handler loc strm =
-    str_item_parser.val ?directive_handler loc strm; 
+    str_item_parser.val ?directive_handler loc strm;
 end;
 
 module CurrentPrinter = struct
@@ -147,7 +147,7 @@ module CurrentPrinter = struct
   value print_interf ?input_file ?output_file ast =
     sig_item_printer.val ?input_file ?output_file ast;
   value print_implem ?input_file ?output_file ast =
-    str_item_printer.val ?input_file ?output_file ast; 
+    str_item_printer.val ?input_file ?output_file ast;
 end;
 
 value enable_ocaml_printer () =
@@ -167,4 +167,3 @@ value enable_dump_camlp4_ast_printer () =
 
 value enable_null_printer () =
   let module M = Printer PP.Null.Id PP.Null.Make in ();
-

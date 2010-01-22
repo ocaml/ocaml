@@ -16,4 +16,3 @@
 /* Nats are represented as unstructured blocks with tag Custom_tag. */
 
 #define Digit_val(nat,pos) (((bng) Data_custom_val(nat))[pos])
-

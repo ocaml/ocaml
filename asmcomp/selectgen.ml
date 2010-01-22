@@ -259,8 +259,8 @@ method select_operation op args =
   | (Cnegf, _) -> (Inegf, args)
   | (Cabsf, _) -> (Iabsf, args)
   | (Caddf, _) -> (Iaddf, args)
-  | (Csubf, _) -> (Isubf, args)  
-  | (Cmulf, _) -> (Imulf, args)  
+  | (Csubf, _) -> (Isubf, args)
+  | (Cmulf, _) -> (Imulf, args)
   | (Cdivf, _) -> (Idivf, args)
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
@@ -381,7 +381,7 @@ method insert_move_results loc res stacksize =
   self#insert_moves loc res
 
 (* Add an Iop opcode. Can be overriden by processor description
-   to insert moves before and after the operation, i.e. for two-address 
+   to insert moves before and after the operation, i.e. for two-address
    instructions, or instructions using dedicated registers. *)
 
 method insert_op_debug op dbg rs rd =
@@ -506,7 +506,7 @@ method emit_expr env exp =
               let r1 = self#emit_tuple env new_args in
               let rd = self#regs_for ty in
               Some (self#insert_op_debug op dbg r1 rd)
-      end        
+      end
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> None
@@ -545,7 +545,7 @@ method emit_expr env exp =
           (fun id ->
             let r = self#regs_for typ_addr in name_regs id r; r)
           ids in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ; 
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
       let (r1, s1) = self#emit_sequence env e1 in
       catch_regs := List.tl !catch_regs ;
       let new_env =
@@ -768,7 +768,7 @@ method emit_tail env exp =
             name_regs id r  ;
             r)
           ids in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ; 
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
       let s1 = self#emit_tail_sequence env e1 in
       catch_regs := List.tl !catch_regs ;
       let new_env =

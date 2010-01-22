@@ -43,6 +43,6 @@ let init () =
   params := [];
   raised_exceptions := [];
   return_value := None ;
-  customs := [] 
+  customs := []
 
 (* eof $Id$ *)

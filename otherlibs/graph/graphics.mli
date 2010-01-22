@@ -193,12 +193,12 @@ external draw_string : string -> unit = "caml_gr_draw_string"
 
 external set_font : string -> unit = "caml_gr_set_font"
 (** Set the font used for drawing text.
-   The interpretation of the argument to [set_font] 
+   The interpretation of the argument to [set_font]
    is implementation-dependent. *)
 
 val set_text_size : int -> unit
 (** Set the character size used for drawing text.
-   The interpretation of the argument to [set_text_size] 
+   The interpretation of the argument to [set_text_size]
    is implementation-dependent. *)
 
 external text_size : string -> int * int = "caml_gr_text_size"
@@ -281,7 +281,7 @@ type status =
     mouse_y : int;              (** Y coordinate of the mouse *)
     button : bool;              (** true if a mouse button is pressed *)
     keypressed : bool;          (** true if a key has been pressed *)
-    key : char;                 (** the character for the key pressed *) 
+    key : char;                 (** the character for the key pressed *)
   }
 (** To report events. *)
 
@@ -375,5 +375,3 @@ external remember_mode : bool -> unit = "caml_gr_remember_mode"
    unaffected by drawings.  This occurs independently of drawing
    onto the graphics window (see the function {!Graphics.display_mode} above).
    Default remember mode is on.  *)
-
-

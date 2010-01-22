@@ -247,7 +247,7 @@ module type Ast = sig
 
   (** This class is the base class for map traversal on the Ast.
       To make a custom traversal class one just extend it like that:
-      
+
       This example swap pairs expression contents:
       open Camlp4.PreCast;
       [class swap = object
@@ -744,7 +744,7 @@ module type Token = sig
   type t;
 
   value to_string : t -> string;
-  
+
   value print : Format.formatter -> t -> unit;
 
   value match_keyword : string -> t -> bool;
@@ -774,7 +774,7 @@ module type Token = sig
         function to produce token keywords instead. *)
     value filter : t -> token_filter;
 
-    (** Called by the grammar system when a keyword is used. 
+    (** Called by the grammar system when a keyword is used.
         The boolean argument is True when it's the first time that keyword
         is used. If you do not care about this information just return [()]. *)
     value keyword_added : t -> string -> bool -> unit;
@@ -955,10 +955,10 @@ module Grammar = struct
       (** The abstract type of grammar entries. The type parameter is the type
           of the semantic actions that are associated with this entry. *)
       type t 'a;
-  
+
       (** Make a new entry from the given name. *)
       value mk : gram -> string -> t 'a;
-  
+
       (** Make a new entry from a name and an hand made token parser. *)
       value of_parser :
         gram -> string -> (Stream.t (Token.t * Loc.t) -> 'a) -> t 'a;
@@ -1367,4 +1367,3 @@ module type SyntaxExtension = functor (Syn : Syntax)
                                 and module Token          = Syn.Token
                                 and module Gram           = Syn.Gram
                                 and module Quotation      = Syn.Quotation);
-

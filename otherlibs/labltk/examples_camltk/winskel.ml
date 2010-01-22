@@ -18,8 +18,8 @@ open Camltk
 
 let main () =
  let top = opentk() in
- let mbar = Frame.create top [Relief Raised; BorderWidth (Pixels 2)] 
- and dummy = 
+ let mbar = Frame.create top [Relief Raised; BorderWidth (Pixels 2)]
+ and dummy =
     Frame.create top [Width (Centimeters 10.); Height (Centimeters 5.)] in
     pack [mbar; dummy] [Side Side_Top; Fill Fill_X];
  let file = Menubutton.create mbar [Text "File"; UnderlinedChar 0]
@@ -32,8 +32,8 @@ let main () =
    pack [help] [Side Side_Right];
    (* same code as chap16-14 *)
   let m = Menu.create text [] in
-   let bold = Textvariable.create() 
-   and italic = Textvariable.create() 
+   let bold = Textvariable.create()
+   and italic = Textvariable.create()
    and underline = Textvariable.create() in
    Menu.add_checkbutton m [Label "Bold"; Variable bold];
    Menu.add_checkbutton m [Label "Italic"; Variable italic];
@@ -46,13 +46,13 @@ let main () =
    Menu.add_radiobutton m [Label "Courier"; Variable font; Value "courier"];
    Menu.add_separator m;
    Menu.add_command m [Label "Insert Bullet";
-                        Command (function () -> 
-                                  print_string "Insert Bullet\n"; 
-                                  flush stdout)];   
+                        Command (function () ->
+                                  print_string "Insert Bullet\n";
+                                  flush stdout)];
    Menu.add_command m [Label "Margins and Tags...";
-                        Command (function () -> 
-                                  print_string "margins\n"; 
-                                  flush stdout)]; 
+                        Command (function () ->
+                                  print_string "margins\n";
+                                  flush stdout)];
    Menubutton.configure text [Menu m];
 
     mainLoop()

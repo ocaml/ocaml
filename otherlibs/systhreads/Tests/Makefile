@@ -22,9 +22,9 @@ MOREPROGS=testfork.byt
 
 include ../../../config/Makefile
 
-CAMLC=../../../boot/ocamlrun ../../../ocamlc -I .. -I ../../unix -I ../../../stdlib 
+CAMLC=../../../boot/ocamlrun ../../../ocamlc -I .. -I ../../unix -I ../../../stdlib
 
-CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I .. -I ../../unix -I ../../../stdlib 
+CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I .. -I ../../unix -I ../../../stdlib
 
 all: $(PROGS) $(MOREPROGS)
 

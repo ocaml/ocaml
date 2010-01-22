@@ -42,7 +42,7 @@ let real_slurp path =
   let abs x = if Filename.is_implicit x || Filename.is_relative x then cwd/x else x in
   let visited = Hashtbl.create 1024 in
   let rec scandir path names =
-    let (file_acc, dir_acc) = 
+    let (file_acc, dir_acc) =
       Array.fold_left begin fun ((file_acc, dir_acc) as acc) name ->
         match do_entry true path name with
         | None -> acc

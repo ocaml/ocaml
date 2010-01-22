@@ -38,7 +38,7 @@ module Make (Token : Sig.Token) : S with module Token = Token = struct
   type t = { strm : mutable Stream.t (Token.t * Loc.t);
              loc  : mutable Loc.t };
 
-  value loc_bp c = 
+  value loc_bp c =
     match Stream.peek c.strm with
     [ None -> Loc.ghost
     | Some (_, loc) -> loc ];

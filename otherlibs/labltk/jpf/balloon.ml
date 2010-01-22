@@ -33,37 +33,37 @@ let debug = ref false
 let topw = ref default_toplevel
 and popupw = ref (Obj.magic dummy : message widget)
 
-let configure_cursor w cursor = 
+let configure_cursor w cursor =
   (* DDDDDDDDDIIIIIIIRRRRRRRRTTTTTTTTYYYYYYY *)
-  Protocol.tkCommand [| TkToken (name w); 
+  Protocol.tkCommand [| TkToken (name w);
                     TkToken "configure";
                     TkToken "-cursor";
                     TkToken cursor |]
 
-let put ~on: w ~ms: millisec mesg = 
+let put ~on: w ~ms: millisec mesg =
   let t = ref None in
   let cursor = ref "" in
 
-  let reset () = 
+  let reset () =
       begin
         match !t with
           Some t -> Timer.remove t
         | _ -> ()
       end;
       (* if there is a popup label, unmap it *)
-      if Winfo.exists !topw && Wm.state !topw <> "withdrawn" then 
+      if Winfo.exists !topw && Wm.state !topw <> "withdrawn" then
         begin
           Wm.withdraw !topw;
           if Winfo.exists w then configure_cursor w !cursor
         end
   and set ev =
     if !flag then
-      t := Some (Timer.add ~ms: millisec ~callback: (fun () -> 
+      t := Some (Timer.add ~ms: millisec ~callback: (fun () ->
         t := None;
         if !debug then
           prerr_endline ("Balloon: " ^ Widget.name w);
         update_idletasks();
-        Message.configure !popupw ~text: mesg; 
+        Message.configure !popupw ~text: mesg;
         raise_window !topw;
         Wm.geometry_set !topw (* 9 & 8 are some kind of magic... *)
           ("+"^(string_of_int (ev.ev_RootX + 9))^

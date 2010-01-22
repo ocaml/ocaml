@@ -129,7 +129,7 @@ let emit_label lbl =
   emit_string "$"; emit_int lbl
 
 let emit_Llabel fallthrough lbl =
-  if (not fallthrough) then begin 
+  if (not fallthrough) then begin
     emit_string "	.align	4\n"
   end ;
   emit_label lbl
@@ -195,7 +195,7 @@ let int_reg_number = [|
   0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12;
   16; 17; 18; 19; 20; 21; 22
 |]
-  
+
 let float_reg_number = [|
   0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15;
   16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 26; 27; 29; 30
@@ -358,7 +358,7 @@ let emit_instr fallthrough i =
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
-        if src.loc <> dst.loc then begin        
+        if src.loc <> dst.loc then begin
           match (src.loc, dst.loc) with
             (Reg rs, Reg rd) ->
               if src.typ = Float then
@@ -381,7 +381,7 @@ let emit_instr fallthrough i =
     | Lop(Iconst_int n) ->
         if n = 0n then
           `	clr	{emit_reg i.res.(0)}\n`
-        else if digital_asm || 
+        else if digital_asm ||
                 (n >= Nativeint.of_int (-0x80000000) &&
                  n <= Nativeint.of_int 0x7FFFFFFF) then
           `	ldiq	{emit_reg i.res.(0)}, {emit_nativeint n}\n`

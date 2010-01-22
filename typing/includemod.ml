@@ -124,14 +124,14 @@ let simplify_structure_coercion cc =
   then Tcoerce_none
   else Tcoerce_structure cc
 
-(* Inclusion between module types. 
+(* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
 let rec modtypes env subst mty1 mty2 =
   try
     try_modtypes env subst mty1 mty2
-  with 
+  with
     Dont_match ->
       raise(Error[Module_types(mty1, Subst.modtype subst mty2)])
   | Error reasons ->
@@ -363,7 +363,7 @@ let include_err ppf = function
   | Modtype_permutation ->
       fprintf ppf "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
-      fprintf ppf "@[The implementation %s@ does not match the interface %s:" 
+      fprintf ppf "@[The implementation %s@ does not match the interface %s:"
        impl_name intf_name
   | Class_type_declarations(id, d1, d2, reason) ->
       fprintf ppf

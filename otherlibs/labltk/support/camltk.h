@@ -58,4 +58,3 @@ extern int cltk_slave_mode;
 
 #define RCNAME ".camltkrc"
 #define CAMLCB "camlcb"
-

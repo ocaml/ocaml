@@ -148,7 +148,7 @@ let check ?sanitize laws entry =
                @ A@ script@ shell@ file@ %S@ is@ being@ created.\
                @ Check@ this@ script@ and@ run@ it@ to@ remove@ unwanted@ files\
                @ or@ use@ other@ options@ (such@ as@ defining@ hygiene@ exceptions\
-               @ or@ using@ the@ -no-hygiene@ option).@]" 
+               @ or@ using@ the@ -no-hygiene@ option).@]"
                m (if m = 1 then "" else "s") fn;
             let oc = open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o755 fn in
             let fp = Printf.fprintf in

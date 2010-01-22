@@ -132,8 +132,8 @@ let spec =
    "-documentation", Set show_documentation, " Show rules and flags";
    "-log", Set_string log_file_internal, "<file> Set log file";
    "-no-log", Unit (fun () -> log_file_internal := ""), " No log file";
-   "-clean", Set must_clean, " Remove build directory and other files, then exit"; 
-   "-r", Set recursive, " Traverse directories by default (true: traverse)"; 
+   "-clean", Set must_clean, " Remove build directory and other files, then exit";
+   "-r", Set recursive, " Traverse directories by default (true: traverse)";
 
    "-I", String (add_to' my_include_dirs), "<path> Add to include directories";
    "-Is", String (add_to my_include_dirs), "<path,...> (same as above, but accepts a (comma or blank)-separated list)";

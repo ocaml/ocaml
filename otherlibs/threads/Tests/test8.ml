@@ -42,5 +42,3 @@ let g () =
 let _ =
   Thread.create f ();
   g()
-
-

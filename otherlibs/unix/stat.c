@@ -137,4 +137,3 @@ CAMLprim value unix_fstat_64(value fd)
   if (ret == -1) uerror("fstat", Nothing);
   return stat_aux(1, &buf);
 }
-

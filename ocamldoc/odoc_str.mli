@@ -26,7 +26,7 @@ val string_of_type_list : ?par: bool -> string -> Types.type_expr list -> string
    for the given type. *)
 val string_of_type_param_list : Odoc_type.t_type -> string
 
-(** This function returns a string to represent the given list of 
+(** This function returns a string to represent the given list of
    type parameters of a class or class type,
    with a given separator. *)
 val string_of_class_type_param_list : Types.type_expr list -> string

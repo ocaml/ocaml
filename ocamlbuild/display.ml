@@ -140,7 +140,7 @@ let create
           ds_last_cached     = false;
           ds_changed         = false;
           ds_update_interval = default_update_interval;
-          ds_columns         = n; 
+          ds_columns         = n;
           ds_jobs            = 0;
           ds_jobs_cached     = 0;
           ds_tagline         = create_tagline description;
@@ -196,7 +196,7 @@ HH MM SS XXXX        PATHNAME
 |          |  \ number of jobs cached
 |          \ number of jobs
 \ elapsed time
-cmo mllib 
+cmo mllib
 ***)
 (*** redraw_sophisticated *)
 let redraw_sophisticated ds =

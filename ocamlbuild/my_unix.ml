@@ -93,7 +93,7 @@ and is_link x =
 
 and lstat x =
   if is_link x then { stat_key = x; stat_file_kind = FK_link } else stat x
-        
+
 let implem =
   {
     is_degraded = true;
@@ -134,7 +134,6 @@ let run_and_read cmd =
       if len > 0 then begin
         Buffer.add_substring totalbuf buf 0 len;
         loop (pos + len)
-      end 
+      end
     in loop 0; Buffer.contents totalbuf
   end
-

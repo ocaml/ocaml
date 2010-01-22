@@ -24,5 +24,3 @@ let main () =
   while true do read() done
 
 let _ = Printexc.catch main ()
-
-  

@@ -28,5 +28,3 @@ value caml_gr_point_color(value vx, value vy)
   XDestroyImage(im);
   return Val_int(rgb);
 }
-
-                     

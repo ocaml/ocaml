@@ -1950,9 +1950,9 @@ let generic_functions shared units =
   let (apply,send,curry) =
     List.fold_left
       (fun (apply,send,curry) ui ->
-	 List.fold_right IntSet.add ui.Compilenv.ui_apply_fun apply,
-	 List.fold_right IntSet.add ui.Compilenv.ui_send_fun send,
-	 List.fold_right IntSet.add ui.Compilenv.ui_curry_fun curry)
+         List.fold_right IntSet.add ui.Compilenv.ui_apply_fun apply,
+         List.fold_right IntSet.add ui.Compilenv.ui_send_fun send,
+         List.fold_right IntSet.add ui.Compilenv.ui_curry_fun curry)
       (IntSet.empty,IntSet.empty,IntSet.empty)
       units in
   let apply = if shared then apply else IntSet.union apply default_apply in
@@ -2071,7 +2071,7 @@ let plugin_header units =
       crc = crc;
       imports_cmi = ui.Compilenv.ui_imports_cmi;
       imports_cmx = ui.Compilenv.ui_imports_cmx;
-      defines = ui.Compilenv.ui_defines 
+      defines = ui.Compilenv.ui_defines
     } in
   global_data "caml_plugin_header"
     { magic = dyn_magic_number; units = List.map mk units }

@@ -71,4 +71,3 @@ let report_error ppf = function
       fprintf ppf "Cannot find file %s" name
   | Archiver_error name ->
       fprintf ppf "Error while creating the library %s" name
-

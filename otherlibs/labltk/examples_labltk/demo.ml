@@ -26,7 +26,7 @@ open Tk
 let _ =
 
 (* Initialize Tk *)
-let top = openTk () in 
+let top = openTk () in
 (* Title setting *)
 Wm.title_set top "LablTk demo";
 
@@ -35,7 +35,7 @@ let base = Frame.create top in
 pack [base];
 
 (* Menu bar *)
-let bar = Frame.create ~borderwidth:2 ~relief:`Raised  base in 
+let bar = Frame.create ~borderwidth:2 ~relief:`Raised  base in
 pack ~fill:`X [bar];
 
   (* Menu and Menubutton *)
@@ -43,24 +43,24 @@ pack ~fill:`X [bar];
   let men = Menu.create meb in
   Menu.add_command ~label:"Quit" ~command:(fun () -> closeTk (); exit 0) men;
   Menubutton.configure ~menu:men meb;
-  
+
   (* Frames *)
   let base2 = Frame.create base in
   let left = Frame.create base2 in
   let right = Frame.create base2 in
   pack [base2];
   pack ~side:`Left [left; right];
-  
+
     (* Widgets on left and right *)
-    
+
     (* Button *)
     let but = Button.create ~text:"Welcome to LablTk" left in
-    
+
     (* Canvas *)
     let can =
       Canvas.create ~width:100 ~height:100 ~borderwidth:1 ~relief:`Sunken left
     in
-    let oval = Canvas.create_oval ~x1: 10 ~y1: 10 
+    let oval = Canvas.create_oval ~x1: 10 ~y1: 10
                                   ~x2: 90 ~y2: 90
                                   ~fill: `Red
                                   can
@@ -68,22 +68,22 @@ pack ~fill:`X [bar];
 
     (* Check button *)
     let che = Checkbutton.create ~text:"Check" left in
-    
+
     (* Entry *)
-    let ent = Entry.create ~width:10 left in 
-    
+    let ent = Entry.create ~width:10 left in
+
     (* Label *)
     let lab = Label.create ~text:"Welcome to LablTk" left in
-    
+
     (* Listbox *)
     let lis = Listbox.create left in
     Listbox.insert lis ~index:`End ~texts:["This"; "is"; "Listbox"];
-    
+
     (* Message *)
     let mes = Message.create
         ~text: "Hello this is a message widget with very long text, but ..."
         left in
-    
+
     (* Radio buttons *)
     let tv = Textvariable.create () in
     Textvariable.set tv "One";
@@ -91,32 +91,32 @@ pack ~fill:`X [bar];
     let rads = List.map
         ~f:(fun t -> Radiobutton.create ~text:t ~value:t ~variable:tv radf)
         ["One"; "Two"; "Three"] in
-    
+
     (* Scale *)
     let sca = Scale.create ~label:"Scale" ~length:100 ~showvalue:true right in
-    
+
     (* Text and scrollbar *)
-    let texf = Frame.create right in 
-    
+    let texf = Frame.create right in
+
       (* Text *)
       let tex = Text.create ~width:20 ~height:8 texf in
       Text.insert ~index:(`End,[]) ~text:"This is a text widget." tex;
-      
+
       (* Scrollbar *)
       let scr = Scrollbar.create texf in
-      
+
       (* Text and Scrollbar widget link *)
       let scroll_link sb tx =
         Text.configure ~yscrollcommand:(Scrollbar.set sb) tx;
         Scrollbar.configure ~command:(Text.yview tx) sb in
       scroll_link scr tex;
-      
+
       pack ~side:`Right ~fill:`Y [scr];
       pack ~side:`Left ~fill:`Both ~expand:true [tex];
-       
+
     (* Pack them *)
     pack ~side:`Left [meb];
-    pack [coe but; coe can; coe che; coe ent; coe lab; coe lis; coe mes]; 
+    pack [coe but; coe can; coe che; coe ent; coe lab; coe lis; coe mes];
     pack [coe radf; coe sca; coe texf];
     pack rads;
 
@@ -125,7 +125,7 @@ pack ~fill:`X [bar];
   Wm.title_set top2 "LablTk demo control";
   let defcol = `Color "#dfdfdf" in
   let selcol = `Color "#ffdfdf" in
-  let buttons = 
+  let buttons =
     List.map ~f:(fun (w, t, c, a) ->
         let b = Button.create ~text:t ~command:c top2 in
         bind ~events:[`Enter] ~action:(fun _ -> a selcol) b;
@@ -163,5 +163,4 @@ pack ~fill:`X [bar];
     pack ~fill:`X buttons;
 
 (* Main Loop *)
-Printexc.print mainLoop () 
-
+Printexc.print mainLoop ()

@@ -116,7 +116,7 @@ let emit_reg r =
     Reg r -> emit_string (register_name r)
   | _ -> fatal_error "Emit.emit_reg"
 
-let use_full_regnames = 
+let use_full_regnames =
   Config.system = "rhapsody"
 
 let emit_gpr r =
@@ -607,13 +607,13 @@ let rec emit_instr i dslot =
     | Lop(Iintop_imm(Idiv, n)) ->       (* n is guaranteed to be a power of 2 *)
         let l = Misc.log2 n in
         `	{emit_string sragi}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int l}\n`;
-        `	addze	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n` 
+        `	addze	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Imod, n)) ->       (* n is guaranteed to be a power of 2 *)
         let l = Misc.log2 n in
         `	{emit_string sragi}	{emit_gpr 0}, {emit_reg i.arg.(0)}, {emit_int l}\n`;
         `	addze	{emit_gpr 0}, {emit_gpr 0}\n`;
         `	{emit_string slgi}	{emit_gpr 0}, {emit_gpr 0}, {emit_int l}\n`;
-        `	subfc	{emit_reg i.res.(0)}, {emit_gpr 0}, {emit_reg i.arg.(0)}\n` 
+        `	subfc	{emit_reg i.res.(0)}, {emit_gpr 0}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         begin match cmp with
           Isigned c ->

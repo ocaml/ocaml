@@ -15,7 +15,7 @@
 
 (* Set of characters encoded as list of intervals *)
 
-type t 
+type t
 exception Bad
 
 val empty : t
@@ -32,6 +32,3 @@ val inter : t -> t -> t
 val diff : t -> t -> t
 val complement : t -> t
 val env_to_array : (t * 'a) list -> 'a array
-
-
-

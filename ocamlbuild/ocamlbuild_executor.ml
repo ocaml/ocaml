@@ -95,7 +95,7 @@ let execute
   let jobs_to_terminate = Queue.create () in
   let commands_to_execute = Queue.create () in
   let all_ok = ref true in
-  let results = 
+  let results =
     List.map (fun tasks ->
       let result = ref false in
       Queue.add (tasks, result) commands_to_execute;
@@ -174,7 +174,7 @@ let execute
     if not job.job_dying then
       begin
         job.job_dying <- true;
-        Queue.add (job, continue) jobs_to_terminate 
+        Queue.add (job, continue) jobs_to_terminate
       end
     else
       ()
@@ -203,7 +203,7 @@ let execute
               | Unix.Unix_error(_,_,_) -> 0
             in
             if m = 0 then
-              if job.job_dying then 
+              if job.job_dying then
                 ()
               else
                 terminate job
@@ -321,7 +321,7 @@ let execute
              begin fun _ _job ->
                (*display (fun oc -> fp oc "Exceptional condition on command %S\n%!" job.job_command);
                exit Exceptional_condition*)
-	       () (* FIXME *)
+               () (* FIXME *)
              end];
         loop ()
       end

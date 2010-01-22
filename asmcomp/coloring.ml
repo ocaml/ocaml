@@ -50,7 +50,7 @@ let find_degree reg =
     let cl = Proc.register_class reg in
     let avail_regs = Proc.num_available_registers.(cl) in
     if avail_regs = 0 then
-      (* Don't bother computing the degree if there are no regs 
+      (* Don't bother computing the degree if there are no regs
          in this class *)
       unconstrained := Reg.Set.add reg !unconstrained
     else begin
@@ -131,7 +131,7 @@ let iter_preferred f reg =
   List.iter (fun (r, w) -> walk r w) reg.prefer;
   reg.visited <- false
 
-(* Where to start the search for a suitable register. 
+(* Where to start the search for a suitable register.
    Used to introduce some "randomness" in the choice between registers
    with equal scores. This offers more opportunities for scheduling. *)
 

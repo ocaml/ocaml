@@ -92,7 +92,7 @@ let basic_sync abort_env genev =
   (* Extract the result *)
   if abort_env = [] then
     (* Preserve tail recursion *)
-    bev.(!performed).result() 
+    bev.(!performed).result()
   else begin
     let num = !performed in
     let result = bev.(num).result() in

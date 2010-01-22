@@ -208,7 +208,7 @@ is not compatible with type
 #   val sort : (#comparable as 'a) list -> 'a list = <fun>
 #     val pr : < x : int; .. > list -> unit = <fun>
 #   val l : int_comparable list = [<obj>; <obj>; <obj>]
-# 5 2 4 
+# 5 2 4
 - : unit = ()
 # 2 4 5 
 - : unit = ()

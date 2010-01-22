@@ -134,7 +134,7 @@ module Analyser :
         (Odoc_types.info option * Odoc_module.module_element list)
 
       (** [name_comment_from_type_kind pos_end pos_limit type_kind].
-	 This function takes a [Parsetree.type_kind] and returns the list of
+         This function takes a [Parsetree.type_kind] and returns the list of
          (name, optional comment) for the various fields/constructors of the type,
          or an empty list for an abstract type.
          [pos_end] is last char of the complete type definition.

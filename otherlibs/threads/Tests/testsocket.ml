@@ -27,5 +27,3 @@ let main() =
   done
 
 let _ = Printexc.catch main (); exit 0
-
-    

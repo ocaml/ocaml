@@ -328,7 +328,7 @@ Very old (no more supported) syntax:\n\
         <:expr< $lid:x$ >>)
   ;
 
-  let list_ok = ["<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$"] in 
+  let list_ok = ["<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$"] in
   let list_first_char_ok = ['='; '<'; '>'; '|'; '&'; '$'; '!'] in
   let excl = ["<-"; "||"; "&&"] in
   Gram.Entry.setup_parser infixop0
@@ -776,7 +776,7 @@ Very old (no more supported) syntax:\n\
         [ p = labeled_ipatt; e = SELF ->
             <:expr< fun $p$ -> $e$ >>
         | "="; e = expr -> <:expr< $e$ >>
-        | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> 
+        | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >>
         | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
     ;
     match_case:

@@ -91,7 +91,7 @@ let rec longest_path critical_outputs node =
           then node.delay
           else 0
     | sons ->
-        node.length <- 
+        node.length <-
           List.fold_left
             (fun len (son, delay) ->
               max len (longest_path critical_outputs son + delay))
@@ -287,7 +287,7 @@ method private ready_instruction date queue =
         then instr else best in
       extract new_best rem in
   extract dummy_node queue
-  
+
 (* Schedule a basic block, adding its instructions in front of the given
    instruction sequence *)
 

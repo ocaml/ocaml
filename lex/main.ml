@@ -36,7 +36,7 @@ let specs =
    "-q", Arg.Set Common.quiet_mode, " Do not display informational messages";
    "-v",  Arg.Unit print_version_string, " Print version and exit";
    "-version",  Arg.Unit print_version_string, " Print version and exit";
-  ] 
+  ]
 
 let _ =
   Arg.parse
@@ -44,11 +44,11 @@ let _ =
     (fun name -> source_name := Some name)
     usage
 
-  
+
 let main () =
 
   let source_name = match !source_name with
-  | None -> Arg.usage specs usage ; exit 2 
+  | None -> Arg.usage specs usage ; exit 2
   | Some name -> name in
   let dest_name = match !output_name with
   | Some name -> name
@@ -105,7 +105,7 @@ let main () =
     | Lexgen.Memory_overflow ->
         Printf.fprintf stderr
           "File \"%s\":\n Position memory overflow, too many bindings\n"
-          source_name        
+          source_name
     | Output.Table_overflow ->
         Printf.fprintf stderr
           "File \"%s\":\ntransition table overflow, automaton is too big\n"
@@ -116,4 +116,3 @@ let main () =
     exit 3
 
 let _ = (* Printexc.catch *) main (); exit 0
-

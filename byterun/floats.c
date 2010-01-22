@@ -429,7 +429,7 @@ CAMLprim value caml_classify_float(value vd)
     return Val_int(FP_normal);
   }
 #else
-  union { 
+  union {
     double d;
 #if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
     struct { uint32 h; uint32 l; } i;

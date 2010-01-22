@@ -22,18 +22,18 @@ open Protocol
 let events = Hashtbl.create 37
 
 (* Notes:
- *   "cascading" events (on the same event) are not supported 
+ *   "cascading" events (on the same event) are not supported
  *   Only one binding active at a time for each event on each widget.
  *)
 
 (* Get the callback table associated with <name>. Initializes if required *)
 let get_event name =
-  try Hashtbl.find events name 
+  try Hashtbl.find events name
   with
     Not_found ->
       let h = Hashtbl.create 37 in
        Hashtbl.add events name h;
-       (* Initialize the callback invocation mechanism, based on 
+       (* Initialize the callback invocation mechanism, based on
           variable trace
         *)
        let var = "camltk_events(" ^ name ^")" in
@@ -44,9 +44,9 @@ let get_event name =
             begin match Textvariable.get tkvar with
               "all" -> (* Invoke all callbacks *)
                 Hashtbl.iter
-                  (fun p f -> 
-                     try 
-                      f (cTKtoCAMLwidget p) 
+                  (fun p f ->
+                     try
+                      f (cTKtoCAMLwidget p)
                      with _ -> ())
                   h
             | p -> (* Invoke callback for p *)
@@ -56,14 +56,14 @@ let get_event name =
                     f w
                 with
                   _ -> ()
-            end; 
+            end;
             set ()(* reactivate the callback *)
             ) in
        set();
-       h 
+       h
 
 (* Remove binding for event <name> on widget <w> *)
-let remove w name =   
+let remove w name =
   Hashtbl.remove (get_event name) (Widget.name w)
 
 (* Adds <f> as callback for widget <w> on event <name> *)
@@ -77,7 +77,7 @@ let broadcast name =
 
 (* Sends event <name> to widget <w> *)
 let send name w =
-  Textvariable.set (Textvariable.coerce ("camltk_events(" ^ name ^")")) 
+  Textvariable.set (Textvariable.coerce ("camltk_events(" ^ name ^")"))
                    (Widget.name w)
 
 (* Remove all callbacks associated to widget <w> *)

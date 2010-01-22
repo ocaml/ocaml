@@ -31,7 +31,7 @@ let omega = make_pat Tpat_any Ctype.none Env.empty
 
 let extra_pat =
   make_pat (Tpat_var (Ident.create "+")) Ctype.none Env.empty
-  
+
 let rec omegas i =
   if i <= 0 then [] else omega :: omegas (i-1)
 
@@ -80,7 +80,7 @@ let rec compat p q =
   | (Tpat_any|Tpat_var _),_ -> true
   | _,(Tpat_any|Tpat_var _) -> true
   | Tpat_or (p1,p2,_),_     -> compat p1 q || compat p2 q
-  | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2    
+  | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2
   | Tpat_constant c1, Tpat_constant c2 -> c1=c2
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_lazy p, Tpat_lazy q -> compat p q
@@ -89,7 +89,7 @@ let rec compat p q =
   | Tpat_variant(l1,Some p1, r1), Tpat_variant(l2,Some p2,_) ->
       l1=l2 && compat p1 p2
   | Tpat_variant (l1,None,r1), Tpat_variant(l2,None,_) ->
-      l1 = l2 
+      l1 = l2
   | Tpat_variant (_, None, _), Tpat_variant (_,Some _, _) -> false
   | Tpat_variant (_, Some _, _), Tpat_variant (_, None, _) -> false
   | Tpat_record l1,Tpat_record l2 ->
@@ -100,7 +100,7 @@ let rec compat p q =
       compats ps qs
   | _,_  ->
       assert false
-        
+
 and compats ps qs = match ps,qs with
 | [], [] -> true
 | p::ps, q::qs -> compat p q && compats ps qs
@@ -260,14 +260,14 @@ let top_pretty ppf v =
 let prerr_pat v =
   top_pretty str_formatter v ;
   prerr_string (flush_str_formatter ())
-  
+
 
 (****************************)
 (* Utilities for matching   *)
 (****************************)
 
 (* Check top matching *)
-let simple_match p1 p2 = 
+let simple_match p1 p2 =
   match p1.pat_desc, p2.pat_desc with
   | Tpat_construct(c1, _), Tpat_construct(c2, _) ->
       c1.cstr_tag = c2.cstr_tag
@@ -385,7 +385,7 @@ let rec normalize_pat q = match q.pat_desc with
 let discr_pat q pss =
 
   let rec acc_pat acc pss = match pss with
-    ({pat_desc = Tpat_alias (p,_)}::ps)::pss -> 
+    ({pat_desc = Tpat_alias (p,_)}::ps)::pss ->
         acc_pat acc ((p::ps)::pss)
   | ({pat_desc = Tpat_or (p1,p2,_)}::ps)::pss ->
         acc_pat acc ((p1::ps)::(p2::ps)::pss)
@@ -483,7 +483,7 @@ and set_args_erase_mutable q r = do_set_args true q r
 (* filter pss acording to pattern q *)
 let filter_one q pss =
   let rec filter_rec = function
-      ({pat_desc = Tpat_alias(p,_)}::ps)::pss -> 
+      ({pat_desc = Tpat_alias(p,_)}::ps)::pss ->
         filter_rec ((p::ps)::pss)
     | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
         filter_rec ((p1::ps)::(p2::ps)::pss)
@@ -501,7 +501,7 @@ let filter_one q pss =
 *)
 let filter_extra pss =
   let rec filter_rec = function
-      ({pat_desc = Tpat_alias(p,_)}::ps)::pss -> 
+      ({pat_desc = Tpat_alias(p,_)}::ps)::pss ->
         filter_rec ((p::ps)::pss)
     | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
         filter_rec ((p1::ps)::(p2::ps)::pss)
@@ -511,7 +511,7 @@ let filter_extra pss =
     | [] -> [] in
   filter_rec pss
 
-(* 
+(*
   Pattern p0 is the discriminating pattern,
   returns [(q0,pss0) ; ... ; (qn,pssn)]
   where the qi's are simple patterns and the pssi's are
@@ -557,7 +557,7 @@ let filter_all pat0 pss =
         pss
   | _::pss -> filter_omega env pss
   | [] -> env in
-        
+
   filter_omega
     (filter_rec
       (match pat0.pat_desc with
@@ -575,7 +575,7 @@ let rec set_last a = function
 
 (* mark constructor lines for failure when they are incomplete *)
 let rec mark_partial = function
-    ({pat_desc = Tpat_alias(p,_)}::ps)::pss -> 
+    ({pat_desc = Tpat_alias(p,_)}::ps)::pss ->
       mark_partial ((p::ps)::pss)
   | ({pat_desc = Tpat_or(p1,p2,_)}::ps)::pss ->
       mark_partial ((p1::ps)::(p2::ps)::pss)
@@ -691,17 +691,17 @@ let complete_tags nconsts nconstrs tags =
   for i = 0 to nconstrs-1 do
     if not seen_constr.(i) then
       r := Cstr_block i :: !r
-  done ;  
+  done ;
   !r
 
 (* build a pattern from a constructor list *)
 let pat_of_constr ex_pat cstr =
  {ex_pat with pat_desc = Tpat_construct (cstr,omegas cstr.cstr_arity)}
-    
+
 let rec pat_of_constrs ex_pat = function
 | [] -> raise Empty
 | [cstr] -> pat_of_constr ex_pat cstr
-| cstr::rem ->    
+| cstr::rem ->
     {ex_pat with
     pat_desc=
       Tpat_or
@@ -801,7 +801,7 @@ let build_other ext env =  match env with
         | Tpat_constant (Const_char c) -> c
         | _ -> assert false)
         env in
-    
+
     let rec find_other i imax =
       if i > imax then raise Not_found
       else
@@ -870,7 +870,7 @@ let build_other ext env =  match env with
           p.pat_type p.pat_env in
     try_arrays 0
 | [] -> omega
-| _ -> omega  
+| _ -> omega
 
 (*
   Core function :
@@ -889,17 +889,17 @@ let rec has_instance p = match p.pat_desc with
   | Tpat_construct (_,ps) | Tpat_tuple ps | Tpat_array ps -> has_instances ps
   | Tpat_record lps -> has_instances (List.map snd lps)
   | Tpat_lazy p -> has_instance p
-      
+
 and has_instances = function
   | [] -> true
   | q::rem -> has_instance q && has_instances rem
-  
+
 let rec satisfiable pss qs = match pss with
-| [] -> has_instances qs 
+| [] -> has_instances qs
 | _  ->
     match qs with
     | [] -> false
-    | {pat_desc = Tpat_or(q1,q2,_)}::qs -> 
+    | {pat_desc = Tpat_or(q1,q2,_)}::qs ->
         satisfiable pss (q1::qs) || satisfiable pss (q2::qs)
     | {pat_desc = Tpat_alias(q,_)}::qs ->
           satisfiable pss (q::qs)
@@ -930,7 +930,7 @@ let rec satisfiable pss qs = match pss with
   This function should be called for exhaustiveness check only.
 *)
 
-type 'a result = 
+type 'a result =
   | Rnone           (* No matching value *)
   | Rsome of 'a     (* This matching value *)
 
@@ -954,7 +954,7 @@ let rec exhaust ext pss n = match pss with
         | Rsome r -> Rsome (q0::r)
         | r -> r
       end
-    | constrs ->          
+    | constrs ->
         let try_non_omega (p,pss) =
           if is_absent_pat p then
             Rnone
@@ -1008,7 +1008,7 @@ let rec pressure_variants tdefs = function
       let q0 = discr_pat omega pss in
       begin match filter_all q0 pss with
         [] -> pressure_variants tdefs (filter_extra pss)
-      | constrs ->   
+      | constrs ->
           let rec try_non_omega = function
               (p,pss) :: rem ->
                 let ok = pressure_variants tdefs pss in
@@ -1074,8 +1074,8 @@ let pretty_matrix pss =
       prerr_endline "")
     pss ;
   prerr_endline "end matrix"
-  
-(* this row type enable column processing inside the matrix 
+
+(* this row type enable column processing inside the matrix
     - left  ->  elements not to be processed,
     - right ->  elements to be processed
 *)
@@ -1131,7 +1131,7 @@ let remove r = match r.active with
 | []     -> assert false
 
 let remove_column rs = List.map remove rs
-    
+
 (* Current column has been processed *)
 let push_no_or r = match r.active with
 | p::rem -> { r with no_ors = p::r.no_ors ; active=rem}
@@ -1148,7 +1148,7 @@ and push_no_or_column rs = List.map push_no_or rs
    work on the current column, instead of the first column
 *)
 
-let discr_pat q rs = 
+let discr_pat q rs =
   discr_pat q (List.map (fun r -> r.active) rs)
 
 let filter_one q rs =
@@ -1257,7 +1257,7 @@ let rec every_satisfiables pss qs = match qs.active with
         then
 (* syntactically generated or-pats should not be expanded *)
           every_satisfiables (push_no_or_column pss) (push_no_or qs)
-        else 
+        else
 (* this is a real or-pattern *)
           every_satisfiables (push_or_column pss) (push_or qs)
     | Tpat_variant (l,_,r) when is_absent l r -> (* Ah Jacques... *)
@@ -1303,7 +1303,7 @@ and every_both pss qs q1 q2 =
       | Upartial u2 -> Upartial (u1 @ u2)
       end
 
-  
+
 
 
 (* le_pat p q  means, forall V,  V matches q implies V matches p *)
@@ -1329,7 +1329,7 @@ let rec le_pat p q =
       List.length ps = List.length qs && le_pats ps qs
 (* In all other cases, enumeration is performed *)
   | _,_  -> not (satisfiable [[p]] [q])
-        
+
 and le_pats ps qs =
   match ps,qs with
     p::ps, q::qs -> le_pat p q && le_pats ps qs
@@ -1384,7 +1384,7 @@ let rec lub p q = match p.pat_desc,q.pat_desc with
     raise Empty
 
 and orlub p1 p2 q =
-  try    
+  try
     let r1 = lub p1 q in
     try
       {q with pat_desc=(Tpat_or (r1,lub p2 q,None))}
@@ -1406,12 +1406,12 @@ and record_lubs l1 l2 =
       else
         (lbl1,lub p1 p2)::lub_rec rem1 rem2 in
   lub_rec l1 l2
-    
+
 and lubs ps qs = match ps,qs with
 | p::ps, q::qs -> lub p q :: lubs ps qs
 | _,_ -> []
-      
-      
+
+
 (******************************)
 (* Exported variant closing   *)
 (******************************)
@@ -1475,7 +1475,7 @@ let rec do_filter_var = function
 
 let do_filter_one q pss =
   let rec filter_rec = function
-    | ({pat_desc = Tpat_alias(p,_)}::ps,loc)::pss -> 
+    | ({pat_desc = Tpat_alias(p,_)}::ps,loc)::pss ->
         filter_rec ((p::ps,loc)::pss)
     | ({pat_desc = Tpat_or(p1,p2,_)}::ps,loc)::pss ->
         filter_rec ((p1::ps,loc)::(p2::ps,loc)::pss)
@@ -1504,7 +1504,7 @@ let rec do_match pss qs = match qs with
       let q0 = normalize_pat q in
       do_match (do_filter_one q0 pss) (simple_match_args q0 q @ qs)
 
-        
+
 let check_partial_all v casel =
   try
     let pss = initial_all true casel in
@@ -1531,7 +1531,7 @@ let do_check_partial loc casel pss = match pss with
     | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
     end ;
     Partial
-| ps::_  ->      
+| ps::_  ->
     begin match exhaust None pss (List.length ps) with
     | Rnone -> Total
     | Rsome [v] ->
@@ -1546,13 +1546,13 @@ let do_check_partial loc casel pss = match pss with
                   (* This is 'Some loc', where loc is the location of
                      a possibly matching clause.
                      Forget about loc, because printing two locations
-                     is a pain in the top-level *)                  
+                     is a pain in the top-level *)
                 Buffer.add_string buf
                   "\n(However, some guarded clause may match this value.)"
             end ;
             Buffer.contents buf
           with _ ->
-            "" in          
+            "" in
         Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
         Partial
     | _ ->
@@ -1598,7 +1598,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
     collect_paths_from_pat (collect_paths_from_pat r p1) p2
 | Tpat_lazy p ->
     collect_paths_from_pat r p
-      
+
 
 (*
   Actual fragile check
@@ -1679,7 +1679,7 @@ let check_unused tdefs casel =
               | Used -> ()
             with e -> assert false
             end ;
-                   
+
           if has_guard act then
             do_rec pref rem
           else

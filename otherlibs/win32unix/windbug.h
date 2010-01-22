@@ -43,8 +43,7 @@ int  dbug_test    (void);
 #define DBUG_CLEANUP dbug_cleanup()
 
 #else
-#define DBUG_PRINT(fmt, ...) 
+#define DBUG_PRINT(fmt, ...)
 #define DBUG_INIT
 #define DBUG_CLEANUP
 #endif
-

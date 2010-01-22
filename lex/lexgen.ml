@@ -37,7 +37,7 @@ type regexp =
   | Star of regexp
 
 type tag_base = Start | End | Mem of int
-type tag_addr = Sum of (tag_base * int)        
+type tag_addr = Sum of (tag_base * int)
 type ident_info =
   | Ident_string of bool * tag_addr * tag_addr
   | Ident_char of bool * tag_addr
@@ -298,7 +298,7 @@ let rec encode_regexp char_vars act = function
 (* Optimisation,
     Static optimization :
       Replace tags by offsets relative to the beginning
-      or end of matched string. 
+      or end of matched string.
     Dynamic optimization:
       Replace some non-optional, non-double tags by offsets w.r.t
       a previous similar tag.
@@ -448,7 +448,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
             let a = get_tag_addr (n.id,n.start) in
             r,Some a
         end
-          
+
     | Empty -> r,pos
     | Chars (_,is_eof) -> r,(if is_eof then pos else add_pos pos 1)
     | Seq (r1,r2) ->
@@ -465,10 +465,10 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
     | Action _ -> assert false in
 
   let r,_ = alloc_exp None r in
-  let m =      
+  let m =
     IdSet.fold
       (fun ((name,_) as x) r ->
-        
+
         let v =
           if IdSet.mem x char_vars then
             Ident_char
@@ -482,8 +482,8 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
       all_vars [] in
   m,r, !loc_count
 
-        
-  
+
+
 let encode_casedef casedef =
   let r =
     List.fold_left
@@ -520,7 +520,7 @@ let encode_lexdef def =
   (chr, entry_list)
 
 (* To generate directly a NFA from a regular expression.
-     Confer Aho-Sethi-Ullman, dragon book, chap. 3 
+     Confer Aho-Sethi-Ullman, dragon book, chap. 3
    Extension to tagged automata.
      Confer
        Ville Larikari
@@ -533,7 +533,7 @@ let encode_lexdef def =
 *)
 
 type t_transition =
-    OnChars of int 
+    OnChars of int
   | ToAction of int
 
 type transition = t_transition * Tags.t
@@ -608,7 +608,7 @@ let followpos size entry_list =
         fill (TransSet.union (firstpos r) s) r in
   List.iter (fun (entry,_,_) -> fill TransSet.empty entry.lex_regexp) entry_list ;
   v
-  
+
 (************************)
 (* The algorithm itself *)
 (************************)
@@ -654,7 +654,7 @@ let dstate {final=(act,(_,m)) ; others=o} =
     (fun () -> prerr_endline "")
     o
 
-  
+
 let dfa_state_empty =
   {final=(no_action, (max_int,TagMap.empty)) ;
    others=MemMap.empty}
@@ -663,7 +663,7 @@ and dfa_state_is_empty {final=(act,_) ; others=o} =
   act = no_action &&
   o = MemMap.empty
 
-  
+
 (* A key is an abstraction on a dfa state,
    two states with the same key can be made the same by
    copying some memory cells into others *)
@@ -688,14 +688,14 @@ type dfa_key = {kstate : StateSet.t ; kmem : MemKey.t}
 
 (* Map a state to its key *)
 let env_to_class m =
-  let env1 = 
+  let env1 =
     MemMap.fold
       (fun _ (tag,s) r ->
         try
           let ss = TagMap.find tag r in
           let r = TagMap.remove tag r in
           TagMap.add tag (StateSetSet.add s ss) r
-        with 
+        with
         | Not_found ->
             TagMap.add tag (StateSetSet.add s StateSetSet.empty) r)
       m TagMap.empty in
@@ -739,23 +739,23 @@ let key_compare k1 k2 = match StateSet.compare k1.kstate k2.kstate with
 | r -> r
 
 (* Association dfa_state -> state_num *)
-        
+
 module StateMap =
   Map.Make(struct type t = dfa_key let compare = key_compare end)
 
 let state_map = ref (StateMap.empty : int StateMap.t)
-let todo = Stack.create() 
+let todo = Stack.create()
 let next_state_num = ref 0
 let next_mem_cell = ref 0
 let temp_pending = ref false
-let tag_cells = Hashtbl.create 17 
+let tag_cells = Hashtbl.create 17
 let state_table = Table.create dfa_state_empty
 
 
 (* Initial reset of state *)
 let reset_state () =
   Stack.clear todo;
-  next_state_num := 0 ;  
+  next_state_num := 0 ;
   let _ = Table.trim state_table in
   ()
 
@@ -878,14 +878,14 @@ let get_map t st = match t with
     m
 
 let dest = function | Copy (d,_) | Set d  -> d
-and orig = function | Copy (_,o) -> o | Set _ -> -1 
+and orig = function | Copy (_,o) -> o | Set _ -> -1
 
 let pmv oc mv = fprintf oc "%d <- %d" (dest mv) (orig mv)
 let pmvs oc mvs =
   List.iter (fun mv -> fprintf oc "%a " pmv  mv) mvs ;
   output_char oc '\n' ; flush oc
 
-    
+
 (* Topological sort << a la louche >> *)
 let sort_mvs mvs =
   let rec do_rec r mvs = match mvs with
@@ -917,7 +917,7 @@ let sort_mvs mvs =
           end
       | _  -> do_rec (here@r) rem  in
   do_rec [] mvs
-      
+
 let move_to mem_key src tgt =
   let mvs =
     MemKey.fold
@@ -943,7 +943,7 @@ let move_to mem_key src tgt =
   sort_mvs mvs
 
 
-let get_state st = 
+let get_state st =
   let key = get_key st in
   try
     let num = StateMap.find key !state_map in
@@ -992,7 +992,7 @@ let add_tags_to_map gen tags m =
 let apply_transition gen r pri m = function
   | ToAction n,tags ->
       let on,(opri,_) = r.final in
-      if n < on || (on=n && pri < opri) then 
+      if n < on || (on=n && pri < opri) then
         let m = add_tags_to_map gen tags m in
         {r with final=n,(pri,m)}
       else r
@@ -1000,7 +1000,7 @@ let apply_transition gen r pri m = function
       try
         let (opri,_) = MemMap.find n r.others in
         if pri < opri then
-          let m = add_tags_to_map gen tags m in          
+          let m = add_tags_to_map gen tags m in
           {r with others=MemMap.add n (pri,m) (MemMap.remove n r.others)}
         else
           r
@@ -1018,7 +1018,7 @@ let apply_transitions gen r pri m ts =
     ts r
 
 
-(* For a given nfa_state pos, refine char partition *)  
+(* For a given nfa_state pos, refine char partition *)
 let rec split_env gen follow pos m s = function
   | [] -> (* Can occur ! because of non-matching regexp ([^'\000'-'\255']) *)
       []
@@ -1033,20 +1033,20 @@ let rec split_env gen follow pos m s = function
             rem
           else
             split_env gen follow pos m rest rem
-        and new_st = apply_transitions gen st1 pos m follow in        
+        and new_st = apply_transitions gen st1 pos m follow in
         let stay = Cset.diff s1 here in
         if Cset.is_empty stay then
           (here, new_st)::rem
         else
           (stay, st1)::(here, new_st)::rem
-        
+
 
 (* For all nfa_state pos in a dfa state st *)
 let comp_shift gen chars follow st =
   MemMap.fold
     (fun pos (_,m) env -> split_env gen follow.(pos) pos m chars.(pos) env)
     st [Cset.all_chars_eof,dfa_state_empty]
-        
+
 
 let reachs chars follow st =
   let gen = create_new_addr_gen () in
@@ -1058,7 +1058,7 @@ let reachs chars follow st =
       (fun (s,dfa_state) -> s,goto_state dfa_state) env in
 (* finally build the char indexed array -> new state num *)
   let shift = Cset.env_to_array env in
-  shift  
+  shift
 
 
 let get_tag_mem n env t =
@@ -1082,8 +1082,8 @@ let do_tag_actions n env  m =
           used,r)
       env.(n) (used,r) in
   r
-  
-    
+
+
 let translate_state shortest_match tags chars follow st =
   let (n,(_,m)) = st.final in
   if MemMap.empty = st.others then
@@ -1106,7 +1106,7 @@ let dtags chan tags =
   Tags.iter
     (fun t -> fprintf chan " %a" dtag t)
     tags
-  
+
 let dtransset s =
   TransSet.iter
     (fun trans -> match trans with
@@ -1169,7 +1169,7 @@ let make_dfa lexdef =
            map_on_all_states
              (translate_state shortest tags chars follow) !r_states ;
         { auto_name = le.lex_name;
-          auto_args = args ; 
+          auto_args = args ;
           auto_mem_size =
             (if !temp_pending then !next_mem_cell+1 else !next_mem_cell) ;
           auto_initial_state = init_num ;

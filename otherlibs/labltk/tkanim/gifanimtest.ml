@@ -27,18 +27,18 @@ let main () =
        \tbutton 3 quits.";
     let t = openTk () in
 
-      (* First of all, you must initialize the extension. *) 
+      (* First of all, you must initialize the extension. *)
       Tkanim.init ();
 
       prerr_endline !file;
 
       (* Then load the animated gif. *)
-      let anim = Tkanim.create !file in  
+      let anim = Tkanim.create !file in
       prerr_endline "load done";
 
       (* Check it is really animated or not. *)
       match anim with
-      | Still x -> 
+      | Still x ->
           (* Use whatever you want in CamlTk with this ImagePhoto. *)
           prerr_endline "Sorry, it is not an animated GIF."
 
@@ -46,7 +46,7 @@ let main () =
           (* OK, let's animate it. *)
           let l = Label.create t [] in
             pack [l] [];
-          
+
             (* animate returns an interface function. *)
             let f = animate l x in
 
@@ -67,5 +67,5 @@ let main () =
 
               (* Go to the main loop. *)
               mainLoop ()
-    
+
 let _ = Printexc.print main ()

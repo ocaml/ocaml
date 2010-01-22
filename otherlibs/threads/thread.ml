@@ -28,7 +28,7 @@ type resumption_status =
       Unix.file_descr list * Unix.file_descr list * Unix.file_descr list
   | Resumed_wait of int * Unix.process_status
 
-(* It is mucho important that the primitives that reschedule are called 
+(* It is mucho important that the primitives that reschedule are called
    through an ML function call, not directly. That's because when such a
    primitive returns, the bytecode interpreter is only semi-obedient:
    it takes sp from the new thread, but keeps pc from the old thread.
@@ -100,7 +100,7 @@ let wait_timed_write fd delay =
 
 let wait_pid_aux pid = thread_wait_pid pid
 
-let wait_pid pid = 
+let wait_pid pid =
   match wait_pid_aux pid with
     Resumed_wait(pid, status) -> (pid, status)
   | _ -> invalid_arg "Thread.wait_pid"

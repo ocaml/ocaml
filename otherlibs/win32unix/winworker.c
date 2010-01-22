@@ -53,17 +53,17 @@ DWORD WINAPI worker_wait (LPVOID _data)
 {
   BOOL     bExit;
   LPWORKER lpWorker;
- 
+
   lpWorker = (LPWORKER )_data;
   bExit    = FALSE;
 
   DBUG_PRINT("Worker %x starting", lpWorker);
   while (
-      !bExit 
+      !bExit
       && SignalObjectAndWait(
-        lpWorker->hWorkerReady, 
+        lpWorker->hWorkerReady,
         lpWorker->hCommandReady,
-        INFINITE, 
+        INFINITE,
         TRUE) == WAIT_OBJECT_0)
   {
     DBUG_PRINT("Worker %x running", lpWorker);
@@ -111,11 +111,11 @@ LPWORKER worker_new (void)
   lpWorker->hCommandReady      = CreateEvent(NULL, FALSE, FALSE, NULL);
   lpWorker->ECommand           = WORKER_CMD_NONE;
   lpWorker->hThread = CreateThread(
-    NULL, 
-    THREAD_WORKERS_MEM, 
-    worker_wait, 
-    (LPVOID)lpWorker, 
-    0, 
+    NULL,
+    THREAD_WORKERS_MEM,
+    worker_wait,
+    (LPVOID)lpWorker,
+    0,
     NULL);
 
   return lpWorker;
@@ -287,7 +287,7 @@ void worker_cleanup(void)
       worker_free(lpWorker);
     };
     ReleaseMutex(hWorkersMutex);
-    
+
     /* Destroy associated mutex */
     CloseHandle(hWorkersMutex);
     hWorkersMutex = INVALID_HANDLE_VALUE;

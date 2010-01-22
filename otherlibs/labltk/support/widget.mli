@@ -74,7 +74,7 @@ val dummy : any widget
   (* [dummy] is a widget used as context when we don't have any.
      It is *not* a real widget.
    *)
-          
+
 val new_atom : parent:'a widget -> ?name: string -> string -> 'b widget
 
 val get_atom : string -> any widget

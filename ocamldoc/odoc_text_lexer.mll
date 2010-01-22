@@ -423,26 +423,26 @@ rule main = parse
       if !verb_mode or !latex_mode or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-	if !open_brackets >= 1 then
-	  (
-	   lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
+        if !open_brackets >= 1 then
+          (
+           lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
            lexbuf.Lexing.lex_curr_p <-
-	     { lexbuf.Lexing.lex_curr_p with
-	       pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1
-	     } ;
-	   decr char_number ;
-	   if !open_brackets > 1 then
-	     (
-	      decr open_brackets;
+             { lexbuf.Lexing.lex_curr_p with
+               pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1
+             } ;
+           decr char_number ;
+           if !open_brackets > 1 then
+             (
+              decr open_brackets;
               Char "]"
-	     )
-	   else
-	     (
+             )
+           else
+             (
               open_brackets := 0;
               END_CODE
              )
-	  )
-	else
+          )
+        else
           if !code_pre_mode then
             (
              code_pre_mode := false;
@@ -669,10 +669,10 @@ rule main = parse
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
         Char (Lexing.lexeme lexbuf)
       else
-	if not !ele_ref_mode then
+        if not !ele_ref_mode then
           INDEX_LIST
-	else
-	  Char (Lexing.lexeme lexbuf)
+        else
+          Char (Lexing.lexeme lexbuf)
     }
 
 | begin_verb
@@ -728,9 +728,9 @@ rule main = parse
       incr_cpts lexbuf ;
       lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
       lexbuf.Lexing.lex_curr_p <-
-	{ lexbuf.Lexing.lex_curr_p with
-	  pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1 ;
-	} ;
+        { lexbuf.Lexing.lex_curr_p with
+          pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1 ;
+        } ;
       decr line_number ;
       if !shortcut_list_mode then
         (
@@ -741,9 +741,9 @@ rule main = parse
          END_SHORTCUT_LIST
         )
       else
-	if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode or !verb_mode then
-	  Char (Lexing.lexeme lexbuf)
-	else
+        if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode or !verb_mode then
+          Char (Lexing.lexeme lexbuf)
+        else
           BLANK_LINE
     }
 
@@ -757,8 +757,8 @@ rule main = parse
         (!open_brackets >= 1) or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-	let s = Lexing.lexeme lexbuf in
-	let tag = Odoc_misc.no_blanks s in
+        let s = Lexing.lexeme lexbuf in
+        let tag = Odoc_misc.no_blanks s in
         CUSTOM tag
     }
 

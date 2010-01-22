@@ -143,7 +143,7 @@ let rec insert_labels ~labels ~text expr =
       insert_labels ~labels ~text e2
   | _ ->
       ()
-        
+
 let rec insert_labels_class ~labels ~text expr =
   match labels, expr.pcl_desc with
     l::labels, Pcl_fun(l', _, pat, rem) ->

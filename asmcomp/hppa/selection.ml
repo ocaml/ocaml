@@ -69,7 +69,7 @@ method select_operation op args =
      Cand, Cor, Cxor : never *)
   | (Cmuli, ([arg1; Cconst_int n] as args)) ->
       let l = Misc.log2 n in
-      if n = 1 lsl l 
+      if n = 1 lsl l
       then (Iintop_imm(Ilsl, l), [arg1])
       else (Iintop Imul, args)
   | (Cmuli, ([Cconst_int n; arg1] as args)) ->

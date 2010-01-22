@@ -16,9 +16,9 @@
 (** First-class synchronous communication.
 
    This module implements synchronous inter-thread communications over
-   channels. As in John Reppy's Concurrent ML system, the communication 
+   channels. As in John Reppy's Concurrent ML system, the communication
    events are first-class values: they can be built and combined
-   independently before being offered for communication. 
+   independently before being offered for communication.
 *)
 
 type 'a channel
@@ -31,12 +31,12 @@ type +'a event
 (** The type of communication events returning a result of type ['a]. *)
 
 (** [send ch v] returns the event consisting in sending the value [v]
-   over the channel [ch]. The result value of this event is [()]. *) 
+   over the channel [ch]. The result value of this event is [()]. *)
 val send : 'a channel -> 'a -> unit event
 
 (** [receive ch] returns the event consisting in receiving a value
    from the channel [ch]. The result value of this event is the
-   value received. *) 
+   value received. *)
 val receive : 'a channel -> 'a event
 
 val always : 'a -> 'a event
@@ -64,7 +64,7 @@ val guard : (unit -> 'a event) -> 'a event
    operation. *)
 
 val sync : 'a event -> 'a
-(** ``Synchronize'' on an event: offer all the communication 
+(** ``Synchronize'' on an event: offer all the communication
    possibilities specified in the event to the outside world,
    and block until one of the communications succeed. The result
    value of that communication is returned. *)
@@ -74,9 +74,8 @@ val select : 'a event list -> 'a
    [select evl] is shorthand for [sync(choose evl)]. *)
 
 val poll : 'a event -> 'a option
-(** Non-blocking version of {!Event.sync}: offer all the communication 
+(** Non-blocking version of {!Event.sync}: offer all the communication
    possibilities specified in the event to the outside world,
    and if one can take place immediately, perform it and return
    [Some r] where [r] is the result value of that communication.
    Otherwise, return [None] without blocking. *)
-

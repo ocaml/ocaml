@@ -9,7 +9,7 @@ let token = ref 0
 let process (n, conds, nprocs) =
   while true do
     Mutex.lock mut;
-    while !token <> n do 
+    while !token <> n do
       (* Printf.printf "Thread %d waiting (token = %d)\n" n !token; *)
       Condition.wait conds.(n) mut
     done;

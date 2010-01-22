@@ -253,4 +253,3 @@ let curveto b c (x, y as d) =
  draw_poly_line
   (Array.of_list (List.map int_point points));
  moveto x y;;
-

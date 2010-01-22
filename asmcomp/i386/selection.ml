@@ -72,7 +72,7 @@ let rec select_addr exp =
       end
   | arg ->
       (Alinear arg, 0)
-    
+
 (* C functions to be turned into Ifloatspecial instructions if -ffast-math *)
 
 let inline_float_ops =
@@ -310,7 +310,7 @@ method emit_extcall_args env args =
   let sz2 = Misc.align sz1 stack_alignment in
   let rec emit_pushes = function
   | [] ->
-      if sz2 > sz1 then 
+      if sz2 > sz1 then
         self#insert (Iop (Istackoffset (sz2 - sz1))) [||] [||]
   | e :: el ->
       emit_pushes el;
@@ -324,4 +324,3 @@ method emit_extcall_args env args =
 end
 
 let fundecl f = (new selector)#emit_fundecl f
-

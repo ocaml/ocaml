@@ -83,7 +83,7 @@ exception Marshalling_error
 module Remote_value :
   sig
     type t
-    
+
     val obj : t -> 'a
     val is_block : t -> bool
     val tag : t -> int

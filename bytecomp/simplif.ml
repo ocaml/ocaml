@@ -26,7 +26,7 @@ let rec eliminate_ref id = function
     Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
   | Lconst cst as lam -> lam
-  | Lapply(e1, el, loc) -> 
+  | Lapply(e1, el, loc) ->
       Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el, loc)
   | Lfunction(kind, params, body) as lam ->
       if IdentSet.mem id (free_variables lam)
@@ -85,7 +85,7 @@ let rec eliminate_ref id = function
 
 (* Simplification of exits *)
 
-let simplify_exits lam = 
+let simplify_exits lam =
 
   (* Count occurrences of (exit n ...) statements *)
   let exits = Hashtbl.create 17 in
@@ -101,7 +101,7 @@ let simplify_exits lam =
       incr (Hashtbl.find exits i)
     with
     | Not_found -> Hashtbl.add exits i (ref 1) in
-  
+
   let rec count = function
   | (Lvar _| Lconst _) -> ()
   | Lapply(l1, ll, _) -> count l1; List.iter count ll
@@ -267,7 +267,7 @@ let simplify_lets lam =
       !(Hashtbl.find occ v)
     with Not_found ->
       0
-  and incr_var v = 
+  and incr_var v =
     try
       incr(Hashtbl.find occ v)
     with Not_found ->
@@ -388,7 +388,7 @@ let simplify_lets lam =
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
                   sw_failaction = new_fail})
   | Lstaticraise (i,ls) ->
-      Lstaticraise (i, List.map simplif ls)   
+      Lstaticraise (i, List.map simplif ls)
   | Lstaticcatch(l1, (i,args), l2) ->
       Lstaticcatch (simplif l1, (i,args), simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)

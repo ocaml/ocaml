@@ -71,7 +71,7 @@ and instruction_desc =
   | Iswitch of int array * instruction array
   | Iloop of instruction
   | Icatch of int * instruction * instruction
-  | Iexit of int 
+  | Iexit of int
   | Itrywith of instruction * instruction
   | Iraise
 
@@ -83,11 +83,10 @@ type fundecl =
 
 val dummy_instr: instruction
 val end_instr: unit -> instruction
-val instr_cons: 
+val instr_cons:
       instruction_desc -> Reg.t array -> Reg.t array -> instruction ->
         instruction
-val instr_cons_debug: 
+val instr_cons_debug:
       instruction_desc -> Reg.t array -> Reg.t array -> Debuginfo.t ->
         instruction -> instruction
 val instr_iter: (instruction -> unit) -> instruction -> unit
-

@@ -138,7 +138,7 @@ let emit_frames a =
   let filenames = Hashtbl.create 7 in
   let lbl_filenames = ref 200000 in
   let label_filename name =
-    try 
+    try
       Hashtbl.find filenames name
     with Not_found ->
       let lbl = !lbl_filenames in
@@ -165,7 +165,7 @@ let emit_frames a =
         Int64.add (Int64.shift_left (Int64.of_int char_end) 26)
                   (Int64.of_int kind))) in
       a.efa_label_rel
-        (label_filename d.dinfo_file) 
+        (label_filename d.dinfo_file)
         (Int64.to_int32 info);
       a.efa_32 (Int64.to_int32 (Int64.shift_right info 32))
     end in
@@ -189,4 +189,3 @@ let is_generic_function name =
   List.exists
     (fun p -> isprefix p name)
     ["caml_apply"; "caml_curry"; "caml_send"; "caml_tuplify"]
-

@@ -21,4 +21,3 @@
       "mfhi %1"                                                             \
       : "=r" (resl), "=r" (resh)                                            \
       : "r" (arg1), "r" (arg2))
-

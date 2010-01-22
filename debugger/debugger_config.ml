@@ -23,7 +23,7 @@ exception Toplevel
 
 (*ISO 6429 color sequences
 00      to restore default color
-01      for brighter colors 
+01      for brighter colors
 04      for underlined text
 05      for flashing text
 30      for black foreground

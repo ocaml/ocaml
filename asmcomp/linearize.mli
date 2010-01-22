@@ -42,7 +42,7 @@ and instruction_desc =
 
 val has_fallthrough :  instruction_desc -> bool
 val end_instr: instruction
-val instr_cons: 
+val instr_cons:
   instruction_desc -> Reg.t array -> Reg.t array -> instruction -> instruction
 val invert_test: Mach.test -> Mach.test
 
@@ -52,4 +52,3 @@ type fundecl =
     fun_fast: bool }
 
 val fundecl: Mach.fundecl -> fundecl
-

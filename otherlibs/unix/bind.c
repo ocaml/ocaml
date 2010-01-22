@@ -20,7 +20,7 @@
 #ifdef HAS_SOCKETS
 
 #include "socketaddr.h"
-  
+
 CAMLprim value unix_bind(value socket, value address)
 {
   int ret;
@@ -37,5 +37,5 @@ CAMLprim value unix_bind(value socket, value address)
 
 CAMLprim value unix_bind(value socket, value address)
 { invalid_argument("bind not implemented"); }
-  
+
 #endif

@@ -28,5 +28,3 @@ char ** cstringvect(value arg)
   res[size] = NULL;
   return res;
 }
-
-  

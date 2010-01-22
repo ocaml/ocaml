@@ -76,13 +76,13 @@ module Search =
       | T.Block t
       | T.Superscript t
       | T.Subscript t
-      |	T.Custom (_,t)
+      | T.Custom (_,t)
       | T.Link (_, t) -> search_text root t v
       | T.List l
       | T.Enum l -> List.flatten (List.map (fun t -> search_text root t v) l)
       | T.Newline
-      |	T.Module_list _
-      |	T.Index_list -> []
+      | T.Module_list _
+      | T.Index_list -> []
       | T.Title (n, l_opt, t) ->
           (match l_opt with
             None -> []
@@ -542,7 +542,7 @@ let type_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_type _ -> true
+        Res_type _ -> true
       | _ -> false
     )
     l
@@ -551,7 +551,7 @@ let value_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_value _ -> true
+        Res_value _ -> true
       | _ -> false
     )
     l
@@ -560,7 +560,7 @@ let class_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_class _ -> true
+        Res_class _ -> true
       | _ -> false
     )
     l
@@ -569,7 +569,7 @@ let class_type_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_class_type _ -> true
+        Res_class_type _ -> true
       | _ -> false
     )
     l
@@ -578,7 +578,7 @@ let module_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_module _ -> true
+        Res_module _ -> true
       | _ -> false
     )
     l
@@ -587,7 +587,7 @@ let module_type_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_module_type _ -> true
+        Res_module_type _ -> true
       | _ -> false
     )
     l
@@ -596,7 +596,7 @@ let exception_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_exception _ -> true
+        Res_exception _ -> true
       | _ -> false
     )
     l
@@ -605,7 +605,7 @@ let attribute_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_attribute _ -> true
+        Res_attribute _ -> true
       | _ -> false
     )
     l
@@ -614,7 +614,7 @@ let method_exists mods regexp =
   let l = Search_by_name.search mods regexp in
   List.exists
     (function
-	Res_method _ -> true
+        Res_method _ -> true
       | _ -> false
     )
     l
@@ -624,8 +624,8 @@ let find_section mods regexp =
   match
     List.find
       (function
-	  Res_section _ -> true
-	| _ -> false
+          Res_section _ -> true
+        | _ -> false
       )
       l
   with

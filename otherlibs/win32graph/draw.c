@@ -32,7 +32,7 @@ static void GetCurrentPosition(HDC hDC,POINT *pt)
 }
 
 static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
-				 value vstart, value vend, BOOL fill);
+                                 value vstart, value vend, BOOL fill);
 
 CAMLprim value caml_gr_plot(value vx, value vy)
 {
@@ -94,10 +94,10 @@ CAMLprim value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
         h=Int_val(vh);
 
         pt[0].x = x;         pt[0].y = y - h;
-	pt[1].x = x + w;     pt[1].y = y - h;
-	pt[2].x = x + w;     pt[2].y = y;
-	pt[3].x = x;         pt[3].y = y;
-	pt[4].x = x;         pt[4].y = y - h;
+        pt[1].x = x + w;     pt[1].y = y - h;
+        pt[2].x = x + w;     pt[2].y = y;
+        pt[3].x = x;         pt[3].y = y;
+        pt[4].x = x;         pt[4].y = y - h;
         if (grremember_mode) {
                 Polyline(grwindow.gcBitmap,pt, 5);
         }
@@ -191,7 +191,7 @@ CAMLprim value caml_gr_set_window_title(value text)
 CAMLprim value caml_gr_draw_arc(value *argv, int argc)
 {
   return gr_draw_or_fill_arc(argv[0], argv[1], argv[2], argv[3],
-			     argv[4], argv[5], FALSE);
+                             argv[4], argv[5], FALSE);
 }
 
 CAMLprim value caml_gr_draw_arc_nat(vx, vy, vrx, vry, vstart, vend)
@@ -252,7 +252,7 @@ CAMLprim value caml_gr_set_color(value vcolor)
 
 
 static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
-				 value vstart, value vend, BOOL fill)
+                                 value vstart, value vend, BOOL fill)
 {
         int x, y, r_x, r_y, start, end;
         int     x1, y1, x2, y2, x3, y3, x4, y4;
@@ -418,7 +418,7 @@ CAMLprim value caml_gr_fill_poly(value vect)
 CAMLprim value caml_gr_fill_arc(value *argv, int argc)
 {
   return gr_draw_or_fill_arc(argv[0], argv[1], argv[2], argv[3],
-			     argv[4], argv[5], TRUE);
+                             argv[4], argv[5], TRUE);
 }
 
 CAMLprim value caml_gr_fill_arc_nat(vx, vy, vrx, vry, vstart, vend)
@@ -438,7 +438,7 @@ struct image {
 #define Height(i) (((struct image *)Data_custom_val(i))->h)
 #define Data(i) (((struct image *)Data_custom_val(i))->data)
 #define Mask(i) (((struct image *)Data_custom_val(i))->mask)
-#define Max_image_mem 500000 
+#define Max_image_mem 500000
 
 static void finalize_image (value i)
 {
@@ -459,19 +459,19 @@ CAMLprim value caml_gr_create_image(value vw, value vh)
 {
         HBITMAP cbm;
         value res;
-	int w = Int_val(vw);
-	int h = Int_val(vh);
+        int w = Int_val(vw);
+        int h = Int_val(vh);
 
         if (w < 0 || h < 0)
                 gr_fail("create_image: width and height must be positive",0);
 
         cbm = CreateCompatibleBitmap(grwindow.gc, w, h);
-	if (cbm == NULL)
-	        gr_fail("create_image: cannot create bitmap", 0);
+        if (cbm == NULL)
+                gr_fail("create_image: cannot create bitmap", 0);
         res = alloc_custom(&image_ops, sizeof(struct image),
                 w * h, Max_image_mem);
         if (res) {
-		Width (res) = w;
+                Width (res) = w;
                 Height (res) = h;
                 Data (res) = cbm;
                 Mask (res) = NULL;

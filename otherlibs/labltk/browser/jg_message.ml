@@ -90,7 +90,7 @@ let ask ~title ?master ?(no=true) ?(cancel=true) text =
   and r = ref (`Cancel : [`Yes|`No|`Cancel]) in
   let accept = Button.create fw
       ~text:(if no || cancel then "Yes" else "Dismiss")
-      ~command:(fun () -> r := `Yes; destroy tl) 
+      ~command:(fun () -> r := `Yes; destroy tl)
   and refuse = Button.create fw ~text:"No"
       ~command:(fun () -> r := `No; destroy tl)
   and cancelB = Button.create fw ~text:"Cancel"

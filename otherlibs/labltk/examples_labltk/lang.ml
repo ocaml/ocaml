@@ -17,14 +17,14 @@
 (* language encoding using UTF-8 *)
 open Tk
 
-let top = opentk () 
+let top = opentk ()
 
 (* declare Tk that we use utf-8 to communicate *)
 (* problem: Text display is highly dependent on your font installation
    and configulation. The fonts with no-scale setting are selected
    only if the point sizes are exactly same???
 *)
-let _ = 
+let _ =
   Encoding.system_set "utf-8";
   let l = Label.create top ~text: "???" in
   pack [l];
@@ -33,7 +33,7 @@ let _ =
 
   let create_hello lang hello =
     let b = Button.create t ~text: lang ~command: (fun () ->
-      Label.configure l ~text: hello) 
+      Label.configure l ~text: hello)
     in
     Text.window_create t ~index: (`End,[]) ~window: b
   in

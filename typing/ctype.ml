@@ -1840,7 +1840,7 @@ and unify_row_field env fixed1 fixed2 l f1 f2 =
       if e1 == e2 then () else
       let redo =
         (m1 || m2 ||
-	 !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
+         !rigid_variants && (List.length tl1 = 1 || List.length tl2 = 1)) &&
         begin match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if c1 || c2 then raise (Unify []);
@@ -3226,15 +3226,15 @@ let rec normalize_type_rec env visited ty =
         begin match !nm with
         | None -> ()
         | Some (n, v :: l) ->
-	    if deep_occur ty (newgenty (Ttuple l)) then
-	      (* The abbreviation may be hiding something, so remove it *)
-	      set_name nm None
-	    else let v' = repr v in
+            if deep_occur ty (newgenty (Ttuple l)) then
+              (* The abbreviation may be hiding something, so remove it *)
+              set_name nm None
+            else let v' = repr v in
             begin match v'.desc with
             | Tvar|Tunivar ->
                 if v' != v then set_name nm (Some (n, v' :: l))
             | Tnil ->
-		log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
+                log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
             | _ -> set_name nm None
             end
         | _ ->

@@ -21,4 +21,3 @@ let _ =
   let t4 = Thread.create (process 4) "quatre" in
   let t5 = Thread.create (process 5) "cinq" in
   List.iter Thread.join [t1;t2;t3;t4;t5]
-

@@ -151,7 +151,7 @@ value filter st =
           value meta_float _loc s = $m.flo$ _loc s;
           value meta_char _loc s = $m.chr$ _loc s;
           value meta_bool _loc =
-            fun   
+            fun
             [ False -> $m_uid m "False"$
             | True  -> $m_uid m "True"$ ];
           value rec meta_list mf_a _loc =

@@ -13,7 +13,7 @@
 /*  described in file LICENSE found in the Objective Caml source tree. */
 /*                                                                     */
 /***********************************************************************/
-/* 
+/*
  * tkAppInit.c --
  *
  *      Provides a default version of the Tcl_AppInit procedure for

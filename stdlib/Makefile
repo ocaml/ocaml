@@ -32,7 +32,7 @@ installopt-noprof:
 	rm -f $(LIBDIR)/stdlib.p.cmxa; ln -s stdlib.cmxa $(LIBDIR)/stdlib.p.cmxa
 	rm -f $(LIBDIR)/stdlib.p.a; ln -s stdlib.a $(LIBDIR)/stdlib.p.a
 	rm -f $(LIBDIR)/std_exit.p.cmx; \
-          ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
+	  ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
 	rm -f $(LIBDIR)/std_exit.p.o; ln -s std_exit.o $(LIBDIR)/std_exit.p.o
 
 installopt-prof:
@@ -44,16 +44,16 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
-          echo '#!$(BINDIR)/ocamlrun' > camlheader && \
-          echo '#!' | tr -d '\012' > camlheader_ur; \
-        else \
+	  echo '#!$(BINDIR)/ocamlrun' > camlheader && \
+	  echo '#!' | tr -d '\012' > camlheader_ur; \
+	else \
 	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-                    -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
-                    header.c -o tmpheader$(EXE) && \
-          strip tmpheader$(EXE) && \
+	            -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
+	            header.c -o tmpheader$(EXE) && \
+	  strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader && \
-          cp camlheader camlheader_ur; \
-        fi
+	  cp camlheader camlheader_ur; \
+	fi
 
 .PHONY: all allopt allopt-noprof allopt-prof install installopt
 .PHONY: installopt-default installopt-noprof installopt-prof clean depend

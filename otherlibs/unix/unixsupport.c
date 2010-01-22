@@ -252,7 +252,7 @@ value unix_error_of_code (int errcode)
   int errconstr;
   value err;
 
-  errconstr = 
+  errconstr =
       cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
   if (errconstr == Val_int(-1)) {
     err = alloc_small(1, 0);
@@ -290,4 +290,3 @@ void uerror(char *cmdname, value cmdarg)
 {
   unix_error(errno, cmdname, cmdarg);
 }
-

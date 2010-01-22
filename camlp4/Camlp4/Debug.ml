@@ -45,7 +45,7 @@ value mode =
           StringSet.add (String.sub str i (String.length str - i)) acc ] in
     let sections = loop StringSet.empty 0 in
     if StringSet.mem "*" sections then fun _ -> True
-    else fun x -> StringSet.mem x sections 
+    else fun x -> StringSet.mem x sections
   with [ Not_found -> fun _ -> False ];
 
 value formatter =

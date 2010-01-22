@@ -27,4 +27,3 @@ val current_event : debug_event option ref
 val get_current_event : unit -> debug_event
 
 val current_event_is_before : unit -> bool
-

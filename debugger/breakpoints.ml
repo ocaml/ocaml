@@ -123,7 +123,7 @@ let change_version version pos =
     (function () ->
        current_version := version;
        positions := pos)
-      
+
 (* Execute given function with no breakpoint in current checkpoint. *)
 (* --- `goto' runs faster this way (does not stop on each breakpoint). *)
 let execute_without_breakpoints f =

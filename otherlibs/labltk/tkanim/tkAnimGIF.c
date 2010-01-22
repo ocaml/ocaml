@@ -154,7 +154,7 @@ FileReadGIF(interp, f, fileName, formatString)
     Tcl_DStringAppend(&resultbuf, heightbuf, -1);
     Tcl_DStringAppend(&resultbuf, " ", -1);
     Tcl_DStringAppend(&resultbuf, "{", -1);
-    
+
     while (1) {
         if (fread(buf, 1, 1, f) != 1) {
             /*
@@ -245,7 +245,7 @@ FileReadGIF(interp, f, fileName, formatString)
 
         imageLeftPos= LM_to_uint(buf[0], buf[1]);
         imageTopPos=  LM_to_uint(buf[2], buf[3]);
-        imageWidth=   LM_to_uint(buf[4], buf[5]); 
+        imageWidth=   LM_to_uint(buf[4], buf[5]);
         imageHeight=  LM_to_uint(buf[6], buf[7]);
 
         block.width = imageWidth;
@@ -276,16 +276,16 @@ FileReadGIF(interp, f, fileName, formatString)
           argv[4] = Tcl_NewStringObj(widthbuf, -1);
           argv[5] = Tcl_NewStringObj("-height", -1);
           argv[6] = Tcl_NewStringObj(heightbuf, -1);
-      
+
           for(i=0; i<7; i++){ Tcl_IncrRefCount(argv[i]); }
 
-          if( Tk_ImageObjCmd((ClientData) winPtr, interp, 
-                        /* "image create photo -width <imageWidth> 
+          if( Tk_ImageObjCmd((ClientData) winPtr, interp,
+                        /* "image create photo -width <imageWidth>
                            -height <imageHeight>" */
                              7, argv) == TCL_ERROR ){
             return TCL_ERROR;
           }
-        
+
         for(i=0; i<7; i++){ Tcl_DecrRefCount(argv[i]); }
 
 #else
@@ -294,11 +294,11 @@ FileReadGIF(interp, f, fileName, formatString)
         argv[4] = widthbuf;
         argv[6] = heightbuf;
 #ifdef TKANIM_DEBUG
-    fprintf(stderr, "\n\t\timage creation (%s %s %s %s %s %s %s)", 
+    fprintf(stderr, "\n\t\timage creation (%s %s %s %s %s %s %s)",
             argv[0], argv[1], argv[2], argv[3], argv[4], argv[5], argv[6]);
 #endif
-        if( Tk_ImageCmd((ClientData) winPtr, interp, 
-                        /* "image create photo -width <imageWidth> 
+        if( Tk_ImageCmd((ClientData) winPtr, interp,
+                        /* "image create photo -width <imageWidth>
                            -height <imageHeight>" */
                         7, argv) == TCL_ERROR ){
             return TCL_ERROR;
@@ -318,7 +318,7 @@ FileReadGIF(interp, f, fileName, formatString)
 #endif
         if (!useGlobalColormap) {
             if (!ReadColorMap(f, bitPixel, localColorMap)) {
-                    Tcl_AppendResult(interp, "error reading color map", 
+                    Tcl_AppendResult(interp, "error reading color map",
                             (char *) NULL);
                     goto error;
             }
@@ -336,7 +336,7 @@ FileReadGIF(interp, f, fileName, formatString)
         }
         Tk_PhotoPutBlock(
 #if (TK_MAJOR_VERSION == 8 && TK_MINOR_VERSION >= 5 || TK_MAJOR_VERSION > 8)
-	NULL,
+        NULL,
 #endif
 photoHandle, &block, 0, 0, imageWidth, imageHeight
 #if (TK_MAJOR_VERSION == 8 && TK_MINOR_VERSION >= 4 || TK_MAJOR_VERSION > 8)
@@ -347,9 +347,9 @@ photoHandle, &block, 0, 0, imageWidth, imageHeight
     fprintf(stderr, " Retrieving result\n");
 #endif
         /* retrieve result */
-        sprintf(newresbuf, "{%s %d %d %d %d %d} ", 
-                imageName, imageWidth, imageHeight, imageLeftPos, imageTopPos, 
-                delay); 
+        sprintf(newresbuf, "{%s %d %d %d %d %d} ",
+                imageName, imageWidth, imageHeight, imageLeftPos, imageTopPos,
+                delay);
 #ifdef TKANIM_DEBUG
     fprintf(stderr, " newresbuf = %s\n", newresbuf);
 #endif
@@ -573,16 +573,16 @@ int transparent;
             return TCL_ERROR;
         }
 
-        if (transparent!=-1 && 
+        if (transparent!=-1 &&
                 (colStr = Tcl_GetVar(interp, "TRANSPARENT_GIF_COLOR", 0L))) {
                 XColor *colorPtr;
-                colorPtr = Tk_GetColor(interp, Tk_MainWindow(interp), 
+                colorPtr = Tk_GetColor(interp, Tk_MainWindow(interp),
                                                           Tk_GetUid(colStr));
                 if (colorPtr) {
 /*
-                        printf("color is %d %d %d\n", 
-                                        colorPtr->red >> 8, 
-                                        colorPtr->green >> 8, 
+                        printf("color is %d %d %d\n",
+                                        colorPtr->red >> 8,
+                                        colorPtr->green >> 8,
                                         colorPtr->blue >> 8);
 */
                         cmap[CM_RED][transparent] = colorPtr->red >> 8;
@@ -827,7 +827,7 @@ int Tk_AnimationCmd(clientData, interp, argc, argv)
     }
     c = argv[1][0];
     length = strlen(argv[1]);
-    if((c == 'c') && (length >= 2) 
+    if((c == 'c') && (length >= 2)
        && (strncmp(argv[1], "create", length) == 0)) {
 
         char * realFileName;
@@ -904,7 +904,7 @@ int Tkanim_Init(interp)
 #ifdef TKANIM_DEBUG
     fprintf(stderr, "Tkanim initialize...");
 #endif
-    Tcl_CreateCommand(interp, "animation", Tk_AnimationCmd, 
+    Tcl_CreateCommand(interp, "animation", Tk_AnimationCmd,
                       (ClientData) NULL,
                       (Tcl_CmdDeleteProc *) TkDeleteTkAnim);
 #ifdef TKANIM_DEBUG

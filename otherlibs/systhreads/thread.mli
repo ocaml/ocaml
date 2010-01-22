@@ -74,7 +74,7 @@ val wait_timed_write : Unix.file_descr -> float -> bool
    on the given Unix file descriptor. Wait for at most
    the amount of time given as second argument (in seconds).
    Return [true] if the file descriptor is ready for input/output
-   and [false] if the timeout expired. 
+   and [false] if the timeout expired.
 
    These functions return immediately [true] in the Win32
    implementation. *)
@@ -131,4 +131,3 @@ val wait_signal : int list -> int
    Signal handlers attached to the signals in [sigs] will not
    be invoked.  The signals [sigs] are expected to be blocked before
    calling [wait_signal]. *)
-

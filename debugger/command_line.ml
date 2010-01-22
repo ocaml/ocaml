@@ -77,10 +77,10 @@ let error text =
   raise Toplevel
 
 let check_not_windows feature =
-  match Sys.os_type with 
+  match Sys.os_type with
   | "Win32" ->
       error ("'"^feature^"' feature not supported on Windows")
-  | _ -> 
+  | _ ->
       ()
 
 let eol =
@@ -227,7 +227,7 @@ let instr_shell ppf lexbuf =
   let cmd = String.concat " " cmdarg in
   (* perhaps we should use $SHELL -c ? *)
   let err = Sys.command cmd in
-  if (err != 0) then 
+  if (err != 0) then
     eprintf "Shell command %S failed with exit code %d\n%!" cmd err
 
 let instr_pwd ppf lexbuf =
@@ -363,8 +363,8 @@ let print_info_list ppf =
 
 let instr_complete ppf lexbuf =
   let ppf = Format.err_formatter in
-  let rec print_list l = 
-    try 
+  let rec print_list l =
+    try
       eol lexbuf;
       List.iter (function i -> fprintf ppf "%s@." i) l
     with _ ->
@@ -395,7 +395,7 @@ let instr_complete ppf lexbuf =
                   | [i] -> if i.info_name = ident then [] else [i.info_name]
                   | l   -> List.map (fun i -> i.info_name) l
                   end
-              | None -> 
+              | None ->
                   List.map (fun i -> i.info_name) !info_list
             end
             else ["info"]

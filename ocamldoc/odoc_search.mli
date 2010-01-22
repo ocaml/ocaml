@@ -29,7 +29,7 @@ type result_element =
 (** The type representing a research result.*)
 type result = result_element list
 
-(** The type of modules which contain the predicates used during the research. 
+(** The type of modules which contain the predicates used during the research.
    Some functions return a couple of booleans ; the first indicates if we
    must go deeper in the analysed element, the second if the element satisfies
    the predicate.
@@ -193,7 +193,7 @@ val attribute_exists : Odoc_module.t_module list -> Str.regexp -> bool
    in the given module list.*)
 val method_exists : Odoc_module.t_module list -> Str.regexp -> bool
 
-(** Return the [text] of the section with the given complete name (regexp) 
+(** Return the [text] of the section with the given complete name (regexp)
    in the given module list.
    @raise Not_found if the section was not found.*)
 val find_section : Odoc_module.t_module list -> Str.regexp -> Odoc_types.text

@@ -211,7 +211,7 @@ module Make (I : INPUT) = struct
         end (dependencies_of fn);
         needed := fn :: !needed
       end
-    in  
+    in
     List.iter aux fns;
     mydprintf "caml_transitive_closure:@ %a ->@ %a" pp_l fns pp_l !needed;
     List.rev !needed

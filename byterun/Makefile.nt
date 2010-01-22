@@ -22,7 +22,7 @@ OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O)
 DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
 
 ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
-	$(MKEXE) -o ocamlrun$(EXE) prims.$(O) $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrun.$(A) 
+	$(MKEXE) -o ocamlrun$(EXE) prims.$(O) $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrun.$(A)
 
 ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
 	$(MKEXE) -o ocamlrun$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrund.$(A)

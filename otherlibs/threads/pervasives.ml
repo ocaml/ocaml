@@ -270,10 +270,10 @@ let rec flush oc =
       wait_outchan oc (-1); false in
   if success then () else flush oc
 
-external out_channels_list : unit -> out_channel list 
+external out_channels_list : unit -> out_channel list
                            = "caml_ml_out_channels_list"
 
-let flush_all () = 
+let flush_all () =
   let rec iter = function
       [] -> ()
     | a::l ->
@@ -298,7 +298,7 @@ let rec unsafe_output oc buf pos len =
     unsafe_output oc buf (pos + written) (len - written)
   end
 
-external output_char_blocking : out_channel -> char -> unit 
+external output_char_blocking : out_channel -> char -> unit
                               = "caml_ml_output_char"
 external output_byte_blocking : out_channel -> int -> unit
                               = "caml_ml_output_char"
@@ -313,7 +313,7 @@ let output_string oc s =
   unsafe_output oc s 0 (string_length s)
 
 let output oc s ofs len =
-  if ofs < 0 || len < 0 || ofs > string_length s - len 
+  if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
@@ -331,7 +331,7 @@ let output_binary_int oc n =
   output_byte oc (n asr 8);
   output_byte oc n
 
-external marshal_to_string : 'a -> unit list -> string 
+external marshal_to_string : 'a -> unit list -> string
                            = "caml_output_value_to_string"
 
 let output_value oc v = output_string oc (marshal_to_string v [])
@@ -494,7 +494,7 @@ module LargeFile =
   end
 
 (* Formats *)
-type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 

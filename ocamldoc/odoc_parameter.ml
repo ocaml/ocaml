@@ -22,9 +22,9 @@ type simple_name = {
     sn_name : string ;
     sn_type : Types.type_expr ;
     mutable sn_text : Odoc_types.text option ;
-  } 
+  }
 
-(** Representation of parameter names. We need it to represent parameter names in tuples. 
+(** Representation of parameter names. We need it to represent parameter names in tuples.
    The value [Tuple ([], t)] stands for an anonymous parameter.*)
 type param_info =
   | Simple_name of simple_name
@@ -37,7 +37,7 @@ type parameter = param_info
 
 (** acces to the name as a string. For tuples, parenthesis and commas are added. *)
 let complete_name p =
-  let rec iter pi = 
+  let rec iter pi =
     match pi with
       Simple_name sn ->
         sn.sn_name
@@ -49,7 +49,7 @@ let complete_name p =
   iter p
 
 (** access to the complete type *)
-let typ pi = 
+let typ pi =
   match pi with
     Simple_name sn -> sn.sn_type
   | Tuple (_, typ) -> typ
@@ -57,7 +57,7 @@ let typ pi =
 (** Update the text of a parameter using a function returning
    the optional text associated to a parameter name.*)
 let update_parameter_text f p =
-  let rec iter pi = 
+  let rec iter pi =
     match pi with
       Simple_name sn ->
         sn.sn_text <- f sn.sn_name
@@ -68,7 +68,7 @@ let update_parameter_text f p =
 
 (** access to the description of a specific name.
    @raise Not_found if no description is associated to the given name. *)
-let desc_by_name pi name = 
+let desc_by_name pi name =
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
@@ -92,9 +92,9 @@ let names pi =
   in
   iter [] pi
 
-(** access to the type of a specific name. 
+(** access to the type of a specific name.
    @raise Not_found if no type is associated to the given name. *)
-let type_by_name pi name = 
+let type_by_name pi name =
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
@@ -107,17 +107,17 @@ let type_by_name pi name =
 
 (** access to the optional description of a parameter name from an optional info structure.*)
 let desc_from_info_opt info_opt s =
-  print_DEBUG "desc_from_info_opt"; 
+  print_DEBUG "desc_from_info_opt";
   match info_opt with
     None -> None
   | Some i ->
       match s with
         "" -> None
       | _ ->
-          try 
+          try
             Some (List.assoc s i.Odoc_types.i_params)
           with
-            Not_found -> 
+            Not_found ->
               print_DEBUG ("desc_from_info_opt "^s^" not found in\n");
               List.iter (fun (s, _) -> print_DEBUG s) i.Odoc_types.i_params;
               None

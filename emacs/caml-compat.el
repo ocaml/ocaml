@@ -39,4 +39,3 @@ only if necessary.  It leaves point at end of indentation."
   (defalias 'buffer-substring-no-properties 'buffer-substring)))
 
 (provide 'caml-compat)
-

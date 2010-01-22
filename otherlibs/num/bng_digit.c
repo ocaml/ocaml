@@ -168,4 +168,3 @@ static void bng_div_aux(bngdigit * quo, bngdigit * rem,
 }
 
 #endif
-

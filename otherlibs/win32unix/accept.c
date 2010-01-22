@@ -37,7 +37,7 @@ CAMLprim value unix_accept(sock)
   if (retcode == 0) {
     /* Set sockets to synchronous mode */
     newvalue = SO_SYNCHRONOUS_NONALERT;
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                (char *) &newvalue, sizeof(newvalue));
   }
   addr_len = sizeof(sock_addr);
@@ -47,7 +47,7 @@ CAMLprim value unix_accept(sock)
   leave_blocking_section();
   if (retcode == 0) {
     /* Restore initial mode */
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                (char *) &oldvalue, oldvaluelen);
   }
   if (snew == INVALID_SOCKET) {
@@ -63,4 +63,3 @@ CAMLprim value unix_accept(sock)
   End_roots();
   return res;
 }
-

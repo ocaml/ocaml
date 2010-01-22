@@ -179,7 +179,7 @@ let record_global_approx_toplevel id =
 let global_approx id =
   if Ident.is_predef_exn id then Value_unknown
   else try Hashtbl.find toplevel_approx (Ident.name id)
-  with Not_found -> 
+  with Not_found ->
     match get_global_info id with
       | None -> Value_unknown
       | Some ui -> ui.ui_approx
@@ -240,4 +240,3 @@ let report_error ppf = function
       fprintf ppf "Corrupted compilation unit description@ %s" filename
   | Illegal_renaming(modname, filename) ->
       fprintf ppf "%s@ contains the description for unit@ %s" filename modname
-
