@@ -43,7 +43,6 @@ type t =
   | Nonreturning_statement                  (* 21 *)
   | Camlp4 of string                        (* 22 *)
   | All_clauses_guarded                     (* 23 *)
-  | Useless_record_with                     (* 24 *)
   | Bad_module_name of string               (* 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
@@ -79,7 +78,6 @@ let number = function
   | Unused_argument -> 20
   | Nonreturning_statement -> 21
   | Camlp4 _ -> 22
-  | Useless_record_with -> 23
   | Bad_module_name _ -> 24
   | All_clauses_guarded -> 25
   | Unused_var _ -> 26
@@ -231,9 +229,6 @@ let message = function
   | Camlp4 s -> s
   | All_clauses_guarded ->
       "bad style, all clauses in this pattern-matching are guarded."
-  | Useless_record_with ->
-      "this record is defined by a `with' expression,\n\
-       but no fields are borrowed from the original."
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
   | Wildcard_arg_to_constant_constr ->

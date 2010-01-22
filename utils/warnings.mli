@@ -38,7 +38,6 @@ type t =
   | Nonreturning_statement                  (* 21 *)
   | Camlp4 of string                        (* 22 *)
   | All_clauses_guarded                     (* 23 *)
-  | Useless_record_with                     (* 24 *)
   | Bad_module_name of string               (* 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
