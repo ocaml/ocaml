@@ -77,12 +77,12 @@
     polymorphic user-defined scanners.  Furthermore, the Caml formatted input
     facility is fully type-checked at compile time. *)
 
-(** {6 Scanning buffers} *)
+(** {6 Formatted input channel} *)
 module Scanning : sig
 
 type in_channel;;
 (* The notion of input channel for the [Scanf] module:
-   it provides all the machinery necessary to read from a given
+   those channels provide all the machinery necessary to read from a given
    [Pervasives.in_channel] value.
    A [Scanf.Scanning.in_channel] value is also called a {i formatted input
    channel} or equivalently a {i scanning buffer}.
@@ -94,9 +94,9 @@ type scanbuf = in_channel;;
     current state of the scan, plus a function to get the next char from the
     input, and a token buffer to store the string matched so far.
 
-    Note: a scan may often require to examine one character in advance;
-    when this ``lookahead'' character does not belong to the token read,
-    it is stored back in the scanning buffer and becomes the next
+    Note: a scanning action may often require to examine one character in
+    advance; when this ``lookahead'' character does not belong to the token
+    read, it is stored back in the scanning buffer and becomes the next
     character read. *)
 
 val stdin : in_channel;;
@@ -207,12 +207,12 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** The format is a character string which contains three types of
     objects:
     - plain characters, which are simply matched with the characters of the
-      input,
+      input (with a special case for {{:Scanf.space} space and line feed),
     - conversion specifications, each of which causes reading and conversion of
-      one argument for the function [f],
-    - scanning indications to specify boundaries of tokens. *)
+      one argument for the function [f] (see {!Scanf.conversion}),
+    - scanning indications to specify boundaries of tokens (see {!Scanf.indication}). *)
 
-(** {7 The space character in format strings} *)
+(** {7:space The space character in format strings} *)
 
 (** As mentioned above, a plain character in the format string is just
     matched with the next character of the input; however, two characters are
@@ -231,7 +231,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     input with various whitespace in it, such as [Price = 1 $],
     [Price  =  1    $], or even [Price=1$]. *)
 
-(** {7 Conversion specifications in format strings} *)
+(** {7:conversion Conversion specifications in format strings} *)
 
 (** Conversion specifications consist in the [%] character, followed by
     an optional flag, an optional field width, and followed by one or
@@ -246,9 +246,10 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [x] or [X]: reads an unsigned hexadecimal integer.
     - [o]: reads an unsigned octal integer.
     - [s]: reads a string argument that spreads as much as possible, until the
-      following bounding condition holds: a whitespace has been found, a
-      scanning indication has been encountered, or the end-of-input has been
-      reached.
+      following bounding condition holds:
+      - a whitespace has been found (see {!Scanf.space}),
+      - a scanning indication (see {!Scanf.indication}) has been encountered,
+      - the end-of-input has been reached.
       Hence, this conversion always succeeds: it returns an empty
       string, if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
@@ -339,7 +340,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     [Str]), stream parsers, [ocamllex]-generated lexers,
     [ocamlyacc]-generated parsers. *)
 
-(** {7 Scanning indications in format strings} *)
+(** {7:indication Scanning indications in format strings} *)
 
 (** Scanning indications appear just after the string conversions [%s]
     and [%\[ range \]] to delimit the end of the token. A scanning
