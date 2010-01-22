@@ -82,6 +82,7 @@ type error =
   | Label_ref_multiply_defined of label_ref
   | Label_missing of string list
   | Label_ref_not_mutable of label_ref
+  | Wrong_record_construction
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
