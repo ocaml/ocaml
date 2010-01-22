@@ -591,11 +591,6 @@ have type
 22
 \ \ Camlp4 warning.
 
-23
-\ \ Useless record
-.B with
-clause.
-
 24
 \ \ Bad module name: the source file name is not a valid OCaml module name.
 
@@ -652,7 +647,7 @@ mentioned here corresponds to the empty set.
 \ 13
 
 .B X
-\ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+\ 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25
 
 .B Y
 \ 26
