@@ -207,10 +207,11 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** The format is a character string which contains three types of
     objects:
     - plain characters, which are simply matched with the characters of the
-      input (with a special case for {{:Scanf.space} space and line feed),
+      input (with a special case for {!Scanf.space} and line feed),
     - conversion specifications, each of which causes reading and conversion of
       one argument for the function [f] (see {!Scanf.conversion}),
-    - scanning indications to specify boundaries of tokens (see {!Scanf.indication}). *)
+    - scanning indications to specify boundaries of tokens
+      (see scanning {!Scanf.indication}). *)
 
 (** {7:space The space character in format strings} *)
 
@@ -248,7 +249,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [s]: reads a string argument that spreads as much as possible, until the
       following bounding condition holds:
       - a whitespace has been found (see {!Scanf.space}),
-      - a scanning indication (see {!Scanf.indication}) has been encountered,
+      - a scanning indication (see scanning {!Scanf.indication}) has been
+        encountered,
       - the end-of-input has been reached.
       Hence, this conversion always succeeds: it returns an empty
       string, if the bounding condition holds when the scan begins.
