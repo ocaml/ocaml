@@ -42,6 +42,7 @@ type error =
   | Label_ref_multiply_defined of label_ref
   | Label_missing of string list
   | Label_ref_not_mutable of label_ref
+  | Wrong_record_construction
   | Incomplete_format of string
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
@@ -180,7 +181,6 @@ let find_constructor_ref_description env loc cref =
      unbound_constr_ref_error env loc cref
        (fun clid -> Unbound_constructor_ref (Pconstr clid))
 ;;
-
 
 (* Typing of constants *)
 
@@ -485,10 +485,12 @@ let rewrite_clause rdesc (spat, sexp) =
 ;;
 
 let rec make_modqual_cref mod_lid cname =
-  Pconstr (Longident.Ldot (mod_lid, cname));;
+  Pconstr (Longident.Ldot (mod_lid, cname))
+;;
 
 let rec make_typqual_cref ty_lid cname =
-  Pconstr_ty (ty_lid, cname);;
+  Pconstr_ty (ty_lid, cname)
+;;
 
 let rec list_find_option f = function
   | [] -> None
@@ -504,19 +506,36 @@ let list_find_some f l =
   | Some r -> r
 ;;
 
+type rdesc =
+   | Rid
+   | Rlist of rdesc list
+   | Rcref of (string -> Reftypes.constructor_ref)
+   | Rlref of (string -> Reftypes.label_ref)
+;;
+
 let rewrite_ppat_desc make_constr_ref ppat_desc =
 
   let rec rewrite_desc = function
-  | Ppat_construct (Pconstr (Longident.Lident cname), arg, b) ->
-      Ppat_construct (make_constr_ref cname, arg, b)
   | Ppat_alias (spat, id) ->
       Ppat_alias (rewrite_spat_rec spat, id)
+
+  | Ppat_tuple (_spat :: _spatl) as ppat_desc -> ppat_desc (* To be fixed *)
+
+  | Ppat_construct (Pconstr (Longident.Lident cname), arg, b) ->
+      Ppat_construct (make_constr_ref cname, arg, b)
+
+  | Ppat_variant (_lbl, _spat_option) as ppat_desc -> ppat_desc (* To be fixed ? *)
+
+  | Ppat_record (_fields, _closed) as ppat_desc -> ppat_desc (* To be fixed ? *)
+
   | Ppat_array spatl ->
       Ppat_array (List.map rewrite_spat_rec spatl)
+
   | Ppat_or (spat1, spat2) ->
       Ppat_or (rewrite_spat_rec spat1, rewrite_spat_rec spat2)
   | Ppat_constraint (spat, ty) ->
       Ppat_constraint (rewrite_spat_rec spat, ty)
+  | Ppat_type _tylid as ppat_desc -> ppat_desc
   | Ppat_lazy spat ->
       Ppat_lazy (rewrite_spat_rec spat)
   | ppat_desc -> ppat_desc
@@ -526,7 +545,9 @@ let rewrite_ppat_desc make_constr_ref ppat_desc =
   rewrite_desc ppat_desc
 ;;
 
-(* Determine if a type is (an abbreviation for) the predefined type "exn"
+(* Determine if a type is (or is an abbreviation for) some extensible type;
+   for the time being, there is only one extensible type which is the
+   predefined type "exn".
    We use the Ctype.expand_head_opt version of expand_head to get access
    to the manifest type of private abbreviations. *)
 let is_exn env ty =
@@ -538,6 +559,16 @@ let is_exn env ty =
 let find_constructor_qualifier env clauses =
 
   let rec find_qualifier_desc loc = function
+    | Ppat_any
+    | Ppat_var _ -> None
+
+    | Ppat_alias (spat, _id) -> find_qualifier_spat spat
+
+    | Ppat_constant _
+    | Ppat_tuple [] -> None
+
+    | Ppat_tuple (_spat :: _spatl) -> None (* To be fixed *)
+
     | Ppat_construct (Pconstr (Longident.Ldot (mod_lid, _cname)) as cref, _, _) ->
         let cdesc = find_constructor_ref_description env loc cref in
         if is_exn env cdesc.cstr_res
@@ -545,33 +576,27 @@ let find_constructor_qualifier env clauses =
         else Some (make_modqual_cref mod_lid)
     | Ppat_construct (Pconstr_ty (ty_lid, _cname), _, _) ->
         Some (make_typqual_cref ty_lid)
-    | Ppat_alias (spat, _id) -> find_qualifier_spat spat
+
+    | Ppat_variant (_lbl, None) -> None
+    | Ppat_variant (_lbl, Some _spat) -> None (* To be fixed ? *)
+
+    | Ppat_record ([], _closed) -> None
+    | Ppat_record ((_lbl_ref, _spat) :: _, _) -> None (* To be fixed ? *)
+
+    | Ppat_array [] -> None
     | Ppat_array spatl -> list_find_option find_qualifier_spat spatl
+
     | Ppat_or (spat1, spat2) ->
         let qual1 = find_qualifier_spat spat1 in
         if qual1 = None then find_qualifier_spat spat2 else qual1
-    | Ppat_constraint (spat, ty) -> find_qualifier_spat spat
+
+    | Ppat_constraint (spat, _ty) -> find_qualifier_spat spat
+
+    | Ppat_type _tylid -> None
+
     | Ppat_lazy spat -> find_qualifier_spat spat
-    (* Rem:
-       For real completeness, we could also treat all other cases of
-       patterns, but this would also add some complexity to the function
-       rewrite_ppat_desc; is it worth the burden ?
 
-       For instance, if we admit that we only propagate the qualification of
-       the first ``relevant'' sub-pattern of the clause at hand, we could
-       write some additional code along those lines:
-
-    | Ppat_any | Ppat_vat _ -> None
-    | Ppat_constant _ | Ppat_tuple [] -> None
-    | Ppat_tuple (spat :: _) -> find_qualifier_spat spat
-    | Ppat_variant None -> None
-    | Ppat_variant (Some spat) -> find_qualifier_spat spat
-    | Ppat_record ([], _) -> None
-    | Ppat_record ((_lbl_ref, spat) :: _, _) -> find_qualifier_spat spat
-    | Ppat_array [] -> None
-    | Ppat_type _lid -> None *)
-
-    | _ -> None
+    | spat -> None
 
   and find_qualifier_spat spat = find_qualifier_desc spat.ppat_loc spat.ppat_desc in
 
@@ -579,8 +604,8 @@ let find_constructor_qualifier env clauses =
 ;;
 
 let type_match_clauses env is_exn_arg type_clause clauses =
-  (* Type exn is extensible, hence its constructor may be defined in more
-     than one Module. Therefore we cannot propagate module annotations. *)
+  (* The type exn is extensible, hence its constructors may be defined in more
+     than one Module. Therefore, we cannot propagate module annotations. *)
   if is_exn_arg then List.map type_clause clauses else
   match find_constructor_qualifier env clauses with
   | None ->
@@ -1475,7 +1500,7 @@ let rec type_exp env sexp =
         let missing = missing_labels 0 label_names in
         raise(Error(loc, Label_missing missing)) else
       if opt_sexp <> None && List.length fields = !num_fields then
-        Location.prerr_warning loc Warnings.Useless_record_with;
+        raise(Error(loc, Wrong_record_construction));
 
       re {
         exp_desc = Texp_record(ldesc_arg_list, opt_exp);
@@ -2614,6 +2639,10 @@ let report_error ppf = function
         print_labels labels
   | Label_ref_not_mutable lref ->
       fprintf ppf "The record field label %a is not mutable" label_ref lref
+  | Wrong_record_construction ->
+      fprintf ppf
+        "Wrong record construction: this { expr with fields } record, \
+         should be defined as { fields }"
   | Incomplete_format s ->
       fprintf ppf "Premature end of format string ``%S''" s
   | Bad_conversion (fmt, i, c) ->
