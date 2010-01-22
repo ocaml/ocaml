@@ -38,3 +38,4 @@ Ocaml_dependencies
 Exit_codes
 Digest_cache
 Ocamlbuild_plugin
+Findlib

@@ -38,4 +38,5 @@ Ocaml_compiler
 Ocaml_dependencies
 Exit_codes
 Digest_cache
+Findlib
 Param_tags

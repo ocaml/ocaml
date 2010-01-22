@@ -37,6 +37,7 @@ let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
 let catch_errors = ref true
+let use_ocamlfind = ref false
 
 let mk_virtual_solvers =
   let dir = Ocamlbuild_where.bindir in
@@ -62,7 +63,7 @@ let mk_virtual_solvers =
 let () =
   mk_virtual_solvers
     ["ocamlc"; "ocamlopt"; "ocamldep"; "ocamldoc";
-    "ocamlyacc"; "menhir"; "ocamllex"; "ocamlmklib"; "ocamlmktop"]
+    "ocamlyacc"; "menhir"; "ocamllex"; "ocamlmklib"; "ocamlmktop"; "ocamlfind"]
 let ocamlc = ref (V"OCAMLC")
 let ocamlopt = ref (V"OCAMLOPT")
 let ocamldep = ref (V"OCAMLDEP")
@@ -72,6 +73,7 @@ let ocamllex = ref (V"OCAMLLEX")
 let ocamlmklib = ref (V"OCAMLMKLIB")
 let ocamlmktop = ref (V"OCAMLMKTOP")
 let ocamlrun = ref N
+let ocamlfind x = S[V"OCAMLFIND"; x]
 let program_to_execute = ref false
 let must_clean = ref false
 let show_documentation = ref false
@@ -83,6 +85,8 @@ let exe = ref Ocamlbuild_Myocamlbuild_config.exe
 
 let targets_internal = ref []
 let ocaml_libs_internal = ref []
+let ocaml_mods_internal = ref []
+let ocaml_pkgs_internal = ref []
 let ocaml_lflags_internal = ref []
 let ocaml_cflags_internal = ref []
 let ocaml_ppflags_internal = ref []
@@ -142,6 +146,11 @@ let spec =
 
    "-lib", String (add_to' ocaml_libs_internal), "<flag> Link to this ocaml library";
    "-libs", String (add_to ocaml_libs_internal), "<flag,...> (idem)";
+   "-mod", String (add_to' ocaml_mods_internal), "<module> Link to this ocaml module";
+   "-mods", String (add_to ocaml_mods_internal), "<module,...> (idem)";
+   "-pkg", String (add_to' ocaml_pkgs_internal), "<package> Link to this ocaml findlib package";
+   "-pkgs", String (add_to ocaml_pkgs_internal), "<package,...> (idem)";
+   "-package", String (add_to' ocaml_pkgs_internal), "<package> (idem)";
    "-lflag", String (add_to' ocaml_lflags_internal), "<flag> Add to ocamlc link flags";
    "-lflags", String (add_to ocaml_lflags_internal), "<flag,...> (idem)";
    "-cflag", String (add_to' ocaml_cflags_internal), "<flag> Add to ocamlc compile flags";
@@ -172,6 +181,7 @@ let spec =
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
    "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
+   "-use-ocamlfind", Set use_ocamlfind, " Use ocamlfind to call ocaml compilers";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
@@ -197,6 +207,8 @@ let spec =
 
 let targets = ref []
 let ocaml_libs = ref []
+let ocaml_mods = ref []
+let ocaml_pkgs = ref []
 let ocaml_lflags = ref []
 let ocaml_cflags = ref []
 let ocaml_ppflags = ref []
@@ -229,9 +241,22 @@ let init () =
       Log.init log
   in
 
+  if !use_ocamlfind then begin
+    (* TODO: warning message when using an option such as -ocamlc *)
+    (* Note that plugins can still modify these variables After_options.
+       This design decision can easily be changed. *)
+    ocamlc := ocamlfind & A"ocamlc";
+    ocamlopt := ocamlfind & A"ocamlopt";
+    ocamldep := ocamlfind & A"ocamldep";
+    ocamldoc := ocamlfind & A"ocamldoc";
+    ocamlmktop := ocamlfind & A"ocamlmktop";
+  end;
+
   let reorder x y = x := !x @ (List.concat (List.rev !y)) in
   reorder targets targets_internal;
   reorder ocaml_libs ocaml_libs_internal;
+  reorder ocaml_mods ocaml_mods_internal;
+  reorder ocaml_pkgs ocaml_pkgs_internal;
   reorder ocaml_cflags ocaml_cflags_internal;
   reorder ocaml_lflags ocaml_lflags_internal;
   reorder ocaml_ppflags ocaml_ppflags_internal;

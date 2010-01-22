@@ -380,9 +380,12 @@ module type OPTIONS = sig
   val use_menhir : bool ref
   val show_documentation : bool ref
   val recursive : bool ref
+  val use_ocamlfind : bool ref
 
   val targets : string list ref
   val ocaml_libs : string list ref
+  val ocaml_mods : string list ref
+  val ocaml_pkgs : string list ref
   val ocaml_cflags : string list ref
   val ocaml_lflags : string list ref
   val ocaml_ppflags : string list ref
@@ -433,6 +436,69 @@ module type ARCH = sig
     (Format.formatter -> 'a -> unit) -> Format.formatter -> (string, 'a) Hashtbl.t -> unit
 end
 
+module type FINDLIB = sig
+  (** Findlib / Ocamlfind tools. *)
+
+  type command_spec
+
+  type error =
+    | Cannot_run_ocamlfind
+    | Dependency_not_found of string * string (* package, dependency *)
+    | Package_not_found of string
+    | Cannot_parse_query of string * string (* package, explaination *)
+
+  exception Findlib_error of error
+
+  val string_of_error: error -> string
+    (** Return a string message describing an error. *)
+
+  val report_error: error -> 'a
+    (** Report an error on the standard error and exit with code 2. *)
+
+  type package = {
+    name: string;
+    description: string;
+    version: string;
+    archives_byte: string;
+      (** Archive names, with the .cma extension, but without the directory. *)
+    archives_native: string;
+      (** Archive names, with the .cmxa extension, but without the directory. *)
+    link_options: string;
+    location: string;
+    dependencies: package list;
+      (** Transitive closure, as returned by [ocamlfind query -r]. *)
+  }
+    (** Package information. *)
+
+  val query: string -> package
+    (** Query information about a package, given its name. May raise
+[Not_found]. *)
+
+  val list: unit -> string list
+    (** Return the names of all known packages. *)
+
+  val topological_closure: package list -> package list
+    (** Computes the transitive closure of a list of
+packages and sort them in topological order.
+Given any list of package [l], [topological_closure l] returns a list of
+packages including [l] and their dependencies, in an order where any element
+may only depend on the previous ones. *)
+
+  val compile_flags_byte: package list -> command_spec
+    (** Return the flags to add when compiling in byte mode (include
+directories). *)
+
+  val compile_flags_native: package list -> command_spec
+    (** Same as [link_flags_byte] but for native mode. *)
+
+  val link_flags_byte: package list -> command_spec
+    (** Return the flags to add when linking in byte mode. It includes:
+include directories, libraries and special link options. *)
+
+  val link_flags_native: package list -> command_spec
+    (** Same as [link_flags_byte] but for native mode. *)
+end
+
 (** This module contains the functions and values that can be used by plugins. *)
 module type PLUGIN = sig
   module Pathname  : PATHNAME
@@ -444,6 +510,7 @@ module type PLUGIN = sig
   module StringSet : Set.S with type elt = String.t
   module Options   : OPTIONS with type command_spec = Command.spec
   module Arch      : ARCH
+  module Findlib   : FINDLIB with type command_spec = Command.spec
   include MISC
 
   (** See [COMMAND] for the description of these types. *)

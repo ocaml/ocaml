@@ -88,6 +88,11 @@ let proceed () =
   || Sys.file_exists (* authorized since we're not in build *) "myocamlbuild.ml"
   then Configuration.tag_any ["traverse"];
 
+  (* options related to findlib *)
+  List.iter
+    (fun pkg -> Configuration.tag_any [Param_tags.make "package" pkg])
+    !Options.ocaml_pkgs;
+
   let newpwd = Sys.getcwd () in
   Sys.chdir Pathname.pwd;
   let entry_include_dirs = ref [] in

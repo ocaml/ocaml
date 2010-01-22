@@ -357,6 +357,49 @@ flag ["ocaml"; "native"; "link"] begin
   S (List.map (fun x -> A (x^".cmxa")) !Options.ocaml_libs)
 end;;
 
+flag ["ocaml"; "byte"; "link"] begin
+  S (List.map (fun x -> A (x^".cmo")) !Options.ocaml_mods)
+end;;
+
+flag ["ocaml"; "native"; "link"] begin
+  S (List.map (fun x -> A (x^".cmx")) !Options.ocaml_mods)
+end;;
+
+(* findlib *)
+let () =
+  if !Options.use_ocamlfind then begin
+    (* Ocamlfind will link the archives for us. *)
+    flag ["ocaml"; "link"] & A"-linkpkg";
+
+    let all_tags = [
+      ["ocaml"; "byte"; "compile"];
+      ["ocaml"; "native"; "compile"];
+      ["ocaml"; "byte"; "link"];
+      ["ocaml"; "native"; "link"];
+      ["ocaml"; "ocamldep"];
+      ["ocaml"; "doc"];
+      ["ocaml"; "mktop"];
+      ["ocaml"; "infer_interface"];
+    ] in
+
+    (* tags package(X), predicate(X) and syntax(X) *)
+    List.iter begin fun tags ->
+      pflag tags "package" (fun pkg -> S [A "-package"; A pkg]);
+      pflag tags "predicate" (fun pkg -> S [A "-predicate"; A pkg]);
+      pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
+    end all_tags
+  end else begin
+    try
+      (* Note: if there is no -pkg option, ocamlfind won't be called *)
+      let pkgs = List.map Findlib.query !Options.ocaml_pkgs in
+      flag ["ocaml"; "byte"; "compile"] (Findlib.compile_flags_byte pkgs);
+      flag ["ocaml"; "native"; "compile"] (Findlib.compile_flags_native pkgs);
+      flag ["ocaml"; "byte"; "link"] (Findlib.link_flags_byte pkgs);
+      flag ["ocaml"; "native"; "link"] (Findlib.link_flags_native pkgs)
+    with Findlib.Findlib_error e ->
+      Findlib.report_error e
+  end
+
 (* parameterized tags *)
 let () =
   pflag ["ocaml"; "native"; "compile"] "for-pack"
@@ -428,12 +471,15 @@ flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "link"; "library"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
+
+(* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
-flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);;
-flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);;
-flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"]);;
-flag ["ocaml"; "link"; "thread"; "native"; "toplevel"] (S[A "threads.cmxa"; A "-thread"]);;
-flag ["ocaml"; "link"; "thread"; "byte"; "toplevel"] (S[A "threads.cma"; A "-thread"]);;
+if not !Options.use_ocamlfind then begin
+  flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);
+  flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);
+  flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"])
+end;;
+
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
 flag ["ocaml"; "compile"; "nolabels"] (A"-nolabels");;
 
