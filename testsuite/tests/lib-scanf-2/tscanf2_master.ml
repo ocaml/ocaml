@@ -30,8 +30,11 @@ let interact i =
 ;;
 
 begin
+(*
   Random.self_init ();
   let n = max (Random.int 8) 1 in
+*)
+  let n = 8 in
   let rec loop i =
     if i > 0 then (interact i; loop (i - 1)) in
   loop n
@@ -42,7 +45,7 @@ begin
   send_string_stop ob;
   let ack = receive_string ib in
   if ack = "OK, bye!"
-  then (prerr_endline "Test OK."; exit 0)
-  else (prerr_endline "Test Failed!"; exit 2)
+  then (print_endline "Test OK."; exit 0)
+  else (print_endline "Test Failed!"; exit 2)
 end
 ;;
