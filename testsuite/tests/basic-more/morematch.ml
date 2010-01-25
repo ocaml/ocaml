@@ -43,6 +43,7 @@ let g x = match x with
 | 6 -> 5
 | 7 | 8 -> 6
 | 9 -> 7
+| _ -> assert false
 ;;
 
 test "deux" g 5 4 ;

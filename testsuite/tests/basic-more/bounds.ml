@@ -7,7 +7,7 @@ let trail = ref []
 let test n =
   let result =
     try
-      trail := n :: !trail; a.(n); "doesn't fail"
+      trail := n :: !trail; ignore a.(n); "doesn't fail"
     with Invalid_argument s ->
            (* Check well-formedness of s *)
            if String.length s = 19
