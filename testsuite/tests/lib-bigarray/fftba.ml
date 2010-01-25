@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: fftba.ml 2938 2000-03-10 14:54:41Z xleroy $ *)
 
 open Bigarray
 
@@ -182,8 +182,14 @@ let test np =
          ki := i
       end
   done;
+(*
   let zm = if abs_float !zr < abs_float !zi then !zi else !zr in
   print_float zm; print_newline()
+*)
+  if abs_float !zr <= 1e-9 && abs_float !zi <= 1e-9
+  then print_string "ok"
+  else print_string "ERROR";
+  print_newline()
 
 
 let _ =
