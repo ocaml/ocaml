@@ -1,0 +1,33 @@
+#
+# module T01:
+# Odoc_info.string_of_module_type:
+<[sig  end]>
+# Odoc_info.string_of_module_type ~complete: true :
+<[sig  end]>
+#
+# module T01.M:
+# Odoc_info.string_of_module_type:
+<[sig  end]>
+# Odoc_info.string_of_module_type ~complete: true :
+<[sig val y : int end]>
+#
+# module type T01.MT:
+# Odoc_info.string_of_module_type:
+<[sig  end]>
+# Odoc_info.string_of_module_type ~complete: true :
+<[sig
+  type t =
+      string ->
+      int ->
+      string ->
+      string * string * string ->
+      string * string * string -> string * string * string -> unit
+  val y : int
+end]>
+# type T01.MT.t:
+# manifest (Odoc_info.string_of_type_expr):
+<[string ->
+  int ->
+  string ->
+  string * string * string ->
+  string * string * string -> string * string * string -> unit]>
