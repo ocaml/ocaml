@@ -67,8 +67,8 @@ let test_out filename =
 
 
 let test n b =
-  prerr_string "Test "; prerr_int n;
-  if b then prerr_string " passed.\n" else prerr_string " FAILED.\n";
+  print_string "Test "; print_int n;
+  if b then print_string " passed.\n" else print_string " FAILED.\n";
   flush stderr
 
 let test_in filename =
