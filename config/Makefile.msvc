@@ -80,7 +80,7 @@ BYTECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
 BYTECCCOMPOPTS=/Ox /MD
 
 ### Additional link-time options for $(BYTECC).  (For static linking.)
-BYTECCLINKOPTS=/MD /F16777216
+BYTECCLINKOPTS=
 
 ### Additional compile-time options for $(BYTECC).  (For building a DLL.)
 DLLCCCOMPOPTS=/Ox /MD
@@ -131,7 +131,7 @@ NATIVECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
 NATIVECCCOMPOPTS=/Ox /MD
 
 ### Additional link-time options for $(NATIVECC)
-NATIVECCLINKOPTS=/MD /F16777216
+NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
 PACKLD=link /lib /nologo /out:# there must be no space after this '/out:'
@@ -145,17 +145,17 @@ BNG_ARCH=generic
 BNG_ASM_LEVEL=0
 
 ### Configuration for LablTk
-# Set TK_ROOT to the directory where you installed TCL/TK 8.3
+# Set TK_ROOT to the directory where you installed TCL/TK 8.5
 TK_ROOT=c:/tcl
 TK_DEFS=-I$(TK_ROOT)/include
 # The following definition avoids hard-wiring $(TK_ROOT) in the libraries
 # produced by OCaml, and is therefore required for binary distribution
 # of these libraries.  However, $(TK_ROOT)/lib must be added to the LIB
 # environment variable, as described in README.win32.
-TK_LINK=tk84.lib tcl84.lib ws2_32.lib
+TK_LINK=tk85.lib tcl85.lib ws2_32.lib
 # An alternative definition that avoids mucking with the LIB variable,
 # but hard-wires the Tcl/Tk location in the binaries
-# TK_LINK=$(TK_ROOT)/tk84.lib $(TK_ROOT)/tcl84.lib ws2_32.lib
+# TK_LINK=$(TK_ROOT)/tk85.lib $(TK_ROOT)/tcl85.lib ws2_32.lib
 
 ############# Aliases for common commands
 

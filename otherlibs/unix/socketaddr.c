@@ -80,6 +80,9 @@ void get_sockaddr(value mladr,
       adr->s_inet6.sin6_family = AF_INET6;
       adr->s_inet6.sin6_addr = GET_INET6_ADDR(Field(mladr, 0));
       adr->s_inet6.sin6_port = htons(Int_val(Field(mladr, 1)));
+#ifdef SIN6_LEN
+      adr->s_inet6.sin6_len = sizeof(struct sockaddr_in6);
+#endif
       *adr_len = sizeof(struct sockaddr_in6);
       break;
     }
@@ -88,6 +91,9 @@ void get_sockaddr(value mladr,
     adr->s_inet.sin_family = AF_INET;
     adr->s_inet.sin_addr = GET_INET_ADDR(Field(mladr, 0));
     adr->s_inet.sin_port = htons(Int_val(Field(mladr, 1)));
+#ifdef SIN6_LEN
+    adr->s_inet.sin_len = sizeof(struct sockaddr_in);
+#endif
     *adr_len = sizeof(struct sockaddr_in);
     break;
   }

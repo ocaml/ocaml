@@ -165,6 +165,10 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
   return Val_unit;
 }
 
+CAMLprim value caml_obj_add_offset (value v, value offset)
+{
+  return v + Int32_val (offset);
+}
 
 /* The following functions are used in stdlib/lazy.ml.
    They are not written in O'Caml because they must be atomic with respect

@@ -27,9 +27,12 @@ external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
+let double_field x i = Array.get (obj x : float array) i
+let set_double_field x i v = Array.set (obj x : float array) i v
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
+external add_offset : t -> int -> t = "caml_obj_add_offset"
 
 let marshal (obj : t) =
   Marshal.to_string obj []

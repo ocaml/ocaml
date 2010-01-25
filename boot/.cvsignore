@@ -4,3 +4,4 @@ ocamlyacc
 camlheader
 myocamlbuild
 myocamlbuild.native
+libcamlrun.a

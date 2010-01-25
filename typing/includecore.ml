@@ -40,7 +40,8 @@ let value_descriptions env vd1 vd2 =
 let private_flags decl1 decl2 =
   match decl1.type_private, decl2.type_private with
   | Private, Public ->
-      decl2.type_kind = Type_abstract && decl2.type_manifest = None
+      decl2.type_kind = Type_abstract &&
+      (decl2.type_manifest = None || decl1.type_kind <> Type_abstract)
   | _, _ -> true
 
 (* Inclusion between manifest types (particularly for private row types) *)

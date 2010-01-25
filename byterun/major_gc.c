@@ -30,7 +30,7 @@
 #include "weak.h"
 
 uintnat caml_percent_free;
-intnat caml_major_heap_increment;
+uintnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start;
 char *caml_gc_sweep_hp;
 int caml_gc_phase;        /* always Phase_mark, Phase_sweep, or Phase_idle */

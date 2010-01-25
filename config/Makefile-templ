@@ -78,10 +78,14 @@ SHARPBANGSCRIPTS=true
 # Under FreeBSD:
 #CPP=cpp -P
 
+### Magic declarations for ocamlbuild -- leave unchanged
+#ml let syslib x = "-l"^x;;
+#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
+
 ### How to invoke ranlib
-# BSD-style:
-#RANLIB=ranlib
-#RANLIBCMD=ranlib
+RANLIB=ranlib
+RANLIBCMD=ranlib
+
 # If ranlib is not needed:
 #RANLIB=ar rs
 #RANLIBCMD=

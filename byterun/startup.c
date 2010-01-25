@@ -439,12 +439,18 @@ CAMLexport void caml_startup_code(
            char **argv)
 {
   value res;
+  char* cds_file;
 
   caml_init_ieee_floats();
   caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
 #endif
+  cds_file = getenv("CAML_DEBUG_FILE");
+  if (cds_file != NULL) {
+    caml_cds_file = caml_stat_alloc(strlen(cds_file) + 1);
+    strcpy(caml_cds_file, cds_file);
+  }
   parse_camlrunparam();
   caml_external_raise = NULL;
   /* Initialize the abstract machine */
@@ -454,8 +460,17 @@ CAMLexport void caml_startup_code(
   init_atoms();
   /* Initialize the interpreter */
   caml_interprete(NULL, 0);
+  /* Initialize the debugger, if needed */
+  caml_debugger_init();
   /* Load the code */
   caml_start_code = code;
+  caml_code_size = code_size;
+  if (caml_debugger_in_use) {
+    int len, i;
+    len = code_size / sizeof(opcode_t);
+    caml_saved_code = (unsigned char *) caml_stat_alloc(len);
+    for (i = 0; i < len; i++) caml_saved_code[i] = caml_start_code[i];
+  }
 #ifdef THREADED_CODE
   caml_thread_code(caml_start_code, code_size);
 #endif
@@ -469,10 +484,19 @@ CAMLexport void caml_startup_code(
   /* Record the sections (for caml_get_section_table in meta.c) */
   caml_section_table = section_table;
   caml_section_table_size = section_table_size;
-  /* Run the code */
+  /* Initialize system libraries */
   caml_init_exceptions();
   caml_sys_init("", argv);
-  res = caml_interprete(caml_start_code, code_size);
-  if (Is_exception_result(res))
-    caml_fatal_uncaught_exception(Extract_exception(res));
+  /* Execute the program */
+  caml_debugger(PROGRAM_START);
+  res = caml_interprete(caml_start_code, caml_code_size);
+  if (Is_exception_result(res)) {
+    caml_exn_bucket = Extract_exception(res);
+    if (caml_debugger_in_use) {
+      caml_extern_sp = &caml_exn_bucket; /* The debugger needs the
+                                            exception value.*/
+      caml_debugger(UNCAUGHT_EXC);
+    }
+    caml_fatal_uncaught_exception(caml_exn_bucket);
+  }
 }
