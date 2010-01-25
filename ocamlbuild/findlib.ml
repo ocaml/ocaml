@@ -10,7 +10,7 @@
 (***********************************************************************)
 
 
-(* Original author: Nicolas Pouillard *)
+(* Original author: Romain Bardou *)
 
 open My_std
 open Lexers

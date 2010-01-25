@@ -10,6 +10,6 @@
 (***********************************************************************)
 
 
-(* Original author: Nicolas Pouillard *)
+(* Original author: Romain Bardou *)
 
 include Signatures.FINDLIB with type command_spec = Command.spec
