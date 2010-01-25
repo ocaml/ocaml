@@ -4373,11 +4373,13 @@ let main () =
 
   ignore (String.create (1048576 * !mem));
   Gc.full_major ();
+(*
   let a2l = Array.to_list in
   let l2ak x y = Array.of_list x in
   let id = fun x -> x in
   let fst x y = x in
   let snd x y = y in
+*)
   let benchonly f x y z t =
     match !only with
     | [] -> f x y z t
@@ -4474,4 +4476,4 @@ let main () =
 
 if not !Sys.interactive then Printexc.catch main ();;
 
-(* $Id$ *)
+(* $Id: sorts.ml 4955 2002-06-26 14:55:37Z doligez $ *)

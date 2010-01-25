@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: boyer.ml 7017 2005-08-12 09:22:04Z xleroy $ *)
 
 (* Manipulations over terms *)
 
@@ -808,7 +808,7 @@ let rec tautologyp x true_lst false_lst =
 *)
  match x with
      Var _ -> false
-   | Prop (head,[test; yes; no]) as p ->
+   | Prop (head,[test; yes; no]) ->
         if head.name = "if" then
           if truep test true_lst then
             tautologyp yes true_lst false_lst
