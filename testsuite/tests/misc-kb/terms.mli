@@ -10,20 +10,22 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: terms.mli 2553 1999-11-17 18:59:06Z xleroy $ *)
 
-open Terms
-open Equations
+type term = 
+    Var of int
+  | Term of string * term list
 
-val super: term -> term -> (int list * (int * term) list) list
-val super_strict: term -> term -> (int list * (int * term) list) list
-val critical_pairs: term * term -> term * term -> (term * term) list
-val strict_critical_pairs: term * term -> term * term -> (term * term) list
-val mutual_critical_pairs: term * term -> term * term -> (term * term) list
-val rename: int -> term * term -> term * term
-val deletion_message: rule -> unit
-val non_orientable: term * term -> unit
-val partition: ('a -> bool) -> 'a list -> 'a list * 'a list
-val get_rule: int -> rule list -> rule
-val kb_completion: (term * term -> bool) -> int -> rule list -> (term * term) list -> int * int -> (term * term) list -> rule list
-val kb_complete: (term * term -> bool) -> rule list -> rule list -> unit
+val union: 'a list -> 'a list -> 'a list
+val vars: term -> int list
+val vars_of_list: term list -> int list
+val substitute: (int * term) list -> term -> term
+val replace: term -> int list -> term -> term
+val replace_nth: int -> term list -> int list -> term -> term list
+val matching: term -> term -> (int * term) list
+val compsubst: (int * term) list -> (int * term) list -> (int * term) list
+val occurs: int -> term -> bool
+val unify: term -> term -> (int * term) list
+val infixes: string list
+val pretty_term: term -> unit
+val pretty_close: term -> unit
