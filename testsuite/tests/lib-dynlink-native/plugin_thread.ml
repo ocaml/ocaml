@@ -4,13 +4,13 @@ let () =
     Thread.create 
       (fun () ->
 	 for i = 1 to 5 do
-	   print_endline "Thread 1"; flush stdout;
+	   print_endline "Thread"; flush stdout;
 	   Thread.delay 1.;
 	 done
       ) ()
   in
   for i = 1 to 10 do
-    print_endline "Thread 2"; flush stdout;
+    print_endline "Thread"; flush stdout;
     Thread.delay 0.50;
   done
 
