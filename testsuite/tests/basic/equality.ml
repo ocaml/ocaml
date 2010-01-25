@@ -1,6 +1,6 @@
 let test n check res =
-  prerr_string "Test "; prerr_int n;
-  if check res then prerr_string " passed.\n" else prerr_string " FAILED.\n";
+  print_string "Test "; print_int n;
+  if check res then print_string " passed.\n" else print_string " FAILED.\n";
   flush stderr
 
 let eq0 = function 0 -> true | _ -> false

@@ -45,6 +45,7 @@ let l = function
   | [|x|] -> x + 1
   | [|x;y|] -> x + y
   | [|x;y;z|] -> x + y + z
+  | _ -> assert false
 
 (* The test *)
 
