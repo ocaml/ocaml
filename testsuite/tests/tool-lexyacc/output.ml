@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: output.ml,v 1.5 2000/12/28 13:06:41 weis Exp $ *)
 
 (* Generating a DFA as a set of mutually recursive functions *)
 
@@ -153,9 +153,9 @@ let rec output_entries = function
 (* All together *)
 
 let output_lexdef header (initial_st, st, actions) =
-  prerr_int (Array.length st); prerr_string " states, ";
-  prerr_int (List.length actions); prerr_string " actions.";
-  prerr_newline();
+  print_int (Array.length st); print_string " states, ";
+  print_int (List.length actions); print_string " actions.";
+  print_newline();
   copy_chunk header;
   output_string !oc "\nlet rec ";
   states := st;

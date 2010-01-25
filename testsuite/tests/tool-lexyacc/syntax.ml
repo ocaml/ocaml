@@ -10,38 +10,31 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: syntax.ml,v 1.4 1999/11/17 18:58:39 xleroy Exp $ *)
 
-(* Auxiliaries for the parser. *)
+(* The shallow abstract syntax *)
 
-open Syntax
+type location =
+    Location of int * int
 
-let regexp_for_string s =
-  let l = String.length s in
-  if l = 0 then
+type regular_expression =
     Epsilon
-  else begin
-    let re = ref(Characters [String.get s (l - 1)]) in
-    for i = l - 2 downto 0 do
-      re := Sequence(Characters [String.get s i], !re)
-    done;
-    !re
-  end
+  | Characters of char list
+  | Sequence of regular_expression * regular_expression
+  | Alternative of regular_expression * regular_expression
+  | Repetition of regular_expression
 
+type lexer_definition =
+    Lexdef of location * (string * (regular_expression * location) list) list
 
-let char_class c1 c2 =
-  let cl = ref [] in
-  for i = Char.code c2 downto Char.code c1 do
-    cl := Char.chr i :: !cl
-  done;
-  !cl
+(* Representation of automata *)
 
-
-let all_chars = char_class '\001' '\255'
-
-
-let rec subtract l1 l2 =
-  match l1 with
-    [] -> []
-  | a::l -> if List.mem a l2 then subtract l l2 else a :: subtract l l2
-
+type automata =
+    Perform of int
+  | Shift of automata_trans * automata_move array
+and automata_trans =
+    No_remember
+  | Remember of int
+and automata_move =
+    Backtrack
+  | Goto of int

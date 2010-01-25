@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: main.ml,v 1.4 1999/11/17 18:58:39 xleroy Exp $ *)
 
 (* The lexer generator. Command-line parsing. *)
 
@@ -32,7 +32,8 @@ let main () =
     else
       source_name ^ ".ml" in
   ic := open_in source_name;
-  oc := open_out dest_name;
+(*  oc := open_out dest_name; *) ignore dest_name;
+  oc := stdout;
   let lexbuf = Lexing.from_channel !ic in
   let (Lexdef(header,_) as def) =
     try

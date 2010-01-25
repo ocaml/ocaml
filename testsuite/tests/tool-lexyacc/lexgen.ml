@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: lexgen.ml,v 1.5 2000/12/28 13:06:39 weis Exp $ *)
 
 (* Compiling a lexer definition *)
 
@@ -128,9 +128,9 @@ let rec merge_trans l1 l2 =
       if n1 = n2 then t1 :: merge_trans r1 r2 else
       if n1 < n2 then t1 :: merge_trans r1 s2 else
                       t2 :: merge_trans s1 r2
-  | ((OnChars n1 as t1) :: r1 as s1), ((ToAction n2 as t2) :: r2 as s2) ->
+  | ((OnChars n1 as t1) :: r1), ((ToAction n2) :: r2 as s2) ->
       t1 :: merge_trans r1 s2
-  | ((ToAction n1 as t1) :: r1 as s1), ((OnChars n2 as t2) :: r2 as s2) ->
+  | ((ToAction n1) :: r1 as s1), ((OnChars n2 as t2) :: r2) ->
       t2 :: merge_trans s1 r2
 
 
