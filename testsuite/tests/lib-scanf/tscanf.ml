@@ -10,7 +10,7 @@
 (*                                                                       *)
 (*************************************************************************)
 
-(* $Id$
+(* $Id: tscanf.ml 9306 2009-07-03 08:36:54Z weis $
 
 A testbed file for the module Scanf.
 
@@ -208,11 +208,11 @@ let test9 () =
   Scanf.sscanf "\"\\xef\"" "%S" (fun s -> s) =
                   "\xef" &&
   Scanf.sscanf "\"\\xef\\xbb\\xbf\"" "%S" (fun s -> s) =
-                  "﻿" &&
+                  "Ԫ�" &&
   Scanf.sscanf "\"\\xef\\xbb\\xbf\"" "%S" (fun s -> s) =
                   "\239\187\191" &&
   Scanf.sscanf "\"\xef\xbb\xbf\"" "%S" (fun s -> s) =
-                  "﻿" &&
+                  "Ԫ�" &&
   Scanf.sscanf "\"\\\\xef\\\\xbb\\\\xbf\"" "%S" (fun s -> s) =
                   "\\xef\\xbb\\xbf" &&
   Scanf.sscanf "\"\ \"" "%S" (fun s -> s) =
@@ -357,7 +357,7 @@ let rec scan_elems ib accu =
      | ';' -> scan_elems ib (i :: accu)
      | ']' -> List.rev (i :: accu)
      | '[' when accu = [] -> scan_elems ib (i :: accu)
-     | c -> prerr_endline (String.make 1 c); failwith "scan_elems")
+     | c -> print_endline (String.make 1 c); failwith "scan_elems")
   with
   | Scan_failure _ -> bscanf ib "]" (); accu
   | End_of_file -> accu
@@ -899,7 +899,7 @@ let scan_float_list_list =
 ;;
 
 (* The killer way to define [scan_float_list_list]. *)
-let scan_float_list_list = scan_list scan_float_list;;
+(* let scan_float_list_list = scan_list scan_float_list;; *)
 
 test (
   scan_float_list_list
@@ -953,6 +953,7 @@ let make_read_elem fmt f ib = Scanf.bscanf ib fmt f;;
 let scan_List fmt = read_list (make_read_elem fmt);;
 
 (* Example for list of floatting point numbers. *)
+(*
 scan_List "%f";;
 - : Scanf.Scanning.scanbuf -> float list = <fun>
 
