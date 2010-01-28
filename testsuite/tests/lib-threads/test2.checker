@@ -1,0 +1,1 @@
+head -1 test2.result | grep -q '^[ab]*'

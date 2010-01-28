@@ -1,0 +1,1 @@
+head -1 testsignal.result | grep -q '^[ab]*Got ctrl-C, exiting...$' 

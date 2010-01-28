@@ -1,0 +1,1 @@
+head -1 testsignal2.result | grep -q '^[ab]*'
