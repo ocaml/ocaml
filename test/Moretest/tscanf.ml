@@ -181,7 +181,7 @@ test (test8 ())
 
 (* %S and %s styles. *)
 let unit fmt s =
-  let ib = Scanning.from_string (Printf.sprintf "\"%S\"" s) in
+  let ib = Scanning.from_string (Printf.sprintf "%S" s) in
   Scanf.bscanf ib fmt id
 ;;
 
