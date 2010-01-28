@@ -181,11 +181,28 @@ test (test8 ())
 
 (* %S and %s styles. *)
 let unit fmt s =
-  let ib = Scanning.from_string (Printf.sprintf "\"%S\"" s) in
+  let ib = Scanning.from_string (Printf.sprintf "%S" s) in
   Scanf.bscanf ib fmt id
 ;;
 
 let test_fmt fmt s = unit fmt s = s;;
+
+(* The following test9_string is a result for test9 scanning.
+   Test9_string is the string "ï»¿",
+   that is character i tréma, followed by french right guillemet,
+   followed by inverted question mark.
+   It is NOT the string "Ôªø",
+   that is uppercase o with circonflex accent, followed by commercial a,
+   followed by empty set.
+
+   In other words, the string "ï»¿" has the following 3 characters
+   "\239\187\191".
+   It has NOT the characters "\212\170\248"!
+
+   Beware with automatic translation by your own local settings
+   (being your locale or your OS!)
+*)
+let test9_string = "ï»¿";;
 
 let test_S = test_fmt "%S";;
 let test9 () =
@@ -208,11 +225,11 @@ let test9 () =
   Scanf.sscanf "\"\\xef\"" "%S" (fun s -> s) =
                   "\xef" &&
   Scanf.sscanf "\"\\xef\\xbb\\xbf\"" "%S" (fun s -> s) =
-                  "Ôªø" &&
+                  test9_string &&
   Scanf.sscanf "\"\\xef\\xbb\\xbf\"" "%S" (fun s -> s) =
                   "\239\187\191" &&
   Scanf.sscanf "\"\xef\xbb\xbf\"" "%S" (fun s -> s) =
-                  "Ôªø" &&
+                  test9_string &&
   Scanf.sscanf "\"\\\\xef\\\\xbb\\\\xbf\"" "%S" (fun s -> s) =
                   "\\xef\\xbb\\xbf" &&
   Scanf.sscanf "\"\ \"" "%S" (fun s -> s) =
