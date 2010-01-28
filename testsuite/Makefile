@@ -29,16 +29,16 @@ one: lib
 	@if [ -z $(DIR) ]; then echo "No value set for variable 'DIR'."; exit 1; fi
 	@if [ ! -d $(DIR) ]; then echo "Directory '$(DIR)' does not exist."; exit 1; fi
 	@echo "Running tests from '$$DIR' ..."
-	@$(MAKE) -C $(DIR) BASEDIR=$(BASEDIR)
+	@(cd $(DIR) && $(MAKE) BASEDIR=$(BASEDIR) && cd ../..)
 
 lib: FORCE
-	@$(MAKE) -s -C lib BASEDIR=$(BASEDIR)
+	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR) && cd ..)
 
 clean: FORCE
-	@$(MAKE) -C lib BASEDIR=$(BASEDIR) clean
+	@(cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ..)
 	@for file in tests/*; do \
 	  if [ -d $$file ]; then \
-	    $(MAKE) -C $$file BASEDIR=$(BASEDIR) clean; \
+	    (cd $$file && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ../..); \
 	  fi \
 	done
 
