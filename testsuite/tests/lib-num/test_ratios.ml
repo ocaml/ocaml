@@ -2,7 +2,6 @@ open Test;;
 open Nat;;
 open Big_int;;
 open Ratio;;
-open Int_misc;;
 open Arith_status;;
 
 set_error_when_null_denominator false

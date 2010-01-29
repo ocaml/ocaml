@@ -11,7 +11,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id$ */
+/* $Id: test_bng.c 5900 2003-11-07 07:59:10Z xleroy $ */
 
 /* Test harness for the BNG primitives.  Use BigNum as a reference. */
 

@@ -1,7 +1,6 @@
 open Test;;
 open Nat;;
 open Big_int;;
-open Int_misc;;
 open List;;
 
 testing_function "compare_big_int";;

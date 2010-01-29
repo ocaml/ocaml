@@ -126,7 +126,7 @@ for i = 1 to 20 do
   let nat1 = nat_of_int n1
   and nat2 = nat_of_int n2 in
   ignore (gcd_nat nat1 0 1 nat2 0 1);
-  ignore (test i eq (int_of_nat nat1, Int_misc.gcd_int n1 n2))
+  ignore (test i eq (int_of_nat nat1, gcd_int n1 n2))
 done
 ;;
 

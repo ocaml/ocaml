@@ -66,9 +66,9 @@ let end_tests () =
  flush_all ();
  print_newline ();
  if !error_occurred then begin
-   prerr_endline "************* TESTS FAILED ****************"; exit 2
+   print_endline "************* TESTS FAILED ****************"; exit 2
  end else begin
-   prerr_endline "************* TESTS COMPLETED SUCCESSFULLY ****************";
+   print_endline "************* TESTS COMPLETED SUCCESSFULLY ****************";
    exit 0
  end;;
 
@@ -80,3 +80,22 @@ let eq_int32 (i: int32) (j: int32) = (i = j);;
 let eq_int64 (i: int64) (j: int64) = (i = j);;
 
 let sixtyfour = (1 lsl 31) <> 0;;
+
+let rec gcd_int i1 i2 =
+  if i2 = 0 then abs i1 else gcd_int i2 (i1 mod i2);;
+
+let rec num_bits_int_aux n =
+  if n = 0 then 0 else succ(num_bits_int_aux (n lsr 1));;
+
+let num_bits_int n = num_bits_int_aux (abs n);;
+
+let sign_int i = if i = 0 then 0 else if i > 0 then 1 else -1;;
+
+let length_of_int = Sys.word_size - 2;;
+
+let monster_int = 1 lsl length_of_int;;
+let biggest_int = monster_int - 1;;
+let least_int = - biggest_int;;
+
+let compare_int n1 n2 =
+  if n1 == n2 then 0 else if n1 > n2 then 1 else -1;;
