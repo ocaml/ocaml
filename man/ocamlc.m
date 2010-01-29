@@ -499,7 +499,7 @@ If a warning is disabled, it isn't displayed and doesn't affect
 compilation in any way (even if it is marked).  If a warning is enabled,
 it is displayed normally by the compiler whenever the source code
 triggers it.  If it is enabled and marked, the compiler will stop with
-an error after displaying that warning if the source code triggers it.
+an error after displaying the warnings if the source code triggers it.
 
 The
 .I warning\-list
@@ -636,6 +636,15 @@ and doesn't start with an underscore (_) character.
 .BR let \ nor \ as ,
 and doesn't start with an underscore (_) character.
 
+28
+\ \ A pattern contains a constant constructor applied to the underscore (_)
+pattern.
+
+29
+\ \ A non-escaped end-of-line was found in a string constant.  This may
+
+cause portability problems between Unix and Windows.
+
 The letters stand for the following sets of warnings.  Any letter not
 mentioned here corresponds to the empty set.
 
@@ -686,9 +695,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27 ,
-enabling all warnings except fragile pattern matchings, omitted labels,
-missing fields in record patterns, and innocuous unused variables.
+.BR \-w\ +a\-4\-6\-9\-27\-28\-29 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.
