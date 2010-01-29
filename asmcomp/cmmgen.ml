@@ -52,7 +52,7 @@ let floatarray_header len =
       block_header Obj.double_array_tag (len * size_float / size_addr)
 let string_header len =
       block_header Obj.string_tag ((len + size_addr) / size_addr)
-let boxedint_header = block_header Obj.custom_tag 2
+let boxedint_header = block_header Obj.custom_tag (1 + 8 / size_addr)
 
 let alloc_block_header tag sz = Cconst_natint(block_header tag sz)
 let alloc_float_header = Cconst_natint(float_header)
