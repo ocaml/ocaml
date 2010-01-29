@@ -42,9 +42,9 @@ type t =
   | Unused_argument                         (* 20 *)
   | Nonreturning_statement                  (* 21 *)
   | Camlp4 of string                        (* 22 *)
-  | All_clauses_guarded                     (* 23 *)
-  | Useless_record_with                     (* 24 *)
-  | Bad_module_name of string               (* 25 *)
+  | Useless_record_with                     (* 23 *)
+  | Bad_module_name of string               (* 24 *)
+  | All_clauses_guarded                     (* 25 *)
   | Unused_var of string                    (* 26 *)
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
@@ -185,20 +185,17 @@ let () = parse_options false defaults_w;;
 let () = parse_options true defaults_warn_error;;
 
 let message = function
-  | Partial_match "" -> "this pattern-matching is not exhaustive."
-  | Partial_match s ->
-      "this pattern-matching is not exhaustive.\n\
-       Here is an example of a value that is not matched:\n" ^ s
-  | Unused_match -> "this match case is unused."
-  | Unused_pat   -> "this sub-pattern is unused."
+  | Comment_start -> "this is the start of a comment."
+  | Comment_not_end -> "this is not the end of a comment."
+  | Deprecated -> "this syntax is deprecated."
   | Fragile_match "" ->
       "this pattern-matching is fragile."
   | Fragile_match s ->
       "this pattern-matching is fragile.\n\
        It will remain exhaustive when constructors are added to type " ^ s ^ "."
-  | Non_closed_record_pattern s ->
-      "the following labels are not bound in this record pattern:\n" ^ s ^
-      "\nEither bind these labels explicitly or add `; _' to the pattern."
+  | Partial_application ->
+      "this function application is partial,\n\
+       maybe some arguments are missing."
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override [lab] ->
@@ -208,18 +205,20 @@ let message = function
         ("the following methods are overriden by the class"
          :: cname  :: ":\n " :: slist)
   | Method_override [] -> assert false
+  | Partial_match "" -> "this pattern-matching is not exhaustive."
+  | Partial_match s ->
+      "this pattern-matching is not exhaustive.\n\
+       Here is an example of a value that is not matched:\n" ^ s
+  | Non_closed_record_pattern s ->
+      "the following labels are not bound in this record pattern:\n" ^ s ^
+      "\nEither bind these labels explicitly or add `; _' to the pattern."
+  | Statement_type ->
+      "this expression should have type unit."
+  | Unused_match -> "this match case is unused."
+  | Unused_pat   -> "this sub-pattern is unused."
   | Instance_variable_override lab ->
       "the instance variable " ^ lab ^ " is overridden.\n" ^
       "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
-  | Partial_application ->
-      "this function application is partial,\n\
-       maybe some arguments are missing."
-  | Statement_type ->
-      "this expression should have type unit."
-  | Comment_start -> "this is the start of a comment."
-  | Comment_not_end -> "this is not the end of a comment."
-  | Deprecated -> "this syntax is deprecated."
-  | Unused_var v | Unused_var_strict v -> "unused variable " ^ v ^ "."
   | Illegal_backslash -> "illegal backslash escape in string."
   | Implicit_public_methods l ->
       "the following private methods were made public implicitly:\n "
@@ -232,13 +231,14 @@ let message = function
   | Nonreturning_statement ->
       "this statement never returns (or has an unsound type.)"
   | Camlp4 s -> s
-  | All_clauses_guarded ->
-      "bad style, all clauses in this pattern-matching are guarded."
   | Useless_record_with ->
       "this record is defined by a `with' expression,\n\
        but no fields are borrowed from the original."
   | Bad_module_name (modname) ->
       "bad source file name: \"" ^ modname ^ "\" is not a valid module name."
+  | All_clauses_guarded ->
+      "bad style, all clauses in this pattern-matching are guarded."
+  | Unused_var v | Unused_var_strict v -> "unused variable " ^ v ^ "."
   | Wildcard_arg_to_constant_constr ->
      "wildcard pattern given as argument to a constant constructor"
   | Eol_in_string ->
