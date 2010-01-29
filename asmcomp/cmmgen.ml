@@ -52,14 +52,18 @@ let floatarray_header len =
       block_header Obj.double_array_tag (len * size_float / size_addr)
 let string_header len =
       block_header Obj.string_tag ((len + size_addr) / size_addr)
-let boxedint_header = block_header Obj.custom_tag (1 + 8 / size_addr)
+let boxedint32_header = block_header Obj.custom_tag 2
+let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
+let boxedintnat_header = block_header Obj.custom_tag 2
 
 let alloc_block_header tag sz = Cconst_natint(block_header tag sz)
 let alloc_float_header = Cconst_natint(float_header)
 let alloc_floatarray_header len = Cconst_natint(floatarray_header len)
 let alloc_closure_header sz = Cconst_natint(closure_header sz)
 let alloc_infix_header ofs = Cconst_natint(infix_header ofs)
-let alloc_boxedint_header = Cconst_natint(boxedint_header)
+let alloc_boxedint32_header = Cconst_natint(boxedint32_header)
+let alloc_boxedint64_header = Cconst_natint(boxedint64_header)
+let alloc_boxedintnat_header = Cconst_natint(boxedintnat_header)
 
 (* Integers *)
 
@@ -461,6 +465,12 @@ let operations_boxed_int bi =
   | Pint32 -> "caml_int32_ops"
   | Pint64 -> "caml_int64_ops"
 
+let alloc_header_boxed_int bi =
+  match bi with
+    Pnativeint -> alloc_boxedintnat_header
+  | Pint32 -> alloc_boxedint32_header
+  | Pint64 -> alloc_boxedint64_header
+
 let box_int bi arg =
   match arg with
     Cconst_int n ->
@@ -472,7 +482,7 @@ let box_int bi arg =
         if bi = Pint32 && size_int = 8 && big_endian
         then Cop(Clsl, [arg; Cconst_int 32])
         else arg in
-      Cop(Calloc, [alloc_boxedint_header;
+      Cop(Calloc, [alloc_header_boxed_int bi;
                    Cconst_symbol(operations_boxed_int bi);
                    arg'])
 
@@ -1553,13 +1563,13 @@ let rec emit_constant symb cst cont =
       Cdefine_symbol symb ::
       emit_string_constant s cont
   | Const_base(Const_int32 n) ->
-      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      Cint(boxedint32_header) :: Cdefine_symbol symb ::
       emit_boxed_int32_constant n cont
   | Const_base(Const_int64 n) ->
-      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      Cint(boxedint64_header) :: Cdefine_symbol symb ::
       emit_boxed_int64_constant n cont
   | Const_base(Const_nativeint n) ->
-      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      Cint(boxedintnat_header) :: Cdefine_symbol symb ::
       emit_boxed_nativeint_constant n cont
   | Const_block(tag, fields) ->
       let (emit_fields, cont1) = emit_constant_fields fields cont in
@@ -1609,17 +1619,17 @@ and emit_constant_field field cont =
   | Const_base(Const_int32 n) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(boxedint_header) :: Cdefine_label lbl ::
+       Cint(boxedint32_header) :: Cdefine_label lbl ::
        emit_boxed_int32_constant n cont)
   | Const_base(Const_int64 n) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(boxedint_header) :: Cdefine_label lbl ::
+       Cint(boxedint64_header) :: Cdefine_label lbl ::
        emit_boxed_int64_constant n cont)
   | Const_base(Const_nativeint n) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(boxedint_header) :: Cdefine_label lbl ::
+       Cint(boxedintnat_header) :: Cdefine_label lbl ::
        emit_boxed_nativeint_constant n cont)
   | Const_pointer n ->
       (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n),
