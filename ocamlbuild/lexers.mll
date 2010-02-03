@@ -81,15 +81,14 @@ and comma_or_blank_sep_strings_aux = parse
   | space* eof { [] }
   | _ { raise (Error "Expecting (comma|blank)-separated strings (2)") }
 
-and colon_sep_strings = parse
-  | ([^ ':']+ as word) eof { [word] }
-  | ([^ ':']+ as word) { word :: colon_sep_strings_aux lexbuf }
+and parse_environment_path = parse
+  | ([^ ':']* as word) { word :: parse_environment_path_aux lexbuf }
+  | ':' ([^ ':']* as word) { "" :: word :: parse_environment_path_aux lexbuf }
   | eof { [] }
-  | _ { raise (Error "Expecting colon-separated strings (1)") }
-and colon_sep_strings_aux = parse
-  | ':'+ ([^ ':']+ as word) { word :: colon_sep_strings_aux lexbuf }
+and parse_environment_path_aux = parse
+  | ':' ([^ ':']* as word) { word :: parse_environment_path_aux lexbuf }
   | eof { [] }
-  | _ { raise (Error "Expecting colon-separated strings (2)") }
+  | _ { raise (Error "Impossible: expecting colon-separated strings") }
 
 and conf_lines dir pos err = parse
   | space* '#' not_newline* newline { conf_lines dir (pos + 1) err lexbuf }

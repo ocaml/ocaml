@@ -91,7 +91,15 @@ let atomize_paths l = S(List.map (fun x -> P x) l)
 
 let env_path = lazy begin
   let path_var = Sys.getenv "PATH" in
-  Lexers.colon_sep_strings (Lexing.from_string path_var)
+  let paths =
+    try
+      Lexers.parse_environment_path (Lexing.from_string path_var)
+    with Lexers.Error msg -> raise (Lexers.Error ("$PATH: " ^ msg))
+  in
+  let norm_current_dir_name path =
+    if path = "" then Filename.current_dir_name else path
+  in
+  List.map norm_current_dir_name paths
 end
 
 let virtual_solvers = Hashtbl.create 32

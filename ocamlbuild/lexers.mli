@@ -26,10 +26,12 @@ val comma_sep_strings : Lexing.lexbuf -> string list
 val comma_or_blank_sep_strings : Lexing.lexbuf -> string list
 val trim_blanks : Lexing.lexbuf -> string
 
-(* Parse a colon separated string.
-   Note: successive colons are ignored.
-   Example: "aaa:bbb:::ccc" -> ["aaa"; "bbb"; "ccc"] *)
-val colon_sep_strings : Lexing.lexbuf -> string list
+(* Parse an environment path (i.e. $PATH).
+   This is a colon separated string.
+   Note: successive colons means an empty string.
+   Example:
+      ":aaa:bbb:::ccc:" -> [""; "aaa"; "bbb"; ""; ""; "ccc"; ""] *)
+val parse_environment_path : Lexing.lexbuf -> string list
 
 val conf_lines : string option -> int -> string -> Lexing.lexbuf -> conf
 val path_scheme : bool -> Lexing.lexbuf ->
