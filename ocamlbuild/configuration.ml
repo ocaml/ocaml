@@ -36,10 +36,12 @@ let parse_string s =
   add_config conf
 
 let parse_file ?dir file =
-  with_input_file file begin fun ic ->
-    let conf = Lexers.conf_lines dir 1 (Printf.sprintf "file: %S" file) (Lexing.from_channel ic) in
-    add_config conf
-  end
+  try
+    with_input_file file begin fun ic ->
+      let conf = Lexers.conf_lines dir 1 (Printf.sprintf "file: %S" file) (Lexing.from_channel ic) in
+      add_config conf
+    end
+  with Lexers.Error msg -> raise (Lexers.Error (file ^ ": " ^ msg))
 
 let key_match = Glob.eval
 
