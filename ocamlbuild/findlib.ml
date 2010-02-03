@@ -13,7 +13,6 @@
 (* Original author: Romain Bardou *)
 
 open My_std
-open Lexers
 open My_unix
 open Command
 
@@ -74,15 +73,15 @@ let rec query name =
   with Not_found ->
     try
       let n, d, v, a_byte, lo, l =
-        run_and_parse ocamlfind_query
+        run_and_parse Lexers.ocamlfind_query
           "%s query -l -predicates byte %s" ocamlfind name
       in
       let a_native =
-        run_and_parse trim_blanks
+        run_and_parse Lexers.trim_blanks
           "%s query -a-format -predicates native %s" ocamlfind name
       in
       let deps =
-        run_and_parse blank_sep_strings "%s query -r -p-format %s" ocamlfind name
+        run_and_parse Lexers.blank_sep_strings "%s query -r -p-format %s" ocamlfind name
       in
       let deps = List.filter ((<>) n) deps in
       let deps =
@@ -114,7 +113,7 @@ let rec query name =
           error (Cannot_parse_query (name, s))
 
 let list () =
-  run_and_parse blank_sep_strings "%s list | cut -d' ' -f1" ocamlfind
+  run_and_parse Lexers.blank_sep_strings "%s list | cut -d' ' -f1" ocamlfind
 
 (* The closure algorithm is easy because the dependencies are already closed
 and sorted for each package. We only have to make the union. We could also
