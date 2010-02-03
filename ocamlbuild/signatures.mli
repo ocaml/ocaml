@@ -166,7 +166,7 @@ module type COMMAND = sig
     | Echo of string list * pathname (** Write the given strings (w/ any formatting) to the given file *)
     | Nop                            (** The command that does nothing *)
 
-  (** The type for command specifications. *)
+  (** The type for command specifications. That is pieces of command. *)
   and spec =
     | N                       (** No operation. *)
     | S of spec list          (** A sequence.  This gets flattened in the last stages *)
