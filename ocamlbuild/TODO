@@ -36,4 +36,3 @@ Done:
 * Have some option to draw tags/rules that applies on a target (it's -show-tags).
 * rm sanitize.sh during -clean
 * rm sanitize.sh when running ocamlbuild
-* Export my_unix_with_unix and executor (and change its name)
