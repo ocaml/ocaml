@@ -57,13 +57,9 @@ let rec self depth on_the_go_orig target =
     if Resource.exists_in_source_dir target then
       Resource.Cache.import_in_build_dir target
     else
-    (* FIXME tags of target
-    let tags = Configuration.tags_of_target target in
-    let matching_rules = List.filter_opt (Rule.tags_matches tags) rules in *)
-    let matching_rules = List.filter_opt (Rule.can_produce target) (*matching_*)rules in
-    match matching_rules with
+    match List.filter_opt (Rule.can_produce target) rules with
     | [] -> failed target (Leaf target)
-    | _ ->
+    | matching_rules ->
       let rec until_works rs backtraces =
         match rs with
         | [] -> assert false
