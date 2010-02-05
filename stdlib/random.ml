@@ -13,11 +13,16 @@
 
 (* $Id$ *)
 
-(* "Linear feedback shift register" pseudo-random number generator. *)
-(* References: Robert Sedgewick, "Algorithms", Addison-Wesley *)
-
-(* The PRNG is a linear feedback shift register.
-   It is seeded by a MD5-based PRNG.
+(* Pseudo-random number generator
+   This is a lagged-Fibonacci F(55, 24, +) with a modified addition
+   function to enhance the mixing of bits.
+   If we use normal addition, the low-order bit fails tests 1 and 7
+   of the Diehard test suite, and bits 1 and 2 also fail test 7.
+   If we use multiplication as suggested by Marsaglia, it doesn't fare
+   much better.
+   By mixing the bits of one of the numbers before addition (XOR the
+   5 high-order bits into the low-order bits), we get a generator that
+   passes all the Diehard tests.
 *)
 
 external random_seed: unit -> int = "caml_sys_random_seed";;
@@ -35,9 +40,10 @@ module State = struct
   let full_init s seed =
     let combine accu x = Digest.string (accu ^ string_of_int x) in
     let extract d =
-      (Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16))
-      lxor (Char.code d.[3] lsl 22)
+      Char.code d.[0] + (Char.code d.[1] lsl 8) + (Char.code d.[2] lsl 16)
+      + (Char.code d.[3] lsl 24)
     in
+    let seed = if seed = [| |] then [| 0 |] else seed in
     let l = Array.length seed in
     for i = 0 to 54 do
       s.st.(i) <- i;
@@ -69,9 +75,10 @@ module State = struct
   (* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
   let bits s =
     s.idx <- (s.idx + 1) mod 55;
-    let newval = (s.st.((s.idx + 24) mod 55) + s.st.(s.idx)) land 0x3FFFFFFF in
+    let newval = s.st.((s.idx + 24) mod 55)
+                 + (s.st.(s.idx) lxor ((s.st.(s.idx) lsr 25) land 31)) in
     s.st.(s.idx) <- newval;
-    newval
+    newval land 0x3FFFFFFF   (* land is needed for 64-bit arch *)
   ;;
 
   let rec intaux s n =
@@ -137,19 +144,19 @@ module State = struct
 
 end;;
 
-(* This is the state you get with [init 27182818] on a 32-bit machine. *)
+(* This is the state you get with [init 27182818]. *)
 let default = {
   State.st = [|
-      509760043; 399328820; 99941072; 112282318; 611886020; 516451399;
-      626288598; 337482183; 748548471; 808894867; 657927153; 386437385;
-      42355480; 977713532; 311548488; 13857891; 307938721; 93724463;
-      1041159001; 444711218; 1040610926; 233671814; 664494626; 1071756703;
-      188709089; 420289414; 969883075; 513442196; 275039308; 918830973;
-      598627151; 134083417; 823987070; 619204222; 81893604; 871834315;
-      398384680; 475117924; 520153386; 324637501; 38588599; 435158812;
-      168033706; 585877294; 328347186; 293179100; 671391820; 846150845;
-      283985689; 502873302; 718642511; 938465128; 962756406; 107944131;
-      192910970;
+      0x7ae2522b; 0x5d8d4634; 0x15b4fad0; 0x18b14ace; 0x12f8a3c4; 0x7b086c47;
+      0x16d467d6; 0x501d91c7; 0x321df177; 0x4176c193; 0x1ff72bf1; 0x5e889109;
+      0x0b464b18; 0x6b86b97c; 0x4891da48; 0x03137463; 0x485ac5a1; 0x15d61f2f;
+      0x7bced359; 0x69c1c132; 0x7a86766e; 0x366d8c86; 0x1f5b6222; 0x7ce1b59f;
+      0x2ebf78e1; 0x67cd1b86; 0x658f3dc3; 0x789a8194; 0x42e4c44c; 0x58c43f7d;
+      0x0f6e534f; 0x1e7df359; 0x455d0b7e; 0x10e84e7e; 0x126198e4; 0x4e7722cb;
+      0x5cbede28; 0x7391b964; 0x7d40e92a; 0x4c59933d; 0x0b8cd0b7; 0x64efff1c;
+      0x2803fdaa; 0x08ebc72e; 0x4f522e32; 0x45398edc; 0x2144a04c; 0x4aef3cbd;
+      0x41ad4719; 0x75b93cd6; 0x2a559d4f; 0x5e6fd768; 0x66e27f36; 0x186f18c3;
+      0x2fbf967a;
     |];
   State.idx = 0;
 };;
@@ -194,20 +201,20 @@ init 27182818; init_diff2 1024; chisquare diff2 100000 1024;;
 init 27182818; init_diff2 100; chisquare diff2 100000 100;;
 init 14142136; init_diff2 100; chisquare diff2 100000 100;;
 init 299792643; init_diff2 100; chisquare diff2 100000 100;;
-- : float * float * float = (936.754446796632465, 1032., 1063.24555320336754)
-# - : float * float * float = (80., 91.3699999999953434, 120.)
-# - : float * float * float = (4858.57864376269026, 4982., 5141.42135623730974)
+- : float * float * float = (936.754446796632465, 997.5, 1063.24555320336754)
+# - : float * float * float = (80., 89.7400000000052387, 120.)
+# - : float * float * float = (4858.57864376269, 5045.5, 5141.42135623731)
 # - : float * float * float =
-(936.754446796632465, 1017.99399999994785, 1063.24555320336754)
-# - : float * float * float = (960., 984.565759999997681, 1088.)
-# - : float * float * float = (960., 1003.40735999999742, 1088.)
-# - : float * float * float = (960., 1035.23328000000038, 1088.)
-# - : float * float * float = (960., 1026.79551999999967, 1088.)
-# - : float * float * float = (80., 110.194000000003143, 120.)
-# - : float * float * float = (960., 1067.98080000000482, 1088.)
-# - : float * float * float = (80., 107.292000000001281, 120.)
-# - : float * float * float = (80., 85.1180000000022119, 120.)
-# - : float * float * float = (80., 86.614000000001397, 120.)
+(936.754446796632465, 944.805999999982305, 1063.24555320336754)
+# - : float * float * float = (960., 1019.19744000000355, 1088.)
+# - : float * float * float = (960., 1059.31776000000536, 1088.)
+# - : float * float * float = (960., 1039.98463999999512, 1088.)
+# - : float * float * float = (960., 1054.38207999999577, 1088.)
+# - : float * float * float = (80., 90.096000000005, 120.)
+# - : float * float * float = (960., 1076.78720000000612, 1088.)
+# - : float * float * float = (80., 85.1760000000067521, 120.)
+# - : float * float * float = (80., 85.2160000000003492, 120.)
+# - : float * float * float = (80., 80.6220000000030268, 120.)
 
 *)
 
