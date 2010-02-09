@@ -35,7 +35,8 @@ int main(int argc, char ** argv)
              "Under sh, bash, zsh:  ulimit -s %lu\n"
              "Under csh, tcsh:      limit stacksize %lu\n\n",
              (unsigned long) (limit.rlim_cur / 1024),
-             MINSTACKBYTES / 1024, MINSTACKBYTES / 1024);
+             (unsigned long) (MINSTACKBYTES / 1024),
+             (unsigned long) (MINSTACKBYTES / 1024));
     exit (3);
   }
   exit (0);
