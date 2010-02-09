@@ -1,0 +1,9 @@
+# svn propset -R svn:ignore -F .svnignore .
+# find . -name .svnignore -print | while read f; do svn propset svn:ignore -F $f `dirname $f`; done
+_log
+*.so
+*.a
+*.result
+*.byte
+*.native
+program

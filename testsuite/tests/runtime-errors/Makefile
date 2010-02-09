@@ -6,11 +6,11 @@ compile:
 	  $(OCAMLOPT) -w a -o `basename $$f ml`native $$f; \
 	done
 	@if [ ! `grep -c HAS_STACK_OVERFLOW_DETECTION ../../../config/s.h` ]; then \
-	  rm -f stackoverflow.bytecode stackoverflow.native; \
+	  rm -f stackoverflow.byte stackoverflow.native; \
 	fi
 
 run:
-	@for f in *.bytecode; do \
+	@for f in *.byte; do \
 	  echo -n " ... testing '$$f':"; \
 	  (./$$f > $$f.result 2>&1; true); \
 	  diff -q $$f.reference $$f.result > /dev/null || (echo " => failed" && exit 1) && echo " => passed"; \
@@ -20,6 +20,6 @@ run:
 	done
 
 clean: defaultclean
-	@rm -f *.bytecode *.native *.result
+	@rm -f *.byte *.native *.result
 
 include ../../makefiles/Makefile.common

@@ -1,0 +1,6 @@
+main
+static
+custom
+*.a
+*.so
+*.result
