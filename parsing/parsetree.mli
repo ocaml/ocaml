@@ -233,6 +233,7 @@ and modtype_declaration =
 and with_constraint =
     Pwith_type of type_declaration
   | Pwith_module of Longident.t
+  | Pwith_typesubst of Longident.t * Location.t
 
 (* Value expressions for the module language *)
 

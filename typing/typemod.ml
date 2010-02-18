@@ -89,7 +89,14 @@ let check_type_decl env id row_id newdecl decl rs rem =
   let env = if rs = Trec_not then env else add_rec_types env rem in
   Includemod.type_declarations env id newdecl decl
 
+let rec make_params n = function
+    [] -> []
+  | _ :: l -> ("a" ^ string_of_int n) :: make_params (n+1) l
+
+let wrap_param s = {ptyp_desc=Ptyp_var s; ptyp_loc=Location.none}
+
 let merge_constraint initial_env loc sg lid constr =
+  let real_id = ref None in
   let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
@@ -121,9 +128,27 @@ let merge_constraint initial_env loc sg lid constr =
           Typedecl.transl_with_constraint initial_env id None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
-    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
+    | (Tsig_type(id, decl, rs) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
         merge env rem namelist (Some id)
+    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_typesubst (lid, loc))
+      when Ident.name id = s ->
+        (* Check as for a normal with constraint, but discard definition *)
+        let params = make_params 1 decl.type_params in
+        let sdecl =
+          {ptype_params = params;  ptype_cstrs = [];
+           ptype_kind = Ptype_abstract;
+           ptype_manifest = Some
+             {ptyp_desc=Ptyp_constr(lid, List.map wrap_param params);
+              ptyp_loc=loc};
+           ptype_private = Public;
+           ptype_variance = List.map (fun _ -> (false,false)) params;
+           ptype_loc = loc} in
+        let newdecl =
+          Typedecl.transl_with_constraint initial_env id None sdecl in
+        check_type_decl env id row_id newdecl decl rs rem;
+        real_id := Some id;
+        rem
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = type_module_path initial_env loc lid in
@@ -137,7 +162,21 @@ let merge_constraint initial_env loc sg lid constr =
     | (item :: rem, _, _) ->
         item :: merge (Env.add_item item env) rem namelist row_id in
   try
-    merge initial_env sg (Longident.flatten lid) None
+    let names = Longident.flatten lid in
+    let sg = merge initial_env sg names None in
+    match names, constr with
+      [s], Pwith_typesubst (lid, loc) ->
+        let id =
+          match !real_id with None -> assert false | Some id -> id in
+        let (path, _) =
+          try Env.lookup_type lid initial_env
+          with Not_found ->
+            raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
+        in
+        let sub = Subst.add_type id path Subst.identity in
+        Subst.signature sub sg
+    | _ ->
+        sg
   with Includemod.Error explanation ->
     raise(Error(loc, With_mismatch(lid, explanation)))
 

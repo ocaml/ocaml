@@ -1289,6 +1289,10 @@ with_constraint:
                          ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
        functor applications in type path */
+  | TYPE type_parameters label_longident COLONEQUAL type_longident
+      { if $2 <> [] then raise Parse_error;
+        (match $3 with Lident _ -> () | _ -> raise Parse_error);
+        ($3, Pwith_typesubst ($5, symbol_rloc())) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { ($2, Pwith_module $4) }
 ;
