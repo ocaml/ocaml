@@ -155,6 +155,13 @@ let merge_constraint initial_env loc sg lid constr =
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         Tsig_module(id, newmty, rs) :: rem
+    | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_modsubst lid)
+      when Ident.name id = s ->
+        let (path, mty') = type_module_path initial_env loc lid in
+        let newmty = Mtype.strengthen env mty' path in
+        ignore(Includemod.modtypes env newmty mty);
+        real_id := Some id;
+        rem
     | (Tsig_module(id, mty, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let newsg = merge env (extract_sig env loc mty) namelist None in
@@ -169,11 +176,15 @@ let merge_constraint initial_env loc sg lid constr =
         let id =
           match !real_id with None -> assert false | Some id -> id in
         let (path, _) =
-          try Env.lookup_type lid initial_env
-          with Not_found ->
-            raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
+          try Env.lookup_type lid initial_env with Not_found -> assert false
         in
         let sub = Subst.add_type id path Subst.identity in
+        Subst.signature sub sg
+    | [s], Pwith_modsubst lid ->
+        let id =
+          match !real_id with None -> assert false | Some id -> id in
+        let (path, _) = type_module_path initial_env loc lid in
+        let sub = Subst.add_module id path Subst.identity in
         Subst.signature sub sg
     | _ ->
         sg

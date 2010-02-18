@@ -1295,6 +1295,8 @@ with_constraint:
         ($3, Pwith_typesubst ($5, symbol_rloc())) }
   | MODULE mod_longident EQUAL mod_ext_longident
       { ($2, Pwith_module $4) }
+  | MODULE mod_longident COLONEQUAL mod_ext_longident
+      { ($2, Pwith_modsubst $4) }
 ;
 with_type_binder:
     EQUAL          { Public }

@@ -20,8 +20,14 @@ module type S = sig type t val f : t -> t end
 module type S' = S with type t := int
 
 module type S = sig type 'a t val map : ('a -> 'b) -> 'a t -> 'b t end
-module type S' = S with type t := list
-module type S' = sig
+module type S1 = S with type t := list
+module type S2 = sig
   type 'a dict = (string * 'a) list
   include S with type t := dict
 end
+
+
+module type S =
+  sig module T : sig type exp type arg end val f : T.exp -> T.arg end
+module M = struct type exp = string type arg = int end
+module type S' = S with module T := M
