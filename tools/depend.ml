@@ -178,7 +178,9 @@ and add_modtype bv mty =
       add_modtype bv mty;
       List.iter
         (function (_, Pwith_type td) -> add_type_declaration bv td
-                | (_, Pwith_module lid) -> addmodule bv lid)
+                | (_, Pwith_module lid) -> addmodule bv lid
+                | (_, Pwith_typesubst (c, _)) -> add bv c
+                | (_, Pwith_modsubst lid) -> addmodule bv lid)
         cstrl
 
 and add_signature bv = function
