@@ -20,10 +20,10 @@ module type S = sig type t val f : t -> t end
 module type S' = S with type t := int
 
 module type S = sig type 'a t val map : ('a -> 'b) -> 'a t -> 'b t end
-module type S1 = S with type t := list
+module type S1 = S with type 'a t := 'a list
 module type S2 = sig
   type 'a dict = (string * 'a) list
-  include S with type t := dict
+  include S with type 'a t := 'a dict
 end
 
 

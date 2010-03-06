@@ -558,8 +558,9 @@ and with_constraint i ppf x =
   | Pwith_type (td) ->
       line i ppf "Pwith_type\n";
       type_declaration (i+1) ppf td;
-  | Pwith_typesubst (li,loc) ->
-      line i ppf "Pwith_module %a %a\n" fmt_longident li fmt_location loc;
+  | Pwith_typesubst (td) ->
+      line i ppf "Pwith_typesubst\n";
+      type_declaration (i+1) ppf td;
   | Pwith_module (li) -> line i ppf "Pwith_module %a\n" fmt_longident li;
   | Pwith_modsubst (li) -> line i ppf "Pwith_modsubst %a\n" fmt_longident li;
 

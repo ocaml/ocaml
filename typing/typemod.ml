@@ -40,6 +40,7 @@ type error =
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
+  | With_need_typeconstr
 
 exception Error of Location.t * error
 
@@ -131,19 +132,9 @@ let merge_constraint initial_env loc sg lid constr =
     | (Tsig_type(id, decl, rs) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
         merge env rem namelist (Some id)
-    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_typesubst (lid, loc))
+    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_typesubst sdecl)
       when Ident.name id = s ->
         (* Check as for a normal with constraint, but discard definition *)
-        let params = make_params 1 decl.type_params in
-        let sdecl =
-          {ptype_params = params;  ptype_cstrs = [];
-           ptype_kind = Ptype_abstract;
-           ptype_manifest = Some
-             {ptyp_desc=Ptyp_constr(lid, List.map wrap_param params);
-              ptyp_loc=loc};
-           ptype_private = Public;
-           ptype_variance = List.map (fun _ -> (false,false)) params;
-           ptype_loc = loc} in
         let newdecl =
           Typedecl.transl_with_constraint initial_env id None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
@@ -172,9 +163,21 @@ let merge_constraint initial_env loc sg lid constr =
     let names = Longident.flatten lid in
     let sg = merge initial_env sg names None in
     match names, constr with
-      [s], Pwith_typesubst (lid, loc) ->
+      [s], Pwith_typesubst sdecl ->
         let id =
           match !real_id with None -> assert false | Some id -> id in
+        let lid =
+          try match sdecl.ptype_manifest with
+          | Some {ptyp_desc = Ptyp_constr (lid, stl)} ->
+              let params =
+                List.map
+                  (function {ptyp_desc=Ptyp_var s} -> s | _ -> raise Exit)
+                  stl in
+              if params <> sdecl.ptype_params then raise Exit;
+              lid
+          | _ -> raise Exit
+          with Exit -> raise (Error (sdecl.ptype_loc, With_need_typeconstr))
+        in
         let (path, _) =
           try Env.lookup_type lid initial_env with Not_found -> assert false
         in
@@ -1073,3 +1076,6 @@ let report_error ppf = function
   | Not_allowed_in_functor_body ->
       fprintf ppf
         "This kind of expression is not allowed within the body of a functor."
+  | With_need_typeconstr ->
+      fprintf ppf
+        "Only type constructors with identical parameters can be substituted."
