@@ -372,9 +372,7 @@ class virtual text =
 
     method html_of_Title b n label_opt t =
       let label1 = self#create_title_label (n, label_opt, t) in
-      bs b "<a name=\"";
-      bs b (Naming.label_target label1);
-      bs b "\"></a>\n";
+      bp b "<span id=\"%s\">" (Naming.label_target label1);
       let (tag_o, tag_c) =
         if n > 6 then
           (Printf.sprintf "div class=\"h%d\"" n, "div")
@@ -387,7 +385,8 @@ class virtual text =
       self#html_of_text b t;
       bs b "</";
       bs b tag_c;
-      bs b ">"
+      bs b ">";
+      bs b "</span>"
 
     method html_of_Latex b _ = ()
       (* don't care about LaTeX stuff in HTML. *)
@@ -780,6 +779,8 @@ class html =
         "pre { margin-bottom: 4px }" ;
 
         "div.sig_block {margin-left: 2em}" ;
+
+        "*:target { background: yellow; } " ;
       ]
 
     (** The style file for all pages. *)
@@ -1306,11 +1307,10 @@ class html =
     (** Print html code for a value. *)
     method html_of_value b v =
       Odoc_info.reset_type_names ();
-      bs b "<pre>";
+      bs b "<pre>" ;
+      bp b "<span id=\"%s\">" (Naming.value_target v);
       bs b (self#keyword "val");
       bs b " ";
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.value_target v);
       (
        match v.val_code with
          None -> bs b (self#escape (Name.simple v.val_name))
@@ -1319,6 +1319,7 @@ class html =
            self#output_code v.val_name (Filename.concat !Args.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (self#escape (Name.simple v.val_name))
       );
+      bs b "</span>";
       bs b " : ";
       self#html_of_type_expr b (Name.father v.val_name) v.val_type;
       bs b "</pre>";
@@ -1334,12 +1335,11 @@ class html =
     method html_of_exception b e =
       Odoc_info.reset_type_names ();
       bs b "<pre>";
+      bp b "<span id=\"%s\">" (Naming.exception_target e);
       bs b (self#keyword "exception");
       bs b " ";
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>%s"
-        (Naming.exception_target e)
-        (Name.simple e.ex_name);
+      bs b (Name.simple e.ex_name);
+      bs b "</span>";
       (
        match e.ex_args with
          [] -> ()
@@ -1376,12 +1376,12 @@ class html =
         | Some _, Type_variant _
         | Some _, Type_record _ -> "<pre>"
         );
+      bp b "<span id=\"%s\">" (Naming.type_target t);
       bs b ((self#keyword "type")^" ");
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.type_target t);
       self#html_of_type_expr_param_list b father t;
       (match t.ty_parameters with [] -> () | _ -> bs b " ");
-      bs b ((Name.simple t.ty_name)^" ");
+      bs b (Name.simple t.ty_name);
+      bs b "</span> ";
       let priv = t.ty_private = Asttypes.Private in
       (
        match t.ty_manifest with
@@ -1486,10 +1486,9 @@ class html =
     method html_of_attribute b a =
       let module_name = Name.father (Name.father a.att_value.val_name) in
       bs b "<pre>" ;
+      bp b "<span id=\"%s\">" (Naming.attribute_target a);
       bs b (self#keyword "val");
       bs b " ";
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.attribute_target a);
       (
        if a.att_virtual then
          bs b ((self#keyword "virtual")^ " ")
@@ -1509,6 +1508,7 @@ class html =
            self#output_code a.att_value.val_name (Filename.concat !Args.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple a.att_value.val_name);
       );
+      bs b "</span>";
       bs b " : ";
       self#html_of_type_expr b module_name a.att_value.val_type;
       bs b "</pre>";
@@ -1518,10 +1518,10 @@ class html =
     method html_of_method b m =
       let module_name = Name.father (Name.father m.met_value.val_name) in
       bs b "<pre>";
-      bs b ((self#keyword "method")^" ");
       (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.method_target m);
-      if m.met_private then bs b ((self#keyword "private")^" ");
+      bp b "<span id=\"%s\">" (Naming.method_target m);
+     bs b ((self#keyword "method")^" ");
+       if m.met_private then bs b ((self#keyword "private")^" ");
       if m.met_virtual then bs b ((self#keyword "virtual")^" ");
       (
        match m.met_value.val_code with
@@ -1531,6 +1531,7 @@ class html =
            self#output_code m.met_value.val_name (Filename.concat !Args.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple m.met_value.val_name);
       );
+      bs b "</span>";
       bs b " : ";
       self#html_of_type_expr b module_name m.met_value.val_type;
       bs b "</pre>";
@@ -1829,10 +1830,9 @@ class html =
       Odoc_info.reset_type_names ();
       let (html_file, _) = Naming.html_files c.cl_name in
       bs b "<pre>";
-      bs b ((self#keyword "class")^" ");
-      (* we add a html tag, the same as for a type so we can
+      (* we add a html id, the same as for a type so we can
          go directly here when the class name is used as a type name *)
-      bp b "<a name=\"%s\"></a>"
+      bp b "<span name=\"%s\">"
         (Naming.type_target
            { ty_name = c.cl_name ;
              ty_info = None ; ty_parameters = [] ;
@@ -1841,6 +1841,7 @@ class html =
              ty_code = None ;
            }
         );
+      bs b ((self#keyword "class")^" ");
       print_DEBUG "html#html_of_class : virtual or not" ;
       if c.cl_virtual then bs b ((self#keyword "virtual")^" ");
       (
@@ -1857,7 +1858,7 @@ class html =
        else
          bs b (Name.simple c.cl_name)
       );
-
+      bs b "</span>";
       bs b " : " ;
       self#html_of_class_parameter_list b father c ;
       self#html_of_class_kind b father ~cl: c c.cl_kind;
@@ -1876,10 +1877,9 @@ class html =
       let father = Name.father ct.clt_name in
       let (html_file, _) = Naming.html_files ct.clt_name in
       bs b "<pre>";
-      bs b ((self#keyword "class type")^" ");
-      (* we add a html tag, the same as for a type so we can
+      (* we add a html id, the same as for a type so we can
          go directly here when the class type name is used as a type name *)
-      bp b "<a name=\"%s\"></a>"
+      bp b "<span id=\"%s\">"
         (Naming.type_target
            { ty_name = ct.clt_name ;
              ty_info = None ; ty_parameters = [] ;
@@ -1888,6 +1888,7 @@ class html =
              ty_code = None ;
            }
         );
+      bs b ((self#keyword "class type")^" ");
       if ct.clt_virtual then bs b ((self#keyword "virtual")^" ");
       (
        match ct.clt_type_parameters with
@@ -1902,6 +1903,7 @@ class html =
       else
         bs b (Name.simple ct.clt_name);
 
+      bs b "</span>";
       bs b " = ";
       self#html_of_class_type_kind b father ~ct ct.clt_kind;
       bs b "</pre>";
