@@ -153,6 +153,8 @@ module Texter =
           p b "{%s " s;
           p_text b t;
           p b "}"
+      | Target (target, code) ->
+          p b "{%%%s: %s}" target (escape_raw code)
 
     let string_of_text s =
       let b = Buffer.create 256 in

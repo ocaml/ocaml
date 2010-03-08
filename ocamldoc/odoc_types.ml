@@ -47,6 +47,7 @@ and text_element =
   | Module_list of string list
   | Index_list
   | Custom of string * text
+  | Target of string * string
 
 and text = text_element list
 

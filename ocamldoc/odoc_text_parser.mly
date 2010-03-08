@@ -47,7 +47,8 @@ let print_DEBUG s = print_string s; print_newline ()
 %token VERB
 %token END_VERB
 %token LATEX
-%token END_LATEX
+%token <string> Target
+%token END_TARGET
 %token LBRACE
 
 %token ELE_REF
@@ -145,7 +146,8 @@ text_element:
      }
 | INDEX_LIST { Index_list }
 | VERB string END_VERB { Verbatim $2 }
-| LATEX string END_LATEX { Latex $2 }
+| LATEX string END_TARGET { Latex $2 }
+| Target string END_TARGET { Target ($1, $2) }
 | LINK string END text END { Link ($2, $4) }
 | BLANK_LINE { Newline }
 | BEGIN_SHORTCUT_LIST_ITEM shortcut_list END_SHORTCUT_LIST { List $2 }

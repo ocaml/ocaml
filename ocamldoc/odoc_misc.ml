@@ -140,6 +140,7 @@ let rec string_of_text t =
       | Odoc_types.Index_list ->
           ""
       | Odoc_types.Custom (_, t) -> string_of_text t
+      | Odoc_types.Target _ -> ""
   in
   String.concat "" (List.map iter t)
 
@@ -260,7 +261,8 @@ let rec text_no_title_no_list t =
     | Odoc_types.Code _
     | Odoc_types.CodePre _
     | Odoc_types.Verbatim _
-    | Odoc_types.Ref _ -> [t_ele]
+    | Odoc_types.Ref _
+    | Odoc_types.Target _ -> [t_ele]
     | Odoc_types.Newline ->  [Odoc_types.Newline]
     | Odoc_types.Block t -> [Odoc_types.Block (text_no_title_no_list t)]
     | Odoc_types.Bold t -> [Odoc_types.Bold (text_no_title_no_list t)]
@@ -311,6 +313,7 @@ let get_titles_in_text t =
     | Odoc_types.Module_list _ -> ()
     | Odoc_types.Index_list -> ()
     | Odoc_types.Custom (_, t) -> iter_text t
+    | Odoc_types.Target _ -> ()
   and iter_text te =
     List.iter iter_ele te
   in
@@ -402,7 +405,9 @@ and first_sentence_text_ele text_ele =
   | Odoc_types.Subscript _
   | Odoc_types.Module_list _
   | Odoc_types.Index_list -> (false, text_ele, None)
-  | Odoc_types.Custom _ -> (false, text_ele, None)
+  | Odoc_types.Custom _
+  | Odoc_types.Target _ -> (false, text_ele, None)
+
 
 let first_sentence_of_text t =
   let (_,t2,_) = first_sentence_text t in

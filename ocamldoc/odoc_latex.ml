@@ -245,8 +245,15 @@ class text =
       | Odoc_info.Module_list _ -> ()
       | Odoc_info.Index_list -> ()
       | Odoc_info.Custom (s,t) -> self#latex_of_custom_text fmt s t
+      | Odoc_info.Target (target, code) -> self#latex_of_Target fmt ~target ~code
 
     method latex_of_custom_text fmt s t = ()
+
+    method latex_of_Target fmt ~target ~code =
+      if String.lowercase target = "latex" then
+        self#latex_of_Latex fmt code
+      else
+        ()
 
     method latex_of_Raw fmt s =
       ps fmt (self#escape s)

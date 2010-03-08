@@ -54,6 +54,7 @@ and text_element =
        (** The table of the given modules with their abstract; *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
   | Custom of string * text (** to extend \{foo syntax *)
+  | Target of string * string (** (target, code) : to specify code for a specific target format *)
 
 (** [text] is a list of text_elements. The order matters. *)
 and text = text_element list

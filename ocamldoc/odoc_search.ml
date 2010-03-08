@@ -83,6 +83,7 @@ module Search =
       | T.Newline
       | T.Module_list _
       | T.Index_list -> []
+      | T.Target _ -> []
       | T.Title (n, l_opt, t) ->
           (match l_opt with
             None -> []

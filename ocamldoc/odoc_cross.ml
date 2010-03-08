@@ -729,6 +729,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
   | Index_list ->
       Index_list
   | Custom (s,t) -> Custom (s, (assoc_comments_text parent_name module_list t))
+  | Target (target, code) -> Target (target, code)
 
 and assoc_comments_text parent_name module_list text =
   List.map (assoc_comments_text_elements parent_name module_list) text

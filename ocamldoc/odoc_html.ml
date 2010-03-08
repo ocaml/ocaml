@@ -251,8 +251,12 @@ class virtual text =
       | Odoc_info.Module_list l -> self#html_of_Module_list b l
       | Odoc_info.Index_list -> self#html_of_Index_list b
       | Odoc_info.Custom (s,t) -> self#html_of_custom_text b s t
+      | Odoc_info.Target (target, code) -> self#html_of_Target b ~target ~code
 
     method html_of_custom_text b s t = ()
+
+    method html_of_Target b ~target ~code =
+      if String.lowercase target = "html" then bs b code else ()
 
     method html_of_Raw b s = bs b (self#escape s)
 

@@ -285,8 +285,12 @@ class man =
       | Odoc_info.Index_list ->
           ()
       | Odoc_info.Custom (s,t) -> self#man_of_custom_text b s t
+      | Odoc_info.Target (target, code) -> self#man_of_Target b ~target ~code
 
     method man_of_custom_text b s t = ()
+
+    method man_of_Target b ~target ~code =
+      if String.lowercase target = "man" then bs b code else ()
 
     (** Print groff string to display code. *)
     method man_of_code b s = self#man_of_text b [ Code s ]
