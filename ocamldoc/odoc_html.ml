@@ -53,8 +53,17 @@ module Naming =
 
     (** Return the two html files names for the given module or class name.*)
     let html_files name =
-      let html_file = name^".html" in
-      let html_frame_file = name^"-frame.html" in
+      let qual =
+        try
+          let i = String.rindex name '.' in
+          match name.[i + 1] with
+          | 'A'..'Z' -> ""
+          | _ -> "-c"
+        with Not_found -> ""
+      in
+      let prefix = name^qual in
+      let html_file = prefix^".html" in
+      let html_frame_file = prefix^"-frame.html" in
       (html_file, html_frame_file)
 
     (** Return the target for the given prefix and simple name. *)
