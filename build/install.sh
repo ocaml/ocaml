@@ -132,7 +132,6 @@ cd ..
 WIN32=""
 if [ "x$EXE" = "x.exe" ]; then
   installbin win32caml/ocamlwin.exe $PREFIX/OCamlWin.exe
-  installdir byterun/ocamlrun.dll $BINDIR
   WIN32=win32
 fi
 
@@ -140,7 +139,7 @@ installdir otherlibs/"$WIN32"unix/unixsupport.h \
            otherlibs/bigarray/bigarray.h \
            $LIBDIR/caml
 
-installdir yacc/ocamlyacc byterun/ocamlrun $BINDIR
+installdir yacc/ocamlyacc$EXE byterun/ocamlrun$EXE $BINDIR
 
 installdir config/Makefile $LIBDIR/Makefile.config
 installdir byterun/ld.conf $LIBDIR

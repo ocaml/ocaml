@@ -114,14 +114,10 @@ open Printf
 
 let output_primitive_table outchan =
   let prim = all_primitives() in
-  fprintf outchan "\
-    #ifdef __cplusplus\n\
-    extern \"C\" {\n\
-    #endif\n";
   for i = 0 to Array.length prim - 1 do
-    fprintf outchan "extern long %s();\n" prim.(i)
+    fprintf outchan "extern value %s();\n" prim.(i)
   done;
-  fprintf outchan "typedef long (*primitive)();\n";
+  fprintf outchan "typedef value (*primitive)();\n";
   fprintf outchan "primitive caml_builtin_cprim[] = {\n";
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "  %s,\n" prim.(i)
@@ -131,11 +127,7 @@ let output_primitive_table outchan =
   for i = 0 to Array.length prim - 1 do
     fprintf outchan "  \"%s\",\n" prim.(i)
   done;
-  fprintf outchan "  (char *) 0 };\n";
-  fprintf outchan "\
-    #ifdef __cplusplus\n\
-    }\n\
-    #endif\n"
+  fprintf outchan "  (char *) 0 };\n"
 
 (* Initialization for batch linking *)
 

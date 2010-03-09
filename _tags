@@ -55,6 +55,7 @@ true: use_stdlib
 <otherlibs/num/nums.cm{,x}a> or <otherlibs/dbm/dbm.cm{,x}a>: ocamlmklib
 <otherlibs/{,win32}graph/graphics.cm{,x}a>: ocamlmklib
 <otherlibs/threads/threads.cm{,x}a>: ocamlmklib
+"otherlibs/threads/unix.cma": ocamlmklib
 <otherlibs/bigarray/bigarray.cm{,x}a>: ocamlmklib
 
 <otherlibs/{bigarray,systhreads}/**.ml*>: include_unix
@@ -70,6 +71,7 @@ true: use_stdlib
 <otherlibs/bigarray/**>: otherlibs_bigarray
 <otherlibs/num/**>: otherlibs_num
 <otherlibs/threads/**>: otherlibs_threads
+"otherlibs/threads/unix.cma": -otherlibs_threads
 <otherlibs/systhreads/**>: otherlibs_systhreads
 <otherlibs/dbm/**>: otherlibs_dbm
 <otherlibs/graph/**>: otherlibs_graph

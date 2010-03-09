@@ -1,4 +1,13 @@
+JoCaml 3.11.2.A
+---------------
+- Unfortunate bug in lex/Makefile [and forgot bootstrap]
+
+JoCaml 3.11.2
+-------------
+- Follow ocaml release
+
 JoCaml 3.11.1
+-------------
 
 - Corrected bug in installation (all tools now installed with 'jo' prefix)
 

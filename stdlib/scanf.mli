@@ -69,7 +69,7 @@
     However, it is also largely different, simpler, and yet more powerful:
     the formatted input functions are higher-order functionals and the
     parameter passing mechanism is just the regular function application not
-    the variable assigment based mechanism which is typical for formatted
+    the variable assignment based mechanism which is typical for formatted
     input in imperative languages; the Caml format strings also feature
     useful additions to easily define complex tokens; as expected within a
     functional programming language, the formatted input functions also
@@ -197,16 +197,19 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 (** {7 The space character in format strings} *)
 
 (** As mentioned above, a plain character in the format string is just
-    matched with the characters of the input; however, one character is a
-    special exception to this simple rule: the space character (ASCII code
-    32) does not match a single space character, but any amount of
+    matched with the next character of the input; however, two characters are
+    special exceptions to this rule: the space character ([' '] or ASCII code
+    32) and the line feed character (['\n'] or ASCII code 10).
+    A space does not match a single space character, but any amount of
     ``whitespace'' in the input. More precisely, a space inside the format
     string matches {e any number} of tab, space, line feed and carriage
-    return characters.
+    return characters. Similarly, a line feed character in the format string
+    matches either a single line feed or a carriage return followed by a line
+    feed.
 
     Matching {e any} amount of whitespace, a space in the format string
     also matches no amount of whitespace at all; hence, the call [bscanf ib
-    "Price = %d $" (fun p -> p)] succeds and returns [1] when reading an
+    "Price = %d $" (fun p -> p)] succeeds and returns [1] when reading an
     input with various whitespace in it, such as [Price = 1 $],
     [Price  =  1    $], or even [Price=1$]. *)
 
@@ -287,6 +290,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     - [N] or [L]: returns the number of tokens read so far.
     - [!]: matches the end of input condition.
     - [%]: matches one [%] character in the input.
+    - [,]: the no-op delimiter for conversion specifications.
 
     Following the [%] character that introduces a conversion, there may be
     the special flag [_]: the conversion that follows occurs as usual,
@@ -303,7 +307,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 
     Notes:
 
-    - as mentioned above, a [%s] convertion always succeeds, even if there is
+    - as mentioned above, a [%s] conversion always succeeds, even if there is
       nothing to read in the input: it simply returns [""].
 
     - in addition to the relevant digits, ['_'] characters may appear
@@ -361,7 +365,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     [End_of_file]: if the end of input is reached the conversion succeeds and
     simply returns the characters read so far, or [""] if none were read. *)
 
-(** {6 Specialized formatted input functions} *)
+(** {6 Specialised formatted input functions} *)
 
 val fscanf : in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** Same as {!Scanf.bscanf}, but reads from the given channel.
@@ -373,7 +377,7 @@ val fscanf : in_channel -> ('a, 'b, 'c, 'd) scanner;;
     primitives on the channel (reading characters, seeking the reading
     position, and so on).
 
-    As a consequence, never mixt direct low level reading and high level
+    As a consequence, never mix direct low level reading and high level
     scanning from the same input channel. *)
 
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner;;
@@ -397,7 +401,7 @@ val kscanf :
 val bscanf_format :
   Scanning.scanbuf -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
-(** [bscanf_format ib fmt f] reads a format string token from the scannning
+(** [bscanf_format ib fmt f] reads a format string token from the scanning
     buffer [ib], according to the given format string [fmt], and applies [f] to
     the resulting format string value.
     Raise [Scan_failure] if the format string value read does not have the

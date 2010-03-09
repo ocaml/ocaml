@@ -48,6 +48,15 @@ current contents of the buffer [b] starting at offset [off] of length
 [len] bytes. May raise [Invalid_argument] if out of bounds request. The
 buffer itself is unaffected. *)
 
+val blit : t -> int -> string -> int -> int -> unit
+(** [Buffer.blit src srcoff dst dstoff len] copies [len] characters from
+   the current contents of the buffer [src], starting at offset [srcoff]
+   to string [dst], starting at character [dstoff].
+
+   Raise [Invalid_argument] if [srcoff] and [len] do not designate a valid
+   substring of [src], or if [dstoff] and [len] do not designate a valid
+   substring of [dst]. *)
+
 val nth : t -> int -> char
 (** get the n-th character of the buffer. Raise [Invalid_argument] if
 index out of bounds *)

@@ -39,6 +39,14 @@ let sub b ofs len =
   end
 ;;
 
+let blit src srcoff dst dstoff len =
+  if len < 0 || srcoff < 0 || srcoff > src.position - len
+             || dstoff < 0 || dstoff > (String.length dst) - len
+  then invalid_arg "Buffer.blit"
+  else
+    String.blit src.buffer srcoff dst dstoff len
+;;
+
 let nth b ofs =
   if ofs < 0 || ofs >= b.position then
    invalid_arg "Buffer.nth"

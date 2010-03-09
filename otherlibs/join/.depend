@@ -1,22 +1,22 @@
-join.cmi: 
 joinCount.cmi: join.cmi 
 joinFifo.cmi: join.cmi 
 joinHelper.cmi: join.cmi 
-joinMapRed.cmi: 
+joinMapRed.cmi: joinPool.cmi joinHelper.cmi 
+join.cmi: 
 joinPool.cmi: join.cmi 
 joinProc.cmi: 
-join.cmo: site.cmo ns.cmo join.cmi 
-join.cmx: site.cmx ns.cmx join.cmi 
 joinCount.cmo: join.cmi joinCount.cmi 
 joinCount.cmx: join.cmx joinCount.cmi 
 joinFifo.cmo: join.cmi joinFifo.cmi 
 joinFifo.cmx: join.cmx joinFifo.cmi 
 joinHelper.cmo: join.cmi joinHelper.cmi 
 joinHelper.cmx: join.cmx joinHelper.cmi 
-joinMapRed.cmo: joinMapRed.cmi 
-joinMapRed.cmx: joinMapRed.cmi 
-joinPool.cmo: join.cmi joinPool.cmi 
-joinPool.cmx: join.cmx joinPool.cmi 
+joinMapRed.cmo: joinPool.cmi joinHelper.cmi join.cmi joinMapRed.cmi 
+joinMapRed.cmx: joinPool.cmx joinHelper.cmx join.cmx joinMapRed.cmi 
+join.cmo: site.cmo ns.cmo join.cmi 
+join.cmx: site.cmx ns.cmx join.cmi 
+joinPool.cmo: joinCount.cmi join.cmi joinPool.cmi 
+joinPool.cmx: joinCount.cmx join.cmx joinPool.cmi 
 joinProc.cmo: joinProc.cmi 
 joinProc.cmx: joinProc.cmi 
 ns.cmo: site.cmo 

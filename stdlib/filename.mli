@@ -22,6 +22,9 @@ val parent_dir_name : string
 (** The conventional name for the parent of the current directory
    (e.g. [..] in Unix). *)
 
+val dir_sep : string
+(** The directory separator (e.g. [/] in Unix). *)
+
 val concat : string -> string -> string
 (** [concat dir file] returns a file name that designates file
    [file] in directory [dir]. *)
@@ -68,11 +71,13 @@ val basename : string -> string
 val dirname : string -> string
 (** See {!Filename.basename}. *)
 
-val temp_file : string -> string -> string
+val temp_file : ?temp_dir: string -> string -> string -> string
 (** [temp_file prefix suffix] returns the name of a
    fresh temporary file in the temporary directory.
    The base name of the temporary file is formed by concatenating
    [prefix], then a suitably chosen integer number, then [suffix].
+   The optional argument [temp_dir] indicates the temporary directory
+   to use, defaulting to {!Filename.temp_dir_name}.
    The temporary file is created empty, with permissions [0o600]
    (readable and writable only by the file owner).  The file is
    guaranteed to be different from any other file that existed when
@@ -80,7 +85,7 @@ val temp_file : string -> string -> string
 *)
 
 val open_temp_file :
-      ?mode: open_flag list -> string -> string -> string * out_channel
+      ?mode: open_flag list -> ?temp_dir: string -> string -> string -> string * out_channel
 (** Same as {!Filename.temp_file}, but returns both the name of a fresh
    temporary file, and an output channel opened (atomically) on
    this file.  This function is more secure than [temp_file]: there

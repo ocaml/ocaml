@@ -176,7 +176,7 @@ then
      fi
   esac
   has_ocaml=false
-  jocaml_version=`head -1 ../../VERSION`
+  jocaml_version=3.11.2
   case "$ocamlc" in
    "") echo "Warning: could not find ocamlc";;
    *)
@@ -337,14 +337,16 @@ case "$bytecc,$host" in
   gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
     dllccompopts="-D_WIN32 -DCAML_DLL"
-    flexlink="flexlink -chain cygwin -merge-manifest"
-    flexdir=`$flexlink -where | dos2unix`
-    if test -z "$flexdir"; then
-      echo "flexlink not found: native shared libraries won't be available"
-      withsharedlibs=no
-    else
-      iflexdir="-I\"$flexdir\""
-      mkexe="$flexlink -exe"
+    if test $withsharedlibs = yes; then
+      flexlink="flexlink -chain cygwin -merge-manifest"
+      flexdir=`$flexlink -where | dos2unix`
+      if test -z "$flexdir"; then
+        echo "flexlink not found: native shared libraries won't be available"
+        withsharedlibs=no
+      else
+        iflexdir="-I\"$flexdir\""
+        mkexe="$flexlink -exe"
+      fi
     fi
     exe=".exe"
     ostype="Cygwin";;

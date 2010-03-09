@@ -194,14 +194,14 @@ external close_desc: int -> unit = "caml_sys_close"
 
 let prng = Random.State.make_self_init ();;
 
-let temp_file_name prefix suffix =
+let temp_file_name temp_dir prefix suffix =
   let rnd = (Random.State.bits prng) land 0xFFFFFF in
-  concat temp_dir_name (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+  concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
 ;;
 
-let temp_file prefix suffix =
+let temp_file ?(temp_dir=temp_dir_name) prefix suffix =
   let rec try_name counter =
-    let name = temp_file_name prefix suffix in
+    let name = temp_file_name temp_dir prefix suffix in
     try
       close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o600);
       name
@@ -209,9 +209,9 @@ let temp_file prefix suffix =
       if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
 
-let open_temp_file ?(mode = [Open_text]) prefix suffix =
+let open_temp_file ?(mode = [Open_text]) ?(temp_dir=temp_dir_name) prefix suffix =
   let rec try_name counter =
-    let name = temp_file_name prefix suffix in
+    let name = temp_file_name temp_dir prefix suffix in
     try
       (name,
        open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)

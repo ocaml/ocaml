@@ -39,6 +39,7 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
+  | Repeated_method_label of string
 
 exception Error of Location.t * error
 
@@ -156,7 +157,7 @@ let rec transl_type env policy styp =
       end;
       constr
   | Ptyp_object fields ->
-      newobj (transl_fields env policy fields)
+      newobj (transl_fields env policy [] fields)
   | Ptyp_class(lid, stl, present) ->
       let (path, decl, is_variant) =
         try
@@ -384,15 +385,16 @@ let rec transl_type env policy styp =
       unify_var env (newvar()) ty';
       ty'
 
-and transl_fields env policy =
+and transl_fields env policy seen =
   function
     [] ->
       newty Tnil
   | {pfield_desc = Pfield_var}::_ ->
       if policy = Univars then new_pre_univar () else newvar ()
-  | {pfield_desc = Pfield(s, e)}::l ->
+  | {pfield_desc = Pfield(s, e); pfield_loc = loc}::l ->
+      if List.mem s seen then  raise (Error (loc, Repeated_method_label s));
       let ty1 = transl_type env policy e in
-      let ty2 = transl_fields env policy l in
+      let ty2 = transl_fields env policy (s::seen) l in
         newty (Tfield (s, Fpresent, ty1, ty2))
 
 
@@ -557,3 +559,6 @@ let report_error ppf = function
         (if v.desc = Tvar then "it escapes this scope" else
          if v.desc = Tunivar then "it is aliased to another variable"
          else "it is not a variable")
+  | Repeated_method_label s ->
+      fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
+        s "Multiple occurences are not allowed."

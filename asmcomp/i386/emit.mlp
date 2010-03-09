@@ -815,7 +815,8 @@ let rec emit_all fallthrough i =
 
 let emit_float_constant (lbl, cst) =
   `	.data\n`;
-  `{emit_label lbl}:	.double	{emit_string cst}\n`
+  `{emit_label lbl}:`;
+  emit_float64_split_directive ".long" cst
 
 (* Emission of external symbol references (for MacOSX) *)
 
@@ -888,7 +889,9 @@ let fundecl fundecl =
   bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
-  if macosx && is_generic_function fundecl.fun_name
+  if macosx
+  && not !Clflags.output_c_object
+  && is_generic_function fundecl.fun_name
   then (* PR#4690 *)
     `	.private_extern	{emit_symbol fundecl.fun_name}\n`
   else
@@ -928,9 +931,9 @@ let emit_item = function
   | Cint n ->
       `	.long	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.float	{emit_string f}\n`
+      emit_float32_directive ".long" f
   | Cdouble f ->
-      `	.double	{emit_string f}\n`
+      emit_float64_split_directive ".long" f
   | Csymbol_address s ->
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->

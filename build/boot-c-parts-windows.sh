@@ -13,7 +13,6 @@ set -ex
 mkdir -p _build/boot
 cp -f byterun/ocamlrun.exe \
       byterun/libcamlrun.$A \
-      byterun/ocamlrun.dll \
       asmrun/libasmrun.$A \
       yacc/ocamlyacc.exe \
       boot/ocamlc \
@@ -21,5 +20,4 @@ cp -f byterun/ocamlrun.exe \
       boot/ocamldep \
       _build/boot
 mkdir -p _build/byterun
-cp -f byterun/ocamlrun.exe byterun/ocamlrun.dll boot
-cp -f byterun/ocamlrun.$A _build/byterun
+cp -f byterun/ocamlrun.exe boot

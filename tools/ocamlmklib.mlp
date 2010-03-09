@@ -15,19 +15,25 @@
 open Printf
 open Myocamlbuild_config
 
-let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to jocamlc *)
-and native_objs = ref [] (* .cmx,.cmxa,.ml,.mli files to pass to jocamlopt *)
-and c_objs = ref []      (* .o, .a, .obj, .libfiles to pass to mksharedlib and ar *)
-and caml_libs = ref []      (* -cclib to pass to jocamlc, jocamlopt *)
-and caml_opts = ref []      (* -ccopt to pass to jocamlc, jocamlopt *)
+(* PR#4783: under Windows, don't use absolute paths because we do
+   not know where the binary distribution will be installed. *)
+let compiler_path name =
+  if Sys.os_type = "Win32" then name else Filename.concat bindir name
+
+let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
+and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to ocamlopt *)
+and c_objs = ref []         (* .o, .a, .obj, .lib, .dll files to pass to mksharedlib and ar *)
+and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
+and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 
 and dynlink = ref supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and jocamlc -cclib *)
 and c_opts = ref []      (* options to pass to mksharedlib and jocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
-and jocamlc = ref (Filename.concat bindir "jocamlc")
-and jocamlopt = ref (Filename.concat bindir "jocamlopt")
+and jocamlc = ref (compiler_path "jocamlc")
+and jocamlopt = ref (compiler_path "jocamlopt")
+
 and output = ref "a"        (* Output name for Caml part of library *)
 and output_c = ref ""       (* Output name for C part of library *)
 and rpath = ref []          (* rpath options *)
@@ -124,9 +130,8 @@ let parse_arguments argv =
   done;
   List.iter
     (fun r -> r := List.rev !r)
-    [ bytecode_objs; native_objs; c_objs; caml_libs; caml_opts; 
+    [ bytecode_objs; native_objs; caml_libs; caml_opts;
       c_libs; c_objs; c_opts; ld_opts; rpath ];
-  (* On retourne deux fois c_objs ??  -- AF *)
 
   if !output_c = "" then output_c := !output
 
@@ -188,7 +193,7 @@ let make_rpath flag =
   else flag ^ String.concat ":" (make_set !rpath)
 
 let make_rpath_ccopt flag =
-  if !rpath = [] || flag = "" 
+  if !rpath = [] || flag = ""
   then ""
   else "-ccopt " ^ flag ^ String.concat ":" (make_set !rpath)
 
@@ -204,10 +209,10 @@ let prepostfix pre name post =
 let transl_path s =
   match Sys.os_type with
     | "Win32" ->
-	let rec aux i = 
-	  if i = String.length s || s.[i] = ' ' then s
-	  else (if s.[i] = '/' then s.[i] <- '\\'; aux (i + 1))
-	in aux 0
+        let rec aux i =
+          if i = String.length s || s.[i] = ' ' then s
+          else (if s.[i] = '/' then s.[i] <- '\\'; aux (i + 1))
+        in aux 0
     | _ -> s
 
 let build_libs () =

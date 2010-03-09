@@ -14,3 +14,4 @@ stdlib_man
 test_stdlib
 test_latex
 test
+*.a
