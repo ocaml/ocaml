@@ -54,6 +54,7 @@ module type TESTSIG = sig
     val of_string: string -> t 
   end
   val testcomp: t -> t -> bool*bool*bool*bool*bool*bool*int
+  val skip_float_tests: bool
 end
 
 module Test32(M: TESTSIG) =
@@ -86,15 +87,15 @@ struct
     testing_function "to_string, format";
     List.iter (fun (n, s) -> test n (to_string (of_string s)) s)
       [1, "0"; 2, "123"; 3, "-456"; 4, "1234567890";
-       5, "2147483647"; 6, "-2147483648"];
+       5, "1073741824"; 6, "2147483647"; 7, "-2147483648"];
     List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
-      [7, "0x0"; 8, "0x123"; 9, "0xABCDEF"; 10, "0x12345678";
-       11, "0x7FFFFFFF"; 12, "0x80000000"; 13, "0xFFFFFFFF"];
-    test 14 (to_string max_int) "2147483647";
-    test 15 (to_string min_int) "-2147483648";
-    test 16 (to_string zero) "0";
-    test 17 (to_string one) "1";
-    test 18 (to_string minus_one) "-1";
+      [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x12345678";
+       12, "0x7FFFFFFF"; 13, "0x80000000"; 14, "0xFFFFFFFF"];
+    test 15 (to_string max_int) "2147483647";
+    test 16 (to_string min_int) "-2147483648";
+    test 17 (to_string zero) "0";
+    test 18 (to_string one) "1";
+    test 19 (to_string minus_one) "-1";
 
     testing_function "neg";
     test 1 (neg (of_int 0)) (of_int 0);
@@ -246,21 +247,23 @@ struct
        6, "0xb11b00", 7, "0x16236";
        7, "-0xb11b00", 7, "0x1fe9dca"];
 
-    testing_function "of_float";
-    test 1 (of_float 0.0) (of_int 0);
-    test 2 (of_float 123.0) (of_int 123);
-    test 3 (of_float 123.456) (of_int 123);
-    test 4 (of_float 123.999) (of_int 123);
-    test 5 (of_float (-456.0)) (of_int (-456));
-    test 6 (of_float (-456.123)) (of_int (-456));
-    test 7 (of_float (-456.789)) (of_int (-456));
+    if not (skip_float_tests) then begin
+      testing_function "of_float";
+      test 1 (of_float 0.0) (of_int 0);
+      test 2 (of_float 123.0) (of_int 123);
+      test 3 (of_float 123.456) (of_int 123);
+      test 4 (of_float 123.999) (of_int 123);
+      test 5 (of_float (-456.0)) (of_int (-456));
+      test 6 (of_float (-456.123)) (of_int (-456));
+      test 7 (of_float (-456.789)) (of_int (-456));
 
-    testing_function "to_float";
-    test 1 (to_float (of_int 0)) 0.0;
-    test 2 (to_float (of_int 123)) 123.0;
-    test 3 (to_float (of_int (-456))) (-456.0);
-    test 4 (to_float (of_int 0x3FFFFFFF)) 1073741823.0;
-    test 5 (to_float (of_int (-0x40000000))) (-1073741824.0);
+      testing_function "to_float";
+      test 1 (to_float (of_int 0)) 0.0;
+      test 2 (to_float (of_int 123)) 123.0;
+      test 3 (to_float (of_int (-456))) (-456.0);
+      test 4 (to_float (of_int 0x3FFFFFFF)) 1073741823.0;
+      test 5 (to_float (of_int (-0x40000000))) (-1073741824.0)
+    end;
 
     testing_function "Comparisons";
     test 1 (testcomp (of_int 0) (of_int 0))
@@ -317,14 +320,14 @@ struct
        6, "9223372036854775807";
        7, "-9223372036854775808"];
     List.iter (fun (n, s) -> test n ("0x" ^ format "%X" (of_string s)) s)
-      [7, "0x0"; 8, "0x123"; 9, "0xABCDEF"; 10, "0x1234567812345678";
-       11, "0x7FFFFFFFFFFFFFFF"; 12, "0x8000000000000000";
-       13, "0xFFFFFFFFFFFFFFFF"];
-    test 14 (to_string max_int) "9223372036854775807";
-    test 15 (to_string min_int) "-9223372036854775808";
-    test 16 (to_string zero) "0";
-    test 17 (to_string one) "1";
-    test 18 (to_string minus_one) "-1";
+      [8, "0x0"; 9, "0x123"; 10, "0xABCDEF"; 11, "0x1234567812345678";
+       12, "0x7FFFFFFFFFFFFFFF"; 13, "0x8000000000000000";
+       14, "0xFFFFFFFFFFFFFFFF"];
+    test 15 (to_string max_int) "9223372036854775807";
+    test 16 (to_string min_int) "-9223372036854775808";
+    test 17 (to_string zero) "0";
+    test 18 (to_string one) "1";
+    test 19 (to_string minus_one) "-1";
 
     testing_function "neg";
     test 1 (neg (of_int 0)) (of_int 0);
@@ -510,24 +513,28 @@ let _ =
   testing_function "-------- Int32 --------";
   let module A = Test32(struct type t = int32
                                module Ops = Int32
-                               let testcomp = testcomp_int32 end) in
+                               let testcomp = testcomp_int32
+                               let skip_float_tests = false end) in
   print_newline(); testing_function "-------- Int64 --------";
   let module B = Test64(struct type t = int64
                                module Ops = Int64
-                               let testcomp = testcomp_int64 end) in
+                               let testcomp = testcomp_int64
+                               let skip_float_tests = false end) in
   print_newline(); testing_function "-------- Nativeint --------";
   begin match Sys.word_size with
     32 ->
       let module C =
         Test32(struct type t = nativeint 
                       module Ops = Nativeint
-                      let testcomp = testcomp_nativeint end)
+                      let testcomp = testcomp_nativeint
+                      let skip_float_tests = true end)
       in ()
   | 64 ->
       let module C =
         Test64(struct type t = nativeint
                       module Ops = Nativeint
-                      let testcomp = testcomp_nativeint end)
+                      let testcomp = testcomp_nativeint 
+                      let skip_float_tests = true end)
       in ()
   | _ ->
       assert false
@@ -540,7 +547,9 @@ let _ =
          (Int32.of_string "0x12345678");
   if Sys.word_size = 64 then
   test 3 (Nativeint.to_int32 (Nativeint.of_string "0x123456789ABCDEF0"))
-         (Int32.of_string "0x9ABCDEF0");
+         (Int32.of_string "0x9ABCDEF0")
+  else
+  test 3 0 0; (* placeholder to have the same output on both 32-bit and 64-bit *)
   testing_function "int64 of/to int32";
   test 1 (Int64.of_int32 (Int32.of_string "-0x12345678"))
          (Int64.of_string "-0x12345678");
