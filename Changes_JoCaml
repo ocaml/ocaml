@@ -1,4 +1,5 @@
 - Corrected incorrect handling of channel names in object bodies. Dear.
+  (bug #1, rev 10200)
 
 JoCaml 3.11.2.A
 ---------------
