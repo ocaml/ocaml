@@ -8,7 +8,7 @@ default:
 	  fi; \
 	done
 	@for file in *.reference; do \
-	  echo -n " ... testing '$$file':"; \
+	  printf " ... testing '$$file':"; \
 	  diff -q $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
 	done
 

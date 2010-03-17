@@ -7,10 +7,10 @@ compile: tscanf2_io.cmo tscanf2_io.cmx
 	@$(OCAMLOPT) tscanf2_io.cmx -o slave.native tscanf2_slave.ml
 
 run:
-	@echo -n " ... testing with ocamlc"
+	@printf " ... testing with ocamlc"
 	@./master.byte ./slave.byte > result.byte 2>&1
 	@diff -q reference result.byte > /dev/null || (echo " => failed" && exit 1)
-	@echo -n " ocamlopt"
+	@printf " ocamlopt"
 	@./master.native ./slave.native > result.native 2>&1
 	@diff -q reference result.native > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"

@@ -6,7 +6,7 @@ common:
 	@$(CC) -c callbackprim.c
 
 run-byte: common
-	@echo -n " ... testing 'bytecode':"
+	@printf " ... testing 'bytecode':"
 	@$(OCAMLC) -c tcallback.ml
 	@$(OCAMLC) -o ./program -custom unix.cma callbackprim.$(O) tcallback.cmo
 	@./program > bytecode.result
@@ -14,7 +14,7 @@ run-byte: common
 	@echo " => passed"
 
 run-opt: common
-	@echo -n " ... testing 'native':"
+	@printf " ... testing 'native':"
 	@$(OCAMLOPT) -c tcallback.ml
 	@$(OCAMLOPT) -o ./program unix.cmxa callbackprim.$(O) tcallback.cmx
 	@./program > native.result

@@ -7,7 +7,7 @@ ADD_COMPFLAGS=-thread
 compile: $(PLUGINS) main mylib.so
 
 run:
-	@echo -n " ... testing 'main'"
+	@printf " ... testing 'main'"
 	@./main plugin_thread.so > result
 	@diff -q reference result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"

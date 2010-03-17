@@ -4,7 +4,7 @@ default: compile
 
 compile:
 	@for file in *.ml; do \
-	  echo -n " ... testing '$$file'"; \
+	  printf " ... testing '$$file'"; \
 	  if [ `echo $$file | grep bad` ]; then \
 	    $(OCAMLC) -c -w a $$file 2> /dev/null && (echo " => failed" && exit 1) || echo " => passed"; \
 	  else \

@@ -15,17 +15,17 @@ compile:
 	@$(OCAMLC) -o custom -custom -linkall plug2.cma plug1.cma -I .
 
 run:
-	@echo -n " ... testing 'main'"
+	@printf " ... testing 'main'"
 	@./main plug1.cma plug2.cma > main.result
 	@diff -q main.reference main.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
-	@echo -n " ... testing 'static'"
+	@printf " ... testing 'static'"
 	@./static > static.result
 	@diff -q static.reference static.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
-	@echo -n " ... testing 'custom'"
+	@printf " ... testing 'custom'"
 	@./custom > custom.result
 	@diff -q custom.reference custom.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"

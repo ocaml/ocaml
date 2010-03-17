@@ -24,10 +24,10 @@ compile: $(ML_FILES) $(CMO_FILES) $(CMX_FILES) $(MAIN_MODULE).cmo $(MAIN_MODULE)
 	@$(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(patsubst %,%.cmx,$(ADD_MODULES)) $(MAIN_MODULE).cmx
 
 run:
-	@echo -n " ... testing with ocamlc"
+	@printf " ... testing with ocamlc"
 	@./program.byte $(EXEC_ARGS) > $(MAIN_MODULE).result || (echo " => failed" && exit 1)
 	@diff -q $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1)
-	@echo -n " ocamlopt"
+	@printf " ocamlopt"
 	@./program.native $(EXEC_ARGS) > $(MAIN_MODULE).result || (echo " => failed" && exit 1)
 	@diff -q $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"

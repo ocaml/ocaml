@@ -23,7 +23,7 @@ run-all:
 	  $(FORTRAN_COMPILER) -c -I$(PREFIX)/lib/ocaml/caml $$file.f; \
 	done;
 	@for file in *.ml; do \
-	  echo -n " ... testing '$$file':"; \
+	  printf " ... testing '$$file':"; \
 	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) -w a $(CMA_FILES) -I ../../lib $(CMO_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
 	  $(MAKE) run-file DESC=ocamlopt COMP=$(PREFIX)/bin/ocamlopt COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I ../../lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
 	  if [ ! -z $(UNSAFE) ]; then \
@@ -34,7 +34,7 @@ run-all:
 	done;
 
 run-file:
-	@echo -n " $(DESC)"
+	@printf " $(DESC)"
 	@$(COMP) $(COMPFLAGS) $(FILE) -o program
 	@if [ -f `basename $(FILE) ml`runner ]; then \
 	  sh `basename $(FILE) ml`runner; \
