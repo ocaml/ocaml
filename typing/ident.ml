@@ -182,3 +182,9 @@ let rec keys_aux stack accu = function
       keys_aux (l :: stack) (k.ident :: accu) r
 
 let keys tbl = keys_aux [] [] tbl
+
+let rec map f = function
+  | Empty -> Empty
+  | Node (l, k, r, h) ->
+      Node (map f l, { k with data = f k.data ; }, map f r, h)
+

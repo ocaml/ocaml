@@ -732,6 +732,13 @@ and add_continuation id desc env  =
   {env with continuations = new_conts}
 
 and remove_continuations t =  {t with continuations = Ident.empty}
+
+let do_purge (path,d as c) = match d.val_kind with
+  | Val_channel _|Val_alone _ -> path,{ d with val_kind = Val_reg; }
+  | _ -> c
+
+let remove_channel_info t =
+  { t with values = Ident.map do_purge t.values ; }
 (*< JOCAML *)
 
 (* Insertion of bindings by name *)

@@ -67,9 +67,12 @@ val add_cltype: Ident.t -> cltype_declaration -> t -> t
 
 val add_item: signature_item -> t -> t
 val add_signature: signature -> t -> t
+
 (*> JOCAML *)
 val add_continuation: Ident.t -> continuation_description -> t -> t
 val remove_continuations: t -> t
+(* Erase channel information *)
+val remove_channel_info: t -> t
 (*< JOCAML *)
 
 (* Insertion of all fields of a signature, relative to the given path.

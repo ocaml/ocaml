@@ -1152,7 +1152,7 @@ and check_process ctx sexp = match ctx with
 (*<JOCAML*)
 
 (* Plain caml function for typing expressions *)
-let rec type_exp  env sexp = do_type_exp E env sexp
+let rec type_exp env sexp = do_type_exp E env sexp
 
 and type_proc env sexp = do_type_exp P env sexp 
 
@@ -1935,6 +1935,10 @@ and do_type_exp ctx env sexp =
        }
   | Pexp_object s ->
       check_expression ctx sexp ;
+      (* Quite dear: costs one env copy.
+         Avoids auto names escaping in method bodies.
+         Cf. transclass and its funny handling of names *) 
+      let env = Env.remove_channel_info env in
       let desc, sign, meths = !type_object env sexp.pexp_loc s in
       re {
         exp_desc = Texp_object (desc, sign, meths);

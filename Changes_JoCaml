@@ -1,3 +1,5 @@
+- Corrected incorrect handling of channel names in object bodies. Dear.
+
 JoCaml 3.11.2.A
 ---------------
 - Unfortunate bug in lex/Makefile [and forgot bootstrap]
