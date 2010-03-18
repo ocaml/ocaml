@@ -321,6 +321,16 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
+let rec remove_values ids = function
+    [] -> []
+  | Tsig_value (id, _) :: rem when List.exists (Ident.equal id) ids -> rem
+  | f :: rem -> f :: remove_values ids rem
+
+let rec get_values = function
+    [] -> []
+  | Tsig_value (id, _) :: rem -> id :: get_values rem
+  | f :: rem -> get_values rem
+
 (* Check and translate a module type expression *)
 
 let transl_modtype_longident loc env lid =
@@ -365,7 +375,8 @@ and transl_signature env sg =
             let desc = Typedecl.transl_value_decl env sdesc in
             let (id, newenv) = Env.enter_value name desc env in
             let rem = transl_sig newenv srem in
-            Tsig_value(id, desc) :: rem
+            if List.exists (Ident.equal id) (get_values rem) then rem
+            else Tsig_value(id, desc) :: rem
         | Psig_type sdecls ->
             List.iter
               (fun (name, decl) -> check "type" item.psig_loc type_names name)
@@ -411,7 +422,7 @@ and transl_signature env sg =
               sg;
             let newenv = Env.add_signature sg env in
             let rem = transl_sig newenv srem in
-            sg @ rem
+            remove_values (get_values rem) sg @ rem
         | Psig_class cl ->
             List.iter
               (fun {pci_name = name} ->
