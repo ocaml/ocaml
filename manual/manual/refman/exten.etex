@@ -406,7 +406,60 @@ is not inferred, and must be given explicitly.
 \ikwd{let\@\texttt{let}}
 \ikwd{open\@\texttt{open}}
 
-The expression
+The expressions
 @"let" "open" module-path "in" expr@
-locally opens the module referred to by the module path @module-path@ in
+and
+@module-path.(expr)@ are strictly equivalent. They
+locally open the module referred to by the module path @module-path@ in
 the scope of the expression @expr@.
+
+Restricting opening to the scope of a single expression instead of a
+whole structure allows one to benefit from shorter syntax to refer to
+components of the opened module, without polluting the global
+scope. Also, this can make the code easier to read (the open statement is
+closer to where it is used) and to refactorize (because the code
+fragment is more self-contained).
+
+
+\section{Explicit naming of generic types}
+\ikwd{type\@\texttt{type}}
+
+The expression @"fun" ("type" typeconstr-name) -> expr@ introduces a
+type constructor named @typeconstr-name@ which is considered abstract
+in the scope of the sub-expression, but then replaced by a fresh type
+variable.  Note that contrary to what the syntax could suggest, the
+expression @"fun" ("type" typeconstr-name) -> expr@ itself does not
+suspend the evaluation of @expr@ as a regular abstraction would.  The
+syntax has been chosen to fit nicely in the context of function
+declarations, where it is generally used. It is possible to freely mix
+regular function parameters with pseudo type parameters, as in:
+
+\begin{verbatim}
+  let f = fun (type t) (foo : t list) -> ...
+\end{verbatim}
+
+and even use the alternative syntax for declaring functions:
+
+\begin{verbatim}
+  let fun f (type t) (foo : t list) = ...
+\end{verbatim}
+
+The construction is useful because the type constructor it introduces
+can be used where a type variable is not allowed. For instance, one
+can use it to define an exception in a local module within a
+polymorphic function.
+\begin{verbatim}
+let f (type t) () =
+  let module M = struct exception E of t end in
+  (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
+\end{verbatim}
+
+Another example:
+\begin{verbatim}
+let sort_uniq (type s) (cmp : s -> s -> int) =
+  let module S = Set.Make(struct type t = s let compare = cmp end) in
+  fun l ->
+    S.elements (List.fold_right S.add l S.empty)
+\end{verbatim}
+
+The construction is also extremely useful with first-class modules.
