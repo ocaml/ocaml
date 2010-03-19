@@ -463,3 +463,47 @@ let sort_uniq (type s) (cmp : s -> s -> int) =
 \end{verbatim}
 
 The construction is also extremely useful with first-class modules.
+
+\section{First-class modules}
+\ikwd{module\@\texttt{module}}
+\ikwd{val\@\texttt{val}}
+
+\begin{verbatim}
+typeexpr:
+      ...
+    | ('module' package-type)
+;
+package-type:
+      modtype-path
+    | modtype-path 'with' package-type-constraint { 'and' package-type-constraint }
+;
+module-expr:
+      ...
+    | ('val' expr : package-type)
+;
+package-type-constraint:
+          'type' typeconstr-name '=' typexpr
+;
+expr:
+      ...
+    | ('module' module-expr : package-type)
+;
+\end{verbatim}
+
+Modules are typically thought as static components. This extension
+allows one to manipulate them as regular-class values.
+
+Note that package types are a subset of module type expressions. The accepted
+forms are named module types with optional constraints of a limited form
+(only non-parametrized types can be specified).
+
+The new forms of expressions and module expressions turn a value of
+the module language into a value of the base language and conversely.
+The type of the expression @("module" module-expr ":" package-type)@
+is @("module" package-type)@.
+
+The module expression @("val" expr ":" package-type)@ cannot be used in the
+body of a functor (but it can be used in a local module expression anywhere).
+The type for the expression @expr@ must be @("module" package-type)@ (with the
+same package type). Package types are compared by path equality on the module
+type name component, and normal type equality for constraints.
