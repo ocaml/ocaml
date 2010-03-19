@@ -1,3 +1,6 @@
+(* Adapted from: An Expressive Language of Signatures
+   by Norman Ramsey, Kathleen Fisher and Paul Govereau *)
+
 module type VALUE = sig
   type value (* a Lua value *)
   type state (* the state of a Lua interpreter *)
