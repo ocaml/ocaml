@@ -68,13 +68,15 @@ module type COMBINED_TYPE = sig
   include COMBINED_COMMON with module T := T
 end
 
-module type BARECODE =
-    functor (C : CORE) -> sig val init : C.V.state -> unit end
+module type BARECODE = sig
+  type state
+  val init : state -> unit
+end
 
 module USERCODE(X : TYPEVIEW) = struct
   module type F =
       functor (C : CORE with type V.usert = X.combined) ->
-        sig val init : C.V.state -> unit end
+        BARECODE with type state := C.V.state
 end
 
 module Weapon = struct type t end
