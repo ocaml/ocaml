@@ -400,3 +400,13 @@ pattern-matching must have a default case.
 
 Like for abstract and private types, the variance of type parameters
 is not inferred, and must be given explicitly.
+
+
+\section{Local opens}
+\ikwd{let\@\texttt{let}}
+\ikwd{open\@\texttt{open}}
+
+The expression
+@"let" "open" module-path "in" expr@
+locally opens the module referred to by the module path @module-path@ in
+the scope of the expression @expr@.
