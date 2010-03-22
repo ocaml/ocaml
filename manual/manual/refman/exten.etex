@@ -468,27 +468,27 @@ The construction is also extremely useful with first-class modules.
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
 
-\begin{verbatim}
-typeexpr:
-      ...
+\begin{syntax}
+typexpr-ext:
+      typexpr
     | ('module' package-type)
 ;
 package-type:
       modtype-path
     | modtype-path 'with' package-type-constraint { 'and' package-type-constraint }
 ;
-module-expr:
-      ...
-    | ('val' expr : package-type)
+module-expr-ext:
+      module-expr
+    | ('val' expr ':' package-type)
 ;
 package-type-constraint:
           'type' typeconstr-name '=' typexpr
 ;
-expr:
-      ...
-    | ('module' module-expr : package-type)
+expr-ext:
+      expr
+    | ('module' module-expr ':' package-type)
 ;
-\end{verbatim}
+\end{syntax}
 
 Modules are typically thought as static components. This extension
 makes it possible to pack a module as a first-class value, which can
