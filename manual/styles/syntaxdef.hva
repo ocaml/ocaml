@@ -44,6 +44,7 @@
 \stx@silent{unit-name}%
 %%Redefined in exten.etex
 \stx@silent{expr}%
+\stx@silent{module-expr}%
 \stx@silent{type-representation}%
 \stx@silent{definition}%
 \stx@silent{specification}%
