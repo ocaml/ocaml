@@ -469,23 +469,23 @@ The construction is also extremely useful with first-class modules.
 \ikwd{val\@\texttt{val}}
 
 \begin{syntax}
-typexpr-ext:
-      typexpr
+typexpr:
+      ...
     | ('module' package-type)
 ;
 package-type:
       modtype-path
     | modtype-path 'with' package-type-constraint { 'and' package-type-constraint }
 ;
-module-expr-ext:
-      module-expr
+module-expr:
+      ...
     | ('val' expr ':' package-type)
 ;
 package-type-constraint:
           'type' typeconstr-name '=' typexpr
 ;
-expr-ext:
-      expr
+expr:
+      ...
     | ('module' module-expr ':' package-type)
 ;
 \end{syntax}
