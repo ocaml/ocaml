@@ -473,20 +473,20 @@ typexpr:
       ...
     | ('module' package-type)
 ;
-package-type:
-      modtype-path
-    | modtype-path 'with' package-type-constraint { 'and' package-type-constraint }
-;
 module-expr:
       ...
     | ('val' expr ':' package-type)
 ;
-package-type-constraint:
-          'type' typeconstr-name '=' typexpr
-;
 expr:
       ...
     | ('module' module-expr ':' package-type)
+;
+package-type:
+      modtype-path
+    | modtype-path 'with' package-type-constraint { 'and' package-type-constraint }
+;
+package-type-constraint:
+          'type' typeconstr-name '=' typexpr
 ;
 \end{syntax}
 
