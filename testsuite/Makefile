@@ -1,6 +1,6 @@
 # $Id$
 
-BASEDIR=$(shell pwd)
+BASEDIR=${PWD}
 
 default:
 	@echo "Available targets:"
