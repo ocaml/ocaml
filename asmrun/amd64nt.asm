@@ -84,7 +84,9 @@ L105:
         movlpd  QWORD PTR [rsp + 14*8], xmm14
         movlpd  QWORD PTR [rsp + 15*8], xmm15
     ; Call the garbage collector
-        call    caml_garbage_collection
+        sub rsp, 32      ; PR#5008: bottom 32 bytes are reserved for callee
+        call caml_garbage_collection
+        add rsp, 32      ; PR#5008
     ; Restore all regs used by the code generator
         movlpd  xmm0, QWORD PTR [rsp + 0*8]
         movlpd  xmm1, QWORD PTR [rsp + 1*8]

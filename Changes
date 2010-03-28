@@ -46,7 +46,7 @@ Compilers and toplevel:
 Standard library:
 - Format: new function ikfprintf analoguous to ifprintf with a continuation
   argument.
-- PR#4210, #4245: stricter range checking in string->integer conversion
+* PR#4210, #4245: stricter range checking in string->integer conversion
   functions (int_of_string, Int32.of_string, Int64.of_string,
   Nativeint.of_string).  The decimal string corresponding to
   max_int + 1 is no longer accepted.
@@ -58,7 +58,7 @@ Standard library:
 
 Bug Fixes:
 - PR#4775: compiler crash on crazy types (temporary fix)
-
+- PR#5008: on AMD64/MSVC port, rare float corruption during GC.
 
 Objective Caml 3.11.2:
 ----------------------
