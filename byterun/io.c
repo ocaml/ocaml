@@ -62,7 +62,9 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
 
   channel = (struct channel *) caml_stat_alloc(sizeof(struct channel));
   channel->fd = fd;
-  channel->offset = lseek (fd, 0, SEEK_CUR);
+  caml_enter_blocking_section();
+  channel->offset = lseek(fd, 0, SEEK_CUR);
+  caml_leave_blocking_section();
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   channel->mutex = NULL;
@@ -111,13 +113,21 @@ CAMLexport void caml_close_channel(struct channel *channel)
 
 CAMLexport file_offset caml_channel_size(struct channel *channel)
 {
+  file_offset offset;
   file_offset end;
+  int fd;
 
-  end = lseek(channel->fd, 0, SEEK_END);
-  if (end == -1 ||
-      lseek(channel->fd, channel->offset, SEEK_SET) != channel->offset) {
+  /* We extract data from [channel] before dropping the Caml lock, in case
+     someone else touches the block. */
+  fd = channel->fd;
+  offset = channel->offset;
+  caml_enter_blocking_section();
+  end = lseek(fd, 0, SEEK_END);
+  if (end == -1 || lseek(fd, offset, SEEK_SET) != offset) {
+    caml_leave_blocking_section();
     caml_sys_error(NO_ARG);
   }
+  caml_leave_blocking_section();
   return end;
 }
 
@@ -245,7 +255,12 @@ CAMLexport void caml_really_putblock(struct channel *channel,
 CAMLexport void caml_seek_out(struct channel *channel, file_offset dest)
 {
   caml_flush(channel);
-  if (lseek(channel->fd, dest, SEEK_SET) != dest) caml_sys_error(NO_ARG);
+  caml_enter_blocking_section();
+  if (lseek(channel->fd, dest, SEEK_SET) != dest) {
+    caml_leave_blocking_section();
+    caml_sys_error(NO_ARG);
+  }
+  caml_leave_blocking_section();
   channel->offset = dest;
 }
 
@@ -340,7 +355,12 @@ CAMLexport void caml_seek_in(struct channel *channel, file_offset dest)
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
   } else {
-    if (lseek(channel->fd, dest, SEEK_SET) != dest) caml_sys_error(NO_ARG);
+    caml_enter_blocking_section();
+    if (lseek(channel->fd, dest, SEEK_SET) != dest) {
+      caml_leave_blocking_section();
+      caml_sys_error(NO_ARG);
+    }
+    caml_leave_blocking_section();
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
   }
