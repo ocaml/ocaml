@@ -510,6 +510,9 @@ and module_type i ppf x =
       line i ppf "Pmty_with\n";
       module_type i ppf mt;
       list i longident_x_with_constraint ppf l;
+  | Pmty_typeof m ->
+      line i ppf "Pmty_typeof\n";
+      module_expr i ppf m
 
 and signature i ppf x = list i signature_item ppf x
 

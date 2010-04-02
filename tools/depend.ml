@@ -180,6 +180,7 @@ and add_modtype bv mty =
         (function (_, Pwith_type td) -> add_type_declaration bv td
                 | (_, Pwith_module lid) -> addmodule bv lid)
         cstrl
+  | Pmty_typeof m -> add_module bv m
 
 and add_signature bv = function
     [] -> ()

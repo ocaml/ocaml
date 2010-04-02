@@ -75,6 +75,11 @@ let rm node =
   Stypes.record (Stypes.Ti_mod node);
   node
 
+(* Forward declaration, to be filled in by type_module_type_of *)
+let type_module_type_of_fwd 
+  : (Env.t -> Parsetree.module_expr -> module_type) ref
+  = ref (fun env m -> assert false)
+
 (* Merge one "with" constraint in a signature *)
 
 let rec add_rec_types env = function
@@ -179,6 +184,8 @@ let rec approx_modtype env smty =
       Tmty_functor(id, arg, res)
   | Pmty_with(sbody, constraints) ->
       approx_modtype env sbody
+  | Pmty_typeof smod ->
+      !type_module_type_of_fwd env smod
 
 and approx_sig env ssg =
   match ssg with
@@ -297,6 +304,8 @@ let rec transl_modtype env smty =
             merge_constraint env smty.pmty_loc sg lid sdecl)
           init_sg constraints in
       Mtype.freshen (Tmty_signature final_sg)
+  | Pmty_typeof smod ->
+      !type_module_type_of_fwd env smod
 
 and transl_signature env sg =
   let type_names = ref StringSet.empty
@@ -826,12 +835,20 @@ and type_structure funct_body anchor env sstr scope =
 let type_module = type_module false None
 let type_structure = type_structure false None
 
-(* Fill in the forward declaration *)
+let type_module_type_of env smod =
+  match smod.pmod_desc with
+  | Pmod_ident lid -> (* turn off strengthening in this case *)
+      let (path, mty) = type_module_path env smod.pmod_loc lid in mty
+  | _ ->
+      (type_module env smod).mod_type
+
+(* Fill in the forward declarations *)
 let () =
   Typecore.type_module := type_module;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
-  Typecore.type_open := type_open
+  Typecore.type_open := type_open;
+  type_module_type_of_fwd := type_module_type_of
 
 (* Normalize types in a signature *)
 

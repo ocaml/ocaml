@@ -207,6 +207,7 @@ and module_type_desc =
   | Pmty_signature of signature
   | Pmty_functor of string * module_type * module_type
   | Pmty_with of module_type * (Longident.t * with_constraint) list
+  | Pmty_typeof of module_expr
 
 and signature = signature_item list
 

@@ -519,6 +519,8 @@ module_type:
       { mkmty(Pmty_functor($3, $5, $8)) }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
+  | MODULE TYPE OF module_expr
+      { mkmty(Pmty_typeof $4) }
   | LPAREN module_type RPAREN
       { $2 }
   | LPAREN module_type error

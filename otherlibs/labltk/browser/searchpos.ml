@@ -240,6 +240,8 @@ and search_pos_module m ~pos ~env =
               _, Pwith_type t -> search_pos_type_decl t ~pos ~env
             | _ -> ()
           end
+    | Pmty_typeof md -> 
+        ()   (* TODO? *)
     end
   end
 

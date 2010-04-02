@@ -865,6 +865,8 @@ module Analyser =
                   "??"
               | Parsetree.Pmty_with (mt, _) ->
                   f mt.Parsetree.pmty_desc
+              | Parsetree.Pmty_typeof _ -> (* TODO *)
+                  "??"
             in
             let name = (f module_type.Parsetree.pmty_desc) in
             let full_name = Odoc_env.full_module_or_module_type_name env name in
@@ -1093,7 +1095,10 @@ module Analyser =
            Module_type_with (k, s)
           )
 
-    (** Analyse of a Parsetree.module_type and a Types.module_type.*)
+      | Parsetree.Pmty_typeof module_expr ->
+          assert false                  (* TODO *)
+
+    (** analyse of a Parsetree.module_type and a Types.module_type.*)
     and analyse_module_kind env current_module_name module_type sig_module_type =
       match module_type.Parsetree.pmty_desc with
         Parsetree.Pmty_ident longident ->
@@ -1156,6 +1161,8 @@ module Analyser =
            let k = analyse_module_type_kind env current_module_name module_type2 sig_module_type in
            Module_with (k, s)
           )
+      | Parsetree.Pmty_typeof module_expr ->
+          assert false                  (* TODO *)
 
     (** Analyse of a Parsetree.class_type and a Types.class_type to return a couple
        (class parameters, class_kind).*)
