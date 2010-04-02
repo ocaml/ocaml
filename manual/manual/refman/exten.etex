@@ -417,7 +417,7 @@ Restricting opening to the scope of a single expression instead of a
 whole structure allows one to benefit from shorter syntax to refer to
 components of the opened module, without polluting the global
 scope. Also, this can make the code easier to read (the open statement is
-closer to where it is used) and to refactorize (because the code
+closer to where it is used) and to refactor (because the code
 fragment is more self-contained).
 
 
@@ -467,6 +467,7 @@ The construction is also extremely useful with first-class modules.
 \section{First-class modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
+\ikwd{with\@\texttt{with}}
 
 \begin{syntax}
 typexpr:
@@ -522,12 +523,12 @@ The type inferred for this function is "(module Set.S with type elt =
 'a) -> 'a list -> 'a list". To use this function, one can wrap the "Set.Make" functor:
 
 \begin{verbatim}
-let make_set (type s) cmp =
-  let module S = Set.Make(struct
-    type t = s
-    let compare = cmp
-  end) in
-  (module S : Set.S with type elt = s) 
+        let make_set (type s) cmp =
+          let module S = Set.Make(struct
+            type t = s
+            let compare = cmp
+          end) in
+          (module S : Set.S with type elt = s) 
 \end{verbatim}
 
 This function has type "('a -> 'a -> int) -> (module Set.S with type elt = 'a)".
@@ -538,55 +539,55 @@ Algebraic Data Types. To demonstrate this, we first define a type
 of witnesses for type equalities:
 
 \begin{verbatim}
-module TypEq :
-  sig
-    type ('a, 'b) t
-    val apply: ('a, 'b) t -> 'a -> 'b
-    val refl: ('a, 'a) t
-    val sym: ('a, 'b) t -> ('b, 'a) t
-  end
-  =
-  struct
-    type ('a, 'b) t = ('a -> 'b) * ('b -> 'a)
-    let refl = (fun x -> x), (fun x -> x)
-    let apply (f, _) x = f x
-    let sym (f, g) = (g, f)
-  end
+        module TypEq :
+          sig
+            type ('a, 'b) t
+            val apply: ('a, 'b) t -> 'a -> 'b
+            val refl: ('a, 'a) t
+            val sym: ('a, 'b) t -> ('b, 'a) t
+          end
+          =
+          struct
+            type ('a, 'b) t = ('a -> 'b) * ('b -> 'a)
+            let refl = (fun x -> x), (fun x -> x)
+            let apply (f, _) x = f x
+            let sym (f, g) = (g, f)
+          end
 \end{verbatim}
 
 We can then define a paramatrized algebraic data type whose
 constructors provide some information about the type parameter:
 
 \begin{verbatim}
-module rec Typ :
-  sig
-    module type PAIR =
-      sig
-        type t
-        type t1
-        type t2
-        val eq: (t, t1 * t2) TypEq.t
-        val t1: t1 Typ.typ
-        val t2: t2 Typ.typ
-      end
+        module rec Typ :
+          sig
+            module type PAIR =
+              sig
+                type t
+                type t1
+                type t2
+                val eq: (t, t1 * t2) TypEq.t
+                val t1: t1 Typ.typ
+                val t2: t2 Typ.typ
+              end
 
-    type 'a typ =
-      | Int of ('a, int) TypEq.t
-      | String of ('a, string) TypEq.t
-      | Pair of (module PAIR with type t = 'a)
-  end
-  =
-  struct
-    module type PAIR =
-      sig
-        include Typ.PAIR
-      end
+            type 'a typ =
+              | Int of ('a, int) TypEq.t
+              | String of ('a, string) TypEq.t
+              | Pair of (module PAIR with type t = 'a)
+          end
+          =
+          struct
+            module type PAIR =
+              sig
+                include Typ.PAIR
+              end
 
-    type 'a typ =
-      | Int of ('a, int) TypEq.t
-      | String of ('a, string) TypEq.t
-      | Pair of (module PAIR with type t = 'a)
-  end
+            type 'a typ =
+              | Int of ('a, int) TypEq.t
+              | String of ('a, string) TypEq.t
+              | Pair of (module PAIR with type t = 'a)
+          end
 \end{verbatim}
 
 Values of type "'a typ" are supposed to be runtime representations for
@@ -601,37 +602,73 @@ should how to use first-class modules to simulate existentials.
 Here is how to construct values of type "'a typ":
 
 \begin{verbatim}
-let int = Typ.Int TypEq.refl
+        let int = Typ.Int TypEq.refl
 
-let str = Typ.String TypEq.refl
+        let str = Typ.String TypEq.refl
 
-let pair (type s1) (type s2) t1 t2 =
-  let module P = struct
-    type t = s1 * s2
-    type t1 = s1
-    type t2 = s2
-    let eq = TypEq.refl
-    let t1 = t1
-    let t2 = t2
-  end in
-  let pair = (module P : Typ.PAIR with type t = s1 * s2) in
-  Typ.Pair pair
+        let pair (type s1) (type s2) t1 t2 =
+          let module P = struct
+            type t = s1 * s2
+            type t1 = s1
+            type t2 = s2
+            let eq = TypEq.refl
+            let t1 = t1
+            let t2 = t2
+          end in
+          let pair = (module P : Typ.PAIR with type t = s1 * s2) in
+          Typ.Pair pair
 \end{verbatim}
 
-And finally, here is an example of a polymorphoc function that takes the
+And finally, here is an example of a polymorphic function that takes the
 runtime representation of some type "'a" and a value of the same type,
-and pretty-print the value as a string:
+then pretty-print the value as a string:
 
 \begin{verbatim}
-let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
-  fun (type s) t x ->
-    match t with
-    | Int eq -> string_of_int (TypEq.apply eq x)
-    | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
-    | Pair p ->
-        let module P = (val p : PAIR with type t = s) in
-        let (x1, x2) = TypEq.apply P.eq x in
-        Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
+        let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
+          fun (type s) t x ->
+            match t with
+            | Int eq -> string_of_int (TypEq.apply eq x)
+            | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
+            | Pair p ->
+                let module P = (val p : PAIR with type t = s) in
+                let (x1, x2) = TypEq.apply P.eq x in
+                Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
 \end{verbatim}
 
 Note that the function uses polymorphic recursion.
+
+\section{Recovering the type of a module}
+
+\ikwd{module\@\texttt{module}}
+\ikwd{type\@\texttt{type}}
+\ikwd{include\@\texttt{include}}
+
+\begin{syntax}
+module-type: 
+     ...
+   | 'module' 'type' 'of' module-expr
+\end{syntax}
+
+The construction @'module' 'type' 'of' M@ expands to the module type
+(signature or functor type) inferred for the module expression @M@
+(structure or functor). 
+
+A typical use, in conjunction with the signature-level @'include'@
+construct, is to extend the signature of an existing structure, as in
+the following example.
+\begin{verbatim}
+        module type MYHASH = sig
+          include module type of Hashtbl
+          val replace: ('a, 'b) t -> 'a -> 'b -> unit
+        end
+\end{verbatim}
+The signature "MYHASH", then, contains all the fields of the signature
+of module "Hashtbl", plus the new field "replace".  An implementation
+of this signature can be obtained easily, using the @'include'@
+construct at the structure level this time:
+\begin{verbatim}
+        module MyHash : MYHASH = struct
+          include Hashtbl
+          let replace t k v = remove t k; add t k v
+        end
+\end{verbatim}
