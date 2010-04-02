@@ -20,7 +20,7 @@ for the specifications expressed in module types.
 \begin{syntax}
 module-expr:
           module-path
-        | 'struct' { definition [';;'] | expr ';;' } 'end'
+        | 'struct' { definition [';;'] || expr ';;' } 'end'
         | 'functor' '(' module-name ':' module-type ')' '->' module-expr
         | module-expr '(' module-expr ')'
         | '(' module-expr ')'

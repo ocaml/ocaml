@@ -4,27 +4,27 @@ FILES=allfiles.tex biblio.tex foreword.tex version.tex
 TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
-CSLDIR=../../release
-OCAMLDOC=$(CSLDIR)/ocamldoc/ocamldoc.opt -hide Pervasives 
+SRC=../../release
+OCAMLDOC=$(SRC)/ocamldoc/ocamldoc.opt -hide Pervasives 
 HEVEA=hevea
 HACHA=hacha
 INFO=-fix -exec xxdate.exe -info -w 79
 HTML=-fix -exec xxdate.exe -O
 TEXT=-fix -exec xxdate.exe -text -w 79
 
-CSLDIR2=../$(CSLDIR)
-MLIS=$(CSLDIR2)/stdlib/*.mli \
-	$(CSLDIR2)/otherlibs/bigarray/bigarray.mli \
-	$(CSLDIR2)/otherlibs/dbm/dbm.mli \
-	$(CSLDIR2)/otherlibs/dynlink/dynlink.mli \
-	$(CSLDIR2)/otherlibs/graph/graphics.mli \
-	$(CSLDIR2)/otherlibs/graph/graphicsX11.mli \
-	$(CSLDIR2)/otherlibs/num/num.mli \
-	$(CSLDIR2)/otherlibs/num/arith_status.mli \
-	$(CSLDIR2)/otherlibs/num/big_int.mli \
-	$(CSLDIR2)/otherlibs/str/*.mli \
-	$(CSLDIR2)/otherlibs/systhreads/*.mli \
-	$(CSLDIR2)/otherlibs/unix/*.mli \
+SRC2=../$(SRC)
+MLIS=$(SRC2)/stdlib/*.mli \
+	$(SRC2)/otherlibs/bigarray/bigarray.mli \
+	$(SRC2)/otherlibs/dbm/dbm.mli \
+	$(SRC2)/otherlibs/dynlink/dynlink.mli \
+	$(SRC2)/otherlibs/graph/graphics.mli \
+	$(SRC2)/otherlibs/graph/graphicsX11.mli \
+	$(SRC2)/otherlibs/num/num.mli \
+	$(SRC2)/otherlibs/num/arith_status.mli \
+	$(SRC2)/otherlibs/num/big_int.mli \
+	$(SRC2)/otherlibs/str/*.mli \
+	$(SRC2)/otherlibs/systhreads/*.mli \
+	$(SRC2)/otherlibs/unix/*.mli \
 	../library/tk.mli
 
 manual: files
@@ -48,19 +48,19 @@ html: files
 	mkdir -p libref ; \
 	../$(OCAMLDOC) -colorize-code -sort -html \
 	-d libref \
-	-I $(CSLDIR2)/stdlib  \
-	-I $(CSLDIR2)/otherlibs/bigarray \
-	-I $(CSLDIR2)/otherlibs/dbm \
-	-I $(CSLDIR2)/otherlibs/dynlink \
-	-I $(CSLDIR2)/otherlibs/graph \
-	-I $(CSLDIR2)/otherlibs/num \
-	-I $(CSLDIR2)/otherlibs/str \
-	-I $(CSLDIR2)/otherlibs/systhreads \
-	-I $(CSLDIR2)/otherlibs/unix \
-	-I $(CSLDIR2)/otherlibs/labltk/support \
-	-I $(CSLDIR2)/otherlibs/labltk/lib \
-	-I $(CSLDIR2)/otherlibs/labltk/labltk \
-	-I $(CSLDIR2)/otherlibs/labltk/camltk \
+	-I $(SRC2)/stdlib  \
+	-I $(SRC2)/otherlibs/bigarray \
+	-I $(SRC2)/otherlibs/dbm \
+	-I $(SRC2)/otherlibs/dynlink \
+	-I $(SRC2)/otherlibs/graph \
+	-I $(SRC2)/otherlibs/num \
+	-I $(SRC2)/otherlibs/str \
+	-I $(SRC2)/otherlibs/systhreads \
+	-I $(SRC2)/otherlibs/unix \
+	-I $(SRC2)/otherlibs/labltk/support \
+	-I $(SRC2)/otherlibs/labltk/lib \
+	-I $(SRC2)/otherlibs/labltk/labltk \
+	-I $(SRC2)/otherlibs/labltk/camltk \
 	$(MLIS) ; \
 	cp -f ../style.css libref ; \
 	${HEVEA} ${HTML} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff manual.hva -e macros.tex ../manual.tex ;\
@@ -117,5 +117,5 @@ release:
 .etex.tex:
 	../tools/texquote2 < $*.etex > $*.tex
 
-version.tex: $(CSLDIR)/stdlib/sys.ml
-	sed -n -e 's/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $(CSLDIR)/VERSION > version.tex
+version.tex: $(SRC)/stdlib/sys.ml
+	sed -n -e 's/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $(SRC)/VERSION > version.tex
