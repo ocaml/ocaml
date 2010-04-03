@@ -47,7 +47,7 @@ CAMLprim value camltk_splitlist (value v)
   case TCL_ERROR:
   default:
     stat_free( utf );
-    tk_error(cltclinterp->result);
+    tk_error(Tcl_GetStringResult(cltclinterp));
   }
 }
 

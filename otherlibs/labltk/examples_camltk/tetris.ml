@@ -215,7 +215,6 @@ let init fw =
   let scorev = Textvariable.create ()
   and linev = Textvariable.create ()
   and levv = Textvariable.create ()
-  and namev = Textvariable.create ()
   in
   let f = Frame.create fw [BorderWidth (Pixels 2)] in
   let c = Canvas.create f [Width (Pixels (block_size * 10));

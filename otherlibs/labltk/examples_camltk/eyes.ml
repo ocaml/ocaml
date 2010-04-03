@@ -25,7 +25,7 @@ let _ =
   pack [fw] [];
   let c = Canvas.create fw [Width (Pixels 200); Height (Pixels 200)] in
   let create_eye cx cy wx wy ewx ewy bnd =
-    let o2 =
+    let _o2 =
        Canvas.create_oval c
         (Pixels (cx - wx)) (Pixels (cy - wy))
         (Pixels (cx + wx)) (Pixels (cy + wy))

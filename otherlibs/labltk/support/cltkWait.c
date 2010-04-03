@@ -66,7 +66,7 @@ CAMLprim value camltk_wait_vis(value win, value cbid)
   vis->win = Tk_NameToWindow(cltclinterp, String_val(win), cltk_mainWindow);
   if (vis -> win == NULL) {
     stat_free((char *)vis);
-    tk_error(cltclinterp->result);
+    tk_error(Tcl_GetStringResult(cltclinterp));
   };
   vis->cbid = Int_val(cbid);
   Tk_CreateEventHandler(vis->win, VisibilityChangeMask,
@@ -93,7 +93,7 @@ CAMLprim value camltk_wait_des(value win, value cbid)
   vis->win = Tk_NameToWindow(cltclinterp, String_val(win), cltk_mainWindow);
   if (vis -> win == NULL) {
     stat_free((char *)vis);
-    tk_error(cltclinterp->result);
+    tk_error(Tcl_GetStringResult(cltclinterp));
   };
   vis->cbid = Int_val(cbid);
   Tk_CreateEventHandler(vis->win, StructureNotifyMask,
