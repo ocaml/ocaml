@@ -934,8 +934,6 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
-  | LPAREN MODULE module_expr COLON package_type RPAREN
-      { mkexp (Pexp_pack ($3, $5)) }
 ;
 simple_expr:
     val_longident
@@ -1000,6 +998,8 @@ simple_expr:
       { mkexp(Pexp_override []) }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+  | LPAREN MODULE module_expr COLON package_type RPAREN
+      { mkexp (Pexp_pack ($3, $5)) }
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
