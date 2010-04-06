@@ -60,6 +60,7 @@ Bug Fixes:
 - PR#4775: compiler crash on crazy types (temporary fix)
 - PR#5004: problem in Buffer.add_channel with very large lengths.
 - PR#5008: on AMD64/MSVC port, rare float corruption during GC.
+- PR#5018: wrong exception raised by Dynlink.loadfile.
 
 Objective Caml 3.11.2:
 ----------------------
