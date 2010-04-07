@@ -490,7 +490,8 @@ and string = parse
         end
       }
   | newline
-      { Location.prerr_warning (Location.curr lexbuf) Warnings.Eol_in_string;
+      { if not (in_comment ()) then
+          Location.prerr_warning (Location.curr lexbuf) Warnings.Eol_in_string;
         update_loc lexbuf None 1 false 0;
         let s = Lexing.lexeme lexbuf in
         for i = 0 to String.length s - 1 do
