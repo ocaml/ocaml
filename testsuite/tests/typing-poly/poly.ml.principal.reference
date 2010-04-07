@@ -1,4 +1,3 @@
-        Objective Caml version 3.12.0+dev5 (2009-09-04)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -121,8 +120,9 @@ val cp : color_point = <obj>
 val c : circle = <obj>
 val d : float = 11.4536240470737098
 #   val f : < m : 'a. 'a -> 'a > -> < m : 'b. 'b -> 'b > = <fun>
-#   Characters 41-42:
-Error: This expression has type < m : 'a. 'a -> 'a list >
+#   [A[A# let f (x : < m : 'a. 'a -> 'a list >) = ([4mx[m : < m : 'b. 'b -> 'c >)
+  ;;
+[mError: This expression has type < m : 'a. 'a -> 'a list >
        but an expression was expected of type < m : 'a. 'a -> 'b >
        The universal variable 'a would escape its scope
 #           class id : object method id : 'a -> 'a end
@@ -130,30 +130,57 @@ Error: This expression has type < m : 'a. 'a -> 'a list >
 #       class id_impl : object method id : 'a -> 'a end
 #               class a : object method m : bool end
 and b : object method id : 'a -> 'a end
-#           Characters 72-77:
-Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
-#         Characters 75-80:
-Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
-#           Characters 80-85:
-Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'b
-#                 Characters 92-159:
-Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'b
+#           [A[A[A[A[A[A# 
+  class ['a] id1 = object
+    method virtual id : 'b. 'b -> 'a
+    method id [4mx = x[m
+  end
+  ;;
+[mError: This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
+#         [A[A[A[A[A# class id2 (x : 'a) = object
+    method virtual id : 'b. 'b -> 'a
+    method id [4mx = x[m
+  end
+  ;;
+[mError: This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
+#           [A[A[A[A[A[A# class id3 x = object
+    val x = x
+    method virtual id : 'a. 'a -> 'a
+    method id [4m_ = x[m
+  end
+  ;;
+[mError: This method has type 'a -> 'a which is less general than 'b. 'b -> 'b
+#                 [A[A[A[A[A[A[A[A[A# class id4 () = object
+    val mutable r = None
+    method virtual id : 'a. 'a -> 'a
+    method id [4mx =
+      match r with
+        None -> r <- Some x; x
+      | Some y -> y[m
+  end
+  ;;
+[mError: This method has type 'a -> 'a which is less general than 'b. 'b -> 'b
 #         class c : object method m : 'a -> 'b -> 'a end
 #     val f1 : id -> int * bool = <fun>
 #   val f2 : id -> int * bool = <fun>
-#   Characters 24-28:
-Error: This expression has type bool but an expression was expected of type
+#   [A[A# let f3 f = f#id 1, f#id [4mtrue[m
+  ;;
+[mError: This expression has type bool but an expression was expected of type
          int
-#   Characters 27-31:
-Warning X: this use of a polymorphic method is not principal.
-Characters 35-39:
-Warning X: this use of a polymorphic method is not principal.
+#   [A[A# let f4 f = ignore(f : id); [4mf#id[m 1, f#id true
+  ;;
+[mWarning 18: this use of a polymorphic method is not principal.
+[A[A[A# let f4 f = ignore(f : id); f#id 1, [4mf#id[m true
+  ;;
+[m
+Warning 18: this use of a polymorphic method is not principal.
 val f4 : id -> int * bool = <fun>
 #           class c : object method m : #id -> int * bool end
 #             class id2 : object method id : 'a -> 'a method mono : int -> int end
 #   val app : int * bool = (1, true)
-#   Characters 4-25:
-Error: The type abbreviation foo is cyclic
+#   [A[A# type[4m 'a foo = 'a foo list[m
+  ;;
+[mError: The type abbreviation foo is cyclic
 #     class ['a] bar : 'a -> object  end
 #   type 'a foo = 'a foo bar
 #   - : (< m : 'b. 'b * 'a > as 'a) -> 'c * (< m : 'e. 'e * 'd > as 'd) = <fun>
@@ -222,13 +249,13 @@ class next : #numeral -> object method fold : ('a -> 'a) -> 'a -> 'a end
 #       class node : node_type
 #     class node : object method as_variant : [> `Node of node_type ] end
 #   type bad = { bad : 'a. 'a option ref; }
-# Characters 17-25:
-Error: This field value has type 'a option ref which is less general than
+# [A# let bad = {bad = [4mref None[m};;
+[mError: This field value has type 'a option ref which is less general than
          'b. 'b option ref
 # type bad2 = { mutable bad2 : 'a. 'a option ref option; }
 # val bad2 : bad2 = {bad2 = None}
-# Characters 13-28:
-Error: This field value has type 'a option ref option
+# [A# bad2.bad2 <- [4mSome (ref None)[m;;
+[mError: This field value has type 'a option ref option
        which is less general than 'b. 'b option ref option
 #       val f : < m : 'a. < p : 'a * 'b > as 'b > -> 'c -> unit = <fun>
 # val f :
@@ -239,37 +266,48 @@ Error: This field value has type 'a option ref option
 #         class c : object method m : ([> 'a t ] as 'a) -> unit end
 #     class c : object method m : ([> 'a t ] as 'a) -> 'a end
 #     class c : object method m : ([> `A ] as 'a) option -> 'a end
-#           Characters 145-166:
-Error: This type scheme cannot quantify 'a :
+#           [A[A[A[A[A[A# 
+  (* various old bugs *)
+  class virtual ['a] visitor =
+  object method virtual caseNil : 'a end
+  and virtual int_list =
+  object method virtual visit : [4m'a.('a visitor -> 'a)[m end;;
+[mError: This type scheme cannot quantify 'a :
 it escapes this scope.
 #                 type ('a, 'b) list_visitor = < caseCons : 'b -> 'b list -> 'a; caseNil : 'a >
 type 'a alist = < visit : 'b. ('b, 'a) list_visitor -> 'b >
 class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
 type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
-#     Characters 20-25:
-Error: The type abbreviation t is cyclic
+#     [A[A[A# 
+  (* PR#1663 *)
+  type [4mt = u[m and u = t;;
+[mError: The type abbreviation t is cyclic
 #       class ['a] a : object constraint 'a = [> `A of 'a a ] end
 type t = [ `A of t a ]
-#     Characters 71-80:
-Error: Constraints are not satisfied in this type.
+#     [A[A[A# 
+  (* Wrong in 3.06 *)
+  type ('a,'b) t constraint 'a = 'b and ('a,'b) u = [4m('a,'b) t[m;;
+[mError: Constraints are not satisfied in this type.
 Type ('a, 'b) t should be an instance of ('c, 'c) t
 #     type 'a t = 'a
 and u = int t
 #     type 'a t constraint 'a = int
-# Characters 26-32:
-Error: Constraints are not satisfied in this type.
+# [A# type 'a u = 'a and 'a v = [4m'a u t[m;;
+[mError: Constraints are not satisfied in this type.
 Type 'a u t should be an instance of int t
 # type 'a u = 'a constraint 'a = int
 and 'a v = 'a u t constraint 'a = int
 #     type g = int
 # type 'a t = unit constraint 'a = g
-# Characters 26-32:
-Error: Constraints are not satisfied in this type.
+# [A# type 'a u = 'a and 'a v = [4m'a u t[m;;
+[mError: Constraints are not satisfied in this type.
 Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
 and 'a v = 'a u t constraint 'a = int
-#     Characters 38-58:
-Error: In the definition of v, type 'a list u should be 'a u
+#     [A[A[A# 
+  (* Example of wrong expansion *)
+  type[4m 'a u = < m : 'a v >[m and 'a v = 'a list u;;
+[mError: In the definition of v, type 'a list u should be 'a u
 #       type 'a t = 'a
 type 'a u = A of 'a t
 #     type 'a t = < a : 'a >
@@ -282,27 +320,36 @@ type 'a u = A of 'a t
 #   - : [> `A ] option * t -> int = <fun>
 # - : t * [< `A | `B ] -> int = <fun>
 # - : [< `A | `B ] * t -> int = <fun>
-# Characters 0-41:
-Warning P: this pattern-matching is not exhaustive.
+# [A# [4mfunction (`A|`B), _ -> 0 | _,(`A|`B) -> 1[m;;
+[mWarning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (`AnyExtraTag, `AnyExtraTag)
 - : [> `A | `B ] * [> `A | `B ] -> int = <fun>
-# Characters 0-29:
-Warning P: this pattern-matching is not exhaustive.
+# [A# [4mfunction `B,1 -> 1 | _,1 -> 2[m;;
+[mWarning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (_, 0)
-Characters 21-24:
-Warning U: this match case is unused.
+[A[A[A[A# function `B,1 -> 1 | [4m_,1[m -> 2;;
+[m
+
+
+Warning 11: this match case is unused.
 - : [< `B ] * int -> int = <fun>
-# Characters 0-29:
-Warning P: this pattern-matching is not exhaustive.
+# [A# [4mfunction 1,`B -> 1 | 1,_ -> 2[m;;
+[mWarning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (0, _)
-Characters 21-24:
-Warning U: this match case is unused.
+[A[A[A[A# function 1,`B -> 1 | [4m1,_[m -> 2;;
+[m
+
+
+Warning 11: this match case is unused.
 - : int * [< `B ] -> int = <fun>
-#       Characters 69-135:
-Error: Constraints are not satisfied in this type.
+#       [A[A[A[A# 
+  (* pass typetexp, but fails during Typedecl.check_recursion *)
+  type [4m('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b][m 
+  and  ('a, 'b) b = 'b -> unit constraint 'b = [> `A of ('a, 'b) a as 'a];;
+[mError: Constraints are not satisfied in this type.
 Type
 ([> `B of 'a ], 'a) b as 'a
 should be an instance of
@@ -337,58 +384,79 @@ type bt = 'a ca cb as 'a
 #     class c : object method m : int end
 # val f : unit -> c = <fun>
 # val f : unit -> c = <fun>
-# Characters 11-60:
-Warning X: the following private methods were made public implicitly:
+# [A# let f () = [4mobject method private n = 1 method m = {<>}#n end[m;;
+[mWarning 15: the following private methods were made public implicitly:
  n.
 val f : unit -> < m : int; n : int > = <fun>
-# Characters 11-56:
-Error: This object is expected to have type c but actually has type
+# [A# let f () = [4mobject (self:c) method n = 1 method m = 2 end[m;;
+[mError: This object is expected to have type c but actually has type
          < m : int; n : 'a >
        The first object type has no method n
-# Characters 11-69:
-Error: This object is expected to have type < n : int > but actually has type
+# [A# let f () = [4mobject (_:'s) constraint 's = < n : int > method m = 1 end[m;;
+[mError: This object is expected to have type < n : int > but actually has type
          < m : 'a >
        The second object type has no method n
-#         Characters 66-124:
-Error: This object is expected to have type < x : int; .. >
+#         [A[A[A[A[A# class c = object (_ : 's)
+    method x = 1
+    method private m =
+      [4mobject (self: 's) method x = 3 method private m = self end[m
+  end;;
+[mError: This object is expected to have type < x : int; .. >
        but actually has type < x : int >
        Self type cannot be unified with a closed object type
 #         val o : < x : int > = <obj>
-#         Characters 76-77:
-Error: This expression has type < m : 'b. 'b * < m : 'b * 'a > > as 'a
+#         [A[A[A[A[A# 
+  
+  (* Unsound! *)
+  fun (x : <m : 'a. 'a * <m: 'b. 'a * 'foo> > as 'foo) ->
+    ([4mx[m : <m : 'a. 'a * (<m:'b. 'a * <m:'c. 'c * 'bar> > as 'bar) >);;
+[mError: This expression has type < m : 'b. 'b * < m : 'b * 'a > > as 'a
        but an expression was expected of type
          < m : 'b. 'b * (< m : 'b * < m : 'd. 'd * 'c > > as 'c) >
        Types for method m are incompatible
-#         Characters 176-177:
-Error: This expression has type foo' = < m : 'a. 'a * 'a foo >
+#         [A[A[A[A[A# type 'a foo = <m: 'b. 'a * 'a foo>
+  type foo' =   <m: 'a. 'a * 'a foo>
+  type 'a bar = <m: 'b. 'a * <m: 'c. 'c * 'a bar> >
+  type bar' =   <m: 'a. 'a * 'a bar >
+  let f (x : foo') = ([4mx[m : bar');;
+[mError: This expression has type foo' = < m : 'a. 'a * 'a foo >
        but an expression was expected of type bar' = < m : 'a. 'a * 'a bar >
        Type 'a foo = < m : 'a * 'a foo > is not compatible with type
          'a bar = < m : 'a * < m : 'b. 'b * 'a bar > > 
        Type 'a foo = < m : 'a * 'a foo > is not compatible with type
          < m : 'b. 'b * 'a bar > 
        Types for method m are incompatible
-#     Characters 67-68:
-Error: This expression has type
+#     [A[A[A# 
+  fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
+    ([4mx[m : <m : 'b. 'b * ('b * <m : 'c. 'c * ('c * 'bar)>)> as 'bar);;
+[mError: This expression has type
          < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
        but an expression was expected of type
          < m : 'a. 'a * ('a * < m : 'c. 'c * ('c * 'd) >) > as 'd
        Types for method m are incompatible
-#   Characters 66-67:
-Error: This expression has type
+#   [A[A# fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
+    ([4mx[m : <m : 'b. 'b * ('b * <m : 'c. 'c * ('b * 'bar)>)> as 'bar);;
+[mError: This expression has type
          < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
        but an expression was expected of type
          < m : 'a. 'a * ('a * < m : 'c. 'c * ('a * 'd) >) > as 'd
        Types for method m are incompatible
-#   Characters 51-52:
-Error: This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
+#   [A[A# fun (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) ->
+    ([4mx[m : <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>);;
+[mError: This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
        but an expression was expected of type
          < m : 'b. 'b * ('b * < m : 'd. 'd * 'c > as 'c) >
        Types for method m are incompatible
-#     Characters 14-115:
-Error: Type < m : 'a. 'a -> ('a * (< m : 'd. 'd -> 'b as 'e > as 'c) as 'b) >
+#     [A[A[A# let f x =
+      [4m(x : <m : 'a. 'a -> ('a * <m:'c. 'c -> 'bar> as 'bar)>
+         :> <m : 'a. 'a -> ('a * 'foo)> as 'foo)[m;;
+[mError: Type < m : 'a. 'a -> ('a * (< m : 'd. 'd -> 'b as 'e > as 'c) as 'b) >
        is not a subtype of < m : 'a. 'a -> ('a * 'f as 'h) as 'g > as 'f 
-#       Characters 88-150:
-Error: Signature mismatch:
+#       [A[A[A[A# 
+  module M
+  : sig val f : (<m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>) -> unit end
+  = [4mstruct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end[m;;
+[mError: Signature mismatch:
        Modules do not match:
          sig val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit end
        is not included in
@@ -399,8 +467,10 @@ Error: Signature mismatch:
          val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit
        is not included in
          val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit
-#     Characters 78-132:
-Error: Signature mismatch:
+#     [A[A[A# module M
+  : sig type t = <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)> end
+  = [4mstruct type t = <m : 'a. 'a * ('a * 'foo)> as 'foo end[m;;
+[mError: Signature mismatch:
        Modules do not match:
          sig type t = < m : 'b. 'b * ('b * 'a) > as 'a end
        is not included in
@@ -420,34 +490,40 @@ Error: Signature mismatch:
 # - : t -> v = <fun>
 # type u = private [< t ]
 # - : u -> v = <fun>
-# Characters 9-21:
-Error: Type v = [> `A | `B ] is not a subtype of u = [< `A | `B ] 
+# [A# fun x -> [4m(x : v :> u)[m;;
+[mError: Type v = [> `A | `B ] is not a subtype of u = [< `A | `B ] 
 # type v = private [< t ]
-# Characters 9-21:
-Error: Type u = [< `A | `B ] is not a subtype of v = [< `A | `B ] 
+# [A# fun x -> [4m(x : u :> v)[m;;
+[mError: Type u = [< `A | `B ] is not a subtype of v = [< `A | `B ] 
 # type p = < x : p >
 # type q = private < x : p; .. >
 # - : q -> p = <fun>
-# Characters 9-21:
-Error: Type p = < x : p > is not a subtype of q = < x : p; .. > 
-#       Characters 14-100:
-Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
+# [A# fun x -> [4m(x : p :> q)[m;;
+[mError: Type p = < x : p > is not a subtype of q = < x : p; .. > 
+#       [A[A[A[A# 
+  let f1 x =
+    [4m(x : <m:'a. (<p:int;..> as 'a) -> int>
+      :> <m:'b. (<p:int;q:int;..> as 'b) -> int>)[m;;
+[mError: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int > 
 #     val f2 :
   < m : 'a. (< p : < a : int >; .. > as 'a) -> int > ->
   < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int > = <fun>
-#     Characters 13-107:
-Error: Type < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int >
+#     [A[A[A# let f3 x =
+    [4m(x : <m:'a. (<p:<a:int;b:int>;..> as 'a) -> int>
+      :> <m:'b. (<p:<a:int>;..> as 'b) -> int>)[m;;
+[mError: Type < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int >
        is not a subtype of < m : 'a. (< p : < a : int >; .. > as 'a) -> int > 
-# Characters 11-55:
-Error: Type < p : < a : int; b : int >; .. > is not a subtype of
+# [A# let f4 x = [4m(x : <p:<a:int;b:int>;..> :> <p:<a:int>;..>)[m;;
+[mError: Type < p : < a : int; b : int >; .. > is not a subtype of
          < p : < a : int >; .. > 
 The second object type has no method b
 #   val f5 :
   < m : 'a. [< `A of < p : int > ] as 'a > ->
   < m : 'a. [< `A of <  > ] as 'a > = <fun>
-#   Characters 13-83:
-Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
+#   [A[A# let f6 x =
+    [4m(x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>)[m;;
+[mError: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
          < m : 'a. [< `A of < p : int > ] as 'a > 
 #     class c : object method id : 'a -> 'a end
 # type u = c option
@@ -459,30 +535,36 @@ Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
 val g : 'a -> int = <fun>
 # type 'a t = Leaf of 'a | Node of ('a * 'a) t
 #   val depth : 'a t -> int = <fun>
-#     Characters 34-74:
-Error: This definition has type 'a t -> int which is less general than
+#     [A[A[A# let rec depth : 'a. 'a t -> _ =
+    [4mfunction Leaf _ -> 1 | Node x -> 1 + d x[m
+  and d x = depth x;; (* fails *)
+[mError: This definition has type 'a t -> int which is less general than
          'b. 'b t -> int
-#   Characters 34-78:
-Error: This definition has type int t -> int which is less general than
+#   [A[A# let rec depth : 'a. 'a t -> _ =
+    [4mfunction Leaf x -> x | Node x -> 1 + depth x[m;; (* fails *)
+[mError: This definition has type int t -> int which is less general than
          'a. 'a t -> int
-#   Characters 34-74:
-Error: This definition has type 'a t -> 'a which is less general than
+#   [A[A# let rec depth : 'a. 'a t -> _ =
+    [4mfunction Leaf x -> x | Node x -> depth x[m;; (* fails *)
+[mError: This definition has type 'a t -> 'a which is less general than
          'b. 'b t -> 'a
-#   Characters 38-78:
-Error: This definition has type 'a. 'a t -> 'a which is less general than
+#   [A[A# let rec depth : 'a 'b. 'a t -> 'b =
+    [4mfunction Leaf x -> x | Node x -> depth x[m;; (* fails *)
+[mError: This definition has type 'a. 'a t -> 'a which is less general than
          'b 'c. 'c t -> 'b
 #   val r : 'a list * '_b list ref = ([], {contents = []})
 val q : unit -> 'a list * '_b list ref = <fun>
 # val f : 'a -> 'a = <fun>
 # val zero : [> `B of 'a | `Int of int ] as 'a = `Int 0
-# Characters 39-45:
-Error: This expression has type [> `Int of int ]
+# [A# let zero : 'a. [< `Int of int] as 'a = [4m`Int 0[m;; (* fails *)
+[mError: This expression has type [> `Int of int ]
        but an expression was expected of type [< `Int of int ]
        Types for tag `Int are incompatible
 #       type t = { f : 'a. [> `B of 'a | `Int of int ] as 'a; }
 val zero : t = {f = `Int 0}
-#   Characters 56-62:
-Error: This expression has type [> `Int of int ]
+#   [A[A# type t = {f: 'a. [< `Int of int] as 'a}
+  let zero = {f = [4m`Int 0[m} ;; (* fails *)
+[mError: This expression has type [> `Int of int ]
        but an expression was expected of type [< `Int of int ]
        Types for tag `Int are incompatible
 #       val id : 'a -> 'a = <fun>

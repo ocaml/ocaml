@@ -1,4 +1,4 @@
-(* $Id$ *)
+(* $Id: poly.ml 9396 2009-10-26 07:11:36Z garrigue $ *)
 (*
    Polymorphic methods are now available in the main branch.
    Enjoy.

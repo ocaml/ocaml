@@ -1,4 +1,4 @@
-(* $Id$ *)
+(* $Id: mixin.ml 5929 2003-11-19 02:36:58Z garrigue $ *)
 
 open StdLabels
 open MoreLabels
@@ -139,8 +139,19 @@ let rec eval : lexpr -> _ = function
     #lambda as x -> eval_lambda ~eval_rec:eval ~subst x
   | #expr as x -> eval_expr ~eval_rec:eval x
 
-(* A few examples:
-eval1 (`App(`Abs("x",`Var"x"), `Var"y"));;
-eval2 (`Add(`Mult(`Num 3,`Neg(`Num 2)), `Var"x"));;
-eval (`Add(`App(`Abs("x",`Mult(`Var"x",`Var"x")),`Num 2), `Num 5));;
-*)
+let rec print = function
+  | `Var id -> print_string id
+  | `Abs (id, l) -> print_string ("\ " ^ id ^ " . "); print l
+  | `App (l1, l2) -> print l1; print_string " "; print l2
+  | `Num x -> print_int x
+  | `Add (e1, e2) -> print e1; print_string " + "; print e2
+  | `Neg e -> print_string "-"; print e
+  | `Mult (e1, e2) -> print e1; print_string " * "; print e2
+
+let () =
+  let e1 = eval1 (`App(`Abs("x",`Var"x"), `Var"y")) in
+  let e2 = eval2 (`Add(`Mult(`Num 3,`Neg(`Num 2)), `Var"x")) in
+  let e3 = eval (`Add(`App(`Abs("x",`Mult(`Var"x",`Var"x")),`Num 2), `Num 5)) in
+  print e1; print_newline ();
+  print e2; print_newline ();
+  print e3; print_newline ()
