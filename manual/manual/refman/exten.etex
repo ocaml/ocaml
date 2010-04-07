@@ -438,7 +438,7 @@ regular function parameters with pseudo type parameters, as in:
 \end{verbatim}
 and even use the alternative syntax for declaring functions:
 \begin{verbatim}
-        let fun f (type t) (foo : t list) = ...
+        let f (type t) (foo : t list) = ...
 \end{verbatim}
 
 The construction is useful because the type constructor it introduces
