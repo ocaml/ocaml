@@ -20,7 +20,7 @@ FORTRAN_COMPILER=/sw/bin/gcc
 FORTRAN_LIBRARY=/sw/lib/gcc4.3/lib/libgfortran.a
 
 defaultclean:
-	@rm -f *.cm* *.$(O) *.$(SO) *.$(A)
+	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
 	@for dsym in *.dSYM; do \
 	  if [ -d $$dsym ]; then \
 	    rm -fr $$dsym; \
@@ -60,7 +60,7 @@ defaultclean:
 	@$(AS) $(ASFLAGS) -o $*.o $*.s
 
 .S.o:
-	@$(ASPP) $(ASPPFLAGS) -o $*.o $*.S
+	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.S
 
 .s.o:
-	@$(ASPP) $(ASPPFLAGS) -o $*.o $*.s
+	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s

@@ -2,9 +2,9 @@
 
 default:
 	@for file in *.ml; do \
-	  $(OCAML) < $$file > $$file.result 2>&1; \
+	  $(OCAML) < $$file 2>&1 | grep -v '^        Objective Caml version' > $$file.result; \
 	  if [ -f $$file.principal.reference ]; then \
-	    $(OCAML) -principal < $$file > $$file.principal.result 2>&1; \
+	    $(OCAML) -principal < $$file 2>&1 | grep -v '^        Objective Caml version' > $$file.principal.result; \
 	  fi; \
 	done
 	@for file in *.reference; do \
