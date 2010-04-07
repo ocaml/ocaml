@@ -3,94 +3,80 @@ fun (x : < x : int >) y z -> (y :> 'a), (x :> 'a), (z :> 'a);;
 (* - : (< x : int > as 'a) -> 'a -> 'a * 'a = <fun> *)
 
 (* Bizarrerie du typage des classes *)
-class 'a c () =
+class ['a] c () = object
   method f = (new c (): int c)
-and 'a d () =
-  inherit ('a) c ()
+end and ['a] d () = object
+  inherit ['a] c ()
 end;;
-(* class 'a c (unit) = constraint 'a = int method f : 'a c end *)
-(* class 'a d (unit) method f : int c end *)
+(* class ['a] c : unit -> object constraint 'a = int method f : 'a c end *)
+(* and ['a] d : unit -> object constraint 'a = int method f : 'a c end *)
 
 (* 'a libre dans classe d *)
-class 'a c () =
+class ['a] c () = object
   method f (x : 'a) = ()
-and d () =
-  inherit ('a) c ()
+end and d () = object
+  inherit ['a] c ()
 end;;
-
-(* Ferme self ! *)
-(* Pas vraiment moyen de garder l'abbreviation en parametre *)
-class virtual closed c ((x : 'a): < f : int >) : 'a =
-and virtual closed d ((x : 'a): < f : int >) : 'a =
-  inherit c x
-end;;
-class virtual closed e x =
-  inherit d x
-end;;
-(* class virtual closed c (< f : int >) = virtual f : int end *)
-(* class virtual closed d (< f : int >) = virtual f : int end *)
-(* class virtual closed e (< f : int >) = virtual f : int end *)
-
-(* Self unifie avec une abreviation *)
-class virtual closed c ((x : 'a) : c) : 'a = end;;
 
 (* Instancie #c *)
-class virtual c () =
-and 'a d () =
+class virtual c () = object
+end and ['a] d () = object
   constraint 'a = #c
   method f (x : #c) = (x#x : int)
 end;;
-(* class virtual c (unit) = end
-   class 'a d (unit) = constraint 'a = < x: int; .. > method f : 'a -> int end *)
+(* class virtual c : unit -> object  end *)
+(* and ['a] d : *)
+(*  unit -> object constraint 'a = < x : int; .. > method f : 'a -> int end *)
 
-class 'a c () =
+class ['a] c () = object
   constraint 'a = int
-and 'a d () =
+end and ['a] d () = object
   constraint 'a = 'b #c
 end;;
-(* class 'a c (unit) = constraint 'a = int end
-   class 'a d (unit) = constraint 'a = int #c end *)
+(* class ['a] c : unit -> object constraint 'a = int end
+   and ['a] d : unit -> object constraint 'a = int #c end *)
 
 (* Self en parametre *)
-class closed 'a c (x : 'a) as self : 'b =
+class ['a] c (x : 'a) = object (self : 'b)
   constraint 'a = 'b
   method f = self
 end;;
 new c;;
-(* class 'a c ('a) :'b = constraint 'a = 'a c method f : 'a end *)
-(* - : ('a c as 'a) -> 'b c as 'b = <fun> *)
+(* class ['a] c :
+  'a -> object ('a) constraint 'a = < f : 'a; .. > method f : 'a end *)
+(* - : ('a c as 'a) -> 'a = <fun> *)
 
-class x () =
-  virtual f : int
+class x () = object
+  method virtual f : int
 end;;
 (* The class x should be virtual:  its methods f is undefined *)
 
 (* Methode g en trop *)
-class virtual closed c ((x : 'a): < f : int >) : 'a =
-and virtual closed d x : 'a =
+class virtual c ((x : 'a): < f : int >) = object (_ : 'a) end
+and virtual d x = object (_ : 'a)
   inherit c x
   method g = true
 end;;
 
 (* Contrainte non respectee *)
-class 'a c () =
+class ['a] c () = object
   constraint 'a = int
   method f x = (x : bool c)
 end;;
 
 (* Differentes contraintes *)
-class ('a, 'b) c () =
+class ['a, 'b] c () = object
   constraint 'a = int -> 'c
   constraint 'b = 'a * <x : 'b> * 'c * 'd
   method f (x : 'a) (y : 'b) = ()
 end;;
-class ('a, 'b) d () =
-  inherit ('a, 'b) c ()
+class ['a, 'b] d () = object
+  inherit ['a, 'b] c ()
 end;;
 
 (* Contrainte non generique *)
 let x = ref [];;
-class 'a c () =
+class ['a] c () = object
   method f = (x : 'a)
 end;;
 
@@ -117,9 +103,9 @@ fun (x : t) (y : 'a u) -> y = x;;
 (* Modules *)
 module M =
   struct
-    class ('a, 'b) c x (y: 'b) =
+    class ['a, 'b] c (x: int) (y: 'b) = object
       constraint 'a = int -> bool
-      val x = []
+      val x : float list = []
       val y = y
       method f (x : 'a) = ()
       method g = y
@@ -127,7 +113,7 @@ module M =
   end;;
 module M' = (M :
   sig
-     class virtual ('a, 'b) c (int) ('b) =
+     class virtual ['a, 'b] c : int -> 'b -> object
        constraint 'a = int -> bool
        val x : float list
        val y : 'b
@@ -135,33 +121,32 @@ module M' = (M :
        method g : 'b
      end
    end);;
-class ('a, 'b) d () y = inherit ('a, 'b) M.c () y end;;
-class ('a, 'b) e () y = inherit ('a, 'b) M'.c 1 y end;;
-(new M.c () "a")#g;;
-(new M'.c 1)#g;;
+class ['a, 'b] d () y = object inherit ['a, 'b] M.c 7 y end;;
+class ['a, 'b] e () y = object inherit ['a, 'b] M'.c 1 y end;;
+(new M.c 3 "a")#g;;
 (new d () 10)#g;;
 (new e () 7.1)#g;;
 open M;;
-(new c () true)#g;;
+(new c 5 true)#g;;
 
 (* #cl quand cl est fermee *)
-module M = struct class closed 'a c () = method f (x : 'a) = () end end;;
+module M = struct class ['a] c () = object method f (x : 'a) = () end end;;
 module M' =
-  (M : sig class closed 'a c (unit) = method f : 'a -> unit end end);;
+  (M : sig class ['a] c : unit -> object method f : 'a -> unit end end);;
 fun x -> (x :> 'a #M.c);;
 fun x -> (x :> 'a #M'.c);;
-class 'a c (x : 'b #c) = end;;
-class closed 'a c (x : 'b #c) = end;;
+class ['a] c (x : 'b #c) = object end;;
+class ['a] c (x : 'b #c) = object end;;
 
 (* Ordre de calcul *)
-class c () = method f = 1 and d () = method f = 2 end;;
-class e () = inherit c () inherit d () end;;
+class c () = object method f = 1 end and d () = object method f = 2 end;;
+class e () = object inherit c () inherit d () end;;
 (new e ())#f;;
-class c () = val x = - true val y = -. () end;;
+class c () = object val x = - true val y = -. () end;;
 
-class c () = method f = 1 method g = 1 method h = 1 end;;
-class d () = method h = 2 method i = 2 method j = 2 end;;
-class e () =
+class c () = object method f = 1 method g = 1 method h = 1 end;;
+class d () = object method h = 2 method i = 2 method j = 2 end;;
+class e () = object
   method f = 3
   inherit c ()
   method g = 3
@@ -172,9 +157,9 @@ end;;
 let e = new e ();;
 e#f, e#g, e#h, e#i, e#j;;
 
-class c a = val x = 1 val y = 1 val z = 1 val a = a end;;
-class d b = val z = 2 val t = 2 val u = 2 val b = b end;;
-class e () =
+class c a = object val x = 1 val y = 1 val z = 1 val a = a end;;
+class d b = object val z = 2 val t = 2 val u = 2 val b = b end;;
+class e () = object 
   val x = 3
   inherit c 5
   val y = 3
@@ -192,24 +177,25 @@ end;;
 let e = new e ();;
 e#x, e#y, e#z, e#t, e#u, e#a, e#b;;
 
-class c (x : int) (y : int) =
+class c (x : int) (y : int) = object
   val x = x
   val y = y
   method x = x
   method y = y
 end;;
-class d x y = inherit c x y end;;
+class d x y = object inherit c x y end;;
 let c = new c 1 2 in c#x, c#y;;
 let d = new d 1 2 in d#x, d#y;;
 
 (* Parametres n'apparaissant pas dans le type de l'objet *)
-class 'a c (x : 'a) = end;;
+class ['a] c (x : 'a) = object end;;
 new c;;
 
 (* Variables privees *)
+(*
 module type M = sig
-  class c (unit) = val x : int end
-  class d (unit) = inherit c val private x : int val x : bool end
+  class c : unit -> object val x : int end
+  class d : unit -> object inherit c val private x : int val x : bool end
 end;;
 class c (x : int) =
   val private mutable x = x
@@ -220,50 +206,52 @@ let c = new c 5;;
 c#get;;
 c#set 7; c#get;;
 
+
 class c () = val x = 1 val y = 1 method c = x end;;
 class d () = inherit c () val private x method d = x end;;
 class e () =
   val x = 2 val y = 2 inherit d () method x = x method y = y
 end;;
 let e = new e () in e#x, e#y, e#c, e#d;;
+*)
 
 (* Oubli de variables dans l'interface *)
 module M :
   sig
-    class c (unit) =
+    class c : unit -> object
       method xc : int
     end
   end =
   struct
-    class c () =
+    class c () = object
       val x = 1
       method xc = x
     end
   end;;
-class d () =
+class d () = object
   val x = 2
   method xd = x
   inherit M.c ()
 end;;
 let d = new d () in d#xc, d#xd;;
 
-class virtual 'a matrix (sz, init : int * 'a) =
+class virtual ['a] matrix (sz, init : int * 'a) = object
   val m = Array.create_matrix sz sz init
   method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
 end;;
 
-class c () = method m = new c () end;;
+class c () = object method m = new c () end;;
 (new c ())#m;;
-module M = struct class c () = method m = new c () end end;;
+module M = struct class c () = object method m = new c () end end;;
 (new M.c ())#m;;
 
 type uu = A of int | B of (<leq: 'a> as 'a);;
 
-class virtual c () : 'a = virtual m : 'a end;;
+class virtual c () = object (_ : 'a) method virtual m : 'a end;;
 module S = (struct
   let f (x : #c) = x
 end : sig
-  val f : #c as 'a -> 'a
+  val f : (#c as 'a) -> 'a
 end);;
 module S = (struct
   let f (x : #c) = x
@@ -271,7 +259,7 @@ end : sig
   val f : #c -> #c
 end);;
 
-module M = struct type t = int class t () = end end;;
+module M = struct type t = int class t () = object end end;;
 
 fun x -> (x :> < m : 'a -> 'a > as 'a);;
 
@@ -292,25 +280,25 @@ type 'a t = < x : 'a >;;
 fun (x : 'a t as 'a) -> ();;
 fun (x : 'a t) -> (x : 'a); ();;
 
-class 'a c () =
+class ['a] c () = object
   constraint 'a = < .. > -> unit
   method m = (fun x -> () : 'a)
 end;;
-class 'a c () =
+class ['a] c () = object
   constraint 'a = unit -> < .. >
   method m (f : 'a) = f ()
 end;;
 
-class c () as self =
-  private method m = 1
+class c () = object (self)
+  method private m = 1
   method n = self#m
 end;;
 
-class d () as self =
+class d () = object (self)
   inherit c ()
   method o = self#m
 end;;
 
 let x = new d () in x#n, x#o;;
 
-class c () = virtual m : int private method m = 1 end;;
+class c () = object method virtual m : int method private m = 1 end;;

@@ -1,5 +1,5 @@
 
-class point x_init =
+class point x_init = object
   val mutable x = x_init
   method get_x = x
   method move d = x <- x + d
@@ -15,7 +15,7 @@ let q = Oo.copy p;;
 
 q#move 7; p#get_x, q#get_x;;
 
-class color_point x (c : string) =
+class color_point x (c : string) = object
   inherit point x
   val c = c
   method color = c
@@ -31,19 +31,19 @@ let get_x p = p#get_x;;
 let set_x p = p#set_x;;
 List.map get_x l;;
 
-class ref x_init =
+class ref x_init = object
   val mutable x = x_init
   method get = x
   method set y = x <- y
 end;;
 
-class ref (x_init:int) =
+class ref (x_init:int) = object
   val mutable x = x_init
   method get = x
   method set y = x <- y
 end;;
 
-class 'a ref x_init =
+class ['a] ref x_init = object
   val mutable x = (x_init : 'a)
   method get = x
   method set y = x <- y
@@ -51,14 +51,14 @@ end;;
 
 let r = new ref 1 in r#set 2; (r#get);;
 
-class 'a circle (c : 'a) =
+class ['a] circle (c : 'a) = object
   val mutable center = c
   method center = center
   method set_center c = center <- c
   method move = (center#move : int -> unit)
 end;;
 
-class 'a circle (c : 'a) =
+class ['a] circle (c : 'a) = object
   constraint 'a = #point
   val mutable center = c
   method center = center
@@ -68,9 +68,9 @@ end;;
 
 let (c, c') = (new circle p, new circle p');;
 
-class 'a color_circle c =
+class ['a] color_circle c = object
   constraint 'a = #color_point
-  inherit ('a) circle c
+  inherit ['a] circle c
   method color = center#color
 end;;
 
@@ -81,7 +81,7 @@ let c'' = new color_circle p';;
 (c'' :> point circle);;                 (* Echec *)
 fun x -> (x : color_point color_circle :> point circle);;
 
-class printable_point y as s =
+class printable_point y = object (s)
   inherit point y
   method print = print_int s#get_x
 end;;
@@ -89,7 +89,7 @@ end;;
 let p = new printable_point 7;;
 p#print;;
 
-class printable_color_point y c as self =
+class printable_color_point y c = object (self)
   inherit color_point y c
   inherit printable_point y as super
   method print =
@@ -103,7 +103,7 @@ end;;
 let p' = new printable_color_point 7 "red";;
 p'#print;;
 
-class functional_point y =
+class functional_point y = object
   val x = y
   method get_x = x
   method move d = {< x = x + d >}
@@ -119,10 +119,10 @@ fun x -> (x :> functional_point);;
 
 (*******************************************************************)
 
-class virtual 'a lst () as self =
-  virtual null : bool
-  virtual hd : 'a
-  virtual tl : 'a lst
+class virtual ['a] lst () = object (self)
+  method virtual null : bool
+  method virtual hd : 'a
+  method virtual tl : 'a lst
   method map f =
     (if self#null then
        new nil ()
@@ -140,13 +140,13 @@ class virtual 'a lst () as self =
     self#iter (fun x -> f x; print_string "::");
     print_string "[]";
     print_string ")"
-and 'a nil () =
-  inherit ('a) lst ()
+end and ['a] nil () = object
+  inherit ['a] lst ()
   method null = true
   method hd   = failwith "hd"
   method tl   = failwith "tl"
-and 'a cons h t =
-  inherit ('a) lst ()
+end and ['a] cons h t = object
+  inherit ['a] lst ()
   val h = h val t = t
   method null = false
   method hd   = h
@@ -169,24 +169,24 @@ p1#print (fun x -> x#print);;
 
 (*******************************************************************)
 
-class virtual comparable () : 'a =
-  virtual leq : 'a -> bool
+class virtual comparable () = object (self : 'a)
+  method virtual leq : 'a -> bool
   end;;
 
-class int_comparable (x : int) =
+class int_comparable (x : int) = object
   inherit comparable ()
   val x = x
   method x = x
   method leq p = x <= p#x
 end;;
 
-class int_comparable2 x =
-  inherit int_comparable x
-  val private mutable x
-  method set_x y = x <- y
+class int_comparable2 xi = object
+  inherit int_comparable xi
+  val mutable x' = xi
+  method set_x y = x' <- y
 end;;
 
-class 'a sorted_list () =
+class ['a] sorted_list () = object
   constraint 'a = #comparable
   val mutable l = ([] : 'a list)
   method add x =
@@ -207,7 +207,7 @@ let c2 = new int_comparable2 15;;
 l#add (c2 :> int_comparable);;      (* Echec : 'a comp2 n'est un sous-type *)
 (new sorted_list ())#add c2;;
 
-class int_comparable3 (x : int) =
+class int_comparable3 (x : int) = object
   val mutable x = x
   method leq (y : int_comparable) = x < y#x
   method x = x
@@ -238,7 +238,7 @@ let min (x : #comparable) y =
 
 (*******************************************************************)
 
-class 'a link (x : 'a) as self : 'b =
+class ['a] link (x : 'a) = object (self : 'b)
   val mutable x = x
   val mutable next = (None : 'b option)
   method x = x
@@ -253,8 +253,8 @@ class 'a link (x : 'a) as self : 'b =
         l'#append l
 end;;
 
-class 'a double_link x as self =
-  inherit ('a) link x
+class ['a] double_link x = object (self)
+  inherit ['a] link x
   val mutable prev = None
   method prev = prev
   method  set_next l =
@@ -271,7 +271,7 @@ let rec fold_right f (l : 'a #link option) accu =
 
 (*******************************************************************)
 
-class calculator () as self =
+class calculator () = object (self)
   val mutable arg = 0.
   val mutable acc = 0.
   val mutable equals = function s -> s#arg
@@ -293,7 +293,7 @@ end;;
 (((new calculator ())#enter 5.)#sub#enter 3.5)#equals;;
 ((new calculator ())#enter 5.)#add#add#equals;;
 
-class calculator () as self =
+class calculator () = object (self)
   val mutable arg = 0.
   val mutable acc = 0.
   val mutable equals = function s -> s#arg
@@ -309,18 +309,18 @@ end;;
 (((new calculator ())#enter 5.)#sub#enter 3.5)#equals;;
 ((new calculator ())#enter 5.)#add#add#equals;;
 
-class calculator arg acc as self =
+class calculator arg acc = object (self)
   val arg = arg
   val acc = acc
   method enter n = new calculator n acc
   method add = new calculator_add arg self#equals
   method sub = new calculator_sub arg self#equals
   method equals = arg
-and calculator_add arg acc =
+end and calculator_add arg acc = object
   inherit calculator arg acc
   method enter n = new calculator_add n acc
   method equals = acc +. arg
-and calculator_sub arg acc =
+end and calculator_sub arg acc = object
   inherit calculator arg acc
   method enter n = new calculator_sub n acc
   method equals = acc -. arg
