@@ -1,19 +1,15 @@
 (* Example of algorithm parametrized with modules *)
 
-let sort =
-  let new type s in
-  fun set l ->
-    let module (Set : Set.S with type elt = s) = set in
-    Set.elements (List.fold_right Set.add l Set.empty)
+let sort (type s) set l =
+  let module Set = (val set : Set.S with type elt = s) in
+  Set.elements (List.fold_right Set.add l Set.empty)
 
-let make_set =
-  let new type s in
-  fun cmp ->
-    let module S = Set.Make(struct
-      type t = s
-      let compare = cmp
-    end) in
-    (module S : Set.S with type elt = s)
+let make_set (type s) cmp =
+  let module S = Set.Make(struct
+    type t = s
+    let compare = cmp
+  end) in
+  (module S : Set.S with type elt = s)
 
 let both l =
   List.map
@@ -33,29 +29,25 @@ module type S = sig
   val x: t
 end
 
-let create =
-  let new type s in
-  fun to_string apply x ->
-    let module M = struct
-      type t = s
-      let to_string = to_string
-      let apply = apply
-      let x = x
-    end in
-    (module M : S with type t = s)
+let create (type s) to_string apply x =
+  let module M = struct
+    type t = s
+    let to_string = to_string
+    let apply = apply
+    let x = x
+  end in
+  (module M : S with type t = s)
 
-let forget =
-  let new type s in
-  fun x ->
-    let module (M : S with type t = s) = x in
-    (module M : S)
+let forget (type s) x =
+  let module M = (val x : S with type t = s) in
+  (module M : S)
 
 let print x =
-  let module (M : S) = x in
+  let module M = (val x : S) in
   print_endline (M.to_string M.x)
 
 let apply x =
-  let module (M : S) = x in
+  let module M = (val x : S) in
   let module N = struct
     include M
     let x = apply x
@@ -119,34 +111,29 @@ let int = Int TypEq.refl
 
 let str = String TypEq.refl
 
-let pair =
-  let new type s1 in
-  let new type s2 in
-  fun t1 t2 ->
-    let module P = struct
-      type t = s1 * s2
-      type t1 = s1
-      type t2 = s2
-      let eq = TypEq.refl
-      let t1 = t1
-      let t2 = t2
-    end in
-    let pair = (module P : PAIR with type t = s1 * s2) in
-    Pair pair
+let pair (type s1) (type s2) t1 t2 =
+  let module P = struct
+    type t = s1 * s2
+    type t1 = s1
+    type t2 = s2
+    let eq = TypEq.refl
+    let t1 = t1
+    let t2 = t2
+  end in
+  let pair = (module P : PAIR with type t = s1 * s2) in
+  Pair pair
 
 module rec Print : sig
   val to_string: 'a Typ.typ -> 'a -> string
 end = struct
-  let to_string =
-    let new type s in
-    fun t x ->
-      match t with
-      | Int eq -> string_of_int (TypEq.apply eq x)
-      | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
-      | Pair p ->
-          let module (P : PAIR with type t = s) = p in
-          let (x1, x2) = TypEq.apply P.eq x in
-          Printf.sprintf "(%s,%s)" (Print.to_string P.t1 x1) (Print.to_string P.t2 x2)
+  let to_string (type s) t x =
+    match t with
+    | Int eq -> string_of_int (TypEq.apply eq x)
+    | String eq -> Printf.sprintf "%S" (TypEq.apply eq x)
+    | Pair p ->
+        let module P = (val p : PAIR with type t = s) in
+        let (x1, x2) = TypEq.apply P.eq x in
+        Printf.sprintf "(%s,%s)" (Print.to_string P.t1 x1) (Print.to_string P.t2 x2)
 end
 
 let () =
