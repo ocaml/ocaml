@@ -25,11 +25,7 @@ CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 CAMLRUN=../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
-BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
-  fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
-  nucleic.byt bdd.byt hamming.byt sorts.byt \
-  almabench.byt almabench.fast.byt weaktest.byt \
-  newtype.byt fstclassmod.byt
+BYTE_EXE=newtype.byt fstclassmod.byt
 
 CODE_EXE=$(BYTE_EXE:.byt=.out)
 
@@ -45,62 +41,6 @@ clean::
 	    (cd $$i; $(MAKE) clean); \
 	  fi; \
 	done
-
-# Nucleic
-
-nucleic.out: nucleic.ml
-	case $(ARCH) in \
-          i386|arm) \
-             sed -e '/<HAND_CSE>/,/<\/HAND_CSE>/d' -e '/NO_CSE>/d' \
-             nucleic.ml > nucleic.mlt; \
-             $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.mlt;\
-	     rm -f nucleic.mlt;; \
-          *) $(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) -o nucleic.out nucleic.ml; \
-        esac
-
-# KB
-
-BYTE_KB=KB/terms.cmo KB/equations.cmo KB/kb.cmo KB/orderings.cmo KB/kbmain.cmo
-CODE_KB=$(BYTE_KB:.cmo=.cmx)
-
-kb.byt: $(BYTE_KB)
-	$(CAMLC) $(COMPFLAGS) $(BYTE_KB) -o kb.byt
-kb.out: $(CODE_KB)
-	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) $(CODE_KB) -o kb.out
-
-clean::
-	rm -f KB/*.cm[iox] KB/*.[os]
-	rm -f KB/*~
-
-# Genlex
-
-BYTE_GENLEX=Lex/syntax.cmo Lex/scan_aux.cmo Lex/scanner.cmo Lex/gram_aux.cmo \
-  Lex/grammar.cmo Lex/lexgen.cmo Lex/output.cmo Lex/main.cmo
-CODE_GENLEX=$(BYTE_GENLEX:.cmo=.cmx)
-
-genlex.byt: $(BYTE_GENLEX)
-	$(CAMLC) $(COMPFLAGS) $(BYTE_GENLEX) -o genlex.byt
-genlex.out: $(CODE_GENLEX)
-	$(CAMLOPT) $(COMPFLAGS) $(OPTFLAGS) $(CODE_GENLEX) -o genlex.out
-
-clean::
-	rm -f Lex/*.cm[iox] Lex/*.[os]
-	rm -f Lex/*~
-	rm -f Lex/grammar.output
-
-Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/ocamlyacc$(EXE)
-	$(CAMLYACC) $(YACCFLAGS) Lex/grammar.mly
-
-clean::
-	rm -f Lex/grammar.ml Lex/grammar.mli
-beforedepend:: Lex/grammar.ml Lex/grammar.mli
-
-Lex/scanner.ml: Lex/scanner.mll ../lex/ocamllex
-	$(CAMLLEX) Lex/scanner.mll
-
-clean::
-	rm -f Lex/scanner.ml
-beforedepend:: Lex/scanner.ml
 
 # Moretest
 
