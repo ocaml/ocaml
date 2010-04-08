@@ -41,6 +41,11 @@ clean: FORCE
 	    (cd $$file && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ../..); \
 	  fi \
 	done
+	@for file in interactive/*; do \
+	  if [ -d $$file ]; then \
+	    (cd $$file && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ../..); \
+	  fi \
+	done
 
 report: FORCE
 	@if [ ! -f _log ]; then echo "No '_log' file."; exit 1; fi
