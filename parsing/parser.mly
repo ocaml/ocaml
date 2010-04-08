@@ -686,8 +686,9 @@ virtual_method:
     METHOD override_flag PRIVATE VIRTUAL label COLON poly_type
       { if $2 = Override then syntax_error ();
         $5, Private, $7, symbol_rloc () }
-  | METHOD VIRTUAL private_flag label COLON poly_type
-      { $4, $3, $6, symbol_rloc () }
+  | METHOD override_flag VIRTUAL private_flag label COLON poly_type
+      { if $2 = Override then syntax_error ();
+        $5, $4, $7, symbol_rloc () }
 ;
 concrete_method :
     METHOD override_flag private_flag label strict_binding
@@ -742,7 +743,7 @@ class_sig_fields:
     /* empty */                                 { [] }
   | class_sig_fields INHERIT class_signature    { Pctf_inher $3 :: $1 }
   | class_sig_fields VAL value_type             { Pctf_val   $3 :: $1 }
-  | class_sig_fields virtual_method             { Pctf_virt  $2 :: $1 }
+  | class_sig_fields virtual_method_type        { Pctf_virt  $2 :: $1 }
   | class_sig_fields method_type                { Pctf_meth  $2 :: $1 }
   | class_sig_fields CONSTRAINT constrain       { Pctf_cstr  $3 :: $1 }
 ;
@@ -757,6 +758,12 @@ value_type:
 method_type:
     METHOD private_flag label COLON poly_type
       { $3, $2, $5, symbol_rloc () }
+;
+virtual_method_type:
+    METHOD PRIVATE VIRTUAL label COLON poly_type
+      { $4, Private, $6, symbol_rloc () }
+  | METHOD VIRTUAL private_flag label COLON poly_type
+      { $4, $3, $6, symbol_rloc () }
 ;
 constrain:
         core_type EQUAL core_type          { $1, $3, symbol_rloc () }
