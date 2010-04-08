@@ -151,7 +151,10 @@ and 'a t = 'a t u
 # class ['a] c : 'a #c -> object  end
 #     class c : unit -> object method f : int end
 and d : unit -> object method f : int end
-# class e : unit -> object method f : int end
+# [A# class e () = object inherit c () inherit [4md ()[m end;;
+[mWarning 7: the following methods are overriden by the class d :
+  f
+class e : unit -> object method f : int end
 # - : int = 2
 # [A# class c () = object val x = - [4mtrue[m val y = -. () end;;
 [mError: This expression has type bool but an expression was expected of type
@@ -171,6 +174,17 @@ and d : unit -> object method f : int end
 [A[A[A[A[A[A[A[A[A[A# class e () = object
     method f = 3
     inherit c ()
+    [4mmethod g = 3[m
+    method i = 3
+    inherit d ()
+    method j = 3
+  end;;
+[m
+
+Warning 7: the method g is overridden.
+[A[A[A[A[A[A[A[A[A[A[A# class e () = object
+    method f = 3
+    inherit c ()
     method g = 3
     method i = 3
     inherit [4md ()[m
@@ -178,8 +192,23 @@ and d : unit -> object method f : int end
   end;;
 [m
 
+
 Warning 7: the following methods are overriden by the class d :
-  i
+  h i
+[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object
+    method f = 3
+    inherit c ()
+    method g = 3
+    method i = 3
+    inherit d ()
+    [4mmethod j = 3[m
+  end;;
+[m
+
+
+
+
+Warning 7: the method j is overridden.
 class e :
   unit ->
   object
@@ -208,9 +237,10 @@ class e :
     method a = a
     method b = b
   end;;
-[mWarning 13: the instance variable x is overridden.
+[mWarning 13: the following instance variables are overriden by the class c :
+  x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
     val x = 3
     inherit c 5
     val [4my = 3[m
@@ -227,30 +257,10 @@ The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
   end;;
 [m
 
+
 Warning 13: the instance variable y is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
-    val x = 3
-    inherit c 5
-    val y = 3
-    val t = 3
-    inherit [4md 7[m
-    val u = 3
-    method x = x
-    method y = y
-    method z = z
-    method t = t
-    method u = u
-    method a = a
-    method b = b
-  end;;
-[m
-
-
-
-Warning 13: the instance variable t is overridden.
-The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
+[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
     val x = 3
     inherit c 5
     val y = 3
@@ -270,8 +280,8 @@ The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 
 
 
-
-Warning 13: the instance variable z is overridden.
+Warning 13: the following instance variables are overriden by the class d :
+  t z
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Characters 91-96:
 Warning 13: the instance variable u is overridden.
