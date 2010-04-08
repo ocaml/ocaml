@@ -285,4 +285,4 @@ draw_circle 400 240 20;;
 
 synchronize ();;
 
-input_line stdin;;
+ignore (wait_next_event [Key_pressed])
