@@ -321,11 +321,11 @@ and rewrite_trymatching l =
 
 and rewrite_class_field iflag =
   function
-    Pcf_inher (cexpr, _)     -> rewrite_class_expr iflag cexpr
-  | Pcf_val (_, _, sexp, _)  -> rewrite_exp iflag sexp
-  | Pcf_meth (_, _, ({pexp_desc = Pexp_function _} as sexp), _) ->
+    Pcf_inher (_, cexpr, _)     -> rewrite_class_expr iflag cexpr
+  | Pcf_val (_, _, _, sexp, _)  -> rewrite_exp iflag sexp
+  | Pcf_meth (_, _, _, ({pexp_desc = Pexp_function _} as sexp), _) ->
       rewrite_exp iflag sexp
-  | Pcf_meth (_, _, sexp, loc) ->
+  | Pcf_meth (_, _, _, sexp, loc) ->
       if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp
   | Pcf_let(_, spat_sexp_list, _) ->

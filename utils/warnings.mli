@@ -27,7 +27,7 @@ type t =
   | Statement_type                          (* 10 *)
   | Unused_match                            (* 11 *)
   | Unused_pat                              (* 12 *)
-  | Instance_variable_override of string    (* 13 *)
+  | Instance_variable_override of string list (* 13 *)
   | Illegal_backslash                       (* 14 *)
   | Implicit_public_methods of string list  (* 15 *)
   | Unerasable_optional_argument            (* 16 *)

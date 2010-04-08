@@ -32,7 +32,7 @@ type t =
   | Statement_type                          (* 10 *)
   | Unused_match                            (* 11 *)
   | Unused_pat                              (* 12 *)
-  | Instance_variable_override of string    (* 13 *)
+  | Instance_variable_override of string list (* 13 *)
   | Illegal_backslash                       (* 14 *)
   | Implicit_public_methods of string list  (* 15 *)
   | Unerasable_optional_argument            (* 16 *)
@@ -199,7 +199,7 @@ let message = function
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override [lab] ->
-      "the method " ^ lab ^ " is overridden in the same class."
+      "the method " ^ lab ^ " is overridden."
   | Method_override (cname :: slist) ->
       String.concat " "
         ("the following methods are overriden by the class"
@@ -216,9 +216,15 @@ let message = function
       "this expression should have type unit."
   | Unused_match -> "this match case is unused."
   | Unused_pat   -> "this sub-pattern is unused."
-  | Instance_variable_override lab ->
+  | Instance_variable_override [lab] ->
       "the instance variable " ^ lab ^ " is overridden.\n" ^
       "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
+  | Instance_variable_override (cname :: slist) ->
+      String.concat " "
+        ("the following instance variables are overriden by the class"
+         :: cname  :: ":\n " :: slist) ^
+      "\nThe behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
+  | Instance_variable_override [] -> assert false
   | Illegal_backslash -> "illegal backslash escape in string."
   | Implicit_public_methods l ->
       "the following private methods were made public implicitly:\n "

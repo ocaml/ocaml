@@ -213,6 +213,7 @@ let pat_of_label lbl =
 %token AS
 %token ASSERT
 %token BACKQUOTE
+%token BANG
 %token BAR
 %token BARBAR
 %token BARRBRACKET
@@ -374,7 +375,7 @@ The precedences must be listed from low to high.
 %nonassoc below_DOT
 %nonassoc DOT
 /* Finally, the first tokens of simple_expr are above everything else. */
-%nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT INT32 INT64
+%nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
 
@@ -646,8 +647,8 @@ class_self_pattern:
 class_fields:
     /* empty */
       { [] }
-  | class_fields INHERIT class_expr parent_binder
-      { Pcf_inher ($3, $4) :: $1 }
+  | class_fields INHERIT override_flag class_expr parent_binder
+      { Pcf_inher ($3, $4, $5) :: $1 }
   | class_fields VAL virtual_value
       { Pcf_valvirt $3 :: $1 }
   | class_fields VAL value
@@ -668,29 +669,31 @@ parent_binder:
           { None }
 ;
 virtual_value:
-    MUTABLE VIRTUAL label COLON core_type
-      { $3, Mutable, $5, symbol_rloc () }
+    override_flag MUTABLE VIRTUAL label COLON core_type
+      { if $1 = Override then syntax_error ();
+        $4, Mutable, $6, symbol_rloc () }
   | VIRTUAL mutable_flag label COLON core_type
       { $3, $2, $5, symbol_rloc () }
 ;
 value:
-    mutable_flag label EQUAL seq_expr
-      { $2, $1, $4, symbol_rloc () }
-  | mutable_flag label type_constraint EQUAL seq_expr
-      { $2, $1, (let (t, t') = $3 in ghexp(Pexp_constraint($5, t, t'))),
+    override_flag mutable_flag label EQUAL seq_expr
+      { $3, $2, $1, $5, symbol_rloc () }
+  | override_flag mutable_flag label type_constraint EQUAL seq_expr
+      { $3, $2, $1, (let (t, t') = $4 in ghexp(Pexp_constraint($6, t, t'))),
         symbol_rloc () }
 ;
 virtual_method:
-    METHOD PRIVATE VIRTUAL label COLON poly_type
-      { $4, Private, $6, symbol_rloc () }
+    METHOD override_flag PRIVATE VIRTUAL label COLON poly_type
+      { if $2 = Override then syntax_error ();
+        $5, Private, $7, symbol_rloc () }
   | METHOD VIRTUAL private_flag label COLON poly_type
       { $4, $3, $6, symbol_rloc () }
 ;
 concrete_method :
-    METHOD private_flag label strict_binding
-      { $3, $2, ghexp(Pexp_poly ($4, None)), symbol_rloc () }
-  | METHOD private_flag label COLON poly_type EQUAL seq_expr
-      { $3, $2, ghexp(Pexp_poly($7,Some $5)), symbol_rloc () }
+    METHOD override_flag private_flag label strict_binding
+      { $4, $3, $2, ghexp(Pexp_poly ($5, None)), symbol_rloc () }
+  | METHOD override_flag private_flag label COLON poly_type EQUAL seq_expr
+      { $4, $3, $2, ghexp(Pexp_poly($8,Some $6)), symbol_rloc () }
 ;
 
 /* Class types */
@@ -700,12 +703,14 @@ class_type:
       { $1 }
   | QUESTION LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $2 ,
-                       {ptyp_desc = Ptyp_constr(Ldot (Lident "*predef*", "option"), [$4]);
+                       {ptyp_desc =
+                        Ptyp_constr(Ldot (Lident "*predef*", "option"), [$4]);
                         ptyp_loc = $4.ptyp_loc},
                        $6)) }
   | OPTLABEL simple_core_type_or_tuple MINUSGREATER class_type
       { mkcty(Pcty_fun("?" ^ $1 ,
-                       {ptyp_desc = Ptyp_constr(Ldot (Lident "*predef*", "option"), [$2]);
+                       {ptyp_desc =
+                        Ptyp_constr(Ldot (Lident "*predef*", "option"), [$2]);
                         ptyp_loc = $2.ptyp_loc},
                        $4)) }
   | LIDENT COLON simple_core_type_or_tuple MINUSGREATER class_type
@@ -988,6 +993,8 @@ simple_expr:
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
       { mkexp(Pexp_apply(mkoperator $1 1, ["",$2])) }
+  | BANG simple_expr
+      { mkexp(Pexp_apply(mkoperator "!" 1, ["",$2])) }
   | NEW class_longident
       { mkexp(Pexp_new($2)) }
   | LBRACELESS field_expr_list opt_semi GREATERRBRACE
@@ -1493,6 +1500,7 @@ operator:
   | INFIXOP2                                    { $1 }
   | INFIXOP3                                    { $1 }
   | INFIXOP4                                    { $1 }
+  | BANG                                        { "!" }
   | PLUS                                        { "+" }
   | PLUSDOT                                     { "+." }
   | MINUS                                       { "-" }
@@ -1593,6 +1601,10 @@ mutable_flag:
 virtual_flag:
     /* empty */                                 { Concrete }
   | VIRTUAL                                     { Virtual }
+;
+override_flag:
+    /* empty */                                 { Fresh }
+  | BANG                                        { Override }
 ;
 opt_bar:
     /* empty */                                 { () }

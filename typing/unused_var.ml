@@ -248,10 +248,10 @@ and class_structure ppf tbl (p, cfl) =
 
 and class_field ppf tbl cf =
   match cf with
-  | Pcf_inher (ce, _) -> class_expr ppf tbl ce;
-  | Pcf_val (_, _, e, _) -> expression ppf tbl e;
+  | Pcf_inher (_, ce, _) -> class_expr ppf tbl ce;
+  | Pcf_val (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_virt _ | Pcf_valvirt _ -> ()
-  | Pcf_meth (_, _, e, _) -> expression ppf tbl e;
+  | Pcf_meth (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_cstr _ -> ()
   | Pcf_let (recflag, pel, _) -> let_pel ppf tbl recflag pel None;
   | Pcf_init e -> expression ppf tbl e;

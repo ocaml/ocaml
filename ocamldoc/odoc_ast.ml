@@ -514,17 +514,21 @@ module Analyser =
             in
             (acc_inher, acc_fields @ ele_comments)
 
-        | (Parsetree.Pcf_inher (p_clexp, _)) :: q  ->
+        | (Parsetree.Pcf_inher (_, p_clexp, _)) :: q  ->
             let tt_clexp =
               let n = List.length acc_inher in
               try Typedtree_search.get_nth_inherit_class_expr tt_cls n
-              with Not_found -> raise (Failure (Odoc_messages.inherit_classexp_not_found_in_typedtree n))
+              with Not_found ->
+                raise (Failure (
+                       Odoc_messages.inherit_classexp_not_found_in_typedtree n))
             in
             let (info_opt, ele_comments) =
               get_comments_in_class last_pos
                 p_clexp.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum
             in
-            let text_opt = match info_opt with None -> None | Some i -> i.Odoc_types.i_desc in
+            let text_opt =
+              match info_opt with None -> None
+              | Some i -> i.Odoc_types.i_desc in
             let name = tt_name_of_class_expr tt_clexp in
             let inher =
               {
@@ -537,8 +541,8 @@ module Analyser =
               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
               q
 
-      | ((Parsetree.Pcf_val (label, mutable_flag, _, loc) |
-              Parsetree.Pcf_valvirt (label, mutable_flag, _, loc) ) as x) :: q ->
+      | ((Parsetree.Pcf_val (label, mutable_flag, _, _, loc) |
+          Parsetree.Pcf_valvirt (label, mutable_flag, _, loc) ) as x) :: q ->
             let virt = match x with Parsetree.Pcf_val _ -> false | _ -> true in
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
@@ -602,7 +606,7 @@ module Analyser =
 
             iter acc_inher (acc_fields @ ele_comments @ [ Class_method met ]) loc.Location.loc_end.Lexing.pos_cnum q
 
-        | (Parsetree.Pcf_meth  (label, private_flag, _, loc)) :: q ->
+        | (Parsetree.Pcf_meth  (label, private_flag, _, _, loc)) :: q ->
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let exp =

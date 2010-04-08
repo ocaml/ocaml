@@ -474,7 +474,7 @@ class texi =
                  Raw " " ; Raw s ; Raw ": " ] @ t @ [ Newline ] )
              params_list)
 
-    method text_of_raised_exceptions = function
+    method! text_of_raised_exceptions = function
       | [] -> []
       | (s, t) :: [] ->
           [ linebreak ;
@@ -490,12 +490,12 @@ class texi =
                  (fun (ex, desc) ->(Code ex) :: (Raw " ") :: desc ) l ) ;
             Newline ]
 
-    method text_of_return_opt = function
+    method! text_of_return_opt = function
       | None -> []
       | Some t ->
           (Bold [Raw Odoc_messages.returns ]) :: Raw " " :: t @ [ Newline ]
 
-    method text_of_custom c_l =
+    method! text_of_custom c_l =
       List.flatten
         (List.rev
            (List.fold_left
@@ -509,7 +509,7 @@ class texi =
                  acc
               ) [] c_l))
 
-    method text_of_info ?(block=false) = function
+    method! text_of_info ?(block=false) = function
       | None -> []
       | Some info ->
           let t =
@@ -559,7 +559,7 @@ class texi =
              (self#relative_idents m_name
                 (Odoc_info.string_of_type_expr typ)))
 
-    method text_of_short_type_expr m_name typ =
+    method! text_of_short_type_expr m_name typ =
       [ Raw (self#normal_type m_name typ) ]
 
     (** Return Texinfo code for a value. *)

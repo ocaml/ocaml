@@ -65,6 +65,12 @@ let fmt_virtual_flag f x =
   | Concrete -> fprintf f "Concrete";
 ;;
 
+let fmt_override_flag f x =
+  match x with
+  | Override -> fprintf f "Override";
+  | Fresh -> fprintf f "Fresh";
+;;
+
 let fmt_rec_flag f x =
   match x with
   | Nonrecursive -> fprintf f "Nonrec";
@@ -453,25 +459,25 @@ and class_structure i ppf (p, l) =
 
 and class_field i ppf x =
   match x with
-  | Pcf_inher (ce, so) ->
-      line i ppf "Pcf_inher\n";
+  | Pcf_inher (ovf, ce, so) ->
+      line i ppf "Pcf_inher %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
   | Pcf_valvirt (s, mf, ct, loc) ->
-      line i ppf
-        "Pcf_valvirt \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
+      line i ppf "Pcf_valvirt \"%s\" %a %a\n"
+        s fmt_mutable_flag mf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pcf_val (s, mf, e, loc) ->
-      line i ppf
-        "Pcf_val \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
+  | Pcf_val (s, mf, ovf, e, loc) ->
+      line i ppf "Pcf_val \"%s\" %a %a %a\n"
+        s fmt_mutable_flag mf fmt_override_flag ovf fmt_location loc;
       expression (i+1) ppf e;
   | Pcf_virt (s, pf, ct, loc) ->
-      line i ppf
-        "Pcf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      line i ppf "Pcf_virt \"%s\" %a %a\n"
+        s fmt_private_flag pf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pcf_meth (s, pf, e, loc) ->
-      line i ppf
-        "Pcf_meth \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+  | Pcf_meth (s, pf, ovf, e, loc) ->
+      line i ppf "Pcf_meth \"%s\" %a %a %a\n"
+        s fmt_private_flag pf fmt_override_flag ovf fmt_location loc;
       expression (i+1) ppf e;
   | Pcf_cstr (ct1, ct2, loc) ->
       line i ppf "Pcf_cstr %a\n" fmt_location loc;

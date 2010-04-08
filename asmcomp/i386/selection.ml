@@ -159,7 +159,7 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate (n : int) = true
 
-method is_simple_expr e =
+method! is_simple_expr e =
   match e with
   | Cop(Cextcall(fn, _, alloc, _), args)
     when !fast_math && List.mem fn inline_float_ops ->
@@ -181,7 +181,7 @@ method select_addressing exp =
   | (Ascaledadd(e1, e2, scale), d) ->
       (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-method select_store addr exp =
+method! select_store addr exp =
   match exp with
     Cconst_int n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
@@ -196,7 +196,7 @@ method select_store addr exp =
   | _ ->
       super#select_store addr exp
 
-method select_operation op args =
+method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Cadda | Csubi | Csuba ->
@@ -269,7 +269,7 @@ method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
 
 (* Deal with register constraints *)
 
-method insert_op_debug op dbg rs rd =
+method! insert_op_debug op dbg rs rd =
   try
     let (rsrc, rdst, move_res) = pseudoregs_for_operation op rs rd in
     self#insert_moves rs rsrc;
@@ -282,7 +282,7 @@ method insert_op_debug op dbg rs rd =
   with Use_default ->
     super#insert_op_debug op dbg rs rd
 
-method insert_op op rs rd =
+method! insert_op op rs rd =
   self#insert_op_debug op Debuginfo.none rs rd
 
 (* Selection of push instructions for external calls *)
@@ -302,7 +302,7 @@ method select_push exp =
       (Ispecific(Ipush_load_float addr), arg)
   | _ -> (Ispecific(Ipush), exp)
 
-method emit_extcall_args env args =
+method! emit_extcall_args env args =
   let rec size_pushes = function
   | [] -> 0
   | e :: el -> Selectgen.size_expr env e + size_pushes el in

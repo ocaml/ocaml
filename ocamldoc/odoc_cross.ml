@@ -244,28 +244,28 @@ let lookup_exception name =
 class scan =
   object
     inherit Odoc_scan.scanner
-    method scan_value v =
+    method! scan_value v =
       add_known_element v.val_name (Odoc_search.Res_value v)
-    method scan_type t =
+    method! scan_type t =
       add_known_element t.ty_name (Odoc_search.Res_type t)
-    method scan_exception e =
+    method! scan_exception e =
       add_known_element e.ex_name (Odoc_search.Res_exception e)
-    method scan_attribute a =
+    method! scan_attribute a =
       add_known_element a.att_value.val_name
         (Odoc_search.Res_attribute a)
-    method scan_method m =
+    method! scan_method m =
       add_known_element m.met_value.val_name
         (Odoc_search.Res_method m)
-    method scan_class_pre c =
+    method! scan_class_pre c =
       add_known_element c.cl_name (Odoc_search.Res_class c);
       true
-    method scan_class_type_pre c =
+    method! scan_class_type_pre c =
       add_known_element c.clt_name (Odoc_search.Res_class_type c);
       true
-    method scan_module_pre m =
+    method! scan_module_pre m =
       add_known_element m.m_name (Odoc_search.Res_module m);
       true
-    method scan_module_type_pre m =
+    method! scan_module_type_pre m =
       add_known_element m.mt_name (Odoc_search.Res_module_type m);
       true
 

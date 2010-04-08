@@ -1009,8 +1009,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | CrCtr loc t1 t2 -> [Pcf_cstr (ctyp t1, ctyp t2, mkloc loc) :: l]
     | <:class_str_item< $cst1$; $cst2$ >> ->
         class_str_item cst1 (class_str_item cst2 l)
-    | CrInh _ ce "" -> [Pcf_inher (class_expr ce) None :: l]
-    | CrInh _ ce pb -> [Pcf_inher (class_expr ce) (Some pb) :: l]
+    | CrInh _ ce "" -> [Pcf_inher Fresh (class_expr ce) None :: l]
+    | CrInh _ ce pb -> [Pcf_inher Fresh (class_expr ce) (Some pb) :: l]
     | CrIni _ e -> [Pcf_init (expr e) :: l]
     | CrMth loc s b e t ->
         let t =
@@ -1018,8 +1018,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           [ <:ctyp<>> -> None
           | t -> Some (mkpolytype (ctyp t)) ] in
         let e = mkexp loc (Pexp_poly (expr e) t) in
-        [Pcf_meth (s, mkprivate b, e, mkloc loc) :: l]
-    | CrVal loc s b e -> [Pcf_val (s, mkmutable b, expr e, mkloc loc) :: l]
+        [Pcf_meth (s, mkprivate b, Fresh, e, mkloc loc) :: l]
+    | CrVal loc s b e ->
+        [Pcf_val (s, mkmutable b, Fresh, expr e, mkloc loc) :: l]
     | CrVir loc s b t ->
         [Pcf_virt (s, mkprivate b, mkpolytype (ctyp t), mkloc loc) :: l]
     | CrVvr loc s b t ->

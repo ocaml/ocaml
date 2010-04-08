@@ -296,10 +296,10 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
       in
       ignore (List.fold_left l ~init:values ~f:
         begin fun values -> function
-          | Pcf_val (s, _, e, _) ->
+          | Pcf_val (s, _, _, e, _) ->
               add_labels_expr ~text ~classes ~values e;
               SMap.removes [s] values
-          | Pcf_meth (s, _, e, _) ->
+          | Pcf_meth (s, _, _, e, _) ->
               begin try
                 let labels = List.assoc s methods in
                 insert_labels ~labels ~text e

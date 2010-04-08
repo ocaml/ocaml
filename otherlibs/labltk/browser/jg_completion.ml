@@ -41,13 +41,13 @@ class timed ?nocase ?wait texts = object (self)
   inherit completion texts ?nocase as super
   val wait = match wait with None -> 500 | Some n -> n
   val mutable timer = None
-  method add c =
+  method! add c =
     begin match timer with
       None -> self#reset
     | Some t -> Timer.remove t
     end;
     timer <- Some (Timer.add ~ms:wait ~callback:(fun () -> self#reset));
     super#add c
-  method reset =
+  method! reset =
     timer <- None; super#reset
 end

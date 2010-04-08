@@ -39,7 +39,7 @@ let recenter lb ~index =
 class timed ?wait ?nocase get_texts = object
   val get_texts = get_texts
   inherit Jg_completion.timed [] ?wait ?nocase as super
-  method reset =
+  method! reset =
     texts <- get_texts ();
     super#reset
 end

@@ -380,6 +380,7 @@ rule token = parse
   | ">]" { GREATERRBRACKET }
   | "}"  { RBRACE }
   | ">}" { GREATERRBRACE }
+  | "!"  { BANG }
 
   | "!=" { INFIXOP0 "!=" }
   | "+"  { PLUS }
@@ -387,7 +388,7 @@ rule token = parse
   | "-"  { MINUS }
   | "-." { MINUSDOT }
 
-  | "!" symbolchar *
+  | "!" symbolchar +
             { PREFIXOP(Lexing.lexeme lexbuf) }
   | ['~' '?'] symbolchar +
             { PREFIXOP(Lexing.lexeme lexbuf) }

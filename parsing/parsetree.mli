@@ -185,11 +185,11 @@ and class_expr_desc =
 and class_structure = pattern * class_field list
 
 and class_field =
-    Pcf_inher of class_expr * string option
+    Pcf_inher of override_flag * class_expr * string option
   | Pcf_valvirt of (string * mutable_flag * core_type * Location.t)
-  | Pcf_val   of (string * mutable_flag * expression * Location.t)
+  | Pcf_val of (string * mutable_flag * override_flag * expression * Location.t)
   | Pcf_virt  of (string * private_flag * core_type * Location.t)
-  | Pcf_meth  of (string * private_flag * expression * Location.t)
+  | Pcf_meth of (string * private_flag *override_flag * expression * Location.t)
   | Pcf_cstr  of (core_type * core_type * Location.t)
   | Pcf_let   of rec_flag * (pattern * expression) list * Location.t
   | Pcf_init  of expression

@@ -44,7 +44,7 @@ class string_gen =
              None -> []
            | Some i -> i.i_custom
           )
-    method scan_type t =
+    method! scan_type t =
       match test_kinds with
         [] -> ()
       | _ ->
@@ -59,7 +59,7 @@ class string_gen =
             );
 
 
-    method scan_module_pre m =
+    method! scan_module_pre m =
       p fmt "#\n# module %s:\n" m.m_name ;
       if self#must_display_types then
         (
@@ -70,7 +70,7 @@ class string_gen =
         );
       true
 
-    method scan_module_type_pre m =
+    method! scan_module_type_pre m =
       p fmt "#\n# module type %s:\n" m.mt_name ;
       if self#must_display_types then
         (
