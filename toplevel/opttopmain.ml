@@ -53,72 +53,52 @@ let print_version () =
   exit 0;
 ;;
 
-let main () =
-  Arg.parse (Arch.command_line_options @ [
-     "-compact", Arg.Clear optimize_for_speed, " Optimize code size rather than speed";
-       "-inline", Arg.Int(fun n -> inline_threshold := n * 8),
-             "<n>  Set aggressiveness of inlining to <n>";
-     "-I", Arg.String(fun dir ->
-       let dir = Misc.expand_directory Config.standard_library dir in
-       include_dirs := dir :: !include_dirs),
-           "<dir>  Add <dir> to the list of include directories";
-     "-init", Arg.String (fun s -> init_file := Some s),
-           "<file>  Load <file> instead of default init file";
-     "-labels", Arg.Clear classic, " Labels commute (default)";
-     "-no-app-funct", Arg.Clear applicative_functors,
-           " Deactivate applicative functors";
-     "-noassert", Arg.Set noassert, " Do not compile assertion checks";
-     "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
-     "-noprompt", Arg.Set noprompt, " Suppress all prompts";
-     "-nostdlib", Arg.Set no_std_include,
-           " do not add default directory to the list of include directories";
-     "-principal", Arg.Set principal, " Check principality of type inference";
-     "-rectypes", Arg.Set recursive_types, " Allow arbitrary recursive types";
-     "-strict-sequence", Arg.Set strict_sequence,
-           " Left hand part of a sequence must have type unit";
-     "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
-     "-unsafe", Arg.Set fast, " No bound checking on array and string access";
-     "-version", Arg.Unit print_version, " Print version and exit";
-     "-w", Arg.String (Warnings.parse_options false),
-           "<flags>  Enable or disable warnings according to <flags>:\n\
-       \032    A/a enable/disable all warnings\n\
-       \032    C/c enable/disable suspicious comment\n\
-       \032    D/d enable/disable deprecated features\n\
-       \032    E/e enable/disable fragile match\n\
-       \032    F/f enable/disable partially applied function\n\
-       \032    L/l enable/disable labels omitted in application\n\
-       \032    M/m enable/disable overriden method\n\
-       \032    P/p enable/disable partial match\n\
-       \032    S/s enable/disable non-unit statement\n\
-       \032    U/u enable/disable unused match case\n\
-       \032    V/v enable/disable hidden instance variable\n\
-       \032    Y/y enable/disable suspicious unused variables\n\
-       \032    Z/z enable/disable all other unused variables\n\
-       \032    X/x enable/disable all other warnings\n\
-       \032    default setting is \"Aelz\"";
-     "-warn-error" , Arg.String (Warnings.parse_options true),
-       "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
-         \032    (see option -w for the list of flags)\n\
-         \032    default setting is a (all warnings are non-fatal)";
+module Options = Main_args.Make_opttop_options (struct
+  let set r () = r := true
+  let clear r () = r := false
 
-       "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
-       "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
-       "-dlambda", Arg.Set dump_lambda, " (undocumented)";
-       "-dcmm", Arg.Set dump_cmm, " (undocumented)";
-       "-dsel", Arg.Set dump_selection, " (undocumented)";
-       "-dcombine", Arg.Set dump_combine, " (undocumented)";
-       "-dlive", Arg.Unit(fun () -> dump_live := true;
-                                    Printmach.print_live := true),
-             " (undocumented)";
-       "-dspill", Arg.Set dump_spill, " (undocumented)";
-       "-dsplit", Arg.Set dump_split, " (undocumented)";
-       "-dinterf", Arg.Set dump_interf, " (undocumented)";
-       "-dprefer", Arg.Set dump_prefer, " (undocumented)";
-       "-dalloc", Arg.Set dump_regalloc, " (undocumented)";
-       "-dreload", Arg.Set dump_reload, " (undocumented)";
-       "-dscheduling", Arg.Set dump_scheduling, " (undocumented)";
-       "-dlinear", Arg.Set dump_linear, " (undocumented)";
-       "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
-    ]) file_argument usage;
+  let _compact = clear optimize_for_speed
+  let _I dir =
+    let dir = Misc.expand_directory Config.standard_library dir in
+    include_dirs := dir :: !include_dirs
+  let _init s = init_file := Some s
+  let _inline n = inline_threshold := n * 8
+  let _labels = clear classic
+  let _no_app_funct = clear applicative_functors
+  let _noassert = set noassert
+  let _nolabels = set classic
+  let _noprompt = set noprompt
+  let _nostdlib = set no_std_include
+  let _principal = set principal
+  let _rectypes = set recursive_types
+  let _strict_sequence = set strict_sequence
+  let _S = set keep_asm_file
+  let _unsafe = set fast
+  let _version () = print_version ()
+  let _w s = Warnings.parse_options false s
+  let _warn_error s = Warnings.parse_options true s
+
+  let _dparsetree = set dump_parsetree
+  let _drawlambda = set dump_rawlambda
+  let _dlambda = set dump_lambda
+  let _dcmm = set dump_cmm
+  let _dsel = set dump_selection
+  let _dcombine = set dump_combine
+  let _dlive () = dump_live := true; Printmach.print_live := true
+  let _dspill = set dump_spill
+  let _dsplit = set dump_split
+  let _dinterf = set dump_interf
+  let _dprefer = set dump_prefer
+  let _dalloc = set dump_regalloc
+  let _dreload = set dump_reload
+  let _dscheduling = set dump_scheduling
+  let _dlinear = set dump_linear
+  let _dstartup = set keep_startup_file
+
+  let anonymous = file_argument
+end);;
+
+let main () =
+  Arg.parse Options.list file_argument usage;
   if not (prepare Format.err_formatter) then exit 2;
   Opttoploop.loop Format.std_formatter

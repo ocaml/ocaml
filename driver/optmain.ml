@@ -83,132 +83,89 @@ let default_output = function
 
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
+(* Error messages to standard error formatter *)
+let anonymous = process_file Format.err_formatter;;
+let impl = process_implementation_file Format.err_formatter;;
+let intf = process_interface_file Format.err_formatter;;
+
 let show_config () =
   Config.print_config stdout;
   exit 0;
 ;;
 
+module Options = Main_args.Make_optcomp_options (struct
+  let set r () = r := true
+  let clear r () = r := false
+
+  let _a = set make_archive
+  let _annot = set annotations
+  let _c = set compile_only
+  let _cc s = c_compiler := Some s
+  let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
+  let _ccopt s = ccopts := s :: !ccopts
+  let _compact = clear optimize_for_speed
+  let _config () = show_config ()
+  let _for_pack s = for_package := Some s
+  let _g = set debug
+  let _i () = print_types := true; compile_only := true
+  let _I dir = include_dirs := dir :: !include_dirs
+  let _impl = impl
+  let _inline n = inline_threshold := n * 8
+  let _intf = intf
+  let _intf_suffix s = Config.interface_suffix := s
+  let _labels = clear classic
+  let _linkall = set link_everything
+  let _no_app_funct = clear applicative_functors
+  let _noassert = set noassert
+  let _noautolink = set no_auto_link
+  let _nodynlink = clear dlcode
+  let _nolabels = set classic
+  let _nostdlib = set no_std_include
+  let _o s = output_name := Some s
+  let _output_obj = set output_c_object
+  let _p = set gprofile
+  let _pack = set make_package
+  let _pp s = preprocessor := Some s
+  let _principal = set principal
+  let _rectypes = set recursive_types
+  let _strict_sequence = set strict_sequence
+  let _shared () = shared := true; dlcode := true
+  let _S = set keep_asm_file
+  let _thread = set use_threads
+  let _unsafe = set fast
+  let _v () = print_version_and_library ()
+  let _version () = print_version_string ()
+  let _verbose = set verbose
+  let _w s = Warnings.parse_options false s
+  let _warn_error s = Warnings.parse_options true s
+  let _where () = print_standard_library ()
+
+  let _nopervasives = set nopervasives
+  let _dparsetree = set dump_parsetree
+  let _drawlambda = set dump_rawlambda
+  let _dlambda = set dump_lambda
+  let _dcmm = set dump_cmm
+  let _dsel = set dump_selection
+  let _dcombine = set dump_combine
+  let _dlive () = dump_live := true; Printmach.print_live := true
+  let _dspill = set dump_spill
+  let _dsplit = set dump_split
+  let _dinterf = set dump_interf
+  let _dprefer = set dump_prefer
+  let _dalloc = set dump_regalloc
+  let _dreload = set dump_reload
+  let _dscheduling = set dump_scheduling
+  let _dlinear = set dump_linear
+  let _dstartup = set keep_startup_file
+
+  let anonymous = anonymous
+end);;
+
 let main () =
   native_code := true;
   let ppf = Format.err_formatter in
   try
-    Arg.parse (Arch.command_line_options @ [
-       "-a", Arg.Set make_archive, " Build a library";
-       "-annot", Arg.Set annotations,
-             " Save information in <filename>.annot";
-       "-c", Arg.Set compile_only, " Compile only (do not link)";
-       "-cc", Arg.String(fun s -> c_compiler := Some s),
-             "<comp>  Use <comp> as the C compiler and linker";
-       "-cclib", Arg.String(fun s ->
-                              ccobjs := Misc.rev_split_words s @ !ccobjs),
-             "<opt>  Pass option <opt> to the C linker";
-       "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts),
-             "<opt>  Pass option <opt> to the C compiler and linker";
-       "-compact", Arg.Clear optimize_for_speed,
-             " Optimize code size rather than speed";
-       "-config", Arg.Unit show_config,
-             " print configuration values and exit";
-       "-dtypes", Arg.Set annotations,
-             " (deprecated) same as -annot";
-       "-for-pack", Arg.String (fun s -> for_package := Some s),
-             "<ident>  Generate code that can later be `packed' with\n\
-         \     ocamlopt -pack -o <ident>.cmx";
-       "-g", Arg.Set debug,
-             " Record debugging information for exception backtrace";
-       "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
-             " Print inferred interface";
-       "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
-             "<dir>  Add <dir> to the list of include directories";
-       "-impl", Arg.String (process_implementation_file ppf),
-             "<file>  Compile <file> as a .ml file";
-       "-inline", Arg.Int(fun n -> inline_threshold := n * 8),
-             "<n>  Set aggressiveness of inlining to <n>";
-       "-intf", Arg.String (process_interface_file ppf),
-             "<file>  Compile <file> as a .mli file";
-       "-intf-suffix", Arg.String (fun s -> Config.interface_suffix := s),
-             "<file>  Suffix for interface files (default: .mli)";
-       "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
-             "<file>  (deprecated) same as -intf-suffix";
-       "-labels", Arg.Clear classic, " Use commuting label mode";
-       "-linkall", Arg.Set link_everything,
-             " Link all modules, even unused ones";
-       "-no-app-funct", Arg.Clear applicative_functors,
-           " Deactivate applicative functors";
-       "-noassert", Arg.Set noassert, " Don't compile assertion checks";
-       "-noautolink", Arg.Set no_auto_link,
-             " Don't automatically link C libraries specified in .cmxa files";
-       "-nodynlink", Arg.Clear dlcode,
-             " Enable optimizations for code that will not be dynlinked";
-       "-nolabels", Arg.Set classic, " Ignore non-optional labels in types";
-       "-nostdlib", Arg.Set no_std_include,
-           " do not add standard directory to the list of include directories";
-       "-o", Arg.String(fun s -> output_name := Some s),
-             "<file>  Set output file name to <file>";
-       "-output-obj", Arg.Unit(fun () -> output_c_object := true),
-             " Output a C object file instead of an executable";
-       "-p", Arg.Set gprofile,
-             " Compile and link with profiling support for \"gprof\"\n\
-         \     (not supported on all platforms)";
-       "-pack", Arg.Set make_package,
-              " Package the given .cmx files into one .cmx";
-       "-pp", Arg.String(fun s -> preprocessor := Some s),
-             "<command>  Pipe sources through preprocessor <command>";
-       "-principal", Arg.Set principal,
-             " Check principality of type inference";
-       "-rectypes", Arg.Set recursive_types,
-             " Allow arbitrary recursive types";
-       "-strict-sequence", Arg.Set strict_sequence,
-             " Left hand part of a sequence must have type unit";
-       "-shared", Arg.Unit (fun () -> shared := true; dlcode := true),
-             " Produce a dynlinkable plugin";
-       "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
-       "-thread", Arg.Set use_threads,
-             " Generate code that supports the system threads library";
-       "-unsafe", Arg.Set fast,
-             " No bounds checking on array and string access";
-       "-v", Arg.Unit print_version_and_library,
-             " Print compiler version and standard library location and exit";
-       "-version", Arg.Unit print_version_string,
-             " Print compiler version and exit";
-       "-verbose", Arg.Set verbose, " Print calls to external commands";
-    "-w", Arg.String (Warnings.parse_options false),
-      "<list>  Enable or disable warnings according to <list>:\n\
-      \032    +<num>    enable warning <num>\n\
-      \032    +<letter> enable set <letter>\n\
-      \032    -<num>    disable warning <num>\n\
-      \032    -<letter> disable set <letter>\n\
-      \032    @<num>    enable warning <num> and treat it as an error\n\
-      \032    @<letter> enable set <letter> and treat them as errors\n\
-      \032    default setting is \"+a-4-6-9-27-28-29\"";
-    "-warn-error" , Arg.String (Warnings.parse_options true),
-     "<list>  Enable or disable error status for warnings according\n\
-      \     to <list>.  See option -w for the syntax of <list>.\n\
-      \     Default setting is \"-a\"";
-       "-where", Arg.Unit print_standard_library,
-         " Print location of standard library and exit";
-
-       "-nopervasives", Arg.Set nopervasives, " (undocumented)";
-       "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
-       "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
-       "-dlambda", Arg.Set dump_lambda, " (undocumented)";
-       "-dcmm", Arg.Set dump_cmm, " (undocumented)";
-       "-dsel", Arg.Set dump_selection, " (undocumented)";
-       "-dcombine", Arg.Set dump_combine, " (undocumented)";
-       "-dlive", Arg.Unit(fun () -> dump_live := true;
-                                    Printmach.print_live := true),
-             " (undocumented)";
-       "-dspill", Arg.Set dump_spill, " (undocumented)";
-       "-dsplit", Arg.Set dump_split, " (undocumented)";
-       "-dinterf", Arg.Set dump_interf, " (undocumented)";
-       "-dprefer", Arg.Set dump_prefer, " (undocumented)";
-       "-dalloc", Arg.Set dump_regalloc, " (undocumented)";
-       "-dreload", Arg.Set dump_reload, " (undocumented)";
-       "-dscheduling", Arg.Set dump_scheduling, " (undocumented)";
-       "-dlinear", Arg.Set dump_linear, " (undocumented)";
-       "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
-       "-", Arg.String (process_file ppf),
-            "<file>  Treat <file> as a file name (even if it starts with `-')"
-      ]) (process_file ppf) usage;
+    Arg.parse (Arch.command_line_options @ Options.list) anonymous usage;
     if
       List.length (List.filter (fun x -> !x)
                      [make_package; make_archive; shared;

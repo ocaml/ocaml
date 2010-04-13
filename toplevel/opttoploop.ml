@@ -333,7 +333,7 @@ let first_line = ref true
 let got_eof = ref false;;
 
 let read_input_default prompt buffer len =
-  output_string stdout prompt; flush stdout;
+  output_string Pervasives.stdout prompt; flush Pervasives.stdout;
   let i = ref 0 in
   try
     while true do

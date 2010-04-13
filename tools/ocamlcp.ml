@@ -41,7 +41,7 @@ let incompatible o =
   fprintf stderr "ocamlcp: profiling is incompatible with the %s option\n" o;
   exit 2
 
-module Options = Main_args.Make_options (struct
+module Options = Main_args.Make_bytecomp_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _annot = option "-annot"
   let _c = option "-c"

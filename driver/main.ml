@@ -85,7 +85,7 @@ let show_config () =
   exit 0;
 ;;
 
-module Options = Main_args.Make_options (struct
+module Options = Main_args.Make_bytecomp_options (struct
   let set r () = r := true
   let unset r () = r := false
   let _a = set make_archive

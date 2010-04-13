@@ -87,10 +87,10 @@ DRIVER=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
   driver/main_args.cmo driver/main.cmo
 
 OPTDRIVER= driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
-  driver/optmain.cmo
+  driver/main_args.cmo driver/optmain.cmo
 
 TOPLEVEL=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
-  toplevel/genprintval.cmo toplevel/toploop.cmo \
+  driver/main_args.cmo toplevel/genprintval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
 TOPLEVELLIB=toplevel/toplevellib.cma
@@ -104,6 +104,7 @@ TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
 NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
   driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
+  driver/main_args.cmo \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
