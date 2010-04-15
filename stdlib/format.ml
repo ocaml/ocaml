@@ -112,16 +112,8 @@ type formatter_tag_functions = {
 }
 ;;
 
-type formatter_output_meaning = {
-  output_string: string -> int -> int -> unit;
-  output_flush : unit -> unit;
-  output_line_break : unit -> unit;
-  output_indentation : int -> unit;
-}
-;;
-
 (* A formatter with all its machinery. *)
-type out_channel = {
+type formatter = {
   mutable pp_scan_stack : pp_scan_elem list;
   mutable pp_format_stack : pp_format_elem list;
   mutable pp_tbox_stack : tblock list;
@@ -174,8 +166,6 @@ type out_channel = {
   mutable pp_queue : pp_queue_elem queue;
 }
 ;;
-
-type formatter = out_channel;;
 
 (**************************************************************
 
@@ -810,22 +800,6 @@ let pp_set_margin state n =
 
 let pp_get_margin state () = state.pp_margin;;
 
-let pp_get_formatter_output_meaning state = {
-  output_string = state.pp_output_function;
-  output_flush = state.pp_flush_function;
-  output_line_break = state.pp_output_newline;
-  output_indentation = state.pp_output_spaces;
-}
-;;
-
-let pp_set_formatter_output_meaning state = function
-  | { output_string; output_flush; output_line_break; output_indentation; } ->
-      state.pp_output_function <- output_string;
-      state.pp_flush_function <- output_flush;
-      state.pp_output_newline <- output_line_break;
-      state.pp_output_spaces <- output_indentation
-;;
-
 let pp_set_formatter_output_functions state f g =
   state.pp_output_function <- f; state.pp_flush_function <- g;;
 let pp_get_formatter_output_functions state () =
@@ -932,25 +906,17 @@ let formatter_of_buffer b =
 let stdbuf = Buffer.create 512;;
 
 (* Predefined formatters. *)
-(* The standard output channels notion for the [Format] module. *)
-let stdout = formatter_of_out_channel Pervasives.stdout
-and stderr = formatter_of_out_channel Pervasives.stderr
-and stdstr = formatter_of_buffer stdbuf
+let std_formatter = formatter_of_out_channel Pervasives.stdout
+and err_formatter = formatter_of_out_channel Pervasives.stderr
+and str_formatter = formatter_of_buffer stdbuf
 ;;
 
-let std_formatter = stdout
-and err_formatter = stderr
-and str_formatter = stdstr
-;;
-
-let flush_stdstr () =
-  pp_flush_queue stdstr false;
+let flush_str_formatter () =
+  pp_flush_queue str_formatter false;
   let s = Buffer.contents stdbuf in
   Buffer.reset stdbuf;
   s
 ;;
-
-let flush_str_formatter = flush_stdstr
 
 (**************************************************************
 
@@ -1012,11 +978,6 @@ and set_all_formatter_output_functions =
   pp_set_all_formatter_output_functions std_formatter
 and get_all_formatter_output_functions =
   pp_get_all_formatter_output_functions std_formatter
-
-and get_formatter_output_meaning =
-  pp_get_formatter_output_meaning std_formatter
-and set_formatter_output_meaning =
-  pp_set_formatter_output_meaning std_formatter
 
 and set_formatter_tag_functions =
   pp_set_formatter_tag_functions std_formatter
@@ -1106,8 +1067,8 @@ let implode_rev s0 = function
 (* [mkprintf] is the printf-like function generator: given the
    - [to_s] flag that tells if we are printing into a string,
    - the [get_out] function that has to be called to get a [ppf] function to
-     output onto,
-   it generates a [kprintf] function that takes as arguments a [k]
+     output onto.
+   It generates a [kprintf] function that takes as arguments a [k]
    continuation function to be called at the end of formatting,
    and a printing format string to print the rest of the arguments
    according to the format string.
