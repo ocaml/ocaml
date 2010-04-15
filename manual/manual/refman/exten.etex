@@ -406,6 +406,14 @@ is not inferred, and must be given explicitly.
 \ikwd{let\@\texttt{let}}
 \ikwd{open\@\texttt{open}}
 
+\begin{syntax}
+expr:
+       ...
+     | "let" "open" module-path "in" expr
+     | module-path '.(' expr ')'
+;
+\end{syntax}
+
 The expressions
 @"let" "open" module-path "in" expr@
 and
@@ -420,15 +428,73 @@ scope. Also, this can make the code easier to read (the open statement is
 closer to where it is used) and to refactor (because the code
 fragment is more self-contained).
 
+\section{Record notations}
+
+\begin{syntax}
+pattern:
+    ...
+  | '{' field ('=' pattern)? { ';' (field '=' pattern)? } ( ';' '_' )? '}'
+;
+expr:
+     ...
+  | '{' field ('=' expr)? { ';' field ('=' expr)? } '}'
+  | '{' expr 'with' field ('=' expr?) { ';' field ('=' expr)? } '}'
+;
+\end{syntax}
+
+In a record pattern or a record construction expression, a single
+identifier @id@ stands for @id = id@, and a qualified identifier
+@path ',' id@ stands for @path '.' id = id@.  For example, assuming
+the record type
+\begin{verbatim}
+          type point = { x: float; y: float }
+\end{verbatim}
+has been declared, the following expressions are equivalent:
+\begin{verbatim}
+          let x = 1 and y = 2 in { x = x; y = y }
+          let x = 1 and y = 2 in { x; y }
+          let x = 1 and y = 2 in { x = x; y }
+\end{verbatim}
+Likewise, the following functions are equivalent:
+\begin{verbatim}
+          fun {x = x; y = y} -> x + y
+          fun {x; y} -> x + y
+\end{verbatim}
+
+Optionally, a record pattern can be terminated by "; _" to convey the
+fact that not all fields of the record type are listed in the record
+pattern and that it is intentional.  By default, the compiler ignores
+the "; _" annotation.  If the "R" warning is turned on, however,
+the compiler will warn if a record pattern fails to list all fields of
+the corresponding record type and is not terminated by "; _".
+Continuing the "point" example above,
+\begin{verbatim}
+          fun {x} -> x + 1
+\end{verbatim}
+will warn if the "R" warning is on, while
+\begin{verbatim}
+          fun {x; _} -> x + 1
+\end{verbatim}
+will not warn.  This warning can help spot program points where record
+patterns may need to be modified after new fields were added to a
+record type.
 
 \section{Explicit naming of generic types}
 \ikwd{type\@\texttt{type}}
+\ikwd{type\@\texttt{fun}}
 
-The expression @"fun" ("type" typeconstr-name) "->" expr@ introduces a
+\begin{syntax}
+parameter:
+       ...
+     | '(' "type" typeconstr-name ')'
+;
+\end{syntax}
+
+The expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ introduces a
 type constructor named @typeconstr-name@ which is considered abstract
 in the scope of the sub-expression, but then replaced by a fresh type
 variable.  Note that contrary to what the syntax could suggest, the
-expression @"fun" ("type" typeconstr-name) "->" expr@ itself does not
+expression @"fun" '(' "type" typeconstr-name ')' "->" expr@ itself does not
 suspend the evaluation of @expr@ as a regular abstraction would.  The
 syntax has been chosen to fit nicely in the context of function
 declarations, where it is generally used. It is possible to freely mix
