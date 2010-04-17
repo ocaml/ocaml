@@ -234,8 +234,10 @@ and modtype_declaration =
 and with_constraint =
     Pwith_type of type_declaration
   | Pwith_module of Longident.t
+  | Pwith_typesubst of type_declaration
+  | Pwith_modsubst of Longident.t
 
-(* Value expressions for the module language *)
+(* value expressions for the module language *)
 
 and module_expr =
   { pmod_desc: module_expr_desc;

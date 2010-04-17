@@ -40,6 +40,7 @@ type error =
   | Implementation_is_required of string
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
+  | With_need_typeconstr
 
 exception Error of Location.t * error
 
@@ -94,7 +95,14 @@ let check_type_decl env id row_id newdecl decl rs rem =
   let env = if rs = Trec_not then env else add_rec_types env rem in
   Includemod.type_declarations env id newdecl decl
 
+let rec make_params n = function
+    [] -> []
+  | _ :: l -> ("a" ^ string_of_int n) :: make_params (n+1) l
+
+let wrap_param s = {ptyp_desc=Ptyp_var s; ptyp_loc=Location.none}
+
 let merge_constraint initial_env loc sg lid constr =
+  let real_id = ref None in
   let rec merge env sg namelist row_id =
     match (sg, namelist, constr) with
       ([], _, _) ->
@@ -126,15 +134,30 @@ let merge_constraint initial_env loc sg lid constr =
           Typedecl.transl_with_constraint initial_env id None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
-    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
+    | (Tsig_type(id, decl, rs) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
       when Ident.name id = s ^ "#row" ->
         merge env rem namelist (Some id)
+    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_typesubst sdecl)
+      when Ident.name id = s ->
+        (* Check as for a normal with constraint, but discard definition *)
+        let newdecl =
+          Typedecl.transl_with_constraint initial_env id None sdecl in
+        check_type_decl env id row_id newdecl decl rs rem;
+        real_id := Some id;
+        rem
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = type_module_path initial_env loc lid in
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         Tsig_module(id, newmty, rs) :: rem
+    | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_modsubst lid)
+      when Ident.name id = s ->
+        let (path, mty') = type_module_path initial_env loc lid in
+        let newmty = Mtype.strengthen env mty' path in
+        ignore(Includemod.modtypes env newmty mty);
+        real_id := Some id;
+        rem
     | (Tsig_module(id, mty, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let newsg = merge env (extract_sig env loc mty) namelist None in
@@ -142,7 +165,37 @@ let merge_constraint initial_env loc sg lid constr =
     | (item :: rem, _, _) ->
         item :: merge (Env.add_item item env) rem namelist row_id in
   try
-    merge initial_env sg (Longident.flatten lid) None
+    let names = Longident.flatten lid in
+    let sg = merge initial_env sg names None in
+    match names, constr with
+      [s], Pwith_typesubst sdecl ->
+        let id =
+          match !real_id with None -> assert false | Some id -> id in
+        let lid =
+          try match sdecl.ptype_manifest with
+          | Some {ptyp_desc = Ptyp_constr (lid, stl)} ->
+              let params =
+                List.map
+                  (function {ptyp_desc=Ptyp_var s} -> s | _ -> raise Exit)
+                  stl in
+              if params <> sdecl.ptype_params then raise Exit;
+              lid
+          | _ -> raise Exit
+          with Exit -> raise (Error (sdecl.ptype_loc, With_need_typeconstr))
+        in
+        let (path, _) =
+          try Env.lookup_type lid initial_env with Not_found -> assert false
+        in
+        let sub = Subst.add_type id path Subst.identity in
+        Subst.signature sub sg
+    | [s], Pwith_modsubst lid ->
+        let id =
+          match !real_id with None -> assert false | Some id -> id in
+        let (path, _) = type_module_path initial_env loc lid in
+        let sub = Subst.add_module id path Subst.identity in
+        Subst.signature sub sg
+    | _ ->
+        sg
   with Includemod.Error explanation ->
     raise(Error(loc, With_mismatch(lid, explanation)))
 
@@ -275,6 +328,16 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
+let rec remove_values ids = function
+    [] -> []
+  | Tsig_value (id, _) :: rem when List.exists (Ident.equal id) ids -> rem
+  | f :: rem -> f :: remove_values ids rem
+
+let rec get_values = function
+    [] -> []
+  | Tsig_value (id, _) :: rem -> id :: get_values rem
+  | f :: rem -> get_values rem
+
 (* Check and translate a module type expression *)
 
 let transl_modtype_longident loc env lid =
@@ -321,7 +384,8 @@ and transl_signature env sg =
             let desc = Typedecl.transl_value_decl env sdesc in
             let (id, newenv) = Env.enter_value name desc env in
             let rem = transl_sig newenv srem in
-            Tsig_value(id, desc) :: rem
+            if List.exists (Ident.equal id) (get_values rem) then rem
+            else Tsig_value(id, desc) :: rem
         | Psig_type sdecls ->
             List.iter
               (fun (name, decl) -> check "type" item.psig_loc type_names name)
@@ -367,7 +431,7 @@ and transl_signature env sg =
               sg;
             let newenv = Env.add_signature sg env in
             let rem = transl_sig newenv srem in
-            sg @ rem
+            remove_values (get_values rem) sg @ rem
         | Psig_class cl ->
             List.iter
               (fun {pci_name = name} ->
@@ -1040,3 +1104,6 @@ let report_error ppf = function
   | Not_allowed_in_functor_body ->
       fprintf ppf
         "This kind of expression is not allowed within the body of a functor."
+  | With_need_typeconstr ->
+      fprintf ppf
+        "Only type constructors with identical parameters can be substituted."
