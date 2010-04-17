@@ -73,6 +73,7 @@ let ocamlopt_link flag tags deps out =
           atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
 
 let ocamlopt_link_lib = ocamlopt_link (A"-a")
+let ocamlopt_link_shared_lib = ocamlopt_link (A"-shared")
 let ocamlopt_link_prog = ocamlopt_link N
 
 let ocamlopt_p tags deps out =
@@ -95,7 +96,16 @@ let native_lib_linker tags =
   else
     ocamlopt_link_lib tags
 
+let native_shared_lib_linker tags =
+(* ocamlmklib seems to not support -shared, is this OK?
+  if Tags.mem "ocamlmklib" tags then
+    ocamlmklib tags
+  else
+*)
+    ocamlopt_link_shared_lib tags
+
 let native_lib_linker_tags tags = tags++"ocaml"++"link"++"native"++"library"
+
 
 let prepare_compile build ml =
   let dir = Pathname.dirname ml in
@@ -182,6 +192,11 @@ end
 module Ocaml_dependencies = Ocaml_dependencies.Make(Ocaml_dependencies_input)
 
 let caml_transitive_closure = Ocaml_dependencies.caml_transitive_closure
+
+let link_one_gen linker tagger cmX out env _build =
+  let cmX = env cmX and out = env out in
+  let tags = tagger (tags_of_pathname out) in
+  linker tags [cmX] out
 
 let link_gen cmX_ext cma_ext a_ext extensions linker tagger cmX out env build =
   let cmX = env cmX and out = env out in
@@ -337,11 +352,32 @@ let native_library_link_modules x =
   link_modules [("cmx",[!Options.ext_obj])] "cmx" "cmxa"
      !Options.ext_lib native_lib_linker native_lib_linker_tags x
 
+let native_shared_library_link_modules x =
+  link_modules [("cmx",[!Options.ext_obj])] "cmx" "cmxa"
+     !Options.ext_lib native_shared_lib_linker
+     (fun tags -> native_lib_linker_tags tags++"shared") x
+
 let native_library_link_mllib = link_from_file native_library_link_modules
+
+let native_shared_library_link_mldylib = link_from_file native_shared_library_link_modules
+
+let native_shared_library_tags tags basetags =
+  List.fold_left (++) (basetags++"ocaml"++"link"++"native"++"shared"++"library") tags
+
+let native_shared_library_link ?(tags = []) x =
+  link_one_gen native_shared_lib_linker
+    (native_shared_library_tags tags) x
 
 let native_profile_library_link_modules x =
   link_modules [("p.cmx",["p" -.- !Options.ext_obj])] "p.cmx" "p.cmxa"
     ("p" -.- !Options.ext_lib) native_lib_linker
     (fun tags -> native_lib_linker_tags tags++"profile") x
 
+let native_profile_shared_library_link_modules x =
+  link_modules [("p.cmx",["p" -.- !Options.ext_obj])] "p.cmx" "p.cmxa"
+    ("p" -.- !Options.ext_lib) native_shared_lib_linker
+    (fun tags -> native_lib_linker_tags tags++"shared"++"profile") x
+
 let native_profile_library_link_mllib = link_from_file native_profile_library_link_modules
+
+let native_profile_shared_library_link_mldylib = link_from_file native_profile_shared_library_link_modules

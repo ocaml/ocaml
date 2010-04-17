@@ -55,6 +55,7 @@ let x_a = "%"-.-ext_lib;;
 let x_dll = "%"-.-ext_dll;;
 let x_p_o = "%.p"-.-ext_obj;;
 let x_p_a = "%.p"-.-ext_lib;;
+let x_p_dll = "%.p"-.-ext_dll;;
 
 rule "target files"
   ~dep:"%.itarget"
@@ -207,17 +208,53 @@ rule "ocaml: mllib & cmx* & o* -> cmxa & a"
   ~dep:"%.mllib"
   (Ocaml_compiler.native_library_link_mllib "%.mllib" "%.cmxa");;
 
-rule "ocaml: p.cmx* & p.o* -> p.cmxa & p.a"
+rule "ocaml: p.cmx & p.o -> p.cmxa & p.a"
   ~tags:["ocaml"; "native"; "profile"; "library"]
   ~prods:["%.p.cmxa"; x_p_a]
   ~deps:["%.p.cmx"; x_p_o]
   (Ocaml_compiler.native_profile_library_link "%.p.cmx" "%.p.cmxa");;
 
-rule "ocaml: cmx* & o* -> cmxa & a"
+rule "ocaml: cmx & o -> cmxa & a"
   ~tags:["ocaml"; "native"; "library"]
   ~prods:["%.cmxa"; x_a]
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_library_link "%.cmx" "%.cmxa");;
+
+rule "ocaml: mldylib & p.cmx* & p.o* -> p.cmxs & p.so"
+  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
+  ~prods:["%.p.cmxs"; x_p_dll]
+  ~dep:"%.mldylib"
+  (Ocaml_compiler.native_profile_shared_library_link_mldylib "%.mldylib" "%.p.cmxs");;
+
+rule "ocaml: mldylib & cmx* & o* -> cmxs & so"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"; x_dll]
+  ~dep:"%.mldylib"
+  (Ocaml_compiler.native_shared_library_link_mldylib "%.mldylib" "%.cmxs");;
+
+rule "ocaml: p.cmx & p.o -> p.cmxs & p.so"
+  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
+  ~prods:["%.p.cmxs"; x_p_dll]
+  ~deps:["%.p.cmx"; x_p_o]
+  (Ocaml_compiler.native_shared_library_link ~tags:["profile"] "%.p.cmx" "%.p.cmxs");;
+
+rule "ocaml: p.cmxa & p.a -> p.cmxs & p.so"
+  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
+  ~prods:["%.p.cmxs"; x_p_dll]
+  ~deps:["%.p.cmxa"; x_p_a]
+  (Ocaml_compiler.native_shared_library_link ~tags:["profile";"linkall"] "%.p.cmxa" "%.p.cmxs");;
+
+rule "ocaml: cmx & o -> cmxs & so"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"; x_dll]
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_shared_library_link "%.cmx" "%.cmxs");;
+
+rule "ocaml: cmxa & a -> cmxs & so"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"; x_dll]
+  ~deps:["%.cmxa"; x_a]
+  (Ocaml_compiler.native_shared_library_link ~tags:["linkall"] "%.cmxa" "%.cmxs");;
 
 rule "ocaml dependencies ml"
   ~prod:"%.ml.depends"
