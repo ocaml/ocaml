@@ -1147,7 +1147,6 @@ case "$arch" in
             fi;;
   mips)     bng_arch=mips; bng_asm_level=1;;
   power)    bng_arch=ppc; bng_asm_level=1;;
-  sparc)    bng_arch=sparc; bng_asm_level=1;;
   amd64)    bng_arch=amd64; bng_asm_level=1;;
   *)        bng_arch=generic; bng_asm_level=0;;
 esac
