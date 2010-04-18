@@ -75,7 +75,6 @@ file system)}
 functions; use threads instead of non-blocking I/O}
 \entree{"rewinddir"}{not implemented; re-open the directory instead}
 \entree{"mkfifo"}{not implemented}
-\entree{"lockf"}{not implemented}
 \entree{"kill", "pause"}{not implemented (no inter-process signals in Windows)}
 \entree{"alarm", "times"}{not implemented}
 \entree{"getitimer", "setitimer"}{not implemented}
