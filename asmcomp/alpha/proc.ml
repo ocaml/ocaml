@@ -208,8 +208,8 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   let as_cmd =
     if digital_asm && !Clflags.gprofile
-    then Config.as ^ " -pg"
-    else Config.as in
+    then Config.asm ^ " -pg"
+    else Config.asm in
   Ccomp.command (as_cmd ^ " -o " ^
                  Filename.quote outfile ^ " " ^ Filename.quote infile)
 

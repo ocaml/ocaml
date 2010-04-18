@@ -175,8 +175,6 @@ val const_unit: structured_constant
 val lambda_unit: lambda
 val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
-val is_guarded: lambda -> bool
-val patch_guarded : lambda -> lambda -> lambda
 
 val iter: (lambda -> unit) -> lambda -> unit
 module IdentSet: Set.S with type elt = Ident.t
