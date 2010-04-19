@@ -842,10 +842,12 @@ module Analyser =
                   "??"
               | Parsetree.Pmty_with (mt, _) ->
                   f mt.Parsetree.pmty_desc
-              | Parsetree.Pmty_typeof _ -> (* TODO *)
-                  "??"
+              | Parsetree.Pmty_typeof mexpr ->
+                  match mexpr.Parsetree.pmod_desc with
+                    Parsetree.Pmod_ident longident -> Name.from_longident longident
+                  | _ -> "??"
             in
-            let name = (f module_type.Parsetree.pmty_desc) in
+            let name = f module_type.Parsetree.pmty_desc in
             let full_name = Odoc_env.full_module_or_module_type_name env name in
             let im =
               {
