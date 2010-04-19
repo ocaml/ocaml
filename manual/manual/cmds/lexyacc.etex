@@ -216,9 +216,9 @@ Reference the regular expression bound to @ident@ by an earlier
 Bind the substring matched by @regexp@ to identifier @ident@.
 \end{options}
 
-Concerning the precedences of operators, "*" and "+" have
-highest precedence, followed by "?", then concatenation, then
-"|" (alternation), then "as".
+Concerning the precedences of operators, "#" has the highest precedence,
+followed by "*", "+"  and "?",
+then concatenation, then "|" (alternation), then "as".
 
 \subsection{Actions}
 
