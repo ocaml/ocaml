@@ -61,6 +61,9 @@ Microsoft Visual C++ compiler (items [1] and [2] in the section
 The native-code compiler (ocamlopt) requires Visual C++ (items [1], [2]),
 the Microsoft assembler MASM (item [3]) and the flexdll tool (item [5]).
 
+Instead of items [1], [2] and [3], it is possible to use item [6] which contains
+everything needed.
+
 The LablTk GUI requires Tcl/Tk 8.5 (item [4]).
 
 
@@ -102,6 +105,9 @@ http://www.microsoft.com/downloads/details.aspx?FamilyID=7A1C9DA0-0510-44A2-B042
 
 [5] flexdll.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
+
+[6] Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 Service Pack 1
+
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -321,6 +327,10 @@ THIRD-PARTY SOFTWARE:
     Can be downloaded for free from http://www.microsoft.com/.
     Includes all we need, namely a C compiler, the masm64 assembler,
     Windows libraries and include files.
+
+    Alternatively, the more recent SDK:
+      Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 Service Pack 1
+    can be used.
 
 [2] flexdll.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
