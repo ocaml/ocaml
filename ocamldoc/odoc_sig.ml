@@ -791,50 +791,27 @@ module Analyser =
             let (maybe_more, mods) = f ~first: true 0 pos_start_ele decls in
             (maybe_more, new_env, mods)
 
-        | Parsetree.Psig_modtype (name, Parsetree.Pmodtype_abstract) ->
+        | Parsetree.Psig_modtype (name, pmodtype_decl) ->
+            let complete_name = Name.concat current_module_name name in
             let sig_mtype =
               try Signature_search.search_module_type table name
               with Not_found ->
                 raise (Failure (Odoc_messages.module_type_not_found current_module_name name))
             in
-            let complete_name = Name.concat current_module_name name in
+            let module_type_kind =
+              match pmodtype_decl with
+                Parsetree.Pmodtype_abstract -> None
+              | Parsetree.Pmodtype_manifest module_type ->
+                match sig_mtype with
+                | Some sig_mtype -> Some (analyse_module_type_kind env complete_name module_type sig_mtype)
+                | None -> None
+            in
+
             let mt =
               {
                 mt_name = complete_name ;
                 mt_info = comment_opt ;
                 mt_type = sig_mtype ;
-                mt_is_interface = true ;
-                mt_file = !file_name ;
-                mt_kind = None ;
-                mt_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
-              }
-            in
-            let (maybe_more, info_after_opt) =
-              My_ir.just_after_special
-                !file_name
-                (get_string_of_file pos_end_ele pos_limit)
-            in
-            mt.mt_info <- merge_infos mt.mt_info info_after_opt ;
-            let new_env = Odoc_env.add_module_type env mt.mt_name in
-            (maybe_more, new_env, [ Element_module_type mt ])
-
-        | Parsetree.Psig_modtype (name, Parsetree.Pmodtype_manifest module_type) ->
-            let complete_name = Name.concat current_module_name name in
-            let sig_mtype_opt =
-              try Signature_search.search_module_type table name
-              with Not_found ->
-                raise (Failure (Odoc_messages.module_type_not_found current_module_name name))
-            in
-            let module_type_kind =
-              match sig_mtype_opt with
-              | Some sig_mtype -> Some (analyse_module_type_kind env complete_name module_type sig_mtype)
-              | None -> None
-            in
-            let mt =
-              {
-                mt_name = complete_name ;
-                mt_info = comment_opt ;
-                mt_type = sig_mtype_opt ;
                 mt_is_interface = true ;
                 mt_file = !file_name ;
                 mt_kind = module_type_kind ;
@@ -849,7 +826,7 @@ module Analyser =
             mt.mt_info <- merge_infos mt.mt_info info_after_opt ;
             let new_env = Odoc_env.add_module_type env mt.mt_name in
             let new_env2 =
-              match sig_mtype_opt with (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+              match sig_mtype with (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
                 Some (Types.Tmty_signature s) -> Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
               | _ -> new_env
             in
