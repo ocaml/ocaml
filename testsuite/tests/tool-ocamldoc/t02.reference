@@ -4,3 +4,5 @@
 # module T02.Foo:
 #
 # module type T02.TFoo:
+#
+# module type T02.TBar:
