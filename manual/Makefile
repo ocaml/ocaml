@@ -9,3 +9,7 @@ clean:
 release:
 	cd manual; ${MAKE} release
 #	cd fpcl; ${MAKE} release
+
+.PHONY: tools
+tools:
+	cd tools; ${MAKE} clean; ${MAKE} all
