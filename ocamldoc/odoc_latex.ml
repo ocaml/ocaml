@@ -102,8 +102,8 @@ class text =
       ("\\.\\.\\.", "$\\ldots$");
       ("\\\\", "MAXENCE"^"XXX") ;
       ("&", "MAXENCE"^"YYY") ;
-      ("\\$", "MAXENCE"^"ZZZ")
-     ]
+      ("\\$", "MAXENCE"^"ZZZ");
+    ]
 
     val mutable subst_strings_simple =
       [
@@ -622,6 +622,11 @@ class latex =
           self#latex_of_module_type_kind fmt father k;
           self#latex_of_text fmt
             [ Code " ";
+              Code (self#relative_idents father s);
+            ]
+      | Module_type_typeof s ->
+          self#latex_of_text fmt
+            [ Code "module type of ";
               Code (self#relative_idents father s);
             ]
 

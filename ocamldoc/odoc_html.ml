@@ -1298,6 +1298,10 @@ class html =
           bs b "<code class=\"type\"> ";
           bs b (self#create_fully_qualified_module_idents_links father s);
           bs b "</code>"
+      | Module_type_typeof s ->
+          bs b "<code class=\"type\">module type of ";
+          bs b (self#create_fully_qualified_module_idents_links father s);
+          bs b "</code>"
 
     (** Print html code to display the type of a module parameter.. *)
     method html_of_module_parameter_type b m_name p =

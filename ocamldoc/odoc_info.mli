@@ -479,6 +479,8 @@ module Module :
             (** Complete alias name and corresponding module type if we found it. *)
       | Module_type_with of module_type_kind * string
             (** The module type kind and the code of the with constraint. *)
+      | Module_type_typeof of string
+            (** by now only the code of the module expression *)
 
     (** Representation of a module type. *)
     and t_module_type = Odoc_module.t_module_type =

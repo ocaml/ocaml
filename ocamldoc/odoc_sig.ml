@@ -1073,7 +1073,10 @@ module Analyser =
           )
 
       | Parsetree.Pmty_typeof module_expr ->
-          assert false                  (* TODO *)
+          let loc_start = module_expr.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
+           let loc_end = module_expr.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
+           let s = get_string_of_file loc_start loc_end in
+           Module_type_typeof s
 
     (** analyse of a Parsetree.module_type and a Types.module_type.*)
     and analyse_module_kind env current_module_name module_type sig_module_type =

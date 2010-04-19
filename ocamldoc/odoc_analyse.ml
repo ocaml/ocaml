@@ -437,7 +437,7 @@ and remove_module_elements_between_stop_in_module_type_kind tk =
   | Odoc_module.Module_type_alias _ -> tk
   | Odoc_module.Module_type_with (tk2, s) ->
       Odoc_module.Module_type_with (remove_module_elements_between_stop_in_module_type_kind tk2, s)
-
+  | Odoc_module.Module_type_typeof _ -> tk
 
 (** Remove elements between the stop special comment. *)
 let remove_elements_between_stop module_list =

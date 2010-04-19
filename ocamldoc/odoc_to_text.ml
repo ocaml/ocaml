@@ -570,5 +570,9 @@ class virtual to_text =
                  | Some mt -> mt.mt_name))
           ]
 
-
+      | Odoc_module.Module_type_typeof s ->
+          let code = Printf.sprintf "%smodule type of %s"
+            (if with_def_syntax then " = " else "") s
+          in
+          [ Code code ]
   end
