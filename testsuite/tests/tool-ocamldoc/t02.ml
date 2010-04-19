@@ -6,4 +6,5 @@ module type TBar = TFoo with type u := float;;
 module type Gee =
   sig
     module M : module type of Foo
+    include module type of Foo
   end
