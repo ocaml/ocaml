@@ -447,6 +447,7 @@ module Module :
                         Should appear in interface files only. *)
       | Module_constraint of module_kind * module_type_kind
                      (** A module constraint by a module type. *)
+      | Module_typeof of string (** by now only the code of the module expression *)
 
     (** Representation of a module. *)
     and t_module = Odoc_module.t_module =

@@ -60,6 +60,7 @@ and module_kind =
   | Module_apply of module_kind * module_kind
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
+  | Module_typeof of string (** by now only the code of the module expression *)
 
 (** Representation of a module. *)
 and t_module = {
@@ -244,6 +245,7 @@ let rec module_elements ?(trans=true) m =
             m_code_intf = None ;
             m_text_only = false ;
           }
+    | Module_typeof s -> []
 (*
    module_type_elements ~trans: trans
    { mt_name = "" ; mt_info = None ; mt_type = None ;
@@ -401,7 +403,8 @@ and module_parameters ?(trans=true) m =
             mt_loc = Odoc_types.dummy_loc }
     | Module_struct _
     | Module_apply _
-    | Module_with _ ->
+    | Module_with _
+    | Module_typeof _ ->
         []
   in
   iter m.m_kind

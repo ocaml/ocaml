@@ -343,6 +343,9 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
           { mt_name = "" ; mt_info = None ; mt_type = None ;
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
             mt_loc = Odoc_types.dummy_loc }
+
+     | Module_typeof _ ->
+        (acc_b, acc_inc, acc_names)
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) m.m_kind
 
@@ -799,6 +802,7 @@ and assoc_comments_module_kind parent_name module_list mk =
       Module_constraint
         (assoc_comments_module_kind parent_name module_list mk1,
          assoc_comments_module_type_kind parent_name module_list mtk)
+  | Module_typeof _ -> mk
 
 and assoc_comments_module_type_kind parent_name module_list mtk =
   match mtk with

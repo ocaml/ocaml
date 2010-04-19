@@ -659,6 +659,11 @@ class latex =
       | Module_constraint (k, tk) ->
           (* TODO: on affiche quoi ? *)
           self#latex_of_module_kind fmt father k
+      | Module_typeof s ->
+          self#latex_of_text fmt
+            [ Code "module type of ";
+              Code (self#relative_idents father s);
+            ]
 
     method latex_of_class_kind fmt father kind =
       match kind with

@@ -543,6 +543,13 @@ class virtual to_text =
           [Code " -> "] @
           (self#text_of_module_kind ~with_def_syntax: false k)
 
+      | Module_typeof s ->
+          let code = Printf.sprintf "%smodule type of %s"
+            (if with_def_syntax then " : " else "")
+            s
+          in
+          [Code code]
+
     (** Return html code for a [module_type_kind].*)
     method text_of_module_type_kind ?(with_def_syntax=true) tk =
       match tk with

@@ -1225,6 +1225,10 @@ class html =
       | Module_constraint (k, tk) ->
           (* TODO: on affiche quoi ? *)
           self#html_of_module_kind b father ?modu k
+      | Module_typeof s ->
+          bs b "<code class=\"type\">module type of ";
+          bs b (self#create_fully_qualified_module_idents_links father s);
+          bs b "</code>"
 
     method html_of_module_parameter b father p =
       let (s_functor,s_arrow) =
