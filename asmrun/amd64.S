@@ -126,7 +126,7 @@
 
 FUNCTION(G(caml_call_gc))
         RECORD_STACK_FRAME(0)
-.L105:
+.Lcaml_call_gc:
     /* Build array of registers, save it into caml_gc_regs */
         pushq   %r13
         pushq   %r12
@@ -203,6 +203,7 @@ FUNCTION(G(caml_call_gc))
         ret
 
 FUNCTION(G(caml_alloc1))
+.Lcaml_alloc1:
         subq    $16, %r15
         CMP_VAR(caml_young_limit, %r15)
         jb      .L100
@@ -210,11 +211,12 @@ FUNCTION(G(caml_alloc1))
 .L100:
         RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .L105
+        call    .Lcaml_call_gc
 	addq	$8, %rsp
-        jmp     G(caml_alloc1)
+        jmp     .Lcaml_alloc1
 
 FUNCTION(G(caml_alloc2))
+.Lcaml_alloc2:
         subq    $24, %r15
         CMP_VAR(caml_young_limit, %r15)
         jb      .L101
@@ -222,11 +224,12 @@ FUNCTION(G(caml_alloc2))
 .L101:
         RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .L105
+        call    .Lcaml_call_gc
 	addq	$8, %rsp
-        jmp     G(caml_alloc2)
+        jmp     .Lcaml_alloc2
 
 FUNCTION(G(caml_alloc3))
+.Lcaml_alloc3:
         subq    $32, %r15
         CMP_VAR(caml_young_limit, %r15)
         jb      .L102
@@ -234,11 +237,12 @@ FUNCTION(G(caml_alloc3))
 .L102:
         RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .L105
+        call    .Lcaml_call_gc
 	addq	$8, %rsp
-        jmp     G(caml_alloc3)
+        jmp     .Lcaml_alloc3
 
 FUNCTION(G(caml_allocN))
+.Lcaml_allocN:
         pushq   %rax                       /* save desired size */
         subq    %rax, %r15
         CMP_VAR(caml_young_limit, %r15)
@@ -247,13 +251,14 @@ FUNCTION(G(caml_allocN))
         ret
 .L103:
         RECORD_STACK_FRAME(8)
-        call    .L105
+        call    .Lcaml_call_gc
         popq    %rax                      /* recover desired size */
-        jmp     G(caml_allocN)
+        jmp     .Lcaml_allocN
 
 /* Call a C function from Caml */
 
 FUNCTION(G(caml_c_call))
+.Lcaml_c_call:
     /* Record lowest stack address and return address */
         popq    %r12
         STORE_VAR(%r12, caml_last_return_address)
@@ -283,7 +288,7 @@ FUNCTION(G(caml_start_program))
     /* Initial entry point is G(caml_program) */
         leaq    GCALL(caml_program)(%rip), %r12
     /* Common code for caml_start_program and caml_callback* */
-.L106:
+.Lcaml_start_program:
     /* Build a callback link */
 	subq	$8, %rsp	/* stack 16-aligned */
         PUSH_VAR(caml_gc_regs)
@@ -386,7 +391,7 @@ FUNCTION(G(caml_callback_exn))
         movq    %rdi, %rbx      /* closure */
         movq    %rsi, %rax      /* argument */
         movq    0(%rbx), %r12   /* code pointer */
-        jmp     .L106
+        jmp     .Lcaml_start_program
 
 FUNCTION(G(caml_callback2_exn))
     /* Save callee-save registers */
@@ -402,7 +407,7 @@ FUNCTION(G(caml_callback2_exn))
         movq    %rsi, %rax               /* first argument */
         movq    %rdx, %rbx               /* second argument */
         leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
-        jmp     .L106
+        jmp     .Lcaml_start_program
 
 FUNCTION(G(caml_callback3_exn))
     /* Save callee-save registers */
@@ -419,11 +424,11 @@ FUNCTION(G(caml_callback3_exn))
         movq    %rdi, %rsi               /* closure */
         movq    %rcx, %rdi               /* third argument */
         leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
-        jmp     .L106
+        jmp     .Lcaml_start_program
 
 FUNCTION(G(caml_ml_array_bound_error))
         leaq    GCALL(caml_array_bound_error)(%rip), %rax
-        jmp     G(caml_c_call)
+        jmp     .Lcaml_c_call
 
         .data
         .globl  G(caml_system__frametable)
