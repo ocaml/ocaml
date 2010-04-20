@@ -32,6 +32,10 @@ type checkpoint_report =
     Checkpoint_done of int
   | Checkpoint_failed
 
+type follow_fork_mode =
+    Fork_child
+  | Fork_parent
+
 (* Set the current connection with the debuggee *)
 val set_current_connection : Primitives.io_channel -> unit
 
@@ -75,6 +79,10 @@ val up_frame : int -> int * int
 
 (* Set the trap barrier to given stack position. *)
 val set_trap_barrier : int -> unit
+
+(* Set whether the debugger follow the child or the parent process on fork *)
+val fork_mode : follow_fork_mode ref
+val update_follow_fork_mode : unit -> unit
 
 (* Handling of remote values *)
 

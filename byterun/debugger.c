@@ -13,7 +13,7 @@
 
 /* $Id$ */
 
-/* Interface with the debugger */
+/* Interface with the byte-code debugger */
 
 #ifdef _WIN32
 #include <io.h>
@@ -23,26 +23,23 @@
 
 #include "config.h"
 #include "debugger.h"
-#include "fail.h"
-#include "fix_code.h"
-#include "instruct.h"
-#include "intext.h"
-#include "io.h"
 #include "misc.h"
-#include "mlvalues.h"
-#include "stacks.h"
-#include "sys.h"
 
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
+int caml_debugger_fork_mode = 1; /* parent by default */
 
-#if !defined(HAS_SOCKETS)
+#if !defined(HAS_SOCKETS) || defined(NATIVE_CODE)
 
 void caml_debugger_init(void)
 {
 }
 
 void caml_debugger(enum event_kind event)
+{
+}
+
+void caml_debugger_cleanup_fork(void)
 {
 }
 
@@ -66,6 +63,15 @@ void caml_debugger(enum event_kind event)
 #undef ATOM
 #include <process.h>
 #endif
+
+#include "fail.h"
+#include "fix_code.h"
+#include "instruct.h"
+#include "intext.h"
+#include "io.h"
+#include "mlvalues.h"
+#include "stacks.h"
+#include "sys.h"
 
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
@@ -109,7 +115,7 @@ static void open_connection(void)
 #endif
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
-    caml_fatal_error_arg2 ("cannot connect to debugger at %s", dbg_addr,
+    caml_fatal_error_arg2 ("cannot connect to debugger at %s\n", dbg_addr,
                            "error: %s\n", strerror (errno));
   }
 #ifdef _WIN32
@@ -412,8 +418,19 @@ void caml_debugger(enum event_kind event)
       caml_putword(dbg_out, (Code_val(val)-caml_start_code) * sizeof(opcode_t));
       caml_flush(dbg_out);
       break;
+    case REQ_SET_FORK_MODE:
+      caml_debugger_fork_mode = caml_getword(dbg_in);
+      break;
     }
   }
+}
+
+void caml_debugger_cleanup_fork(void)
+{
+  /* We could remove all of the breakpoints, but closing the connection
+   * means that they'll just be skipped anyway. */
+  close_connection();
+  caml_debugger_in_use = 0;
 }
 
 #endif

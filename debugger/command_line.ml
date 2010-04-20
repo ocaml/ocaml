@@ -807,6 +807,22 @@ let loading_mode_variable ppf =
       find loading_modes;
       fprintf ppf "@."
 
+let follow_fork_variable =
+  (function lexbuf ->
+     let mode =
+       match identifier_eol Lexer.lexeme lexbuf with
+       | "child" -> Fork_child
+       | "parent" -> Fork_parent
+       | _ -> error "Syntax error."
+     in
+       fork_mode := mode;
+       if !loaded then update_follow_fork_mode ()),
+  function ppf ->
+    fprintf ppf "%s@."
+      (match !fork_mode with
+         Fork_child -> "child"
+       | Fork_parent -> "parent")
+
 (** Infos. **)
 
 let pr_modules ppf mods =
@@ -1106,7 +1122,14 @@ It can be either :\n\
        var_action = integer_variable false 1 "Must be at least 1"
                                      max_printer_steps;
        var_help =
-"maximal number of value nodes printed." }];
+"maximal number of value nodes printed." };
+     { var_name = "follow_fork_mode";
+       var_action = follow_fork_variable;
+       var_help =
+"process to follow after forking.\n\
+It can be either :
+  child : the newly created process.\n\
+  parent : the process that called fork.\n" }];
 
   info_list :=
     (* info name, function, help *)

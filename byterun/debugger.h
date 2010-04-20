@@ -21,8 +21,8 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-extern int caml_debugger_in_use;
-extern int running;
+CAMLextern int caml_debugger_in_use;
+CAMLextern int caml_debugger_fork_mode; /* non-zero for parent */
 extern uintnat caml_event_count;
 
 enum event_kind {
@@ -32,6 +32,7 @@ enum event_kind {
 
 void caml_debugger_init (void);
 void caml_debugger (enum event_kind event);
+void caml_debugger_cleanup_fork (void);
 
 /* Communication protocol */
 
@@ -84,9 +85,11 @@ enum debugger_request {
   REQ_MARSHAL_OBJ = 'M',        /* mlvalue v */
   /* Send a copy of the data structure rooted at v, using the same
      format as [caml_output_value]. */
-  REQ_GET_CLOSURE_CODE = 'C'    /* mlvalue v */
+  REQ_GET_CLOSURE_CODE = 'C',   /* mlvalue v */
   /* Send the code address of the given closure.
      Reply is one uint32. */
+  REQ_SET_FORK_MODE = 'K'       /* uint32 m */
+  /* Set whether to follow the child (m=0) or the parent on fork. */
 };
 
 /* Replies to a REQ_GO request. All replies are followed by three uint32:
