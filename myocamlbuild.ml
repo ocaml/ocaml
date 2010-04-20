@@ -199,9 +199,6 @@ let cold_camlp4boot = "camlp4boot" (* The installed version *);;
 
 flag ["ocaml"; "ocamlyacc"] (A"-v");;
 
-flag ["ocaml"; "compile"; "warn_Aler"] (S[A"-w";A"Aler"; A"-warn-error";A"Almer"]);;
-flag ["ocaml"; "compile"; "warn_Alerzv"] (S[A"-w";A"Alerzv"; A"-warn-error";A"Almerzv"]);;
-
 non_dependency "otherlibs/threads/pervasives.ml" "Unix";;
 non_dependency "otherlibs/threads/pervasives.ml" "String";;
 

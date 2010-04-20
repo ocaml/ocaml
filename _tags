@@ -19,7 +19,7 @@ true: use_stdlib
 # The stdlib neither requires the stdlib nor debug information
 <stdlib/**>: -use_stdlib, -debug
 
-<**/*.ml*>: warn_Alerz
+<**/*.ml*>: warn_error_A
 
 "toplevel/topstart.byte": linkall
 
@@ -28,18 +28,18 @@ true: use_stdlib
 <ocamldoc/*.ml*>: include_unix, include_str, include_dynlink
 <ocamldoc/odoc.{byte,native}>: use_unix, use_str, use_dynlink
 
-<camlp4/**/*.ml*>: camlp4boot, -warn_Alerz, warn_Aler
+<camlp4/**/*.ml*>: camlp4boot, warn_Z, warn_error_m
 <camlp4/Camlp4_{config,import}.ml*>: -camlp4boot
-"camlp4/Camlp4_import.ml": -warn_Aler
-<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Aler, warn_a
+"camlp4/Camlp4_import.ml": -warn_Z
+<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Z, warn_a
 <camlp4/Camlp4Bin.{byte,native}> or <camlp4/{mkcamlp4,boot/camlp4boot}.byte>: use_dynlink
-"camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": warn_Alerzv
+"camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": -warn_Z, warn_v
 <camlp4/Camlp4Printers/**.ml>: include_unix
 "camlp4/Camlp4/Struct/DynLoader.ml" or "camlp4/boot/Camlp4.ml": include_dynlink
 <camlp4/Camlp4Top/**>: include_toplevel
 <camlp4/camlp4{,boot,o,r,of,rf,oof,orf}.byte>: -debug
 
-<ocamlbuild/*>: -warn_Alerz, include_unix
+<ocamlbuild/*>: include_unix
 
 <**/pervasives.ml> or <**/pervasives.mli> or <**/camlinternalOO.mli>: nopervasives
 <**/camlinternalOO*.cmx>: inline(0)

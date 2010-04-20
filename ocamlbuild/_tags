@@ -1,6 +1,6 @@
 # OCamlbuild tags file
 true: debug
-<*.ml> or <*.mli>: warn_A, warn_error_A, warn_e, annot
+<*.ml> or <*.mli>: warn_L, warn_R, warn_Z, annot
 "discard_printf.ml": rectypes
 "ocamlbuildlib.cma" or "ocamlbuildlightlib.cma": linkall
 <*.byte> or <*.native> or <*.top>: use_unix
