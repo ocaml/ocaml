@@ -99,6 +99,12 @@ let rec map f = function
     Empty -> Empty
   | Node(l, v, d, r, h) -> Node(map f l, v, f v d, map f r, h)
 
+let rec fold f m accu =
+  match m with
+  | Empty -> accu
+  | Node(l, v, d, r, _) ->
+      fold f r (f v d (fold f l accu))
+
 open Format
 
 let print print_key print_data ppf tbl =

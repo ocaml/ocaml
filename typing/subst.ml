@@ -309,11 +309,17 @@ and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract
   | Tmodtype_manifest mty -> Tmodtype_manifest(modtype s mty)
 
+(* For every binding k |-> d of m1, add k |-> f d to m2 
+   and return resulting merged map. *)
+
+let merge_tbls f m1 m2 =
+  Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
+
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =
-  { types = Tbl.map (fun id p -> type_path s2 p) s1.types;
-    modules = Tbl.map (fun id p -> module_path s2 p) s1.modules;
-    modtypes = Tbl.map (fun id mty -> modtype s2 mty) s1.modtypes;
+  { types = merge_tbls (type_path s2) s1.types s2.types;
+    modules = merge_tbls (module_path s2) s1.modules s2.modules;
+    modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = false }
