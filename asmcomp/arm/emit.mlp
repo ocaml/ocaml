@@ -573,7 +573,7 @@ let emit_item = function
   | Cdefine_symbol s ->
       `{emit_symbol s}:\n`
   | Cdefine_label lbl ->
-      `{emit_label (10000 + lbl)}:\n`
+      `{emit_label (100000 + lbl)}:\n`
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
@@ -583,17 +583,13 @@ let emit_item = function
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
   | Csingle f ->
-      `	.float	{emit_string	f}\n`
+      emit_float32_directive ".long" f
   | Cdouble f ->
-      (* FIXME: this version of the ARM port is mixed-endian, so we
-         use .double instead of emit_float64_directive.  The next
-         version is little-endian, so we'll use emit_float64 then. *)
-      `	.align	0\n`;
-      `	.double	{emit_string f}\n`
+      emit_float64_split_directive ".long" f
   | Csymbol_address s ->
       `	.word	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.word	{emit_label (10000 + lbl)}\n`
+      `	.word	{emit_label (100000 + lbl)}\n`
   | Cstring s ->
       emit_string_directive "	.ascii  " s
   | Cskip n ->
