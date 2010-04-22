@@ -45,7 +45,7 @@ method select_addressing = function
   | arg ->
       (Iindexed 0, arg)
 
-method select_operation op args =
+method! select_operation op args =
   match (op, args) with
   (* Recognize shift-add operations. *)
     ((Caddi|Cadda),
@@ -92,7 +92,7 @@ method select_operation op args =
 
 (* Deal with register constraints *)
 
-method insert_op_debug op dbg rs rd =
+method! insert_op_debug op dbg rs rd =
   match op with
     Iintop(Idiv | Imod) -> (* handled via calls to millicode *)
       let rs' = [|phys_reg 20; phys_reg 19|] (* %r26, %r25 *)

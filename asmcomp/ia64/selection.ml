@@ -64,7 +64,7 @@ method is_immediate_add n = n >= -8192 && n < 8192
 
 method select_addressing arg = (Iindexed, arg)
 
-method select_operation op args =
+method! select_operation op args =
   let norm_op =
     match op with Cadda -> Caddi | Csuba -> Csubi | _ -> op in
   let norm_args =
@@ -146,7 +146,7 @@ method private select_imul_imm arg n =
       ...
     Note: we use two temp regs and perform stores by groups of 2
     in order to expose more instruction-level parallelism. *)
-method emit_stores env data regs_addr =
+method! emit_stores env data regs_addr =
   let t1 = Reg.create Addr and t2 = Reg.create Addr in
   self#insert (Iop(Iintop_imm(Iadd, -8))) regs_addr [|t1|];
   self#insert (Iop Imove) regs_addr [|t2|];
