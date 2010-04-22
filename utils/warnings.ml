@@ -178,7 +178,8 @@ let parse_opt flags s =
 
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
-let defaults_w = "+a-4-6-9-27-28-29";;
+(* If you change these, don't forget to change them in main_args.ml too *)
+let defaults_w = "+a-4-6-7-9-27-28-29";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;

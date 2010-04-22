@@ -265,7 +265,7 @@ let mk_w f =
   \     -<letter> disable set <letter>\n\
   \     @<num>    enable warning <num> and treat it as an error\n\
   \     @<letter> enable set <letter> and treat them as errors\n\
-  \     default setting is \"+a-4-6-9-27-28-29\""
+  \     default setting is \"+a-4-6-7-9-27-28-29\""
 ;;
 
 let mk_warn_error f =

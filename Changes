@@ -30,11 +30,17 @@ Language features:
   "S with type t1 = ... and ... and type tn = ..." (S refers to a module type).
 - Local opening of modules in a subexpression.
   Syntax: "let open M in e", or "M.(e)"
+- [SOMEONE MUST DOCUMENT method! HERE]  (See change to warning 7 below).
 
 Compilers and toplevel:
-- New warning (activated by the warning code 'R') to signal
-  record patterns without "; _" where some labels of the record type
-  are not listed in the pattern.
+- Warnings are now numbered and can be switched on and off individually.
+  The old system with letters referring to sets of warnings is still
+  supported.
+- New warning (number 9, code 'R') to signal record patterns
+  without "; _" where some labels of the record type are not listed in
+  the pattern.
+* The semantics of warning 7 (code 'M', method override) have changed,
+  and it is now inactive by default.
 - Better error report in case of unbound qualified identifier: if the module
   is unbound this error is reported in the first place.
 - Added option '-strict-sequence' to force left hand part of sequence to have

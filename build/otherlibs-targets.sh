@@ -101,8 +101,6 @@ for lib in $OTHERLIBRARIES; do
     add_byte      lib/labltktop$EXE lib/labltk$EXE
     add_ocaml_lib jpf/jpflib
     add_ocaml_lib frx/frxlib
-    add_ocaml_lib tkanim/tkanim
-    add_file      tkanim/libtkanim.$A
     add_byte      browser/ocamlbrowser$EXE
     ;;
   dbm)

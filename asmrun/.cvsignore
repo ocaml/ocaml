@@ -1,3 +1,5 @@
+libasmrun.a
+libasmrunp.a
 main.c
 misc.c
 freelist.c
@@ -32,3 +34,4 @@ globroots.c
 unix.c
 dynlink.c
 signals.c
+debugger.c

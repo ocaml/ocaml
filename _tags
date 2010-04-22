@@ -28,7 +28,7 @@ true: use_stdlib
 <ocamldoc/*.ml*>: include_unix, include_str, include_dynlink
 <ocamldoc/odoc.{byte,native}>: use_unix, use_str, use_dynlink
 
-<camlp4/**/*.ml*>: camlp4boot, warn_Z, warn_error_m
+<camlp4/**/*.ml*>: camlp4boot, warn_Z
 <camlp4/Camlp4_{config,import}.ml*>: -camlp4boot
 "camlp4/Camlp4_import.ml": -warn_Z
 <camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Z, warn_a
@@ -83,4 +83,3 @@ true: use_stdlib
 "otherlibs/labltk/browser/jglib.cma": -ocamlmklib
 "otherlibs/labltk/browser/main.byte": use_unix, use_str, ocamlbrowser, bootstrap_thread
 <otherlibs/labltk/{browser,jpf}/**.ml*>: include_unix, include_str
-<otherlibs/labltk/{tkanim,frx}/**.ml*>: include_unix

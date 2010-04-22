@@ -155,6 +155,7 @@ void caml_main(char **argv)
                 percent_free_init, max_percent_free_init);
   init_atoms();
   caml_init_signals();
+  caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
   if (exe_name == NULL) exe_name = "";
 #ifdef __linux__

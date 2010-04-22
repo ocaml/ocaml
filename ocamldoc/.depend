@@ -200,8 +200,8 @@ odoc_text_lexer.cmo: odoc_text_parser.cmi odoc_misc.cmi
 odoc_text_lexer.cmx: odoc_text_parser.cmx odoc_misc.cmx
 odoc_text_parser.cmo: odoc_types.cmi odoc_misc.cmi odoc_text_parser.cmi
 odoc_text_parser.cmx: odoc_types.cmx odoc_misc.cmx odoc_text_parser.cmi
-odoc_to_text.cmo: odoc_messages.cmo odoc_info.cmi
-odoc_to_text.cmx: odoc_messages.cmx odoc_info.cmx
+odoc_to_text.cmo: odoc_module.cmo odoc_messages.cmo odoc_info.cmi
+odoc_to_text.cmx: odoc_module.cmx odoc_messages.cmx odoc_info.cmx
 odoc_type.cmo: ../typing/types.cmi odoc_types.cmi odoc_name.cmi \
     ../parsing/asttypes.cmi
 odoc_type.cmx: ../typing/types.cmx odoc_types.cmx odoc_name.cmx \

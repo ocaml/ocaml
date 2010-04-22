@@ -925,8 +925,6 @@ Pathname.define_context "otherlibs/labltk/jpf"
   ["otherlibs/labltk/jpf"; "otherlibs/labltk/labltk"; "otherlibs/labltk/support"; "stdlib"];;
 Pathname.define_context "otherlibs/labltk/frx"
   ["otherlibs/labltk/frx"; "otherlibs/labltk/camltk"; "otherlibs/labltk/support"; "stdlib"];;
-Pathname.define_context "otherlibs/labltk/tkanim"
-  ["otherlibs/labltk/tkanim"; "otherlibs/labltk/camltk"; "otherlibs/labltk/support"; "stdlib"];;
 Pathname.define_context "otherlibs/labltk/browser"
   ["otherlibs/labltk/browser"; "otherlibs/labltk/labltk"; "otherlibs/labltk/support"; "parsing"; "utils"; "typing"; "stdlib"];;
 
