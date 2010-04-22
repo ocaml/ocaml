@@ -55,7 +55,7 @@ class selector = object(self)
 
 inherit Selectgen.selector_generic as super
 
-method regs_for tyv =
+method! regs_for tyv =
   (* Expand floats into pairs of integer registers *)
   let nty = Array.length tyv in
   let rec expand i =
@@ -94,7 +94,7 @@ method select_shift_arith op shiftop shiftrevop args =
   | _ ->
       super#select_operation op args
 
-method select_operation op args =
+method! select_operation op args =
   match op with
     Cadda | Caddi ->
       begin match args with
@@ -150,12 +150,12 @@ method select_operation op args =
             args)])
   (* Add coercions around loads and stores of 32-bit floats *)
   | Cload Single ->
-      (Iextcall("__extendsdfd2", false), [Cop(Cload Word, args)])
+      (Iextcall("__extendsfdf2", false), [Cop(Cload Word, args)])
   | Cstore Single ->
       begin match args with
       | [arg1; arg2] ->
           let arg2' =
-            Cop(Cextcall("__truncdfsd2", typ_int, false, Debuginfo.none),
+            Cop(Cextcall("__truncdfsf2", typ_int, false, Debuginfo.none),
                 [arg2]) in
           self#select_operation (Cstore Word) [arg1; arg2']
       | _ -> assert false
@@ -163,7 +163,7 @@ method select_operation op args =
   (* Other operations are regular *)
   | _ -> super#select_operation op args
 
-method select_condition = function
+method! select_condition = function
   | Cop(Ccmpf cmp, args) ->
       (Iinttest_imm(Isigned cmp, 0),
        Cop(Cextcall(float_comparison_function cmp,
@@ -182,7 +182,7 @@ method select_condition = function
    this simplifies code generation later.
 *)
 
-method insert_op_debug op dbg rs rd =
+method! insert_op_debug op dbg rs rd =
   match op with
   | Iintop(Imul) ->
       self#insert_debug (Iop op) dbg rs [| rd.(0); rs.(0) |]; rd
