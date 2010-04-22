@@ -690,11 +690,17 @@ virtual_method:
       { if $2 = Override then syntax_error ();
         $5, $4, $7, symbol_rloc () }
 ;
-concrete_method :
-    METHOD override_flag private_flag label strict_binding
-      { $4, $3, $2, ghexp(Pexp_poly ($5, None)), symbol_rloc () }
-  | METHOD override_flag private_flag label COLON poly_type EQUAL seq_expr
-      { $4, $3, $2, ghexp(Pexp_poly($8,Some $6)), symbol_rloc () }
+concrete_method:
+    METHOD override_flag private_flag label fun_binding
+      { let expr, t = $5 in
+        let t = match t with
+        | None
+        | Some ({ptyp_desc=Ptyp_poly _}) -> t
+        | Some t -> Some (ghtyp(Ptyp_poly([], t)))
+        in
+        $4, $3, $2, ghexp(Pexp_poly (expr, t)), symbol_rloc () }
+  | METHOD override_flag private_flag LPAREN label COLON poly_type RPAREN fun_args
+      { $5, $3, $2, ghexp(Pexp_poly ($9, Some $7)), symbol_rloc () }
 ;
 
 /* Class types */
@@ -1045,29 +1051,74 @@ let_bindings:
   | let_bindings AND let_binding                { $3 :: $1 }
 ;
 let_binding:
-    val_ident fun_binding
-      { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
-  | val_ident COLON typevar_list DOT core_type EQUAL seq_expr
-      { (ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
-                               ghtyp(Ptyp_poly($3,$5)))),
-         $7) }
-  | pattern EQUAL seq_expr
-      { ($1, $3) }
+    pattern0 fun_binding {
+      let pat = $1 in
+      let expr, t = $2 in
+      let pat, expr = match t with
+      | None -> pat, expr
+      | Some t -> ghpat(Ppat_constraint(pat, t)), expr
+      in
+      (* extra hack to allow: let A x = .... and let `A x = ...
+         Some care is taken to reject: let A = fun x -> ...
+       *)
+      match pat, expr with
+      | {ppat_desc = Ppat_variant(v, None)},
+        {pexp_desc = Pexp_function("", None, [pat, expr]);
+         pexp_loc = {loc_ghost = true}} ->
+          {pat with ppat_desc = Ppat_variant(v, Some pat)}, expr
+      | {ppat_desc = Ppat_construct(v, None, false)},
+        {pexp_desc = Pexp_function("", None, [pat, expr]);
+         pexp_loc = {loc_ghost = true}} ->
+           {pat with ppat_desc = Ppat_construct(v, Some pat, false)}, expr
+      | _ ->
+          pat, expr
+     }
 ;
-fun_binding:
-    strict_binding
+
+/* same as pattern, without (A p) and (`A p) */
+pattern0:
+    simple_pattern
       { $1 }
+  | pattern0 AS val_ident
+      { mkpat(Ppat_alias($1, $3)) }
+  | pattern0_comma_list  %prec below_COMMA
+      { mkpat(Ppat_tuple(List.rev $1)) }
+  | pattern0 COLONCOLON pattern0
+      { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$1;$3])),
+                             false)) }
+  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
+      { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$5;$7])),
+                             false)) }
+  | pattern0 BAR pattern0
+      { mkpat(Ppat_or($1, $3)) }
+  | LAZY simple_pattern
+      { mkpat(Ppat_lazy $2) }
+;
+
+pattern0_comma_list:
+    pattern0_comma_list COMMA pattern0            { $3 :: $1 }
+  | pattern0 COMMA pattern0                       { [$3; $1] }
+;
+
+fun_binding:
+  fun_args
+      {
+       match $1 with
+       | {pexp_desc = Pexp_constraint(expr, Some t, None)} -> expr, Some t
+       | expr -> expr, None
+      }
+;
+fun_args:
+    labeled_simple_pattern fun_args
+      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
+  | LPAREN TYPE LIDENT RPAREN fun_args
+      { mkexp(Pexp_newtype($3, $5)) }
+  | EQUAL seq_expr
+      { $2 }
   | type_constraint EQUAL seq_expr
       { let (t, t') = $1 in ghexp(Pexp_constraint($3, t, t')) }
 ;
-strict_binding:
-    EQUAL seq_expr
-      { $2 }
-  | labeled_simple_pattern fun_binding
-      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
-  | LPAREN TYPE LIDENT RPAREN fun_binding
-      { mkexp(Pexp_newtype($3, $5)) }
-;
+
 match_cases:
     pattern match_action                        { [$1, $2] }
   | match_cases BAR pattern match_action        { ($3, $4) :: $1 }
@@ -1112,7 +1163,7 @@ expr_semi_list:
   | expr_semi_list SEMI expr                    { $3 :: $1 }
 ;
 type_constraint:
-    COLON core_type                             { (Some $2, None) }
+    COLON opt_poly_type                         { (Some $2, None) }
   | COLON core_type COLONGREATER core_type      { (Some $2, Some $4) }
   | COLONGREATER core_type                      { (None, Some $2) }
   | COLON error                                 { syntax_error() }
@@ -1176,7 +1227,7 @@ simple_pattern:
       { reloc_pat $2 }
   | LPAREN pattern error
       { unclosed "(" 1 ")" 3 }
-  | LPAREN pattern COLON core_type RPAREN
+  | LPAREN pattern COLON opt_poly_type RPAREN
       { mkpat(Ppat_constraint($2, $4)) }
   | LPAREN pattern COLON core_type error
       { unclosed "(" 1 ")" 5 }
@@ -1333,6 +1384,12 @@ typevar_list:
 poly_type:
         core_type
           { mktyp(Ptyp_poly([], $1)) }
+      | typevar_list DOT core_type
+          { mktyp(Ptyp_poly(List.rev $1, $3)) }
+;
+opt_poly_type:
+        core_type
+          { $1 }
       | typevar_list DOT core_type
           { mktyp(Ptyp_poly(List.rev $1, $3)) }
 ;

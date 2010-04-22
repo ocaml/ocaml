@@ -62,6 +62,7 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Polymorphic_type_not_allowed
 
 exception Error of Location.t * error
 
@@ -400,7 +401,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
 
 (* Typing of patterns *)
 
-let rec type_pat env sp =
+let rec type_pat ?(allow_poly = false) env sp =
   let loc = sp.ppat_loc in
   match sp.ppat_desc with
     Ppat_any ->
@@ -417,6 +418,8 @@ let rec type_pat env sp =
         pat_loc = loc;
         pat_type = ty;
         pat_env = env }
+  | Ppat_constraint(_, {ptyp_desc=Ptyp_poly _; ptyp_loc = loc}) when not allow_poly ->
+      raise (Error (loc, Polymorphic_type_not_allowed))
   | Ppat_constraint({ppat_desc=Ppat_var name; ppat_loc=loc},
                     ({ptyp_desc=Ptyp_poly _} as sty)) ->
       (* explicitly polymorphic type *)
@@ -601,7 +604,7 @@ let type_pattern env spat scope =
 
 let type_pattern_list env spatl scope =
   reset_pattern scope;
-  let patl = List.map (type_pat env) spatl in
+  let patl = List.map (type_pat ~allow_poly:true env) spatl in
   let new_env = add_pattern_variables env in
   (patl, new_env, get_ref pattern_force)
 
@@ -1344,6 +1347,8 @@ let rec type_exp env sexp =
         exp_loc = loc;
         exp_type = instance Predef.type_unit;
         exp_env = env }
+  | Pexp_constraint(_, Some {ptyp_desc = Ptyp_poly _; ptyp_loc = loc}, _) ->
+      raise (Error (loc, Polymorphic_type_not_allowed))
   | Pexp_constraint(sarg, sty, sty') ->
       let (arg, ty') =
         match (sty, sty') with
@@ -2458,3 +2463,5 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+  | Polymorphic_type_not_allowed ->
+      fprintf ppf "A polymorphic type is not allowed here."

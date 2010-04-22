@@ -102,6 +102,7 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Polymorphic_type_not_allowed
 
 exception Error of Location.t * error
 
