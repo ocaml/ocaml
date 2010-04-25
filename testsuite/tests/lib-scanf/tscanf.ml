@@ -1127,7 +1127,39 @@ let test48 () =
   (* Complex test of scanning a meta format specified in the scanner input
      format string and extraction of its specification from a string. *)
   sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
-    (fun i f s -> i = 12 && f = "%i" && s = "89")
+    (fun i f s -> i = 12 && f = "%i" && s = "89") &&
+  (* Testing scanf format string replacement *)
+  let k s =
+    Scanf.sscanf s
+      "%(%f%)" (fun _fmt i -> i) in
+  k "\" : %1f\": 987654321" = 9.0  &&
+  k "\" : %2f\": 987654321" = 98.0 &&
+  k "\" : %3f\": 9.87654321" = 9.8 &&
+  k "\" : %4f\": 9.87654321" = 9.87 &&
+
+  let h s =
+    Scanf.sscanf s
+      "Read integers with %(%i%)" (fun _fmt i -> i) in
+  h "Read integers with \"%1d\"987654321" = 9  &&
+  h "Read integers with \"%2d\"987654321" = 98 &&
+  h "Read integers with \"%3u\"987654321" = 987 &&
+  h "Read integers with \"%4x\"987654321" = 39030 &&
+
+  let i s =
+    Scanf.sscanf s
+      "with %(%i %s%)" (fun _fmt amount currency -> amount, currency) in
+  i "with \" : %d %s\" :        21 euros" = (21, "euros")  &&
+  i "with \" : %d %s\" : 987654321 dollars" = (987654321, "dollars") &&
+  i "with \" : %u %s\" :     54321 pounds" = (54321, "pounds") &&
+  i "with \" : %x %s\" :       321 yens" = (801, "yens") &&
+
+  let j s =
+    Scanf.sscanf s
+      "with %(%i %_s %s%)" (fun _fmt amount currency -> amount, currency) in
+  j "with \" : %1d %_s %s\" : 987654321 euros" = (9, "euros")  &&
+  j "with \" : %2d %_s %s\" : 987654321 dollars" = (98, "dollars") &&
+  j "with \" : %3u %_s %s\" : 987654321 pounds" = (987, "pounds") &&
+  j "with \" : %4x %_s %s\" : 987654321 yens" = (39030, "yens") &&
 ;;
 
 test (test48 ())
