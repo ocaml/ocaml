@@ -409,7 +409,6 @@ external string_to_format :
 exception Scan_failure of string;;
 
 let bad_input s = raise (Scan_failure s);;
-let bad_input_char c = bad_input (String.make 1 c);;
 
 let bad_input_escape c =
   bad_input (Printf.sprintf "illegal escape character %C" c)
@@ -421,7 +420,7 @@ module Tformat = Printf.CamlinternalPr.Tformat;;
 let bad_conversion fmt i c =
   invalid_arg
     (Printf.sprintf
-       "scanf: bad conversion %%%c, at char number %i \
+       "scanf: bad conversion %%%C, at char number %i \
         in format string ``%s''" c i (Sformat.to_string fmt))
 ;;
 
@@ -461,8 +460,7 @@ let compatible_format_type fmt1 fmt2 =
    End_of_file in case of end_of_input.
    That's why we use checked_peek_char here.
    We are also careful to treat "\r\n" in the input as a end of line marker: it
-   always matches a '\n' specification in the input format string.
- *)
+   always matches a '\n' specification in the input format string. *)
 let rec check_char ib c =
   let ci = Scanning.checked_peek_char ib in
   if ci = c then Scanning.invalidate_current_char ib else begin
@@ -497,7 +495,8 @@ let token_bool ib =
   match Scanning.token ib with
   | "true" -> true
   | "false" -> false
-  | s -> bad_input ("invalid boolean " ^ s);;
+  | s -> bad_input (Printf.sprintf "invalid boolean %S" s)
+;;
 
 (* Extract an integer literal token.
    Since the functions Pervasives.*int*_of_string do not accept a leading +,
@@ -573,7 +572,8 @@ let scan_decimal_digits_plus max ib =
   | '0' .. '9' ->
     let max = Scanning.store_char max ib c in
     scan_decimal_digits max ib
-  | c -> bad_input_char c
+  | c ->
+    bad_input (Printf.sprintf "character %C is not a decimal digit" c)
 ;;
 
 let scan_digits_plus digitp max ib =
@@ -596,7 +596,8 @@ let scan_digits_plus digitp max ib =
   if digitp c then
     let max = Scanning.store_char max ib c in
     scan_digits max
-  else bad_input_char c
+  else
+    bad_input (Printf.sprintf "character %C is not a digit" c)
 ;;
 
 let is_binary_digit = function
@@ -773,9 +774,11 @@ let char_for_decimal_code c0 c1 c2 =
     100 * decimal_value_of_char c0 +
      10 * decimal_value_of_char c1 +
           decimal_value_of_char c2 in
-  if c < 0 || c > 255
-  then bad_input (Printf.sprintf "bad char \\%c%c%c" c0 c1 c2)
-  else char_of_int c
+  if c < 0 || c > 255 then
+    bad_input
+      (Printf.sprintf
+         "bad character decimal encoding \\%c%c%c" c0 c1 c2) else
+  char_of_int c
 ;;
 
 (* The integer value corresponding to the facial value of a valid
@@ -798,17 +801,23 @@ let char_for_hexadecimal_code c1 c2 =
   let c =
     16 * hexadecimal_value_of_char c1 +
          hexadecimal_value_of_char c2 in
-  if c < 0 || c > 255
-  then bad_input (Printf.sprintf "bad char \\%c%c" c1 c2)
-  else char_of_int c
+  if c < 0 || c > 255 then
+    bad_input
+      (Printf.sprintf "bad character hexadecimal encoding \\%c%c" c1 c2) else
+  char_of_int c
 ;;
 
 (* Called when encountering '\\' as starter of a char.
    Stops before the corresponding '\''. *)
 let check_next_char message max ib =
-  if max = 0 then bad_input message else
+  if max = 0 then
+    bad_input (Printf.sprintf "not more room to scan %s token" message) else
   let c = Scanning.peek_char ib in
-  if Scanning.eof ib then bad_input message else c
+  if Scanning.eof ib then
+    bad_input
+      (Printf.sprintf
+         "premature end of file while scanning %s token" message) else
+  c
 ;;
 
 let check_next_char_for_char = check_next_char "a char";;
@@ -837,7 +846,8 @@ let scan_backslash_char max ib =
     let c1 = get_digit () in
     let c2 = get_digit () in
     Scanning.store_char (max - 2) ib (char_for_hexadecimal_code c1 c2)
-  | c -> bad_input_char c
+  | c ->
+    bad_input_escape c
 ;;
 
 (* Scan a character (a Caml token). *)
@@ -896,14 +906,18 @@ let scan_String max ib =
 
 (* Scan a boolean (a Caml token). *)
 let scan_bool max ib =
-  if max < 4 then bad_input "a boolean" else
+  if max < 4 then
+    bad_input
+      (Printf.sprintf
+         "not enough room left (%d characters) to scan a boolean" max) else
   let c = Scanning.checked_peek_char ib in
-  if Scanning.eof ib then bad_input "a boolean" else
   let m =
     match c with
     | 't' -> 4
     | 'f' -> 5
-    | _ -> bad_input "a boolean" in
+    | c ->
+      bad_input
+        (Printf.sprintf "the character %C cannot start a boolean" c) in
   scan_string [] (min max m) ib
 ;;
 
@@ -1154,20 +1168,20 @@ let rec skip_whites ib =
   end
 ;;
 
-let list_iter_i f l =
-  let rec loop i = function
-  | [] -> ()
-  | [x] -> f i x (* Tail calling [f] *)
-  | x :: xs -> f i x; loop (succ i) xs in
-  loop 0 l
-;;
-
 (* The global error report function for [Scanf]. *)
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
     let i = Scanning.char_count ib in
     bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x
+;;
+
+let list_iter_i f l =
+  let rec loop i = function
+  | [] -> ()
+  | [x] -> f i x (* Tail calling [f] *)
+  | x :: xs -> f i x; loop (succ i) xs in
+  loop 0 l
 ;;
 
 let ascanf sc fmt =
@@ -1215,8 +1229,6 @@ let ascanf sc fmt =
 
 let scan_format ib ef fmt rv f =
 
-  let lim = Sformat.length fmt - 1 in
-
   let limr = Array.length rv - 1 in
 
   let return v = Obj.magic v () in
@@ -1226,13 +1238,13 @@ let scan_format ib ef fmt rv f =
 
   let rec scan fmt =
 
+    let lim = Sformat.length fmt - 1 in
+
     let rec scan_fmt ir f i =
       if i > lim then ir, f else
       match Sformat.get fmt i with
       | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
-      | '%' ->
-        if i > lim then incomplete_format fmt else
-        scan_conversion false max_int ir f (succ i)
+      | '%' -> scan_conversion false max_int ir f (succ i)
       | '@' ->
         let i = succ i in
         if i > lim then incomplete_format fmt else begin
@@ -1338,7 +1350,7 @@ let scan_format ib ef fmt rv f =
            read. *)
         if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
         (* Or else, read according to the format string just read. *)
-        let ir, nf = scan (Obj.magic rf) ir (stack f rf) 0 in
+        let ir, nf = scan (string_to_format rf) ir (stack f rf) 0 in
         (* Return the format string read and the value just read,
            then go on with the rest of the format. *)
         scan_fmt ir nf j
