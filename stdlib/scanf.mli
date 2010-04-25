@@ -241,8 +241,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
     - [d]: reads an optionally signed decimal integer.
     - [i]: reads an optionally signed integer
-      (usual input formats for hexadecimal ([0x[d]+] and [0X[d]+]),
-       octal ([0o[d]+]), and binary [0b[d]+] notations are understood).
+      (usual input formats for decimal, hexadecimal ([0x[d]+] and [0X[d]+]),
+       octal ([0o[d]+]), and binary ([0b[d]+]) notations are understood).
     - [u]: reads an unsigned decimal integer.
     - [x] or [X]: reads an unsigned hexadecimal integer.
     - [o]: reads an unsigned octal integer.
@@ -296,16 +296,24 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [\{ fmt %\}]: reads a format string argument.
       The format string read must have the same type as the format string
       specification [fmt].
-      For instance, ["%\{%i%\}"] reads any format string that can read a value of
-      type [int]; hence [Scanf.sscanf "fmt:\\\"number is %u\\\"" "fmt:%\{%i%\}"]
+      For instance, ["%{ %i %}"] reads any format string that can read a value of
+      type [int]; hence [Scanf.sscanf "fmt:\"number is %u\"" "fmt:%{%i%}"]
       succeeds and returns the format string ["number is %u"].
     - [\( fmt %\)]: scanning format substitution.
-      Reads a format string to replace [fmt].
+      Reads a format string to read with it instead of [fmt].
       The format string read must have the same type as the format string
-      specification [fmt].
-      For instance, ["%\( %i% \)"] reads any format string that can read a value
-      of type [int]; hence [Scanf.sscanf "\\\"%4d\\\"1234.00" "%\(%i%\)"]
-      is equivalent to [Scanf.sscanf "1234.00" "%4d"].
+      specification [fmt] that is replaces.
+      For instance, ["%( %i %)"] reads any format string that can read a value
+      of type [int].
+      Returns the format string read, and the value read using the format
+      string read.
+      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%(%i%)"
+                (fun fmt i -> fmt, i)] evaluates to [("%4d", 1234)].
+      If the special flag [_] is used, the conversion discards the
+      format string read and only returns the value read with the format
+      string read.
+      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%_(%i%)"] is simply
+      equivalent to [Scanf.sscanf "1234.00" "%4d"].
     - [l]: returns the number of lines read so far.
     - [n]: returns the number of characters read so far.
     - [N] or [L]: returns the number of tokens read so far.
