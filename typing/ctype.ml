@@ -1251,7 +1251,7 @@ let rec non_recursive_abbrev env ty0 ty =
     match ty.desc with
       Tconstr(p, args, abbrev) ->
         begin try
-          non_recursive_abbrev env ty0 (try_expand_once env ty)
+          non_recursive_abbrev env ty0 (try_expand_once_opt env ty)
         with Cannot_expand ->
           if !Clflags.recursive_types then () else
           iter_type_expr (non_recursive_abbrev env ty0) ty
@@ -3183,7 +3183,7 @@ let cyclic_abbrev env id ty =
       Tconstr (p, tl, abbrev) ->
         p = Path.Pident id || List.memq ty seen ||
         begin try
-          check_cycle (ty :: seen) (expand_abbrev env ty)
+          check_cycle (ty :: seen) (expand_abbrev_opt env ty)
         with
           Cannot_expand -> false
         | Unify _ -> true
