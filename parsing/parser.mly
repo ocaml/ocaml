@@ -850,8 +850,6 @@ expr:
       { mkexp(Pexp_letmodule($3, $4, $6)) }
   | LET OPEN mod_longident IN seq_expr
       { mkexp(Pexp_open($3, $5)) }
-  | mod_longident DOT LPAREN seq_expr RPAREN
-      { mkexp(Pexp_open($1, $4)) }
   | FUNCTION opt_bar match_cases
       { mkexp(Pexp_function("", None, List.rev $3)) }
   | FUN labeled_simple_pattern fun_def
@@ -970,6 +968,10 @@ simple_expr:
       { let (t, t') = $3 in mkexp(Pexp_constraint($2, t, t')) }
   | simple_expr DOT label_longident
       { mkexp(Pexp_field($1, $3)) }
+  | mod_longident DOT LPAREN seq_expr RPAREN
+      { mkexp(Pexp_open($1, $4)) }
+  | mod_longident DOT LPAREN seq_expr error
+      { unclosed "(" 3 ")" 5 }
   | simple_expr DOT LPAREN seq_expr RPAREN
       { mkexp(Pexp_apply(ghexp(Pexp_ident(array_function "Array" "get")),
                          ["",$1; "",$4])) }
