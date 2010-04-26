@@ -450,6 +450,8 @@ module_expr:
       { unclosed "(" 1 ")" 3 }
   | LPAREN VAL expr COLON package_type RPAREN
       { mkmod(Pmod_unpack($3, $5)) }
+  | LPAREN VAL expr COLON error
+      { unclosed "(" 1 ")" 5 }
 ;
 structure:
     structure_tail                              { $1 }
@@ -1016,6 +1018,8 @@ simple_expr:
       { mkexp(Pexp_send($1, $3)) }
   | LPAREN MODULE module_expr COLON package_type RPAREN
       { mkexp (Pexp_pack ($3, $5)) }
+  | LPAREN MODULE module_expr COLON error
+      { unclosed "(" 1 ")" 5 }
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
