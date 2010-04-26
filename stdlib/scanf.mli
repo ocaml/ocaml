@@ -241,11 +241,12 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
     - [d]: reads an optionally signed decimal integer.
     - [i]: reads an optionally signed integer
-      (usual input formats for decimal, hexadecimal ([0x[d]+] and [0X[d]+]),
-       octal ([0o[d]+]), and binary ([0b[d]+]) notations are understood).
+      (usual input conventions for decimal ([0-9]+), hexadecimal
+       ([0x[0-9a-f]+] and [0X[0-9A-F]+]), octal ([0o[0-7]+]), and binary
+       ([0b[0-1]+]) notations are understood).
     - [u]: reads an unsigned decimal integer.
-    - [x] or [X]: reads an unsigned hexadecimal integer.
-    - [o]: reads an unsigned octal integer.
+    - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-f]+] or [[0-9A-F]+]).
+    - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
       following bounding condition holds:
       - a whitespace has been found (see {!Scanf.space}),
@@ -272,11 +273,11 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [b]: reads a boolean argument (for backward compatibility; do not use
       in new programs).
     - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
-      the format specified by the second letter (decimal, hexadecimal, etc).
+      the format specified by the second letter for regular integers.
     - [nd], [ni], [nu], [nx], [nX], [no]: reads a [nativeint] argument to
-      the format specified by the second letter.
+      the format specified by the second letter for regular integers.
     - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
-      the format specified by the second letter.
+      the format specified by the second letter for regular integers.
     - [\[ range \]]: reads characters that matches one of the characters
       mentioned in the range of characters [range] (or not mentioned in
       it, if the range starts with [^]). Reads a [string] that can be
@@ -337,7 +338,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     Notes:
 
     - as mentioned above, a [%s] conversion always succeeds, even if there is
-      nothing to read in the input: it simply returns [""].
+      nothing to read in the input: in this case, it simply returns [""].
 
     - in addition to the relevant digits, ['_'] characters may appear
     inside numbers (this is reminiscent to the usual Caml lexical
