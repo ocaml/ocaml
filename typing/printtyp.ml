@@ -539,11 +539,8 @@ let rec tree_of_type_decl id decl =
     let abstr =
       match decl.type_kind with
         Type_abstract ->
-          begin match decl.type_manifest with
-            None -> true
-          | Some ty -> has_constr_row ty
-          end
-      | Type_variant _ | Type_record(_,_) ->
+          decl.type_manifest = None || decl.type_private = Private
+      | Type_variant _ | Type_record _ ->
           decl.type_private = Private
     in
     let vari =

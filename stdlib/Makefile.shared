@@ -94,3 +94,4 @@ include .depend
 
 depend:
 	$(CAMLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) *.ml | sed -e 's/\.cmx/.p.cmx/g' >>.depend

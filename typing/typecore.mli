@@ -89,7 +89,7 @@ type error =
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
   | Unbound_instance_variable of string
-  | Instance_variable_not_mutable of string
+  | Instance_variable_not_mutable of bool * string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
   | Value_multiply_overridden of string

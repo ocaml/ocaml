@@ -49,7 +49,7 @@ type error =
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
   | Unbound_instance_variable of string
-  | Instance_variable_not_mutable of string
+  | Instance_variable_not_mutable of bool * string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
   | Value_multiply_overridden of string
@@ -1549,9 +1549,9 @@ let rec type_exp env sexp =
               exp_type = instance Predef.type_unit;
               exp_env = env }
         | Val_ivar _ ->
-            raise(Error(loc, Instance_variable_not_mutable lab))
+            raise(Error(loc,Instance_variable_not_mutable(true,lab)))
         | _ ->
-            raise(Error(loc, Unbound_instance_variable lab))
+            raise(Error(loc,Instance_variable_not_mutable(false,lab)))
       with
         Not_found ->
           raise(Error(loc, Unbound_instance_variable lab))
@@ -2393,8 +2393,11 @@ let report_error ppf = function
         longident cl
   | Unbound_instance_variable v ->
       fprintf ppf "Unbound instance variable %s" v
-  | Instance_variable_not_mutable v ->
-      fprintf ppf "The instance variable %s is not mutable" v
+  | Instance_variable_not_mutable (b, v) ->
+      if b then
+        fprintf ppf "The instance variable %s is not mutable" v
+      else
+        fprintf ppf "The value %s is not an instance variable" v
   | Not_subtype(tr1, tr2) ->
       report_subtyping_error ppf tr1 "is not a subtype of" tr2
   | Outside_class ->
