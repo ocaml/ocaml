@@ -70,6 +70,9 @@ type stat =
 
     top_heap_words : int;
     (** Maximum size reached by the major heap, in words. *)
+
+    stack_size: int;
+    (** Current size of the stack, in words. *)
 }
 (** The memory management counters are returned in a [stat] record.
 
