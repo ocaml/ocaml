@@ -94,8 +94,9 @@ be sent from another buffer in Caml mode.
   (if (string-match "[^ ]" s) (setq inferior-caml-output t)))
 
 (defun inferior-caml-mode-output-hook ()
-  (setq comint-output-filter-functions
-        (list (function inferior-caml-signal-output))))
+  (set-variable comint-output-filter-functions
+        (list (function inferior-caml-signal-output)) 
+        t))
 (add-hook 'inferior-caml-mode-hooks 'inferior-caml-mode-output-hook)
 
 ;; To launch ocaml whenever needed
