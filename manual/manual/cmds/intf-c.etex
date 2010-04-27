@@ -559,13 +559,13 @@ to do the method call "foo#bar" from the C side, you should call:
   callback(caml_get_public_method(foo, hash_variant("bar")), foo);
 \end{verbatim}
 
-\subsection{Variants}
+\subsection{Prolymorphic variants}
 
-Like constructed terms, values of variant types are represented either
-as integers (for variants without arguments), or as blocks (for
-variants with an argument).  Unlike constructed terms, variant
-constructors are not numbered starting from 0, but identified by a
-hash value (a Caml integer), as computed by the C function
+Like constructed terms, polymorphic variant values are represented either
+as integers (for polymorphic variants without arguments), or as blocks
+(for polymorphic variants with an argument).  Unlike constructed
+terms, variant constructors are not numbered starting from 0, but
+identified by a hash value (a Caml integer), as computed by the C function
 "hash_variant" (declared in "<caml/mlvalues.h>"):
 the hash value for a variant constructor named, say, "VConstr"
 is "hash_variant(\"VConstr\")".
@@ -576,11 +576,12 @@ represented by a block of size 2 and tag 0, with field number 0
 containing "hash_variant(\"VConstr\")" and field number 1 containing
 \var{v}.
 
-Unlike constructed values, variant values taking several arguments are
-not flattened.  That is, "`VConstr("\var{v}", "\var{v'}")" is
-represented by a block of size 2, whose field number 1 contains
-the representation of the pair "("\var{v}", "\var{v'}")", rather than a
-block of size 3 containing \var{v} and \var{v'} in fields 1 and 2.
+Unlike constructed values, polymorphic variant values taking several
+arguments are not flattened.
+That is, "`VConstr("\var{v}", "\var{v'}")" is represented by a block
+of size 2, whose field number 1 contains the representation of the
+pair "("\var{v}", "\var{v'}")", rather than a block of size 3
+containing \var{v} and \var{v'} in fields 1 and 2.
 
 \section{Operations on values}
 \pdfsection{Operations on values}

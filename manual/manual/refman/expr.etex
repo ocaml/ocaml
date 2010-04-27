@@ -508,8 +508,8 @@ values of @expr_1@ to @expr_n@.
 
 \subsubsection*{Polymorphic variants}
 
-The expression @"`"tag-name expr@ evaluates to the variant value whose
-tag is @tag-name@, and whose argument is the value of @expr@.
+The expression @"`"tag-name expr@ evaluates to the polymorphic variant
+value whose tag is @tag-name@, and whose argument is the value of @expr@.
 
 \subsubsection*{Records}
 
@@ -713,9 +713,9 @@ expression @expr@ from type @typexpr_1@ to type @typexpr_2@.
 The former operator will sometimes fail to coerce an expression @expr@
 from a type $t_1$ to a type $t_2$ even if type $t_1$ is a subtype of type
 $t_2$: in the current implementation it only expands two levels of
-type abbreviations containing objects and/or variants, keeping only
-recursion when it is explicit in the class type (for objects). As an
-exception to the above algorithm, if both the inferred type of @expr@
+type abbreviations containing objects and/or polymorphic variants,
+keeping only recursion when it is explicit in the class type (for objects).
+As an exception to the above algorithm, if both the inferred type of @expr@
 and @typexpr@ are ground ({\em i.e.} do not contain type variables), the
 former operator behaves as the latter one, taking the inferred type of
 @expr@ as @typexpr_1@. In case of failure with the former operator,

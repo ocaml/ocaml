@@ -14,7 +14,7 @@ typexpr:
       | typexpr typeconstr
       | '(' typexpr { ',' typexpr } ')' typeconstr
       | typexpr 'as' "'" ident
-      | variant-type
+      | polymorphic-variant-type
       | '<' ['..'] '>'
       | '<' method-type { ';' method-type } [';' '..'] '>'
       | '#' class-path
@@ -113,17 +113,17 @@ the same as for a named type variable, and covers the whole enclosing
 definition. If the type variable
 @ident@ actually occurs in @typexpr@, a recursive type is created. Recursive
 types for which  there exists a recursive path that does not contain
-an object or variant type constructor are rejected, except when the
-"-rectypes" mode is selected.
+an object or polymorphic variant type constructor are rejected, except
+when the "-rectypes" mode is selected.
 
 If @"'" ident@ denotes an explicit polymorphic variable, and @typexpr@
-denotes either an object or variant type, the row variable of @typexpr@
-is captured by @"'" ident@, and quantified upon.
+denotes either an object or polymorphic variant type, the row variable
+of @typexpr@ is captured by @"'" ident@, and quantified upon.
 
-\subsubsection*{Variant types}
+\subsubsection*{Polymorphic variant types}
 
 \begin{syntax}
-variant-type:
+polymorphic-variant-type:
         '[' [ '|' ] tag-spec { '|' tag-spec } ']'
       | '[>' [ tag-spec ] { '|' tag-spec } ']'
       | '[<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ] ']'
@@ -142,7 +142,8 @@ tag-spec-full:
 ;
 \end{syntax}
 
-Variant types describe the values a polymorphic variant may take.
+Polymorphic variant types describe the values a polymorphic variant
+may take.
 
 The first case is an exact variant type: all possible tags are
 known, with their associated types, and they can all be present.
@@ -211,7 +212,7 @@ type @'#' class-path '->' '#' class-path@ is usually not the same as
 type @('#' class-path 'as' "'" ident) '->' "'" ident@.
 %
 
-Use of \#-types to abbreviate variant types is deprecated.
+Use of \#-types to abbreviate polymorphic variant types is deprecated.
 If "t" is an exact variant type then "#t" translates to "[< t]",
 and @"#t[>" "`tag"_1 \dots"`tag"_k"]"@ translates to 
 @"[<" "t" ">" "`tag"_1 \dots"`tag"_k"]"@
