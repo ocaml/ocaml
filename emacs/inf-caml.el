@@ -94,7 +94,7 @@ be sent from another buffer in Caml mode.
   (if (string-match "[^ ]" s) (setq inferior-caml-output t)))
 
 (defun inferior-caml-mode-output-hook ()
-  (set-variable comint-output-filter-functions
+  (set-variable 'comint-output-filter-functions
         (list (function inferior-caml-signal-output)) 
         t))
 (add-hook 'inferior-caml-mode-hooks 'inferior-caml-mode-output-hook)
