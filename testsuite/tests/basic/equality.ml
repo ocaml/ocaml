@@ -76,5 +76,30 @@ let _ =
   test 40 eqftffff (cmpgen nan 0.0);
   test 41 eqftffff (cmpfloat nan nan);
   test 42 eqftffff (cmpfloat nan 0.0);
-  test 43 eqtrue ([||] = [||])
+  test 43 eqtrue ([||] = [||]);
+  (* Convoluted forms to test both the "positive" and "negative" cases
+     of float tests *)
+  let cmpfloatpos (x:float) (y:float) =
+    ((let r = ref false in (if x = y then r := true); !r),
+     (let r = ref false in (if x <> y then r := true); !r),
+     (let r = ref false in (if x < y then r := true); !r),
+     (let r = ref false in (if x <= y then r := true); !r),
+     (let r = ref false in (if x > y then r := true); !r),
+     (let r = ref false in (if x >= y then r := true); !r))
+  and cmpfloatneg (x:float) (y:float) =
+    ((let r = ref true in (if not (x = y) then r := false); !r),
+     (let r = ref true in (if not (x <> y) then r := false); !r),
+     (let r = ref true in (if not (x < y) then r := false); !r),
+     (let r = ref true in (if not (x <= y) then r := false); !r),
+     (let r = ref true in (if not (x > y) then r := false); !r),
+     (let r = ref true in (if not (x >= y) then r := false); !r)) in
+  let testcmpfloat x y =
+    cmpfloatpos x y = cmpgen x y &&
+    cmpfloatneg x y = cmpgen x y in
+  test 50 eqtrue (testcmpfloat nan nan);
+  test 51 eqtrue (testcmpfloat nan 0.0);
+  test 52 eqtrue (testcmpfloat 0.0 nan);
+  test 53 eqtrue (testcmpfloat 0.0 0.0);
+  test 54 eqtrue (testcmpfloat 1.0 0.0);
+  test 55 eqtrue (testcmpfloat 0.0 1.0)
 
