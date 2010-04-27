@@ -457,8 +457,15 @@ let compatible_format_type fmt1 fmt2 =
 (* Checking that [c] is indeed in the input, then skips it.
    In this case, the character c has been explicitely specified in the
    format as being mandatory in the input; hence we should fail with
-   End_of_file in case of end_of_input.
-   That's why we use checked_peek_char here.
+   End_of_file in case of end_of_input. (Remember that Scan_failure is raised
+   only when (we can prove by evidence) that the input does not match the
+   format string given. We must thus differentiate End_of_file as an error
+   due to lack of input, and Scan_failure which is due to provably wrong
+   input. I am not sure this is worth to burden: it is complex and somehow
+   subliminal; should be clearer to fail with Scan_failure "Not enough input
+   to complete scanning"!)
+
+   That's why, waiting for a better solution, we use checked_peek_char here.
    We are also careful to treat "\r\n" in the input as a end of line marker: it
    always matches a '\n' specification in the input format string. *)
 let rec check_char ib c =
@@ -807,21 +814,21 @@ let char_for_hexadecimal_code c1 c2 =
   char_of_int c
 ;;
 
-(* Called when encountering '\\' as starter of a char.
+(* Called in particular when encountering '\\' as starter of a char.
    Stops before the corresponding '\''. *)
 let check_next_char message max ib =
   if max = 0 then
-    bad_input (Printf.sprintf "not more room to scan %s token" message) else
+    bad_input (Printf.sprintf "no more room to scan a %s token" message) else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then
     bad_input
       (Printf.sprintf
-         "premature end of file while scanning %s token" message) else
+         "premature end of file while scanning a %s token" message) else
   c
 ;;
 
-let check_next_char_for_char = check_next_char "a char";;
-let check_next_char_for_string = check_next_char "a string";;
+let check_next_char_for_char = check_next_char "char";;
+let check_next_char_for_string = check_next_char "string";;
 
 let scan_backslash_char max ib =
   match check_next_char_for_char max ib with
