@@ -899,21 +899,6 @@ and type_structure funct_body anchor env sstr scope =
 let type_module = type_module false None
 let type_structure = type_structure false None
 
-let type_module_type_of env smod =
-  match smod.pmod_desc with
-  | Pmod_ident lid -> (* turn off strengthening in this case *)
-      let (path, mty) = type_module_path env smod.pmod_loc lid in mty
-  | _ ->
-      (type_module env smod).mod_type
-
-(* Fill in the forward declarations *)
-let () =
-  Typecore.type_module := type_module;
-  Typetexp.transl_modtype_longident := transl_modtype_longident;
-  Typetexp.transl_modtype := transl_modtype;
-  Typecore.type_open := type_open;
-  type_module_type_of_fwd := type_module_type_of
-
 (* Normalize types in a signature *)
 
 let rec normalize_modtype env = function
@@ -959,6 +944,24 @@ and simplify_signature sg =
       simplif val_names exn_names (component :: res) sg
   in
     simplif StringSet.empty StringSet.empty [] (List.rev sg)
+
+(* Extract the module type of a module expression *)
+
+let type_module_type_of env smod =
+  match smod.pmod_desc with
+  | Pmod_ident lid -> (* turn off strengthening in this case *)
+      let (path, mty) = type_module_path env smod.pmod_loc lid in
+      simplify_modtype mty
+  | _ ->
+      simplify_modtype (type_module env smod).mod_type
+
+(* Fill in the forward declarations *)
+let () =
+  Typecore.type_module := type_module;
+  Typetexp.transl_modtype_longident := transl_modtype_longident;
+  Typetexp.transl_modtype := transl_modtype;
+  Typecore.type_open := type_open;
+  type_module_type_of_fwd := type_module_type_of
 
 (* Typecheck an implementation file *)
 
