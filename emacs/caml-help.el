@@ -497,7 +497,8 @@ This uses info files produced by HeVeA.
     (message "Scanning info files in %s" dir)
     (save-window-excursion
       (set-buffer (get-buffer-create "*caml-help*"))
-      (or (shell-command command (current-buffer)) (error "HERE"))
+      (or (shell-command command (current-buffer))
+          (error "Could not run:%s" command))
       (goto-char (point-min))
       (while (re-search-forward module-regexp (point-max) t)
         (if (equal (char-after (match-end 1)) 127)
@@ -624,7 +625,8 @@ current buffer using \\[ocaml-qualified-identifier]."
             (progn
               (message "Help for entry %s not found in module %s"
                        entry module)
-              (goto-char here)))))
+              (goto-char here)))
+          ))
     (ocaml-link-activate (cdr info-section))
     (if (window-live-p window) (select-window window))
     ))
@@ -778,26 +780,27 @@ buffer positions."
                               (mapconcat 'car links "\\|")
                               "\\)[^A-Za-z0-9'_]"))
               (case-fold-search nil))
-          (goto-char (point-min))
-          (let ((buffer-read-only nil)
-                ;; use of dynamic scoping, need not be restored!
-                (modified-p (buffer-modified-p)))
-            (unwind-protect
-                (save-excursion
-                  (goto-char (point-min))
-                  (while (re-search-forward regexp (point-max) t)
-                    (put-text-property (match-beginning 1) (match-end 1)
-                                       'mouse-face 'highlight)
-                    (put-text-property (match-beginning 1) (match-end 1)
-                                       'local-map ocaml-link-map)
-                    (if (x-display-color-p)
-                        (put-text-property (match-beginning 1) (match-end 1)
-                                           'face 'ocaml-link-face)))
-                  )
-              ;; need to restore flag if buffer was unmodified.
-              (unless modified-p (set-buffer-modified-p nil))
-              ))
-          ))))
+          (save-excursion
+            (goto-char (point-min))
+            (let ((buffer-read-only nil)
+                  ;; use of dynamic scoping, need not be restored!
+                  (modified-p (buffer-modified-p)))
+              (unwind-protect
+                  (save-excursion
+                    (goto-char (point-min))
+                    (while (re-search-forward regexp (point-max) t)
+                      (put-text-property (match-beginning 1) (match-end 1)
+                                         'mouse-face 'highlight)
+                      (put-text-property (match-beginning 1) (match-end 1)
+                                         'local-map ocaml-link-map)
+                      (if (x-display-color-p)
+                          (put-text-property (match-beginning 1) (match-end 1)
+                                             'face 'ocaml-link-face)))
+                    )
+                ;; need to restore flag if buffer was unmodified.
+                (unless modified-p (set-buffer-modified-p nil))
+                ))
+            )))))
 
 
 
