@@ -89,7 +89,8 @@ BYTECCLINKOPTS=
 DLLCCCOMPOPTS=/Ox /MD
 
 ### Libraries needed
-EXTRALIBS=bufferoverflowu.lib
+#EXTRALIBS=bufferoverflowu.lib  # for the old PSDK compiler only
+EXTRALIBS=
 BYTECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
 NATIVECCLIBS=advapi32.lib ws2_32.lib $(EXTRALIBS)
 
