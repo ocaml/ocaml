@@ -92,7 +92,7 @@
 }
 #endif
 
-#define BngLowHalf(d) ((d) & ((1L << BNG_BITS_PER_HALF_DIGIT) - 1))
+#define BngLowHalf(d) ((d) & (((bngdigit)1 << BNG_BITS_PER_HALF_DIGIT) - 1))
 #define BngHighHalf(d) ((d) >> BNG_BITS_PER_HALF_DIGIT)
 
 #ifndef BngMult
