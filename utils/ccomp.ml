@@ -120,8 +120,8 @@ let call_linker mode output_name files extra =
         (if !Clflags.gprofile then Config.cc_profile else "")
         ""  (*(Clflags.std_include_flag "-I")*)
         (quote_prefixed "-L" !Config.load_path)
+        (String.concat " " (List.rev !Clflags.ccopts))
         files
         extra
-        (String.concat " " (List.rev !Clflags.ccopts))
   in
   command cmd = 0
