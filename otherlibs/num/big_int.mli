@@ -168,8 +168,12 @@ val shift_left_big_int : big_int -> int -> big_int
             Equivalent to multiplication by [2^n]. *)
 val shift_right_big_int : big_int -> int -> big_int
         (** [shift_right_big_int b n] returns [b] shifted right by [n] bits.
-            The shift is performed on the absolute value of [b].
-            The result has the same sign as [b].
+            Equivalent to division by [2^n] with the result being
+            rounded towards minus infinity. *)
+val shift_right_towards_zero_big_int : big_int -> int -> big_int
+        (** [shift_right_towards_zero_big_int b n] returns [b] shifted
+            right by [n] bits.  The shift is performed on the absolute
+            value of [b], and the result has the same sign as [b].
             Equivalent to division by [2^n] with the result being
             rounded towards zero. *)
 val extract_big_int : big_int -> int -> int -> big_int

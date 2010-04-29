@@ -888,7 +888,19 @@ test 4 eq_big_int
    big_int_of_string "39614081257132168796771975168");;
 test 5 eq_big_int
   (shift_right_big_int (big_int_of_string "-5299989648942") 32,
+   big_int_of_int (-1235));;
+test 6 eq_big_int
+  (shift_right_big_int (big_int_of_string "-16570089876543209725755392") 27,
+   big_int_of_string "-123456790123456789");;
+
+testing_function "shift_right_towards_zero_big_int";;
+
+test 1 eq_big_int
+  (shift_right_towards_zero_big_int (big_int_of_string "-5299989648942") 32,
    big_int_of_int (-1234));;
+test 2 eq_big_int
+  (shift_right_towards_zero_big_int (big_int_of_string "-16570089876543209725755392") 27,
+   big_int_of_string "-123456790123456789");;
 
 testing_function "extract_big_int";;
 

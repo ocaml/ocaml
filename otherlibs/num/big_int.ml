@@ -682,8 +682,8 @@ let shift_left_big_int bi n =
 
 (* Shift right by N bits (rounds toward zero) *)
 
-let shift_right_big_int bi n =
-  if n < 0 then invalid_arg "shift_right_big_int"
+let shift_right_towards_zero_big_int bi n =
+  if n < 0 then invalid_arg "shift_right_towards_zero_big_int"
   else if n = 0 then bi
   else if bi.sign = 0 then bi
   else begin
@@ -702,17 +702,6 @@ let shift_right_big_int bi n =
     end
   end
 
-(*************************************
-(* Compute 2^n *)
-
-let two_power_big_int n =
-  if n < 0 then invalid_arg "two_power_big_int";
-  let size_res = (n + length_of_digit - 1) / length_of_digit in
-  let res = make_nat n in
-  set_digit_nat_native res (n / length_of_digit)
-                           (Nativeint.shift_left 1n (n mod length_of_digit));
-  { sign = 1; abs_value = res }
-
 (* Compute 2^n - 1 *)
 
 let two_power_m1_big_int n =
@@ -720,20 +709,19 @@ let two_power_m1_big_int n =
   else if n = 0 then zero_big_int
   else begin
     let size_res = (n + length_of_digit - 1) / length_of_digit in
-    let res = make_nat n in
+    let res = make_nat size_res in
     set_digit_nat_native res (n / length_of_digit)
                              (Nativeint.shift_left 1n (n mod length_of_digit));
     ignore (decr_nat res 0 size_res 0);
     { sign = 1; abs_value = res }
   end
 
-(* Shift right logical by N bits (rounds toward minus infinity) *)
+(* Shift right by N bits (rounds toward minus infinity) *)
 
-let lsr_big_int bi n =
-  if n < 0 then invalid_arg "asr_big_int"
-  else if bi.sign >= 0 then asr_big_int bi n
-  else asr_big_int (sub_big_int bi (two_power_m1_big_int n)) n
-**************************)
+let shift_right_big_int bi n =
+  if n < 0 then invalid_arg "shift_right_big_int"
+  else if bi.sign >= 0 then shift_right_towards_zero_big_int bi n
+  else shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
 
 (* Extract N bits starting at ofs.
    Treats bi in two's complement.
