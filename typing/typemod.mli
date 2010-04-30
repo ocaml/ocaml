@@ -53,6 +53,7 @@ type error =
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
   | With_need_typeconstr
+  | Invalid_component_for_module_of_module_type of string
 
 exception Error of Location.t * error
 

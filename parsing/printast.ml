@@ -597,6 +597,9 @@ and module_expr i ppf x =
       line i ppf "Pmod_unpack %a\n" fmt_longident p;
       list i package_with ppf l;
       expression i ppf e;
+  | Pmod_modtype mt ->
+      line i ppf "Pmod_modtype\n";
+      module_type i ppf mt;
 
 and structure i ppf x = list i structure_item ppf x
 

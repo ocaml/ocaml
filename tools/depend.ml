@@ -231,6 +231,8 @@ and add_module bv modl =
   | Pmod_unpack(e, pt) ->
       add_package_type bv pt;
       add_expr bv e
+  | Pmod_modtype mty ->
+      add_modtype bv mty
 
 and add_structure bv item_list =
   List.fold_left add_struct_item bv item_list

@@ -41,6 +41,7 @@ type error =
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
   | With_need_typeconstr
+  | Invalid_component_for_module_of_module_type of string
 
 exception Error of Location.t * error
 
@@ -648,6 +649,54 @@ let check_recmodule_inclusion env bindings =
     end
   in check_incl true (List.length bindings) env Subst.identity
 
+(* Convert of module type that only declares static components into a
+   matching module expression *)
+
+let rec module_of_module_type env loc mty =
+  let err kind id =
+    raise (Error (loc, Invalid_component_for_module_of_module_type (kind ^ " " ^ id)))
+  in
+  match Mtype.scrape env mty with
+  | Tmty_ident p -> err "An abstract module type" (Path.name p)
+  | Tmty_functor (id, arg, res) ->
+      {
+       mod_desc = Tmod_functor (id, arg, module_of_module_type (Env.add_module id arg env) loc res);
+       mod_loc = loc;
+       mod_type = mty;
+       mod_env = env;
+      }
+  | Tmty_signature items ->
+      let rec loop_types decls = function
+        | Tsig_type (id, d, Trec_next) :: rem -> loop_types ((id, d) :: decls) rem
+        | rem -> Tstr_type (List.rev decls) :: loop rem
+      and loop_cltypes decls = function
+        | Tsig_cltype (id, d, Trec_next) :: rem -> loop_cltypes ((id, d) :: decls) rem
+        | rem -> Tstr_cltype (List.rev decls) :: loop rem
+      and loop_recmod decls = function
+        | Tsig_module (id, d, Trec_next) :: rem -> loop_recmod ((id, d) :: decls) rem
+        | rem ->
+            let decls = List.rev_map (fun (id, d) -> (id, module_of_module_type env loc d)) decls in
+            Tstr_recmodule decls :: loop rem
+      and loop = function
+        | [] -> []
+        | Tsig_type (id, d, Trec_first) :: rem -> loop_types [(id, d)] rem
+        | Tsig_exception (id, d) :: rem -> Tstr_exception (id, d) :: loop rem
+        | Tsig_module (id, d, Trec_not) :: rem -> Tstr_module (id, module_of_module_type env loc d) :: loop rem
+        | Tsig_module (id, d, Trec_first) :: rem -> loop_recmod [(id, d)] rem
+        | Tsig_modtype (id, Tmodtype_manifest mty) :: rem -> Tstr_modtype (id, mty) :: loop rem
+        | Tsig_cltype (id, d, Trec_first) :: rem -> loop_cltypes [(id, d)] rem
+        | (Tsig_type _ | Tsig_cltype _ | Tsig_module _) :: _ -> assert false
+        | Tsig_value (id, _) :: _ -> err "A value declaration" (Ident.name id)
+        | Tsig_class (id, _, _) :: _ -> err "A class declaration" (Ident.name id)
+        | Tsig_modtype (id, Tmodtype_abstract) :: _ -> err "An abstract module type declaration" (Ident.name id)
+      in
+      {
+       mod_desc = Tmod_structure (loop items);
+       mod_loc = loc;
+       mod_type = mty;
+       mod_env = env;
+      }
+
 (* Type a module value expression *)
 
 let rec type_module funct_body anchor env smod =
@@ -723,6 +772,10 @@ let rec type_module funct_body anchor env smod =
            mod_type = mty;
            mod_env = env;
            mod_loc = smod.pmod_loc }
+
+  | Pmod_modtype smty ->
+      let mty = transl_modtype env smty in
+      rm (module_of_module_type env smod.pmod_loc mty)
 
 and type_structure funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
@@ -1115,3 +1168,7 @@ let report_error ppf = function
   | With_need_typeconstr ->
       fprintf ppf
         "Only type constructors with identical parameters can be substituted."
+  | Invalid_component_for_module_of_module_type s ->
+      fprintf ppf
+        "%s appear in this module type. This kind of component is not allowed in a (module type ...) expression."
+        s

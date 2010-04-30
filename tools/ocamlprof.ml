@@ -363,6 +363,7 @@ and rewrite_mod iflag smod =
   | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
   | Pmod_constraint(smod, smty) -> rewrite_mod iflag smod
   | Pmod_unpack(sexp, _) -> rewrite_exp iflag sexp
+  | Pmod_modtype _ -> ()
 
 and rewrite_str_item iflag item =
   match item.pstr_desc with
