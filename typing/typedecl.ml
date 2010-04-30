@@ -42,6 +42,7 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
+  | Duplicate_definitions of string * string * string * string
 
 exception Error of Location.t * error
 
@@ -599,6 +600,33 @@ let compute_variance_decls env cldecls =
        {cltydef with clty_variance = variance}))
     decls cldecls
 
+(* Check multiple declarations of fields/constructors *)
+
+let check_duplicates name_sdecl_list =
+  let fields = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
+  List.iter
+    (fun (name, sdecl) -> match sdecl.ptype_kind with
+      Ptype_variant cl ->
+        List.iter
+          (fun (cname, _, loc) ->
+            try
+              let name' = Hashtbl.find constrs cname in
+              raise (Error (loc, Duplicate_definitions
+                              ("constructor", cname, name', name)))
+            with Not_found -> Hashtbl.add constrs cname name)
+          cl
+    | Ptype_record fl ->
+        List.iter
+          (fun (cname, _, _, loc) ->
+            try
+              let name' = Hashtbl.find fields cname in
+              raise (Error (loc, Duplicate_definitions
+                              ("field", cname, name', name)))
+            with Not_found -> Hashtbl.add fields cname name)
+          fl
+    | Ptype_abstract -> ())
+    name_sdecl_list
+
 (* Force recursion to go through id for private types*)
 let name_recursion sdecl id decl =
   match decl with
@@ -645,6 +673,8 @@ let transl_type_decl env name_sdecl_list =
   (* Translate each declaration. *)
   let decls =
     List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  (* Check for duplicates *)
+  check_duplicates name_sdecl_list;
   (* Build the final env. *)
   let newenv =
     List.fold_right
@@ -952,3 +982,6 @@ let report_error ppf = function
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
       fprintf ppf "This fixed type %s" r
+  | Duplicate_definitions (kind, cname, tc1, tc2) ->
+      fprintf ppf "The %s %s is defined both in types %s and %s."
+        kind cname tc1 tc2
