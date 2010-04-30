@@ -953,11 +953,12 @@ let type_module_type_of env smod =
     | Pmod_ident lid -> (* turn off strengthening in this case *)
         let (path, mty) = type_module_path env smod.pmod_loc lid in mty
     | _ -> (type_module env smod).mod_type in
+  (* PR#5037: clean up inferred signature to remove duplicate specs *)
+  let mty = simplify_modtype mty in
   (* PR#5036: must not contain non-generalized type variables *)
   if not (closed_modtype mty) then
     raise(Error(smod.pmod_loc, Non_generalizable_module mty));
-  (* PR#5037: clean up inferred signature to remove duplicate specs *)
-  simplify_modtype mty
+  mty
 
 (* Fill in the forward declarations *)
 let () =
