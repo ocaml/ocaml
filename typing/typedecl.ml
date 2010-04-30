@@ -42,7 +42,6 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
-  | Duplicate_definitions of string * string * string * string
 
 exception Error of Location.t * error
 
@@ -600,10 +599,10 @@ let compute_variance_decls env cldecls =
        {cltydef with clty_variance = variance}))
     decls cldecls
 
-(* Check multiple declarations of fields/constructors *)
+(* Check multiple declarations of labels/constructors *)
 
 let check_duplicates name_sdecl_list =
-  let fields = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
+  let labels = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
   List.iter
     (fun (name, sdecl) -> match sdecl.ptype_kind with
       Ptype_variant cl ->
@@ -611,18 +610,19 @@ let check_duplicates name_sdecl_list =
           (fun (cname, _, loc) ->
             try
               let name' = Hashtbl.find constrs cname in
-              raise (Error (loc, Duplicate_definitions
-                              ("constructor", cname, name', name)))
+              Location.prerr_warning loc
+                (Warnings.Duplicate_definitions
+                   ("constructor", cname, name', name))
             with Not_found -> Hashtbl.add constrs cname name)
           cl
     | Ptype_record fl ->
         List.iter
           (fun (cname, _, _, loc) ->
             try
-              let name' = Hashtbl.find fields cname in
-              raise (Error (loc, Duplicate_definitions
-                              ("field", cname, name', name)))
-            with Not_found -> Hashtbl.add fields cname name)
+              let name' = Hashtbl.find labels cname in
+              Location.prerr_warning loc
+                (Warnings.Duplicate_definitions ("label", cname, name', name))
+            with Not_found -> Hashtbl.add labels cname name)
           fl
     | Ptype_abstract -> ())
     name_sdecl_list
@@ -982,6 +982,3 @@ let report_error ppf = function
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
       fprintf ppf "This fixed type %s" r
-  | Duplicate_definitions (kind, cname, tc1, tc2) ->
-      fprintf ppf "The %s %s is defined both in types %s and %s."
-        kind cname tc1 tc2

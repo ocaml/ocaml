@@ -49,6 +49,7 @@ type t =
   | Unused_var_strict of string             (* 27 *)
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
+  | Duplicate_definitions of string * string * string * string (*30 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -87,9 +88,10 @@ let number = function
   | Unused_var_strict _ -> 27
   | Wildcard_arg_to_constant_constr -> 28
   | Eol_in_string -> 29
+  | Duplicate_definitions _ -> 30
 ;;
 
-let last_warning_number = 29;;
+let last_warning_number = 30;;
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
@@ -118,7 +120,7 @@ let letter = function
   | 'u' -> [11; 12]
   | 'v' -> [13]
   | 'w' -> []
-  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25]
+  | 'x' -> [14; 15; 16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 30]
   | 'y' -> [26]
   | 'z' -> [27]
   | _ -> assert false
@@ -250,6 +252,9 @@ let message = function
      "wildcard pattern given as argument to a constant constructor"
   | Eol_in_string ->
      "unescaped end-of-line in a string constant (non-portable code)"
+  | Duplicate_definitions (kind, cname, tc1, tc2) ->
+      Printf.sprintf "the %s %s is defined both in types %s and %s."
+        kind cname tc1 tc2
 ;;
 
 let nerrors = ref 0;;
