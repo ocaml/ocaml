@@ -3297,6 +3297,8 @@ let rec nondep_type_rec env id ty =
             end
           else
             Tconstr(p, List.map (nondep_type_rec env id) tl, ref Mnil)
+      | Tpackage(p, _, _) when Path.isfree id p ->
+          raise Not_found
       | Tobject (t1, name) ->
           Tobject (nondep_type_rec env id t1,
                  ref (match !name with
