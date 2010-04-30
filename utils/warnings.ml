@@ -133,11 +133,6 @@ let is_active x = active.(number x);;
 let is_error x = error.(number x);;
 
 let parse_opt flags s =
-  let check i =
-    if i < 1 then raise (Arg.Bad "Bad warning number 0");
-    if i > last_warning_number then
-      raise (Arg.Bad "Bad warning number (too large)");
-  in
   let set i = flags.(i) <- true in
   let clear i = flags.(i) <- false in
   let set_all i = active.(i) <- true; error.(i) <- true in
@@ -167,20 +162,27 @@ let parse_opt flags s =
        loop (i+1)
     | _ -> error ()
   and loop_num myset i n =
-    if i >= String.length s then myset n else
+    if i >= String.length s then myset n
+    else if n > last_warning_number then ignore_num i
+    else
     match s.[i] with
     | '0' .. '9' ->
-       let nn = 10 * n + Char.code s.[i] - Char.code '0' in
-       check nn;
-       loop_num myset (i+1) nn
+       loop_num myset (i+1) (10 * n + Char.code s.[i] - Char.code '0')
     | _ -> myset n; loop i
+  and ignore_num i =
+    if i < String.length s then begin
+      match s.[i] with
+      | '0' .. '9' -> ignore_num (i+1)
+      | _ -> loop i
+    end
   in
   loop 0
 ;;
 
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
-(* If you change these, don't forget to change them in main_args.ml too *)
+(* If you change these, don't forget to change them in driver/main_args.ml
+   and in man/ocamlc.m *)
 let defaults_w = "+a-4-6-7-9-27-28-29";;
 let defaults_warn_error = "-a";;
 
@@ -253,7 +255,7 @@ let message = function
   | Eol_in_string ->
      "unescaped end-of-line in a string constant (non-portable code)"
   | Duplicate_definitions (kind, cname, tc1, tc2) ->
-      Printf.sprintf "the %s %s is defined both in types %s and %s."
+      Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
 ;;
 
