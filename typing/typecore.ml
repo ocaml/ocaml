@@ -463,7 +463,10 @@ let rec type_pat env sp =
   | Ppat_construct(lid, sarg, explicit_arity) ->
       let constr =
         try
-          Env.lookup_constructor lid env
+          match lid with
+            Longident.Ldot (Longident.Lident "*predef*", s) ->
+              Env.lookup_constructor (Longident.Lident s) Env.initial
+          | _ -> Env.lookup_constructor lid env
         with Not_found ->
           raise(Error(loc, Unbound_constructor lid)) in
       let sargs =
@@ -2020,13 +2023,14 @@ and type_expect ?in_function env sexp ty_expected =
          {ppat_loc = default_loc;
           ppat_desc =
             Ppat_construct
-              (Longident.Lident "Some",
+              (Longident.(Ldot (Lident "*predef*", "Some")),
                Some {ppat_loc = default_loc; ppat_desc = Ppat_var "*sth*"},
                false)},
          {pexp_loc = default_loc;
           pexp_desc = Pexp_ident(Longident.Lident "*sth*")};
          {ppat_loc = default_loc;
-          ppat_desc = Ppat_construct(Longident.Lident "None", None, false)},
+          ppat_desc = Ppat_construct
+            (Longident.(Ldot (Lident "*predef*", "None")), None, false)},
          default;
       ] in
       let smatch = {
