@@ -33,7 +33,17 @@ let rec longident ppf = function
 
 (* Print an identifier *)
 
-let ident ppf id = fprintf ppf "%s" (Ident.name id)
+let unique_names = ref Ident.empty
+
+let ident_name id =
+  try Ident.find_same id !unique_names with Not_found -> Ident.name id
+
+let add_unique id =
+  try ignore (Ident.find_same id !unique_names)
+  with Not_found ->
+    unique_names := Ident.add id (Ident.unique_toplevel_name id) !unique_names
+
+let ident ppf id = fprintf ppf "%s" (ident_name id)
 
 (* Print a path *)
 
@@ -41,7 +51,7 @@ let ident_pervasive = Ident.create_persistent "Pervasives"
 
 let rec tree_of_path = function
   | Pident id ->
-      Oide_ident (Ident.name id)
+      Oide_ident (ident_name id)
   | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
       Oide_ident s
   | Pdot(p, s, pos) ->
@@ -288,7 +298,7 @@ let reset_loop_marks () =
   visited_objects := []; aliased := []; delayed := []
 
 let reset () =
-  reset_names (); reset_loop_marks ()
+  unique_names := Ident.empty; reset_names (); reset_loop_marks ()
 
 let reset_and_mark_loops ty =
   reset (); mark_loops ty
@@ -960,8 +970,32 @@ let explanation unif mis ppf =
     None -> ()
   | Some (t3, t4) -> explanation unif t3 t4 ppf
 
+let ident_same_name id1 id2 =
+  if Ident.equal id1 id2 && not (Ident.same id1 id2) then begin
+    add_unique id1; add_unique id2
+  end
+
+let rec path_same_name p1 p2 =
+  match p1, p2 with
+    Pident id1, Pident id2 -> ident_same_name id1 id2
+  | Pdot (p1, s1, _), Pdot (p2, s2, _) when s1 = s2 -> path_same_name p1 p2
+  | Papply (p1, p1'), Papply (p2, p2') ->
+      path_same_name p1 p2; path_same_name p1' p2'
+  | _ -> ()
+
+let type_same_name t1 t2 =
+  match (repr t1).desc, (repr t2).desc with
+    Tconstr (p1, _, _), Tconstr (p2, _, _) -> path_same_name p1 p2
+  | _ -> ()
+
+let rec trace_same_names = function
+    (t1, t1') :: (t2, t2') :: rem ->
+      type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
+  | _ -> ()
+
 let unification_error unif tr txt1 ppf txt2 =
   reset ();
+  trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
   let mis = mismatch unif tr in
   match tr with
@@ -993,6 +1027,7 @@ let report_unification_error ppf tr txt1 txt2 =
 
 let trace fst txt ppf tr =
   print_labels := not !Clflags.classic;
+  trace_same_names tr;
   try match tr with
     t1 :: t2 :: tr' ->
       if fst then trace fst txt ppf (t1 :: t2 :: filter_trace tr')
