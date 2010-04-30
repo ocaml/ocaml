@@ -36,11 +36,16 @@ Compilers and toplevel:
 - Warnings are now numbered and can be switched on and off individually.
   The old system with letters referring to sets of warnings is still
   supported.
-- New warning (number 9, code 'R') to signal record patterns
-  without "; _" where some labels of the record type are not listed in
-  the pattern.
+- New warnings:
+  + 9 (code 'R') to signal record patterns without "; _" where
+    some labels of the record type are not listed in the pattern.
+  + 28 when giving a wildcard argument to a constant constructor in
+    a pattern-matching.
+  + 29 when an end-of-line appears unescaped in a string constant.
+  + 30 when the same constructor or record field is defined twice in
+    mutually-recursive type definitions.
 * The semantics of warning 7 (code 'M', method override) have changed,
-  and it is now inactive by default.
+  and it is now disabled by default.
 - Better error report in case of unbound qualified identifier: if the module
   is unbound this error is reported in the first place.
 - Added option '-strict-sequence' to force left hand part of sequence to have
@@ -56,11 +61,10 @@ Standard library:
   functions (int_of_string, Int32.of_string, Int64.of_string,
   Nativeint.of_string).  The decimal string corresponding to
   max_int + 1 is no longer accepted.
-- Format: to prevent confusion when mixing Format printing functions and
-  direct low level output, values Format.stdout and Format.stderr have been
-  added.
 - Scanf: to prevent confusion when mixing Scanf scanning functions and direct
   low level input, value Scanf.stdin has been added.
+* Random: changed the algorithm to produce better randomness.  Now passes the
+  DieHard tests.
 
 Bug Fixes:
 - PR#4775: compiler crash on crazy types (temporary fix)
