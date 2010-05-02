@@ -514,7 +514,7 @@ let test22 () =
 test (test22 ())
 ;;
 
-(* Should work and does not with this version of scan_int_list!
+(* Should work but does not with this version of scan_int_list!
 scan_int_list (Scanning.from_string "[1;2;3;4; ]");;
 (* Should lead to a bad input error. *)
 scan_int_list (Scanning.from_string "[1;2;3;4 5]");;
@@ -918,10 +918,10 @@ let scan_float_list_list =
 (* The killer way to define [scan_float_list_list]. *)
 (* let scan_float_list_list = scan_list scan_float_list;; *)
 
-test (
+let test340 () =
   scan_float_list_list
    (Scanning.from_string "[[1.0] ; []; [2.0; 3; 5.0; 6.];]") =
- [[1.]; []; [2.; 3.; 5.; 6.]])
+  [[1.]; []; [2.; 3.; 5.; 6.]]
 ;;
 
 (* A general scan_list_list functional. *)
@@ -945,7 +945,7 @@ let test35 () =
   sscanf " " "%N%s%N" (fun x s y -> x, s, y) = (0, "", 1)
 ;;
 
-test (test35 ())
+test (test340 () && test35 ())
 ;;
 
 (* The prefered reader functionnals. *)
@@ -1409,7 +1409,7 @@ test (test56 ())
 ;;
 
 (* Testing the scanning of formats. *)
-let test48 () =
+let test57 () =
   (* Testing format_from_string. *)
   let test_format_scan s fmt efmt =
     format_from_string s fmt = efmt in
@@ -1440,6 +1440,17 @@ let test48 () =
   sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
     (fun i f s -> i = 12 && f = "%i" && s = "89")
 ;;
+
+test (test57 ())
+;;
+
+(*
+let test58 () =
+;;
+
+test (test58 ())
+;;
+*)
 
 (* To be continued ...
 (* Trying to scan records. *)
