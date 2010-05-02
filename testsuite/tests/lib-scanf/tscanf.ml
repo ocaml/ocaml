@@ -1159,7 +1159,7 @@ let test48 () =
   j "with \" : %1d %_s %s\" : 987654321 euros" = (9, "euros")  &&
   j "with \" : %2d %_s %s\" : 987654321 dollars" = (98, "dollars") &&
   j "with \" : %3u %_s %s\" : 987654321 pounds" = (987, "pounds") &&
-  j "with \" : %4x %_s %s\" : 987654321 yens" = (39030, "yens") &&
+  j "with \" : %4x %_s %s\" : 987654321 yens" = (39030, "yens")
 ;;
 
 test (test48 ())
