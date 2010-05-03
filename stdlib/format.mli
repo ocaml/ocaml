@@ -341,12 +341,15 @@ val get_mark_tags : unit -> bool;;
 (** {6 Redirecting the standard formatter output} *)
 
 val set_formatter_out_channel : Pervasives.out_channel -> unit;;
-(** Redirect the pretty-printer output to the given channel. *)
+(** Redirect the pretty-printer output to the given channel.
+    (All the output functions of the standard formatter are set to the
+     default output functions printing to the given channel.) *)
 
 val set_formatter_output_functions :
   (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
 (** [set_formatter_output_functions out flush] redirects the
-   pretty-printer output to the functions [out] and [flush].
+   relevant pretty-printer output functions to the functions [out] and
+   [flush].
 
    The [out] function performs the pretty-printer string output. It is called
    with a string [s], a start position [p], and a number of characters
@@ -371,7 +374,7 @@ val set_all_formatter_output_functions :
   flush:(unit -> unit) ->
   newline:(unit -> unit) ->
   spaces:(int -> unit) ->
-  unit
+  unit;;
 (** [set_all_formatter_output_functions out flush outnewline outspace]
    redirects the pretty-printer output to the functions [out] and
    [flush] as described in [set_formatter_output_functions]. In

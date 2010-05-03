@@ -817,9 +817,25 @@ let pp_get_all_formatter_output_functions state () =
    state.pp_output_newline, state.pp_output_spaces)
 ;;
 
+(* Default function to output new lines. *)
+let display_newline state () = state.pp_output_function "\n" 0  1;;
+
+(* Default function to output spaces. *)
+let blank_line = String.make 80 ' ';;
+let rec display_blanks state n =
+  if n > 0 then
+  if n <= 80 then state.pp_output_function blank_line 0 n else
+  begin
+    state.pp_output_function blank_line 0 80;
+    display_blanks state (n - 80)
+  end
+;;
+
 let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
-  state.pp_flush_function <- (fun () -> flush os)
+  state.pp_flush_function <- (fun () -> flush os);
+  state.pp_output_newline <- display_newline state;
+  state.pp_output_spaces <- display_blanks state;
 ;;
 
 (**************************************************************
@@ -872,20 +888,6 @@ let pp_make_formatter f g h i =
    pp_queue = pp_q;
   }
 ;;
-
-(* Default function to output spaces. *)
-let blank_line = String.make 80 ' ';;
-let rec display_blanks state n =
-  if n > 0 then
-  if n <= 80 then state.pp_output_function blank_line 0 n else
-  begin
-    state.pp_output_function blank_line 0 80;
-    display_blanks state (n - 80)
-  end
-;;
-
-(* Default function to output new lines. *)
-let display_newline state () = state.pp_output_function "\n" 0  1;;
 
 (* Make a formatter with default functions to output spaces and new lines. *)
 let make_formatter output flush =
