@@ -843,9 +843,25 @@ let pp_get_all_formatter_output_functions state () =
    state.pp_output_newline, state.pp_output_spaces)
 ;;
 
+(* Default function to output new lines. *)
+let display_newline state () = state.pp_output_function "\n" 0  1;;
+
+(* Default function to output spaces. *)
+let blank_line = String.make 80 ' ';;
+let rec display_blanks state n =
+  if n > 0 then
+  if n <= 80 then state.pp_output_function blank_line 0 n else
+  begin
+    state.pp_output_function blank_line 0 80;
+    display_blanks state (n - 80)
+  end
+;;
+
 let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
-  state.pp_flush_function <- (fun () -> flush os)
+  state.pp_flush_function <- (fun () -> flush os);
+  state.pp_output_newline <- display_newline state;
+  state.pp_output_spaces <- display_blanks state;
 ;;
 
 (**************************************************************
@@ -899,20 +915,6 @@ let pp_make_formatter f g h i =
   }
 ;;
 
-(* Default function to output spaces. *)
-let blank_line = String.make 80 ' ';;
-let rec display_blanks state n =
-  if n > 0 then
-  if n <= 80 then state.pp_output_function blank_line 0 n else
-  begin
-    state.pp_output_function blank_line 0 80;
-    display_blanks state (n - 80)
-  end
-;;
-
-(* Default function to output new lines. *)
-let display_newline state () = state.pp_output_function "\n" 0  1;;
-
 (* Make a formatter with default functions to output spaces and new lines. *)
 let make_formatter output flush =
   let ppf = pp_make_formatter output flush ignore ignore in
@@ -938,6 +940,7 @@ and stderr = formatter_of_out_channel Pervasives.stderr
 and stdstr = formatter_of_buffer stdbuf
 ;;
 
+(* Deprecated: std_formatter, err_formatter, str_formatter. *)
 let std_formatter = stdout
 and err_formatter = stderr
 and str_formatter = stdstr
@@ -950,6 +953,7 @@ let flush_stdstr () =
   s
 ;;
 
+(* Deprecated: flush_str_formatter. *)
 let flush_str_formatter = flush_stdstr
 
 (**************************************************************
@@ -1018,6 +1022,9 @@ and get_formatter_output_meaning =
 and set_formatter_output_meaning =
   pp_set_formatter_output_meaning std_formatter
 
+(* Deprecated:
+   set_formatter_tag_functions, get_formatter_tag_functions,
+*)
 and set_formatter_tag_functions =
   pp_set_formatter_tag_functions std_formatter
 and get_formatter_tag_functions =
@@ -1348,15 +1355,6 @@ let ifprintf ppf = ikfprintf ignore ppf;;
 let printf fmt = fprintf std_formatter fmt;;
 let eprintf fmt = fprintf err_formatter fmt;;
 
-let kbprintf k b =
-  mkprintf false (fun _ -> formatter_of_buffer b) k
-;;
-
-let bprintf b =
-  let k ppf = pp_flush_queue ppf false in
-  kbprintf k b
-;;
-
 let ksprintf k =
   let b = Buffer.create 512 in
   let k ppf = k (string_out b ppf) in
@@ -1365,7 +1363,23 @@ let ksprintf k =
 
 let sprintf fmt = ksprintf (fun s -> s) fmt;;
 
-(* Obsolete alias for ksprintf. *)
+(**************************************************************
+
+  Deprecated stuff.
+
+ **************************************************************)
+
+let kbprintf k b =
+  mkprintf false (fun _ -> formatter_of_buffer b) k
+;;
+
+(* Deprecated error prone function bprintf. *)
+let bprintf b =
+  let k ppf = pp_flush_queue ppf false in
+  kbprintf k b
+;;
+
+(* Deprecated alias for ksprintf. *)
 let kprintf = ksprintf;;
 
 at_exit print_flush
