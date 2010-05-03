@@ -10,9 +10,7 @@ O_FILES=$(patsubst %,%.$(O),$(C_FILES))
 
 GENERATED_SOURCES=$(patsubst %,%.ml,$(LEX_MODULES)) $(patsubst %,%.ml,$(YACC_MODULES)) $(patsubst %,%.mli,$(YACC_MODULES))
 
-ifdef C_FILES
-ADD_CFLAGS+=-custom
-endif
+ADD_CFLAGS+=`if [ -z $(C_FILES) ]; then true; else echo '-custom'; fi`
 
 default: compile run
 
