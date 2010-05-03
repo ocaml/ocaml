@@ -218,23 +218,8 @@ val f4 : id -> int * bool = <fun>
   end
 #     val id : 'a -> 'a = <fun>
 #       class c : object method id : 'a -> 'a end
-#         [A[A[A[A[A# class c' = object
-    inherit c
-    [4mmethod id = id[m
-  end
-  ;;
-[mWarning 7: the method id is overridden.
-class c' : object method id : 'a -> 'a end
-#               [A[A[A[A[A[A[A[A# class d = object
-    inherit c as c
-    val mutable count = 0
-    [4mmethod id x = count <- count+1; x[m
-    method count = count
-    method old : 'a. 'a -> 'a = c#id
-  end
-  ;;
-[mWarning 7: the method id is overridden.
-class d :
+#         class c' : object method id : 'a -> 'a end
+#               class d :
   object
     val mutable count : int
     method count : int
