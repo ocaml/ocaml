@@ -664,6 +664,11 @@ class latex =
             [ Code "module type of ";
               Code (self#relative_idents father s);
             ]
+      | Module_unpack (s, _) ->
+          self#latex_of_text fmt
+            [
+              Code (self#relative_idents father s);
+            ]
 
     method latex_of_class_kind fmt father kind =
       match kind with

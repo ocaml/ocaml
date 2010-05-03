@@ -346,6 +346,31 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
 
      | Module_typeof _ ->
         (acc_b, acc_inc, acc_names)
+
+     | Module_unpack (code, mta) ->
+        begin
+          match mta.mta_module with
+            Some _ ->
+              (acc_b, acc_inc, acc_names)
+          | None ->
+              let mt_opt =
+                try Some (lookup_module_type mta.mta_name)
+                with Not_found -> None
+              in
+              match mt_opt with
+                None -> (acc_b, (Name.head m.m_name) :: acc_inc,
+                   (* we don't want to output warning messages for
+                      "sig ... end" or "struct ... end" modules not found *)
+                   (if mta.mta_name = Odoc_messages.struct_end or
+                      mta.mta_name = Odoc_messages.sig_end then
+                      acc_names
+                    else
+                      (NF_mt mta.mta_name) :: acc_names)
+                  )
+              | Some mt ->
+                  mta.mta_module <- Some mt ;
+                  (true, acc_inc, acc_names)
+        end
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) m.m_kind
 
@@ -803,6 +828,7 @@ and assoc_comments_module_kind parent_name module_list mk =
         (assoc_comments_module_kind parent_name module_list mk1,
          assoc_comments_module_type_kind parent_name module_list mtk)
   | Module_typeof _ -> mk
+  | Module_unpack _ -> mk
 
 and assoc_comments_module_type_kind parent_name module_list mtk =
   match mtk with

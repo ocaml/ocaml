@@ -428,6 +428,7 @@ and remove_module_elements_between_stop_in_module_kind k =
       Odoc_module.Module_constraint (remove_module_elements_between_stop_in_module_kind k2,
                          remove_module_elements_between_stop_in_module_type_kind mtkind)
   | Odoc_module.Module_typeof _ -> k
+  | Odoc_module.Module_unpack _ -> k
 
 (** Remove the module elements between the stop special comment, in the given module type kind. *)
 and remove_module_elements_between_stop_in_module_type_kind tk =

@@ -61,6 +61,7 @@ and module_kind =
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
   | Module_typeof of string (** by now only the code of the module expression *)
+  | Module_unpack of string * module_type_alias (** code of the expression and module type alias *)
 
 (** Representation of a module. *)
 and t_module = {
@@ -245,7 +246,8 @@ let rec module_elements ?(trans=true) m =
             m_code_intf = None ;
             m_text_only = false ;
           }
-    | Module_typeof s -> []
+    | Module_typeof _ -> []
+    | Module_unpack _ -> []
 (*
    module_type_elements ~trans: trans
    { mt_name = "" ; mt_info = None ; mt_type = None ;
@@ -404,8 +406,8 @@ and module_parameters ?(trans=true) m =
     | Module_struct _
     | Module_apply _
     | Module_with _
-    | Module_typeof _ ->
-        []
+    | Module_typeof _
+    | Module_unpack _ -> []
   in
   iter m.m_kind
 

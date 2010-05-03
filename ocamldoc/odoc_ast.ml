@@ -1647,6 +1647,24 @@ module Analyser =
             m_kind = Module_struct elements2 ;
           }
 
+      | (Parsetree.Pmod_unpack (p_exp, pkg_type),
+         Typedtree.Tmod_unpack (t_exp, tt_modtype)) ->
+          print_DEBUG ("Odoc_ast: case Parsetree.Pmod_unpack + Typedtree.Tmod_unpack "^module_name);
+          let code =
+            let loc = p_module_expr.Parsetree.pmod_loc in
+            let loc_end = loc.Location.loc_end.Lexing.pos_cnum in
+            let exp_loc = p_exp.Parsetree.pexp_loc in
+            let exp_loc_end = exp_loc.Location.loc_end.Lexing.pos_cnum in
+            let s = get_string_of_file exp_loc_end loc_end in
+            Printf.sprintf "(val ...%s" s
+          in
+          let name = Odoc_env.full_module_type_name env (Name.from_longident (fst pkg_type)) in
+          let alias = { mta_name = name ; mta_module = None } in
+          { m_base with
+            m_type = Odoc_env.subst_module_type env tt_modtype ;
+            m_kind = Module_unpack (code, alias) ;
+          }
+
       | (parsetree, typedtree) ->
           (*DEBUG*)let s_parse =
           (*DEBUG*)  match parsetree with
@@ -1655,6 +1673,7 @@ module Analyser =
           (*DEBUG*)  | Parsetree.Pmod_functor _ -> "Pmod_functor"
           (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
           (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
+          (*DEBUG*)  | Parsetree.Pmod_unpack _ -> "Pmod_unpack"
           (*DEBUG*)in
           (*DEBUG*)let s_typed =
           (*DEBUG*)  match typedtree with
@@ -1663,6 +1682,7 @@ module Analyser =
           (*DEBUG*)  | Typedtree.Tmod_functor _ -> "Tmod_functor"
           (*DEBUG*)  | Typedtree.Tmod_apply _ -> "Tmod_apply"
           (*DEBUG*)  | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
+          (*DEBUG*)  | Typedtree.Tmod_unpack _ -> "Tmod_unpack"
           (*DEBUG*)in
           (*DEBUG*)let code = get_string_of_file pos_start pos_end in
           print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);

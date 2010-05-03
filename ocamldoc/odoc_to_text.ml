@@ -549,6 +549,12 @@ class virtual to_text =
             s
           in
           [Code code]
+      | Module_unpack (code, _) ->
+          let code = Printf.sprintf "%s%s"
+            (if with_def_syntax then " : " else "")
+            code
+          in
+          [Code code]
 
     (** Return html code for a [module_type_kind].*)
     method text_of_module_type_kind ?(with_def_syntax=true) tk =

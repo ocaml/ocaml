@@ -1229,6 +1229,18 @@ class html =
           bs b "<code class=\"type\">module type of ";
           bs b (self#create_fully_qualified_module_idents_links father s);
           bs b "</code>"
+      | Module_unpack (code, mta) ->
+          bs b "<code class=\"type\">";
+          begin
+            match mta.mta_module with
+              None ->
+                bs b (self#create_fully_qualified_module_idents_links father (self#escape code))
+            | Some mt ->
+                let (html_file, _) = Naming.html_files mt.mt_name in
+                bp b " <a href=\"%s\">%s</a> " html_file (self#escape code)
+          end;
+          bs b "</code>"
+
 
     method html_of_module_parameter b father p =
       let (s_functor,s_arrow) =

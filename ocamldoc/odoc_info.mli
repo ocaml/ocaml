@@ -448,6 +448,7 @@ module Module :
       | Module_constraint of module_kind * module_type_kind
                      (** A module constraint by a module type. *)
       | Module_typeof of string (** by now only the code of the module expression *)
+      | Module_unpack of string * module_type_alias (** code of the expression and module type alias *)
 
     (** Representation of a module. *)
     and t_module = Odoc_module.t_module =
