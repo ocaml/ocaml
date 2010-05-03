@@ -20,6 +20,6 @@ run:
 	done
 
 clean: defaultclean
-	@rm -f *.byte *.native *.result
+	@rm -f *.bytecode *.native *.result
 
 include ../../makefiles/Makefile.common
