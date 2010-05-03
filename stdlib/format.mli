@@ -346,7 +346,8 @@ val set_formatter_out_channel : Pervasives.out_channel -> unit;;
      default output functions printing to the given channel.) *)
 
 val set_formatter_output_functions :
-  (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
+  (string -> int -> int -> unit) -> (unit -> unit) -> unit
+;;
 (** [set_formatter_output_functions out flush] redirects the
    relevant pretty-printer output functions to the functions [out] and
    [flush].
@@ -359,7 +360,8 @@ val set_formatter_output_functions :
    or using low level function [print_flush] or [print_newline]). *)
 
 val get_formatter_output_functions :
-  unit -> (string -> int -> int -> unit) * (unit -> unit);;
+  unit -> (string -> int -> int -> unit) * (unit -> unit)
+;;
 (** Return the current output functions of the pretty-printer. *)
 
 (** {6:meaning Changing the meaning of standard formatter pretty printing} *)
@@ -374,7 +376,8 @@ val set_all_formatter_output_functions :
   flush:(unit -> unit) ->
   newline:(unit -> unit) ->
   spaces:(int -> unit) ->
-  unit;;
+  unit
+;;
 (** [set_all_formatter_output_functions out flush outnewline outspace]
    redirects the pretty-printer output to the functions [out] and
    [flush] as described in [set_formatter_output_functions]. In
@@ -395,19 +398,21 @@ val get_all_formatter_output_functions :
   (string -> int -> int -> unit) *
   (unit -> unit) *
   (unit -> unit) *
-  (int -> unit);;
+  (int -> unit)
+;;
 (** Return the current output functions of the pretty-printer,
    including line breaking and indentation functions. Useful to record the
-  current setting and restore it afterwards. *)
+   current setting and restore it afterwards. *)
 
-(** {6 Changing the meaning of printing semantics tags} *)
+(** {6:tags Changing the meaning of printing semantics tags} *)
 
 type formatter_tag_functions = {
   mark_open_tag : tag -> string;
   mark_close_tag : tag -> string;
   print_open_tag : tag -> unit;
   print_close_tag : tag -> unit;
-};;
+}
+;;
 (** The tag handling functions specific to a formatter:
    [mark] versions are the ``tag marking'' functions that associate a string
    marker to a tag in order for the pretty-printing engine to flush
@@ -416,7 +421,8 @@ type formatter_tag_functions = {
    regular printing when a tag is closed or opened. *)
 
 val set_formatter_tag_functions :
-  formatter_tag_functions -> unit;;
+  formatter_tag_functions -> unit
+;;
 
 (** [set_formatter_tag_functions tag_funs] changes the meaning of
    opening and closing tags to use the functions in [tag_funs].
@@ -434,24 +440,29 @@ val set_formatter_tag_functions :
    material in the pretty-printer queue. *)
 
 val get_formatter_tag_functions :
-  unit -> formatter_tag_functions;;
+  unit -> formatter_tag_functions
+;;
 (** Return the current tag functions of the pretty-printer. *)
 
 (** {6 Multiple formatted output} *)
 
 type formatter;;
 (** Abstract data corresponding to a pretty-printer (also called a
-  formatter) and all its machinery.  Defining new pretty-printers permits the output of
-  material in parallel on several channels.
-  Parameters of a pretty-printer are local to this pretty-printer:
+  formatter) and all its machinery.
+
+  Defining new pretty-printers permits unrelated output of material in
+  parallel on several output channels.
+  All the parameters of a pretty-printer are local to this pretty-printer:
   margin, maximum indentation limit, maximum number of boxes
   simultaneously opened, ellipsis, and so on, are specific to
   each pretty-printer and may be fixed independently.
-  Given an output channel [oc], a new formatter writing to
-  that channel is obtained by calling [formatter_of_out_channel oc].
+  Given a [Pervasives.out_channel] output channel [oc], a new formatter
+  writing to that channel is simply obtained by calling
+  [formatter_of_out_channel oc].
   Alternatively, the [make_formatter] function allocates a new
   formatter with explicit output and flushing functions
-  (convenient to output material to strings for instance). *)
+  (convenient to output material to strings for instance).
+*)
 
 val formatter_of_out_channel : out_channel -> formatter;;
 (** [formatter_of_out_channel oc] returns a new formatter that
@@ -485,11 +496,12 @@ val flush_str_formatter : unit -> string;;
    the formatter and resets the corresponding buffer. *)
 
 val make_formatter :
-  (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
-(** [make_formatter out flush] returns a new formatter that
-   writes according to the output function [out], and the flushing
-   function [flush]. Hence, a formatter to the out channel [oc]
-   is returned by [make_formatter (output oc) (fun () -> flush oc)]. *)
+  (string -> int -> int -> unit) -> (unit -> unit) -> formatter
+;;
+(** [make_formatter out flush] returns a new formatter that writes according
+  to the output function [out], and the flushing function [flush]. For
+  instance, a formatter to the [Pervasives.out_channel] [oc] is returned by
+  [make_formatter (Pervasives.output oc) (fun () -> Pervasives.flush oc)]. *)
 
 (** {6 Basic functions to use with formatters} *)
 
@@ -535,20 +547,26 @@ val pp_set_ellipsis_text : formatter -> string -> unit;;
 val pp_get_ellipsis_text : formatter -> unit -> string;;
 val pp_set_formatter_out_channel : formatter -> Pervasives.out_channel -> unit;;
 val pp_set_formatter_output_functions :
-  formatter -> (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
+  formatter -> (string -> int -> int -> unit) -> (unit -> unit) -> unit
+;;
 val pp_get_formatter_output_functions :
-  formatter -> unit -> (string -> int -> int -> unit) * (unit -> unit);;
+  formatter -> unit -> (string -> int -> int -> unit) * (unit -> unit)
+;;
 val pp_set_all_formatter_output_functions :
   formatter -> out:(string -> int -> int -> unit) -> flush:(unit -> unit) ->
-  newline:(unit -> unit) -> spaces:(int -> unit) -> unit;;
+  newline:(unit -> unit) -> spaces:(int -> unit) -> unit
+;;
 val pp_get_all_formatter_output_functions :
   formatter -> unit ->
   (string -> int -> int -> unit) * (unit -> unit) * (unit -> unit) *
-  (int -> unit);;
+  (int -> unit)
+;;
 val pp_set_formatter_tag_functions :
-  formatter -> formatter_tag_functions -> unit;;
+  formatter -> formatter_tag_functions -> unit
+;;
 val pp_get_formatter_tag_functions :
-  formatter -> unit -> formatter_tag_functions;;
+  formatter -> unit -> formatter_tag_functions
+;;
 (** These functions are the basic ones: usual functions
    operating on the standard formatter are defined via partial
    evaluation of these primitives. For instance,
@@ -557,13 +575,16 @@ val pp_get_formatter_tag_functions :
 (** {6 [printf] like functions for pretty-printing.} *)
 
 val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
-(** [fprintf ff format arg1 ... argN] formats the arguments
-   [arg1] to [argN] according to the format string [format],
-   and outputs the resulting string on the formatter [ff].
-   The format is a character string which contains three types of
-   objects: plain characters and conversion specifications as
-   specified in the [printf] module, and pretty-printing
-   indications.
+
+(** [fprintf ff fmt arg1 ... argN] formats the arguments [arg1] to [argN]
+   according to the format string [fmt], and outputs the resulting string on
+   the formatter [ff].
+
+   The format [fmt] is a character string which contains three types of
+   objects: plain characters and conversion specifications as specified in
+   the [Printf] module, and pretty-printing indications specific to the
+   [Format] module.
+
    The pretty-printing indication characters are introduced by
    a [@] character, and their meanings are:
    - [@\[]: open a pretty-printing box. The type and offset of the
@@ -624,10 +645,6 @@ val printf : ('a, formatter, unit) format -> 'a;;
 val eprintf : ('a, formatter, unit) format -> 'a;;
 (** Same as [fprintf] above, but output on [err_formatter]. *)
 
-val ifprintf : formatter -> ('a, formatter, unit) format -> 'a;;
-(** Same as [fprintf] above, but does not print anything.
-   Useful to ignore some material when conditionally printing. *)
-
 val sprintf : ('a, unit, string) format -> 'a;;
 (** Same as [printf] above, but instead of printing on a formatter,
    returns a string containing the result of formatting the arguments.
@@ -636,33 +653,28 @@ val sprintf : ('a, unit, string) format -> 'a;;
 
    In case of multiple and related calls to [sprintf] to output
    material on a single string, you should consider using [fprintf]
-   with a formatter writing to a buffer: flushing the buffer at the
-   end of pretty-printing returns the desired string. You can also use
-   the predefined formatter [str_formatter] and call
-   [flush_str_formatter ()] to get the result. *)
+   with the predefined formatter [str_formatter] and call
+   [flush_str_formatter ()] to get the final result.
 
-val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
-(** Same as [sprintf] above, but instead of printing on a string,
-   writes into the given extensible buffer.
-   As for [sprintf], the pretty-printer queue is flushed at the end of each
-   call to [bprintf].
+   Alternatively, you can use [Format.fprintf] with a formatter writing to a
+   buffer of your own: flushing the formatter and the buffer at the end of
+   pretty-printing returns the desired string. *)
 
-   In case of multiple and related calls to [bprintf] to output
-   material on the same buffer [b], you should consider using
-   [fprintf] with a formatter writing to the buffer [b] (as obtained
-   by [formatter_of_buffer b]), otherwise the repeated flushes of the
-   pretty-printer queue would result in unexpected and badly formatted
-   output. *)
+val ifprintf : formatter -> ('a, formatter, unit) format -> 'a;;
+(** Same as [fprintf] above, but does not print anything.
+   Useful to ignore some material when conditionally printing. *)
 
 (** Formatted output functions with continuations. *)
 
 val kfprintf : (formatter -> 'a) -> formatter ->
-              ('b, formatter, unit, 'a) format4 -> 'b;;
+              ('b, formatter, unit, 'a) format4 -> 'b
+;;
 (** Same as [fprintf] above, but instead of returning immediately,
    passes the formatter to its first argument at the end of printing. *)
 
 val ikfprintf : (formatter -> 'a) -> formatter ->
-              ('b, formatter, unit, 'a) format4 -> 'b;;
+              ('b, formatter, unit, 'a) format4 -> 'b
+;;
 (** Same as [kfprintf] above, but does not print anything.
    Useful to ignore some material when conditionally printing. *)
 
@@ -670,5 +682,14 @@ val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** Same as [sprintf] above, but instead of returning the string,
    passes it to the first argument. *)
 
+(** {6 Deprecated} *)
+
+val bprintf : Buffer.t -> ('a, formatter, unit) format -> 'a;;
+(** Deprecated and error prone function. Do not use it.
+
+  If you need to print to some buffer [b], you must first define a
+  formatter writing to [b], using [let to_b = formatter_of_buffer b]; then
+  use regular calls to [Format.fprintf] on formatter [to_b]. *)
+
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
-(** A deprecated synonym for [ksprintf]. *)
+(** Deprecated name. A synonym for [ksprintf]. *)
