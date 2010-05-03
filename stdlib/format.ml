@@ -1069,8 +1069,8 @@ let implode_rev s0 = function
 (* [mkprintf] is the printf-like function generator: given the
    - [to_s] flag that tells if we are printing into a string,
    - the [get_out] function that has to be called to get a [ppf] function to
-     output onto.
-   It generates a [kprintf] function that takes as arguments a [k]
+     output onto,
+   it generates a [kprintf] function that takes as arguments a [k]
    continuation function to be called at the end of formatting,
    and a printing format string to print the rest of the arguments
    according to the format string.
@@ -1311,15 +1311,6 @@ let ifprintf ppf = ikfprintf ignore ppf;;
 let printf fmt = fprintf std_formatter fmt;;
 let eprintf fmt = fprintf err_formatter fmt;;
 
-let kbprintf k b =
-  mkprintf false (fun _ -> formatter_of_buffer b) k
-;;
-
-let bprintf b =
-  let k ppf = pp_flush_queue ppf false in
-  kbprintf k b
-;;
-
 let ksprintf k =
   let b = Buffer.create 512 in
   let k ppf = k (string_out b ppf) in
@@ -1328,7 +1319,23 @@ let ksprintf k =
 
 let sprintf fmt = ksprintf (fun s -> s) fmt;;
 
-(* Obsolete alias for ksprintf. *)
+(**************************************************************
+
+  Deprecated stuff.
+
+ **************************************************************)
+
+let kbprintf k b =
+  mkprintf false (fun _ -> formatter_of_buffer b) k
+;;
+
+(* Deprecated error prone function bprintf. *)
+let bprintf b =
+  let k ppf = pp_flush_queue ppf false in
+  kbprintf k b
+;;
+
+(* Deprecated alias for ksprintf. *)
 let kprintf = ksprintf;;
 
 at_exit print_flush
