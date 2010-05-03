@@ -121,41 +121,9 @@ Type point = point is not a subtype of color_point = color_point
       print_string (self#color);
       print_string ")"
   end;;
-[mWarning 7: the following methods are overriden by the class printable_point :
-  get_x move
-[A[A[A[A[A[A[A[A[A[A[A[A[A# 
-  class printable_color_point y c = object (self)
-    inherit color_point y c
-    inherit [4mprintable_point y[m as super
-    method print =
-      print_string "(";
-      super#print;
-      print_string ", ";
-      print_string (self#color);
-      print_string ")"
-  end;;
-[m
-
-Warning 13: the following instance variables are overriden by the class printable_point :
+[mWarning 13: the following instance variables are overriden by the class printable_point :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# 
-  class printable_color_point y c = object (self)
-    inherit color_point y c
-    inherit printable_point y as super
-    [4mmethod print =
-      print_string "(";
-      super#print;
-      print_string ", ";
-      print_string (self#color);
-      print_string ")"[m
-  end;;
-[m
-
-
-
-
-Warning 7: the method print is overridden.
 class printable_color_point :
   int ->
   string ->
@@ -304,18 +272,7 @@ val pr : < x : int; .. > list -> unit = <fun>
     method set_x : 'a -> unit
     method x : 'a
   end
-#                   [A[A[A[A[A[A[A[A[A[A# 
-  class ['a] double_link x = object (self)
-    inherit ['a] link x
-    val mutable prev = None
-    method prev = prev
-    [4mmethod  set_next l =
-           next <- l;
-           match l with Some l -> l#set_prev (Some self) | None -> ()[m
-    method  set_prev l = prev <- l
-  end;;
-[mWarning 7: the method set_next is overridden.
-class ['a] double_link :
+#                   class ['a] double_link :
   'a ->
   object ('b)
     val mutable next : 'b option
@@ -362,85 +319,7 @@ class ['a] double_link :
 #   - : float = 5.
 # - : float = 1.5
 # - : float = 15.
-#                                 [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# 
-  class calculator arg acc = object (self)
-    val arg = arg
-    val acc = acc
-    method enter n = new calculator n acc
-    method add = new calculator_add arg self#equals
-    method sub = new calculator_sub arg self#equals
-    method equals = arg
-  end and calculator_add arg acc = object
-    inherit calculator arg acc
-    [4mmethod enter n = new calculator_add n acc[m
-    method equals = acc +. arg
-  end and calculator_sub arg acc = object
-    inherit calculator arg acc
-    method enter n = new calculator_sub n acc
-    method equals = acc -. arg
-  end;;
-[mWarning 7: the method enter is overridden.
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# 
-  class calculator arg acc = object (self)
-    val arg = arg
-    val acc = acc
-    method enter n = new calculator n acc
-    method add = new calculator_add arg self#equals
-    method sub = new calculator_sub arg self#equals
-    method equals = arg
-  end and calculator_add arg acc = object
-    inherit calculator arg acc
-    method enter n = new calculator_add n acc
-    [4mmethod equals = acc +. arg[m
-  end and calculator_sub arg acc = object
-    inherit calculator arg acc
-    method enter n = new calculator_sub n acc
-    method equals = acc -. arg
-  end;;
-[m
-Warning 7: the method equals is overridden.
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# 
-  class calculator arg acc = object (self)
-    val arg = arg
-    val acc = acc
-    method enter n = new calculator n acc
-    method add = new calculator_add arg self#equals
-    method sub = new calculator_sub arg self#equals
-    method equals = arg
-  end and calculator_add arg acc = object
-    inherit calculator arg acc
-    method enter n = new calculator_add n acc
-    method equals = acc +. arg
-  end and calculator_sub arg acc = object
-    inherit calculator arg acc
-    [4mmethod enter n = new calculator_sub n acc[m
-    method equals = acc -. arg
-  end;;
-[m
-
-Warning 7: the method enter is overridden.
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# 
-  class calculator arg acc = object (self)
-    val arg = arg
-    val acc = acc
-    method enter n = new calculator n acc
-    method add = new calculator_add arg self#equals
-    method sub = new calculator_sub arg self#equals
-    method equals = arg
-  end and calculator_add arg acc = object
-    inherit calculator arg acc
-    method enter n = new calculator_add n acc
-    method equals = acc +. arg
-  end and calculator_sub arg acc = object
-    inherit calculator arg acc
-    method enter n = new calculator_sub n acc
-    [4mmethod equals = acc -. arg[m
-  end;;
-[m
-
-
-Warning 7: the method equals is overridden.
-class calculator :
+#                                 class calculator :
   float ->
   float ->
   object

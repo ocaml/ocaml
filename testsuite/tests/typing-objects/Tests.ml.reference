@@ -151,65 +151,14 @@ and 'a t = 'a t u
 # class ['a] c : 'a #c -> object  end
 #     class c : unit -> object method f : int end
 and d : unit -> object method f : int end
-# [A# class e () = object inherit c () inherit [4md ()[m end;;
-[mWarning 7: the following methods are overriden by the class d :
-  f
-class e : unit -> object method f : int end
+# class e : unit -> object method f : int end
 # - : int = 2
 # [A# class c () = object val x = - [4mtrue[m val y = -. () end;;
 [mError: This expression has type bool but an expression was expected of type
          int
 #   class c : unit -> object method f : int method g : int method h : int end
 # class d : unit -> object method h : int method i : int method j : int end
-#               [A[A[A[A[A[A[A[A# class e () = object
-    method f = 3
-    inherit [4mc ()[m
-    method g = 3
-    method i = 3
-    inherit d ()
-    method j = 3
-  end;;
-[mWarning 7: the following methods are overriden by the class c :
-  f
-[A[A[A[A[A[A[A[A[A[A# class e () = object
-    method f = 3
-    inherit c ()
-    [4mmethod g = 3[m
-    method i = 3
-    inherit d ()
-    method j = 3
-  end;;
-[m
-
-Warning 7: the method g is overridden.
-[A[A[A[A[A[A[A[A[A[A[A# class e () = object
-    method f = 3
-    inherit c ()
-    method g = 3
-    method i = 3
-    inherit [4md ()[m
-    method j = 3
-  end;;
-[m
-
-
-Warning 7: the following methods are overriden by the class d :
-  h i
-[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object
-    method f = 3
-    inherit c ()
-    method g = 3
-    method i = 3
-    inherit d ()
-    [4mmethod j = 3[m
-  end;;
-[m
-
-
-
-
-Warning 7: the method j is overridden.
-class e :
+#               class e :
   unit ->
   object
     method f : int
