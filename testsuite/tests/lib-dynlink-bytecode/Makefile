@@ -16,7 +16,7 @@ compile:
 
 run:
 	@printf " ... testing 'main'"
-	@./main plug1.cma plug2.cma > main.result
+	@LD_LIBRARY_PATH=. ./main plug1.cma plug2.cma > main.result
 	@diff -q main.reference main.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
