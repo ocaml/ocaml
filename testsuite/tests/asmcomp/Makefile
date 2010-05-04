@@ -96,7 +96,7 @@ ADD_COMPFLAGS=$(INCLUDES) -g
 
 default: arch codegen tests
 
-codegen: parsecmm.ml lexcmm.ml $(patsubst %.cmo,%.cmi,$(OBJS)) $(OBJS) main.cmo
+codegen: parsecmm.ml lexcmm.ml $(OBJS:.cmo=.cmi) $(OBJS) main.cmo
 	@$(OCAMLC) $(LINKFLAGS) -o codegen $(OTHEROBJS) $(OBJS) main.cmo
 
 parsecmm.mli parsecmm.ml: parsecmm.mly
@@ -120,7 +120,7 @@ ARGS_tagged-integr=-DINT_FLOAT -DFUN=test main.c
 ARGS_tagged-quicksort=-DSORT -DFUN=quicksort main.c
 ARGS_tagged-tak=-DUNIT_INT -DFUN=takmain main.c
 
-tests: $(patsubst %,%.o,$(CASES))
+tests: $(CASES:=.o)
 	@for c in $(CASES); do \
 	  printf " ... testing '$$c':"; \
 	  $(MAKE) one CC="$(CC) $(CFLAGS)" NAME=$$c; \
@@ -133,7 +133,7 @@ one:
 clean: defaultclean
 	@rm -f ./codegen *.out
 	@rm -f parsecmm.ml parsecmm.mli lexcmm.ml
-	@rm -f $(patsubst %,%.s,$(CASES))
+	@rm -f $(CASES:=.s)
 
 power.o: power-$(SYSTEM).o
 	@cp power-$(SYSTEM).o power.o

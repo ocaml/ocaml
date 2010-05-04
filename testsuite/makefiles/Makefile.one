@@ -1,14 +1,17 @@
 # $Id$
 
-CMI_FILES=$(patsubst %,%.cmi,$(MODULES))
-CMO_FILES=$(patsubst %,%.cmo,$(MODULES))
-CMX_FILES=$(patsubst %,%.cmx,$(MODULES))
-CMA_FILES=$(patsubst %,%.cma,$(LIBRARIES))
-CMXA_FILES=$(patsubst %,%.cmxa,$(LIBRARIES))
-ML_FILES=$(patsubst %,%.ml,$(LEX_MODULES) $(YACC_MODULES))
-O_FILES=$(patsubst %,%.$(O),$(C_FILES))
+CMI_FILES=$(MODULES:=.cmi)
+CMO_FILES=$(MODULES:=.cmo)
+CMX_FILES=$(MODULES:=.cmx)
+CMA_FILES=$(LIBRARIES:=.cma)
+CMXA_FILES=$(LIBRARIES:=.cmxa)
+ML_LEX_FILES=$(LEX_MODULES:=.ml)
+ML_YACC_FILES=$(YACC_MODULES:=.ml)
+MLI_YACC_FILES=$(YACC_MODULES:=.mli)
+ML_FILES=$(ML_LEX_FILES) $(ML_YACC_FILES)
+O_FILES=$(C_FILES:=.o)
 
-GENERATED_SOURCES=$(patsubst %,%.ml,$(LEX_MODULES)) $(patsubst %,%.ml,$(YACC_MODULES)) $(patsubst %,%.mli,$(YACC_MODULES))
+GENERATED_SOURCES=$(ML_LEX_FILES) $(ML_YACC_FILES) $(MLI_YACC_FILES)
 
 ADD_CFLAGS+=`if [ -z $(C_FILES) ]; then true; else echo '-custom'; fi`
 
@@ -18,8 +21,8 @@ compile: $(ML_FILES) $(CMO_FILES) $(CMX_FILES) $(MAIN_MODULE).cmo $(MAIN_MODULE)
 	@for file in $(C_FILES); do \
 	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(TOPDIR)/byterun $$file.c; \
 	done;
-	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(patsubst %,%.cmo,$(ADD_MODULES)) $(MAIN_MODULE).cmo
-	@$(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(patsubst %,%.cmx,$(ADD_MODULES)) $(MAIN_MODULE).cmx
+	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_MODULES:=.cmo) $(MAIN_MODULE).cmo
+	@$(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(ADD_MODULES:=.cmx) $(MAIN_MODULE).cmx
 
 run:
 	@printf " ... testing with ocamlc"

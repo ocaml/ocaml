@@ -2,11 +2,11 @@
 
 CC=$(NATIVECC) $(NATIVECCCOMPOPTS)
 FC=$(FORTAN_COMPILER)
-CMO_FILES=$(patsubst %,%.cmo,$(MODULES))
-CMX_FILES=$(patsubst %,%.cmx,$(MODULES))
-CMA_FILES=$(patsubst %,%.cma,$(LIBRARIES))
-CMXA_FILES=$(patsubst %,%.cmxa,$(LIBRARIES))
-O_FILES=$(patsubst %,%.$(O),$(C_FILES) $(F_FILES))
+CMO_FILES=$(MODULES:=.cmo)
+CMX_FILES=$(MODULES:=.cmx)
+CMA_FILES=$(LIBRARIES:=.cma)
+CMXA_FILES=$(LIBRARIES:=.cmxa)
+O_FILES=$(C_FILES:=.o)
 ADD_CFLAGS+=`if [ -z $(C_FILES) ]; then true; else echo '-custom'; fi`
 ADD_CFLAGS+=`if [ -z $(F_FILES) ]; then true; else echo '$(FORTRAN_LIBRARY)'; fi`
 ADD_OPTFLAGS+=`if [ -z $(F_FILES) ]; then true; else echo '$(FORTRAN_LIBRARY)'; fi`
