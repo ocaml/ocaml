@@ -62,3 +62,5 @@ val print : formatter -> t -> int;;
 exception Errors of int;;
 
 val check_fatal : unit -> unit;;
+
+val help_warnings: unit -> unit

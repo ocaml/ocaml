@@ -1,23 +1,14 @@
-posix.o: posix.c ../../byterun/alloc.h ../../byterun/compatibility.h \
-  ../../byterun/misc.h ../../byterun/config.h ../../byterun/../config/m.h \
-  ../../byterun/../config/s.h ../../byterun/mlvalues.h \
-  ../../byterun/backtrace.h ../../byterun/callback.h \
-  ../../byterun/custom.h ../../byterun/fail.h ../../byterun/io.h \
-  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
-  ../../byterun/freelist.h ../../byterun/minor_gc.h ../../byterun/misc.h \
-  ../../byterun/mlvalues.h ../../byterun/printexc.h ../../byterun/roots.h \
-  ../../byterun/memory.h ../../byterun/signals.h ../../byterun/stacks.h \
-  ../../byterun/sys.h
-win32.o: win32.c ../../byterun/alloc.h ../../byterun/compatibility.h \
-  ../../byterun/misc.h ../../byterun/config.h ../../byterun/../config/m.h \
-  ../../byterun/../config/s.h ../../byterun/mlvalues.h \
-  ../../byterun/backtrace.h ../../byterun/callback.h \
-  ../../byterun/custom.h ../../byterun/fail.h ../../byterun/io.h \
-  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
-  ../../byterun/freelist.h ../../byterun/minor_gc.h ../../byterun/misc.h \
-  ../../byterun/mlvalues.h ../../byterun/printexc.h ../../byterun/roots.h \
-  ../../byterun/memory.h ../../byterun/signals.h ../../byterun/stacks.h \
-  ../../byterun/sys.h
+st_stubs.o: st_stubs.c ../../byterun/alloc.h \
+ ../../byterun/compatibility.h ../../byterun/misc.h \
+ ../../byterun/config.h ../../byterun/../config/m.h \
+ ../../byterun/../config/s.h ../../byterun/mlvalues.h \
+ ../../byterun/backtrace.h ../../byterun/callback.h \
+ ../../byterun/custom.h ../../byterun/fail.h ../../byterun/io.h \
+ ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+ ../../byterun/freelist.h ../../byterun/minor_gc.h ../../byterun/misc.h \
+ ../../byterun/mlvalues.h ../../byterun/printexc.h ../../byterun/roots.h \
+ ../../byterun/memory.h ../../byterun/signals.h ../../byterun/stacks.h \
+ ../../byterun/sys.h threads.h st_posix.h
 condition.cmi: mutex.cmi
 event.cmi:
 mutex.cmi:
@@ -33,7 +24,3 @@ thread.cmo: thread.cmi
 thread.cmx: thread.cmi
 threadUnix.cmo: thread.cmi threadUnix.cmi
 threadUnix.cmx: thread.cmx threadUnix.cmi
-thread_posix.cmo:
-thread_posix.cmx:
-thread_win32.cmo:
-thread_win32.cmx:

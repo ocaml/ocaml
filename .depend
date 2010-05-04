@@ -735,8 +735,8 @@ driver/main.cmx: utils/warnings.cmx utils/misc.cmx driver/main_args.cmx \
     driver/errors.cmx utils/config.cmx driver/compile.cmx utils/clflags.cmx \
     bytecomp/bytepackager.cmx bytecomp/bytelink.cmx \
     bytecomp/bytelibrarian.cmx driver/main.cmi
-driver/main_args.cmo: driver/main_args.cmi
-driver/main_args.cmx: driver/main_args.cmi
+driver/main_args.cmo: utils/warnings.cmi driver/main_args.cmi
+driver/main_args.cmx: utils/warnings.cmx driver/main_args.cmi
 driver/optcompile.cmo: utils/warnings.cmi typing/unused_var.cmi \
     typing/typemod.cmi typing/typedtree.cmi bytecomp/translmod.cmi \
     typing/stypes.cmi bytecomp/simplif.cmi typing/printtyp.cmi \

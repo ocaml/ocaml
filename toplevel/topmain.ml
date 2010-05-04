@@ -54,6 +54,7 @@ module Options = Main_args.Make_bytetop_options (struct
   let set r () = r := true
   let clear r () = r := false
 
+  let _help_warnings = Warnings.help_warnings
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
