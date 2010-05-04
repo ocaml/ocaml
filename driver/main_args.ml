@@ -258,21 +258,24 @@ let mk_vmthread f =
 
 let mk_w f =
   "-w", Arg.String f,
+  Printf.sprintf
   "<list>  Enable or disable warnings according to <list>:\n\
-  \     +<num>    enable warning <num>\n\
-  \     +<letter> enable set <letter>\n\
-  \     -<num>    disable warning <num>\n\
-  \     -<letter> disable set <letter>\n\
-  \     @<num>    enable warning <num> and treat it as an error\n\
-  \     @<letter> enable set <letter> and treat them as errors\n\
-  \     default setting is \"+a-4-6-7-9-27-28-29\""
+  \        +<spec>   enable warnings in <spec>\n\
+  \        -<spec>   disable warnings in <spec>\n\
+  \        @<spec>   enable warnings in <spec> and treat them as errors\n\
+  \     <spec> can be:\n\
+  \        <num>             a single warning number\n\
+  \        <num1>..<num2>    a range of consecutive warning numbers\n\
+  \        <letter>          a predefined set\n\
+  \     default setting is %S" Warnings.defaults_w
 ;;
 
 let mk_warn_error f =
   "-warn-error", Arg.String f,
+  Printf.sprintf
   "<list>  Enable or disable error status for warnings according\n\
   \     to <list>.  See option -w for the syntax of <list>.\n\
-  \     Default setting is \"-a\""
+  \     Default setting is %S" Warnings.defaults_warn_error
 ;;
 
 let mk_where f =

@@ -137,6 +137,21 @@ let parse_opt flags s =
   let clear i = flags.(i) <- false in
   let set_all i = active.(i) <- true; error.(i) <- true in
   let error () = raise (Arg.Bad "Ill-formed list of warnings") in
+  let rec get_num n i =
+    if i >= String.length s then i, n
+    else match s.[i] with
+    | '0'..'9' -> get_num (10 * n + Char.code s.[i] - Char.code '0') (i + 1)
+    | _ -> i, n
+  in
+  let get_range i =
+    let i, n1 = get_num 0 i in
+    if i + 2 < String.length s && s.[i] = '.' && s.[i + 1] = '.' then
+      let i, n2 = get_num 0 (i + 2) in
+      if n2 < n1 then error ();
+      i, n1, n2
+    else
+      i, n1, n1
+  in
   let rec loop i =
     if i >= String.length s then () else
     match s.[i] with
@@ -153,7 +168,10 @@ let parse_opt flags s =
   and loop_letter_num myset i =
     if i >= String.length s then error () else
     match s.[i] with
-    | '0' .. '9' -> loop_num myset i 0
+    | '0' .. '9' ->
+        let i, n1, n2 = get_range i in
+        for n = n1 to min n2 last_warning_number do myset n done;
+        loop i
     | 'A' .. 'Z' ->
        List.iter myset (letter (Char.lowercase s.[i]));
        loop (i+1)
@@ -161,20 +179,6 @@ let parse_opt flags s =
        List.iter myset (letter s.[i]);
        loop (i+1)
     | _ -> error ()
-  and loop_num myset i n =
-    if n > last_warning_number then ignore_num i
-    else if i >= String.length s then myset n
-    else
-    match s.[i] with
-    | '0' .. '9' ->
-       loop_num myset (i+1) (10 * n + Char.code s.[i] - Char.code '0')
-    | _ -> myset n; loop i
-  and ignore_num i =
-    if i < String.length s then begin
-      match s.[i] with
-      | '0' .. '9' -> ignore_num (i+1)
-      | _ -> loop i
-    end
   in
   loop 0
 ;;
@@ -183,7 +187,7 @@ let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in driver/main_args.ml
    and in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-28-29";;
+let defaults_w = "+a-4-6-7-9-27..29";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
