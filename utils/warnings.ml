@@ -162,8 +162,8 @@ let parse_opt flags s =
        loop (i+1)
     | _ -> error ()
   and loop_num myset i n =
-    if i >= String.length s then myset n
-    else if n > last_warning_number then ignore_num i
+    if n > last_warning_number then ignore_num i
+    else if i >= String.length s then myset n
     else
     match s.[i] with
     | '0' .. '9' ->
