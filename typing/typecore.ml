@@ -305,11 +305,45 @@ let rec build_as_type env p =
   | Tpat_any | Tpat_var _ | Tpat_constant _
   | Tpat_array _ | Tpat_lazy _ -> p.pat_type
 
+(* Narrowing unbound identifier errors. *)
+let rec narrow_unbound_lid_error env loc lid make_error =
+  let module_is_bound mlid =
+    ignore (Env.lookup_module mlid env) in
+  match lid with
+  | Longident.Lident _ -> make_error lid
+  | Longident.Ldot (mlid, _) ->
+    begin
+      try
+        module_is_bound mlid;
+        make_error lid with
+      | Not_found -> Error (loc, Unbound_module mlid)
+    end
+  | Longident.Lapply (flid, mlid) ->
+    begin
+      try
+        module_is_bound flid;
+        begin
+          try
+            module_is_bound mlid;
+            make_error lid with
+          | Not_found -> Error (loc, Unbound_module mlid)
+        end with
+      | Not_found -> Error (loc, Unbound_functor flid)
+    end
+;;
+
+let unbound_lid_error env loc lid make_error =
+  let err = narrow_unbound_lid_error env loc lid make_error in
+  raise err
+;;
+
 let build_or_pat env loc lid =
   let path, decl =
     try Env.lookup_type lid env
     with Not_found ->
-      raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
+      unbound_lid_error env loc lid
+        (fun lid ->
+         Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
   let row0 =
@@ -468,7 +502,8 @@ let rec type_pat env sp =
               Env.lookup_constructor (Longident.Lident s) Env.initial
           | _ -> Env.lookup_constructor lid env
         with Not_found ->
-          raise(Error(loc, Unbound_constructor lid)) in
+          unbound_lid_error env loc lid
+            (fun lid -> Error(loc, Unbound_constructor lid)) in
       let sargs =
         match sarg with
           None -> []
@@ -513,7 +548,8 @@ let rec type_pat env sp =
           try
             Env.lookup_label lid env
           with Not_found ->
-            raise(Error(loc, Unbound_label lid)) in
+            unbound_lid_error env loc lid
+              (fun lid -> Error(loc, Unbound_label lid)) in
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
         if vars = [] then end_def ();
@@ -1018,37 +1054,6 @@ let unify_exp env exp expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
 
-let rec narrow_unbound_lid_error env make_error lid =
-  let module_is_bound mlid =
-    ignore (Env.lookup_module mlid env) in
-  match lid with
-  | Longident.Lident _ -> make_error lid
-  | Longident.Ldot (mlid, _) ->
-    begin
-      try
-        module_is_bound mlid;
-        make_error lid with
-      | Not_found -> Unbound_module mlid
-    end
-  | Longident.Lapply (flid, mlid) ->
-    begin
-      try
-        module_is_bound flid;
-        begin
-          try
-            module_is_bound mlid;
-            make_error lid with
-          | Not_found -> Unbound_module mlid
-        end with
-      | Not_found -> Unbound_functor flid
-    end
-;;
-
-let unbound_ident_error loc env make_error lid =
-  let err = narrow_unbound_lid_error env make_error lid in
-  raise (Error (loc, err))
-;;
-
 let rec type_exp env sexp =
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
@@ -1083,7 +1088,8 @@ let rec type_exp env sexp =
           exp_type = instance desc.val_type;
           exp_env = env }
       with Not_found ->
-        unbound_ident_error loc env (fun lid -> Unbound_value lid) lid
+        unbound_lid_error env loc lid
+          (fun lid -> Error (loc, Unbound_value lid))
       end
   | Pexp_constant cst ->
       re {
@@ -1187,7 +1193,8 @@ let rec type_exp env sexp =
           try
             Env.lookup_label lid env
           with Not_found ->
-            raise(Error(loc, Unbound_label lid)) in
+            unbound_lid_error env loc lid
+              (fun lid -> Error (loc, Unbound_label lid)) in
         begin_def ();
         if !Clflags.principal then begin_def ();
         let (vars, ty_arg, ty_res) = instance_label true label in
@@ -1262,7 +1269,8 @@ let rec type_exp env sexp =
         try
           Env.lookup_label lid env
         with Not_found ->
-          raise(Error(loc, Unbound_label lid)) in
+          unbound_lid_error env loc lid
+            (fun lid -> Error (loc, Unbound_label lid)) in
       let (_, ty_arg, ty_res) = instance_label false label in
       unify_exp env arg ty_res;
       re {
@@ -1276,7 +1284,8 @@ let rec type_exp env sexp =
         try
           Env.lookup_label lid env
         with Not_found ->
-          raise(Error(loc, Unbound_label lid)) in
+          unbound_lid_error env loc lid
+            (fun lid -> Error (loc, Unbound_label lid)) in
       if label.lbl_mut = Immutable then
         raise(Error(loc, Label_not_mutable lid));
       begin_def ();
@@ -1524,8 +1533,10 @@ let rec type_exp env sexp =
       end
   | Pexp_new cl ->
       let (cl_path, cl_decl) =
-        try Env.lookup_class cl env with Not_found ->
-          raise(Error(loc, Unbound_class cl))
+        try Env.lookup_class cl env with
+        | Not_found ->
+          unbound_lid_error env loc cl
+            (fun lid -> Error (loc, Unbound_class lid))
       in
         begin match cl_decl.cty_new with
           None ->
@@ -1949,7 +1960,8 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
     try
       Env.lookup_constructor lid env
     with Not_found ->
-      raise(Error(loc, Unbound_constructor lid)) in
+      unbound_lid_error env loc lid
+        (fun lid -> Error (loc, Unbound_constructor lid)) in
   let sargs =
     match sarg with
       None -> []
