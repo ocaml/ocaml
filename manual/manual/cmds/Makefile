@@ -1,5 +1,5 @@
 FILES=comp.tex top.tex runtime.tex native.tex lexyacc.tex intf-c.tex \
-  depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex
+  depend.tex profil.tex debugger.tex browser.tex ocamldoc.tex warnings.tex
 
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
@@ -26,3 +26,5 @@ lexyacc.tex: lexyacc.etex $(TRANSF)
 debugger.tex: debugger.etex $(TRANSF)
 	$(TRANSF) < debugger.etex | $(TEXQUOTE) > debugger.tex
 
+warnings.tex: ../warnings.tex
+	cp ../warnings.tex .

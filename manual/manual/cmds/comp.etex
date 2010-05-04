@@ -189,6 +189,9 @@ required in order to be able to debug the program with "ocamldebug"
 the program terminates on an uncaught exception (see
 section~\ref{ocamlrun-options}).
 
+\item["-help-warnings"]
+Show description for all available warning numbers.
+
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
@@ -390,73 +393,7 @@ to \var{lowercase-letter}.
 Warning numbers which are out of the range of warnings that are currently defined are
 ignored. The warning numbers are as follows.
 \begin{options}
-
-\item[1] Suspicious-looking start-of-comment mark.
-
-\item[2] Suspicious-looking end-of-comment mark.
-
-\item[3] Deprecated syntax.
-
-\item[4] Fragile pattern matching: matching that will remain
-complete even if additional constructors are added to one of the
-variant types matched.
-
-\item[5] Partially applied function: expression whose result has
-function type and is ignored.
-
-\item[6] Label omitted in function application.
-
-\item[7] Some methods are overriden in the class where they are defined.
-
-\item[8] Partial match: missing cases in pattern-matching.
-
-\item[9] Missing fields in a record pattern.
-
-\item[10] Expression on the left-hand side of a sequence that doesn't
-have type "unit" (and that is not a function, see warning number 5).
-
-\item[11] Redundant case in a pattern matching (unused match case).
-
-\item[12] Redundant sub-pattern in a pattern-matching.
-
-\item[13] Override of an instance variable.
-
-\item[14] Illegal backslash escape in a string constant.
-
-\item[15] Private method made public implicitly.
-
-\item[16] Unerasable optional argument.
-
-\item[17] Undeclared virtual method.
-
-\item[18] Non-principal type.
-
-\item[19] Type without principality.
-
-\item[20] Unused function argument.
-
-\item[21] Non-returning statement.
-
-\item[22] Camlp4 warning.
-
-\item[23] Useless record "with" clause.
-
-\item[24] Bad module name: the source file name is not a valid OCaml
-module name.
-
-\item[25] Pattern-matching with all clauses guarded.
-
-\item[26] Suspicious unused variable: unused variable that is bound with
-"let" or "as", and doesn't start with an underscore ("_") character.
-
-\item[27] Innocuous unused variable: unused variable that is not bound with
-"let" nor "as", and doesn't start with an underscore ("_") character.
-
-\item[28] Wildcard pattern given as argument to a constant constructor.
-
-\item[29] Unescaped end-of-line in a string constant (non-portable code).
-
-\item[30] Two labels or constructors of the same name are defined in two mutually recursive types.
+\input{warnings.tex}
 \end{options}
 
 The letters stand for the following sets of warnings.  Any letter not

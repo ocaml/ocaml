@@ -1,6 +1,6 @@
 # $Id$
 
-FILES=allfiles.tex biblio.tex foreword.tex version.tex
+FILES=allfiles.tex biblio.tex foreword.tex version.tex warnings.tex
 TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
@@ -99,6 +99,7 @@ clean:
 	cd htmlman; rm -f index.html manual*.html *.haux *.hind
 	cd textman; rm -f manual.txt *.haux *.hind
 	cd infoman; rm -f ocaml.info ocaml.info-*  *.haux *.hind
+	rm warnings.tex
 
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
@@ -119,3 +120,6 @@ release:
 
 version.tex: $(SRC)/stdlib/sys.ml
 	sed -n -e 's/^\([0-9]*\.[0-9]*\).*$$/\\def\\ocamlversion{\1}/p' $(SRC)/VERSION > version.tex
+
+warnings.tex: $(SRC)/utils/warnings.ml
+	$(SRC)/boot/ocamlrun $(SRC)/ocamlc -help-warnings | sed -e 's/^ *\([0-9][0-9]*\)\(.*\)/\\item[\1] \2/' > warnings.tex
