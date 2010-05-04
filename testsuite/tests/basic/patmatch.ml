@@ -51,6 +51,35 @@ let l = function
 
 open Printf
 
+external string_create: int -> string = "caml_create_string"
+external unsafe_chr: int -> char = "%identity"
+external string_unsafe_set : string -> int -> char -> unit
+                           = "%string_unsafe_set"
+
+(* The following function is roughly equivalent to Char.escaped,
+   except that it is locale-independent. *)
+let escaped = function
+  | '\'' -> "\\'"
+  | '\\' -> "\\\\"
+  | '\n' -> "\\n"
+  | '\t' -> "\\t"
+  | '\r' -> "\\r"
+  | '\b' -> "\\b"
+  | c ->
+    if ((k c) <> "othr") && ((Char.code c) <= 191) then begin
+      let s = string_create 1 in
+      string_unsafe_set s 0 c;
+      s
+    end else begin
+      let n = Char.code c in
+      let s = string_create 4 in
+      string_unsafe_set s 0 '\\';
+      string_unsafe_set s 1 (unsafe_chr (48 + n / 100));
+      string_unsafe_set s 2 (unsafe_chr (48 + (n / 10) mod 10));
+      string_unsafe_set s 3 (unsafe_chr (48 + n mod 10));
+      s
+    end
+
 let _ =
   for i = -5 to 10 do printf "f(%d) = %d\n" i (f i) done;
   List.iter (fun i -> printf "g(%d) = %d\n" i (g i))
@@ -62,7 +91,7 @@ let _ =
   done;
   for i = 0 to 255 do
     let c = Char.chr i in
-    printf "k(%s) = %s\t" (Char.escaped c) (k c)
+    printf "k(%s) = %s\t" (escaped c) (k c)
   done;
   printf "\n";
   printf "p([|\"hello\"|]) = %s\n" (p [|"hello"|]);
