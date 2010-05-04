@@ -18,9 +18,21 @@
 #define ALIGN 16
 #endif
 
-        .globl  _call_gen_code
+#ifdef SYS_macosx
+#define CALL_GEN_CODE _call_gen_code
+#define CAML_C_CALL _caml_c_call
+#define CAML_NEGF_MASK _caml_negf_mask
+#define CAML_ABSF_MASK _caml_absf_mask
+#else
+#define CALL_GEN_CODE call_gen_code
+#define CAML_C_CALL caml_c_call
+#define CAML_NEGF_MASK caml_negf_mask
+#define CAML_ABSF_MASK caml_absf_mask
+#endif
+
+        .globl  CALL_GEN_CODE
         .align  ALIGN
-_call_gen_code:
+CALL_GEN_CODE:
         pushq   %rbx
         pushq   %rbp
         pushq   %r12
@@ -41,9 +53,9 @@ _call_gen_code:
         popq    %rbx
         ret
 
-        .globl  caml_c_call
+        .globl  CAML_C_CALL
         .align  ALIGN
-caml_c_call:
+CAML_C_CALL:
         jmp     *%rax
 
 #ifdef SYS_macosx
@@ -51,13 +63,13 @@ caml_c_call:
 #else
 	.section	.rodata.cst8,"aM",@progbits,8
 #endif
-        .globl  _caml_negf_mask
+        .globl  CAML_NEGF_MASK
         .align  ALIGN
-_caml_negf_mask:
+CAML_NEGF_MASK:
 	.quad	0x8000000000000000, 0
-        .globl  _caml_absf_mask
+        .globl  CAML_ABSF_MASK
         .align  ALIGN
-_caml_absf_mask:
+CAML_ABSF_MASK:
 	.quad	0x7FFFFFFFFFFFFFFF, 0
 
         .comm   young_limit, 8
