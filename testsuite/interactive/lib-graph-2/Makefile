@@ -1,6 +1,6 @@
-MODULES=
+#MODULES=
 MAIN_MODULE=graph_test
-ADD_COMPFLAGS=
+#ADD_COMPFLAGS=
 LIBRARIES=graphics
 
 include ../../makefiles/Makefile.one

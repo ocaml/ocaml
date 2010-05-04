@@ -1,4 +1,4 @@
-MODULES=
+#MODULES=
 MAIN_MODULE=io
 EXEC_ARGS=io.ml
 

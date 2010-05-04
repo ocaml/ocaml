@@ -1,4 +1,4 @@
-MODULES=
+#MODULES=
 MAIN_MODULE=wc
 EXEC_ARGS=wc.ml
 

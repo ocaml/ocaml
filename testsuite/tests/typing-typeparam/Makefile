@@ -1,4 +1,4 @@
-MODULES=
+#MODULES=
 MAIN_MODULE=newtype
 ADD_COMPFLAGS=-w a
 

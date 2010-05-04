@@ -1,4 +1,4 @@
-MODULES=
+#MODULES=
 MAIN_MODULE=globroots
 C_FILES=globrootsprim
 ADD_COMPFLAGS=-w a

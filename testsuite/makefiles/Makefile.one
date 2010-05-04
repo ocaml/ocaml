@@ -10,10 +10,13 @@ ML_YACC_FILES=$(YACC_MODULES:=.ml)
 MLI_YACC_FILES=$(YACC_MODULES:=.mli)
 ML_FILES=$(ML_LEX_FILES) $(ML_YACC_FILES)
 O_FILES=$(C_FILES:=.o)
+ADD_CMO_FILES=$(ADD_MODULES:=.cmo)
+ADD_CMX_FILES=$(ADD_MODULES:=.cmx)
 
 GENERATED_SOURCES=$(ML_LEX_FILES) $(ML_YACC_FILES) $(MLI_YACC_FILES)
 
-ADD_CFLAGS+=`if [ -z $(C_FILES) ]; then true; else echo '-custom'; fi`
+CUSTOM_FLAG=`if [ -z "$(C_FILES)" ]; then true; else echo '-custom'; fi`
+ADD_CFLAGS+=$(CUSTOM_FLAG)
 
 default: compile run
 
@@ -21,8 +24,8 @@ compile: $(ML_FILES) $(CMO_FILES) $(CMX_FILES) $(MAIN_MODULE).cmo $(MAIN_MODULE)
 	@for file in $(C_FILES); do \
 	  $(NATIVECC) $(NATIVECCCOMPOPTS) -c -I$(TOPDIR)/byterun $$file.c; \
 	done;
-	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_MODULES:=.cmo) $(MAIN_MODULE).cmo
-	@$(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(ADD_MODULES:=.cmx) $(MAIN_MODULE).cmx
+	@$(OCAMLC) $(ADD_COMPFLAGS) $(ADD_CFLAGS) -o program.byte $(O_FILES) $(CMA_FILES) $(CMO_FILES) $(ADD_CMO_FILES) $(MAIN_MODULE).cmo
+	@$(OCAMLOPT) $(ADD_COMPFLAGS) -o program.native $(O_FILES) $(CMXA_FILES) $(CMX_FILES) $(ADD_CMX_FILES) $(MAIN_MODULE).cmx
 
 run:
 	@printf " ... testing with ocamlc"

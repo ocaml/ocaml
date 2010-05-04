@@ -15,7 +15,7 @@ OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib$(EXE)
 OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj$(EXE)
-COMPFLAGS=
+#COMPFLAGS=
 FORTRAN_COMPILER=/sw/bin/gcc
 FORTRAN_LIBRARY=/sw/lib/gcc4.3/lib/libgfortran.a
 

@@ -1,4 +1,4 @@
-MODULES=
+#MODULES=
 MAIN_MODULE=manyargs
 C_FILES=manyargsprim
 
