@@ -119,6 +119,10 @@ val open_in : string -> in_channel;;
 val open_in_bin : string -> in_channel;;
 (** Bufferized file reading in binary mode. *)
 
+val close_in : in_channel -> unit;;
+(** Close the [Pervasives.input_channel] associated with the given
+  [Scanning.in_channel]. *)
+
 val from_file : string -> in_channel;;
 (** An alias for [open_in] above. *)
 val from_file_bin : string -> in_channel;;

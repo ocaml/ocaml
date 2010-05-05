@@ -414,10 +414,6 @@ let bad_input_escape c =
   bad_input (Printf.sprintf "illegal escape character %C" c)
 ;;
 
-let bad_input_char message c =
-  bad_input (Printf.sprintf "found character %C which is not %s" c message)
-;;
-
 let bad_token_length message =
   bad_input
     (Printf.sprintf
@@ -707,7 +703,7 @@ let scan_optionally_signed_int max ib =
   scan_unsigned_int max ib
 ;;
 
-let scan_int_conv conv max ib =
+let scan_int_conv conv max _min ib =
   match conv with
   | 'b' -> scan_binary_int max ib
   | 'd' -> scan_optionally_signed_decimal_int max ib
@@ -1363,6 +1359,7 @@ let scan_format ib ef fmt rv f =
     and scan_conversion skip max_opt min_opt ir f i =
       let stack = if skip then no_stack else stack in
       let max = int_max max_opt in
+      let min = int_min min_opt in
       match Sformat.get fmt i with
       | '%' as conv ->
         check_char ib conv; scan_fmt ir f (succ i)
@@ -1388,7 +1385,7 @@ let scan_format ib ef fmt rv f =
         let _x = scan_Char max ib in
         scan_fmt ir (stack f (token_char ib)) (succ i)
       | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-        let _x = scan_int_conv conv max ib in
+        let _x = scan_int_conv conv max min ib in
         scan_fmt ir (stack f (token_int conv ib)) (succ i)
       | 'N' as conv ->
         scan_fmt ir (stack f (get_count conv ib)) (succ i)
