@@ -1,6 +1,7 @@
 # $Id$
 
 BASEDIR=${PWD}
+NO_PRINT=`($(MAKE) empty --no-print-directory > /dev/null 2>&1) && echo '--no-print-directory' || echo ''`
 
 default:
 	@echo "Available targets:"
@@ -13,7 +14,7 @@ default:
 
 all:
 	@for dir in tests/*; do \
-	  $(MAKE) one DIR=$$dir; \
+	  $(MAKE) $(NO_PRINT) one DIR=$$dir; \
 	done 2>&1 | tee _log
 	@$(MAKE) report
 
@@ -21,7 +22,7 @@ list:
 	@if [ -z $(FILE) ]; then echo "No value set for variable 'FILE'."; exit 1; fi
 	@if [ ! -f $(FILE) ]; then echo "File '$(FILE)' does not exist."; exit 1; fi
 	@while read LINE; do \
-	  $(MAKE) one DIR=$$LINE; \
+	  $(MAKE) $(NO_PRINT) one DIR=$$LINE; \
 	done < $(FILE) 2>&1 | tee _log
 	@$(MAKE) report
 
@@ -55,5 +56,7 @@ report: FORCE
 	@echo '  ' `grep 'failed$$' _log | wc -l` 'test(s) failed'
 	@echo '  ' `grep '^Error' _log | wc -l` 'compilation error(s)'
 	@echo '  ' `grep '^Warning' _log | wc -l` 'compilation warning(s)'
+
+empty: FORCE
 
 FORCE:
