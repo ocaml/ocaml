@@ -14,6 +14,9 @@ FORTRAN_LIB=`if [ -z "$(F_FILES)" ]; then true; else echo '$(FORTRAN_LIBRARY)'; 
 ADD_CFLAGS+=$(FORTRAN_LIB)
 ADD_OPTFLAGS+=$(FORTRAN_LIB)
 
+check:
+	@if [ -n "$(FORTRAN_COMPILER)" -o -z "$(F_FILES)" ]; then $(MAKE) run-all; fi
+
 run-all:
 	@for file in $(C_FILES); do \
 	  $(CC) -c -I$(PREFIX)/lib/ocaml/caml $$file.c; \

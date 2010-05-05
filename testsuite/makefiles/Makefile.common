@@ -16,8 +16,8 @@ OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
 OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
 DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj$(EXE)
 #COMPFLAGS=
-FORTRAN_COMPILER=/sw/bin/gcc
-FORTRAN_LIBRARY=/sw/lib/gcc4.3/lib/libgfortran.a
+#FORTRAN_COMPILER=
+#FORTRAN_LIBRARY=
 
 defaultclean:
 	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
