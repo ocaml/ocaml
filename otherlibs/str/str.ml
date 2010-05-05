@@ -29,7 +29,7 @@ module Charset =
   struct
     type t = string (* of length 32 *)
 
-    let empty = String.make 32 '\000'
+    (*let empty = String.make 32 '\000'*)
     let full = String.make 32 '\255'
 
     let make_empty () = String.make 32 '\000'
@@ -44,9 +44,9 @@ module Charset =
     let singleton c =
       let s = make_empty () in add s c; s
 
-    let range c1 c2 =
+    (*let range c1 c2 =
       let s = make_empty () in add_range s c1 c2; s
-
+    *)
     let complement s =
       let r = String.create 32 in
       for i = 0 to 31 do
