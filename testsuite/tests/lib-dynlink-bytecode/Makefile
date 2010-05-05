@@ -16,17 +16,17 @@ compile:
 
 run:
 	@printf " ... testing 'main'"
-	@LD_LIBRARY_PATH=. ./main plug1.cma plug2.cma > main.result
+	@export LD_LIBRARY_PATH=`pwd` && ./main plug1.cma plug2.cma > main.result
 	@diff -q main.reference main.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
 	@printf " ... testing 'static'"
-	@./static > static.result
+	@export LD_LIBRARY_PATH=`pwd` && ./static > static.result
 	@diff -q static.reference static.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
 	@printf " ... testing 'custom'"
-	@./custom > custom.result
+	@export LD_LIBRARY_PATH=`pwd` && ./custom > custom.result
 	@diff -q custom.reference custom.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
