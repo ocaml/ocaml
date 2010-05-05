@@ -296,19 +296,20 @@ let check_fatal () =
 
 let descriptions =
   [
-   1, "Suspicious-looking start-of-comment mark.";
-   2, "Suspicious-looking end-of-comment mark.";
-   3, "Deprecated syntax.";
-   4, "Fragile pattern matching: matching that will remain complete even\n\
-  \    if additional constructors are added to one of the variant types matched.";
-   5, "Partially applied function: expression whose result has function\n\
-  \    type and is ignored.";
-   6, "Label omitted in function application.";
-   7, "Some methods are overriden in the class where they are defined.";
-   8, "Partial match: missing cases in pattern-matching.";
-   9, "Missing fields in a record pattern.";
-   10, "Expression on the left-hand side of a sequence that doesn't have type \"unit\"\n\
-   \    (and that is not a function, see warning number 5).";
+    1, "Suspicious-looking start-of-comment mark.";
+    2, "Suspicious-looking end-of-comment mark.";
+    3, "Deprecated syntax.";
+    4, "Fragile pattern matching: matching that will remain complete even\n\
+   \    if additional constructors are added to one of the variant types\n\
+   \    matched.";
+    5, "Partially applied function: expression whose result has function\n\
+   \    type and is ignored.";
+    6, "Label omitted in function application.";
+    7, "Some methods are overriden in the class where they are defined.";
+    8, "Partial match: missing cases in pattern-matching.";
+    9, "Missing fields in a record pattern.";
+   10, "Expression on the left-hand side of a sequence that doesn't have type\n\
+   \    \"unit\" (and that is not a function, see warning number 5).";
    11, "Redundant case in a pattern matching (unused match case).";
    12, "Redundant sub-pattern in a pattern-matching.";
    13, "Override of an instance variable.";
@@ -323,14 +324,17 @@ let descriptions =
    22, "Camlp4 warning.";
    23, "Useless record \"with\" clause.";
    24, "Bad module name: the source file name is not a valid OCaml module name.";
-   25, "Pattern-matching with all clauses guarded.";
-   26, "Suspicious unused variable: unused variable that is bound with \"let\" or \"as\",\n\
-   \    and doesn't start with an underscore (\"_\") character.";
-   27, "Innocuous unused variable: unused variable that is not bound with \"let\" nor \"as\",\n\
-   \    and doesn't start with an underscore (\"_\") character.";
+   25, "Pattern-matching with all clauses guarded.  Exhaustiveness cannot be\n\
+   \    checked";
+   26, "Suspicious unused variable: unused variable that is bound with \"let\"\n\
+   \    or \"as\", and doesn't start with an underscore (\"_\") character.";
+   27, "Innocuous unused variable: unused variable that is not bound with\n\
+   \    \"let\" nor \"as\", and doesn't start with an underscore (\"_\")\n\
+   \    character.";
    28, "Wildcard pattern given as argument to a constant constructor.";
    29, "Unescaped end-of-line in a string constant (non-portable code).";
-   30, "Two labels or constructors of the same name are defined in two mutually recursive types.";
+   30, "Two labels or constructors of the same name are defined in two\n\
+   \    mutually recursive types.";
   ]
 
 let help_warnings () =
