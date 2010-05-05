@@ -1413,7 +1413,7 @@ let scan_format ib ef fmt rv f =
         match Sformat.get fmt i with
         (* This is in fact an integer conversion (e.g. %ld, %ni, or %Lo). *)
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv1 ->
-          let _x = scan_int_conv conv1 max ib in
+          let _x = scan_int_conv conv1 max min ib in
           (* Look back to the character that triggered the integer conversion
              (this character is either 'l', 'n' or 'L') to find the
              conversion to apply to the integer token read. *)
