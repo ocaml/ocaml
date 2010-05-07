@@ -479,9 +479,43 @@ will not warn.  This warning can help spot program points where record
 patterns may need to be modified after new fields were added to a
 record type.
 
-\section{Explicit naming of generic types}
+\section{Explicit polymorphic type annotations}
+\ikwd{let\@\texttt{let}}
+\begin{syntax}
+let-binding:
+          ...
+        | value-name ':' poly-typexpr '=' expr
+\end{syntax}
+
+Polymorphic type annotations in "let"-definitions behave in a way
+similar to polymorphic methods: they explicitly require the defined
+value to be polymorphic, and allow one to use this polymorphism in
+recursive occurences (when using "let rec"). Note however that this
+is just an usual polymorphic type, unifiable with any instance of
+itself.
+
+There two possible applications of this feature. One is polymorphic
+recursion:
+\begin{verbatim}
+        type 'a t = Leaf of 'a | Node of ('a * 'a) t
+        let rec depth : 'a. 'a t -> 'b = function
+            Leaf _ -> 1
+          | Node x -> 1 + depth x
+\end{verbatim}
+Note that "'b" is not explicitly polymorphic here, and it will
+actually be unified with "int".
+
+The other application is to ensure that some definition is sufficiently
+polymorphic.
+\caml
+\?let id : 'a. 'a -> 'a = \<fun x -> x+1\> ;;
+\:Error: This definition has type int -> int which is less general than
+\:         'a. 'a -> 'a
+\endcaml
+
+\section{Explicit naming of type variables}
 \ikwd{type\@\texttt{type}}
-\ikwd{type\@\texttt{fun}}
+\ikwd{fun\@\texttt{fun}}
 
 \begin{syntax}
 parameter:
@@ -507,17 +541,17 @@ and even use the alternative syntax for declaring functions:
         let f (type t) (foo : t list) = ...
 \end{verbatim}
 
-The construction is useful because the type constructor it introduces
-can be used where a type variable is not allowed. For instance, one
-can use it to define an exception in a local module within a
-polymorphic function.
+This construction is useful because the type constructor it introduces
+can be used in places where a type variable is not allowed. For
+instance, one can use it to define an exception in a local module
+within a polymorphic function.
 \begin{verbatim}
         let f (type t) () =
           let module M = struct exception E of t end in
           (fun x -> M.E x), (function M.E x -> Some x | _ -> None)
 \end{verbatim}
 
-Another example:
+Here is another example:
 \begin{verbatim}
         let sort_uniq (type s) (cmp : s -> s -> int) =
           let module S = Set.Make(struct type t = s let compare = cmp end) in
@@ -525,7 +559,10 @@ Another example:
             S.elements (List.fold_right S.add l S.empty)
 \end{verbatim}
 
-The construction is also extremely useful with first-class modules.
+This construction by itself does not make polymorphic the type
+variable it introduces, but it can be combined with explicit
+polymorphic annotations where needed. It is also extremely useful for
+first-class modules.
 
 \section{First-class modules}
 \ikwd{module\@\texttt{module}}
@@ -602,55 +639,36 @@ Algebraic Data Types. To demonstrate this, we first define a type
 of witnesses for type equalities:
 
 \begin{verbatim}
-        module TypEq :
-          sig
-            type ('a, 'b) t
-            val apply: ('a, 'b) t -> 'a -> 'b
-            val refl: ('a, 'a) t
-            val sym: ('a, 'b) t -> ('b, 'a) t
-          end
-          =
-          struct
-            type ('a, 'b) t = ('a -> 'b) * ('b -> 'a)
-            let refl = (fun x -> x), (fun x -> x)
-            let apply (f, _) x = f x
-            let sym (f, g) = (g, f)
-          end
+        module TypEq : sig
+          type ('a, 'b) t
+          val apply: ('a, 'b) t -> 'a -> 'b
+          val refl: ('a, 'a) t
+          val sym: ('a, 'b) t -> ('b, 'a) t
+        end = struct
+          type ('a, 'b) t = ('a -> 'b) * ('b -> 'a)
+          let refl = (fun x -> x), (fun x -> x)
+          let apply (f, _) x = f x
+          let sym (f, g) = (g, f)
+        end
 \end{verbatim}
 
 We can then define a paramatrized algebraic data type whose
 constructors provide some information about the type parameter:
 
 \begin{verbatim}
-        module rec Typ :
-          sig
-            module type PAIR =
-              sig
-                type t
-                type t1
-                type t2
-                val eq: (t, t1 * t2) TypEq.t
-                val t1: t1 Typ.typ
-                val t2: t2 Typ.typ
-              end
-
-            type 'a typ =
-              | Int of ('a, int) TypEq.t
-              | String of ('a, string) TypEq.t
-              | Pair of (module PAIR with type t = 'a)
+        module rec Typ : sig
+          module type PAIR = sig
+            type t and t1 and t2
+            val eq: (t, t1 * t2) TypEq.t
+            val t1: t1 Typ.typ
+            val t2: t2 Typ.typ
           end
-          =
-          struct
-            module type PAIR =
-              sig
-                include Typ.PAIR
-              end
 
-            type 'a typ =
-              | Int of ('a, int) TypEq.t
-              | String of ('a, string) TypEq.t
-              | Pair of (module PAIR with type t = 'a)
-          end
+          type 'a typ =
+            | Int of ('a, int) TypEq.t
+            | String of ('a, string) TypEq.t
+            | Pair of (module PAIR with type t = 'a)
+        end = Typ
 \end{verbatim}
 
 Values of type "'a typ" are supposed to be runtime representations for
@@ -687,6 +705,7 @@ runtime representation of some type "'a" and a value of the same type,
 then pretty-print the value as a string:
 
 \begin{verbatim}
+        open Typ
         let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
           fun (type s) t x ->
             match t with
@@ -698,7 +717,8 @@ then pretty-print the value as a string:
                 Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
 \end{verbatim}
 
-Note that the function uses polymorphic recursion.
+Note that this function uses an explicit polymorphic annotation to obtain
+polymorphic recursion.
 
 \section{Recovering the type of a module}
 
@@ -734,3 +754,64 @@ construct at the structure level this time:
           let replace t k v = remove t k; add t k v
         end
 \end{verbatim}
+
+\section{Substituting inside a signature}
+\ikwd{with\@\texttt{with}}
+\ikwd{module\@\texttt{module}}
+\ikwd{type\@\texttt{type}}
+
+\begin{syntax}
+mod-constraint:
+          ...
+        | 'type' [type-parameters] typeconstr-name ':=' [type-parameters] typeconstr
+        | 'module' module-name ':=' extended-module-path
+;
+\end{syntax}
+
+``Destructive'' substitution ("with ... :=") behaves essentially like
+normal signature constraints ("with ... ="), but it additionally removes
+the redefined type or module from the signature. There are a number of
+restrictions: one can only remove types and modules at the outermost
+level (not inside submodules), and the definition must be either
+another type constructor (with identical type parameters), or a module
+path.
+
+A natural application of destructive substitution is merging two
+signatures sharing a type name.
+\begin{verbatim}
+        module type Printable = sig
+          type t
+          val print : Format.formatter -> t -> unit
+        end
+        module type Comparable = sig
+          type t
+          val compare : t -> t -> int
+        end
+        module type PrintableComparable = sig
+          include Printable
+          include Comparable with type t := t
+        end
+\end{verbatim}
+
+One can also use this to completely remove a field:
+\caml
+\?module type S = Comparable with type t := int;;
+\:module type S = sig val compare : int -> int -> int end
+\endcaml
+or to rename one:
+\caml
+\?module type S = sig
+\?  type u
+\?  include Comparable with type t := u
+\?end;;
+\:module type S = sig type u val compare : u -> u -> int end
+\endcaml
+
+Note that you can also remove manifest types, by substituting with the
+same type.
+\caml
+\?module type ComparableInt = Comparable with type t = int
+\:module type ComparableInt = sig type t = int val compare : t -> t -> int end
+\?module type CompareInt = ComparableInt with type t := int ;;
+\:module type CompareInt = sig val compare : int -> int -> int end
+\endcaml
