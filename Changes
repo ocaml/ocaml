@@ -30,7 +30,21 @@ Language features:
   "S with type t1 = ... and ... and type tn = ..." (S refers to a module type).
 - Local opening of modules in a subexpression.
   Syntax: "let open M in e", or "M.(e)"
-- [SOMEONE MUST DOCUMENT method! HERE]  (See change to warning 7 below).
+- In class definitions, method and instance variable override can now
+  be made explicit, by writing "method!", "val!" or "inherit!" in place of
+  "method", "val" and "inherit". It is an error to override an
+  undefined member (or to use overriding inheritance when nothing get
+  overriden). Additionally, these constructs disactivate respectively
+  warnings 7 (method override, code 'M') and 13 (instance variable
+  override, code 'V'). Note that, by default, warning 7 is inactive
+  and warning 13 is active.
+- "Destructive" substitution in signatures.
+  By writing "<signature> with type t := <typeconstr>" and
+  "<signature> with module M := <module-path>" one replaces "t" and "M"
+  inside the signature, removing their respective fields. Among other
+  uses, this allows to merge two signatures containing identically
+  named fields.
+
 
 Compilers and toplevel:
 - Warnings are now numbered and can be switched on and off individually.
@@ -44,8 +58,9 @@ Compilers and toplevel:
   + 29 when an end-of-line appears unescaped in a string constant.
   + 30 when the same constructor or record field is defined twice in
     mutually-recursive type definitions.
-* The semantics of warning 7 (code 'M', method override) have changed,
-  and it is now disabled by default.
+* The semantics of warning 7 (code 'M', method override) have changed
+  (it now detects all overrides, not just repeated definitions inside
+  the same class body), and it is now inactive by default.
 - Better error report in case of unbound qualified identifier: if the module
   is unbound this error is reported in the first place.
 - Added option '-strict-sequence' to force left hand part of sequence to have
