@@ -815,3 +815,31 @@ same type.
 \?module type CompareInt = ComparableInt with type t := int ;;
 \:module type CompareInt = sig val compare : int -> int -> int end
 \endcaml
+
+\section{Explicit overriding in class definitions}
+\ikwd{method!\@\texttt{method!}}
+\ikwd{val!\@\texttt{val!}}
+\ikwd{inherit!\@\texttt{inherit!}}
+
+\begin{syntax}
+class-field:
+      ...
+   |  'inherit!' class-expr ['as' value-name]
+   |  'val!' ['mutable'] inst-var-name [':' typexpr] '=' expr
+   |  'method!' ['private'] method-name {parameter} [':' typexpr] '=' expr
+   |  'method!' ['private'] method-name ':' poly-typexpr '=' expr
+;
+\end{syntax}
+
+The keywords "inherit!", "val!" and "method!" have the same semantics
+as "inherit", "val" and "method", but they additionally require the
+definition they introduce to be an overriding. Namely, "method!"
+requires @method-name@ to be already defined in this class, "val!"
+requires @inst-var-name@ to be already defined in this class, and
+"inherit!" requires @class-expr@ to override some definitions.
+If no such overriding occurs, an error is signaled.
+
+As a side-effect, these 3 keywords avoid the warnings
+``method override'' and `` instance variable override''.
+As of Objective Caml 3.12, the warning ``method override'' has to be
+enabled manually for backwards compatibility reasons.
