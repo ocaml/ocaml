@@ -7,6 +7,8 @@ Objective Caml reference manual.
 
 \section{Integer literals for types "int32", "int64" and "nativeint"}
 
+(introduced in OCaml 3.07)
+
 \begin{syntax}
 int32-literal: integer-literal 'l'
 ;
@@ -27,6 +29,8 @@ provide operations on these integer types.
 \section{Streams and stream parsers}
 \label{s:streams}
 
+(removed in OCaml 3.03)
+
 The syntax for streams and stream parsers is no longer part of the
 Objective Caml language, but available through a Camlp4 syntax
 extension.  See the Camlp4 reference manual for more information.
@@ -38,6 +42,8 @@ that use the stream parser syntax should be compiled with the
 run "ocaml" and issue the \verb'#load "camlp4o.cma";;' command.
 
 \section{Recursive definitions of values} \label{s:letrecvalues}
+
+(introduced in OCaml 1.00)
 
 As mentioned in section~\ref{s:localdef}, the @'let rec'@ binding
 construct, in addition to the definition of recursive functions,
@@ -105,6 +111,8 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
 
 \section{Range patterns}
 
+(introduced in OCaml 1.00)
+
 In patterns, Objective Caml recognizes the form
 @"'" @c@ "'" ".." "'" @d@ "'"@
 (two character literals separated by~"..") as shorthand for the pattern
@@ -118,6 +126,8 @@ instance, the pattern "'0'..'9'" matches all characters that are digits.
 
 \section{Assertion checking}
 \ikwd{assert\@\texttt{assert}}
+
+(introduced in OCaml 1.06)
 
 Objective Caml supports the "assert" construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
@@ -135,6 +145,8 @@ is not turned off by the "-noassert" option).
 
 \section{Lazy evaluation}
 \ikwd{lazy\@\texttt{lazy}}
+
+(introduced in OCaml 1.06 for expressions; in OCaml 3.11.0 for patterns)
 
 The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
 encapsulates the computation of @expr@.  The argument @expr@ is not
@@ -165,6 +177,8 @@ standard library (see
 \ikwd{let\@\texttt{let}}
 \ikwd{module\@\texttt{module}}
 
+(introduced in OCaml 2.00)
+
 The expression
 @"let" "module" module-name "=" module-expr "in" expr@
 locally binds the module expression @module-expr@ to the identifier
@@ -182,6 +196,8 @@ It then returns the value of @expr@.  For example:
 \section{Recursive modules} \label{s-recursive-modules}
 \ikwd{module\@\texttt{module}}
 \ikwd{rec\@\texttt{rec}}
+
+(introduced in OCaml 3.07)
 
 \begin{syntax}
 definition:
@@ -263,6 +279,8 @@ and for row types (section~\ref{s-private-rows}).
 \subsection{Private variant and record types}
 \label{s-private-types-variant}
 
+(introduced in OCaml 3.07)
+
 \begin{syntax}
 type-representation:
           ...
@@ -301,6 +319,8 @@ parameters, their variance is the one explicitly given by prefixing
 the parameter by a `"+"' or a `"-"', it is invariant otherwise.
 
 \subsection{Private type abbreviations} \label{s-private-types-abbrev}
+
+(introduced in OCaml 3.11.0)
 
 \begin{syntax}
 type-equation:
@@ -347,6 +367,8 @@ N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
 
 \subsection{Private row types} \label{s-private-rows}
 \ikwd{private\@\texttt{private}}
+
+(introduced in OCaml 3.09.0)
 
 \begin{syntax}
 type-equation:
@@ -406,6 +428,8 @@ is not inferred, and must be given explicitly.
 \ikwd{let\@\texttt{let}}
 \ikwd{open\@\texttt{open}}
 
+(introduced in OCaml 3.12.0)
+
 \begin{syntax}
 expr:
        ...
@@ -429,6 +453,8 @@ closer to where it is used) and to refactor (because the code
 fragment is more self-contained).
 
 \section{Record notations}
+
+(introduced in OCaml 3.12.0)
 
 \begin{syntax}
 pattern:
@@ -481,6 +507,9 @@ record type.
 
 \section{Explicit polymorphic type annotations}
 \ikwd{let\@\texttt{let}}
+
+(introduced in OCaml 3.12.0)
+
 \begin{syntax}
 let-binding:
           ...
@@ -516,6 +545,8 @@ polymorphic.
 \section{Explicit naming of type variables}
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
+
+(introduced in OCaml 3.12.0)
 
 \begin{syntax}
 parameter:
@@ -568,6 +599,8 @@ first-class modules.
 \ikwd{module\@\texttt{module}}
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
+
+(introduced in OCaml 3.12.0)
 
 \begin{syntax}
 typexpr:
@@ -726,6 +759,8 @@ polymorphic recursion.
 \ikwd{type\@\texttt{type}}
 \ikwd{include\@\texttt{include}}
 
+(introduced in OCaml 3.12.0)
+
 \begin{syntax}
 module-type: 
      ...
@@ -759,6 +794,8 @@ construct at the structure level this time:
 \ikwd{with\@\texttt{with}}
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
+
+(introduced in OCaml 3.12.0)
 
 \begin{syntax}
 mod-constraint:
@@ -821,6 +858,8 @@ same type.
 \ikwd{val!\@\texttt{val!}}
 \ikwd{inherit!\@\texttt{inherit!}}
 
+(introduced in OCaml 3.12.0)
+
 \begin{syntax}
 class-field:
       ...
@@ -841,5 +880,5 @@ If no such overriding occurs, an error is signaled.
 
 As a side-effect, these 3 keywords avoid the warnings
 ``method override'' and `` instance variable override''.
-As of Objective Caml 3.12, the warning ``method override'' has to be
+As of Objective Caml 3.12.0, the warning ``method override'' has to be
 enabled manually for backwards compatibility reasons.

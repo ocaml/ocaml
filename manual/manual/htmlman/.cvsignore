@@ -3,5 +3,6 @@
 *.hind
 libref
 manual.hmanual
+manual.hmanual.kwd
 manual.css
 *.htoc

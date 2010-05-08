@@ -20,8 +20,8 @@ htmlgen: latexmacros.cmo latexscan.cmo latexmain.cmo
 latexscan.ml: latexscan.mll
 	ocamllex latexscan.mll
 
-caml-tex2: caml-tex2.cmo
-	ocamlc -o caml-tex2 str.cma unix.cma caml-tex2.cmo
+caml-tex2: caml_tex2.cmo
+	ocamlc -o caml-tex2 str.cma unix.cma caml_tex2.cmo
 #	ocamlc -custom -o caml-tex2 str.cma unix.cma caml-tex2.cmo \
 #		-cclib -lunix -cclib -lstr
 
