@@ -99,7 +99,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _g = set debug
-  let _help_warnings = Warnings.help_warnings
   let _i () = print_types := true; compile_only := true
   let _I s = include_dirs := s :: !include_dirs
   let _impl = impl
@@ -130,6 +129,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _version = print_version_string
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
+  let _warn_help = Warnings.help_warnings
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives

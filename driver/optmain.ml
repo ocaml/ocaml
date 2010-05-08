@@ -107,7 +107,6 @@ module Options = Main_args.Make_optcomp_options (struct
   let _config () = show_config ()
   let _for_pack s = for_package := Some s
   let _g = set debug
-  let _help_warnings = Warnings.help_warnings
   let _i () = print_types := true; compile_only := true
   let _I dir = include_dirs := dir :: !include_dirs
   let _impl = impl
@@ -139,6 +138,7 @@ module Options = Main_args.Make_optcomp_options (struct
   let _verbose = set verbose
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
+  let _warn_help = Warnings.help_warnings
   let _where () = print_standard_library ()
 
   let _nopervasives = set nopervasives

@@ -25,7 +25,6 @@ module type Bytecomp_options =
     val _dllib : string -> unit
     val _dllpath : string -> unit
     val _g : unit -> unit
-    val _help_warnings : unit -> unit
     val _i : unit -> unit
     val _I : string -> unit
     val _impl : string -> unit
@@ -55,6 +54,7 @@ module type Bytecomp_options =
     val _verbose : unit -> unit
     val _w : string -> unit
     val _warn_error : string -> unit
+    val _warn_help : unit -> unit
     val _where : unit -> unit
 
     val _nopervasives : unit -> unit
@@ -69,7 +69,6 @@ module type Bytecomp_options =
 ;;
 
 module type Bytetop_options = sig
-  val _help_warnings : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _labels : unit -> unit
@@ -85,6 +84,7 @@ module type Bytetop_options = sig
   val _version : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
+  val _warn_help : unit -> unit
 
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
@@ -105,7 +105,6 @@ module type Optcomp_options = sig
   val _config : unit -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
-  val _help_warnings : unit -> unit
   val _i : unit -> unit
   val _I : string -> unit
   val _impl : string -> unit
@@ -137,6 +136,7 @@ module type Optcomp_options = sig
   val _verbose : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
+  val _warn_help : unit -> unit
   val _where : unit -> unit
 
   val _nopervasives : unit -> unit
@@ -162,7 +162,6 @@ end;;
 
 module type Opttop_options = sig
   val _compact : unit -> unit
-  val _help_warnings : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _inline : int -> unit
@@ -180,6 +179,7 @@ module type Opttop_options = sig
   val _version : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
+  val _warn_help : unit -> unit
 
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit

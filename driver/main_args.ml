@@ -80,10 +80,6 @@ let mk_g_opt f =
   "-g", Arg.Unit f, " Record debugging information for exception backtrace"
 ;;
 
-let mk_help_warnings f =
-  "-help-warnings", Arg.Unit f, "  Show definition for warnings numbers"
-;;
-
 let mk_i f =
   "-i", Arg.Unit f, " Print inferred interface"
 ;;
@@ -282,6 +278,10 @@ let mk_warn_error f =
   \     Default setting is %S" Warnings.defaults_warn_error
 ;;
 
+let mk_warn_help f =
+  "-warn-help", Arg.Unit f, "  Show description of warning numbers"
+;;
+
 let mk_where f =
   "-where", Arg.Unit f, " Print location of standard library and exit"
 ;;
@@ -379,7 +379,6 @@ module type Bytecomp_options = sig
   val _dllib : string -> unit
   val _dllpath : string -> unit
   val _g : unit -> unit
-  val _help_warnings : unit -> unit
   val _i : unit -> unit
   val _I : string -> unit
   val _impl : string -> unit
@@ -409,6 +408,7 @@ module type Bytecomp_options = sig
   val _verbose : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
+  val _warn_help : unit -> unit
   val _where : unit -> unit
 
   val _nopervasives : unit -> unit
@@ -422,7 +422,6 @@ module type Bytecomp_options = sig
 end;;
 
 module type Bytetop_options = sig
-  val _help_warnings : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _labels : unit -> unit
@@ -438,6 +437,7 @@ module type Bytetop_options = sig
   val _version : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
+  val _warn_help : unit -> unit
 
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
@@ -458,7 +458,6 @@ module type Optcomp_options = sig
   val _config : unit -> unit
   val _for_pack : string -> unit
   val _g : unit -> unit
-  val _help_warnings : unit -> unit
   val _i : unit -> unit
   val _I : string -> unit
   val _impl : string -> unit
@@ -490,6 +489,7 @@ module type Optcomp_options = sig
   val _verbose : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
+  val _warn_help : unit -> unit
   val _where : unit -> unit
 
   val _nopervasives : unit -> unit
@@ -515,7 +515,6 @@ end;;
 
 module type Opttop_options = sig
   val _compact : unit -> unit
-  val _help_warnings : unit -> unit
   val _I : string -> unit
   val _init : string -> unit
   val _inline : int -> unit
@@ -533,6 +532,7 @@ module type Opttop_options = sig
   val _version : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
+  val _warn_help : unit -> unit
 
   val _dparsetree : unit -> unit
   val _drawlambda : unit -> unit
@@ -574,7 +574,6 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_byt ();
     mk_g_byt F._g;
-    mk_help_warnings F._help_warnings;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -608,6 +607,7 @@ struct
     mk_vmthread F._vmthread;
     mk_w F._w;
     mk_warn_error F._warn_error;
+    mk_warn_help F._warn_help;
     mk_where F._where;
 
     mk_nopervasives F._nopervasives;
@@ -624,7 +624,6 @@ end;;
 module Make_bytetop_options (F : Bytetop_options) =
 struct
   let list = [
-    mk_help_warnings F._help_warnings;
     mk_I F._I;
     mk_init F._init;
     mk_labels F._labels;
@@ -640,6 +639,7 @@ struct
     mk_version F._version;
     mk_w F._w;
     mk_warn_error F._warn_error;
+    mk_warn_help F._warn_help;
 
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
@@ -664,7 +664,6 @@ struct
     mk_dtypes F._annot;
     mk_for_pack_opt F._for_pack;
     mk_g_opt F._g;
-    mk_help_warnings F._help_warnings;
     mk_i F._i;
     mk_I F._I;
     mk_impl F._impl;
@@ -696,6 +695,7 @@ struct
     mk_verbose F._verbose;
     mk_w F._w;
     mk_warn_error F._warn_error;
+    mk_warn_help F._warn_help;
     mk_where F._where;
 
     mk_nopervasives F._nopervasives;
@@ -721,7 +721,6 @@ end;;
 module Make_opttop_options (F : Opttop_options) = struct
   let list = [
     mk_compact F._compact;
-    mk_help_warnings F._help_warnings;
     mk_I F._I;
     mk_init F._init;
     mk_inline F._inline;
@@ -739,6 +738,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_version F._version;
     mk_w F._w;
     mk_warn_error F._warn_error;
+    mk_warn_help F._warn_help;
 
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;

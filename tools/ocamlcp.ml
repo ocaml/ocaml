@@ -54,7 +54,6 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _dllpath = option_with_arg "-dllpath"
   let _dtypes = option "-dtypes"
   let _g = option "-g"
-  let _help_warnings = option "-help-warnings"
   let _i = option "-i"
   let _I s = option_with_arg "-I" s
   let _impl s = with_impl := true; option_with_arg "-impl" s
@@ -85,6 +84,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _verbose = option "-verbose"
   let _w = option_with_arg "-w"
   let _warn_error = option_with_arg "-warn-error"
+  let _warn_help = option "-warn-help"
   let _where = option "-where"
   let _nopervasives = option "-nopervasives"
   let _dparsetree = option "-dparsetree"

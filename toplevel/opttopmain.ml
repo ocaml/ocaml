@@ -58,7 +58,6 @@ module Options = Main_args.Make_opttop_options (struct
   let clear r () = r := false
 
   let _compact = clear optimize_for_speed
-  let _help_warnings = Warnings.help_warnings
   let _I dir =
     let dir = Misc.expand_directory Config.standard_library dir in
     include_dirs := dir :: !include_dirs
@@ -78,6 +77,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _version () = print_version ()
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
+  let _warn_help = Warnings.help_warnings
 
   let _dparsetree = set dump_parsetree
   let _drawlambda = set dump_rawlambda
