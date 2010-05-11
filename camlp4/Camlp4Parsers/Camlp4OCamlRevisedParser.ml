@@ -255,6 +255,12 @@ Very old (no more supported) syntax:\n\
     | e -> e ]
   ;
 
+  value rec lid_of_ident =
+    fun
+    [ <:ident< $_$ . $i$ >> -> lid_of_ident i
+    | <:ident< $lid:lid$ >> -> lid
+    | _                     -> assert False ];
+
   value module_type_app mt1 mt2 =
     match (mt1, mt2) with
     [ (<:module_type@_loc< $id:i1$ >>, <:module_type< $id:i2$ >>) ->
@@ -819,7 +825,9 @@ Very old (no more supported) syntax:\n\
             <:rec_binding< $anti:mk_anti ~c:"ident" n s$ = $e$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
-        | i = label_longident; e = fun_binding -> <:rec_binding< $i$ = $e$ >> ] ]
+        | i = label_longident; e = fun_binding -> <:rec_binding< $i$ = $e$ >>
+        | i = label_longident ->
+            <:rec_binding< $i$ = $lid:lid_of_ident i$ >> ] ]
     ;
     fun_def:
       [ [ p = labeled_ipatt; (w, e) = fun_def_cont ->
@@ -921,12 +929,7 @@ Very old (no more supported) syntax:\n\
         | `ANTIQUOT ("list" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
         | i = label_longident; "="; p = patt -> <:patt< $i$ = $p$ >>
-        | i = label_longident ->
-            let rec desugar_punning = fun
-              [ <:ident< $_$ . $i$ >> -> desugar_punning i
-              | <:ident< $lid:lid$ >> -> <:patt< $i$ = $lid:lid$ >>
-              | _                     -> assert False ]
-            in desugar_punning i
+        | i = label_longident -> <:patt< $i$ = $lid:lid_of_ident i$ >>
       ] ]
     ;
     ipatt:

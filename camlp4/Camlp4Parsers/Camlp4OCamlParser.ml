@@ -115,13 +115,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | _ -> 1 ])
   ;
 
-  value test_label_eq =
-    Gram.Entry.of_parser "test_label_eq"
+  value test_label_expr_list =
+    Gram.Entry.of_parser "test_label_expr_list"
       (test 1 where rec test lev strm =
         match stream_peek_nth lev strm with
         [ Some (UIDENT _ | LIDENT _ | KEYWORD ".") ->
             test (lev + 1) strm
-        | Some (KEYWORD "=") -> ()
+        | Some (KEYWORD ("="|";"|"}")) ->
+            (* ";" and "}" occur due to record punning *)
+            ()
         | _ -> raise Stream.Failure ])
   ;
 
@@ -335,7 +337,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     expr: LEVEL "simple" (* LEFTA *)
       [ [ "false" -> <:expr< False >>
         | "true" -> <:expr< True >>
-        | "{"; test_label_eq; lel = label_expr_list; "}" ->
+        | "{"; test_label_expr_list; lel = label_expr_list; "}" ->
             <:expr< { $lel$ } >>
         | "{"; e = expr LEVEL "."; "with"; lel = label_expr_list; "}" ->
             <:expr< { ($e$) with $lel$ } >>
