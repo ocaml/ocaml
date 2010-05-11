@@ -921,6 +921,12 @@ Very old (no more supported) syntax:\n\
         | `ANTIQUOT ("list" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
         | i = label_longident; "="; p = patt -> <:patt< $i$ = $p$ >>
+        | i = label_longident ->
+            let rec desugar_punning = fun
+              [ <:ident< $_$ . $i$ >> -> desugar_punning i
+              | <:ident< $lid:lid$ >> -> <:patt< $i$ = $lid:lid$ >>
+              | _                     -> assert False ]
+            in desugar_punning i
       ] ]
     ;
     ipatt:
