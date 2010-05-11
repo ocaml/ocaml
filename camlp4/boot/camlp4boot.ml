@@ -3708,6 +3708,22 @@ Very old (no more supported) syntax:\n\
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (label_longident :
+                                   'label_longident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i : 'label_longident) (_loc : Gram.Loc.t)
+                                ->
+                                (let rec desugar_punning =
+                                   function
+                                   | Ast.IdAcc (_, _, i) -> desugar_punning i
+                                   | Ast.IdLid (_, lid) ->
+                                       Ast.PaEq (_loc, i,
+                                         Ast.PaId (_loc,
+                                           Ast.IdLid (_loc, lid)))
+                                   | _ -> assert false
+                                 in desugar_punning i : 'label_patt))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_longident :
                                    'label_longident Gram.Entry.t));
                             Gram.Skeyword "=";
                             Gram.Snterm
