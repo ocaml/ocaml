@@ -3676,6 +3676,25 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (label_patt : 'label_patt Gram.Entry.t));
+                            Gram.Skeyword ";"; Gram.Skeyword "_";
+                            Gram.Skeyword ";" ],
+                          (Gram.Action.mk
+                             (fun _ _ _ (p1 : 'label_patt)
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.PaSem (_loc, p1, Ast.PaAny _loc) :
+                                  'label_patt_list))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_patt : 'label_patt Gram.Entry.t));
+                            Gram.Skeyword ";"; Gram.Skeyword "_" ],
+                          (Gram.Action.mk
+                             (fun _ _ (p1 : 'label_patt) (_loc : Gram.Loc.t)
+                                ->
+                                (Ast.PaSem (_loc, p1, Ast.PaAny _loc) :
+                                  'label_patt_list))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_patt : 'label_patt Gram.Entry.t));
                             Gram.Skeyword ";"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'label_patt_list) _

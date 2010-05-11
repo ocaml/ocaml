@@ -909,6 +909,8 @@ Very old (no more supported) syntax:\n\
     ;
     label_patt_list:
       [ [ p1 = label_patt; ";"; p2 = SELF -> <:patt< $p1$ ; $p2$ >>
+        | p1 = label_patt; ";"; "_"       -> <:patt< $p1$ ; _ >>
+        | p1 = label_patt; ";"; "_"; ";"  -> <:patt< $p1$ ; _ >>
         | p1 = label_patt; ";"            -> p1
         | p1 = label_patt                 -> p1
       ] ];

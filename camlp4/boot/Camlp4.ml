@@ -13889,9 +13889,14 @@ module Struct =
                    | _ ->
                        error loc "range pattern allowed only for characters")
               | PaRec (loc, p) ->
-                  mkpat loc
-                    (Ppat_record
-                       (((List.map mklabpat (list_of_patt p [])), Closed)))
+                  let ps = list_of_patt p [] in
+                  let is_wildcard =
+                    (function | Ast.PaAny _ -> true | _ -> false) in
+                  let (wildcards, ps) = List.partition is_wildcard ps in
+                  let is_closed = if wildcards = [] then Closed else Open
+                  in
+                    mkpat loc
+                      (Ppat_record (((List.map mklabpat ps), is_closed)))
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant
