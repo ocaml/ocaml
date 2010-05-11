@@ -13,8 +13,6 @@
 #                                                                       #
 #########################################################################
 
-# $Id$
-
 cd `dirname $0`
 set -e
 if [ -e ocamlbuild_mixed_mode ]; then
@@ -22,13 +20,17 @@ if [ -e ocamlbuild_mixed_mode ]; then
   echo 'please cleanup and re-launch (make clean ; ./build/distclean.sh)'
   exit 1
 fi
+case "$1" in
+  all|a|al) mode=all;;
+  byte|b|by|byt) mode=byte;;
+  native|na|nat|nati|nativ) mode=native;;
+  *) echo 'Unexpected target. Expected targets are: all,byte,native' \
+       >/dev/stderr
+     exit 1;;
+esac
+shift
 ./mkconfig.sh
 ./mkmyocamlbuild_config.sh
-. ../config/config.sh
-if [ "x$EXE" = "x.exe" -a "x$SYSTEM" != "xcygwin" ]; then
-  ./boot-c-parts-windows.sh
-else
-  ./boot-c-parts.sh
-fi
-./boot.sh $@
-./world.all.sh $@
+./boot-c-parts.sh
+./boot.sh "$@"
+./world."$mode".sh "$@"

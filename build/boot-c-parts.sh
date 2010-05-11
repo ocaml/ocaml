@@ -1,22 +1,37 @@
 #!/bin/sh
-# $Id$
 cd `dirname $0`/..
 set -ex
 
-# Create a bunch of symlinks to _build/boot
+. config/config.sh
+
+if "$WINDOWS"; then
+  MAKEOPTS='-f Makefile.nt'
+  LINK='cp -f'
+else
+  MAKEOPTS=''
+  LINK='ln -s -f'
+fi
+
+(cd byterun && make $MAKEOPTS)
+(cd asmrun && make $MAKEOPTS all meta."$O" dynlink."$O")
+(cd yacc && make $MAKEOPTS)
+
+if "$WINDOWS"; then
+  (cd win32caml && make)
+fi
+
 mkdir -p _build/boot
-ln -sf ../../byterun/ocamlrun \
-       ../../byterun/libcamlrun.a \
-       ../../asmrun/libasmrun.a \
-       ../../asmrun/libasmrunp.a \
-       ../../yacc/ocamlyacc \
-       ../../boot/ocamlc \
-       ../../boot/ocamllex \
-       ../../boot/ocamldep \
-       _build/boot
 
-[ -f boot/ocamlrun ] || ln -sf ../byterun/ocamlrun boot
+# Create a bunch of symlinks (or copies) to _build/boot
+(cd _build/boot &&
+$LINK ../../byterun/ocamlrun$EXE \
+      ../../byterun/libcamlrun.$A \
+      ../../asmrun/libasmrun.$A \
+      ../../yacc/ocamlyacc$EXE \
+      ../../boot/ocamlc \
+      ../../boot/ocamllex \
+      ../../boot/ocamldep \
+      . )
 
-(cd byterun && make)
-(cd asmrun && make all meta.o dynlink.o)
-(cd yacc && make)
+(cd boot &&
+[ -f boot/ocamlrun$EXE ] || $LINK ../byterun/ocamlrun$EXE . )

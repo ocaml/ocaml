@@ -24,12 +24,7 @@ if [ -e ocamlbuild_mixed_mode ]; then
 fi
 ./mkconfig.sh
 ./mkmyocamlbuild_config.sh
-. ../config/config.sh
-if [ "x$EXE" = "x.exe" -a "x$SYSTEM" != "xcygwin" ]; then
-  ./boot-c-parts-windows.sh
-else
-  ./boot-c-parts.sh
-fi
+./boot-c-parts.sh
 ./boot.sh $@
 
 cd ..
