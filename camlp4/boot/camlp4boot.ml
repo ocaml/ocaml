@@ -415,6 +415,12 @@ Very old (no more supported) syntax:\n\
           | (Ast.ExSem (_, _, _) as e) -> Ast.ExSeq (_loc, e)
           | e -> e
           
+        let rec lid_of_ident =
+          function
+          | Ast.IdAcc (_, _, i) -> lid_of_ident i
+          | Ast.IdLid (_, lid) -> lid
+          | _ -> assert false
+          
         let module_type_app mt1 mt2 =
           match (mt1, mt2) with
           | (Ast.MtId (_loc, i1), Ast.MtId (_, i2)) ->
@@ -3043,6 +3049,17 @@ Very old (no more supported) syntax:\n\
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (label_longident :
+                                   'label_longident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i : 'label_longident) (_loc : Gram.Loc.t)
+                                ->
+                                (Ast.RbEq (_loc, i,
+                                   Ast.ExId (_loc,
+                                     Ast.IdLid (_loc, lid_of_ident i))) :
+                                  'label_expr))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_longident :
                                    'label_longident Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -3712,15 +3729,10 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (i : 'label_longident) (_loc : Gram.Loc.t)
                                 ->
-                                (let rec desugar_punning =
-                                   function
-                                   | Ast.IdAcc (_, _, i) -> desugar_punning i
-                                   | Ast.IdLid (_, lid) ->
-                                       Ast.PaEq (_loc, i,
-                                         Ast.PaId (_loc,
-                                           Ast.IdLid (_loc, lid)))
-                                   | _ -> assert false
-                                 in desugar_punning i : 'label_patt))));
+                                (Ast.PaEq (_loc, i,
+                                   Ast.PaId (_loc,
+                                     Ast.IdLid (_loc, lid_of_ident i))) :
+                                  'label_patt))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (label_longident :
