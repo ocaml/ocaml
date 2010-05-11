@@ -640,7 +640,7 @@ module Sig =
         (** {6 Traversals} *)
         (** This class is the base class for map traversal on the Ast.
       To make a custom traversal class one just extend it like that:
-      
+
       This example swap pairs expression contents:
       open Camlp4.PreCast;
       [class swap = object
@@ -13890,7 +13890,8 @@ module Struct =
                        error loc "range pattern allowed only for characters")
               | PaRec (loc, p) ->
                   mkpat loc
-                    (Ppat_record (List.map mklabpat (list_of_patt p []), Closed))
+                    (Ppat_record
+                       (((List.map mklabpat (list_of_patt p [])), Closed)))
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant
@@ -14539,7 +14540,8 @@ module Struct =
                   (Pcf_cstr (((ctyp t1), (ctyp t2), (mkloc loc)))) :: l
               | Ast.CrSem (_, cst1, cst2) ->
                   class_str_item cst1 (class_str_item cst2 l)
-              | CrInh (_, ce, "") -> (Pcf_inher (Fresh, class_expr ce, None)) :: l
+              | CrInh (_, ce, "") ->
+                  (Pcf_inher (Fresh, class_expr ce, None)) :: l
               | CrInh (_, ce, pb) ->
                   (Pcf_inher (Fresh, class_expr ce, Some pb)) :: l
               | CrIni (_, e) -> (Pcf_init (expr e)) :: l
@@ -14549,9 +14551,12 @@ module Struct =
                      | Ast.TyNil _ -> None
                      | t -> Some (mkpolytype (ctyp t))) in
                   let e = mkexp loc (Pexp_poly (expr e, t))
-                  in (Pcf_meth ((s, (mkprivate b), Fresh, e, (mkloc loc)))) :: l
+                  in
+                    (Pcf_meth ((s, (mkprivate b), Fresh, e, (mkloc loc)))) ::
+                      l
               | CrVal (loc, s, b, e) ->
-                  (Pcf_val ((s, (mkmutable b), Fresh, (expr e), (mkloc loc)))) :: l
+                  (Pcf_val ((s, (mkmutable b), Fresh, (expr e), (mkloc loc)))) ::
+                    l
               | CrVir (loc, s, b, t) ->
                   (Pcf_virt
                      ((s, (mkprivate b), (mkpolytype (ctyp t)), (mkloc loc)))) ::
@@ -19410,7 +19415,11 @@ module Printers =
                           pp f "@[<2>%a@ when@ %a@ ->@ %a@]" o#patt p
                             o#under_pipe#expr w o#under_pipe#expr e
                   
-                method sum_type = fun f t -> pp f "@[<hv0>[ %a ]@]" o#ctyp t
+                method sum_type =
+                  fun f ->
+                    function
+                    | Ast.TyNil _ -> pp f "[]"
+                    | t -> pp f "@[<hv0>[ %a ]@]" o#ctyp t
                   
                 method ident =
                   fun f i ->
