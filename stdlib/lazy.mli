@@ -27,6 +27,9 @@ type 'a t = 'a lazy_t;;
    for the [lazy] keyword.  You should not use it directly.  Always use
    [Lazy.t] instead.
 
+   Note: [Lazy.force] is not thread-safe.  If you use this module in
+   a multi-threaded program, you will need to add some locks.
+
    Note: if the program is compiled with the [-rectypes] option,
    ill-founded recursive definitions of the form [let rec x = lazy x]
    or [let rec x = lazy(lazy(...(lazy x)))] are accepted by the type-checker
