@@ -1046,6 +1046,8 @@ module Sig =
           ExVrn of loc * string
           | (* while e do { e } *)
           ExWhi of loc * expr * expr
+          | (* let open i in e *)
+          ExOpI of loc * ident * expr
           and module_type =
           | MtNil of loc
           | (* i *)
@@ -1821,6 +1823,7 @@ module Sig =
           | ExTyc of loc * expr * ctyp
           | ExVrn of loc * string
           | ExWhi of loc * expr * expr
+          | ExOpI of loc * ident * expr
           and module_type =
           | MtNil of loc
           | MtId of loc * ident
@@ -8064,6 +8067,17 @@ module Struct =
                                 meta_loc _loc x0)
                         and meta_expr _loc =
                           function
+                          | Ast.ExOpI (x0, x1, x2) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExApp (_loc,
+                                    Ast.ExId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "ExOpI"))),
+                                    meta_loc _loc x0),
+                                  meta_ident _loc x1),
+                                meta_expr _loc x2)
                           | Ast.ExWhi (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -10103,6 +10117,17 @@ module Struct =
                                 meta_loc _loc x0)
                         and meta_expr _loc =
                           function
+                          | Ast.ExOpI (x0, x1, x2) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaApp (_loc,
+                                    Ast.PaId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "ExOpI"))),
+                                    meta_loc _loc x0),
+                                  meta_ident _loc x1),
+                                meta_expr _loc x2)
                           | Ast.ExWhi (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -11950,6 +11975,10 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#expr _x_i1 in
                       let _x_i2 = o#expr _x_i2 in ExWhi (_x, _x_i1, _x_i2)
+                  | ExOpI (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExOpI (_x, _x_i1, _x_i2)
                   
                 method ctyp : ctyp -> ctyp =
                   function
@@ -12715,6 +12744,9 @@ module Struct =
                   | ExWhi (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
+                  | ExOpI (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
                   
                 method ctyp : ctyp -> 'self_type =
                   function
@@ -14195,6 +14227,8 @@ module Struct =
               | ExWhi (loc, e1, el) ->
                   let e2 = ExSeq (loc, el)
                   in mkexp loc (Pexp_while (expr e1, expr e2))
+              | Ast.ExOpI (loc, i, e) ->
+                  mkexp loc (Pexp_open (long_uident i, expr e))
               | Ast.ExCom (loc, _, _) ->
                   error loc "expr, expr: not allowed here"
               | Ast.ExSem (loc, _, _) ->
@@ -18414,6 +18448,9 @@ module Printers =
                                  "@[<hv0>@[<2>let %a%a@]@ @[<hv2>in@ %a@]@]"
                                  o#rec_flag r o#binding bi o#reset_semi#expr
                                  e)
+                      | Ast.ExOpI (_, i, e) ->
+                          pp f "@[<2>let open %a@]@ @[<2>in@ %a@]" o#ident i
+                            o#reset_semi#expr e
                       | Ast.ExMat (_, e, a) ->
                           pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]"
                             o#expr e o#match_case a
@@ -18528,9 +18565,9 @@ module Printers =
                           Ast.ExFun (_, _) | Ast.ExMat (_, _, _) |
                           Ast.ExTry (_, _, _) | Ast.ExIfe (_, _, _, _) |
                           Ast.ExLet (_, _, _, _) | Ast.ExLmd (_, _, _, _) |
-                          Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _) |
-                          Ast.ExNew (_, _) | Ast.ExObj (_, _, _) ->
-                          pp f "(%a)" o#reset#expr e
+                          Ast.ExOpI (_, _, _) | Ast.ExAsr (_, _) |
+                          Ast.ExAsf _ | Ast.ExLaz (_, _) | Ast.ExNew (_, _) |
+                          Ast.ExObj (_, _, _) -> pp f "(%a)" o#reset#expr e
                   
                 method direction_flag =
                   fun f b ->

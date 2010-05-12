@@ -1880,6 +1880,16 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExFun (_loc, Ast.mcOr_of_list a) :
                                   'expr))));
+                         ([ Gram.Skeyword "let"; Gram.Skeyword "open";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_longident :
+                                   'module_longident Gram.Entry.t));
+                            Gram.Skeyword "in"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) _ (i : 'module_longident) _ _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.ExOpI (_loc, i, e) : 'expr))));
                          ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2677,6 +2687,16 @@ Very old (no more supported) syntax:\n\
                                        mk_anti ~c: "expr;" n s) :
                                       'sequence)
                                 | _ -> assert false)));
+                         ([ Gram.Skeyword "let"; Gram.Skeyword "open";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_longident :
+                                   'module_longident Gram.Entry.t));
+                            Gram.Skeyword "in"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (e : 'sequence) _ (i : 'module_longident) _
+                                _ (_loc : Gram.Loc.t) ->
+                                (Ast.ExOpI (_loc, i, e) : 'sequence))));
                          ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                             Gram.Snterm
                               (Gram.Entry.obj

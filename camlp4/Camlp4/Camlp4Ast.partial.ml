@@ -148,7 +148,9 @@
       (* `s *)
     | ExVrn of loc and string
       (* while e do { e } *)
-    | ExWhi of loc and expr and expr ]
+    | ExWhi of loc and expr and expr
+      (* let open i in e *)
+    | ExOpI of loc and ident and expr ]
   and module_type =
     [ MtNil of loc
       (* i *) (* A.B.C *)

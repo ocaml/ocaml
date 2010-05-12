@@ -604,6 +604,8 @@ Very old (no more supported) syntax:\n\
             <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
+        | "let"; "open"; i = module_longident; "in"; e = SELF ->
+            <:expr< let open $id:i$ in $e$ >>
         | "fun"; "["; a = LIST0 match_case0 SEP "|"; "]" ->
             <:expr< fun [ $list:a$ ] >>
         | "fun"; e = fun_def -> e
@@ -760,6 +762,8 @@ Very old (no more supported) syntax:\n\
             k <:expr< let module $m$ = $mb$ in $e$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; ";"; el = SELF ->
             <:expr< let module $m$ = $mb$ in $mksequence _loc el$ >>
+        | "let"; "open"; i = module_longident; "in"; e = SELF ->
+            <:expr< let open $id:i$ in $e$ >>
         | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
         | e = expr; k = sequence' -> k e ] ]
     ;

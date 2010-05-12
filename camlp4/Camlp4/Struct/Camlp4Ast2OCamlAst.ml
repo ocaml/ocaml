@@ -735,6 +735,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
+    | <:expr@loc< let open $i$ in $e$ >> ->
+        mkexp loc (Pexp_open (long_uident i) (expr e))
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
     | <:expr@loc< $_$;$_$ >> ->
         error loc "expr; expr: not allowed here, use do {...} or [|...|] to surround them"

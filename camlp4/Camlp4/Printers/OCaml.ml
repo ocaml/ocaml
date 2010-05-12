@@ -456,6 +456,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | _ ->
             pp f "@[<hv0>@[<2>let %a%a@]@ @[<hv2>in@ %a@]@]"
               o#rec_flag r o#binding bi o#reset_semi#expr e ]
+    | <:expr< let open $i$ in $e$ >> ->
+        pp f "@[<2>let open %a@]@ @[<2>in@ %a@]"
+             o#ident i o#reset_semi#expr e
     | <:expr< match $e$ with [ $a$ ] >> ->
         pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]"
           o#expr e o#match_case a
@@ -549,6 +552,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:expr< if $_$ then $_$ else $_$ >> |
       <:expr< let $rec:_$ $_$ in $_$ >> |
       <:expr< let module $_$ = $_$ in $_$ >> |
+      <:expr< let open $_$ in $_$ >> |
       <:expr< assert $_$ >> | <:expr< assert False >> |
       <:expr< lazy $_$ >> | <:expr< new $_$ >> |
       <:expr< object ($_$) $_$ end >> ->
