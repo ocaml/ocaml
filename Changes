@@ -81,11 +81,18 @@ Standard library:
 * Random: changed the algorithm to produce better randomness.  Now passes the
   DieHard tests.
 
+Ocamlbuild:
+- Add support for native dynlink.
+
 Bug Fixes:
 - PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4970: better error message for instance variables
+- PR#4988: contravariance lost with ocamlc -i
 - PR#5004: problem in Buffer.add_channel with very large lengths.
 - PR#5008: on AMD64/MSVC port, rare float corruption during GC.
 - PR#5018: wrong exception raised by Dynlink.loadfile.
+- Wrong type for Obj.add_offset.
+- Small problem with the representation of Int32, Int64, and Nativeint constants.
 
 Objective Caml 3.11.2:
 ----------------------
