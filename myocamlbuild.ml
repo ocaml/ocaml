@@ -192,6 +192,7 @@ dispatch begin function
 
 let hot_camlp4boot = "camlp4"/"boot"/"camlp4boot.byte";;
 let cold_camlp4boot = "camlp4boot" (* The installed version *);;
+let cold_camlp4o = "camlp4o" (* The installed version *);;
 
 flag ["ocaml"; "ocamlyacc"] (A"-v");;
 
@@ -753,7 +754,7 @@ rule "camlp4: Camlp4/Struct/Lexer.ml -> boot/Lexer.ml"
   ~prod:"camlp4/boot/Lexer.ml"
   ~dep:"camlp4/Camlp4/Struct/Lexer.ml"
   begin fun _ _ ->
-    Cmd(S[P"camlp4o"; P"camlp4/Camlp4/Struct/Lexer.ml";
+    Cmd(S[P cold_camlp4o; P"camlp4/Camlp4/Struct/Lexer.ml";
           A"-printer"; A"r"; A"-o"; Px"camlp4/boot/Lexer.ml"])
   end;;
 
