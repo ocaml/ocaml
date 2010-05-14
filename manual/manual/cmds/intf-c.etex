@@ -542,11 +542,11 @@ The following artificial example illustrates the assignment of
 integers and block tags to constructors:
 \begin{verbatim}
 type t =
-  | A             /* First constant constructor -> integer "Val_int(0)" */
-  | B of string   /* First non-constant constructor -> block with tag 0 */
-  | C             /* Second constant constructor -> integer "Val_int(1)" */
-  | D of bool     /* Second non-constant constructor -> block with tag 1 */
-  | E of t * t    /* Third non-constant constructor -> block with tag 2 */
+  | A             (* First constant constructor -> integer "Val_int(0)" *)
+  | B of string   (* First non-constant constructor -> block with tag 0 *)
+  | C             (* Second constant constructor -> integer "Val_int(1)" *)
+  | D of bool     (* Second non-constant constructor -> block with tag 1 *)
+  | E of t * t    (* Third non-constant constructor -> block with tag 2 *)
 \end{verbatim}
 
 \subsection{Objects}
