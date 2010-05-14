@@ -167,6 +167,8 @@ section~\ref{s:custom}).}
 \entree{"caml/intext.h"}{operations for writing user-defined
 serialization and deserialization functions for custom blocks
 (see section~\ref{s:custom}).}
+\entree{"caml/threads.h"}{operations for interfacing in the presence
+  of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
 These files reside in the "caml/" subdirectory of the Objective Caml
 standard library directory (usually "/usr/local/lib/ocaml").
@@ -508,7 +510,7 @@ These arrays are represented by pointers to blocks with tag
 "Double_array_tag".  They should be accessed with the "Double_field"
 and "Store_double_field" macros.
 
-\subsection{Concrete types}
+\subsection{Concrete data types}
 
 Constructed terms are represented either by unboxed integers (for
 constant constructors) or by blocks whose tag encode the constructor
@@ -528,13 +530,24 @@ constructor argument. Example:
 \entree{"()"}{"Val_int(0)"}
 \entree{"false"}{"Val_int(0)"}
 \entree{"true"}{"Val_int(1)"}
-\entree{"[]"}{"Val_int(0)"}
+\entree{"[]"}{"Val_int(0)".}
 \entree{"h::t"}{Block with size = 2 and tag = 0; first field
-contains "h", second field "t"}
+contains "h", second field "t".}
 \end{tableau}
 
 As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
 "Val_false" and "Val_true" to refer to "()", "false" and "true".
+
+The following artificial example illustrates the assignment of
+integers and block tags to constructors:
+\begin{verbatim}
+type t =
+  | A             /* First constant constructor -> integer "Val_int(0)" */
+  | B of string   /* First non-constant constructor -> block with tag 0 */
+  | C             /* Second constant constructor -> integer "Val_int(1)" */
+  | D of bool     /* Second non-constant constructor -> block with tag 1 */
+  | E of t * t    /* Third non-constant constructor -> block with tag 2 */
+\end{verbatim}
 
 \subsection{Objects}
 
@@ -559,7 +572,7 @@ to do the method call "foo#bar" from the C side, you should call:
   callback(caml_get_public_method(foo, hash_variant("bar")), foo);
 \end{verbatim}
 
-\subsection{Prolymorphic variants}
+\subsection{Polymorphic variants}
 
 Like constructed terms, polymorphic variant values are represented either
 as integers (for polymorphic variants without arguments), or as blocks
@@ -1190,7 +1203,7 @@ value caml_curses_mvwaddstr(value win, value x, value y, value s)
 
 The file "curses_stubs.c" can be compiled with:
 \begin{verbatim}
-        cc -c -I/usr/local/lib/ocaml curses.c
+        cc -c -I`ocamlc -where` curses.c
 \end{verbatim}
 or, even simpler,
 \begin{verbatim}
@@ -1785,15 +1798,141 @@ word is reserved for storing the custom operations; the other
 \var{used} and \var{max} are used to control the speed of garbage
 collection, as described for "caml_alloc_custom".
 
+\section{Advanced topic: multithreading}
+\label{s:C-multithreading}
+
+Using multiple threads (shared-memory concurrency) in a mixed Caml/C
+application requires special precautions, which are described in this
+section.
+
+\subsection{Registering threads created from C}
+
+Callbacks from C to Caml are possible only if the calling thread is
+known to the Caml run-time system.  Threads created from Caml (through
+the "Thread.create" function of the system threads library) are
+automatically known to the run-time system.  If the application
+creates additional threads from C and wishes to callback into Caml
+code from these threads, it must first register them with the run-time
+system.  The following functions are declared in the include file
+"<caml/threads.h>".
+
+\begin{itemize}
+\item
+"caml_c_thread_register()" registers the calling thread with the Caml
+run-time system.  Returns 1 on success, 0 on error.  Registering an
+already-register thread does nothing and returns 0.
+\item
+"caml_c_thread_unregister()"  must be called before the thread
+  terminates, to unregister it from the Caml run-time system.
+Returns 1 on success, 0 on error.  If the calling thread was not
+previously registered, does nothing and returns 0.
+\end{itemize}
+
+\subsection{Parallel execution of long-running C code}
+
+The Caml run-time system is not reentrant: at any time, at most one
+thread can be executing Caml code or C code that uses the Caml
+run-time system.  Technically, this is enforced by a ``master lock''
+that any thread must hold while executing such code.
+
+When Caml calls the C code implementing a primitive, the master lock
+is held, therefore the C code has full access to the facilities of the
+run-time system.  However, no other thread can execute Caml code
+concurrently with the C code of the primitive.
+
+If a C primitive runs for a long time or performs potentially blocking
+input-output operations, it can explicitly release the master lock,
+enabling other Caml threads to run concurrently with its operations.
+The C code must re-acquire the master lock before returning to Caml.
+This is achieved with the following functions, declared in 
+the include file "<caml/threads.h>".
+
+\begin{itemize}
+\item
+"caml_release_runtime_system()"
+The calling thread releases the master lock and other Caml resources,
+enabling other threads to run Caml code in parallel with the execution
+of the calling thread.  
+\item
+"caml_acquire_runtime_system()"
+The calling thread re-acquires the master lock and other Caml
+resources.  It may block until no other thread uses the Caml run-time
+system.
+\end{itemize}
+
+After "caml_release_runtime_system()" was called and until
+"caml_acquire_runtime_system()" is called, the C code must not access
+any Caml data, nor call any function of the run-time system, nor call
+back into Caml code.  Consequently, arguments provided by Caml to the
+C primitive must be copied into C data structures before calling
+"caml_release_runtime_system()", and results to be returned to Caml
+must be encoded as Caml values after "caml_acquire_runtime_system()"
+returns.
+
+Example: the following C primitive invokes "gethostbyname" to find the
+IP address of a host name.  The "gethostbyname" function can block for
+a long time, so we choose to release the Caml run-time system while it
+is running.
+\begin{verbatim}
+CAMLprim stub_gethostbyname(value vname)
+{
+  CAMLparam1 (vname);
+  CAMLlocal1 (vres);
+  struct hostent * h;
+
+  /* Copy the string argument to a C string, allocated outside the
+     Caml heap. */
+  name = stat_alloc(caml_string_length(vname) + 1);
+  strcpy(name, String_val(vname));
+  /* Release the Caml run-time system */
+  caml_release_runtime_system();
+  /* Resolve the name */
+  h = gethostbyname(name);
+  /* Re-acquire the Caml run-time system */
+  caml_acquire_runtime_system();
+  /* Encode the relevant fields of h as the Caml value vres */
+  ... /* Omitted */
+  /* Return to Caml */
+  CAMLreturn (vres);
+}
+\end{verbatim}
+
+Callbacks from C to Caml must be performed while holding the master
+lock to the Caml run-time system.  This is naturally the case if the
+callback is performed by a C primitive that did not release the
+run-time system.  If the C primitive released the run-time system
+previously, or the callback is performed from other C code that was
+not invoked from Caml (e.g. an event loop in a GUI application), the
+run-time system must be acquired before the callback and released
+after:
+\begin{verbatim}
+  caml_acquire_runtime_system();
+  /* Resolve Caml function vfun to be invoked */
+  /* Build Caml argument varg to the callback */
+  vres = callback(vfun, varg);
+  /* Copy relevant parts of result vres to C data structures */
+  caml_release_runtime_system();
+\end{verbatim}
+
+Note: the "acquire" and "release" functions described above were
+introduced in OCaml 3.12.  Older code uses the following historical
+names, declared in "<caml/signals.h>":
+\begin{itemize}
+\item "caml_enter_blocking_section" as an alias for
+  "caml_release_runtime_system"
+\item "caml_leave_blocking_section" as an alias for
+  "caml_acquire_runtime_system"
+\end{itemize}
+Intuition: a ``blocking section'' is a piece of C code that does not
+use the Caml run-time system, typically a blocking input/output operation.
+
 \section{Building mixed C/Caml libraries: "ocamlmklib"} \label{s-ocamlmklib}
 
 The "ocamlmklib" command facilitates the construction of libraries
 containing both Caml code and C code, and usable both in static
-linking and dynamic linking modes.
-
-\begin{windows} This command is available for all the Windows ports
-  only since version 3.11.
-\end{windows}
+linking and dynamic linking modes.  This command is available under
+Windows since OCaml 3.11 and under other operating systems since OCaml
+3.03.
 
 The "ocamlmklib" command takes three kinds of arguments:
 \begin{itemize}
