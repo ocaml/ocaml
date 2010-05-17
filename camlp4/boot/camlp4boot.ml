@@ -2895,33 +2895,13 @@ Very old (no more supported) syntax:\n\
                ((fun () ->
                    (None,
                     [ (None, (Some Camlp4.Sig.Grammar.RightA),
-                       [ ([ Gram.Skeyword ":>";
-                            Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
-                            Gram.Skeyword "=";
-                            Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (cvalue_binding :
+                                   'cvalue_binding Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) _ (t : 'ctyp) _
-                                (_loc : Gram.Loc.t) ->
-                                (Ast.ExCoe (_loc, e, Ast.TyNil _loc, t) :
-                                  'fun_binding))));
-                         ([ Gram.Skeyword ":";
-                            Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
-                            Gram.Skeyword "=";
-                            Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (e : 'expr) _ (t : 'ctyp) _
-                                (_loc : Gram.Loc.t) ->
-                                (Ast.ExTyc (_loc, e, t) : 'fun_binding))));
-                         ([ Gram.Skeyword "=";
-                            Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (e : 'expr) _ (_loc : Gram.Loc.t) ->
-                                (e : 'fun_binding))));
+                             (fun (bi : 'cvalue_binding) (_loc : Gram.Loc.t)
+                                -> (bi : 'fun_binding))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (labeled_ipatt :
@@ -5918,7 +5898,8 @@ Very old (no more supported) syntax:\n\
                                   'cvalue_binding))));
                          ([ Gram.Skeyword ":";
                             Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
+                              (Gram.Entry.obj
+                                 (poly_type : 'poly_type Gram.Entry.t));
                             Gram.Skeyword ":>";
                             Gram.Snterm
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
@@ -5926,18 +5907,24 @@ Very old (no more supported) syntax:\n\
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) _ (t2 : 'ctyp) _ (t : 'ctyp) _
-                                (_loc : Gram.Loc.t) ->
-                                (Ast.ExCoe (_loc, e, t, t2) :
+                             (fun (e : 'expr) _ (t2 : 'ctyp) _
+                                (t : 'poly_type) _ (_loc : Gram.Loc.t) ->
+                                (match t with
+                                 | Ast.TyPol (_, _, _) ->
+                                     raise
+                                       (Stream.Error
+                                          "unexpected polytype here")
+                                 | _ -> Ast.ExCoe (_loc, e, t, t2) :
                                   'cvalue_binding))));
                          ([ Gram.Skeyword ":";
                             Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
+                              (Gram.Entry.obj
+                                 (poly_type : 'poly_type Gram.Entry.t));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) _ (t : 'ctyp) _
+                             (fun (e : 'expr) _ (t : 'poly_type) _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExTyc (_loc, e, t) : 'cvalue_binding))));
                          ([ Gram.Skeyword "=";
