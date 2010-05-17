@@ -48,7 +48,7 @@ true: use_stdlib
 
 "tools/addlabels.ml": warn_s
 
-<debugger/main.byte> or <debugger/main.native>: use_unix, use_dynlink, linkall
+<debugger/main.byte> or <debugger/main.native>: use_unix, linkall
 <debugger/*.ml*>: include_unix
 
 <otherlibs/{,win32}unix/unix.cm{,x}a> or <otherlibs/str/str.cm{,x}a>: ocamlmklib

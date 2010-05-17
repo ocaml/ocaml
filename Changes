@@ -85,6 +85,7 @@ Ocamlbuild:
 - Add support for native dynlink.
 
 Bug Fixes:
+- PR#4742: finalisation function raising an exception blocks other finalisations
 - PR#4775: compiler crash on crazy types (temporary fix)
 - PR#4970: better error message for instance variables
 - PR#4988: contravariance lost with ocamlc -i

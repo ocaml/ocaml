@@ -114,4 +114,13 @@ clean::
 	rm -f parser.ml parser.mli
 beforedepend:: parser.ml parser.mli
 
+dynlink.ml: ../otherlibs/dynlink/dynlink.ml
+	grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
+	     ../otherlibs/dynlink/dynlink.ml >dynlink.ml
+dynlink.mli: ../otherlibs/dynlink/dynlink.mli
+	cp ../otherlibs/dynlink/dynlink.mli .
+clean::
+	rm -f dynlink.ml dynlink.mli
+beforedepend:: dynlink.ml dynlink.mli
+
 include .depend

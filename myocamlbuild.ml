@@ -583,6 +583,17 @@ rule "camlheader"
             A"cp"; A"stdlib/camlheader"; A"stdlib/camlheader_ur"])
   end;;
 
+(* Private copy of dynlink.{ml,mli} in debugger/ *)
+copy_rule "otherlibs/dynlink/dynlink.mli -> debugger/dynlink.mli" "otherlibs/dynlink/dynlink.mli" "debugger/dynlink.mli";;
+rule "debugger/dynlink.ml"
+  ~prod: "debugger/dynlink.ml"
+  ~dep: "otherlibs/dynlink/dynlink.ml"
+  begin fun _ _ ->
+    Cmd(Sh"grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
+           < otherlibs/dynlink/dynlink.ml >debugger/dynlink.ml")
+  end;;
+
+
 copy_rule "win32unix use some unix files" "otherlibs/unix/%" "otherlibs/win32unix/%";;
 
 (* Temporary rule *)
