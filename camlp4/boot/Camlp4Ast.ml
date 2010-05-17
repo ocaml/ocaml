@@ -2371,6 +2371,26 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (meta_loc _loc x0))
                            (meta_with_constr _loc x1))
                         (meta_with_constr _loc x2)
+                  | Ast.WcMoS x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcMoS")))
+                              (meta_loc _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2)
+                  | Ast.WcTyS x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcTyS")))
+                              (meta_loc _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
                   | Ast.WcMod x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -4301,6 +4321,26 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (meta_loc _loc x0))
                            (meta_with_constr _loc x1))
                         (meta_with_constr _loc x2)
+                  | Ast.WcMoS x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcMoS")))
+                              (meta_loc _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2)
+                  | Ast.WcTyS x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcTyS")))
+                              (meta_loc _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
                   | Ast.WcMod x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -4352,6 +4392,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#ident _x_i1 in
               let _x_i2 = o#ident _x_i2 in WcMod _x _x_i1 _x_i2
+          | WcTyS _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in WcTyS _x _x_i1 _x_i2
+          | WcMoS _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ident _x_i1 in
+              let _x_i2 = o#ident _x_i2 in WcMoS _x _x_i1 _x_i2
           | WcAnd _x _x_i1 _x_i2 ->
               let _x = o#loc _x in
               let _x_i1 = o#with_constr _x_i1 in
@@ -5147,6 +5195,12 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#loc _x in
               let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
           | WcMod _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+          | WcTyS _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | WcMoS _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
           | WcAnd _x _x_i1 _x_i2 ->

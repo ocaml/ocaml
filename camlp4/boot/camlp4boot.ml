@@ -1680,6 +1680,57 @@ Very old (no more supported) syntax:\n\
                               (Gram.Entry.obj
                                  (module_longident :
                                    'module_longident Gram.Entry.t));
+                            Gram.Skeyword ":=";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_longident_with_app :
+                                   'module_longident_with_app Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i2 : 'module_longident_with_app) _
+                                (i1 : 'module_longident) _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.WcMoS (_loc, i1, i2) : 'with_constr))));
+                         ([ Gram.Skeyword "type";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (type_longident_and_parameters :
+                                   'type_longident_and_parameters Gram.Entry.
+                                     t));
+                            Gram.Skeyword ":=";
+                            Gram.Snterm
+                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (t2 : 'ctyp) _
+                                (t1 : 'type_longident_and_parameters) _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.WcTyS (_loc, t1, t2) : 'with_constr))));
+                         ([ Gram.Skeyword "type";
+                            Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "typ" | "anti"), _) ->
+                                     true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\"), _)"));
+                            Gram.Skeyword ":=";
+                            Gram.Snterm
+                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (t : 'ctyp) _ (__camlp4_0 : Gram.Token.t) _
+                                (_loc : Gram.Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("" | "typ" | "anti" as n)), s)
+                                    ->
+                                    (Ast.WcTyS (_loc,
+                                       Ast.TyAnt (_loc,
+                                         mk_anti ~c: "ctyp" n s),
+                                       t) :
+                                      'with_constr)
+                                | _ -> assert false)));
+                         ([ Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_longident :
+                                   'module_longident Gram.Entry.t));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj

@@ -1099,6 +1099,10 @@ module Sig =
           WcTyp of loc * ctyp * ctyp
           | (* module i = i *)
           WcMod of loc * ident * ident
+          | (* type t := t *)
+          WcTyS of loc * ctyp * ctyp
+          | (* module i := i *)
+          WcMoS of loc * ident * ident
           | (* wc and wc *)
           WcAnd of loc * with_constr * with_constr
           | WcAnt of loc * string
@@ -1852,6 +1856,8 @@ module Sig =
           | WcNil of loc
           | WcTyp of loc * ctyp * ctyp
           | WcMod of loc * ident * ident
+          | WcTyS of loc * ctyp * ctyp
+          | WcMoS of loc * ident * ident
           | WcAnd of loc * with_constr * with_constr
           | WcAnt of loc * string
           and binding =
@@ -9318,6 +9324,28 @@ module Struct =
                                     meta_loc _loc x0),
                                   meta_with_constr _loc x1),
                                 meta_with_constr _loc x2)
+                          | Ast.WcMoS (x0, x1, x2) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExApp (_loc,
+                                    Ast.ExId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "WcMoS"))),
+                                    meta_loc _loc x0),
+                                  meta_ident _loc x1),
+                                meta_ident _loc x2)
+                          | Ast.WcTyS (x0, x1, x2) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExApp (_loc,
+                                    Ast.ExId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "WcTyS"))),
+                                    meta_loc _loc x0),
+                                  meta_ctyp _loc x1),
+                                meta_ctyp _loc x2)
                           | Ast.WcMod (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -11368,6 +11396,28 @@ module Struct =
                                     meta_loc _loc x0),
                                   meta_with_constr _loc x1),
                                 meta_with_constr _loc x2)
+                          | Ast.WcMoS (x0, x1, x2) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaApp (_loc,
+                                    Ast.PaId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "WcMoS"))),
+                                    meta_loc _loc x0),
+                                  meta_ident _loc x1),
+                                meta_ident _loc x2)
+                          | Ast.WcTyS (x0, x1, x2) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaApp (_loc,
+                                    Ast.PaId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "WcTyS"))),
+                                    meta_loc _loc x0),
+                                  meta_ctyp _loc x1),
+                                meta_ctyp _loc x2)
                           | Ast.WcMod (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -11428,6 +11478,14 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#ident _x_i1 in
                       let _x_i2 = o#ident _x_i2 in WcMod (_x, _x_i1, _x_i2)
+                  | WcTyS (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2 in WcTyS (_x, _x_i1, _x_i2)
+                  | WcMoS (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ident _x_i1 in
+                      let _x_i2 = o#ident _x_i2 in WcMoS (_x, _x_i1, _x_i2)
                   | WcAnd (_x, _x_i1, _x_i2) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#with_constr _x_i1 in
@@ -12327,6 +12385,12 @@ module Struct =
                       let o = o#loc _x in
                       let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
                   | WcMod (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
+                  | WcTyS (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | WcMoS (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#ident _x_i1 in let o = o#ident _x_i2 in o
                   | WcAnd (_x, _x_i1, _x_i2) ->
@@ -13766,28 +13830,36 @@ module Struct =
               | Ast.TyId (_, i) -> ((ident i), acc)
               | _ -> assert false
               
+            let mkwithtyp pwith_type loc id_tpl ct =
+              let (id, tpl) = type_parameters_and_type_name id_tpl [] in
+              let (params, variance) = List.split tpl in
+              let (kind, priv, ct) = opt_private_ctyp ct
+              in
+                (id,
+                 (pwith_type
+                    {
+                      ptype_params = params;
+                      ptype_cstrs = [];
+                      ptype_kind = kind;
+                      ptype_private = priv;
+                      ptype_manifest = Some ct;
+                      ptype_loc = mkloc loc;
+                      ptype_variance = variance;
+                    }))
+              
             let rec mkwithc wc acc =
               match wc with
-              | WcNil _ -> acc
-              | WcTyp (loc, id_tpl, ct) ->
-                  let (id, tpl) = type_parameters_and_type_name id_tpl [] in
-                  let (params, variance) = List.split tpl in
-                  let (kind, priv, ct) = opt_private_ctyp ct
-                  in
-                    (id,
-                     (Pwith_type
-                        {
-                          ptype_params = params;
-                          ptype_cstrs = [];
-                          ptype_kind = kind;
-                          ptype_private = priv;
-                          ptype_manifest = Some ct;
-                          ptype_loc = mkloc loc;
-                          ptype_variance = variance;
-                        })) ::
-                      acc
-              | WcMod (_, i1, i2) ->
+              | Ast.WcNil _ -> acc
+              | Ast.WcTyp (loc, id_tpl, ct) ->
+                  (mkwithtyp (fun x -> Pwith_type x) loc id_tpl ct) :: acc
+              | Ast.WcMod (_, i1, i2) ->
                   ((long_uident i1), (Pwith_module (long_uident i2))) :: acc
+              | Ast.WcTyS (loc, id_tpl, ct) ->
+                  (mkwithtyp (fun x -> Pwith_typesubst x) loc id_tpl ct) ::
+                    acc
+              | Ast.WcMoS (_, i1, i2) ->
+                  ((long_uident i1), (Pwith_modsubst (long_uident i2))) ::
+                    acc
               | Ast.WcAnd (_, wc1, wc2) -> mkwithc wc1 (mkwithc wc2 acc)
               | Ast.WcAnt (loc, _) ->
                   error loc "bad with constraint (antiquotation)"
@@ -18981,6 +19053,11 @@ module Printers =
                       | Ast.WcMod (_, i1, i2) ->
                           pp f "@[<2>module@ %a =@ %a@]" o#ident i1 o#ident
                             i2
+                      | Ast.WcTyS (_, t1, t2) ->
+                          pp f "@[<2>type@ %a :=@ %a@]" o#ctyp t1 o#ctyp t2
+                      | Ast.WcMoS (_, i1, i2) ->
+                          pp f "@[<2>module@ %a :=@ %a@]" o#ident i1 
+                            o#ident i2
                       | Ast.WcAnd (_, wc1, wc2) ->
                           (o#with_constraint f wc1;
                            pp f andsep;
