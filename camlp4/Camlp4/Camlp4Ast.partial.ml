@@ -199,6 +199,10 @@
     | WcTyp of loc and ctyp and ctyp
       (* module i = i *)
     | WcMod of loc and ident and ident
+      (* type t := t *)
+    | WcTyS of loc and ctyp and ctyp
+      (* module i := i *)
+    | WcMoS of loc and ident and ident
       (* wc and wc *)
     | WcAnd of loc and with_constr and with_constr
     | WcAnt of loc and string (* $s$ *) ]

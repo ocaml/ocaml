@@ -860,6 +860,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>type@ %a =@ %a@]" o#ctyp t1 o#ctyp t2
     | <:with_constr< module $i1$ = $i2$ >> ->
           pp f "@[<2>module@ %a =@ %a@]" o#ident i1 o#ident i2
+    | <:with_constr< type $t1$ := $t2$ >> ->
+          pp f "@[<2>type@ %a :=@ %a@]" o#ctyp t1 o#ctyp t2
+    | <:with_constr< module $i1$ := $i2$ >> ->
+          pp f "@[<2>module@ %a :=@ %a@]" o#ident i1 o#ident i2
     | <:with_constr< $wc1$ and $wc2$ >> ->
           do { o#with_constraint f wc1; pp f andsep; o#with_constraint f wc2 }
     | <:with_constr< $anti:s$ >> -> o#anti f s ];

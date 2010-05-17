@@ -446,7 +446,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "type"; t1 = type_longident_and_parameters; "="; t2 = opt_private_ctyp ->
             <:with_constr< type $t1$ = $t2$ >>
         | "module"; i1 = module_longident; "="; i2 = module_longident_with_app ->
-            <:with_constr< module $i1$ = $i2$ >> ] ]
+            <:with_constr< module $i1$ = $i2$ >>
+        | "type"; `ANTIQUOT (""|"typ"|"anti" as n) s; ":="; t = opt_private_ctyp ->
+            <:with_constr< type $anti:mk_anti ~c:"ctyp" n s$ := $t$ >>
+        | "type"; t1 = type_longident_and_parameters; ":="; t2 = opt_private_ctyp ->
+            <:with_constr< type $t1$ := $t2$ >>
+        | "module"; i1 = module_longident; ":="; i2 = module_longident_with_app ->
+            <:with_constr< module $i1$ := $i2$ >> ] ]
     ;
     opt_private_ctyp:
       [ [ "private"; t = ctyp -> <:ctyp< private $t$ >>

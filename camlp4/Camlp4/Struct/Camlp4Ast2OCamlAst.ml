@@ -370,22 +370,28 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp< $id:i$ >> -> (ident i, acc)
     | _ -> assert False ];
 
+  value mkwithtyp pwith_type loc id_tpl ct =
+    let (id, tpl) = type_parameters_and_type_name id_tpl [] in
+    let (params, variance) = List.split tpl in
+    let (kind, priv, ct) = opt_private_ctyp ct in
+    (id, pwith_type
+      {ptype_params = params; ptype_cstrs = [];
+        ptype_kind = kind;
+        ptype_private = priv;
+        ptype_manifest = Some ct;
+        ptype_loc = mkloc loc; ptype_variance = variance});
+
   value rec mkwithc wc acc =
     match wc with
-    [ WcNil _ -> acc
-    | WcTyp loc id_tpl ct ->
-        let (id, tpl) = type_parameters_and_type_name id_tpl [] in
-        let (params, variance) = List.split tpl in
-        let (kind, priv, ct) = opt_private_ctyp ct in
-        [(id,
-        Pwith_type
-          {ptype_params = params; ptype_cstrs = [];
-            ptype_kind = kind;
-            ptype_private = priv;
-            ptype_manifest = Some ct;
-            ptype_loc = mkloc loc; ptype_variance = variance}) :: acc]
-    | WcMod _ i1 i2 ->
+    [ <:with_constr<>> -> acc
+    | <:with_constr@loc< type $id_tpl$ = $ct$ >> ->
+        [mkwithtyp (fun x -> Pwith_type x) loc id_tpl ct :: acc]
+    | <:with_constr< module $i1$ = $i2$ >> ->
         [(long_uident i1, Pwith_module (long_uident i2)) :: acc]
+    | <:with_constr@loc< type $id_tpl$ := $ct$ >> ->
+        [mkwithtyp (fun x -> Pwith_typesubst x) loc id_tpl ct :: acc]
+    | <:with_constr< module $i1$ := $i2$ >> (*WcMoS _ i1 i2*) ->
+        [(long_uident i1, Pwith_modsubst (long_uident i2)) :: acc]
     | <:with_constr< $wc1$ and $wc2$ >> -> mkwithc wc1 (mkwithc wc2 acc)
     | <:with_constr@loc< $anti:_$ >> ->
          error loc "bad with constraint (antiquotation)" ];
