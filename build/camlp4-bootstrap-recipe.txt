@@ -1,0 +1,164 @@
+=== Initial setup ===
+  make clean
+  ./build/distclean.sh
+  ./configure -prefix `pwd`/_install
+  ./build/world.sh byte
+  # Go to "Bootstrap camlp4"
+
+=== Install the bootstrapping camlp4 processor ===
+  ./build/install.sh
+  # Either extend your PATH with _install
+    export PATH=`pwd`/_install:$PATH
+  # Or copy just the needed files (for better understanding)
+    cp _build/camlp4/camlp4boot.byte <somewhereinPATH>/bin/camlp4boot
+    cp _build/camlp4/camlp4o.byte <somewhereinPATH>/bin/camlp4o
+
+=== Build camlp4 ===
+  # This step is not needed right after a "./build/world.sh byte"
+  ./build/camlp4-byte-only.sh
+
+=== Bootstrap camlp4 ===
+  # First "Build camlp4"
+  # Then "Install the bootstrapping camlp4 processor"
+  ./build/camlp4-bootstrap.sh
+  # If the fixpoint not is reached yet
+    # Go to "Bootstrap camlp4"
+  # Otherwise
+    # Have a look at the changes in
+    # camlp4/boot it may be a good idea to commit them
+
+=== Case study "let open M in e" ===
+
+ Open the revised parser
+ Camlp4Parsers/Camlp4OCamlRevisedParser.ml
+
+ Look for similar constructs, indeed rules
+ that starts by the same prefix should in
+ the same entry. It is simpler to stick
+ them close to each other.
+
+ [ "let"; r = opt_rec; ...
+ | "let"; "module"; m = a_UIDENT; ...
+
+ So we naturally add something like
+
+ | "let"; "open"; ...
+
+ Then have a look to the "open" construct:
+
+ | "open"; i = module_longident ->
+
+ So we need a module_longident, it becomes:
+
+ | "let"; "open"; i = module_longident; "in"; e = SELF ->
+
+ Then we leave a dummy action but very close to what we want
+ in the end:
+
+ | "let"; "open"; i = module_longident; "in"; e = SELF ->
+   <:expr< open_in $id:i$ $e$ >>
+
+ Here it is just calling a (non-existing) function called open_in.
+
+ Check that there is no other place where we have to duplicate this
+ rule (yuk!). In our case it is! The sequence entry have the "let"
+ rules again.
+
+ Then go into Camlp4Parsers/Camlp4OCamlParser.ml and look for other
+ occurences.
+
+ When copy/pasting the rule take care of SELF occurences, you may
+ have to replace it by expr and expr LEVEL ";" in our case.
+
+ The return type of the production might be different from expr in
+ our case an action become <:str_item<...>> instead of <:expr<...>
+
+ Watch the DELETE_RULE as well, in our case I'm searching for the
+ literal string "let" in the source:
+
+ DELETE_RULE Gram expr: "let"; "open"; module_longident; "in"; SELF END;
+
+ Then build and bootstrap.
+
+ Then you can at last extend the AST, go in:
+
+ Camlp4/Camlp4Ast.partial.ml
+
+ And add the "open in" constructor (at the end).
+
+   (* let open i in e *)
+ | ExOpI of loc and ident and expr
+
+ Then build. Bootstrap once and build again.
+
+ We get a single warning in Camlp4/Struct/Camlp4Ast2OCamlAst.ml but
+ don't fix it now.
+
+ Then I hacked the camlp4/boot/camlp4boot.ml to generate:
+   Ast.ExOpI(_loc, i, e)
+ instead of
+   Ast.ExApp(_loc .... "open_in" ... i ... e ...)
+
+ Build. Bootstrap once and build again.
+
+ Then change the parsers again and replace the
+   open_in $id:i$ $e$
+ by
+   let open $i$ in $e$
+
+ Then change the Parsetree generation in
+   Camlp4/Struct/Camlp4Ast2OCamlAst.ml
+
+   | <:expr@loc< let open $i$ in $e$ >> ->
+       mkexp loc (Pexp_open (long_uident i) (expr e))
+
+ Change the pretty-printers as well (drawing inspiration in
+   "let module" in this case):
+
+ In Camlp4/Printers/OCaml.ml:
+   | <:expr< let open $i$ in $e$ >> ->
+       pp f "@[<2>let open %a@]@ @[<2>in@ %a@]" 
+             o#ident i o#reset_semi#expr e
+ And at the end of #simple_expr:
+   <:expr< let open $_$ in $_$ >>
+
+ Have a look in Camlp4/Printers/OCamlr.ml as well.
+
+=== Second case study "with t := ..." ===
+
+1/ Change the revised parser first.
+Add new parsing rules for := but keep the old actions for now.
+
+2/ Change Camlp4Ast.partial.ml, add:
+    (* type t := t *)
+    | WcTyS of loc and ctyp and ctyp
+    (* module i := i *)
+    | WcMoS of loc and ident and ident
+
+3/ Build and bootstrap once.
+
+4/ Change the generated camlp4/boot/camlp4boot.ml:
+   Look for ":=" and change occurences of
+   WcMod by WcMoS and WcTyp by WcTyS
+
+5/ Build (DO NOT bootstrap)
+   "Install the bootstrapping camlp4 processor"
+
+6/ Change the required files:
+   Camlp4/Printers/OCaml.ml:
+     just copy/paste&adapt what is done for
+       "... with type t = u" and
+       "... with module M = N"
+   Camlp4/Struct/Camlp4Ast2OCamlAst.ml:
+       I've factored out a common part under
+       another function and then copy/pasted.
+   Camlp4Parsers/Camlp4OCamlRevisedParser.ml:
+       Change the <:with_constr< type $...$ = $...$ >>
+       we've introduced earlier by replacing the '='
+       by ':='.
+   Camlp4Parsers/Camlp4OCamlParser.ml:
+       Copy paste what we have done in Camlp4OCamlRevisedParser
+       and but we need to call opt_private_ctyp instead of
+       ctyp (just like the "type =" construct).
+
+7/ Build & Bootstrap
