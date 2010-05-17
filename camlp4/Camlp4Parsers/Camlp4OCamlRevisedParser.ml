@@ -791,9 +791,8 @@ Very old (no more supported) syntax:\n\
       [ RIGHTA
         [ p = labeled_ipatt; e = SELF ->
             <:expr< fun $p$ -> $e$ >>
-        | "="; e = expr -> <:expr< $e$ >>
-        | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >>
-        | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
+        | bi = cvalue_binding -> bi
+      ] ]
     ;
     match_case:
       [ [ "["; l = LIST0 match_case0 SEP "|"; "]" -> Ast.mcOr_of_list l
@@ -1325,9 +1324,11 @@ Very old (no more supported) syntax:\n\
     ;
     cvalue_binding:
       [ [ "="; e = expr -> e
-        | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >>
-        | ":"; t = ctyp; ":>"; t2 = ctyp; "="; e = expr ->
-            <:expr< ($e$ : $t$ :> $t2$) >>
+        | ":"; t = poly_type; "="; e = expr -> <:expr< ($e$ : $t$) >>
+        | ":"; t = poly_type; ":>"; t2 = ctyp; "="; e = expr ->
+            match t with
+            [ <:ctyp< ! $_$ . $_$ >> -> raise (Stream.Error "unexpected polytype here")
+            | _ -> <:expr< ($e$ : $t$ :> $t2$) >> ]
         | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
     ;
     label:
