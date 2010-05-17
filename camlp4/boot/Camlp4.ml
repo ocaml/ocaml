@@ -14325,6 +14325,10 @@ module Struct =
             and binding x acc =
               match x with
               | Ast.BiAnd (_, x, y) -> binding x (binding y acc)
+              | Ast.BiEq (_loc, p,
+                  (Ast.ExTyc (_, e, (Ast.TyPol (_, vs, ty))))) ->
+                  ((patt (Ast.PaTyc (_loc, p, Ast.TyPol (_loc, vs, ty)))),
+                   (expr e)) :: acc
               | Ast.BiEq (_, p, e) -> ((patt p), (expr e)) :: acc
               | Ast.BiNil _ -> acc
               | _ -> assert false

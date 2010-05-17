@@ -764,6 +764,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match x with
     [ <:binding< $x$ and $y$ >> ->
          binding x (binding y acc)
+    | <:binding@_loc< $p$ = ($e$ : ! $vs$ . $ty$) >> ->
+        [(patt <:patt< ($p$ : ! $vs$ . $ty$ ) >>, expr e) :: acc]
     | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
     | <:binding<>> -> acc
     | _ -> assert False ]
