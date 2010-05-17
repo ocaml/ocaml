@@ -571,12 +571,12 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
-        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, []))
+        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc))
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
         Lfunction(Curried, [obj; meth; cache; pos],
-                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos]))
+                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos], e.exp_loc))
       else
         transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
@@ -614,10 +614,10 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = List.hd argl in
-        wrap (Lsend (kind, List.nth argl 1, obj, []))
+        wrap (Lsend (kind, List.nth argl 1, obj, [], e.exp_loc))
       else if p.prim_name = "%sendcache" then
         match argl with [obj; meth; cache; pos] ->
-          wrap (Lsend(Cached, meth, obj, [cache; pos]))
+          wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
         let prim = transl_prim p args in
@@ -737,11 +737,11 @@ and transl_exp0 e =
       let obj = transl_exp expr in
       let lam =
         match met with
-          Tmeth_val id -> Lsend (Self, Lvar id, obj, [])
+          Tmeth_val id -> Lsend (Self, Lvar id, obj, [], e.exp_loc)
         | Tmeth_name nm ->
             let (tag, cache) = Translobj.meth obj nm in
             let kind = if cache = [] then Public else Cached in
-            Lsend (kind, tag, obj, cache)
+            Lsend (kind, tag, obj, cache, e.exp_loc)
       in
       event_after e lam
   | Texp_new (cl, _) ->
@@ -840,10 +840,10 @@ and transl_tupled_cases patl_expr_list =
 and transl_apply lam sargs loc =
   let lapply funct args =
     match funct with
-      Lsend(k, lmet, lobj, largs) ->
-        Lsend(k, lmet, lobj, largs @ args)
-    | Levent(Lsend(k, lmet, lobj, largs), _) ->
-        Lsend(k, lmet, lobj, largs @ args)
+      Lsend(k, lmet, lobj, largs, loc) ->
+        Lsend(k, lmet, lobj, largs @ args, loc)
+    | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
+        Lsend(k, lmet, lobj, largs @ args, loc)
     | Lapply(lexp, largs, _) ->
         Lapply(lexp, largs @ args, loc)
     | lexp ->
