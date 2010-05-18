@@ -729,10 +729,7 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
 and class_expr cl_num val_env met_env scl =
   match scl.pcl_desc with
     Pcl_constr (lid, styl) ->
-      let (path, decl) =
-        try Env.lookup_class lid val_env with Not_found ->
-          raise(Error(scl.pcl_loc, Unbound_class lid))
-      in
+      let (path, decl) = Typetexp.find_class val_env scl.pcl_loc lid in
       if Path.same decl.cty_path unbound_class then
         raise(Error(scl.pcl_loc, Unbound_class_2 lid));
       let tyl = List.map
