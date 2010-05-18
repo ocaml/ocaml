@@ -30,7 +30,6 @@ type error =
   | Apply_wrong_label of label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
-  | Unbound_class of Longident.t
   | Unbound_class_2 of Longident.t
   | Unbound_class_type of Longident.t
   | Unbound_class_type_2 of Longident.t
@@ -1488,9 +1487,6 @@ let report_error ppf = function
       fprintf ppf "@[%s@ %a@]"
         "This pattern cannot match self: it only matches values of type"
         Printtyp.type_expr ty
-  | Unbound_class cl ->
-      fprintf ppf "@[Unbound class@ %a@]"
-      Printtyp.longident cl
   | Unbound_class_2 cl ->
       fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
       Printtyp.longident cl
