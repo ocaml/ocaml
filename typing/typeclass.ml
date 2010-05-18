@@ -31,7 +31,6 @@ type error =
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class_2 of Longident.t
-  | Unbound_class_type of Longident.t
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Constructor_type_mismatch of string * (type_expr * type_expr) list
@@ -389,10 +388,7 @@ and class_signature env sty sign =
 and class_type env scty =
   match scty.pcty_desc with
     Pcty_constr (lid, styl) ->
-      let (path, decl) =
-        try Env.lookup_cltype lid env with Not_found ->
-          raise(Error(scty.pcty_loc, Unbound_class_type lid))
-      in
+      let (path, decl) = Typetexp.find_cltype env scty.pcty_loc lid in
       if Path.same decl.clty_path unbound_class then
         raise(Error(scty.pcty_loc, Unbound_class_type_2 lid));
       let (params, clty) =
@@ -1489,9 +1485,6 @@ let report_error ppf = function
         Printtyp.type_expr ty
   | Unbound_class_2 cl ->
       fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
-      Printtyp.longident cl
-  | Unbound_class_type cl ->
-      fprintf ppf "@[Unbound class type@ %a@]"
       Printtyp.longident cl
   | Unbound_class_type_2 cl ->
       fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"

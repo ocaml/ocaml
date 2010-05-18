@@ -46,6 +46,7 @@ type error =
   | Unbound_module of Longident.t
   | Unbound_class of Longident.t
   | Unbound_modtype of Longident.t
+  | Unbound_cltype of Longident.t
   | Ill_typed_functor_application of Longident.t
 
 exception Error of Location.t * error
@@ -91,6 +92,8 @@ let find_value = find_component Env.lookup_value (fun lid -> Unbound_value lid)
 let find_module = find_component Env.lookup_module (fun lid -> Unbound_module lid)
 
 let find_modtype = find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
+
+let find_cltype = find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
 
 (* Support for first-class modules. *)
 
@@ -651,5 +654,7 @@ let report_error ppf = function
       fprintf ppf "Unbound class %a" longident lid
   | Unbound_modtype lid ->
       fprintf ppf "Unbound module type %a" longident lid
+  | Unbound_cltype lid ->
+      fprintf ppf "Unbound class type %a" longident lid
   | Ill_typed_functor_application lid ->
       fprintf ppf "Ill-typed functor application %a" longident lid
