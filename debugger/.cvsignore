@@ -2,3 +2,5 @@ lexer.ml
 parser.ml
 parser.mli
 ocamldebug
+dynlink.ml
+dynlink.mli
