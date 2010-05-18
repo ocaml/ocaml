@@ -60,6 +60,7 @@ type error =
   | Unbound_label of Longident.t
   | Unbound_module of Longident.t
   | Unbound_class of Longident.t
+  | Unbound_modtype of Longident.t
   | Ill_typed_functor_application of Longident.t
 
 exception Error of Location.t * error
@@ -77,3 +78,4 @@ val find_label: Env.t -> Location.t -> Longident.t -> Types.label_description
 val find_value: Env.t -> Location.t -> Longident.t -> Path.t * Types.value_description
 val find_class:  Env.t -> Location.t -> Longident.t -> Path.t * Types.class_declaration
 val find_module: Env.t -> Location.t -> Longident.t -> Path.t * Types.module_type
+val find_modtype: Env.t -> Location.t -> Longident.t -> Path.t * Types.modtype_declaration

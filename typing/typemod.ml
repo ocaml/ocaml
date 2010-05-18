@@ -24,8 +24,7 @@ open Typedtree
 open Format
 
 type error =
-    Unbound_modtype of Longident.t
-  | Cannot_apply of module_type
+    Cannot_apply of module_type
   | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
@@ -213,12 +212,8 @@ let rec map_rec' fn decls rem =
 let rec approx_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
-      begin try
-        let (path, info) = Env.lookup_modtype lid env in
-        Tmty_ident path
-      with Not_found ->
-        raise(Error(smty.pmty_loc, Unbound_modtype lid))
-      end
+      let (path, info) = Typetexp.find_modtype env smty.pmty_loc lid in
+      Tmty_ident path
   | Pmty_signature ssg ->
       Tmty_signature(approx_sig env ssg)
   | Pmty_functor(param, sarg, sres) ->
@@ -332,11 +327,8 @@ let rec get_values = function
 (* Check and translate a module type expression *)
 
 let transl_modtype_longident loc env lid =
-  try
-    let (path, info) = Env.lookup_modtype lid env in
-    path
-  with Not_found ->
-    raise(Error(loc, Unbound_modtype lid))
+  let (path, info) = Typetexp.find_modtype env loc lid in
+  path
 
 let rec transl_modtype env smty =
   match smty.pmty_desc with
@@ -1047,8 +1039,7 @@ let package_units objfiles cmifile modulename =
 open Printtyp
 
 let report_error ppf = function
-    Unbound_modtype lid -> fprintf ppf "Unbound module type %a" longident lid
-  | Cannot_apply mty ->
+    Cannot_apply mty ->
       fprintf ppf
         "@[This module is not a functor; it has type@ %a@]" modtype mty
   | Not_included errs ->

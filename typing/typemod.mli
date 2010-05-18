@@ -36,8 +36,7 @@ val package_units:
         string list -> string -> string -> Typedtree.module_coercion
 
 type error =
-    Unbound_modtype of Longident.t
-  | Cannot_apply of module_type
+    Cannot_apply of module_type
   | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
