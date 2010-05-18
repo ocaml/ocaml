@@ -24,8 +24,7 @@ open Typedtree
 open Format
 
 type error =
-    Unbound_module of Longident.t
-  | Unbound_modtype of Longident.t
+    Unbound_modtype of Longident.t
   | Cannot_apply of module_type
   | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
@@ -56,18 +55,10 @@ let extract_sig_open env loc mty =
     Tmty_signature sg -> sg
   | _ -> raise(Error(loc, Structure_expected mty))
 
-(* Lookup the type of a module path *)
-
-let type_module_path env loc lid =
-  try
-    Env.lookup_module lid env
-  with Not_found ->
-    raise(Error(loc, Unbound_module lid))
-
 (* Compute the environment after opening a module *)
 
 let type_open env loc lid =
-  let (path, mty) = type_module_path env loc lid in
+  let (path, mty) = Typetexp.find_module env loc lid in
   let sg = extract_sig_open env loc mty in
   Env.open_signature path sg env
 
@@ -147,13 +138,13 @@ let merge_constraint initial_env loc sg lid constr =
         rem
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
-        let (path, mty') = type_module_path initial_env loc lid in
+        let (path, mty') = Typetexp.find_module initial_env loc lid in
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         Tsig_module(id, newmty, rs) :: rem
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_modsubst lid)
       when Ident.name id = s ->
-        let (path, mty') = type_module_path initial_env loc lid in
+        let (path, mty') = Typetexp.find_module initial_env loc lid in
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         real_id := Some id;
@@ -191,7 +182,7 @@ let merge_constraint initial_env loc sg lid constr =
     | [s], Pwith_modsubst lid ->
         let id =
           match !real_id with None -> assert false | Some id -> id in
-        let (path, _) = type_module_path initial_env loc lid in
+        let (path, _) = Typetexp.find_module initial_env loc lid in
         let sub = Subst.add_module id path Subst.identity in
         Subst.signature sub sg
     | _ ->
@@ -653,7 +644,7 @@ let check_recmodule_inclusion env bindings =
 let rec type_module funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
-      let (path, mty) = type_module_path env smod.pmod_loc lid in
+      let (path, mty) = Typetexp.find_module env smod.pmod_loc lid in
       rm { mod_desc = Tmod_ident path;
            mod_type = Mtype.strengthen env mty path;
            mod_env = env;
@@ -951,7 +942,7 @@ let type_module_type_of env smod =
   let mty =
     match smod.pmod_desc with
     | Pmod_ident lid -> (* turn off strengthening in this case *)
-        let (path, mty) = type_module_path env smod.pmod_loc lid in mty
+        let (path, mty) = Typetexp.find_module env smod.pmod_loc lid in mty
     | _ -> (type_module env smod).mod_type in
   (* PR#5037: clean up inferred signature to remove duplicate specs *)
   let mty = simplify_modtype mty in
@@ -1056,8 +1047,7 @@ let package_units objfiles cmifile modulename =
 open Printtyp
 
 let report_error ppf = function
-  | Unbound_module lid -> fprintf ppf "Unbound module %a" longident lid
-  | Unbound_modtype lid -> fprintf ppf "Unbound module type %a" longident lid
+    Unbound_modtype lid -> fprintf ppf "Unbound module type %a" longident lid
   | Cannot_apply mty ->
       fprintf ppf
         "@[This module is not a functor; it has type@ %a@]" modtype mty

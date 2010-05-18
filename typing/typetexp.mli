@@ -76,3 +76,4 @@ val find_constructor: Env.t -> Location.t -> Longident.t -> Types.constructor_de
 val find_label: Env.t -> Location.t -> Longident.t -> Types.label_description
 val find_value: Env.t -> Location.t -> Longident.t -> Path.t * Types.value_description
 val find_class:  Env.t -> Location.t -> Longident.t -> Path.t * Types.class_declaration
+val find_module: Env.t -> Location.t -> Longident.t -> Path.t * Types.module_type

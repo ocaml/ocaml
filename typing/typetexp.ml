@@ -87,6 +87,8 @@ let find_class = find_component Env.lookup_class (fun lid -> Unbound_class lid)
 
 let find_value = find_component Env.lookup_value (fun lid -> Unbound_value lid)
 
+let find_module = find_component Env.lookup_module (fun lid -> Unbound_module lid)
+
 (* Support for first-class modules. *)
 
 let transl_modtype_longident = ref (fun _ -> assert false)
