@@ -7,7 +7,7 @@ Objective Caml reference manual.
 
 \section{Integer literals for types "int32", "int64" and "nativeint"}
 
-(introduced in OCaml 3.07)
+(Introduced in OCaml 3.07)
 
 \begin{syntax}
 int32-literal: integer-literal 'l'
@@ -29,7 +29,7 @@ provide operations on these integer types.
 \section{Streams and stream parsers}
 \label{s:streams}
 
-(removed in OCaml 3.03)
+(Removed in OCaml 3.03)
 
 The syntax for streams and stream parsers is no longer part of the
 Objective Caml language, but available through a Camlp4 syntax
@@ -43,7 +43,7 @@ run "ocaml" and issue the \verb'#load "camlp4o.cma";;' command.
 
 \section{Recursive definitions of values} \label{s:letrecvalues}
 
-(introduced in OCaml 1.00)
+(Introduced in OCaml 1.00)
 
 As mentioned in section~\ref{s:localdef}, the @'let rec'@ binding
 construct, in addition to the definition of recursive functions,
@@ -111,7 +111,7 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
 
 \section{Range patterns}
 
-(introduced in OCaml 1.00)
+(Introduced in OCaml 1.00)
 
 In patterns, Objective Caml recognizes the form
 @"'" @c@ "'" ".." "'" @d@ "'"@
@@ -127,7 +127,7 @@ instance, the pattern "'0'..'9'" matches all characters that are digits.
 \section{Assertion checking}
 \ikwd{assert\@\texttt{assert}}
 
-(introduced in OCaml 1.06)
+(Introduced in OCaml 1.06)
 
 Objective Caml supports the "assert" construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
@@ -146,7 +146,7 @@ is not turned off by the "-noassert" option).
 \section{Lazy evaluation}
 \ikwd{lazy\@\texttt{lazy}}
 
-(introduced in OCaml 1.06 for expressions; in OCaml 3.11.0 for patterns)
+(Introduced in OCaml 1.06 for expressions; in OCaml 3.11 for patterns)
 
 The expression @"lazy" expr@ returns a value \var{v} of type "Lazy.t" that
 encapsulates the computation of @expr@.  The argument @expr@ is not
@@ -177,7 +177,7 @@ standard library (see
 \ikwd{let\@\texttt{let}}
 \ikwd{module\@\texttt{module}}
 
-(introduced in OCaml 2.00)
+(Introduced in OCaml 2.00)
 
 The expression
 @"let" "module" module-name "=" module-expr "in" expr@
@@ -197,7 +197,7 @@ It then returns the value of @expr@.  For example:
 \ikwd{module\@\texttt{module}}
 \ikwd{rec\@\texttt{rec}}
 
-(introduced in OCaml 3.07)
+(Introduced in OCaml 3.07)
 
 \begin{syntax}
 definition:
@@ -279,7 +279,7 @@ and for row types (section~\ref{s-private-rows}).
 \subsection{Private variant and record types}
 \label{s-private-types-variant}
 
-(introduced in OCaml 3.07)
+(Introduced in OCaml 3.07)
 
 \begin{syntax}
 type-representation:
@@ -320,7 +320,7 @@ the parameter by a `"+"' or a `"-"', it is invariant otherwise.
 
 \subsection{Private type abbreviations} \label{s-private-types-abbrev}
 
-(introduced in OCaml 3.11.0)
+(Introduced in OCaml 3.11)
 
 \begin{syntax}
 type-equation:
@@ -368,7 +368,7 @@ N.t :> int)" and "(l : N.t list :> int list)" for the above examples.
 \subsection{Private row types} \label{s-private-rows}
 \ikwd{private\@\texttt{private}}
 
-(introduced in OCaml 3.09.0)
+(Introduced in OCaml 3.09)
 
 \begin{syntax}
 type-equation:
@@ -428,7 +428,7 @@ is not inferred, and must be given explicitly.
 \ikwd{let\@\texttt{let}}
 \ikwd{open\@\texttt{open}}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 expr:
@@ -454,7 +454,7 @@ fragment is more self-contained).
 
 \section{Record notations}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 pattern:
@@ -508,7 +508,7 @@ record type.
 \section{Explicit polymorphic type annotations}
 \ikwd{let\@\texttt{let}}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 let-binding:
@@ -546,7 +546,7 @@ polymorphic.
 \ikwd{type\@\texttt{type}}
 \ikwd{fun\@\texttt{fun}}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 parameter:
@@ -600,7 +600,7 @@ first-class modules.
 \ikwd{val\@\texttt{val}}
 \ikwd{with\@\texttt{with}}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 typexpr:
@@ -628,23 +628,67 @@ Modules are typically thought as static components. This extension
 makes it possible to pack a module as a first-class value, which can
 later be dynamically unpacked into a module.
 
-Note that package types are a subset of module type expressions. The accepted
-forms are named module types with optional constraints of a limited form
-(only non-parametrized types can be specified).
+The expression @('module' module-expr ':' package-type)@ converts the
+module (structure or functor) denoted by module expression @module-expr@
+to a value of the core language that encapsulates this module.  The
+type of this core language value is @('module' package-type)@.
 
-The new forms of expressions and module expressions turn a value of
-the module language into a value of the base language and conversely.
-The type of the expression @("module" module-expr ":" package-type)@
-is @("module" package-type)@.
+Conversely, the module expression @('val' expr ':' package-type)@
+evaluates the core language expression @expr@ to a value, which must
+have type @'module' package-type@, and extracts the module that was
+encapsulated in this value.
+
+The @package-type@ syntactic class appearing in the  @('module'
+module-expr ':' package-type)@ expressions, the @('val' expr ':'
+package-type)@ module expressions and the @('module' package-type)@
+type expression represents a subset of module types.  
+This subset consists of named module types with optional constraints
+of a limited form: only non-parametrized types can be specified.  For
+type-checking purposes, package types are compared by path equality on
+the module type name component, and normal type equality for
+constraints.
 
 The module expression @("val" expr ":" package-type)@ cannot be used in the
-body of a functor (but it can be used in a local module expression anywhere).
-The type for the expression @expr@ must be @("module" package-type)@ (with the
-same package type). Package types are compared by path equality on the module
-type name component, and normal type equality for constraints.
+body of a functor, because this can cause unsoundness in conjunction
+with applicative functors.  It can be used anywhere in the context of a local
+module binding @'let' M = ("val" expr_1 ":" package-type) "in" expr_2@,
+however.
 
+\paragraph{Basic example} A typical use of first-class modules is to
+select at run-time among several implementations of a signatures.  
+Each implementation is a structure that we can encapsulate as a
+first-class module, then store in a data structure such as a hash
+table:
+\begin{verbatim}
+        module type DEVICE = sig ... end
+        let devices : (string, module DEVICE) Hashtbl.t = Hashtbl.create 17
+
+        module SVG = struct ... end
+        let _ = Hashtbl.add devices "SVG" (module SVG : DEVICE)
+
+        module PDF = struct ... end
+        let _ = Hashtbl.add devices "PDF" (module PDF: DEVICE)
+\end{verbatim}
+We can then select one implementation based on command-line
+arguments, for instance:
+\begin{verbatim}
+        module Device =
+          (val (try Hashtbl.find devices (parse_cmdline())
+                with Not_found -> eprintf "Unknown device %s\n"; exit 2)
+           : DEVICE)
+\end{verbatim}
+Alternatively, the selection can be performed within a function:
+\begin{verbatim}
+        let draw_using_device device_name picture =
+          let module Device =
+            (val (Hashtbl.find_devices device_name) : DEVICE)
+          in
+            Device.draw picture
+\end{verbatim}
+
+\paragraph{Advanced examples}
 With first-class modules, it is possible to parametrize some code over the
-implementation of a module without using a functor. Here is an example:
+implementation of a module without using a functor.
 
 \begin{verbatim}
         let sort (type s) set l =
@@ -666,9 +710,9 @@ The type inferred for this function is "(module Set.S with type elt =
 
 This function has type "('a -> 'a -> int) -> (module Set.S with type elt = 'a)".
 
-Another typical use of first-class module is to encode existential
-types. In particular, they can be used to simulate Generalized
-Algebraic Data Types. To demonstrate this, we first define a type
+Another advanced use of first-class module is to encode existential
+types. In particular, they can be used to simulate generalized
+algebraic data types (GADT). To demonstrate this, we first define a type
 of witnesses for type equalities:
 
 \begin{verbatim}
@@ -759,7 +803,7 @@ polymorphic recursion.
 \ikwd{type\@\texttt{type}}
 \ikwd{include\@\texttt{include}}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 module-type: 
@@ -795,7 +839,7 @@ construct at the structure level this time:
 \ikwd{module\@\texttt{module}}
 \ikwd{type\@\texttt{type}}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 mod-constraint:
@@ -858,7 +902,7 @@ same type.
 \ikwd{val!\@\texttt{val!}}
 \ikwd{inherit!\@\texttt{inherit!}}
 
-(introduced in OCaml 3.12.0)
+(Introduced in OCaml 3.12)
 
 \begin{syntax}
 class-field:
@@ -880,5 +924,5 @@ If no such overriding occurs, an error is signaled.
 
 As a side-effect, these 3 keywords avoid the warnings
 ``method override'' and `` instance variable override''.
-As of Objective Caml 3.12.0, the warning ``method override'' has to be
+As of Objective Caml 3.12, the warning ``method override'' has to be
 enabled manually for backwards compatibility reasons.
