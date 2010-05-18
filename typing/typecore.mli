@@ -63,12 +63,7 @@ val force_delayed_checks: unit -> unit
 val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
-    Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
-  | Unbound_module of Longident.t
-  | Unbound_functor of Longident.t
-  | Polymorphic_label of Longident.t
+    Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
@@ -84,7 +79,6 @@ type error =
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
-  | Unbound_class of Longident.t
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr

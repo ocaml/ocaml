@@ -28,7 +28,6 @@ type error =
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
-  | Unbound_class of Longident.t
   | Unbound_row_variable of Longident.t
   | Type_mismatch of (type_expr * type_expr) list
   | Alias_type_mismatch of (type_expr * type_expr) list
@@ -41,10 +40,52 @@ type error =
   | Cannot_quantify of string * type_expr
   | Multiple_constraints_on_type of string
   | Repeated_method_label of string
+  | Unbound_value of Longident.t
+  | Unbound_constructor of Longident.t
+  | Unbound_label of Longident.t
+  | Unbound_module of Longident.t
+  | Unbound_class of Longident.t
+  | Ill_typed_functor_application of Longident.t
 
 exception Error of Location.t * error
 
 type variable_context = int * (string, type_expr) Tbl.t
+
+(* Narrowing unbound identifier errors. *)
+
+let rec narrow_unbound_lid_error env loc lid make_error =
+  let check_module mlid =
+    try ignore (Env.lookup_module mlid env)
+    with Not_found -> narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid); assert false
+  in
+  begin match lid with
+  | Longident.Lident _ -> ()
+  | Longident.Ldot (mlid, _) -> check_module mlid
+  | Longident.Lapply (flid, mlid) ->
+      check_module flid;
+      check_module mlid;
+      raise (Error (loc, Ill_typed_functor_application lid))
+  end;
+  raise (Error (loc, make_error lid))
+
+let find_component lookup make_error env loc lid =
+  try
+    match lid with
+    | Longident.Ldot (Longident.Lident "*predef*", s) -> lookup (Longident.Lident s) Env.initial
+    | _ -> lookup lid env
+  with Not_found ->
+    narrow_unbound_lid_error env loc lid make_error;
+    assert false
+
+let find_type = find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
+
+let find_constructor = find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
+
+let find_label = find_component Env.lookup_label (fun lid -> Unbound_label lid)
+
+let find_class = find_component Env.lookup_class (fun lid -> Unbound_class lid)
+
+let find_value = find_component Env.lookup_value (fun lid -> Unbound_value lid)
 
 (* Support for first-class modules. *)
 
@@ -151,17 +192,7 @@ let rec transl_type env policy styp =
   | Ptyp_tuple stl ->
       newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl) ->
-      let (path, decl) =
-        let lid, env =
-          match lid with
-          | Longident.Ldot (Longident.Lident "*predef*", lid) ->
-              Longident.Lident lid, Env.initial
-          | _ -> lid, env
-        in
-        try
-          Env.lookup_type lid env
-        with Not_found ->
-          raise(Error(styp.ptyp_loc, Unbound_type_constructor lid)) in
+      let (path, decl) = find_type env styp.ptyp_loc lid in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
@@ -533,6 +564,7 @@ let transl_type_scheme env styp =
   generalize typ;
   typ
 
+
 (* Error report *)
 
 open Format
@@ -555,8 +587,6 @@ let report_error ppf = function
       fprintf ppf "Already bound type parameter '%s" name
   | Recursive_type ->
       fprintf ppf "This type is recursive"
-  | Unbound_class lid ->
-      fprintf ppf "Unbound class %a" longident lid
   | Unbound_row_variable lid ->
       fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
@@ -604,3 +634,15 @@ let report_error ppf = function
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
         s "Multiple occurences are not allowed."
+  | Unbound_value lid ->
+      fprintf ppf "Unbound value %a" longident lid
+  | Unbound_module lid ->
+      fprintf ppf "Unbound module %a" longident lid
+  | Unbound_constructor lid ->
+      fprintf ppf "Unbound constructor %a" longident lid
+  | Unbound_label lid ->
+      fprintf ppf "Unbound record field label %a" longident lid
+  | Unbound_class lid ->
+      fprintf ppf "Unbound class %a" longident lid
+  | Ill_typed_functor_application lid ->
+      fprintf ppf "Ill-typed functor application %a" longident lid
