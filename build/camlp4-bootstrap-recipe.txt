@@ -33,7 +33,7 @@
  Camlp4Parsers/Camlp4OCamlRevisedParser.ml
 
  Look for similar constructs, indeed rules
- that starts by the same prefix should in
+ that start by the same prefix should in
  the same entry. It is simpler to stick
  them close to each other.
 
