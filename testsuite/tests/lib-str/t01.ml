@@ -588,7 +588,7 @@ let automated_test() =
   start_test "Search for /\\ba/";
   let r = Str.regexp "\\ba" in
   let n = 0 in
-  test_search_forward r n "abcd"
+  test_search_forward r n "a2cd"
     [|"a"|];
   test_search_forward r n "the a"
     [|"a"|];
@@ -606,7 +606,7 @@ let automated_test() =
   let n = 0 in
   test_search_forward r n "a"
     [|"a"|];
-  test_search_forward r n "bcda"
+  test_search_forward r n "bc_a"
     [|"a"|];
   test_search_forward r n "a foo"
     [|"a"|];

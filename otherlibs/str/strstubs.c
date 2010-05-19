@@ -109,10 +109,19 @@ static void free_backtrack_stack(struct backtrack_stack * stack)
 #define In_bitset(s,i,tmp) (tmp = (i), ((s)[tmp >> 3] >> (tmp & 7)) & 1)
 
 /* Determine if a character is a word constituent */
+/* PR#4874: word constituent = letter, digit, underscore. */
+
 static unsigned char re_word_letters[32] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 254, 255, 255, 7, 254, 255, 255, 7,
-  0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 255, 255, 255, 127, 255
+  0x00, 0x00, 0x00, 0x00,       /* 0x00-0x1F: none */
+  0x00, 0x00, 0xFF, 0x03,       /* 0x20-0x3F: digits 0-9 */
+  0xFE, 0xFF, 0xFF, 0x87,       /* 0x40-0x5F: A to Z, _ */
+  0xFE, 0xFF, 0xFF, 0x07,       /* 0x60-0x7F: a to z */
+  0x00, 0x00, 0x00, 0x00,       /* 0x80-0x9F: none */
+  0x00, 0x00, 0x00, 0x00,       /* 0xA0-0xBF: none */
+  0xFF, 0xFF, 0x7F, 0xFF,       /* 0xC0-0xDF: Latin-1 accented uppercase */
+  0xFF, 0xFF, 0x7F, 0xFF        /* 0xE0-0xFF: Latin-1 accented lowercase */
 };
+
 #define Is_word_letter(c) ((re_word_letters[(c) >> 3] >> ((c) & 7)) & 1)
 
 /* The bytecode interpreter for the NFA */

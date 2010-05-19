@@ -81,6 +81,11 @@ Standard library:
 * Random: changed the algorithm to produce better randomness.  Now passes the
   DieHard tests.
 
+Other libraries:
+* Str: letters that constitute a word now include digits 0-9 and
+  underscore _.  This changes the interpretation of '\b' (word boundary)
+  in regexps, but is more consistent with other regexp libraries. (PR#4874).
+
 Ocamlbuild:
 - Add support for native dynlink.
 
