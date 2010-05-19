@@ -1050,6 +1050,9 @@ module Sig =
           ExWhi of loc * expr * expr
           | (* let open i in e *)
           ExOpI of loc * ident * expr
+          | (* fun (type t) -> e *)
+          (* let f x (type t) y z = e *)
+          ExFUN of loc * string * expr
           | (* (module ME : S) which is represented as (module (ME : S)) *)
           ExPkg of loc * module_expr
           and module_type =
@@ -1836,6 +1839,7 @@ module Sig =
           | ExVrn of loc * string
           | ExWhi of loc * expr * expr
           | ExOpI of loc * ident * expr
+          | ExFUN of loc * string * expr
           | ExPkg of loc * module_expr
           and module_type =
           | MtNil of loc
@@ -8101,6 +8105,17 @@ module Struct =
                                       Ast.IdUid (_loc, "ExPkg"))),
                                   meta_loc _loc x0),
                                 meta_module_expr _loc x1)
+                          | Ast.ExFUN (x0, x1, x2) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExApp (_loc,
+                                    Ast.ExId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "ExFUN"))),
+                                    meta_loc _loc x0),
+                                  meta_string _loc x1),
+                                meta_expr _loc x2)
                           | Ast.ExOpI (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -10197,6 +10212,17 @@ module Struct =
                                       Ast.IdUid (_loc, "ExPkg"))),
                                   meta_loc _loc x0),
                                 meta_module_expr _loc x1)
+                          | Ast.ExFUN (x0, x1, x2) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaApp (_loc,
+                                    Ast.PaId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "ExFUN"))),
+                                    meta_loc _loc x0),
+                                  meta_string _loc x1),
+                                meta_expr _loc x2)
                           | Ast.ExOpI (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -12100,6 +12126,10 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#ident _x_i1 in
                       let _x_i2 = o#expr _x_i2 in ExOpI (_x, _x_i1, _x_i2)
+                  | ExFUN (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#expr _x_i2 in ExFUN (_x, _x_i1, _x_i2)
                   | ExPkg (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#module_expr _x_i1 in ExPkg (_x, _x_i1)
@@ -12882,6 +12912,9 @@ module Struct =
                   | ExOpI (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
+                  | ExFUN (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#string _x_i1 in let o = o#expr _x_i2 in o
                   | ExPkg (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#module_expr _x_i1 in o
                   
@@ -14400,6 +14433,7 @@ module Struct =
                   mkexp loc (Pexp_pack (module_expr me, package_type pt))
               | Ast.ExPkg (loc, _) ->
                   error loc "(module_expr : package_type) expected here"
+              | ExFUN (loc, i, e) -> mkexp loc (Pexp_newtype (i, expr e))
               | Ast.ExCom (loc, _, _) ->
                   error loc "expr, expr: not allowed here"
               | Ast.ExSem (loc, _, _) ->
@@ -17821,6 +17855,8 @@ module Printers =
               
             type sep = (unit, formatter, unit) format
             
+            type fun_binding = [ | `patt of Ast.patt | `newtype of string ]
+            
             val list' :
               (formatter -> 'a -> unit) ->
                 ('b, formatter, unit) format ->
@@ -17848,7 +17884,7 @@ module Printers =
             val get_ctyp_args :
               Ast.ctyp -> Ast.ctyp list -> (Ast.ctyp * (Ast.ctyp list))
               
-            val expr_fun_args : Ast.expr -> ((Ast.patt list) * Ast.expr)
+            val expr_fun_args : Ast.expr -> ((fun_binding list) * Ast.expr)
               
             class printer :
               ?curry_constr: bool ->
@@ -17907,6 +17943,8 @@ module Printers =
                         
                       method expr_list_cons :
                         bool -> formatter -> Ast.expr -> unit
+                        
+                      method fun_binding : formatter -> fun_binding -> unit
                         
                       method functor_arg :
                         formatter -> (string * Ast.module_type) -> unit
@@ -17980,7 +18018,7 @@ module Printers =
                       method patt_tycon : formatter -> Ast.patt -> unit
                         
                       method patt_expr_fun_args :
-                        formatter -> (Ast.patt * Ast.expr) -> unit
+                        formatter -> (fun_binding * Ast.expr) -> unit
                         
                       method patt_class_expr_fun_args :
                         formatter -> (Ast.patt * Ast.class_expr) -> unit
@@ -18068,6 +18106,8 @@ module Printers =
             include Syntax
               
             type sep = (unit, formatter, unit) format
+            
+            type fun_binding = [ | `patt of Ast.patt | `newtype of string ]
             
             let pp = fprintf
               
@@ -18195,8 +18235,11 @@ module Printers =
               | (Ast.ExFun (_, (Ast.McArr (_, p, (Ast.ExNil _), e))) as ge)
                   ->
                   if is_irrefut_patt p
-                  then (let (pl, e) = expr_fun_args e in ((p :: pl), e))
+                  then
+                    (let (pl, e) = expr_fun_args e in (((`patt p) :: pl), e))
                   else ([], ge)
+              | Ast.ExFUN (_, i, e) ->
+                  let (pl, e) = expr_fun_args e in (((`newtype i) :: pl), e)
               | ge -> ([], ge)
               
             let rec class_expr_fun_args =
@@ -18363,6 +18406,12 @@ module Printers =
                         pp f "@ | @[<2>%a@ when@ %a@ ->@ %a@]" o#patt p
                           o#under_pipe#expr w o#under_pipe#expr e
                   
+                method fun_binding =
+                  fun f ->
+                    function
+                    | `patt p -> o#simple_patt f p
+                    | `newtype i -> pp f "(type %s)" i
+                  
                 method binding =
                   fun f bi ->
                     let () = o#node f bi Ast.loc_of_binding
@@ -18381,11 +18430,11 @@ module Printers =
                              | (Ast.PaId (_, (Ast.IdLid (_, _))),
                                 Ast.ExTyc (_, e, t)) ->
                                  pp f "%a :@ %a =@ %a"
-                                   (list o#simple_patt "@ ") (p :: pl) 
-                                   o#ctyp t o#expr e
+                                   (list o#fun_binding "@ ")
+                                   ((`patt p) :: pl) o#ctyp t o#expr e
                              | _ ->
                                  pp f "%a @[<0>%a=@]@ %a" o#simple_patt p
-                                   (list' o#simple_patt "" "@ ") pl o#expr e)
+                                   (list' o#fun_binding "" "@ ") pl o#expr e)
                       | Ast.BiAnt (_, s) -> o#anti f s
                   
                 method record_binding =
@@ -18446,7 +18495,7 @@ module Printers =
                   fun f (p, e) ->
                     let (pl, e) = expr_fun_args e
                     in
-                      pp f "%a@ ->@ %a" (list o#simple_patt "@ ") (p :: pl)
+                      pp f "%a@ ->@ %a" (list o#fun_binding "@ ") (p :: pl)
                         o#expr e
                   
                 method patt_class_expr_fun_args =
@@ -18606,7 +18655,11 @@ module Printers =
                             loc
                       | Ast.ExFun (_, (Ast.McArr (_, p, (Ast.ExNil _), e)))
                           when is_irrefut_patt p ->
-                          pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
+                          pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args
+                            ((`patt p), e)
+                      | Ast.ExFUN (_, i, e) ->
+                          pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args
+                            ((`newtype i), e)
                       | Ast.ExFun (_, a) ->
                           pp f "@[<hv0>function%a@]" o#match_case a
                       | Ast.ExIfe (_, e1, e2, e3) ->
@@ -18747,12 +18800,13 @@ module Printers =
                       | Ast.ExApp (_, _, _) | Ast.ExAcc (_, _, _) |
                           Ast.ExAre (_, _, _) | Ast.ExSte (_, _, _) |
                           Ast.ExAss (_, _, _) | Ast.ExSnd (_, _, _) |
-                          Ast.ExFun (_, _) | Ast.ExMat (_, _, _) |
-                          Ast.ExTry (_, _, _) | Ast.ExIfe (_, _, _, _) |
-                          Ast.ExLet (_, _, _, _) | Ast.ExLmd (_, _, _, _) |
-                          Ast.ExOpI (_, _, _) | Ast.ExAsr (_, _) |
-                          Ast.ExAsf _ | Ast.ExLaz (_, _) | Ast.ExNew (_, _) |
-                          Ast.ExObj (_, _, _) -> pp f "(%a)" o#reset#expr e
+                          Ast.ExFun (_, _) | Ast.ExFUN (_, _, _) |
+                          Ast.ExMat (_, _, _) | Ast.ExTry (_, _, _) |
+                          Ast.ExIfe (_, _, _, _) | Ast.ExLet (_, _, _, _) |
+                          Ast.ExLmd (_, _, _, _) | Ast.ExOpI (_, _, _) |
+                          Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _) |
+                          Ast.ExNew (_, _) | Ast.ExObj (_, _, _) ->
+                          pp f "(%a)" o#reset#expr e
                   
                 method direction_flag =
                   fun f b ->
@@ -19718,7 +19772,11 @@ module Printers =
                           pp f "@[<2>%a@ :=@ %a@]" o#dot_expr e1 o#expr e2
                       | Ast.ExFun (_, (Ast.McArr (_, p, (Ast.ExNil _), e)))
                           when Ast.is_irrefut_patt p ->
-                          pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
+                          pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args
+                            ((`patt p), e)
+                      | Ast.ExFUN (_, i, e) ->
+                          pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args
+                            ((`newtype i), e)
                       | Ast.ExFun (_, a) ->
                           pp f "@[<hv0>fun%a@]" o#match_case a
                       | Ast.ExAsf _ -> pp f "@[<2>assert@ False@]"

@@ -585,6 +585,13 @@ Very old (no more supported) syntax:\n\
                    raise Stream.Failure
                | _ -> ())
           
+        let test_lparen_type =
+          Gram.Entry.of_parser "test_lparen_type"
+            (fun strm ->
+               match Stream.npeek 2 strm with
+               | [ (KEYWORD "(", _); (KEYWORD "type", _) ] -> ()
+               | _ -> raise Stream.Failure)
+          
         let stopped_at _loc = Some (Loc.move_line 1 _loc)
           
         (* FIXME be more precise *)
@@ -945,6 +952,8 @@ Very old (no more supported) syntax:\n\
             <:patt< ? $i$ : ($p$ = $e$) >>                             *)
             string_list : 'string_list Gram.Entry.t =
             grammar_entry_create "string_list"
+          and fun_def_cont_no_when : 'fun_def_cont_no_when Gram.Entry.t =
+            grammar_entry_create "fun_def_cont_no_when"
           and fun_def_cont : 'fun_def_cont Gram.Entry.t =
             grammar_entry_create "fun_def_cont"
           and sequence' : 'sequence' Gram.Entry.t =
@@ -2964,7 +2973,20 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExFun (_loc,
                                    Ast.McArr (_loc, p, Ast.ExNil _loc, e)) :
-                                  'fun_binding)))) ]) ]))
+                                  'fun_binding))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (test_lparen_type :
+                                   'test_lparen_type Gram.Entry.t));
+                            Gram.Skeyword "("; Gram.Skeyword "type";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                            Gram.Skeyword ")"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (e : 'fun_binding) _ (i : 'a_LIDENT) _ _ _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.ExFUN (_loc, i, e) : 'fun_binding)))) ]) ]))
                   ());
              Gram.extend (match_case : 'match_case Gram.Entry.t)
                ((fun () ->
@@ -3248,7 +3270,24 @@ Very old (no more supported) syntax:\n\
                              (fun ((w, e) : 'fun_def_cont)
                                 (p : 'labeled_ipatt) (_loc : Gram.Loc.t) ->
                                 (Ast.ExFun (_loc, Ast.McArr (_loc, p, w, e)) :
-                                  'fun_def)))) ]) ]))
+                                  'fun_def))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (test_lparen_type :
+                                   'test_lparen_type Gram.Entry.t));
+                            Gram.Skeyword "("; Gram.Skeyword "type";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                            Gram.Skeyword ")";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (fun_def_cont_no_when :
+                                   'fun_def_cont_no_when Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (e : 'fun_def_cont_no_when) _
+                                (i : 'a_LIDENT) _ _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.ExFUN (_loc, i, e) : 'fun_def)))) ]) ]))
                   ());
              Gram.extend (fun_def_cont : 'fun_def_cont Gram.Entry.t)
                ((fun () ->
@@ -3281,7 +3320,63 @@ Very old (no more supported) syntax:\n\
                                 (((Ast.ExNil _loc),
                                   (Ast.ExFun (_loc,
                                      Ast.McArr (_loc, p, w, e)))) :
+                                  'fun_def_cont))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (test_lparen_type :
+                                   'test_lparen_type Gram.Entry.t));
+                            Gram.Skeyword "("; Gram.Skeyword "type";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                            Gram.Skeyword ")";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (fun_def_cont_no_when :
+                                   'fun_def_cont_no_when Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (e : 'fun_def_cont_no_when) _
+                                (i : 'a_LIDENT) _ _ _ (_loc : Gram.Loc.t) ->
+                                (((Ast.ExNil _loc), (Ast.ExFUN (_loc, i, e))) :
                                   'fun_def_cont)))) ]) ]))
+                  ());
+             Gram.extend
+               (fun_def_cont_no_when : 'fun_def_cont_no_when Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, (Some Camlp4.Sig.Grammar.RightA),
+                       [ ([ Gram.Skeyword "->";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) _ (_loc : Gram.Loc.t) ->
+                                (e : 'fun_def_cont_no_when))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (labeled_ipatt :
+                                   'labeled_ipatt Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (fun_def_cont : 'fun_def_cont Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun ((w, e) : 'fun_def_cont)
+                                (p : 'labeled_ipatt) (_loc : Gram.Loc.t) ->
+                                (Ast.ExFun (_loc, Ast.McArr (_loc, p, w, e)) :
+                                  'fun_def_cont_no_when))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (test_lparen_type :
+                                   'test_lparen_type Gram.Entry.t));
+                            Gram.Skeyword "("; Gram.Skeyword "type";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_LIDENT : 'a_LIDENT Gram.Entry.t));
+                            Gram.Skeyword ")"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (e : 'fun_def_cont_no_when) _
+                                (i : 'a_LIDENT) _ _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.ExFUN (_loc, i, e) :
+                                  'fun_def_cont_no_when)))) ]) ]))
                   ());
              Gram.extend (patt : 'patt Gram.Entry.t)
                ((fun () ->
