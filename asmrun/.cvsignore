@@ -35,3 +35,6 @@ unix.c
 dynlink.c
 signals.c
 debugger.c
+*.obj
+libasmrun.lib
+.depend.nt
