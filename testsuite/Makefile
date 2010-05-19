@@ -14,7 +14,7 @@ default:
 
 all:
 	@for dir in tests/*; do \
-	  $(MAKE) $(NO_PRINT) one DIR=$$dir; \
+	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
 	@$(MAKE) report
 
@@ -22,13 +22,16 @@ list:
 	@if [ -z $(FILE) ]; then echo "No value set for variable 'FILE'."; exit 1; fi
 	@if [ ! -f $(FILE) ]; then echo "File '$(FILE)' does not exist."; exit 1; fi
 	@while read LINE; do \
-	  $(MAKE) $(NO_PRINT) one DIR=$$LINE; \
+	  $(MAKE) $(NO_PRINT) exec-one DIR=$$LINE; \
 	done < $(FILE) 2>&1 | tee _log
 	@$(MAKE) report
 
 one: lib
 	@if [ -z $(DIR) ]; then echo "No value set for variable 'DIR'."; exit 1; fi
 	@if [ ! -d $(DIR) ]; then echo "Directory '$(DIR)' does not exist."; exit 1; fi
+	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
+
+exec-one:
 	@echo "Running tests from '$$DIR' ..."
 	@(cd $(DIR) && $(MAKE) BASEDIR=$(BASEDIR) && cd ../..)
 
