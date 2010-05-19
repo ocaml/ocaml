@@ -21,6 +21,8 @@ true: use_stdlib
 
 <**/*.ml*>: warn_error_A
 
+<{bytecomp,driver,stdlib,tools,asmcomp,toplevel,typing,utils,lex,parsing}/**>: strict_sequence
+
 "toplevel/topstart.byte": linkall
 
 <ocamldoc/**>: -debug

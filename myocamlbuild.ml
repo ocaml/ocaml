@@ -196,6 +196,8 @@ let cold_camlp4o = "camlp4o" (* The installed version *);;
 
 flag ["ocaml"; "ocamlyacc"] (A"-v");;
 
+flag ["ocaml"; "compile"; "strict_sequence"] (A"-strict-sequence");;
+
 non_dependency "otherlibs/threads/pervasives.ml" "Unix";;
 non_dependency "otherlibs/threads/pervasives.ml" "String";;
 
