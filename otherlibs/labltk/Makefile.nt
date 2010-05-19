@@ -4,7 +4,7 @@ include ../../config/Makefile
 
 
 
-SUBDIRS=compiler support lib labltk camltk jpf frx tkanim examples_labltk examples_camltk browser
+SUBDIRS=compiler support lib labltk camltk jpf frx examples_labltk examples_camltk browser
 
 all:
 	cd support ; $(MAKEREC)
@@ -16,7 +16,6 @@ all:
 	cd lib ; $(MAKEREC)
 	cd jpf ; $(MAKEREC)
 	cd frx ; $(MAKEREC)
-	cd tkanim ; $(MAKEREC)
 	cd browser ; $(MAKEREC)
 
 allopt:
@@ -28,7 +27,6 @@ allopt:
 	cd lib ; $(MAKEREC) opt
 	cd jpf ; $(MAKEREC) opt
 	cd frx ; $(MAKEREC) opt
-	cd tkanim ; $(MAKEREC) opt
 
 .PHONY: examples_labltk examples_camltk
 
@@ -48,7 +46,6 @@ install:
 	cd compiler ; $(MAKEREC) install
 	cd jpf ; $(MAKEREC) install
 	cd frx ; $(MAKEREC) install
-	cd tkanim ; $(MAKEREC) install
 	cd browser ; $(MAKEREC) install
 
 installopt:
@@ -58,7 +55,6 @@ installopt:
 	cd lib ; $(MAKEREC) installopt
 	cd jpf ; $(MAKEREC) installopt
 	cd frx ; $(MAKEREC) installopt
-	cd tkanim ; $(MAKEREC) installopt
 
 partialclean clean:
 	for d in $(SUBDIRS); do $(MAKEREC) -C $$d clean; done
