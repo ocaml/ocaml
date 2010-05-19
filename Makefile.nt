@@ -612,7 +612,7 @@ ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
 
 .PHONY: ocamlbuild-mixed-boot
 ocamlbuild-mixed-boot:
-	./build/mixed-boot.sh
+	OCAMLBUILD_FIND=/usr/bin/find ./build/mixed-boot.sh
 partialclean::
 	rm -rf _build
 

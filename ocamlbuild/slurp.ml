@@ -129,8 +129,9 @@ let rec add root path entries =
       else f :: add root path entries'
 
 let slurp_with_find path =
+  let find_cmd = try Sys.getenv "OCAMLBUILD_FIND" with _ -> "find" in
   let lines =
-    My_unix.run_and_open (Printf.sprintf "find %s" (Filename.quote path)) begin fun ic ->
+    My_unix.run_and_open (Printf.sprintf "%s %s" find_cmd (Filename.quote path)) begin fun ic ->
       let acc = ref [] in
       try while true do acc := input_line ic :: !acc done; []
       with End_of_file -> !acc
