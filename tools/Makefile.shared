@@ -23,8 +23,9 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels \
-     dumpobj
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj
+# scrapelabels addlabels
+
 .PHONY: all
 
 opt.opt: ocamldep.opt
@@ -154,8 +155,8 @@ scrapelabels: $(SCRAPELABELS)
 lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
-install::
-	cp scrapelabels $(LIBDIR)
+#install::
+#	cp scrapelabels $(LIBDIR)
 
 clean::
 	rm -f scrapelabels lexer301.ml
@@ -170,8 +171,8 @@ addlabels: addlabels.cmo
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
 		$(ADDLABELS_IMPORTS) addlabels.cmo
 
-install::
-	cp addlabels $(LIBDIR)
+#install::
+#	cp addlabels $(LIBDIR)
 
 clean::
 	rm -f addlabels
@@ -225,21 +226,29 @@ clean::
 
 beforedepend:: opnames.ml
 
-# Dump .cmx files
+# Display info on compiled files
 
-dumpapprox: dumpapprox.cmo
-	$(CAMLC) $(LINKFLAGS) -o dumpapprox config.cmo dumpapprox.cmo
+objinfo_lib.cma: ocamlmklib objinfo_lib.cmo objinfo_stubs$(EXT_OBJ)
+	../boot/ocamlrun ./ocamlmklib -ocamlc '$(CAMLC)' \
+          -o objinfo_lib objinfo_lib.cmo objinfo_stubs$(EXT_OBJ) $(LIBBFD_LINK)
 
-clean::
-	rm -f dumpapprox
+objinfo_stubs$(EXT_OBJ): objinfo_stubs.c
+	$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -c objinfo_stubs.c
 
-# Print imported interfaces for .cmo files
+OBJINFO=../utils/config.cmo ../bytecomp/bytesections.cmo \
+        objinfo_lib.cma objinfo.cmo
 
-objinfo: objinfo.cmo
-	$(CAMLC) $(LINKFLAGS) -o objinfo config.cmo objinfo.cmo
+objinfo: $(OBJINFO)
+	$(CAMLC) -o objinfo $(OBJINFO)
+
+install::
+	cp objinfo $(BINDIR)/ocamlobjinfo$(EXE)
+	if test -f dllobjinfo_lib$(EXT_DLL); then \
+          cp dllobjinfo_lib$(EXT_DLL) $(STUBLIBDIR)/; fi
 
 clean::
 	rm -f objinfo
+	rm -f objinfo_stubs$(EXT_OBJ) libobjinfo_lib$(EXT_LIB) dllobjinfo_lib$(EXT_DLL)
 
 # Scan object files for required primitives
 
@@ -266,7 +275,7 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
-	rm -f *.cmo *.cmi
+	rm -f *.cmo *.cmi *.cma
 
 depend: beforedepend
 	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend

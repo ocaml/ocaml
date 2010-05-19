@@ -19,7 +19,7 @@ open Printf
 open Misc
 open Lambda
 open Clambda
-open Compilenv
+open Cmx_format
 
 type error =
     Illegal_renaming of string * string

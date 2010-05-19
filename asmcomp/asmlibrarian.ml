@@ -16,7 +16,7 @@
 
 open Misc
 open Config
-open Compilenv
+open Cmx_format
 
 type error =
     File_not_found of string

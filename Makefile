@@ -620,10 +620,10 @@ clean::
 
 # Tools
 
-ocamltools: ocamlc ocamlyacc ocamllex
+ocamltools: ocamlc ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) all
 
-ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex
+ocamltoolsopt.opt: ocamlc.opt ocamlyacc ocamllex asmcomp/cmx_format.cmi
 	cd tools; $(MAKE) opt.opt
 
 partialclean::

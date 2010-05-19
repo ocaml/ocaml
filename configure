@@ -1543,6 +1543,17 @@ else
   echo "TK_LINK=" >> Makefile
 fi
 
+# Look for BFD library
+
+if ./hasgot -i bfd.h -lbfd -ldl; then
+  echo "BFD library found."
+  echo "#define HAS_LIBBFD" >> s.h
+  echo "LIBBFD_LINK=-lbfd -ldl" >> Makefile
+else
+  echo "BFD library not found, 'objinfo' will be unable to display info on .cmxs files"
+  echo "LIBBFD_LINK=" >> Makefile
+fi
+
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"

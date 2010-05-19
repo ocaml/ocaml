@@ -551,9 +551,9 @@ clean::
 
 # Tools
 
-ocamltools:
+ocamltools: asmcomp/cmx_format.cmi
 	cd tools ; $(MAKEREC) all
-ocamltoolsopt.opt:
+ocamltoolsopt.opt: asmcomp/cmx_format.cmi
 	cd tools ; $(MAKEREC) opt.opt
 partialclean::
 	cd tools ; $(MAKEREC) clean

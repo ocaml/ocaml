@@ -22,6 +22,7 @@ open Types
 open Lambda
 open Clambda
 open Cmm
+open Cmx_format
 
 (* Local binding of complex expressions *)
 
@@ -1960,9 +1961,9 @@ let generic_functions shared units =
   let (apply,send,curry) =
     List.fold_left
       (fun (apply,send,curry) ui ->
-         List.fold_right IntSet.add ui.Compilenv.ui_apply_fun apply,
-         List.fold_right IntSet.add ui.Compilenv.ui_send_fun send,
-         List.fold_right IntSet.add ui.Compilenv.ui_curry_fun curry)
+         List.fold_right IntSet.add ui.ui_apply_fun apply,
+         List.fold_right IntSet.add ui.ui_send_fun send,
+         List.fold_right IntSet.add ui.ui_curry_fun curry)
       (IntSet.empty,IntSet.empty,IntSet.empty)
       units in
   let apply = if shared then apply else IntSet.union apply default_apply in
@@ -2060,28 +2061,13 @@ let predef_exception name =
 
 let mapflat f l = List.flatten (List.map f l)
 
-type dynunit = {
-  name: string;
-  crc: Digest.t;
-  imports_cmi: (string * Digest.t) list;
-  imports_cmx: (string * Digest.t) list;
-  defines: string list;
-}
-
-type dynheader = {
-  magic: string;
-  units: dynunit list;
-}
-
-let dyn_magic_number = "Caml2007D001"
-
 let plugin_header units =
   let mk (ui,crc) =
-    { name = ui.Compilenv.ui_name;
-      crc = crc;
-      imports_cmi = ui.Compilenv.ui_imports_cmi;
-      imports_cmx = ui.Compilenv.ui_imports_cmx;
-      defines = ui.Compilenv.ui_defines
+    { dynu_name = ui.ui_name;
+      dynu_crc = crc;
+      dynu_imports_cmi = ui.ui_imports_cmi;
+      dynu_imports_cmx = ui.ui_imports_cmx;
+      dynu_defines = ui.ui_defines
     } in
   global_data "caml_plugin_header"
-    { magic = dyn_magic_number; units = List.map mk units }
+    { dynu_magic = Config.cmxs_magic_number; dynu_units = List.map mk units }
