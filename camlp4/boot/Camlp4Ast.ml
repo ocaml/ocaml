@@ -855,6 +855,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                 and meta_ctyp _loc =
                   fun
                   [ Ast.TyAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.TyPkg x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyPkg")))
+                           (meta_loc _loc x0))
+                        (meta_module_type _loc x1)
                   | Ast.TyOfAmp x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -1180,7 +1188,15 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (meta_loc _loc x0) ]
                 and meta_expr _loc =
                   fun
-                  [ Ast.ExOpI x0 x1 x2 ->
+                  [ Ast.ExPkg x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExPkg")))
+                           (meta_loc _loc x0))
+                        (meta_module_expr _loc x1)
+                  | Ast.ExOpI x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExApp _loc
@@ -1717,6 +1733,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                 and meta_module_expr _loc =
                   fun
                   [ Ast.MeAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.MePkg x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MePkg")))
+                           (meta_loc _loc x0))
+                        (meta_expr _loc x1)
                   | Ast.MeTyc x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -2805,6 +2829,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                 and meta_ctyp _loc =
                   fun
                   [ Ast.TyAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.TyPkg x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyPkg")))
+                           (meta_loc _loc x0))
+                        (meta_module_type _loc x1)
                   | Ast.TyOfAmp x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -3130,7 +3162,15 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                         (meta_loc _loc x0) ]
                 and meta_expr _loc =
                   fun
-                  [ Ast.ExOpI x0 x1 x2 ->
+                  [ Ast.ExPkg x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExPkg")))
+                           (meta_loc _loc x0))
+                        (meta_module_expr _loc x1)
+                  | Ast.ExOpI x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaApp _loc
@@ -3667,6 +3707,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                 and meta_module_expr _loc =
                   fun
                   [ Ast.MeAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.MePkg x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MePkg")))
+                           (meta_loc _loc x0))
+                        (meta_expr _loc x1)
                   | Ast.MeTyc x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -4661,6 +4709,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#module_expr _x_i1 in
               let _x_i2 = o#module_type _x_i2 in MeTyc _x _x_i1 _x_i2
+          | MePkg _x _x_i1 ->
+              let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in MePkg _x _x_i1
           | MeAnt _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in MeAnt _x _x_i1 ];
@@ -4889,7 +4939,10 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | ExOpI _x _x_i1 _x_i2 ->
               let _x = o#loc _x in
               let _x_i1 = o#ident _x_i1 in
-              let _x_i2 = o#expr _x_i2 in ExOpI _x _x_i1 _x_i2 ];
+              let _x_i2 = o#expr _x_i2 in ExOpI _x _x_i1 _x_i2
+          | ExPkg _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_expr _x_i1 in ExPkg _x _x_i1 ];
         method ctyp : ctyp -> ctyp =
           fun
           [ TyNil _x -> let _x = o#loc _x in TyNil _x
@@ -5014,6 +5067,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#ctyp _x_i1 in
               let _x_i2 = o#ctyp _x_i2 in TyOfAmp _x _x_i1 _x_i2
+          | TyPkg _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_type _x_i1 in TyPkg _x _x_i1
           | TyAnt _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in TyAnt _x _x_i1 ];
@@ -5378,6 +5434,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | MeTyc _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#module_expr _x_i1 in let o = o#module_type _x_i2 in o
+          | MePkg _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
           | MeAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method module_binding : module_binding -> 'self_type =
           fun
@@ -5538,7 +5595,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#expr _x_i1 in let o = o#expr _x_i2 in o
           | ExOpI _x _x_i1 _x_i2 ->
               let o = o#loc _x in
-              let o = o#ident _x_i1 in let o = o#expr _x_i2 in o ];
+              let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
+          | ExPkg _x _x_i1 ->
+              let o = o#loc _x in let o = o#module_expr _x_i1 in o ];
         method ctyp : ctyp -> 'self_type =
           fun
           [ TyNil _x -> let o = o#loc _x in o
@@ -5624,6 +5683,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | TyOfAmp _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyPkg _x _x_i1 ->
+              let o = o#loc _x in let o = o#module_type _x_i1 in o
           | TyAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method class_type : class_type -> 'self_type =
           fun

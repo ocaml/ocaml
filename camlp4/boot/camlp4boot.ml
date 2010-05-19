@@ -758,6 +758,7 @@ Very old (no more supported) syntax:\n\
           
         let _ =
           let _ = (a_CHAR : 'a_CHAR Gram.Entry.t)
+          and _ = (package_type : 'package_type Gram.Entry.t)
           and _ = (do_sequence : 'do_sequence Gram.Entry.t)
           and _ = (infixop4 : 'infixop4 Gram.Entry.t)
           and _ = (infixop3 : 'infixop3 Gram.Entry.t)
@@ -983,7 +984,34 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.MeApp (_loc, me1, me2) : 'module_expr)))) ]);
                       ((Some "simple"), None,
-                       [ ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
+                       [ ([ Gram.Skeyword "(";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (value_val : 'value_val Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (package_type : 'package_type Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (p : 'package_type) _ (e : 'expr) _ _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.MePkg (_loc,
+                                   Ast.ExTyc (_loc, e, Ast.TyPkg (_loc, p))) :
+                                  'module_expr))));
+                         ([ Gram.Skeyword "(";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (value_val : 'value_val Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (e : 'expr) _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.MePkg (_loc, e) : 'module_expr))));
+                         ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (me : 'module_expr) _ (_loc : Gram.Loc.t)
                                 -> (me : 'module_expr))));
@@ -2280,7 +2308,31 @@ Very old (no more supported) syntax:\n\
                                    Ast.ExId (_loc, Ast.IdLid (_loc, "val"))) :
                                   'expr)))) ]);
                       ((Some "simple"), None,
-                       [ ([ Gram.Skeyword "begin"; Gram.Skeyword "end" ],
+                       [ ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_expr : 'module_expr Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (package_type : 'package_type Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (pt : 'package_type) _
+                                (me : 'module_expr) _ _ (_loc : Gram.Loc.t)
+                                ->
+                                (Ast.ExPkg (_loc, Ast.MeTyc (_loc, me, pt)) :
+                                  'expr))));
+                         ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_expr : 'module_expr Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (me : 'module_expr) _ _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.ExPkg (_loc, me) : 'expr))));
+                         ([ Gram.Skeyword "begin"; Gram.Skeyword "end" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
                                 (Ast.ExId (_loc, Ast.IdUid (_loc, "()")) :
@@ -4390,7 +4442,16 @@ Very old (no more supported) syntax:\n\
                                      raise (Stream.Error s) :
                                   'ctyp)))) ]);
                       ((Some "simple"), None,
-                       [ ([ Gram.Skeyword "<";
+                       [ ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (package_type : 'package_type Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (p : 'package_type) _ _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.TyPkg (_loc, p) : 'ctyp))));
+                         ([ Gram.Skeyword "<";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (opt_meth_list :
@@ -6564,6 +6625,17 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (t : 'ctyp) (_loc : Gram.Loc.t) ->
                                 (t : 'poly_type)))) ]) ]))
+                  ());
+             Gram.extend (package_type : 'package_type Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_type : 'module_type Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (p : 'module_type) (_loc : Gram.Loc.t) ->
+                                (p : 'package_type)))) ]) ]))
                   ());
              Gram.extend (typevars : 'typevars Gram.Entry.t)
                ((fun () ->

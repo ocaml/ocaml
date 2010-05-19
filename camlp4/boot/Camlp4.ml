@@ -910,6 +910,8 @@ module Sig =
           | (* t & t *)
           TyOfAmp of loc * ctyp * ctyp
           | (* t of & t *)
+          TyPkg of loc * module_type
+          | (* (module S) *)
           TyAnt of loc * string
           and (* $s$ *)
           patt =
@@ -1048,6 +1050,8 @@ module Sig =
           ExWhi of loc * expr * expr
           | (* let open i in e *)
           ExOpI of loc * ident * expr
+          | (* (module ME : S) which is represented as (module (ME : S)) *)
+          ExPkg of loc * module_expr
           and module_type =
           | MtNil of loc
           | (* i *)
@@ -1156,6 +1160,9 @@ module Sig =
           MeStr of loc * str_item
           | (* (me : mt) *)
           MeTyc of loc * module_expr * module_type
+          | (* (value e) *)
+          (* (value e : S) which is represented as (value (e : S)) *)
+          MePkg of loc * expr
           | MeAnt of loc * string
           and (* $s$ *)
           str_item =
@@ -1755,6 +1762,7 @@ module Sig =
           | TyVrnInfSup of loc * ctyp * ctyp
           | TyAmp of loc * ctyp * ctyp
           | TyOfAmp of loc * ctyp * ctyp
+          | TyPkg of loc * module_type
           | TyAnt of loc * string
           and patt =
           | PaNil of loc
@@ -1828,6 +1836,7 @@ module Sig =
           | ExVrn of loc * string
           | ExWhi of loc * expr * expr
           | ExOpI of loc * ident * expr
+          | ExPkg of loc * module_expr
           and module_type =
           | MtNil of loc
           | MtId of loc * ident
@@ -1888,6 +1897,7 @@ module Sig =
           | MeFun of loc * string * module_type * module_expr
           | MeStr of loc * str_item
           | MeTyc of loc * module_expr * module_type
+          | MePkg of loc * expr
           | MeAnt of loc * string
           and str_item =
           | StNil of loc
@@ -2657,6 +2667,8 @@ module Sig =
         val module_rec_declaration : Ast.module_binding Gram.Entry.t
           
         val module_type : Ast.module_type Gram.Entry.t
+          
+        val package_type : Ast.module_type Gram.Entry.t
           
         val module_type_quot : Ast.module_type Gram.Entry.t
           
@@ -7729,6 +7741,14 @@ module Struct =
                         and meta_ctyp _loc =
                           function
                           | Ast.TyAnt (x0, x1) -> Ast.ExAnt (x0, x1)
+                          | Ast.TyPkg (x0, x1) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "TyPkg"))),
+                                  meta_loc _loc x0),
+                                meta_module_type _loc x1)
                           | Ast.TyOfAmp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -8073,6 +8093,14 @@ module Struct =
                                 meta_loc _loc x0)
                         and meta_expr _loc =
                           function
+                          | Ast.ExPkg (x0, x1) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "ExPkg"))),
+                                  meta_loc _loc x0),
+                                meta_module_expr _loc x1)
                           | Ast.ExOpI (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -8638,6 +8666,14 @@ module Struct =
                         and meta_module_expr _loc =
                           function
                           | Ast.MeAnt (x0, x1) -> Ast.ExAnt (x0, x1)
+                          | Ast.MePkg (x0, x1) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "MePkg"))),
+                                  meta_loc _loc x0),
+                                meta_expr _loc x1)
                           | Ast.MeTyc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -9801,6 +9837,14 @@ module Struct =
                         and meta_ctyp _loc =
                           function
                           | Ast.TyAnt (x0, x1) -> Ast.PaAnt (x0, x1)
+                          | Ast.TyPkg (x0, x1) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "TyPkg"))),
+                                  meta_loc _loc x0),
+                                meta_module_type _loc x1)
                           | Ast.TyOfAmp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -10145,6 +10189,14 @@ module Struct =
                                 meta_loc _loc x0)
                         and meta_expr _loc =
                           function
+                          | Ast.ExPkg (x0, x1) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "ExPkg"))),
+                                  meta_loc _loc x0),
+                                meta_module_expr _loc x1)
                           | Ast.ExOpI (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -10710,6 +10762,14 @@ module Struct =
                         and meta_module_expr _loc =
                           function
                           | Ast.MeAnt (x0, x1) -> Ast.PaAnt (x0, x1)
+                          | Ast.MePkg (x0, x1) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "MePkg"))),
+                                  meta_loc _loc x0),
+                                meta_expr _loc x1)
                           | Ast.MeTyc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -11780,6 +11840,9 @@ module Struct =
                       let _x_i1 = o#module_expr _x_i1 in
                       let _x_i2 = o#module_type _x_i2
                       in MeTyc (_x, _x_i1, _x_i2)
+                  | MePkg (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#expr _x_i1 in MePkg (_x, _x_i1)
                   | MeAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in MeAnt (_x, _x_i1)
@@ -12037,6 +12100,9 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#ident _x_i1 in
                       let _x_i2 = o#expr _x_i2 in ExOpI (_x, _x_i1, _x_i2)
+                  | ExPkg (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_expr _x_i1 in ExPkg (_x, _x_i1)
                   
                 method ctyp : ctyp -> ctyp =
                   function
@@ -12170,6 +12236,9 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#ctyp _x_i1 in
                       let _x_i2 = o#ctyp _x_i2 in TyOfAmp (_x, _x_i1, _x_i2)
+                  | TyPkg (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_type _x_i1 in TyPkg (_x, _x_i1)
                   | TyAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in TyAnt (_x, _x_i1)
@@ -12614,6 +12683,8 @@ module Struct =
                       let o = o#loc _x in
                       let o = o#module_expr _x_i1 in
                       let o = o#module_type _x_i2 in o
+                  | MePkg (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#expr _x_i1 in o
                   | MeAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   
@@ -12811,6 +12882,8 @@ module Struct =
                   | ExOpI (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
+                  | ExPkg (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_expr _x_i1 in o
                   
                 method ctyp : ctyp -> 'self_type =
                   function
@@ -12909,6 +12982,8 @@ module Struct =
                   | TyOfAmp (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyPkg (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_type _x_i1 in o
                   | TyAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   
@@ -13654,6 +13729,9 @@ module Struct =
                   mktyp loc
                     (Ptyp_object (meth_list fl [ mkfield loc Pfield_var ]))
               | TyCls (loc, id) -> mktyp loc (Ptyp_class (ident id, [], []))
+              | Ast.TyPkg (loc, pt) ->
+                  let (i, cs) = package_type pt
+                  in mktyp loc (Ptyp_package (i, cs))
               | TyLab (loc, _, _) ->
                   error loc "labelled type not allowed here"
               | TyMan (loc, _, _) ->
@@ -13718,6 +13796,23 @@ module Struct =
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, lab)))), t) ->
                   (mkfield loc (Pfield (lab, mkpolytype (ctyp t)))) :: acc
               | _ -> assert false
+            and package_type_constraints wc acc =
+              match wc with
+              | Ast.WcNil _ -> acc
+              | Ast.WcTyp (_, (Ast.TyId (_, (Ast.IdLid (_, id)))), ct) ->
+                  (id, (ctyp ct)) :: acc
+              | Ast.WcAnd (_, wc1, wc2) ->
+                  package_type_constraints wc1
+                    (package_type_constraints wc2 acc)
+              | _ ->
+                  error (loc_of_with_constr wc)
+                    "unexpected `with constraint' for a package type"
+            and package_type : module_type -> package_type =
+              function
+              | Ast.MtWit (_, (Ast.MtId (_, i)), wc) ->
+                  ((long_uident i), (package_type_constraints wc []))
+              | Ast.MtId (_, i) -> ((long_uident i), [])
+              | mt -> error (loc_of_module_type mt) "unexpected package type"
               
             let mktype loc tl cl tk tp tm =
               let (params, variance) = List.split tl
@@ -14301,6 +14396,10 @@ module Struct =
                   in mkexp loc (Pexp_while (expr e1, expr e2))
               | Ast.ExOpI (loc, i, e) ->
                   mkexp loc (Pexp_open (long_uident i, expr e))
+              | Ast.ExPkg (loc, (Ast.MeTyc (_, me, pt))) ->
+                  mkexp loc (Pexp_pack (module_expr me, package_type pt))
+              | Ast.ExPkg (loc, _) ->
+                  error loc "(module_expr : package_type) expected here"
               | Ast.ExCom (loc, _, _) ->
                   error loc "expr, expr: not allowed here"
               | Ast.ExSem (loc, _, _) ->
@@ -14462,6 +14561,10 @@ module Struct =
               | Ast.MeTyc (loc, me, mt) ->
                   mkmod loc
                     (Pmod_constraint (module_expr me, module_type mt))
+              | Ast.MePkg (loc, (Ast.ExTyc (_, e, (Ast.TyPkg (_, pt))))) ->
+                  mkmod loc (Pmod_unpack (expr e, package_type pt))
+              | Ast.MePkg (loc, _) ->
+                  error loc "(value expr) not supported yet"
               | Ast.MeAnt (loc, _) ->
                   error loc "antiquotation in module_expr"
             and str_item s l =
@@ -18635,6 +18738,12 @@ module Printers =
                           pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
                       | Ast.ExSem (_, e1, e2) ->
                           pp f "%a;@ %a" o#under_semi#expr e1 o#expr e2
+                      | Ast.ExPkg (_, (Ast.MeTyc (_, me, mt))) ->
+                          pp f "@[<hv0>@[<hv2>(module %a : %a@])@]"
+                            o#module_expr me o#module_type mt
+                      | Ast.ExPkg (_, me) ->
+                          pp f "@[<hv0>@[<hv2>(module %a@])@]" o#module_expr
+                            me
                       | Ast.ExApp (_, _, _) | Ast.ExAcc (_, _, _) |
                           Ast.ExAre (_, _, _) | Ast.ExSte (_, _, _) |
                           Ast.ExAss (_, _, _) | Ast.ExSnd (_, _, _) |
@@ -18809,6 +18918,8 @@ module Printers =
                       | Ast.TyRec (_, t) -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
                       | Ast.TySum (_, t) -> pp f "@[<0>%a@]" o#sum_type t
                       | Ast.TyTup (_, t) -> pp f "@[<1>(%a)@]" o#ctyp t
+                      | Ast.TyPkg (_, mt) ->
+                          pp f "@[<2>(module@ %a@])" o#module_type mt
                       | Ast.TyVrnEq (_, t) ->
                           pp f "@[<2>[@ %a@]@ ]" o#sum_type t
                       | Ast.TyVrnInf (_, t) ->
@@ -19101,6 +19212,12 @@ module Printers =
                       | Ast.MeTyc (_, me, mt) ->
                           pp f "@[<1>(%a :@ %a)@]" o#module_expr me
                             o#module_type mt
+                      | Ast.MePkg (_,
+                          (Ast.ExTyc (_, e, (Ast.TyPkg (_, mt))))) ->
+                          pp f "@[<1>(%s %a :@ %a)@]" value_val o#expr e
+                            o#module_type mt
+                      | Ast.MePkg (_, e) ->
+                          pp f "@[<1>(%s %a)@]" value_val o#expr e
                   
                 method class_expr =
                   fun f ce ->
@@ -20010,6 +20127,8 @@ module OCamlInitSyntax =
         let module_rec_declaration = Gram.Entry.mk "module_rec_declaration"
           
         let module_type = Gram.Entry.mk "module_type"
+          
+        let package_type = Gram.Entry.mk "package_type"
           
         let more_ctyp = Gram.Entry.mk "more_ctyp"
           
