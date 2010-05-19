@@ -30,10 +30,11 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 all: ocamlbrowser$(EXE)
 
 ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
-			../support/lib$(LIBNAME).$(A)
+			../support/lib$(LIBNAME).$(A) $(XTRAOBJ)
 	$(CAMLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
-		unix.cma str.cma $(OCAMLBR) $(LIBNAME).cma jglib.cma $(OBJ)
+		unix.cma str.cma $(OCAMLBR) $(LIBNAME).cma jglib.cma \
+	        $(OBJ) $(XTRAOBJ)
 
 ocamlbrowser.cma: jglib.cma $(OBJ)
 	$(CAMLC) -a -o $@ -linkall jglib.cma $(OBJ)
