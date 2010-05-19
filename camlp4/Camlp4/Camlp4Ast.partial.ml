@@ -55,6 +55,7 @@
     | TyVrnInfSup of loc and ctyp and ctyp (* [ < t > t ] *)
     | TyAmp of loc and ctyp and ctyp (* t & t *)
     | TyOfAmp of loc and ctyp and ctyp (* t of & t *)
+    | TyPkg of loc and module_type (* (module S) *)
     | TyAnt of loc and string (* $s$ *)
     ]
    and patt =
@@ -150,7 +151,9 @@
       (* while e do { e } *)
     | ExWhi of loc and expr and expr
       (* let open i in e *)
-    | ExOpI of loc and ident and expr ]
+    | ExOpI of loc and ident and expr
+      (* (module ME : S) which is represented as (module (ME : S)) *)
+    | ExPkg of loc and module_expr ]
   and module_type =
     [ MtNil of loc
       (* i *) (* A.B.C *)
@@ -248,6 +251,9 @@
     | MeStr of loc and str_item
       (* (me : mt) *)
     | MeTyc of loc and module_expr and module_type
+      (* (value e) *)
+      (* (value e : S) which is represented as (value (e : S)) *)
+    | MePkg of loc and expr
     | MeAnt of loc and string (* $s$ *) ]
   and str_item =
     [ StNil of loc

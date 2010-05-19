@@ -221,6 +221,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear star_ctyp;
   clear match_case;
   clear with_constr;
+  clear package_type;
   clear top_phrase;
 
   EXTEND Gram
@@ -257,7 +258,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence
+      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence package_type
     ;
     sem_expr:
       [ [ e1 = expr LEVEL "top"; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>
@@ -454,6 +455,23 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "module"; i1 = module_longident; ":="; i2 = module_longident_with_app ->
             <:with_constr< module $i1$ := $i2$ >> ] ]
     ;
+    package_type:
+      [ [ i = module_longident_with_app -> <:module_type< $id:i$ >>
+        | i = module_longident_with_app; "with"; cs = package_type_cstrs ->
+            <:module_type< $id:i$ with $cs$ >>
+      ] ]
+    ;
+    package_type_cstr:
+      [ [ "type"; i = a_LIDENT; "="; ty = ctyp ->
+            <:with_constr< type $lid:i$ = $ty$ >>
+      ] ]
+    ;
+    package_type_cstrs:
+      [ [ c = package_type_cstr -> c
+        | c = package_type_cstr; "and"; cs = package_type_cstrs ->
+            <:with_constr< $c$ and $cs$ >>
+      ] ]
+    ;
     opt_private_ctyp:
       [ [ "private"; t = ctyp -> <:ctyp< private $t$ >>
         | t = ctyp -> t ] ]
@@ -535,6 +553,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:ctyp< [ < $rfl$ ] >>
         | "[<"; OPT "|"; rfl = row_field; ">"; ntl = name_tags; "]" ->
             <:ctyp< [ < $rfl$ > $ntl$ ] >>
+        | "("; "module"; p = package_type; ")" -> <:ctyp< (module $p$) >>
         ] ]
     ;
     meth_list:

@@ -123,6 +123,7 @@ module Make (Ast     : Sig.Camlp4Ast)
   value module_longident_with_app = Gram.Entry.mk "module_longident_with_app";
   value module_rec_declaration = Gram.Entry.mk "module_rec_declaration";
   value module_type = Gram.Entry.mk "module_type";
+  value package_type = Gram.Entry.mk "package_type";
   value more_ctyp = Gram.Entry.mk "more_ctyp";
   value name_tags = Gram.Entry.mk "name_tags";
   value opt_as_lident = Gram.Entry.mk "opt_as_lident";

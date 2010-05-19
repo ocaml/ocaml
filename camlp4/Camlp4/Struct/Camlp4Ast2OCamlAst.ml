@@ -232,6 +232,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mktyp loc (Ptyp_object (meth_list fl [mkfield loc Pfield_var]))
     | TyCls loc id ->
         mktyp loc (Ptyp_class (ident id) [] [])
+    | <:ctyp@loc< (module $pt$) >> ->
+        let (i, cs) = package_type pt in
+        mktyp loc (Ptyp_package i cs)
     | TyLab loc _ _ -> error loc "labelled type not allowed here"
     | TyMan loc _ _ -> error loc "manifest type not allowed here"
     | TyOlb loc _ _ -> error loc "labelled type not allowed here"
@@ -276,6 +279,22 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp@loc< $lid:lab$ : $t$ >> ->
         [mkfield loc (Pfield lab (mkpolytype (ctyp t))) :: acc]
     | _ -> assert False ]
+
+  and package_type_constraints wc acc =
+    match wc with
+    [ <:with_constr<>> -> acc
+    | <:with_constr< type $lid:id$ = $ct$ >> ->
+        [(id, ctyp ct) :: acc]
+    | <:with_constr< $wc1$ and $wc2$ >> ->
+        package_type_constraints wc1 (package_type_constraints wc2 acc)
+    | _ -> error (loc_of_with_constr wc) "unexpected `with constraint' for a package type" ]
+
+  and package_type : module_type -> package_type =
+    fun
+    [ <:module_type< $id:i$ with $wc$ >> ->
+      (long_uident i, package_type_constraints wc [])
+    | <:module_type< $id:i$ >> -> (long_uident i, [])
+    | mt -> error (loc_of_module_type mt) "unexpected package type" ]
   ;
 
   value mktype loc tl cl tk tp tm =
@@ -743,6 +762,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkexp loc (Pexp_while (expr e1) (expr e2))
     | <:expr@loc< let open $i$ in $e$ >> ->
         mkexp loc (Pexp_open (long_uident i) (expr e))
+    | <:expr@loc< (module $me$ : $pt$) >> ->
+        mkexp loc (Pexp_pack (module_expr me) (package_type pt))
+    | <:expr@loc< (module $_$) >> ->
+        error loc "(module_expr : package_type) expected here"
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
     | <:expr@loc< $_$;$_$ >> ->
         error loc "expr; expr: not allowed here, use do {...} or [|...|] to surround them"
@@ -879,6 +902,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkmod loc (Pmod_structure (str_item sl []))
     | <:module_expr@loc< ($me$ : $mt$) >> ->
         mkmod loc (Pmod_constraint (module_expr me) (module_type mt))
+    | <:module_expr@loc< (value $e$ : $pt$) >> ->
+        mkmod loc (Pmod_unpack (expr e) (package_type pt))
+    | <:module_expr@loc< (value $_$) >> ->
+        error loc "(value expr) not supported yet"
     | <:module_expr@loc< $anti:_$ >> -> error loc "antiquotation in module_expr" ]
   and str_item s l =
     match s with

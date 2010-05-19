@@ -450,7 +450,7 @@ Very old (no more supported) syntax:\n\
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence;
+      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence package_type;
     module_expr:
       [ "top"
         [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
@@ -467,7 +467,11 @@ Very old (no more supported) syntax:\n\
         | i = module_longident -> <:module_expr< $id:i$ >>
         | "("; me = SELF; ":"; mt = module_type; ")" ->
             <:module_expr< ( $me$ : $mt$ ) >>
-        | "("; me = SELF; ")" -> <:module_expr< $me$ >> ] ]
+        | "("; me = SELF; ")" -> <:module_expr< $me$ >>
+        | "("; value_val; e = expr; ")" ->
+            <:module_expr< (value $e$) >>
+        | "("; value_val; e = expr; ":"; p = package_type; ")" ->
+            <:module_expr< (value $e$ : $p$) >> ] ]
     ;
     str_item:
       [ "top"
@@ -728,7 +732,12 @@ Very old (no more supported) syntax:\n\
         | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
         | "("; e = SELF; ")" -> e
         | "begin"; seq = sequence; "end" -> mksequence _loc seq
-        | "begin"; "end" -> <:expr< () >> ] ]
+        | "begin"; "end" -> <:expr< () >>
+        | "("; "module"; me = module_expr; ")" ->
+            <:expr< (module $me$) >>
+        | "("; "module"; me = module_expr; ":"; pt = package_type; ")" ->
+            <:expr< (module $me$ : $pt$) >>
+        ] ]
     ;
     do_sequence:
       [ [ "{"; seq = sequence; "}" -> seq
@@ -1078,6 +1087,7 @@ Very old (no more supported) syntax:\n\
         | "{"; t = label_declaration_list; "}" -> <:ctyp< { $t$ } >>
         | "#"; i = class_longident -> <:ctyp< # $i$ >>
         | "<"; t = opt_meth_list; ">" -> t
+        | "("; "module"; p = package_type; ")" -> <:ctyp< (module $p$) >>
       ] ]
     ;
     star_ctyp:
@@ -1431,6 +1441,9 @@ Very old (no more supported) syntax:\n\
     ;
     poly_type:
       [ [ t = ctyp -> t ] ]
+    ;
+    package_type:
+      [ [ p = module_type -> p ] ]
     ;
     typevars:
       [ LEFTA

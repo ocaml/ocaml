@@ -1299,6 +1299,7 @@ module type Camlp4Syntax = sig
   value module_longident_with_app : Gram.Entry.t Ast.ident;
   value module_rec_declaration : Gram.Entry.t Ast.module_binding;
   value module_type : Gram.Entry.t Ast.module_type;
+  value package_type : Gram.Entry.t Ast.module_type;
   value module_type_quot : Gram.Entry.t Ast.module_type;
   value more_ctyp : Gram.Entry.t Ast.ctyp;
   value name_tags : Gram.Entry.t Ast.ctyp;

@@ -544,6 +544,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
     | <:expr< $e1$; $e2$ >> ->
         pp f "%a;@ %a" o#under_semi#expr e1 o#expr e2
+    | <:expr< (module $me$ : $mt$) >> ->
+        pp f "@[<hv0>@[<hv2>(module %a : %a@])@]"
+           o#module_expr me o#module_type mt
+    | <:expr< (module $me$) >> ->
+        pp f "@[<hv0>@[<hv2>(module %a@])@]" o#module_expr me
     | <:expr< $_$ $_$ >> | <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
       <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
       <:expr< $_$ # $_$ >> |
@@ -669,6 +674,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< { $t$ } >> -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
     | <:ctyp< [ $t$ ] >> -> pp f "@[<0>%a@]" o#sum_type t
     | <:ctyp< ( $tup:t$ ) >> -> pp f "@[<1>(%a)@]" o#ctyp t
+    | <:ctyp< (module $mt$) >> -> pp f "@[<2>(module@ %a@])" o#module_type mt
     | <:ctyp< [ = $t$ ] >> -> pp f "@[<2>[@ %a@]@ ]" o#sum_type t
     | <:ctyp< [ < $t$ ] >> -> pp f "@[<2>[<@ %a@]@,]" o#sum_type t
     | <:ctyp< [ < $t1$ > $t2$ ] >> ->
@@ -890,7 +896,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:module_expr< struct $st$ end >> ->
           pp f "@[<hv0>@[<hv2>struct@ %a@]@ end@]" o#str_item st
     | <:module_expr< ( $me$ : $mt$ ) >> ->
-          pp f "@[<1>(%a :@ %a)@]" o#module_expr me o#module_type mt ];
+          pp f "@[<1>(%a :@ %a)@]" o#module_expr me o#module_type mt
+    | <:module_expr< (value $e$ : $mt$ ) >> ->
+          pp f "@[<1>(%s %a :@ %a)@]" value_val o#expr e o#module_type mt
+    | <:module_expr< (value $e$ ) >> ->
+          pp f "@[<1>(%s %a)@]" value_val o#expr e
+    ];
 
     method class_expr f ce =
     let () = o#node f ce Ast.loc_of_class_expr in
