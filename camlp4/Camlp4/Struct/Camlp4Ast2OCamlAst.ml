@@ -766,6 +766,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkexp loc (Pexp_pack (module_expr me) (package_type pt))
     | <:expr@loc< (module $_$) >> ->
         error loc "(module_expr : package_type) expected here"
+    | ExFUN loc i e ->
+        mkexp loc (Pexp_newtype i (expr e))
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
     | <:expr@loc< $_$;$_$ >> ->
         error loc "expr; expr: not allowed here, use do {...} or [|...|] to surround them"

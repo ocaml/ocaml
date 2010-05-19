@@ -307,6 +307,13 @@ Very old (no more supported) syntax:\n\
         [ Some(KEYWORD "{" | KEYWORD "do", _) -> raise Stream.Failure
         | _ -> () ]);
 
+  value test_lparen_type =
+    Gram.Entry.of_parser "test_lparen_type"
+      (fun strm ->
+        match Stream.npeek 2 strm with
+        [ [(KEYWORD "(", _); (KEYWORD "type", _)] -> ()
+        | _ ->  raise Stream.Failure ]);
+
   value stopped_at _loc =
     Some (Loc.move_line 1 _loc) (* FIXME be more precise *);
 
@@ -798,7 +805,9 @@ Very old (no more supported) syntax:\n\
     ;
     fun_binding:
       [ RIGHTA
-        [ p = labeled_ipatt; e = SELF ->
+        [ test_lparen_type; "("; "type"; i = a_LIDENT; ")"; e = SELF ->
+            Ast.ExFUN _loc i e
+        | p = labeled_ipatt; e = SELF ->
             <:expr< fun $p$ -> $e$ >>
         | bi = cvalue_binding -> bi
       ] ]
@@ -848,14 +857,29 @@ Very old (no more supported) syntax:\n\
             <:rec_binding< $i$ = $lid:lid_of_ident i$ >> ] ]
     ;
     fun_def:
-      [ [ p = labeled_ipatt; (w, e) = fun_def_cont ->
+      [ [ test_lparen_type; "("; "type"; i = a_LIDENT; ")";
+          e = fun_def_cont_no_when ->
+            Ast.ExFUN _loc i e
+        | p = labeled_ipatt; (w, e) = fun_def_cont ->
             <:expr< fun [ $p$ when $w$ -> $e$ ] >> ] ]
     ;
     fun_def_cont:
       [ RIGHTA
-        [ p = labeled_ipatt; (w,e) = SELF -> (<:expr<>>, <:expr< fun [ $p$ when $w$ -> $e$ ] >>)
+        [ test_lparen_type; "("; "type"; i = a_LIDENT; ")";
+          e = fun_def_cont_no_when ->
+            (<:expr<>>, Ast.ExFUN _loc i e)
+        | p = labeled_ipatt; (w,e) = SELF ->
+            (<:expr<>>, <:expr< fun [ $p$ when $w$ -> $e$ ] >>)
         | "when"; w = expr; "->"; e = expr -> (w, e)
         | "->"; e = expr -> (<:expr<>>, e) ] ]
+    ;
+    fun_def_cont_no_when:
+      [ RIGHTA
+        [ test_lparen_type; "("; "type"; i = a_LIDENT; ")";
+          e = fun_def_cont_no_when -> Ast.ExFUN _loc i e
+        | p = labeled_ipatt; (w,e) = fun_def_cont ->
+            <:expr< fun [ $p$ when $w$ -> $e$ ] >>
+        | "->"; e = expr -> e ] ]
     ;
     patt:
       [ "|" LEFTA

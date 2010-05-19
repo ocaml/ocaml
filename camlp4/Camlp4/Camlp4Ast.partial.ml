@@ -152,6 +152,9 @@
     | ExWhi of loc and expr and expr
       (* let open i in e *)
     | ExOpI of loc and ident and expr
+      (* fun (type t) -> e *)
+      (* let f x (type t) y z = e *)
+    | ExFUN of loc and string and expr
       (* (module ME : S) which is represented as (module (ME : S)) *)
     | ExPkg of loc and module_expr ]
   and module_type =

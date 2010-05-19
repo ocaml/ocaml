@@ -27,6 +27,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   include Syntax;
 
   type sep = format unit formatter unit;
+  type fun_binding = [= `patt of Ast.patt | `newtype of string ];
 
   value pp = fprintf;
   value cut f = fprintf f "@ ";
@@ -132,8 +133,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ <:expr< fun $p$ -> $e$ >> as ge ->
         if is_irrefut_patt p then
           let (pl, e) = expr_fun_args e in
-          ([p :: pl], e)
+          ([`patt p :: pl], e)
         else ([], ge)
+    | Ast.ExFUN _ i e ->
+        let (pl, e) = expr_fun_args e in
+        ([`newtype i :: pl], e)
     | ge -> ([], ge) ];
 
   value rec class_expr_fun_args =
@@ -269,6 +273,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@ | @[<2>%a@ when@ %a@ ->@ %a@]"
             o#patt p o#under_pipe#expr w o#under_pipe#expr e ];
 
+    method fun_binding f =
+      fun
+      [ `patt p -> o#simple_patt f p
+      | `newtype i -> pp f "(type %s)" i ];
+
     method binding f bi =
       let () = o#node f bi Ast.loc_of_binding in
       match bi with
@@ -283,9 +292,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           match (p, e) with
           [ (<:patt< $lid:_$ >>, <:expr< ($e$ : $t$) >>) ->
               pp f "%a :@ %a =@ %a"
-                (list o#simple_patt "@ ") [p::pl] o#ctyp t o#expr e
+                (list o#fun_binding "@ ") [`patt p::pl] o#ctyp t o#expr e
           | _ -> pp f "%a @[<0>%a=@]@ %a" o#simple_patt
-                    p (list' o#simple_patt "" "@ ") pl o#expr e ]
+                    p (list' o#fun_binding "" "@ ") pl o#expr e ]
       | <:binding< $anti:s$ >> -> o#anti f s ];
 
     method record_binding f bi =
@@ -331,7 +340,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     method patt_expr_fun_args f (p, e) =
       let (pl, e) = expr_fun_args e
-      in pp f "%a@ ->@ %a" (list o#simple_patt "@ ") [p::pl] o#expr e;
+      in pp f "%a@ ->@ %a" (list o#fun_binding "@ ") [p::pl] o#expr e;
 
     method patt_class_expr_fun_args f (p, ce) =
       let (pl, ce) = class_expr_fun_args ce
@@ -441,7 +450,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr@loc< fun [] >> ->
         pp f "@[<2>fun@ _@ ->@ %a@]" o#raise_match_failure loc
     | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->
-        pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
+        pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`patt p, e)
+    | Ast.ExFUN _ i e ->
+        pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`newtype i, e)
     | <:expr< fun [ $a$ ] >> ->
         pp f "@[<hv0>function%a@]" o#match_case a
     | <:expr< if $e1$ then $e2$ else $e3$ >> ->
@@ -552,7 +563,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< $_$ $_$ >> | <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
       <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
       <:expr< $_$ # $_$ >> |
-      <:expr< fun [ $_$ ] >> | <:expr< match $_$ with [ $_$ ] >> |
+      <:expr< fun [ $_$ ] >> | Ast.ExFUN _ _ _ | <:expr< match $_$ with [ $_$ ] >> |
       <:expr< try $_$ with [ $_$ ] >> |
       <:expr< if $_$ then $_$ else $_$ >> |
       <:expr< let $rec:_$ $_$ in $_$ >> |

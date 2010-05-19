@@ -27,6 +27,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
             and module Gram    = Syntax.Gram;
 
   type sep = format unit formatter unit;
+  type fun_binding = [= `patt of Ast.patt | `newtype of string ];
 
   value list' :
     (formatter -> 'a -> unit) ->
@@ -49,7 +50,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     Ast.patt -> list Ast.patt -> (Ast.patt * list Ast.patt);
   value get_ctyp_args :
     Ast.ctyp -> list Ast.ctyp -> (Ast.ctyp * list Ast.ctyp);
-  value expr_fun_args : Ast.expr -> (list Ast.patt * Ast.expr);
+  value expr_fun_args : Ast.expr -> (list fun_binding * Ast.expr);
 
   (**
     [new printer ~curry_constr:True ~comments:False]
@@ -88,6 +89,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method expr : formatter -> Ast.expr -> unit;
     method expr_list : formatter -> list Ast.expr -> unit;
     method expr_list_cons : bool -> formatter -> Ast.expr -> unit;
+    method fun_binding : formatter -> fun_binding -> unit;
     method functor_arg :
       formatter -> (string * Ast.module_type) -> unit;
     method functor_args :
@@ -124,7 +126,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method patt5 : formatter -> Ast.patt -> unit;
     method patt_tycon : formatter -> Ast.patt -> unit;
     method patt_expr_fun_args :
-      formatter -> (Ast.patt * Ast.expr) -> unit;
+      formatter -> (fun_binding * Ast.expr) -> unit;
     method patt_class_expr_fun_args :
       formatter -> (Ast.patt * Ast.class_expr) -> unit;
     method print_comments_before : Loc.t -> formatter -> unit;
