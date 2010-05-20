@@ -38,7 +38,7 @@ COBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
 
 CAMLOBJS=unix.cmo unixLabels.cmo
 
-HEADERS=unixsupport.h
+HEADERS=unixsupport.h socketaddr.h
 
 include ../Makefile
 
