@@ -279,6 +279,11 @@ let print_version () =
   exit 0;
 ;;
 
+let print_version_num () =
+  printf "%s@." Sys.ocaml_version;
+  exit 0;
+;;
+
 let _ =
   Clflags.classic := false;
   add_to_load_path Filename.current_dir_name;
@@ -299,5 +304,7 @@ let _ =
        "   (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-version", Arg.Unit print_version,
       " Print version and exit";
+     "-vnum", Arg.Unit print_version_num,
+      " Print version number and exit";
     ] file_dependencies usage;
   exit (if !error_occurred then 2 else 0)

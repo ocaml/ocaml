@@ -131,6 +131,8 @@ let spec =
   Arg.align
   [
    "-version", Unit (fun () -> print_endline version; raise Exit_OK), " Display the version";
+   "-vnum", Unit (fun () -> print_endline Sys.ocaml_version; raise Exit_OK),
+            " Display the version number";
    "-quiet", Unit (fun () -> Log.level := 0), " Make as quiet as possible";
    "-verbose", Int (fun i -> Log.level := i + 2), "<level> Set the verbosity level";
    "-documentation", Set show_documentation, " Show rules and flags";

@@ -476,7 +476,7 @@ invocations of the C compiler and linker in
 .B \-custom
 mode.  Useful to debug C library problems.
 .TP
-.B \-version
+.BR \-vnum or \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP

@@ -161,6 +161,10 @@ let print_version () =
   printf "The Objective Caml debugger, version %s@." Sys.ocaml_version;
   exit 0;
 ;;
+let print_version_num () =
+  printf "%s@." Sys.ocaml_version;
+  exit 0;
+;;
 
 let speclist = [
    "-c", Arg.Int set_checkpoints,
@@ -175,6 +179,8 @@ let speclist = [
       "<filename>  Set the name of the communication socket";
    "-version", Arg.Unit print_version,
       " Print version and exit";
+   "-vnum", Arg.Unit print_version_num,
+      " Print version number and exit";
    ]
 
 let main () =

@@ -23,7 +23,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj objinfo
 # scrapelabels addlabels
 
 .PHONY: all

@@ -191,6 +191,9 @@ void getargs(int argc, char **argv)
               printf ("The Objective Caml parser generator, version "
                       OCAML_VERSION "\n");
               exit (0);
+            }else if (!strcmp (argv[i], "-vnum")){
+              printf (OCAML_VERSION "\n");
+              exit (0);
             }else{
               vflag = 1;
             }

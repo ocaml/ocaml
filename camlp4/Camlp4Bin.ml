@@ -264,6 +264,8 @@ value initial_spec_list =
     "Print Camlp4 version and exit.");
   ("-version", Arg.Unit just_print_the_version,
     "Print Camlp4 version number and exit.");
+  ("-vnum", Arg.Unit just_print_the_version,
+    "Print Camlp4 version number and exit.");
   ("-no_quot", Arg.Clear Camlp4_config.quotations,
     "Don't parse quotations, allowing to use, e.g. \"<:>\" as token.");
   ("-loaded-modules", Arg.Set print_loaded_modules, "Print the list of loaded modules.");

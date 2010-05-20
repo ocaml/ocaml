@@ -457,7 +457,7 @@ standard library directory, then exit.
 Print all external commands before they are executed, in particular
 invocations of the assembler, C compiler, and linker.
 .TP
-.B \-version
+.BR \-vnum or \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP

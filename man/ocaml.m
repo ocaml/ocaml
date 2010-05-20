@@ -135,6 +135,9 @@ accesses an array or string outside of its bounds.
 .B \-version
 Print version string and exit.
 .TP
+.B \-vnum
+Print short version number and exit.
+.TP
 .BI \-w \ warning-list
 Enable or disable warnings according to the argument
 .IR warning-list .

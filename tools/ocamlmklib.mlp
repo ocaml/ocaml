@@ -52,6 +52,11 @@ let print_version () =
   exit 0;
 ;;
 
+let print_version_num () =
+  printf "%s\n" Sys.ocaml_version;
+  exit 0;
+;;
+
 let parse_arguments argv =
   let i = ref 1 in
   let next_arg () =
@@ -116,6 +121,8 @@ let parse_arguments argv =
       verbose := true
     else if s = "-version" then
       print_version ()
+    else if s = "-vnum" then
+      print_version_num ()
     else if starts_with s "-F" then
       c_opts := s :: !c_opts
     else if s = "-framework" then
@@ -160,6 +167,7 @@ Options are:\n\
   -verbose       Print commands before executing them\n\
   -v             same as -verbose\n\
   -version       Print version and exit\n\
+  -vnum          Print version number and exit\n\
   -Wl,-rpath,<dir>     Same as -dllpath <dir>\n\
   -Wl,-rpath -Wl,<dir> Same as -dllpath <dir>\n\
   -Wl,-R<dir>          Same as -dllpath <dir>\n\

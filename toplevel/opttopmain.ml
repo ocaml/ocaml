@@ -53,6 +53,11 @@ let print_version () =
   exit 0;
 ;;
 
+let print_version_num () =
+  Printf.printf "%s\n" Sys.ocaml_version;
+  exit 0;
+;;
+
 module Options = Main_args.Make_opttop_options (struct
   let set r () = r := true
   let clear r () = r := false
@@ -75,6 +80,7 @@ module Options = Main_args.Make_opttop_options (struct
   let _S = set keep_asm_file
   let _unsafe = set fast
   let _version () = print_version ()
+  let _vnum () = print_version_num ()
   let _w s = Warnings.parse_options false s
   let _warn_error s = Warnings.parse_options true s
   let _warn_help = Warnings.help_warnings

@@ -7,7 +7,7 @@ ocamlmktop \- Building custom toplevel systems
 .SH SYNOPSIS
 .B ocamlmktop
 [
-.B \-v
+.BR \-v | \-version | \-vnum
 ]
 [
 .BI \-cclib \ libname
@@ -49,7 +49,10 @@ The following command-line options are recognized by
 .BR ocamlmktop (1).
 .TP
 .B \-v
-Print the version number of the compiler.
+Print the version string of the compiler and exit.
+.TP
+.BR \-vnum or \-version
+Print the version number of the compiler in short form and exit.
 .TP
 .BI \-cclib\ \-l libname
 Pass the

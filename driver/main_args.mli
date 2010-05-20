@@ -51,6 +51,7 @@ module type Bytecomp_options =
     val _use_runtime : string -> unit
     val _v : unit -> unit
     val _version : unit -> unit
+    val _vnum : unit -> unit
     val _verbose : unit -> unit
     val _w : string -> unit
     val _warn_error : string -> unit
@@ -82,6 +83,7 @@ module type Bytetop_options = sig
   val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
+  val _vnum : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
@@ -133,6 +135,7 @@ module type Optcomp_options = sig
   val _unsafe : unit -> unit
   val _v : unit -> unit
   val _version : unit -> unit
+  val _vnum : unit -> unit
   val _verbose : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
@@ -177,6 +180,7 @@ module type Opttop_options = sig
   val _S : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
+  val _vnum : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit

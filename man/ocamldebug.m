@@ -6,7 +6,7 @@
 ocamldebug \- the Objective Caml source-level replay debugger.
 .SH SYNOPSIS
 .B ocamldebug
-.I "[options] program [arguments]"
+.RI [\  options \ ]\  program \ [\  arguments \ ]
 .SH DESCRIPTION
 .B ocamldebug
 is the Objective Caml source-level replay debugger.
@@ -69,7 +69,10 @@ for the format of
 .IR socket .
 .TP
 .B \-version
-Print version and exit.
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.

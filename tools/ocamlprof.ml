@@ -459,6 +459,11 @@ let print_version () =
   exit 0;
 ;;
 
+let print_version_num () =
+  printf "%s@." Sys.ocaml_version;
+  exit 0;
+;;
+
 let main () =
   try
     Warnings.parse_options false "a";
@@ -475,6 +480,8 @@ let main () =
        "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)";
        "-version", Arg.Unit print_version,
                    "     Print version and exit";
+       "-vnum", Arg.Unit print_version_num,
+                "        Print version number and exit";
       ] process_anon_file usage;
     exit 0
   with x ->

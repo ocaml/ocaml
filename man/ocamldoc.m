@@ -243,7 +243,10 @@ For HTML, the file is used to create the whole "index.html" file.
 Verbose mode. Display progress information.
 .TP
 .B \-version
-Print the version string and exit.
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
 .TP
 .B \-warn\-error
 Treat Ocamldoc warnings as errors.

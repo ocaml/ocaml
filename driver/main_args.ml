@@ -246,6 +246,10 @@ let mk_version f =
   "-version", Arg.Unit f, " Print version and exit"
 ;;
 
+let mk_vnum f =
+  "-vnum", Arg.Unit f, " Print version number and exit"
+;;
+
 let mk_verbose f =
   "-verbose", Arg.Unit f, " Print calls to external commands"
 ;;
@@ -405,6 +409,7 @@ module type Bytecomp_options = sig
   val _use_runtime : string -> unit
   val _v : unit -> unit
   val _version : unit -> unit
+  val _vnum : unit -> unit
   val _verbose : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
@@ -435,6 +440,7 @@ module type Bytetop_options = sig
   val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
+  val _vnum : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
@@ -486,6 +492,7 @@ module type Optcomp_options = sig
   val _unsafe : unit -> unit
   val _v : unit -> unit
   val _version : unit -> unit
+  val _vnum : unit -> unit
   val _verbose : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
@@ -530,6 +537,7 @@ module type Opttop_options = sig
   val _S : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
+  val _vnum : unit -> unit
   val _w : string -> unit
   val _warn_error : string -> unit
   val _warn_help : unit -> unit
@@ -603,6 +611,7 @@ struct
     mk_use_runtime_2 F._use_runtime;
     mk_v F._v;
     mk_version F._version;
+    mk_vnum F._vnum;
     mk_verbose F._verbose;
     mk_vmthread F._vmthread;
     mk_w F._w;
@@ -637,6 +646,7 @@ struct
     mk_strict_sequence F._strict_sequence;
     mk_unsafe F._unsafe;
     mk_version F._version;
+    mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;
@@ -692,6 +702,7 @@ struct
     mk_unsafe F._unsafe;
     mk_v F._v;
     mk_version F._version;
+    mk_vnum F._vnum;
     mk_verbose F._verbose;
     mk_w F._w;
     mk_warn_error F._warn_error;
@@ -736,6 +747,7 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_strict_sequence F._strict_sequence;
     mk_unsafe F._unsafe;
     mk_version F._version;
+    mk_vnum F._vnum;
     mk_w F._w;
     mk_warn_error F._warn_error;
     mk_warn_help F._warn_help;

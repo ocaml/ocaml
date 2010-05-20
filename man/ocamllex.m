@@ -72,7 +72,10 @@ to standard output.  They are suppressed if option
 is used.
 .TP
 .BR \-v \ or \ \-version
-Print version and exit.
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
