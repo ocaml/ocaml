@@ -20,7 +20,7 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 val size_expr : environment -> Cmm.expression -> int
 
 class virtual selector_generic : object
-  (* The following methods must or can be overriden by the processor
+  (* The following methods must or can be overridden by the processor
      description *)
   method virtual is_immediate : int -> bool
     (* Must be defined to indicate whether a constant is a suitable
@@ -29,41 +29,41 @@ class virtual selector_generic : object
     Cmm.expression -> Arch.addressing_mode * Cmm.expression
     (* Must be defined to select addressing modes *)
   method is_simple_expr: Cmm.expression -> bool
-    (* Can be overriden to reflect special extcalls known to be pure *)
+    (* Can be overridden to reflect special extcalls known to be pure *)
   method select_operation :
     Cmm.operation ->
     Cmm.expression list -> Mach.operation * Cmm.expression list
-    (* Can be overriden to deal with special arithmetic instructions *)
+    (* Can be overridden to deal with special arithmetic instructions *)
   method select_condition : Cmm.expression -> Mach.test * Cmm.expression
-    (* Can be overriden to deal with special test instructions *)
+    (* Can be overridden to deal with special test instructions *)
   method select_store :
     Arch.addressing_mode -> Cmm.expression -> Mach.operation * Cmm.expression
-    (* Can be overriden to deal with special store constant instructions *)
+    (* Can be overridden to deal with special store constant instructions *)
   method regs_for : Cmm.machtype -> Reg.t array
     (* Return an array of fresh registers of the given type.
        Default implementation is like Reg.createv.
-       Can be overriden if float values are stored as pairs of
+       Can be overridden if float values are stored as pairs of
        integer registers. *)
   method insert_op :
     Mach.operation -> Reg.t array -> Reg.t array -> Reg.t array
-    (* Can be overriden to deal with 2-address instructions
+    (* Can be overridden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
   method insert_op_debug :
     Mach.operation -> Debuginfo.t -> Reg.t array -> Reg.t array -> Reg.t array
-    (* Can be overriden to deal with 2-address instructions
+    (* Can be overridden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
   method emit_extcall_args :
     environment -> Cmm.expression list -> Reg.t array * int
-    (* Can be overriden to deal with stack-based calling conventions *)
+    (* Can be overridden to deal with stack-based calling conventions *)
   method emit_stores :
     environment -> Cmm.expression list -> Reg.t array -> unit
-    (* Fill a freshly allocated block.  Can be overriden for architectures
+    (* Fill a freshly allocated block.  Can be overridden for architectures
        that do not provide Arch.offset_addressing. *)
 
-  (* The following method is the entry point and should not be overriden *)
+  (* The following method is the entry point and should not be overridden *)
   method emit_fundecl : Cmm.fundecl -> Mach.fundecl
 
-  (* The following methods should not be overriden.  They cannot be
+  (* The following methods should not be overridden.  They cannot be
      declared "private" in the current implementation because they
      are not always applied to "self", but ideally they should be private. *)
   method extract : Mach.instruction

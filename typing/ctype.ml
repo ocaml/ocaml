@@ -1057,7 +1057,7 @@ let apply env params body args =
    If the environnement has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
    quite pessimistic: it would be enough to flush the cache when a
-   type or module definition is overriden in the environnement.
+   type or module definition is overridden in the environnement.
 *)
 let previous_env = ref Env.empty
 let string_of_kind = function Public -> "public" | Private -> "private"

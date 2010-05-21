@@ -115,7 +115,7 @@ let some_load = (Iload(Cmm.Word, Arch.identity_addressing))
 class virtual scheduler_generic = object (self)
 
 (* Determine whether an operation ends a basic block or not.
-   Can be overriden for some processors to signal specific instructions
+   Can be overridden for some processors to signal specific instructions
    that terminate a basic block. *)
 
 method oper_in_basic_block = function
@@ -137,7 +137,7 @@ method private instr_in_basic_block instr =
   | _ -> false
 
 (* Determine whether an operation is a memory store or a memory load.
-   Can be overriden for some processors to signal specific
+   Can be overridden for some processors to signal specific
    load or store instructions (e.g. on the I386). *)
 
 method is_store = function

@@ -851,7 +851,7 @@ module Scan :
        (** This method scan the elements of the given class. *)
         method scan_class_elements : Class.t_class -> unit
 
-       (** Scan of a class. Should not be overriden. It calls [scan_class_pre]
+       (** Scan of a class. Should not be overridden. It calls [scan_class_pre]
           and if [scan_class_pre] returns [true], then it calls scan_class_elements.*)
         method scan_class : Class.t_class -> unit
 
@@ -868,7 +868,7 @@ module Scan :
         (** This method scan the elements of the given class type. *)
         method scan_class_type_elements : Class.t_class_type -> unit
 
-        (** Scan of a class type. Should not be overriden. It calls [scan_class_type_pre]
+        (** Scan of a class type. Should not be overridden. It calls [scan_class_type_pre]
            and if [scan_class_type_pre] returns [true], then it calls scan_class_type_elements.*)
         method scan_class_type : Class.t_class_type -> unit
 
@@ -885,7 +885,7 @@ module Scan :
         (** This method scan the elements of the given module. *)
         method scan_module_elements : Module.t_module -> unit
 
-       (** Scan of a module. Should not be overriden. It calls [scan_module_pre]
+       (** Scan of a module. Should not be overridden. It calls [scan_module_pre]
           and if [scan_module_pre] returns [true], then it calls scan_module_elements.*)
         method scan_module : Module.t_module -> unit
 
@@ -902,7 +902,7 @@ module Scan :
         (** This method scan the elements of the given module type. *)
         method scan_module_type_elements : Module.t_module_type -> unit
 
-        (** Scan of a module type. Should not be overriden. It calls [scan_module_type_pre]
+        (** Scan of a module type. Should not be overridden. It calls [scan_module_type_pre]
            and if [scan_module_type_pre] returns [true], then it calls scan_module_type_elements.*)
         method scan_module_type : Module.t_module_type -> unit
 

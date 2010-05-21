@@ -338,7 +338,7 @@ type stats = Unix.stats =
     st_mtime : float;           (** Last modification time *)
     st_ctime : float;           (** Last status change time *)
   }
-(** The informations returned by the {!UnixLabels.stat} calls. *)
+(** The information returned by the {!UnixLabels.stat} calls. *)
 
 val stat : string -> stats
 (** Return the information for the named file. *)

@@ -25,13 +25,13 @@ diff -u -r1.23 warnings.ml
    | Unerasable_optional_argument
 @@ -126,9 +126,9 @@
        String.concat " "
-         ("the following methods are overriden \
+         ("the following methods are overridden \
            by the inherited class:\n " :: slist)
 -  | Hide_instance_variable lab ->
 -      "this definition of an instance variable " ^ lab ^
 -      " hides a previously\ndefined instance variable of the same name."
 +  | Instance_variable_override lab ->
-+      "the instance variable " ^ lab ^ " is overriden.\n" ^
++      "the instance variable " ^ lab ^ " is overridden.\n" ^
 +      "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
    | Partial_application ->
        "this function application is partial,\n\
@@ -1383,13 +1383,13 @@ diff -u -r1.48 main_args.ml
        \032    E/e enable/disable fragile match\n\
        \032    F/f enable/disable partially applied function\n\
        \032    L/l enable/disable labels omitted in application\n\
--      \032    M/m enable/disable overriden method\n\
-+      \032    M/m enable/disable overriden methods\n\
+-      \032    M/m enable/disable overridden method\n\
++      \032    M/m enable/disable overridden methods\n\
        \032    P/p enable/disable partial match\n\
        \032    S/s enable/disable non-unit statement\n\
        \032    U/u enable/disable unused match case\n\
 -      \032    V/v enable/disable hidden instance variable\n\
-+      \032    V/v enable/disable overriden instance variables\n\
++      \032    V/v enable/disable overridden instance variables\n\
        \032    Y/y enable/disable suspicious unused variables\n\
        \032    Z/z enable/disable all other unused variables\n\
        \032    X/x enable/disable all other warnings\n\
@@ -1405,7 +1405,7 @@ diff -u -r1.87 optmain.ml
           \032    S/s enable/disable non-unit statement\n\
           \032    U/u enable/disable unused match case\n\
 -         \032    V/v enable/disable hidden instance variables\n\
-+         \032    V/v enable/disable overriden instance variables\n\
++         \032    V/v enable/disable overridden instance variables\n\
           \032    Y/y enable/disable suspicious unused variables\n\
           \032    Z/z enable/disable all other unused variables\n\
           \032    X/x enable/disable all other warnings\n\

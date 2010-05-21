@@ -121,7 +121,7 @@ Type point = point is not a subtype of color_point = color_point
       print_string (self#color);
       print_string ")"
   end;;
-[mWarning 13: the following instance variables are overriden by the class printable_point :
+[mWarning 13: the following instance variables are overridden by the class printable_point :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class printable_color_point :

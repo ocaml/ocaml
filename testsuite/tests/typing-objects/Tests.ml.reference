@@ -186,7 +186,7 @@ and d : unit -> object method f : int end
     method a = a
     method b = b
   end;;
-[mWarning 13: the following instance variables are overriden by the class c :
+[mWarning 13: the following instance variables are overridden by the class c :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
@@ -229,7 +229,7 @@ The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 
 
 
-Warning 13: the following instance variables are overriden by the class d :
+Warning 13: the following instance variables are overridden by the class d :
   t z
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Characters 91-96:

@@ -34,7 +34,7 @@
 
 #include "bng_digit.c"
 
-/**** Operations that cannot be overriden ****/
+/**** Operations that cannot be overridden ****/
 
 /* Return number of leading zero bits in d */
 int bng_leading_zero_bits(bngdigit d)

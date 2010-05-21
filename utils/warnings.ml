@@ -210,7 +210,7 @@ let message = function
       "the method " ^ lab ^ " is overridden."
   | Method_override (cname :: slist) ->
       String.concat " "
-        ("the following methods are overriden by the class"
+        ("the following methods are overridden by the class"
          :: cname  :: ":\n " :: slist)
   | Method_override [] -> assert false
   | Partial_match "" -> "this pattern-matching is not exhaustive."
@@ -229,7 +229,7 @@ let message = function
       "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
   | Instance_variable_override (cname :: slist) ->
       String.concat " "
-        ("the following instance variables are overriden by the class"
+        ("the following instance variables are overridden by the class"
          :: cname  :: ":\n " :: slist) ^
       "\nThe behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
   | Instance_variable_override [] -> assert false
@@ -305,7 +305,7 @@ let descriptions =
     5, "Partially applied function: expression whose result has function\n\
    \    type and is ignored.";
     6, "Label omitted in function application.";
-    7, "Some methods are overriden in the class where they are defined.";
+    7, "Some methods are overridden in the class where they are defined.";
     8, "Partial match: missing cases in pattern-matching.";
     9, "Missing fields in a record pattern.";
    10, "Expression on the left-hand side of a sequence that doesn't have type\n\

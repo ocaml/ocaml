@@ -56,7 +56,7 @@ class scanner =
         )
         (Odoc_class.class_elements c)
 
-    (** Scan of a class. Should not be overriden. It calls [scan_class_pre]
+    (** Scan of a class. Should not be overridden. It calls [scan_class_pre]
       and if [scan_class_pre] returns [true], then it calls scan_class_elements.*)
     method scan_class c = if self#scan_class_pre c then self#scan_class_elements c
 
@@ -82,7 +82,7 @@ class scanner =
         )
         (Odoc_class.class_type_elements ct)
 
-    (** Scan of a class type. Should not be overriden. It calls [scan_class_type_pre]
+    (** Scan of a class type. Should not be overridden. It calls [scan_class_type_pre]
       and if [scan_class_type_pre] returns [true], then it calls scan_class_type_elements.*)
     method scan_class_type ct = if self#scan_class_type_pre ct then self#scan_class_type_elements ct
 
@@ -113,7 +113,7 @@ class scanner =
         )
         (Odoc_module.module_elements m)
 
-    (** Scan of a module. Should not be overriden. It calls [scan_module_pre]
+    (** Scan of a module. Should not be overridden. It calls [scan_module_pre]
       and if [scan_module_pre] returns [true], then it calls scan_module_elements.*)
     method scan_module m = if self#scan_module_pre m then self#scan_module_elements m
 
@@ -144,7 +144,7 @@ class scanner =
         )
         (Odoc_module.module_type_elements mt)
 
-    (** Scan of a module type. Should not be overriden. It calls [scan_module_type_pre]
+    (** Scan of a module type. Should not be overridden. It calls [scan_module_type_pre]
       and if [scan_module_type_pre] returns [true], then it calls scan_module_type_elements.*)
     method scan_module_type mt =
       if self#scan_module_type_pre mt then self#scan_module_type_elements mt

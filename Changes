@@ -34,7 +34,7 @@ Language features:
   be made explicit, by writing "method!", "val!" or "inherit!" in place of
   "method", "val" and "inherit". It is an error to override an
   undefined member (or to use overriding inheritance when nothing get
-  overriden). Additionally, these constructs disactivate respectively
+  overridden). Additionally, these constructs disactivate respectively
   warnings 7 (method override, code 'M') and 13 (instance variable
   override, code 'V'). Note that, by default, warning 7 is inactive
   and warning 13 is active.
@@ -94,14 +94,15 @@ All tools:
 
 Bug Fixes:
 - PR#4478: better error messages for type definition mismatches
-- PR#5057: fatal typing error with local module + functor + polymorphic variant
 - PR#4742: finalisation function raising an exception blocks other finalisations
 - PR#4775: compiler crash on crazy types (temporary fix)
 - PR#4970: better error message for instance variables
+- PR#4975: spelling mistakes
 - PR#4988: contravariance lost with ocamlc -i
 - PR#5004: problem in Buffer.add_channel with very large lengths.
 - PR#5008: on AMD64/MSVC port, rare float corruption during GC.
 - PR#5018: wrong exception raised by Dynlink.loadfile.
+- PR#5057: fatal typing error with local module + functor + polymorphic variant
 - Wrong type for Obj.add_offset.
 - Small problem with the representation of Int32, Int64, and Nativeint constants.
 
@@ -974,7 +975,7 @@ Type-checking:
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
   This new feature is also supported by ocamlbrowser.
-- Disable "method is overriden" warning when the method was explicitly
+- Disable "method is overridden" warning when the method was explicitly
   redefined as virtual beforehand (i.e. not through inheritance). Typing
   and semantics are unchanged.
 

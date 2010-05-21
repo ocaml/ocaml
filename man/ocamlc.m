@@ -565,7 +565,7 @@ function type and is ignored.
 \ \ \ Label omitted in function application.
 
 7
-\ \ \ Some methods are overriden in the class where they are defined.
+\ \ \ Some methods are overridden in the class where they are defined.
 
 8
 \ \ \ Partial match: missing cases in pattern-matching.

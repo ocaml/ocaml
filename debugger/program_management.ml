@@ -117,7 +117,7 @@ let ask_kill_program () =
 
 let initialize_loading () =
   if !debug_loading then
-    prerr_endline "Loading debugging informations...";
+    prerr_endline "Loading debugging information...";
   begin try access !program_name [F_OK]
   with Unix_error _ ->
     prerr_endline "Program not found.";

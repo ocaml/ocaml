@@ -218,7 +218,7 @@ struct
     String.concat "\n"
       [ "@ifinfo" ; s ; "@end ifinfo" ; "" ]
 
-  (** [install-info] informations *)
+  (** [install-info] information *)
   let dirsection sec =
     "@dircategory " ^ (escape sec)
 
