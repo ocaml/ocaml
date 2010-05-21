@@ -31,7 +31,7 @@ type type_mismatch =
   | Field_arity of string
   | Field_names of int * string * string
   | Field_missing of bool * string
-  | Record_representation
+  | Record_representation of bool
 
 val value_descriptions:
     Env.t -> value_description -> value_description -> module_coercion
@@ -45,4 +45,5 @@ val class_types:
         Env.t -> class_type -> class_type -> bool
 *)
 
-val report_type_mismatch: string -> string -> type_mismatch -> string
+val report_type_mismatch:
+    string -> string -> string -> Format.formatter -> type_mismatch list -> unit

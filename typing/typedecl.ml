@@ -893,21 +893,19 @@ let report_error ppf = function
   | Duplicate_constructor s ->
       fprintf ppf "Two constructors are named %s" s
   | Too_many_constructors ->
-      fprintf ppf "Too many non-constant constructors -- \
-                   maximum is %i non-constant constructors"
-        (Config.max_tag + 1)
+      fprintf ppf
+        "@[Too many non-constant constructors@ -- maximum is %i %s@]"
+        (Config.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
       fprintf ppf "The type abbreviation %s is cyclic" s
   | Definition_mismatch (ty, errs) ->
       Printtyp.reset_and_mark_loops ty;
-      fprintf ppf
-        "The variant or record definition does not match that of type@ %a"
-        Printtyp.type_expr ty;
-      List.iter
-        (fun err -> fprintf ppf "@.%s."
-            (Includecore.report_type_mismatch "this" "the original" err))
+      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@ %a@]"
+        "This variant or record definition" "does not match that of type"
+        Printtyp.type_expr ty
+        (Includecore.report_type_mismatch "the original" "this" "definition")
         errs
   | Constraint_failed (ty, ty') ->
       fprintf ppf "Constraints are not satisfied in this type.@.";

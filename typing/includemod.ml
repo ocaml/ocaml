@@ -337,15 +337,13 @@ let include_err ppf = function
         %a@;<1 -2>is not included in@ %a@]"
        (value_description id) d1 (value_description id) d2
   | Type_declarations(id, d1, d2, errs) ->
-      fprintf ppf
-       "@[<hv 2>Type declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
-       (type_declaration id) d1
-       (type_declaration id) d2;
-      List.iter
-        (fun err -> fprintf ppf "@.%s."
-            (Includecore.report_type_mismatch "the first" "the second" err))
-        errs
+      fprintf ppf "@[@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a@]"
+        "Type declarations do not match"
+        (type_declaration id) d1
+        "is not included in"
+        (type_declaration id) d2
+        (Includecore.report_type_mismatch
+           "the first" "the second" "declaration") errs
   | Exception_declarations(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Exception declarations do not match:@ \

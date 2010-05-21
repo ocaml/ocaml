@@ -120,7 +120,7 @@ type type_mismatch =
   | Field_arity of string
   | Field_names of int * string * string
   | Field_missing of bool * string
-  | Record_representation
+  | Record_representation of bool
 
 let nth n =
   if n = 1 then "first" else
@@ -128,32 +128,43 @@ let nth n =
   if n = 3 then "3rd" else
   string_of_int n ^ "th"
 
-let report_type_mismatch first second = function
-    Arity -> "They have different arities"
-  | Privacy -> "A private type would be revealed"
-  | Kind -> "Their kinds differ"
-  | Constraint -> "Their constraints differ"
-  | Manifest -> ""
-  | Variance -> "Their variances do not agree"
+let report_type_mismatch0 first second decl ppf err =
+  let pr fmt = Format.fprintf ppf fmt in
+  match err with
+    Arity -> pr "They have different arities"
+  | Privacy -> pr "A private type would be revealed"
+  | Kind -> pr "Their kinds differ"
+  | Constraint -> pr "Their constraints differ"
+  | Manifest -> ()
+  | Variance -> pr "Their variances do not agree"
   | Field_type s ->
-      "The types for field " ^ s ^ " are not equal"
+      pr "The types for field %s are not equal" s
   | Field_mutable s ->
-      "The mutability of field " ^ s ^ " is different"
+      pr "The mutability of field %s is different" s
   | Field_arity s ->
-      "The arities for field " ^ s ^ " differ"
+      pr "The arities for field %s differ" s
   | Field_names (n, name1, name2) ->
-      Printf.sprintf "Their %s fields have different names, %s and %s"
+      pr "Their %s fields have different names, %s and %s"
         (nth n) name1 name2
   | Field_missing (b, s) ->
-      Printf.sprintf "The field %s is only present in %s declaration"
-        s (if b then second else first)
-  | Record_representation -> "Their representation differ (record with float fields only)"
+      pr "The field %s is only present in %s %s"
+        s (if b then second else first) decl
+  | Record_representation b ->
+      pr "Their internal representations differ:@ %s %s %s"
+        (if b then second else first) decl
+        "uses unboxed float representation"
+
+let report_type_mismatch first second decl ppf =
+  List.iter
+    (fun err ->
+      if err = Manifest then () else
+      Format.fprintf ppf "%a." (report_type_mismatch0 first second decl) err)
 
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
     [], []           -> []
-  | [], (cstr2,_)::_ -> [Field_missing (false, cstr2)]
-  | (cstr1,_)::_, [] -> [Field_missing (true, cstr1)]
+  | [], (cstr2,_)::_ -> [Field_missing (true, cstr2)]
+  | (cstr1,_)::_, [] -> [Field_missing (false, cstr1)]
   | (cstr1, arg1)::rem1, (cstr2, arg2)::rem2 ->
       if cstr1 <> cstr2 then [Field_names (n, cstr1, cstr2)] else
       if List.length arg1 <> List.length arg2 then [Field_arity cstr1] else
@@ -168,8 +179,8 @@ let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
 let rec compare_records env decl1 decl2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
-  | [], (lab2,_,_)::_ -> [Field_missing (false, lab2)]
-  | (lab1,_,_)::_, [] -> [Field_missing (true, lab1)]
+  | [], (lab2,_,_)::_ -> [Field_missing (true, lab2)]
+  | (lab1,_,_)::_, [] -> [Field_missing (false, lab1)]
   | (lab1, mut1, arg1)::rem1, (lab2, mut2, arg2)::rem2 ->
       if lab1 <> lab2 then [Field_names (n, lab1, lab2)] else
       if mut1 <> mut2 then [Field_mutable lab1] else
@@ -186,8 +197,9 @@ let type_declarations env id decl1 decl2 =
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         compare_variants env decl1 decl2 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
-        if rep1 <> rep2 then [Record_representation]
-        else compare_records env decl1 decl2 1 labels1 labels2
+        let err = compare_records env decl1 decl2 1 labels1 labels2 in
+        if err <> [] || rep1 = rep2 then err else
+        [Record_representation (rep2 = Record_float)]
     | (_, _) -> [Kind]
   in
   if err <> [] then err else
