@@ -196,6 +196,9 @@ accesses an array or string outside of its bounds.
 \item["-version"]
 Print version string and exit.
 
+\item["-vnum"]
+Print short version number and exit.
+
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument \var{warning-list}.
 See section~\ref{s:comp-options} for the syntax of the argument.

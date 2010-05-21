@@ -72,7 +72,9 @@ Direct the memory manager to print some progress messages on
 standard error.  This is equivalent to setting "v=63" in the
 "OCAMLRUNPARAM" environment variable (see below).
 \item["-version"] 
-Print version and exit.
+Print version string and exit.
+\item["-vnum"] 
+Print short version number and exit.
 
 \end{options}
 

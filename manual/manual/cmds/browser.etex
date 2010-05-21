@@ -43,7 +43,10 @@ only recursive types where the recursion goes through an object type
 are supported.
 
 \item["-version"]
-Print version and exit.
+Print version string and exit.
+
+\item["-vnum"]
+Print short version number and exit.
 
 \item["-w" \var{warning-list}]
 Enable or disable warnings according to the argument \var{warning-list}.

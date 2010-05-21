@@ -67,7 +67,10 @@ of the usual backward slash ($\backslash$).  Under Unix, this option does
 nothing.
 
 \item["-version"]
-Print version and exit.
+Print version string and exit.
+
+\item["-vnum"]
+Print short version number and exit.
 
 \item["-help" or "--help"]
 Display a short usage summary and exit.

@@ -65,8 +65,9 @@ More precisely, consider the expression:
 @"let" "rec" name_1 "=" expr_1 "and" \ldots "and" name_n "=" expr_n "in" expr@
 \end{center}
 It will be accepted if each one of @expr_1 \ldots expr_n@ is
-statically constructive with respect to @name_1 \ldots name_n@ and
-not immediately linked to any of @name_1 \ldots name_n@
+statically constructive with respect to @name_1 \ldots name_n@,
+is not immediately linked to any of @name_1 \ldots name_n@,
+and is not an array constructor whose arguments have abstract type.
 
 An expression @@e@@ is said to be {\em statically constructive
 with respect to} the variables @name_1 \ldots name_n@ if at least

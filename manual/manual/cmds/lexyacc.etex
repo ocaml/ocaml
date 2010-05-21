@@ -64,7 +64,10 @@ Quiet mode.  "ocamllex" normally outputs informational messages
 to standard output.  They are suppressed if option "-q" is used.
 
 \item["-v" or "-version"] 
-Print version and exit.
+Print version string and exit.
+
+\item["-vnum"] 
+Print short version number and exit.
 
 \item["-help" or "--help"]
 Display a short usage summary and exit.

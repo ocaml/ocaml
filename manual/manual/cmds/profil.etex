@@ -110,7 +110,10 @@ Process the file \var{filename} as an interface file, even if its
 extension is not ".mli".
 
 \item["-version"]
-Print the version number of ocamlprof and exit.
+Print version string and exit.
+
+\item["-vnum"]
+Print short version number and exit.
 
 \item["-help" or "--help"]
 Display a short usage summary and exit.

@@ -180,7 +180,10 @@ For HTML, the file is used to create the whole "index.html" file.
 Verbose mode. Display progress information.
 
 \item["-version"]
-Print the version string and exit.
+Print version string and exit.
+
+\item["-vnum"]
+Print short version number and exit.
 
 \item["-warn-error"]
 Treat Ocamldoc warnings as errors.
@@ -196,7 +199,7 @@ Display a short usage summary and exit.
 \subsubsection*{Type-checking options}
 
 OCamldoc calls the Objective Caml type-checker to obtain type
-informations.  The following options impact the type-checking phase.
+information.  The following options impact the type-checking phase.
 They have the same meaning as for the "ocamlc" and "ocamlopt" commands.
 
 \begin{options}

@@ -346,7 +346,7 @@ Print all external commands before they are executed, in particular
 invocations of the C compiler and linker in "-custom" mode.  Useful to
 debug C library problems.
 
-\item["-version"]
+\item["-vnum" or "-version"]
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 
@@ -375,8 +375,8 @@ following:
 \item["-"\var{num}] Disable warning number \var{num}.
 \item["@"\var{num}] Enable and mark warning number \var{num}.
 \item["+"\var{num1}..\var{num2}] Enable warnings in the given range.
-\item["-"\var{num}..\var{num2}] Disable warnings in the given range.
-\item["@"\var{num}..\var{num2}] Enable and mark warnings in the given range.
+\item["-"\var{num1}..\var{num2}] Disable warnings in the given range.
+\item["@"\var{num1}..\var{num2}] Enable and mark warnings in the given range.
 \item["+"\var{letter}] Enable the set of warnings corresponding to
 \var{letter}. The letter may be uppercase or lowercase.
 \item["-"\var{letter}] Disable the set of warnings corresponding to
@@ -390,8 +390,8 @@ to \var{uppercase-letter}.
 to \var{lowercase-letter}.
 \end{options}
 
-Warning numbers which are out of the range of warnings that are currently defined are
-ignored. The warning numbers are as follows.
+Warning numbers which are out of the range of warnings that are currently
+defined are ignored. The warning numbers are as follows.
 \begin{options}
 \input{warnings.tex}
 \end{options}
@@ -417,9 +417,7 @@ mentioned here corresponds to the empty set.
 \item[Z] 27
 \end{options}
 
-The default setting is "-w +a-4-6-9-27..29", enabling all warnings except fragile
-pattern matchings, omitted labels, missing fields in record patterns,
-and innocuous unused variables.
+The default setting is "-w +a-4-6-7-9-27..29".
 Note that warnings 5 and 10 are not always triggered, depending on
 the internals of the type checker.
 
@@ -437,7 +435,7 @@ arguments to "-warn-error"
 in production code, because this can break your build when future versions
 of OCaml add some new warnings.
 
-The default setting is "-warn-error +a"
+The default setting is "-warn-error -a"
 (none of the warnings is treated as an error).
 
 \item["-where"]

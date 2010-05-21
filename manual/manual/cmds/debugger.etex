@@ -62,7 +62,10 @@ description of the command "set socket" (section~\ref{s:communication})
 for the format of \var{socket}.
 
 \item["-version"]
-Print version and exit.
+Print version string and exit.
+
+\item["-vnum"]
+Print short version number and exit.
 
 \item["-help" or "--help"]
 Display a short usage summary and exit.
