@@ -22,7 +22,8 @@ open Typedtree
 type error =
     Missing_field of Ident.t
   | Value_descriptions of Ident.t * value_description * value_description
-  | Type_declarations of Ident.t * type_declaration * type_declaration
+  | Type_declarations of Ident.t * type_declaration
+        * type_declaration * Includecore.type_mismatch list
   | Exception_declarations of
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type
@@ -56,9 +57,8 @@ let value_descriptions env subst id vd1 vd2 =
 
 let type_declarations env subst id decl1 decl2 =
   let decl2 = Subst.type_declaration subst decl2 in
-  if Includecore.type_declarations env id decl1 decl2
-  then ()
-  else raise(Error[Type_declarations(id, decl1, decl2)])
+  let err = Includecore.type_declarations env id decl1 decl2 in
+  if err <> [] then raise(Error[Type_declarations(id, decl1, decl2, err)])
 
 (* Inclusion between exception declarations *)
 
@@ -336,12 +336,16 @@ let include_err ppf = function
        "@[<hv 2>Values do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
        (value_description id) d1 (value_description id) d2
-  | Type_declarations(id, d1, d2) ->
+  | Type_declarations(id, d1, d2, errs) ->
       fprintf ppf
        "@[<hv 2>Type declarations do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
        (type_declaration id) d1
-       (type_declaration id) d2
+       (type_declaration id) d2;
+      List.iter
+        (fun err -> fprintf ppf "@.%s."
+            (Includecore.report_type_mismatch "the first" "the second" err))
+        errs
   | Exception_declarations(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Exception declarations do not match:@ \

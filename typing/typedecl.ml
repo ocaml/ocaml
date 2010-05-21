@@ -28,7 +28,7 @@ type error =
   | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
-  | Definition_mismatch of type_expr
+  | Definition_mismatch of type_expr * Includecore.type_mismatch list
   | Constraint_failed of type_expr * type_expr
   | Unconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list
@@ -316,18 +316,23 @@ let check_abbrev env (_, sdecl) (id, decl) =
         Tconstr(path, args, _) ->
           begin try
             let decl' = Env.find_type path env in
-            if List.length args = List.length decl.type_params
-            && Ctype.equal env false args decl.type_params
-            && Includecore.type_declarations env id
-                decl'
-                (Subst.type_declaration (Subst.add_type id path Subst.identity)
-                                        decl)
-            then ()
-            else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+            let err =
+              if List.length args <> List.length decl.type_params
+              then [Includecore.Arity]
+              else if not (Ctype.equal env false args decl.type_params)
+              then [Includecore.Constraint]
+              else
+                Includecore.type_declarations env id
+                  decl'
+                  (Subst.type_declaration
+                     (Subst.add_type id path Subst.identity) decl)
+            in
+            if err <> [] then
+              raise(Error(sdecl.ptype_loc, Definition_mismatch (ty, err)))
           with Not_found ->
             raise(Error(sdecl.ptype_loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+      | _ -> raise(Error(sdecl.ptype_loc, Definition_mismatch (ty, [])))
       end
   | _ -> ()
 
@@ -895,11 +900,15 @@ let report_error ppf = function
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
       fprintf ppf "The type abbreviation %s is cyclic" s
-  | Definition_mismatch ty ->
+  | Definition_mismatch (ty, errs) ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf
         "The variant or record definition does not match that of type@ %a"
-        Printtyp.type_expr ty
+        Printtyp.type_expr ty;
+      List.iter
+        (fun err -> fprintf ppf "@.%s."
+            (Includecore.report_type_mismatch "this" "the original" err))
+        errs
   | Constraint_failed (ty, ty') ->
       fprintf ppf "Constraints are not satisfied in this type.@.";
       Printtyp.reset_and_mark_loops ty;
