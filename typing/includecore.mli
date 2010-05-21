@@ -29,8 +29,9 @@ type type_mismatch =
   | Field_type of string
   | Field_mutable of string
   | Field_arity of string
-  | Field_names of int * string * string 
+  | Field_names of int * string * string
   | Field_missing of bool * string
+  | Record_representation
 
 val value_descriptions:
     Env.t -> value_description -> value_description -> module_coercion

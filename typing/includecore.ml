@@ -118,8 +118,9 @@ type type_mismatch =
   | Field_type of string
   | Field_mutable of string
   | Field_arity of string
-  | Field_names of int * string * string 
+  | Field_names of int * string * string
   | Field_missing of bool * string
+  | Record_representation
 
 let nth n =
   if n = 1 then "first" else
@@ -146,6 +147,7 @@ let report_type_mismatch first second = function
   | Field_missing (b, s) ->
       Printf.sprintf "The field %s is only present in %s declaration"
         s (if b then second else first)
+  | Record_representation -> "Their representation differ (record with float fields only)"
 
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
@@ -184,7 +186,8 @@ let type_declarations env id decl1 decl2 =
     | (Type_variant cstrs1, Type_variant cstrs2) ->
         compare_variants env decl1 decl2 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
-        compare_records env decl1 decl2 1 labels1 labels2
+        if rep1 <> rep2 then [Record_representation]
+        else compare_records env decl1 decl2 1 labels1 labels2
     | (_, _) -> [Kind]
   in
   if err <> [] then err else
