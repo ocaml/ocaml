@@ -55,3 +55,5 @@ val echo_eof: unit -> unit
 val reset: unit -> unit
 
 val highlight_locations: formatter -> t -> t -> bool
+
+val print: formatter -> t -> unit

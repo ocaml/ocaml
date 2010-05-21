@@ -3383,6 +3383,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_manifest = tm;
       type_private = priv;
       type_variance = decl.type_variance;
+      type_loc = decl.type_loc;
     }
   with Not_found ->
     clear_hash ();

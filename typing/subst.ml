@@ -183,6 +183,7 @@ let type_declaration s decl =
         end;
       type_private = decl.type_private;
       type_variance = decl.type_variance;
+      type_loc = if s.for_saving then Location.none else decl.type_loc;
     }
   in
   cleanup_types ();

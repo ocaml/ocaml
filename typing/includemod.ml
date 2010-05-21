@@ -338,14 +338,23 @@ let include_err ppf = function
        (value_description id) d1 (value_description id) d2
   | Type_declarations(id, d1, d2, errs) ->
       fprintf ppf
-       "@[<hv 2>Type declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
-       (type_declaration id) d1
-       (type_declaration id) d2;
+        "@[<hv 2>Type declarations do not match:@ %a@;<1 -2>is not included in@ %a@]"
+        (type_declaration id) d1
+        (type_declaration id) d2;
+      if d1.type_loc.Location.loc_start <> Lexing.dummy_pos then begin
+        fprintf ppf "@.";
+        Location.print ppf d1.type_loc;
+        fprintf ppf "First declaration"
+      end;
+      if d2.type_loc.Location.loc_start <> Lexing.dummy_pos then begin
+        fprintf ppf "@.";
+        Location.print ppf d2.type_loc;
+        fprintf ppf "Second declaration"
+      end;
       List.iter
         (fun err -> fprintf ppf "@.%s."
             (Includecore.report_type_mismatch "the first" "the second" err))
-        errs
+        errs;
   | Exception_declarations(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Exception declarations do not match:@ \

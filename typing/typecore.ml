@@ -1594,6 +1594,7 @@ let rec type_exp env sexp =
         type_private = Public;
         type_manifest = None;
         type_variance = [];
+        type_loc = loc;
       }
       in
 

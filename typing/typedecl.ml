@@ -58,6 +58,7 @@ let enter_type env (name, sdecl) id =
         begin match sdecl.ptype_manifest with None -> None
         | Some _ -> Some(Ctype.newvar ()) end;
       type_variance = List.map (fun _ -> true, true, true) sdecl.ptype_params;
+      type_loc = sdecl.ptype_loc;
     }
   in
   Env.add_type id decl env
@@ -187,6 +188,7 @@ let transl_declaration env (name, sdecl) id =
             Some (transl_simple_type env no_row sty)
         end;
       type_variance = List.map (fun _ -> true, true, true) params;
+      type_loc = sdecl.ptype_loc;
     } in
 
   (* Check constraints *)
@@ -800,6 +802,7 @@ let transl_with_constraint env id row_path sdecl =
             Some(transl_simple_type env no_row sty)
         end;
       type_variance = [];
+      type_loc = sdecl.ptype_loc;
     }
   in
   begin match row_path with None -> ()
@@ -829,7 +832,9 @@ let abstract_type_decl arity =
       type_kind = Type_abstract;
       type_private = Public;
       type_manifest = None;
-      type_variance = replicate_list (true, true, true) arity } in
+      type_variance = replicate_list (true, true, true) arity;
+      type_loc = Location.none;
+     } in
   Ctype.end_def();
   generalize_decl decl;
   decl

@@ -109,7 +109,9 @@ let merge_constraint initial_env loc sg lid constr =
             type_manifest = None;
             type_variance =
               List.map (fun (c,n) -> (not n, not c, not c))
-              sdecl.ptype_variance }
+              sdecl.ptype_variance;
+            type_loc = Location.none;
+           }
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl = Typedecl.transl_with_constraint
