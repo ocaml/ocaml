@@ -110,7 +110,9 @@ let nondep_supertype env mid mty =
       match item with
         Tsig_value(id, d) ->
           Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
-                          val_kind = d.val_kind}) :: rem'
+                          val_kind = d.val_kind;
+                          val_loc = d.val_loc;
+                         }) :: rem'
       | Tsig_type(id, d, rs) ->
           Tsig_type(id, Ctype.nondep_type_decl env mid id (va = Co) d, rs)
           :: rem'

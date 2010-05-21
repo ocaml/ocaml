@@ -40,6 +40,8 @@ let mkclass d =
   { pcl_desc = d; pcl_loc = symbol_rloc() }
 let mkcty d =
   { pcty_desc = d; pcty_loc = symbol_rloc() }
+let mkval ty p =
+  {pval_type = ty; pval_prim = p; pval_loc = symbol_rloc()}
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
@@ -470,7 +472,7 @@ structure_item:
           [{ppat_desc = Ppat_any}, exp] -> mkstr(Pstr_eval exp)
         | _ -> mkstr(Pstr_value($2, List.rev $3)) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-      { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
+      { mkstr(Pstr_primitive($2, mkval $4 $6)) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
@@ -536,9 +538,9 @@ signature:
 ;
 signature_item:
     VAL val_ident COLON core_type
-      { mksig(Psig_value($2, {pval_type = $4; pval_prim = []})) }
+      { mksig(Psig_value($2, mkval $4 [])) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
-      { mksig(Psig_value($2, {pval_type = $4; pval_prim = $6})) }
+      { mksig(Psig_value($2, mkval $4 $6)) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments

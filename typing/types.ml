@@ -87,7 +87,9 @@ module Vars = Meths
 
 type value_description =
   { val_type: type_expr;                (* Type of the value *)
-    val_kind: value_kind }
+    val_kind: value_kind;
+    val_loc: Location.t;
+ }
 
 and value_kind =
     Val_reg                             (* Regular value *)

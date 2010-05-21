@@ -242,7 +242,9 @@ let class_type s cty =
 
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
-    val_kind = descr.val_kind }
+    val_kind = descr.val_kind;
+    val_loc = if s.for_saving then Location.none else descr.val_loc;
+   }
 
 let exception_declaration s tyl =
   List.map (type_expr s) tyl

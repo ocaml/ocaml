@@ -328,6 +328,18 @@ let type_declarations env id decl1 decl2 =
 open Format
 open Printtyp
 
+let show_locs ppf loc1 loc2 =
+  if loc2.Location.loc_start <> Lexing.dummy_pos then begin
+    fprintf ppf "@.";
+    Location.print ppf loc2;
+    fprintf ppf "Expected declaration"
+  end;
+  if loc1.Location.loc_start <> Lexing.dummy_pos then begin
+    fprintf ppf "@.";
+    Location.print ppf loc1;
+    fprintf ppf "Actual declaration"
+  end
+
 let include_err ppf = function
   | Missing_field id ->
       fprintf ppf "The field `%a' is required but not provided" ident id
@@ -335,22 +347,14 @@ let include_err ppf = function
       fprintf ppf
        "@[<hv 2>Values do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
-       (value_description id) d1 (value_description id) d2
+       (value_description id) d1 (value_description id) d2;
+      show_locs ppf d1.val_loc d2.val_loc;
   | Type_declarations(id, d1, d2, errs) ->
       fprintf ppf
         "@[<hv 2>Type declarations do not match:@ %a@;<1 -2>is not included in@ %a@]"
         (type_declaration id) d1
         (type_declaration id) d2;
-      if d1.type_loc.Location.loc_start <> Lexing.dummy_pos then begin
-        fprintf ppf "@.";
-        Location.print ppf d1.type_loc;
-        fprintf ppf "First declaration"
-      end;
-      if d2.type_loc.Location.loc_start <> Lexing.dummy_pos then begin
-        fprintf ppf "@.";
-        Location.print ppf d2.type_loc;
-        fprintf ppf "Second declaration"
-      end;
+      show_locs ppf d1.type_loc d2.type_loc;
       List.iter
         (fun err -> fprintf ppf "@.%s."
             (Includecore.report_type_mismatch "the first" "the second" err))
