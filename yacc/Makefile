@@ -28,7 +28,7 @@ ocamlyacc$(EXE): $(OBJS)
 	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc $(OBJS)
 
 version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" >version.h
+	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" >version.h
 
 clean:
 	rm -f *.o ocamlyacc$(EXE) *~ version.h

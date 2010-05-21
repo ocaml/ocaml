@@ -42,7 +42,7 @@ mkcamlp4.sh: mkcamlp4.sh.tpl version.sh
 	    mkcamlp4.sh.tpl > mkcamlp4.sh
 
 version.sh : $(OTOP)/VERSION
-	echo "VERSION=\"`head -1 ../VERSION`\"" >version.sh
+	echo "VERSION=\"`sed -e 1q ../VERSION`\"" >version.sh
 
 install-local:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"

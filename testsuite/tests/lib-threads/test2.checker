@@ -1,1 +1,1 @@
-head -1 test2.result | grep -q '^[ab]*'
+sed -e 1q test2.result | grep -q '^[ab]*'
