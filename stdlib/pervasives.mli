@@ -176,7 +176,7 @@ external ( mod ) : int -> int -> int = "%modint"
    [x = (x / y) * y + x mod y] and
    [abs(x mod y) <= abs(y)-1].
    If [y = 0], [x mod y] raises [Division_by_zero].
-   Notice that [x mod y] is nonpositive if and only if [x < 0].
+   Note that [x mod y] is negative only if [x < 0].
    Raise [Division_by_zero] if [y] is zero. *)
 
 val abs : int -> int
@@ -268,11 +268,15 @@ external log10 : float -> float = "caml_log10_float" "log10" "float"
 
 external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
 (** [expm1 x] computes [exp x -. 1.0], giving numerically-accurate results
-    even if [x] is close to [0.0]. *)
+    even if [x] is close to [0.0].
+    @since 3.12.0
+*)
 
 external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
 (** [log1p x] computes [log(1.0 +. x)] (natural logarithm),
-    giving numerically-accurate results even if [x] is close to [0.0]. *)
+    giving numerically-accurate results even if [x] is close to [0.0].
+    @since 3.12.0
+*)
 
 external cos : float -> float = "caml_cos_float" "cos" "float"
 (** Cosine.  Argument is in radians. *)

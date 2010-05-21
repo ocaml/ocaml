@@ -29,7 +29,10 @@ val self_init : unit -> unit
    in a system-dependent way. *)
 
 val bits : unit -> int
-(** Return 30 random bits in a nonnegative integer. *)
+(** Return 30 random bits in a nonnegative integer.
+    @before 3.12.0 used a different algorithm (affects all the following
+                   functions)
+*)
 
 val int : int -> int
 (** [Random.int bound] returns a random integer between 0 (inclusive)

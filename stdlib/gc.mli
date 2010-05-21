@@ -72,7 +72,7 @@ type stat =
     (** Maximum size reached by the major heap, in words. *)
 
     stack_size: int;
-    (** Current size of the stack, in words. *)
+    (** Current size of the stack, in words. @since 3.12.0 *)
 }
 (** The memory management counters are returned in a [stat] record.
 
@@ -136,7 +136,7 @@ type control =
         quite fast but can result in fragmentation.  1 is the
         first-fit policy, which can be slower in some cases but
         can be better for programs with fragmentation problems.
-        Default: 0. *)
+        Default: 0. @since 3.11.0 *)
 }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the

@@ -662,7 +662,9 @@ val sprintf : ('a, unit, string) format -> 'a;;
 
 val ifprintf : formatter -> ('a, formatter, unit) format -> 'a;;
 (** Same as [fprintf] above, but does not print anything.
-   Useful to ignore some material when conditionally printing. *)
+   Useful to ignore some material when conditionally printing.
+   @since 3.10.0
+*)
 
 (** Formatted output functions with continuations. *)
 
@@ -676,7 +678,9 @@ val ikfprintf : (formatter -> 'a) -> formatter ->
               ('b, formatter, unit, 'a) format4 -> 'b
 ;;
 (** Same as [kfprintf] above, but does not print anything.
-   Useful to ignore some material when conditionally printing. *)
+   Useful to ignore some material when conditionally printing.
+   @since 3.12.0
+*)
 
 val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** Same as [sprintf] above, but instead of returning the string,

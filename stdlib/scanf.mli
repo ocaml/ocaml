@@ -86,7 +86,9 @@ type in_channel;;
    [Pervasives.in_channel] value.
    A [Scanf.Scanning.in_channel] value is also called a {i formatted input
    channel} or equivalently a {i scanning buffer}.
-   The type [scanbuf] below is an alias for [in_channel]. *)
+   The type [scanbuf] below is an alias for [in_channel].
+   @since 3.12.0
+*)
 
 type scanbuf = in_channel;;
 (** The type of scanning buffers. A scanning buffer is the source from which a
@@ -106,7 +108,9 @@ val stdin : in_channel;;
     Note: when input is read interactively from [stdin], the newline character
     that triggers the evaluation is incorporated in the input; thus, scanning
     specifications must properly skip this character (simply add a ['\n']
-    as the last character of the format string). *)
+    as the last character of the format string).
+    @since 3.12.0
+*)
 
 val open_in : string -> in_channel;;
 (** Bufferized file reading in text mode. The efficient and usual
@@ -114,14 +118,18 @@ val open_in : string -> in_channel;;
     scanning buffer that reads characters in large chunks, rather than one
     character at a time as buffers returned by [from_channel] below do).
     [Scanning.from_file fname] returns a scanning buffer which reads
-    from the given file [fname] in text mode. *)
+    from the given file [fname] in text mode.
+    @since 3.12.0
+*)
 
 val open_in_bin : string -> in_channel;;
-(** Bufferized file reading in binary mode. *)
+(** Bufferized file reading in binary mode. @since 3.12.0 *)
 
 val close_in : in_channel -> unit;;
 (** Close the [Pervasives.input_channel] associated with the given
-  [Scanning.in_channel]. *)
+  [Scanning.in_channel].
+  @since 3.12.0
+*)
 
 val from_file : string -> in_channel;;
 (** An alias for [open_in] above. *)
@@ -158,7 +166,9 @@ val beginning_of_input : in_channel -> bool;;
 
 val name_of_input : in_channel -> string;;
 (** [Scanning.file_name_of_input ic] returns the name of the character source
-    for the formatted input channel [ic]. *)
+    for the formatted input channel [ic].
+    @since 3.09.0
+*)
 
 val stdib : in_channel;;
 (** A deprecated alias for [Scanning.stdin], the scanning buffer reading from
@@ -186,7 +196,9 @@ type ('a, 'b, 'c, 'd) scanner =
     functions must be provided before the receiver [f] argument. For
     instance, if [read_elem] is an input function for values of type [t],
     then [bscanf ic "%r;" read_elem f] reads a value [v] of type [t] followed
-    by a [';'] character, and returns [f v]. *)
+    by a [';'] character, and returns [f v].
+    @since 3.10.0
+*)
 
 exception Scan_failure of string;;
 (** The exception that formatted input functions raise when the input cannot be
@@ -439,12 +451,16 @@ val bscanf_format :
     input channel [ic], according to the given format string [fmt], and
     applies [f] to the resulting format string value.
     Raise [Scan_failure] if the format string value read does not have the
-    same type as [fmt]. *)
+    same type as [fmt].
+    @since 3.09.0
+*)
 
 val sscanf_format :
   string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
-(** Same as {!Scanf.bscanf_format}, but reads from the given string. *)
+(** Same as {!Scanf.bscanf_format}, but reads from the given string.
+    @since 3.09.0
+*)
 
 val format_from_string :
   string ->
@@ -452,4 +468,6 @@ val format_from_string :
 (** [format_from_string s fmt] converts a string argument to a format string,
     according to the given format string [fmt].
     Raise [Scan_failure] if [s], considered as a format string, does not
-    have the same type as [fmt]. *)
+    have the same type as [fmt].
+    @since 3.10.0
+*)

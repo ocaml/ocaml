@@ -30,12 +30,13 @@ external set_tag : t -> int -> unit = "caml_obj_set_tag"
 external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
-val double_field : t -> int -> float
-val set_double_field : t -> int -> float -> unit
+val double_field : t -> int -> float  (* @since 3.11.2 *)
+val set_double_field : t -> int -> float -> unit  (* @since 3.11.2 *)
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 external truncate : t -> int -> unit = "caml_obj_truncate"
 external add_offset : t -> Int32.t -> t = "caml_obj_add_offset"
+         (* @since 3.12.0 *)
 
 val lazy_tag : int
 val closure_tag : int
@@ -52,7 +53,7 @@ val final_tag : int  (* DEPRECATED *)
 
 val int_tag : int
 val out_of_heap_tag : int
-val unaligned_tag : int   (* should never happen *)
+val unaligned_tag : int   (* should never happen @since 3.11.0 *)
 
 (** The following two functions are deprecated.  Use module {!Marshal}
     instead. *)
