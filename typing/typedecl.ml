@@ -902,7 +902,7 @@ let report_error ppf = function
       fprintf ppf "The type abbreviation %s is cyclic" s
   | Definition_mismatch (ty, errs) ->
       Printtyp.reset_and_mark_loops ty;
-      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]@ %a@]"
+      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
         "This variant or record definition" "does not match that of type"
         Printtyp.type_expr ty
         (Includecore.report_type_mismatch "the original" "this" "definition")

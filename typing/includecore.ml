@@ -158,7 +158,7 @@ let report_type_mismatch first second decl ppf =
   List.iter
     (fun err ->
       if err = Manifest then () else
-      Format.fprintf ppf "%a." (report_type_mismatch0 first second decl) err)
+      Format.fprintf ppf "@ %a." (report_type_mismatch0 first second decl) err)
 
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with

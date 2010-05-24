@@ -337,7 +337,7 @@ let include_err ppf = function
         %a@;<1 -2>is not included in@ %a@]"
        (value_description id) d1 (value_description id) d2
   | Type_declarations(id, d1, d2, errs) ->
-      fprintf ppf "@[@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]@ %a@]"
+      fprintf ppf "@[@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a@]"
         "Type declarations do not match"
         (type_declaration id) d1
         "is not included in"
