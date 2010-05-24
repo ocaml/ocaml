@@ -45,7 +45,6 @@ Language features:
   uses, this allows to merge two signatures containing identically
   named fields.
 
-
 Compilers and toplevel:
 - Warnings are now numbered and can be switched on and off individually.
   The old system with letters referring to sets of warnings is still
@@ -69,6 +68,10 @@ Compilers and toplevel:
   This option can help working around mysterious type incompatibilities
   caused by the incomplete comparison of applicative paths F(X).t.
 
+Native-code compiler:
+- AMD64: shorter and slightly more efficient code generated for 
+  float comparisons.
+
 Standard library:
 - Format: new function ikfprintf analoguous to ifprintf with a continuation
   argument.
@@ -88,6 +91,12 @@ Other libraries:
 
 Ocamlbuild:
 - Add support for native dynlink.
+
+New tool:
+- ocamlobjinfo: displays various information, esp. dependencies, for
+  compiled OCaml files (.cmi, .cmo, .cma, .cmx, .cmxa, .cmxs, and bytecode
+  executables).  Extends and makes more official the old objinfo tool
+  that was installed by some OCaml packages.
 
 All tools:
 - PR#4857: add a -vnum option to display the version number and nothing else
