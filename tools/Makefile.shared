@@ -228,27 +228,22 @@ beforedepend:: opnames.ml
 
 # Display info on compiled files
 
-objinfo_lib.cma: ocamlmklib objinfo_lib.cmo objinfo_stubs$(EXT_OBJ)
-	../boot/ocamlrun ./ocamlmklib -ocamlc '$(CAMLC)' \
-          -o objinfo_lib objinfo_lib.cmo objinfo_stubs$(EXT_OBJ) $(LIBBFD_LINK)
+objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
+	$(BYTECC) -o objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
+          objinfo_helper.c $(LIBBFD_LINK)
 
-objinfo_stubs$(EXT_OBJ): objinfo_stubs.c
-	$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -c objinfo_stubs.c
+OBJINFO=../utils/misc.cmo ../utils/config.cmo ../bytecomp/bytesections.cmo \
+        objinfo.cmo
 
-OBJINFO=../utils/config.cmo ../bytecomp/bytesections.cmo \
-        objinfo_lib.cma objinfo.cmo
-
-objinfo: $(OBJINFO)
+objinfo: objinfo_helper$(EXE) $(OBJINFO)
 	$(CAMLC) -o objinfo $(OBJINFO)
 
 install::
 	cp objinfo $(BINDIR)/ocamlobjinfo$(EXE)
-	if test -f dllobjinfo_lib$(EXT_DLL); then \
-          cp dllobjinfo_lib$(EXT_DLL) $(STUBLIBDIR)/; fi
+	cp objinfo_helper$(EXE) $(LIBDIR)/objinfo_helper$(EXE)
 
 clean::
-	rm -f objinfo
-	rm -f objinfo_stubs$(EXT_OBJ) libobjinfo_lib$(EXT_LIB) dllobjinfo_lib$(EXT_DLL)
+	rm -f objinfo objinfo_helper$(EXE)
 
 # Scan object files for required primitives
 

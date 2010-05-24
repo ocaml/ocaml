@@ -19,6 +19,7 @@
    and on bytecode executables. *)
 
 open Printf
+open Misc
 open Config
 open Cmo_format
 open Clambda
@@ -181,6 +182,27 @@ let dump_byte ic =
     )
     toc
 
+let read_dyn_header filename ic =
+  let tempfile = Filename.temp_file "objinfo" ".out" in
+  let helper = Filename.concat Config.standard_library "objinfo_helper" in
+  try
+    try_finally
+      (fun () ->
+        let rc = Sys.command (sprintf "%s %s > %s"
+                                (Filename.quote helper)
+                                (Filename.quote filename)
+                                tempfile) in
+        if rc <> 0 then failwith "cannot read";
+        let tc = open_in tempfile in
+        try_finally
+          (fun () ->
+            let ofs = Scanf.fscanf tc "%Ld" (fun x -> x) in
+            LargeFile.seek_in ic ofs;
+            Some(input_value ic : dynheader))
+          (fun () -> close_in tc))
+      (fun () -> remove_file tempfile)
+  with Failure _ | Sys_error _ -> None
+
 let dump_obj filename =
   printf "File %s\n" filename;
   let ic = open_in_bin filename in
@@ -221,20 +243,18 @@ let dump_obj filename =
       dump_byte ic;
       close_in ic
     end else if Filename.check_suffix filename ".cmxs" then begin
-      let offset = Objinfo_lib.get_cmxs_info filename in
-      begin match offset with
-        | -2L -> printf "Cannot display info on .cmxs files\n"
-        | -1L -> printf "Failed to read table of contents\n"; exit 2
-        | _ ->
-            let _ = LargeFile.seek_in ic offset in
-            let header = (input_value ic : dynheader) in
-            if header.dynu_magic = Config.cmxs_magic_number then
-              print_cmxs_infos header
-            else begin
-              printf "Wrong magic number\n"; exit 2
-            end
-      end;
-      close_in ic
+      flush stdout;
+      match read_dyn_header filename ic with
+      | None ->
+          printf "Unable to read info on file %s\n" filename;
+          exit 2
+      | Some header ->
+          if header.dynu_magic = Config.cmxs_magic_number then
+            print_cmxs_infos header
+          else begin
+            printf "Wrong magic number\n"; exit 2
+          end;
+          close_in ic
     end else begin
       printf "Not an OCaml object file\n"; exit 2
     end
