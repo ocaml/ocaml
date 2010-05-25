@@ -511,17 +511,14 @@ mksharedlib=''
 byteccrpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
-natdynlink=false
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
     *-*-cygwin*)
-      natdynlink=true
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
-      natdynlink=true
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -614,11 +611,24 @@ if test -z "$mkmaindll"; then
   mkmaindll=$mksharedlib
 fi
 
+# Configure native dynlink
+
+natdynlink=false
+
+if test $withsharedlibs = "yes"; then
+  case "$host" in
+    *-*-cygwin*)                  natdynlink=true;;
+    i[3456]86-*-linux*)           natdynlink=true;;
+    x86_64-*-linux*)              natdynlink=true;;
+  esac
+fi
+
 if test $natdynlink = "true"; then
   cmxs="cmxs"
 else
   cmxs="cmxa"
 fi
+
 
 # Configure the native-code compiler
 
@@ -638,7 +648,7 @@ case "$host" in
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
   sparc*-*-gnu*)                arch=sparc; system=gnu;;
-  i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
+  i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`; natdynlink=true;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         if $arch64; then
