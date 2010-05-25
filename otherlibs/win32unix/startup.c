@@ -28,8 +28,6 @@ CAMLprim value win_startup(unit)
   int i;
   HANDLE h;
 
-  DBUG_INIT;
-
   (void) WSAStartup(MAKEWORD(2, 0), &wsaData);
   DuplicateHandle(GetCurrentProcess(), GetCurrentProcess(),
                   GetCurrentProcess(), &h, 0, TRUE,
@@ -47,8 +45,6 @@ CAMLprim value win_cleanup(unit)
   worker_cleanup();
 
   (void) WSACleanup();
-
-  DBUG_CLEANUP;
 
   return Val_unit;
 }
