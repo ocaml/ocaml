@@ -83,6 +83,7 @@ Standard library:
   low level input, value Scanf.stdin has been added.
 * Random: changed the algorithm to produce better randomness.  Now passes the
   DieHard tests.
+- Map: implement functions from Set that make sense for Map.
 
 Other libraries:
 * Str: letters that constitute a word now include digits 0-9 and

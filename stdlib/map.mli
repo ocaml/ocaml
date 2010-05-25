@@ -52,28 +52,99 @@ module type S =
     val is_empty: 'a t -> bool
     (** Test whether a map is empty or not. *)
 
+    val mem: key -> 'a t -> bool
+    (** [mem x m] returns [true] if [m] contains a binding for [x],
+       and [false] otherwise. *)
+
     val add: key -> 'a -> 'a t -> 'a t
     (** [add x y m] returns a map containing the same bindings as
        [m], plus a binding of [x] to [y]. If [x] was already bound
        in [m], its previous binding disappears. *)
 
-    val find: key -> 'a t -> 'a
-    (** [find x m] returns the current binding of [x] in [m],
-       or raises [Not_found] if no such binding exists. *)
+    val singleton: key -> 'a -> 'a t
+    (** [singleton x y] returns the one-element map that contains a binding [y] for [x]. *)
 
     val remove: key -> 'a t -> 'a t
     (** [remove x m] returns a map containing the same bindings as
        [m], except for [x] which is unbound in the returned map. *)
 
-    val mem: key -> 'a t -> bool
-    (** [mem x m] returns [true] if [m] contains a binding for [x],
-       and [false] otherwise. *)
+    val merge: (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+    (** [merge f m1 m2] compute a map whose keys is a subset of keys of [m1] and of [m2]. The presence of each such binding, and the corresponding value, is determined with the function [f]. *)
+
+    val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
+    (** Total ordering between maps.  The first argument is a total ordering
+        used to compare data associated with equal keys in the two maps. *)
+
+    val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+    (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are
+       equal, that is, contain equal keys and associate them with
+       equal data.  [cmp] is the equality predicate used to compare
+       the data associated with the keys. *)
 
     val iter: (key -> 'a -> unit) -> 'a t -> unit
     (** [iter f m] applies [f] to all bindings in map [m].
        [f] receives the key as first argument, and the associated value
        as second argument.  The bindings are passed to [f] in increasing
        order with respect to the ordering over the type of the keys. *)
+
+    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
+       where [k1 ... kN] are the keys of all bindings in [m]
+       (in increasing order), and [d1 ... dN] are the associated data. *)
+
+    val for_all: (key -> 'a -> bool) -> 'a t -> bool
+    (** [for_all p m] checks if all the bindings of the map
+       satisfy the predicate [p]. *)
+
+    val exists: (key -> 'a -> bool) -> 'a t -> bool
+    (** [exists p m] checks if at least one binding of the map
+       satisfy the predicate [p]. *)
+
+    val filter: (key -> 'a -> bool) -> 'a t -> 'a t
+    (** [filter p m] returns the map with all the bindings in [m]
+       that satisfy predicate [p]. *)
+
+    val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
+    (** [partition p m] returns a pair of maps [(m1, m2)], where
+       [m1] contains all the bindings of [s] that satisfy the
+       predicate [p], and [m2] is the map with all the bindings of
+       [s] that do not satisfy [p]. *)
+
+    val cardinal: 'a t -> int
+    (** Return the number of bindings of a map. *)
+
+    val bindings: 'a t -> (key * 'a) list
+    (** Return the list of all bindings of the given map.
+       The returned list is sorted in increasing order with respect
+       to the ordering [Ord.compare], where [Ord] is the argument
+       given to {!Map.Make}. *)
+
+    val min_binding: 'a t -> (key * 'a)
+    (** Return the smallest binding of the given map
+       (with respect to the [Ord.compare] ordering), or raise
+       [Not_found] if the map is empty. *)
+
+    val max_binding: 'a t -> (key * 'a)
+    (** Same as {!Map.S.max_binding}, but returns the largest binding
+       of the given map. *)
+
+    val choose: 'a t -> (key * 'a)
+    (** Return one binding of the given map, or raise [Not_found] if
+       the map is empty. Which binding is chosen is unspecified,
+       but equal bindings will be chosen for equal maps. *)
+
+    val split: key -> 'a t -> 'a t * 'a option * 'a t
+    (** [split x m] returns a triple [(l, data, r)], where
+          [l] is the map with all the bindings of [m] whose key
+        is strictly less than [x];
+          [r] is the map with all the bindings of [m] whose key
+        is strictly greater than [x];
+          [data] is [None] if [m] contains no binding for [x],
+          or [Some v] if [m] binds [v] to [x]. *)
+
+    val find: key -> 'a t -> 'a
+    (** [find x m] returns the current binding of [x] in [m],
+       or raises [Not_found] if no such binding exists. *)
 
     val map: ('a -> 'b) -> 'a t -> 'b t
     (** [map f m] returns a map with same domain as [m], where the
@@ -86,20 +157,6 @@ module type S =
     (** Same as {!Map.S.map}, but the function receives as arguments both the
        key and the associated value for each binding of the map. *)
 
-    val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
-    (** [fold f m a] computes [(f kN dN ... (f k1 d1 a)...)],
-       where [k1 ... kN] are the keys of all bindings in [m]
-       (in increasing order), and [d1 ... dN] are the associated data. *)
-
-    val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
-    (** Total ordering between maps.  The first argument is a total ordering
-        used to compare data associated with equal keys in the two maps. *)
-
-    val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    (** [equal cmp m1 m2] tests whether the maps [m1] and [m2] are
-       equal, that is, contain equal keys and associate them with
-       equal data.  [cmp] is the equality predicate used to compare
-       the data associated with the keys. *)
 
   end
 (** Output signature of the functor {!Map.Make}. *)
