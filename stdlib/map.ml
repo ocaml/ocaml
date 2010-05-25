@@ -150,12 +150,22 @@ module Make(Ord: OrderedType) = struct
           iter f l; f v d; iter f r
 
     let rec map f = function
-        Empty               -> Empty
-      | Node(l, v, d, r, h) -> Node(map f l, v, f d, map f r, h)
+        Empty ->
+          Empty
+      | Node(l, v, d, r, h) ->
+          let l' = map f l in
+          let d' = f d in
+          let r' = map f r in
+          Node(l', v, d', r', h)
 
     let rec mapi f = function
-        Empty               -> Empty
-      | Node(l, v, d, r, h) -> Node(mapi f l, v, f v d, mapi f r, h)
+        Empty ->
+          Empty
+      | Node(l, v, d, r, h) ->
+          let l' = mapi f l in
+          let d' = f v d in
+          let r' = mapi f r in
+          Node(l', v, d', r', h)
 
     let rec fold f m accu =
       match m with

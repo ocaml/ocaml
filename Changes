@@ -102,6 +102,7 @@ All tools:
 - PR#4857: add a -vnum option to display the version number and nothing else
 
 Bug Fixes:
+- PR#4012: Map.map and Map.mapi do not conform to specification
 - PR#4478: better error messages for type definition mismatches
 - PR#4742: finalisation function raising an exception blocks other finalisations
 - PR#4775: compiler crash on crazy types (temporary fix)
