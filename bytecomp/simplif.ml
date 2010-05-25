@@ -409,20 +409,24 @@ let simplify_lets lam =
   in
   simplif lam
 
+(* Tail call info in annotation files *)
+
+let is_tail_native_heuristic : (int -> bool) ref =
+  ref (fun n -> true)
+
 let rec emit_tail_infos is_tail lambda =
-  let is_tail_native_heuristic _ =
-    true in
-  let call_kind x =
-    if is_tail && ((not !Clflags.native_code) || (is_tail_native_heuristic x)) then
-      Annot.Tail
-    else
-      Annot.Stack in
+  let call_kind args =
+    if is_tail
+    && ((not !Clflags.native_code)
+        || (!is_tail_native_heuristic (List.length args)))
+   then Annot.Tail
+   else Annot.Stack in
   match lambda with
   | Lvar _ -> ()
   | Lconst _ -> ()
   | Lapply (func, l, loc) ->
       list_emit_tail_infos false l;
-      Stypes.record (Stypes.An_call (loc, call_kind ()))
+      Stypes.record (Stypes.An_call (loc, call_kind l))
   | Lfunction (_, _, lam) ->
       emit_tail_infos true lam
   | Llet (_, _, lam, body) ->
@@ -471,7 +475,7 @@ let rec emit_tail_infos is_tail lambda =
       emit_tail_infos false meth;
       emit_tail_infos false obj;
       list_emit_tail_infos false args;
-      Stypes.record (Stypes.An_call (loc, call_kind ()))
+      Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)))
   | Levent (lam, _) ->
       emit_tail_infos is_tail lam
   | Lifused (_, lam) ->
@@ -481,7 +485,11 @@ and list_emit_tail_infos_fun f is_tail =
 and list_emit_tail_infos is_tail =
   List.iter (emit_tail_infos is_tail)
 
+(* The entry point:
+   simplification + emission of tailcall annotations, if needed. *)
+
 let simplify_lambda lam =
   let res = simplify_lets (simplify_exits lam) in
-  emit_tail_infos true res;
+  if !Clflags.annotations then emit_tail_infos true res;
   res
+
