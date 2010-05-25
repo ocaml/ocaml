@@ -648,7 +648,7 @@ case "$host" in
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
   sparc*-*-gnu*)                arch=sparc; system=gnu;;
-  i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`; natdynlink=true;;
+  i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         if $arch64; then
