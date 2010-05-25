@@ -58,9 +58,9 @@ dynlinkaux.cmo: $(COMPILEROBJS)
 dynlinkaux.cmi: dynlinkaux.cmo
 
 dynlink.cmx: dynlink.cmi natdynlink.ml
-	cp natdynlink.ml dynlink.mlopt
+	sed -e 's|%%NATDYNLINK%%|$(NATDYNLINK)|' natdynlink.ml > dynlink.mlopt
 	$(CAMLOPT) -c $(COMPFLAGS) -impl dynlink.mlopt
-	rm -f dynlink.mlopt
+#	rm -f dynlink.mlopt
 
 extract_crc: dynlink.cma extract_crc.cmo
 	$(CAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo

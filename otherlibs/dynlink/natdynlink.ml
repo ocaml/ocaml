@@ -15,6 +15,8 @@
 
 (* Dynamic loading of .cmx files *)
 
+let supported = %%NATDYNLINK%%
+
 type handle
 
 external ndl_open: string -> bool -> handle * string = "caml_natdynlink_open"
@@ -37,6 +39,7 @@ type error =
   | File_not_found of string
   | Cannot_open_dll of string
   | Inconsistent_implementation of string
+  | Dynlink_not_supported
 
 exception Error of error
 
@@ -93,6 +96,7 @@ let allow_extension = ref true
 let inited = ref false
 
 let default_available_units () =
+  if not supported then raise (Error Dynlink_not_supported);
   let map : (string*Digest.t*Digest.t*string list) list =
     Marshal.from_string (ndl_getmap ()) 0 in
   let exe = Sys.executable_name in
@@ -244,6 +248,8 @@ let error_message = function
       "error loading shared library: " ^ reason
   | Inconsistent_implementation name ->
       "implementation mismatch on " ^ name
+  | Dynlink_not_supported ->
+      "dynlink not supported"
 
 let is_native = true
 let adapt_filename f = Filename.chop_extension f ^ ".cmxs"

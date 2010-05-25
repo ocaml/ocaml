@@ -70,6 +70,7 @@ DEBUGGER=ocamldebugger
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
+NATDYNLINK=true
 CMXS=cmxs
 
 ########## Configuration for the bytecode compiler

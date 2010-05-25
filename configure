@@ -511,17 +511,17 @@ mksharedlib=''
 byteccrpath=''
 mksharedlibrpath=''
 natdynlinkopts=""
-cmxs="cmxa"
+natdynlink=false
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
     *-*-cygwin*)
-      cmxs="cmxs"
+      natdynlink=true
       mksharedlib="$flexlink"
       mkmaindll="$flexlink -maindll"
       shared_libraries_supported=true;;
     *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-openbsd*|*-*-netbsd*|*-*-gnu*)
-      cmxs="cmxs"
+      natdynlink=true
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -612,6 +612,12 @@ fi
 
 if test -z "$mkmaindll"; then
   mkmaindll=$mksharedlib
+fi
+
+if test $natdynlink = "true"; then
+  cmxs="cmxs"
+else
+  cmxs="cmxa"
 fi
 
 # Configure the native-code compiler
@@ -1618,6 +1624,7 @@ echo "EXT_DLL=.so" >> Makefile
 echo "EXTRALIBS=" >> Makefile
 echo "CCOMPTYPE=cc" >> Makefile
 echo "TOOLCHAIN=cc" >> Makefile
+echo "NATDYNLINK=$natdynlink" >> Makefile
 echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
@@ -1666,6 +1673,7 @@ else
   echo "        options for linking....... $nativecclinkopts $cclibs"
   echo "        assembler ................ $as"
   echo "        preprocessed assembler ... $aspp"
+  echo "        native dynlink ........... $natdynlink"
   if test "$profiling" = "prof"; then
   echo "        profiling with gprof ..... supported"
   else
