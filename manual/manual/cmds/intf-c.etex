@@ -1287,7 +1287,7 @@ On the Caml side, registration is performed by evaluating
 "Callback.register" \var{n} \var{v}. Here, \var{n} is the global name
 (an arbitrary string) and \var{v} the Caml value. For instance:
 \begin{verbatim}
-    let f x = print_string "f is applied to "; print_int n; print_newline()
+    let f x = print_string "f is applied to "; print_int x; print_newline()
     let _ = Callback.register "test function" f
 \end{verbatim}
 
