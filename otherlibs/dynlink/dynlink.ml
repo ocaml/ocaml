@@ -18,8 +18,6 @@
 open Dynlinkaux  (* REMOVE_ME for ../../debugger/dynlink.ml *)
 open Cmo_format
 
-let supported = true
-
 type linking_error =
     Undefined_global of string
   | Unavailable_primitive of string
@@ -35,7 +33,6 @@ type error =
   | File_not_found of string
   | Cannot_open_dll of string
   | Inconsistent_implementation of string
-  | Dynlink_not_supported
 
 exception Error of error
 
@@ -271,8 +268,6 @@ let error_message = function
       "error loading shared library: " ^ reason
   | Inconsistent_implementation name ->
       "implementation mismatch on " ^ name
-  | Dynlink_not_supported ->
-      "dynlink not supported"
 
 let is_native = false
 let adapt_filename f = f

@@ -19,10 +19,6 @@ val is_native: bool
 (** [true] if the program is native,
     [false] if the program is bytecode. *)
 
-val supported: bool
-(** [true] if dynlink is supported for the current platform (always
-    [true] in bytecode, can be [false] for native code). *)
-
 (** {6 Dynamic loading of compiled files} *)
 
 val loadfile : string -> unit
@@ -131,7 +127,6 @@ type error =
   | File_not_found of string
   | Cannot_open_dll of string
   | Inconsistent_implementation of string
-  | Dynlink_not_supported
 
 exception Error of error
 (** Errors in dynamic linking are reported by raising the [Error]
