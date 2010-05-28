@@ -206,11 +206,15 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt ocamlbuildlib.native
+opt-core: runtimeopt ocamlopt libraryopt
+opt: opt-core otherlibrariesopt ocamlbuildlib.native
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt \
-	ocamlbuild.native camlp4opt ocamldoc.opt
+opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
+	 ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
+
+# Complete build using fast compilers
+world.opt: coldstart opt.opt
 
 # Installation
 install: installbyt installopt
@@ -377,6 +381,9 @@ beforedepend:: parsing/linenum.ml
 ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
 	cd asmrun ; $(MAKEREC) meta.$(O) dynlink.$(O)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx) asmrun/meta.$(O) asmrun/dynlink.$(O)
+	@sed -e 's|@compiler@|$$topdir/ocamlc.opt|' \
+	  driver/ocamlcomp.sh.in > ocamlcomp.sh
+	@chmod +x ocamlcomp.sh
 
 partialclean::
 	rm -f ocamlc.opt
@@ -385,6 +392,9 @@ partialclean::
 
 ocamlopt.opt: $(OPTOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt $(OPTOBJS:.cmo=.cmx)
+	@sed -e 's|@compiler@|$$topdir/ocamlopt.opt|' \
+	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
+	@chmod +x ocamlcompopt.sh
 
 partialclean::
 	rm -f ocamlopt.opt

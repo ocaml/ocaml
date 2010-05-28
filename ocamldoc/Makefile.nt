@@ -14,8 +14,8 @@
 include ../config/Makefile
 
 CAMLRUN =../boot/ocamlrun
-OCAMLC   =$(CAMLRUN) ../ocamlc -warn-error A
-OCAMLOPT =$(CAMLRUN) ../ocamlopt
+OCAMLC   = ../ocamlcomp.sh
+OCAMLOPT = ../ocamlcompopt.sh
 OCAMLLEX =$(CAMLRUN) ../boot/ocamllex
 OCAMLYACC=../boot/ocamlyacc
 
