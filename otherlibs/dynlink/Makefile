@@ -70,10 +70,10 @@ install:
 	cp extract_crc $(LIBDIR)/extract_crc$(EXE)
 
 installopt:
-	(grep -q '^NATDYNLINK=true$$' ../../config/Makefile && \
+	if $(NATDYNLINK); then \
 	  cp $(NATOBJS) dynlink.cmxa dynlink.$(A) $(LIBDIR) && \
-	  cd $(LIBDIR) && $(RANLIB) dynlink.$(A) \
-	) || true
+	  cd $(LIBDIR) && $(RANLIB) dynlink.$(A); \
+	fi
 
 partialclean:
 	rm -f extract_crc *.cm[ioax] *.cmxa
