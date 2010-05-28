@@ -1,3 +1,4 @@
+iterator.cmi: 
 joinCount.cmi: join.cmi 
 joinFifo.cmi: join.cmi 
 joinHelper.cmi: join.cmi 
@@ -5,6 +6,9 @@ joinMapRed.cmi: joinPool.cmi joinHelper.cmi
 join.cmi: 
 joinPool.cmi: join.cmi 
 joinProc.cmi: 
+joinSharedPool.cmi: join.cmi 
+iterator.cmo: iterator.cmi 
+iterator.cmx: iterator.cmi 
 joinCount.cmo: join.cmi joinCount.cmi 
 joinCount.cmx: join.cmx joinCount.cmi 
 joinFifo.cmo: join.cmi joinFifo.cmi 
@@ -19,6 +23,8 @@ joinPool.cmo: joinCount.cmi join.cmi joinPool.cmi
 joinPool.cmx: joinCount.cmx join.cmx joinPool.cmi 
 joinProc.cmo: joinProc.cmi 
 joinProc.cmx: joinProc.cmi 
+joinSharedPool.cmo: join.cmi joinSharedPool.cmi 
+joinSharedPool.cmx: join.cmx joinSharedPool.cmi 
 ns.cmo: site.cmo 
 ns.cmx: site.cmx 
 site.cmo: 
