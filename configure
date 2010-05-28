@@ -620,6 +620,10 @@ if test $withsharedlibs = "yes"; then
     *-*-cygwin*)                  natdynlink=true;;
     i[3456]86-*-linux*)           natdynlink=true;;
     x86_64-*-linux*)              natdynlink=true;;
+    i[3456]86-*-darwin10.*)
+      if test $arch64 == true; then
+        natdynlink=true
+      fi;;
   esac
 fi
 
