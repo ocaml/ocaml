@@ -62,7 +62,8 @@ module type S =
        in [m], its previous binding disappears. *)
 
     val singleton: key -> 'a -> 'a t
-    (** [singleton x y] returns the one-element map that contains a binding [y] for [x].
+    (** [singleton x y] returns the one-element map that contains a binding [y]
+        for [x].
         @since 3.12.0
      *)
 
@@ -70,8 +71,11 @@ module type S =
     (** [remove x m] returns a map containing the same bindings as
        [m], except for [x] which is unbound in the returned map. *)
 
-    val merge: (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-    (** [merge f m1 m2] compute a map whose keys is a subset of keys of [m1] and of [m2]. The presence of each such binding, and the corresponding value, is determined with the function [f].
+    val merge:
+         (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+    (** [merge f m1 m2] computes a map whose keys is a subset of keys of [m1]
+        and of [m2]. The presence of each such binding, and the corresponding
+        value, is determined with the function [f].
         @since 3.12.0
      *)
 
