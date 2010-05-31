@@ -207,4 +207,4 @@ let init_server_with_register cfg id v =
 let wait_forever () =
   def wait() & never_sent() = reply to wait in
   wait ();
-  Obj.magic 0 (* never reached *)
+  exit 0 (* never reached *)
