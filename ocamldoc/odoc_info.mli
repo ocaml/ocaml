@@ -79,13 +79,16 @@ type param = (string * text)
 (** Raised exception name and description. *)
 type raised_exception = (string * text)
 
-(** Information in a special comment *)
+(** Information in a special comment
+@before 3.12.0 \@before information was not present.
+*)
 type info = Odoc_types.info = {
     i_desc : text option; (** The description text. *)
     i_authors : string list; (** The list of authors in \@author tags. *)
     i_version : string option; (** The string in the \@version tag. *)
     i_sees : see list; (** The list of \@see tags. *)
     i_since : string option; (** The string in the \@since tag. *)
+    i_before : (string * text) list ; (** the version number and text in \@before tag *)
     i_deprecated : text option; (** The of the \@deprecated tag. *)
     i_params : param list; (** The list of parameter descriptions. *)
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)

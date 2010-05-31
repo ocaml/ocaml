@@ -68,6 +68,7 @@ type info = {
     i_version : string option;
     i_sees : see list;
     i_since : string option;
+    i_before : (string * text) list;
     i_deprecated : text option;
     i_params : param list;
     i_raised_exceptions : raised_exception list;
@@ -81,6 +82,7 @@ let dummy_info = {
   i_version = None ;
   i_sees = [] ;
   i_since = None ;
+  i_before = [] ;
   i_deprecated = None ;
   i_params = [] ;
   i_raised_exceptions = [] ;

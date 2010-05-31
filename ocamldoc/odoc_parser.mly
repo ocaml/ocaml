@@ -34,6 +34,7 @@ let print_DEBUG s = print_string s; print_newline ()
 %token T_VERSION
 %token T_SEE
 %token T_SINCE
+%token T_BEFORE
 %token T_DEPRECATED
 %token T_RAISES
 %token T_RETURN
@@ -81,6 +82,7 @@ element:
 | version { () }
 | see { () }
 | since { () }
+| before { () }
 | deprecated { () }
 | raise_exc { () }
 | return { () }
@@ -121,6 +123,22 @@ see:
 ;
 since:
     T_SINCE Desc { since := Some $2 }
+;
+before:
+    T_BEFORE Desc
+    {
+      (* isolate the version name *)
+      let s = $2 in
+      match Str.split (Str.regexp (blank^"+")) s with
+        []
+      | _ :: [] ->
+          raise (Failure "usage: @before version description")
+      | id :: _ ->
+          print_DEBUG ("version "^id);
+            let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
+            let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
+            before := !before @ [(id, remain2)]
+    }
 ;
 deprecated:
     T_DEPRECATED Desc { deprecated := Some $2 }

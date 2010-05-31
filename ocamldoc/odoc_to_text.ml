@@ -61,6 +61,17 @@ class virtual info =
                     Newline
                   ]
 
+    (** @return [text] value to represent the list of "before" information. *)
+    method text_of_before = function
+      [] -> []
+    | l ->
+        let f (v, text) =
+          (Bold [Raw (Printf.sprintf "%s %s " Odoc_messages.before v) ]) ::
+            text @
+            [Newline]
+        in
+        List.flatten (List.map f l)
+
     (** @return [text] value for the given list of raised exceptions.*)
     method text_of_raised_exceptions l =
       match l with
@@ -153,6 +164,7 @@ class virtual info =
             ) @
             (self#text_of_author_list info.i_authors) @
             (self#text_of_version_opt info.i_version) @
+            (self#text_of_before info.i_before) @
             (self#text_of_since_opt info.i_since) @
             (self#text_of_raised_exceptions info.i_raised_exceptions) @
             (self#text_of_return_opt info.i_return_value) @

@@ -55,11 +55,13 @@ odoc_class.cmo: ../typing/types.cmi odoc_value.cmo odoc_types.cmi \
 odoc_class.cmx: ../typing/types.cmx odoc_value.cmx odoc_types.cmx \
     odoc_parameter.cmx odoc_name.cmx
 odoc_comments.cmo: odoc_types.cmi odoc_text.cmi odoc_see_lexer.cmo \
-    odoc_parser.cmi odoc_misc.cmi odoc_messages.cmo odoc_lexer.cmo \
-    odoc_global.cmi odoc_cross.cmi odoc_comments_global.cmi odoc_comments.cmi
+    odoc_parser.cmi odoc_misc.cmi odoc_messages.cmo odoc_merge.cmi \
+    odoc_lexer.cmo odoc_global.cmi odoc_cross.cmi odoc_comments_global.cmi \
+    odoc_comments.cmi
 odoc_comments.cmx: odoc_types.cmx odoc_text.cmx odoc_see_lexer.cmx \
-    odoc_parser.cmx odoc_misc.cmx odoc_messages.cmx odoc_lexer.cmx \
-    odoc_global.cmx odoc_cross.cmx odoc_comments_global.cmx odoc_comments.cmi
+    odoc_parser.cmx odoc_misc.cmx odoc_messages.cmx odoc_merge.cmx \
+    odoc_lexer.cmx odoc_global.cmx odoc_cross.cmx odoc_comments_global.cmx \
+    odoc_comments.cmi
 odoc_comments_global.cmo: odoc_comments_global.cmi
 odoc_comments_global.cmx: odoc_comments_global.cmi
 odoc_config.cmo: ../utils/config.cmi odoc_config.cmi
@@ -212,6 +214,8 @@ odoc_value.cmo: ../typing/types.cmi ../typing/printtyp.cmi odoc_types.cmi \
     odoc_parameter.cmo odoc_name.cmi
 odoc_value.cmx: ../typing/types.cmx ../typing/printtyp.cmx odoc_types.cmx \
     odoc_parameter.cmx odoc_name.cmx
+t.cmo:
+t.cmx:
 odoc_analyse.cmi: odoc_module.cmo odoc_args.cmi
 odoc_args.cmi: odoc_types.cmi odoc_module.cmo
 odoc_ast.cmi: ../typing/types.cmi ../typing/typedtree.cmi ../typing/path.cmi \

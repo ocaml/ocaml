@@ -313,6 +313,8 @@ and elements = parse
              T_SEE
          | "since" ->
              T_SINCE
+         | "before" ->
+             T_BEFORE
          | "deprecated" ->
              T_DEPRECATED
          | "raise" ->

@@ -72,6 +72,7 @@ type info = Odoc_types.info = {
     i_version : string option;
     i_sees : see list;
     i_since : string option;
+    i_before : (string * text) list ;
     i_deprecated : text option;
     i_params : param list;
     i_raised_exceptions : raised_exception list;

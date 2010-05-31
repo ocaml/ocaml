@@ -58,6 +58,22 @@ class virtual info =
           bs b v;
           bs b "\n.sp\n"
 
+    (** Printf groff string for the \@before information. *)
+    method man_of_before b = function
+      [] -> ()
+    | l ->
+        List.iter
+          (fun (v, text) ->
+             bp b ".B \"%s" Odoc_messages.before;
+             bs b v;
+             bs b "\"\n";
+             self#man_of_text b text;
+             bs b "\n";
+             bs b "\n.sp\n"
+          )
+          l
+
+
     (** Print groff string for the given optional since information.*)
     method man_of_since_opt b s_opt =
       match s_opt with
@@ -178,6 +194,7 @@ class virtual info =
           );
           self#man_of_author_list b info.M.i_authors;
           self#man_of_version_opt b info.M.i_version;
+          self#man_of_before b info.M.i_before;
           self#man_of_since_opt b info.M.i_since;
           self#man_of_raised_exceptions b info.M.i_raised_exceptions;
           self#man_of_return_opt b info.M.i_return_value;

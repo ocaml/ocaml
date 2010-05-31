@@ -550,6 +550,15 @@ class virtual info =
       | Some s ->
           bp b "<b>%s</b> %s<br>\n" Odoc_messages.since s
 
+    (** Print html code for the given "before" information.*)
+    method html_of_before b l =
+      let f (v, text) =
+        bp b "<b>%s %s </b> " Odoc_messages.before v;
+        self#html_of_text b text;
+        bs b "<br>\n"
+      in
+      List.iter f l
+
     (** Print html code for the given list of raised exceptions.*)
     method html_of_raised_exceptions b l =
       match l with
@@ -651,6 +660,7 @@ class virtual info =
           );
           self#html_of_author_list b info.M.i_authors;
           self#html_of_version_opt b info.M.i_version;
+          self#html_of_before b info.M.i_before;
           self#html_of_since_opt b info.M.i_since;
           self#html_of_raised_exceptions b info.M.i_raised_exceptions;
           self#html_of_return_opt b info.M.i_return_value;
