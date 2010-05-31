@@ -62,14 +62,18 @@ module type S =
        in [m], its previous binding disappears. *)
 
     val singleton: key -> 'a -> 'a t
-    (** [singleton x y] returns the one-element map that contains a binding [y] for [x]. *)
+    (** [singleton x y] returns the one-element map that contains a binding [y] for [x].
+        @since 3.12.0
+     *)
 
     val remove: key -> 'a t -> 'a t
     (** [remove x m] returns a map containing the same bindings as
        [m], except for [x] which is unbound in the returned map. *)
 
     val merge: (key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
-    (** [merge f m1 m2] compute a map whose keys is a subset of keys of [m1] and of [m2]. The presence of each such binding, and the corresponding value, is determined with the function [f]. *)
+    (** [merge f m1 m2] compute a map whose keys is a subset of keys of [m1] and of [m2]. The presence of each such binding, and the corresponding value, is determined with the function [f].
+        @since 3.12.0
+     *)
 
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
     (** Total ordering between maps.  The first argument is a total ordering
@@ -94,44 +98,62 @@ module type S =
 
     val for_all: (key -> 'a -> bool) -> 'a t -> bool
     (** [for_all p m] checks if all the bindings of the map
-       satisfy the predicate [p]. *)
+        satisfy the predicate [p].
+        @since 3.12.0
+     *)
 
     val exists: (key -> 'a -> bool) -> 'a t -> bool
     (** [exists p m] checks if at least one binding of the map
-       satisfy the predicate [p]. *)
+        satisfy the predicate [p].
+        @since 3.12.0
+     *)
 
     val filter: (key -> 'a -> bool) -> 'a t -> 'a t
     (** [filter p m] returns the map with all the bindings in [m]
-       that satisfy predicate [p]. *)
+        that satisfy predicate [p].
+        @since 3.12.0
+     *)
 
     val partition: (key -> 'a -> bool) -> 'a t -> 'a t * 'a t
     (** [partition p m] returns a pair of maps [(m1, m2)], where
-       [m1] contains all the bindings of [s] that satisfy the
-       predicate [p], and [m2] is the map with all the bindings of
-       [s] that do not satisfy [p]. *)
+        [m1] contains all the bindings of [s] that satisfy the
+        predicate [p], and [m2] is the map with all the bindings of
+        [s] that do not satisfy [p].
+        @since 3.12.0
+     *)
 
     val cardinal: 'a t -> int
-    (** Return the number of bindings of a map. *)
+    (** Return the number of bindings of a map.
+        @since 3.12.0
+     *)
 
     val bindings: 'a t -> (key * 'a) list
     (** Return the list of all bindings of the given map.
        The returned list is sorted in increasing order with respect
        to the ordering [Ord.compare], where [Ord] is the argument
-       given to {!Map.Make}. *)
+       given to {!Map.Make}.
+        @since 3.12.0
+     *)
 
     val min_binding: 'a t -> (key * 'a)
     (** Return the smallest binding of the given map
        (with respect to the [Ord.compare] ordering), or raise
-       [Not_found] if the map is empty. *)
+       [Not_found] if the map is empty.
+        @since 3.12.0
+     *)
 
     val max_binding: 'a t -> (key * 'a)
     (** Same as {!Map.S.max_binding}, but returns the largest binding
-       of the given map. *)
+        of the given map.
+        @since 3.12.0
+     *)
 
     val choose: 'a t -> (key * 'a)
     (** Return one binding of the given map, or raise [Not_found] if
        the map is empty. Which binding is chosen is unspecified,
-       but equal bindings will be chosen for equal maps. *)
+       but equal bindings will be chosen for equal maps.
+        @since 3.12.0
+     *)
 
     val split: key -> 'a t -> 'a t * 'a option * 'a t
     (** [split x m] returns a triple [(l, data, r)], where
@@ -140,7 +162,9 @@ module type S =
           [r] is the map with all the bindings of [m] whose key
         is strictly greater than [x];
           [data] is [None] if [m] contains no binding for [x],
-          or [Some v] if [m] binds [v] to [x]. *)
+          or [Some v] if [m] binds [v] to [x].
+        @since 3.12.0
+     *)
 
     val find: key -> 'a t -> 'a
     (** [find x m] returns the current binding of [x] in [m],
