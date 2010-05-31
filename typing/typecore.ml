@@ -1005,8 +1005,16 @@ let rec type_exp env sexp =
       begin
         if !Clflags.annotations then begin
           try let (path, annot) = Env.lookup_annot lid env in
+              let rec name_of_path = function
+                | Path.Pident id -> Ident.name id
+                | Path.Pdot(p, s, pos) ->
+                    if Oprint.parenthesized_ident s then
+                      name_of_path p ^ ".( " ^ s ^ " )"
+                    else
+                      name_of_path p ^ "." ^ s
+                | Path.Papply(p1, p2) -> name_of_path p1 ^ "(" ^ name_of_path p2 ^ ")" in
               Stypes.record
-                (Stypes.An_ident (loc, Path.name path, annot))
+                (Stypes.An_ident (loc, name_of_path path, annot))
           with _ -> ()
         end;
         let (path, desc) = Typetexp.find_value env loc lid in

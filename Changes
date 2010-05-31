@@ -107,6 +107,7 @@ Bug Fixes:
 - PR#4478: better error messages for type definition mismatches
 - PR#4742: finalisation function raising an exception blocks other finalisations
 - PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4964: parenthesized names for infix functions in annot files
 - PR#4970: better error message for instance variables
 - PR#4975: spelling mistakes
 - PR#4988: contravariance lost with ocamlc -i
