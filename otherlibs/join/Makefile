@@ -22,7 +22,7 @@ JCOPT=../../ocamlcompopt.sh -I ../unix
 COMPFLAGS=-warn-error A
 
 STDJOIN_OBJS=joinProc.cmo joinFifo.cmo joinCount.cmo joinHelper.cmo \
- joinPool.cmo iterator.cmo joinSharedPool.cmo joinMapRed.cmo
+ joinPool.cmo joinMapRed.cmo
 STDJOIN_MLI=$(STDJOIN_OBJS:.cmo=.mli)
 STDJOIN_CMI=$(STDJOIN_OBJS:.cmo=.cmi)
 JOIN_OBJS=site.cmo ns.cmo join.cmo $(STDJOIN_OBJS)

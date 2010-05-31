@@ -2,4 +2,4 @@
 # It is used to know what to expunge in toplevels.
 # $Id$
 
-STDJOIN_MODULES=join joinProc joinFifo joinCount joinHelper joinPool Iterator joinSharedPool joinMapRed
+STDJOIN_MODULES=join joinProc joinFifo joinCount joinHelper joinPool joinMapRed

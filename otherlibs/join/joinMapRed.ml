@@ -47,7 +47,9 @@ module type S = sig
 
   val client : JoinHelper.configuration -> unit
 
-  val server : JoinHelper.configuration -> init -> ('a, input) JoinPool.enum -> output -> output
+  val server :
+      JoinHelper.configuration -> init ->
+        ('a, input) JoinPool.Simple.enum -> output -> output
 end
 
 module Make (P : Problem) : S
@@ -84,8 +86,10 @@ module Make (P : Problem) : S
           M.add k v' m)
         m
         l in
-    let pool = JoinPool.create enum comb M.empty in
-    let _ = JoinHelper.init_server_with_register cfg register_id (i, pool.JoinPool.register) in
-    let map = pool.JoinPool.wait () in
+    let pool = JoinPool.Simple.create enum comb M.empty in
+    let _ =
+      JoinHelper.init_server_with_register cfg register_id
+        (i, pool.JoinPool.Simple.register) in
+    let map = pool.JoinPool.Simple.wait () in
     M.fold P.reduce map z
 end
