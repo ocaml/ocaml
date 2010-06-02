@@ -741,19 +741,14 @@ let data l =
 let begin_assembly() =
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
-    if macosx then begin
-        `	.literal16\n`;
-        `	.align  4\n`;
-        `caml_negf_mask:	.quad   0x8000000000000000, 0\n`;
-        `	.align  4\n`;
-        `caml_absf_mask:	.quad   0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF\n`;
-    end else begin
+    if macosx then
+        `	.literal16\n`
+    else
         `	.section        .rodata.cst8,\"a\",@progbits\n`;
-        `	.align  16\n`;
-        `caml_negf_mask:	.quad   0x8000000000000000, 0\n`;
-        `	.align  16\n`;
-        `caml_absf_mask:	.quad   0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF\n`;
-    end;
+    emit_align 16;
+    `{emit_symbol "caml_negf_mask"}:	.quad   0x8000000000000000, 0\n`;
+    emit_align 16;
+    `{emit_symbol "caml_absf_mask"}:	.quad   0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF\n`
   end;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
