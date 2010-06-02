@@ -114,7 +114,12 @@ exception Invalid_magic of string * string
     The first component is the waited magic value while the second component is the 
     magic value retrieved from the server. *)
 
-val init_client : ?at_fail:at_fail_chan -> configuration -> Join.Ns.t
+val connect : configuration -> Join.Site.t
+(** [connect cfg] 
+    connect as a client  to the server referenced by [cfg]. *)
+
+val init_client : ?at_fail:at_fail_chan -> configuration ->
+  Join.Ns.t * int list
 (** [init_client ~at_fail cfg] initializes a client by connecting it to
     the server referenced by [cfg], forking clients, and registering the
     [at_fail] channel to act as a guard on server failure
@@ -122,14 +127,14 @@ val init_client : ?at_fail:at_fail_chan -> configuration -> Join.Ns.t
     Also ensures that client and server have the same magic number,
     raising [Invalid_magic] if not.
 
-    Returns the name service of the server. *)
+    Returns the name service of the server, and the list of the client pids. *)
 
 val init_client_with_lookup :
    ?at_fail:at_fail_chan ->
    ?lookup:'a lookup_function ->
    configuration ->
    string ->
-   Join.Ns.t * 'a
+   Join.Ns.t * int list * 'a 
 (** [init_client_with_lookup ~at_fail ~lookup cfg name] behaves as
     [init_client], additionally looking up for [name] using [lookup]
     (defaulting to [lookup_times ~-1 1.0]) on the returned server name service.

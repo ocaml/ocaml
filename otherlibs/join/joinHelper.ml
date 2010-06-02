@@ -56,7 +56,8 @@ let do_forks name args n =
         match Unix.fork () with
         | 0 ->
             let args = prepend name (get_args args) in
-            (try Unix.execv name args with _ -> exit 127)
+            Unix.handle_unix_error
+              (fun () -> Unix.execv name args) ()
         | pid -> pid :: (df (pred n)) in
   df (max 0 n)
 
@@ -167,23 +168,34 @@ let exit_at_fail = exit_at_fail_with_code 0
 
 exception Invalid_magic of string * string
 
-let init_client ?(at_fail=do_nothing_at_fail) cfg =
+let rec get_site n addr =
+  try Join.Site.there addr with
+  | Join.Exit -> raise Join.Exit
+  | Failure _ as e ->
+      if n > 1 then begin
+	Thread.delay 0.5 ; get_site (n-1) addr
+      end else raise e
+
+let connect cfg =
   let inet_addr = (Unix.gethostbyname cfg.host).Unix.h_addr_list.(0) in
   let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
-  let server_site = Join.Site.there server_addr in
+  get_site 128 server_addr
+  
+let init_client ?(at_fail=do_nothing_at_fail) cfg =
+  let server_site = connect cfg in
   let ns = Join.Ns.of_site server_site in
   Join.Site.at_fail server_site at_fail;
   let lookup_magic = lookup_times ~-1 1.0 in
   let magic : string = lookup_magic ns cfg.magic_id in
   if magic <> cfg.magic_value then
     raise (Invalid_magic (cfg.magic_value, magic));
-  ignore (do_forks cfg.forked_program cfg.fork_args cfg.clients);
-  ns
+  let pids = do_forks cfg.forked_program cfg.fork_args cfg.clients in
+  ns,pids
 
 let init_client_with_lookup ?(at_fail=do_nothing_at_fail) ?(lookup=(lookup_times ~-1 1.0)) cfg id =
-  let ns = init_client ~at_fail:at_fail cfg in
+  let ns,pids = init_client ~at_fail:at_fail cfg in
   let v = lookup ns id in
-  ns, v
+  ns, pids,v
 
 
 (* Server-related functions *)

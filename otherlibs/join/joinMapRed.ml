@@ -66,7 +66,8 @@ module Make (P : Problem) : S
   module M = Map.Make (struct type t = P.key let compare = P.compare_keys end)
 
   let client cfg =
-    let _, (i, register : P.init * ((P.input -> (P.key * P.value) list)) Join.chan) =
+    let _, _,
+      (i, register : P.init * ((P.input -> (P.key * P.value) list)) Join.chan) =
       JoinHelper.init_client_with_lookup
         ~at_fail:JoinHelper.exit_at_fail
         ~lookup:(JoinHelper.lookup_times 0 1.0)
