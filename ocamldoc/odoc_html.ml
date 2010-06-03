@@ -727,7 +727,7 @@ class html =
     val mutable doctype =
       "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
     val mutable character_encoding =
-      "<meta content=\"text/html; charset=iso-8859-1\" http-equiv=\"Content-Type\">\n"
+      "<meta content=\"text/html; charset=\"iso-8859-1\" http-equiv=\"Content-Type\">\n"
 
     (** The default style options. *)
     val mutable default_style_options =
