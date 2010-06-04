@@ -14,7 +14,7 @@
 # $Id$
 
 include ../../config/Makefile
-
+NOJOIN=-nojoin
 CAMLC=../../ocamlcomp.sh $(NOJOIN) -I ../unix
 CAMLOPT=../../ocamlcompopt.sh $(NOJOIN) -I ../unix
 JCC=../../ocamlcomp.sh -I ../unix
@@ -24,7 +24,6 @@ COMPFLAGS=-warn-error A -g
 #OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
 
 
-
 BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
@@ -32,12 +31,12 @@ JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
  join_set.cmo join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
  join_message.cmo join_space.cmo join_prim.cmo join_test.cmo
 
-BYTECODE_C_OBJS=posix_b.o $(BYTECODE_JOIN_C_OBJS)
-NATIVECODE_C_OBJS=posix_n.o $(NATIVECODE_JOIN_C_OBJS)
+BYTECODE_C_OBJS=st_stubs_b.o $(BYTECODE_JOIN_C_OBJS)
+NATIVECODE_C_OBJS=st_stubs_n.o $(NATIVECODE_JOIN_C_OBJS)
 CAML_THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo 
 THREAD_OBJS= $(CAML_THREAD_OBJS) $(JOIN_OBJS)
 
-GENFILES=thread.ml join.c join_types.mli\
+GENFILES=join.c join_types.mli\
  join_debug.mli join_debug.ml\
  join_misc.mli join_misc.ml\
  join_link.mli join_link.ml\
@@ -59,10 +58,10 @@ allopt: libthreadsnat.a threads.cmxa
 libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
 
-posix_b.o: posix.c
+st_stubs_b.o: st_stubs.c st_posix.h
 	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
-	   -c posix.c
-	mv posix.o posix_b.o
+	   -c st_stubs.c
+	mv st_stubs.o st_stubs_b.o
 
 join_b.o: join.c
 	$(BYTECC) -DCAML_NAME_SPACE -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
@@ -77,9 +76,9 @@ libthreadsnat.a: $(NATIVECODE_C_OBJS)
 libjoinnat.a: $(NATIVECODE_JOIN_C_OBJS)
 	$(AR) rc libjoinnat.a $(NATIVECODE_JOIN_C_OBJS)
 
-posix_n.o: posix.c
-	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
-	mv posix.o posix_n.o
+st_stubs_n.o: st_stubs.c st_posix.h
+	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c st_stubs.c
+	mv st_stubs.o st_stubs_n.o
 
 join_n.o: join.c
 	$(NATIVECC) -DCAML_NAME_SPACE -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c join.c
@@ -87,23 +86,20 @@ join_n.o: join.c
 
 threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
-          -cclib -lunix $(PTHREAD_LINK)
+	  -cclib -lunix $(PTHREAD_LINK)
 
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat $(PTHREAD_LINK)
+	  -cclib -lthreadsnat $(PTHREAD_LINK)
 
-# Note: I removed "-cclib -lunix" from the line above. 
-# Indeed, if we link threads.cmxa, then we must also link unix.cmxa, 
+# Note: I removed "-cclib -lunix" from the line above.
+# Indeed, if we link threads.cmxa, then we must also link unix.cmxa,
 # which itself will pass -lunix to the C linker.  It seems more
 # modular to me this way. -- Alain
 
 
 $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx): ../../ocamlopt
-
-thread.ml: thread_posix.ml
-	ln -s thread_posix.ml thread.ml
 
 join_debug.ml: ../threads/join_debug.ml
 	ln -s ../threads/join_debug.ml .
@@ -188,7 +184,6 @@ partialclean:
 
 clean: partialclean
 	rm -f *.o *.a *.so
-	rm -f $(GENFILES)
 
 install:
 	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
@@ -199,6 +194,7 @@ install:
   event.mli threadUnix.mli $(LIBDIR)/threads
 	cp join_prim.cmi join_test.cmi $(LIBDIR)/threads
 	cp $(CAML_THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
+	cp threads.h $(LIBDIR)/caml/threads.h
 
 installopt:
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a

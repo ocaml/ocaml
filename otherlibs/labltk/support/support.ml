@@ -25,11 +25,11 @@ let split_str ~pred:char_sep str =
     else if char_sep str.[cur] then skip_sep (succ cur)
     else cur  in
   let rec split beg cur =
-    if cur >= len then 
+    if cur >= len then
       if beg = cur then []
       else [String.sub str beg (len - beg)]
-    else if char_sep str.[cur] 
-         then 
+    else if char_sep str.[cur]
+         then
            let nextw = skip_sep cur in
             (String.sub str beg (cur - beg))
               ::(split nextw nextw)

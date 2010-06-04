@@ -8,10 +8,18 @@ all: addition$(EXE) helloworld$(EXE) winskel$(EXE) fileinput$(EXE) \
 	eyes$(EXE) tetris$(EXE) mytext$(EXE) fileopen$(EXE)
 
 addition$(EXE): addition.cmo
+<<<<<<< .courant
 	$(CAMLC) -nojoin $(COMPFLAGS) -o $@ $(LIBNAME).cma addition.cmo 
+=======
+	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma addition.cmo
+>>>>>>> .fusion-droit.r10497
 
 helloworld$(EXE): helloworld.cmo
+<<<<<<< .courant
 	$(CAMLC) -nojoin $(COMPFLAGS) -o $@ $(LIBNAME).cma helloworld.cmo 
+=======
+	$(CAMLC) $(COMPFLAGS) -o $@ $(LIBNAME).cma helloworld.cmo
+>>>>>>> .fusion-droit.r10497
 
 winskel$(EXE): winskel.cmo
 	$(CAMLC) -nojoin $(COMPFLAGS) -o $@ $(LIBNAME).cma winskel.cmo
@@ -33,13 +41,13 @@ mytext$(EXE): mytext.cmo
 
 # graph$(EXE): graphics.cmo graphics_test.cmo
 # 	  $(CAMLC) -nojoin -o $@ graphics.cmo graphics_test.cmo
-# 
+#
 # graphics_test.cmo: graphics.cmo
 
 fileopen$(EXE): fileopen.cmo
 	$(CAMLC) -nojoin $(COMPFLAGS) -o $@ $(LIBNAME).cma fileopen.cmo
 
-clean : 
+clean :
 	rm -f *.cm? $(EXECS) addition eyes fileinput fileopen helloworld jptest mytext tetris winskel
 
 .SUFFIXES :

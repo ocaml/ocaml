@@ -16,7 +16,7 @@
 (** Operation on arbitrary-precision numbers.
 
    Numbers (type [num]) are arbitrary-precision rational numbers,
-   plus the special elements [1/0] (infinity) and [0/0] (undefined). 
+   plus the special elements [1/0] (infinity) and [0/0] (undefined).
 *)
 
 open Nat
@@ -24,7 +24,7 @@ open Big_int
 open Ratio
 
 (** The type of numbers. *)
-type num = 
+type num =
     Int of int
   | Big_int of big_int
   | Ratio of ratio
@@ -96,7 +96,7 @@ val is_integer_num : num -> bool
 (** The four following functions approximate a number by an integer : *)
 
 val integer_num : num -> num
-(** [integer_num n] returns the integer closest to [n]. In case of ties, 
+(** [integer_num n] returns the integer closest to [n]. In case of ties,
    rounds towards zero. *)
 
 val floor_num : num -> num
@@ -168,4 +168,3 @@ val big_int_of_num : num -> big_int
 val ratio_of_num : num -> ratio
 val num_of_ratio : ratio -> num
 val float_of_num : num -> float
-

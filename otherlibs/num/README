@@ -9,11 +9,11 @@ maintenance and bug fixing.
 
 Initially, the low-level big integer operations were provided by the
 BigNum package developed by Bernard Serpette, Jean Vuillemin and
-Jean-Claude Herve (INRIA and Digital PRL).  License issues forced us to 
+Jean-Claude Herve (INRIA and Digital PRL).  License issues forced us to
 replace the BigNum package.  The current implementation of low-level
 big integer operations is due to Xavier Leroy.
 
-This library is documented in "The CAML Numbers Reference Manual" by 
+This library is documented in "The CAML Numbers Reference Manual" by
 Valerie Menissier-Morain, technical report 141, INRIA, july 1992,
 available at ftp://ftp.inria.fr/INRIA/publication/RT/RT-0141.ps.gz
 
@@ -44,7 +44,7 @@ As an example, try:
 PROCESSOR-SPECIFIC OPTIMIZATIONS:
 
 When compiled with GCC, the low-level primitives use "inline extended asm"
-to exploit useful features of the target processor (additions and 
+to exploit useful features of the target processor (additions and
 subtractions with carry; double-width multiplication, division).
 Here are the processors for which such optimizations are available:
   IA32 (x86)       (carry, dwmult, dwdiv, 64-bit ops with SSE2 if available)

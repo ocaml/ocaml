@@ -15,7 +15,14 @@
 
 # Makefile for the str library
 
+<<<<<<< .courant
 include ../../config/Makefile
+=======
+LIBNAME=str
+COBJS=strstubs.$(O)
+CLIBNAME=camlstr
+CAMLOBJS=str.cmo
+>>>>>>> .fusion-droit.r10497
 
 # Compilation options
 CC=$(BYTECC)
@@ -80,5 +87,5 @@ installopt:
 
 depend:
 
-str.cmo: str.cmi 
-str.cmx: str.cmi 
+str.cmo: str.cmi
+str.cmx: str.cmi

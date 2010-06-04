@@ -256,7 +256,7 @@ CAMLprim value div_nat(value *argv, int argn)
   return div_nat_native(argv[0], argv[1], argv[2],
                         argv[3], argv[4], argv[5]);
 }
- 
+
 value shift_right_nat_native(value nat1, value ofs1, value len1,
                              value nat2, value ofs2, value nbits)
 {
@@ -272,7 +272,7 @@ CAMLprim value shift_right_nat(value *argv, int argn)
                                 argv[3], argv[4], argv[5]);
 }
 
-CAMLprim value compare_digits_nat(value nat1, value ofs1, 
+CAMLprim value compare_digits_nat(value nat1, value ofs1,
                                   value nat2, value ofs2)
 {
   bngdigit d1 = Digit_val(nat1, Long_val(ofs1));
@@ -322,7 +322,7 @@ CAMLprim value lxor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
    For big-endian 64-bit platforms, we need to swap the two 32-bit halves
    of 64-bit words to obtain the correct behavior. */
 
-static void serialize_nat(value nat, 
+static void serialize_nat(value nat,
                           uintnat * wsize_32,
                           uintnat * wsize_64)
 {

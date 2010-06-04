@@ -87,6 +87,7 @@ external ( *. ) : float -> float -> float = "%mulfloat"
 external (/.) : float -> float -> float = "%divfloat"
 external ( ** ) : float -> float -> float = "caml_power_float" "pow" "float"
 external exp : float -> float = "caml_exp_float" "exp" "float"
+external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
 external acos : float -> float = "caml_acos_float" "acos" "float"
 external asin : float -> float = "caml_asin_float" "asin" "float"
 external atan : float -> float = "caml_atan_float" "atan" "float"
@@ -95,6 +96,7 @@ external cos : float -> float = "caml_cos_float" "cos" "float"
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
 external log : float -> float = "caml_log_float" "log" "float"
 external log10 : float -> float = "caml_log10_float" "log10" "float"
+external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
 external sin : float -> float = "caml_sin_float" "sin" "float"
 external sinh : float -> float = "caml_sinh_float" "sinh" "float"
 external sqrt : float -> float = "caml_sqrt_float" "sqrt" "float"
@@ -268,10 +270,10 @@ let rec flush oc =
       wait_outchan oc (-1); false in
   if success then () else flush oc
 
-external out_channels_list : unit -> out_channel list 
+external out_channels_list : unit -> out_channel list
                            = "caml_ml_out_channels_list"
 
-let flush_all () = 
+let flush_all () =
   let rec iter = function
       [] -> ()
     | a::l ->
@@ -296,7 +298,7 @@ let rec unsafe_output oc buf pos len =
     unsafe_output oc buf (pos + written) (len - written)
   end
 
-external output_char_blocking : out_channel -> char -> unit 
+external output_char_blocking : out_channel -> char -> unit
                               = "caml_ml_output_char"
 external output_byte_blocking : out_channel -> int -> unit
                               = "caml_ml_output_char"
@@ -311,7 +313,7 @@ let output_string oc s =
   unsafe_output oc s 0 (string_length s)
 
 let output oc s ofs len =
-  if ofs < 0 || len < 0 || ofs > string_length s - len 
+  if ofs < 0 || len < 0 || ofs > string_length s - len
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
@@ -329,7 +331,7 @@ let output_binary_int oc n =
   output_byte oc (n asr 8);
   output_byte oc n
 
-external marshal_to_string : 'a -> unit list -> string 
+external marshal_to_string : 'a -> unit list -> string
                            = "caml_output_value_to_string"
 
 let output_value oc v = output_string oc (marshal_to_string v [])
@@ -492,7 +494,7 @@ module LargeFile =
   end
 
 (* Formats *)
-type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 

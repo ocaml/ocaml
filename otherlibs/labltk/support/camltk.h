@@ -22,6 +22,11 @@
 #define CAMLTKextern CAMLextern
 #endif
 
+/* if Tcl_GetStringResult is not defined, we use interp->result */
+#ifndef Tcl_GetStringResult
+#  define Tcl_GetStringResult(interp) (interp->result)
+#endif
+
 /* cltkMisc.c */
 /* copy a Caml string to the C heap. Must be deallocated with stat_free */
 extern char *string_to_c(value s);
@@ -53,4 +58,3 @@ extern int cltk_slave_mode;
 
 #define RCNAME ".camltkrc"
 #define CAMLCB "camlcb"
-

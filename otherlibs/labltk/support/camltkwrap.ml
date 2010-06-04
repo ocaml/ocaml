@@ -23,12 +23,12 @@ end
 module Protocol = struct
   open Widget
   include Protocol
-      
+
   let opentk () = coe (opentk ())
   let opentk_with_args args = coe (opentk_with_args args)
   let openTk ?display ?clas () = coe (openTk ?display ?clas ())
 
-  let cCAMLtoTKwidget table w = 
+  let cCAMLtoTKwidget table w =
     Widget.check_class w table; (* we need run time type check of widgets *)
     TkToken (Widget.name w)
 
@@ -71,7 +71,7 @@ module Timer = struct
   let remove = remove
 end
 
-(* 
+(*
 Not compiled in support
-module Tkwait = Tkwait 
+module Tkwait = Tkwait
 *)

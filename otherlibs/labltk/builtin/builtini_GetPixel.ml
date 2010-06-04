@@ -8,7 +8,7 @@ let cCAMLtoTKunits = function
   | Centimeters (foo) -> TkToken(Printf.sprintf "%gc" foo)
 ;;
 
-let cTKtoCAMLunits str = 
+let cTKtoCAMLunits str =
   let len = String.length str in
   let num_part str = String.sub str 0 (len - 1) in
   match String.get str (pred len) with
@@ -29,7 +29,7 @@ let cCAMLtoTKunits : units -> tkArgs = function
   | `Cm (foo) -> TkToken(Printf.sprintf "%gc" foo)
 ;;
 
-let cTKtoCAMLunits str = 
+let cTKtoCAMLunits str =
   let len = String.length str in
   let num_part str = String.sub str ~pos:0 ~len:(len - 1) in
   match String.get str (pred len) with

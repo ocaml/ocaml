@@ -91,7 +91,13 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
                 invalid_argument("lockf only supported on WIN32_NT platforms");
                 }
 
+<<<<<<< .courant
         h = Handle_val(fd);
+=======
+  h = Handle_val(fd);
+
+  l_len = Long_val(span);
+>>>>>>> .fusion-droit.r10497
 
         overlap.Offset = 0;
         overlap.OffsetHigh = 0;
@@ -204,3 +210,59 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
   return Val_unit;
 }
 
+<<<<<<< .courant
+=======
+  switch(Int_val(cmd)) {
+  case 0: /* F_ULOCK - unlock */
+    if (! UnlockFileEx(h, 0,
+                       lock_len.LowPart, lock_len.HighPart, &overlap))
+      err = GetLastError();
+    break;
+  case 1: /* F_LOCK - blocking write lock */
+    enter_blocking_section();
+    if (! LockFileEx(h, LOCKFILE_EXCLUSIVE_LOCK, 0,
+                     lock_len.LowPart, lock_len.HighPart, &overlap))
+      err = GetLastError();
+    leave_blocking_section();
+    break;
+  case 2: /* F_TLOCK - non-blocking write lock */
+    if (! LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
+                     lock_len.LowPart, lock_len.HighPart, &overlap))
+      err = GetLastError();
+    break;
+  case 3: /* F_TEST - check whether a write lock can be obtained */
+    /*  I'm doing this by aquiring an immediate write
+     * lock and then releasing it. It is not clear that
+     * this behavior matches anything in particular, but
+     * it is not clear the nature of the lock test performed
+     * by ocaml (unix) currently. */
+    if (LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK, 0,
+                   lock_len.LowPart, lock_len.HighPart, &overlap)) {
+      UnlockFileEx(h, 0, lock_len.LowPart, lock_len.HighPart, &overlap);
+    } else {
+      err = GetLastError();
+    }
+    break;
+  case 4: /* F_RLOCK - blocking read lock */
+    enter_blocking_section();
+    if (! LockFileEx(h, 0, 0,
+                     lock_len.LowPart, lock_len.HighPart, &overlap))
+      err = GetLastError();
+    leave_blocking_section();
+    break;
+  case 5: /* F_TRLOCK - non-blocking read lock */
+    if (! LockFileEx(h, LOCKFILE_FAIL_IMMEDIATELY, 0,
+                     lock_len.LowPart, lock_len.HighPart, &overlap))
+      err = GetLastError();
+    break;
+  default:
+    errno = EINVAL;
+    uerror("lockf", Nothing);
+  }
+  if (err != NO_ERROR) {
+    win32_maperr(err);
+    uerror("lockf", Nothing);
+  }
+  CAMLreturn(Val_unit);
+}
+>>>>>>> .fusion-droit.r10497

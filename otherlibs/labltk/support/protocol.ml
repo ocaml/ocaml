@@ -45,7 +45,7 @@ external callback_init : unit -> unit
         = "camltk_init"
 external finalizeTk : unit -> unit
         = "camltk_finalize"
-    (* Finalize tcl/tk before exiting. This function will be automatically 
+    (* Finalize tcl/tk before exiting. This function will be automatically
        called when you call [Pervasives.exit ()] (This is installed at
        [install_cleanup ()] *)
 
@@ -60,13 +60,13 @@ let cltclinterp = ref Nativeint.zero
 let () = Callback.register "cltclinterp" cltclinterp
 
 (* Debugging support *)
-let debug = 
+let debug =
  ref (try ignore (Sys.getenv "CAMLTKDEBUG"); true
       with Not_found -> false)
 
 (* This is approximative, since we don't quote what needs to be quoted *)
 let dump_args args =
-  let rec print_arg = function 
+  let rec print_arg = function
     TkToken s -> prerr_string s; prerr_string " "
   | TkTokenList l -> List.iter print_arg l
   | TkQuote a -> prerr_string "{"; print_arg a; prerr_string "} "
@@ -79,7 +79,7 @@ let dump_args args =
  *   debugging support should not affect performances...
  *)
 
-let tkEval args = 
+let tkEval args =
   if !debug then dump_args args;
   let res = tcl_direct_eval args in
   if !debug then begin
@@ -95,7 +95,7 @@ let tkCommand args = ignore (tkEval args)
  *)
 
 (* LablTk only *)
-let cCAMLtoTKwidget w = 
+let cCAMLtoTKwidget w =
   (* Widget.check_class w table; (* with subtyping, it is redundant *) *)
   TkToken (Widget.name w)
 
@@ -103,8 +103,8 @@ let cTKtoCAMLwidget = function
    "" -> raise (Invalid_argument "cTKtoCAMLwidget")
  | s -> Widget.get_atom s
 
-let callback_naming_table = 
-   (Hashtbl.create 401 : (int, callback_buffer -> unit) Hashtbl.t) 
+let callback_naming_table =
+   (Hashtbl.create 401 : (int, callback_buffer -> unit) Hashtbl.t)
 
 let callback_memo_table =
    (Hashtbl.create 401 : (any widget, int) Hashtbl.t)
@@ -120,7 +120,7 @@ let string_of_cbid = string_of_int
 let register_callback w ~callback:f =
   let id = new_function_id () in
     Hashtbl.add callback_naming_table id f;
-    if (forget_type w) <> (forget_type Widget.dummy) then 
+    if (forget_type w) <> (forget_type Widget.dummy) then
       Hashtbl.add callback_memo_table (forget_type w) id;
     (string_of_cbid id)
 
@@ -142,7 +142,7 @@ let remove_callbacks w =
  * that hooks can be set up at load time (i.e. before openTk)
  *)
 let destroy_hooks = ref []
-let add_destroy_hook f = 
+let add_destroy_hook f =
   destroy_hooks := f :: !destroy_hooks
 
 let _ =
@@ -150,7 +150,7 @@ let _ =
 
 let install_cleanup () =
   let call_destroy_hooks = function
-      [wname] -> 
+      [wname] ->
         let w = cTKtoCAMLwidget wname in
          List.iter (fun f -> f w) !destroy_hooks
     | _ -> raise (TkError "bad cleanup callback") in
@@ -199,16 +199,16 @@ let camltk_argv = ref []
 
 (* options for Arg.parse *)
 let keywords = [
-  "-display", Arg.String (fun s -> 
+  "-display", Arg.String (fun s ->
     camltk_argv := "-display" :: s :: !camltk_argv),
     "<disp> : X server to contact (CamlTk)";
-  "-colormap", Arg.String (fun s -> 
+  "-colormap", Arg.String (fun s ->
     camltk_argv := "-colormap" :: s :: !camltk_argv),
     "<colormap> : colormap to use (CamlTk)";
-  "-geometry", Arg.String (fun s -> 
+  "-geometry", Arg.String (fun s ->
     camltk_argv := "-geometry" :: s :: !camltk_argv),
     "<geom> : size and position (CamlTk)";
-  "-name", Arg.String (fun s -> 
+  "-name", Arg.String (fun s ->
     camltk_argv := "-name" :: s :: !camltk_argv),
     "<name> : application class (CamlTk)";
   "-sync", Arg.Unit (fun () ->
@@ -223,8 +223,8 @@ let keywords = [
   "-visual", Arg.String (fun s ->
     camltk_argv := "-visual" :: s :: !camltk_argv),
     "<visual> : visual to use (CamlTk)" ]
-    
-let opentk_with_args argv (* = [argv1;..;argvn] *) = 
+
+let opentk_with_args argv (* = [argv1;..;argvn] *) =
   (* argv must be command line for wish *)
   let argv0 = Sys.argv.(0) in
   let rec find_display = function
@@ -241,7 +241,7 @@ let opentk_with_args argv (* = [argv1;..;argvn] *) =
     | [] -> ""
   in
   default_display_name := find_display argv;
-  opentk_low (argv0 :: argv); 
+  opentk_low (argv0 :: argv);
   install_cleanup();
   Widget.default_toplevel
 
@@ -256,7 +256,7 @@ let openTk ?(display = "") ?(clas = "LablTk") () =
     match display with
     | "" -> []
     | _ -> ["-display"; display]
-  in 
+  in
   opentk_with_args (dispopt @ ["-name"; clas])
 
 (* Destroy all widgets, thus cleaning up table and exiting the loop *)
@@ -264,13 +264,12 @@ let closeTk () =
   tcl_command "destroy ."
 
 let mainLoop =
-  tk_mainloop 
+  tk_mainloop
 
 
-(* [register tclname f] makes [f] available from Tcl with 
+(* [register tclname f] makes [f] available from Tcl with
    name [tclname] *)
 let register tclname ~callback =
   let s = register_callback Widget.default_toplevel ~callback in
     tcl_command (Printf.sprintf "proc %s {args} {eval {camlcb %s} $args}"
                              tclname s)
-  

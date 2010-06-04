@@ -34,7 +34,7 @@
 
 #include "bng_digit.c"
 
-/**** Operations that cannot be overriden ****/
+/**** Operations that cannot be overridden ****/
 
 /* Return number of leading zero bits in d */
 int bng_leading_zero_bits(bngdigit d)
@@ -153,7 +153,7 @@ static bngcarry bng_generic_sub
   return 1;
 }
 
-/* {a,alen} := {a,alen} << shift.  
+/* {a,alen} := {a,alen} << shift.
    Return the bits shifted out of the most significant digit of a.
    Require 0 <= shift < BITS_PER_BNGDIGIT. */
 static bngdigit bng_generic_shift_left
@@ -172,7 +172,7 @@ static bngdigit bng_generic_shift_left
   return carry;
 }
 
-/* {a,alen} := {a,alen} >> shift.  
+/* {a,alen} := {a,alen} >> shift.
    Return the bits shifted out of the least significant digit of a.
    Require 0 <= shift < BITS_PER_BNGDIGIT. */
 static bngdigit bng_generic_shift_right
@@ -285,7 +285,7 @@ static bngcarry bng_generic_square_add
   /* Double products */
   for (carry1 = 0, i = 1; i < blen; i++) {
     aofs = 2 * i - 1;
-    carry1 += bng_mult_add_digit(a + aofs, alen - aofs, 
+    carry1 += bng_mult_add_digit(a + aofs, alen - aofs,
                                  b + i, blen - i, b[i - 1]);
   }
   /* Multiply by two */
@@ -426,7 +426,7 @@ struct bng_operations bng_ops = {
 #endif
   bng_generic_div_rem
 };
-  
+
 void bng_init(void)
 {
 #ifdef BNG_SETUP_OPS

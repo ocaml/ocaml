@@ -17,18 +17,18 @@
 #include <mlvalues.h>
 #include <fail.h>
 #include "unixsupport.h"
-  
-typedef  
+
+typedef
 BOOL (WINAPI *tCreateHardLink)(
   LPCTSTR lpFileName,
   LPCTSTR lpExistingFileName,
-  LPSECURITY_ATTRIBUTES lpSecurityAttributes  
+  LPSECURITY_ATTRIBUTES lpSecurityAttributes
 );
-  
+
 CAMLprim value unix_link(value path1, value path2)
-{ 
+{
   HMODULE hModKernel32;
-  tCreateHardLink pCreateHardLink; 
+  tCreateHardLink pCreateHardLink;
   hModKernel32 = GetModuleHandle("KERNEL32.DLL");
   pCreateHardLink =
     (tCreateHardLink) GetProcAddress(hModKernel32, "CreateHardLinkA");
@@ -39,4 +39,4 @@ CAMLprim value unix_link(value path1, value path2)
     uerror("link", path2);
   }
   return Val_unit;
-} 
+}

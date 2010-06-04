@@ -6,7 +6,7 @@ open Protocol;;
 let create ?name parent variable values =
   let w = Widget.new_atom "menubutton" ~parent ?name in
   let mw = Widget.new_atom "menu" ~parent:w ~name:"menu" in
-  let res = 
+  let res =
     tkEval [|TkToken "tk_optionMenu";
              TkToken (Widget.name w);
              cCAMLtoTKtextVariable variable;
@@ -20,7 +20,7 @@ let create ?name parent variable values =
 let create_named parent name variable values =
   let w = Widget.new_atom "menubutton" ~parent ~name in
   let mw = Widget.new_atom "menu" ~parent:w ~name: "menu" in
-  let res = 
+  let res =
     tkEval [|TkToken "tk_optionMenu";
              TkToken (Widget.name w);
              cCAMLtoTKtextVariable variable;
@@ -38,9 +38,9 @@ open Protocol;;
 
 let create ~parent ~variable ?name values =
   let w = Widget.new_atom "menubutton" ~parent ?name in
-  let mw = Widget.new_atom "menu" ~parent:w ~name:"menu" in 
+  let mw = Widget.new_atom "menu" ~parent:w ~name:"menu" in
   (* assumes .menu naming *)
-  let res = 
+  let res =
     tkEval [|TkToken "tk_optionMenu";
              TkToken (Widget.name w);
              cCAMLtoTKtextVariable variable;

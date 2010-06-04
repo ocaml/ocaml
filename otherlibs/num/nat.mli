@@ -27,7 +27,7 @@ external blit_nat: nat -> int -> nat -> int -> int -> unit = "blit_nat"
 val copy_nat: nat -> int -> int -> nat
 external set_digit_nat: nat -> int -> int -> unit = "set_digit_nat"
 external nth_digit_nat: nat -> int -> int = "nth_digit_nat"
-val length_nat : nat -> int 
+val length_nat : nat -> int
 external num_digits_nat: nat -> int -> int -> int = "num_digits_nat"
 external num_leading_zero_bits_in_digit: nat -> int -> int = "num_leading_zero_bits_in_digit"
 external is_digit_int: nat -> int -> bool = "is_digit_int"

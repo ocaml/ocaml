@@ -35,7 +35,7 @@ $(OBJSX): ../lib/$(LIBNAME).cmxa
 
 ### Tests
 
-balloontest: balloontest.cmo 
+balloontest: balloontest.cmo
 	$(CAMLC) -nojoin -o balloontest -I ../support -I ../lib \
 	        -custom $(LIBNAME).cma jpflib.cma balloontest.cmo
 
@@ -59,7 +59,7 @@ balloontest.cmx : balloon.cmx jpflib.cmxa
 .ml.cmx:
 	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $<
 
-depend: 
+depend:
 	mv Makefile Makefile.bak
 	(sed -n -e '1,/^### DO NOT DELETE THIS LINE/p' Makefile.bak; \
 	 $(CAMLDEP) *.mli *.ml) > Makefile
@@ -67,11 +67,11 @@ depend:
 
 ### EVERYTHING THAT GOES BEYOND THIS COMMENT IS GENERATED
 ### DO NOT DELETE THIS LINE
-balloon.cmo: balloon.cmi 
-balloon.cmx: balloon.cmi 
-fileselect.cmo: fileselect.cmi 
-fileselect.cmx: fileselect.cmi 
-jpf_font.cmo: shell.cmi jpf_font.cmi 
-jpf_font.cmx: shell.cmx jpf_font.cmi 
-shell.cmo: shell.cmi 
-shell.cmx: shell.cmi 
+balloon.cmo: balloon.cmi
+balloon.cmx: balloon.cmi
+fileselect.cmo: fileselect.cmi
+fileselect.cmx: fileselect.cmi
+jpf_font.cmo: shell.cmi jpf_font.cmi
+jpf_font.cmx: shell.cmx jpf_font.cmi
+shell.cmo: shell.cmi
+shell.cmx: shell.cmi

@@ -44,7 +44,7 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);
-  CAMLreturn(vchan); 
+  CAMLreturn(vchan);
 }
 
 CAMLprim value win_outchannel_of_filedescr(value handle)
@@ -58,7 +58,7 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);
-  CAMLreturn(vchan); 
+  CAMLreturn(vchan);
 }
 
 CAMLprim value win_filedescr_of_channel(value vchan)

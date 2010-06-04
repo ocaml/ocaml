@@ -40,4 +40,3 @@ let _ =
   bind entry0_w [([], KeyPressDetail "Return")] (BindSet ([], send));
   pack [text0_w; entry0_w; button0_w][Side Side_Top; Fill Fill_X; Expand true];
   mainLoop ()
-

@@ -26,7 +26,7 @@ open Compile
 let labltk_write_create_p ~w wname =
   w "val create :\n  ?name:string ->\n";
   begin
-    try 
+    try
       let option = Hashtbl.find types_table "options" in
       let classdefs = List.assoc wname option.subtypes in
       let tklabels = List.map ~f:gettklabel classdefs in
@@ -37,7 +37,7 @@ let labltk_write_create_p ~w wname =
           end,
           fc.template
         end in
-      w (String.concat ~sep:" ->\n" 
+      w (String.concat ~sep:" ->\n"
          (List.map l ~f:
           begin fun (s, t) ->
             "  ?" ^ s ^ ":"
@@ -58,7 +58,7 @@ let camltk_write_create_p ~w wname =
   w "val create : ?name: string -> widget -> options list -> widget \n";
   w "(** [create ?name parent options] creates a new widget with\n";
   w "    parent [parent] and new patch component [name] if specified.\n";
-  w "    Options are restricted to the widget class subset, and checked\n"; 
+  w "    Options are restricted to the widget class subset, and checked\n";
   w "    dynamically. *)\n\n"
 ;;
 
@@ -77,7 +77,7 @@ let labltk_write_function_type ~w def =
     let tys = types_of_template def.template in
     let rec replace_args ~u ~l ~o = function
         [] -> u, l, o
-      | (_, List(Subtype _) as x)::ls -> 
+      | (_, List(Subtype _) as x)::ls ->
           replace_args ~u ~l ~o:(x::o) ls
       | ("", _ as x)::ls ->
           replace_args ~u:(x::u) ~l ~o  ls
@@ -144,7 +144,7 @@ let camltk_write_function_type ~w def =
   let have_normal_arg = ref false in
   List.iter tys ~f:
     begin fun (l, t) ->
-      if l <> "" then 
+      if l <> "" then
         if l.[0] = '?' then w (l^":")
         else begin
           have_normal_arg := true;
@@ -161,7 +161,7 @@ let camltk_write_function_type ~w def =
   else w "\n(* /unsafe *)\n"
 *)
 
-let write_function_type ~w def = 
+let write_function_type ~w def =
   if !Flags.camltk then camltk_write_function_type ~w def
   else labltk_write_function_type ~w def
 
@@ -176,12 +176,12 @@ let write_external_type ~w def =
           close_in ic;
           if not def.safe then w "(* unsafe *)\n";
           List.iter (Ppexec.exec (fun _ -> ()) w)
-            (if !Flags.camltk then 
+            (if !Flags.camltk then
               Code.Define "CAMLTK" :: code_list else code_list );
           if def.safe then w "\n\n"
           else w "\n(* /unsafe *)\n\n"
         with
-        | Ppparse.Error s -> 
+        | Ppparse.Error s ->
             close_in ic;
             raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
       with

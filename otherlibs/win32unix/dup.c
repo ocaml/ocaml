@@ -31,4 +31,3 @@ CAMLprim value unix_dup(value fd)
   Descr_kind_val(newfd) = kind;
   return newfd;
 }
-

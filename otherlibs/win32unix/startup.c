@@ -39,5 +39,9 @@ CAMLprim value win_cleanup(unit)
      value unit;
 {
   (void) WSACleanup();
+<<<<<<< .courant
+=======
+
+>>>>>>> .fusion-droit.r10497
   return Val_unit;
 }

@@ -85,4 +85,3 @@ val ratio_of_string : string -> ratio
 val float_of_ratio : ratio -> float
 val power_ratio_positive_int : ratio -> int -> ratio
 val power_ratio_positive_big_int : ratio -> big_int -> ratio
-

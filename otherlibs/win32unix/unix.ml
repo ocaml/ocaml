@@ -145,7 +145,7 @@ external waitpid : wait_flag list -> int -> int * process_status
 external getpid : unit -> int = "unix_getpid"
 
 let fork () = invalid_arg "Unix.fork not implemented"
-let wait () = invalid_arg "Unix.wait not implemented" 
+let wait () = invalid_arg "Unix.wait not implemented"
 let getppid () = invalid_arg "Unix.getppid not implemented"
 let nice prio = invalid_arg "Unix.nice not implemented"
 
@@ -435,6 +435,8 @@ let getegid = getgid
 let setgid id = invalid_arg "Unix.setgid not implemented"
 
 let getgroups () = [|1|]
+let setgroups _ = invalid_arg "Unix.setgroups not implemented"
+let initgroups _ _ = invalid_arg "Unix.initgroups not implemented"
 
 type passwd_entry =
   { pw_name : string;
@@ -536,7 +538,7 @@ external accept : file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
-external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
+external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown"
 external getsockname : file_descr -> sockaddr = "unix_getsockname"
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
 
@@ -587,6 +589,61 @@ external getsockopt_float : file_descr -> socket_float_option -> float
 external setsockopt_float : file_descr -> socket_float_option -> float -> unit
                                           = "unix_setsockopt_float"
 
+<<<<<<< .courant
+=======
+type socket_int_option =
+    SO_SNDBUF
+  | SO_RCVBUF
+  | SO_ERROR
+  | SO_TYPE
+  | SO_RCVLOWAT
+  | SO_SNDLOWAT
+
+type socket_optint_option = SO_LINGER
+
+type socket_float_option =
+    SO_RCVTIMEO
+  | SO_SNDTIMEO
+
+type socket_error_option = SO_ERROR
+
+module SO: sig
+  type ('opt, 'v) t
+  val bool: (socket_bool_option, bool) t
+  val int: (socket_int_option, int) t
+  val optint: (socket_optint_option, int option) t
+  val float: (socket_float_option, float) t
+  val error: (socket_error_option, error option) t
+  val get: ('opt, 'v) t -> file_descr -> 'opt -> 'v
+  val set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
+end = struct
+  type ('opt, 'v) t = int
+  let bool = 0
+  let int = 1
+  let optint = 2
+  let float = 3
+  let error = 4
+  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v
+              = "unix_getsockopt"
+  external set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
+              = "unix_setsockopt"
+end
+
+let getsockopt fd opt = SO.get SO.bool fd opt
+let setsockopt fd opt v = SO.set SO.bool fd opt v
+
+let getsockopt_int fd opt = SO.get SO.int fd opt
+let setsockopt_int fd opt v = SO.set SO.int fd opt v
+
+let getsockopt_optint fd opt = SO.get SO.optint fd opt
+let setsockopt_optint fd opt v = SO.set SO.optint fd opt v
+
+let getsockopt_float fd opt = SO.get SO.float fd opt
+let setsockopt_float fd opt v = SO.set SO.float fd opt v
+
+let getsockopt_error fd = SO.get SO.error fd SO_ERROR
+
+>>>>>>> .fusion-droit.r10497
 (* Host and protocol databases *)
 
 type host_entry =
@@ -653,7 +710,7 @@ let getaddrinfo node service opts =
       with Failure _ ->
       try
         [ty, (getservbyname service kind).s_port]
-      with Not_found -> [] 
+      with Not_found -> []
   in
   let ports =
     match !opt_socktype with
@@ -684,7 +741,7 @@ let getaddrinfo node service opts =
         [] in
   (* Cross-product of addresses and ports *)
   List.flatten
-    (List.map 
+    (List.map
       (fun (ty, port) ->
         List.map
           (fun (addr, name) ->
@@ -747,7 +804,7 @@ let create_process prog args fd1 fd2 fd3 =
 let create_process_env prog args env fd1 fd2 fd3 =
   win_create_process prog (make_cmdline args)
                      (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
-                     fd1 fd2 fd3 
+                     fd1 fd2 fd3
 
 external system: string -> process_status = "win_system"
 

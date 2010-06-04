@@ -17,20 +17,19 @@ open Unix
 
 (************************************************************* Subshell call *)
 
-let subshell cmd = 
+let subshell cmd =
   let r,w = pipe () in
     match fork () with
-      0 -> close r; dup2 w stdout; 
+      0 -> close r; dup2 w stdout;
            close stderr;
            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-    | id -> 
-        close w; 
+    | id ->
+        close w;
         let rc = in_channel_of_descr r in
-        let rec it () = try 
+        let rec it () = try
             let x = input_line rc in x:: it ()
           with _ -> []
-        in 
+        in
           let answer = it() in
           close_in rc;  (* because of finalize_channel *)
           let _ = waitpid [] id in answer
-

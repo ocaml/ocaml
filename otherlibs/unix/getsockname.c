@@ -37,5 +37,5 @@ CAMLprim value unix_getsockname(value sock)
 
 CAMLprim value unix_getsockname(value sock)
 { invalid_argument("getsockname not implemented"); }
-  
+
 #endif

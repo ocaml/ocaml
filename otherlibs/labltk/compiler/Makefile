@@ -31,11 +31,11 @@ ppyac.ml ppyac.mli: ppyac.mly
 
 copyright.ml: copyright
 	(echo "let copyright=\"\\"; \
-	cat copyright; \
+	sed -e 's/$$/\\n\\/' copyright; \
 	echo "\""; \
-	echo "let write ~w = w copyright;;") > copyright.ml 
+	echo "let write ~w = w copyright;;") > copyright.ml
 
-clean : 
+clean :
 	rm -f *.cm* parser.ml parser.mli lexer.ml copyright.ml
 	rm -f pplex.ml ppyac.ml ppyac.mli ppyac.output
 	rm -f tkcompiler$(EXE) pp$(EXE) parser.output
@@ -44,7 +44,7 @@ scratch :
 	rm -f *.cm*  parser.ml parser.mli lexer.ml tkcompiler$(EXE)
 	rm -f *.cm*  pplex.ml ppyac.ml ppyac.mli pp$(EXE)
 
-install: 
+install:
 	cp tkcompiler$(EXE) $(INSTALLDIR)
 	cp pp$(EXE) $(INSTALLDIR)
 
@@ -52,10 +52,10 @@ install:
 .SUFFIXES : .mli .ml .cmi .cmo .mlp
 
 .mli.cmi:
-	$(CAMLCOMP) -g $(COMPFLAGS) -I ../support $<
+	$(CAMLCOMP) $(COMPFLAGS) -I ../support $<
 
 .ml.cmo:
-	$(CAMLCOMP) -g $(COMPFLAGS) -I ../support $<
+	$(CAMLCOMP) $(COMPFLAGS) -I ../support $<
 
 depend: parser.ml parser.mli lexer.ml pplex.ml ppyac.ml ppyac.mli
 	$(CAMLDEP) *.mli *.ml > .depend

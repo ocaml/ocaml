@@ -1,4 +1,5 @@
 strstubs.o: strstubs.c ../../byterun/mlvalues.h \
+<<<<<<< .courant
   ../../byterun/compatibility.h ../../byterun/config.h \
   ../../byterun/../config/m.h ../../byterun/../config/s.h \
   ../../byterun/compatibility.h ../../byterun/misc.h \
@@ -14,3 +15,13 @@ strstubs.o: strstubs.c ../../byterun/mlvalues.h \
   ../../byterun/mlvalues.h
 str.cmo: str.cmi 
 str.cmx: str.cmi 
+=======
+ ../../byterun/compatibility.h ../../byterun/config.h \
+ ../../byterun/../config/m.h ../../byterun/../config/s.h \
+ ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h \
+ ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+ ../../byterun/freelist.h ../../byterun/minor_gc.h ../../byterun/fail.h
+str.cmi:
+str.cmo: str.cmi
+str.cmx: str.cmi
+>>>>>>> .fusion-droit.r10497

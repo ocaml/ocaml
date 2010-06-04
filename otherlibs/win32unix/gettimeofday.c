@@ -31,6 +31,6 @@ CAMLprim value unix_gettimeofday(value unit)
     return copy_double((double) initial_time);
   } else {
     return copy_double((double) initial_time +
-		       (double) (tickcount - initial_tickcount) * 1e-3);
+                       (double) (tickcount - initial_tickcount) * 1e-3);
   }
 }

@@ -26,15 +26,17 @@ struct filedescr {
   union {
     HANDLE handle;
     SOCKET socket;
-  } fd;
+  } fd;                   /* Real windows handle */
   enum { KIND_HANDLE, KIND_SOCKET } kind;
-  int crt_fd;
+  int crt_fd;             /* C runtime descriptor */
+  unsigned int flags_fd;  /* See FLAGS_FD_* */
 };
 
 #define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
 #define Socket_val(v) (((struct filedescr *) Data_custom_val(v))->fd.socket)
 #define Descr_kind_val(v) (((struct filedescr *) Data_custom_val(v))->kind)
 #define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
+#define Flags_fd_val(v) (((struct filedescr *) Data_custom_val(v))->flags_fd)
 
 extern value win_alloc_handle_or_socket(HANDLE);
 extern value win_alloc_handle(HANDLE);
@@ -49,5 +51,12 @@ extern value unix_error_of_code (int errcode);
 extern void unix_error (int errcode, char * cmdname, value arg);
 extern void uerror (char * cmdname, value arg);
 extern value unix_freeze_buffer (value);
+
+/* Information stored in flags_fd, describing more precisely the socket
+ * and its status. The whole flags_fd is initialized to 0.
+ */
+
+/* Blocking or nonblocking.  By default a filedescr is in blocking state */
+#define FLAGS_FD_IS_BLOCKING (1<<0)
 
 #define UNIX_BUFFER_SIZE 16384

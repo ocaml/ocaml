@@ -1,6 +1,11 @@
+<<<<<<< .courant
 include ../support/Makefile.common.nt
 
 LABLTKLIB=-I ../labltk -I ../lib -I ../support
+=======
+# $Id$
+
+>>>>>>> .fusion-droit.r10497
 OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 OCAMLTOPLIB=-I $(TOPDIR)/parsing -I $(TOPDIR)/utils -I $(TOPDIR)/typing
 INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)

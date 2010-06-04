@@ -85,7 +85,7 @@ let rec choose n ~card:l =
   if n = 1 then List.map l ~f:(fun x -> [x]) else
   if n = 0 then [[]] else
   if n > len then [] else
-  match l with [] -> [] 
+  match l with [] -> []
   | a :: l ->
     List.map (choose (n-1) ~card:l) ~f:(fun l -> a :: l)
     @ choose n ~card:l
@@ -98,7 +98,7 @@ let rec all_args ty =
   match ty.desc with
     Tarrow(l, ty1, ty2, _) -> let (tl,ty) = all_args ty2 in ((l,ty1)::tl, ty)
   | _ -> ([], ty)
-  
+
 let rec equal ~prefix t1 t2 =
   match (repr t1).desc, (repr t2).desc with
     Tvar, Tvar -> true
@@ -313,7 +313,7 @@ let search_string_type text ~mode =
       let start_c = l.loc_start.Lexing.pos_cnum in
       let end_c = l.loc_end.Lexing.pos_cnum in
       raise (Error (start_c - 8, end_c - 8))
-      
+
 let longident_of_string text =
   let exploded = ref [] and l = ref 0 in
   for i = 0 to String.length text - 2 do
@@ -414,7 +414,7 @@ let rec bound_variables pat =
   | Ppat_construct (_,Some pat,_) -> bound_variables pat
   | Ppat_variant (_,None) -> []
   | Ppat_variant (_,Some pat) -> bound_variables pat
-  | Ppat_record l ->
+  | Ppat_record (l, _) ->
       List2.flat_map l ~f:(fun (_,pat) -> bound_variables pat)
   | Ppat_array l ->
       List2.flat_map l ~f:bound_variables

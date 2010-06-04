@@ -1,5 +1,27 @@
+<<<<<<< .courant
 *.x
 thread.ml
 so_locations
 *.so
 *.a
+=======
+.depend
+configure
+ocamlc
+ocamlc.opt
+expunge
+ocaml
+ocamlopt
+ocamlopt.opt
+ocamlcomp.sh
+ocamlcompopt.sh
+package-macosx
+.DS_Store
+*.annot
+_boot_log1
+_boot_log2
+_build
+_log
+myocamlbuild_config.ml
+ocamlnat
+>>>>>>> .fusion-droit.r10499

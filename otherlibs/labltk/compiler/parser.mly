@@ -31,7 +31,7 @@ open Tables
 %token RPAREN           /* ")" */
 %token COMMA            /* "," */
 %token SEMICOLON        /* ";" */
-%token COLON            /* ":" */       
+%token COLON            /* ":" */
 %token QUESTION         /* "?" */
 %token LBRACKET         /* "[" */
 %token RBRACKET         /* "]" */
@@ -86,11 +86,11 @@ Type0 :
 /* Camltk/Labltk types */
 Type0_5:
   | Type0 SLASH Type0 { if !Flags.camltk then $1 else $3 }
-  | Type0 { $1 }  
+  | Type0 { $1 }
 ;
 
 /* with subtypes */
-Type1 : 
+Type1 :
     Type0_5
       { $1 }
   | TypeName LPAREN IDENT RPAREN
@@ -141,8 +141,8 @@ FType :
     LPAREN RPAREN
       { Unit }
   | LPAREN Type2 RPAREN
-      { $2 }      
-  | LPAREN Type_record RPAREN 
+      { $2 }
+  | LPAREN Type_record RPAREN
       { Record $2 }
 ;
 
@@ -168,7 +168,7 @@ Arg:
   | Type
       {TypeArg ("", $1) }
   | IDENT COLON Type
-      {TypeArg ($1, $3)}       
+      {TypeArg ($1, $3)}
   | QUESTION IDENT COLON LBRACKET SimpleArgList RBRACKET DefaultList
       {OptionalArgs ( $2, $5, $7 )}
   | QUESTION WIDGET COLON LBRACKET SimpleArgList RBRACKET DefaultList
@@ -212,14 +212,14 @@ Template :
 /* Constructors for type declarations */
 Constructor :
     IDENT Template
-      {{ component = Constructor; 
+      {{ component = Constructor;
          ml_name = $1;
          var_name = getvarname $1 $2;
          template = $2;
          result = Unit;
          safe = true }}
   | IDENT LPAREN IDENT RPAREN Template
-      {{ component = Constructor; 
+      {{ component = Constructor;
          ml_name = $1;
          var_name = $3;
          template = $5;
@@ -290,7 +290,7 @@ WidgetComponents :
   { $1 :: $2 }
 ;
 
-ModuleComponents : 
+ModuleComponents :
   /* */
   { [] }
  | Command ModuleComponents
@@ -319,7 +319,7 @@ entry :
     { enter_subtype "options" $2 $5 $8 }
 | SUBTYPE ParserArity TypeName LPAREN IDENT RPAREN LBRACE AbbrevConstructors RBRACE
     { enter_subtype $3 $2 $5 $8 }
-| Command 
+| Command
     { enter_function $1 }
 | WIDGET IDENT LBRACE WidgetComponents RBRACE
     { enter_widget $2 $4 }

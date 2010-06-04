@@ -24,7 +24,7 @@ open Compile
 open Intf
 
 let flag_verbose = ref false
-let verbose_string s = 
+let verbose_string s =
   if !flag_verbose then prerr_string s
 let verbose_endline s =
   if !flag_verbose then prerr_endline s
@@ -33,7 +33,7 @@ let input_name = ref "Widgets.src"
 let output_dir = ref ""
 let destfile f = Filename.concat !output_dir f
 
-let usage () = 
+let usage () =
   prerr_string "Usage: tkcompiler input.src\n";
   flush stderr;
   exit 1
@@ -53,15 +53,15 @@ let parse_file filename =
       let code_list = Ppparse.parse_channel ic in
       close_in ic;
       let buf = Buffer.create 50000 in
-      List.iter (Ppexec.exec 
+      List.iter (Ppexec.exec
                    (fun l -> Buffer.add_string buf
                        (Printf.sprintf "##line %d\n" l))
                    (Buffer.add_string buf))
-        (if !Flags.camltk then Code.Define "CAMLTK" :: code_list 
+        (if !Flags.camltk then Code.Define "CAMLTK" :: code_list
         else code_list);
       Lexing.from_string (Buffer.contents buf)
     with
-    | Ppparse.Error s -> 
+    | Ppparse.Error s ->
         close_in ic;
         raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
   in
@@ -110,9 +110,9 @@ let uniq_clauses = function
      let check_constr constr1 constr2 =
        if constr1.template <> constr2.template then
        begin
-        let code1, vars11, vars12, opts1 = 
+        let code1, vars11, vars12, opts1 =
          code_of_template ~context_widget:"dummy" constr1.template in
-        let code2, vars12, vars22, opts2 = 
+        let code2, vars12, vars22, opts2 =
          code_of_template ~context_widget:"dummy" constr2.template in
         let err =
          Printf.sprintf
@@ -141,14 +141,14 @@ let option_hack oc =
    let hack =
      { parser_arity = OneToken;
        constructors = begin
-         let constrs = 
+         let constrs =
            List.map typdef.constructors ~f:
-             begin fun c -> 
+             begin fun c ->
                { component = Constructor;
-                 ml_name = (if !Flags.camltk then "C" ^ c.ml_name 
+                 ml_name = (if !Flags.camltk then "C" ^ c.ml_name
                             else c.ml_name);
                  var_name = c.var_name; (* as variants *)
-                 template = 
+                 template =
                  begin match c.template with
                    ListArg (x :: _) -> x
                  | _ -> fatal_error "bogus hack"
@@ -159,20 +159,20 @@ let option_hack oc =
          if !Flags.camltk then constrs else uniq_clauses constrs (* JPF ?? *)
        end;
        subtypes = [];
-       requires_widget_context = false; 
+       requires_widget_context = false;
        variant = false }
    in
    write_CAMLtoTK
      ~w:(output_string oc) ~def:hack ~safetype:false "options_constrs"
 
-let realname name = 
+let realname name =
   (* module name fix for camltk *)
   if !Flags.camltk then "c" ^ String.capitalize name
   else name
 ;;
 
 (* analize the parsed Widget.src and output source files *)
-let compile () = 
+let compile () =
   verbose_endline "Creating _tkgen.ml ...";
   let oc = open_out_bin (destfile "_tkgen.ml") in
   let oc' = open_out_bin (destfile "_tkigen.ml") in
@@ -197,7 +197,7 @@ let compile () =
     if not !Flags.camltk then (* only for LablTk *)
       write_catch_optionals ~w:(output_string oc') typname ~def:typdef;
     verbose_endline "."
-  with Not_found -> 
+  with Not_found ->
     if not (List.mem_assoc typname !types_external) then
     begin
       verbose_string "Type ";
@@ -224,8 +224,8 @@ let compile () =
   let write_module wname wdef =
     verbose_endline ("  "^wname);
     let modname = realname wname in
-    let oc = open_out_bin (destfile (modname ^ ".ml")) 
-    and oc' = open_out_bin (destfile (modname ^ ".mli")) in 
+    let oc = open_out_bin (destfile (modname ^ ".ml"))
+    and oc' = open_out_bin (destfile (modname ^ ".mli")) in
     Copyright.write ~w:(output_string oc);
     Copyright.write ~w:(output_string oc');
     begin match wdef.module_type with
@@ -260,11 +260,11 @@ let compile () =
         end
     | Family -> ()
     end;
-    List.iter ~f:(write_function ~w:(output_string oc)) 
+    List.iter ~f:(write_function ~w:(output_string oc))
           (sort_components wdef.commands);
     List.iter ~f:(write_function_type ~w:(output_string oc'))
           (sort_components wdef.commands);
-    List.iter ~f:(write_external ~w:(output_string oc)) 
+    List.iter ~f:(write_external ~w:(output_string oc))
            (sort_components wdef.externals);
     List.iter ~f:(write_external_type ~w:(output_string oc'))
            (sort_components wdef.externals);
@@ -276,15 +276,15 @@ let compile () =
   if !Flags.camltk then begin
     let oc = open_out_bin (destfile "camltk.ml") in
     Copyright.write ~w:(output_string oc);
-    output_string oc 
-"(** This module Camltk provides the module name spaces of the CamlTk API.
-
-  The users of the CamlTk API should open this module first to access
-  the types, functions and modules of the CamlTk API easier. 
-  For the documentation of each sub modules such as [Button] and [Toplevel],
-  refer to its defintion file,  [cButton.mli], [cToplevel.mli], etc. 
- *)
-
+    output_string oc
+"(** This module Camltk provides the module name spaces of the CamlTk API.\n\
+\n\
+  The users of the CamlTk API should open this module first to access\n\
+  the types, functions and modules of the CamlTk API easier.\n\
+  For the documentation of each sub modules such as [Button] and [Toplevel],\n\
+  refer to its defintion file,  [cButton.mli], [cToplevel.mli], etc.\n\
+ *)\n\
+\n\
 ";
     output_string oc "include CTk\n";
     output_string oc "module Tk = CTk\n";
@@ -297,17 +297,17 @@ let compile () =
   end else begin
     let oc = open_out_bin (destfile "labltk.ml") in
     Copyright.write ~w:(output_string oc);
-    output_string oc 
-"(** This module Labltk provides the module name spaces of the LablTk API,
-  useful to call LablTk functions inside CamlTk programs. 100% LablTk users
-  do not need to use this. *)
-
+    output_string oc
+"(** This module Labltk provides the module name spaces of the LablTk API,\n\
+  useful to call LablTk functions inside CamlTk programs. 100% LablTk users\n\
+  do not need to use this. *)\n\
+\n\
 ";
-    output_string oc "module Widget = Widget;;
-module Protocol = Protocol;;
-module Textvariable = Textvariable;;
-module Fileevent = Fileevent;;
-module Timer = Timer;;
+    output_string oc "module Widget = Widget;;\n\
+module Protocol = Protocol;;\n\
+module Textvariable = Textvariable;;\n\
+module Fileevent = Fileevent;;\n\
+module Timer = Timer;;\n\
 ";
     Hashtbl.iter (fun name _ ->
       let cname = realname name in
@@ -319,9 +319,9 @@ module Timer = Timer;;
     Hashtbl.iter (fun name def ->
       match def.module_type with
       | Widget ->
-          output_string oc (Printf.sprintf 
+          output_string oc (Printf.sprintf
               "let %s (w : any widget) =\n" name);
-          output_string oc (Printf.sprintf 
+          output_string oc (Printf.sprintf
               "  Rawwidget.check_class w widget_%s_table;\n" name);
           output_string oc (Printf.sprintf
               "  (Obj.magic w : %s widget);;\n\n" name);

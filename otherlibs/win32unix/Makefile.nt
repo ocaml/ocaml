@@ -53,7 +53,18 @@ UNIX_CAML_FILES = unix.mli unixLabels.mli unixLabels.ml
 
 all: dllunix.dll libunix.$(A) unix.cma
 
+<<<<<<< .courant
 allopt: libunix.$(A) unix.cmxa
+=======
+LIBNAME=unix
+COBJS=$(ALL_FILES:.c=.$(O))
+CAMLOBJS=unix.cmo unixLabels.cmo
+LINKOPTS=-cclib $(WSOCKLIB)
+LDOPTS=-ldopt $(WSOCKLIB)
+EXTRACAMLFLAGS=-nolabels
+EXTRACFLAGS=-I../unix
+HEADERS=unixsupport.h socketaddr.h
+>>>>>>> .fusion-droit.r10497
 
 dllunix.dll: $(DOBJS)
 	$(call MKDLL,dllunix.dll,tmp.$(A),$(DOBJS) ../../byterun/ocamlrun.$(A) $(LIBS))

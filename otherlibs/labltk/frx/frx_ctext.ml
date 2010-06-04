@@ -23,12 +23,12 @@ let create top opts navigation =
   let rf = Frame.create f [] in
   let c = Canvas.create lf [BorderWidth (Pixels 0)]
   and xscroll = Scrollbar.create lf [Orient Horizontal]
-  and yscroll = Scrollbar.create rf [Orient Vertical] 
+  and yscroll = Scrollbar.create rf [Orient Vertical]
   and secret = Frame.create_named rf "secret" []
   in
   let t = Text.create c (BorderWidth(Pixels 0) :: opts) in
     if navigation then Frx_text.navigation_keys t;
- 
+
     (* Make the text widget an embedded canvas object *)
     ignore
      (Canvas.create_window c (Pixels 0) (Pixels 0)
@@ -50,7 +50,7 @@ let create top opts navigation =
         YScrollCommand (fun first last ->
            scroll first last;
            let x,y,w,h = Canvas.bbox c [Tag "main"] in
-             Canvas.configure c 
+             Canvas.configure c
                [ScrollRegion (Pixels x, Pixels y, Pixels w, Pixels h)])
         ];
 

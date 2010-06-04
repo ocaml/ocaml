@@ -53,6 +53,11 @@ let print_version () =
   exit 0;
 ;;
 
+let print_version_num () =
+  printf "%s\n" Sys.ocaml_version;
+  exit 0;
+;;
+
 let usage ~spec errmsg =
   let b = Buffer.create 1024 in
   bprintf b "%s\n" errmsg;
@@ -80,22 +85,9 @@ let _ =
       " Allow arbitrary recursive types";
       "-version", Arg.Unit print_version,
         " Print version and exit";
+      "-vnum", Arg.Unit print_version_num, " Print version number and exit";
       "-w", Arg.String (fun s -> Shell.warnings := s),
-      "<flags>  Enable or disable warnings according to <flags>:\n\
-        \032    A/a enable/disable all warnings\n\
-        \032    C/c enable/disable suspicious comment\n\
-        \032    D/d enable/disable deprecated features\n\
-        \032    E/e enable/disable fragile match\n\
-        \032    F/f enable/disable partially applied function\n\
-        \032    L/l enable/disable labels omitted in application\n\
-        \032    M/m enable/disable overriden method\n\
-        \032    P/p enable/disable partial match\n\
-        \032    S/s enable/disable non-unit statement\n\
-        \032    U/u enable/disable unused match case\n\
-        \032    V/v enable/disable hidden instance variable\n\
-        \032    X/x enable/disable all other warnings\n\
-        \032    default setting is \"Ale\"\n\
-        \032    (all warnings but labels and fragile match enabled)"; ]
+      "<flags>  Enable or disable warnings according to <flags>"; ]
   and errmsg = "Command line: ocamlbrowser <options>" in
   if not (check ~spec Sys.argv) then fatal_error (usage ~spec errmsg);
   Arg.parse spec

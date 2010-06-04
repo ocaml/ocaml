@@ -15,8 +15,8 @@
 
 (* Dynamic loading of .cmo files *)
 
-open Dynlinkaux
-open Dynlinkaux.Cmo_format
+open Dynlinkaux  (* REMOVE_ME for ../../debugger/dynlink.ml *)
+open Cmo_format
 
 type linking_error =
     Undefined_global of string
@@ -197,10 +197,14 @@ let load_compunit ic file_name compunit =
 
 let loadfile file_name =
   init();
+  if not (Sys.file_exists file_name) then raise(Error (File_not_found file_name));
   let ic = open_in_bin file_name in
   try
     let buffer = String.create (String.length Config.cmo_magic_number) in
-    really_input ic buffer 0 (String.length Config.cmo_magic_number);
+    begin
+      try really_input ic buffer 0 (String.length Config.cmo_magic_number)
+      with End_of_file -> raise(Error(Not_a_bytecode_file file_name))
+    end;
     if buffer = Config.cmo_magic_number then begin
       let compunit_pos = input_binary_int ic in  (* Go to descriptor *)
       seek_in ic compunit_pos;
@@ -210,7 +214,7 @@ let loadfile file_name =
       let toc_pos = input_binary_int ic in  (* Go to table of contents *)
       seek_in ic toc_pos;
       let lib = (input_value ic : library) in
-      begin try 
+      begin try
         Dll.open_dlls Dll.For_execution
                       (List.map Dll.extract_dll_name lib.lib_dllibs)
       with Failure reason ->

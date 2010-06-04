@@ -18,4 +18,3 @@ type bindings = [
 (* /type *)
 
 ##endif
-

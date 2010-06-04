@@ -16,7 +16,7 @@
 
 (* Basic functions *)
 
-(** Start the main loop in a new GUI thread. Do not use recursively. *) 
+(** Start the main loop in a new GUI thread. Do not use recursively. *)
 val start : unit -> Thread.t
 (** The actual function executed in the new thread *)
 val thread_main : unit -> unit

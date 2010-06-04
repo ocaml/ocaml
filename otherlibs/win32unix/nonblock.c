@@ -26,6 +26,7 @@ CAMLprim value unix_set_nonblock(socket)
     win32_maperr(WSAGetLastError());
     uerror("unix_set_nonblock", Nothing);
   }
+  Flags_fd_val(socket) = Flags_fd_val(socket) | FLAGS_FD_IS_BLOCKING;
   return Val_unit;
 }
 
@@ -38,5 +39,6 @@ CAMLprim value unix_clear_nonblock(socket)
     win32_maperr(WSAGetLastError());
     uerror("unix_clear_nonblock", Nothing);
   }
+  Flags_fd_val(socket) = Flags_fd_val(socket) & ~FLAGS_FD_IS_BLOCKING;
   return Val_unit;
 }

@@ -365,6 +365,8 @@ external getgid : unit -> int = "unix_getgid"
 external getegid : unit -> int = "unix_getegid"
 external setgid : int -> unit = "unix_setgid"
 external getgroups : unit -> int array = "unix_getgroups"
+external setgroups : int array -> unit = "unix_setgroups"
+external initgroups : string -> int -> unit = "unix_initgroups"
 
 type passwd_entry =
   { pw_name : string;
@@ -442,7 +444,7 @@ external accept : file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
-external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
+external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown"
 external getsockname : file_descr -> sockaddr = "unix_getsockname"
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
 
@@ -519,7 +521,7 @@ end = struct
   let optint = 2
   let float = 3
   let error = 4
-  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v 
+  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v
               = "unix_getsockopt"
   external set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
               = "unix_setsockopt"
@@ -606,7 +608,7 @@ let getaddrinfo_emulation node service opts =
       with Failure _ ->
       try
         [ty, (getservbyname service kind).s_port]
-      with Not_found -> [] 
+      with Not_found -> []
   in
   let ports =
     match !opt_socktype with
@@ -637,7 +639,7 @@ let getaddrinfo_emulation node service opts =
         [] in
   (* Cross-product of addresses and ports *)
   List.flatten
-    (List.map 
+    (List.map
       (fun (ty, port) ->
         List.map
           (fun (addr, name) ->
@@ -893,7 +895,7 @@ let find_proc_id fun_name proc =
     raise(Unix_error(EBADF, fun_name, ""))
 
 let rec waitpid_non_intr pid =
-  try waitpid [] pid 
+  try waitpid [] pid
   with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
 
 let close_process_in inchan =
@@ -963,4 +965,3 @@ let establish_server server_fun sockaddr =
             exit 0
     | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the son *)
   done
-

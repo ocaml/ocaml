@@ -24,7 +24,7 @@ type dbm_flag =
 
 exception Dbm_error of string
 
-external raw_opendbm : string -> open_flag list -> int -> t 
+external raw_opendbm : string -> open_flag list -> int -> t
               = "caml_dbm_open"
 
 let opendbm file flags mode =
@@ -52,7 +52,7 @@ let iter f t =
   let rec walk = function
       None -> ()
     | Some k ->
-        f k (find t k); 
+        f k (find t k);
         walk (try Some(nextkey t) with Not_found -> None)
   in
   walk (try Some(firstkey t) with Not_found -> None)

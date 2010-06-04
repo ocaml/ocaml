@@ -35,10 +35,10 @@ type color = [
 
 (* type *)
 type cursor =
-  | XCursor of string 
+  | XCursor of string
   | XCursorFg of string * color
   | XCursortFgBg of string * color * color
-  | CursorFileFg of string * color 
+  | CursorFileFg of string * color
   | CursorMaskFile of string * string * color * color
 ;;
 (* /type *)
@@ -58,4 +58,3 @@ type cursor = [
 (* /type *)
 
 ##endif
-

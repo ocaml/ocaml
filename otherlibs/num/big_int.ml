@@ -327,6 +327,79 @@ let int_of_big_int bi =
     if eq_big_int bi monster_big_int then monster_int
     else failwith "int_of_big_int";;
 
+<<<<<<< .courant
+=======
+let big_int_of_nativeint i =
+  if i = 0n then
+    zero_big_int
+  else if i > 0n then begin
+    let res = create_nat 1 in
+    set_digit_nat_native res 0 i;
+    { sign = 1; abs_value = res }
+  end else begin
+    let res = create_nat 1 in
+    set_digit_nat_native res 0 (Nativeint.neg i);
+    { sign = -1; abs_value = res }
+  end
+
+let nativeint_of_big_int bi =
+  if num_digits_big_int bi > 1 then failwith "nativeint_of_big_int";
+  let i = nth_digit_nat_native bi.abs_value 0 in
+  if bi.sign >= 0 then
+    if i >= 0n then i else failwith "nativeint_of_big_int"
+  else
+    if i >= 0n || i = Nativeint.min_int
+    then Nativeint.neg i
+    else failwith "nativeint_of_big_int"
+
+let big_int_of_int32 i = big_int_of_nativeint (Nativeint.of_int32 i)
+
+let int32_of_big_int bi =
+  let i = nativeint_of_big_int bi in
+  if i <= 0x7FFF_FFFFn && i >= -0x8000_0000n
+  then Nativeint.to_int32 i
+  else failwith "int32_of_big_int"
+
+let big_int_of_int64 i =
+  if Sys.word_size = 64 then
+    big_int_of_nativeint (Int64.to_nativeint i)
+  else begin
+    let (sg, absi) =
+      if i = 0L then (0, 0L)
+      else if i > 0L then (1, i)
+      else (-1, Int64.neg i) in
+    let res = create_nat 2 in
+    set_digit_nat_native res 0 (Int64.to_nativeint absi);
+    set_digit_nat_native res 1 (Int64.to_nativeint (Int64.shift_right absi 32));
+    { sign = sg; abs_value = res }
+  end
+
+let int64_of_big_int bi =
+  if Sys.word_size = 64 then
+    Int64.of_nativeint (nativeint_of_big_int bi)
+  else begin
+    let i =
+      match num_digits_big_int bi with
+      | 1 -> Int64.logand
+               (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))
+               0xFFFFFFFFL
+      | 2 -> Int64.logor
+               (Int64.logand
+                 (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 0))
+                 0xFFFFFFFFL)
+               (Int64.shift_left
+                 (Int64.of_nativeint (nth_digit_nat_native bi.abs_value 1))
+                 32)
+      | _ -> failwith "int64_of_big_int" in
+    if bi.sign >= 0 then
+      if i >= 0L then i else failwith "int64_of_big_int"
+    else
+      if i >= 0L || i = Int64.min_int
+      then Int64.neg i
+      else failwith "int64_of_big_int"
+  end
+
+>>>>>>> .fusion-droit.r10497
 (* Coercion with nat type *)
 let nat_of_big_int bi =
  if bi.sign = -1
@@ -588,3 +661,166 @@ let approx_big_int prec bi =
        else (sign^(String.sub s off 1)^"."^
              (String.sub s (succ off) (pred prec))
              ^"e"^(string_of_int (n - succ off + String.length s)))
+
+(* Logical operations *)
+
+(* Shift left by N bits *)
+
+let shift_left_big_int bi n =
+  if n < 0 then invalid_arg "shift_left_big_int"
+  else if n = 0 then bi
+  else if bi.sign = 0 then bi
+  else begin
+    let size_bi = num_digits_big_int bi in
+    let size_res = size_bi + ((n + length_of_digit - 1) / length_of_digit) in
+    let res = create_nat size_res in
+    let ndigits = n / length_of_digit in
+    set_to_zero_nat res 0 ndigits;
+    blit_nat res ndigits bi.abs_value 0 size_bi;
+    let nbits = n mod length_of_digit in
+    if nbits > 0 then
+      shift_left_nat res ndigits size_bi res (ndigits + size_bi) nbits;
+    { sign = bi.sign; abs_value = res }
+  end
+
+(* Shift right by N bits (rounds toward zero) *)
+
+let shift_right_towards_zero_big_int bi n =
+  if n < 0 then invalid_arg "shift_right_towards_zero_big_int"
+  else if n = 0 then bi
+  else if bi.sign = 0 then bi
+  else begin
+    let size_bi = num_digits_big_int bi in
+    let ndigits = n / length_of_digit in
+    let nbits = n mod length_of_digit in
+    if ndigits >= size_bi then zero_big_int else begin
+      let size_res = size_bi - ndigits in
+      let res = create_nat size_res in
+      blit_nat res 0 bi.abs_value ndigits size_res;
+      if nbits > 0 then begin
+        let tmp = create_nat 1 in
+        shift_right_nat res 0 size_res tmp 0 nbits
+      end;
+      { sign = bi.sign; abs_value = res }
+    end
+  end
+
+(* Compute 2^n - 1 *)
+
+let two_power_m1_big_int n =
+  if n < 0 then invalid_arg "two_power_m1_big_int"
+  else if n = 0 then zero_big_int
+  else begin
+    let size_res = (n + length_of_digit - 1) / length_of_digit in
+    let res = make_nat size_res in
+    set_digit_nat_native res (n / length_of_digit)
+                             (Nativeint.shift_left 1n (n mod length_of_digit));
+    ignore (decr_nat res 0 size_res 0);
+    { sign = 1; abs_value = res }
+  end
+
+(* Shift right by N bits (rounds toward minus infinity) *)
+
+let shift_right_big_int bi n =
+  if n < 0 then invalid_arg "shift_right_big_int"
+  else if bi.sign >= 0 then shift_right_towards_zero_big_int bi n
+  else shift_right_towards_zero_big_int (sub_big_int bi (two_power_m1_big_int n)) n
+
+(* Extract N bits starting at ofs.
+   Treats bi in two's complement.
+   Result is always positive. *)
+
+let extract_big_int bi ofs n =
+  if ofs < 0 || n < 0 then invalid_arg "extract_big_int"
+  else if bi.sign = 0 then bi
+  else begin
+    let size_bi = num_digits_big_int bi in
+    let size_res = (n + length_of_digit - 1) / length_of_digit in
+    let ndigits = ofs / length_of_digit in
+    let nbits = ofs mod length_of_digit in
+    let res = make_nat size_res in
+    if ndigits < size_bi then
+      blit_nat res 0 bi.abs_value ndigits (min size_res (size_bi - ndigits));
+    if bi.sign < 0 then begin
+      (* Two's complement *)
+      complement_nat res 0 size_res;
+      ignore (incr_nat res 0 size_res 1)
+    end;
+    if nbits > 0 then begin
+      let tmp = create_nat 1 in
+      shift_right_nat res 0 size_res tmp 0 nbits
+    end;
+    let n' = n mod length_of_digit in
+    if n' > 0 then begin
+      let tmp = create_nat 1 in
+      set_digit_nat_native tmp 0
+          (Nativeint.shift_right_logical (-1n) (length_of_digit - n'));
+      land_digit_nat res (size_res - 1) tmp 0
+    end;
+    if is_zero_nat res 0 size_res
+    then zero_big_int
+    else { sign = 1; abs_value = res }
+  end
+
+(* Bitwise logical operations.  Arguments must be >= 0. *)
+
+let and_big_int a b =
+  if a.sign < 0 || b.sign < 0 then invalid_arg "and_big_int"
+  else if a.sign = 0 || b.sign = 0 then zero_big_int
+  else begin
+    let size_a = num_digits_big_int a
+    and size_b = num_digits_big_int b in
+    let size_res = min size_a size_b in
+    let res = create_nat size_res in
+    blit_nat res 0 a.abs_value 0 size_res;
+    for i = 0 to size_res - 1 do
+      land_digit_nat res i b.abs_value i
+    done;
+    if is_zero_nat res 0 size_res
+    then zero_big_int
+    else { sign = 1; abs_value = res }
+  end
+
+let or_big_int a b =
+  if a.sign < 0 || b.sign < 0 then invalid_arg "or_big_int"
+  else if a.sign = 0 then b
+  else if b.sign = 0 then a
+  else begin
+    let size_a = num_digits_big_int a
+    and size_b = num_digits_big_int b in
+    let size_res = max size_a size_b in
+    let res = create_nat size_res in
+    let or_aux a' b' size_b' =
+      blit_nat res 0 a'.abs_value 0 size_res;
+      for i = 0 to size_b' - 1 do
+        lor_digit_nat res i b'.abs_value i
+      done in
+    if size_a >= size_b
+    then or_aux a b size_b
+    else or_aux b a size_a;
+    if is_zero_nat res 0 size_res
+    then zero_big_int
+    else { sign = 1; abs_value = res }
+  end
+
+let xor_big_int a b =
+  if a.sign < 0 || b.sign < 0 then invalid_arg "xor_big_int"
+  else if a.sign = 0 then b
+  else if b.sign = 0 then a
+  else begin
+    let size_a = num_digits_big_int a
+    and size_b = num_digits_big_int b in
+    let size_res = max size_a size_b in
+    let res = create_nat size_res in
+    let xor_aux a' b' size_b' =
+      blit_nat res 0 a'.abs_value 0 size_res;
+      for i = 0 to size_b' - 1 do
+        lxor_digit_nat res i b'.abs_value i
+      done in
+    if size_a >= size_b
+    then xor_aux a b size_b
+    else xor_aux b a size_a;
+    if is_zero_nat res 0 size_res
+    then zero_big_int
+    else { sign = 1; abs_value = res }
+  end

@@ -55,4 +55,3 @@ let set ~ms ~callback = ignore (add ~ms ~callback);;
 let remove (tkTimer, id) =
   internal_rem_timer tkTimer;
   clear_callback id
-

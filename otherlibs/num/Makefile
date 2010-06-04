@@ -63,7 +63,6 @@ partialclean:
 
 clean: partialclean
 	rm -f *.a *.o *.so
-	cd test; $(MAKE) clean
 
 .SUFFIXES: .ml .mli .cmi .cmo .cmx
 

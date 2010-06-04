@@ -10,8 +10,8 @@ _tkgen.ml: ../Widgets.src ../compiler/tkcompiler
 tk.ml labltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../builtin/builtin_*.ml
 	(echo 'open StdLabels'; \
 	 echo 'open Widget'; \
-         echo 'open Protocol'; \
-         echo 'open Support'; \
+	 echo 'open Protocol'; \
+	 echo 'open Support'; \
 	 echo 'open Textvariable'; \
 	 cat ../builtin/report.ml; \
 	 cat ../builtin/builtin_*.ml; \

@@ -103,7 +103,8 @@ fcntl.o: fcntl.c ../../byterun/fail.h ../../byterun/compatibility.h \
   ../../byterun/mlvalues.h unixsupport.h
 fork.o: fork.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
-  ../../byterun/../config/s.h ../../byterun/misc.h unixsupport.h
+  ../../byterun/../config/s.h ../../byterun/misc.h \
+  ../../byterun/debugger.h ../../byterun/mlvalues.h unixsupport.h
 ftruncate.o: ftruncate.c ../../byterun/fail.h \
   ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
@@ -222,6 +223,11 @@ gmtime.o: gmtime.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/mlvalues.h ../../byterun/fail.h ../../byterun/memory.h \
   ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
   ../../byterun/minor_gc.h unixsupport.h
+initgroups.o: initgroups.c ../../byterun/mlvalues.h \
+  ../../byterun/compatibility.h ../../byterun/config.h \
+  ../../byterun/../config/m.h ../../byterun/../config/s.h \
+  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h \
+  ../../byterun/fail.h unixsupport.h
 isatty.o: isatty.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/misc.h unixsupport.h
@@ -325,6 +331,13 @@ sendrecv.o: sendrecv.c ../../byterun/mlvalues.h \
 setgid.o: setgid.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/misc.h unixsupport.h
+setgroups.o: setgroups.c ../../byterun/mlvalues.h \
+  ../../byterun/compatibility.h ../../byterun/config.h \
+  ../../byterun/../config/m.h ../../byterun/../config/s.h \
+  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h \
+  ../../byterun/fail.h ../../byterun/memory.h ../../byterun/gc.h \
+  ../../byterun/major_gc.h ../../byterun/freelist.h \
+  ../../byterun/minor_gc.h unixsupport.h
 setsid.o: setsid.c ../../byterun/fail.h ../../byterun/compatibility.h \
   ../../byterun/misc.h ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/mlvalues.h \
@@ -435,9 +448,9 @@ write.o: write.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/gc.h ../../byterun/mlvalues.h ../../byterun/major_gc.h \
   ../../byterun/freelist.h ../../byterun/minor_gc.h \
   ../../byterun/signals.h unixsupport.h
-unixLabels.cmi: unix.cmi 
-unix.cmi: 
-unixLabels.cmo: unix.cmi unixLabels.cmi 
-unixLabels.cmx: unix.cmx unixLabels.cmi 
-unix.cmo: unix.cmi 
-unix.cmx: unix.cmi 
+unixLabels.cmi: unix.cmi
+unix.cmi:
+unixLabels.cmo: unix.cmi unixLabels.cmi
+unixLabels.cmx: unix.cmx unixLabels.cmi
+unix.cmo: unix.cmi
+unix.cmx: unix.cmi

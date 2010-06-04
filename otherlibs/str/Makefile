@@ -17,6 +17,7 @@
 
 include ../../config/Makefile
 
+<<<<<<< .courant
 # Compilation options
 CC=$(BYTECC)
 CFLAGS=-O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
@@ -25,13 +26,24 @@ CAMLOPT=../../ocamlcompopt.sh
 COMPFLAGS=-warn-error A -nojoin -g
 COBJS=strstubs.o
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+=======
+LIBNAME=str
+COBJS=strstubs.$(O)
+CLIBNAME=camlstr
+CAMLOBJS=str.cmo
+>>>>>>> .fusion-droit.r10497
 
 all: libstr.a str.cmi str.cma
 
 allopt: libstr.a str.cmi str.cmxa
 
+<<<<<<< .courant
 libstr.a: $(COBJS)
 	$(MKLIB) -o str $(COBJS)
+=======
+str.cmo: str.cmi
+str.cmx: str.cmi
+>>>>>>> .fusion-droit.r10497
 
 str.cma: str.cmo
 	$(MKLIB) -ocamlc '$(CAMLC)' -o str str.cmo

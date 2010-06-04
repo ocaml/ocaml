@@ -52,7 +52,7 @@ struct bng_operations {
         bngcarry carry);
 #define bng_sub bng_ops.sub
 
-  /* {a,alen} := {a,alen} << shift.  
+  /* {a,alen} := {a,alen} << shift.
      Return the bits shifted out of the most significant digit of a.
      Require 0 <= shift < BITS_PER_BNGDIGIT. */
   bngdigit (*shift_left)
@@ -60,7 +60,7 @@ struct bng_operations {
         int shift);
 #define bng_shift_left bng_ops.shift_left
 
-  /* {a,alen} := {a,alen} >> shift.  
+  /* {a,alen} := {a,alen} >> shift.
      Return the bits shifted out of the least significant digit of a.
      Require 0 <= shift < BITS_PER_BNGDIGIT. */
   bngdigit (*shift_right)
@@ -154,4 +154,3 @@ extern int bng_compare(bng a/*[alen]*/, bngsize alen,
 
 /* Return the number of leading zero bits in digit d. */
 extern int bng_leading_zero_bits(bngdigit d);
-

@@ -67,7 +67,7 @@ let remplir_taquin c nx ny tx ty pièces =
     if x = !trou_x && (y = !trou_y - 1 || y = !trou_y + 1)
     || y = !trou_y && (x = !trou_x - 1 || x = !trou_x + 1)
     then déplacer x y in
-  Canvas.bind ~events:[`ButtonPress] 
+  Canvas.bind ~events:[`ButtonPress]
                  ~fields:[`MouseX; `MouseY] ~action:jouer c (`Tag "pièce");;
 
 let rec permutation = function
@@ -112,7 +112,7 @@ let give_help parent lines () =
  let ok_button = Button.create ~text:"Ok" ~command:quit_help help_frame in
 
  pack ~side:`Bottom [help_txtw];
- pack ~side:`Bottom [ok_button ]; 
+ pack ~side:`Bottom [ok_button ];
  pack [help_frame];;
 
 let taquin nom_fichier nx ny =
@@ -136,8 +136,8 @@ let taquin nom_fichier nx ny =
   let help =
     Button.create ~text:"Help" ~command:(give_help fp help_lines) fp in
   pack ~side:`Left ~fill:`X [quit] ;
-  pack ~side:`Left ~fill:`X [help] ;  
+  pack ~side:`Left ~fill:`X [help] ;
   mainLoop ();;
- 
+
 if !Sys.interactive then () else
 begin taquin "Lambda2.back.gif" 4 4; exit 0 end;;

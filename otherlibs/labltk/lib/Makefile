@@ -4,7 +4,7 @@ all: $(LIBNAME).cma $(LIBNAME)top$(EXE) $(LIBNAME)
 
 opt: $(LIBNAME).cmxa
 
-clean: 
+clean:
 	rm -f $(LIBNAME)top$(EXE) $(LIBNAME) *.cm* *.a
 
 superclean:
@@ -21,8 +21,8 @@ CAMLTKOBJS=cTk.cmo $(CWIDGETOBJS) labltk.cmo camltk.cmo
 
 SUPPORT=../support/support.cmo ../support/rawwidget.cmo \
 	../support/widget.cmo ../support/protocol.cmo \
-        ../support/textvariable.cmo ../support/timer.cmo \
-        ../support/fileevent.cmo ../support/camltkwrap.cmo
+	../support/textvariable.cmo ../support/timer.cmo \
+	../support/fileevent.cmo ../support/camltkwrap.cmo
 
 TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
@@ -33,16 +33,26 @@ $(LIBNAME).cma: $(SUPPORT) ../Widgets.src
 	cd ../labltk; $(MAKE)
 	cd ../camltk; $(MAKE)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) -oc $(LIBNAME) \
+<<<<<<< .courant
           -I ../labltk -I ../camltk $(TKOBJS) \
           $(TK_LINK)
+=======
+	  -I ../labltk -I ../camltk $(TKOBJS) \
+	  -ccopt "\"$(TK_LINK)\""
+>>>>>>> .fusion-droit.r10497
 
 $(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx) ../Widgets.src
 	$(MAKE) superclean
 	cd ../labltk; $(MAKE) opt
 	cd ../camltk; $(MAKE) opt
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o $(LIBNAME) -oc $(LIBNAME) \
+<<<<<<< .courant
           -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
           $(TK_LINK)
+=======
+	  -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
+	  -ccopt "\"$(TK_LINK)\""
+>>>>>>> .fusion-droit.r10497
 
 $(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).a
 	$(CAMLC) -verbose -linkall -o $(LIBNAME)top$(EXE) -I ../support \

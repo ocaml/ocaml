@@ -338,7 +338,7 @@ type stats =
     st_mtime : float;           (** Last modification time *)
     st_ctime : float;           (** Last status change time *)
   }
-(** The informations returned by the {!Unix.stat} calls. *)
+(** The information returned by the {!Unix.stat} calls. *)
 
 val stat : string -> stats
 (** Return the information for the named file. *)
@@ -819,6 +819,16 @@ val setgid : int -> unit
 val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
    belongs. *)
+
+val setgroups : int array -> unit
+  (** [setgroups groups] sets the supplementary group IDs for the
+      calling process. Appropriate privileges are required. *)
+
+val initgroups : string -> int -> unit
+  (** [initgroups user group] initializes the group access list by
+      reading the group database /etc/group and using all groups of
+      which [user] is a member. The additional group [group] is also
+      added to the list. *)
 
 type passwd_entry =
   { pw_name : string;

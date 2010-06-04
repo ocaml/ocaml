@@ -18,7 +18,7 @@ open Protocol
 
 let rec mapi f n l =
   match l with
-    [] -> [] 
+    [] -> []
   | x::l -> let v = f n x in v::(mapi f (succ n) l)
 
 (* Same as tk_dialog, but not sharing the tkwait variable *)
@@ -29,7 +29,7 @@ let f w name title mesg bitmap def buttons =
     Wm.iconname_set t "Dialog";
     Wm.protocol_set t "WM_DELETE_WINDOW" (function () -> ());
     (* Wm.transient_set t (Winfo.toplevel w); *)
-  let ftop = 
+  let ftop =
    Frame.create_named t "top" [Relief Raised; BorderWidth (Pixels 1)]
   and fbot =
    Frame.create_named t "bot" [Relief Raised; BorderWidth (Pixels 1)]
@@ -38,37 +38,37 @@ let f w name title mesg bitmap def buttons =
      pack [fbot][Side Side_Bottom; Fill Fill_Both];
 
   let l =
-   Label.create_named ftop "msg" 
+   Label.create_named ftop "msg"
      [Justify Justify_Left; Text mesg; WrapLength (Pixels 600)] in
      pack [l][Side Side_Right; Expand true; Fill Fill_Both;
               PadX (Millimeters 3.0); PadY (Millimeters 3.0)];
   begin match bitmap with
      Predefined "" -> ()
   |  _ ->
-    let b = 
+    let b =
       Label.create_named ftop "bitmap" [Bitmap bitmap] in
      pack [b][Side Side_Left; PadX (Millimeters 3.0); PadY (Millimeters 3.0)]
   end;
-  
+
   let waitv = Textvariable.create_temporary t in
- 
+
   let buttons =
     mapi (fun i bname ->
-     let b = Button.create t 
-              [Text bname; 
+     let b = Button.create t
+              [Text bname;
                Command (fun () -> Textvariable.set waitv (string_of_int i))] in
     if i = def then begin
-      let f = Frame.create_named fbot "default" 
+      let f = Frame.create_named fbot "default"
                  [Relief Sunken; BorderWidth (Pixels 1)] in
         raise_window_above b f;
-        pack [f][Side Side_Left; Expand true; 
+        pack [f][Side Side_Left; Expand true;
                  PadX (Millimeters 3.0); PadY (Millimeters 2.0)];
         pack [b][In f; PadX (Millimeters 2.0); PadY (Millimeters 2.0)];
         bind t [[], KeyPressDetail "Return"]
          (BindSet ([], (fun _ -> Button.flash b; Button.invoke b)))
         end
     else
-      pack [b][In fbot; Side Side_Left; Expand true; 
+      pack [b][In fbot; Side Side_Left; Expand true;
                PadX (Millimeters 3.0); PadY (Millimeters 2.0)];
     b
     )
@@ -86,7 +86,7 @@ let f w name title mesg bitmap def buttons =
    let oldfocus = try Some (Focus.get()) with _ -> None
    and oldgrab = Grab.current ~displayof: t ()
    and grabstatus = ref None in
-    begin match oldgrab with 
+    begin match oldgrab with
       [] -> ()
     | x::l -> grabstatus := Some(Grab.status x)
     end;
@@ -104,7 +104,7 @@ let f w name title mesg bitmap def buttons =
    destroy t;
    begin match oldgrab with
      [] -> ()
-   | x::l -> 
+   | x::l ->
       try
         match !grabstatus with
           Some(GrabGlobal) -> Grab.set_global x

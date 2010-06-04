@@ -5,8 +5,8 @@ let handle_set opts w cmd =
   tkCommand [|
     TkToken"selection";
     TkToken"handle";
-    TkTokenList 
-      (List.map 
+    TkTokenList
+      (List.map
          (function x -> cCAMLtoTKicccm w icccm_selection_handle_table x)
          opts);
     cCAMLtoTKwidget widget_any_table w;

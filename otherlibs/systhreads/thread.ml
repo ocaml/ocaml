@@ -11,7 +11,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id$ *)
+(* $Id: thread_posix.ml 9547 2010-01-22 12:48:24Z doligez $ *)
 
 (* User-level threads *)
 
@@ -19,7 +19,7 @@ type t
 
 external thread_initialize : unit -> unit = "caml_thread_initialize"
 external thread_new : (unit -> unit) -> t = "caml_thread_new"
-external thread_uncaught_exception : exn -> unit = 
+external thread_uncaught_exception : exn -> unit =
             "caml_thread_uncaught_exception"
 
 external yield : unit -> unit = "caml_thread_yield"
@@ -51,8 +51,13 @@ let preempt signal = yield()
 
 (* Initialization of the scheduler *)
 
+let preempt_signal =
+  match Sys.os_type with
+  | "Win32" -> Sys.sigterm
+  | _       -> Sys.sigvtalrm
+
 let _ =
-  ignore(Sys.signal Sys.sigvtalrm (Sys.Signal_handle preempt));
+  ignore(Sys.signal preempt_signal (Sys.Signal_handle preempt));
   thread_initialize()
 
 (* Wait functions *)

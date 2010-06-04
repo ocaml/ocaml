@@ -58,9 +58,9 @@ text.o: text.c libgraph.h ../../byterun/mlvalues.h \
   ../../byterun/compatibility.h ../../byterun/config.h \
   ../../byterun/../config/m.h ../../byterun/../config/s.h \
   ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/mlvalues.h
-graphics.cmi: 
-graphicsX11.cmi: 
-graphics.cmo: graphics.cmi 
-graphics.cmx: graphics.cmi 
-graphicsX11.cmo: graphics.cmi graphicsX11.cmi 
-graphicsX11.cmx: graphics.cmx graphicsX11.cmi 
+graphics.cmi:
+graphicsX11.cmi:
+graphics.cmo: graphics.cmi
+graphics.cmx: graphics.cmi
+graphicsX11.cmo: graphics.cmi graphicsX11.cmi
+graphicsX11.cmx: graphics.cmx graphicsX11.cmi

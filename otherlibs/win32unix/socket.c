@@ -36,7 +36,7 @@ CAMLprim value unix_socket(domain, type, proto)
   if (retcode == 0) {
     /* Set sockets to synchronous mode */
     newvalue = SO_SYNCHRONOUS_NONALERT;
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                (char *) &newvalue, sizeof(newvalue));
   }
   s = socket(socket_domain_table[Int_val(domain)],
@@ -44,7 +44,7 @@ CAMLprim value unix_socket(domain, type, proto)
                    Int_val(proto));
   if (retcode == 0) {
     /* Restore initial mode */
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE, 
+    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                (char *) &oldvalue, oldvaluelen);
   }
   if (s == INVALID_SOCKET) {
