@@ -22,7 +22,7 @@ type class_element =
   | Class_comment of Odoc_types.text
 
 (** Used when we can reference t_class or t_class_type. *)
-type cct = 
+type cct =
     Cl of t_class
   | Cltype of t_class_type * Types.type_expr list (** class type and type parameters *)
 
@@ -30,20 +30,20 @@ and inherited_class = {
     ic_name : Name.t ; (** Complete name of the inherited class *)
     mutable ic_class : cct option ; (** The associated t_class or t_class_type *)
     ic_text : Odoc_types.text option ; (** The inheritance comment, if any *)
-  } 
+  }
 
 and class_apply = {
     capp_name : Name.t ; (** The complete name of the applied class *)
     mutable capp_class : t_class option;  (** The associated t_class if we found it *)
     capp_params : Types.type_expr list; (** The type of expressions the class is applied to *)
     capp_params_code : string list ; (** The code of these expressions *)
-  } 
+  }
 
 and class_constr = {
     cco_name : Name.t ; (** The complete name of the applied class *)
     mutable cco_class : cct option;  (** The associated class ot class type if we found it *)
     cco_type_parameters : Types.type_expr list; (** The type parameters of the class, if needed *)
-  } 
+  }
 
 
 and class_kind =
@@ -52,7 +52,7 @@ and class_kind =
   | Class_apply of class_apply (** application/alias of a class, used in implementation only *)
   | Class_constr of class_constr (** a class used to give the type of the defined class,
                                     instead of a structure, used in interface only.
-                                    For example, it will be used with the name "M1.M2....tutu" 
+                                    For example, it will be used with the name "M1.M2....tutu"
                                     when the class to is defined like this :
                                     class toto : int -> tutu *)
   | Class_constraint of class_kind * class_type_kind
@@ -68,28 +68,28 @@ and t_class = {
     mutable cl_kind : class_kind ;
     mutable cl_parameters : Odoc_parameter.parameter list ;
     mutable cl_loc : Odoc_types.location ;
-  } 
+  }
 
 and class_type_alias = {
     cta_name : Name.t ;
     mutable cta_class : cct option ; (** we can have a t_class or a t_class_type *)
     cta_type_parameters : Types.type_expr list ; (** the type parameters *)
-  } 
+  }
 
-and class_type_kind = 
+and class_type_kind =
     Class_signature of inherited_class list * class_element list
   | Class_type of class_type_alias (** a class type eventually applied to type args *)
 
 (** Representation of a class type. *)
 and t_class_type = {
-    clt_name : Name.t ; 
+    clt_name : Name.t ;
     mutable clt_info : Odoc_types.info option ; (** The optional associated user information *)
     clt_type : Types.class_type ;
     clt_type_parameters : Types.type_expr list ; (** type parameters *)
     clt_virtual : bool ; (** true = virtual *)
     mutable clt_kind : class_type_kind ;
     mutable clt_loc : Odoc_types.location ;
-  } 
+  }
 
 
 (** {2 Functions} *)
@@ -108,8 +108,8 @@ let class_parameter_text_by_name cl label =
           None
 
 (** Returns the list of elements of a t_class. *)
-let rec class_elements ?(trans=true) cl = 
-  let rec iter_kind k = 
+let rec class_elements ?(trans=true) cl =
+  let rec iter_kind k =
     match k with
       Class_structure (_, elements) -> elements
     | Class_constraint (c_kind, ct_kind) ->
@@ -117,7 +117,7 @@ let rec class_elements ?(trans=true) cl =
       (* A VOIR : utiliser le c_kind ou le ct_kind ?
          Pour l'instant, comme le ct_kind n'est pas analysé,
          on cherche dans le c_kind
-         class_type_elements ~trans: trans 
+         class_type_elements ~trans: trans
          { clt_name = "" ; clt_info = None ;
           clt_type_parameters = [] ;
          clt_virtual = false ;
@@ -137,10 +137,10 @@ let rec class_elements ?(trans=true) cl =
          | _ -> []
         )
   in
-  iter_kind cl.cl_kind 
-  
+  iter_kind cl.cl_kind
+
 (** Returns the list of elements of a t_class_type. *)
-and class_type_elements ?(trans=true) clt = 
+and class_type_elements ?(trans=true) clt =
   match clt.clt_kind with
     Class_signature (_, elements) -> elements
   | Class_type { cta_class = Some (Cltype (ct, _)) } when trans ->
@@ -192,8 +192,8 @@ let class_comments ?(trans=true) cl =
 
 (** Update the parameters text of a t_class, according to the cl_info field. *)
 let class_update_parameters_text cl =
-  let f p = 
-    Odoc_parameter.update_parameter_text (class_parameter_text_by_name cl) p 
+  let f p =
+    Odoc_parameter.update_parameter_text (class_parameter_text_by_name cl) p
   in
   List.iter f cl.cl_parameters
 
@@ -249,5 +249,5 @@ let class_type_parameter_text_by_name clt label =
         Not_found ->
           None
 
-        
+
 (* eof $Id$ *)

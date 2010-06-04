@@ -209,6 +209,8 @@ let default_dot_generator = ref (None : doc_generator option)
 (** The default option list *)
 let options = ref [
   "-version", Arg.Unit (fun () -> print_string M.message_version ; print_newline () ; exit 0) , M.option_version ;
+  "-vnum", Arg.Unit (fun () -> print_string M.config_version ;
+                               print_newline () ; exit 0) , M.option_version ;
   "-v", Arg.Unit (fun () -> verbose := true), M.verbose_mode ;
   "-I", Arg.String (fun s -> include_dirs := (Misc.expand_directory Config.standard_library s) :: !include_dirs), M.include_dirs ;
   "-pp", Arg.String (fun s -> preprocessor := Some s), M.preprocess ;

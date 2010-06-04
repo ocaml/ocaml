@@ -4,7 +4,42 @@ TODO:
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
 
 =====
+<<<<<<< .courant
 Next release:
+=======
+Release > 3.11.0:
+- option -g also for native code version (loading custom generators)
+
+=====
+Release 3.09.3:
+- mod: PR#4017 new option -short-functors to use a short form to display
+  functors in html generator
+- fix: PR#4016 (using modtype constraint to filter module elements displayed in doc)
+- fix: PR#4066 (missing crossref in text from intro files)
+- fix: PR#4007 (error in merging of top dependencies of modules)
+- fix: PR#3981 (-dot-colors has no effect)
+- mod: name resolution in cross-referencing: {!name} if name is not
+  found, then it is searched in the parent module/class, and in the parent
+  of the parent, and so on until it is found.
+
+=====
+Release 3.09.1:
+ - fix: remove .TP for generated man pages, use .sp instead
+   (.TP caused a lot of odd margins)
+ - fix: html generator now output DOCTYPE and character encoding information.
+ - add: m_text_only field in Module.t_module, to separate real modules
+   from text files handled as modules.
+ - fix: display only text for "text modules"
+ - extensible {foo } syntax
+ - user can give .txt files on the command line, containing ocamldoc formatted
+   text, to be able to include bigger texts out of source files
+ - -o option is now used by the html generator to indicate the prefix
+   of generated index files (to avoid conflict when a Index module exists
+   on case-insensitive file systems).
+
+=====
+Release 3.08.4:
+>>>>>>> .fusion-droit.r10497
  - some improvements in html display
  - better error messages for misplaced variant constructors comments
  - some fixes in man page generation (escaping characters)

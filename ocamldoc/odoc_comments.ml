@@ -67,8 +67,17 @@ module Info_retriever =
                  i_version = !Odoc_comments_global.version;
                  i_sees = (List.map create_see !Odoc_comments_global.sees) ;
                  i_since = !Odoc_comments_global.since;
+<<<<<<< .courant
                  i_deprecated = 
                  (match !Odoc_comments_global.deprecated with 
+=======
+                 i_before = Odoc_merge.merge_before_tags
+                     (List.map (fun (n, s) ->
+                         (n, MyTexter.text_of_string s)) !Odoc_comments_global.before)
+                   ;
+                 i_deprecated =
+                 (match !Odoc_comments_global.deprecated with
+>>>>>>> .fusion-droit.r10497
                    None -> None | Some s -> Some (MyTexter.text_of_string s));
                  i_params = 
                  (List.map (fun (n, s) -> 
@@ -312,4 +321,37 @@ module Info_retriever =
 
 module Basic_info_retriever = Info_retriever (Odoc_text.Texter)
 
+<<<<<<< .courant
 (* eof $Id$ *)
+=======
+let info_of_string s =
+  let dummy =
+    {
+      i_desc = None ;
+      i_authors = [] ;
+      i_version = None ;
+      i_sees = [] ;
+      i_since = None ;
+      i_before = [] ;
+      i_deprecated = None ;
+      i_params = [] ;
+      i_raised_exceptions = [] ;
+      i_return_value = None ;
+      i_custom = [] ;
+    }
+  in
+  let s2 = Printf.sprintf "(** %s *)" s in
+  let (_, i_opt) = Basic_info_retriever.first_special "-" s2 in
+  match i_opt with
+    None -> dummy
+  | Some i -> i
+
+let info_of_comment_file modlist f =
+  try
+    let s = Odoc_misc.input_file_as_string f in
+    let i = info_of_string s in
+    Odoc_cross.assoc_comments_info "" modlist i
+  with
+    Sys_error s ->
+      failwith s
+>>>>>>> .fusion-droit.r10497

@@ -45,13 +45,16 @@ and text_element = Odoc_types.text_element =
              (** Style number, optional label, and text. *)
   | Latex of string (** A string for latex. *)
   | Link of string * text (** A reference string and the link text. *)
-  | Ref of string * ref_kind option
-       (** A reference to an element. Complete name and kind. *)
+  | Ref of string * ref_kind option * text option
+       (** A reference to an element. Complete name and kind.
+        An optional text can be given to display this text instead
+        of the element name.*)
   | Superscript of text (** Superscripts. *)
   | Subscript of text (** Subscripts. *)
   | Module_list of string list
        (** The table of the given modules with their abstract. *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
+  | Target of string * string (** (target, code) : to specify code specific to a target format *)
 
 (** A text is a list of [text_element]. The order matters. *)
 and text = text_element list
@@ -75,13 +78,16 @@ type param = (string * text)
 (** Raised exception name and description. *)
 type raised_exception = (string * text)
 
-(** Information in a special comment *)
+(** Information in a special comment
+@before 3.12.0 \@before information was not present.
+*)
 type info = Odoc_types.info = {
     i_desc : text option; (** The description text. *)
     i_authors : string list; (** The list of authors in \@author tags. *)
     i_version : string option; (** The string in the \@version tag. *)
     i_sees : see list; (** The list of \@see tags. *)
     i_since : string option; (** The string in the \@since tag. *)
+    i_before : (string * text) list ; (** the version number and text in \@before tag *)
     i_deprecated : text option; (** The of the \@deprecated tag. *)
     i_params : param list; (** The list of parameter descriptions. *)
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
@@ -443,6 +449,8 @@ module Module :
                         Should appear in interface files only. *)
       | Module_constraint of module_kind * module_type_kind
                      (** A module constraint by a module type. *)
+      | Module_typeof of string (** by now only the code of the module expression *)
+      | Module_unpack of string * module_type_alias (** code of the expression and module type alias *)
 
     (** Representation of a module. *)
     and t_module = Odoc_module.t_module =
@@ -474,6 +482,8 @@ module Module :
             (** Complete alias name and corresponding module type if we found it. *)
       | Module_type_with of module_type_kind * string
             (** The module type kind and the code of the with constraint. *)
+      | Module_type_typeof of string
+            (** by now only the code of the module expression *)
 
     (** Representation of a module type. *)
     and t_module_type = Odoc_module.t_module_type =
@@ -838,7 +848,7 @@ module Scan :
        (** This method scan the elements of the given class. *)
         method scan_class_elements : Class.t_class -> unit
 
-       (** Scan of a class. Should not be overriden. It calls [scan_class_pre]
+       (** Scan of a class. Should not be overridden. It calls [scan_class_pre]
           and if [scan_class_pre] returns [true], then it calls scan_class_elements.*)
         method scan_class : Class.t_class -> unit
 
@@ -855,7 +865,7 @@ module Scan :
         (** This method scan the elements of the given class type. *)
         method scan_class_type_elements : Class.t_class_type -> unit
 
-        (** Scan of a class type. Should not be overriden. It calls [scan_class_type_pre]
+        (** Scan of a class type. Should not be overridden. It calls [scan_class_type_pre]
            and if [scan_class_type_pre] returns [true], then it calls scan_class_type_elements.*)
         method scan_class_type : Class.t_class_type -> unit
 
@@ -872,7 +882,7 @@ module Scan :
         (** This method scan the elements of the given module. *)
         method scan_module_elements : Module.t_module -> unit
 
-       (** Scan of a module. Should not be overriden. It calls [scan_module_pre]
+       (** Scan of a module. Should not be overridden. It calls [scan_module_pre]
           and if [scan_module_pre] returns [true], then it calls scan_module_elements.*)
         method scan_module : Module.t_module -> unit
 
@@ -889,7 +899,7 @@ module Scan :
         (** This method scan the elements of the given module type. *)
         method scan_module_type_elements : Module.t_module_type -> unit
 
-        (** Scan of a module type. Should not be overriden. It calls [scan_module_type_pre]
+        (** Scan of a module type. Should not be overridden. It calls [scan_module_type_pre]
            and if [scan_module_type_pre] returns [true], then it calls scan_module_type_elements.*)
         method scan_module_type : Module.t_module_type -> unit
 

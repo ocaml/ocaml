@@ -13,7 +13,7 @@
 
 (** Environment for finding complete names from relative names. *)
 
-(** An environment of known names, 
+(** An environment of known names,
    from simple name to complete name. *)
 type env
 

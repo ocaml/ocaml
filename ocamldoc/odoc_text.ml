@@ -33,7 +33,7 @@ module Texter =
     let count s c =
       let count = ref 0 in
       for i = 0 to String.length s - 1 do
-	if s.[i] = c then incr count
+        if s.[i] = c then incr count
       done;
       !count
 
@@ -42,13 +42,13 @@ module Texter =
       let len = String.length s in
       let b = Buffer.create (len + n) in
       for i = 0 to len - 1 do
-	if s.[i] = c && !remain > 0 then
-	  (
-	   Printf.bprintf b "\\%c" c;
-	   decr remain
-	  )
-	else
-	  Buffer.add_char b s.[i]
+        if s.[i] = c && !remain > 0 then
+          (
+           Printf.bprintf b "\\%c" c;
+           decr remain
+          )
+        else
+          Buffer.add_char b s.[i]
       done;
       Buffer.contents b
 
@@ -56,22 +56,29 @@ module Texter =
       let open_brackets = count s '[' in
       let close_brackets = count s ']' in
       if open_brackets > close_brackets then
-	escape_n s '[' (open_brackets - close_brackets)
+        escape_n s '[' (open_brackets - close_brackets)
       else
+<<<<<<< .courant
 	if close_brackets > open_brackets then
 	  escape_n s ']' (close_brackets - open_brackets) 
 	else
 	  s
+=======
+        if close_brackets > open_brackets then
+          escape_n s ']' (close_brackets - open_brackets)
+        else
+          s
+>>>>>>> .fusion-droit.r10497
 
     let escape_raw s =
       let len = String.length s in
       let b = Buffer.create len in
       for i = 0 to len - 1 do
-	match s.[i] with
-	  '[' | ']' | '{' | '}' ->
-	    Printf.bprintf b "\\%c" s.[i]
-	| c ->
-	    Buffer.add_char b c
+        match s.[i] with
+          '[' | ']' | '{' | '}' ->
+            Printf.bprintf b "\\%c" s.[i]
+        | c ->
+            Buffer.add_char b c
       done;
       Buffer.contents b
 
@@ -82,8 +89,8 @@ module Texter =
 
     and p_list b l =
       List.iter
-	(fun t -> p b "{- " ; p_text b t ; p b "}\n")
-	l
+        (fun t -> p b "{- " ; p_text b t ; p b "}\n")
+        l
 
     and p_text_element b = function
       | Raw s -> p b "%s" (escape_raw s)
@@ -101,6 +108,7 @@ module Texter =
       | Newline -> p b "\n" 
       | Block  t -> p_text b t
       | Title (n, l_opt, t) ->
+<<<<<<< .courant
 	  p b "{%d%s " 
 	    n
 	    (match l_opt with
@@ -109,8 +117,19 @@ module Texter =
 	    );
 	  p_text b t ; 
 	  p b "}"
+=======
+          p b "{%d%s "
+            n
+            (match l_opt with
+              None -> ""
+            | Some s -> ":"^s
+            );
+          p_text b t ;
+          p b "}"
+>>>>>>> .fusion-droit.r10497
       | Latex s -> p b "{%% %s%%}" s
       | Link (s,t) ->
+<<<<<<< .courant
 	  p b "{{:%s}" s;
 	  p_text b t ;
 	  p b "}"
@@ -132,15 +151,62 @@ module Texter =
 	   in
 	   p b "{!%s:%s}" sk s	   
 	  )
+=======
+          p b "{{:%s}" s;
+          p_text b t ;
+          p b "}"
+      | Ref (name, kind_opt, text_opt) ->
+        begin
+          p b "%s{!%s%s}"
+            (match text_opt with None -> "" | Some _ -> "{")
+            (match kind_opt with
+               None -> ""
+             | Some k ->
+                 let s =
+                   match k with
+                     RK_module -> "module"
+                   | RK_module_type -> "modtype"
+                   | RK_class -> "class"
+                   | RK_class_type -> "classtype"
+                   | RK_value -> "val"
+                   | RK_type -> "type"
+                   | RK_exception -> "exception"
+                   | RK_attribute -> "attribute"
+                   | RK_method -> "method"
+                   | RK_section _ -> "section"
+                 in
+                 s^":"
+            )
+            name;
+          match text_opt with
+            None -> ()
+          | Some t -> p_text b t; p b "}"
+        end
+>>>>>>> .fusion-droit.r10497
       | Superscript t -> p b "{^" ; p_text b t ; p b "}"
       | Subscript t -> p b "{_" ; p_text b t ; p b "}"
       | Module_list l -> 
+<<<<<<< .courant
 	  p b "{!modules:";
 	  List.iter (fun s -> p b " %s" s) l;
 	  p b "}"
       |	Index_list ->
 	  p b "{!indexlist}"
 	    
+=======
+          p b "{!modules:";
+          List.iter (fun s -> p b " %s" s) l;
+          p b "}"
+      | Index_list ->
+          p b "{!indexlist}"
+      | Custom (s,t) ->
+          p b "{%s " s;
+          p_text b t;
+          p b "}"
+      | Target (target, code) ->
+          p b "{%%%s: %s}" target (escape_raw code)
+
+>>>>>>> .fusion-droit.r10497
     let string_of_text s =
       let b = Buffer.create 256 in
       p_text b s;

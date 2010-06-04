@@ -27,7 +27,6 @@ let remove_trailing_blanks s =
 let print_DEBUG s = print_string s; print_newline ()
 %}
 
-%token ERROR
 %token END
 %token <int * string option> Title
 %token BOLD
@@ -47,7 +46,9 @@ let print_DEBUG s = print_string s; print_newline ()
 %token VERB
 %token END_VERB
 %token LATEX
-%token END_LATEX
+%token <string> Target
+%token END_TARGET
+%token LBRACE
 
 %token ELE_REF
 %token VAL_REF
@@ -96,6 +97,20 @@ text_element_list:
 | text_element text_element_list { $1 :: $2 }
 ;
 
+ele_ref_kind:
+  ELE_REF { None }
+| VAL_REF { Some RK_value }
+| TYP_REF { Some RK_type }
+| EXC_REF { Some RK_exception }
+| MOD_REF { Some RK_module }
+| MODT_REF { Some RK_module_type }
+| CLA_REF { Some RK_class }
+| CLT_REF { Some RK_class_type }
+| ATT_REF { Some RK_attribute }
+| MET_REF { Some RK_method }
+| SEC_REF { Some (RK_section [])}
+;
+
 text_element:
   Title text END { let n, l_opt = $1 in Title (n, l_opt, $2) }
 | BOLD text END { Bold $2 }
@@ -110,14 +125,28 @@ text_element:
 | ENUM list END { Enum $2 }
 | CODE string END_CODE { Code $2 }
 | CODE_PRE string END_CODE_PRE { CodePre $2 }
+<<<<<<< .courant
 | ELE_REF string END { 
+=======
+| ele_ref_kind string END  {
+>>>>>>> .fusion-droit.r10497
       let s2 = remove_beginning_blanks $2 in
       let s3 = remove_trailing_blanks s2 in
+<<<<<<< .courant
       Ref (s3, None) 
+=======
+      Ref (s3, $1, None)
+>>>>>>> .fusion-droit.r10497
      }
+<<<<<<< .courant
 | VAL_REF string END { 
       let s2 = remove_beginning_blanks $2 in
+=======
+| LBRACE ele_ref_kind string END text END {
+      let s2 = remove_beginning_blanks $3 in
+>>>>>>> .fusion-droit.r10497
       let s3 = remove_trailing_blanks s2 in
+<<<<<<< .courant
       Ref (s3, Some RK_value) 
      }
 | TYP_REF string END { 
@@ -165,6 +194,11 @@ text_element:
       let s3 = remove_trailing_blanks s2 in
       Ref (s3, Some (RK_section []))
      }
+=======
+      Ref (s3, $2, Some $5)
+    }
+
+>>>>>>> .fusion-droit.r10497
 | MOD_LIST_REF string END { 
       let s2 = remove_beginning_blanks $2 in
       let s3 = remove_trailing_blanks s2 in
@@ -173,7 +207,8 @@ text_element:
      }
 | INDEX_LIST { Index_list } 
 | VERB string END_VERB { Verbatim $2 }
-| LATEX string END_LATEX { Latex $2 }
+| LATEX string END_TARGET { Latex $2 }
+| Target string END_TARGET { Target ($1, $2) }
 | LINK string END text END { Link ($2, $4) }
 | BLANK_LINE { Newline }
 | BEGIN_SHORTCUT_LIST_ITEM shortcut_list END_SHORTCUT_LIST { List $2 }

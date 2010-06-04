@@ -60,7 +60,13 @@ and module_kind =
   | Module_apply of module_kind * module_kind
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
+<<<<<<< .courant
         
+=======
+  | Module_typeof of string (** by now only the code of the module expression *)
+  | Module_unpack of string * module_type_alias (** code of the expression and module type alias *)
+
+>>>>>>> .fusion-droit.r10497
 (** Representation of a module. *)
 and t_module = {
     m_name : Name.t ; 
@@ -86,6 +92,7 @@ and module_type_kind =
   | Module_type_functor of module_parameter * module_type_kind
   | Module_type_alias of module_type_alias (** complete name and corresponding module type if we found it *)
   | Module_type_with of module_type_kind * string (** the module type kind and the code of the with constraint *)
+  | Module_type_typeof of string (** by now only the code of the module expression *)
 
 (** Representation of a module type. *)
 and t_module_type = {
@@ -241,6 +248,8 @@ let rec module_elements ?(trans=true) m =
 	    m_code = None ;
 	    m_code_intf = None ;
           }
+    | Module_typeof _ -> []
+    | Module_unpack _ -> []
 (*
    module_type_elements ~trans: trans
    { mt_name = "" ; mt_info = None ; mt_type = None ;
@@ -269,6 +278,7 @@ and module_type_elements ?(trans=true) mt =
           | Some mt -> module_type_elements mt
 	else
           []
+  | Some (Module_type_typeof _) -> []
   in
   iter_kind mt.mt_kind
 
@@ -356,7 +366,8 @@ let rec module_type_parameters ?(trans=true) mt =
           []
     | Some (Module_type_struct _) ->
         []
-    | None ->
+    | Some (Module_type_typeof _) -> []
+      | None ->
         []
   in 
   iter mt.mt_kind
@@ -396,8 +407,14 @@ and module_parameters ?(trans=true) m =
             mt_loc = Odoc_types.dummy_loc }
     | Module_struct _ 
     | Module_apply _ 
+<<<<<<< .courant
     | Module_with _ ->
 	[]
+=======
+    | Module_with _
+    | Module_typeof _
+    | Module_unpack _ -> []
+>>>>>>> .fusion-droit.r10497
   in
   iter m.m_kind
 
@@ -424,6 +441,7 @@ let rec module_type_is_functor mt =
     | Some (Module_type_with (k, _)) ->
         iter (Some k)
     | Some (Module_type_struct _) 
+    | Some (Module_type_typeof _)
     | None -> false
   in
   iter mt.mt_kind

@@ -109,7 +109,9 @@ let rec string_of_text t =
       | Odoc_types.Latex s -> "{% "^s^" %}"
       | Odoc_types.Link (s, t) ->
           "["^s^"]"^(string_of_text t)
-      | Odoc_types.Ref (name, _) ->
+      | Odoc_types.Ref (name, _, Some text) ->
+          Printf.sprintf "[%s]" (string_of_text text)
+      | Odoc_types.Ref (name, _, None) ->
           iter (Odoc_types.Code name)
       | Odoc_types.Superscript t ->
           "^{"^(string_of_text t)^"}"
@@ -122,6 +124,7 @@ let rec string_of_text t =
 	    )
       |	Odoc_types.Index_list ->
 	  ""
+      | Odoc_types.Target _ -> ""
   in
   String.concat "" (List.map iter t)
 
@@ -242,7 +245,8 @@ let rec text_no_title_no_list t =
     | Odoc_types.Code _
     | Odoc_types.CodePre _
     | Odoc_types.Verbatim _
-    | Odoc_types.Ref _ -> [t_ele]
+    | Odoc_types.Ref _
+    | Odoc_types.Target _ -> [t_ele]
     | Odoc_types.Newline ->  [Odoc_types.Newline]
     | Odoc_types.Block t -> [Odoc_types.Block (text_no_title_no_list t)]
     | Odoc_types.Bold t -> [Odoc_types.Bold (text_no_title_no_list t)]
@@ -256,11 +260,19 @@ let rec text_no_title_no_list t =
     | Odoc_types.Superscript t -> [Odoc_types.Superscript (text_no_title_no_list t)]
     | Odoc_types.Subscript t -> [Odoc_types.Subscript (text_no_title_no_list t)]
     | Odoc_types.Module_list l ->
+<<<<<<< .courant
 	list_concat (Odoc_types.Raw ", ")
 	  (List.map
 	     (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module))
 	     l
 	  )
+=======
+        list_concat (Odoc_types.Raw ", ")
+          (List.map
+             (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module, None))
+             l
+          )
+>>>>>>> .fusion-droit.r10497
     | Odoc_types.Index_list -> []
   in
   List.flatten (List.map iter t)
@@ -291,6 +303,7 @@ let get_titles_in_text t =
     | Odoc_types.Subscript t  -> iter_text t
     | Odoc_types.Module_list _ -> ()
     | Odoc_types.Index_list -> ()
+    | Odoc_types.Target _ -> ()
   and iter_text te =
     List.iter iter_ele te
   in
@@ -382,6 +395,12 @@ and first_sentence_text_ele text_ele =
   | Odoc_types.Subscript _
   | Odoc_types.Module_list _
   | Odoc_types.Index_list -> (false, text_ele, None)
+<<<<<<< .courant
+=======
+  | Odoc_types.Custom _
+  | Odoc_types.Target _ -> (false, text_ele, None)
+>>>>>>> .fusion-droit.r10497
+
 
 let first_sentence_of_text t =
   let (_,t2,_) = first_sentence_text t in
@@ -460,7 +479,8 @@ let remove_option typ =
     | Types.Tobject _
     | Types.Tfield _
     | Types.Tnil
-    | Types.Tvariant _ -> t
+    | Types.Tvariant _
+    | Types.Tpackage _ -> t
     | Types.Tlink t2
     | Types.Tsubst t2 -> iter t2.Types.desc
     | Types.Tproc _ -> t

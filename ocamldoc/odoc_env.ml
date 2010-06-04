@@ -28,22 +28,22 @@ type env = {
     env_modules : env_element list ;
     env_module_types : env_element list ;
     env_exceptions : env_element list ;
-  } 
+  }
 
 let empty = {
-  env_values = [] ; 
-  env_types = [] ; 
-  env_class_types = [] ; 
-  env_classes = [] ; 
-  env_modules = [] ; 
-  env_module_types = [] ; 
-  env_exceptions = [] ; 
-  } 
+  env_values = [] ;
+  env_types = [] ;
+  env_class_types = [] ;
+  env_classes = [] ;
+  env_modules = [] ;
+  env_module_types = [] ;
+  env_exceptions = [] ;
+  }
 
 (** Add a signature to an environment.  *)
 let rec add_signature env root ?rel signat =
   let qualify id = Name.concat root (Name.from_ident id) in
-  let rel_name id = 
+  let rel_name id =
     let n = Name.from_ident id in
     match rel with
       None -> n
@@ -54,18 +54,18 @@ let rec add_signature env root ?rel signat =
       Types.Tsig_value (ident, _) -> { env with env_values = (rel_name ident, qualify ident) :: env.env_values }
     | Types.Tsig_type (ident,_,_) -> { env with env_types = (rel_name ident, qualify ident) :: env.env_types }
     | Types.Tsig_exception (ident, _) -> { env with env_exceptions = (rel_name ident, qualify ident) :: env.env_exceptions }
-    | Types.Tsig_module (ident, modtype, _) -> 
-        let env2 = 
+    | Types.Tsig_module (ident, modtype, _) ->
+        let env2 =
           match modtype with (* A VOIR : le cas où c'est un identificateur, dans ce cas on n'a pas de signature *)
             Types.Tmty_signature s -> add_signature env (qualify ident) ~rel: (rel_name ident) s
           |  _ -> env
         in
         { env2 with env_modules = (rel_name ident, qualify ident) :: env2.env_modules }
-    | Types.Tsig_modtype (ident, modtype_decl) -> 
+    | Types.Tsig_modtype (ident, modtype_decl) ->
         let env2 =
           match modtype_decl with
             Types.Tmodtype_abstract ->
-              env 
+              env
           | Types.Tmodtype_manifest modtype ->
               match modtype with
                  (* A VOIR : le cas où c'est un identificateur, dans ce cas on n'a pas de signature *)
@@ -76,7 +76,7 @@ let rec add_signature env root ?rel signat =
     | Types.Tsig_class (ident, _, _) -> { env with env_classes = (rel_name ident, qualify ident) :: env.env_classes }
     | Types.Tsig_cltype (ident, _, _) -> { env with env_class_types = (rel_name ident, qualify ident) :: env.env_class_types }
   in
-  List.fold_left f env signat 
+  List.fold_left f env signat
 
 let add_exception env full_name =
   let simple_name = Name.simple full_name in
@@ -100,20 +100,20 @@ let add_module_type env full_name =
 
 let add_class env full_name =
   let simple_name = Name.simple full_name in
-  { env with 
+  { env with
     env_classes = (simple_name, full_name) :: env.env_classes ;
     (* we also add a type 'cause the class name may appear as a type *)
     env_types = (simple_name, full_name) :: env.env_types
   }
-    
+
 let add_class_type env full_name =
   let simple_name = Name.simple full_name in
-  { env with 
-    env_class_types = (simple_name, full_name) :: env.env_class_types ; 
+  { env with
+    env_class_types = (simple_name, full_name) :: env.env_class_types ;
     (* we also add a type 'cause the class type name may appear as a type *)
     env_types = (simple_name, full_name) :: env.env_types
   }
-    
+
 let full_module_name env n =
   try List.assoc n env.env_modules
   with Not_found ->
@@ -123,7 +123,7 @@ let full_module_name env n =
 
 let full_module_type_name env n =
   try List.assoc n env.env_module_types
-  with Not_found -> 
+  with Not_found ->
     print_DEBUG ("Module "^n^" not found with env=");
     List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_modules;
     n
@@ -133,16 +133,16 @@ let full_module_or_module_type_name env n =
   with Not_found -> full_module_type_name env n
 
 let full_type_name env n =
-  try 
+  try
     let full = List.assoc n env.env_types in
 (**    print_string ("type "^n^" is "^full);
     print_newline ();*)
     full
-  with Not_found -> 
+  with Not_found ->
 (**    print_string ("type "^n^" not found");
     print_newline ();*)
     n
-      
+
 let full_value_name env n =
   try List.assoc n env.env_values
   with Not_found -> n
@@ -156,14 +156,14 @@ let full_exception_name env n =
 
 let full_class_name env n =
   try List.assoc n env.env_classes
-  with Not_found -> 
+  with Not_found ->
     print_DEBUG ("Class "^n^" not found with env=");
     List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_classes;
     n
 
 let full_class_type_name env n =
   try List.assoc n env.env_class_types
-  with Not_found -> 
+  with Not_found ->
     print_DEBUG ("Class type "^n^" not found with env=");
     List.iter (fun (sn, fn) -> print_DEBUG ("("^sn^", "^fn^")")) env.env_class_types;
     n
@@ -194,6 +194,10 @@ let subst_type env t =
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
           t.Types.desc <- Types.Tconstr (new_p, l, a)
+      | Types.Tpackage (p, n, l) ->
+          let new_p =
+            Odoc_name.to_path (full_module_type_name env (Odoc_name.from_path p)) in
+          t.Types.desc <- Types.Tpackage (new_p, n, l)
       | Types.Tobject (_, ({contents=Some(p,tyl)} as r)) ->
           let new_p =
             Odoc_name.to_path (full_type_name env (Odoc_name.from_path p)) in
@@ -209,7 +213,7 @@ let subst_type env t =
   in
   iter t;
   t
-    
+
 
 let subst_module_type env t =
   let rec iter t =

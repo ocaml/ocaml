@@ -28,6 +28,9 @@ val sees : string list ref
 (** the since string *)
 val since : string option ref
 
+(** the before tag information *)
+val before : (string * string) list ref
+
 (** the deprecated flag *)
 val deprecated : string option ref
 

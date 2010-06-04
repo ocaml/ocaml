@@ -53,8 +53,17 @@ module Naming =
 
     (** Return the two html files names for the given module or class name.*)
     let html_files name =
-      let html_file = name^".html" in
-      let html_frame_file = name^"-frame.html" in
+      let qual =
+        try
+          let i = String.rindex name '.' in
+          match name.[i + 1] with
+          | 'A'..'Z' -> ""
+          | _ -> "-c"
+        with Not_found -> ""
+      in
+      let prefix = name^qual in
+      let html_file = prefix^".html" in
+      let html_frame_file = prefix^"-frame.html" in
       (html_file, html_frame_file)
 
     (** Return the target for the given prefix and simple name. *)
@@ -243,11 +252,16 @@ class virtual text =
       | Odoc_info.Title (n, l_opt, t) -> self#html_of_Title b n l_opt t
       | Odoc_info.Latex s -> self#html_of_Latex b s
       | Odoc_info.Link (s, t) -> self#html_of_Link b s t
-      | Odoc_info.Ref (name, ref_opt) -> self#html_of_Ref b name ref_opt
+      | Odoc_info.Ref (name, ref_opt, text_opt) ->
+          self#html_of_Ref b name ref_opt text_opt
       | Odoc_info.Superscript t -> self#html_of_Superscript b t
       | Odoc_info.Subscript t -> self#html_of_Subscript b t
       |	Odoc_info.Module_list l -> self#html_of_Module_list b l
       |	Odoc_info.Index_list -> self#html_of_Index_list b
+      | Odoc_info.Target (target, code) -> self#html_of_Target b ~target ~code
+
+    method html_of_Target b ~target ~code =
+      if String.lowercase target = "html" then bs b code else ()
 
     method html_of_Raw b s = bs b (self#escape s)
 
@@ -363,9 +377,7 @@ class virtual text =
 
     method html_of_Title b n label_opt t =
       let label1 = self#create_title_label (n, label_opt, t) in
-      bs b "<a name=\"";
-      bs b (Naming.label_target label1);
-      bs b "\"></a>\n";
+      bp b "<span id=\"%s\">" (Naming.label_target label1);
       let (tag_o, tag_c) =
 	if n > 6 then
 	  (Printf.sprintf "div class=\"h%d\"" n, "div")
@@ -378,7 +390,8 @@ class virtual text =
       self#html_of_text b t;
       bs b "</";
       bs b tag_c;
-      bs b ">"
+      bs b ">";
+      bs b "</span>"
 
     method html_of_Latex b _ = ()
       (* don't care about LaTeX stuff in HTML. *)
@@ -390,10 +403,15 @@ class virtual text =
       self#html_of_text b t;
       bs b "</a>"
 
-    method html_of_Ref b name ref_opt =
+    method html_of_Ref b name ref_opt text_opt =
       match ref_opt with
         None ->
-          self#html_of_text_element b (Odoc_info.Code name)
+          let text =
+            match text_opt with
+              None -> [Odoc_info.Code name]
+            | Some t -> t
+          in
+          self#html_of_text b text
       | Some kind ->
 	  let h name = Odoc_info.Code (Odoc_info.use_hidden_modules name) in
           let (target, text) =
@@ -412,8 +430,13 @@ class virtual text =
             | Odoc_info.RK_section t -> (Naming.complete_label_target name,
 					 Odoc_info.Italic [Raw (Odoc_info.string_of_text t)])
           in
+          let text =
+            match text_opt with
+              None -> [text]
+            | Some text -> text
+          in
           bs b ("<a href=\""^target^"\">");
-          self#html_of_text_element b text;
+          self#html_of_text b text;
 	  bs b "</a>"
 
     method html_of_Superscript b t =
@@ -523,6 +546,15 @@ class virtual info =
       | Some s ->
 	  bp b "<b>%s</b> %s<br>\n" Odoc_messages.since s
 
+    (** Print html code for the given "before" information.*)
+    method html_of_before b l =
+      let f (v, text) =
+        bp b "<b>%s %s </b> " Odoc_messages.before v;
+        self#html_of_text b text;
+        bs b "<br>\n"
+      in
+      List.iter f l
+
     (** Print html code for the given list of raised exceptions.*)
     method html_of_raised_exceptions b l =
       match l with
@@ -624,6 +656,7 @@ class virtual info =
           );
           self#html_of_author_list b info.M.i_authors;
           self#html_of_version_opt b info.M.i_version;
+          self#html_of_before b info.M.i_before;
           self#html_of_since_opt b info.M.i_since;
           self#html_of_raised_exceptions b info.M.i_raised_exceptions;
           self#html_of_return_opt b info.M.i_return_value;
@@ -756,6 +789,8 @@ class html =
 	"pre { margin-bottom: 4px }" ;
 
 	"div.sig_block {margin-left: 2em}" ;
+
+        "*:target { background: yellow; } " ;
       ]
 
     (** The style file for all pages. *)
@@ -1170,6 +1205,22 @@ class html =
       | Module_constraint (k, tk) ->
 	  (* TODO: on affiche quoi ? *)
 	  self#html_of_module_kind b father ?modu k
+      | Module_typeof s ->
+          bs b "<code class=\"type\">module type of ";
+          bs b (self#create_fully_qualified_module_idents_links father s);
+          bs b "</code>"
+      | Module_unpack (code, mta) ->
+          bs b "<code class=\"type\">";
+          begin
+            match mta.mta_module with
+              None ->
+                bs b (self#create_fully_qualified_module_idents_links father (self#escape code))
+            | Some mt ->
+                let (html_file, _) = Naming.html_files mt.mt_name in
+                bp b " <a href=\"%s\">%s</a> " html_file (self#escape code)
+          end;
+          bs b "</code>"
+
 
     method html_of_module_parameter b father p =
       self#html_of_text b
@@ -1237,6 +1288,10 @@ class html =
 	  bs b "<code class=\"type\"> ";
 	  bs b (self#create_fully_qualified_module_idents_links father s);
 	  bs b "</code>"
+      | Module_type_typeof s ->
+          bs b "<code class=\"type\">module type of ";
+          bs b (self#create_fully_qualified_module_idents_links father s);
+          bs b "</code>"
 
     (** Print html code to display the type of a module parameter.. *)
     method html_of_module_parameter_type b m_name p =
@@ -1255,11 +1310,10 @@ class html =
     (** Print html code for a value. *)
     method html_of_value b v =
       Odoc_info.reset_type_names ();
-      bs b "<pre>";
+      bs b "<pre>" ;
+      bp b "<span id=\"%s\">" (Naming.value_target v);
       bs b (self#keyword "val");
       bs b " ";
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.value_target v);
       (
        match v.val_code with
          None -> bs b (Name.simple v.val_name)
@@ -1268,6 +1322,7 @@ class html =
            self#output_code v.val_name (Filename.concat !Args.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple v.val_name)
       );
+      bs b "</span>";
       bs b " : ";
       self#html_of_type_expr b (Name.father v.val_name) v.val_type;
       bs b "</pre>";
@@ -1283,12 +1338,18 @@ class html =
     method html_of_exception b e =
       Odoc_info.reset_type_names ();
       bs b "<pre>";
+      bp b "<span id=\"%s\">" (Naming.exception_target e);
       bs b (self#keyword "exception");
       bs b " ";
+<<<<<<< .courant
       (* html mark *)
       bp b "<a name=\"%s\"></a>%s"
 	(Naming.exception_target e)
 	(Name.simple e.ex_name);
+=======
+      bs b (Name.simple e.ex_name);
+      bs b "</span>";
+>>>>>>> .fusion-droit.r10497
       (
        match e.ex_args with
          [] -> ()
@@ -1325,12 +1386,12 @@ class html =
 	| Some _, Type_variant _
 	| Some _, Type_record _ -> "<pre>"
 	);
+      bp b "<span id=\"%s\">" (Naming.type_target t);
       bs b ((self#keyword "type")^" ");
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.type_target t);
       self#html_of_type_expr_param_list b father t;
       (match t.ty_parameters with [] -> () | _ -> bs b " ");
-      bs b ((Name.simple t.ty_name)^" ");
+      bs b (Name.simple t.ty_name);
+      bs b "</span> ";
       let priv = t.ty_private = Asttypes.Private in
       (
        match t.ty_manifest with
@@ -1435,10 +1496,9 @@ class html =
     method html_of_attribute b a =
       let module_name = Name.father (Name.father a.att_value.val_name) in
       bs b "<pre>" ;
+      bp b "<span id=\"%s\">" (Naming.attribute_target a);
       bs b (self#keyword "val");
       bs b " ";
-      (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.attribute_target a);
       (
        if a.att_virtual then
          bs b ((self#keyword "virtual")^ " ")
@@ -1458,6 +1518,7 @@ class html =
            self#output_code a.att_value.val_name (Filename.concat !Args.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple a.att_value.val_name);
       );
+      bs b "</span>";
       bs b " : ";
       self#html_of_type_expr b module_name a.att_value.val_type;
       bs b "</pre>";
@@ -1467,10 +1528,10 @@ class html =
     method html_of_method b m =
       let module_name = Name.father (Name.father m.met_value.val_name) in
       bs b "<pre>";
-      bs b ((self#keyword "method")^" ");
       (* html mark *)
-      bp b "<a name=\"%s\"></a>" (Naming.method_target m);
-      if m.met_private then bs b ((self#keyword "private")^" ");
+      bp b "<span id=\"%s\">" (Naming.method_target m);
+     bs b ((self#keyword "method")^" ");
+       if m.met_private then bs b ((self#keyword "private")^" ");
       if m.met_virtual then bs b ((self#keyword "virtual")^" ");
       (
        match m.met_value.val_code with
@@ -1480,6 +1541,7 @@ class html =
            self#output_code m.met_value.val_name (Filename.concat !Args.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple m.met_value.val_name);
       );
+      bs b "</span>";
       bs b " : ";
       self#html_of_type_expr b module_name m.met_value.val_type;
       bs b "</pre>";
@@ -1773,10 +1835,9 @@ class html =
       Odoc_info.reset_type_names ();
       let (html_file, _) = Naming.html_files c.cl_name in
       bs b "<pre>";
-      bs b ((self#keyword "class")^" ");
-      (* we add a html tag, the same as for a type so we can
+      (* we add a html id, the same as for a type so we can
          go directly here when the class name is used as a type name *)
-      bp b "<a name=\"%s\"></a>"
+      bp b "<span name=\"%s\">"
         (Naming.type_target
            { ty_name = c.cl_name ;
              ty_info = None ; ty_parameters = [] ;
@@ -1785,6 +1846,7 @@ class html =
 	     ty_code = None ;
 	   }
 	);
+      bs b ((self#keyword "class")^" ");
       print_DEBUG "html#html_of_class : virtual or not" ;
       if c.cl_virtual then bs b ((self#keyword "virtual")^" ");
       (
@@ -1801,7 +1863,7 @@ class html =
        else
          bs b (Name.simple c.cl_name)
       );
-
+      bs b "</span>";
       bs b " : " ;
       self#html_of_class_parameter_list b father c ;
       self#html_of_class_kind b father ~cl: c c.cl_kind;
@@ -1820,10 +1882,9 @@ class html =
       let father = Name.father ct.clt_name in
       let (html_file, _) = Naming.html_files ct.clt_name in
       bs b "<pre>";
-      bs b ((self#keyword "class type")^" ");
-      (* we add a html tag, the same as for a type so we can
+      (* we add a html id, the same as for a type so we can
          go directly here when the class type name is used as a type name *)
-      bp b "<a name=\"%s\"></a>"
+      bp b "<span id=\"%s\">"
         (Naming.type_target
            { ty_name = ct.clt_name ;
              ty_info = None ; ty_parameters = [] ;
@@ -1832,6 +1893,7 @@ class html =
 	     ty_code = None ;
 	   }
 	);
+      bs b ((self#keyword "class type")^" ");
       if ct.clt_virtual then bs b ((self#keyword "virtual")^" ");
       (
        match ct.clt_type_parameters with
@@ -1846,6 +1908,7 @@ class html =
       else
         bs b (Name.simple ct.clt_name);
 
+      bs b "</span>";
       bs b " = ";
       self#html_of_class_type_kind b father ~ct ct.clt_kind;
       bs b "</pre>";
@@ -2266,6 +2329,7 @@ class html =
         self#print_header b self#title;
         bs b "<body>\n";
         bs b "<center><h1>";
+<<<<<<< .courant
 	bs b title;
 	bs b "</h1></center>\n" ;
 	let info = Odoc_info.apply_opt
@@ -2281,6 +2345,25 @@ class html =
 	 | Some i -> self#html_of_info ~indent: false b info
 	);
 	Buffer.output_buffer chanout b;
+=======
+        bs b title;
+        bs b "</h1></center>\n" ;
+        let info = Odoc_info.apply_opt
+            (Odoc_info.info_of_comment_file module_list)
+            !Odoc_info.Args.intro_file
+        in
+        (
+         match info with
+           None ->
+             self#html_of_Index_list b;
+             bs b "<br/>";
+             self#html_of_Module_list b
+               (List.map (fun m -> m.m_name) module_list);
+         | Some i -> self#html_of_info ~indent: false b info
+        );
+        bs b "</body>\n</html>";
+        Buffer.output_buffer chanout b;
+>>>>>>> .fusion-droit.r10497
         close_out chanout
       with
         Sys_error s ->

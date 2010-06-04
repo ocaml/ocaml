@@ -244,28 +244,36 @@ let lookup_exception name =
 class scan =
   object
     inherit Odoc_scan.scanner
+<<<<<<< .courant
     method scan_value v = 
+=======
+    method! scan_value v =
+>>>>>>> .fusion-droit.r10497
       add_known_element v.val_name (Odoc_search.Res_value v)
+<<<<<<< .courant
     method scan_type t = 
+=======
+    method! scan_type t =
+>>>>>>> .fusion-droit.r10497
       add_known_element t.ty_name (Odoc_search.Res_type t)
-    method scan_exception e =
+    method! scan_exception e =
       add_known_element e.ex_name (Odoc_search.Res_exception e)
-    method scan_attribute a =
+    method! scan_attribute a =
       add_known_element a.att_value.val_name
 	(Odoc_search.Res_attribute a)
-    method scan_method m =
+    method! scan_method m =
       add_known_element m.met_value.val_name
 	(Odoc_search.Res_method m)
-    method scan_class_pre c =
+    method! scan_class_pre c =
       add_known_element c.cl_name (Odoc_search.Res_class c);
       true
-    method scan_class_type_pre c =
+    method! scan_class_type_pre c =
       add_known_element c.clt_name (Odoc_search.Res_class_type c);
       true
-    method scan_module_pre m =
+    method! scan_module_pre m =
       add_known_element m.m_name (Odoc_search.Res_module m);
       true
-    method scan_module_type_pre m =
+    method! scan_module_type_pre m =
       add_known_element m.mt_name (Odoc_search.Res_module_type m);
       true
 
@@ -343,6 +351,34 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
           { mt_name = "" ; mt_info = None ; mt_type = None ;
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
             mt_loc = Odoc_types.dummy_loc }
+
+     | Module_typeof _ ->
+        (acc_b, acc_inc, acc_names)
+
+     | Module_unpack (code, mta) ->
+        begin
+          match mta.mta_module with
+            Some _ ->
+              (acc_b, acc_inc, acc_names)
+          | None ->
+              let mt_opt =
+                try Some (lookup_module_type mta.mta_name)
+                with Not_found -> None
+              in
+              match mt_opt with
+                None -> (acc_b, (Name.head m.m_name) :: acc_inc,
+                   (* we don't want to output warning messages for
+                      "sig ... end" or "struct ... end" modules not found *)
+                   (if mta.mta_name = Odoc_messages.struct_end or
+                      mta.mta_name = Odoc_messages.sig_end then
+                      acc_names
+                    else
+                      (NF_mt mta.mta_name) :: acc_names)
+                  )
+              | Some mt ->
+                  mta.mta_module <- Some mt ;
+                  (true, acc_inc, acc_names)
+        end
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) m.m_kind
         
@@ -362,6 +398,7 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
         iter_kind (acc_b, acc_inc, acc_names) k
 
     | Module_type_alias mta ->
+<<<<<<< .courant
         match mta.mta_module with
            Some _ ->
              (acc_b, acc_inc, acc_names)
@@ -383,6 +420,33 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
              | Some mt -> 
                  mta.mta_module <- Some mt ;
                  (true, acc_inc, acc_names)
+=======
+        begin
+          match mta.mta_module with
+            Some _ ->
+              (acc_b, acc_inc, acc_names)
+          | None ->
+              let mt_opt =
+                try Some (lookup_module_type mta.mta_name)
+                with Not_found -> None
+              in
+              match mt_opt with
+                None -> (acc_b, (Name.head mt.mt_name) :: acc_inc,
+                   (* we don't want to output warning messages for
+                      "sig ... end" or "struct ... end" modules not found *)
+                   (if mta.mta_name = Odoc_messages.struct_end or
+                      mta.mta_name = Odoc_messages.sig_end then
+                      acc_names
+                    else
+                      (NF_mt mta.mta_name) :: acc_names)
+                  )
+              | Some mt ->
+                  mta.mta_module <- Some mt ;
+                  (true, acc_inc, acc_names)
+        end
+    | Module_type_typeof _ ->
+        (acc_b, acc_inc, acc_names)
+>>>>>>> .fusion-droit.r10497
   in
   match mt.mt_kind with
     None -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
@@ -592,13 +656,23 @@ let rec assoc_comments_text_elements module_list t_ele =
   | List l -> List (List.map (assoc_comments_text module_list) l)
   | Enum l -> Enum (List.map (assoc_comments_text module_list) l)
   | Newline -> Newline
+<<<<<<< .courant
   | Block t -> Block (assoc_comments_text module_list t)
   | Superscript t -> Superscript (assoc_comments_text module_list t)
   | Subscript t -> Subscript (assoc_comments_text module_list t)
   | Title (n, l_opt, t) -> Title (n, l_opt, (assoc_comments_text module_list t))
   | Link (s, t) -> Link (s, (assoc_comments_text module_list t))
   | Ref (name, None) ->
+=======
+  | Block t -> Block (assoc_comments_text parent_name module_list t)
+  | Superscript t -> Superscript (assoc_comments_text parent_name module_list t)
+  | Subscript t -> Subscript (assoc_comments_text parent_name module_list t)
+  | Title (n, l_opt, t) -> Title (n, l_opt, (assoc_comments_text parent_name module_list t))
+  | Link (s, t) -> Link (s, (assoc_comments_text parent_name module_list t))
+  | Ref (initial_name, None, text_option) ->
+>>>>>>> .fusion-droit.r10497
       (
+<<<<<<< .courant
        match get_known_elements name with
 	 [] ->
 	   (
@@ -630,9 +704,65 @@ let rec assoc_comments_text_elements module_list t_ele =
            in
            add_verified (name, Some kind) ;
 	   Ref (name, Some kind)
+=======
+       let rec iter_parent ?parent_name name =
+         let res =
+           match get_known_elements name with
+             [] ->
+               (
+                try
+                  let re = Str.regexp ("^"^(Str.quote name)^"$") in
+                  let t = Odoc_search.find_section module_list re in
+                  let v2 = (name, Some (RK_section t)) in
+                  add_verified v2 ;
+                  (name, Some (RK_section t))
+              with
+                  Not_found ->
+                    (name, None)
+               )
+           | ele :: _ ->
+           (* we look for the first element with this name *)
+               let (name, kind) =
+                 match ele with
+                   Odoc_search.Res_module m -> (m.m_name, RK_module)
+                 | Odoc_search.Res_module_type mt -> (mt.mt_name, RK_module_type)
+                 | Odoc_search.Res_class c -> (c.cl_name, RK_class)
+                 | Odoc_search.Res_class_type ct -> (ct.clt_name, RK_class_type)
+                 | Odoc_search.Res_value v -> (v.val_name, RK_value)
+                 | Odoc_search.Res_type t -> (t.ty_name, RK_type)
+                 | Odoc_search.Res_exception e -> (e.ex_name, RK_exception)
+                 | Odoc_search.Res_attribute a -> (a.att_value.val_name, RK_attribute)
+                 | Odoc_search.Res_method m -> (m.met_value.val_name, RK_method)
+                 | Odoc_search.Res_section (_ ,t)-> assert false
+               in
+               add_verified (name, Some kind) ;
+               (name, Some kind)
+         in
+         match res with
+         | (name, Some k) -> Ref (name, Some k, text_option)
+         | (_, None) ->
+             match parent_name with
+               None ->
+                 Odoc_messages.pwarning (Odoc_messages.cross_element_not_found initial_name);
+                 Ref (initial_name, None, text_option)
+             | Some p ->
+                 let parent_name =
+                   match Name.father p with
+                     "" -> None
+                   | s -> Some s
+                 in
+                 iter_parent ?parent_name (Name.concat p initial_name)
+       in
+       iter_parent ~parent_name initial_name
+>>>>>>> .fusion-droit.r10497
       )
+<<<<<<< .courant
   | Ref (name, Some kind) -> 
+=======
+  | Ref (initial_name, Some kind, text_option) ->
+>>>>>>> .fusion-droit.r10497
       (
+<<<<<<< .courant
        let v = (name, Some kind) in
        if was_verified v then
 	 Ref (name, Some kind)
@@ -676,11 +806,72 @@ let rec assoc_comments_text_elements module_list t_ele =
 		Odoc_messages.pwarning (f_mes name);
 		Ref (name, None)
 	       )
+=======
+       let rec iter_parent ?parent_name name =
+         let v = (name, Some kind) in
+         if was_verified v then
+           Ref (name, Some kind, text_option)
+         else
+           let res =
+             match kind with
+             | RK_section _ ->
+                 (
+                  (** we just verify that we find an element of this kind with this name *)
+                  try
+                    let re = Str.regexp ("^"^(Str.quote name)^"$") in
+                    let t = Odoc_search.find_section module_list re in
+                    let v2 = (name, Some (RK_section t)) in
+                    add_verified v2 ;
+                    (name, Some (RK_section t))
+                  with
+                    Not_found ->
+                      (name, None)
+                 )
+             | _ ->
+                 let f =
+                   match kind with
+                     RK_module -> module_exists
+                   | RK_module_type -> module_type_exists
+                   | RK_class -> class_exists
+                   | RK_class_type -> class_type_exists
+                   | RK_value -> value_exists
+                   | RK_type -> type_exists
+                   | RK_exception -> exception_exists
+                   | RK_attribute -> attribute_exists
+                   | RK_method -> method_exists
+                   | RK_section _ -> assert false
+                 in
+                 if f name then
+                   (
+                    add_verified v ;
+                    (name, Some kind)
+                   )
+                 else
+                   (name, None)
+           in
+           match res with
+           | (name, Some k) -> Ref (name, Some k, text_option)
+           | (_, None) ->
+               match parent_name with
+                 None ->
+                   Odoc_messages.pwarning (not_found_of_kind kind initial_name);
+                   Ref (initial_name, None, text_option)
+               | Some p ->
+                   let parent_name =
+                     match Name.father p with
+                       "" -> None
+                     | s -> Some s
+                   in
+                   iter_parent ?parent_name (Name.concat p initial_name)
+       in
+       iter_parent ~parent_name initial_name
+>>>>>>> .fusion-droit.r10497
       )
   | Module_list l -> 
       Module_list l
   | Index_list ->
       Index_list
+  | Target (target, code) -> Target (target, code)
 
 and assoc_comments_text module_list text =
   List.map (assoc_comments_text_elements module_list) text
@@ -732,6 +923,8 @@ and assoc_comments_module_kind module_list mk =
   | Module_constraint (mk1, mtk) -> 
       Module_constraint (assoc_comments_module_kind module_list mk1,
                          assoc_comments_module_type_kind module_list mtk)
+  | Module_typeof _ -> mk
+  | Module_unpack _ -> mk
 
 and assoc_comments_module_type_kind module_list mtk =
   match mtk with
@@ -743,6 +936,7 @@ and assoc_comments_module_type_kind module_list mtk =
       mtk
   | Module_type_with (mtk1, s) ->
       Module_type_with (assoc_comments_module_type_kind module_list mtk1, s)
+  | Module_type_typeof _ -> mtk
 
 and assoc_comments_class_kind module_list ck =
   match ck with

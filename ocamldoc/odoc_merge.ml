@@ -23,6 +23,26 @@ open Odoc_exception
 open Odoc_class
 open Odoc_module
 
+let merge_before_tags l =
+  let rec iter acc = function
+    [] -> List.rev acc
+  | (v, text) :: q ->
+      let (l1, l2) = List.partition
+        (fun (v2,_) -> v = v2) q
+      in
+      let acc =
+        let text =
+          List.fold_left
+            (fun acc t -> acc @ [Raw " "] @ t)
+            text (List.map snd l1)
+        in
+        (v, text) :: acc
+      in
+      iter acc l2
+  in
+  iter [] l
+;;
+
 (** Merge two Odoctypes.info struture, completing the information of
    the first one with the information in the second one.
    The merge treatment depends on a given merge_option list.
@@ -83,7 +103,12 @@ let merge_info merge_options (m1 : info) (m2 : info) =
         else
           Some v1
   in
+<<<<<<< .courant
   let new_dep = 
+=======
+  let new_before = merge_before_tags (m1.i_before @ m2.i_before) in
+  let new_dep =
+>>>>>>> .fusion-droit.r10497
     match m1.i_deprecated, m2.i_deprecated with
       None, None -> None
     | None, Some t
@@ -170,6 +195,7 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     Odoc_types.i_version = new_version ;
     Odoc_types.i_sees = new_sees ;
     Odoc_types.i_since = new_since ;
+    Odoc_types.i_before = new_before ;
     Odoc_types.i_deprecated = new_dep ;
     Odoc_types.i_params = new_params ;
     Odoc_types.i_raised_exceptions = new_raised_exceptions ;
