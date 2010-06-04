@@ -366,7 +366,7 @@ L102:
         ldo     LOW(G(caml_young_limit))(%r1), %r4
 ; Call the Caml code
         ble     0(4, %r22)
-        copy    %r31, %r2        
+        copy    %r31, %r2
 L104:
 ; Pop the trap frame
         ldw     -8(%r30), %r31

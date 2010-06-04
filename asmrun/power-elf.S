@@ -204,7 +204,7 @@ caml_c_call:
         Storeglobal(12, caml_last_return_address, 11)
     /* Return to caller */
         blr
-        
+
 /* Raise an exception from C */
 
         .globl  caml_raise_exception
@@ -298,7 +298,7 @@ caml_start_program:
         stw     11, 4(1)
         mr      29, 1
     /* Reload allocation pointers */
-        Loadglobal(31, caml_young_ptr, 11) 
+        Loadglobal(31, caml_young_ptr, 11)
         Loadglobal(30, caml_young_limit, 11)
     /* Say we are back into Caml code */
         li      0, 0
@@ -316,9 +316,9 @@ caml_start_program:
         lwz     9, 0(1)
         lwz     10, 4(1)
         lwz     11, 8(1)
-        Storeglobal(9, caml_bottom_of_stack, 12) 
-        Storeglobal(10, caml_last_return_address, 12) 
-        Storeglobal(11, caml_gc_regs, 12) 
+        Storeglobal(9, caml_bottom_of_stack, 12)
+        Storeglobal(10, caml_last_return_address, 12)
+        Storeglobal(11, caml_gc_regs, 12)
         addi    1, 1, 16
     /* Update allocation pointer */
         Storeglobal(31, caml_young_ptr, 11)
@@ -396,7 +396,7 @@ caml_callback2_exn:
         mr      5, 0
         Addrglobal(12, caml_apply2)
         b       .L102
-        
+
         .globl  caml_callback3_exn
         .type   caml_callback3_exn, @function
 caml_callback3_exn:
@@ -418,4 +418,3 @@ caml_system__frametable:
         .long   .L105 + 4       /* return address into callback */
         .short  -1              /* negative size count => use callback link */
         .short  0               /* no roots here */
-

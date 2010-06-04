@@ -1,13 +1,13 @@
 ;*********************************************************************
-;                                                                     
-;                           Objective Caml                            
 ;
-;            Xavier Leroy, projet Gallium, INRIA Rocquencourt         
+;                           Objective Caml
 ;
-;  Copyright 2006 Institut National de Recherche en Informatique et   
-;  en Automatique.  All rights reserved.  This file is distributed    
-;  under the terms of the GNU Library General Public License, with    
-;  the special exception on linking described in file ../LICENSE.     
+;            Xavier Leroy, projet Gallium, INRIA Rocquencourt
+;
+;  Copyright 2006 Institut National de Recherche en Informatique et
+;  en Automatique.  All rights reserved.  This file is distributed
+;  under the terms of the GNU Library General Public License, with
+;  the special exception on linking described in file ../LICENSE.
 ;
 ;*********************************************************************
 
@@ -46,11 +46,11 @@ caml_call_gc:
         mov     caml_last_return_address, rax
         lea     rax, [rsp+8]
         mov     caml_bottom_of_stack, rax
-L105:  
+L105:
     ; Save caml_young_ptr, caml_exception_pointer
 	mov	caml_young_ptr, r15
 	mov	caml_exception_pointer, r14
-    ; Build array of registers, save it into caml_gc_regs 
+    ; Build array of registers, save it into caml_gc_regs
         push    r13
         push    r12
         push    rbp
@@ -65,7 +65,7 @@ L105:
         push    rbx
         push    rax
         mov     caml_gc_regs, rsp
-    ; Save floating-point registers 
+    ; Save floating-point registers
         sub     rsp, 16*8
         movlpd  QWORD PTR [rsp + 0*8], xmm0
         movlpd  QWORD PTR [rsp + 1*8], xmm1
@@ -83,9 +83,11 @@ L105:
         movlpd  QWORD PTR [rsp + 13*8], xmm13
         movlpd  QWORD PTR [rsp + 14*8], xmm14
         movlpd  QWORD PTR [rsp + 15*8], xmm15
-    ; Call the garbage collector 
-        call    caml_garbage_collection
-    ; Restore all regs used by the code generator 
+    ; Call the garbage collector
+        sub rsp, 32      ; PR#5008: bottom 32 bytes are reserved for callee
+        call caml_garbage_collection
+        add rsp, 32      ; PR#5008
+    ; Restore all regs used by the code generator
         movlpd  xmm0, QWORD PTR [rsp + 0*8]
         movlpd  xmm1, QWORD PTR [rsp + 1*8]
         movlpd  xmm2, QWORD PTR [rsp + 2*8]
@@ -116,10 +118,10 @@ L105:
         pop     rbp
         pop     r12
         pop     r13
-    ; Restore caml_young_ptr, caml_exception_pointer 
+    ; Restore caml_young_ptr, caml_exception_pointer
 	mov	r15, caml_young_ptr
 	mov	r14, caml_exception_pointer
-    ; Return to caller 
+    ; Return to caller
         ret
 
         PUBLIC  caml_alloc1
@@ -181,41 +183,41 @@ caml_allocN:
         jb      L103
         ret
 L103:
-        push    rax                       ; save desired size 
+        push    rax                       ; save desired size
         mov     rax, [rsp + 8]
         mov     caml_last_return_address, rax
         lea     rax, [rsp + 16]
         mov     caml_bottom_of_stack, rax
         call    L105
-        pop     rax                      ; recover desired size 
+        pop     rax                      ; recover desired size
         jmp     caml_allocN
 
-; Call a C function from Caml 
+; Call a C function from Caml
 
         PUBLIC  caml_c_call
         ALIGN   16
 caml_c_call:
-    ; Record lowest stack address and return address 
+    ; Record lowest stack address and return address
         pop     r12
         mov     caml_last_return_address, r12
         mov     caml_bottom_of_stack, rsp
-    ; Make the exception handler and alloc ptr available to the C code 
+    ; Make the exception handler and alloc ptr available to the C code
 	mov	caml_young_ptr, r15
 	mov	caml_exception_pointer, r14
-    ; Call the function (address in rax) 
+    ; Call the function (address in rax)
         call    rax
-    ; Reload alloc ptr 
+    ; Reload alloc ptr
 	mov	r15, caml_young_ptr
-    ; Return to caller 
+    ; Return to caller
 	push	r12
 	ret
 
-; Start the Caml program 
+; Start the Caml program
 
         PUBLIC  caml_start_program
         ALIGN   16
 caml_start_program:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push    rbx
         push    rbp
         push    rsi
@@ -235,39 +237,39 @@ caml_start_program:
         movapd  OWORD PTR [rsp + 7*16], xmm13
         movapd  OWORD PTR [rsp + 8*16], xmm14
         movapd  OWORD PTR [rsp + 9*16], xmm15
-    ; Initial entry point is caml_program 
+    ; Initial entry point is caml_program
         lea     r12, caml_program
-    ; Common code for caml_start_program and caml_callback* 
+    ; Common code for caml_start_program and caml_callback*
 L106:
-    ; Build a callback link 
-	sub	rsp, 8	; stack 16-aligned 
+    ; Build a callback link
+	sub	rsp, 8	; stack 16-aligned
         push    caml_gc_regs
         push    caml_last_return_address
         push    caml_bottom_of_stack
-    ; Setup alloc ptr and exception ptr 
+    ; Setup alloc ptr and exception ptr
 	mov	r15, caml_young_ptr
 	mov	r14, caml_exception_pointer
-    ; Build an exception handler 
+    ; Build an exception handler
         lea     r13, L108
         push    r13
         push    r14
         mov     r14, rsp
-    ; Call the Caml code 
+    ; Call the Caml code
         call    r12
 L107:
-    ; Pop the exception handler 
+    ; Pop the exception handler
         pop     r14
-        pop     r12    ; dummy register 
+        pop     r12    ; dummy register
 L109:
-    ; Update alloc ptr and exception ptr 
+    ; Update alloc ptr and exception ptr
 	mov	caml_young_ptr, r15
 	mov	caml_exception_pointer, r14
-    ; Pop the callback restoring, link the global variables 
+    ; Pop the callback restoring, link the global variables
         pop     caml_bottom_of_stack
         pop     caml_last_return_address
         pop     caml_gc_regs
 	add	rsp, 8
-    ; Restore callee-save registers. 
+    ; Restore callee-save registers.
         movapd  xmm6, OWORD PTR [rsp + 0*16]
         movapd  xmm7, OWORD PTR [rsp + 1*16]
         movapd  xmm8, OWORD PTR [rsp + 2*16]
@@ -291,7 +293,7 @@ L109:
         ret
 L108:
     ; Exception handler
-    ; Mark the bucket as an exception result and return it 
+    ; Mark the bucket as an exception result and return it
         or      rax, 2
         jmp     L109
 
@@ -318,7 +320,7 @@ L110:
         pop     r14                  ; Recover previous exception handler
         ret                          ; Branch to handler
 
-; Raise an exception from C 
+; Raise an exception from C
 
         PUBLIC  caml_raise_exception
         ALIGN   16
@@ -327,8 +329,8 @@ caml_raise_exception:
         jne     L111
         mov     rax, rcx             ; First argument is exn bucket
         mov     rsp, caml_exception_pointer
-        pop     r14                  ; Recover previous exception handler 
-        mov     r15, caml_young_ptr ; Reload alloc ptr 
+        pop     r14                  ; Recover previous exception handler
+        mov     r15, caml_young_ptr ; Reload alloc ptr
         ret
 L111:
         mov     r12, rcx             ; Save exception bucket in r12
@@ -340,16 +342,16 @@ L111:
         call    caml_stash_backtrace
         mov     rax, r12             ; Recover exception bucket
         mov     rsp, caml_exception_pointer
-        pop     r14                  ; Recover previous exception handler 
-        mov     r15, caml_young_ptr ; Reload alloc ptr 
+        pop     r14                  ; Recover previous exception handler
+        mov     r15, caml_young_ptr ; Reload alloc ptr
         ret
 
-; Callback from C to Caml 
+; Callback from C to Caml
 
         PUBLIC  caml_callback_exn
         ALIGN   16
 caml_callback_exn:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push    rbx
         push    rbp
         push    rsi
@@ -369,16 +371,16 @@ caml_callback_exn:
         movapd  OWORD PTR [rsp + 7*16], xmm13
         movapd  OWORD PTR [rsp + 8*16], xmm14
         movapd  OWORD PTR [rsp + 9*16], xmm15
-    ; Initial loading of arguments 
-        mov     rbx, rcx      ; closure 
-        mov     rax, rdx      ; argument 
-        mov     r12, [rbx]    ; code pointer 
+    ; Initial loading of arguments
+        mov     rbx, rcx      ; closure
+        mov     rax, rdx      ; argument
+        mov     r12, [rbx]    ; code pointer
         jmp     L106
 
         PUBLIC  caml_callback2_exn
         ALIGN   16
 caml_callback2_exn:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push    rbx
         push    rbp
         push    rsi
@@ -398,17 +400,17 @@ caml_callback2_exn:
         movapd  OWORD PTR [rsp + 7*16], xmm13
         movapd  OWORD PTR [rsp + 8*16], xmm14
         movapd  OWORD PTR [rsp + 9*16], xmm15
-    ; Initial loading of arguments 
+    ; Initial loading of arguments
         mov     rdi, rcx        ; closure
-        mov     rax, rdx        ; first argument 
-        mov     rbx, r8         ; second argument 
-        lea     r12, caml_apply2  ; code pointer 
+        mov     rax, rdx        ; first argument
+        mov     rbx, r8         ; second argument
+        lea     r12, caml_apply2  ; code pointer
         jmp     L106
 
         PUBLIC  caml_callback3_exn
         ALIGN   16
 caml_callback3_exn:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push    rbx
         push    rbp
         push    rsi
@@ -428,12 +430,12 @@ caml_callback3_exn:
         movapd  OWORD PTR [rsp + 7*16], xmm13
         movapd  OWORD PTR [rsp + 8*16], xmm14
         movapd  OWORD PTR [rsp + 9*16], xmm15
-    ; Initial loading of arguments 
+    ; Initial loading of arguments
         mov     rsi, rcx        ; closure
-        mov     rax, rdx        ; first argument 
-        mov     rbx, r8         ; second argument 
-        mov     rdi, r9         ; third argument 
-        lea     r12, caml_apply3      ; code pointer 
+        mov     rax, rdx        ; first argument
+        mov     rbx, r8         ; second argument
+        mov     rdi, r9         ; third argument
+        lea     r12, caml_apply3      ; code pointer
         jmp     L106
 
         PUBLIC  caml_ml_array_bound_error
@@ -445,10 +447,10 @@ caml_ml_array_bound_error:
         .DATA
         PUBLIC  caml_system__frametable
 caml_system__frametable LABEL QWORD
-        QWORD   1           ; one descriptor 
-        QWORD   L107        ; return address into callback 
-        WORD    -1          ; negative frame size => use callback link 
-        WORD    0           ; no roots here 
+        QWORD   1           ; one descriptor
+        QWORD   L107        ; return address into callback
+        WORD    -1          ; negative frame size => use callback link
+        WORD    0           ; no roots here
         ALIGN   8
 
         PUBLIC  caml_negf_mask

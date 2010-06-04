@@ -29,6 +29,7 @@
 #include "mlvalues.h"
 #include "osdeps.h"
 #include "printexc.h"
+#include "stack.h"
 #include "sys.h"
 #include "natdynlink.h"
 #ifdef HAS_UI
@@ -144,17 +145,20 @@ void caml_main(char **argv)
   static char proc_self_exe[256];
 #endif
   value res;
+  char tos;
 
   caml_init_ieee_floats();
   caml_init_custom_operations();
 #ifdef DEBUG
   caml_verb_gc = 63;
 #endif
+  caml_top_of_stack = &tos;
   parse_camlrunparam();
   caml_init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
                 percent_free_init, max_percent_free_init);
   init_atoms();
   caml_init_signals();
+  caml_debugger_init (); /* force debugger.o stub to be linked */
   exe_name = argv[0];
   if (exe_name == NULL) exe_name = "";
 #ifdef __linux__
