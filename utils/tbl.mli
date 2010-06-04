@@ -22,8 +22,9 @@ val add: 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
 val find: 'a -> ('a, 'b) t -> 'b
 val mem: 'a -> ('a, 'b) t -> bool
 val remove: 'a -> ('a,  'b) t -> ('a, 'b) t
-val iter: ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
+val iter: ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 val map: ('a -> 'b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
+val fold: ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 
 open Format
 

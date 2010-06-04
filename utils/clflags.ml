@@ -47,6 +47,8 @@ and use_prims = ref ""                  (* -use-prims ... *)
 and use_runtime = ref ""                (* -use-runtime ... *)
 and principal = ref false               (* -principal *)
 and recursive_types = ref false         (* -rectypes *)
+and strict_sequence = ref false         (* -strict-sequence *)
+and applicative_functors = ref true     (* -no-app-funct *)
 and make_runtime = ref false            (* -make_runtime *)
 and gprofile = ref false                (* -p *)
 and c_compiler = ref (None: string option) (* -cc *)
@@ -96,4 +98,3 @@ let std_include_dir () =
 
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
-
