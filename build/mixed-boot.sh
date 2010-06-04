@@ -4,19 +4,19 @@
 #                                                                       #
 #                            Objective Caml                             #
 #                                                                       #
-#         Nicolas Pouillard, projet Gallium, INRIA Rocquencourt         #
+#       Nicolas Pouillard, projet Gallium, INRIA Rocquencourt           #
 #                                                                       #
-#   Copyright 2008 Institut National de Recherche en Informatique et    #
+#   Copyright 2007 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file LICENSE.         #
+#   under the terms of the Q Public License version 1.0.                #
 #                                                                       #
 #########################################################################
 
-# $Id$
-
-set -e
+set -ex
 cd `dirname $0`/..
-. build/targets.sh
-set -x
-$OCAMLBUILD $@ byte_stdlib_mixed_mode $OCAMLC_BYTE $OCAMLLEX_BYTE $OCAMLBUILD_BYTE
+touch build/ocamlbuild_mixed_mode
+mkdir -p _build
+cp -rf boot _build/
+./build/mkconfig.sh
+./build/mkmyocamlbuild_config.sh
+./build/boot.sh
