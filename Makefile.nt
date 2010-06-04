@@ -17,9 +17,9 @@
 include config/Makefile
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -I stdlib -I otherlibs/dynlink
-COMPFLAGS=$(INCLUDES)
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
+CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
+COMPFLAGS=-strict-sequence -warn-error A $(INCLUDES)
 LINKFLAGS=
 CAMLYACC=boot/ocamlyacc
 YACCFLAGS=
@@ -29,7 +29,7 @@ DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
-         -I toplevel
+	 -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo utils/warnings.cmo \
@@ -84,10 +84,10 @@ DRIVER=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
   driver/main_args.cmo driver/main.cmo
 
 OPTDRIVER=driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
-  driver/optmain.cmo
+  driver/main_args.cmo driver/optmain.cmo
 
 TOPLEVEL=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
-  toplevel/genprintval.cmo toplevel/toploop.cmo \
+  driver/main_args.cmo toplevel/genprintval.cmo toplevel/toploop.cmo \
   toplevel/trace.cmo toplevel/topdirs.cmo toplevel/topmain.cmo
 
 TOPLEVELLIB=toplevel/toplevellib.cma
@@ -101,6 +101,7 @@ TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
 NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
   driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
+  driver/main_args.cmo \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
@@ -205,11 +206,15 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt ocamlbuildlib.native
+opt-core: runtimeopt ocamlopt libraryopt
+opt: opt-core otherlibrariesopt ocamlbuildlib.native
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt \
-	ocamlbuild.native camlp4opt ocamldoc.opt
+opt.opt: core opt-core ocamlc.opt all ocamlopt.opt ocamllex.opt \
+	 ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
+
+# Complete build using fast compilers
+world.opt: coldstart opt.opt
 
 # Installation
 install: installbyt installopt
@@ -295,7 +300,7 @@ partialclean::
 
 # The native toplevel
 
-ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx) 
+ocamlnat: ocamlopt otherlibs/dynlink/dynlink.cmxa $(NATTOPOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) otherlibs/dynlink/dynlink.cmxa -o ocamlnat $(NATTOPOBJS:.cmo=.cmx) -linkall
 
 toplevel/opttoploop.cmx: otherlibs/dynlink/dynlink.cmxa
@@ -309,31 +314,31 @@ otherlibs/dynlink/dynlink.cmxa: otherlibs/dynlink/natdynlink.ml
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e "s|%%LIBDIR%%|$(LIBDIR)|" \
-            -e "s|%%BYTERUN%%|ocamlrun|" \
-            -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
-            -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
-            -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
-            -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
-            -e "s|%%PACKLD%%|$(PACKLD)|" \
-            -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
-            -e "s|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|" \
-            -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-            -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
-            -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
-            -e "s|%%ARCH%%|$(ARCH)|" \
-            -e "s|%%MODEL%%|$(MODEL)|" \
-            -e "s|%%SYSTEM%%|$(SYSTEM)|" \
-            -e "s|%%EXT_OBJ%%|.$(O)|" \
-            -e "s|%%EXT_ASM%%|.$(S)|" \
-            -e "s|%%EXT_LIB%%|.$(A)|" \
-            -e "s|%%EXT_DLL%%|.dll|" \
-            -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
-            -e 's|%%ASM%%|$(ASM)|' \
-            -e 's|%%MKDLL%%|$(MKDLL)|' \
-            -e 's|%%MKEXE%%|$(MKEXE)|' \
-            -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
-            -e 's|%%CC_PROFILE%%||' \
-            utils/config.mlp > utils/config.ml
+	    -e "s|%%BYTERUN%%|ocamlrun|" \
+	    -e 's|%%CCOMPTYPE%%|$(CCOMPTYPE)|' \
+	    -e "s|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS)|" \
+	    -e "s|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
+	    -e "s|%%PARTIALLD%%|$(PARTIALLD)|" \
+	    -e "s|%%PACKLD%%|$(PACKLD)|" \
+	    -e "s|%%BYTECCLIBS%%|$(BYTECCLIBS)|" \
+	    -e "s|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|" \
+	    -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
+	    -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
+	    -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
+	    -e "s|%%ARCH%%|$(ARCH)|" \
+	    -e "s|%%MODEL%%|$(MODEL)|" \
+	    -e "s|%%SYSTEM%%|$(SYSTEM)|" \
+	    -e "s|%%EXT_OBJ%%|.$(O)|" \
+	    -e "s|%%EXT_ASM%%|.$(S)|" \
+	    -e "s|%%EXT_LIB%%|.$(A)|" \
+	    -e "s|%%EXT_DLL%%|.dll|" \
+	    -e "s|%%SYSTHREAD_SUPPORT%%|true|" \
+	    -e 's|%%ASM%%|$(ASM)|' \
+	    -e 's|%%MKDLL%%|$(MKDLL)|' \
+	    -e 's|%%MKEXE%%|$(MKEXE)|' \
+	    -e 's|%%MKMAINDLL%%|$(MKMAINDLL)|' \
+	    -e 's|%%CC_PROFILE%%||' \
+	    utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
 partialclean::
@@ -376,6 +381,9 @@ beforedepend:: parsing/linenum.ml
 ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
 	cd asmrun ; $(MAKEREC) meta.$(O) dynlink.$(O)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx) asmrun/meta.$(O) asmrun/dynlink.$(O)
+	@sed -e 's|@compiler@|$$topdir/ocamlc.opt|' \
+	  driver/ocamlcomp.sh.in > ocamlcomp.sh
+	@chmod +x ocamlcomp.sh
 
 partialclean::
 	rm -f ocamlc.opt
@@ -384,6 +392,9 @@ partialclean::
 
 ocamlopt.opt: $(OPTOBJS:.cmo=.cmx)
 	$(CAMLOPT) $(LINKFLAGS) -o ocamlopt.opt $(OPTOBJS:.cmo=.cmx)
+	@sed -e 's|@compiler@|$$topdir/ocamlopt.opt|' \
+	  driver/ocamlcomp.sh.in > ocamlcompopt.sh
+	@chmod +x ocamlcompopt.sh
 
 partialclean::
 	rm -f ocamlopt.opt
@@ -394,7 +405,7 @@ $(OPTOBJS:.cmo=.cmx): ocamlopt
 
 bytecomp/opcodes.ml: byterun/instruct.h
 	sed -n -e "/^enum/p" -e "s|,||g" -e "/^  /p" byterun/instruct.h | \
-        gawk -f tools/make-opcodes > bytecomp/opcodes.ml
+	gawk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 partialclean::
 	rm -f bytecomp/opcodes.ml
@@ -410,9 +421,9 @@ bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
 	(echo 'let builtin_exceptions = [|'; \
 	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
 	 sed -e '$$s/;$$//'; \
-         echo '|]'; \
-         echo 'let builtin_primitives = [|'; \
-         sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
+	 echo '|]'; \
+	 echo 'let builtin_primitives = [|'; \
+	 sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
 	 echo '|]') > bytecomp/runtimedef.ml
 
 partialclean::
@@ -550,9 +561,9 @@ clean::
 
 # Tools
 
-ocamltools:
+ocamltools: asmcomp/cmx_format.cmi
 	cd tools ; $(MAKEREC) all
-ocamltoolsopt.opt:
+ocamltoolsopt.opt: asmcomp/cmx_format.cmi
 	cd tools ; $(MAKEREC) opt.opt
 partialclean::
 	cd tools ; $(MAKEREC) clean
@@ -561,9 +572,9 @@ alldepend::
 
 # OCamldoc
 
-ocamldoc.byte: 
+ocamldoc.byte:
 	cd ocamldoc ; $(MAKEREC) all
-ocamldoc.opt: 
+ocamldoc.opt:
 	cd ocamldoc ; $(MAKEREC) opt.opt
 partialclean::
 	cd ocamldoc ; $(MAKEREC) clean
@@ -595,23 +606,23 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc otherlibraries ocamlbuild-mixed-boot ocamlbuild.byte
-	./build/camlp4-byte-only.sh
+	OCAMLBUILD_FIND=/usr/bin/find ./build/camlp4-byte-only.sh
 camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
-	./build/camlp4-native-only.sh
+	OCAMLBUILD_FIND=/usr/bin/find ./build/camlp4-native-only.sh
 
 # Ocamlbuild
 
 ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
-	./build/ocamlbuild-byte-only.sh
+	OCAMLBUILD_FIND=/usr/bin/find ./build/ocamlbuild-byte-only.sh
 ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	./build/ocamlbuild-native-only.sh
+	OCAMLBUILD_FIND=/usr/bin/find ./build/ocamlbuild-native-only.sh
 ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	./build/ocamlbuildlib-native-only.sh
+	OCAMLBUILD_FIND=/usr/bin/find ./build/ocamlbuildlib-native-only.sh
 
 
 .PHONY: ocamlbuild-mixed-boot
 ocamlbuild-mixed-boot:
-	./build/mixed-boot.sh
+	OCAMLBUILD_FIND=/usr/bin/find ./build/mixed-boot.sh
 partialclean::
 	rm -rf _build
 

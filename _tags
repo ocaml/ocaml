@@ -19,7 +19,9 @@ true: use_stdlib
 # The stdlib neither requires the stdlib nor debug information
 <stdlib/**>: -use_stdlib, -debug
 
-<**/*.ml*>: warn_Alez
+<**/*.ml*>: warn_error_A
+
+<{bytecomp,driver,stdlib,tools,asmcomp,toplevel,typing,utils,lex,parsing}/**>: strict_sequence
 
 "toplevel/topstart.byte": linkall
 
@@ -28,18 +30,18 @@ true: use_stdlib
 <ocamldoc/*.ml*>: include_unix, include_str, include_dynlink
 <ocamldoc/odoc.{byte,native}>: use_unix, use_str, use_dynlink
 
-<camlp4/**/*.ml*>: camlp4boot, -warn_Alez, warn_Ale
+<camlp4/**/*.ml*>: camlp4boot, warn_Z
 <camlp4/Camlp4_{config,import}.ml*>: -camlp4boot
-"camlp4/Camlp4_import.ml": -warn_Ale
-<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Ale, warn_a
+"camlp4/Camlp4_import.ml": -warn_Z
+<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Z, warn_a
 <camlp4/Camlp4Bin.{byte,native}> or <camlp4/{mkcamlp4,boot/camlp4boot}.byte>: use_dynlink
-"camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": warn_Alezv
+"camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": -warn_Z, warn_v
 <camlp4/Camlp4Printers/**.ml>: include_unix
 "camlp4/Camlp4/Struct/DynLoader.ml" or "camlp4/boot/Camlp4.ml": include_dynlink
 <camlp4/Camlp4Top/**>: include_toplevel
 <camlp4/camlp4{,boot,o,r,of,rf,oof,orf}.byte>: -debug
 
-<ocamlbuild/*>: -warn_Alez, include_unix
+<ocamlbuild/*>: include_unix
 
 <**/pervasives.ml> or <**/pervasives.mli> or <**/camlinternalOO.mli>: nopervasives
 <**/camlinternalOO*.cmx>: inline(0)
@@ -48,7 +50,7 @@ true: use_stdlib
 
 "tools/addlabels.ml": warn_s
 
-<debugger/main.byte> or <debugger/main.native>: use_unix, use_dynlink, linkall
+<debugger/main.byte> or <debugger/main.native>: use_unix, linkall
 <debugger/*.ml*>: include_unix
 
 <otherlibs/{,win32}unix/unix.cm{,x}a> or <otherlibs/str/str.cm{,x}a>: ocamlmklib
@@ -83,4 +85,3 @@ true: use_stdlib
 "otherlibs/labltk/browser/jglib.cma": -ocamlmklib
 "otherlibs/labltk/browser/main.byte": use_unix, use_str, ocamlbrowser, bootstrap_thread
 <otherlibs/labltk/{browser,jpf}/**.ml*>: include_unix, include_str
-<otherlibs/labltk/{tkanim,frx}/**.ml*>: include_unix

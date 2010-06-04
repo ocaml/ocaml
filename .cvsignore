@@ -1,4 +1,3 @@
-.cvsignore
 .depend
 configure
 ocamlc
@@ -17,3 +16,4 @@ _boot_log2
 _build
 _log
 myocamlbuild_config.ml
+ocamlnat

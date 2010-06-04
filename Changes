@@ -1,3 +1,123 @@
+Objective Caml 3.12.0:
+----------------------
+
+(Changes that can break existing programs are marked with a "*"  )
+
+Language features:
+- Shorthand notation for records: in expressions and patterns,
+    { lbl } stands for { lbl = lbl } and { M.lbl } for { M.lbl = lbl }
+- Record patterns of the form { lbl = pat; _ } to mark that not all
+  labels are listed, purposefully.  (See new warning below.)
+- Explicit naming of a generic type; in an expression
+  "fun ... (type t) ... -> e", the type t is considered abstract in its
+  scope (the arguments that follow it and the body of the function),
+  and then replaced by a fresh type variable. In particular, the type
+  t can be used in contexts where a type variable is not allowed
+  (e.g. for defining an exception in a local module).
+- Explicit polymorphic types and polymorphic recursion. In let
+  definitions, one can write an explicit polymorphic type just
+  immediately the function name; the polymorphism will be enforced,
+  and recursive calls may use the polymorphism.
+  The syntax is the same as for polymorphic methods:
+    "let [rec] <ident> : 'a1 ... 'an. <typexp> = ..."
+- First-class packages modules.
+  New kind of type expression, for packaged modules: (module PT).
+  New kind of expression, to pack a module as a first-class value:
+    (module MODEXPR : PT).
+  New kind of module expression, to unpack a first-class value as a module:
+    (val EXPR : PT).
+  PT is a package type of the form "S" or
+  "S with type t1 = ... and ... and type tn = ..." (S refers to a module type).
+- Local opening of modules in a subexpression.
+  Syntax: "let open M in e", or "M.(e)"
+- In class definitions, method and instance variable override can now
+  be made explicit, by writing "method!", "val!" or "inherit!" in place of
+  "method", "val" and "inherit". It is an error to override an
+  undefined member (or to use overriding inheritance when nothing get
+  overridden). Additionally, these constructs disactivate respectively
+  warnings 7 (method override, code 'M') and 13 (instance variable
+  override, code 'V'). Note that, by default, warning 7 is inactive
+  and warning 13 is active.
+- "Destructive" substitution in signatures.
+  By writing "<signature> with type t := <typeconstr>" and
+  "<signature> with module M := <module-path>" one replaces "t" and "M"
+  inside the signature, removing their respective fields. Among other
+  uses, this allows to merge two signatures containing identically
+  named fields.
+
+Compilers and toplevel:
+- Warnings are now numbered and can be switched on and off individually.
+  The old system with letters referring to sets of warnings is still
+  supported.
+- New warnings:
+  + 9 (code 'R') to signal record patterns without "; _" where
+    some labels of the record type are not listed in the pattern.
+  + 28 when giving a wildcard argument to a constant constructor in
+    a pattern-matching.
+  + 29 when an end-of-line appears unescaped in a string constant.
+  + 30 when the same constructor or record field is defined twice in
+    mutually-recursive type definitions.
+* The semantics of warning 7 (code 'M', method override) have changed
+  (it now detects all overrides, not just repeated definitions inside
+  the same class body), and it is now inactive by default.
+- Better error report in case of unbound qualified identifier: if the module
+  is unbound this error is reported in the first place.
+- Added option '-strict-sequence' to force left hand part of sequence to have
+  type unit.
+- Added option '-no-app-funct' to turn applicative functors off.
+  This option can help working around mysterious type incompatibilities
+  caused by the incomplete comparison of applicative paths F(X).t.
+
+Native-code compiler:
+- AMD64: shorter and slightly more efficient code generated for 
+  float comparisons.
+
+Standard library:
+- Format: new function ikfprintf analoguous to ifprintf with a continuation
+  argument.
+* PR#4210, #4245: stricter range checking in string->integer conversion
+  functions (int_of_string, Int32.of_string, Int64.of_string,
+  Nativeint.of_string).  The decimal string corresponding to
+  max_int + 1 is no longer accepted.
+- Scanf: to prevent confusion when mixing Scanf scanning functions and direct
+  low level input, value Scanf.stdin has been added.
+* Random: changed the algorithm to produce better randomness.  Now passes the
+  DieHard tests.
+- Map: implement functions from Set that make sense for Map.
+
+Other libraries:
+* Str: letters that constitute a word now include digits 0-9 and
+  underscore _.  This changes the interpretation of '\b' (word boundary)
+  in regexps, but is more consistent with other regexp libraries. (PR#4874).
+
+Ocamlbuild:
+- Add support for native dynlink.
+
+New tool:
+- ocamlobjinfo: displays various information, esp. dependencies, for
+  compiled OCaml files (.cmi, .cmo, .cma, .cmx, .cmxa, .cmxs, and bytecode
+  executables).  Extends and makes more official the old objinfo tool
+  that was installed by some OCaml packages.
+
+All tools:
+- PR#4857: add a -vnum option to display the version number and nothing else
+
+Bug Fixes:
+- PR#4012: Map.map and Map.mapi do not conform to specification
+- PR#4478: better error messages for type definition mismatches
+- PR#4742: finalisation function raising an exception blocks other finalisations
+- PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4964: parenthesized names for infix functions in annot files
+- PR#4970: better error message for instance variables
+- PR#4975: spelling mistakes
+- PR#4988: contravariance lost with ocamlc -i
+- PR#5004: problem in Buffer.add_channel with very large lengths.
+- PR#5008: on AMD64/MSVC port, rare float corruption during GC.
+- PR#5018: wrong exception raised by Dynlink.loadfile.
+- PR#5057: fatal typing error with local module + functor + polymorphic variant
+- Wrong type for Obj.add_offset.
+- Small problem with the representation of Int32, Int64, and Nativeint constants.
+
 Objective Caml 3.11.2:
 ----------------------
 
@@ -128,7 +248,7 @@ Compilers:
   are tail calls.
 - All compiler error messages now include a file name and location, for
   better interaction with Emacs' compilation mode.
-- Optimized compilation of "lazy e" when the argument "e" is 
+- Optimized compilation of "lazy e" when the argument "e" is
   already evaluated.
 - Optimized compilation of equality tests with a variant constant constructor.
 - The -dllib options recorded in libraries are no longer ignored when
@@ -181,7 +301,7 @@ Other libraries:
 - Dynlink: on some platforms, the Dynlink library is now available in
   native code. The boolean Dynlink.is_native allows the program to
   know whether it has been compiled in bytecode or in native code.
-- Bigarrays: added "unsafe_get" and "unsafe_set" 
+- Bigarrays: added "unsafe_get" and "unsafe_set"
   (non-bound-checking versions of "get" and "set").
 - Bigarrays: removed limitation "array dimension < 2^31".
 - Labltk: added support for TK 8.5.
@@ -211,7 +331,7 @@ Bug fixes:
   out-of-heap pointers.
 - PR#3915: updated most man pages.
 - PR#4261: type-checking of recursive modules
-- PR#4308: better stack backtraces for "spontaneous" exceptions such as 
+- PR#4308: better stack backtraces for "spontaneous" exceptions such as
   Stack_overflow, Out_of_memory, etc.
 - PR#4338: Str.global_substitute, Str.global_replace and the Str.*split*
   functions are now tail-recursive.
@@ -866,7 +986,7 @@ Type-checking:
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
   This new feature is also supported by ocamlbrowser.
-- Disable "method is overriden" warning when the method was explicitly
+- Disable "method is overridden" warning when the method was explicitly
   redefined as virtual beforehand (i.e. not through inheritance). Typing
   and semantics are unchanged.
 
