@@ -145,13 +145,16 @@ external ( or ) : bool -> bool -> bool = "%sequor"
    They do not fail on overflow. *)
 
 external ( ~- ) : int -> int = "%negint"
-(** Unary negation. You can also write [-e] instead of [~-e]. *)
+(** Unary negation. You can also write [- e] instead of [~- e]. *)
+
+external ( ~+ ) : int -> int = "%identity"
+(** Unary addition. You can also write [+ e] instead of [~+ e]. *)
 
 external succ : int -> int = "%succint"
-(** [succ x] is [x+1]. *)
+(** [succ x] is [x + 1]. *)
 
 external pred : int -> int = "%predint"
-(** [pred x] is [x-1]. *)
+(** [pred x] is [x - 1]. *)
 
 external ( + ) : int -> int -> int = "%addint"
 (** Integer addition. *)
@@ -168,7 +171,7 @@ external ( / ) : int -> int -> int = "%divint"
    Integer division rounds the real quotient of its arguments towards zero.
    More precisely, if [x >= 0] and [y > 0], [x / y] is the greatest integer
    less than or equal to the real quotient of [x] by [y].  Moreover,
-   [(-x) / y = x / (-y) = -(x / y)].  *)
+   [(- x) / y = x / (-y) = - (x / y)].  *)
 
 external ( mod ) : int -> int -> int = "%modint"
 (** Integer remainder.  If [y] is not zero, the result
@@ -237,7 +240,10 @@ external ( asr ) : int -> int -> int = "%asrint"
 *)
 
 external ( ~-. ) : float -> float = "%negfloat"
-(** Unary negation. You can also write [-.e] instead of [~-.e]. *)
+(** Unary negation. You can also write [-. e] instead of [~-. e]. *)
+
+external ( ~+. ) : float -> float = "%identity"
+(** Unary addition. You can also write [+. e] instead of [~+. e]. *)
 
 external ( +. ) : float -> float -> float = "%addfloat"
 (** Floating-point addition *)
