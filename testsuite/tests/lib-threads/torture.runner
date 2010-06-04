@@ -1,0 +1,1 @@
+./program < torture.data > torture.result 2> /dev/null || true

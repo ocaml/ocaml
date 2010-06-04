@@ -1,0 +1,13 @@
+(* $Id: length.mli 8482 2007-11-06 21:06:18Z weis $
+
+A testbed file for private type abbreviation definitions.
+
+We define a Length module to implement positive integers.
+
+*)
+
+type t = private int;;
+
+val make : int -> t;;
+
+external from : t -> int = "%identity";;

@@ -1,0 +1,7 @@
+Loading plug1.cma
+ABCDEF
+Loading plug2.cma
+This is stub1!
+This is stub2, calling stub1:
+This is stub1!
+Ok!

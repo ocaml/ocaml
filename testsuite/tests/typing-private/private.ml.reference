@@ -1,0 +1,88 @@
+
+#         module Foobar : sig type t = private int end
+#   module F0 : sig type t = private int end
+#   [A[A# 
+  let f (x : F0.t) = ([4mx[m : Foobar.t);; (* fails *)
+[mError: This expression has type F0.t but an expression was expected of type
+         Foobar.t
+#   module F : sig type t = Foobar.t end
+#   val f : F.t -> F.t = <fun>
+#   module M : sig type t = < m : int > end
+# module M1 : sig type t = private < m : int; .. > end
+# module M2 : sig type t = private < m : int; .. > end
+# [A# fun (x : M1.t) -> ([4mx[m : M2.t);; (* fails *)
+[mError: This expression has type M1.t but an expression was expected of type
+         M2.t
+#   module M3 : sig type t = private M1.t end
+# - : M3.t -> M1.t = <fun>
+# - : M3.t -> M.t = <fun>
+# [A# module M4 : sig type t = private M3.t end = [4mM2[m;; (* fails *)
+[mError: Signature mismatch:
+       Modules do not match:
+         sig type t = M2.t end
+       is not included in
+         sig type t = private M3.t end
+       Type declarations do not match:
+         type t = M2.t
+       is not included in
+         type t = private M3.t
+# [A# module M4 : sig type t = private M3.t end = [4mM[m;; (* fails *)
+[mError: Signature mismatch:
+       Modules do not match:
+         sig type t = < m : int > end
+       is not included in
+         sig type t = private M3.t end
+       Type declarations do not match:
+         type t = < m : int >
+       is not included in
+         type t = private M3.t
+# [A# module M4 : sig type t = private M3.t end = [4mM1[m;; (* might be ok *)
+[mError: Signature mismatch:
+       Modules do not match:
+         sig type t = M1.t end
+       is not included in
+         sig type t = private M3.t end
+       Type declarations do not match:
+         type t = M1.t
+       is not included in
+         type t = private M3.t
+# module M5 : sig type t = private M1.t end
+# [A# module M6 : sig type t = private < n:int; .. > end = [4mM1[m;; (* fails *)
+[mError: Signature mismatch:
+       Modules do not match:
+         sig type t = M1.t end
+       is not included in
+         sig type t = private < n : int; .. > end
+       Type declarations do not match:
+         type t = M1.t
+       is not included in
+         type t = private < n : int; .. >
+#     [A[A[A# 
+  module Bar : sig type t = private Foobar.t val f : int -> t end =
+    [4mstruct type t = int let f (x : int) = (x : t) end[m;; (* must fail *)
+[mError: Signature mismatch:
+       Modules do not match:
+         sig type t = int val f : t -> t end
+       is not included in
+         sig type t = private Foobar.t val f : int -> t end
+       Type declarations do not match:
+         type t = int
+       is not included in
+         type t = private Foobar.t
+#               module M : sig type t = private T of int val mk : int -> t end
+#               module M1 : sig type t = M.t val mk : int -> t end
+#             module M2 : sig type t = M.t val mk : int -> t end
+#         module M3 : sig type t = M.t val mk : int -> t end
+#         [A[A[A[A[A# 
+  module M4 : sig   
+      type [4mt = M.t = T of int[m
+      val mk : int -> t
+    end = M;;
+[mError: This variant or record definition does not match that of type M.t
+       A private type would be revealed.
+#           module M5 : sig type t = M.t = private T of int val mk : int -> t end
+#         module M6 : sig type t = private T of int val mk : int -> t end
+#                   module M' :
+  sig type t_priv = private T of int type t = t_priv val mk : int -> t end
+#         module M3' : sig type t = M'.t val mk : int -> t end
+# 
