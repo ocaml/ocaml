@@ -167,7 +167,7 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
 
 CAMLprim value caml_obj_add_offset (value v, value offset)
 {
-  return v + Int32_val (offset);
+  return v + (unsigned long) Int32_val (offset);
 }
 
 /* The following functions are used in stdlib/lazy.ml.

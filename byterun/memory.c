@@ -175,7 +175,7 @@ static unsigned char caml_page_table_empty[Pagetable2_size] = { 0, };
 int caml_page_table_initialize(mlsize_t bytesize)
 {
   int i;
-  for (i = 0; i < Pagetable1_size; i++) 
+  for (i = 0; i < Pagetable1_size; i++)
     caml_page_table[i] = caml_page_table_empty;
   return 0;
 }

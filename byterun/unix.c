@@ -91,7 +91,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   strcpy(fullname, name);
   return fullname;
 }
-  
+
 #ifdef __CYGWIN32__
 
 /* Cygwin needs special treatment because of the implicit ".exe" at the
@@ -135,7 +135,7 @@ static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
   strcpy(fullname, name);
   return fullname;
 }
-  
+
 #endif
 
 char * caml_search_exe_in_path(char * name)

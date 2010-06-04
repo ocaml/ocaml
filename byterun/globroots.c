@@ -133,7 +133,7 @@ static void caml_delete_global_root(struct global_root_list * rootlist,
   /* Reclaim list element */
   caml_stat_free(e);
   /* Down-correct list level */
-  while (rootlist->level > 0 && 
+  while (rootlist->level > 0 &&
          rootlist->forward[rootlist->level] == NULL)
     rootlist->level--;
 }
@@ -223,11 +223,11 @@ CAMLexport void caml_modify_generational_global_root(value *r, value newval)
 {
   value oldval = *r;
 
-  /* It is OK to have a root in roots_young that suddenly points to 
+  /* It is OK to have a root in roots_young that suddenly points to
      the old generation -- the next minor GC will take care of that.
      What needs corrective action is a root in roots_old that suddenly
      points to the young generation. */
-  if (Is_block(newval) && Is_young(newval) && 
+  if (Is_block(newval) && Is_young(newval) &&
       Is_block(oldval) && Is_in_heap(oldval)) {
     caml_delete_global_root(&caml_global_roots_old, r);
     caml_insert_global_root(&caml_global_roots_young, r);

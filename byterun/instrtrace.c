@@ -59,7 +59,7 @@ void caml_disasm_instr(pc)
     /* Instructions with two operands */
   case APPTERM: case CLOSURE: case CLOSUREREC: case PUSHGETGLOBALFIELD:
   case GETGLOBALFIELD: case MAKEBLOCK:
-  case BEQ: case BNEQ: case BLTINT: case BLEINT: case BGTINT: case BGEINT: 
+  case BEQ: case BNEQ: case BLTINT: case BLEINT: case BGTINT: case BGEINT:
   case BULTINT: case BUGEINT:
     printf(" %d, %d\n", pc[0], pc[1]); break;
     /* Instructions with a C primitive as operand */
@@ -182,13 +182,13 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
   if (!v)
     return;
   if (prog && v % sizeof (int) == 0
-	   && (code_t) v >= prog
-	   && (code_t) v < (code_t) ((char *) prog + proglen))
+           && (code_t) v >= prog
+           && (code_t) v < (code_t) ((char *) prog + proglen))
     fprintf (f, "=code@%d", (code_t) v - prog);
   else if (Is_long (v))
     fprintf (f, "=long%" ARCH_INTNAT_PRINTF_FORMAT "d", Long_val (v));
-  else if ((void*)v >= (void*)caml_stack_low 
-	   && (void*)v < (void*)caml_stack_high)
+  else if ((void*)v >= (void*)caml_stack_low
+           && (void*)v < (void*)caml_stack_high)
     fprintf (f, "=stack_%d", (intnat*)caml_stack_high - (intnat*)v);
   else if (Is_block (v)) {
     int s = Wosize_val (v);
@@ -202,10 +202,10 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
       l = caml_string_length (v);
       fprintf (f, "=string[s%dL%d]'", s, l);
       for (i = 0; i < ((l>0x1f)?0x1f:l) ; i++) {
-	if (isprint (Byte (v, i)))
-	  putc (Byte (v, i), f);
-	else
-	  putc ('?', f);
+        if (isprint (Byte (v, i)))
+          putc (Byte (v, i), f);
+        else
+          putc ('?', f);
       };
       fprintf (f, "'");
       goto displayfields;
@@ -215,7 +215,7 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
     case Double_array_tag:
       fprintf (f, "=floatarray[s%d]", s);
       for (i = 0; i < ((s>0xf)?0xf:s); i++)
-	fprintf (f, " %g", Double_field (v, i));
+        fprintf (f, " %g", Double_field (v, i));
       goto displayfields;
     case Abstract_tag:
       fprintf (f, "=abstract[s%d]", s);
@@ -227,25 +227,25 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
       fprintf (f, "=block<T%d/s%d>", tg, s);
     displayfields:
       if (s > 0)
-	fputs ("=(", f);
+        fputs ("=(", f);
       for (i = 0; i < s; i++) {
-	if (i > 20) {
-	  fputs ("....", f);
-	  break;
-	};
-	if (i > 0)
-	  putc (' ', f);
-	fprintf (f, "%#lx", Field (v, i));
+        if (i > 20) {
+          fputs ("....", f);
+          break;
+        };
+        if (i > 0)
+          putc (' ', f);
+        fprintf (f, "%#lx", Field (v, i));
       };
       if (s > 0)
-	putc (')', f);
+        putc (')', f);
     };
   }
 }
 
 void
 caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
-			 FILE * f)
+                         FILE * f)
 {
   int i;
   value *p;

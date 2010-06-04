@@ -24,7 +24,11 @@
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#ifdef NATIVE_CODE
+#include "stack.h"
+#else
 #include "stacks.h"
+#endif
 
 #ifndef NATIVE_CODE
 extern uintnat caml_max_stack_size;    /* defined in stacks.c */
@@ -214,7 +218,7 @@ static value heap_stats (int returnstats)
     intnat cpct = caml_stat_compactions;
     intnat top_heap_words = Wsize_bsize (caml_stat_top_heap_size);
 
-    res = caml_alloc_tuple (15);
+    res = caml_alloc_tuple (16);
     Store_field (res, 0, caml_copy_double (minwords));
     Store_field (res, 1, caml_copy_double (prowords));
     Store_field (res, 2, caml_copy_double (majwords));
@@ -230,6 +234,7 @@ static value heap_stats (int returnstats)
     Store_field (res, 12, Val_long (fragments));
     Store_field (res, 13, Val_long (cpct));
     Store_field (res, 14, Val_long (top_heap_words));
+    Store_field (res, 15, Val_long (caml_stack_usage()));
     CAMLreturn (res);
   }else{
     CAMLreturn (Val_unit);
@@ -266,7 +271,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   intnat cpct = caml_stat_compactions;
   intnat heap_chunks = caml_stat_heap_chunks;
 
-  res = caml_alloc_tuple (15);
+  res = caml_alloc_tuple (16);
   Store_field (res, 0, caml_copy_double (minwords));
   Store_field (res, 1, caml_copy_double (prowords));
   Store_field (res, 2, caml_copy_double (majwords));
@@ -282,6 +287,7 @@ CAMLprim value caml_gc_quick_stat(value v)
   Store_field (res, 12, Val_long (0));
   Store_field (res, 13, Val_long (cpct));
   Store_field (res, 14, Val_long (top_heap_words));
+  Store_field (res, 15, Val_long (caml_stack_usage()));
   CAMLreturn (res);
 }
 

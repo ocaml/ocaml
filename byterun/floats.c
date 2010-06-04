@@ -248,11 +248,8 @@ CAMLprim value caml_log10_float(value f)
 
 CAMLprim value caml_modf_float(value f)
 {
-#if __SC__
-  _float_eval frem;       /* Problem with Apple's <math.h> */
-#else
   double frem;
-#endif
+
   CAMLparam1 (f);
   CAMLlocal3 (res, quo, rem);
 
@@ -329,6 +326,46 @@ CAMLprim value caml_ceil_float(value f)
   return caml_copy_double(ceil(Double_val(f)));
 }
 
+/* These emulations of expm1() and log1p() are due to William Kahan.
+   See http://www.plunk.org/~hatch/rightway.php */
+
+CAMLexport double caml_expm1(double x)
+{
+#ifdef HAS_EXPM1_LOG1P
+  return expm1(x);
+#else
+  double u = exp(x);
+  if (u == 1.)
+    return x;
+  if (u - 1. == -1.)
+    return -1.;
+  return (u - 1.) * x / log(u);
+#endif
+}
+
+CAMLexport double caml_log1p(double x)
+{
+#ifdef HAS_EXPM1_LOG1P
+  return log1p(x);
+#else
+  double u = 1. + x;
+  if (u == 1.)
+    return x;
+  else
+    return log(u) * x / (u - 1.);
+#endif
+}
+
+CAMLprim value caml_expm1_float(value f)
+{
+  return caml_copy_double(caml_expm1(Double_val(f)));
+}
+
+CAMLprim value caml_log1p_float(value f)
+{
+  return caml_copy_double(caml_log1p(Double_val(f)));
+}
+
 CAMLprim value caml_eq_float(value f, value g)
 {
   return Val_bool(Double_val(f) == Double_val(g));
@@ -392,7 +429,7 @@ CAMLprim value caml_classify_float(value vd)
     return Val_int(FP_normal);
   }
 #else
-  union { 
+  union {
     double d;
 #if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
     struct { uint32 h; uint32 l; } i;

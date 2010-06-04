@@ -61,7 +61,7 @@ static void hash_aux(value obj)
   /* Pointers into the heap are well-structured blocks. So are atoms.
      We can inspect the block contents. */
 
-  Assert (Is_block (obj));  
+  Assert (Is_block (obj));
   if (Is_in_value_area(obj)) {
     tag = Tag_val(obj);
     switch (tag) {
@@ -146,7 +146,7 @@ CAMLexport value caml_hash_variant(char const * tag)
 {
   value accu;
   /* Same hashing algorithm as in ../typing/btype.ml, function hash_variant */
-  for (accu = Val_int(0); *tag != 0; tag++) 
+  for (accu = Val_int(0); *tag != 0; tag++)
     accu = Val_int(223 * Int_val(accu) + *((unsigned char *) tag));
 #ifdef ARCH_SIXTYFOUR
   accu = accu & Val_long(0x7FFFFFFFL);

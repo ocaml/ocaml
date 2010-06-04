@@ -267,7 +267,7 @@ CAMLprim value caml_install_signal_handler(value signal_number, value action)
   int sig, act, oldact;
 
   sig = caml_convert_signal_number(Int_val(signal_number));
-  if (sig < 0 || sig >= NSIG) 
+  if (sig < 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {
   case Val_int(0):              /* Signal_default */

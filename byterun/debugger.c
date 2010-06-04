@@ -13,7 +13,7 @@
 
 /* $Id$ */
 
-/* Interface with the debugger */
+/* Interface with the byte-code debugger */
 
 #ifdef _WIN32
 #include <io.h>
@@ -23,26 +23,23 @@
 
 #include "config.h"
 #include "debugger.h"
-#include "fail.h"
-#include "fix_code.h"
-#include "instruct.h"
-#include "intext.h"
-#include "io.h"
 #include "misc.h"
-#include "mlvalues.h"
-#include "stacks.h"
-#include "sys.h"
 
 int caml_debugger_in_use = 0;
 uintnat caml_event_count;
+int caml_debugger_fork_mode = 1; /* parent by default */
 
-#if !defined(HAS_SOCKETS)
+#if !defined(HAS_SOCKETS) || defined(NATIVE_CODE)
 
 void caml_debugger_init(void)
 {
 }
 
 void caml_debugger(enum event_kind event)
+{
+}
+
+void caml_debugger_cleanup_fork(void)
 {
 }
 
@@ -67,12 +64,21 @@ void caml_debugger(enum event_kind event)
 #include <process.h>
 #endif
 
+#include "fail.h"
+#include "fix_code.h"
+#include "instruct.h"
+#include "intext.h"
+#include "io.h"
+#include "mlvalues.h"
+#include "stacks.h"
+#include "sys.h"
+
 static int sock_domain;         /* Socket domain for the debugger */
 static union {                  /* Socket address for the debugger */
   struct sockaddr s_gen;
 #ifndef _WIN32
   struct sockaddr_un s_unix;
-#endif    
+#endif
   struct sockaddr_in s_inet;
 } sock_addr;
 static int sock_addr_len;       /* Length of sock_addr */
@@ -98,7 +104,7 @@ static void open_connection(void)
       setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                  (char *) &newvalue, sizeof(newvalue));
   }
-#endif    
+#endif
   dbg_socket = socket(sock_domain, SOCK_STREAM, 0);
 #ifdef _WIN32
   if (retcode == 0) {
@@ -106,10 +112,10 @@ static void open_connection(void)
     setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
                (char *) &oldvalue, oldvaluelen);
   }
-#endif    
+#endif
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1){
-    caml_fatal_error_arg2 ("cannot connect to debugger at %s", dbg_addr,
+    caml_fatal_error_arg2 ("cannot connect to debugger at %s\n", dbg_addr,
                            "error: %s\n", strerror (errno));
   }
 #ifdef _WIN32
@@ -181,7 +187,7 @@ void caml_debugger_init(void)
         + strlen(address);
 #else
     caml_fatal_error("Unix sockets not supported");
-#endif    
+#endif
   } else {
     /* Internet domain */
     sock_domain = PF_INET;
@@ -318,7 +324,7 @@ void caml_debugger(enum event_kind event)
 #else
       caml_fatal_error("error: REQ_CHECKPOINT command");
       exit(-1);
-#endif      
+#endif
       break;
     case REQ_GO:
       caml_event_count = caml_getword(dbg_in);
@@ -332,7 +338,7 @@ void caml_debugger(enum event_kind event)
 #else
       caml_fatal_error("Fatal error: REQ_WAIT command");
       exit(-1);
-#endif      
+#endif
       break;
     case REQ_INITIAL_FRAME:
       frame = caml_extern_sp + 1;
@@ -412,8 +418,19 @@ void caml_debugger(enum event_kind event)
       caml_putword(dbg_out, (Code_val(val)-caml_start_code) * sizeof(opcode_t));
       caml_flush(dbg_out);
       break;
+    case REQ_SET_FORK_MODE:
+      caml_debugger_fork_mode = caml_getword(dbg_in);
+      break;
     }
   }
+}
+
+void caml_debugger_cleanup_fork(void)
+{
+  /* We could remove all of the breakpoints, but closing the connection
+   * means that they'll just be skipped anyway. */
+  close_connection();
+  caml_debugger_in_use = 0;
 }
 
 #endif
