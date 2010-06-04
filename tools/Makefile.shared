@@ -15,15 +15,16 @@
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib $(NOJOIN) -I ../boot
-CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib $(NOJOIN) -I ../stdlib
+CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot  $(NOJOIN)
+CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib  $(NOJOIN)
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
-         -I ../driver
+	 -I ../driver
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib dumpobj objinfo
+
 .PHONY: all
 
 opt.opt: ocamldep.opt
@@ -65,7 +66,7 @@ ocamlprof: $(CSLPROF) profiling.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlprof $(CSLPROF_IMPORTS) $(CSLPROF)
 
 ocamlcp: ocamlcp.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlcp main_args.cmo ocamlcp.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlcp warnings.cmo main_args.cmo ocamlcp.cmo
 
 install::
 	cp ocamlprof $(BINDIR)/jocamlprof$(EXE)
@@ -104,13 +105,13 @@ clean::
 ocamlmklib.ml: ocamlmklib.mlp ../config/Makefile
 	echo '(* THIS FILE IS GENERATED FROM ocamlmklib.mlp *)' >ocamlmklib.ml
 	sed -e "s|%%BINDIR%%|$(BINDIR)|" \
-            -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
-            -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
-            -e "s|%%BYTECCRPATH%%|$(BYTECCRPATH)|" \
-            -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
-            -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
-            -e "s|%%RANLIB%%|$(RANLIB)|" \
-          ocamlmklib.mlp >> ocamlmklib.ml
+	    -e "s|%%SUPPORTS_SHARED_LIBRARIES%%|$(SUPPORTS_SHARED_LIBRARIES)|" \
+	    -e "s|%%MKSHAREDLIB%%|$(MKSHAREDLIB)|" \
+	    -e "s|%%BYTECCRPATH%%|$(BYTECCRPATH)|" \
+	    -e "s|%%NATIVECCRPATH%%|$(NATIVECCRPATH)|" \
+	    -e "s|%%MKSHAREDLIBRPATH%%|$(MKSHAREDLIBRPATH)|" \
+	    -e "s|%%RANLIB%%|$(RANLIB)|" \
+	  ocamlmklib.mlp >> ocamlmklib.ml
 
 beforedepend:: ocamlmklib.ml
 
@@ -165,9 +166,9 @@ ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
   linenum.cmo warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
-addlabels: addlabels.ml
+addlabels: addlabels.cmo
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
-		$(ADDLABELS_IMPORTS) addlabels.ml
+		$(ADDLABELS_IMPORTS) addlabels.cmo
 
 #install::
 #	cp addlabels $(LIBDIR)
@@ -212,33 +213,36 @@ opnames.ml: ../byterun/instruct.h
 	unset LC_CTYPE || : ; \
 	unset LC_COLLATE LANG || : ; \
 	sed -e '/\/\*/d' \
-            -e '/^#/d' \
-            -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
-            -e 's/};$$/ |]/' \
-            -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
-            -e 's/,/;/g' \
-        ../byterun/instruct.h > opnames.ml
+	    -e '/^#/d' \
+	    -e 's/enum \(.*\) {/let names_of_\1 = [|/' \
+	    -e 's/};$$/ |]/' \
+	    -e 's/\([A-Z][A-Z_0-9a-z]*\)/"\1"/g' \
+	    -e 's/,/;/g' \
+	../byterun/instruct.h > opnames.ml
 
 clean::
 	rm -f opnames.ml
 
 beforedepend:: opnames.ml
 
-# Dump .cmx files
+# Display info on compiled files
 
-dumpapprox: dumpapprox.cmo
-	$(CAMLC) $(LINKFLAGS) -o dumpapprox config.cmo dumpapprox.cmo
+objinfo_helper$(EXE): objinfo_helper.c ../config/s.h
+	$(BYTECC) -o objinfo_helper$(EXE) $(BYTECCCOMPOPTS) \
+          objinfo_helper.c $(LIBBFD_LINK)
+
+OBJINFO=../utils/misc.cmo ../utils/config.cmo ../bytecomp/bytesections.cmo \
+        objinfo.cmo
+
+objinfo: objinfo_helper$(EXE) $(OBJINFO)
+	$(CAMLC) -o objinfo $(OBJINFO)
+
+install::
+	cp objinfo $(BINDIR)/ocamlobjinfo$(EXE)
+	cp objinfo_helper$(EXE) $(LIBDIR)/objinfo_helper$(EXE)
 
 clean::
-	rm -f dumpapprox
-
-# Print imported interfaces for .cmo files
-
-objinfo: objinfo.cmo
-	$(CAMLC) $(LINKFLAGS) -o objinfo config.cmo objinfo.cmo
-
-clean::
-	rm -f objinfo
+	rm -f objinfo objinfo_helper$(EXE)
 
 # Scan object files for required primitives
 
@@ -265,7 +269,7 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
-	rm -f *.cmo *.cmi
+	rm -f *.cmo *.cmi *.cma
 
 depend: beforedepend
 	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend

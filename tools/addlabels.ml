@@ -58,7 +58,7 @@ let rec pattern_vars pat =
   | Ppat_variant (_, Some pat)
   | Ppat_constraint (pat, _) ->
       pattern_vars pat
-  | Ppat_record l ->
+  | Ppat_record(l, _) ->
       List.concat (List.map l ~f:(fun (_,p) -> pattern_vars p))
   | Ppat_or (pat1, pat2) ->
       pattern_vars pat1 @ pattern_vars pat2
@@ -143,7 +143,7 @@ let rec insert_labels ~labels ~text expr =
       insert_labels ~labels ~text e2
   | _ ->
       ()
-        
+
 let rec insert_labels_class ~labels ~text expr =
   match labels, expr.pcl_desc with
     l::labels, Pcl_fun(l', _, pat, rem) ->
@@ -258,7 +258,9 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_letmodule (_, _, e)
   | Pexp_assert e
   | Pexp_lazy e
-  | Pexp_poly (e, _) ->
+  | Pexp_poly (e, _)
+  | Pexp_newtype (_, e)
+  | Pexp_open (_, e) ->
       add_labels_rec e
   | Pexp_record (lst, opt) ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e);
@@ -277,7 +279,7 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_override lst ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e)
   | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
-  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ ->
+  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ | Pexp_pack _ ->
       ()
   |Pexp_def (_, _)|Pexp_reply (_, _)
   | Pexp_par (_, _)|Pexp_spawn _
@@ -296,12 +298,12 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
               ~init:(SMap.add s ["<object>"] values)
               ~f:(fun m (k,l) -> SMap.add (s^"#"^k) l m)
       in
-      List.fold_left l ~init:values ~f:
+      ignore (List.fold_left l ~init:values ~f:
         begin fun values -> function
-          | Pcf_val (s, _, e, _) ->
+          | Pcf_val (s, _, _, e, _) ->
               add_labels_expr ~text ~classes ~values e;
               SMap.removes [s] values
-          | Pcf_meth (s, _, e, _) ->
+          | Pcf_meth (s, _, _, e, _) ->
               begin try
                 let labels = List.assoc s methods in
                 insert_labels ~labels ~text e
@@ -314,8 +316,7 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
               values
           | Pcf_inher _ | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _ -> values
           | Pcf_let _ -> values (* not in the grammar *)
-        end;
-      ()
+        end)
   | Pcl_fun (_, opt, pat, cl) ->
       begin match opt with None -> ()
       | Some e -> add_labels_expr ~text ~classes ~values e
@@ -323,7 +324,7 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
       let values = SMap.removes (pattern_vars pat) values in
       add_labels_class ~text ~classes ~values ~methods cl
   | Pcl_apply (cl, args) ->
-      List.map args ~f:(fun (_,e) -> add_labels_expr ~text ~classes ~values e);
+      List.iter args ~f:(fun (_,e) -> add_labels_expr ~text ~classes ~values e);
       add_labels_class ~text ~classes ~values ~methods cl
   | Pcl_let (recp, lst, cl) ->
       let vars = List.concat (List.map lst ~f:(fun (p,_) -> pattern_vars p)) in
@@ -356,7 +357,7 @@ let add_labels ~intf ~impl ~file =
       end
   in
   let text = input_file file in
-  List.fold_right impl ~init:(values, classes) ~f:
+  ignore (List.fold_right impl ~init:(values, classes) ~f:
     begin fun item (values, classes as acc) ->
       match item.pstr_desc with
         Pstr_value (recp, l) ->
@@ -409,7 +410,7 @@ let add_labels ~intf ~impl ~file =
           (values, SMap.removes names classes)
       | _ ->
           acc
-    end;
+    end);
   if !insertions <> [] then begin
     let backup = file ^ ".bak" in
     if Sys.file_exists backup then Sys.remove file

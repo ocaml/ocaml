@@ -41,7 +41,7 @@ let incompatible o =
   fprintf stderr "jocamlcp: profiling is incompatible with the %s option\n" o;
   exit 2
 
-module Options = Main_args.Make_options (struct
+module Options = Main_args.Make_bytecomp_options (struct
   let _a () = make_archive := true; option "-a" ()
   let _annot = option "-annot"
   let _c = option "-c"
@@ -62,6 +62,7 @@ module Options = Main_args.Make_options (struct
   let _labels = option "-labels"
   let _linkall = option "-linkall"
   let _make_runtime = option "-make-runtime"
+  let _no_app_funct = option "-no-app-funct"
   let _noassert = option "-noassert"
   let _nolabels = option "-nolabels"
   let _noautolink = option "-noautolink"
@@ -73,6 +74,7 @@ module Options = Main_args.Make_options (struct
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _nojoin () = option "-nojoin" ()
+  let _strict_sequence = option "-strict-sequence"
   let _thread () = option "-thread" ()
   let _vmthread () = option "-vmthread" ()
   let _nothread () = option "-nothread" ()
@@ -81,9 +83,11 @@ module Options = Main_args.Make_options (struct
   let _use_runtime s = option_with_arg "-use-runtime" s
   let _v = option "-v"
   let _version = option "-version"
+  let _vnum = option "-vnum"
   let _verbose = option "-verbose"
   let _w = option_with_arg "-w"
   let _warn_error = option_with_arg "-warn-error"
+  let _warn_help = option "-warn-help"
   let _where = option "-where"
   let _nopervasives = option "-nopervasives"
   let _dparsetree = option "-dparsetree"
