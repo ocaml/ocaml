@@ -229,6 +229,60 @@ option is given, specify the name of the library produced.
 Print the version number of the compiler.
 
 .TP
+<<<<<<< .courant
+=======
+.B \-pack
+Build a bytecode object file (.cmo file) and its associated compiled
+interface (.cmi) that combines the object
+files given on the command line, making them appear as sub-modules of
+the output .cmo file.  The name of the output .cmo file must be
+given with the
+.B \-o
+option.  For instance,
+.B ocamlc\ \-pack\ \-o\ p.cmo\ a.cmo\ b.cmo\ c.cmo
+generates compiled files p.cmo and p.cmi describing a compilation
+unit having three sub-modules A, B and C, corresponding to the
+contents of the object files a.cmo, b.cmo and c.cmo.  These
+contents can be referenced as P.A, P.B and P.C in the remainder
+of the program.
+.TP
+.BI \-pp \ command
+Cause the compiler to call the given
+.I command
+as a preprocessor for each source file. The output of
+.I command
+is redirected to
+an intermediate file, which is compiled. If there are no compilation
+errors, the intermediate file is deleted afterwards. The name of this
+file is built from the basename of the source file with the
+extension .ppi for an interface (.mli) file and .ppo for an
+implementation (.ml) file.
+.TP
+.B \-principal
+Check information path during type-checking, to make sure that all
+types are derived in a principal way.  When using labelled arguments
+and/or polymorphic methods, this flag is required to ensure future
+versions of the compiler will be able to infer types correctly, even
+if internal algorithms change.
+All programs accepted in
+.B \-principal
+mode are also accepted in the
+default mode with equivalent types, but different binary signatures,
+and this may slow down type checking; yet it is a good idea to
+use it once before publishing source code.
+.TP
+.B \-rectypes
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported. Note that once you have created an interface using this
+flag, you must use it again for all dependencies.
+.TP
+.B \-thread
+Compile or link multithreaded programs, in combination with the
+system "threads" library described in
+.IR The\ Objective\ Caml\ user's\ manual .
+.TP
+>>>>>>> .fusion-droit.r10497
 .B \-unsafe
 Turn bound checking off on array and string accesses (the 
 .B v.(i)
@@ -239,7 +293,293 @@ constructs). Programs compiled with
 are therefore
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
+<<<<<<< .courant
+=======
+.TP
+.BI \-use\-runtime \ runtime\-name
+Generate a bytecode executable file that can be executed on the custom
+runtime system
+.IR runtime\-name ,
+built earlier with
+.B ocamlc\ \-make\-runtime
+.IR runtime\-name .
+.TP
+.B \-v
+Print the version number of the compiler and the location of the
+standard library directory, then exit.
+.TP
+.B \-verbose
+Print all external commands before they are executed, in particular
+invocations of the C compiler and linker in
+.B \-custom
+mode.  Useful to debug C library problems.
+.TP
+.BR \-vnum or \-version
+Print the version number of the compiler in short form (e.g. "3.11.0"),
+then exit.
+.TP
+.B \-vmthread
+Compile or link multithreaded programs, in combination with the
+VM-level threads library described in
+.IR The\ Objective\ Caml\ user's\ manual .
+.TP
+.BI \-w \ warning\-list
+Enable, disable, or mark as errors the warnings specified by the argument
+.IR warning\-list .
+>>>>>>> .fusion-droit.r10497
 
+<<<<<<< .courant
+=======
+Each warning can be
+.IR enabled \ or\  disabled ,
+and each warning can be
+.I marked
+(as error) or
+.IR unmarked .
+If a warning is disabled, it isn't displayed and doesn't affect
+compilation in any way (even if it is marked).  If a warning is enabled,
+it is displayed normally by the compiler whenever the source code
+triggers it.  If it is enabled and marked, the compiler will stop with
+an error after displaying the warnings if the source code triggers it.
+
+The
+.I warning\-list
+argument is a sequence of warning specifiers, with no separators
+between them.  A warning specifier is one of the following:
+
+.BI + num
+\ \ Enable warning number
+.IR num .
+
+.BI \- num
+\ \ Disable warning number
+.IR num .
+
+.BI @ num
+\ \ Enable and mark warning number
+.IR num .
+
+.BI + letter
+\ \ Enable the set of warnings corresponding to
+.IR letter .
+The letter may be uppercase or lowercase.
+
+.BI \- letter
+\ \ Disable the set of warnings corresponding to
+.IR letter .
+The letter may be uppercase or lowercase.
+
+.BI @ letter
+\ \ Enable and mark the set of warnings corresponding to
+.IR letter .
+The letter may be uppercase or lowercase.
+
+.I uppercase\-letter
+\ \ Enable the set of warnings corresponding to
+.IR uppercase\-letter .
+
+.I lowercase\-letter
+\ \ Disable the set of warnings corresponding to
+.IR lowercase\-letter .
+
+The warning numbers are as follows.
+
+1
+\ \ \ Suspicious-looking start-of-comment mark.
+
+2
+\ \ \ Suspicious-looking end-of-comment mark.
+
+3
+\ \ \ Deprecated syntax.
+
+4
+\ \ \ Fragile pattern matching: matching that will remain
+complete even if additional constructors are added to one of the
+variant types matched.
+
+5
+\ \ \ Partially applied function: expression whose result has
+function type and is ignored.
+
+6
+\ \ \ Label omitted in function application.
+
+7
+\ \ \ Some methods are overridden in the class where they are defined.
+
+8
+\ \ \ Partial match: missing cases in pattern-matching.
+
+9
+\ \ \ Missing fields in a record pattern.
+
+10
+\ \ Expression on the left-hand side of a sequence that doesn't
+have type
+.B unit
+(and that is not a function, see warning number 5).
+
+11
+\ \ Redundant case in a pattern matching (unused match case).
+
+12
+\ \ Redundant sub-pattern in a pattern-matching.
+
+13
+\ \ Override of an instance variable.
+
+14
+\ \ Illegal backslash escape in a string constant.
+
+15
+\ \ Private method made public implicitly.
+
+16
+\ \ Unerasable optional argument.
+
+17
+\ \ Undeclared virtual method.
+
+18
+\ \ Non-principal type.
+
+19
+\ \ Type without principality.
+
+20
+\ \ Unused function argument.
+
+21
+\ \ Non-returning statement.
+
+22
+\ \ Camlp4 warning.
+
+23
+\ \ Useless record
+.B with
+clause.
+
+24
+\ \ Bad module name: the source file name is not a valid OCaml module name.
+
+25
+\ \ Pattern-matching with all clauses guarded.
+
+26
+\ \ Suspicious unused variable: unused variable that is bound with
+.BR let \ or \ as ,
+and doesn't start with an underscore (_) character.
+
+27
+\ \ Innocuous unused variable: unused variable that is not bound with
+.BR let \ nor \ as ,
+and doesn't start with an underscore (_) character.
+
+28
+\ \ A pattern contains a constant constructor applied to the underscore (_)
+pattern.
+
+29
+\ \ A non-escaped end-of-line was found in a string constant.  This may
+
+cause portability problems between Unix and Windows.
+
+The letters stand for the following sets of warnings.  Any letter not
+mentioned here corresponds to the empty set.
+
+.B A
+\ all warnings
+
+.B C
+\ 1, 2
+
+.B D
+\ 3
+
+.B E
+\ 4
+
+.B F
+\ 5
+
+.B L
+\ 6
+
+.B M
+\ 7
+
+.B P
+\ 8
+
+.B R
+\ 9
+
+.B S
+\ 10
+
+.B U
+\ 11, 12
+
+.B V
+\ 13
+
+.B X
+\ 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+
+.B Y
+\ 26
+
+.B Z
+\ 27
+
+.IP
+The default setting is
+.BR \-w\ +a\-4\-6\-9\-27\-28\-29 .
+Note that warnings
+.BR 5 \ and \ 10
+are not always triggered, depending on the internals of the type checker.
+.TP
+.BI \-warn\-error \ warning\-list
+Mark as errors the warnings specified in the argument
+.IR warning\-list .
+The compiler will stop with an error when one of these
+warnings is emitted.  The
+.I warning\-list
+has the same meaning as for
+the
+.B \-w
+option: a
+.B +
+sign (or an uppercase letter) turns the corresponding warnings into errors, a
+.B \-
+sign (or a lowercase letter) turns them back into warnings, and a
+.B @
+sign both enables and marks the corresponding warnings.
+
+Note: it is not recommended to use warning sets (i.e. letters) as
+arguments to
+.B \-warn\-error
+in production code, because this can break your build when future versions
+of OCaml add some new warnings.
+
+The default setting is
+.B \-warn\-error\ +a
+(none of the warnings is treated as an error).
+.TP
+.B \-where
+Print the location of the standard library, then exit.
+.TP
+.BI \- \ file
+Process
+.I file
+as a file name, even if it starts with a dash (-) character.
+.TP
+.BR \-help \ or \ \-\-help
+Display a short usage summary and exit.
+
+>>>>>>> .fusion-droit.r10497
 .SH SEE ALSO
 .BR ocaml (1),
 .BR ocamlrun (1).

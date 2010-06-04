@@ -63,6 +63,31 @@ interpreter. Instead, the automaton is encoded by Caml functions.
 This option is useful for debugging
 .BR ocamllex (1),
 using it for production lexers is not recommended.
+<<<<<<< .courant
+=======
+.TP
+.BI \-o \ output\-file
+Specify the name of the output file produced by
+.BR ocamllex (1).
+The default is the input file name, with its extension replaced by .ml.
+.TP
+.B \-q
+Quiet mode.
+.BR ocamllex (1)
+normally outputs informational messages
+to standard output.  They are suppressed if option
+.B \-q
+is used.
+.TP
+.BR \-v \ or \ \-version
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
+.TP
+.BR \-help \ or \ \-\-help
+Display a short usage summary and exit.
+>>>>>>> .fusion-droit.r10497
 
 .SH SEE ALSO
 .BR ocamlyacc (1).

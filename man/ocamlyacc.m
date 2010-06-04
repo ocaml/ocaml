@@ -6,10 +6,15 @@ ocamlyacc \- The Objective Caml parser generator
 .SH SYNOPSIS
 .B ocamlyacc
 [
-.B -v
-]
-[
 .BI \-b prefix
+] [
+.B \-q
+] [
+.B \-v
+] [
+.B \-version
+] [
+.B \-vnum
 ]
 .I filename.mly
 
@@ -63,6 +68,35 @@ Name the output files
 .IR prefix \&.mli,
 .IR prefix \&.output,
 instead of the default naming convention.
+<<<<<<< .courant
+=======
+.TP
+.B \-q
+This option has no effect.
+.TP
+.B \-v
+Generate a description of the parsing tables and a report on conflicts
+resulting from ambiguities in the grammar. The description is put in
+file
+.IR grammar .output.
+.TP
+.B \-version
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
+.TP
+.B \-
+Read the grammar specification from standard input.  The default
+output file names are stdin.ml and stdin.mli.
+.TP
+.BI \-\- \ file
+Process
+.I file
+as the grammar specification, even if its name
+starts with a dash (-) character.  This option must be the last on the
+command line.
+>>>>>>> .fusion-droit.r10497
 
 .SH SEE ALSO
 .BR ocamllex (1).

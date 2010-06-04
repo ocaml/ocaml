@@ -6,10 +6,7 @@ ocamlprof \- The Objective Caml profiler
 .SH SYNOPSIS
 .B ocamlprof
 [
-.BI \-f \ dump-file
-]
-[
-.BI \-F \ text
+.I options
 ]
 .I filename ...
 
@@ -48,7 +45,30 @@ where
 is the counter value for a profiling point. With option
 .BI \-F \ string
 the annotation will be
+<<<<<<< .courant
 .BI (* \ s\ n \ *)
+=======
+.BI (* \ sn \ *)
+.TP
+.BI \-impl \ filename
+Compile the file
+.I filename
+as an implementation file, even if its extension is not .ml.
+.TP
+.BI \-intf \ filename
+Compile the file
+.I filename
+as an interface file, even if its extension is not .mli.
+.TP
+.B \-version
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
+.TP
+.BR \-help \ or \ \-\-help
+Display a short usage summary and exit.
+>>>>>>> .fusion-droit.r10497
 
 .SH SEE ALSO
 .BR ocamlcp (1).

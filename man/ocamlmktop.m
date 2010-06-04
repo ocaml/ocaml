@@ -6,7 +6,7 @@ ocamlmktop \- Building custom toplevel systems
 .SH SYNOPSIS
 .B ocamlmktop
 [
-.B \-v
+.BR \-v | \-version | \-vnum
 ]
 [
 .BI \-cclib \ libname
@@ -49,11 +49,19 @@ The following command-line options are recognized by
 
 .TP
 .B \-v
-Print the version number of the compiler.
+Print the version string of the compiler and exit.
 
 .TP
+<<<<<<< .courant
 .BI \-cclib\ -l libname
 Pass the 
+=======
+.BR \-vnum or \-version
+Print the version number of the compiler in short form and exit.
+.TP
+.BI \-cclib\ \-l libname
+Pass the
+>>>>>>> .fusion-droit.r10497
 .BI \-l libname
 option to the C linker when linking in
 ``custom runtime'' mode (see the corresponding option for

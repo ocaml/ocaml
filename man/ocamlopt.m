@@ -1,3 +1,4 @@
+
 .TH OCAMLOPT 1
 
 .SH NAME
@@ -222,8 +223,127 @@ Print the version number of the compiler.
 Turn bound checking off on array and string accesses (the v.(i) and
 s.[i] constructs). Programs compiled with -unsafe are therefore
 faster, but unsafe: anything can happen if the program accesses an
+<<<<<<< .courant
 array or string outside of its bounds.
 
+=======
+array or string outside of its bounds. Additionally, turn off the
+check for zero divisor in integer division and modulus operations.
+With
+.BR \-unsafe ,
+an integer division (or modulus) by zero can halt the
+program or continue with an unspecified result instead of raising a
+.B Division_by_zero
+exception.
+.TP
+.B \-v
+Print the version number of the compiler and the location of the
+standard library directory, then exit.
+.TP
+.B \-verbose
+Print all external commands before they are executed, in particular
+invocations of the assembler, C compiler, and linker.
+.TP
+.BR \-vnum or \-version
+Print the version number of the compiler in short form (e.g. "3.11.0"),
+then exit.
+.TP
+.BI \-w \ warning\-list
+Enable, disable, or mark as errors the warnings specified by the argument
+.IR warning\-list .
+See
+.BR ocamlc (1)
+for the syntax of
+.IR warning-list .
+.TP
+.BI \-warn\-error \ warning\-list
+Mark as errors the warnings specified in the argument
+.IR warning\-list .
+The compiler will stop with an error when one of these
+warnings is emitted.  The
+.I warning\-list
+has the same meaning as for
+the
+.B \-w
+option: a
+.B +
+sign (or an uppercase letter) turns the corresponding warnings into errors, a
+.B \-
+sign (or a lowercase letter) turns them back into warnings, and a
+.B @
+sign both enables and marks the corresponding warnings.
+
+Note: it is not recommended to use warning sets (i.e. letters) as
+arguments to
+.B \-warn\-error
+in production code, because this can break your build when future versions
+of OCaml add some new warnings.
+
+The default setting is
+.B \-warn\-error\ +a
+(none of the warnings is treated as an error).
+.TP
+.B \-where
+Print the location of the standard library, then exit.
+.TP
+.BI \- \ file
+Process
+.I file
+as a file name, even if it starts with a dash (-) character.
+.TP
+.BR \-help \ or \ \-\-help
+Display a short usage summary and exit.
+
+.SH OPTIONS FOR THE IA32 ARCHITECTURE
+
+The IA32 code generator (Intel Pentium, AMD Athlon) supports the
+following additional option:
+.TP
+.B \-ffast\-math
+Use the IA32 instructions to compute
+trigonometric and exponential functions, instead of calling the
+corresponding library routines.  The functions affected are:
+.BR atan ,
+.BR atan2 ,
+.BR cos ,
+.BR log ,
+.BR log10 ,
+.BR sin ,
+.B sqrt
+and
+.BR tan .
+The resulting code runs faster, but the range of supported arguments
+and the precision of the result can be reduced.  In particular,
+trigonometric operations
+.BR cos ,
+.BR sin ,
+.B tan
+have their range reduced to [\-2^64, 2^64].
+
+.SH OPTIONS FOR THE AMD64 ARCHITECTURE
+
+The AMD64 code generator (64-bit versions of Intel Pentium and AMD
+Athlon) supports the following additional options:
+.TP
+.B \-fPIC
+Generate position-independent machine code.  This is the default.
+.TP
+.B \-fno\-PIC
+Generate position-dependent machine code.
+
+.SH OPTIONS FOR THE SPARC ARCHITECTURE
+The Sparc code generator supports the following additional options:
+.TP
+.B \-march=v8
+Generate SPARC version 8 code.
+.TP
+.B \-march=v9
+Generate SPARC version 9 code.
+.P
+The default is to generate code for SPARC version 7, which runs on all
+SPARC processors.
+
+>>>>>>> .fusion-droit.r10497
 .SH SEE ALSO
 .BR ocamlc (1).
 .br

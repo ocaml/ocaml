@@ -1,3 +1,4 @@
+
 .TH OCAMLRUN 1
 
 .SH NAME
@@ -41,9 +42,45 @@ The following command-line option is recognized by
 .BR ocamlrun (1).
 
 .TP
+<<<<<<< .courant
 .B \-v 
 When set, the memory manager prints verbose messages on standard error
 to signal garbage collections and heap extensions.
+=======
+.B \-b
+When the program aborts due to an uncaught exception, print a detailed
+"back trace" of the execution, showing where the exception was
+raised and which function calls were outstanding at this point.  The
+back trace is printed only if the bytecode executable contains
+debugging information, i.e. was compiled and linked with the
+.B \-g
+option to
+.BR ocamlc (1)
+set.  This option is equivalent to setting the
+.B b
+flag in the OCAMLRUNPARAM environment variable (see below).
+.TP
+.BI \-I \ dir
+Search the directory
+.I dir
+for dynamically-loaded libraries, in addition to the standard search path.
+.B \-p
+Print the names of the primitives known to this version of
+.BR ocamlrun (1)
+and exit.
+.TP
+.B \-v
+Direct the memory manager to print verbose messages on standard error.
+This is equivalent to setting
+.B v=63
+in the OCAMLRUNPARAM environment variable (see below).
+.TP
+.B \-version
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
+>>>>>>> .fusion-droit.r10497
 
 .SH ENVIRONMENT VARIABLES
 

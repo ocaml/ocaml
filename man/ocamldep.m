@@ -70,6 +70,28 @@ are compiled to native-code only.  The flag
 causes dependencies on native compiled files (.cmx) to be generated instead
 of on .cmo files.  (This flag makes no difference if all source files
 have explicit .mli interface files.)
+<<<<<<< .courant
+=======
+.TP
+.BI \-pp \ command
+Cause
+.BR ocamldep (1)
+to call the given
+.I command
+as a preprocessor for each source file.
+.TP
+.B \-slash
+Under Unix, this option does nothing.
+.TP
+.B \-version
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
+.TP
+.BR \-help \ or \ \-\-help
+Display a short usage summary and exit.
+>>>>>>> .fusion-droit.r10497
 
 .SH SEE ALSO
 .BR ocamlc (1),
