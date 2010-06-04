@@ -70,6 +70,7 @@ CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
 CMXS=cmxs
+NATDYNLINK=true
 
 ########## Configuration for the bytecode compiler
 
@@ -159,5 +160,5 @@ TK_LINK=tk85.lib tcl85.lib ws2_32.lib
 
 ############# Aliases for common commands
 
-MAKEREC=$(MAKE) -f Makefile.nt 
+MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)

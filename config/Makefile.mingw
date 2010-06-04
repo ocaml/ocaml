@@ -70,6 +70,7 @@ DEBUGGER=ocamldebugger
 CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
+NATDYNLINK=true
 CMXS=cmxs
 
 ########## Configuration for the bytecode compiler
@@ -153,5 +154,5 @@ TK_LINK=$(TK_ROOT)/bin/tk85.dll $(TK_ROOT)/bin/tcl85.dll -lws2_32
 
 ############# Aliases for common commands
 
-MAKEREC=$(MAKE) -f Makefile.nt 
+MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)

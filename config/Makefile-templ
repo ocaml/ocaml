@@ -31,7 +31,7 @@ MANDIR=/usr/local/man
 MANEXT=1
 
 ### Do #! scripts work on your system?
-### Beware: on some systems (e.g. SunOS 4), this will work only if 
+### Beware: on some systems (e.g. SunOS 4), this will work only if
 ### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
 ### In doubt, set SHARPBANGSCRIPTS to false.
 SHARPBANGSCRIPTS=true
@@ -224,7 +224,7 @@ PARTIALLD=ld -r $(NATIVECCLINKOPTS)
 #       unix            Unix system calls
 #       str             Regular expressions and high-level string processing
 #       num             Arbitrary-precision rational arithmetic
-#       threads         Lightweight concurrent processes 
+#       threads         Lightweight concurrent processes
 #       systhreads      Same as threads, requires POSIX threads
 #       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
