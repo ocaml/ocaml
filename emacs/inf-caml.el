@@ -80,7 +80,7 @@ be sent from another buffer in Caml mode.
 (defconst inferior-caml-buffer-name
   (concat "*" inferior-caml-buffer-subname "*"))
 
-;; for compatibility with xemacs 
+;; for compatibility with xemacs
 
 (defun caml-sit-for (second &optional mili redisplay)
    (if (and (boundp 'running-xemacs) running-xemacs)
@@ -94,8 +94,9 @@ be sent from another buffer in Caml mode.
   (if (string-match "[^ ]" s) (setq inferior-caml-output t)))
 
 (defun inferior-caml-mode-output-hook ()
-  (setq comint-output-filter-functions
-        (list (function inferior-caml-signal-output))))
+  (set-variable 'comint-output-filter-functions
+        (list (function inferior-caml-signal-output)) 
+        t))
 (add-hook 'inferior-caml-mode-hooks 'inferior-caml-mode-output-hook)
 
 ;; To launch ocaml whenever needed
@@ -170,7 +171,7 @@ Input and output via buffer `*inferior-caml*'."
     )
 )
 
-;; patched by Didier to move cursor after evaluation 
+;; patched by Didier to move cursor after evaluation
 
 (defun inferior-caml-eval-region (start end)
   "Send the current region to the inferior Caml process."
@@ -231,15 +232,15 @@ output can be retreived later, asynchronously.")
 
 (defun inferior-caml-eval-phrase (arg &optional min max)
   "Send the phrase containing the point to the CAML process.
-With prefix-arg send as many phrases as its numeric value, 
+With prefix-arg send as many phrases as its numeric value,
 If an error occurs during evalutaion, stop at this phrase and
-repport the error. 
+repport the error.
 
 Return nil if noerror and position of error if any.
 
 If arg's numeric value is zero or negative, evaluate the current phrase
-or as many as prefix arg, ignoring evaluation errors. 
-This allows to jump other erroneous phrases. 
+or as many as prefix arg, ignoring evaluation errors.
+This allows to jump other erroneous phrases.
 
 Optional arguments min max defines a region within which the phrase
 should lies."
@@ -327,12 +328,12 @@ should lies."
              (progn
                (move-overlay caml-error-overlay beg end (current-buffer))
                (beep) (if wait (read-event) (caml-sit-for 60)))
-           (delete-overlay caml-error-overlay)))))  
+           (delete-overlay caml-error-overlay)))))
 
 ;; wait some amount for ouput, that is, until inferior-caml-output is set
 ;; to true. Hence, interleaves sitting for shorts delays and checking the
-;; flag. Give up after some time. Typing into the source buffer will cancel 
-;; waiting, i.e. may report 'No result yet' 
+;; flag. Give up after some time. Typing into the source buffer will cancel
+;; waiting, i.e. may report 'No result yet'
 
 (defun caml-wait-output (&optional before after)
   (let ((c 1))
@@ -351,11 +352,11 @@ should lies."
                            caml-previous-output (- pos 2))))
 
 ;; additional bindings
-  
+
 ;(let ((map (lookup-key caml-mode-map [menu-bar caml])))
 ;  (define-key map [indent-buffer] '("Indent buffer" . caml-indent-buffer))
 ;  (define-key map [eval-buffer] '("Eval buffer" . caml-eval-buffer))
-;) 
+;)
 ;(define-key caml-mode-map "\C-c\C-b" 'caml-eval-buffer)
 
 

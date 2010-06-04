@@ -1,6 +1,6 @@
 ;; caml-font: font-lock support for OCaml files
 ;;
-;; rewrite and clean-up. 
+;; rewrite and clean-up.
 ;; Changes:
 ;; - fontify strings and comments using syntactic font lock
 ;; - define a `font-lock-syntactic-face-function' to fontify ocamldoc comments
@@ -31,7 +31,7 @@
 
 (unless (facep 'font-lock-preprocessor-face)
   (defvar font-lock-preprocessor-face
-    (copy-face 'font-lock-builtin-face 
+    (copy-face 'font-lock-builtin-face
                'font-lock-preprocessor-face)))
 
 (defconst caml-font-lock-keywords
@@ -93,7 +93,7 @@
 (defun caml-font-set-font-lock ()
   (setq font-lock-defaults
         '(caml-font-lock-keywords
-          nil nil nil nil 
+          nil nil nil nil
           (font-lock-syntactic-face-function . caml-font-syntactic-face)))
   (font-lock-mode 1))
 (add-hook 'caml-mode-hook 'caml-font-set-font-lock)
@@ -107,7 +107,7 @@
 (defun inferior-caml-set-font-lock ()
   (setq font-lock-defaults
         '(inferior-caml-font-lock-keywords
-          nil nil nil nil 
+          nil nil nil nil
           (font-lock-syntactic-face-function . caml-font-syntactic-face)))
   (font-lock-mode 1))
 (add-hook 'inferior-caml-mode-hooks 'inferior-caml-set-font-lock)
