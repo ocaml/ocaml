@@ -430,24 +430,33 @@ let get_index spec n =
 
 (* Format a float argument as a valid Caml lexeme. *)
 let format_float_lexeme =
-  let valid_float_lexeme sfmt s =
+
+  (* To be revised: this procedure should be a unique loop that performs the
+     validity check and the string lexeme modification at the same time.
+     Otherwise, it is too difficult to handle the strange padding facilities
+     given by printf. Let alone handling the correct widths indication,
+     knowing that we have sometime to add a '.' at the end of the result!
+  *)
+
+  let make_valid_float_lexeme s =
+    (* Check if s is already a valid lexeme:
+       in this case do nothing,
+       otherwise turn s into a valid Caml lexeme. *)
     let l = String.length s in
-    if l = 0 then "nan" else
-      let add_dot sfmt s = s ^ "." in
+    let rec valid_float_loop i =
+      if i >= l then s ^ "." else
+      match s.[i] with
+      (* Sure, this is already a valid float lexeme. *)
+      | '.' | 'e' | 'E' -> s
+      | _ -> valid_float_loop (i + 1) in
 
-      let rec loop i =
-        if i >= l then add_dot sfmt s else
-        match s.[i] with
-        | '.' -> s
-        | _ -> loop (i + 1) in
+    valid_float_loop 0 in
 
-      loop 0 in
-
-   (fun sfmt x ->
-    let s = format_float sfmt x in
-    match classify_float x with
-    | FP_normal | FP_subnormal | FP_zero -> valid_float_lexeme sfmt s
-    | FP_nan | FP_infinite -> s)
+  (fun sfmt x ->
+   let s = format_float sfmt x in
+   match classify_float x with
+   | FP_normal | FP_subnormal | FP_zero -> make_valid_float_lexeme s
+   | FP_nan | FP_infinite -> s)
 ;;
 
 (* Decode a format string and act on it.

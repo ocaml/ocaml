@@ -23,9 +23,9 @@
 
     The formatted input functions can read from any kind of input, including
     strings, files, or anything that can return characters. The more general
-    source of characters is named a {e scanning buffer} and has type
-    {!Scanning.scanbuf}. The more general formatted input function reads from
-    any scanning buffer and is named [bscanf].
+    source of characters is named a {e formatted input channel} (or {e
+    scanning buffer}) and has type {!Scanning.in_channel}. The more general
+    formatted input function reads from any scanning buffer and is named [bscanf].
 
     Generally speaking, the formatted input functions have 3 arguments:
     - the first argument is a source of characters for the input,
@@ -35,10 +35,10 @@
       values read.
 
     Hence, a typical call to the formatted input function {!Scanf.bscanf} is
-    [bscanf ib fmt f], where:
+    [bscanf ic fmt f], where:
 
-    - [ib] is a source of characters (typically a {e
-    scanning buffer} with type {!Scanning.scanbuf}),
+    - [ic] is a source of characters (typically a {e
+    formatted input channel} with type {!Scanning.in_channel}),
 
     - [fmt] is a format string (the same format strings as those used to print
     material with module {!Printf} or {!Format}),
@@ -48,18 +48,18 @@
 
 (** {7 A simple example} *)
 
-(** As suggested above, the expression [bscanf ib "%d" f] reads a decimal
-    integer [n] from the source of characters [ib] and returns [f n].
+(** As suggested above, the expression [bscanf ic "%d" f] reads a decimal
+    integer [n] from the source of characters [ic] and returns [f n].
 
     For instance,
 
-    - if we use [stdib] as the source of characters ({!Scanning.stdib} is
-    the predefined input buffer that reads from standard input),
+    - if we use [stdin] as the source of characters ({!Scanning.stdin} is
+    the predefined formatted input channel that reads from standard input),
 
     - if we define the receiver [f] as [let f x = x + 1],
 
-    then [bscanf stdib "%d" f] reads an integer [n] from the standard input
-    and returns [f n] (that is [n + 1]). Thus, if we evaluate [bscanf stdib
+    then [bscanf Scanning.stdin "%d" f] reads an integer [n] from the standard input
+    and returns [f n] (that is [n + 1]). Thus, if we evaluate [bscanf stdin
     "%d" f], and then enter [41] at the keyboard, we get [42] as the final
     result. *)
 
@@ -77,94 +77,128 @@
     polymorphic user-defined scanners.  Furthermore, the Caml formatted input
     facility is fully type-checked at compile time. *)
 
-(** {6 Scanning buffers} *)
+(** {6 Formatted input channel} *)
 module Scanning : sig
 
-type scanbuf;;
+type in_channel;;
+(* The notion of input channel for the [Scanf] module:
+   those channels provide all the machinery necessary to read from a given
+   [Pervasives.in_channel] value.
+   A [Scanf.Scanning.in_channel] value is also called a {i formatted input
+   channel} or equivalently a {i scanning buffer}.
+   The type [scanbuf] below is an alias for [in_channel].
+   @since 3.12.0
+*)
+
+type scanbuf = in_channel;;
 (** The type of scanning buffers. A scanning buffer is the source from which a
     formatted input function gets characters. The scanning buffer holds the
     current state of the scan, plus a function to get the next char from the
     input, and a token buffer to store the string matched so far.
 
-    Note: a scan may often require to examine one character in advance;
-    when this ``lookahead'' character does not belong to the token read,
-    it is stored back in the scanning buffer and becomes the next
+    Note: a scanning action may often require to examine one character in
+    advance; when this ``lookahead'' character does not belong to the token
+    read, it is stored back in the scanning buffer and becomes the next
     character read. *)
 
-val stdib : scanbuf;;
-(** The scanning buffer reading from [stdin].
-    [stdib] is equivalent to [Scanning.from_channel stdin].
+val stdin : in_channel;;
+(** The standard input notion for the module [Scanf].
+    [stdin] is equivalent to [Scanning.from_channel Pervasives.stdin].
 
     Note: when input is read interactively from [stdin], the newline character
     that triggers the evaluation is incorporated in the input; thus, scanning
     specifications must properly skip this character (simply add a ['\n']
-    as the last character of the format string). *)
+    as the last character of the format string).
+    @since 3.12.0
+*)
 
-val from_string : string -> scanbuf;;
-(** [Scanning.from_string s] returns a scanning buffer which reads from the
-    given string.
-    Reading starts from the first character in the string.
-    The end-of-input condition is set when the end of the string is reached. *)
-
-val from_file : string -> scanbuf;;
+val open_in : string -> in_channel;;
 (** Bufferized file reading in text mode. The efficient and usual
     way to scan text mode files (in effect, [from_file] returns a
     scanning buffer that reads characters in large chunks, rather than one
-    character at a time as buffers returned by [from_channel] do).
+    character at a time as buffers returned by [from_channel] below do).
     [Scanning.from_file fname] returns a scanning buffer which reads
-    from the given file [fname] in text mode. *)
+    from the given file [fname] in text mode.
+    @since 3.12.0
+*)
 
-val from_file_bin : string -> scanbuf;;
-(** Bufferized file reading in binary mode. *)
+val open_in_bin : string -> in_channel;;
+(** Bufferized file reading in binary mode. @since 3.12.0 *)
 
-val from_function : (unit -> char) -> scanbuf;;
+val close_in : in_channel -> unit;;
+(** Close the [Pervasives.input_channel] associated with the given
+  [Scanning.in_channel].
+  @since 3.12.0
+*)
+
+val from_file : string -> in_channel;;
+(** An alias for [open_in] above. *)
+val from_file_bin : string -> in_channel;;
+(** An alias for [open_in_bin] above. *)
+
+val from_string : string -> in_channel;;
+(** [Scanning.from_string s] returns a formatted input channel which reads
+    from the given string.
+    Reading starts from the first character in the string.
+    The end-of-input condition is set when the end of the string is reached. *)
+
+val from_function : (unit -> char) -> in_channel;;
 (** [Scanning.from_function f] returns a scanning buffer with the given
     function as its reading method.
 
     When scanning needs one more character, the given function is called.
 
-    When the function has no more character to provide, it must signal an
+    When the function has no more character to provide, it {e must} signal an
     end-of-input condition by raising the exception [End_of_file]. *)
 
-val from_channel : in_channel -> scanbuf;;
-(** [Scanning.from_channel ic] returns a scanning buffer which reads from the
-    input channel [ic], starting at the current reading position. *)
+val from_channel : Pervasives.in_channel -> in_channel;;
+(** [Scanning.from_channel ic] returns a formatted input channel which reads
+    from the regular input channel [ic] argument, starting at the current
+    reading position. *)
 
-val end_of_input : scanbuf -> bool;;
-(** [Scanning.end_of_input ib] tests the end-of-input condition of the given
-    scanning buffer. *)
+val end_of_input : in_channel -> bool;;
+(** [Scanning.end_of_input ic] tests the end-of-input condition of the given
+    formatted input channel. *)
 
-val beginning_of_input : scanbuf -> bool;;
-(** [Scanning.beginning_of_input ib] tests the beginning of input condition of
-    the given scanning buffer. *)
+val beginning_of_input : in_channel -> bool;;
+(** [Scanning.beginning_of_input ic] tests the beginning of input condition of
+    the given formatted input channel. *)
 
-val name_of_input : scanbuf -> string;;
-(** [Scanning.file_name_of_input ib] returns the name of the character source
-    for the scanning buffer [ib]. *)
+val name_of_input : in_channel -> string;;
+(** [Scanning.file_name_of_input ic] returns the name of the character source
+    for the formatted input channel [ic].
+    @since 3.09.0
+*)
+
+val stdib : in_channel;;
+(** A deprecated alias for [Scanning.stdin], the scanning buffer reading from
+    [Pervasives.stdin]. *)
 
 end;;
 
 (** {6 Type of formatted input functions} *)
 
 type ('a, 'b, 'c, 'd) scanner =
-     ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
+     ('a, Scanning.in_channel, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
 (** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner] is the
-    type of a formatted input function that reads from some scanning buffer
+    type of a formatted input function that reads from some formatted input channel
     according to some format string; more precisely, if [scan] is some
-    formatted input function, then [scan ib fmt f] applies [f] to the arguments
+    formatted input function, then [scan ic fmt f] applies [f] to the arguments
     specified by the format string [fmt], when [scan] has read those arguments
-    from the scanning input buffer [ib].
+    from the formatted input channel [ic].
 
     For instance, the [scanf] function below has type [('a, 'b, 'c, 'd)
-    scanner], since it is a formatted input function that reads from [stdib]:
-    [scanf fmt f] applies [f] to the arguments specified by [fmt], reading
-    those arguments from [stdin] as expected.
+    scanner], since it is a formatted input function that reads from
+    [Scanning.stdin]: [scanf fmt f] applies [f] to the arguments specified by
+    [fmt], reading those arguments from [Pervasives.stdin] as expected.
 
     If the format [fmt] has some [%r] indications, the corresponding input
     functions must be provided before the receiver [f] argument. For
     instance, if [read_elem] is an input function for values of type [t],
-    then [bscanf ib "%r;" read_elem f] reads a value [v] of type [t] followed
-    by a [';'] character, and returns [f v]. *)
+    then [bscanf ic "%r;" read_elem f] reads a value [v] of type [t] followed
+    by a [';'] character, and returns [f v].
+    @since 3.10.0
+*)
 
 exception Scan_failure of string;;
 (** The exception that formatted input functions raise when the input cannot be
@@ -172,10 +206,10 @@ exception Scan_failure of string;;
 
 (** {6 The general formatted input function} *)
 
-val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
-(** [bscanf ib fmt r1 ... rN f] reads arguments for the function [f], from the
-    scanning buffer [ib], according to the format string [fmt], and applies [f]
-    to these values.
+val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
+(** [bscanf ic fmt r1 ... rN f] reads arguments for the function [f], from the
+    formatted input channel [ic], according to the format string [fmt], and
+    applies [f] to these values.
     The result of this call to [f] is returned as the result of the entire
     [bscanf] call.
     For instance, if [f] is the function [fun s i -> i + 1], then
@@ -189,12 +223,13 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 (** The format is a character string which contains three types of
     objects:
     - plain characters, which are simply matched with the characters of the
-      input,
+      input (with a special case for {!Scanf.space} and line feed),
     - conversion specifications, each of which causes reading and conversion of
-      one argument for the function [f],
-    - scanning indications to specify boundaries of tokens. *)
+      one argument for the function [f] (see {!Scanf.conversion}),
+    - scanning indications to specify boundaries of tokens
+      (see scanning {!Scanf.indication}). *)
 
-(** {7 The space character in format strings} *)
+(** {7:space The space character in format strings} *)
 
 (** As mentioned above, a plain character in the format string is just
     matched with the next character of the input; however, two characters are
@@ -213,7 +248,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     input with various whitespace in it, such as [Price = 1 $],
     [Price  =  1    $], or even [Price=1$]. *)
 
-(** {7 Conversion specifications in format strings} *)
+(** {7:conversion Conversion specifications in format strings} *)
 
 (** Conversion specifications consist in the [%] character, followed by
     an optional flag, an optional field width, and followed by one or
@@ -222,15 +257,18 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 
     - [d]: reads an optionally signed decimal integer.
     - [i]: reads an optionally signed integer
-      (usual input formats for hexadecimal ([0x[d]+] and [0X[d]+]),
-       octal ([0o[d]+]), and binary [0b[d]+] notations are understood).
+      (usual input conventions for decimal ([0-9]+), hexadecimal
+       ([0x[0-9a-f]+] and [0X[0-9A-F]+]), octal ([0o[0-7]+]), and binary
+       ([0b[0-1]+]) notations are understood).
     - [u]: reads an unsigned decimal integer.
-    - [x] or [X]: reads an unsigned hexadecimal integer.
-    - [o]: reads an unsigned octal integer.
+    - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-f]+] or [[0-9A-F]+]).
+    - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
-      following bounding condition holds: a whitespace has been found, a
-      scanning indication has been encountered, or the end-of-input has been
-      reached.
+      following bounding condition holds:
+      - a whitespace has been found (see {!Scanf.space}),
+      - a scanning indication (see scanning {!Scanf.indication}) has been
+        encountered,
+      - the end-of-input has been reached.
       Hence, this conversion always succeeds: it returns an empty
       string, if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
@@ -251,11 +289,11 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     - [b]: reads a boolean argument (for backward compatibility; do not use
       in new programs).
     - [ld], [li], [lu], [lx], [lX], [lo]: reads an [int32] argument to
-      the format specified by the second letter (decimal, hexadecimal, etc).
+      the format specified by the second letter for regular integers.
     - [nd], [ni], [nu], [nx], [nX], [no]: reads a [nativeint] argument to
-      the format specified by the second letter.
+      the format specified by the second letter for regular integers.
     - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: reads an [int64] argument to
-      the format specified by the second letter.
+      the format specified by the second letter for regular integers.
     - [\[ range \]]: reads characters that matches one of the characters
       mentioned in the range of characters [range] (or not mentioned in
       it, if the range starts with [^]). Reads a [string] that can be
@@ -270,21 +308,29 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
       [\[^\]\]] matches any character that is not [\]].
     - [r]: user-defined reader. Takes the next [ri] formatted input function and
       applies it to the scanning buffer [ib] to read the next argument. The
-      input function [ri] must therefore have type [Scanning.scanbuf -> 'a] and
+      input function [ri] must therefore have type [Scanning.in_channel -> 'a] and
       the argument read has type ['a].
     - [\{ fmt %\}]: reads a format string argument.
       The format string read must have the same type as the format string
       specification [fmt].
-      For instance, ["%\{%i%\}"] reads any format string that can read a value of
-      type [int]; hence [Scanf.sscanf "fmt:\\\"number is %u\\\"" "fmt:%\{%i%\}"]
+      For instance, ["%{ %i %}"] reads any format string that can read a value of
+      type [int]; hence [Scanf.sscanf "fmt:\"number is %u\"" "fmt:%{%i%}"]
       succeeds and returns the format string ["number is %u"].
     - [\( fmt %\)]: scanning format substitution.
-      Reads a format string to replace [fmt].
+      Reads a format string to read with it instead of [fmt].
       The format string read must have the same type as the format string
-      specification [fmt].
-      For instance, ["%\( %i% \)"] reads any format string that can read a value
-      of type [int]; hence [Scanf.sscanf "\\\"%4d\\\"1234.00" "%\(%i%\)"]
-      is equivalent to [Scanf.sscanf "1234.00" "%4d"].
+      specification [fmt] that is replaces.
+      For instance, ["%( %i %)"] reads any format string that can read a value
+      of type [int].
+      Returns the format string read, and the value read using the format
+      string read.
+      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%(%i%)"
+                (fun fmt i -> fmt, i)] evaluates to [("%4d", 1234)].
+      If the special flag [_] is used, the conversion discards the
+      format string read and only returns the value read with the format
+      string read.
+      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%_(%i%)"] is simply
+      equivalent to [Scanf.sscanf "1234.00" "%4d"].
     - [l]: returns the number of lines read so far.
     - [n]: returns the number of characters read so far.
     - [N] or [L]: returns the number of tokens read so far.
@@ -308,7 +354,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     Notes:
 
     - as mentioned above, a [%s] conversion always succeeds, even if there is
-      nothing to read in the input: it simply returns [""].
+      nothing to read in the input: in this case, it simply returns [""].
 
     - in addition to the relevant digits, ['_'] characters may appear
     inside numbers (this is reminiscent to the usual Caml lexical
@@ -321,7 +367,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
     [Str]), stream parsers, [ocamllex]-generated lexers,
     [ocamlyacc]-generated parsers. *)
 
-(** {7 Scanning indications in format strings} *)
+(** {7:indication Scanning indications in format strings} *)
 
 (** Scanning indications appear just after the string conversions [%s]
     and [%\[ range \]] to delimit the end of the token. A scanning
@@ -363,54 +409,58 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 
     - as a consequence, scanning a [%s] conversion never raises exception
     [End_of_file]: if the end of input is reached the conversion succeeds and
-    simply returns the characters read so far, or [""] if none were read. *)
+    simply returns the characters read so far, or [""] if none were ever read. *)
 
 (** {6 Specialised formatted input functions} *)
 
-val fscanf : in_channel -> ('a, 'b, 'c, 'd) scanner;;
-(** Same as {!Scanf.bscanf}, but reads from the given channel.
+val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner;;
+(** Same as {!Scanf.bscanf}, but reads from the given regular input channel.
 
-    Warning: since all formatted input functions operate from a scanning
-    buffer, be aware that each [fscanf] invocation will operate with a
-    scanning buffer reading from the given channel. This extra level of
-    bufferization can lead to strange scanning behaviour if you use low level
-    primitives on the channel (reading characters, seeking the reading
+    Warning: since all formatted input functions operate from a {e formatted
+    input channel}, be aware that each [fscanf] invocation will operate with a
+    formatted input channel reading from the given channel. This extra level
+    of bufferization can lead to strange scanning behaviour if you use low
+    level primitives on the channel (reading characters, seeking the reading
     position, and so on).
 
     As a consequence, never mix direct low level reading and high level
-    scanning from the same input channel. *)
+    scanning from the same regular input channel. *)
 
 val sscanf : string -> ('a, 'b, 'c, 'd) scanner;;
 (** Same as {!Scanf.bscanf}, but reads from the given string. *)
 
 val scanf : ('a, 'b, 'c, 'd) scanner;;
-(** Same as {!Scanf.bscanf}, but reads from the predefined scanning
-    buffer {!Scanf.Scanning.stdib} that is connected to [stdin]. *)
+(** Same as {!Scanf.bscanf}, but reads from the predefined formatted input
+    channel {!Scanf.Scanning.stdin} that is connected to [Pervasives.stdin]. *)
 
 val kscanf :
-  Scanning.scanbuf -> (Scanning.scanbuf -> exn -> 'd) ->
+  Scanning.in_channel -> (Scanning.in_channel -> exn -> 'd) ->
     ('a, 'b, 'c, 'd) scanner;;
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
     [ef] that is called in case of error: if the scanning process or
     some conversion fails, the scanning function aborts and calls the
     error handling function [ef] with the scanning buffer and the
-    exception that aborted the scanning process. *)
+    exception that aborted the scanning process as arguments. *)
 
 (** {6 Reading format strings from input} *)
 
 val bscanf_format :
-  Scanning.scanbuf -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  Scanning.in_channel -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
-(** [bscanf_format ib fmt f] reads a format string token from the scanning
-    buffer [ib], according to the given format string [fmt], and applies [f] to
-    the resulting format string value.
+(** [bscanf_format ic fmt f] reads a format string token from the formatted
+    input channel [ic], according to the given format string [fmt], and
+    applies [f] to the resulting format string value.
     Raise [Scan_failure] if the format string value read does not have the
-    same type as [fmt]. *)
+    same type as [fmt].
+    @since 3.09.0
+*)
 
 val sscanf_format :
   string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
-(** Same as {!Scanf.bscanf_format}, but reads from the given string. *)
+(** Same as {!Scanf.bscanf_format}, but reads from the given string.
+    @since 3.09.0
+*)
 
 val format_from_string :
   string ->
@@ -418,4 +468,6 @@ val format_from_string :
 (** [format_from_string s fmt] converts a string argument to a format string,
     according to the given format string [fmt].
     Raise [Scan_failure] if [s], considered as a format string, does not
-    have the same type as [fmt]. *)
+    have the same type as [fmt].
+    @since 3.10.0
+*)

@@ -794,7 +794,7 @@ let pp_set_margin state n =
          new margin, if it is greater than 1. *)
        max (max (state.pp_margin - state.pp_min_space_left)
                 (state.pp_margin / 2)) 1 in
-  (* Rebuild invariants. *)
+    (* Rebuild invariants. *)
     pp_set_max_indent state new_max_indent
 ;;
 
@@ -809,17 +809,33 @@ let pp_get_formatter_output_functions state () =
 let pp_set_all_formatter_output_functions state
     ~out:f ~flush:g ~newline:h ~spaces:i =
   pp_set_formatter_output_functions state f g;
-  state.pp_output_newline <- (function () -> h ());
-  state.pp_output_spaces <- (function n -> i n)
+  state.pp_output_newline <- h;
+  state.pp_output_spaces <- i;
 ;;
 let pp_get_all_formatter_output_functions state () =
   (state.pp_output_function, state.pp_flush_function,
    state.pp_output_newline, state.pp_output_spaces)
 ;;
 
+(* Default function to output new lines. *)
+let display_newline state () = state.pp_output_function "\n" 0  1;;
+
+(* Default function to output spaces. *)
+let blank_line = String.make 80 ' ';;
+let rec display_blanks state n =
+  if n > 0 then
+  if n <= 80 then state.pp_output_function blank_line 0 n else
+  begin
+    state.pp_output_function blank_line 0 80;
+    display_blanks state (n - 80)
+  end
+;;
+
 let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
-  state.pp_flush_function <- (fun () -> flush os)
+  state.pp_flush_function <- (fun () -> flush os);
+  state.pp_output_newline <- display_newline state;
+  state.pp_output_spaces <- display_blanks state;
 ;;
 
 (**************************************************************
@@ -842,7 +858,8 @@ let pp_make_formatter f g h i =
   add_queue sys_tok pp_q;
   let sys_scan_stack =
       (Scan_elem (1, sys_tok)) :: scan_stack_bottom in
-  {pp_scan_stack = sys_scan_stack;
+  {
+   pp_scan_stack = sys_scan_stack;
    pp_format_stack = [];
    pp_tbox_stack = [];
    pp_tag_stack = [];
@@ -872,20 +889,6 @@ let pp_make_formatter f g h i =
   }
 ;;
 
-(* Default function to output spaces. *)
-let blank_line = String.make 80 ' ';;
-let rec display_blanks state n =
-  if n > 0 then
-  if n <= 80 then state.pp_output_function blank_line 0 n else
-  begin
-    state.pp_output_function blank_line 0 80;
-    display_blanks state (n - 80)
-  end
-;;
-
-(* Default function to output new lines. *)
-let display_newline state () = state.pp_output_function "\n" 0  1;;
-
 (* Make a formatter with default functions to output spaces and new lines. *)
 let make_formatter output flush =
   let ppf = pp_make_formatter output flush ignore ignore in
@@ -905,9 +908,9 @@ let formatter_of_buffer b =
 let stdbuf = Buffer.create 512;;
 
 (* Predefined formatters. *)
-let str_formatter = formatter_of_buffer stdbuf
-and std_formatter = formatter_of_out_channel stdout
-and err_formatter = formatter_of_out_channel stderr
+let std_formatter = formatter_of_out_channel Pervasives.stdout
+and err_formatter = formatter_of_out_channel Pervasives.stderr
+and str_formatter = formatter_of_buffer stdbuf
 ;;
 
 let flush_str_formatter () =
@@ -1066,8 +1069,8 @@ let implode_rev s0 = function
 (* [mkprintf] is the printf-like function generator: given the
    - [to_s] flag that tells if we are printing into a string,
    - the [get_out] function that has to be called to get a [ppf] function to
-   output onto.
-   It generates a [kprintf] function that takes as arguments a [k]
+     output onto,
+   it generates a [kprintf] function that takes as arguments a [k]
    continuation function to be called at the end of formatting,
    and a printing format string to print the rest of the arguments
    according to the format string.
@@ -1301,20 +1304,12 @@ let mkprintf to_s get_out =
  **************************************************************)
 
 let kfprintf k ppf = mkprintf false (fun _ -> ppf) k;;
-let ifprintf ppf = Tformat.kapr (fun _ -> Obj.magic ignore);;
+let ikfprintf k ppf = Tformat.kapr (fun _ _ -> Obj.magic (k ppf));;
 
 let fprintf ppf = kfprintf ignore ppf;;
+let ifprintf ppf = ikfprintf ignore ppf;;
 let printf fmt = fprintf std_formatter fmt;;
 let eprintf fmt = fprintf err_formatter fmt;;
-
-let kbprintf k b =
-  mkprintf false (fun _ -> formatter_of_buffer b) k
-;;
-
-let bprintf b =
-  let k ppf = pp_flush_queue ppf false in
-  kbprintf k b
-;;
 
 let ksprintf k =
   let b = Buffer.create 512 in
@@ -1322,9 +1317,26 @@ let ksprintf k =
   mkprintf true (fun _ -> formatter_of_buffer b) k
 ;;
 
-let kprintf = ksprintf;;
-
 let sprintf fmt = ksprintf (fun s -> s) fmt;;
+
+(**************************************************************
+
+  Deprecated stuff.
+
+ **************************************************************)
+
+let kbprintf k b =
+  mkprintf false (fun _ -> formatter_of_buffer b) k
+;;
+
+(* Deprecated error prone function bprintf. *)
+let bprintf b =
+  let k ppf = pp_flush_queue ppf false in
+  kbprintf k b
+;;
+
+(* Deprecated alias for ksprintf. *)
+let kprintf = ksprintf;;
 
 at_exit print_flush
 ;;

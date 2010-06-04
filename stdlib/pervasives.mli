@@ -17,7 +17,7 @@
 
    This module provides the basic operations over the built-in types
    (numbers, booleans, strings, exceptions, references, lists, arrays,
-   input-output channels, ...)
+   input-output channels, ...).
 
    This module is automatically opened at the beginning of each compilation.
    All components of this module can therefore be referred by their short
@@ -93,7 +93,7 @@ external compare : 'a -> 'a -> int = "%compare"
    the {!List.sort} and {!Array.sort} functions. *)
 
 val min : 'a -> 'a -> 'a
-(** Return the smaller of the two arguments. 
+(** Return the smaller of the two arguments.
     The result is unspecified if one of the arguments contains
     the float value [nan]. *)
 
@@ -104,9 +104,11 @@ val max : 'a -> 'a -> 'a
 
 external ( == ) : 'a -> 'a -> bool = "%eq"
 (** [e1 == e2] tests for physical equality of [e1] and [e2].
-   On mutable structures, [e1 == e2] is true if and only if
-   physical modification of [e1] also affects [e2].
-   On non-mutable structures, the behavior of [(==)] is
+   On mutable types such as references, arrays, strings, records with
+   mutable fields and objects with mutable instance variables,
+   [e1 == e2] is true if and only if physical modification of [e1]
+   also affects [e2].
+   On non-mutable types, the behavior of [(==)] is
    implementation-dependent; however, it is guaranteed that
    [e1 == e2] implies [compare e1 e2 = 0]. *)
 
@@ -174,7 +176,7 @@ external ( mod ) : int -> int -> int = "%modint"
    [x = (x / y) * y + x mod y] and
    [abs(x mod y) <= abs(y)-1].
    If [y = 0], [x mod y] raises [Division_by_zero].
-   Notice that [x mod y] is nonpositive if and only if [x < 0].
+   Note that [x mod y] is negative only if [x < 0].
    Raise [Division_by_zero] if [y] is zero. *)
 
 val abs : int -> int
@@ -264,55 +266,63 @@ external log : float -> float = "caml_log_float" "log" "float"
 external log10 : float -> float = "caml_log10_float" "log10" "float"
 (** Base 10 logarithm. *)
 
+external expm1 : float -> float = "caml_expm1_float" "caml_expm1" "float"
+(** [expm1 x] computes [exp x -. 1.0], giving numerically-accurate results
+    even if [x] is close to [0.0].
+    @since 3.12.0
+*)
+
+external log1p : float -> float = "caml_log1p_float" "caml_log1p" "float"
+(** [log1p x] computes [log(1.0 +. x)] (natural logarithm),
+    giving numerically-accurate results even if [x] is close to [0.0].
+    @since 3.12.0
+*)
+
 external cos : float -> float = "caml_cos_float" "cos" "float"
-(** [cos a] returns the cosine of angle [a] measured in radians. *)
+(** Cosine.  Argument is in radians. *)
 
 external sin : float -> float = "caml_sin_float" "sin" "float"
-(** [sin a] returns the sine of angle [a] measured in radians. *)
+(** Sine.  Argument is in radians. *)
 
 external tan : float -> float = "caml_tan_float" "tan" "float"
-(** [tan a] returns the tangent of angle [a] measured in radians. *)
+(** Tangent.  Argument is in radians. *)
 
 external acos : float -> float = "caml_acos_float" "acos" "float"
-(** [acos f] returns the arc cosine of [f]. The return angle is measured
-    in radians. *)
+(** Arc cosine.  The argument must fall within the range [[-1.0, 1.0]].
+    Result is in radians and is between [0.0] and [pi]. *)
 
 external asin : float -> float = "caml_asin_float" "asin" "float"
-(** [asin f] returns the arc sine of [f]. The return angle is measured
-    in radians. *)
+(** Arc sine.  The argument must fall within the range [[-1.0, 1.0]].
+    Result is in radians and is between [-pi/2] and [pi/2]. *)
 
 external atan : float -> float = "caml_atan_float" "atan" "float"
-(** [atan f] returns the arc tangent of [f]. The return angle is measured
-    in radians. *)
+(** Arc tangent.
+    Result is in radians and is between [-pi/2] and [pi/2]. *)
 
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
-(** [atan2 y x] returns the principal value of the arc tangent of
-     [y / x], using the signs of both arguments to determine the quadrant of the
-     result. The return angle is measured in radians. *)
+(** [atan x y] returns the arc tangent of [y /. x].  The signs of [x]
+    and [y] are used to determine the quadrant of the result.
+    Result is in radians and is between [-pi] and [pi]. *)
 
 external cosh : float -> float = "caml_cosh_float" "cosh" "float"
-(** [cosh a] returns the hyperbolic cosine of angle [a] measured
-    in radians. *)
+(** Hyperbolic cosine.  Argument is in radians. *)
 
 external sinh : float -> float = "caml_sinh_float" "sinh" "float"
-(** [sinh a] returns the hyperbolic sine of angle [a] measured
-    in radians. *)
+(** Hyperbolic sine.  Argument is in radians. *)
 
 external tanh : float -> float = "caml_tanh_float" "tanh" "float"
-(** [tanh f] returns the hyperbolic tangent of angle [a] measured
-    in radians. *)
+(** Hyperbolic tangent.  Argument is in radians. *)
 
 external ceil : float -> float = "caml_ceil_float" "ceil" "float"
-(** Round the given float to an integer value.
-   [ceil f] returns the least integer value greater than or
-   equal to [f].
-   See also {!Pervasives.floor}. *)
+(** Round above to an integer value.
+    [ceil f] returns the least integer value greater than or equal to [f].
+    The result is returned as a float. *)
 
 external floor : float -> float = "caml_floor_float" "floor" "float"
-(** Round the given float to an integer value.
-   [floor f] returns the greatest integer value less than or
-   equal to [f].
-   See also {!Pervasives.ceil}. *)
+(** Round below to an integer value.
+    [floor f] returns the greatest integer value less than or
+    equal to [f].
+    The result is returned as a float. *)
 
 external abs_float : float -> float = "%absfloat"
 (** [abs_float f] returns the absolute value of [f]. *)
@@ -881,8 +891,8 @@ val at_exit : (unit -> unit) -> unit
    The functions are called in ``last in, first out'' order:
    the function most recently added with [at_exit] is called first. *)
 
-
 (**/**)
+
 
 (** {6 For system use only, not for the casual user} *)
 

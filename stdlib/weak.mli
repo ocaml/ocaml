@@ -24,7 +24,7 @@ type 'a t
    the value is not used any more (through normal pointers) by the
    program.  Note that finalisation functions are run after the
    weak pointers are erased.
- 
+
    A weak pointer is said to be full if it points to a value,
    empty if the value was erased by the GC.
 

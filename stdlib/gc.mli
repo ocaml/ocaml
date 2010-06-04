@@ -70,6 +70,9 @@ type stat =
 
     top_heap_words : int;
     (** Maximum size reached by the major heap, in words. *)
+
+    stack_size: int;
+    (** Current size of the stack, in words. @since 3.12.0 *)
 }
 (** The memory management counters are returned in a [stat] record.
 
@@ -133,7 +136,7 @@ type control =
         quite fast but can result in fragmentation.  1 is the
         first-fit policy, which can be slower in some cases but
         can be better for programs with fragmentation problems.
-        Default: 0. *)
+        Default: 0. @since 3.11.0 *)
 }
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
@@ -221,7 +224,8 @@ val finalise : ('a -> unit) -> 'a -> unit
    The [f] function can use all features of O'Caml, including
    assignments that make the value reachable again.  It can also
    loop forever (in this case, the other
-   finalisation functions will be called during the execution of f).
+   finalisation functions will not be called during the execution of f,
+   unless it calls [finalise_release]).
    It can call [finalise] on [v] or other values to register other
    functions or even itself.  It can raise an exception; in this case
    the exception will interrupt whatever the program was doing when
