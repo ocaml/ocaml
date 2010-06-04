@@ -91,7 +91,7 @@ let show_config () =
   exit 0;
 ;;
 
-module Options = Main_args.Make_options (struct
+module Options = Main_args.Make_bytecomp_options (struct
   let set r () = r := true
   let unset r () = r := false
   let _a = set make_archive
@@ -114,6 +114,7 @@ module Options = Main_args.Make_options (struct
   let _linkall = set link_everything
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
+  let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
   let _nolabels = set classic
   let _noautolink = set no_auto_link
@@ -124,19 +125,22 @@ module Options = Main_args.Make_options (struct
   let _pp s = preprocessor := Some s
   let _principal = set principal
   let _rectypes = set recursive_types
+  let _strict_sequence = set strict_sequence
 (*>JOCAML*)
-  let _thread () =  use_vmthreads := false ; use_threads := true
-  let _vmthread () =  use_vmthreads := true ; use_threads := false
+  let _thread () =  set use_vmthreads () ; set use_threads ()
+  let _vmthread () = set use_vmthreads () ; unset use_threads ()
   let _nojoin () =
-    nojoin := true ; use_vmthreads := false ; use_threads := false
+    set nojoin () ;  unset use_vmthreads () ;  unset use_threads ()
 (*<JOCAML*)
   let _unsafe = set fast
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
   let _v = print_version_and_library
   let _version = print_version_string
+  let _vnum = print_version_string
   let _w = (Warnings.parse_options false)
   let _warn_error = (Warnings.parse_options true)
+  let _warn_help = Warnings.help_warnings
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
