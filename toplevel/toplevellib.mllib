@@ -16,4 +16,4 @@ Translclass Translmod Simplif Runtimedef
 Meta Instruct Bytegen Printinstr Opcodes Emitcode
 Bytesections Dll Symtable Bytelink Bytelibrarian Bytepackager
 
-Pparse Errors Compile Genprintval Toploop Trace Topdirs Topmain
+Pparse Errors Compile Main_args Genprintval Toploop Trace Topdirs Topmain

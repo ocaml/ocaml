@@ -21,7 +21,7 @@ let preload_objects = ref []
 let prepare ppf =
   Toploop.set_paths ();
   try
-    let res = 
+    let res =
       List.for_all (Topdirs.load_file ppf) (List.rev !preload_objects) in
     !Toploop.toplevel_startup_hook ();
     res
@@ -54,57 +54,49 @@ let print_version () =
 let magic_join () =
   let dir = Misc.expand_directory Config.standard_library None "+threads" in
   include_dirs := dir :: !include_dirs ;
-    ()
+  ()
 (*< JOCAML *)         
+
+let print_version_num () =
+  Printf.printf "%s\n" Sys.ocaml_version;
+  exit 0;
+;;
+
+module Options = Main_args.Make_bytetop_options (struct
+  let set r () = r := true
+  let clear r () = r := false
+
+  let _I dir =
+    let dir = Misc.expand_directory Config.standard_library
+        Config.ocaml_library dir in
+    include_dirs := dir :: !include_dirs
+  let _init s = init_file := Some s
+  let _labels = clear classic
+  let _no_app_funct = clear applicative_functors
+  let _noassert = set noassert
+  let _nolabels = set classic
+  let _noprompt = set noprompt
+  let _nostdlib = set no_std_include
+  let _principal = set principal
+  let _rectypes = set recursive_types
+  let _strict_sequence = set strict_sequence
+  let _unsafe = set fast
+  let _version () = print_version ()
+  let _vnum () = print_version_num ()
+  let _w s = Warnings.parse_options false s
+  let _warn_error s = Warnings.parse_options true s
+  let _warn_help = Warnings.help_warnings
+  let _dparsetree = set dump_parsetree
+  let _drawlambda = set dump_rawlambda
+  let _dlambda = set dump_lambda
+  let _dinstr = set dump_instr
+
+  let anonymous s = file_argument s
+end);;
+
 
 let main () =
   magic_join () ;
-  Arg.parse [
-     "-I", Arg.String(fun dir ->
-       let dir =
-         Misc.expand_directory
-           Config.standard_library Config.ocaml_library dir in
-       include_dirs := dir :: !include_dirs),
-           "<dir>  Add <dir> to the list of include directories";
-     "-init", Arg.String (fun s -> init_file := Some s),
-           "<file>  Load <file> instead of default init file";
-     "-labels", Arg.Clear classic, " Labels commute (default)";
-     "-noassert", Arg.Set noassert, " Do not compile assertion checks";
-     "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
-     "-noprompt", Arg.Set noprompt, " Suppress all prompts";
-     "-nostdlib", Arg.Set no_std_include,
-           " do not add default directory to the list of include directories";
-     "-principal", Arg.Set principal, " Check principality of type inference";
-     "-rectypes", Arg.Set recursive_types, " Allow arbitrary recursive types";
-     "-unsafe", Arg.Set fast, " No bound checking on array and string access";
-     "-version", Arg.Unit print_version, " Print version and exit";
-     "-w", Arg.String (Warnings.parse_options false),
-           "<flags>  Enable or disable warnings according to <flags>:\n\
-       \032    A/a enable/disable all warnings\n\
-       \032    C/c enable/disable suspicious comment\n\
-       \032    D/d enable/disable deprecated features\n\
-       \032    E/e enable/disable fragile match\n\
-       \032    F/f enable/disable partially applied function\n\
-       \032    L/l enable/disable labels omitted in application\n\
-       \032    M/m enable/disable overriden method\n\
-       \032    P/p enable/disable partial match\n\
-       \032    S/s enable/disable non-unit statement\n\
-       \032    U/u enable/disable unused match case\n\
-       \032    V/v enable/disable hidden instance variable\n\
-       \032    Y/y enable/disable suspicious unused variables\n\
-       \032    Z/z enable/disable all other unused variables\n\
-       \032    X/x enable/disable all other warnings\n\
-       \032    default setting is \"Aelz\"";
-     "-warn-error" , Arg.String (Warnings.parse_options true),
-       "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
-         \032    (see option -w for the list of flags)\n\
-         \032    default setting is a (all warnings are non-fatal)";
-
-     "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
-     "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
-     "-dlambda", Arg.Set dump_lambda, " (undocumented)";
-     "-dinstr", Arg.Set dump_instr, " (undocumented)";
-    ] file_argument usage;
+  Arg.parse Options.list file_argument usage;
   if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
-

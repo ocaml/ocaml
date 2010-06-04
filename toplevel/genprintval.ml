@@ -321,6 +321,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           | Tunivar ->
               Oval_stuff "<poly>"
           | Tproc _ -> assert false
+          | Tpackage _ ->
+              Oval_stuff "<module>"
         end
 
       and tree_of_val_list start depth obj ty_list =
