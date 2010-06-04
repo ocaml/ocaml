@@ -23,7 +23,7 @@ val transl_store_phrases: string -> structure -> int * lambda
 val transl_store_implementation:
       string -> structure * module_coercion -> int * lambda
 val transl_toplevel_definition: structure -> lambda
-val transl_package: 
+val transl_package:
       Ident.t option list -> Ident.t -> module_coercion -> lambda
 val transl_store_package:
       Ident.t option list -> Ident.t -> module_coercion -> int * lambda

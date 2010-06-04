@@ -58,4 +58,3 @@ val init_compile: bool -> unit
    contents of ld.conf file).  Take note of the DLLs that were opened
    when starting the running program. *)
 val init_toplevel: string -> unit
-

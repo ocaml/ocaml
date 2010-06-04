@@ -69,7 +69,7 @@ let out_const c =
     out_int (const_as_int c)
   with
   | AsInt -> Misc.fatal_error "Emitcode.const_as_int"
-  
+
 
 (* Handling of local labels and backpatching *)
 

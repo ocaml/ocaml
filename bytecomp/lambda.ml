@@ -425,7 +425,6 @@ and negate_comparison = function
 | Clt -> Cge | Cle -> Cgt
 | Cgt -> Cle | Cge -> Clt
 
-
 (*>JOCAML*)
 (* Get a runtime location, ie a tuple (filename, line, pos) *)
 (* Code moved from translcore, so as to share it *)
@@ -445,7 +444,6 @@ let transl_location loc =
                Const_base(Const_int char)]))
 
 (*>JOCAML*)
-
 let may_raise = function
   | Pccall desc -> desc.Primitive.prim_alloc
   | Praise 

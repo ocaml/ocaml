@@ -58,7 +58,7 @@ let add_ccobjs l =
   end
 
 (* A note on ccobj ordering:
-   - Clflags.ccobjs is in reverse order w.r.t. what was given on the 
+   - Clflags.ccobjs is in reverse order w.r.t. what was given on the
         ocamlc command line;
    - l.lib_ccobjs is also in reverse order w.r.t. what was given on the
         ocamlc -a command line when the library was created;

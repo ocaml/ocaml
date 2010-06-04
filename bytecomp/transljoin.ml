@@ -311,7 +311,7 @@ let rec simple_exp e = match e.exp_desc with
 (* Who knows ? *)
 | Texp_letmodule (_,_,_) | Texp_override (_,_) | Texp_lazy (_)
 | Texp_send (_,_) | Texp_while (_,_) | Texp_new (_,_) | Texp_try (_,_)
-| Texp_object (_, _, _)
+| Texp_object (_, _, _) | Texp_pack _
   -> false
 (* Process constructs are not errors *)
 | Texp_reply (_, _)|Texp_par (_, _)|Texp_asyncsend (_, _)
@@ -353,7 +353,7 @@ and simple_proc p = match p.exp_desc with
   Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
   Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
-  Texp_assertfalse
+  Texp_assertfalse|Texp_pack _
   -> assert false
 
 

@@ -28,7 +28,7 @@ type error =
 
 exception Error of error
 
-(* References accumulating informations on the .cmo files *)
+(* References accumulating information on the .cmo files *)
 
 let relocs = ref ([] : (reloc_info * int) list)
 let events = ref ([] : debug_event list)

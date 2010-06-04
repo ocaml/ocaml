@@ -84,7 +84,7 @@ let primitive_declarations = ref ([] : Primitive.description list)
 let record_primitive = function
   | {val_kind=Val_prim p} -> primitive_declarations := p :: !primitive_declarations
   | _ -> ()
- 
+
 (* Keep track of the root path (from the root of the namespace to the
    currently compiled module expression).  Useful for naming exceptions. *)
 
@@ -266,6 +266,8 @@ let rec transl_module cc rootpath mexp =
                 [transl_module ccarg None arg], mexp.mod_loc))
   | Tmod_constraint(arg, mty, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
+  | Tmod_unpack(arg, _) ->
+      Translcore.transl_exp arg
 
 and transl_structure fields cc rootpath = function
     [] ->

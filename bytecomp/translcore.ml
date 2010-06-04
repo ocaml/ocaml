@@ -412,6 +412,7 @@ let check_recursive_lambda idlist lam =
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
+    | Lprim (Pmakearray (Pgenarray), args) -> false
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
     | lam -> check idlist lam
@@ -429,9 +430,8 @@ let check_recursive_lambda idlist lam =
         check idlist' body
     | Lprim(Pmakeblock(tag, mut), args) ->
         List.for_all (check idlist) args
-    | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
+    | Lprim(Pmakearray(_), args) ->
         List.for_all (check idlist) args
-    | Lprim (Pmakearray (Pgenarray), args) -> false
     | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
     | lam ->
@@ -823,6 +823,8 @@ and transl_exp0 e =
              (Lvar cpy))
   | Texp_letmodule(id, modl, body) ->
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
+  | Texp_pack modl ->
+      !transl_module Tcoerce_none None modl
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
@@ -852,7 +854,7 @@ and transl_exp0 e =
               Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
-          | Tarrow(_,_,_,_) | Ttuple _ | Tobject(_,_) | Tnil | Tvariant _
+          | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil | Tvariant _
               -> transl_exp e
           (* optimize predefined types (excepted float) *)
           | Tconstr(_,_,_) ->
@@ -976,7 +978,7 @@ and transl_proc die sync p = match p.exp_desc with
   Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
   Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
-  Texp_assertfalse
+  Texp_assertfalse | Texp_pack _
   ->
     Location.print_error Format.err_formatter p.exp_loc ;
     fatal_error "Translcore.transl_proc"
@@ -1058,7 +1060,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
   Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
   Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
-  Texp_assertfalse
+  Texp_assertfalse|Texp_pack _
  -> assert false
 
 (* Parameter list for a guarded process *)
