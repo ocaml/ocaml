@@ -114,7 +114,7 @@ void output_rule_data(void)
     register int i;
     register int j;
 
-  
+
     fprintf(output_file, "let yylhs = \"");
     output_short(symbol_value[start_symbol]);
 
