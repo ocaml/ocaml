@@ -13,8 +13,9 @@
 # $Id$
 
 # The lexer generator
+
 NOJOIN=-nojoin
-CAMLC=../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot  $(NOJOIN)
+CAMLC=../boot/ocamlrun ../boot/ocamlc -strict-sequence -nostdlib -I ../boot $(NOJOIN)
 CAMLOPT=../boot/ocamlrun ../ocamlopt -nostdlib -I ../stdlib $(NOJOIN)
 COMPFLAGS=-warn-error A
 CAMLYACC=../boot/ocamlyacc
