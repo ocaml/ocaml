@@ -47,9 +47,14 @@ and do_register(key,v) =
 
 
 type t =
-   { lookup : 'a.string -> 'a ; register : 'a.(string * 'a) -> unit ; }
+   { lookup : 'a.string -> 'a ; register : 'a.(string * 'a) -> unit ;
+     site : Site.t ;
+   }
 
-let ns = { lookup = do_lookup ;  register = do_register ; }
+
+let ns = { lookup = do_lookup ;  register = do_register ;
+           site = Site.here
+         }
 
 let here = ns
   
@@ -63,6 +68,8 @@ let of_site site =
   let link =
     Join_prim.call_service (Join_prim.space_id_of_chan site, name_key) () in
   (link : t)
+
+let to_site ns = ns.site
 
 let there sockaddr = of_site (Site.there sockaddr)
 

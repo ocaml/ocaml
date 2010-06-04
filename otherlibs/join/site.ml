@@ -16,6 +16,8 @@ open Join_types
 (*DEBUG*)open Join_debug
 
 
+(* Trick: a site simply is an async channel.
+   Sites elements are to be found in stub *)
 type t = unit async
 
 def _here() = assert false ; 0
@@ -44,15 +46,6 @@ let there addr =
   (site : t)
 
 let where_from ( chan : 'a async ) = (Obj.magic chan : t)
-(* In place of
-  let stub = match chan with Async(stub,_)|Alone(stub,_) -> stub in
-  match stub.stub_tag with
-  | Local -> here
-  | Remote -> 
-      let space_id = (Obj.magic stub.stub_val : space_id) in
-      let site = Join_prim.call_service (space_id, site_key) () in
-      (site : t)
-*)
 
 let equal s1 s2 = 
   (Join_prim.space_id_of_chan s1) = (Join_prim.space_id_of_chan s2)

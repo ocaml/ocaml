@@ -109,14 +109,18 @@ val exit_at_fail_with_code : int -> at_fail_chan
 val exit_at_fail : at_fail_chan
 (** Bare alias for [exit_at_fail_with_code 0]. *)
 
+val connect : configuration -> Join.Site.t * Join.Ns.t
+(** [connect cfg] 
+    connect as a client  to the server referenced by [cfg]. *)
+
 exception Invalid_magic of string * string
 (** Raised when a client tries to connect to a server with a different magic number.
     The first component is the waited magic value while the second component is the 
     magic value retrieved from the server. *)
 
-val connect : configuration -> Join.Site.t
-(** [connect cfg] 
-    connect as a client  to the server referenced by [cfg]. *)
+val check_magic : Join.Ns.t -> configuration -> unit
+(**  Ensures that client and server have the same magic number,
+    raising [Invalid_magic] if not. *)
 
 val init_client : ?at_fail:at_fail_chan -> configuration ->
   Join.Ns.t * int list

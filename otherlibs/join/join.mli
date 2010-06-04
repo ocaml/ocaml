@@ -130,6 +130,9 @@ module Ns : sig
   val of_site : Site.t -> t
   (** Get remote name service by site identity. *)
 
+  val to_site : t -> Site.t
+  (** Converse operation *)
+
   val there : Unix.sockaddr -> t
   (** Get remote name service by socket address.
       Basically, [there addr] is [of_site (Site.there addr)]. *)

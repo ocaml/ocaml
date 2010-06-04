@@ -137,10 +137,9 @@ type ('b,'c) monitor =
     wait : unit -> 'c ;
     finished : unit Join.chan }
 
-let rec to_string = function
-  | [] -> ""
-  | [x,_] -> string_of_int x
-  | (x,_)::rem ->  string_of_int x ^ ", " ^ to_string rem
+let to_string active =
+  String.concat ","
+    (List.map  (fun (x,_) -> string_of_int x) active)
 
 let create_monitor gather default =
   def state(new_id, active, result) & enter(x) =
