@@ -25,7 +25,7 @@ val unique_name: t -> string
 val unique_toplevel_name: t -> string
 val persistent: t -> bool
 val equal: t -> t -> bool
-        (* Compare identifiers by name. *)      
+        (* Compare identifiers by name. *)
 val same: t -> t -> bool
         (* Compare identifiers by binding location.
            Two identifiers are the same either if they are both

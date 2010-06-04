@@ -36,9 +36,7 @@ val package_units:
         string list -> string -> string -> Typedtree.module_coercion
 
 type error =
-    Unbound_module of Longident.t
-  | Unbound_modtype of Longident.t
-  | Cannot_apply of module_type
+    Cannot_apply of module_type
   | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
@@ -51,6 +49,8 @@ type error =
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
+  | Not_allowed_in_functor_body
+  | With_need_typeconstr
 
 exception Error of Location.t * error
 

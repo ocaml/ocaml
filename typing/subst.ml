@@ -19,7 +19,7 @@ open Path
 open Types
 open Btype
 
-type t = 
+type t =
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
@@ -44,6 +44,18 @@ let rec module_path s = function
       Pdot(module_path s p, n, pos)
   | Papply(p1, p2) ->
       Papply(module_path s p1, module_path s p2)
+
+let rec modtype_path s = function
+    Pident id as p ->
+      begin try
+        match Tbl.find id s.modtypes with
+          | Tmty_ident p -> p
+          | _ -> fatal_error "Subst.modtype_path"
+      with Not_found -> p end
+  | Pdot(p, n, pos) ->
+      Pdot(module_path s p, n, pos)
+  | Papply(p1, p2) ->
+      fatal_error "Subst.modtype_path"
 
 let type_path s = function
     Pident id as p ->
@@ -88,6 +100,8 @@ let rec typexp s ty =
       begin match desc with
       | Tconstr(p, tl, abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
+      | Tpackage(p, n, tl) ->
+          Tpackage(modtype_path s p, n, List.map (typexp s) tl)
       | Tobject (t1, name) ->
           Tobject (typexp s t1,
                  ref (match !name with
@@ -244,7 +258,7 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | (Tsig_value(id, _) | Tsig_exception(id, _) | 
+  | (Tsig_value(id, _) | Tsig_exception(id, _) |
      Tsig_class(id, _, _) | Tsig_cltype(id, _, _)) :: sg ->
       let id' = Ident.rename id in
       rename_bound_idents s (id' :: idents) sg
@@ -295,11 +309,17 @@ and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract
   | Tmodtype_manifest mty -> Tmodtype_manifest(modtype s mty)
 
-(* Composition of substitutions:  
+(* For every binding k |-> d of m1, add k |-> f d to m2 
+   and return resulting merged map. *)
+
+let merge_tbls f m1 m2 =
+  Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
+
+(* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =
-  { types = Tbl.map (fun id p -> type_path s2 p) s1.types;
-    modules = Tbl.map (fun id p -> module_path s2 p) s1.modules;
-    modtypes = Tbl.map (fun id mty -> modtype s2 mty) s1.modtypes;
+  { types = merge_tbls (type_path s2) s1.types s2.types;
+    modules = merge_tbls (module_path s2) s1.modules s2.modules;
+    modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = false }

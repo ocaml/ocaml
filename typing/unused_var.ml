@@ -69,7 +69,7 @@ let rec get_vars ((vacc, asacc) as acc) p =
   | Ppat_tuple pl -> List.fold_left get_vars acc pl
   | Ppat_construct (_, po, _) -> get_vars_option acc po
   | Ppat_variant (_, po) -> get_vars_option acc po
-  | Ppat_record ipl ->
+  | Ppat_record (ipl, cls) ->
       List.fold_left (fun a (_, p) -> get_vars a p) acc ipl
   | Ppat_array pl -> List.fold_left get_vars acc pl
   | Ppat_or (p1, _p2) -> get_vars acc p1
@@ -213,6 +213,9 @@ and expression ppf tbl e =
        expression ppf tbl e2
   | Pexp_spawn e -> expression ppf tbl e
 (*<JOCAML*)
+  | Pexp_newtype (_, e) -> expression ppf tbl e
+  | Pexp_pack (me, _) -> module_expr ppf tbl me
+  | Pexp_open (_, e) -> expression ppf tbl e
 
 and expression_option ppf tbl eo =
   match eo with
@@ -285,6 +288,7 @@ and module_expr ppf tbl me =
       module_expr ppf tbl me1;
       module_expr ppf tbl me2;
   | Pmod_constraint (me, _) -> module_expr ppf tbl me
+  | Pmod_unpack (e, _) -> expression ppf tbl e
 
 and class_declaration ppf tbl cd = class_expr ppf tbl cd.pci_expr
 
@@ -308,10 +312,10 @@ and class_structure ppf tbl (p, cfl) =
 
 and class_field ppf tbl cf =
   match cf with
-  | Pcf_inher (ce, _) -> class_expr ppf tbl ce;
-  | Pcf_val (_, _, e, _) -> expression ppf tbl e;
+  | Pcf_inher (_, ce, _) -> class_expr ppf tbl ce;
+  | Pcf_val (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_virt _ | Pcf_valvirt _ -> ()
-  | Pcf_meth (_, _, e, _) -> expression ppf tbl e;
+  | Pcf_meth (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_cstr _ -> ()
   | Pcf_let (recflag, pel, _) -> let_pel ppf tbl recflag pel None;
   | Pcf_init e -> expression ppf tbl e;

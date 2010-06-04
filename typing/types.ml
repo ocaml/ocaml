@@ -39,9 +39,11 @@ and type_desc =
   | Tpoly of type_expr * type_expr list
 (*>JOCAML*)
   | Tproc of kont_locs
+(*<JOCAML*)
+  | Tpackage of Path.t * string list * type_expr list
 
+(*>JOCAML*)
 and kont_locs = (Ident.t * Location.t) list
-
 (*<JOCAML*)
 
 and row_desc =
@@ -132,7 +134,8 @@ and constructor_tag =
 (* Record label descriptions *)
 
 type label_description =
-  { lbl_res: type_expr;                 (* Type of the result *)
+  { lbl_name: string;                   (* Short name *)
+    lbl_res: type_expr;                 (* Type of the result *)
     lbl_arg: type_expr;                 (* Type of the argument *)
     lbl_mut: mutable_flag;              (* Is this a mutable field? *)
     lbl_pos: int;                       (* Position in block *)

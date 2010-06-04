@@ -53,6 +53,6 @@ val modtype: t -> module_type -> module_type
 val signature: t -> signature -> signature
 val modtype_declaration: t -> modtype_declaration -> modtype_declaration
 
-(* Composition of substitutions:  
+(* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 val compose: t -> t -> t

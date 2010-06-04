@@ -63,7 +63,7 @@ let set_current_time t = currentstamp := max !currentstamp t
 
 let reinit_level = ref (-1)
 
-let reinit () = 
+let reinit () =
   if !reinit_level < 0
   then reinit_level := !currentstamp
   else currentstamp := !reinit_level

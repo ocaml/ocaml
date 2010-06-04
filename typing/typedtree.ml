@@ -79,6 +79,7 @@ and expression_desc =
   | Texp_assertfalse
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
+  | Texp_pack of module_expr
 (*> JOCAML *)
   | Texp_asyncsend of expression * expression
   | Texp_spawn of expression
@@ -87,6 +88,7 @@ and expression_desc =
   | Texp_reply of expression * Ident.t
   | Texp_def of joinautomaton list * expression
   | Texp_loc of joinlocation list * expression
+
 
 and joinlocation =
     {jloc_desc : joinident * joinautomaton list * expression ;
@@ -191,6 +193,7 @@ and module_expr_desc =
   | Tmod_functor of Ident.t * module_type * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
   | Tmod_constraint of module_expr * module_type * module_coercion
+  | Tmod_unpack of expression * module_type
 
 and structure = structure_item list
 

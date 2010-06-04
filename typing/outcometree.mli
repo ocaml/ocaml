@@ -60,6 +60,7 @@ type out_type =
   | Otyp_variant of
       bool * out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
+  | Otyp_module of string * string list * out_type list
   | Otyp_proc
 
 and out_variant =

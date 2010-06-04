@@ -22,7 +22,8 @@ open Typedtree
 type error =
     Missing_field of Ident.t
   | Value_descriptions of Ident.t * value_description * value_description
-  | Type_declarations of Ident.t * type_declaration * type_declaration
+  | Type_declarations of Ident.t * type_declaration
+        * type_declaration * Includecore.type_mismatch list
   | Exception_declarations of
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type
@@ -56,9 +57,8 @@ let value_descriptions env subst id vd1 vd2 =
 
 let type_declarations env subst id decl1 decl2 =
   let decl2 = Subst.type_declaration subst decl2 in
-  if Includecore.type_declarations env id decl1 decl2
-  then ()
-  else raise(Error[Type_declarations(id, decl1, decl2)])
+  let err = Includecore.type_declarations env id decl1 decl2 in
+  if err <> [] then raise(Error[Type_declarations(id, decl1, decl2, err)])
 
 (* Inclusion between exception declarations *)
 
@@ -124,14 +124,14 @@ let simplify_structure_coercion cc =
   then Tcoerce_none
   else Tcoerce_structure cc
 
-(* Inclusion between module types. 
+(* Inclusion between module types.
    Return the restriction that transforms a value of the smaller type
    into a value of the bigger type. *)
 
 let rec modtypes env subst mty1 mty2 =
   try
     try_modtypes env subst mty1 mty2
-  with 
+  with
     Dont_match ->
       raise(Error[Module_types(mty1, Subst.modtype subst mty2)])
   | Error reasons ->
@@ -336,12 +336,14 @@ let include_err ppf = function
        "@[<hv 2>Values do not match:@ \
         %a@;<1 -2>is not included in@ %a@]"
        (value_description id) d1 (value_description id) d2
-  | Type_declarations(id, d1, d2) ->
-      fprintf ppf
-       "@[<hv 2>Type declarations do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
-       (type_declaration id) d1
-       (type_declaration id) d2
+  | Type_declarations(id, d1, d2, errs) ->
+      fprintf ppf "@[@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a@]"
+        "Type declarations do not match"
+        (type_declaration id) d1
+        "is not included in"
+        (type_declaration id) d2
+        (Includecore.report_type_mismatch
+           "the first" "the second" "declaration") errs
   | Exception_declarations(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Exception declarations do not match:@ \
@@ -363,7 +365,7 @@ let include_err ppf = function
   | Modtype_permutation ->
       fprintf ppf "Illegal permutation of structure fields"
   | Interface_mismatch(impl_name, intf_name) ->
-      fprintf ppf "@[The implementation %s@ does not match the interface %s:" 
+      fprintf ppf "@[The implementation %s@ does not match the interface %s:"
        impl_name intf_name
   | Class_type_declarations(id, d1, d2, reason) ->
       fprintf ppf

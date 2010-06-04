@@ -28,15 +28,19 @@ let rec print_ident ppf =
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 
+let parenthesized_ident name =
+  (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
+  ||
+  (match name.[0] with
+      'a'..'z' | '\223'..'\246' | '\248'..'\255' | '_' ->
+        false
+    | _ -> true)
+
 let value_ident ppf name =
-  if List.mem name
-       ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"] then
+  if parenthesized_ident name then
     fprintf ppf "( %s )" name
   else
-    match name.[0] with
-      'a'..'z' | '\223'..'\246' | '\248'..'\255' | '_' ->
-        fprintf ppf "%s" name
-    | _ -> fprintf ppf "( %s )" name
+    fprintf ppf "%s" name
 
 (* Values *)
 
@@ -210,6 +214,17 @@ and print_simple_out_type ppf =
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
   | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
   | Otyp_proc -> ()
+  | Otyp_module (p, n, tyl) ->
+      fprintf ppf "@[<1>(module %s" p;
+      let first = ref true in
+      List.iter2
+        (fun s t ->
+          let sep = if !first then (first := false; "with") else "and" in
+          fprintf ppf " %s type %s = %a" sep s print_out_type t
+        )
+        n tyl;
+      fprintf ppf ")@]"
+
 
 and print_fields rest ppf =
   function

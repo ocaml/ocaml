@@ -55,14 +55,14 @@ val compute_variance_decls:
        cltype_declaration * ((bool * bool) list * Location.t)) list ->
     (type_declaration * type_declaration * class_declaration *
        cltype_declaration) list
-    
+
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
   | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
-  | Definition_mismatch of type_expr
+  | Definition_mismatch of type_expr * Includecore.type_mismatch list
   | Constraint_failed of type_expr * type_expr
   | Unconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list

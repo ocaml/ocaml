@@ -33,7 +33,17 @@ let rec longident ppf = function
 
 (* Print an identifier *)
 
-let ident ppf id = fprintf ppf "%s" (Ident.name id)
+let unique_names = ref Ident.empty
+
+let ident_name id =
+  try Ident.find_same id !unique_names with Not_found -> Ident.name id
+
+let add_unique id =
+  try ignore (Ident.find_same id !unique_names)
+  with Not_found ->
+    unique_names := Ident.add id (Ident.unique_toplevel_name id) !unique_names
+
+let ident ppf id = fprintf ppf "%s" (ident_name id)
 
 (* Print a path *)
 
@@ -41,7 +51,7 @@ let ident_pervasive = Ident.create_persistent "Pervasives"
 
 let rec tree_of_path = function
   | Pident id ->
-      Oide_ident (Ident.name id)
+      Oide_ident (ident_name id)
   | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
       Oide_ident s
   | Pdot(p, s, pos) ->
@@ -154,6 +164,10 @@ and raw_type_desc ppf = function
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
   | Tproc kids -> fprintf ppf "Tproc"
+  | Tpackage (p, _, tl) ->
+      fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
+        raw_type_list tl
+
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -235,7 +249,7 @@ let rec mark_loops_rec visited ty =
     | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
-    | Tconstr(_, tyl, _) ->
+    | Tconstr(_, tyl, _) | Tpackage (_, _, tyl) ->
         List.iter (mark_loops_rec visited) tyl
     | Tvariant row ->
         if List.memq px !visited_objects then add_alias px else
@@ -287,7 +301,7 @@ let reset_loop_marks () =
   visited_objects := []; aliased := []; delayed := []
 
 let reset () =
-  reset_names (); reset_loop_marks ()
+  unique_names := Ident.empty; reset_names (); reset_loop_marks ()
 
 let reset_and_mark_loops ty =
   reset (); mark_loops ty
@@ -386,6 +400,8 @@ let rec tree_of_typexp sch ty =
     | Tunivar ->
         Otyp_var (false, name_of_type ty)
     | Tproc _ -> Otyp_proc
+    | Tpackage (p, n, tyl) ->
+        Otyp_module (Path.name p, n, tree_of_typlist sch tyl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && aliasable ty then begin
@@ -537,11 +553,8 @@ let rec tree_of_type_decl id decl =
     let abstr =
       match decl.type_kind with
         Type_abstract ->
-          begin match decl.type_manifest with
-            None -> true
-          | Some ty -> has_constr_row ty
-          end
-      | Type_variant _ | Type_record(_,_) ->
+          decl.type_manifest = None || decl.type_private = Private
+      | Type_variant _ | Type_record _ ->
           decl.type_private = Private
     in
     let vari =
@@ -961,8 +974,32 @@ let explanation unif mis ppf =
     None -> ()
   | Some (t3, t4) -> explanation unif t3 t4 ppf
 
+let ident_same_name id1 id2 =
+  if Ident.equal id1 id2 && not (Ident.same id1 id2) then begin
+    add_unique id1; add_unique id2
+  end
+
+let rec path_same_name p1 p2 =
+  match p1, p2 with
+    Pident id1, Pident id2 -> ident_same_name id1 id2
+  | Pdot (p1, s1, _), Pdot (p2, s2, _) when s1 = s2 -> path_same_name p1 p2
+  | Papply (p1, p1'), Papply (p2, p2') ->
+      path_same_name p1 p2; path_same_name p1' p2'
+  | _ -> ()
+
+let type_same_name t1 t2 =
+  match (repr t1).desc, (repr t2).desc with
+    Tconstr (p1, _, _), Tconstr (p2, _, _) -> path_same_name p1 p2
+  | _ -> ()
+
+let rec trace_same_names = function
+    (t1, t1') :: (t2, t2') :: rem ->
+      type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
+  | _ -> ()
+
 let unification_error unif tr txt1 ppf txt2 =
   reset ();
+  trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
   let mis = mismatch unif tr in
   match tr with
@@ -994,6 +1031,7 @@ let report_unification_error ppf tr txt1 txt2 =
 
 let trace fst txt ppf tr =
   print_labels := not !Clflags.classic;
+  trace_same_names tr;
   try match tr with
     t1 :: t2 :: tr' ->
       if fst then trace fst txt ppf (t1 :: t2 :: filter_trace tr')

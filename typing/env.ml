@@ -685,7 +685,7 @@ let components_of_functor_appl f p1 p2 =
     Hashtbl.find f.fcomp_cache p2
   with Not_found ->
     let p = Papply(p1, p2) in
-    let mty = 
+    let mty =
       Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
                     f.fcomp_res in
     let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
@@ -804,7 +804,7 @@ let open_signature root sg env =
                          (Subst.cltype_declaration sub decl) env)
       env sg pl in
   { newenv with summary = Env_open(env.summary, root) }
-  
+
 (* Open a signature from a file *)
 
 let open_pers_signature name env =

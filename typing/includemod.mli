@@ -27,7 +27,8 @@ val type_declarations:
 type error =
     Missing_field of Ident.t
   | Value_descriptions of Ident.t * value_description * value_description
-  | Type_declarations of Ident.t * type_declaration * type_declaration
+  | Type_declarations of Ident.t * type_declaration
+        * type_declaration * Includecore.type_mismatch list
   | Exception_declarations of
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type
