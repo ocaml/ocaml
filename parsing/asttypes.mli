@@ -33,4 +33,8 @@ type mutable_flag = Immutable | Mutable
 
 type virtual_flag = Virtual | Concrete
 
+type override_flag = Override | Fresh
+
+type closed_flag = Closed | Open
+
 type label = string

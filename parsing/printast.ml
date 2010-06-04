@@ -72,6 +72,12 @@ let fmt_virtual_flag f x =
   | Concrete -> fprintf f "Concrete";
 ;;
 
+let fmt_override_flag f x =
+  match x with
+  | Override -> fprintf f "Override";
+  | Fresh -> fprintf f "Fresh";
+;;
+
 let fmt_rec_flag f x =
   match x with
   | Nonrecursive -> fprintf f "Nonrec";
@@ -162,6 +168,13 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
+  | Ptyp_package (s, l) ->
+      line i ppf "Ptyp_package %a\n" fmt_longident s;
+      list i package_with ppf l
+
+and package_with i ppf (s, t) =
+  line i ppf "with type %s\n" s;
+  core_type i ppf t
 
 and core_field_type i ppf x =
   line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
@@ -192,7 +205,7 @@ and pattern i ppf x =
   | Ppat_variant (l, po) ->
       line i ppf "Ppat_variant \"%s\"\n" l;
       option i pattern ppf po;
-  | Ppat_record (l) ->
+  | Ppat_record (l, c) ->
       line i ppf "Ppat_record\n";
       list i longident_x_pattern ppf l;
   | Ppat_array (l) ->
@@ -321,6 +334,16 @@ and expression i ppf x =
   | Pexp_object s ->
       line i ppf "Pexp_object";
       class_structure i ppf s
+  | Pexp_newtype (s, e) ->
+      line i ppf "Pexp_newtype \"%s\"\n" s;
+      expression i ppf e
+  | Pexp_pack (me, (p,l)) ->
+      line i ppf "Pexp_pack %a" fmt_longident p;
+      list i package_with ppf l;
+      module_expr i ppf me
+  | Pexp_open (m, e) ->
+      line i ppf "Pexp_open \"%a\"\n" fmt_longident m;
+      expression i ppf e
 (*> JOCAML *)
   | Pexp_spawn (e) ->
       line i ppf "Pexp_spawn\n" ;
@@ -490,25 +513,25 @@ and class_structure i ppf (p, l) =
 
 and class_field i ppf x =
   match x with
-  | Pcf_inher (ce, so) ->
-      line i ppf "Pcf_inher\n";
+  | Pcf_inher (ovf, ce, so) ->
+      line i ppf "Pcf_inher %a\n" fmt_override_flag ovf;
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
   | Pcf_valvirt (s, mf, ct, loc) ->
-      line i ppf
-        "Pcf_valvirt \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
+      line i ppf "Pcf_valvirt \"%s\" %a %a\n"
+        s fmt_mutable_flag mf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pcf_val (s, mf, e, loc) ->
-      line i ppf
-        "Pcf_val \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
+  | Pcf_val (s, mf, ovf, e, loc) ->
+      line i ppf "Pcf_val \"%s\" %a %a %a\n"
+        s fmt_mutable_flag mf fmt_override_flag ovf fmt_location loc;
       expression (i+1) ppf e;
   | Pcf_virt (s, pf, ct, loc) ->
-      line i ppf
-        "Pcf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+      line i ppf "Pcf_virt \"%s\" %a %a\n"
+        s fmt_private_flag pf fmt_location loc;
       core_type (i+1) ppf ct;
-  | Pcf_meth (s, pf, e, loc) ->
-      line i ppf
-        "Pcf_meth \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
+  | Pcf_meth (s, pf, ovf, e, loc) ->
+      line i ppf "Pcf_meth \"%s\" %a %a %a\n"
+        s fmt_private_flag pf fmt_override_flag ovf fmt_location loc;
       expression (i+1) ppf e;
   | Pcf_cstr (ct1, ct2, loc) ->
       line i ppf "Pcf_cstr %a\n" fmt_location loc;
@@ -547,6 +570,9 @@ and module_type i ppf x =
       line i ppf "Pmty_with\n";
       module_type i ppf mt;
       list i longident_x_with_constraint ppf l;
+  | Pmty_typeof m ->
+      line i ppf "Pmty_typeof\n";
+      module_expr i ppf m
 
 and signature i ppf x = list i signature_item ppf x
 
@@ -595,7 +621,11 @@ and with_constraint i ppf x =
   | Pwith_type (td) ->
       line i ppf "Pwith_type\n";
       type_declaration (i+1) ppf td;
+  | Pwith_typesubst (td) ->
+      line i ppf "Pwith_typesubst\n";
+      type_declaration (i+1) ppf td;
   | Pwith_module (li) -> line i ppf "Pwith_module %a\n" fmt_longident li;
+  | Pwith_modsubst (li) -> line i ppf "Pwith_modsubst %a\n" fmt_longident li;
 
 and module_expr i ppf x =
   line i ppf "module_expr %a\n" fmt_location x.pmod_loc;
@@ -617,6 +647,10 @@ and module_expr i ppf x =
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;
       module_type i ppf mt;
+  | Pmod_unpack (e, (p, l)) ->
+      line i ppf "Pmod_unpack %a\n" fmt_longident p;
+      list i package_with ppf l;
+      expression i ppf e;
 
 and structure i ppf x = list i structure_item ppf x
 
