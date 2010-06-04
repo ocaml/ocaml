@@ -154,14 +154,27 @@ end
 
 (** {6 Pools} *)
 
+(** Standard workers *)
+  type ('elt,'partial) worker = 'elt -> 'partial
+
+(** Interuptible workers *)
+  type subtask_id = int (** Subtask identifier *)
+  type ('elt,'partial) interuptible_worker =
+      subtask_id * 'elt -> 'partial option (** Worker proper *)
+  type kill = subtask_id Join.chan (** Abort given subtask *)
+
+
 (** Output signature of the pool functor *)
 module type S = sig
   type elt         (** Element from a collection *)
   type collection  (** Collection *)
 
   type ('partial, 'result) t = {
-      register : (elt -> 'partial) Join.chan;
-      fold : collection -> ('partial -> 'result -> 'result) -> 'result -> 'result;
+      register : (elt,'partial) worker Join.chan;
+      register_interuptible :
+        ((elt,'partial) interuptible_worker * kill) Join.chan;
+      fold :
+        collection -> ('partial -> 'result -> 'result) -> 'result -> 'result;
     }
 (** Pools dispatch computations among registered agents, re-issuing pending
     tasks if agents do not send computation outcomes.
