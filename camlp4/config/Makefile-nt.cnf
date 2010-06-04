@@ -1,7 +1,0 @@
-EXE=.exe
-OPT=
-OTOP=../..
-OLIBDIR=$(OTOP)/boot
-BINDIR=C:/jocaml/bin
-LIBDIR=C:/jocaml/lib
-MANDIR=C:/jocaml/man
