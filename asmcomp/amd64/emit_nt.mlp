@@ -39,10 +39,10 @@ let frame_required () =
 
 let frame_size () =                     (* includes return address *)
   if frame_required() then begin
-    let sz = 
+    let sz =
       (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
     in Misc.align sz 16
-  end else 
+  end else
     !stack_offset + 8
 
 let slot_offset loc cl =
@@ -63,7 +63,7 @@ let emit_int32 n = emit_printf "0%lxh" n
 let emit_symbol s =
   Emitaux.emit_symbol '$' s
 
-(* Record symbols used and defined - at the end generate extern for those 
+(* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
 let symbols_defined = ref StringSet.empty
@@ -84,11 +84,11 @@ let emit_label lbl =
 
 let emit_align n =
   `	ALIGN	{emit_int n}\n`
-  
+
 let emit_Llabel fallthrough lbl =
   if not fallthrough && !fastcode_flag then emit_align 4;
   emit_label lbl
-  
+
 (* Output a pseudo-register *)
 
 let emit_reg = function
@@ -106,13 +106,13 @@ let emit_reg = function
 (* Output a reference to the lower 8, 16 or 32 bits of a register *)
 
 let reg_low_8_name =
-  [| "al"; "bl"; "dil"; "sil"; "dl"; "cl"; "r8b"; "r9b"; 
+  [| "al"; "bl"; "dil"; "sil"; "dl"; "cl"; "r8b"; "r9b";
      "r10b"; "r11b"; "bpl"; "r12b"; "r13b" |]
 let reg_low_16_name =
-  [| "ax"; "bx"; "di"; "si"; "dx"; "cx"; "r8w"; "r9w"; 
+  [| "ax"; "bx"; "di"; "si"; "dx"; "cx"; "r8w"; "r9w";
      "r10w"; "r11w"; "bp"; "r12w"; "r13w" |]
 let reg_low_32_name =
-  [| "eax"; "ebx"; "edi"; "esi"; "edx"; "ecx"; "r8d"; "r9d"; 
+  [| "eax"; "ebx"; "edi"; "esi"; "edx"; "ecx"; "r8d"; "r9d";
      "r10d"; "r11d"; "ebp"; "r12d"; "r13d" |]
 
 let emit_subreg tbl pref r =
@@ -253,7 +253,7 @@ let name_for_cond_branch = function
   | Iunsigned Ceq -> "e"   | Iunsigned Cne -> "ne"
   | Iunsigned Cle -> "be"  | Iunsigned Cgt -> "a"
   | Iunsigned Clt -> "b"  | Iunsigned Cge -> "ae"
-    
+
 (* Output an = 0 or <> 0 test. *)
 
 let output_test_zero arg =
@@ -264,40 +264,50 @@ let output_test_zero arg =
 (* Output a floating-point compare and branch *)
 
 let emit_float_test cmp neg arg lbl =
-  begin match cmp with
-  | Ceq | Cne -> `	ucomisd	`
-  | _         -> `	comisd	`
-  end;
-  `{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;
-  let (branch_opcode, need_jp) =
-    match (cmp, neg) with
-      (Ceq, false) -> ("je", true)
-    | (Ceq, true)  -> ("jne", true)
-    | (Cne, false) -> ("jne", true)
-    | (Cne, true)  -> ("je", true)
-    | (Clt, false) -> ("jb", true)
-    | (Clt, true)  -> ("jae", true)
-    | (Cle, false) -> ("jbe", true)
-    | (Cle, true)  -> ("ja", true)
-    | (Cgt, false) -> ("ja", false)
-    | (Cgt, true)  -> ("jbe", false)
-    | (Cge, false) -> ("jae", true)
-    | (Cge, true)  -> ("jb", false) in
-  let branch_if_not_comparable =
-    if cmp = Cne then not neg else neg in
-  if need_jp then
-    if branch_if_not_comparable then begin
-      `	jp	{emit_label lbl}\n`;
-      `	{emit_string branch_opcode}	{emit_label lbl}\n`
-    end else begin
+  (* Effect of comisd on flags and conditional branches:
+                     ZF PF CF  cond. branches taken
+        unordered     1  1  1  je, jb, jbe, jp
+        >             0  0  0  jne, jae, ja
+        <             0  0  1  jne, jbe, jb
+        =             1  0  0  je, jae, jbe.
+     If FP traps are on (they are off by default),
+     comisd traps on QNaN and SNaN but ucomisd traps on SNaN only.
+  *)
+  match (cmp, neg) with
+  | (Ceq, false) | (Cne, true) ->
       let next = new_label() in
-      `	jp	{emit_label next}\n`;
-      `	{emit_string branch_opcode}	{emit_label lbl}\n`;
+      `	ucomisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;
+      `	jp	{emit_label next}\n`;    (* skip if unordered *)
+      `	je	{emit_label lbl}\n`;     (* branch taken if x=y *)
       `{emit_label next}:\n`
-    end
-  else begin
-    `	{emit_string branch_opcode}	{emit_label lbl}\n`
-  end
+  | (Cne, false) | (Ceq, true) ->
+      `	ucomisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;
+      `	jp	{emit_label lbl}\n`;     (* branch taken if unordered *)
+      `	jne	{emit_label lbl}\n`      (* branch taken if x<y or x>y *)
+  | (Clt, _) ->
+      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
+      if not neg then
+      `	ja	{emit_label lbl}\n`     (* branch taken if y>x i.e. x<y *)
+      else
+      `	jbe	{emit_label lbl}\n` (* taken if unordered or y<=x i.e. !(x<y) *)
+  | (Cle, _) ->
+      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
+      if not neg then
+      `	jae	{emit_label lbl}\n`     (* branch taken if y>=x i.e. x<=y *)
+      else
+      `	jb	{emit_label lbl}\n` (* taken if unordered or y<x i.e. !(x<=y) *)
+  | (Cgt, _) ->
+      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;
+      if not neg then
+      `	ja	{emit_label lbl}\n`     (* branch taken if x>y *)
+      else
+      `	jbe	{emit_label lbl}\n` (* taken if unordered or x<=y i.e. !(x>y) *)
+  | (Cge, _) ->
+      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      if not neg then
+      `	jae	{emit_label lbl}\n`     (* branch taken if x>=y *)
+      else
+      `	jb	{emit_label lbl}\n` (* taken if unordered or x<y i.e. !(x>=y) *)
 
 (* Deallocate the stack frame before a return or tail call *)
 
@@ -544,7 +554,7 @@ let emit_instr fallthrough i =
             `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}	{emit_label lbl}\n`
-        | Iinttest_imm((Isigned Ceq | Isigned Cne | 
+        | Iinttest_imm((Isigned Ceq | Isigned Cne |
                         Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
             output_test_zero i.arg.(0);
             let b = name_for_cond_branch cmp in

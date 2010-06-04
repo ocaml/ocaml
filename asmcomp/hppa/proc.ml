@@ -40,18 +40,18 @@ open Mach
     %fr31                       temporary *)
 
 let int_reg_name = [|
-  (* 0-4 *)   "%r6"; "%r7"; "%r8"; "%r9"; "%r10"; 
+  (* 0-4 *)   "%r6"; "%r7"; "%r8"; "%r9"; "%r10";
   (* 5-10 *)  "%r11"; "%r12"; "%r13"; "%r14"; "%r15"; "%r16";
-  (* 11-16 *) "%r17"; "%r18"; "%r19"; "%r20"; "%r21"; "%r22"; 
+  (* 11-16 *) "%r17"; "%r18"; "%r19"; "%r20"; "%r21"; "%r22";
   (* 17-20 *) "%r23"; "%r24"; "%r25"; "%r26";
   (* 21-22 *) "%r28"; "%r29"
 |]
-  
+
 let float_reg_name = [|
   (* 100-105 *) "%fr4"; "%fr5"; "%fr6"; "%fr7"; "%fr8"; "%fr9";
   (* 106-111 *) "%fr10"; "%fr11"; "%fr12"; "%fr13"; "%fr14"; "%fr15";
   (* 112-117 *) "%fr16"; "%fr17"; "%fr18"; "%fr19"; "%fr20"; "%fr21";
-  (* 118-123 *) "%fr22"; "%fr23"; "%fr24"; "%fr25"; "%fr26"; "%fr27"; 
+  (* 118-123 *) "%fr22"; "%fr23"; "%fr24"; "%fr25"; "%fr26"; "%fr27";
   (* 124-127 *) "%fr28"; "%fr29"; "%fr30"; "%fr31"
 |]
 
@@ -141,7 +141,7 @@ let loc_results res =
   let (loc, ofs) = calling_conventions  20 13 100 107 not_supported res in loc
 
 (* Calling C functions:
-    when all arguments are integers, use %r26 - %r23, 
+    when all arguments are integers, use %r26 - %r23,
     then -52(%r30), -56(%r30), etc.
     When some arguments are floats, we handle a couple of cases by hand
     and fail otherwise. *)
@@ -218,7 +218,7 @@ let contains_calls = ref false
 
 let assemble_file infile outfile =
   Ccomp.command (Config.asm ^ " -o " ^
-                 Filename.quote outfile ^ " " ^ Filename.quote infile)  
+                 Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 open Clflags;;
 open Config;;

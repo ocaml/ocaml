@@ -62,4 +62,3 @@ method oper_issue_cycles = function
 end
 
 let fundecl f = (new scheduler)#schedule_fundecl f
-

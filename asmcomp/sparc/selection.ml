@@ -38,7 +38,7 @@ method select_addressing = function
   | arg ->
       (Iindexed 0, arg)
 
-method select_operation op args =
+method! select_operation op args =
   match (op, args) with
   (* For SPARC V7 multiplication, division and modulus are turned into
      calls to C library routines, except if the dividend is a power of 2.
@@ -65,7 +65,7 @@ method select_operation op args =
 
 (* Override insert_move_args to deal correctly with floating-point
    arguments being passed into pairs of integer registers. *)
-method insert_move_args arg loc stacksize =
+method! insert_move_args arg loc stacksize =
   if stacksize <> 0 then self#insert (Iop(Istackoffset stacksize)) [||] [||];
   let locpos = ref 0 in
   for i = 0 to Array.length arg - 1 do

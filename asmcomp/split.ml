@@ -189,7 +189,7 @@ let rec rename i sub =
   | Iraise ->
       (instr_cons_debug Iraise (subst_regs i.arg sub) [||] i.dbg i.next,
        None)
-      
+
 (* Second pass: replace registers by their final representatives *)
 
 let set_repres i =

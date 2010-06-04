@@ -31,24 +31,24 @@ open Mach
     rcx         5
     r8          6
     r9          7
-    r10		8
-    r11		9
+    r10         8
+    r11         9
     rbp         10
-    r12		11
-    r13		12
+    r12         11
+    r13         12
     r14         trap pointer
     r15         allocation pointer
-    
+
   xmm0 - xmm15  100 - 115       xmm0 - xmm9: Caml function arguments
                                 xmm0 - xmm7: C function arguments
                                 xmm0: Caml and C function results *)
 
 let int_reg_name =
-  [| "%rax"; "%rbx"; "%rdi"; "%rsi"; "%rdx"; "%rcx"; "%r8"; "%r9"; 
+  [| "%rax"; "%rbx"; "%rdi"; "%rsi"; "%rdx"; "%rcx"; "%r8"; "%r9";
      "%r10"; "%r11"; "%rbp"; "%r12"; "%r13" |]
 
 let float_reg_name =
-  [| "%xmm0"; "%xmm1"; "%xmm2"; "%xmm3"; "%xmm4"; "%xmm5"; "%xmm6"; "%xmm7"; 
+  [| "%xmm0"; "%xmm1"; "%xmm2"; "%xmm3"; "%xmm4"; "%xmm5"; "%xmm6"; "%xmm7";
      "%xmm8"; "%xmm9"; "%xmm10"; "%xmm11";
      "%xmm12"; "%xmm13"; "%xmm14"; "%xmm15" |]
 

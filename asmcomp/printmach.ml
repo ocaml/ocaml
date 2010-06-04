@@ -27,7 +27,7 @@ let reg ppf r =
   fprintf ppf "/%i" r.stamp;
   begin match r.loc with
   | Unknown -> ()
-  | Reg r -> 
+  | Reg r ->
       fprintf ppf "[%s]" (Proc.register_name r)
   | Stack(Local s) ->
       fprintf ppf "[s%i]" s

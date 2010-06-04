@@ -138,7 +138,7 @@ method select_addressing exp =
     | Ascaledadd(e1, e2, scale) ->
         (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-method select_store addr exp =
+method! select_store addr exp =
   match exp with
     Cconst_int n when self#is_immediate n ->
       (Ispecific(Istore_int(Nativeint.of_int n, addr)), Ctuple [])
@@ -153,7 +153,7 @@ method select_store addr exp =
   | _ ->
       super#select_store addr exp
 
-method select_operation op args =
+method! select_operation op args =
   match op with
   (* Recognize the LEA instruction *)
     Caddi | Cadda | Csubi | Csuba ->
@@ -217,7 +217,7 @@ method select_floatarith commutative regular_op mem_op args =
 
 (* Deal with register constraints *)
 
-method insert_op_debug op dbg rs rd =
+method! insert_op_debug op dbg rs rd =
   try
     let (rsrc, rdst) = pseudoregs_for_operation op rs rd in
     self#insert_moves rs rsrc;
@@ -227,7 +227,7 @@ method insert_op_debug op dbg rs rd =
   with Use_default ->
     super#insert_op_debug op dbg rs rd
 
-method insert_op op rs rd =
+method! insert_op op rs rd =
   self#insert_op_debug op Debuginfo.none rs rd
 
 end

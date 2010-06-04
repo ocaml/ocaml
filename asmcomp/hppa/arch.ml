@@ -71,4 +71,3 @@ let print_specific_operation printreg op ppf arg =
   | Ishift1add -> fprintf ppf "%a << 1 + %a" printreg arg.(0) printreg arg.(1)
   | Ishift2add -> fprintf ppf "%a << 2 + %a" printreg arg.(0) printreg arg.(1)
   | Ishift3add -> fprintf ppf "%a << 3 + %a" printreg arg.(0) printreg arg.(1)
-

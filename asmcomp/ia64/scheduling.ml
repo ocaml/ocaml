@@ -14,7 +14,7 @@
 
 open Schedgen (* to create a dependency *)
 
-(* We don't schedule here on the linearized code, but instead schedule the 
+(* We don't schedule here on the linearized code, but instead schedule the
    assembly code generated in Emit. *)
 
 let fundecl f = f

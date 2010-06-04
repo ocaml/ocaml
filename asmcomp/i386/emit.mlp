@@ -98,7 +98,7 @@ let use_ascii_dir =
     "solaris" -> false
   | _ -> true
 
-(* MacOSX has its own way to reference symbols potentially defined in 
+(* MacOSX has its own way to reference symbols potentially defined in
    shared objects *)
 
 let macosx =
@@ -987,7 +987,7 @@ let end_assembly() =
       efa_label_rel = (fun lbl ofs ->
                            `	.long	{emit_label lbl} - . + {emit_int32 ofs}\n`);
       efa_def_label = (fun l -> `{emit_label l}:\n`);
-      efa_string = (fun s -> 
+      efa_string = (fun s ->
         let s = s ^ "\000" in
         if use_ascii_dir
         then emit_string_directive "	.ascii	" s

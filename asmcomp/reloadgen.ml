@@ -109,13 +109,13 @@ method private reload i =
             (self#reload i.next))}
   | Iifthenelse(tst, ifso, ifnot) ->
       let newarg = self#reload_test tst i.arg in
-      insert_moves i.arg newarg      
+      insert_moves i.arg newarg
         (instr_cons
           (Iifthenelse(tst, self#reload ifso, self#reload ifnot)) newarg [||]
           (self#reload i.next))
   | Iswitch(index, cases) ->
       let newarg = self#makeregs i.arg in
-      insert_moves i.arg newarg      
+      insert_moves i.arg newarg
         (instr_cons (Iswitch(index, Array.map (self#reload) cases)) newarg [||]
           (self#reload i.next))
   | Iloop body ->

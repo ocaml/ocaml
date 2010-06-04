@@ -60,7 +60,7 @@ let slot_offset loc cl =
 (* Symbols *)
 
 let emit_symbol s =
-    if macosx then emit_string "_"; 
+    if macosx then emit_string "_";
     Emitaux.emit_symbol '$' s
 
 let emit_call s =
@@ -79,7 +79,6 @@ let load_symbol_addr s =
   else if !pic_code
   then `leaq	{emit_symbol s}(%rip)`
   else `movq	${emit_symbol s}`
-
 
 (* Output a label *)
 
@@ -271,40 +270,50 @@ let output_test_zero arg =
 (* Output a floating-point compare and branch *)
 
 let emit_float_test cmp neg arg lbl =
-  begin match cmp with
-  | Ceq | Cne -> `	ucomisd	`
-  | _         -> `	comisd	`
-  end;
-  `{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
-  let (branch_opcode, need_jp) =
-    match (cmp, neg) with
-      (Ceq, false) -> ("je", true)
-    | (Ceq, true)  -> ("jne", true)
-    | (Cne, false) -> ("jne", true)
-    | (Cne, true)  -> ("je", true)
-    | (Clt, false) -> ("jb", true)
-    | (Clt, true)  -> ("jae", true)
-    | (Cle, false) -> ("jbe", true)
-    | (Cle, true)  -> ("ja", true)
-    | (Cgt, false) -> ("ja", false)
-    | (Cgt, true)  -> ("jbe", false)
-    | (Cge, false) -> ("jae", true)
-    | (Cge, true)  -> ("jb", false) in
-  let branch_if_not_comparable =
-    if cmp = Cne then not neg else neg in
-  if need_jp then
-    if branch_if_not_comparable then begin
-      `	jp	{emit_label lbl}\n`;
-      `	{emit_string branch_opcode}	{emit_label lbl}\n`
-    end else begin
+  (* Effect of comisd on flags and conditional branches:
+                     ZF PF CF  cond. branches taken
+        unordered     1  1  1  je, jb, jbe, jp
+        >             0  0  0  jne, jae, ja
+        <             0  0  1  jne, jbe, jb
+        =             1  0  0  je, jae, jbe.
+     If FP traps are on (they are off by default),
+     comisd traps on QNaN and SNaN but ucomisd traps on SNaN only.
+  *)
+  match (cmp, neg) with
+  | (Ceq, false) | (Cne, true) ->
       let next = new_label() in
-      `	jp	{emit_label next}\n`;
-      `	{emit_string branch_opcode}	{emit_label lbl}\n`;
+      `	ucomisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
+      `	jp	{emit_label next}\n`;    (* skip if unordered *)
+      `	je	{emit_label lbl}\n`;     (* branch taken if x=y *)
       `{emit_label next}:\n`
-    end
-  else begin
-    `	{emit_string branch_opcode}	{emit_label lbl}\n`
-  end
+  | (Cne, false) | (Ceq, true) ->
+      `	ucomisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
+      `	jp	{emit_label lbl}\n`;     (* branch taken if unordered *)
+      `	jne	{emit_label lbl}\n`      (* branch taken if x<y or x>y *)
+  | (Clt, _) ->
+      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      if not neg then
+      `	ja	{emit_label lbl}\n`     (* branch taken if y>x i.e. x<y *)
+      else
+      `	jbe	{emit_label lbl}\n` (* taken if unordered or y<=x i.e. !(x<y) *)
+  | (Cle, _) ->
+      ` comisd	{emit_reg arg.(0)}, {emit_reg arg.(1)}\n`;  (* swap compare *)
+      if not neg then
+      `	jae	{emit_label lbl}\n`     (* branch taken if y>=x i.e. x<=y *)
+      else
+      `	jb	{emit_label lbl}\n` (* taken if unordered or y<x i.e. !(x<=y) *)
+  | (Cgt, _) ->
+      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;
+      if not neg then
+      `	ja	{emit_label lbl}\n`     (* branch taken if x>y *)
+      else
+      `	jbe	{emit_label lbl}\n` (* taken if unordered or x<=y i.e. !(x>y) *)
+  | (Cge, _) ->
+      ` comisd	{emit_reg arg.(1)}, {emit_reg arg.(0)}\n`;  (* swap compare *)
+      if not neg then
+      `	jae	{emit_label lbl}\n`     (* branch taken if x>=y *)
+      else
+      `	jb	{emit_label lbl}\n` (* taken if unordered or x<y i.e. !(x>=y) *)
 
 (* Deallocate the stack frame before a return or tail call *)
 
@@ -732,19 +741,14 @@ let data l =
 let begin_assembly() =
   if !Clflags.dlcode then begin
     (* from amd64.S; could emit these constants on demand *)
-    if macosx then begin
-        `	.literal16\n`;
-        `	.align  4\n`;
-        `caml_negf_mask:	.quad   0x8000000000000000, 0\n`;
-        `	.align  4\n`;
-        `caml_absf_mask:	.quad   0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF\n`;
-    end else begin
+    if macosx then
+        `	.literal16\n`
+    else
         `	.section        .rodata.cst8,\"a\",@progbits\n`;
-        `	.align  16\n`;
-        `caml_negf_mask:	.quad   0x8000000000000000, 0\n`;
-        `	.align  16\n`;
-        `caml_absf_mask:	.quad   0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF\n`;
-    end;
+    emit_align 16;
+    `{emit_symbol "caml_negf_mask"}:	.quad   0x8000000000000000, 0\n`;
+    emit_align 16;
+    `{emit_symbol "caml_absf_mask"}:	.quad   0x7FFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFFFFF\n`
   end;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
@@ -792,4 +796,3 @@ let end_assembly() =
   if Config.system = "linux" then
     (* Mark stack as non-executable, PR#4564 *)
     `	.section .note.GNU-stack,\"\",%progbits\n`
-

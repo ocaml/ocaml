@@ -137,7 +137,7 @@ let emit_imports () =
 
 let is_offset n = (n < 8192) && (n >= -8192) (* 14 bits *)
 
-let is_offset_native n = 
+let is_offset_native n =
   n < Nativeint.of_int 8192 && n >= Nativeint.of_int (-8192)
 
 let emit_load instr addr arg dst =
