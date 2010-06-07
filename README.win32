@@ -49,22 +49,18 @@ The remainder of this document gives more information on each port.
 
 REQUIREMENTS:
 
-This port runs under MS Windows Vista, XP, and 2000.
+This port runs under MS Windows 7, Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
-Statically linking Caml bytecode with C code (ocamlc -custom) requires the
-Microsoft Visual C++ compiler (items [1] and [2] in the section
-"third-party software" below) and the flexdll tool (item [5]).
+The native-code compiler (ocamlopt) requires the Microsoft Windows SDK
+(item [1]) and the flexdll tool (item [3]).
 
-The native-code compiler (ocamlopt) requires Visual C++ (items [1], [2]),
-the Microsoft assembler MASM (item [3]) and the flexdll tool (item [5]).
+Statically linking Caml bytecode with C code (ocamlc -custom) also requires
+items [1] and [3].
 
-Instead of items [1], [2] and [3], it is possible to use item [6] which contains
-everything needed.
-
-The LablTk GUI requires Tcl/Tk 8.5 (item [4]).
+The LablTk GUI requires Tcl/Tk 8.5 (item [2]).
 
 
 INSTALLATION:
@@ -79,53 +75,60 @@ installer) must be added to the PATH environment variable.
 To compile programs that use the LablTK GUI, the directory where the
 libraries tk85.lib and tcl85.lib were installed (by the Tcl/Tk
 installer) must be added to the library search path in the LIB
-environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
-"C:\tcl\lib" to the LIB environment variable.
+environment variable.  E.g. if Tcl/Tk was installed in C:\Tcl, add
+"C:\Tcl\lib" to the LIB environment variable.
 
 THIRD-PARTY SOFTWARE:
 
-[1] Visual C++ version 2008, 2005, 2003, or 6.
-    We use Visual C++ 2008 Express Edition, which can be downloaded for free
-    from http://www.microsoft.com.
+[1] Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 Service Pack 1.
+    Can be downloaded for free from
+    http://www.microsoft.com/downloads/en/default.aspx
+    under the name "Microsoft Windows 7 SDK".
 
-[2] Windows header files and development libraries.  They are included
-    in the Visual C++ 2008 Express Edition distribution.
-    Otherwise, you can find them in the Windows Platform SDK,
-    which can be downloaded for free from http://www.microsoft.com/.
-
-[3] MASM version 6.11 or later. The full distribution of Visual C++ 2005
-    or 2008 contains MASM version 8.  Users of the Express Edition of Visual C++
-    2005 can download MASM version 8 from
-http://www.microsoft.com/downloads/details.aspx?FamilyID=7A1C9DA0-0510-44A2-B042-7EF370530C64&displaylang=en
-    To obtain MASM version 6.11, see
-    http://users.easystreet.com/jkirwan/new/pctools.html.
-
-[4] TCL/TK version 8.5.  Windows binaries are available as part of the
+[2] TCL/TK version 8.5.  Windows binaries are available as part of the
     ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
 
-[5] flexdll.
+[3] flexdll version 0.23 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
-
-[6] Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 Service Pack 1
 
 
 RECOMPILATION FROM THE SOURCES:
 
 The command-line tools can be recompiled from the Unix source
-distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
+distribution (ocaml-X.YY.Z.tar.gz), which also contains the files modified
 for Windows.
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, XP, or Vista.
-- Items [1], [2], [3], [4] and [5] from the list of recommended software above.
+- Windows NT, 2000, XP, Vista, or 7.
+- Items [1], [2] and [3] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages: diffutils, make, ncurses.
 
-Remember to add the directory where the libraries tk84.lib and
-tcl84.lib were installed (by the Tcl/Tk installer) to the LIB variable
-(library search path).
+First, you need to set up your cygwin environment for using the MS
+tools.  The following assumes that you have installed [1], [2], and [3]
+in their default directories.  If this is not the case, you will need
+to adjust the paths accordingly.
 
-To recompile, start a Cygwin shell and change to the top-level
+  Open a Windows Command Prompt and enter the following commands:
+    cd "C:\Program Files\Visual Studio 9.0\VC\bin"
+    vcvars32
+    echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
+    echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
+    echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
+    echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
+    echo FLPATH="`cygpath 'C:\Program Files\flexdll'`" >>C:\cygwin\tmp\msenv
+
+  Open a Cygwin shell and enter the following commands:
+    tr -d '\r' </tmp/msenv >.msenv
+    echo '. $HOME/.msenv' >>.bashrc
+    echo 'PATH="${VCPATH}:$PATH:${FLPATH}"' >>.bashrc
+    echo 'export PATH LIB LIBPATH INCLUDE' >>.bashrc
+
+Now, close the Command Prompt and the shell and you're set up for
+using the MS tools under Cygwin.
+
+
+To recompile OCaml, start a new Cygwin shell and change to the top-level
 directory of the OCaml distribution.  Then, do
 
         cp config/m-nt.h config/m.h
@@ -144,11 +147,6 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
         make -f Makefile.nt opt
         make -f Makefile.nt opt.opt
         make -f Makefile.nt install
-
-Alternatively you can use the experimental build procedure using ocamlbuild:
-
-        ./build/fastworld.sh
-        ./build/install.sh
 
 NOTES:
 
