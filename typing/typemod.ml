@@ -633,17 +633,16 @@ let check_recmodule_inclusion env bindings =
 
 (* Type a module value expression *)
 
-let rec type_module sttn funct_body anchor env smod =
+let rec type_module funct_body anchor env smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let (path, mty) = Typetexp.find_module env smod.pmod_loc lid in
       rm { mod_desc = Tmod_ident path;
-           mod_type = if sttn then Mtype.strengthen env mty path else mty;
+           mod_type = Mtype.strengthen env mty path;
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
-      let (str, sg, finalenv) =
-        type_structure funct_body anchor env sstr smod.pmod_loc in
+      let (str, sg, finalenv) = type_structure funct_body anchor env sstr smod.pmod_loc in
       rm { mod_desc = Tmod_structure str;
            mod_type = Tmty_signature sg;
            mod_env = env;
@@ -651,16 +650,14 @@ let rec type_module sttn funct_body anchor env smod =
   | Pmod_functor(name, smty, sbody) ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_module name mty env in
-      let body = type_module sttn true None newenv sbody in
+      let body = type_module true None newenv sbody in
       rm { mod_desc = Tmod_functor(id, mty, body);
            mod_type = Tmty_functor(id, mty, body.mod_type);
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
-      let arg = type_module true funct_body None env sarg in
-      let path = try Some (path_of_module arg) with Not_a_path -> None in
-      let funct =
-        type_module (sttn && path <> None) funct_body None env sfunct in
+      let funct = type_module funct_body None env sfunct in
+      let arg = type_module funct_body None env sarg in
       begin match Mtype.scrape env funct.mod_type with
         Tmty_functor(param, mty_param, mty_res) as mty_functor ->
           let coercion =
@@ -669,18 +666,17 @@ let rec type_module sttn funct_body anchor env smod =
             with Includemod.Error msg ->
               raise(Error(sarg.pmod_loc, Not_included msg)) in
           let mty_appl =
-            match path with
-              Some path ->
-                Subst.modtype (Subst.add_module param path Subst.identity)
-                              mty_res
-            | None ->
-                try
-                  Mtype.nondep_supertype
-                    (Env.add_module param arg.mod_type env) param mty_res
-                with Not_found ->
-                  raise(Error(smod.pmod_loc,
-                              Cannot_eliminate_dependency mty_functor))
-          in
+            try
+              let path = path_of_module arg in
+              Subst.modtype (Subst.add_module param path Subst.identity)
+                            mty_res
+            with Not_a_path ->
+              try
+                Mtype.nondep_supertype
+                  (Env.add_module param arg.mod_type env) param mty_res
+              with Not_found ->
+                raise(Error(smod.pmod_loc,
+                            Cannot_eliminate_dependency mty_functor)) in
           rm { mod_desc = Tmod_apply(funct, arg, coercion);
                mod_type = mty_appl;
                mod_env = env;
@@ -689,7 +685,7 @@ let rec type_module sttn funct_body anchor env smod =
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
       end
   | Pmod_constraint(sarg, smty) ->
-      let arg = type_module true funct_body anchor env sarg in
+      let arg = type_module funct_body anchor env sarg in
       let mty = transl_modtype env smty in
       let coercion =
         try
@@ -702,12 +698,10 @@ let rec type_module sttn funct_body anchor env smod =
            mod_loc = smod.pmod_loc }
 
   | Pmod_unpack (sexp, (p, l)) ->
-      if funct_body then
-        raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
+      if funct_body then raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
       let l, mty = Typetexp.create_package_mty smod.pmod_loc env (p, l) in
       let mty = transl_modtype env mty in
-      let exp = Typecore.type_expect env sexp
-          (Typecore.create_package_type smod.pmod_loc env (p, l)) in
+      let exp = Typecore.type_expect env sexp (Typecore.create_package_type smod.pmod_loc env (p, l)) in
       rm { mod_desc = Tmod_unpack(exp, mty);
            mod_type = mty;
            mod_env = env;
@@ -781,9 +775,7 @@ and type_structure funct_body anchor env sstr scope =
          final_env)
     | {pstr_desc = Pstr_module(name, smodl); pstr_loc = loc} :: srem ->
         check "module" loc module_names name;
-        let modl =
-          type_module true funct_body (anchor_submodule name anchor) env
-            smodl in
+        let modl = type_module funct_body (anchor_submodule name anchor) env smodl in
         let mty = enrich_module_type anchor name modl.mod_type env in
         let (id, newenv) = Env.enter_module name mty env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
@@ -801,11 +793,9 @@ and type_structure funct_body anchor env sstr scope =
           List.map2
             (fun (id, mty) (name, smty, smodl) ->
               let modl =
-                type_module true funct_body (anchor_recmodule id anchor) newenv
-                  smodl in
+                type_module funct_body (anchor_recmodule id anchor) newenv smodl in
               let mty' =
-                enrich_module_type anchor (Ident.name id) modl.mod_type newenv
-              in
+                enrich_module_type anchor (Ident.name id) modl.mod_type newenv in
               (id, mty, modl, mty'))
            decls sbind in
         let bindings2 =
@@ -873,7 +863,7 @@ and type_structure funct_body anchor env sstr scope =
               classes [sig_rem]),
          final_env)
     | {pstr_desc = Pstr_include smodl; pstr_loc = loc} :: srem ->
-        let modl = type_module true funct_body None env smodl in
+        let modl = type_module funct_body None env smodl in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
                    (extract_sig_open env smodl.pmod_loc modl.mod_type) in
@@ -889,7 +879,7 @@ and type_structure funct_body anchor env sstr scope =
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   type_struct env sstr
 
-let type_module = type_module true false None
+let type_module = type_module false None
 let type_structure = type_structure false None
 
 (* Normalize types in a signature *)
