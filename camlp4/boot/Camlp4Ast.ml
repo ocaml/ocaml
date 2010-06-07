@@ -711,19 +711,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
-                  | Ast.CrVal x0 x1 x2 x3 ->
-                      Ast.ExApp _loc
-                        (Ast.ExApp _loc
-                           (Ast.ExApp _loc
-                              (Ast.ExApp _loc
-                                 (Ast.ExId _loc
-                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                       (Ast.IdUid _loc "CrVal")))
-                                 (meta_loc _loc x0))
-                              (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
-                        (meta_expr _loc x3)
-                  | Ast.CrMth x0 x1 x2 x3 x4 ->
+                  | Ast.CrVal x0 x1 x2 x3 x4 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExApp _loc
@@ -731,12 +719,29 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExApp _loc
                                     (Ast.ExId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                          (Ast.IdUid _loc "CrMth")))
+                                          (Ast.IdUid _loc "CrVal")))
                                     (meta_loc _loc x0))
-                                 (meta_string _loc x1))
-                              (meta_meta_bool _loc x2))
-                           (meta_expr _loc x3))
-                        (meta_ctyp _loc x4)
+                                 (meta_meta_bool _loc x1))
+                              (meta_string _loc x2))
+                           (meta_meta_bool _loc x3))
+                        (meta_expr _loc x4)
+                  | Ast.CrMth x0 x1 x2 x3 x4 x5 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExApp _loc
+                                    (Ast.ExApp _loc
+                                       (Ast.ExId _loc
+                                          (Ast.IdAcc _loc
+                                             (Ast.IdUid _loc "Ast")
+                                             (Ast.IdUid _loc "CrMth")))
+                                       (meta_loc _loc x0))
+                                    (meta_meta_bool _loc x1))
+                                 (meta_string _loc x2))
+                              (meta_meta_bool _loc x3))
+                           (meta_expr _loc x4))
+                        (meta_ctyp _loc x5)
                   | Ast.CrIni x0 x1 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -745,16 +750,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "CrIni")))
                            (meta_loc _loc x0))
                         (meta_expr _loc x1)
-                  | Ast.CrInh x0 x1 x2 ->
+                  | Ast.CrInh x0 x1 x2 x3 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExApp _loc
-                              (Ast.ExId _loc
-                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                    (Ast.IdUid _loc "CrInh")))
-                              (meta_loc _loc x0))
-                           (meta_class_expr _loc x1))
-                        (meta_string _loc x2)
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrInh")))
+                                 (meta_loc _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_class_expr _loc x2))
+                        (meta_string _loc x3)
                   | Ast.CrCtr x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -2695,19 +2702,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                               (meta_string _loc x1))
                            (meta_meta_bool _loc x2))
                         (meta_ctyp _loc x3)
-                  | Ast.CrVal x0 x1 x2 x3 ->
-                      Ast.PaApp _loc
-                        (Ast.PaApp _loc
-                           (Ast.PaApp _loc
-                              (Ast.PaApp _loc
-                                 (Ast.PaId _loc
-                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                       (Ast.IdUid _loc "CrVal")))
-                                 (meta_loc _loc x0))
-                              (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
-                        (meta_expr _loc x3)
-                  | Ast.CrMth x0 x1 x2 x3 x4 ->
+                  | Ast.CrVal x0 x1 x2 x3 x4 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaApp _loc
@@ -2715,12 +2710,29 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaApp _loc
                                     (Ast.PaId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                          (Ast.IdUid _loc "CrMth")))
+                                          (Ast.IdUid _loc "CrVal")))
                                     (meta_loc _loc x0))
-                                 (meta_string _loc x1))
-                              (meta_meta_bool _loc x2))
-                           (meta_expr _loc x3))
-                        (meta_ctyp _loc x4)
+                                 (meta_meta_bool _loc x1))
+                              (meta_string _loc x2))
+                           (meta_meta_bool _loc x3))
+                        (meta_expr _loc x4)
+                  | Ast.CrMth x0 x1 x2 x3 x4 x5 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaApp _loc
+                                    (Ast.PaApp _loc
+                                       (Ast.PaId _loc
+                                          (Ast.IdAcc _loc
+                                             (Ast.IdUid _loc "Ast")
+                                             (Ast.IdUid _loc "CrMth")))
+                                       (meta_loc _loc x0))
+                                    (meta_meta_bool _loc x1))
+                                 (meta_string _loc x2))
+                              (meta_meta_bool _loc x3))
+                           (meta_expr _loc x4))
+                        (meta_ctyp _loc x5)
                   | Ast.CrIni x0 x1 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -2729,16 +2741,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "CrIni")))
                            (meta_loc _loc x0))
                         (meta_expr _loc x1)
-                  | Ast.CrInh x0 x1 x2 ->
+                  | Ast.CrInh x0 x1 x2 x3 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaApp _loc
-                              (Ast.PaId _loc
-                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                    (Ast.IdUid _loc "CrInh")))
-                              (meta_loc _loc x0))
-                           (meta_class_expr _loc x1))
-                        (meta_string _loc x2)
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrInh")))
+                                 (meta_loc _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_class_expr _loc x2))
+                        (meta_string _loc x3)
                   | Ast.CrCtr x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -5139,23 +5153,27 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#ctyp _x_i1 in
               let _x_i2 = o#ctyp _x_i2 in CrCtr _x _x_i1 _x_i2
-          | CrInh _x _x_i1 _x_i2 ->
+          | CrInh _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
-              let _x_i1 = o#class_expr _x_i1 in
-              let _x_i2 = o#string _x_i2 in CrInh _x _x_i1 _x_i2
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#class_expr _x_i2 in
+              let _x_i3 = o#string _x_i3 in CrInh _x _x_i1 _x_i2 _x_i3
           | CrIni _x _x_i1 ->
               let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in CrIni _x _x_i1
-          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
               let _x = o#loc _x in
-              let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
-              let _x_i3 = o#expr _x_i3 in
-              let _x_i4 = o#ctyp _x_i4 in CrMth _x _x_i1 _x_i2 _x_i3 _x_i4
-          | CrVal _x _x_i1 _x_i2 _x_i3 ->
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#string _x_i2 in
+              let _x_i3 = o#meta_bool _x_i3 in
+              let _x_i4 = o#expr _x_i4 in
+              let _x_i5 = o#ctyp _x_i5
+              in CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5
+          | CrVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let _x = o#loc _x in
-              let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
-              let _x_i3 = o#expr _x_i3 in CrVal _x _x_i1 _x_i2 _x_i3
+              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i2 = o#string _x_i2 in
+              let _x_i3 = o#meta_bool _x_i3 in
+              let _x_i4 = o#expr _x_i4 in CrVal _x _x_i1 _x_i2 _x_i3 _x_i4
           | CrVir _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
@@ -5746,19 +5764,22 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | CrCtr _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
-          | CrInh _x _x_i1 _x_i2 ->
+          | CrInh _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#class_expr _x_i1 in let o = o#string _x_i2 in o
+              let o = o#meta_bool _x_i1 in
+              let o = o#class_expr _x_i2 in let o = o#string _x_i3 in o
           | CrIni _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
-          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
               let o = o#loc _x in
-              let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in
-              let o = o#expr _x_i3 in let o = o#ctyp _x_i4 in o
-          | CrVal _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#meta_bool _x_i1 in
+              let o = o#string _x_i2 in
+              let o = o#meta_bool _x_i3 in
+              let o = o#expr _x_i4 in let o = o#ctyp _x_i5 in o
+          | CrVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let o = o#loc _x in
-              let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in let o = o#expr _x_i3 in o
+              let o = o#meta_bool _x_i1 in
+              let o = o#string _x_i2 in
+              let o = o#meta_bool _x_i3 in let o = o#expr _x_i4 in o
           | CrVir _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in

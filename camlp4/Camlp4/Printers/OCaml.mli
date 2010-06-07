@@ -114,9 +114,10 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method module_rec_binding : formatter -> Ast.module_binding -> unit;
     method module_type : formatter -> Ast.module_type -> unit;
     method mutable_flag : formatter -> Ast.meta_bool -> unit;
+    method override_flag : formatter -> Ast.meta_bool -> unit;
     method direction_flag : formatter -> Ast.meta_bool -> unit;
     method rec_flag : formatter -> Ast.meta_bool -> unit;
-    method flag : formatter -> Ast.meta_bool -> string -> unit;
+    method flag : ?nospace:bool -> formatter -> Ast.meta_bool -> string -> unit;
     method node : formatter -> 'b -> ('b -> Loc.t) -> unit;
     method patt : formatter -> Ast.patt -> unit;
     method patt1 : formatter -> Ast.patt -> unit;

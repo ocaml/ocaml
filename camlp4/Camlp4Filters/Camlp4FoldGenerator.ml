@@ -428,6 +428,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         let funs = lambda (fun_of_ctyp id1 ctyp) params' in
         let ty = method_type_of_type_decl type_decl in
         let priv = if priv then Ast.BTrue else Ast.BFalse in
+        (*Ast.CrSem (_loc, Ast.CrMth (_loc, Ast.BFalse, id1, priv, funs, ty), acc)*)
         <:class_str_item< method $private:priv$ $lid:id1$ : $ty$ = $funs$; $acc$ >>
 
       and ctyp_name_of_name_params name params =
@@ -506,6 +507,10 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
     let failure =
       if n > 1 then
         let name = string_of_mode mode in
+        (*Ast.CrMth (_loc, Ast.BFalse, sf "%s%d_failure" name n, Ast.BFalse,
+                   <:expr<fun $M.tuplify_patt (pxik 0)$ ->
+                   failwith $`str:sf "%s%d_failure: default implementation" name n$ >>,
+                   gen_type)*)
         <:class_str_item< method $lid:sf "%s%d_failure" name n$ : $gen_type$ =
                             fun $M.tuplify_patt (pxik 0)$ ->
                               failwith $`str:sf "%s%d_failure: default implementation" name n$ >>
@@ -515,6 +520,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
       <:ctyp< ! 'a . $M.method_type_of_type <:ctyp< 'a >> <:ctyp< 'a >> [] []$ >>
     in
     let unknown =
+      (*Ast.CrMth (_loc, Ast.BFalse, "unknown", Ast.BFalse, M.default_expr, gen_type)*)
       <:class_str_item< method unknown : $gen_type$ = $M.default_expr$ >>
     in
     <:str_item< class $lid:c$ = object (o : 'self_type) $generated$; $failure$; $unknown$ end >>;

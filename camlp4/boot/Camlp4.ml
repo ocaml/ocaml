@@ -1259,13 +1259,13 @@ module Sig =
           | (* type t = t *)
           CrCtr of loc * ctyp * ctyp
           | (* inherit ce or inherit ce as s *)
-          CrInh of loc * class_expr * string
+          CrInh of loc * meta_bool * class_expr * string
           | (* initializer e *)
           CrIni of loc * expr
           | (* method (private)? s : t = e or method (private)? s = e *)
-          CrMth of loc * string * meta_bool * expr * ctyp
+          CrMth of loc * meta_bool * string * meta_bool * expr * ctyp
           | (* value (mutable)? s = e *)
-          CrVal of loc * string * meta_bool * expr
+          CrVal of loc * meta_bool * string * meta_bool * expr
           | (* method virtual (private)? s : t *)
           CrVir of loc * string * meta_bool * ctyp
           | (* value virtual (private)? s : t *)
@@ -1953,10 +1953,10 @@ module Sig =
           | CrNil of loc
           | CrSem of loc * class_str_item * class_str_item
           | CrCtr of loc * ctyp * ctyp
-          | CrInh of loc * class_expr * string
+          | CrInh of loc * meta_bool * class_expr * string
           | CrIni of loc * expr
-          | CrMth of loc * string * meta_bool * expr * ctyp
-          | CrVal of loc * string * meta_bool * expr
+          | CrMth of loc * meta_bool * string * meta_bool * expr * ctyp
+          | CrVal of loc * meta_bool * string * meta_bool * expr
           | CrVir of loc * string * meta_bool * ctyp
           | CrVvr of loc * string * meta_bool * ctyp
           | CrAnt of loc * string
@@ -7590,20 +7590,7 @@ module Struct =
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
-                          | Ast.CrVal (x0, x1, x2, x3) ->
-                              Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVal"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_expr _loc x3)
-                          | Ast.CrMth (x0, x1, x2, x3, x4) ->
+                          | Ast.CrVal (x0, x1, x2, x3, x4) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
                                   Ast.ExApp (_loc,
@@ -7612,12 +7599,29 @@ module Struct =
                                         Ast.ExId (_loc,
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "CrMth"))),
+                                            Ast.IdUid (_loc, "CrVal"))),
                                         meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_expr _loc x3),
-                                meta_ctyp _loc x4)
+                                      meta_meta_bool _loc x1),
+                                    meta_string _loc x2),
+                                  meta_meta_bool _loc x3),
+                                meta_expr _loc x4)
+                          | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExApp (_loc,
+                                    Ast.ExApp (_loc,
+                                      Ast.ExApp (_loc,
+                                        Ast.ExApp (_loc,
+                                          Ast.ExId (_loc,
+                                            Ast.IdAcc (_loc,
+                                              Ast.IdUid (_loc, "Ast"),
+                                              Ast.IdUid (_loc, "CrMth"))),
+                                          meta_loc _loc x0),
+                                        meta_meta_bool _loc x1),
+                                      meta_string _loc x2),
+                                    meta_meta_bool _loc x3),
+                                  meta_expr _loc x4),
+                                meta_ctyp _loc x5)
                           | Ast.CrIni (x0, x1) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -7626,17 +7630,19 @@ module Struct =
                                       Ast.IdUid (_loc, "CrIni"))),
                                   meta_loc _loc x0),
                                 meta_expr _loc x1)
-                          | Ast.CrInh (x0, x1, x2) ->
+                          | Ast.CrInh (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
                                   Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrInh"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_string _loc x2)
+                                    Ast.ExApp (_loc,
+                                      Ast.ExId (_loc,
+                                        Ast.IdAcc (_loc,
+                                          Ast.IdUid (_loc, "Ast"),
+                                          Ast.IdUid (_loc, "CrInh"))),
+                                      meta_loc _loc x0),
+                                    meta_meta_bool _loc x1),
+                                  meta_class_expr _loc x2),
+                                meta_string _loc x3)
                           | Ast.CrCtr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -9697,20 +9703,7 @@ module Struct =
                                     meta_string _loc x1),
                                   meta_meta_bool _loc x2),
                                 meta_ctyp _loc x3)
-                          | Ast.CrVal (x0, x1, x2, x3) ->
-                              Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVal"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_expr _loc x3)
-                          | Ast.CrMth (x0, x1, x2, x3, x4) ->
+                          | Ast.CrVal (x0, x1, x2, x3, x4) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
                                   Ast.PaApp (_loc,
@@ -9719,12 +9712,29 @@ module Struct =
                                         Ast.PaId (_loc,
                                           Ast.IdAcc (_loc,
                                             Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "CrMth"))),
+                                            Ast.IdUid (_loc, "CrVal"))),
                                         meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_expr _loc x3),
-                                meta_ctyp _loc x4)
+                                      meta_meta_bool _loc x1),
+                                    meta_string _loc x2),
+                                  meta_meta_bool _loc x3),
+                                meta_expr _loc x4)
+                          | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaApp (_loc,
+                                    Ast.PaApp (_loc,
+                                      Ast.PaApp (_loc,
+                                        Ast.PaApp (_loc,
+                                          Ast.PaId (_loc,
+                                            Ast.IdAcc (_loc,
+                                              Ast.IdUid (_loc, "Ast"),
+                                              Ast.IdUid (_loc, "CrMth"))),
+                                          meta_loc _loc x0),
+                                        meta_meta_bool _loc x1),
+                                      meta_string _loc x2),
+                                    meta_meta_bool _loc x3),
+                                  meta_expr _loc x4),
+                                meta_ctyp _loc x5)
                           | Ast.CrIni (x0, x1) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -9733,17 +9743,19 @@ module Struct =
                                       Ast.IdUid (_loc, "CrIni"))),
                                   meta_loc _loc x0),
                                 meta_expr _loc x1)
-                          | Ast.CrInh (x0, x1, x2) ->
+                          | Ast.CrInh (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
                                   Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrInh"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_string _loc x2)
+                                    Ast.PaApp (_loc,
+                                      Ast.PaId (_loc,
+                                        Ast.IdAcc (_loc,
+                                          Ast.IdUid (_loc, "Ast"),
+                                          Ast.IdUid (_loc, "CrInh"))),
+                                      meta_loc _loc x0),
+                                    meta_meta_bool _loc x1),
+                                  meta_class_expr _loc x2),
+                                meta_string _loc x3)
                           | Ast.CrCtr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -12323,26 +12335,30 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#ctyp _x_i1 in
                       let _x_i2 = o#ctyp _x_i2 in CrCtr (_x, _x_i1, _x_i2)
-                  | CrInh (_x, _x_i1, _x_i2) ->
+                  | CrInh (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#class_expr _x_i1 in
-                      let _x_i2 = o#string _x_i2 in CrInh (_x, _x_i1, _x_i2)
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#class_expr _x_i2 in
+                      let _x_i3 = o#string _x_i3
+                      in CrInh (_x, _x_i1, _x_i2, _x_i3)
                   | CrIni (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#expr _x_i1 in CrIni (_x, _x_i1)
-                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
-                      let _x_i3 = o#expr _x_i3 in
-                      let _x_i4 = o#ctyp _x_i4
-                      in CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4)
-                  | CrVal (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#string _x_i2 in
+                      let _x_i3 = o#meta_bool _x_i3 in
+                      let _x_i4 = o#expr _x_i4 in
+                      let _x_i5 = o#ctyp _x_i5
+                      in CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5)
+                  | CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
-                      let _x_i3 = o#expr _x_i3
-                      in CrVal (_x, _x_i1, _x_i2, _x_i3)
+                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i2 = o#string _x_i2 in
+                      let _x_i3 = o#meta_bool _x_i3 in
+                      let _x_i4 = o#expr _x_i4
+                      in CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4)
                   | CrVir (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
@@ -13059,21 +13075,24 @@ module Struct =
                   | CrCtr (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
-                  | CrInh (_x, _x_i1, _x_i2) ->
+                  | CrInh (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#class_expr _x_i1 in
-                      let o = o#string _x_i2 in o
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#class_expr _x_i2 in
+                      let o = o#string _x_i3 in o
                   | CrIni (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#expr _x_i1 in o
-                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
                       let o = o#loc _x in
-                      let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in
-                      let o = o#expr _x_i3 in let o = o#ctyp _x_i4 in o
-                  | CrVal (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#string _x_i2 in
+                      let o = o#meta_bool _x_i3 in
+                      let o = o#expr _x_i4 in let o = o#ctyp _x_i5 in o
+                  | CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let o = o#loc _x in
-                      let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in let o = o#expr _x_i3 in o
+                      let o = o#meta_bool _x_i1 in
+                      let o = o#string _x_i2 in
+                      let o = o#meta_bool _x_i3 in let o = o#expr _x_i4 in o
                   | CrVir (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
@@ -13612,6 +13631,8 @@ module Struct =
               | Ast.BAnt _ -> assert false
               
             let mkvirtual m = if mb2b m then Virtual else Concrete
+              
+            let mkoverride m = if mb2b m then Override else Fresh
               
             let lident s = Lident s
               
@@ -14792,22 +14813,25 @@ module Struct =
                   (Pcf_cstr (((ctyp t1), (ctyp t2), (mkloc loc)))) :: l
               | Ast.CrSem (_, cst1, cst2) ->
                   class_str_item cst1 (class_str_item cst2 l)
-              | CrInh (_, ce, "") ->
-                  (Pcf_inher (Fresh, class_expr ce, None)) :: l
-              | CrInh (_, ce, pb) ->
-                  (Pcf_inher (Fresh, class_expr ce, Some pb)) :: l
+              | CrInh (_, ov, ce, "") ->
+                  (Pcf_inher (mkoverride ov, class_expr ce, None)) :: l
+              | CrInh (_, ov, ce, pb) ->
+                  (Pcf_inher (mkoverride ov, class_expr ce, Some pb)) :: l
               | CrIni (_, e) -> (Pcf_init (expr e)) :: l
-              | CrMth (loc, s, b, e, t) ->
+              | CrMth (loc, ov, s, b, e, t) ->
                   let t =
                     (match t with
                      | Ast.TyNil _ -> None
                      | t -> Some (mkpolytype (ctyp t))) in
                   let e = mkexp loc (Pexp_poly (expr e, t))
                   in
-                    (Pcf_meth ((s, (mkprivate b), Fresh, e, (mkloc loc)))) ::
+                    (Pcf_meth
+                       ((s, (mkprivate b), (mkoverride ov), e, (mkloc loc)))) ::
                       l
-              | CrVal (loc, s, b, e) ->
-                  (Pcf_val ((s, (mkmutable b), Fresh, (expr e), (mkloc loc)))) ::
+              | CrVal (loc, ov, s, b, e) ->
+                  (Pcf_val
+                     ((s, (mkmutable b), (mkoverride ov), (expr e),
+                       (mkloc loc)))) ::
                     l
               | CrVir (loc, s, b, t) ->
                   (Pcf_virt
@@ -15312,9 +15336,10 @@ module Struct =
                   
                 method class_str_item =
                   function
-                  | (Ast.CrInh (_, _, "") as cst) -> super#class_str_item cst
-                  | Ast.CrInh (_, ce, s) -> (o#class_expr ce)#add_atom s
-                  | Ast.CrVal (_, s, _, e) -> (o#expr e)#add_atom s
+                  | (Ast.CrInh ((_, _, _, "")) as cst) ->
+                      super#class_str_item cst
+                  | Ast.CrInh ((_, _, ce, s)) -> (o#class_expr ce)#add_atom s
+                  | Ast.CrVal ((_, _, s, _, e)) -> (o#expr e)#add_atom s
                   | Ast.CrVvr (_, s, _, t) -> (o#ctyp t)#add_atom s
                   | cst -> super#class_str_item cst
                   
@@ -17993,13 +18018,17 @@ module Printers =
                       method mutable_flag :
                         formatter -> Ast.meta_bool -> unit
                         
+                      method override_flag :
+                        formatter -> Ast.meta_bool -> unit
+                        
                       method direction_flag :
                         formatter -> Ast.meta_bool -> unit
                         
                       method rec_flag : formatter -> Ast.meta_bool -> unit
                         
                       method flag :
-                        formatter -> Ast.meta_bool -> string -> unit
+                        ?nospace: bool ->
+                          formatter -> Ast.meta_bool -> string -> unit
                         
                       method node : formatter -> 'b -> ('b -> Loc.t) -> unit
                         
@@ -18368,10 +18397,15 @@ module Printers =
                   
                 method private_flag = fun f b -> o#flag f b "private"
                   
+                method override_flag =
+                  fun f b -> o#flag f b "!" ~nospace: true
+                  
                 method flag =
-                  fun f b n ->
+                  fun ?(nospace = false) f b n ->
                     match b with
-                    | Ast.BTrue -> (pp_print_string f n; pp f "@ ")
+                    | Ast.BTrue ->
+                        (pp_print_string f n;
+                         if nospace then () else pp f "@ ")
                     | Ast.BFalse -> ()
                     | Ast.BAnt s -> o#anti f s
                   
@@ -19403,19 +19437,27 @@ module Printers =
                       | Ast.CrCtr (_, t1, t2) ->
                           pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1
                             o#ctyp t2 semisep
-                      | Ast.CrInh (_, ce, "") ->
-                          pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce
+                      | Ast.CrInh ((_, ov, ce, "")) ->
+                          pp f "@[<2>inherit%a@ %a%(%)@]" o#override_flag ov
+                            o#class_expr ce semisep
+                      | Ast.CrInh ((_, ov, ce, s)) ->
+                          pp f "@[<2>inherit%a@ %a as@ %a%(%)@]"
+                            o#override_flag ov o#class_expr ce o#var s
                             semisep
-                      | Ast.CrInh (_, ce, s) ->
-                          pp f "@[<2>inherit@ %a as@ %a%(%)@]" o#class_expr
-                            ce o#var s semisep
                       | Ast.CrIni (_, e) ->
                           pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
-                      | Ast.CrMth (_, s, pr, e, (Ast.TyNil _)) ->
+                      | Ast.CrMth (_, Ast.BFalse, s, pr, e, (Ast.TyNil _)) ->
                           pp f "@[<2>method %a%a =@ %a%(%)@]" o#private_flag
                             pr o#var s o#expr e semisep
-                      | Ast.CrMth (_, s, pr, e, t) ->
+                      | Ast.CrMth (_, Ast.BFalse, s, pr, e, t) ->
                           pp f "@[<2>method %a%a :@ %a =@ %a%(%)@]"
+                            o#private_flag pr o#var s o#ctyp t o#expr e
+                            semisep
+                      | Ast.CrMth (_, Ast.BTrue, s, pr, e, (Ast.TyNil _)) ->
+                          pp f "@[<2>method %a%a =@ %a%(%)@]" o#private_flag
+                            pr o#var s o#expr e semisep
+                      | Ast.CrMth (_, Ast.BTrue, s, pr, e, t) ->
+                          pp f "@[<2>method! %a%a :@ %a =@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t o#expr e
                             semisep
                       | Ast.CrVir (_, s, pr, t) ->
@@ -19424,9 +19466,11 @@ module Printers =
                       | Ast.CrVvr (_, s, mu, t) ->
                           pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" value_val
                             o#mutable_flag mu o#var s o#ctyp t semisep
-                      | Ast.CrVal (_, s, mu, e) ->
-                          pp f "@[<2>%s %a%a =@ %a%(%)@]" value_val
-                            o#mutable_flag mu o#var s o#expr e semisep
+                      | Ast.CrVal ((_, ov, s, mu, e)) ->
+                          pp f "@[<2>%s%a %a%a =@ %a%(%)@]" value_val
+                            o#override_flag ov o#mutable_flag mu o#var s
+                            o#expr e semisep
+                      | Ast.CrMth _ -> assert false
                       | Ast.CrAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
                   
                 method implem =

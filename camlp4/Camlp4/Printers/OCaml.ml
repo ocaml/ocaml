@@ -236,9 +236,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method rec_flag f b = o#flag f b "rec";
     method virtual_flag f b = o#flag f b "virtual";
     method private_flag f b = o#flag f b "private";
-    method flag f b n =
+    method override_flag f b = o#flag f b "!" ~nospace:True;
+    method flag ?(nospace=False) f b n =
       match b with
-      [ Ast.BTrue -> do { pp_print_string f n; pp f "@ " }
+      [ Ast.BTrue -> do { pp_print_string f n; if nospace then () else pp f "@ " }
       | Ast.BFalse -> ()
       | Ast.BAnt s -> o#anti f s ];
 
@@ -1013,10 +1014,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             do { o#class_str_item f cst1; cut f; o#class_str_item f cst2 }
       | <:class_str_item< constraint $t1$ = $t2$ >> ->
             pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
-      | <:class_str_item< inherit $ce$ >> ->
-            pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce semisep
-      | <:class_str_item< inherit $ce$ as $lid:s$ >> ->
-            pp f "@[<2>inherit@ %a as@ %a%(%)@]" o#class_expr ce o#var s semisep
+      | Ast.CrInh (_, ov, ce, "") (* <:class_str_item< inherit $ce$ >> *) ->
+            pp f "@[<2>inherit%a@ %a%(%)@]"
+              o#override_flag ov
+              o#class_expr ce semisep
+      | Ast.CrInh (_, ov, ce, s) (* <:class_str_item< inherit $ce$ as $lid:s$ >> *) ->
+            pp f "@[<2>inherit%a@ %a as@ %a%(%)@]"
+              o#override_flag ov
+              o#class_expr ce o#var s semisep
       | <:class_str_item< initializer $e$ >> ->
             pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
       | <:class_str_item< method $private:pr$ $s$ = $e$ >> ->
@@ -1025,15 +1030,24 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:class_str_item< method $private:pr$ $s$ : $t$ = $e$ >> ->
             pp f "@[<2>method %a%a :@ %a =@ %a%(%)@]"
               o#private_flag pr o#var s o#ctyp t o#expr e semisep
+      | <:class_str_item< method! $private:pr$ $s$ = $e$ >> ->
+            pp f "@[<2>method %a%a =@ %a%(%)@]"
+              o#private_flag pr o#var s o#expr e semisep
+      | <:class_str_item< method! $private:pr$ $s$ : $t$ = $e$ >> ->
+            pp f "@[<2>method! %a%a :@ %a =@ %a%(%)@]"
+              o#private_flag pr o#var s o#ctyp t o#expr e semisep
       | <:class_str_item< method virtual $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
               o#private_flag pr o#var s o#ctyp t semisep
       | <:class_str_item< value virtual $mutable:mu$ $s$ : $t$ >> ->
             pp f "@[<2>%s virtual %a%a :@ %a%(%)@]"
               value_val o#mutable_flag mu o#var s o#ctyp t semisep
-      | <:class_str_item< value $mutable:mu$ $s$ = $e$ >> ->
-            pp f "@[<2>%s %a%a =@ %a%(%)@]"
-              value_val o#mutable_flag mu o#var s o#expr e semisep
+      | (* <:class_str_item< value $mutable:mu$ $s$ = $e$ >> *)
+        Ast.CrVal (_, ov, s, mu, e) ->
+            pp f "@[<2>%s%a %a%a =@ %a%(%)@]"
+              value_val o#override_flag ov
+              o#mutable_flag mu o#var s o#expr e semisep
+      | Ast.CrMth _ -> assert False
       | <:class_str_item< $anti:s$ >> ->
             pp f "%a%(%)" o#anti s semisep ];
 

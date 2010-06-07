@@ -946,12 +946,17 @@ Very old (no more supported) syntax:\n\
             grammar_entry_create "infixop5"
           and (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
             (* <:patt< ? $i$ : ($p$) >> *)
+            (* <:class_str_item< inherit $ce$ as $pb$ >> *)
+            (* <:class_str_item< value $mutable:mf$ $lab$ = $e$ >> *)
+            (* <:class_str_item< method $private:pf$ $l$ : $topt$ = $e$ >> *)
             (* | i = opt_label; "("; p = ipatt_tcon; ")" ->
             <:patt< ? $i$ : ($p$) >>
         | i = opt_label; "("; p = ipatt_tcon; "="; e = expr; ")" ->
             <:patt< ? $i$ : ($p$ = $e$) >>                             *)
             string_list : 'string_list Gram.Entry.t =
             grammar_entry_create "string_list"
+          and opt_override : 'opt_override Gram.Entry.t =
+            grammar_entry_create "opt_override"
           and fun_def_cont_no_when : 'fun_def_cont_no_when Gram.Entry.t =
             grammar_entry_create "fun_def_cont_no_when"
           and fun_def_cont : 'fun_def_cont Gram.Entry.t =
@@ -5862,6 +5867,9 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "method";
                             Gram.Snterm
                               (Gram.Entry.obj
+                                 (opt_override : 'opt_override Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
                                  (opt_private : 'opt_private Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj (label : 'label Gram.Entry.t));
@@ -5873,11 +5881,15 @@ Very old (no more supported) syntax:\n\
                                  (fun_binding : 'fun_binding Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (e : 'fun_binding) (topt : 'opt_polyt)
-                                (l : 'label) (pf : 'opt_private) _
-                                (_loc : Gram.Loc.t) ->
-                                (Ast.CrMth (_loc, l, pf, e, topt) :
+                                (l : 'label) (pf : 'opt_private)
+                                (ovf : 'opt_override) _ (_loc : Gram.Loc.t)
+                                ->
+                                (Ast.CrMth ((_loc, ovf, l, pf, e, topt)) :
                                   'class_str_item))));
                          ([ Gram.Skeyword "method";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_override : 'opt_override Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (opt_private : 'opt_private Gram.Entry.t));
@@ -5890,10 +5902,20 @@ Very old (no more supported) syntax:\n\
                                  (poly_type : 'poly_type Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (t : 'poly_type) _ (l : 'label) _
-                                (pf : 'opt_private) _ (_loc : Gram.Loc.t) ->
-                                (Ast.CrVir (_loc, l, pf, t) :
+                                (pf : 'opt_private) (ovf : 'opt_override) _
+                                (_loc : Gram.Loc.t) ->
+                                (if ovf = Ast.BTrue
+                                 then
+                                   raise
+                                     (Stream.Error
+                                        "one can only override with a concrete method")
+                                 else Ast.CrVir (_loc, l, pf, t) :
                                   'class_str_item))));
-                         ([ Gram.Skeyword "method"; Gram.Skeyword "virtual";
+                         ([ Gram.Skeyword "method";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_override : 'opt_override Gram.Entry.t));
+                            Gram.Skeyword "virtual";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (opt_private : 'opt_private Gram.Entry.t));
@@ -5905,9 +5927,14 @@ Very old (no more supported) syntax:\n\
                                  (poly_type : 'poly_type Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (t : 'poly_type) _ (l : 'label)
-                                (pf : 'opt_private) _ _ (_loc : Gram.Loc.t)
-                                ->
-                                (Ast.CrVir (_loc, l, pf, t) :
+                                (pf : 'opt_private) _ (ovf : 'opt_override) _
+                                (_loc : Gram.Loc.t) ->
+                                (if ovf = Ast.BTrue
+                                 then
+                                   raise
+                                     (Stream.Error
+                                        "one can only override with a concrete method")
+                                 else Ast.CrVir (_loc, l, pf, t) :
                                   'class_str_item))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -5951,6 +5978,9 @@ Very old (no more supported) syntax:\n\
                                  (value_val : 'value_val Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
+                                 (opt_override : 'opt_override Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
                                  (opt_mutable : 'opt_mutable Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj (label : 'label Gram.Entry.t));
@@ -5960,10 +5990,14 @@ Very old (no more supported) syntax:\n\
                                    'cvalue_binding Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (e : 'cvalue_binding) (lab : 'label)
-                                (mf : 'opt_mutable) _ (_loc : Gram.Loc.t) ->
-                                (Ast.CrVal (_loc, lab, mf, e) :
+                                (mf : 'opt_mutable) (ovf : 'opt_override) _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.CrVal ((_loc, ovf, lab, mf, e)) :
                                   'class_str_item))));
                          ([ Gram.Skeyword "inherit";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_override : 'opt_override Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (class_expr : 'class_expr Gram.Entry.t));
@@ -5972,9 +6006,11 @@ Very old (no more supported) syntax:\n\
                                  (opt_as_lident :
                                    'opt_as_lident Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (pb : 'opt_as_lident) (ce : 'class_expr) _
-                                (_loc : Gram.Loc.t) ->
-                                (Ast.CrInh (_loc, ce, pb) : 'class_str_item))));
+                             (fun (pb : 'opt_as_lident) (ce : 'class_expr)
+                                (ovf : 'opt_override) _ (_loc : Gram.Loc.t)
+                                ->
+                                (Ast.CrInh ((_loc, ovf, ce, pb)) :
+                                  'class_str_item))));
                          ([ Gram.Stoken
                               (((function | QUOTATION _ -> true | _ -> false),
                                 "QUOTATION _")) ],
@@ -7133,6 +7169,31 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
                                 (Ast.BTrue : 'direction_flag)))) ]) ]))
+                  ());
+             Gram.extend (opt_override : 'opt_override Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([],
+                          (Gram.Action.mk
+                             (fun (_loc : Gram.Loc.t) ->
+                                (Ast.BFalse : 'opt_override))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("!", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"!\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t)
+                                (_loc : Gram.Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("!" as n)), s) ->
+                                    (Ast.BAnt (mk_anti n s) : 'opt_override)
+                                | _ -> assert false)));
+                         ([ Gram.Skeyword "!" ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Gram.Loc.t) ->
+                                (Ast.BTrue : 'opt_override)))) ]) ]))
                   ());
              Gram.extend (opt_private : 'opt_private Gram.Entry.t)
                ((fun () ->
@@ -14813,6 +14874,8 @@ You should give the -noassert option to the ocaml compiler instead.@."
          "<file> Output on <file> instead of standard output.");
         ("-v", (Arg.Unit print_version), "Print Camlp4 version and exit.");
         ("-version", (Arg.Unit just_print_the_version),
+         "Print Camlp4 version number and exit.");
+        ("-vnum", (Arg.Unit just_print_the_version),
          "Print Camlp4 version number and exit.");
         ("-no_quot", (Arg.Clear Camlp4_config.quotations),
          "Don't parse quotations, allowing to use, e.g. \"<:>\" as token.");

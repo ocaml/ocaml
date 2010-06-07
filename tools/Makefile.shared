@@ -270,7 +270,7 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 clean::
-	rm -f *.cmo *.cmi *.cma
+	rm -f *.cmo *.cmi *.cma *.dll *.so *.lib *.a
 
 depend: beforedepend
 	$(CAMLRUN) ./ocamldep $(INCLUDES) *.mli *.ml > .depend

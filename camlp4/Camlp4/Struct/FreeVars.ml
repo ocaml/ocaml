@@ -106,10 +106,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
       method class_str_item =
         fun
-        [ <:class_str_item< inherit $_$ >> as cst -> super#class_str_item cst
-        | <:class_str_item< inherit $ce$ as $s$ >> ->
+        [ (* <:class_str_item< inherit $_$ >> *)
+          Ast.CrInh (_, _, _, "") as cst ->
+            super#class_str_item cst
+        | (* <:class_str_item< inherit $ce$ as $s$ >> *)
+          Ast.CrInh (_, _, ce, s) ->
             (o#class_expr ce)#add_atom s
-        | <:class_str_item< value $mutable:_$ $s$ = $e$ >> ->
+        | (* <:class_str_item< value $mutable:_$ $s$ = $e$ >> *)
+          Ast.CrVal (_, _, s, _, e) ->
             (o#expr e)#add_atom s
         | <:class_str_item< value virtual $mutable:_$ $s$ : $t$ >> ->
             (o#ctyp t)#add_atom s

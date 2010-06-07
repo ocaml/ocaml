@@ -1328,21 +1328,33 @@ Very old (no more supported) syntax:\n\
         [ `ANTIQUOT (""|"cst"|"anti"|"list" as n) s ->
             <:class_str_item< $anti:mk_anti ~c:"class_str_item" n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.class_str_item_tag
-        | "inherit"; ce = class_expr; pb = opt_as_lident ->
-            <:class_str_item< inherit $ce$ as $pb$ >>
-        | value_val; mf = opt_mutable; lab = label; e = cvalue_binding ->
-            <:class_str_item< value $mutable:mf$ $lab$ = $e$ >>
+        | "inherit"; ovf = opt_override; ce = class_expr; pb = opt_as_lident ->
+            (* <:class_str_item< inherit $ce$ as $pb$ >> *)
+            Ast.CrInh (_loc, ovf, ce, pb)
+        | value_val; ovf = opt_override; mf = opt_mutable; lab = label;
+          e = cvalue_binding ->
+            (* <:class_str_item< value $mutable:mf$ $lab$ = $e$ >> *)
+            Ast.CrVal (_loc, ovf, lab, mf, e)
         | value_val; mf = opt_mutable; "virtual"; l = label; ":"; t = poly_type ->
             <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
         | value_val; "virtual"; mf = opt_mutable; l = label; ":"; t = poly_type ->
             <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
-        | "method"; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
-            <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
-        | "method"; pf = opt_private; "virtual"; l = label; ":"; t = poly_type ->
-            <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
-        | "method"; pf = opt_private; l = label; topt = opt_polyt;
-          e = fun_binding ->
-            <:class_str_item< method $private:pf$ $l$ : $topt$ = $e$ >>
+        | "method"; ovf = opt_override; "virtual"; pf = opt_private;
+          l = label; ":"; t = poly_type ->
+            if ovf = Ast.BTrue then
+              raise (Stream.Error "one can only override with a concrete method")
+            else
+              <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
+        | "method"; ovf = opt_override; pf = opt_private; "virtual";
+          l = label; ":"; t = poly_type ->
+            if ovf = Ast.BTrue then
+              raise (Stream.Error "one can only override with a concrete method")
+            else
+              <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
+        | "method"; ovf = opt_override; pf = opt_private; l = label;
+          topt = opt_polyt; e = fun_binding ->
+            (* <:class_str_item< method $private:pf$ $l$ : $topt$ = $e$ >> *)
+            Ast.CrMth (_loc, ovf, l, pf, e, topt)
         | type_constraint; t1 = ctyp; "="; t2 = ctyp ->
             <:class_str_item< type $t1$ = $t2$ >>
         | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
@@ -1538,6 +1550,12 @@ Very old (no more supported) syntax:\n\
       [ [ "to" -> Ast.BTrue
         | "downto" -> Ast.BFalse
         | `ANTIQUOT ("to" as n) s -> Ast.BAnt (mk_anti n s) ] ]
+    ;
+    opt_override:
+      [ [ "!" -> Ast.BTrue
+        | `ANTIQUOT ("!" as n) s -> Ast.BAnt (mk_anti n s)
+        | -> Ast.BFalse
+      ] ]
     ;
     opt_private:
       [ [ "private" -> Ast.BTrue
