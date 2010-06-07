@@ -27,7 +27,7 @@ run-all:
 	@for file in *.ml; do \
 	  printf " ... testing '$$file':"; \
 	  $(MAKE) run-file DESC=ocamlc COMP='$(OCAMLC)' COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_CFLAGS) $(O_FILES) -w a $(CMA_FILES) -I ../../lib $(CMO_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
-	  $(MAKE) run-file DESC=ocamlopt COMP=$(PREFIX)/bin/ocamlopt COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I ../../lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
+	  $(MAKE) run-file DESC=ocamlopt COMP=$(PREFIX)/bin/jocamlopt COMPFLAGS='$(ADD_COMPFLAGS) $(ADD_OPTFLAGS) $(O_FILES) -w a $(CMXA_FILES) -I ../../lib $(CMX_FILES)' FILE=$$file PROGRAM_ARGS=$(PROGRAM_ARGS) && \
 	  if [ ! -z $(UNSAFE) ]; then \
 	    $(MAKE) run-file DESC=ocamlc-unsafe COMP=$(PREFIX)/bin/ocamlc COMPFLAGS='-w a -unsafe -I ../../li $(CMO_FILES)' FILE=$$file && \
 	    $(MAKE) run-file DESC=ocamlopt-unsafe COMP=$(PREFIX)/bin/ocamlopt COMPFLAGS='-w a -unsafe -I ../../lib $(CMX_FILES)' FILE=$$file; \
@@ -37,7 +37,7 @@ run-all:
 
 run-file:
 	@printf " $(DESC)"
-	@$(COMP) $(COMPFLAGS) $(FILE) -o program
+	$(COMP) $(COMPFLAGS) $(FILE) -o program
 	@if [ -f `basename $(FILE) ml`runner ]; then \
 	  sh `basename $(FILE) ml`runner; \
 	else \
