@@ -2488,7 +2488,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
     Failure error when trace ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
-let match_class_types env pat_sch subj_sch =
+let match_class_types ?(trace=true) env pat_sch subj_sch =
   let type_pairs = TypePairs.create 53 in
   let old_level = !current_level in
   current_level := generic_level - 1;
@@ -2572,7 +2572,7 @@ let match_class_types env pat_sch subj_sch =
     match error with
       [] ->
         begin try
-          moregen_clty true type_pairs env patt subj;
+          moregen_clty trace type_pairs env patt subj;
           []
         with
           Failure r -> r
@@ -2626,8 +2626,6 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
     Failure error when trace ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
-(* XXX On pourrait autoriser l'instantiation du type des parametres... *)
-(* XXX Correct ? (variables de type dans parametres et corps de classe *)
 let match_class_declarations env patt_params patt_type subj_params subj_type =
   let type_pairs = TypePairs.create 53 in
   let subst = ref [] in
@@ -2714,8 +2712,14 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
             raise (Failure [CM_Type_parameter_mismatch
                                (expand_trace env trace)]))
           patt_params subj_params;
-        equal_clty false type_pairs subst env patt_type subj_type;
-        []
+        (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
+        equal_clty false type_pairs subst env
+          (Tcty_signature sign1) (Tcty_signature sign2);
+        (* Use moregeneral for class parameters, need to recheck everything to
+           keeps relationships (PR#4824) *)
+        let clty_params = List.fold_right (fun ty cty -> Tcty_fun ("*",ty,cty)) in
+        match_class_types ~trace:false env
+          (clty_params patt_params patt_type) (clty_params subj_params subj_type)
       with
         Failure r -> r
       end

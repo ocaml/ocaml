@@ -44,6 +44,12 @@ Language features:
   inside the signature, removing their respective fields. Among other
   uses, this allows to merge two signatures containing identically
   named fields.
+* While fixing PR#4824, also corrected a gaping hole in the type checker,
+  which allowed instantiating separately object parameters and instance
+  variables in an interface. This hole was here since the beginning of
+  ocaml, and as a result many programs using object inheritance in a non
+  trivial way will need to be corrected. You can look at lablgtk2 for an
+  example.
 
 Compilers and toplevel:
 - Warnings are now numbered and can be switched on and off individually.
@@ -108,6 +114,7 @@ Bug Fixes:
 - PR#4683: labltk script uses fixed path on windows
 - PR#4742: finalisation function raising an exception blocks other finalisations
 - PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4824: narrowing the type of class parameters with a module specification
 - PR#4862: relaxed value restriction and records
 - PR#4964: parenthesized names for infix functions in annot files
 - PR#4970: better error message for instance variables
