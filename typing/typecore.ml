@@ -1636,24 +1636,20 @@ and type_label_exp create env loc ty (lid, sarg) =
     raise(Error(loc, if create then Private_type ty else Private_label (lid, ty)));
   let arg =
     let snap = if vars = [] then None else Some (Btype.snapshot ()) in
-    let need_begin_def = ref false in
+    let arg = type_argument env sarg ty_arg in
+    end_def ();
     try
-      if vars = [] then raise Exit;
-      (* Try first to type without propagating ty_arg, cf PR#4862 *)
+      check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
+      arg
+    with exn when not (is_nonexpansive arg) ->
+      (* Try to retype without propagating ty_arg, cf PR#4862 *)
+      may Btype.backtrack snap;
+      begin_def ();
       let arg = type_exp env sarg in
       end_def ();
-      need_begin_def := true;
-      if is_nonexpansive arg then generalize arg.exp_type
-      else generalize_expansive env arg.exp_type;
+      generalize_expansive env arg.exp_type;
       unify_exp env arg ty_arg;
       check_univars env false "field value" arg label.lbl_arg vars;
-      arg
-    with _ ->
-      may Btype.backtrack snap;
-      if !need_begin_def then begin_def ();
-      let arg = type_argument env sarg ty_arg in
-      end_def ();
-      check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
       arg
   in
   (label, {arg with exp_type = instance arg.exp_type})
