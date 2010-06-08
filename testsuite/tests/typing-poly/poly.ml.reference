@@ -560,4 +560,7 @@ val transf_alist : (int -> t) -> ('a * t) list -> ('a * t) list = <fun>
 val l : t = {f = <lazy>}
 #     type t = { f : 'a. 'a -> unit; }
 # - : t = {f = <fun>}
+# [A# {f=[4mfun ?x y -> y[m};; (* fail *)
+[mError: This field value has type unit -> unit which is less general than
+         'a. 'a -> unit
 # 

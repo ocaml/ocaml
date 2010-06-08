@@ -1641,7 +1641,7 @@ and type_label_exp create env loc ty (lid, sarg) =
     try
       check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
       arg
-    with exn when not (is_nonexpansive arg) ->
+    with exn when not (is_nonexpansive arg) -> try
       (* Try to retype without propagating ty_arg, cf PR#4862 *)
       may Btype.backtrack snap;
       begin_def ();
@@ -1651,6 +1651,8 @@ and type_label_exp create env loc ty (lid, sarg) =
       unify_exp env arg ty_arg;
       check_univars env false "field value" arg label.lbl_arg vars;
       arg
+    with Error (_, Less_general _) as e -> raise e
+    | _ -> raise exn    (* In case of failure return the first error *)
   in
   (label, {arg with exp_type = instance arg.exp_type})
 

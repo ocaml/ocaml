@@ -621,3 +621,4 @@ let l : t = { f = lazy (raise Not_found)};;
 (* variant *)
 type t = {f: 'a. 'a -> unit};;
 {f=fun ?x y -> ()};;
+{f=fun ?x y -> y};; (* fail *)
