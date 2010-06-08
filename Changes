@@ -108,6 +108,7 @@ Bug Fixes:
 - PR#4683: labltk script uses fixed path on windows
 - PR#4742: finalisation function raising an exception blocks other finalisations
 - PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4862: relaxed value restriction and records
 - PR#4964: parenthesized names for infix functions in annot files
 - PR#4970: better error message for instance variables
 - PR#4975: spelling mistakes

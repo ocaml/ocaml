@@ -556,4 +556,8 @@ val neg : int -> bool -> int * bool = <fun>
 #                         type t = A of int | B of (int * t) list | C of (string * t) list
 val transf : (int -> t) -> t -> t = <fun>
 val transf_alist : (int -> t) -> ('a * t) list -> ('a * t) list = <fun>
+#         type t = { f : 'a. ('a list -> int) Lazy.t; }
+val l : t = {f = <lazy>}
+#     type t = { f : 'a. 'a -> unit; }
+# - : t = {f = <fun>}
 # 

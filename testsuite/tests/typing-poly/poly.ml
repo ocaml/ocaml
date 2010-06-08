@@ -612,3 +612,12 @@ and transf_alist : 'a. _ -> ('a*t) list -> ('a*t) list = fun f -> function
   | [] -> []
   | (k,v)::tl -> (k, transf f v) :: transf_alist f tl
 ;;
+
+(* PR#4862 *)
+
+type t = {f: 'a. ('a list -> int) Lazy.t}
+let l : t = { f = lazy (raise Not_found)};;
+
+(* variant *)
+type t = {f: 'a. 'a -> unit};;
+{f=fun ?x y -> ()};;
