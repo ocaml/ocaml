@@ -57,14 +57,23 @@ $(LIBNAME): Makefile $(TOPDIR)/config/Makefile
 	@echo "#!/bin/sh" > $@
 	@echo 'exec $(INSTALLDIR)/$(LIBNAME)top$(EXE) -I $(INSTALLDIR) $$*' >> $@
 
+install-script: $(LIBNAME)
+	cp $(LIBNAME) $(BINDIR)
+	chmod 755 $(BINDIR)/$(LIBNAME)
+
+install-batch:
+	cp labltk.bat $(BINDIR)
+
 install:
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(LIBNAME).cma $(LIBNAME)top$(EXE) $(INSTALLDIR)
 	chmod 644 $(INSTALLDIR)/$(LIBNAME).cma
 	chmod 755 $(INSTALLDIR)/$(LIBNAME)top$(EXE)
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
-	cp $(LIBNAME) $(BINDIR)
-	chmod 755 $(BINDIR)/$(LIBNAME)
+	@case x$(TOOLCHAIN) in \
+	  xmingw|xmsvc) $(MAKE) install-batch ;; \
+	  *) 		$(MAKE) install-script ;; \
+	esac
 
 installopt:
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
