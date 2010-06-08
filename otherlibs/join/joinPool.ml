@@ -223,7 +223,7 @@ let to_string active =
         reply b to is_active
 
       or state(new_id, active, result) & get_active() =
-        if C.debug then Join.debug "DIST" "Get %s" (to_string active) ;
+        if C.debug then Join.debug "POOL" "ACTIVE %s" (to_string active) ;
         state(new_id, active, result) &
         reply active to get_active
 
@@ -255,9 +255,16 @@ let to_string active =
       | ([],(_::_ as ys)) -> get (List.rev ys,[])
       | ([],[]) -> assert false
 
+(* Entries in high priority queue *)
+type ('a,'b) entry =
+  | Enum of 'a
+  | Compute of 'b
+
 (* Gensym *)
 
-def st(next_id) & fresh_nounce() = st(next_id+1) & reply next_id to fresh_nounce
+def st(next_id) & fresh_nounce() =
+  st(next_id+1) & reply next_id to fresh_nounce
+
 
     let () = spawn st(0)
 
@@ -266,24 +273,27 @@ def st(next_id) & fresh_nounce() = st(next_id+1) & reply next_id to fresh_nounce
       | W of 'a worker
       | WK of 'a interuptible_worker * kill
 
-    type priority = High | Low
-
     let create () =
 
-      def pool(high,low) & addPool(c) = pool(put c high,low)
+      def pool(high,low) & addPool(c) = pool(put (Enum c) high,low)
 
       or pool(Q high,low) & agent(worker) =
-        let (monitor,enum),high = get high in
-        match E.step enum with
-        | Some (x,next) ->
-            let id = monitor.enter(x) in
-            pool(put (monitor,next) high,low) &
-            call_worker(High,monitor, id, x, worker)
-        | None ->
-            agent(worker) &
-            monitor.finished() &
-            pool(high,put ([],C.nagain,monitor) low)
-
+        let e,high = get high in
+        match e with
+        | Enum (monitor,enum) ->
+            begin match E.step enum with
+            | Some (x,next) ->
+                let id = monitor.enter(x) in
+                pool(put (Enum (monitor,next)) high,low) &
+                call_worker(monitor, id, x, worker)
+            | None ->
+                agent(worker) &
+                monitor.finished() &
+                pool(high,put ([],C.nagain,monitor) low)
+            end
+        | Compute (monitor,id,x) ->
+            pool(high,low) &
+            call_worker(monitor,id,x,worker)
 
       (* Re-perform tasks *)
       or pool(E,Q low) & agent(worker) =
@@ -292,7 +302,7 @@ def st(next_id) & fresh_nounce() = st(next_id+1) & reply next_id to fresh_nounce
         | (id,x)::xs ->
             pool (E,put_front (xs,n,m) low) &
             begin if m.is_active id then
-              call_worker(Low,m,id,x,worker)
+              call_worker(m,id,x,worker)
             else
               agent(worker)
             end
@@ -309,19 +319,16 @@ def st(next_id) & fresh_nounce() = st(next_id+1) & reply next_id to fresh_nounce
               pool(E,low)
             end
 
-      or compute(prio,monitor,id,x) & agent(worker) =
-        call_worker(prio,monitor,id,x,worker)
+      or compute(monitor,id,x) & pool(high,low) =
+          pool(put (Compute (monitor,id,x)) high,low)
 
-      and call_worker(prio,monitor,id,x,worker) =
+      and call_worker(monitor,id,x,worker) =
         match worker with
         | W w ->
             let r = try Some (w x) with _ -> None in
             begin match r with
             | None ->
-                begin match prio with
-                | High -> compute(prio,monitor,id,x)
-                | Low -> 0
-                end
+                compute(monitor,id,x)
             | Some v ->
                 monitor.leave(id,v) ;
                 agent(worker)
@@ -335,15 +342,14 @@ def st(next_id) & fresh_nounce() = st(next_id+1) & reply next_id to fresh_nounce
             begin match r with
             | None ->
                 (* Distant client considered dead, forget agent,
-                   re-issue high priority task *)
-                if C.debug then Join.debug "POOL" "WK<%i,%i>: Dead%!" nounce id ;
-                begin match prio with
-                | High -> compute(prio,monitor,id,x)
-                | Low -> 0
-                end
+                   re-issue task *)
+                if C.debug then
+                  Join.debug "POOL" "WK<%i,%i>: Dead%!" nounce id ;
+                compute(monitor,id,x)
             | Some None ->
-                (* Distant client failed, do not re-issue task *)
-                if C.debug then Join.debug "POOL" "WK<%i,%i>: None%!" nounce id ;
+                (* Distant client commanded to failed, do not re-issue task *)
+                if C.debug then
+                  Join.debug "POOL" "WK<%i,%i>: None%!" nounce id ;
                 agent(worker)
             | Some (Some v) ->
                 if C.debug then Join.debug "POOL" "WK<%i,%i>: Some%!" nounce id ;

@@ -121,23 +121,22 @@ let split_addr s =
       try int_of_string port with _ ->
         raise (Arg.Bad ("invalid port: " ^ port)))
 
-let make_configuration () =
-  let cfg = default_configuration () in
-  cfg, [ "-host",
-         Arg.String
-           (fun s ->
-             let h, p = split_addr s in
-             cfg.host <- h;
-             cfg.port <- p),
-         "<name:port>  Set host name and port" ;
+let make_commandline cfg =
+  [ "-host",
+    Arg.String
+      (fun s ->
+        let h, p = split_addr s in
+        cfg.host <- h;
+        cfg.port <- p),
+    "<name:port>  Set host name and port" ;
 
-         "-clients",
-         Arg.Int (fun i -> cfg.clients <- i),
-         "<n>  Set number of clients to launch";
-
-         "-forked-program",
-         Arg.String (fun s -> cfg.forked_program <- String.copy s),
-         "<name>  Set executable for clients" ]
+    "-clients",
+    Arg.Int (fun i -> cfg.clients <- i),
+    "<n>  Set number of clients to launch";
+    
+    "-forked-program",
+    Arg.String (fun s -> cfg.forked_program <- String.copy s),
+    "<name>  Set executable for clients" ]
 
 
 (* Client-related functions *)
@@ -183,23 +182,25 @@ let rec get_site n addr =
 	Thread.delay 0.5 ; get_site (n-1) addr
       end else raise e
 
-let connect cfg =
-  let inet_addr = (Unix.gethostbyname cfg.host).Unix.h_addr_list.(0) in
-  let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
-  let server_site = get_site 128 server_addr in
-  server_site,Join.Ns.of_site server_site
-
-
 let check_magic ns cfg =
   let lookup_magic = lookup_times ~-1 1.0 in
   let magic : string = lookup_magic ns cfg.magic_id in
   if magic <> cfg.magic_value then
     raise (Invalid_magic (cfg.magic_value, magic))
   
+
+let connect cfg =
+  let inet_addr = (Unix.gethostbyname cfg.host).Unix.h_addr_list.(0) in
+  let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
+  let server_site = get_site 128 server_addr in
+  let ns = Join.Ns.of_site server_site in
+  check_magic ns cfg ;
+  server_site,Join.Ns.of_site server_site
+
+
 let init_client ?(at_fail=do_nothing_at_fail) cfg =
   let server_site,ns = connect cfg in
   Join.Site.at_fail server_site at_fail;
-  check_magic ns cfg ;
   let pids = do_forks cfg.forked_program cfg.fork_args cfg.clients in
   ns,pids
 
@@ -211,11 +212,15 @@ let init_client_with_lookup ?(at_fail=do_nothing_at_fail) ?(lookup=(lookup_times
 
 (* Server-related functions *)
 
-let init_server cfg =
+let listen cfg =
   let inet_addr = (Unix.gethostbyname cfg.host).Unix.h_addr_list.(0) in
   let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
   Join.Ns.register Join.Ns.here cfg.magic_id (cfg.magic_value : string) ;
   Join.Site.listen server_addr;
+  ()
+
+let init_server cfg =
+  listen cfg ;
   let pids = do_forks cfg.forked_program cfg.fork_args (max 0 cfg.clients) in
   Join.Ns.here, pids
 

@@ -2054,7 +2054,7 @@ and do_type_exp ctx env sexp =
         exp_type = create_package_type loc env (p, l);
         exp_env = env }
   | Pexp_open (lid, e) ->
-      type_exp (!type_open env sexp.pexp_loc lid) e
+      do_type_exp ctx (!type_open env sexp.pexp_loc lid) e
 
 and type_argument env sarg ty_expected' =
   (* ty_expected' may be generic *)

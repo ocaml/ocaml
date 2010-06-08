@@ -1,4 +1,6 @@
-- Corrected incorrect handling of channel names in object bodies. Dear.
+- Added new librairies JoinHelper and JoinPool
+
+- Corrected incorrect handling of channel names in object bodies. Costly
   (bug #1, rev 10200)
 
 JoCaml 3.11.2.A

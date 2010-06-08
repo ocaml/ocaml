@@ -62,13 +62,10 @@ val default_configuration : unit -> configuration
     - ["magic-number"] for the [magic_id] field;
     - ["magic-value"] for the [magic_value] field. *)
 
-val make_configuration :
-    unit ->
-    configuration * (Arg.key * Arg.spec * Arg.doc) list
-(** [make_configuration ()] returns a couple with:
-    - a configuration with default values (as returned by [default_configuration]);
-    - a list of argument descriptors that will update the aforementioned
-      configuration when parsed through [Arg.parse] (or equivalent).
+val make_commandline : configuration -> (Arg.key * Arg.spec * Arg.doc) list
+(** [make_configuration cfg] returns 
+    - a list of argument descriptors that will update the
+      configuration [cfg]when parsed through [Arg.parse] (or equivalent).
 
     The current version defines the following arguments:
     - {i -host} to set [host] and [port] using ["host:port"] notation;
@@ -109,10 +106,6 @@ val exit_at_fail_with_code : int -> at_fail_chan
 val exit_at_fail : at_fail_chan
 (** Bare alias for [exit_at_fail_with_code 0]. *)
 
-val connect : configuration -> Join.Site.t * Join.Ns.t
-(** [connect cfg] 
-    connect as a client  to the server referenced by [cfg]. *)
-
 exception Invalid_magic of string * string
 (** Raised when a client tries to connect to a server with a different magic number.
     The first component is the waited magic value while the second component is the 
@@ -121,6 +114,13 @@ exception Invalid_magic of string * string
 val check_magic : Join.Ns.t -> configuration -> unit
 (**  Ensures that client and server have the same magic number,
     raising [Invalid_magic] if not. *)
+
+val connect : configuration -> Join.Site.t * Join.Ns.t
+(** [connect cfg] 
+    connect as a client  to the server referenced by [cfg].
+    Also ensures that client and server have the same magic number,
+    raising [Invalid_magic] if not. *)
+
 
 val init_client : ?at_fail:at_fail_chan -> configuration ->
   Join.Ns.t * int list
@@ -147,6 +147,10 @@ val init_client_with_lookup :
 
 
 (** {6 Server-related functions} *)
+
+val listen : configuration -> unit
+(** [listen cfg] initializes a server listening for connections
+    and registers the magic value. *)
 
 val init_server : configuration -> Join.Ns.t * int list
 (** [init_server cfg] initializes a server listening for connections,
