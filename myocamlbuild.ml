@@ -283,7 +283,7 @@ Pathname.define_context "toplevel" ["toplevel"; "parsing"; "typing"; "bytecomp";
 Pathname.define_context "driver" ["driver"; "asmcomp"; "bytecomp"; "typing"; "utils"; "parsing"; "stdlib"];;
 Pathname.define_context "debugger" ["bytecomp"; "utils"; "typing"; "parsing"; "toplevel"; "stdlib"];;
 Pathname.define_context "otherlibs/dynlink" ["otherlibs/dynlink"; "bytecomp"; "utils"; "typing"; "parsing"; "stdlib"];;
-Pathname.define_context "otherlibs/dynlink/nat" ["otherlibs/dynlink/nat"; "stdlib"];;
+Pathname.define_context "otherlibs/dynlink/nat" ["otherlibs/dynlink/nat"; "asmcomp"; "stdlib"];;
 Pathname.define_context "asmcomp" ["asmcomp"; "bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
 Pathname.define_context "ocamlbuild" ["ocamlbuild"; "stdlib"; "."];;
 Pathname.define_context "lex" ["lex"; "stdlib"];;
