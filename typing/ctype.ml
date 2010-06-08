@@ -2291,6 +2291,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           normalize_subst subst;
           if List.assq t1 !subst != t2 then raise (Unify [])
         with Not_found ->
+          (*if List.exists (fun (_, t) -> t == t2) !subst then raise (Unify []);*)
           subst := (t1, t2) :: !subst
         end
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
@@ -2311,6 +2312,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 normalize_subst subst;
                 if List.assq t1' !subst != t2' then raise (Unify [])
               with Not_found ->
+                (*if List.exists (fun (_, t) -> t == t2') !subst then raise (Unify []);*)
                 subst := (t1', t2') :: !subst
               end
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -2614,7 +2616,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
         Vars.iter
           (fun lab (_, _, ty) ->
              let (_, _, ty') = Vars.find lab sign1.cty_vars in
-             try eqtype true type_pairs subst env ty ty' with Unify trace ->
+             try eqtype true type_pairs subst env ty' ty with Unify trace ->
                raise (Failure [CM_Val_type_mismatch
                                   (lab, expand_trace env trace)]))
           sign2.cty_vars
