@@ -81,7 +81,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | Ast.BAnt _ -> assert False ];
 
   value mkvirtual m = if mb2b m then Virtual else Concrete;
-  value mkoverride m = if mb2b m then Override else Fresh;
 
   value lident s = Lident s;
   value ldot l s = Ldot l s;
@@ -571,6 +570,12 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | e -> [(loc_of_expr e, [], e) :: l] ]
   ;
 
+  value override_flag loc =
+    fun [ Ast.OvOverride -> Override
+        | Ast.OvNil      -> Fresh
+        | Ast.OvAnt _    -> error loc "antiquotation not allowed here"
+        ];
+
   value list_of_opt_ctyp ot acc =
     match ot with
     [ <:ctyp<>> -> acc
@@ -1053,22 +1058,23 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | CrCtr loc t1 t2 -> [Pcf_cstr (ctyp t1, ctyp t2, mkloc loc) :: l]
     | <:class_str_item< $cst1$; $cst2$ >> ->
         class_str_item cst1 (class_str_item cst2 l)
-    | CrInh _ ov ce "" -> [Pcf_inher (mkoverride ov) (class_expr ce) None :: l]
-    | CrInh _ ov ce pb -> [Pcf_inher (mkoverride ov) (class_expr ce) (Some pb) :: l]
+    | CrInh loc ov ce pb ->
+        let opb = if pb = "" then None else Some pb in
+        [Pcf_inher (override_flag loc ov) (class_expr ce) opb :: l]
     | CrIni _ e -> [Pcf_init (expr e) :: l]
-    | CrMth loc ov s b e t ->
+    | CrMth loc s ov pf e t ->
         let t =
           match t with
           [ <:ctyp<>> -> None
           | t -> Some (mkpolytype (ctyp t)) ] in
         let e = mkexp loc (Pexp_poly (expr e) t) in
-        [Pcf_meth (s, mkprivate b, mkoverride ov, e, mkloc loc) :: l]
-    | CrVal loc ov s b e ->
-        [Pcf_val (s, mkmutable b, mkoverride ov, expr e, mkloc loc) :: l]
-    | CrVir loc s b t ->
-        [Pcf_virt (s, mkprivate b, mkpolytype (ctyp t), mkloc loc) :: l]
-    | CrVvr loc s b t ->
-        [Pcf_valvirt (s, mkmutable b, ctyp t, mkloc loc) :: l]
+        [Pcf_meth (s, mkprivate pf, override_flag loc ov, e, mkloc loc) :: l]
+    | CrVal loc s ov mf e ->
+        [Pcf_val (s, mkmutable mf, override_flag loc ov, expr e, mkloc loc) :: l]
+    | CrVir loc s pf t ->
+        [Pcf_virt (s, mkprivate pf, mkpolytype (ctyp t), mkloc loc) :: l]
+    | CrVvr loc s mf t ->
+        [Pcf_valvirt (s, mkmutable mf, ctyp t, mkloc loc) :: l]
     | CrAnt _ _ -> assert False ];
 
   value sig_item ast = sig_item ast [];

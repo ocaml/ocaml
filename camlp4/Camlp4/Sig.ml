@@ -222,6 +222,7 @@ module type Ast = sig
   type binding;
   type rec_binding;
   type module_binding;
+  type override_flag;
 
   (** {6 Location accessors} *)
 
@@ -286,6 +287,7 @@ module type Ast = sig
     method module_binding : module_binding -> module_binding;
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
+    method override_flag : override_flag -> override_flag;
 
     method unknown : ! 'a. 'a -> 'a;
   end;
@@ -315,6 +317,7 @@ module type Ast = sig
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
+    method override_flag : override_flag -> 'self_type;
 
     method unknown : ! 'a. 'a -> 'self_type;
   end;
@@ -425,6 +428,7 @@ module type Camlp4Ast = sig
         value meta_sig_item : loc -> sig_item -> expr;
         value meta_str_item : loc -> str_item -> expr;
         value meta_with_constr : loc -> with_constr -> expr;
+        value meta_override_flag : loc -> override_flag -> expr;
       end;
       module Patt : sig
         value meta_string : loc -> string -> patt;
@@ -450,6 +454,7 @@ module type Camlp4Ast = sig
         value meta_sig_item : loc -> sig_item -> patt;
         value meta_str_item : loc -> str_item -> patt;
         value meta_with_constr : loc -> with_constr -> patt;
+        value meta_override_flag : loc -> override_flag -> patt;
       end;
     end;
   end;
@@ -480,6 +485,7 @@ module type Camlp4Ast = sig
     method module_binding : module_binding -> module_binding;
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
+    method override_flag : override_flag -> override_flag;
 
     method unknown : ! 'a. 'a -> 'a;
   end;
@@ -509,6 +515,7 @@ module type Camlp4Ast = sig
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
+    method override_flag : override_flag -> 'self_type;
 
     method unknown : ! 'a. 'a -> 'self_type;
   end;
@@ -612,6 +619,7 @@ module Camlp4AstToAst (M : Camlp4Ast) : Ast
    and type module_binding = M.module_binding
    and type match_case = M.match_case
    and type ident = M.ident
+   and type override_flag = M.override_flag
 = M;
 
 (** Concrete definition of Camlp4 ASTs abstracted from locations.

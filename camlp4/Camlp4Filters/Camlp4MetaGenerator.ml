@@ -91,7 +91,7 @@ value mk_meta m =
           let init = m_id m (meta_ident m m_name_cons) in
           let p = patt_of_data_ctor_decl m_name_cons tyargs in
           let e =
-            if cons = "BAnt" || cons = "OAnt" || cons = "LAnt" then
+            if cons = "BAnt" || cons = "OAnt" || cons = "LAnt" || cons = "OvAnt" then
               <:expr< $id:m.ant$ _loc x0 >>
             else if is_antiquot_data_ctor cons then
               expr_of_data_ctor_decl m.ant tyargs

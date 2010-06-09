@@ -3,6 +3,10 @@
     [ BTrue
     | BFalse
     | BAnt of string ]
+   and override_flag =
+    [ OvOverride
+    | OvNil
+    | OvAnt of string ]
    and meta_option 'a =
     [ ONone
     | OSome of 'a
@@ -346,14 +350,14 @@
     | CrSem of loc and class_str_item and class_str_item
       (* type t = t *)
     | CrCtr of loc and ctyp and ctyp
-      (* inherit ce or inherit ce as s *)
-    | CrInh of loc and meta_bool and class_expr and string
+      (* inherit(!)? ce (as s)? *)
+    | CrInh of loc and override_flag and class_expr and string
       (* initializer e *)
     | CrIni of loc and expr
-      (* method (private)? s : t = e or method (private)? s = e *)
-    | CrMth of loc and meta_bool and string and meta_bool and expr and ctyp
-      (* value (mutable)? s = e *)
-    | CrVal of loc and meta_bool and string and meta_bool and expr
+      (* method(!)? (private)? s : t = e or method(!)? (private)? s = e *)
+    | CrMth of loc and string and override_flag and meta_bool and expr and ctyp
+      (* value(!)? (mutable)? s = e *)
+    | CrVal of loc and string and override_flag and meta_bool and expr
       (* method virtual (private)? s : t *)
     | CrVir of loc and string and meta_bool and ctyp
       (* value virtual (private)? s : t *)
