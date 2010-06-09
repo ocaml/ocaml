@@ -68,8 +68,8 @@ external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
    the usual orderings over integers, characters, strings
    and floating-point numbers, and extend them to a
    total ordering over all types.
-   The ordering is compatible with [(=)]. As in the case
-   of [(=)], mutable structures are compared by contents.
+   The ordering is compatible with [( = )]. As in the case
+   of [( = )], mutable structures are compared by contents.
    Comparison between functional values raises [Invalid_argument].
    Comparison between cyclic structures may not terminate. *)
 
@@ -108,7 +108,7 @@ external ( == ) : 'a -> 'a -> bool = "%eq"
    mutable fields and objects with mutable instance variables,
    [e1 == e2] is true if and only if physical modification of [e1]
    also affects [e2].
-   On non-mutable types, the behavior of [(==)] is
+   On non-mutable types, the behavior of [( == )] is
    implementation-dependent; however, it is guaranteed that
    [e1 == e2] implies [compare e1 e2 = 0]. *)
 
