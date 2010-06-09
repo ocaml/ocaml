@@ -602,6 +602,8 @@ module Sig =
         
         type module_binding
         
+        type override_flag
+        
         (** {6 Location accessors} *)
         val loc_of_ctyp : ctyp -> loc
           
@@ -706,6 +708,8 @@ module Sig =
               
             method ident : ident -> ident
               
+            method override_flag : override_flag -> override_flag
+              
             method unknown : 'a. 'a -> 'a
               
           end
@@ -766,6 +770,8 @@ module Sig =
               
             method ident : ident -> 'self_type
               
+            method override_flag : override_flag -> 'self_type
+              
             method unknown : 'a. 'a -> 'self_type
               
           end
@@ -813,6 +819,8 @@ module Sig =
           t
           and meta_bool =
           | BTrue | BFalse | BAnt of string
+          and override_flag =
+          | OvOverride | OvNil | OvAnt of string
           and 'a meta_option =
           | ONone | OSome of 'a | OAnt of string
           and 'a meta_list =
@@ -1258,14 +1266,14 @@ module Sig =
           CrSem of loc * class_str_item * class_str_item
           | (* type t = t *)
           CrCtr of loc * ctyp * ctyp
-          | (* inherit ce or inherit ce as s *)
-          CrInh of loc * meta_bool * class_expr * string
+          | (* inherit(!)? ce (as s)? *)
+          CrInh of loc * override_flag * class_expr * string
           | (* initializer e *)
           CrIni of loc * expr
-          | (* method (private)? s : t = e or method (private)? s = e *)
-          CrMth of loc * meta_bool * string * meta_bool * expr * ctyp
-          | (* value (mutable)? s = e *)
-          CrVal of loc * meta_bool * string * meta_bool * expr
+          | (* method(!)? (private)? s : t = e or method(!)? (private)? s = e *)
+          CrMth of loc * string * override_flag * meta_bool * expr * ctyp
+          | (* value(!)? (mutable)? s = e *)
+          CrVal of loc * string * override_flag * meta_bool * expr
           | (* method virtual (private)? s : t *)
           CrVir of loc * string * meta_bool * ctyp
           | (* value virtual (private)? s : t *)
@@ -1391,6 +1399,8 @@ module Sig =
                       
                     val meta_with_constr : loc -> with_constr -> expr
                       
+                    val meta_override_flag : loc -> override_flag -> expr
+                      
                   end
                   
                 module Patt :
@@ -1441,6 +1451,8 @@ module Sig =
                     val meta_str_item : loc -> str_item -> patt
                       
                     val meta_with_constr : loc -> with_constr -> patt
+                      
+                    val meta_override_flag : loc -> override_flag -> patt
                       
                   end
                   
@@ -1500,6 +1512,8 @@ module Sig =
               
             method ident : ident -> ident
               
+            method override_flag : override_flag -> override_flag
+              
             method unknown : 'a. 'a -> 'a
               
           end
@@ -1558,6 +1572,8 @@ module Sig =
             method match_case : match_case -> 'self_type
               
             method ident : ident -> 'self_type
+              
+            method override_flag : override_flag -> 'self_type
               
             method unknown : 'a. 'a -> 'self_type
               
@@ -1710,7 +1726,8 @@ module Sig =
       and type class_str_item = M.class_str_item and type binding = M.binding
       and type rec_binding = M.rec_binding
       and type module_binding = M.module_binding
-      and type match_case = M.match_case and type ident = M.ident = M
+      and type match_case = M.match_case and type ident = M.ident
+      and type override_flag = M.override_flag = M
       
     module MakeCamlp4Ast (Loc : Type) =
       struct
@@ -1719,6 +1736,8 @@ module Sig =
           t
           and meta_bool =
           | BTrue | BFalse | BAnt of string
+          and override_flag =
+          | OvOverride | OvNil | OvAnt of string
           and 'a meta_option =
           | ONone | OSome of 'a | OAnt of string
           and 'a meta_list =
@@ -1953,10 +1972,10 @@ module Sig =
           | CrNil of loc
           | CrSem of loc * class_str_item * class_str_item
           | CrCtr of loc * ctyp * ctyp
-          | CrInh of loc * meta_bool * class_expr * string
+          | CrInh of loc * override_flag * class_expr * string
           | CrIni of loc * expr
-          | CrMth of loc * meta_bool * string * meta_bool * expr * ctyp
-          | CrVal of loc * meta_bool * string * meta_bool * expr
+          | CrMth of loc * string * override_flag * meta_bool * expr * ctyp
+          | CrVal of loc * string * override_flag * meta_bool * expr
           | CrVir of loc * string * meta_bool * ctyp
           | CrVvr of loc * string * meta_bool * ctyp
           | CrAnt of loc * string
@@ -7601,8 +7620,8 @@ module Struct =
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "CrVal"))),
                                         meta_loc _loc x0),
-                                      meta_meta_bool _loc x1),
-                                    meta_string _loc x2),
+                                      meta_string _loc x1),
+                                    meta_override_flag _loc x2),
                                   meta_meta_bool _loc x3),
                                 meta_expr _loc x4)
                           | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
@@ -7617,8 +7636,8 @@ module Struct =
                                               Ast.IdUid (_loc, "Ast"),
                                               Ast.IdUid (_loc, "CrMth"))),
                                           meta_loc _loc x0),
-                                        meta_meta_bool _loc x1),
-                                      meta_string _loc x2),
+                                        meta_string _loc x1),
+                                      meta_override_flag _loc x2),
                                     meta_meta_bool _loc x3),
                                   meta_expr _loc x4),
                                 meta_ctyp _loc x5)
@@ -7640,7 +7659,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrInh"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_override_flag _loc x1),
                                   meta_class_expr _loc x2),
                                 meta_string _loc x3)
                           | Ast.CrCtr (x0, x1, x2) ->
@@ -8809,6 +8828,17 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MtNil"))),
                                 meta_loc _loc x0)
+                        and meta_override_flag _loc =
+                          function
+                          | Ast.OvAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.OvNil ->
+                              Ast.ExId (_loc,
+                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                  Ast.IdUid (_loc, "OvNil")))
+                          | Ast.OvOverride ->
+                              Ast.ExId (_loc,
+                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                  Ast.IdUid (_loc, "OvOverride")))
                         and meta_patt _loc =
                           function
                           | Ast.PaLaz (x0, x1) ->
@@ -9714,8 +9744,8 @@ module Struct =
                                             Ast.IdUid (_loc, "Ast"),
                                             Ast.IdUid (_loc, "CrVal"))),
                                         meta_loc _loc x0),
-                                      meta_meta_bool _loc x1),
-                                    meta_string _loc x2),
+                                      meta_string _loc x1),
+                                    meta_override_flag _loc x2),
                                   meta_meta_bool _loc x3),
                                 meta_expr _loc x4)
                           | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
@@ -9730,8 +9760,8 @@ module Struct =
                                               Ast.IdUid (_loc, "Ast"),
                                               Ast.IdUid (_loc, "CrMth"))),
                                           meta_loc _loc x0),
-                                        meta_meta_bool _loc x1),
-                                      meta_string _loc x2),
+                                        meta_string _loc x1),
+                                      meta_override_flag _loc x2),
                                     meta_meta_bool _loc x3),
                                   meta_expr _loc x4),
                                 meta_ctyp _loc x5)
@@ -9753,7 +9783,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CrInh"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_override_flag _loc x1),
                                   meta_class_expr _loc x2),
                                 meta_string _loc x3)
                           | Ast.CrCtr (x0, x1, x2) ->
@@ -10922,6 +10952,17 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "MtNil"))),
                                 meta_loc _loc x0)
+                        and meta_override_flag _loc =
+                          function
+                          | Ast.OvAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.OvNil ->
+                              Ast.PaId (_loc,
+                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                  Ast.IdUid (_loc, "OvNil")))
+                          | Ast.OvOverride ->
+                              Ast.PaId (_loc,
+                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                  Ast.IdUid (_loc, "OvOverride")))
                         and meta_patt _loc =
                           function
                           | Ast.PaLaz (x0, x1) ->
@@ -11826,6 +11867,12 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#patt _x_i1 in PaLaz (_x, _x_i1)
                   
+                method override_flag : override_flag -> override_flag =
+                  function
+                  | OvOverride -> OvOverride
+                  | OvNil -> OvNil
+                  | OvAnt _x -> let _x = o#string _x in OvAnt _x
+                  
                 method module_type : module_type -> module_type =
                   function
                   | MtNil _x -> let _x = o#loc _x in MtNil _x
@@ -12337,7 +12384,7 @@ module Struct =
                       let _x_i2 = o#ctyp _x_i2 in CrCtr (_x, _x_i1, _x_i2)
                   | CrInh (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i1 = o#override_flag _x_i1 in
                       let _x_i2 = o#class_expr _x_i2 in
                       let _x_i3 = o#string _x_i3
                       in CrInh (_x, _x_i1, _x_i2, _x_i3)
@@ -12346,16 +12393,16 @@ module Struct =
                       let _x_i1 = o#expr _x_i1 in CrIni (_x, _x_i1)
                   | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
-                      let _x_i2 = o#string _x_i2 in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#override_flag _x_i2 in
                       let _x_i3 = o#meta_bool _x_i3 in
                       let _x_i4 = o#expr _x_i4 in
                       let _x_i5 = o#ctyp _x_i5
                       in CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5)
                   | CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
-                      let _x_i2 = o#string _x_i2 in
+                      let _x_i1 = o#string _x_i1 in
+                      let _x_i2 = o#override_flag _x_i2 in
                       let _x_i3 = o#meta_bool _x_i3 in
                       let _x_i4 = o#expr _x_i4
                       in CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4)
@@ -12687,6 +12734,12 @@ module Struct =
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   | PaLaz (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#patt _x_i1 in o
+                  
+                method override_flag : override_flag -> 'self_type =
+                  function
+                  | OvOverride -> o
+                  | OvNil -> o
+                  | OvAnt _x -> let o = o#string _x in o
                   
                 method module_type : module_type -> 'self_type =
                   function
@@ -13077,21 +13130,21 @@ module Struct =
                       let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
                   | CrInh (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
+                      let o = o#override_flag _x_i1 in
                       let o = o#class_expr _x_i2 in
                       let o = o#string _x_i3 in o
                   | CrIni (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#expr _x_i1 in o
                   | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
-                      let o = o#string _x_i2 in
+                      let o = o#string _x_i1 in
+                      let o = o#override_flag _x_i2 in
                       let o = o#meta_bool _x_i3 in
                       let o = o#expr _x_i4 in let o = o#ctyp _x_i5 in o
                   | CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
-                      let o = o#string _x_i2 in
+                      let o = o#string _x_i1 in
+                      let o = o#override_flag _x_i2 in
                       let o = o#meta_bool _x_i3 in let o = o#expr _x_i4 in o
                   | CrVir (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
@@ -13631,8 +13684,6 @@ module Struct =
               | Ast.BAnt _ -> assert false
               
             let mkvirtual m = if mb2b m then Virtual else Concrete
-              
-            let mkoverride m = if mb2b m then Override else Fresh
               
             let lident s = Lident s
               
@@ -14202,6 +14253,12 @@ module Struct =
                         as i) -> Ast.ExId (_loc, i))
                   in sep_expr_acc l (normalize_acc i)
               | e -> ((loc_of_expr e), [], e) :: l
+              
+            let override_flag loc =
+              function
+              | Ast.OvOverride -> Override
+              | Ast.OvNil -> Fresh
+              | Ast.OvAnt _ -> error loc "antiquotation not allowed here"
               
             let list_of_opt_ctyp ot acc =
               match ot with | Ast.TyNil _ -> acc | t -> list_of_ctyp t acc
@@ -14813,12 +14870,13 @@ module Struct =
                   (Pcf_cstr (((ctyp t1), (ctyp t2), (mkloc loc)))) :: l
               | Ast.CrSem (_, cst1, cst2) ->
                   class_str_item cst1 (class_str_item cst2 l)
-              | CrInh (_, ov, ce, "") ->
-                  (Pcf_inher (mkoverride ov, class_expr ce, None)) :: l
-              | CrInh (_, ov, ce, pb) ->
-                  (Pcf_inher (mkoverride ov, class_expr ce, Some pb)) :: l
+              | CrInh (loc, ov, ce, pb) ->
+                  let opb = if pb = "" then None else Some pb
+                  in
+                    (Pcf_inher (override_flag loc ov, class_expr ce, opb)) ::
+                      l
               | CrIni (_, e) -> (Pcf_init (expr e)) :: l
-              | CrMth (loc, ov, s, b, e, t) ->
+              | CrMth (loc, s, ov, pf, e, t) ->
                   let t =
                     (match t with
                      | Ast.TyNil _ -> None
@@ -14826,19 +14884,20 @@ module Struct =
                   let e = mkexp loc (Pexp_poly (expr e, t))
                   in
                     (Pcf_meth
-                       ((s, (mkprivate b), (mkoverride ov), e, (mkloc loc)))) ::
+                       ((s, (mkprivate pf), (override_flag loc ov), e,
+                         (mkloc loc)))) ::
                       l
-              | CrVal (loc, ov, s, b, e) ->
+              | CrVal (loc, s, ov, mf, e) ->
                   (Pcf_val
-                     ((s, (mkmutable b), (mkoverride ov), (expr e),
+                     ((s, (mkmutable mf), (override_flag loc ov), (expr e),
                        (mkloc loc)))) ::
                     l
-              | CrVir (loc, s, b, t) ->
+              | CrVir (loc, s, pf, t) ->
                   (Pcf_virt
-                     ((s, (mkprivate b), (mkpolytype (ctyp t)), (mkloc loc)))) ::
+                     ((s, (mkprivate pf), (mkpolytype (ctyp t)), (mkloc loc)))) ::
                     l
-              | CrVvr (loc, s, b, t) ->
-                  (Pcf_valvirt ((s, (mkmutable b), (ctyp t), (mkloc loc)))) ::
+              | CrVvr (loc, s, mf, t) ->
+                  (Pcf_valvirt ((s, (mkmutable mf), (ctyp t), (mkloc loc)))) ::
                     l
               | CrAnt (_, _) -> assert false
               
@@ -15336,10 +15395,10 @@ module Struct =
                   
                 method class_str_item =
                   function
-                  | (Ast.CrInh ((_, _, _, "")) as cst) ->
+                  | (Ast.CrInh (_, _, _, "") as cst) ->
                       super#class_str_item cst
-                  | Ast.CrInh ((_, _, ce, s)) -> (o#class_expr ce)#add_atom s
-                  | Ast.CrVal ((_, _, s, _, e)) -> (o#expr e)#add_atom s
+                  | Ast.CrInh (_, _, ce, s) -> (o#class_expr ce)#add_atom s
+                  | Ast.CrVal (_, s, _, _, e) -> (o#expr e)#add_atom s
                   | Ast.CrVvr (_, s, _, t) -> (o#ctyp t)#add_atom s
                   | cst -> super#class_str_item cst
                   
@@ -18015,10 +18074,10 @@ module Printers =
                       method module_type :
                         formatter -> Ast.module_type -> unit
                         
-                      method mutable_flag :
-                        formatter -> Ast.meta_bool -> unit
-                        
                       method override_flag :
+                        formatter -> Ast.override_flag -> unit
+                        
+                      method mutable_flag :
                         formatter -> Ast.meta_bool -> unit
                         
                       method direction_flag :
@@ -18027,8 +18086,7 @@ module Printers =
                       method rec_flag : formatter -> Ast.meta_bool -> unit
                         
                       method flag :
-                        ?nospace: bool ->
-                          formatter -> Ast.meta_bool -> string -> unit
+                        formatter -> Ast.meta_bool -> string -> unit
                         
                       method node : formatter -> 'b -> ('b -> Loc.t) -> unit
                         
@@ -18389,6 +18447,13 @@ module Printers =
                           o#class_params t2
                     | x -> o#ctyp f x
                   
+                method override_flag =
+                  fun f ->
+                    function
+                    | Ast.OvOverride -> pp f "!"
+                    | Ast.OvNil -> ()
+                    | Ast.OvAnt s -> o#anti f s
+                  
                 method mutable_flag = fun f b -> o#flag f b "mutable"
                   
                 method rec_flag = fun f b -> o#flag f b "rec"
@@ -18397,15 +18462,10 @@ module Printers =
                   
                 method private_flag = fun f b -> o#flag f b "private"
                   
-                method override_flag =
-                  fun f b -> o#flag f b "!" ~nospace: true
-                  
                 method flag =
-                  fun ?(nospace = false) f b n ->
+                  fun f b n ->
                     match b with
-                    | Ast.BTrue ->
-                        (pp_print_string f n;
-                         if nospace then () else pp f "@ ")
+                    | Ast.BTrue -> (pp_print_string f n; pp f "@ ")
                     | Ast.BFalse -> ()
                     | Ast.BAnt s -> o#anti f s
                   
@@ -19437,40 +19497,33 @@ module Printers =
                       | Ast.CrCtr (_, t1, t2) ->
                           pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1
                             o#ctyp t2 semisep
-                      | Ast.CrInh ((_, ov, ce, "")) ->
+                      | Ast.CrInh (_, ov, ce, "") ->
                           pp f "@[<2>inherit%a@ %a%(%)@]" o#override_flag ov
                             o#class_expr ce semisep
-                      | Ast.CrInh ((_, ov, ce, s)) ->
+                      | Ast.CrInh (_, ov, ce, s) ->
                           pp f "@[<2>inherit%a@ %a as@ %a%(%)@]"
                             o#override_flag ov o#class_expr ce o#var s
                             semisep
                       | Ast.CrIni (_, e) ->
                           pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
-                      | Ast.CrMth (_, Ast.BFalse, s, pr, e, (Ast.TyNil _)) ->
-                          pp f "@[<2>method %a%a =@ %a%(%)@]" o#private_flag
-                            pr o#var s o#expr e semisep
-                      | Ast.CrMth (_, Ast.BFalse, s, pr, e, t) ->
-                          pp f "@[<2>method %a%a :@ %a =@ %a%(%)@]"
-                            o#private_flag pr o#var s o#ctyp t o#expr e
-                            semisep
-                      | Ast.CrMth (_, Ast.BTrue, s, pr, e, (Ast.TyNil _)) ->
-                          pp f "@[<2>method %a%a =@ %a%(%)@]" o#private_flag
-                            pr o#var s o#expr e semisep
-                      | Ast.CrMth (_, Ast.BTrue, s, pr, e, t) ->
-                          pp f "@[<2>method! %a%a :@ %a =@ %a%(%)@]"
-                            o#private_flag pr o#var s o#ctyp t o#expr e
-                            semisep
+                      | Ast.CrMth (_, s, ov, pr, e, (Ast.TyNil _)) ->
+                          pp f "@[<2>method%a %a%a =@ %a%(%)@]"
+                            o#override_flag ov o#private_flag pr o#var s
+                            o#expr e semisep
+                      | Ast.CrMth (_, s, ov, pr, e, t) ->
+                          pp f "@[<2>method%a %a%a :@ %a =@ %a%(%)@]"
+                            o#override_flag ov o#private_flag pr o#var s
+                            o#ctyp t o#expr e semisep
                       | Ast.CrVir (_, s, pr, t) ->
                           pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t semisep
                       | Ast.CrVvr (_, s, mu, t) ->
                           pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" value_val
                             o#mutable_flag mu o#var s o#ctyp t semisep
-                      | Ast.CrVal ((_, ov, s, mu, e)) ->
+                      | Ast.CrVal (_, s, ov, mu, e) ->
                           pp f "@[<2>%s%a %a%a =@ %a%(%)@]" value_val
                             o#override_flag ov o#mutable_flag mu o#var s
                             o#expr e semisep
-                      | Ast.CrMth _ -> assert false
                       | Ast.CrAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
                   
                 method implem =

@@ -721,8 +721,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "CrVal")))
                                     (meta_loc _loc x0))
-                                 (meta_meta_bool _loc x1))
-                              (meta_string _loc x2))
+                                 (meta_string _loc x1))
+                              (meta_override_flag _loc x2))
                            (meta_meta_bool _loc x3))
                         (meta_expr _loc x4)
                   | Ast.CrMth x0 x1 x2 x3 x4 x5 ->
@@ -737,8 +737,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                              (Ast.IdUid _loc "Ast")
                                              (Ast.IdUid _loc "CrMth")))
                                        (meta_loc _loc x0))
-                                    (meta_meta_bool _loc x1))
-                                 (meta_string _loc x2))
+                                    (meta_string _loc x1))
+                                 (meta_override_flag _loc x2))
                               (meta_meta_bool _loc x3))
                            (meta_expr _loc x4))
                         (meta_ctyp _loc x5)
@@ -759,7 +759,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrInh")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_override_flag _loc x1))
                            (meta_class_expr _loc x2))
                         (meta_string _loc x3)
                   | Ast.CrCtr x0 x1 x2 ->
@@ -1867,6 +1867,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MtNil")))
                         (meta_loc _loc x0) ]
+                and meta_override_flag _loc =
+                  fun
+                  [ Ast.OvAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.OvNil ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvNil"))
+                  | Ast.OvOverride ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvOverride")) ]
                 and meta_patt _loc =
                   fun
                   [ Ast.PaLaz x0 x1 ->
@@ -2712,8 +2723,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                           (Ast.IdUid _loc "CrVal")))
                                     (meta_loc _loc x0))
-                                 (meta_meta_bool _loc x1))
-                              (meta_string _loc x2))
+                                 (meta_string _loc x1))
+                              (meta_override_flag _loc x2))
                            (meta_meta_bool _loc x3))
                         (meta_expr _loc x4)
                   | Ast.CrMth x0 x1 x2 x3 x4 x5 ->
@@ -2728,8 +2739,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                              (Ast.IdUid _loc "Ast")
                                              (Ast.IdUid _loc "CrMth")))
                                        (meta_loc _loc x0))
-                                    (meta_meta_bool _loc x1))
-                                 (meta_string _loc x2))
+                                    (meta_string _loc x1))
+                                 (meta_override_flag _loc x2))
                               (meta_meta_bool _loc x3))
                            (meta_expr _loc x4))
                         (meta_ctyp _loc x5)
@@ -2750,7 +2761,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CrInh")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_override_flag _loc x1))
                            (meta_class_expr _loc x2))
                         (meta_string _loc x3)
                   | Ast.CrCtr x0 x1 x2 ->
@@ -3858,6 +3869,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MtNil")))
                         (meta_loc _loc x0) ]
+                and meta_override_flag _loc =
+                  fun
+                  [ Ast.OvAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.OvNil ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvNil"))
+                  | Ast.OvOverride ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvOverride")) ]
                 and meta_patt _loc =
                   fun
                   [ Ast.PaLaz x0 x1 ->
@@ -4699,6 +4721,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x_i1 = o#string _x_i1 in PaVrn _x _x_i1
           | PaLaz _x _x_i1 ->
               let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaLaz _x _x_i1 ];
+        method override_flag : override_flag -> override_flag =
+          fun
+          [ OvOverride -> OvOverride
+          | OvNil -> OvNil
+          | OvAnt _x -> let _x = o#string _x in OvAnt _x ];
         method module_type : module_type -> module_type =
           fun
           [ MtNil _x -> let _x = o#loc _x in MtNil _x
@@ -5155,23 +5182,23 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x_i2 = o#ctyp _x_i2 in CrCtr _x _x_i1 _x_i2
           | CrInh _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i1 = o#override_flag _x_i1 in
               let _x_i2 = o#class_expr _x_i2 in
               let _x_i3 = o#string _x_i3 in CrInh _x _x_i1 _x_i2 _x_i3
           | CrIni _x _x_i1 ->
               let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in CrIni _x _x_i1
           | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
-              let _x_i2 = o#string _x_i2 in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#override_flag _x_i2 in
               let _x_i3 = o#meta_bool _x_i3 in
               let _x_i4 = o#expr _x_i4 in
               let _x_i5 = o#ctyp _x_i5
               in CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5
           | CrVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
-              let _x_i2 = o#string _x_i2 in
+              let _x_i1 = o#string _x_i1 in
+              let _x_i2 = o#override_flag _x_i2 in
               let _x_i3 = o#meta_bool _x_i3 in
               let _x_i4 = o#expr _x_i4 in CrVal _x _x_i1 _x_i2 _x_i3 _x_i4
           | CrVir _x _x_i1 _x_i2 _x_i3 ->
@@ -5445,6 +5472,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | PaTyp _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
           | PaVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
           | PaLaz _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o ];
+        method override_flag : override_flag -> 'self_type =
+          fun
+          [ OvOverride -> o
+          | OvNil -> o
+          | OvAnt _x -> let o = o#string _x in o ];
         method module_type : module_type -> 'self_type =
           fun
           [ MtNil _x -> let o = o#loc _x in o
@@ -5766,19 +5798,19 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
           | CrInh _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in
+              let o = o#override_flag _x_i1 in
               let o = o#class_expr _x_i2 in let o = o#string _x_i3 in o
           | CrIni _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
           | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in
-              let o = o#string _x_i2 in
+              let o = o#string _x_i1 in
+              let o = o#override_flag _x_i2 in
               let o = o#meta_bool _x_i3 in
               let o = o#expr _x_i4 in let o = o#ctyp _x_i5 in o
           | CrVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in
-              let o = o#string _x_i2 in
+              let o = o#string _x_i1 in
+              let o = o#override_flag _x_i2 in
               let o = o#meta_bool _x_i3 in let o = o#expr _x_i4 in o
           | CrVir _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
