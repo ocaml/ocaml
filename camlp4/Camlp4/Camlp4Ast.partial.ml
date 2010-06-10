@@ -3,10 +3,34 @@
     [ BTrue
     | BFalse
     | BAnt of string ]
+   and rec_flag =
+    [ ReRecursive
+    | ReNil
+    | ReAnt of string ]
+   and direction_flag =
+    [ DiTo
+    | DiDownto
+    | DiAnt of string ]
+   and mutable_flag =
+    [ MuMutable
+    | MuNil
+    | MuAnt of string ]
+   and private_flag =
+    [ PrPrivate
+    | PrNil
+    | PrAnt of string ]
+   and virtual_flag =
+    [ ViVirtual
+    | ViNil
+    | ViAnt of string ]
    and override_flag =
     [ OvOverride
     | OvNil
     | OvAnt of string ]
+   and row_var_flag =
+    [ RvRowVar
+    | RvNil
+    | RvAnt of string ]
    and meta_option 'a =
     [ ONone
     | OSome of 'a
@@ -34,7 +58,7 @@
       (* type t 'a 'b 'c = t constraint t = t constraint t = t *)
     | TyDcl of loc and string and list ctyp and ctyp and list (ctyp * ctyp)
       (* < (t)? (..)? > *) (* < move : int -> 'a .. > as 'a  *)
-    | TyObj of loc and ctyp and meta_bool
+    | TyObj of loc and ctyp and row_var_flag
     | TyOlb of loc and string and ctyp (* ?s:t *)
     | TyPol of loc and ctyp and ctyp (* ! t . t *) (* ! 'a . list 'a -> 'a *)
     | TyQuo of loc and string (* 's *)
@@ -109,7 +133,7 @@
     | ExCoe of loc and expr and ctyp and ctyp (* (e : t) or (e : t :> t) *)
     | ExFlo of loc and string (* 3.14 *)
       (* for s = e to/downto e do { e } *)
-    | ExFor of loc and string and expr and expr and meta_bool and expr
+    | ExFor of loc and string and expr and expr and direction_flag and expr
     | ExFun of loc and match_case (* fun [ mc ] *)
     | ExIfe of loc and expr and expr and expr (* if e then e else e *)
     | ExInt of loc and string (* 42 *)
@@ -119,7 +143,7 @@
     | ExLab of loc and string and expr (* ~s or ~s:e *)
     | ExLaz of loc and expr (* lazy e *)
       (* let b in e or let rec b in e *)
-    | ExLet of loc and meta_bool and binding and expr
+    | ExLet of loc and rec_flag and binding and expr
       (* let module s = me in e *)
     | ExLmd of loc and string and module_expr and expr
       (* match e with [ mc ] *)
@@ -291,12 +315,12 @@
       (* type t *)
     | StTyp of loc and ctyp
       (* value (rec)? bi *)
-    | StVal of loc and meta_bool and binding
+    | StVal of loc and rec_flag and binding
     | StAnt of loc and string (* $s$ *) ]
   and class_type =
     [ CtNil of loc
       (* (virtual)? i ([ t ])? *)
-    | CtCon of loc and meta_bool and ident and ctyp
+    | CtCon of loc and virtual_flag and ident and ctyp
       (* [t] -> ct *)
     | CtFun of loc and ctyp and class_type
       (* object ((t))? (csg)? end *)
@@ -318,22 +342,22 @@
       (* inherit ct *)
     | CgInh of loc and class_type
       (* method s : t or method private s : t *)
-    | CgMth of loc and string and meta_bool and ctyp
+    | CgMth of loc and string and private_flag and ctyp
       (* value (virtual)? (mutable)? s : t *)
-    | CgVal of loc and string and meta_bool and meta_bool and ctyp
-      (* method virtual (mutable)? s : t *)
-    | CgVir of loc and string and meta_bool and ctyp
+    | CgVal of loc and string and mutable_flag and virtual_flag and ctyp
+      (* method virtual (private)? s : t *)
+    | CgVir of loc and string and private_flag and ctyp
     | CgAnt of loc and string (* $s$ *) ]
   and class_expr =
     [ CeNil of loc
       (* ce e *)
     | CeApp of loc and class_expr and expr
       (* (virtual)? i ([ t ])? *)
-    | CeCon of loc and meta_bool and ident and ctyp
+    | CeCon of loc and virtual_flag and ident and ctyp
       (* fun p -> ce *)
     | CeFun of loc and patt and class_expr
       (* let (rec)? bi in ce *)
-    | CeLet of loc and meta_bool and binding and class_expr
+    | CeLet of loc and rec_flag and binding and class_expr
       (* object ((p))? (cst)? end *)
     | CeStr of loc and patt and class_str_item
       (* ce : ct *)
@@ -355,11 +379,11 @@
       (* initializer e *)
     | CrIni of loc and expr
       (* method(!)? (private)? s : t = e or method(!)? (private)? s = e *)
-    | CrMth of loc and string and override_flag and meta_bool and expr and ctyp
+    | CrMth of loc and string and override_flag and private_flag and expr and ctyp
       (* value(!)? (mutable)? s = e *)
-    | CrVal of loc and string and override_flag and meta_bool and expr
+    | CrVal of loc and string and override_flag and mutable_flag and expr
       (* method virtual (private)? s : t *)
-    | CrVir of loc and string and meta_bool and ctyp
-      (* value virtual (private)? s : t *)
-    | CrVvr of loc and string and meta_bool and ctyp
+    | CrVir of loc and string and private_flag and ctyp
+      (* value virtual (mutable)? s : t *)
+    | CrVvr of loc and string and mutable_flag and ctyp
     | CrAnt of loc and string (* $s$ *) ];

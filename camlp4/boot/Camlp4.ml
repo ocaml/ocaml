@@ -7456,7 +7456,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeLet"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_rec_flag _loc x1),
                                   meta_binding _loc x2),
                                 meta_class_expr _loc x3)
                           | Ast.CeFun (x0, x1, x2) ->
@@ -7480,7 +7480,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeCon"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_virtual_flag _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CeApp (x0, x1, x2) ->
@@ -7514,7 +7514,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CgVir"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_private_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CgVal (x0, x1, x2, x3, x4) ->
                               Ast.ExApp (_loc,
@@ -7528,8 +7528,8 @@ module Struct =
                                             Ast.IdUid (_loc, "CgVal"))),
                                         meta_loc _loc x0),
                                       meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_meta_bool _loc x3),
+                                    meta_mutable_flag _loc x2),
+                                  meta_virtual_flag _loc x3),
                                 meta_ctyp _loc x4)
                           | Ast.CgMth (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -7542,7 +7542,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CgMth"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_private_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CgInh (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -7594,7 +7594,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CrVvr"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_private_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CrVir (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
@@ -7607,7 +7607,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CrVir"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_private_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CrVal (x0, x1, x2, x3, x4) ->
                               Ast.ExApp (_loc,
@@ -7622,7 +7622,7 @@ module Struct =
                                         meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_override_flag _loc x2),
-                                  meta_meta_bool _loc x3),
+                                  meta_mutable_flag _loc x3),
                                 meta_expr _loc x4)
                           | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
                               Ast.ExApp (_loc,
@@ -7638,7 +7638,7 @@ module Struct =
                                           meta_loc _loc x0),
                                         meta_string _loc x1),
                                       meta_override_flag _loc x2),
-                                    meta_meta_bool _loc x3),
+                                    meta_private_flag _loc x3),
                                   meta_expr _loc x4),
                                 meta_ctyp _loc x5)
                           | Ast.CrIni (x0, x1) ->
@@ -7758,7 +7758,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CtCon"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_virtual_flag _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CtNil x0 ->
@@ -8016,7 +8016,7 @@ module Struct =
                                         Ast.IdUid (_loc, "TyObj"))),
                                     meta_loc _loc x0),
                                   meta_ctyp _loc x1),
-                                meta_meta_bool _loc x2)
+                                meta_row_var_flag _loc x2)
                           | Ast.TyDcl (x0, x1, x2, x3, x4) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -8333,7 +8333,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExLet"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_rec_flag _loc x1),
                                   meta_binding _loc x2),
                                 meta_expr _loc x3)
                           | Ast.ExLaz (x0, x1) ->
@@ -8423,7 +8423,7 @@ module Struct =
                                         meta_string _loc x1),
                                       meta_expr _loc x2),
                                     meta_expr _loc x3),
-                                  meta_meta_bool _loc x4),
+                                  meta_direction_flag _loc x4),
                                 meta_expr _loc x5)
                           | Ast.ExFlo (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -8620,17 +8620,23 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "McNil"))),
                                 meta_loc _loc x0)
-                        and meta_meta_bool _loc =
+                        and meta_meta_bool t f _loc =
                           function
                           | Ast.BAnt x0 -> Ast.ExAnt (_loc, x0)
                           | Ast.BFalse ->
                               Ast.ExId (_loc,
                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BFalse")))
+                                  Ast.IdUid (_loc, f)))
                           | Ast.BTrue ->
                               Ast.ExId (_loc,
                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BTrue")))
+                                  Ast.IdUid (_loc, t)))
+                        and meta_rec_flag x = meta_meta_bool "ReRecursive" "ReNil" x
+                        and meta_private_flag x = meta_meta_bool "PrPrivate" "PrNil" x
+                        and meta_mutable_flag x = meta_meta_bool "MuMutable" "MuNil" x
+                        and meta_virtual_flag x = meta_meta_bool "ViVirtual" "ViNil" x
+                        and meta_row_var_flag x = meta_meta_bool "RvRowVar" "RvNil" x
+                        and meta_direction_flag x = meta_meta_bool "DiTo" "DiDownto" x
                         and meta_meta_list mf_a _loc =
                           function
                           | Ast.LAnt x0 -> Ast.ExAnt (_loc, x0)
@@ -9265,7 +9271,7 @@ module Struct =
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StVal"))),
                                     meta_loc _loc x0),
-                                  meta_meta_bool _loc x1),
+                                  meta_rec_flag _loc x1),
                                 meta_binding _loc x2)
                           | Ast.StTyp (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -9580,7 +9586,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeLet"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_rec_flag _loc x1),
                                   meta_binding _loc x2),
                                 meta_class_expr _loc x3)
                           | Ast.CeFun (x0, x1, x2) ->
@@ -9604,7 +9610,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CeCon"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_virtual_flag _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CeApp (x0, x1, x2) ->
@@ -9638,7 +9644,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CgVir"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_private_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CgVal (x0, x1, x2, x3, x4) ->
                               Ast.PaApp (_loc,
@@ -9652,8 +9658,8 @@ module Struct =
                                             Ast.IdUid (_loc, "CgVal"))),
                                         meta_loc _loc x0),
                                       meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_meta_bool _loc x3),
+                                    meta_mutable_flag _loc x2),
+                                  meta_virtual_flag _loc x3),
                                 meta_ctyp _loc x4)
                           | Ast.CgMth (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -9666,7 +9672,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CgMth"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_private_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CgInh (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -9718,7 +9724,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CrVvr"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_mutable_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CrVir (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
@@ -9731,7 +9737,7 @@ module Struct =
                                           Ast.IdUid (_loc, "CrVir"))),
                                       meta_loc _loc x0),
                                     meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
+                                  meta_private_flag _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CrVal (x0, x1, x2, x3, x4) ->
                               Ast.PaApp (_loc,
@@ -9746,7 +9752,7 @@ module Struct =
                                         meta_loc _loc x0),
                                       meta_string _loc x1),
                                     meta_override_flag _loc x2),
-                                  meta_meta_bool _loc x3),
+                                  meta_mutable_flag _loc x3),
                                 meta_expr _loc x4)
                           | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
                               Ast.PaApp (_loc,
@@ -9762,7 +9768,7 @@ module Struct =
                                           meta_loc _loc x0),
                                         meta_string _loc x1),
                                       meta_override_flag _loc x2),
-                                    meta_meta_bool _loc x3),
+                                    meta_private_flag _loc x3),
                                   meta_expr _loc x4),
                                 meta_ctyp _loc x5)
                           | Ast.CrIni (x0, x1) ->
@@ -9882,7 +9888,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "CtCon"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_virtual_flag _loc x1),
                                   meta_ident _loc x2),
                                 meta_ctyp _loc x3)
                           | Ast.CtNil x0 ->
@@ -10140,7 +10146,7 @@ module Struct =
                                         Ast.IdUid (_loc, "TyObj"))),
                                     meta_loc _loc x0),
                                   meta_ctyp _loc x1),
-                                meta_meta_bool _loc x2)
+                                meta_row_var_flag _loc x2)
                           | Ast.TyDcl (x0, x1, x2, x3, x4) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -10457,7 +10463,7 @@ module Struct =
                                           Ast.IdUid (_loc, "Ast"),
                                           Ast.IdUid (_loc, "ExLet"))),
                                       meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
+                                    meta_rec_flag _loc x1),
                                   meta_binding _loc x2),
                                 meta_expr _loc x3)
                           | Ast.ExLaz (x0, x1) ->
@@ -10547,7 +10553,7 @@ module Struct =
                                         meta_string _loc x1),
                                       meta_expr _loc x2),
                                     meta_expr _loc x3),
-                                  meta_meta_bool _loc x4),
+                                  meta_direction_flag _loc x4),
                                 meta_expr _loc x5)
                           | Ast.ExFlo (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -10744,17 +10750,23 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "McNil"))),
                                 meta_loc _loc x0)
-                        and meta_meta_bool _loc =
+                        and meta_meta_bool t f _loc =
                           function
                           | Ast.BAnt x0 -> Ast.PaAnt (_loc, x0)
                           | Ast.BFalse ->
                               Ast.PaId (_loc,
                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BFalse")))
+                                  Ast.IdUid (_loc, f)))
                           | Ast.BTrue ->
                               Ast.PaId (_loc,
                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BTrue")))
+                                  Ast.IdUid (_loc, t)))
+                        and meta_rec_flag x = meta_meta_bool "ReRecursive" "ReNil" x
+                        and meta_private_flag x = meta_meta_bool "PrPrivate" "PrNil" x
+                        and meta_mutable_flag x = meta_meta_bool "MuMutable" "MuNil" x
+                        and meta_virtual_flag x = meta_meta_bool "ViVirtual" "ViNil" x
+                        and meta_row_var_flag x = meta_meta_bool "RvRowVar" "RvNil" x
+                        and meta_direction_flag x = meta_meta_bool "DiTo" "DiDownto" x
                         and meta_meta_list mf_a _loc =
                           function
                           | Ast.LAnt x0 -> Ast.PaAnt (_loc, x0)
@@ -11389,7 +11401,7 @@ module Struct =
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "StVal"))),
                                     meta_loc _loc x0),
-                                  meta_meta_bool _loc x1),
+                                  meta_rec_flag _loc x1),
                                 meta_binding _loc x2)
                           | Ast.StTyp (x0, x1) ->
                               Ast.PaApp (_loc,
