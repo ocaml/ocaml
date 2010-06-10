@@ -808,7 +808,7 @@ Very old (no more supported) syntax:\n\
     fun_binding:
       [ RIGHTA
         [ test_lparen_type; "("; "type"; i = a_LIDENT; ")"; e = SELF ->
-            Ast.ExFUN _loc i e
+            <:expr< fun (type $i$) -> $e$ >>
         | p = labeled_ipatt; e = SELF ->
             <:expr< fun $p$ -> $e$ >>
         | bi = cvalue_binding -> bi
@@ -861,7 +861,7 @@ Very old (no more supported) syntax:\n\
     fun_def:
       [ [ test_lparen_type; "("; "type"; i = a_LIDENT; ")";
           e = fun_def_cont_no_when ->
-            Ast.ExFUN _loc i e
+            <:expr< fun (type $i$) -> $e$ >>
         | p = labeled_ipatt; (w, e) = fun_def_cont ->
             <:expr< fun [ $p$ when $w$ -> $e$ ] >> ] ]
     ;
@@ -869,7 +869,7 @@ Very old (no more supported) syntax:\n\
       [ RIGHTA
         [ test_lparen_type; "("; "type"; i = a_LIDENT; ")";
           e = fun_def_cont_no_when ->
-            (<:expr<>>, Ast.ExFUN _loc i e)
+            (<:expr<>>, <:expr< fun (type $i$) -> $e$ >>)
         | p = labeled_ipatt; (w,e) = SELF ->
             (<:expr<>>, <:expr< fun [ $p$ when $w$ -> $e$ ] >>)
         | "when"; w = expr; "->"; e = expr -> (w, e)
@@ -878,7 +878,7 @@ Very old (no more supported) syntax:\n\
     fun_def_cont_no_when:
       [ RIGHTA
         [ test_lparen_type; "("; "type"; i = a_LIDENT; ")";
-          e = fun_def_cont_no_when -> Ast.ExFUN _loc i e
+          e = fun_def_cont_no_when -> <:expr< fun (type $i$) -> $e$ >>
         | p = labeled_ipatt; (w,e) = fun_def_cont ->
             <:expr< fun [ $p$ when $w$ -> $e$ ] >>
         | "->"; e = expr -> e ] ]
@@ -1335,24 +1335,24 @@ Very old (no more supported) syntax:\n\
         | o = value_val_opt_override; mf = opt_mutable; lab = label; e = cvalue_binding ->
             <:class_str_item< value $override:o$ $mutable:mf$ $lab$ = $e$ >>
         | o = value_val_opt_override; mf = opt_mutable; "virtual"; l = label; ":"; t = poly_type ->
-            if o <> Ast.OvNil then
+            if o <> <:override_flag<>> then
               raise (Stream.Error "override (!) is incompatible with virtual")
             else
               <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
         | o = value_val_opt_override; "virtual"; mf = opt_mutable; l = label; ":"; t = poly_type ->
-            if o <> Ast.OvNil then
+            if o <> <:override_flag<>> then
               raise (Stream.Error "override (!) is incompatible with virtual")
             else
               <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
         | o = method_opt_override; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
-            if o <> Ast.OvNil then
+            if o <> <:override_flag<>> then
               raise (Stream.Error "override (!) is incompatible with virtual")
             else
               <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
         | o = method_opt_override; pf = opt_private; l = label; topt = opt_polyt; e = fun_binding ->
             <:class_str_item< method $override:o$ $private:pf$ $l$ : $topt$ = $e$ >>
         | o = method_opt_override; pf = opt_private; "virtual"; l = label; ":"; t = poly_type ->
-            if o <> Ast.OvNil then
+            if o <> <:override_flag<>> then
               raise (Stream.Error "override (!) is incompatible with virtual")
             else
               <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
@@ -1361,15 +1361,15 @@ Very old (no more supported) syntax:\n\
         | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
     ;
     method_opt_override:
-      [ [ "method"; "!" -> Ast.OvOverride
-        | "method"; `ANTIQUOT (("!"|"override") as n) s -> Ast.OvAnt (mk_anti n s)
-        | "method" -> Ast.OvNil
+      [ [ "method"; "!" -> <:override_flag< ! >>
+        | "method"; `ANTIQUOT (("!"|"override"|"anti") as n) s -> Ast.OvAnt (mk_anti n s)
+        | "method" -> <:override_flag<>>
       ] ]
     ;
     value_val_opt_override:
-      [ [ value_val; "!" -> Ast.OvOverride
-        | value_val; `ANTIQUOT (("!"|"override") as n) s -> Ast.OvAnt (mk_anti n s)
-        | value_val -> Ast.OvNil
+      [ [ value_val; "!" -> <:override_flag< ! >>
+        | value_val; `ANTIQUOT (("!"|"override"|"anti") as n) s -> Ast.OvAnt (mk_anti n s)
+        | value_val -> <:override_flag<>>
       ] ]
     ;
     opt_as_lident:
@@ -1560,44 +1560,44 @@ Very old (no more supported) syntax:\n\
         | p = ipatt -> p ] ]
     ;
     direction_flag:
-      [ [ "to" -> Ast.DiTo
-        | "downto" -> Ast.DiDownto
-        | `ANTIQUOT ("to" as n) s -> Ast.DiAnt (mk_anti n s) ] ]
+      [ [ "to" -> <:direction_flag< to >>
+        | "downto" -> <:direction_flag< downto >>
+        | `ANTIQUOT ("to"|"anti" as n) s -> Ast.DiAnt (mk_anti n s) ] ]
     ;
     opt_private:
-      [ [ "private" -> Ast.PrPrivate
-        | `ANTIQUOT ("private" as n) s -> Ast.PrAnt (mk_anti n s)
-        | -> Ast.PrNil
+      [ [ "private" -> <:private_flag< private >>
+        | `ANTIQUOT ("private"|"anti" as n) s -> Ast.PrAnt (mk_anti n s)
+        | -> <:private_flag<>>
       ] ]
     ;
     opt_mutable:
-      [ [ "mutable" -> Ast.MuMutable
-        | `ANTIQUOT ("mutable" as n) s -> Ast.MuAnt (mk_anti n s)
-        | -> Ast.MuNil
+      [ [ "mutable" -> <:mutable_flag< mutable >>
+        | `ANTIQUOT ("mutable"|"anti" as n) s -> Ast.MuAnt (mk_anti n s)
+        | -> <:mutable_flag<>>
       ] ]
     ;
     opt_virtual:
-      [ [ "virtual" -> Ast.ViVirtual
-        | `ANTIQUOT ("virtual" as n) s -> Ast.ViAnt (mk_anti n s)
-        | -> Ast.ViNil
+      [ [ "virtual" -> <:virtual_flag< virtual >>
+        | `ANTIQUOT ("virtual"|"anti" as n) s -> Ast.ViAnt (mk_anti n s)
+        | -> <:virtual_flag<>>
       ] ]
     ;
     opt_dot_dot:
-      [ [ ".." -> Ast.RvRowVar
-        | `ANTIQUOT (".." as n) s -> Ast.RvAnt (mk_anti n s)
-        | -> Ast.RvNil
+      [ [ ".." -> <:row_var_flag< .. >>
+        | `ANTIQUOT (".."|"anti" as n) s -> Ast.RvAnt (mk_anti n s)
+        | -> <:row_var_flag<>>
       ] ]
     ;
     opt_rec:
-      [ [ "rec" -> Ast.ReRecursive
-        | `ANTIQUOT ("rec" as n) s -> Ast.ReAnt (mk_anti n s)
-        | -> Ast.ReNil
+      [ [ "rec" -> <:rec_flag< rec >>
+        | `ANTIQUOT ("rec"|"anti" as n) s -> Ast.ReAnt (mk_anti n s)
+        | -> <:rec_flag<>>
       ] ]
     ;
     opt_override:
-      [ [ "!" -> Ast.OvOverride
-        | `ANTIQUOT (("!"|"override") as n) s -> Ast.OvAnt (mk_anti n s)
-        | -> Ast.OvNil
+      [ [ "!" -> <:override_flag< ! >>
+        | `ANTIQUOT (("!"|"override"|"anti") as n) s -> Ast.OvAnt (mk_anti n s)
+        | -> <:override_flag<>>
       ] ]
     ;
     opt_expr:

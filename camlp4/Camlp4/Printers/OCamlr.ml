@@ -164,7 +164,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<2>%a@ :=@ %a@]" o#dot_expr e1 o#expr e2
     | <:expr< fun $p$ -> $e$ >> when Ast.is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`patt p, e)
-    | Ast.ExFUN _ i e ->
+    | <:expr< fun (type $i$) -> $e$ >> ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`newtype i, e)
     | <:expr< fun [ $a$ ] >> ->
         pp f "@[<hv0>fun%a@]" o#match_case a

@@ -75,14 +75,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   ;
 
   value mkvirtual = fun
-    [ Ast.ViVirtual -> Virtual
-    | Ast.ViNil -> Concrete
-    | Ast.ViAnt _ -> assert False ];
+    [ <:virtual_flag< virtual >> -> Virtual
+    | <:virtual_flag<>> -> Concrete
+    | _ -> assert False ];
 
   value mkdirection = fun
-    [ Ast.DiTo -> Upto
-    | Ast.DiDownto -> Downto
-    | Ast.DiAnt _ -> assert False ];
+    [ <:direction_flag< to >> -> Upto
+    | <:direction_flag< downto >> -> Downto
+    | _ -> assert False ];
 
   value lident s = Lident s;
   value ldot l s = Ldot l s;
@@ -112,9 +112,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value mkrf =
     fun
-    [ Ast.ReRecursive -> Recursive
-    | Ast.ReNil -> Nonrecursive
-    | Ast.ReAnt _ -> assert False ];
+    [ <:rec_flag< rec >> -> Recursive
+    | <:rec_flag<>> -> Nonrecursive
+    | _ -> assert False ];
 
   value mkli s = loop lident
     where rec loop f =
@@ -307,9 +307,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   ;
   value mkprivate' m = if m then Private else Public;
   value mkprivate = fun
-    [ Ast.PrPrivate -> Private
-    | Ast.PrNil -> Public
-    | Ast.PrAnt _ -> assert False ];
+    [ <:private_flag< private >> -> Private
+    | <:private_flag<>> -> Public
+    | _ -> assert False ];
   value mktrecord =
     fun
     [ <:ctyp@loc< $lid:s$ : mutable $t$ >> ->
@@ -357,9 +357,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | Ast.LAnt _ -> assert False ];
 
   value mkmutable = fun
-    [ Ast.MuMutable -> Mutable
-    | Ast.MuNil -> Immutable
-    | Ast.MuAnt _ -> assert False ];
+    [ <:mutable_flag< mutable >> -> Mutable
+    | <:mutable_flag<>> -> Immutable
+    | _ -> assert False ];
 
   value paolab lab p =
     match (lab, p) with
@@ -579,9 +579,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   ;
 
   value override_flag loc =
-    fun [ Ast.OvOverride -> Override
-        | Ast.OvNil      -> Fresh
-        | Ast.OvAnt _    -> error loc "antiquotation not allowed here"
+    fun [ <:override_flag< ! >> -> Override
+        | <:override_flag<>> -> Fresh
+        |  _ -> error loc "antiquotation not allowed here"
         ];
 
   value list_of_opt_ctyp ot acc =
@@ -956,7 +956,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:str_item@loc< $anti:_$ >> -> error loc "antiquotation in str_item" ]
   and class_type =
     fun
-    [ CtCon loc Ast.ViNil id tl ->
+    [ CtCon loc ViNil id tl ->
         mkcty loc
           (Pcty_constr (long_class_ident id) (List.map ctyp (list_of_opt_ctyp tl [])))
     | CtFun loc (TyLab _ lab t) ct ->
@@ -1030,7 +1030,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let (ce, el) = class_expr_fa [] c in
         let el = List.map label_expr el in
         mkpcl loc (Pcl_apply (class_expr ce) el)
-    | CeCon loc Ast.ViNil id tl ->
+    | CeCon loc ViNil id tl ->
         mkpcl loc
           (Pcl_constr (long_class_ident id) (List.map ctyp (list_of_opt_ctyp tl [])))
     | CeFun loc (PaLab _ lab po) ce ->

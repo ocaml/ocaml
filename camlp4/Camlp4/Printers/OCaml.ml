@@ -135,7 +135,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           let (pl, e) = expr_fun_args e in
           ([`patt p :: pl], e)
         else ([], ge)
-    | Ast.ExFUN _ i e ->
+    | <:expr< fun (type $i$) -> $e$ >> ->
         let (pl, e) = expr_fun_args e in
         ([`newtype i :: pl], e)
     | ge -> ([], ge) ];
@@ -467,7 +467,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<2>fun@ _@ ->@ %a@]" o#raise_match_failure loc
     | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`patt p, e)
-    | Ast.ExFUN _ i e ->
+    | <:expr< fun (type $i$) -> $e$ >> ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`newtype i, e)
     | <:expr< fun [ $a$ ] >> ->
         pp f "@[<hv0>function%a@]" o#match_case a
@@ -579,7 +579,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< $_$ $_$ >> | <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
       <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
       <:expr< $_$ # $_$ >> |
-      <:expr< fun [ $_$ ] >> | Ast.ExFUN _ _ _ | <:expr< match $_$ with [ $_$ ] >> |
+      <:expr< fun [ $_$ ] >> | <:expr< fun (type $_$) -> $_$ >> | <:expr< match $_$ with [ $_$ ] >> |
       <:expr< try $_$ with [ $_$ ] >> |
       <:expr< if $_$ then $_$ else $_$ >> |
       <:expr< let $rec:_$ $_$ in $_$ >> |
