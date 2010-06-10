@@ -557,7 +557,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         ] ]
     ;
     meth_list:
-      [ [ m = meth_decl -> (m, Ast.BFalse) ] ];
+      [ [ m = meth_decl -> (m, Ast.RvNil) ] ];
     comma_ctyp_app:
       [ [ t1 = ctyp; ","; t2 = SELF -> fun acc -> t2 <:ctyp< $acc$ $t1$ >>
         | t = ctyp -> fun acc -> <:ctyp< $acc$ $t$ >>

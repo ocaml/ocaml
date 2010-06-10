@@ -457,7 +457,9 @@ Very old (no more supported) syntax:\n\
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence package_type;
+      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence package_type
+      rec_flag_quot direction_flag_quot mutable_flag_quot private_flag_quot
+      virtual_flag_quot row_var_flag_quot override_flag_quot;
     module_expr:
       [ "top"
         [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
@@ -1558,38 +1560,38 @@ Very old (no more supported) syntax:\n\
         | p = ipatt -> p ] ]
     ;
     direction_flag:
-      [ [ "to" -> Ast.BTrue
-        | "downto" -> Ast.BFalse
-        | `ANTIQUOT ("to" as n) s -> Ast.BAnt (mk_anti n s) ] ]
+      [ [ "to" -> Ast.DiTo
+        | "downto" -> Ast.DiDownto
+        | `ANTIQUOT ("to" as n) s -> Ast.DiAnt (mk_anti n s) ] ]
     ;
     opt_private:
-      [ [ "private" -> Ast.BTrue
-        | `ANTIQUOT ("private" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "private" -> Ast.PrPrivate
+        | `ANTIQUOT ("private" as n) s -> Ast.PrAnt (mk_anti n s)
+        | -> Ast.PrNil
       ] ]
     ;
     opt_mutable:
-      [ [ "mutable" -> Ast.BTrue
-        | `ANTIQUOT ("mutable" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "mutable" -> Ast.MuMutable
+        | `ANTIQUOT ("mutable" as n) s -> Ast.MuAnt (mk_anti n s)
+        | -> Ast.MuNil
       ] ]
     ;
     opt_virtual:
-      [ [ "virtual" -> Ast.BTrue
-        | `ANTIQUOT ("virtual" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "virtual" -> Ast.ViVirtual
+        | `ANTIQUOT ("virtual" as n) s -> Ast.ViAnt (mk_anti n s)
+        | -> Ast.ViNil
       ] ]
     ;
     opt_dot_dot:
-      [ [ ".." -> Ast.BTrue
-        | `ANTIQUOT (".." as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ ".." -> Ast.RvRowVar
+        | `ANTIQUOT (".." as n) s -> Ast.RvAnt (mk_anti n s)
+        | -> Ast.RvNil
       ] ]
     ;
     opt_rec:
-      [ [ "rec" -> Ast.BTrue
-        | `ANTIQUOT ("rec" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "rec" -> Ast.ReRecursive
+        | `ANTIQUOT ("rec" as n) s -> Ast.ReAnt (mk_anti n s)
+        | -> Ast.ReNil
       ] ]
     ;
     opt_override:
@@ -1828,7 +1830,7 @@ Very old (no more supported) syntax:\n\
         | "virtual"; (i, ot) = class_name_and_param ->
             <:class_expr< virtual $lid:i$ [ $ot$ ] >>
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
-            let anti = Ast.BAnt (mk_anti ~c:"class_expr" n s) in
+            let anti = Ast.ViAnt (mk_anti ~c:"class_expr" n s) in
             <:class_expr< $virtual:anti$ $id:i$ [ $ot$ ] >>
         | x = class_expr -> x
         | -> <:class_expr<>>
@@ -1841,7 +1843,7 @@ Very old (no more supported) syntax:\n\
         | "virtual"; (i, ot) = class_name_and_param ->
             <:class_type< virtual $lid:i$ [ $ot$ ] >>
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
-            let anti = Ast.BAnt (mk_anti ~c:"class_type" n s) in
+            let anti = Ast.ViAnt (mk_anti ~c:"class_type" n s) in
             <:class_type< $virtual:anti$ $id:i$ [ $ot$ ] >>
         | x = class_type_plus -> x
         | -> <:class_type<>>
@@ -1862,6 +1864,13 @@ Very old (no more supported) syntax:\n\
       [ [ x = with_constr -> x
         | -> <:with_constr<>> ] ]
     ;
+    rec_flag_quot: [ [ x = opt_rec -> x ] ];
+    direction_flag_quot: [ [ x = direction_flag -> x ] ];
+    mutable_flag_quot: [ [ x = opt_mutable -> x ] ];
+    private_flag_quot: [ [ x = opt_private -> x ] ];
+    virtual_flag_quot: [ [ x = opt_virtual -> x ] ];
+    row_var_flag_quot: [ [ x = opt_dot_dot -> x ] ];
+    override_flag_quot: [ [ x = opt_override -> x ] ];
     patt_eoi:
       [ [ x = patt; `EOI -> x ] ]
     ;

@@ -222,6 +222,12 @@ module type Ast = sig
   type binding;
   type rec_binding;
   type module_binding;
+  type rec_flag;
+  type direction_flag;
+  type mutable_flag;
+  type private_flag;
+  type virtual_flag;
+  type row_var_flag;
   type override_flag;
 
   (** {6 Location accessors} *)
@@ -288,6 +294,12 @@ module type Ast = sig
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
     method override_flag : override_flag -> override_flag;
+    method mutable_flag : mutable_flag -> mutable_flag;
+    method private_flag : private_flag -> private_flag;
+    method virtual_flag : virtual_flag -> virtual_flag;
+    method direction_flag : direction_flag -> direction_flag;
+    method rec_flag : rec_flag -> rec_flag;
+    method row_var_flag : row_var_flag -> row_var_flag;
 
     method unknown : ! 'a. 'a -> 'a;
   end;
@@ -317,6 +329,12 @@ module type Ast = sig
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
+    method rec_flag : rec_flag -> 'self_type;
+    method direction_flag : direction_flag -> 'self_type;
+    method mutable_flag : mutable_flag -> 'self_type;
+    method private_flag : private_flag -> 'self_type;
+    method virtual_flag : virtual_flag -> 'self_type;
+    method row_var_flag : row_var_flag -> 'self_type;
     method override_flag : override_flag -> 'self_type;
 
     method unknown : ! 'a. 'a -> 'self_type;
@@ -428,7 +446,13 @@ module type Camlp4Ast = sig
         value meta_sig_item : loc -> sig_item -> expr;
         value meta_str_item : loc -> str_item -> expr;
         value meta_with_constr : loc -> with_constr -> expr;
+        value meta_rec_flag : loc -> rec_flag -> expr;
+        value meta_mutable_flag : loc -> mutable_flag -> expr;
+        value meta_virtual_flag : loc -> virtual_flag -> expr;
+        value meta_private_flag : loc -> private_flag -> expr;
+        value meta_row_var_flag : loc -> row_var_flag -> expr;
         value meta_override_flag : loc -> override_flag -> expr;
+        value meta_direction_flag : loc -> direction_flag -> expr;
       end;
       module Patt : sig
         value meta_string : loc -> string -> patt;
@@ -454,7 +478,13 @@ module type Camlp4Ast = sig
         value meta_sig_item : loc -> sig_item -> patt;
         value meta_str_item : loc -> str_item -> patt;
         value meta_with_constr : loc -> with_constr -> patt;
+        value meta_rec_flag : loc -> rec_flag -> patt;
+        value meta_mutable_flag : loc -> mutable_flag -> patt;
+        value meta_virtual_flag : loc -> virtual_flag -> patt;
+        value meta_private_flag : loc -> private_flag -> patt;
+        value meta_row_var_flag : loc -> row_var_flag -> patt;
         value meta_override_flag : loc -> override_flag -> patt;
+        value meta_direction_flag : loc -> direction_flag -> patt;
       end;
     end;
   end;
@@ -485,6 +515,12 @@ module type Camlp4Ast = sig
     method module_binding : module_binding -> module_binding;
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
+    method mutable_flag : mutable_flag -> mutable_flag;
+    method private_flag : private_flag -> private_flag;
+    method virtual_flag : virtual_flag -> virtual_flag;
+    method direction_flag : direction_flag -> direction_flag;
+    method rec_flag : rec_flag -> rec_flag;
+    method row_var_flag : row_var_flag -> row_var_flag;
     method override_flag : override_flag -> override_flag;
 
     method unknown : ! 'a. 'a -> 'a;
@@ -515,6 +551,12 @@ module type Camlp4Ast = sig
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
+    method rec_flag : rec_flag -> 'self_type;
+    method direction_flag : direction_flag -> 'self_type;
+    method mutable_flag : mutable_flag -> 'self_type;
+    method private_flag : private_flag -> 'self_type;
+    method virtual_flag : virtual_flag -> 'self_type;
+    method row_var_flag : row_var_flag -> 'self_type;
     method override_flag : override_flag -> 'self_type;
 
     method unknown : ! 'a. 'a -> 'self_type;
@@ -619,6 +661,12 @@ module Camlp4AstToAst (M : Camlp4Ast) : Ast
    and type module_binding = M.module_binding
    and type match_case = M.match_case
    and type ident = M.ident
+   and type rec_flag = M.rec_flag
+   and type direction_flag = M.direction_flag
+   and type mutable_flag = M.mutable_flag
+   and type private_flag = M.private_flag
+   and type virtual_flag = M.virtual_flag
+   and type row_var_flag = M.row_var_flag
    and type override_flag = M.override_flag
 = M;
 
@@ -1269,7 +1317,8 @@ module type Camlp4Syntax = sig
   value ctyp : Gram.Entry.t Ast.ctyp;
   value ctyp_quot : Gram.Entry.t Ast.ctyp;
   value cvalue_binding : Gram.Entry.t Ast.expr;
-  value direction_flag : Gram.Entry.t Ast.meta_bool;
+  value direction_flag : Gram.Entry.t Ast.direction_flag;
+  value direction_flag_quot : Gram.Entry.t Ast.direction_flag;
   value dummy : Gram.Entry.t unit;
   value eq_expr : Gram.Entry.t (string -> Ast.patt -> Ast.patt);
   value expr : Gram.Entry.t Ast.expr;
@@ -1295,7 +1344,7 @@ module type Camlp4Syntax = sig
   value label_patt_list : Gram.Entry.t Ast.patt;
   value labeled_ipatt : Gram.Entry.t Ast.patt;
   value let_binding : Gram.Entry.t Ast.binding;
-  value meth_list : Gram.Entry.t (Ast.ctyp * Ast.meta_bool);
+  value meth_list : Gram.Entry.t (Ast.ctyp * Ast.row_var_flag);
   value meth_decl : Gram.Entry.t Ast.ctyp;
   value module_binding : Gram.Entry.t Ast.module_binding;
   value module_binding0 : Gram.Entry.t Ast.module_expr;
@@ -1315,15 +1364,22 @@ module type Camlp4Syntax = sig
   value opt_class_self_patt : Gram.Entry.t Ast.patt;
   value opt_class_self_type : Gram.Entry.t Ast.ctyp;
   value opt_comma_ctyp : Gram.Entry.t Ast.ctyp;
-  value opt_dot_dot : Gram.Entry.t Ast.meta_bool;
+  value opt_dot_dot : Gram.Entry.t Ast.row_var_flag;
+  value row_var_flag_quot : Gram.Entry.t Ast.row_var_flag;
   value opt_eq_ctyp : Gram.Entry.t Ast.ctyp;
   value opt_expr : Gram.Entry.t Ast.expr;
   value opt_meth_list : Gram.Entry.t Ast.ctyp;
-  value opt_mutable : Gram.Entry.t Ast.meta_bool;
+  value opt_mutable : Gram.Entry.t Ast.mutable_flag;
+  value mutable_flag_quot : Gram.Entry.t Ast.mutable_flag;
+  value opt_override : Gram.Entry.t Ast.override_flag;
+  value override_flag_quot : Gram.Entry.t Ast.override_flag;
   value opt_polyt : Gram.Entry.t Ast.ctyp;
-  value opt_private : Gram.Entry.t Ast.meta_bool;
-  value opt_rec : Gram.Entry.t Ast.meta_bool;
-  value opt_virtual : Gram.Entry.t Ast.meta_bool;
+  value opt_private : Gram.Entry.t Ast.private_flag;
+  value private_flag_quot : Gram.Entry.t Ast.private_flag;
+  value opt_rec : Gram.Entry.t Ast.rec_flag;
+  value rec_flag_quot : Gram.Entry.t Ast.rec_flag;
+  value opt_virtual : Gram.Entry.t Ast.virtual_flag;
+  value virtual_flag_quot : Gram.Entry.t Ast.virtual_flag;
   value opt_when_expr : Gram.Entry.t Ast.expr;
   value patt : Gram.Entry.t Ast.patt;
   value patt_as_patt_opt : Gram.Entry.t Ast.patt;

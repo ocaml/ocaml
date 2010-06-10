@@ -238,15 +238,25 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | Ast.OvNil -> ()
       | Ast.OvAnt s -> o#anti f s ];
 
-    method mutable_flag f b = o#flag f b "mutable";
-    method rec_flag f b = o#flag f b "rec";
-    method virtual_flag f b = o#flag f b "virtual";
-    method private_flag f b = o#flag f b "private";
-    method flag f b n =
-      match b with
-      [ Ast.BTrue -> do { pp_print_string f n; pp f "@ " }
-      | Ast.BFalse -> ()
-      | Ast.BAnt s -> o#anti f s ];
+    method mutable_flag f = fun
+      [ Ast.MuMutable -> pp f "mutable@ "
+      | Ast.MuNil -> ()
+      | Ast.MuAnt s -> o#anti f s ];
+
+    method rec_flag f = fun
+      [ Ast.ReRecursive -> pp f "rec@ "
+      | Ast.ReNil -> ()
+      | Ast.ReAnt s -> o#anti f s ];
+
+    method virtual_flag f = fun
+      [ Ast.ViVirtual -> pp f "virtual@ "
+      | Ast.ViNil -> ()
+      | Ast.ViAnt s -> o#anti f s ];
+
+    method private_flag f = fun
+      [ Ast.PrPrivate -> pp f "private@ "
+      | Ast.PrNil -> ()
+      | Ast.PrAnt s -> o#anti f s ];
 
     method anti f s = pp f "$%s$" s;
 
@@ -582,9 +592,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     method direction_flag f b =
       match b with
-      [ Ast.BTrue -> pp_print_string f "to"
-      | Ast.BFalse -> pp_print_string f "downto"
-      | Ast.BAnt s -> o#anti f s ];
+      [ Ast.DiTo -> pp_print_string f "to"
+      | Ast.DiDownto -> pp_print_string f "downto"
+      | Ast.DiAnt s -> o#anti f s ];
 
     method patt f p =
     let () = o#node f p Ast.loc_of_patt in match p with

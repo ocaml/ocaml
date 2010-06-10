@@ -74,13 +74,15 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> { (t) with ptyp_desc = Ptyp_poly [] t } ]
   ;
 
-  value mb2b =
-    fun
-    [ Ast.BTrue -> True
-    | Ast.BFalse -> False
-    | Ast.BAnt _ -> assert False ];
+  value mkvirtual = fun
+    [ Ast.ViVirtual -> Virtual
+    | Ast.ViNil -> Concrete
+    | Ast.ViAnt _ -> assert False ];
 
-  value mkvirtual m = if mb2b m then Virtual else Concrete;
+  value mkdirection = fun
+    [ Ast.DiTo -> Upto
+    | Ast.DiDownto -> Downto
+    | Ast.DiAnt _ -> assert False ];
 
   value lident s = Lident s;
   value ldot l s = Ldot l s;
@@ -110,9 +112,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value mkrf =
     fun
-    [ Ast.BTrue -> Recursive
-    | Ast.BFalse -> Nonrecursive
-    | Ast.BAnt _ -> assert False ];
+    [ Ast.ReRecursive -> Recursive
+    | Ast.ReNil -> Nonrecursive
+    | Ast.ReAnt _ -> assert False ];
 
   value mkli s = loop lident
     where rec loop f =
@@ -259,7 +261,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TyAnt loc _ -> error loc "antiquotation not allowed here"
     | TyOfAmp _ _ _ |TyAmp _ _ _ |TySta _ _ _ |
       TyCom _ _ _ |TyVrn _ _ |TyQuM _ _ |TyQuP _ _ |TyDcl _ _ _ _ _ |
-      TyObj _ _ (BAnt _) | TyNil _ | TyTup _ _ ->
+      TyObj _ _ (RvAnt _) | TyNil _ | TyTup _ _ ->
         assert False ]
   and row_field = fun
     [ <:ctyp<>> -> []
@@ -304,7 +306,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
      ptype_variance = variance}
   ;
   value mkprivate' m = if m then Private else Public;
-  value mkprivate m = mkprivate' (mb2b m);
+  value mkprivate = fun
+    [ Ast.PrPrivate -> Private
+    | Ast.PrNil -> Public
+    | Ast.PrAnt _ -> assert False ];
   value mktrecord =
     fun
     [ <:ctyp@loc< $lid:s$ : mutable $t$ >> ->
@@ -351,7 +356,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | Ast.LCons x xs -> [x :: list_of_meta_list xs]
     | Ast.LAnt _ -> assert False ];
 
-  value mkmutable m = if mb2b m then Mutable else Immutable;
+  value mkmutable = fun
+    [ Ast.MuMutable -> Mutable
+    | Ast.MuNil -> Immutable
+    | Ast.MuAnt _ -> assert False ];
 
   value paolab lab p =
     match (lab, p) with
@@ -674,8 +682,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float (remove_underscores s)))
     | ExFor loc i e1 e2 df el ->
         let e3 = ExSeq loc el in
-        let df = if mb2b df then Upto else Downto in
-        mkexp loc (Pexp_for i (expr e1) (expr e2) df (expr e3))
+        mkexp loc (Pexp_for i (expr e1) (expr e2) (mkdirection df) (expr e3))
     | <:expr@loc< fun [ $PaLab _ lab po$ when $w$ -> $e$ ] >> ->
         mkexp loc
           (Pexp_function lab None
@@ -949,7 +956,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:str_item@loc< $anti:_$ >> -> error loc "antiquotation in str_item" ]
   and class_type =
     fun
-    [ CtCon loc Ast.BFalse id tl ->
+    [ CtCon loc Ast.ViNil id tl ->
         mkcty loc
           (Pcty_constr (long_class_ident id) (List.map ctyp (list_of_opt_ctyp tl [])))
     | CtFun loc (TyLab _ lab t) ct ->
@@ -979,7 +986,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         [ <:ctyp<>> -> (loc, ([], []))
         | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
       in
-      {pci_virt = if mb2b vir then Virtual else Concrete;
+      {pci_virt = mkvirtual vir;
        pci_params = (params, mkloc loc_params);
        pci_name = name;
        pci_expr = class_expr ce;
@@ -995,7 +1002,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         [ <:ctyp<>> -> (loc, ([], []))
         | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
       in
-      {pci_virt = if mb2b vir then Virtual else Concrete;
+      {pci_virt = mkvirtual vir;
        pci_params = (params, mkloc loc_params);
        pci_name = name;
        pci_expr = class_type ct;
@@ -1023,7 +1030,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let (ce, el) = class_expr_fa [] c in
         let el = List.map label_expr el in
         mkpcl loc (Pcl_apply (class_expr ce) el)
-    | CeCon loc Ast.BFalse id tl ->
+    | CeCon loc Ast.ViNil id tl ->
         mkpcl loc
           (Pcl_constr (long_class_ident id) (List.map ctyp (list_of_opt_ctyp tl [])))
     | CeFun loc (PaLab _ lab po) ce ->
