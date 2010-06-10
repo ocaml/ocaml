@@ -420,7 +420,7 @@ module Make (Token : Sig.Camlp4Token)
 
   and dollar c = parse
     | '$'                                     { set_start_p c; ANTIQUOT("", "") }
-    | ('`'? (identchar*|'.'+) as name) ':'
+    | ('`'? (identchar*|['.' '!']+) as name) ':'
       { with_curr_loc (antiquot name) (shift (1 + String.length name) c)        }
     | _                                           { store_parse (antiquot "") c }
 
