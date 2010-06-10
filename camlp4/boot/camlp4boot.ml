@@ -765,6 +765,13 @@ Very old (no more supported) syntax:\n\
           
         let _ =
           let _ = (a_CHAR : 'a_CHAR Gram.Entry.t)
+          and _ = (override_flag_quot : 'override_flag_quot Gram.Entry.t)
+          and _ = (row_var_flag_quot : 'row_var_flag_quot Gram.Entry.t)
+          and _ = (virtual_flag_quot : 'virtual_flag_quot Gram.Entry.t)
+          and _ = (private_flag_quot : 'private_flag_quot Gram.Entry.t)
+          and _ = (mutable_flag_quot : 'mutable_flag_quot Gram.Entry.t)
+          and _ = (direction_flag_quot : 'direction_flag_quot Gram.Entry.t)
+          and _ = (rec_flag_quot : 'rec_flag_quot Gram.Entry.t)
           and _ = (package_type : 'package_type Gram.Entry.t)
           and _ = (do_sequence : 'do_sequence Gram.Entry.t)
           and _ = (infixop4 : 'infixop4 Gram.Entry.t)
@@ -5733,7 +5740,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (ci : 'class_longident) (_loc : Gram.Loc.t)
                                 ->
-                                (Ast.CeCon (_loc, Ast.BFalse, ci,
+                                (Ast.CeCon (_loc, Ast.ViNil, ci,
                                    Ast.TyNil _loc) :
                                   'class_longident_and_param))));
                          ([ Gram.Snterm
@@ -5749,7 +5756,7 @@ Very old (no more supported) syntax:\n\
                              (fun _ (t : 'comma_ctyp) _
                                 (ci : 'class_longident) (_loc : Gram.Loc.t)
                                 ->
-                                (Ast.CeCon (_loc, Ast.BFalse, ci, t) :
+                                (Ast.CeCon (_loc, Ast.ViNil, ci, t) :
                                   'class_longident_and_param)))) ]) ]))
                   ());
              Gram.extend (class_structure : 'class_structure Gram.Entry.t)
@@ -6069,14 +6076,17 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "method";
                             Gram.Stoken
                               (((function
-                                 | ANTIQUOT (("!" | "override"), _) -> true
+                                 | ANTIQUOT (("!" | "override" | "anti"), _)
+                                     -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\"!\" | \"override\"), _)")) ],
+                                "ANTIQUOT ((\"!\" | \"override\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("!" | "override" as n)), s) ->
+                                | ANTIQUOT
+                                    ((("!" | "override" | "anti" as n)), s)
+                                    ->
                                     (Ast.OvAnt (mk_anti n s) :
                                       'method_opt_override)
                                 | _ -> assert false)));
@@ -6102,14 +6112,17 @@ Very old (no more supported) syntax:\n\
                                  (value_val : 'value_val Gram.Entry.t));
                             Gram.Stoken
                               (((function
-                                 | ANTIQUOT (("!" | "override"), _) -> true
+                                 | ANTIQUOT (("!" | "override" | "anti"), _)
+                                     -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\"!\" | \"override\"), _)")) ],
+                                "ANTIQUOT ((\"!\" | \"override\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("!" | "override" as n)), s) ->
+                                | ANTIQUOT
+                                    ((("!" | "override" | "anti" as n)), s)
+                                    ->
                                     (Ast.OvAnt (mk_anti n s) :
                                       'value_val_opt_override)
                                 | _ -> assert false)));
@@ -6286,7 +6299,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (i : 'class_type_longident)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.CtCon (_loc, Ast.BFalse, i,
+                                (Ast.CtCon (_loc, Ast.ViNil, i,
                                    Ast.TyNil _loc) :
                                   'class_type_longident_and_param))));
                          ([ Gram.Snterm
@@ -6302,7 +6315,7 @@ Very old (no more supported) syntax:\n\
                              (fun _ (t : 'comma_ctyp) _
                                 (i : 'class_type_longident)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.CtCon (_loc, Ast.BFalse, i, t) :
+                                (Ast.CtCon (_loc, Ast.ViNil, i, t) :
                                   'class_type_longident_and_param)))) ]) ]))
                   ());
              Gram.extend (class_type_plus : 'class_type_plus Gram.Entry.t)
@@ -7230,25 +7243,25 @@ Very old (no more supported) syntax:\n\
                     [ (None, None,
                        [ ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT ("to", _) -> true
+                                 | ANTIQUOT (("to" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\"to\", _)")) ],
+                                "ANTIQUOT ((\"to\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("to" as n)), s) ->
-                                    (Ast.BAnt (mk_anti n s) :
+                                | ANTIQUOT ((("to" | "anti" as n)), s) ->
+                                    (Ast.DiAnt (mk_anti n s) :
                                       'direction_flag)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "downto" ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.BFalse : 'direction_flag))));
+                                (Ast.DiDownto : 'direction_flag))));
                          ([ Gram.Skeyword "to" ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.BTrue : 'direction_flag)))) ]) ]))
+                                (Ast.DiTo : 'direction_flag)))) ]) ]))
                   ());
              Gram.extend (opt_private : 'opt_private Gram.Entry.t)
                ((fun () ->
@@ -7257,23 +7270,24 @@ Very old (no more supported) syntax:\n\
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Gram.Loc.t) ->
-                                (Ast.BFalse : 'opt_private))));
+                                (Ast.PrNil : 'opt_private))));
                          ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT ("private", _) -> true
+                                 | ANTIQUOT (("private" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\"private\", _)")) ],
+                                "ANTIQUOT ((\"private\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("private" as n)), s) ->
-                                    (Ast.BAnt (mk_anti n s) : 'opt_private)
+                                | ANTIQUOT ((("private" | "anti" as n)), s)
+                                    ->
+                                    (Ast.PrAnt (mk_anti n s) : 'opt_private)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "private" ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.BTrue : 'opt_private)))) ]) ]))
+                                (Ast.PrPrivate : 'opt_private)))) ]) ]))
                   ());
              Gram.extend (opt_mutable : 'opt_mutable Gram.Entry.t)
                ((fun () ->
@@ -7282,23 +7296,24 @@ Very old (no more supported) syntax:\n\
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Gram.Loc.t) ->
-                                (Ast.BFalse : 'opt_mutable))));
+                                (Ast.MuNil : 'opt_mutable))));
                          ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT ("mutable", _) -> true
+                                 | ANTIQUOT (("mutable" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\"mutable\", _)")) ],
+                                "ANTIQUOT ((\"mutable\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("mutable" as n)), s) ->
-                                    (Ast.BAnt (mk_anti n s) : 'opt_mutable)
+                                | ANTIQUOT ((("mutable" | "anti" as n)), s)
+                                    ->
+                                    (Ast.MuAnt (mk_anti n s) : 'opt_mutable)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "mutable" ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.BTrue : 'opt_mutable)))) ]) ]))
+                                (Ast.MuMutable : 'opt_mutable)))) ]) ]))
                   ());
              Gram.extend (opt_virtual : 'opt_virtual Gram.Entry.t)
                ((fun () ->
@@ -7307,23 +7322,24 @@ Very old (no more supported) syntax:\n\
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Gram.Loc.t) ->
-                                (Ast.BFalse : 'opt_virtual))));
+                                (Ast.ViNil : 'opt_virtual))));
                          ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT ("virtual", _) -> true
+                                 | ANTIQUOT (("virtual" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\"virtual\", _)")) ],
+                                "ANTIQUOT ((\"virtual\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("virtual" as n)), s) ->
-                                    (Ast.BAnt (mk_anti n s) : 'opt_virtual)
+                                | ANTIQUOT ((("virtual" | "anti" as n)), s)
+                                    ->
+                                    (Ast.ViAnt (mk_anti n s) : 'opt_virtual)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "virtual" ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.BTrue : 'opt_virtual)))) ]) ]))
+                                (Ast.ViVirtual : 'opt_virtual)))) ]) ]))
                   ());
              Gram.extend (opt_dot_dot : 'opt_dot_dot Gram.Entry.t)
                ((fun () ->
@@ -7332,23 +7348,23 @@ Very old (no more supported) syntax:\n\
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Gram.Loc.t) ->
-                                (Ast.BFalse : 'opt_dot_dot))));
+                                (Ast.RvNil : 'opt_dot_dot))));
                          ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT ("..", _) -> true
+                                 | ANTIQUOT ((".." | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\"..\", _)")) ],
+                                "ANTIQUOT ((\"..\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT (((".." as n)), s) ->
-                                    (Ast.BAnt (mk_anti n s) : 'opt_dot_dot)
+                                | ANTIQUOT (((".." | "anti" as n)), s) ->
+                                    (Ast.RvAnt (mk_anti n s) : 'opt_dot_dot)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword ".." ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.BTrue : 'opt_dot_dot)))) ]) ]))
+                                (Ast.RvRowVar : 'opt_dot_dot)))) ]) ]))
                   ());
              Gram.extend (opt_rec : 'opt_rec Gram.Entry.t)
                ((fun () ->
@@ -7357,23 +7373,23 @@ Very old (no more supported) syntax:\n\
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Gram.Loc.t) ->
-                                (Ast.BFalse : 'opt_rec))));
+                                (Ast.ReNil : 'opt_rec))));
                          ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT ("rec", _) -> true
+                                 | ANTIQUOT (("rec" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\"rec\", _)")) ],
+                                "ANTIQUOT ((\"rec\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("rec" as n)), s) ->
-                                    (Ast.BAnt (mk_anti n s) : 'opt_rec)
+                                | ANTIQUOT ((("rec" | "anti" as n)), s) ->
+                                    (Ast.ReAnt (mk_anti n s) : 'opt_rec)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "rec" ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.BTrue : 'opt_rec)))) ]) ]))
+                                (Ast.ReRecursive : 'opt_rec)))) ]) ]))
                   ());
              Gram.extend (opt_override : 'opt_override Gram.Entry.t)
                ((fun () ->
@@ -7385,14 +7401,17 @@ Very old (no more supported) syntax:\n\
                                 (Ast.OvNil : 'opt_override))));
                          ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT (("!" | "override"), _) -> true
+                                 | ANTIQUOT (("!" | "override" | "anti"), _)
+                                     -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\"!\" | \"override\"), _)")) ],
+                                "ANTIQUOT ((\"!\" | \"override\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("!" | "override" as n)), s) ->
+                                | ANTIQUOT
+                                    ((("!" | "override" | "anti" as n)), s)
+                                    ->
                                     (Ast.OvAnt (mk_anti n s) : 'opt_override)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "!" ],
@@ -8710,7 +8729,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("virtual" as n)), s) ->
                                     (let anti =
-                                       Ast.BAnt
+                                       Ast.ViAnt
                                          (mk_anti ~c: "class_expr" n s)
                                      in Ast.CeCon (_loc, anti, i, ot) :
                                       'class_expr_quot)
@@ -8723,7 +8742,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun ((i, ot) : 'class_name_and_param) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.CeCon (_loc, Ast.BTrue,
+                                (Ast.CeCon (_loc, Ast.ViVirtual,
                                    Ast.IdLid (_loc, i), ot) :
                                   'class_expr_quot))));
                          ([ Gram.Sself; Gram.Skeyword "="; Gram.Sself ],
@@ -8774,7 +8793,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("virtual" as n)), s) ->
                                     (let anti =
-                                       Ast.BAnt
+                                       Ast.ViAnt
                                          (mk_anti ~c: "class_type" n s)
                                      in Ast.CtCon (_loc, anti, i, ot) :
                                       'class_type_quot)
@@ -8787,7 +8806,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun ((i, ot) : 'class_name_and_param) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.CtCon (_loc, Ast.BTrue,
+                                (Ast.CtCon (_loc, Ast.ViVirtual,
                                    Ast.IdLid (_loc, i), ot) :
                                   'class_type_quot))));
                          ([ Gram.Sself; Gram.Skeyword ":"; Gram.Sself ],
@@ -8884,6 +8903,90 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (x : 'with_constr) (_loc : Gram.Loc.t) ->
                                 (x : 'with_constr_quot)))) ]) ]))
+                  ());
+             Gram.extend (rec_flag_quot : 'rec_flag_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_rec : 'opt_rec Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'opt_rec) (_loc : Gram.Loc.t) ->
+                                (x : 'rec_flag_quot)))) ]) ]))
+                  ());
+             Gram.extend
+               (direction_flag_quot : 'direction_flag_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (direction_flag :
+                                   'direction_flag Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'direction_flag) (_loc : Gram.Loc.t)
+                                -> (x : 'direction_flag_quot)))) ]) ]))
+                  ());
+             Gram.extend
+               (mutable_flag_quot : 'mutable_flag_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_mutable : 'opt_mutable Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'opt_mutable) (_loc : Gram.Loc.t) ->
+                                (x : 'mutable_flag_quot)))) ]) ]))
+                  ());
+             Gram.extend
+               (private_flag_quot : 'private_flag_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_private : 'opt_private Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'opt_private) (_loc : Gram.Loc.t) ->
+                                (x : 'private_flag_quot)))) ]) ]))
+                  ());
+             Gram.extend
+               (virtual_flag_quot : 'virtual_flag_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_virtual : 'opt_virtual Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'opt_virtual) (_loc : Gram.Loc.t) ->
+                                (x : 'virtual_flag_quot)))) ]) ]))
+                  ());
+             Gram.extend
+               (row_var_flag_quot : 'row_var_flag_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_dot_dot : 'opt_dot_dot Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'opt_dot_dot) (_loc : Gram.Loc.t) ->
+                                (x : 'row_var_flag_quot)))) ]) ]))
+                  ());
+             Gram.extend
+               (override_flag_quot : 'override_flag_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (opt_override : 'opt_override Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'opt_override) (_loc : Gram.Loc.t) ->
+                                (x : 'override_flag_quot)))) ]) ]))
                   ());
              Gram.extend (patt_eoi : 'patt_eoi Gram.Entry.t)
                ((fun () ->
@@ -9619,6 +9722,34 @@ module Camlp4QuotationCommon =
           
         let _ = add_quotation "ident" ident_quot ME.meta_ident MP.meta_ident
           
+        let _ =
+          add_quotation "rec_flag" rec_flag_quot ME.meta_rec_flag MP.
+            meta_rec_flag
+          
+        let _ =
+          add_quotation "private_flag" private_flag_quot ME.meta_private_flag
+            MP.meta_private_flag
+          
+        let _ =
+          add_quotation "row_var_flag" row_var_flag_quot ME.meta_row_var_flag
+            MP.meta_row_var_flag
+          
+        let _ =
+          add_quotation "mutable_flag" mutable_flag_quot ME.meta_mutable_flag
+            MP.meta_mutable_flag
+          
+        let _ =
+          add_quotation "virtual_flag" virtual_flag_quot ME.meta_virtual_flag
+            MP.meta_virtual_flag
+          
+        let _ =
+          add_quotation "override_flag" override_flag_quot ME.
+            meta_override_flag MP.meta_override_flag
+          
+        let _ =
+          add_quotation "direction_flag" direction_flag_quot ME.
+            meta_direction_flag MP.meta_direction_flag
+          
       end
       
   end
@@ -9778,7 +9909,7 @@ module Rp =
                  | Ast.McArr (_, _, (Ast.ExNil _), e) -> handle_failure e
                  | _ -> false)
               in (handle_failure me) && (match_case_handle_failure a)
-          | Ast.ExLet (_, Ast.BFalse, bi, e) ->
+          | Ast.ExLet (_, Ast.ReNil, bi, e) ->
               let rec binding_handle_failure =
                 (function
                  | Ast.BiAnd (_, b1, b2) ->
@@ -9903,8 +10034,7 @@ module Rp =
                 else
                   if is_raise_failure ckont
                   then
-                    Ast.ExLet (_loc, Ast.BFalse, Ast.BiEq (_loc, p, e),
-                      skont)
+                    Ast.ExLet (_loc, Ast.ReNil, Ast.BiEq (_loc, p, e), skont)
                   else
                     if
                       pattern_eq_expression
@@ -9935,7 +10065,7 @@ module Rp =
                                      Ast.IdUid (_loc, "Failure"))),
                                  Ast.ExNil _loc, ckont))
                          in
-                           Ast.ExLet (_loc, Ast.BFalse,
+                           Ast.ExLet (_loc, Ast.ReNil,
                              Ast.BiEq (_loc, p, tst), skont))
                       else
                         Ast.ExMat (_loc,
@@ -9962,7 +10092,7 @@ module Rp =
                  | _ -> raise Not_found
                with
                | Not_found ->
-                   Ast.ExLet (_loc, Ast.BFalse,
+                   Ast.ExLet (_loc, Ast.ReNil,
                      Ast.BiEq (_loc, p,
                        Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
                      skont))
@@ -9972,7 +10102,7 @@ module Rp =
           | [] ->
               (match epo with
                | Some ep ->
-                   Ast.ExLet (_loc, Ast.BFalse,
+                   Ast.ExLet (_loc, Ast.ReNil,
                      Ast.BiEq (_loc, ep,
                        Ast.ExApp (_loc,
                          Ast.ExId (_loc,
@@ -10071,7 +10201,7 @@ module Rp =
           let e =
             match bpo with
             | Some bp ->
-                Ast.ExLet (_loc, Ast.BFalse,
+                Ast.ExLet (_loc, Ast.ReNil,
                   Ast.BiEq (_loc, bp,
                     Ast.ExApp (_loc,
                       Ast.ExId (_loc,
@@ -10094,7 +10224,7 @@ module Rp =
           let e =
             match bpo with
             | Some bp ->
-                Ast.ExLet (_loc, Ast.BFalse,
+                Ast.ExLet (_loc, Ast.ReNil,
                   Ast.BiEq (_loc, bp,
                     Ast.ExApp (_loc,
                       Ast.ExId (_loc,
@@ -10111,7 +10241,7 @@ module Rp =
             match me with
             | Ast.ExId (_, (Ast.IdLid (_, x))) when x = strm_n -> e
             | _ ->
-                Ast.ExLet (_loc, Ast.BFalse,
+                Ast.ExLet (_loc, Ast.ReNil,
                   Ast.BiEq (_loc,
                     Ast.PaTyc (_loc,
                       Ast.PaId (_loc, Ast.IdLid (_loc, strm_n)),
@@ -10904,7 +11034,7 @@ module G =
                             (Ast.PaId (_, (Ast.IdLid (_, s))))))
                      } ->
                      (tok_match_pl,
-                      (Ast.ExLet (_loc, Ast.BFalse,
+                      (Ast.ExLet (_loc, Ast.ReNil,
                          Ast.BiEq (_loc,
                            Ast.PaId (_loc, Ast.IdLid (_loc, s)),
                            Ast.ExApp (_loc,
@@ -11409,12 +11539,12 @@ module G =
                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Entry"),
                                    Ast.IdLid (_loc, "mk")))))
                       in
-                        Ast.ExLet (_loc, Ast.BFalse,
+                        Ast.ExLet (_loc, Ast.ReNil,
                           Ast.BiEq (_loc,
                             Ast.PaId (_loc,
                               Ast.IdLid (_loc, "grammar_entry_create")),
                             entry_mk),
-                          Ast.ExLet (_loc, Ast.BFalse, locals, args)))
+                          Ast.ExLet (_loc, Ast.ReNil, locals, args)))
                in
                  (match nl with
                   | [] -> e
@@ -11427,7 +11557,7 @@ module G =
                                  expr_of_name name)))
                           xs
                           (Ast.BiEq (_loc, Ast.PaAny _loc, expr_of_name x))
-                      in Ast.ExLet (_loc, Ast.BFalse, globals, e)))
+                      in Ast.ExLet (_loc, Ast.ReNil, globals, e)))
           
         class subst gmod =
           object inherit Ast.map as super
@@ -11464,7 +11594,7 @@ module G =
                    in
                      if !split_ext
                      then
-                       Ast.ExLet (_loc, Ast.BFalse,
+                       Ast.ExLet (_loc, Ast.ReNil,
                          Ast.BiEq (_loc,
                            Ast.PaId (_loc, Ast.IdLid (_loc, "aux")),
                            Ast.ExFun (_loc,
@@ -14190,7 +14320,7 @@ module D =
                                    | (None, _) ->
                                        mk_debug _loc m fmt section args
                                    | (Some e, _) ->
-                                       Ast.ExLet (_loc, Ast.BFalse,
+                                       Ast.ExLet (_loc, Ast.ReNil,
                                          Ast.BiEq (_loc,
                                            Ast.PaId (_loc,
                                              Ast.IdUid (_loc, "()")),
