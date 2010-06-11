@@ -77,6 +77,7 @@ module Shared : sig
     - The same pool can be shared by several computations.
     - More efficient handling of task re-issuing: fresh tasks have priority
       over re-issued tasks.
+    - Ability to abort duplicated tasks when outcome reaches the pool.
     - A little control on pool behavior is offered by the means
       of the {!Config} module
       argument.
@@ -90,7 +91,8 @@ module type Config = sig
   val debug : bool
 (** If true, gives a few diagnostics on the standard error stream. *)
   val nagain : int
-(** A given task will be re-issued at most [nagain] times *)
+(** A given task will be re-issued at most [nagain] times.
+    No limit is enforced when [nagain] is strictly less that zero *)
 end
 
 (** Functional enumerations *)
@@ -154,14 +156,14 @@ end
 
 (** {6 Pools} *)
 
-(** Standard workers *)
   type ('elt,'partial) worker = 'elt -> 'partial
+(** Standard workers *)
 
-(** Interuptible workers *)
   type subtask_id = int (** Subtask identifier *)
-  type ('elt,'partial) interuptible_worker =
-      subtask_id * 'elt -> 'partial option (** Worker proper *)
-  type kill = subtask_id Join.chan (** Abort given subtask *)
+
+  type ('elt,'partial) interruptible_worker =
+      subtask_id * 'elt -> 'partial option (** Workers that can be aborted asynchrnously *)
+  type kill = subtask_id Join.chan (** To abort given subtask *)
 
 
 (** Output signature of the pool functor *)
@@ -171,8 +173,8 @@ module type S = sig
 
   type ('partial, 'result) t = {
       register : (elt,'partial) worker Join.chan;
-      register_interuptible :
-        ((elt,'partial) interuptible_worker * kill) Join.chan;
+      register_interruptible :
+        ((elt,'partial) interruptible_worker * kill) Join.chan;
       fold :
         collection -> ('partial -> 'result -> 'result) -> 'result -> 'result;
     }
@@ -180,16 +182,33 @@ module type S = sig
     tasks if agents do not send computation outcomes.
 
     Given a pool [p], returned by [create ()]:
-    - [p.register f] is used by agents to indicate that they can perform
+    - [p.register w] is used by agents to indicate that they can perform
       computations, mapping [xi] values to [yi] results, using the
-      synchronous channel [f].
+      synchronous channel [w].
     - [p.fold  c comb y0] returns the combined result
       [comb y1 (comb y2 (... (comb yn y0)))],
       where the [yi] values are the results of the [xi]
       transformed by the functions
       registered by the agents. The [xi] result from enumerating the collection
       [c]. The enumeration technique is specified by the module argument [E]
-      to the functor {!Make}. *)
+      (signature {!Enumerable})
+      to the functor {!Make}.
+    - [p.register_interruptible (w,k)] is used by agents to indicate that
+      they can perform computations as above.
+      Additionally the pool logics will attempt to abort computations
+      found to be useless by issusing messages on channel [k].
+      More specifically, when
+      given an argument [(id,xi)] by the pool logics,
+      the synchronous channel [w] should return [Some yi],
+      where [xi] and [yi] are the same as in the description of [p.fold] above.
+      However, if the pool sends [id] on channel [k] before [yi] is
+      available, then the agent may abort the computation of [yi],
+      so as to spare computing power.
+      In that case, [w(xi)] must reply [None].
+      It is the agent responsability to check that subtask identifiers
+      sent on the [w] and [k] channels
+      are equal before aborting the subtask and having [w] to reply [None] *)
+     
 
   val create : unit ->  ('partial, 'result) t 
   (** Pool creator *)

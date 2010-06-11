@@ -18,7 +18,7 @@
 type fork_args =
 | No_argument
 | Same_arguments of string array
-| Argument_generator of (unit -> string array)
+| Argument_generator of (int -> string array)
 
 let prepend s a =
   let len = Array.length a in
@@ -28,10 +28,10 @@ let prepend s a =
       | 0 -> String.copy s
       | i -> a.(pred i))
 
-let get_args = function
+let get_args k = function
   | No_argument -> [| |]
   | Same_arguments a -> a
-  | Argument_generator f -> f ()
+  | Argument_generator f -> f k
 
 let filter_clients a =
   let a' = Array.copy a in
@@ -50,16 +50,15 @@ let filter_clients a =
   Array.sub a' 0 !i'
 
 let do_forks name args n =
-  let rec df = function
-    | 0 -> []
-    | n ->
-        match Unix.fork () with
-        | 0 ->
-            let args = prepend name (get_args args) in
-            Unix.handle_unix_error
-              (fun () -> Unix.execv name args) ()
-        | pid -> pid :: (df (pred n)) in
-  df (max 0 n)
+  let rec df k =
+    if k >= n then []
+    else match Unix.fork () with
+    | 0 ->
+        let args = prepend name (get_args k args) in
+        Unix.handle_unix_error
+          (fun () -> Unix.execv name args) ()
+    | pid -> pid :: (df (succ k)) in
+  df 0
 
 
 (* Configuration *)
@@ -122,21 +121,24 @@ let split_addr s =
         raise (Arg.Bad ("invalid port: " ^ port)))
 
 let make_commandline cfg =
-  [ "-host",
-    Arg.String
-      (fun s ->
-        let h, p = split_addr s in
-        cfg.host <- h;
-        cfg.port <- p),
-    "<name:port>  Set host name and port" ;
-
-    "-clients",
-    Arg.Int (fun i -> cfg.clients <- i),
-    "<n>  Set number of clients to launch";
-    
-    "-forked-program",
-    Arg.String (fun s -> cfg.forked_program <- String.copy s),
-    "<name>  Set executable for clients" ]
+  ("-host",
+   Arg.String
+     (fun s ->
+       let h, p = split_addr s in
+       cfg.host <- h;
+       cfg.port <- p),
+   "<name:port>  Set host name and port")::
+  begin
+    if cfg.clients < 0 then []
+    else
+      ["-clients",
+       Arg.Int (fun i -> cfg.clients <- i),
+       "<n>  Set number of clients to launch";
+       
+       "-forked-program",
+       Arg.String (fun s -> cfg.forked_program <- String.copy s),
+       "<name>  Set executable for clients" ]
+  end
 
 
 (* Client-related functions *)

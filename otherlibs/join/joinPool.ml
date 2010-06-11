@@ -110,7 +110,7 @@ end
 
 (** Interuptible workers *)
   type subtask_id = int (** Subtask identifier *)
-  type ('elt,'partial) interuptible_worker =
+  type ('elt,'partial) interruptible_worker =
       subtask_id * 'elt -> 'partial option (** Worker proper *)
   type kill = subtask_id Join.chan (** Abort given subtask *)
 
@@ -121,8 +121,8 @@ end
 
   type ('partial, 'result) t = {
       register : (elt,'partial) worker Join.chan;
-      register_interuptible :
-        ((elt,'partial) interuptible_worker * kill) Join.chan;
+      register_interruptible :
+        ((elt,'partial) interruptible_worker * kill) Join.chan;
       fold : collection -> ('partial -> 'result -> 'result) -> 'result -> 'result;
     }
     val create : unit ->  ('partial, 'result) t 
@@ -138,13 +138,13 @@ end
 
 (** Interuptible workers *)
   type subtask_id = int (** Subtask identifier *)
-  type 'a interuptible_worker =
+  type 'a interruptible_worker =
       subtask_id * elt -> 'a option (** Worker proper *)
   type kill = subtask_id Join.chan (** Abort given subtask *)
 
   type ('partial, 'result) t = {
       register : 'partial worker Join.chan;
-      register_interuptible : ('partial interuptible_worker * kill) Join.chan;
+      register_interruptible : ('partial interruptible_worker * kill) Join.chan;
       fold : collection -> ('partial -> 'result -> 'result) -> 'result -> 'result;
     }
 
@@ -271,7 +271,7 @@ def st(next_id) & fresh_nounce() =
 (* Pool proper *)      
     type 'a agent =
       | W of 'a worker
-      | WK of 'a interuptible_worker * kill
+      | WK of 'a interruptible_worker * kill
 
     let create () =
 
@@ -308,12 +308,13 @@ def st(next_id) & fresh_nounce() =
             end
         | [] ->
             agent(worker) &
-	    if n > 0 then begin
+	    if n <> 0 then begin
 	      let again = m.get_active () in
 	      match again with
               | [] ->
                   pool(E,low)
               | _  ->
+                  let n = if n = min_int then min_int else n-1 in
                   pool(E,put (again,n-1,m) low)
             end else begin
               pool(E,low)
@@ -371,9 +372,9 @@ def st(next_id) & fresh_nounce() =
         monitor.wait () in
 
       def register(worker) = agent(W worker)
-      and register_interuptible(w,k) = agent(WK (w,k)) in
+      and register_interruptible(w,k) = agent(WK (w,k)) in
       { fold = fold ; register = register ;
-        register_interuptible = register_interuptible ; }
+        register_interruptible = register_interruptible ; }
 
   end
 

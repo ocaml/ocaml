@@ -20,7 +20,7 @@
 type fork_args =
   | No_argument (** No argument is passed to client. *)
   | Same_arguments of string array (** All clients will reveive the same arguments. *)
-  | Argument_generator of (unit -> string array) (** The function will be called repeatedly to compute the arguments passed to the various clients. *)
+  | Argument_generator of (int -> string array) (** The function will be called repeatedly to compute the arguments passed to the various clients. *)
 (** Type of arguments passed to forked clients. *)
 
 val filter_clients : string array -> string array
@@ -31,7 +31,10 @@ val filter_clients : string array -> string array
 val do_forks : string -> fork_args -> int -> int list
 (** [do_forks prog args n] does [n] forks (none if [n] is negative),
     using [prog] as the program name, and passing [args] to the
-    forked programs. Returns the pid list of the forked programs. *)
+    forked programs. Returns the pid list of the forked programs.
+
+    In case [fork_args] is [Argument_generator g], the calls of [g] will
+    be [g 0], [g 1],..., [g (n-1)]. *)
 
 
 (** {6 Configuration} *)
@@ -64,13 +67,19 @@ val default_configuration : unit -> configuration
 
 val make_commandline : configuration -> (Arg.key * Arg.spec * Arg.doc) list
 (** [make_configuration cfg] returns 
-    - a list of argument descriptors that will update the
-      configuration [cfg]when parsed through [Arg.parse] (or equivalent).
+    a list of argument descriptors that will update the
+    configuration [cfg] when parsed through [Arg.parse] (or equivalent).
 
-    The current version defines the following arguments:
+    The current version defines the following command line options:
     - {i -host} to set [host] and [port] using ["host:port"] notation;
     - {i -clients} to set [clients];
-    - {i -forked-program} to set [forked_program]. *)
+    - {i -forked-program} to set [forked_program].
+
+    By convention, if [cfg.clients] is negative, command
+    line options {i -clients} and {i -forked-program} are omitted.
+     
+    @see <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Arg.html#VALparse>
+    [Arg.parse]. *)
 
 
 (** {6 Client-related functions} *)
@@ -80,9 +89,9 @@ type 'a lookup_function = Join.Ns.t -> string -> 'a
     with a name. *)
 
 val lookup_once : 'a lookup_function
-(* A lookup function that tries to retrieve the value only once,
-   raising [Not_found] if value is not present and [Join.Exit] if
-   remote name service is down. *)
+(** A lookup function that tries to retrieve the value only once,
+   raising [Not_found] if value is not present and {!Join.Exit} if
+   remote name service is down (alias for {!Join.Ns.lookup}). *)
 
 val lookup_times : int -> float -> 'a lookup_function
 (** [lookup_times n w] builds a lookup function that tries up to [n] times to
