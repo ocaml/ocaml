@@ -82,4 +82,4 @@ let setup () =
   implem.at_exit_once <- at_exit_once;
   implem.is_link <- is_link;
   implem.stat <- mkstat Unix.stat;
-  implem.lstat <- mkstat Unix.lstat;
+  implem.lstat <- mkstat Unix.lstat;;
