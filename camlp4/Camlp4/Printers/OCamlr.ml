@@ -43,14 +43,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   object (o)
     inherit PP_o.printer ~curry_constr:init_curry_constr ~comments () as super;
 
-    value semisep : sep = ";";
-    value andsep : sep = "@]@ @[<2>and@ ";
-    value value_val = "value";
-    value value_let = "value";
+    value! semisep : sep = ";";
     value mode = if comments then `comments else `no_comments;
     value curry_constr = init_curry_constr;
     value first_match_case = True;
 
+    method andsep : sep = "@]@ @[<2>and@ ";
+    method value_val = "value";
+    method value_let = "value";
     method under_pipe = o;
     method under_semi = o;
     method reset_semi = o;
