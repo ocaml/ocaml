@@ -646,6 +646,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
   | Ref (initial_name, None, text_option) ->
       (
        let rec iter_parent ?parent_name name =
+         let name = Odoc_name.normalize_name name in
          let res =
            match get_known_elements name with
              [] ->

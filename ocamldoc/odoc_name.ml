@@ -33,14 +33,39 @@ let infix_chars = [ '|' ;
 
 type t = string
 
+let strip_string s =
+  let len = String.length s in
+  let rec iter_first n =
+    if n >= len then
+      None
+    else
+      match s.[n] with
+        ' ' | '\t' | '\n' | '\r' -> iter_first (n+1)
+      | _ -> Some n
+  in
+  match iter_first 0 with
+    None -> ""
+  | Some first ->
+      let rec iter_last n =
+        if n <= first then
+          None
+        else
+          match s.[n] with
+            ' ' | '\t' | '\n' | '\r' -> iter_last (n-1)
+          |	_ -> Some n
+      in
+      match iter_last (len-1) with
+        None -> String.sub s first 1
+      |	Some last -> String.sub s first ((last-first)+1)
+
 let parens_if_infix name =
-  match name with
+  match strip_string name with
   | "" -> ""
   | s when s.[0] = '*' || s.[String.length s - 1] = '*' -> "( " ^ s ^ " )"
   | s when List.mem s.[0] infix_chars -> "(" ^ s ^ ")"
   | "or" | "mod" | "land" | "lor" | "lxor" | "lsl" | "lsr" | "asr" ->
      "(" ^ name ^ ")"
-  | _ -> name
+  | name -> name
 ;;
 
 let cut name =
@@ -79,6 +104,22 @@ let simple name = snd (cut name)
 let father name = fst (cut name)
 
 let concat n1 n2 = n1^"."^n2
+
+let normalize_name name =
+  let (p,s) = cut name in
+  let len = String.length s in
+  let s =
+    if len >= 2 &&
+      s.[0] = '(' && s.[len - 1] = ')'
+    then
+      parens_if_infix (strip_string (String.sub s 1 (len - 2)))
+    else
+      s
+  in
+  match p with
+    "" -> s
+  | p -> concat p s
+  ;;
 
 let head_and_tail n =
   try

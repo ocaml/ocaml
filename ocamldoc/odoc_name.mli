@@ -27,6 +27,10 @@ val father : t -> t
 (** Concatenates two names. *)
 val concat : t -> t -> t
 
+(** Normalize the given name by removing the beginning and ending spaces
+     of the simple name and adding parenthesis if needed. *)
+val normalize_name : t -> t
+
 (** Returns the head of a name. *)
 val head : t -> t
 
