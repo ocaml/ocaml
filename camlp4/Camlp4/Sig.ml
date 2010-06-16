@@ -965,7 +965,10 @@ module Grammar = struct
     type tree;
 
     type token_pattern = ((Token.t -> bool) * string);
-    type token_stream = Stream.t (Token.t * Loc.t);
+    type token_info;
+    type token_stream = Stream.t (Token.t * token_info);
+
+    value token_location : token_info -> Loc.t;
 
     type symbol =
       [ Smeta of string and list symbol and Action.t

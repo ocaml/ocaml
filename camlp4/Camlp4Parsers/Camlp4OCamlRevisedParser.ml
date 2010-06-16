@@ -330,69 +330,46 @@ Very old (no more supported) syntax:\n\
     loop
   ;
 
+  value setup_op_parser entry p =
+    Gram.Entry.setup_parser entry
+      (parser
+        [: `(KEYWORD x | SYMBOL x, ti) when p x :] ->
+          let _loc = Gram.token_location ti in
+          <:expr< $lid:x$ >>);
+
   let list = ['!'; '?'; '~'] in
   let excl = ["!="; "??"] in
-  Gram.Entry.setup_parser prefixop
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            not (List.mem x excl) && String.length x >= 2 &&
-            List.mem x.[0] list && symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser prefixop
+    (fun x -> not (List.mem x excl) && String.length x >= 2 &&
+              List.mem x.[0] list && symbolchar x 1);
 
   let list_ok = ["<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$"] in
   let list_first_char_ok = ['='; '<'; '>'; '|'; '&'; '$'; '!'] in
   let excl = ["<-"; "||"; "&&"] in
-  Gram.Entry.setup_parser infixop0
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            (List.mem x list_ok) ||
-            (not (List.mem x excl) && String.length x >= 2 &&
-              List.mem x.[0] list_first_char_ok && symbolchar x 1) :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop0
+    (fun x -> (List.mem x list_ok) ||
+              (not (List.mem x excl) && String.length x >= 2 &&
+              List.mem x.[0] list_first_char_ok && symbolchar x 1));
 
   let list = ['@'; '^'] in
-  Gram.Entry.setup_parser infixop1
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            String.length x >= 1 && List.mem x.[0] list &&
-            symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop1
+    (fun x -> String.length x >= 1 && List.mem x.[0] list &&
+              symbolchar x 1);
 
   let list = ['+'; '-'] in
-  Gram.Entry.setup_parser infixop2
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            x <> "->" && String.length x >= 1 && List.mem x.[0] list &&
-            symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop2
+    (fun x -> x <> "->" && String.length x >= 1 && List.mem x.[0] list &&
+              symbolchar x 1);
 
   let list = ['*'; '/'; '%'; '\\'] in
-  Gram.Entry.setup_parser infixop3
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            String.length x >= 1 && List.mem x.[0] list &&
-            (x.[0] <> '*' || String.length x < 2 || x.[1] <> '*') &&
-            symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop3
+    (fun x -> String.length x >= 1 && List.mem x.[0] list &&
+              (x.[0] <> '*' || String.length x < 2 || x.[1] <> '*') &&
+              symbolchar x 1);
 
-  Gram.Entry.setup_parser infixop4
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            String.length x >= 2 && x.[0] == '*' && x.[1] == '*' &&
-            symbolchar x 2 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop4
+    (fun x -> String.length x >= 2 && x.[0] == '*' && x.[1] == '*' &&
+              symbolchar x 2);
 
   value rec infix_kwds_filter =
     parser
@@ -408,17 +385,21 @@ Very old (no more supported) syntax:\n\
   Token.Filter.define_filter (Gram.get_filter ())
     (fun f strm -> infix_kwds_filter (f strm));
 
-  (* transmit the context *)
   Gram.Entry.setup_parser sem_expr begin
     let symb1 = Gram.parse_tokens_after_filter expr in
     let symb =
       parser
-      [ [: `(ANTIQUOT ("list" as n) s, _loc) :] -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
+      [ [: `(ANTIQUOT ("list" as n) s, ti) :] ->
+        let _loc = Gram.token_location ti in
+        <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
       | [: a = symb1 :] -> a ]
     in
     let rec kont al =
       parser
-      [ [: `(KEYWORD ";", _loc); a = symb; s :] -> kont <:expr< $al$; $a$ >> s
+      [ [: `(KEYWORD ";", _); a = symb; s :] ->
+        let _loc = Loc.merge (Ast.loc_of_expr al)
+                             (Ast.loc_of_expr a) in
+        kont <:expr< $al$; $a$ >> s
       | [: :] -> al ]
     in
     parser [: a = symb; s :] -> kont a s

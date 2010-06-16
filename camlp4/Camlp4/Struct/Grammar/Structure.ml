@@ -26,7 +26,6 @@ module type S = sig
                         with module Loc   = Loc
                          and module Token = Token;
   module Action       : Sig.Grammar.Action;
-  type context;
 
   type gram =
     { gfilter         : Token.Filter.t;
@@ -35,7 +34,13 @@ module type S = sig
       warning_verbose : ref bool;
       error_verbose   : ref bool };
 
-  type efun = context -> Stream.t (Token.t * Loc.t) -> Action.t;
+  type token_info = { prev_loc : Loc.t
+                    ; cur_loc : Loc.t
+                    };
+
+  type token_stream = Stream.t (Token.t * token_info);
+
+  type efun = token_stream -> Action.t;
 
   type token_pattern = ((Token.t -> bool) * string);
 
@@ -47,7 +52,7 @@ module type S = sig
       edesc     : mutable desc }
   and desc =
     [ Dlevels of list level
-    | Dparser of Stream.t (Token.t * Loc.t) -> Action.t ]
+    | Dparser of token_stream -> Action.t ]
   and level =
     { assoc   : assoc         ;
       lname   : option string ;
@@ -90,10 +95,6 @@ module type S = sig
   type foldsep 'a 'b 'c =
     internal_entry -> list symbol ->
       (Stream.t 'a -> 'b) -> (Stream.t 'a -> unit) -> Stream.t 'a -> 'c;
-
-  value mk_context : Loc.t -> context;
-  value get_loc_ep : context -> Loc.t;
-  value set_loc_ep : context -> Loc.t -> unit;
 
   (* Accessors *)
   value get_filter : gram -> Token.Filter.t;
@@ -122,9 +123,13 @@ module Make (Lexer  : Sig.Lexer) = struct
       warning_verbose : ref bool;
       error_verbose   : ref bool };
 
-  type context = { loc_ep : mutable Loc.t };
+  type token_info = { prev_loc : Loc.t
+                    ; cur_loc : Loc.t
+                    };
 
-  type efun = context -> Stream.t (Token.t * Loc.t) -> Action.t;
+  type token_stream = Stream.t (Token.t * token_info);
+
+  type efun = token_stream -> Action.t;
 
   type token_pattern = ((Token.t -> bool) * string);
 
@@ -136,7 +141,7 @@ module Make (Lexer  : Sig.Lexer) = struct
       edesc     : mutable desc }
   and desc =
     [ Dlevels of list level
-    | Dparser of Stream.t (Token.t * Loc.t) -> Action.t ]
+    | Dparser of token_stream -> Action.t ]
   and level =
     { assoc   : assoc         ;
       lname   : option string ;
@@ -180,11 +185,8 @@ module Make (Lexer  : Sig.Lexer) = struct
     internal_entry -> list symbol ->
       (Stream.t 'a -> 'b) -> (Stream.t 'a -> unit) -> Stream.t 'a -> 'c;
 
-  value mk_context loc = { loc_ep = loc };
-  value get_loc_ep c = c.loc_ep;
-  value set_loc_ep c loc = c.loc_ep := loc;
-
   value get_filter g = g.gfilter;
+  value token_location r = r.cur_loc;
 
   type not_filtered 'a = 'a;
   value using { gkeywords = table; gfilter = filter } kwd =

@@ -24,7 +24,8 @@ module Make (Lexer : Sig.Lexer)
   module Delete    = Delete.Make    Structure;
   module Insert    = Insert.Make    Structure;
   module Entry     = Entry.Make     Structure;
-  module Fold      = Fold.Make Structure;
+  module Fold      = Fold.Make      Structure;
+  module Tools     = Tools.Make     Structure;
   include Structure;
 
   value mk () =
@@ -43,7 +44,7 @@ module Make (Lexer : Sig.Lexer)
 
   value lex_string g loc str = lex g loc (Stream.of_string str);
 
-  value filter g ts = Token.Filter.filter g.gfilter ts;
+  value filter g ts = Tools.keep_prev_loc (Token.Filter.filter g.gfilter ts);
 
   value parse_tokens_after_filter entry ts = Entry.parse_tokens_after_filter entry ts;
 

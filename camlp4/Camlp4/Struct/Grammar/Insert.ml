@@ -316,13 +316,13 @@ module Make (Structure : Structure.S) = struct
       do {
         entry.edesc := Dlevels elev;
         entry.estart :=
-          fun lev c strm ->
+          fun lev strm ->
             let f = Parser.start_parser_of_entry entry in
-            do { entry.estart := f; f lev c strm };
+            do { entry.estart := f; f lev strm };
         entry.econtinue :=
-          fun lev bp a c strm ->
+          fun lev bp a strm ->
             let f = Parser.continue_parser_of_entry entry in
-            do { entry.econtinue := f; f lev bp a c strm }
+            do { entry.econtinue := f; f lev bp a strm }
       };
 
   end;

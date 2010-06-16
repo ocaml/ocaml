@@ -19,8 +19,33 @@
 module Make (Structure : Structure.S) = struct
   open Structure;
 
-  value empty_entry ename _ _ _ =
+  value empty_entry ename _ =
     raise (Stream.Error ("entry [" ^ ename ^ "] is empty"));
+
+  value rec stream_map f = parser
+    [ [: ` x; strm :] -> [: ` (f x); stream_map f strm :]
+    | [: :] -> [: :] ];
+
+  value keep_prev_loc strm =
+    match Stream.peek strm with
+    [ None -> [: :]
+    | Some (_,init_loc) ->
+      let rec go prev_loc = parser
+        [ [: `(tok,cur_loc); strm :] -> [: `(tok,{prev_loc;cur_loc}); go cur_loc strm :]
+        | [: :] -> [: :] ]
+      in go init_loc strm ];
+
+  value drop_prev_loc strm = stream_map (fun (tok,r) -> (tok,r.cur_loc)) strm;
+
+  value get_cur_loc strm =
+    match Stream.peek strm with
+    [ Some (_,r) -> r.cur_loc
+    | None -> Loc.ghost ];
+
+  value get_prev_loc strm =
+    match Stream.peek strm with
+    [ Some (_,r) -> r.prev_loc
+    | None -> Loc.ghost ];
 
   value is_level_labelled n lev =
     match lev.lname with
