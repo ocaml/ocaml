@@ -713,8 +713,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           (list o#simple_ctyp "@ ") [a::al]
     | <:ctyp< [ > $t$ ] >> -> pp f "@[<2>[>@ %a@]@,]" o#sum_type t
     | <:ctyp< # $i$ >> -> pp f "@[<2>#%a@]" o#ident i
-    | <:ctyp< $t1$ == $t2$ >> ->
-        pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#simple_ctyp t2
     | <:ctyp< `$s$ >> -> pp f "`%a" o#var s
     | <:ctyp< $t1$ * $t2$ >> -> pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
     | <:ctyp<>> -> assert False
@@ -740,6 +738,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< $t1$ and $t2$ >> -> pp f "%a@ and %a" o#ctyp t1 o#ctyp t2
     | <:ctyp< mutable $t$ >> -> pp f "@[<2>mutable@ %a@]" o#ctyp t
     | <:ctyp< $t1$ & $t2$ >> -> pp f "%a@ &@ %a" o#ctyp t1 o#ctyp t2
+    | <:ctyp< $t1$ == $t2$ >> ->
+        pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#ctyp t2
     | Ast.TyDcl _ tn tp te cl -> do {
         pp f "@[<2>%a%a@]" o#type_params tp o#var tn;
         match te with
