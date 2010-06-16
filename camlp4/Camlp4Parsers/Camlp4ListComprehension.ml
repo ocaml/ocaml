@@ -123,8 +123,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
 
     item:
-      [ [ test_patt_lessminus;
-          p = patt; "<-" ; e = expr LEVEL "top" -> `gen (p, e)
+      (* NP: These rules rely on being on this particular order. Which should
+             be improved. *)
+      [ [ p = TRY [p = patt; "<-" -> p] ; e = expr LEVEL "top" -> `gen (p, e)
         | e = expr LEVEL "top" -> `cond e ] ]
     ;
 
