@@ -367,14 +367,14 @@ Very old (no more supported) syntax:\n\
           
         let mkumin _loc f arg =
           match arg with
-          | Ast.ExInt (_, n) -> Ast.ExInt (_loc, neg_string n)
-          | Ast.ExInt32 (_, n) -> Ast.ExInt32 (_loc, neg_string n)
-          | Ast.ExInt64 (_, n) -> Ast.ExInt64 (_loc, neg_string n)
-          | Ast.ExNativeInt (_, n) -> Ast.ExNativeInt (_loc, neg_string n)
-          | Ast.ExFlo (_, n) -> Ast.ExFlo (_loc, neg_string n)
+          | Ast.ExInt (_, n) -> Ast.ExInt (_loc, (neg_string n))
+          | Ast.ExInt32 (_, n) -> Ast.ExInt32 (_loc, (neg_string n))
+          | Ast.ExInt64 (_, n) -> Ast.ExInt64 (_loc, (neg_string n))
+          | Ast.ExNativeInt (_, n) -> Ast.ExNativeInt (_loc, (neg_string n))
+          | Ast.ExFlo (_, n) -> Ast.ExFlo (_loc, (neg_string n))
           | _ ->
-              Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdLid (_loc, "~" ^ f)),
-                arg)
+              Ast.ExApp (_loc,
+                (Ast.ExId (_loc, (Ast.IdLid (_loc, ("~" ^ f))))), arg)
           
         let mklistexp _loc last =
           let rec loop top =
@@ -382,15 +382,15 @@ Very old (no more supported) syntax:\n\
             | [] ->
                 (match last with
                  | Some e -> e
-                 | None -> Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+                 | None -> Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))))
             | e1 :: el ->
                 let _loc =
                   if top then _loc else Loc.merge (Ast.loc_of_expr e1) _loc
                 in
                   Ast.ExApp (_loc,
-                    Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                      e1),
-                    loop false el)
+                    (Ast.ExApp (_loc,
+                       (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))), e1)),
+                    (loop false el))
           in loop true
           
         let mkassert _loc =
@@ -424,13 +424,13 @@ Very old (no more supported) syntax:\n\
         let module_type_app mt1 mt2 =
           match (mt1, mt2) with
           | (Ast.MtId (_loc, i1), Ast.MtId (_, i2)) ->
-              Ast.MtId (_loc, Ast.IdApp (_loc, i1, i2))
+              Ast.MtId (_loc, (Ast.IdApp (_loc, i1, i2)))
           | _ -> raise Stream.Failure
           
         let module_type_acc mt1 mt2 =
           match (mt1, mt2) with
           | (Ast.MtId (_loc, i1), Ast.MtId (_, i2)) ->
-              Ast.MtId (_loc, Ast.IdAcc (_loc, i1, i2))
+              Ast.MtId (_loc, (Ast.IdAcc (_loc, i1, i2)))
           | _ -> raise Stream.Failure
           
         let bigarray_get _loc arr arg =
@@ -443,47 +443,49 @@ Very old (no more supported) syntax:\n\
             match coords with
             | [ c1 ] ->
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Array1"),
-                          Ast.IdLid (_loc, "get")))),
-                    arr),
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Bigarray")),
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Array1")),
+                              (Ast.IdLid (_loc, "get")))))))),
+                     arr)),
                   c1)
             | [ c1; c2 ] ->
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExApp (_loc,
-                      Ast.ExId (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                          Ast.IdAcc (_loc, Ast.IdUid (_loc, "Array2"),
-                            Ast.IdLid (_loc, "get")))),
-                      arr),
-                    c1),
+                  (Ast.ExApp (_loc,
+                     (Ast.ExApp (_loc,
+                        (Ast.ExId (_loc,
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Bigarray")),
+                              (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Array2")),
+                                 (Ast.IdLid (_loc, "get")))))))),
+                        arr)),
+                     c1)),
                   c2)
             | [ c1; c2; c3 ] ->
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExApp (_loc,
-                      Ast.ExApp (_loc,
-                        Ast.ExId (_loc,
-                          Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                            Ast.IdAcc (_loc, Ast.IdUid (_loc, "Array3"),
-                              Ast.IdLid (_loc, "get")))),
-                        arr),
-                      c1),
-                    c2),
+                  (Ast.ExApp (_loc,
+                     (Ast.ExApp (_loc,
+                        (Ast.ExApp (_loc,
+                           (Ast.ExId (_loc,
+                              (Ast.IdAcc (_loc,
+                                 (Ast.IdUid (_loc, "Bigarray")),
+                                 (Ast.IdAcc (_loc,
+                                    (Ast.IdUid (_loc, "Array3")),
+                                    (Ast.IdLid (_loc, "get")))))))),
+                           arr)),
+                        c1)),
+                     c2)),
                   c3)
             | (* | coords -> <:expr< Bigarray.Genarray.get $arr$ [| $list:coords$ |] >> ] *)
                 coords ->
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Genarray"),
-                          Ast.IdLid (_loc, "get")))),
-                    arr),
-                  Ast.ExArr (_loc, Ast.exSem_of_list coords))
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Bigarray")),
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Genarray")),
+                              (Ast.IdLid (_loc, "get")))))))),
+                     arr)),
+                  (Ast.ExArr (_loc, (Ast.exSem_of_list coords))))
           
         let bigarray_set _loc var newval =
           match var with
@@ -497,14 +499,15 @@ Very old (no more supported) syntax:\n\
               c1) ->
               Some
                 (Ast.ExApp (_loc,
-                   Ast.ExApp (_loc,
-                     Ast.ExApp (_loc,
-                       Ast.ExId (_loc,
-                         Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                           Ast.IdAcc (_loc, Ast.IdUid (_loc, "Array1"),
-                             Ast.IdLid (_loc, "set")))),
-                       arr),
-                     c1),
+                   (Ast.ExApp (_loc,
+                      (Ast.ExApp (_loc,
+                         (Ast.ExId (_loc,
+                            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Bigarray")),
+                               (Ast.IdAcc (_loc,
+                                  (Ast.IdUid (_loc, "Array1")),
+                                  (Ast.IdLid (_loc, "set")))))))),
+                         arr)),
+                      c1)),
                    newval))
           | Ast.ExApp (_,
               (Ast.ExApp (_,
@@ -518,16 +521,18 @@ Very old (no more supported) syntax:\n\
               c2) ->
               Some
                 (Ast.ExApp (_loc,
-                   Ast.ExApp (_loc,
-                     Ast.ExApp (_loc,
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc,
-                           Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Array2"),
-                               Ast.IdLid (_loc, "set")))),
-                         arr),
-                       c1),
-                     c2),
+                   (Ast.ExApp (_loc,
+                      (Ast.ExApp (_loc,
+                         (Ast.ExApp (_loc,
+                            (Ast.ExId (_loc,
+                               (Ast.IdAcc (_loc,
+                                  (Ast.IdUid (_loc, "Bigarray")),
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Array2")),
+                                     (Ast.IdLid (_loc, "set")))))))),
+                            arr)),
+                         c1)),
+                      c2)),
                    newval))
           | Ast.ExApp (_,
               (Ast.ExApp (_,
@@ -543,18 +548,20 @@ Very old (no more supported) syntax:\n\
               c3) ->
               Some
                 (Ast.ExApp (_loc,
-                   Ast.ExApp (_loc,
-                     Ast.ExApp (_loc,
-                       Ast.ExApp (_loc,
-                         Ast.ExApp (_loc,
-                           Ast.ExId (_loc,
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                               Ast.IdAcc (_loc, Ast.IdUid (_loc, "Array3"),
-                                 Ast.IdLid (_loc, "set")))),
-                           arr),
-                         c1),
-                       c2),
-                     c3),
+                   (Ast.ExApp (_loc,
+                      (Ast.ExApp (_loc,
+                         (Ast.ExApp (_loc,
+                            (Ast.ExApp (_loc,
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Bigarray")),
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Array3")),
+                                        (Ast.IdLid (_loc, "set")))))))),
+                               arr)),
+                            c1)),
+                         c2)),
+                      c3)),
                    newval))
           | Ast.ExApp (_,
               (Ast.ExApp (_,
@@ -566,14 +573,15 @@ Very old (no more supported) syntax:\n\
               (Ast.ExArr (_, coords))) ->
               Some
                 (Ast.ExApp (_loc,
-                   Ast.ExApp (_loc,
-                     Ast.ExApp (_loc,
-                       Ast.ExId (_loc,
-                         Ast.IdAcc (_loc, Ast.IdUid (_loc, "Bigarray"),
-                           Ast.IdAcc (_loc, Ast.IdUid (_loc, "Genarray"),
-                             Ast.IdLid (_loc, "set")))),
-                       arr),
-                     Ast.ExArr (_loc, coords)),
+                   (Ast.ExApp (_loc,
+                      (Ast.ExApp (_loc,
+                         (Ast.ExId (_loc,
+                            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Bigarray")),
+                               (Ast.IdAcc (_loc,
+                                  (Ast.IdUid (_loc, "Genarray")),
+                                  (Ast.IdLid (_loc, "set")))))))),
+                         arr)),
+                      (Ast.ExArr (_loc, coords)))),
                    newval))
           | _ -> None
           
@@ -597,7 +605,7 @@ Very old (no more supported) syntax:\n\
                | Some (((KEYWORD x | SYMBOL x), ti)) when p x ->
                    (Stream.junk __strm;
                     let _loc = Gram.token_location ti
-                    in Ast.ExId (_loc, Ast.IdLid (_loc, x)))
+                    in Ast.ExId (_loc, (Ast.IdLid (_loc, x))))
                | _ -> raise Stream.Failure)
           
         let _ =
@@ -708,7 +716,7 @@ Very old (no more supported) syntax:\n\
                | Some ((ANTIQUOT ((("list" as n)), s), ti)) ->
                    (Stream.junk __strm;
                     let _loc = Gram.token_location ti
-                    in Ast.ExAnt (_loc, mk_anti ~c: "expr;" n s))
+                    in Ast.ExAnt (_loc, (mk_anti ~c: "expr;" n s)))
                | _ -> symb1 __strm in
              let rec kont al (__strm : _ Stream.t) =
                match Stream.peek __strm with
@@ -987,7 +995,8 @@ Very old (no more supported) syntax:\n\
                              (fun _ (p : 'package_type) _ (e : 'expr) _ _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.MePkg (_loc,
-                                   Ast.ExTyc (_loc, e, Ast.TyPkg (_loc, p))) :
+                                   (Ast.ExTyc (_loc, e,
+                                      (Ast.TyPkg (_loc, p))))) :
                                   'module_expr))));
                          ([ Gram.Skeyword "(";
                             Gram.Snterm
@@ -1045,7 +1054,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "mexp" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.MeAnt (_loc,
-                                       mk_anti ~c: "module_expr" n s) :
+                                       (mk_anti ~c: "module_expr" n s)) :
                                       'module_expr)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -1084,7 +1093,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "stri" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.StAnt (_loc,
-                                       mk_anti ~c: "str_item" n s) :
+                                       (mk_anti ~c: "str_item" n s)) :
                                       'str_item)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "class"; Gram.Skeyword "type";
@@ -1205,7 +1214,7 @@ Very old (no more supported) syntax:\n\
                              (fun (i : 'type_longident) _
                                 (t : 'constructor_declaration) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.StExc (_loc, t, Ast.OSome i) :
+                                (Ast.StExc (_loc, t, (Ast.OSome i)) :
                                   'str_item))));
                          ([ Gram.Skeyword "exception";
                             Gram.Snterm
@@ -1307,7 +1316,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" as n)), m) ->
-                                    (Ast.MbColEq (_loc, mk_anti n m, mt, me) :
+                                    (Ast.MbColEq (_loc, (mk_anti n m), mt,
+                                       me) :
                                       'module_binding)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -1321,7 +1331,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" as n)), s) ->
                                     (Ast.MbAnt (_loc,
-                                       mk_anti ~c: "module_binding" n s) :
+                                       (mk_anti ~c: "module_binding" n s)) :
                                       'module_binding)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -1340,7 +1350,7 @@ Very old (no more supported) syntax:\n\
                                        n)),
                                     s) ->
                                     (Ast.MbAnt (_loc,
-                                       mk_anti ~c: "module_binding" n s) :
+                                       (mk_anti ~c: "module_binding" n s)) :
                                       'module_binding)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
@@ -1441,7 +1451,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "mtyp" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.MtAnt (_loc,
-                                       mk_anti ~c: "module_type" n s) :
+                                       (mk_anti ~c: "module_type" n s)) :
                                       'module_type)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -1504,7 +1514,7 @@ Very old (no more supported) syntax:\n\
                                  (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_UIDENT) _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.SgMty (_loc, i, Ast.MtNil _loc) :
+                                (Ast.SgMty (_loc, i, (Ast.MtNil _loc)) :
                                   'sig_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
@@ -1596,7 +1606,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "sigi" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.SgAnt (_loc,
-                                       mk_anti ~c: "sig_item" n s) :
+                                       (mk_anti ~c: "sig_item" n s)) :
                                       'sig_item)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -1676,7 +1686,7 @@ Very old (no more supported) syntax:\n\
                                        as n)),
                                     s) ->
                                     (Ast.MbAnt (_loc,
-                                       mk_anti ~c: "module_binding" n s) :
+                                       (mk_anti ~c: "module_binding" n s)) :
                                       'module_rec_declaration)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
@@ -1737,8 +1747,8 @@ Very old (no more supported) syntax:\n\
                                 | ANTIQUOT ((("" | "typ" | "anti" as n)), s)
                                     ->
                                     (Ast.WcTyS (_loc,
-                                       Ast.TyAnt (_loc,
-                                         mk_anti ~c: "ctyp" n s),
+                                       (Ast.TyAnt (_loc,
+                                          (mk_anti ~c: "ctyp" n s))),
                                        t) :
                                       'with_constr)
                                 | _ -> assert false)));
@@ -1788,8 +1798,8 @@ Very old (no more supported) syntax:\n\
                                 | ANTIQUOT ((("" | "typ" | "anti" as n)), s)
                                     ->
                                     (Ast.WcTyp (_loc,
-                                       Ast.TyAnt (_loc,
-                                         mk_anti ~c: "ctyp" n s),
+                                       (Ast.TyAnt (_loc,
+                                          (mk_anti ~c: "ctyp" n s))),
                                        t) :
                                       'with_constr)
                                 | _ -> assert false)));
@@ -1821,7 +1831,7 @@ Very old (no more supported) syntax:\n\
                                        as n)),
                                     s) ->
                                     (Ast.WcAnt (_loc,
-                                       mk_anti ~c: "with_constr" n s) :
+                                       (mk_anti ~c: "with_constr" n s)) :
                                       'with_constr)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
@@ -1860,7 +1870,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (seq : 'do_sequence) _ (e : 'sequence) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExWhi (_loc, mksequence' _loc e, seq) :
+                                (Ast.ExWhi (_loc, (mksequence' _loc e), seq) :
                                   'expr))));
                          ([ Gram.Skeyword "for";
                             Gram.Snterm
@@ -1885,8 +1895,8 @@ Very old (no more supported) syntax:\n\
                              (fun (seq : 'do_sequence) _ (e2 : 'sequence)
                                 (df : 'direction_flag) (e1 : 'sequence) _
                                 (i : 'a_LIDENT) _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExFor (_loc, i, mksequence' _loc e1,
-                                   mksequence' _loc e2, df, seq) :
+                                (Ast.ExFor (_loc, i, (mksequence' _loc e1),
+                                   (mksequence' _loc e2), df, seq) :
                                   'expr))));
                          ([ Gram.Skeyword "do";
                             Gram.Snterm
@@ -1913,7 +1923,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (a : 'match_case) _ (e : 'sequence) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExTry (_loc, mksequence' _loc e, a) :
+                                (Ast.ExTry (_loc, (mksequence' _loc e), a) :
                                   'expr))));
                          ([ Gram.Skeyword "match";
                             Gram.Snterm
@@ -1926,7 +1936,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (a : 'match_case) _ (e : 'sequence) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExMat (_loc, mksequence' _loc e, a) :
+                                (Ast.ExMat (_loc, (mksequence' _loc e), a) :
                                   'expr))));
                          ([ Gram.Skeyword "fun";
                             Gram.Snterm
@@ -1937,15 +1947,16 @@ Very old (no more supported) syntax:\n\
                                 (e : 'expr))));
                          ([ Gram.Skeyword "fun"; Gram.Skeyword "[";
                             Gram.Slist0sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (match_case0 : 'match_case0 Gram.Entry.t)),
-                              Gram.Skeyword "|");
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (match_case0 :
+                                       'match_case0 Gram.Entry.t))),
+                              (Gram.Skeyword "|"));
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ (a : 'match_case0 list) _ _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExFun (_loc, Ast.mcOr_of_list a) :
+                                (Ast.ExFun (_loc, (Ast.mcOr_of_list a)) :
                                   'expr))));
                          ([ Gram.Skeyword "let"; Gram.Skeyword "open";
                             Gram.Snterm
@@ -2013,7 +2024,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e2 : 'expr) (op : 'infixop6) (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExApp (_loc, Ast.ExApp (_loc, op, e1),
+                                (Ast.ExApp (_loc, (Ast.ExApp (_loc, op, e1)),
                                    e2) :
                                   'expr)))) ]);
                       ((Some "&&"), (Some Camlp4.Sig.Grammar.RightA),
@@ -2025,7 +2036,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e2 : 'expr) (op : 'infixop5) (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExApp (_loc, Ast.ExApp (_loc, op, e1),
+                                (Ast.ExApp (_loc, (Ast.ExApp (_loc, op, e1)),
                                    e2) :
                                   'expr)))) ]);
                       ((Some "<"), (Some Camlp4.Sig.Grammar.LeftA),
@@ -2037,7 +2048,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e2 : 'expr) (op : 'infixop0) (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExApp (_loc, Ast.ExApp (_loc, op, e1),
+                                (Ast.ExApp (_loc, (Ast.ExApp (_loc, op, e1)),
                                    e2) :
                                   'expr)))) ]);
                       ((Some "^"), (Some Camlp4.Sig.Grammar.RightA),
@@ -2049,7 +2060,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e2 : 'expr) (op : 'infixop1) (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExApp (_loc, Ast.ExApp (_loc, op, e1),
+                                (Ast.ExApp (_loc, (Ast.ExApp (_loc, op, e1)),
                                    e2) :
                                   'expr)))) ]);
                       ((Some "+"), (Some Camlp4.Sig.Grammar.LeftA),
@@ -2061,7 +2072,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e2 : 'expr) (op : 'infixop2) (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExApp (_loc, Ast.ExApp (_loc, op, e1),
+                                (Ast.ExApp (_loc, (Ast.ExApp (_loc, op, e1)),
                                    e2) :
                                   'expr)))) ]);
                       ((Some "*"), (Some Camlp4.Sig.Grammar.LeftA),
@@ -2073,7 +2084,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e2 : 'expr) (op : 'infixop3) (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExApp (_loc, Ast.ExApp (_loc, op, e1),
+                                (Ast.ExApp (_loc, (Ast.ExApp (_loc, op, e1)),
                                    e2) :
                                   'expr))));
                          ([ Gram.Sself; Gram.Skeyword "mod"; Gram.Sself ],
@@ -2081,9 +2092,10 @@ Very old (no more supported) syntax:\n\
                              (fun (e2 : 'expr) _ (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdLid (_loc, "mod")),
-                                     e1),
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdLid (_loc, "mod")))),
+                                      e1)),
                                    e2) :
                                   'expr))));
                          ([ Gram.Sself; Gram.Skeyword "lxor"; Gram.Sself ],
@@ -2091,10 +2103,10 @@ Very old (no more supported) syntax:\n\
                              (fun (e2 : 'expr) _ (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc,
-                                       Ast.IdLid (_loc, "lxor")),
-                                     e1),
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdLid (_loc, "lxor")))),
+                                      e1)),
                                    e2) :
                                   'expr))));
                          ([ Gram.Sself; Gram.Skeyword "lor"; Gram.Sself ],
@@ -2102,9 +2114,10 @@ Very old (no more supported) syntax:\n\
                              (fun (e2 : 'expr) _ (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdLid (_loc, "lor")),
-                                     e1),
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdLid (_loc, "lor")))),
+                                      e1)),
                                    e2) :
                                   'expr))));
                          ([ Gram.Sself; Gram.Skeyword "land"; Gram.Sself ],
@@ -2112,10 +2125,10 @@ Very old (no more supported) syntax:\n\
                              (fun (e2 : 'expr) _ (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc,
-                                       Ast.IdLid (_loc, "land")),
-                                     e1),
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdLid (_loc, "land")))),
+                                      e1)),
                                    e2) :
                                   'expr)))) ]);
                       ((Some "**"), (Some Camlp4.Sig.Grammar.RightA),
@@ -2127,7 +2140,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e2 : 'expr) (op : 'infixop4) (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExApp (_loc, Ast.ExApp (_loc, op, e1),
+                                (Ast.ExApp (_loc, (Ast.ExApp (_loc, op, e1)),
                                    e2) :
                                   'expr))));
                          ([ Gram.Sself; Gram.Skeyword "lsr"; Gram.Sself ],
@@ -2135,9 +2148,10 @@ Very old (no more supported) syntax:\n\
                              (fun (e2 : 'expr) _ (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdLid (_loc, "lsr")),
-                                     e1),
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdLid (_loc, "lsr")))),
+                                      e1)),
                                    e2) :
                                   'expr))));
                          ([ Gram.Sself; Gram.Skeyword "lsl"; Gram.Sself ],
@@ -2145,9 +2159,10 @@ Very old (no more supported) syntax:\n\
                              (fun (e2 : 'expr) _ (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdLid (_loc, "lsl")),
-                                     e1),
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdLid (_loc, "lsl")))),
+                                      e1)),
                                    e2) :
                                   'expr))));
                          ([ Gram.Sself; Gram.Skeyword "asr"; Gram.Sself ],
@@ -2155,9 +2170,10 @@ Very old (no more supported) syntax:\n\
                              (fun (e2 : 'expr) _ (e1 : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdLid (_loc, "asr")),
-                                     e1),
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdLid (_loc, "asr")))),
+                                      e1)),
                                    e2) :
                                   'expr)))) ]);
                       ((Some "unary minus"), (Some Camlp4.Sig.Grammar.NonA),
@@ -2199,7 +2215,8 @@ Very old (no more supported) syntax:\n\
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_LIDENT) _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExOlb (_loc, i, Ast.ExNil _loc) : 'expr))));
+                                (Ast.ExOlb (_loc, i, (Ast.ExNil _loc)) :
+                                  'expr))));
                          ([ Gram.Skeyword "?";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2236,7 +2253,8 @@ Very old (no more supported) syntax:\n\
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_LIDENT) _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExLab (_loc, i, Ast.ExNil _loc) : 'expr))));
+                                (Ast.ExLab (_loc, i, (Ast.ExNil _loc)) :
+                                  'expr))));
                          ([ Gram.Skeyword "~";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2293,7 +2311,8 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (_loc : Gram.Loc.t) ->
                                 (Ast.ExAcc (_loc, e,
-                                   Ast.ExId (_loc, Ast.IdLid (_loc, "val"))) :
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdLid (_loc, "val"))))) :
                                   'expr)))) ]);
                       ((Some "simple"), None,
                        [ ([ Gram.Skeyword "("; Gram.Skeyword "module";
@@ -2309,7 +2328,7 @@ Very old (no more supported) syntax:\n\
                              (fun _ (pt : 'package_type) _
                                 (me : 'module_expr) _ _ (_loc : Gram.Loc.t)
                                 ->
-                                (Ast.ExPkg (_loc, Ast.MeTyc (_loc, me, pt)) :
+                                (Ast.ExPkg (_loc, (Ast.MeTyc (_loc, me, pt))) :
                                   'expr))));
                          ([ Gram.Skeyword "("; Gram.Skeyword "module";
                             Gram.Snterm
@@ -2323,7 +2342,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "begin"; Gram.Skeyword "end" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExId (_loc, Ast.IdUid (_loc, "()")) :
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "()"))) :
                                   'expr))));
                          ([ Gram.Skeyword "begin";
                             Gram.Snterm
@@ -2345,7 +2364,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (t : 'ctyp) _ (e : 'expr) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExCoe (_loc, e, Ast.TyNil _loc, t) :
+                                (Ast.ExCoe (_loc, e, (Ast.TyNil _loc), t) :
                                   'expr))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ":";
                             Gram.Snterm
@@ -2381,7 +2400,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (el : 'comma_expr) _ (e : 'expr) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExTup (_loc, Ast.ExCom (_loc, e, el)) :
+                                (Ast.ExTup (_loc, (Ast.ExCom (_loc, e, el))) :
                                   'expr))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ":";
                             Gram.Snterm
@@ -2394,7 +2413,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "("; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExId (_loc, Ast.IdUid (_loc, "()")) :
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "()"))) :
                                   'expr))));
                          ([ Gram.Skeyword "{<";
                             Gram.Snterm
@@ -2409,7 +2428,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "{<"; Gram.Skeyword ">}" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExOvr (_loc, Ast.RbNil _loc) : 'expr))));
+                                (Ast.ExOvr (_loc, (Ast.RbNil _loc)) : 'expr))));
                          ([ Gram.Skeyword "{"; Gram.Skeyword "("; Gram.Sself;
                             Gram.Skeyword ")"; Gram.Skeyword "with";
                             Gram.Snterm
@@ -2430,7 +2449,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (el : 'label_expr_list) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExRec (_loc, el, Ast.ExNil _loc) :
+                                (Ast.ExRec (_loc, el, (Ast.ExNil _loc)) :
                                   'expr))));
                          ([ Gram.Skeyword "[|";
                             Gram.Snterm
@@ -2443,7 +2462,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "[|"; Gram.Skeyword "|]" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExArr (_loc, Ast.ExNil _loc) : 'expr))));
+                                (Ast.ExArr (_loc, (Ast.ExNil _loc)) : 'expr))));
                          ([ Gram.Skeyword "[";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2454,7 +2473,7 @@ Very old (no more supported) syntax:\n\
                              (fun _ (mk_list : 'sem_expr_for_list) _
                                 (_loc : Gram.Loc.t) ->
                                 (mk_list
-                                   (Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) :
+                                   (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]")))) :
                                   'expr))));
                          ([ Gram.Skeyword "[";
                             Gram.Snterm
@@ -2469,7 +2488,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "["; Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")) :
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))) :
                                   'expr))));
                          ([ Gram.Skeyword "`";
                             Gram.Snterm
@@ -2552,8 +2571,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("seq" as n)), s) ->
                                     (Ast.ExSeq (_loc,
-                                       Ast.ExAnt (_loc,
-                                         mk_anti ~c: "expr" n s)) :
+                                       (Ast.ExAnt (_loc,
+                                          (mk_anti ~c: "expr" n s)))) :
                                       'expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -2567,8 +2586,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("tup" as n)), s) ->
                                     (Ast.ExTup (_loc,
-                                       Ast.ExAnt (_loc,
-                                         mk_anti ~c: "expr" n s)) :
+                                       (Ast.ExAnt (_loc,
+                                          (mk_anti ~c: "expr" n s)))) :
                                       'expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -2582,7 +2601,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("`bool" as n)), s) ->
                                     (Ast.ExId (_loc,
-                                       Ast.IdAnt (_loc, mk_anti n s)) :
+                                       (Ast.IdAnt (_loc, (mk_anti n s)))) :
                                       'expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -2597,7 +2616,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("exp" | "" | "anti" as n)), s)
                                     ->
-                                    (Ast.ExAnt (_loc, mk_anti ~c: "expr" n s) :
+                                    (Ast.ExAnt (_loc,
+                                       (mk_anti ~c: "expr" n s)) :
                                       'expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -2617,7 +2637,12 @@ Very old (no more supported) syntax:\n\
                ((fun () ->
                    (None,
                     [ (None, None,
-                       [ ([ Gram.Stry
+                       [ ([ Gram.Skeyword "done" ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Gram.Loc.t) ->
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "()"))) :
+                                  'do_sequence))));
+                         ([ Gram.Stry
                               (Gram.srules do_sequence
                                  [ ([ Gram.Snterm
                                         (Gram.Entry.obj
@@ -2627,10 +2652,20 @@ Very old (no more supported) syntax:\n\
                                     (Gram.Action.mk
                                        (fun _ (seq : 'sequence)
                                           (_loc : Gram.Loc.t) ->
-                                          (seq : 'e__2)))) ]) ],
+                                          (seq : 'e__3)))) ]) ],
                           (Gram.Action.mk
-                             (fun (seq : 'e__2) (_loc : Gram.Loc.t) ->
+                             (fun (seq : 'e__3) (_loc : Gram.Loc.t) ->
                                 (seq : 'do_sequence))));
+                         ([ Gram.Stry
+                              (Gram.srules do_sequence
+                                 [ ([ Gram.Skeyword "{"; Gram.Skeyword "}" ],
+                                    (Gram.Action.mk
+                                       (fun _ _ (_loc : Gram.Loc.t) ->
+                                          (() : 'e__2)))) ]) ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Gram.Loc.t) ->
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "()"))) :
+                                  'do_sequence))));
                          ([ Gram.Stry
                               (Gram.srules do_sequence
                                  [ ([ Gram.Skeyword "{";
@@ -2656,15 +2691,15 @@ Very old (no more supported) syntax:\n\
                                  (Gram.Action.mk
                                     (fun (x : Gram.Token.t)
                                        (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__3))));
+                                       (Gram.Token.extract_string x : 'e__4))));
                                 ([ Gram.Skeyword "&" ],
                                  (Gram.Action.mk
                                     (fun (x : Gram.Token.t)
                                        (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__3)))) ] ],
+                                       (Gram.Token.extract_string x : 'e__4)))) ] ],
                           (Gram.Action.mk
-                             (fun (x : 'e__3) (_loc : Gram.Loc.t) ->
-                                (Ast.ExId (_loc, Ast.IdLid (_loc, x)) :
+                             (fun (x : 'e__4) (_loc : Gram.Loc.t) ->
+                                (Ast.ExId (_loc, (Ast.IdLid (_loc, x))) :
                                   'infixop5)))) ]) ]))
                   ());
              Gram.extend (infixop6 : 'infixop6 Gram.Entry.t)
@@ -2676,15 +2711,15 @@ Very old (no more supported) syntax:\n\
                                  (Gram.Action.mk
                                     (fun (x : Gram.Token.t)
                                        (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__4))));
+                                       (Gram.Token.extract_string x : 'e__5))));
                                 ([ Gram.Skeyword "or" ],
                                  (Gram.Action.mk
                                     (fun (x : Gram.Token.t)
                                        (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__4)))) ] ],
+                                       (Gram.Token.extract_string x : 'e__5)))) ] ],
                           (Gram.Action.mk
-                             (fun (x : 'e__4) (_loc : Gram.Loc.t) ->
-                                (Ast.ExId (_loc, Ast.IdLid (_loc, x)) :
+                             (fun (x : 'e__5) (_loc : Gram.Loc.t) ->
+                                (Ast.ExId (_loc, (Ast.IdLid (_loc, x))) :
                                   'infixop6)))) ]) ]))
                   ());
              Gram.extend
@@ -2698,10 +2733,23 @@ Very old (no more supported) syntax:\n\
                              (fun (e : 'expr) (_loc : Gram.Loc.t) ->
                                 (fun acc ->
                                    Ast.ExApp (_loc,
-                                     Ast.ExApp (_loc,
-                                       Ast.ExId (_loc,
-                                         Ast.IdUid (_loc, "::")),
-                                       e),
+                                     (Ast.ExApp (_loc,
+                                        (Ast.ExId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        e)),
+                                     acc) :
+                                  'sem_expr_for_list))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
+                            Gram.Skeyword ";" ],
+                          (Gram.Action.mk
+                             (fun _ (e : 'expr) (_loc : Gram.Loc.t) ->
+                                (fun acc ->
+                                   Ast.ExApp (_loc,
+                                     (Ast.ExApp (_loc,
+                                        (Ast.ExId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        e)),
                                      acc) :
                                   'sem_expr_for_list))));
                          ([ Gram.Snterm
@@ -2712,11 +2760,11 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (fun acc ->
                                    Ast.ExApp (_loc,
-                                     Ast.ExApp (_loc,
-                                       Ast.ExId (_loc,
-                                         Ast.IdUid (_loc, "::")),
-                                       e),
-                                     el acc) :
+                                     (Ast.ExApp (_loc,
+                                        (Ast.ExId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        e)),
+                                     (el acc)) :
                                   'sem_expr_for_list)))) ]) ]))
                   ());
              Gram.extend (comma_expr : 'comma_expr Gram.Entry.t)
@@ -2724,7 +2772,7 @@ Very old (no more supported) syntax:\n\
                    (None,
                     [ (None, None,
                        [ ([ Gram.Snterml
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top") ],
                           (Gram.Action.mk
                              (fun (e : 'expr) (_loc : Gram.Loc.t) ->
@@ -2740,7 +2788,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.ExAnt (_loc,
-                                       mk_anti ~c: "expr," n s) :
+                                       (mk_anti ~c: "expr," n s)) :
                                       'comma_expr)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
@@ -2801,7 +2849,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.ExAnt (_loc,
-                                       mk_anti ~c: "expr;" n s) :
+                                       (mk_anti ~c: "expr;" n s)) :
                                       'sequence)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "let"; Gram.Skeyword "open";
@@ -2826,7 +2874,8 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (el : 'sequence) _ (mb : 'module_binding0)
                                 (m : 'a_UIDENT) _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExLmd (_loc, m, mb, mksequence _loc el) :
+                                (Ast.ExLmd (_loc, m, mb,
+                                   (mksequence _loc el)) :
                                   'sequence))));
                          ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                             Gram.Snterm
@@ -2858,7 +2907,8 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (el : 'sequence) _ (bi : 'binding)
                                 (rf : 'opt_rec) _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExLet (_loc, rf, bi, mksequence _loc el) :
+                                (Ast.ExLet (_loc, rf, bi,
+                                   (mksequence _loc el)) :
                                   'sequence))));
                          ([ Gram.Skeyword "let";
                             Gram.Snterm
@@ -2905,7 +2955,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "anti" as n)), s) ->
                                     (Ast.BiAnt (_loc,
-                                       mk_anti ~c: "binding" n s) :
+                                       (mk_anti ~c: "binding" n s)) :
                                       'binding)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -2922,8 +2972,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "anti" as n)), s) ->
                                     (Ast.BiEq (_loc,
-                                       Ast.PaAnt (_loc,
-                                         mk_anti ~c: "patt" n s),
+                                       (Ast.PaAnt (_loc,
+                                          (mk_anti ~c: "patt" n s))),
                                        e) :
                                       'binding)
                                 | _ -> assert false)));
@@ -2939,7 +2989,7 @@ Very old (no more supported) syntax:\n\
                                 | ANTIQUOT ((("binding" | "list" as n)), s)
                                     ->
                                     (Ast.BiAnt (_loc,
-                                       mk_anti ~c: "binding" n s) :
+                                       (mk_anti ~c: "binding" n s)) :
                                       'binding)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -2978,14 +3028,14 @@ Very old (no more supported) syntax:\n\
                              (fun (e : 'fun_binding) (p : 'labeled_ipatt)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExFun (_loc,
-                                   Ast.McArr (_loc, p, Ast.ExNil _loc, e)) :
+                                   (Ast.McArr (_loc, p, (Ast.ExNil _loc), e))) :
                                   'fun_binding))));
                          ([ Gram.Stry
                               (Gram.srules fun_binding
                                  [ ([ Gram.Skeyword "("; Gram.Skeyword "type" ],
                                     (Gram.Action.mk
                                        (fun _ _ (_loc : Gram.Loc.t) ->
-                                          (() : 'e__5)))) ]);
+                                          (() : 'e__6)))) ]);
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t));
@@ -3007,14 +3057,15 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (p : 'ipatt)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.McArr (_loc, p, Ast.ExNil _loc, e) :
+                                (Ast.McArr (_loc, p, (Ast.ExNil _loc), e) :
                                   'match_case))));
                          ([ Gram.Skeyword "[";
                             Gram.Slist0sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (match_case0 : 'match_case0 Gram.Entry.t)),
-                              Gram.Skeyword "|");
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (match_case0 :
+                                       'match_case0 Gram.Entry.t))),
+                              (Gram.Skeyword "|"));
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ (l : 'match_case0 list) _
@@ -3058,8 +3109,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "anti" as n)), s) ->
                                     (Ast.McArr (_loc,
-                                       Ast.PaAnt (_loc,
-                                         mk_anti ~c: "patt" n s),
+                                       (Ast.PaAnt (_loc,
+                                          (mk_anti ~c: "patt" n s))),
                                        w, e) :
                                       'match_case0)
                                 | _ -> assert false)));
@@ -3077,9 +3128,9 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "anti" as n)), s) ->
                                     (Ast.McArr (_loc,
-                                       Ast.PaAnt (_loc,
-                                         mk_anti ~c: "patt" n s),
-                                       Ast.ExNil _loc, e) :
+                                       (Ast.PaAnt (_loc,
+                                          (mk_anti ~c: "patt" n s))),
+                                       (Ast.ExNil _loc), e) :
                                       'match_case0)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3093,7 +3144,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "anti" as n)), s) ->
                                     (Ast.McAnt (_loc,
-                                       mk_anti ~c: "match_case" n s) :
+                                       (mk_anti ~c: "match_case" n s)) :
                                       'match_case0)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3109,7 +3160,7 @@ Very old (no more supported) syntax:\n\
                                 | ANTIQUOT ((("match_case" | "list" as n)),
                                     s) ->
                                     (Ast.McAnt (_loc,
-                                       mk_anti ~c: "match_case" n s) :
+                                       (mk_anti ~c: "match_case" n s)) :
                                       'match_case0)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -3186,8 +3237,8 @@ Very old (no more supported) syntax:\n\
                              (fun (i : 'label_longident) (_loc : Gram.Loc.t)
                                 ->
                                 (Ast.RbEq (_loc, i,
-                                   Ast.ExId (_loc,
-                                     Ast.IdLid (_loc, lid_of_ident i))) :
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdLid (_loc, (lid_of_ident i)))))) :
                                   'label_expr))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -3211,7 +3262,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.RbAnt (_loc,
-                                       mk_anti ~c: "rec_binding" n s) :
+                                       (mk_anti ~c: "rec_binding" n s)) :
                                       'label_expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3228,8 +3279,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "anti" as n)), s) ->
                                     (Ast.RbEq (_loc,
-                                       Ast.IdAnt (_loc,
-                                         mk_anti ~c: "ident" n s),
+                                       (Ast.IdAnt (_loc,
+                                          (mk_anti ~c: "ident" n s))),
                                        e) :
                                       'label_expr)
                                 | _ -> assert false)));
@@ -3244,7 +3295,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "anti" as n)), s) ->
                                     (Ast.RbAnt (_loc,
-                                       mk_anti ~c: "rec_binding" n s) :
+                                       (mk_anti ~c: "rec_binding" n s)) :
                                       'label_expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3258,7 +3309,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("rec_binding" as n)), s) ->
                                     (Ast.RbAnt (_loc,
-                                       mk_anti ~c: "rec_binding" n s) :
+                                       (mk_anti ~c: "rec_binding" n s)) :
                                       'label_expr)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -3277,14 +3328,15 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun ((w, e) : 'fun_def_cont)
                                 (p : 'labeled_ipatt) (_loc : Gram.Loc.t) ->
-                                (Ast.ExFun (_loc, Ast.McArr (_loc, p, w, e)) :
+                                (Ast.ExFun (_loc,
+                                   (Ast.McArr (_loc, p, w, e))) :
                                   'fun_def))));
                          ([ Gram.Stry
                               (Gram.srules fun_def
                                  [ ([ Gram.Skeyword "("; Gram.Skeyword "type" ],
                                     (Gram.Action.mk
                                        (fun _ _ (_loc : Gram.Loc.t) ->
-                                          (() : 'e__6)))) ]);
+                                          (() : 'e__7)))) ]);
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t));
@@ -3329,14 +3381,14 @@ Very old (no more supported) syntax:\n\
                                 (p : 'labeled_ipatt) (_loc : Gram.Loc.t) ->
                                 (((Ast.ExNil _loc),
                                   (Ast.ExFun (_loc,
-                                     Ast.McArr (_loc, p, w, e)))) :
+                                     (Ast.McArr (_loc, p, w, e))))) :
                                   'fun_def_cont))));
                          ([ Gram.Stry
                               (Gram.srules fun_def_cont
                                  [ ([ Gram.Skeyword "("; Gram.Skeyword "type" ],
                                     (Gram.Action.mk
                                        (fun _ _ (_loc : Gram.Loc.t) ->
-                                          (() : 'e__7)))) ]);
+                                          (() : 'e__8)))) ]);
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t));
@@ -3373,14 +3425,15 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun ((w, e) : 'fun_def_cont)
                                 (p : 'labeled_ipatt) (_loc : Gram.Loc.t) ->
-                                (Ast.ExFun (_loc, Ast.McArr (_loc, p, w, e)) :
+                                (Ast.ExFun (_loc,
+                                   (Ast.McArr (_loc, p, w, e))) :
                                   'fun_def_cont_no_when))));
                          ([ Gram.Stry
                               (Gram.srules fun_def_cont_no_when
                                  [ ([ Gram.Skeyword "("; Gram.Skeyword "type" ],
                                     (Gram.Action.mk
                                        (fun _ _ (_loc : Gram.Loc.t) ->
-                                          (() : 'e__8)))) ]);
+                                          (() : 'e__9)))) ]);
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t));
@@ -3448,8 +3501,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "lid" as n)), i) ->
-                                    (Ast.PaOlb (_loc, mk_anti n i,
-                                       Ast.PaNil _loc) :
+                                    (Ast.PaOlb (_loc, (mk_anti n i),
+                                       (Ast.PaNil _loc)) :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "?";
@@ -3461,7 +3514,7 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | LIDENT i ->
-                                    (Ast.PaOlb (_loc, i, Ast.PaNil _loc) :
+                                    (Ast.PaOlb (_loc, i, (Ast.PaNil _loc)) :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "?";
@@ -3513,7 +3566,7 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | LIDENT i ->
-                                    (Ast.PaLab (_loc, i, Ast.PaNil _loc) :
+                                    (Ast.PaLab (_loc, i, (Ast.PaNil _loc)) :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "~";
@@ -3527,8 +3580,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "lid" as n)), i) ->
-                                    (Ast.PaLab (_loc, mk_anti n i,
-                                       Ast.PaNil _loc) :
+                                    (Ast.PaLab (_loc, (mk_anti n i),
+                                       (Ast.PaNil _loc)) :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "~";
@@ -3543,7 +3596,7 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "lid" as n)), i) ->
-                                    (Ast.PaLab (_loc, mk_anti n i, p) :
+                                    (Ast.PaLab (_loc, (mk_anti n i), p) :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3595,7 +3648,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (pl : 'comma_patt) _ (p : 'patt) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.PaTup (_loc, Ast.PaCom (_loc, p, pl)) :
+                                (Ast.PaTup (_loc, (Ast.PaCom (_loc, p, pl))) :
                                   'patt))));
                          ([ Gram.Skeyword "("; Gram.Sself;
                             Gram.Skeyword "as"; Gram.Sself; Gram.Skeyword ")" ],
@@ -3618,7 +3671,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "("; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaId (_loc, Ast.IdUid (_loc, "()")) :
+                                (Ast.PaId (_loc, (Ast.IdUid (_loc, "()"))) :
                                   'patt))));
                          ([ Gram.Skeyword "{";
                             Gram.Snterm
@@ -3641,7 +3694,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "[|"; Gram.Skeyword "|]" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaArr (_loc, Ast.PaNil _loc) : 'patt))));
+                                (Ast.PaArr (_loc, (Ast.PaNil _loc)) : 'patt))));
                          ([ Gram.Skeyword "[";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -3652,7 +3705,7 @@ Very old (no more supported) syntax:\n\
                              (fun _ (mk_list : 'sem_patt_for_list) _
                                 (_loc : Gram.Loc.t) ->
                                 (mk_list
-                                   (Ast.PaId (_loc, Ast.IdUid (_loc, "[]"))) :
+                                   (Ast.PaId (_loc, (Ast.IdUid (_loc, "[]")))) :
                                   'patt))));
                          ([ Gram.Skeyword "[";
                             Gram.Snterm
@@ -3667,7 +3720,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "["; Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaId (_loc, Ast.IdUid (_loc, "[]")) :
+                                (Ast.PaId (_loc, (Ast.IdUid (_loc, "[]"))) :
                                   'patt))));
                          ([ Gram.Skeyword "-";
                             Gram.Snterm
@@ -3675,14 +3728,14 @@ Very old (no more supported) syntax:\n\
                                  (a_FLOAT : 'a_FLOAT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_FLOAT) _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaFlo (_loc, neg_string s) : 'patt))));
+                                (Ast.PaFlo (_loc, (neg_string s)) : 'patt))));
                          ([ Gram.Skeyword "-";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (a_NATIVEINT : 'a_NATIVEINT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_NATIVEINT) _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaNativeInt (_loc, neg_string s) :
+                                (Ast.PaNativeInt (_loc, (neg_string s)) :
                                   'patt))));
                          ([ Gram.Skeyword "-";
                             Gram.Snterm
@@ -3690,20 +3743,20 @@ Very old (no more supported) syntax:\n\
                                  (a_INT64 : 'a_INT64 Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_INT64) _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaInt64 (_loc, neg_string s) : 'patt))));
+                                (Ast.PaInt64 (_loc, (neg_string s)) : 'patt))));
                          ([ Gram.Skeyword "-";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (a_INT32 : 'a_INT32 Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_INT32) _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaInt32 (_loc, neg_string s) : 'patt))));
+                                (Ast.PaInt32 (_loc, (neg_string s)) : 'patt))));
                          ([ Gram.Skeyword "-";
                             Gram.Snterm
                               (Gram.Entry.obj (a_INT : 'a_INT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_INT) _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaInt (_loc, neg_string s) : 'patt))));
+                                (Ast.PaInt (_loc, (neg_string s)) : 'patt))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj (a_CHAR : 'a_CHAR Gram.Entry.t)) ],
                           (Gram.Action.mk
@@ -3760,7 +3813,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("`bool" as n)), s) ->
                                     (Ast.PaId (_loc,
-                                       Ast.IdAnt (_loc, mk_anti n s)) :
+                                       (Ast.IdAnt (_loc, (mk_anti n s)))) :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3774,8 +3827,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("tup" as n)), s) ->
                                     (Ast.PaTup (_loc,
-                                       Ast.PaAnt (_loc,
-                                         mk_anti ~c: "patt" n s)) :
+                                       (Ast.PaAnt (_loc,
+                                          (mk_anti ~c: "patt" n s)))) :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3790,7 +3843,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "pat" | "anti" as n)), s)
                                     ->
-                                    (Ast.PaAnt (_loc, mk_anti ~c: "patt" n s) :
+                                    (Ast.PaAnt (_loc,
+                                       (mk_anti ~c: "patt" n s)) :
                                       'patt)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -3814,7 +3868,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.PaAnt (_loc,
-                                       mk_anti ~c: "patt," n s) :
+                                       (mk_anti ~c: "patt," n s)) :
                                       'comma_patt)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
@@ -3832,6 +3886,12 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (p : 'patt) (_loc : Gram.Loc.t) ->
                                 (p : 'sem_patt))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj (patt : 'patt Gram.Entry.t));
+                            Gram.Skeyword ";" ],
+                          (Gram.Action.mk
+                             (fun _ (p : 'patt) (_loc : Gram.Loc.t) ->
+                                (p : 'sem_patt))));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
@@ -3843,12 +3903,14 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.PaAnt (_loc,
-                                       mk_anti ~c: "patt;" n s) :
+                                       (mk_anti ~c: "patt;" n s)) :
                                       'sem_patt)
                                 | _ -> assert false)));
-                         ([ Gram.Sself; Gram.Skeyword ";"; Gram.Sself ],
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj (patt : 'patt Gram.Entry.t));
+                            Gram.Skeyword ";"; Gram.Sself ],
                           (Gram.Action.mk
-                             (fun (p2 : 'sem_patt) _ (p1 : 'sem_patt)
+                             (fun (p2 : 'sem_patt) _ (p1 : 'patt)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.PaSem (_loc, p1, p2) : 'sem_patt)))) ]) ]))
                   ());
@@ -3863,10 +3925,23 @@ Very old (no more supported) syntax:\n\
                              (fun (p : 'patt) (_loc : Gram.Loc.t) ->
                                 (fun acc ->
                                    Ast.PaApp (_loc,
-                                     Ast.PaApp (_loc,
-                                       Ast.PaId (_loc,
-                                         Ast.IdUid (_loc, "::")),
-                                       p),
+                                     (Ast.PaApp (_loc,
+                                        (Ast.PaId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        p)),
+                                     acc) :
+                                  'sem_patt_for_list))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj (patt : 'patt Gram.Entry.t));
+                            Gram.Skeyword ";" ],
+                          (Gram.Action.mk
+                             (fun _ (p : 'patt) (_loc : Gram.Loc.t) ->
+                                (fun acc ->
+                                   Ast.PaApp (_loc,
+                                     (Ast.PaApp (_loc,
+                                        (Ast.PaId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        p)),
                                      acc) :
                                   'sem_patt_for_list))));
                          ([ Gram.Snterm
@@ -3877,11 +3952,11 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (fun acc ->
                                    Ast.PaApp (_loc,
-                                     Ast.PaApp (_loc,
-                                       Ast.PaId (_loc,
-                                         Ast.IdUid (_loc, "::")),
-                                       p),
-                                     pl acc) :
+                                     (Ast.PaApp (_loc,
+                                        (Ast.PaId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        p)),
+                                     (pl acc)) :
                                   'sem_patt_for_list)))) ]) ]))
                   ());
              Gram.extend (label_patt_list : 'label_patt_list Gram.Entry.t)
@@ -3909,7 +3984,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ _ _ (p1 : 'label_patt)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.PaSem (_loc, p1, Ast.PaAny _loc) :
+                                (Ast.PaSem (_loc, p1, (Ast.PaAny _loc)) :
                                   'label_patt_list))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -3918,7 +3993,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ _ (p1 : 'label_patt) (_loc : Gram.Loc.t)
                                 ->
-                                (Ast.PaSem (_loc, p1, Ast.PaAny _loc) :
+                                (Ast.PaSem (_loc, p1, (Ast.PaAny _loc)) :
                                   'label_patt_list))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -3941,8 +4016,8 @@ Very old (no more supported) syntax:\n\
                              (fun (i : 'label_longident) (_loc : Gram.Loc.t)
                                 ->
                                 (Ast.PaEq (_loc, i,
-                                   Ast.PaId (_loc,
-                                     Ast.IdLid (_loc, lid_of_ident i))) :
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdLid (_loc, (lid_of_ident i)))))) :
                                   'label_patt))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -3966,7 +4041,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.PaAnt (_loc,
-                                       mk_anti ~c: "patt;" n s) :
+                                       (mk_anti ~c: "patt;" n s)) :
                                       'label_patt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -3993,7 +4068,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "pat" | "anti" as n)), s)
                                     ->
-                                    (Ast.PaAnt (_loc, mk_anti ~c: "patt" n s) :
+                                    (Ast.PaAnt (_loc,
+                                       (mk_anti ~c: "patt" n s)) :
                                       'label_patt)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -4010,7 +4086,7 @@ Very old (no more supported) syntax:\n\
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_LIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.PaId (_loc, Ast.IdLid (_loc, s)) :
+                                (Ast.PaId (_loc, (Ast.IdLid (_loc, s))) :
                                   'ipatt))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ",";
                             Gram.Snterm
@@ -4020,7 +4096,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (pl : 'comma_ipatt) _ (p : 'ipatt) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.PaTup (_loc, Ast.PaCom (_loc, p, pl)) :
+                                (Ast.PaTup (_loc, (Ast.PaCom (_loc, p, pl))) :
                                   'ipatt))));
                          ([ Gram.Skeyword "("; Gram.Sself;
                             Gram.Skeyword "as"; Gram.Sself; Gram.Skeyword ")" ],
@@ -4043,7 +4119,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "("; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaId (_loc, Ast.IdUid (_loc, "()")) :
+                                (Ast.PaId (_loc, (Ast.IdUid (_loc, "()"))) :
                                   'ipatt))));
                          ([ Gram.Stoken
                               (((function | QUOTATION _ -> true | _ -> false),
@@ -4068,8 +4144,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("tup" as n)), s) ->
                                     (Ast.PaTup (_loc,
-                                       Ast.PaAnt (_loc,
-                                         mk_anti ~c: "patt" n s)) :
+                                       (Ast.PaAnt (_loc,
+                                          (mk_anti ~c: "patt" n s)))) :
                                       'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -4084,7 +4160,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "pat" | "anti" as n)), s)
                                     ->
-                                    (Ast.PaAnt (_loc, mk_anti ~c: "patt" n s) :
+                                    (Ast.PaAnt (_loc,
+                                       (mk_anti ~c: "patt" n s)) :
                                       'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "{";
@@ -4128,7 +4205,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.PaAnt (_loc,
-                                       mk_anti ~c: "patt," n s) :
+                                       (mk_anti ~c: "patt," n s)) :
                                       'comma_ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
@@ -4202,7 +4279,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.PaAnt (_loc,
-                                       mk_anti ~c: "patt;" n s) :
+                                       (mk_anti ~c: "patt;" n s)) :
                                       'label_ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -4217,7 +4294,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "pat" | "anti" as n)), s)
                                     ->
-                                    (Ast.PaAnt (_loc, mk_anti ~c: "patt" n s) :
+                                    (Ast.PaAnt (_loc,
+                                       (mk_anti ~c: "patt" n s)) :
                                       'label_ipatt)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -4272,7 +4350,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctypand" n s) :
+                                       (mk_anti ~c: "ctypand" n s)) :
                                       'type_declaration)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -4287,7 +4365,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" | "anti" as n)), s)
                                     ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'type_declaration)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -4448,7 +4527,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" | "anti" as n)), s)
                                     ->
-                                    (Ast.TyAnt (_loc, mk_anti n s) :
+                                    (Ast.TyAnt (_loc, (mk_anti n s)) :
                                       'type_parameter)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -4464,7 +4543,7 @@ Very old (no more supported) syntax:\n\
                       ((Some "private"), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Skeyword "private";
                             Gram.Snterml
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t),
+                              ((Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)),
                               "alias") ],
                           (Gram.Action.mk
                              (fun (t : 'ctyp) _ (_loc : Gram.Loc.t) ->
@@ -4533,7 +4612,7 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (let t = Ast.TyApp (_loc, t1, t2)
                                  in
-                                   try Ast.TyId (_loc, Ast.ident_of_ctyp t)
+                                   try Ast.TyId (_loc, (Ast.ident_of_ctyp t))
                                    with | Invalid_argument _ -> t :
                                   'ctyp)))) ]);
                       ((Some "."), (Some Camlp4.Sig.Grammar.LeftA),
@@ -4543,8 +4622,9 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (try
                                    Ast.TyId (_loc,
-                                     Ast.IdAcc (_loc, Ast.ident_of_ctyp t1,
-                                       Ast.ident_of_ctyp t2))
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.ident_of_ctyp t1),
+                                        (Ast.ident_of_ctyp t2))))
                                  with
                                  | Invalid_argument s ->
                                      raise (Stream.Error s) :
@@ -4643,7 +4723,8 @@ Very old (no more supported) syntax:\n\
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.TyVrnSup (_loc, Ast.TyNil _loc) : 'ctyp))));
+                                (Ast.TyVrnSup (_loc, (Ast.TyNil _loc)) :
+                                  'ctyp))));
                          ([ Gram.Skeyword "["; Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -4666,7 +4747,7 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "["; Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
-                                (Ast.TySum (_loc, Ast.TyNil _loc) : 'ctyp))));
+                                (Ast.TySum (_loc, (Ast.TyNil _loc)) : 'ctyp))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (t : 'ctyp) _ (_loc : Gram.Loc.t) ->
@@ -4679,21 +4760,21 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (tl : 'star_ctyp) _ (t : 'ctyp) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.TyTup (_loc, Ast.TySta (_loc, t, tl)) :
+                                (Ast.TyTup (_loc, (Ast.TySta (_loc, t, tl))) :
                                   'ctyp))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_UIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.TyId (_loc, Ast.IdUid (_loc, i)) :
+                                (Ast.TyId (_loc, (Ast.IdUid (_loc, i))) :
                                   'ctyp))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_LIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.TyId (_loc, Ast.IdLid (_loc, i)) :
+                                (Ast.TyId (_loc, (Ast.IdLid (_loc, i))) :
                                   'ctyp))));
                          ([ Gram.Stoken
                               (((function | QUOTATION _ -> true | _ -> false),
@@ -4718,8 +4799,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("id" as n)), s) ->
                                     (Ast.TyId (_loc,
-                                       Ast.IdAnt (_loc,
-                                         mk_anti ~c: "ident" n s)) :
+                                       (Ast.IdAnt (_loc,
+                                          (mk_anti ~c: "ident" n s)))) :
                                       'ctyp)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -4733,8 +4814,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("tup" as n)), s) ->
                                     (Ast.TyTup (_loc,
-                                       Ast.TyAnt (_loc,
-                                         mk_anti ~c: "ctyp" n s)) :
+                                       (Ast.TyAnt (_loc,
+                                          (mk_anti ~c: "ctyp" n s)))) :
                                       'ctyp)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -4749,7 +4830,8 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" | "anti" as n)), s)
                                     ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'ctyp)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "_" ],
@@ -4789,7 +4871,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp*" n s) :
+                                       (mk_anti ~c: "ctyp*" n s)) :
                                       'star_ctyp)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -4802,7 +4884,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'star_ctyp)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -4817,7 +4900,7 @@ Very old (no more supported) syntax:\n\
                                  (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.TyId (_loc, Ast.IdUid (_loc, s)) :
+                                (Ast.TyId (_loc, (Ast.IdUid (_loc, s))) :
                                   'constructor_declarations))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -4831,7 +4914,8 @@ Very old (no more supported) syntax:\n\
                              (fun (t : 'constructor_arg_list) _
                                 (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
                                 (Ast.TyOf (_loc,
-                                   Ast.TyId (_loc, Ast.IdUid (_loc, s)), t) :
+                                   (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                                   t) :
                                   'constructor_declarations))));
                          ([ Gram.Sself; Gram.Skeyword "|"; Gram.Sself ],
                           (Gram.Action.mk
@@ -4863,7 +4947,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp|" n s) :
+                                       (mk_anti ~c: "ctyp|" n s)) :
                                       'constructor_declarations)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -4876,7 +4960,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'constructor_declarations)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -4891,7 +4976,7 @@ Very old (no more supported) syntax:\n\
                                  (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.TyId (_loc, Ast.IdUid (_loc, s)) :
+                                (Ast.TyId (_loc, (Ast.IdUid (_loc, s))) :
                                   'constructor_declaration))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -4905,7 +4990,8 @@ Very old (no more supported) syntax:\n\
                              (fun (t : 'constructor_arg_list) _
                                 (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
                                 (Ast.TyOf (_loc,
-                                   Ast.TyId (_loc, Ast.IdUid (_loc, s)), t) :
+                                   (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                                   t) :
                                   'constructor_declaration))));
                          ([ Gram.Stoken
                               (((function | QUOTATION _ -> true | _ -> false),
@@ -4929,7 +5015,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'constructor_declaration)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -4961,7 +5048,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctypand" n s) :
+                                       (mk_anti ~c: "ctypand" n s)) :
                                       'constructor_arg_list)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5016,8 +5103,8 @@ Very old (no more supported) syntax:\n\
                              (fun (t : 'poly_type) _ _ (s : 'a_LIDENT)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.TyCol (_loc,
-                                   Ast.TyId (_loc, Ast.IdLid (_loc, s)),
-                                   Ast.TyMut (_loc, t)) :
+                                   (Ast.TyId (_loc, (Ast.IdLid (_loc, s)))),
+                                   (Ast.TyMut (_loc, t))) :
                                   'label_declaration))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -5030,7 +5117,8 @@ Very old (no more supported) syntax:\n\
                              (fun (t : 'poly_type) _ (s : 'a_LIDENT)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.TyCol (_loc,
-                                   Ast.TyId (_loc, Ast.IdLid (_loc, s)), t) :
+                                   (Ast.TyId (_loc, (Ast.IdLid (_loc, s)))),
+                                   t) :
                                   'label_declaration))));
                          ([ Gram.Stoken
                               (((function | QUOTATION _ -> true | _ -> false),
@@ -5055,7 +5143,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp;" n s) :
+                                       (mk_anti ~c: "ctyp;" n s)) :
                                       'label_declaration)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -5068,7 +5156,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'label_declaration)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5100,7 +5189,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (j : 'ident) _ (i : 'a_UIDENT)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.IdAcc (_loc, Ast.IdUid (_loc, i), j) :
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, i)), j) :
                                   'ident))));
                          ([ Gram.Stoken
                               (((function
@@ -5117,8 +5206,8 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAcc (_loc,
-                                       Ast.IdAnt (_loc,
-                                         mk_anti ~c: "ident" n s),
+                                       (Ast.IdAnt (_loc,
+                                          (mk_anti ~c: "ident" n s))),
                                        i) :
                                       'ident)
                                 | _ -> assert false)));
@@ -5148,7 +5237,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAnt (_loc,
-                                       mk_anti ~c: "ident" n s) :
+                                       (mk_anti ~c: "ident" n s)) :
                                       'ident)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5169,7 +5258,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (l : 'module_longident) _ (m : 'a_UIDENT)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.IdAcc (_loc, Ast.IdUid (_loc, m), l) :
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, m)), l) :
                                   'module_longident))));
                          ([ Gram.Stoken
                               (((function
@@ -5185,7 +5274,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAnt (_loc,
-                                       mk_anti ~c: "ident" n s) :
+                                       (mk_anti ~c: "ident" n s)) :
                                       'module_longident)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5237,7 +5326,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAnt (_loc,
-                                       mk_anti ~c: "ident" n s) :
+                                       (mk_anti ~c: "ident" n s)) :
                                       'module_longident_with_app)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5262,7 +5351,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (l : 'module_longident_dot_lparen) _
                                 (m : 'a_UIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.IdAcc (_loc, Ast.IdUid (_loc, m), l) :
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, m)), l) :
                                   'module_longident_dot_lparen))));
                          ([ Gram.Stoken
                               (((function
@@ -5279,7 +5368,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAnt (_loc,
-                                       mk_anti ~c: "ident" n s) :
+                                       (mk_anti ~c: "ident" n s)) :
                                       'module_longident_dot_lparen)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5329,7 +5418,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAnt (_loc,
-                                       mk_anti ~c: "ident" n s) :
+                                       (mk_anti ~c: "ident" n s)) :
                                       'type_longident)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5350,7 +5439,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (l : 'label_longident) _ (m : 'a_UIDENT)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.IdAcc (_loc, Ast.IdUid (_loc, m), l) :
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, m)), l) :
                                   'label_longident))));
                          ([ Gram.Stoken
                               (((function
@@ -5366,7 +5455,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAnt (_loc,
-                                       mk_anti ~c: "ident" n s) :
+                                       (mk_anti ~c: "ident" n s)) :
                                       'label_longident)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5450,7 +5539,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "cdcl" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CeAnt (_loc,
-                                       mk_anti ~c: "class_expr" n s) :
+                                       (mk_anti ~c: "class_expr" n s)) :
                                       'class_declaration)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
@@ -5515,7 +5604,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun ((i, ot) : 'class_name_and_param)
                                 (mv : 'opt_virtual) (_loc : Gram.Loc.t) ->
-                                (Ast.CtCon (_loc, mv, Ast.IdLid (_loc, i),
+                                (Ast.CtCon (_loc, mv, (Ast.IdLid (_loc, i)),
                                    ot) :
                                   'class_info_for_class_type)))) ]) ]))
                   ());
@@ -5535,7 +5624,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun ((i, ot) : 'class_name_and_param)
                                 (mv : 'opt_virtual) (_loc : Gram.Loc.t) ->
-                                (Ast.CeCon (_loc, mv, Ast.IdLid (_loc, i),
+                                (Ast.CeCon (_loc, mv, (Ast.IdLid (_loc, i)),
                                    ot) :
                                   'class_info_for_class_expr)))) ]) ]))
                   ());
@@ -5588,7 +5677,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp," n s) :
+                                       (mk_anti ~c: "ctyp," n s)) :
                                       'comma_type_parameter)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
@@ -5636,7 +5725,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp," n s) :
+                                       (mk_anti ~c: "ctyp," n s)) :
                                       'comma_ctyp)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
@@ -5698,7 +5787,7 @@ Very old (no more supported) syntax:\n\
                       ((Some "apply"), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Sself;
                             Gram.Snterml
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "label") ],
                           (Gram.Action.mk
                              (fun (e : 'expr) (ce : 'class_expr)
@@ -5765,7 +5854,7 @@ Very old (no more supported) syntax:\n\
                                 | ANTIQUOT ((("" | "cexp" | "anti" as n)), s)
                                     ->
                                     (Ast.CeAnt (_loc,
-                                       mk_anti ~c: "class_expr" n s) :
+                                       (mk_anti ~c: "class_expr" n s)) :
                                       'class_expr)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -5783,7 +5872,7 @@ Very old (no more supported) syntax:\n\
                              (fun (ci : 'class_longident) (_loc : Gram.Loc.t)
                                 ->
                                 (Ast.CeCon (_loc, Ast.ViNil, ci,
-                                   Ast.TyNil _loc) :
+                                   (Ast.TyNil _loc)) :
                                   'class_longident_and_param))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -5817,9 +5906,9 @@ Very old (no more supported) syntax:\n\
                                     (Gram.Action.mk
                                        (fun _ (cst : 'class_str_item)
                                           (_loc : Gram.Loc.t) ->
-                                          (cst : 'e__9)))) ]) ],
+                                          (cst : 'e__10)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__9 list) (_loc : Gram.Loc.t) ->
+                             (fun (l : 'e__10 list) (_loc : Gram.Loc.t) ->
                                 (Ast.crSem_of_list l : 'class_structure))));
                          ([ Gram.Stoken
                               (((function
@@ -5839,8 +5928,8 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "cst" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CrSem (_loc,
-                                       Ast.CrAnt (_loc,
-                                         mk_anti ~c: "class_str_item" n s),
+                                       (Ast.CrAnt (_loc,
+                                          (mk_anti ~c: "class_str_item" n s))),
                                        cst) :
                                       'class_structure)
                                 | _ -> assert false)));
@@ -5858,7 +5947,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "cst" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CrAnt (_loc,
-                                       mk_anti ~c: "class_str_item" n s) :
+                                       (mk_anti ~c: "class_str_item" n s)) :
                                       'class_structure)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -6102,7 +6191,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "cst" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CrAnt (_loc,
-                                       mk_anti ~c: "class_str_item" n s) :
+                                       (mk_anti ~c: "class_str_item" n s)) :
                                       'class_str_item)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -6221,7 +6310,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (t : 'ctyp) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.ExCoe (_loc, e, Ast.TyNil _loc, t) :
+                                (Ast.ExCoe (_loc, e, (Ast.TyNil _loc), t) :
                                   'cvalue_binding))));
                          ([ Gram.Skeyword ":";
                             Gram.Snterm
@@ -6324,7 +6413,7 @@ Very old (no more supported) syntax:\n\
                                 | ANTIQUOT ((("" | "ctyp" | "anti" as n)), s)
                                     ->
                                     (Ast.CtAnt (_loc,
-                                       mk_anti ~c: "class_type" n s) :
+                                       (mk_anti ~c: "class_type" n s)) :
                                       'class_type)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -6342,7 +6431,7 @@ Very old (no more supported) syntax:\n\
                              (fun (i : 'class_type_longident)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.CtCon (_loc, Ast.ViNil, i,
-                                   Ast.TyNil _loc) :
+                                   (Ast.TyNil _loc)) :
                                   'class_type_longident_and_param))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -6412,9 +6501,9 @@ Very old (no more supported) syntax:\n\
                                     (Gram.Action.mk
                                        (fun _ (csg : 'class_sig_item)
                                           (_loc : Gram.Loc.t) ->
-                                          (csg : 'e__10)))) ]) ],
+                                          (csg : 'e__11)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__10 list) (_loc : Gram.Loc.t) ->
+                             (fun (l : 'e__11 list) (_loc : Gram.Loc.t) ->
                                 (Ast.cgSem_of_list l : 'class_signature))));
                          ([ Gram.Stoken
                               (((function
@@ -6434,8 +6523,8 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "csg" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CgSem (_loc,
-                                       Ast.CgAnt (_loc,
-                                         mk_anti ~c: "class_sig_item" n s),
+                                       (Ast.CgAnt (_loc,
+                                          (mk_anti ~c: "class_sig_item" n s))),
                                        csg) :
                                       'class_signature)
                                 | _ -> assert false)));
@@ -6453,7 +6542,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "csg" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CgAnt (_loc,
-                                       mk_anti ~c: "class_sig_item" n s) :
+                                       (mk_anti ~c: "class_sig_item" n s)) :
                                       'class_signature)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -6574,7 +6663,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "csg" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CgAnt (_loc,
-                                       mk_anti ~c: "class_sig_item" n s) :
+                                       (mk_anti ~c: "class_sig_item" n s)) :
                                       'class_sig_item)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -6637,7 +6726,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "typ" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CtAnt (_loc,
-                                       mk_anti ~c: "class_type" n s) :
+                                       (mk_anti ~c: "class_type" n s)) :
                                       'class_description)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
@@ -6694,7 +6783,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "typ" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.CtAnt (_loc,
-                                       mk_anti ~c: "class_type" n s) :
+                                       (mk_anti ~c: "class_type" n s)) :
                                       'class_type_declaration)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
@@ -6743,7 +6832,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (l : 'label)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.RbEq (_loc, Ast.IdLid (_loc, l), e) :
+                                (Ast.RbEq (_loc, (Ast.IdLid (_loc, l)), e) :
                                   'field_expr))));
                          ([ Gram.Stoken
                               (((function
@@ -6756,7 +6845,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.RbAnt (_loc,
-                                       mk_anti ~c: "rec_binding" n s) :
+                                       (mk_anti ~c: "rec_binding" n s)) :
                                       'field_expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -6771,7 +6860,7 @@ Very old (no more supported) syntax:\n\
                                 | ANTIQUOT ((("" | "bi" | "anti" as n)), s)
                                     ->
                                     (Ast.RbAnt (_loc,
-                                       mk_anti ~c: "rec_binding" n s) :
+                                       (mk_anti ~c: "rec_binding" n s)) :
                                       'field_expr)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -6822,7 +6911,8 @@ Very old (no more supported) syntax:\n\
                              (fun (t : 'poly_type) _ (lab : 'a_LIDENT)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.TyCol (_loc,
-                                   Ast.TyId (_loc, Ast.IdLid (_loc, lab)), t) :
+                                   (Ast.TyId (_loc, (Ast.IdLid (_loc, lab)))),
+                                   t) :
                                   'meth_decl))));
                          ([ Gram.Stoken
                               (((function | QUOTATION _ -> true | _ -> false),
@@ -6847,7 +6937,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp;" n s) :
+                                       (mk_anti ~c: "ctyp;" n s)) :
                                       'meth_decl)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -6860,7 +6950,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'meth_decl)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -6873,7 +6964,7 @@ Very old (no more supported) syntax:\n\
                                  (opt_dot_dot : 'opt_dot_dot Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (v : 'opt_dot_dot) (_loc : Gram.Loc.t) ->
-                                (Ast.TyObj (_loc, Ast.TyNil _loc, v) :
+                                (Ast.TyObj (_loc, (Ast.TyNil _loc), v) :
                                   'opt_meth_list))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -6936,7 +7027,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'typevars)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Sself ],
@@ -6965,7 +7057,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (t : 'amp_ctyp) _ (i : 'a_ident) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.TyOf (_loc, Ast.TyVrn (_loc, i), t) :
+                                (Ast.TyOf (_loc, (Ast.TyVrn (_loc, i)), t) :
                                   'row_field))));
                          ([ Gram.Skeyword "`";
                             Gram.Snterm
@@ -6978,7 +7070,7 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (t : 'amp_ctyp) _ _ (i : 'a_ident) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.TyOfAmp (_loc, Ast.TyVrn (_loc, i), t) :
+                                (Ast.TyOfAmp (_loc, (Ast.TyVrn (_loc, i)), t) :
                                   'row_field))));
                          ([ Gram.Skeyword "`";
                             Gram.Snterm
@@ -7003,7 +7095,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp|" n s) :
+                                       (mk_anti ~c: "ctyp|" n s)) :
                                       'row_field)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -7016,7 +7108,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'row_field)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -7040,7 +7133,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
                                     (Ast.TyAnt (_loc,
-                                       mk_anti ~c: "ctyp&" n s) :
+                                       (mk_anti ~c: "ctyp&" n s)) :
                                       'amp_ctyp)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "&"; Gram.Sself ],
@@ -7075,7 +7168,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
-                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
                                       'name_tags)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -7150,8 +7244,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "lid" as n)), i) ->
-                                    (Ast.PaOlb (_loc, mk_anti n i,
-                                       Ast.PaNil _loc) :
+                                    (Ast.PaOlb (_loc, (mk_anti n i),
+                                       (Ast.PaNil _loc)) :
                                       'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "?";
@@ -7163,7 +7257,7 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | LIDENT i ->
-                                    (Ast.PaOlb (_loc, i, Ast.PaNil _loc) :
+                                    (Ast.PaOlb (_loc, i, (Ast.PaNil _loc)) :
                                       'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "?";
@@ -7215,7 +7309,7 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | LIDENT i ->
-                                    (Ast.PaLab (_loc, i, Ast.PaNil _loc) :
+                                    (Ast.PaLab (_loc, i, (Ast.PaNil _loc)) :
                                       'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "~";
@@ -7229,8 +7323,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "lid" as n)), i) ->
-                                    (Ast.PaLab (_loc, mk_anti n i,
-                                       Ast.PaNil _loc) :
+                                    (Ast.PaLab (_loc, (mk_anti n i),
+                                       (Ast.PaNil _loc)) :
                                       'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "~";
@@ -7245,7 +7339,7 @@ Very old (no more supported) syntax:\n\
                                 _ (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "lid" as n)), i) ->
-                                    (Ast.PaLab (_loc, mk_anti n i, p) :
+                                    (Ast.PaLab (_loc, (mk_anti n i), p) :
                                       'ipatt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -7528,9 +7622,9 @@ Very old (no more supported) syntax:\n\
                                     (Gram.Action.mk
                                        (fun _ (sg : 'sig_item)
                                           (_loc : Gram.Loc.t) ->
-                                          (sg : 'e__11)))) ]) ],
+                                          (sg : 'e__12)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__11 list) (_loc : Gram.Loc.t) ->
+                             (fun (l : 'e__12 list) (_loc : Gram.Loc.t) ->
                                 (Ast.sgSem_of_list l : 'sig_items))));
                          ([ Gram.Stoken
                               (((function
@@ -7550,8 +7644,8 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "sigi" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.SgSem (_loc,
-                                       Ast.SgAnt (_loc,
-                                         mk_anti n ~c: "sig_item" s),
+                                       (Ast.SgAnt (_loc,
+                                          (mk_anti n ~c: "sig_item" s))),
                                        sg) :
                                       'sig_items)
                                 | _ -> assert false)));
@@ -7569,7 +7663,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "sigi" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.SgAnt (_loc,
-                                       mk_anti n ~c: "sig_item" s) :
+                                       (mk_anti n ~c: "sig_item" s)) :
                                       'sig_items)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -7626,9 +7720,9 @@ Very old (no more supported) syntax:\n\
                                     (Gram.Action.mk
                                        (fun _ (st : 'str_item)
                                           (_loc : Gram.Loc.t) ->
-                                          (st : 'e__12)))) ]) ],
+                                          (st : 'e__13)))) ]) ],
                           (Gram.Action.mk
-                             (fun (l : 'e__12 list) (_loc : Gram.Loc.t) ->
+                             (fun (l : 'e__13 list) (_loc : Gram.Loc.t) ->
                                 (Ast.stSem_of_list l : 'str_items))));
                          ([ Gram.Stoken
                               (((function
@@ -7648,8 +7742,8 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "stri" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.StSem (_loc,
-                                       Ast.StAnt (_loc,
-                                         mk_anti n ~c: "str_item" s),
+                                       (Ast.StAnt (_loc,
+                                          (mk_anti n ~c: "str_item" s))),
                                        st) :
                                       'str_items)
                                 | _ -> assert false)));
@@ -7667,7 +7761,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "stri" | "anti" | "list" as n)),
                                     s) ->
                                     (Ast.StAnt (_loc,
-                                       mk_anti n ~c: "str_item" s) :
+                                       (mk_anti n ~c: "str_item" s)) :
                                       'str_items)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -8268,7 +8362,8 @@ Very old (no more supported) syntax:\n\
                              (fun (z : 'label_declaration_list) _
                                 (y : 'more_ctyp) _ (x : 'more_ctyp)
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.TySem (_loc, Ast.TyCol (_loc, x, y), z) :
+                                (Ast.TySem (_loc, (Ast.TyCol (_loc, x, y)),
+                                   z) :
                                   'ctyp_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -8295,7 +8390,8 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (z : 'row_field) _ (y : 'amp_ctyp) _ _
                                 (x : 'more_ctyp) (_loc : Gram.Loc.t) ->
-                                (Ast.TyOr (_loc, Ast.TyOfAmp (_loc, x, y), z) :
+                                (Ast.TyOr (_loc, (Ast.TyOfAmp (_loc, x, y)),
+                                   z) :
                                   'ctyp_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -8325,7 +8421,7 @@ Very old (no more supported) syntax:\n\
                              (fun (z : 'constructor_declarations) _
                                 (y : 'constructor_arg_list) _
                                 (x : 'more_ctyp) (_loc : Gram.Loc.t) ->
-                                (Ast.TyOr (_loc, Ast.TyOf (_loc, x, y), z) :
+                                (Ast.TyOr (_loc, (Ast.TyOf (_loc, x, y)), z) :
                                   'ctyp_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -8515,10 +8611,11 @@ Very old (no more supported) syntax:\n\
                              (fun (_loc : Gram.Loc.t) ->
                                 (Ast.McNil _loc : 'match_case_quot))));
                          ([ Gram.Slist0sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (match_case0 : 'match_case0 Gram.Entry.t)),
-                              Gram.Skeyword "|") ],
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (match_case0 :
+                                       'match_case0 Gram.Entry.t))),
+                              (Gram.Skeyword "|")) ],
                           (Gram.Action.mk
                              (fun (x : 'match_case0 list) (_loc : Gram.Loc.t)
                                 -> (Ast.mcOr_of_list x : 'match_case_quot)))) ]) ]))
@@ -8610,7 +8707,8 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" as n)), m) ->
-                                    (Ast.MbColEq (_loc, mk_anti n m, mt, me) :
+                                    (Ast.MbColEq (_loc, (mk_anti n m), mt,
+                                       me) :
                                       'module_binding_quot)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -8628,7 +8726,7 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" as n)), m) ->
-                                    (Ast.MbCol (_loc, mk_anti n m, mt) :
+                                    (Ast.MbCol (_loc, (mk_anti n m), mt) :
                                       'module_binding_quot)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -8642,7 +8740,7 @@ Very old (no more supported) syntax:\n\
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" as n)), s) ->
                                     (Ast.MbAnt (_loc,
-                                       mk_anti ~c: "module_binding" n s) :
+                                       (mk_anti ~c: "module_binding" n s)) :
                                       'module_binding_quot)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -8659,7 +8757,7 @@ Very old (no more supported) syntax:\n\
                                     ((("module_binding" | "anti" as n)), s)
                                     ->
                                     (Ast.MbAnt (_loc,
-                                       mk_anti ~c: "module_binding" n s) :
+                                       (mk_anti ~c: "module_binding" n s)) :
                                       'module_binding_quot)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
@@ -8706,8 +8804,8 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAcc (_loc,
-                                       Ast.IdAnt (_loc,
-                                         mk_anti ~c: "ident" n s),
+                                       (Ast.IdAnt (_loc,
+                                          (mk_anti ~c: "ident" n s))),
                                        i) :
                                       'ident_quot)
                                 | _ -> assert false)));
@@ -8737,7 +8835,7 @@ Very old (no more supported) syntax:\n\
                                     ((("" | "id" | "anti" | "list" as n)), s)
                                     ->
                                     (Ast.IdAnt (_loc,
-                                       mk_anti ~c: "ident" n s) :
+                                       (mk_anti ~c: "ident" n s)) :
                                       'ident_quot)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -8787,7 +8885,7 @@ Very old (no more supported) syntax:\n\
                              (fun ((i, ot) : 'class_name_and_param) _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.CeCon (_loc, Ast.ViVirtual,
-                                   Ast.IdLid (_loc, i), ot) :
+                                   (Ast.IdLid (_loc, i)), ot) :
                                   'class_expr_quot))));
                          ([ Gram.Sself; Gram.Skeyword "="; Gram.Sself ],
                           (Gram.Action.mk
@@ -8851,7 +8949,7 @@ Very old (no more supported) syntax:\n\
                              (fun ((i, ot) : 'class_name_and_param) _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.CtCon (_loc, Ast.ViVirtual,
-                                   Ast.IdLid (_loc, i), ot) :
+                                   (Ast.IdLid (_loc, i)), ot) :
                                   'class_type_quot))));
                          ([ Gram.Sself; Gram.Skeyword ":"; Gram.Sself ],
                           (Gram.Action.mk
@@ -9117,9 +9215,9 @@ module Camlp4QuotationCommon =
               
             let meta_loc_expr _loc loc =
               match !loc_name with
-              | None -> Ast.ExId (_loc, Ast.IdLid (_loc, !Loc.name))
+              | None -> Ast.ExId (_loc, (Ast.IdLid (_loc, !Loc.name)))
               | Some "here" -> MetaLocHere.meta_loc_expr _loc loc
-              | Some x -> Ast.ExId (_loc, Ast.IdLid (_loc, x))
+              | Some x -> Ast.ExId (_loc, (Ast.IdLid (_loc, x)))
               
             let meta_loc_patt _loc _ = Ast.PaAny _loc
               
@@ -9160,139 +9258,156 @@ module Camlp4QuotationCommon =
                          match n with
                          | "antisig_item" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "SgAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "SgAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antistr_item" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "StAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "StAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antictyp" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "TyAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "TyAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antipatt" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "PaAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "PaAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antiexpr" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "ExAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "ExAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antimodule_type" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "MtAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "MtAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antimodule_expr" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "MeAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "MeAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "anticlass_type" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CtAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CtAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "anticlass_expr" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CeAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CeAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "anticlass_sig_item" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CgAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CgAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "anticlass_str_item" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CrAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CrAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antiwith_constr" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "WcAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "WcAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antibinding" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "BiAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "BiAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antirec_binding" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "RbAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "RbAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antimatch_case" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "McAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "McAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antimodule_binding" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "MbAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "MbAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | "antiident" ->
                              Ast.PaApp (_loc,
-                               Ast.PaApp (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "IdAnt"))),
-                                 mloc _loc),
+                               (Ast.PaApp (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "IdAnt")))))),
+                                  (mloc _loc))),
                                p)
                          | _ -> p)
               | p -> super#patt p
@@ -9308,339 +9423,387 @@ module Camlp4QuotationCommon =
                          match n with
                          | "`int" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdLid (_loc, "string_of_int")),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdLid (_loc, "string_of_int")))),
                                e)
                          | "`int32" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Int32"),
-                                   Ast.IdLid (_loc, "to_string"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Int32")),
+                                     (Ast.IdLid (_loc, "to_string")))))),
                                e)
                          | "`int64" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Int64"),
-                                   Ast.IdLid (_loc, "to_string"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Int64")),
+                                     (Ast.IdLid (_loc, "to_string")))))),
                                e)
                          | "`nativeint" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc,
-                                   Ast.IdUid (_loc, "Nativeint"),
-                                   Ast.IdLid (_loc, "to_string"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Nativeint")),
+                                     (Ast.IdLid (_loc, "to_string")))))),
                                e)
                          | "`flo" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdLid (_loc, "string_of_float")),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdLid (_loc, "string_of_float")))),
                                e)
                          | "`str" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "safe_string_escaped"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "safe_string_escaped")))))),
                                e)
                          | "`chr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Char"),
-                                   Ast.IdLid (_loc, "escaped"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Char")),
+                                     (Ast.IdLid (_loc, "escaped")))))),
                                e)
                          | "`bool" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "IdUid"))),
-                                 mloc _loc),
-                               Ast.ExIfe (_loc, e, Ast.ExStr (_loc, "True"),
-                                 Ast.ExStr (_loc, "False")))
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "IdUid")))))),
+                                  (mloc _loc))),
+                               (Ast.ExIfe (_loc, e,
+                                  (Ast.ExStr (_loc, "True")),
+                                  (Ast.ExStr (_loc, "False")))))
                          | "liststr_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "stSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "stSem_of_list")))))),
                                e)
                          | "listsig_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "sgSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "sgSem_of_list")))))),
                                e)
                          | "listclass_sig_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "cgSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "cgSem_of_list")))))),
                                e)
                          | "listclass_str_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "crSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "crSem_of_list")))))),
                                e)
                          | "listmodule_expr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "meApp_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "meApp_of_list")))))),
                                e)
                          | "listmodule_type" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "mtApp_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "mtApp_of_list")))))),
                                e)
                          | "listmodule_binding" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "mbAnd_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "mbAnd_of_list")))))),
                                e)
                          | "listbinding" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "biAnd_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "biAnd_of_list")))))),
                                e)
                          | "listbinding;" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "biSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "biSem_of_list")))))),
                                e)
                          | "listrec_binding" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "rbSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "rbSem_of_list")))))),
                                e)
                          | "listclass_type" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "ctAnd_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "ctAnd_of_list")))))),
                                e)
                          | "listclass_expr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "ceAnd_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "ceAnd_of_list")))))),
                                e)
                          | "listident" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "idAcc_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "idAcc_of_list")))))),
                                e)
                          | "listctypand" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "tyAnd_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "tyAnd_of_list")))))),
                                e)
                          | "listctyp;" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "tySem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "tySem_of_list")))))),
                                e)
                          | "listctyp*" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "tySta_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "tySta_of_list")))))),
                                e)
                          | "listctyp|" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "tyOr_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "tyOr_of_list")))))),
                                e)
                          | "listctyp," ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "tyCom_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "tyCom_of_list")))))),
                                e)
                          | "listctyp&" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "tyAmp_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "tyAmp_of_list")))))),
                                e)
                          | "listwith_constr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "wcAnd_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "wcAnd_of_list")))))),
                                e)
                          | "listmatch_case" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "mcOr_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "mcOr_of_list")))))),
                                e)
                          | "listpatt," ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "paCom_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "paCom_of_list")))))),
                                e)
                          | "listpatt;" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "paSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "paSem_of_list")))))),
                                e)
                          | "listexpr," ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "exCom_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "exCom_of_list")))))),
                                e)
                          | "listexpr;" ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                   Ast.IdLid (_loc, "exSem_of_list"))),
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Ast")),
+                                     (Ast.IdLid (_loc, "exSem_of_list")))))),
                                e)
                          | "antisig_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "SgAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "SgAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antistr_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "StAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "StAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antictyp" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "TyAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "TyAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antipatt" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "PaAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "PaAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antiexpr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "ExAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "ExAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antimodule_type" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "MtAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "MtAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antimodule_expr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "MeAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "MeAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "anticlass_type" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CtAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CtAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "anticlass_expr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CeAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CeAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "anticlass_sig_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CgAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CgAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "anticlass_str_item" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "CrAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "CrAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antiwith_constr" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "WcAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "WcAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antibinding" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "BiAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "BiAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antirec_binding" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "RbAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "RbAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antimatch_case" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "McAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "McAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antimodule_binding" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "MbAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "MbAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | "antiident" ->
                              Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                     Ast.IdUid (_loc, "IdAnt"))),
-                                 mloc _loc),
+                               (Ast.ExApp (_loc,
+                                  (Ast.ExId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Ast")),
+                                        (Ast.IdUid (_loc, "IdAnt")))))),
+                                  (mloc _loc))),
                                e)
                          | _ -> e)
               | e -> super#expr e
@@ -9678,12 +9841,12 @@ module Camlp4QuotationCommon =
                                (Ast.IdUid (_, u)))))),
                          _) ->
                          Ast.PaApp (_loc,
-                           Ast.PaId (_loc,
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                               Ast.IdUid (_loc, u))),
-                           Ast.PaId (_loc, Ast.IdLid (_loc, name)))
+                           (Ast.PaId (_loc,
+                              (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                 (Ast.IdUid (_loc, u)))))),
+                           (Ast.PaId (_loc, (Ast.IdLid (_loc, name)))))
                      | Ast.PaApp (_loc, a, b) ->
-                         Ast.PaApp (_loc, subst_first_loc a, b)
+                         Ast.PaApp (_loc, (subst_first_loc a), b)
                      | p -> p)
                   in subst_first_loc exp_ast
           in
@@ -9900,13 +10063,13 @@ module Rp =
           
         let peek_fun _loc =
           Ast.ExId (_loc,
-            Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-              Ast.IdLid (_loc, "peek")))
+            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+               (Ast.IdLid (_loc, "peek")))))
           
         let junk_fun _loc =
           Ast.ExId (_loc,
-            Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-              Ast.IdLid (_loc, "junk")))
+            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+               (Ast.IdLid (_loc, "junk")))))
           
         (* Parsers. *)
         (* In syntax generated, many cases are optimisations. *)
@@ -9989,61 +10152,63 @@ module Rp =
             match e with
             | Ast.ExId (_, (Ast.IdLid (_, x))) ->
                 let x = if x = v then strm_n else x
-                in Ast.ExId (_loc, Ast.IdLid (_loc, x))
+                in Ast.ExId (_loc, (Ast.IdLid (_loc, x)))
             | Ast.ExId (_, (Ast.IdUid (_, _))) -> e
             | Ast.ExInt (_, _) -> e
             | Ast.ExChr (_, _) -> e
             | Ast.ExStr (_, _) -> e
             | Ast.ExAcc (_, _, _) -> e
             | Ast.ExLet (_, rf, bi, e) ->
-                Ast.ExLet (_loc, rf, subst_binding v bi, subst v e)
+                Ast.ExLet (_loc, rf, (subst_binding v bi), (subst v e))
             | Ast.ExApp (_, e1, e2) ->
-                Ast.ExApp (_loc, subst v e1, subst v e2)
-            | Ast.ExTup (_, e) -> Ast.ExTup (_loc, subst v e)
+                Ast.ExApp (_loc, (subst v e1), (subst v e2))
+            | Ast.ExTup (_, e) -> Ast.ExTup (_loc, (subst v e))
             | Ast.ExCom (_, e1, e2) ->
-                Ast.ExCom (_loc, subst v e1, subst v e2)
+                Ast.ExCom (_loc, (subst v e1), (subst v e2))
             | _ -> raise Not_found
         and subst_binding v =
           function
           | Ast.BiAnd (_loc, b1, b2) ->
-              Ast.BiAnd (_loc, subst_binding v b1, subst_binding v b2)
+              Ast.BiAnd (_loc, (subst_binding v b1), (subst_binding v b2))
           | Ast.BiEq (_loc, (Ast.PaId (_, (Ast.IdLid (_, v')))), e) ->
-              Ast.BiEq (_loc, Ast.PaId (_loc, Ast.IdLid (_loc, v')),
-                if v = v' then e else subst v e)
+              Ast.BiEq (_loc, (Ast.PaId (_loc, (Ast.IdLid (_loc, v')))),
+                (if v = v' then e else subst v e))
           | _ -> raise Not_found
           
         let stream_pattern_component skont ckont =
           function
           | SpTrm (_loc, p, None) ->
               Ast.ExMat (_loc,
-                Ast.ExApp (_loc, peek_fun _loc,
-                  Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
-                Ast.McOr (_loc,
-                  Ast.McArr (_loc,
-                    Ast.PaApp (_loc,
-                      Ast.PaId (_loc, Ast.IdUid (_loc, "Some")), p),
-                    Ast.ExNil _loc,
-                    Ast.ExSeq (_loc,
-                      Ast.ExSem (_loc,
-                        Ast.ExApp (_loc, junk_fun _loc,
-                          Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
-                        skont))),
-                  Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, ckont)))
+                (Ast.ExApp (_loc, (peek_fun _loc),
+                   (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))),
+                (Ast.McOr (_loc,
+                   (Ast.McArr (_loc,
+                      (Ast.PaApp (_loc,
+                         (Ast.PaId (_loc, (Ast.IdUid (_loc, "Some")))), p)),
+                      (Ast.ExNil _loc),
+                      (Ast.ExSeq (_loc,
+                         (Ast.ExSem (_loc,
+                            (Ast.ExApp (_loc, (junk_fun _loc),
+                               (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))),
+                            skont)))))),
+                   (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc),
+                      ckont)))))
           | SpTrm (_loc, p, (Some w)) ->
               Ast.ExMat (_loc,
-                Ast.ExApp (_loc, peek_fun _loc,
-                  Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
-                Ast.McOr (_loc,
-                  Ast.McArr (_loc,
-                    Ast.PaApp (_loc,
-                      Ast.PaId (_loc, Ast.IdUid (_loc, "Some")), p),
-                    w,
-                    Ast.ExSeq (_loc,
-                      Ast.ExSem (_loc,
-                        Ast.ExApp (_loc, junk_fun _loc,
-                          Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
-                        skont))),
-                  Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, ckont)))
+                (Ast.ExApp (_loc, (peek_fun _loc),
+                   (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))),
+                (Ast.McOr (_loc,
+                   (Ast.McArr (_loc,
+                      (Ast.PaApp (_loc,
+                         (Ast.PaId (_loc, (Ast.IdUid (_loc, "Some")))), p)),
+                      w,
+                      (Ast.ExSeq (_loc,
+                         (Ast.ExSem (_loc,
+                            (Ast.ExApp (_loc, (junk_fun _loc),
+                               (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))),
+                            skont)))))),
+                   (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc),
+                      ckont)))))
           | SpNtr (_loc, p, e) ->
               let e =
                 (match e with
@@ -10059,7 +10224,7 @@ module Rp =
                      when v = strm_n -> e
                  | _ ->
                      Ast.ExApp (_loc, e,
-                       Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))))
+                       (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n))))))
               in
                 if pattern_eq_expression p skont
                 then
@@ -10070,30 +10235,31 @@ module Rp =
                     then e
                     else
                       Ast.ExTry (_loc, e,
-                        Ast.McArr (_loc,
-                          Ast.PaId (_loc,
-                            Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                              Ast.IdUid (_loc, "Failure"))),
-                          Ast.ExNil _loc, ckont))
+                        (Ast.McArr (_loc,
+                           (Ast.PaId (_loc,
+                              (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                                 (Ast.IdUid (_loc, "Failure")))))),
+                           (Ast.ExNil _loc), ckont)))
                 else
                   if is_raise_failure ckont
                   then
-                    Ast.ExLet (_loc, Ast.ReNil, Ast.BiEq (_loc, p, e), skont)
+                    Ast.ExLet (_loc, Ast.ReNil, (Ast.BiEq (_loc, p, e)),
+                      skont)
                   else
                     if
                       pattern_eq_expression
                         (Ast.PaApp (_loc,
-                           Ast.PaId (_loc, Ast.IdUid (_loc, "Some")), p))
+                           (Ast.PaId (_loc, (Ast.IdUid (_loc, "Some")))), p))
                         skont
                     then
                       Ast.ExTry (_loc,
-                        Ast.ExApp (_loc,
-                          Ast.ExId (_loc, Ast.IdUid (_loc, "Some")), e),
-                        Ast.McArr (_loc,
-                          Ast.PaId (_loc,
-                            Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                              Ast.IdUid (_loc, "Failure"))),
-                          Ast.ExNil _loc, ckont))
+                        (Ast.ExApp (_loc,
+                           (Ast.ExId (_loc, (Ast.IdUid (_loc, "Some")))), e)),
+                        (Ast.McArr (_loc,
+                           (Ast.PaId (_loc,
+                              (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                                 (Ast.IdUid (_loc, "Failure")))))),
+                           (Ast.ExNil _loc), ckont)))
                     else
                       if is_raise ckont
                       then
@@ -10102,33 +10268,37 @@ module Rp =
                            then e
                            else
                              Ast.ExTry (_loc, e,
-                               Ast.McArr (_loc,
-                                 Ast.PaId (_loc,
-                                   Ast.IdAcc (_loc,
-                                     Ast.IdUid (_loc, "Stream"),
-                                     Ast.IdUid (_loc, "Failure"))),
-                                 Ast.ExNil _loc, ckont))
+                               (Ast.McArr (_loc,
+                                  (Ast.PaId (_loc,
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Stream")),
+                                        (Ast.IdUid (_loc, "Failure")))))),
+                                  (Ast.ExNil _loc), ckont)))
                          in
                            Ast.ExLet (_loc, Ast.ReNil,
-                             Ast.BiEq (_loc, p, tst), skont))
+                             (Ast.BiEq (_loc, p, tst)), skont))
                       else
                         Ast.ExMat (_loc,
-                          Ast.ExTry (_loc,
-                            Ast.ExApp (_loc,
-                              Ast.ExId (_loc, Ast.IdUid (_loc, "Some")), e),
-                            Ast.McArr (_loc,
-                              Ast.PaId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                                  Ast.IdUid (_loc, "Failure"))),
-                              Ast.ExNil _loc,
-                              Ast.ExId (_loc, Ast.IdUid (_loc, "None")))),
-                          Ast.McOr (_loc,
-                            Ast.McArr (_loc,
-                              Ast.PaApp (_loc,
-                                Ast.PaId (_loc, Ast.IdUid (_loc, "Some")), p),
-                              Ast.ExNil _loc, skont),
-                            Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
-                              ckont)))
+                          (Ast.ExTry (_loc,
+                             (Ast.ExApp (_loc,
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "Some")))),
+                                e)),
+                             (Ast.McArr (_loc,
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Stream")),
+                                      (Ast.IdUid (_loc, "Failure")))))),
+                                (Ast.ExNil _loc),
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "None")))))))),
+                          (Ast.McOr (_loc,
+                             (Ast.McArr (_loc,
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdUid (_loc, "Some")))),
+                                   p)),
+                                (Ast.ExNil _loc), skont)),
+                             (Ast.McArr (_loc, (Ast.PaAny _loc),
+                                (Ast.ExNil _loc), ckont)))))
           | SpStr (_loc, p) ->
               (try
                  match p with
@@ -10137,8 +10307,8 @@ module Rp =
                with
                | Not_found ->
                    Ast.ExLet (_loc, Ast.ReNil,
-                     Ast.BiEq (_loc, p,
-                       Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
+                     (Ast.BiEq (_loc, p,
+                        (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))),
                      skont))
           
         let rec stream_pattern _loc epo e ekont =
@@ -10147,12 +10317,12 @@ module Rp =
               (match epo with
                | Some ep ->
                    Ast.ExLet (_loc, Ast.ReNil,
-                     Ast.BiEq (_loc, ep,
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc,
-                           Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                             Ast.IdLid (_loc, "count"))),
-                         Ast.ExId (_loc, Ast.IdLid (_loc, strm_n)))),
+                     (Ast.BiEq (_loc, ep,
+                        (Ast.ExApp (_loc,
+                           (Ast.ExId (_loc,
+                              (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                                 (Ast.IdLid (_loc, "count")))))),
+                           (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))))),
                      e)
                | _ -> e)
           | (spc, err) :: spcl ->
@@ -10164,12 +10334,12 @@ module Rp =
                      | _ -> Ast.ExStr (_loc, ""))
                   in
                     Ast.ExApp (_loc,
-                      Ast.ExId (_loc, Ast.IdLid (_loc, "raise")),
-                      Ast.ExApp (_loc,
-                        Ast.ExId (_loc,
-                          Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                            Ast.IdUid (_loc, "Error"))),
-                        str))
+                      (Ast.ExId (_loc, (Ast.IdLid (_loc, "raise")))),
+                      (Ast.ExApp (_loc,
+                         (Ast.ExId (_loc,
+                            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                               (Ast.IdUid (_loc, "Error")))))),
+                         str)))
                 in stream_pattern _loc epo e ekont spcl in
               let ckont = ekont err
               in stream_pattern_component skont ckont spc
@@ -10180,7 +10350,7 @@ module Rp =
               (fun (p, w, _loc, spcl, epo, e) acc ->
                  let p =
                    Ast.PaApp (_loc,
-                     Ast.PaId (_loc, Ast.IdUid (_loc, "Some")), p) in
+                     (Ast.PaId (_loc, (Ast.IdUid (_loc, "Some")))), p) in
                  let e =
                    let ekont err =
                      let str =
@@ -10189,33 +10359,35 @@ module Rp =
                        | _ -> Ast.ExStr (_loc, "")
                      in
                        Ast.ExApp (_loc,
-                         Ast.ExId (_loc, Ast.IdLid (_loc, "raise")),
-                         Ast.ExApp (_loc,
-                           Ast.ExId (_loc,
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                               Ast.IdUid (_loc, "Error"))),
-                           str)) in
+                         (Ast.ExId (_loc, (Ast.IdLid (_loc, "raise")))),
+                         (Ast.ExApp (_loc,
+                            (Ast.ExId (_loc,
+                               (Ast.IdAcc (_loc,
+                                  (Ast.IdUid (_loc, "Stream")),
+                                  (Ast.IdUid (_loc, "Error")))))),
+                            str))) in
                    let skont = stream_pattern _loc epo e ekont spcl
                    in
                      Ast.ExSeq (_loc,
-                       Ast.ExSem (_loc,
-                         Ast.ExApp (_loc, junk_fun _loc,
-                           Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
-                         skont))
+                       (Ast.ExSem (_loc,
+                          (Ast.ExApp (_loc, (junk_fun _loc),
+                             (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))),
+                          skont)))
                  in
                    match w with
                    | Some w ->
-                       Ast.McOr (_loc, Ast.McArr (_loc, p, w, e), acc)
+                       Ast.McOr (_loc, (Ast.McArr (_loc, p, w, e)), acc)
                    | None ->
                        Ast.McOr (_loc,
-                         Ast.McArr (_loc, p, Ast.ExNil _loc, e), acc))
+                         (Ast.McArr (_loc, p, (Ast.ExNil _loc), e)), acc))
               tspel (Ast.McNil _loc)
           in
             Ast.ExMat (_loc,
-              Ast.ExApp (_loc, peek_fun _loc,
-                Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
-              Ast.McOr (_loc, pel,
-                Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, ekont ())))
+              (Ast.ExApp (_loc, (peek_fun _loc),
+                 (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))),
+              (Ast.McOr (_loc, pel,
+                 (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc),
+                    (ekont ()))))))
           
         let rec group_terms =
           function
@@ -10227,10 +10399,11 @@ module Rp =
         let rec parser_cases _loc =
           function
           | [] ->
-              Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdLid (_loc, "raise")),
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                    Ast.IdUid (_loc, "Failure"))))
+              Ast.ExApp (_loc,
+                (Ast.ExId (_loc, (Ast.IdLid (_loc, "raise")))),
+                (Ast.ExId (_loc,
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                      (Ast.IdUid (_loc, "Failure")))))))
           | spel ->
               (match group_terms spel with
                | ([], (spcl, epo, e) :: spel) ->
@@ -10246,22 +10419,22 @@ module Rp =
             match bpo with
             | Some bp ->
                 Ast.ExLet (_loc, Ast.ReNil,
-                  Ast.BiEq (_loc, bp,
-                    Ast.ExApp (_loc,
-                      Ast.ExId (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                          Ast.IdLid (_loc, "count"))),
-                      Ast.ExId (_loc, Ast.IdLid (_loc, strm_n)))),
+                  (Ast.BiEq (_loc, bp,
+                     (Ast.ExApp (_loc,
+                        (Ast.ExId (_loc,
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                              (Ast.IdLid (_loc, "count")))))),
+                        (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))))),
                   e)
             | None -> e in
           let p =
-            Ast.PaTyc (_loc, Ast.PaId (_loc, Ast.IdLid (_loc, strm_n)),
-              Ast.TyApp (_loc,
-                Ast.TyId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                    Ast.IdLid (_loc, "t"))),
-                Ast.TyAny _loc))
-          in Ast.ExFun (_loc, Ast.McArr (_loc, p, Ast.ExNil _loc, e))
+            Ast.PaTyc (_loc, (Ast.PaId (_loc, (Ast.IdLid (_loc, strm_n)))),
+              (Ast.TyApp (_loc,
+                 (Ast.TyId (_loc,
+                    (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                       (Ast.IdLid (_loc, "t")))))),
+                 (Ast.TyAny _loc))))
+          in Ast.ExFun (_loc, (Ast.McArr (_loc, p, (Ast.ExNil _loc), e)))
           
         let cparser_match _loc me bpo pc =
           let pc = parser_cases _loc pc in
@@ -10269,12 +10442,12 @@ module Rp =
             match bpo with
             | Some bp ->
                 Ast.ExLet (_loc, Ast.ReNil,
-                  Ast.BiEq (_loc, bp,
-                    Ast.ExApp (_loc,
-                      Ast.ExId (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                          Ast.IdLid (_loc, "count"))),
-                      Ast.ExId (_loc, Ast.IdLid (_loc, strm_n)))),
+                  (Ast.BiEq (_loc, bp,
+                     (Ast.ExApp (_loc,
+                        (Ast.ExId (_loc,
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                              (Ast.IdLid (_loc, "count")))))),
+                        (Ast.ExId (_loc, (Ast.IdLid (_loc, strm_n)))))))),
                   pc)
             | None -> pc in
           let me =
@@ -10286,15 +10459,15 @@ module Rp =
             | Ast.ExId (_, (Ast.IdLid (_, x))) when x = strm_n -> e
             | _ ->
                 Ast.ExLet (_loc, Ast.ReNil,
-                  Ast.BiEq (_loc,
-                    Ast.PaTyc (_loc,
-                      Ast.PaId (_loc, Ast.IdLid (_loc, strm_n)),
-                      Ast.TyApp (_loc,
-                        Ast.TyId (_loc,
-                          Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                            Ast.IdLid (_loc, "t"))),
-                        Ast.TyAny _loc)),
-                    me),
+                  (Ast.BiEq (_loc,
+                     (Ast.PaTyc (_loc,
+                        (Ast.PaId (_loc, (Ast.IdLid (_loc, strm_n)))),
+                        (Ast.TyApp (_loc,
+                           (Ast.TyId (_loc,
+                              (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                                 (Ast.IdLid (_loc, "t")))))),
+                           (Ast.TyAny _loc))))),
+                     me)),
                   e)
           
         (* streams *)
@@ -10321,10 +10494,10 @@ module Rp =
                | Ast.ExId (_, (Ast.IdLid (_, _))) -> f
                | _ ->
                    Ast.ExFun (_loc,
-                     Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, e)))
+                     (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc), e))))
           | _ ->
               Ast.ExFun (_loc,
-                Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, e))
+                (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc), e)))
           
         let rec cstream gloc =
           function
@@ -10332,67 +10505,67 @@ module Rp =
               let _loc = gloc
               in
                 Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                    Ast.IdLid (_loc, "sempty")))
+                  (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                     (Ast.IdLid (_loc, "sempty")))))
           | [ SeTrm (_loc, e) ] ->
               if not_computing e
               then
                 Ast.ExApp (_loc,
-                  Ast.ExId (_loc,
-                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                      Ast.IdLid (_loc, "ising"))),
+                  (Ast.ExId (_loc,
+                     (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                        (Ast.IdLid (_loc, "ising")))))),
                   e)
               else
                 Ast.ExApp (_loc,
-                  Ast.ExId (_loc,
-                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                      Ast.IdLid (_loc, "lsing"))),
-                  slazy _loc e)
+                  (Ast.ExId (_loc,
+                     (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                        (Ast.IdLid (_loc, "lsing")))))),
+                  (slazy _loc e))
           | SeTrm (_loc, e) :: secl ->
               if not_computing e
               then
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                        Ast.IdLid (_loc, "icons"))),
-                    e),
-                  cstream gloc secl)
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                           (Ast.IdLid (_loc, "icons")))))),
+                     e)),
+                  (cstream gloc secl))
               else
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                        Ast.IdLid (_loc, "lcons"))),
-                    slazy _loc e),
-                  cstream gloc secl)
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                           (Ast.IdLid (_loc, "lcons")))))),
+                     (slazy _loc e))),
+                  (cstream gloc secl))
           | [ SeNtr (_loc, e) ] ->
               if not_computing e
               then e
               else
                 Ast.ExApp (_loc,
-                  Ast.ExId (_loc,
-                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                      Ast.IdLid (_loc, "slazy"))),
-                  slazy _loc e)
+                  (Ast.ExId (_loc,
+                     (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                        (Ast.IdLid (_loc, "slazy")))))),
+                  (slazy _loc e))
           | SeNtr (_loc, e) :: secl ->
               if not_computing e
               then
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                        Ast.IdLid (_loc, "iapp"))),
-                    e),
-                  cstream gloc secl)
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                           (Ast.IdLid (_loc, "iapp")))))),
+                     e)),
+                  (cstream gloc secl))
               else
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
-                        Ast.IdLid (_loc, "lapp"))),
-                    slazy _loc e),
-                  cstream gloc secl)
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Stream")),
+                           (Ast.IdLid (_loc, "lapp")))))),
+                     (slazy _loc e))),
+                  (cstream gloc secl))
           
         (* Syntax extensions in Revised Syntax grammar *)
         let _ =
@@ -10471,10 +10644,11 @@ module Rp =
                                 ([ pc ] : 'parser_case_list))));
                          ([ Gram.Skeyword "[";
                             Gram.Slist0sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (parser_case : 'parser_case Gram.Entry.t)),
-                              Gram.Skeyword "|");
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (parser_case :
+                                       'parser_case Gram.Entry.t))),
+                              (Gram.Skeyword "|"));
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ (pcl : 'parser_case list) _
@@ -10590,9 +10764,9 @@ module Rp =
                                              'stream_expr Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun (e : 'stream_expr) _
-                                          (_loc : Gram.Loc.t) -> (e : 'e__13)))) ]) ],
+                                          (_loc : Gram.Loc.t) -> (e : 'e__14)))) ]) ],
                           (Gram.Action.mk
-                             (fun (eo : 'e__13 option)
+                             (fun (eo : 'e__14 option)
                                 (spc : 'stream_patt_comp) (_loc : Gram.Loc.t)
                                 -> ((spc, eo) : 'stream_patt_comp_err)))) ]) ]))
                   ());
@@ -10663,9 +10837,9 @@ module Rp =
                                              'stream_expr Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun (e : 'stream_expr) _
-                                          (_loc : Gram.Loc.t) -> (e : 'e__14)))) ]) ],
+                                          (_loc : Gram.Loc.t) -> (e : 'e__15)))) ]) ],
                           (Gram.Action.mk
-                             (fun (eo : 'e__14 option) (p : 'patt) _
+                             (fun (eo : 'e__15 option) (p : 'patt) _
                                 (_loc : Gram.Loc.t) ->
                                 (SpTrm (_loc, p, eo) : 'stream_patt_comp)))) ]) ]))
                   ());
@@ -10682,7 +10856,7 @@ module Rp =
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_LIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.PaId (_loc, Ast.IdLid (_loc, i)) :
+                                (Ast.PaId (_loc, (Ast.IdLid (_loc, i))) :
                                   'parser_ipatt)))) ]) ]))
                   ());
              Gram.extend (expr : 'expr Gram.Entry.t)
@@ -10959,16 +11133,17 @@ module G =
                            (s)
                            with
                            pattern =
-                             Some (Ast.PaId (_loc, Ast.IdLid (_loc, "x")));
+                             Some (Ast.PaId (_loc, (Ast.IdLid (_loc, "x"))));
                          } ];
                      action =
                        Some
                          (Ast.ExApp (_loc,
-                            Ast.ExId (_loc,
-                              Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Token"),
-                                  Ast.IdLid (_loc, "extract_string")))),
-                            Ast.ExId (_loc, Ast.IdLid (_loc, "x"))));
+                            (Ast.ExId (_loc,
+                               (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Token")),
+                                     (Ast.IdLid (_loc, "extract_string")))))))),
+                            (Ast.ExId (_loc, (Ast.IdLid (_loc, "x"))))));
                    }
                | (* ...; [ symb ]; ... ==> ...; (x = [ symb ] -> x); ... *)
                    { prod = [ ({ pattern = None } as s) ]; action = None } ->
@@ -10978,9 +11153,9 @@ module G =
                            (s)
                            with
                            pattern =
-                             Some (Ast.PaId (_loc, Ast.IdLid (_loc, "x")));
+                             Some (Ast.PaId (_loc, (Ast.IdLid (_loc, "x"))));
                          } ];
-                     action = Some (Ast.ExId (_loc, Ast.IdLid (_loc, "x")));
+                     action = Some (Ast.ExId (_loc, (Ast.IdLid (_loc, "x"))));
                    }
                | (* ...; ([] -> a); ... *)
                    ({ prod = []; action = Some _ } as r) -> r
@@ -10993,29 +11168,29 @@ module G =
         let mklistexp _loc =
           let rec loop top =
             function
-            | [] -> Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))
+            | [] -> Ast.ExId (_loc, (Ast.IdUid (_loc, "[]")))
             | e1 :: el ->
                 let _loc =
                   if top then _loc else Loc.merge (Ast.loc_of_expr e1) _loc
                 in
                   Ast.ExApp (_loc,
-                    Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                      e1),
-                    loop false el)
+                    (Ast.ExApp (_loc,
+                       (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))), e1)),
+                    (loop false el))
           in loop true
           
         let mklistpat _loc =
           let rec loop top =
             function
-            | [] -> Ast.PaId (_loc, Ast.IdUid (_loc, "[]"))
+            | [] -> Ast.PaId (_loc, (Ast.IdUid (_loc, "[]")))
             | p1 :: pl ->
                 let _loc =
                   if top then _loc else Loc.merge (Ast.loc_of_patt p1) _loc
                 in
                   Ast.PaApp (_loc,
-                    Ast.PaApp (_loc, Ast.PaId (_loc, Ast.IdUid (_loc, "::")),
-                      p1),
-                    loop false pl)
+                    (Ast.PaApp (_loc,
+                       (Ast.PaId (_loc, (Ast.IdUid (_loc, "::")))), p1)),
+                    (loop false pl))
           in loop true
           
         let rec expr_fa al =
@@ -11025,9 +11200,9 @@ module G =
           
         let rec make_ctyp styp tvar =
           match styp with
-          | STlid (_loc, s) -> Ast.TyId (_loc, Ast.IdLid (_loc, s))
+          | STlid (_loc, s) -> Ast.TyId (_loc, (Ast.IdLid (_loc, s)))
           | STapp (_loc, t1, t2) ->
-              Ast.TyApp (_loc, make_ctyp t1 tvar, make_ctyp t2 tvar)
+              Ast.TyApp (_loc, (make_ctyp t1 tvar), (make_ctyp t2 tvar))
           | STquo (_loc, s) -> Ast.TyQuo (_loc, s)
           | STself (_loc, x) ->
               if tvar = ""
@@ -11038,11 +11213,12 @@ module G =
               else Ast.TyQuo (_loc, tvar)
           | STtok _loc ->
               Ast.TyId (_loc,
-                Ast.IdAcc (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                    Ast.IdUid (_loc, "Token")),
-                  Ast.IdLid (_loc, "t")))
-          | STstring_tok _loc -> Ast.TyId (_loc, Ast.IdLid (_loc, "string"))
+                (Ast.IdAcc (_loc,
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                      (Ast.IdUid (_loc, "Token")))),
+                   (Ast.IdLid (_loc, "t")))))
+          | STstring_tok _loc ->
+              Ast.TyId (_loc, (Ast.IdLid (_loc, "string")))
           | STtyp t -> t
           
         let make_ctyp_patt styp tvar patt =
@@ -11060,11 +11236,11 @@ module G =
           | t -> let _loc = Ast.loc_of_expr expr in Ast.ExTyc (_loc, expr, t)
           
         let text_of_action _loc psl rtvar act tvar =
-          let locid = Ast.PaId (_loc, Ast.IdLid (_loc, !Loc.name)) in
+          let locid = Ast.PaId (_loc, (Ast.IdLid (_loc, !Loc.name))) in
           let act =
             match act with
             | Some act -> act
-            | None -> Ast.ExId (_loc, Ast.IdUid (_loc, "()")) in
+            | None -> Ast.ExId (_loc, (Ast.IdUid (_loc, "()"))) in
           let (tok_match_pl, act, _) =
             List.fold_left
               (fun (((tok_match_pl, act, i) as accu)) ->
@@ -11080,14 +11256,15 @@ module G =
                      } ->
                      (tok_match_pl,
                       (Ast.ExLet (_loc, Ast.ReNil,
-                         Ast.BiEq (_loc,
-                           Ast.PaId (_loc, Ast.IdLid (_loc, s)),
-                           Ast.ExApp (_loc,
-                             Ast.ExId (_loc,
-                               Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Token"),
-                                   Ast.IdLid (_loc, "extract_string")))),
-                             Ast.ExId (_loc, Ast.IdLid (_loc, s)))),
+                         (Ast.BiEq (_loc,
+                            (Ast.PaId (_loc, (Ast.IdLid (_loc, s)))),
+                            (Ast.ExApp (_loc,
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Token")),
+                                        (Ast.IdLid (_loc, "extract_string")))))))),
+                               (Ast.ExId (_loc, (Ast.IdLid (_loc, s)))))))),
                          act)),
                       i)
                  | { pattern = Some p; text = TXtok (_, _, _) } ->
@@ -11096,53 +11273,54 @@ module G =
                        ((Some
                            (match tok_match_pl with
                             | None ->
-                                ((Ast.ExId (_loc, Ast.IdLid (_loc, id))), p)
+                                ((Ast.ExId (_loc, (Ast.IdLid (_loc, id)))),
+                                 p)
                             | Some ((tok_pl, match_pl)) ->
                                 ((Ast.ExCom (_loc,
-                                    Ast.ExId (_loc, Ast.IdLid (_loc, id)),
+                                    (Ast.ExId (_loc, (Ast.IdLid (_loc, id)))),
                                     tok_pl)),
                                  (Ast.PaCom (_loc, p, match_pl))))),
                         act, (succ i))
                  | _ -> accu)
               (None, act, 0) psl in
           let e =
-            let e1 = Ast.ExTyc (_loc, act, Ast.TyQuo (_loc, rtvar)) in
+            let e1 = Ast.ExTyc (_loc, act, (Ast.TyQuo (_loc, rtvar))) in
             let e2 =
               match tok_match_pl with
               | None -> e1
               | Some ((Ast.ExCom (_, t1, t2), Ast.PaCom (_, p1, p2))) ->
                   Ast.ExMat (_loc,
-                    Ast.ExTup (_loc, Ast.ExCom (_loc, t1, t2)),
-                    Ast.McOr (_loc,
-                      Ast.McArr (_loc,
-                        Ast.PaTup (_loc, Ast.PaCom (_loc, p1, p2)),
-                        Ast.ExNil _loc, e1),
-                      Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
-                        Ast.ExAsf _loc)))
+                    (Ast.ExTup (_loc, (Ast.ExCom (_loc, t1, t2)))),
+                    (Ast.McOr (_loc,
+                       (Ast.McArr (_loc,
+                          (Ast.PaTup (_loc, (Ast.PaCom (_loc, p1, p2)))),
+                          (Ast.ExNil _loc), e1)),
+                       (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc),
+                          (Ast.ExAsf _loc))))))
               | Some ((tok, match_)) ->
                   Ast.ExMat (_loc, tok,
-                    Ast.McOr (_loc,
-                      Ast.McArr (_loc, match_, Ast.ExNil _loc, e1),
-                      Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
-                        Ast.ExAsf _loc)))
+                    (Ast.McOr (_loc,
+                       (Ast.McArr (_loc, match_, (Ast.ExNil _loc), e1)),
+                       (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc),
+                          (Ast.ExAsf _loc))))))
             in
               Ast.ExFun (_loc,
-                Ast.McArr (_loc,
-                  Ast.PaTyc (_loc, locid,
-                    Ast.TyId (_loc,
-                      Ast.IdAcc (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                          Ast.IdUid (_loc, "Loc")),
-                        Ast.IdLid (_loc, "t")))),
-                  Ast.ExNil _loc, e2)) in
+                (Ast.McArr (_loc,
+                   (Ast.PaTyc (_loc, locid,
+                      (Ast.TyId (_loc,
+                         (Ast.IdAcc (_loc,
+                            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                               (Ast.IdUid (_loc, "Loc")))),
+                            (Ast.IdLid (_loc, "t")))))))),
+                   (Ast.ExNil _loc), e2))) in
           let (txt, _) =
             List.fold_left
               (fun (txt, i) s ->
                  match s.pattern with
                  | None | Some (Ast.PaAny _) ->
                      ((Ast.ExFun (_loc,
-                         Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
-                           txt))),
+                         (Ast.McArr (_loc, (Ast.PaAny _loc),
+                            (Ast.ExNil _loc), txt)))),
                       i)
                  | Some
                      (Ast.PaAli (_,
@@ -11152,39 +11330,40 @@ module G =
                      let p = make_ctyp_patt s.styp tvar p
                      in
                        ((Ast.ExFun (_loc,
-                           Ast.McArr (_loc, p, Ast.ExNil _loc, txt))),
+                           (Ast.McArr (_loc, p, (Ast.ExNil _loc), txt)))),
                         i)
                  | Some p when Ast.is_irrefut_patt p ->
                      let p = make_ctyp_patt s.styp tvar p
                      in
                        ((Ast.ExFun (_loc,
-                           Ast.McArr (_loc, p, Ast.ExNil _loc, txt))),
+                           (Ast.McArr (_loc, p, (Ast.ExNil _loc), txt)))),
                         i)
                  | Some _ ->
                      let p =
                        make_ctyp_patt s.styp tvar
                          (Ast.PaId (_loc,
-                            Ast.IdLid (_loc, "__camlp4_" ^ (string_of_int i))))
+                            (Ast.IdLid (_loc,
+                               ("__camlp4_" ^ (string_of_int i))))))
                      in
                        ((Ast.ExFun (_loc,
-                           Ast.McArr (_loc, p, Ast.ExNil _loc, txt))),
+                           (Ast.McArr (_loc, p, (Ast.ExNil _loc), txt)))),
                         (succ i)))
               (e, 0) psl in
           let txt =
             if !meta_action
             then
               Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Obj"),
-                    Ast.IdLid (_loc, "magic"))),
-                MetaAst.Expr.meta_expr _loc txt)
+                (Ast.ExId (_loc,
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Obj")),
+                      (Ast.IdLid (_loc, "magic")))))),
+                (MetaAst.Expr.meta_expr _loc txt))
             else txt
           in
             Ast.ExApp (_loc,
-              Ast.ExId (_loc,
-                Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Action"),
-                    Ast.IdLid (_loc, "mk")))),
+              (Ast.ExId (_loc,
+                 (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                    (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Action")),
+                       (Ast.IdLid (_loc, "mk")))))))),
               txt)
           
         let srules loc t rl tvar =
@@ -11201,150 +11380,154 @@ module G =
                 List.fold_right
                   (fun t el ->
                      Ast.ExApp (_loc,
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                         make_expr entry "" t),
+                       (Ast.ExApp (_loc,
+                          (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))),
+                          (make_expr entry "" t))),
                        el))
-                  tl (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+                  tl (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))))
               in
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExApp (_loc,
-                      Ast.ExId (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                          Ast.IdUid (_loc, "Smeta"))),
-                      Ast.ExStr (_loc, n)),
-                    el),
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Action"),
-                          Ast.IdLid (_loc, "mk")))),
-                    make_ctyp_expr t tvar e))
+                  (Ast.ExApp (_loc,
+                     (Ast.ExApp (_loc,
+                        (Ast.ExId (_loc,
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                              (Ast.IdUid (_loc, "Smeta")))))),
+                        (Ast.ExStr (_loc, n)))),
+                     el)),
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Action")),
+                              (Ast.IdLid (_loc, "mk")))))))),
+                     (make_ctyp_expr t tvar e))))
           | TXlist (_loc, min, t, ts) ->
               let txt = make_expr entry "" t.text
               in
                 (match (min, ts) with
                  | (false, None) ->
                      Ast.ExApp (_loc,
-                       Ast.ExId (_loc,
-                         Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                           Ast.IdUid (_loc, "Slist0"))),
+                       (Ast.ExId (_loc,
+                          (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                             (Ast.IdUid (_loc, "Slist0")))))),
                        txt)
                  | (true, None) ->
                      Ast.ExApp (_loc,
-                       Ast.ExId (_loc,
-                         Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                           Ast.IdUid (_loc, "Slist1"))),
+                       (Ast.ExId (_loc,
+                          (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                             (Ast.IdUid (_loc, "Slist1")))))),
                        txt)
                  | (false, Some s) ->
                      let x = make_expr entry tvar s.text
                      in
                        Ast.ExApp (_loc,
-                         Ast.ExApp (_loc,
-                           Ast.ExId (_loc,
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                               Ast.IdUid (_loc, "Slist0sep"))),
-                           txt),
+                         (Ast.ExApp (_loc,
+                            (Ast.ExId (_loc,
+                               (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                  (Ast.IdUid (_loc, "Slist0sep")))))),
+                            txt)),
                          x)
                  | (true, Some s) ->
                      let x = make_expr entry tvar s.text
                      in
                        Ast.ExApp (_loc,
-                         Ast.ExApp (_loc,
-                           Ast.ExId (_loc,
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                               Ast.IdUid (_loc, "Slist1sep"))),
-                           txt),
+                         (Ast.ExApp (_loc,
+                            (Ast.ExId (_loc,
+                               (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                  (Ast.IdUid (_loc, "Slist1sep")))))),
+                            txt)),
                          x))
           | TXnext _loc ->
               Ast.ExId (_loc,
-                Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                  Ast.IdUid (_loc, "Snext")))
+                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                   (Ast.IdUid (_loc, "Snext")))))
           | TXnterm (_loc, n, lev) ->
               (match lev with
                | Some lab ->
                    Ast.ExApp (_loc,
-                     Ast.ExApp (_loc,
-                       Ast.ExId (_loc,
-                         Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                           Ast.IdUid (_loc, "Snterml"))),
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc,
-                           Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Entry"),
-                               Ast.IdLid (_loc, "obj")))),
-                         Ast.ExTyc (_loc, n.expr,
-                           Ast.TyApp (_loc,
-                             Ast.TyId (_loc,
-                               Ast.IdAcc (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                                   Ast.IdUid (_loc, "Entry")),
-                                 Ast.IdLid (_loc, "t"))),
-                             Ast.TyQuo (_loc, n.tvar))))),
-                     Ast.ExStr (_loc, lab))
+                     (Ast.ExApp (_loc,
+                        (Ast.ExId (_loc,
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                              (Ast.IdUid (_loc, "Snterml")))))),
+                        (Ast.ExApp (_loc,
+                           (Ast.ExId (_loc,
+                              (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                 (Ast.IdAcc (_loc,
+                                    (Ast.IdUid (_loc, "Entry")),
+                                    (Ast.IdLid (_loc, "obj")))))))),
+                           (Ast.ExTyc (_loc, n.expr,
+                              (Ast.TyApp (_loc,
+                                 (Ast.TyId (_loc,
+                                    (Ast.IdAcc (_loc,
+                                       (Ast.IdAcc (_loc,
+                                          (Ast.IdUid (_loc, gm)),
+                                          (Ast.IdUid (_loc, "Entry")))),
+                                       (Ast.IdLid (_loc, "t")))))),
+                                 (Ast.TyQuo (_loc, n.tvar)))))))))),
+                     (Ast.ExStr (_loc, lab)))
                | None ->
                    if n.tvar = tvar
                    then
                      Ast.ExId (_loc,
-                       Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                         Ast.IdUid (_loc, "Sself")))
+                       (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                          (Ast.IdUid (_loc, "Sself")))))
                    else
                      Ast.ExApp (_loc,
-                       Ast.ExId (_loc,
-                         Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                           Ast.IdUid (_loc, "Snterm"))),
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc,
-                           Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Entry"),
-                               Ast.IdLid (_loc, "obj")))),
-                         Ast.ExTyc (_loc, n.expr,
-                           Ast.TyApp (_loc,
-                             Ast.TyId (_loc,
-                               Ast.IdAcc (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                                   Ast.IdUid (_loc, "Entry")),
-                                 Ast.IdLid (_loc, "t"))),
-                             Ast.TyQuo (_loc, n.tvar))))))
+                       (Ast.ExId (_loc,
+                          (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                             (Ast.IdUid (_loc, "Snterm")))))),
+                       (Ast.ExApp (_loc,
+                          (Ast.ExId (_loc,
+                             (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                (Ast.IdAcc (_loc,
+                                   (Ast.IdUid (_loc, "Entry")),
+                                   (Ast.IdLid (_loc, "obj")))))))),
+                          (Ast.ExTyc (_loc, n.expr,
+                             (Ast.TyApp (_loc,
+                                (Ast.TyId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, gm)),
+                                         (Ast.IdUid (_loc, "Entry")))),
+                                      (Ast.IdLid (_loc, "t")))))),
+                                (Ast.TyQuo (_loc, n.tvar))))))))))
           | TXopt (_loc, t) ->
               Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                    Ast.IdUid (_loc, "Sopt"))),
-                make_expr entry "" t)
+                (Ast.ExId (_loc,
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                      (Ast.IdUid (_loc, "Sopt")))))),
+                (make_expr entry "" t))
           | TXtry (_loc, t) ->
               Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                    Ast.IdUid (_loc, "Stry"))),
-                make_expr entry "" t)
+                (Ast.ExId (_loc,
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                      (Ast.IdUid (_loc, "Stry")))))),
+                (make_expr entry "" t))
           | TXrules (_loc, rl) ->
               Ast.ExApp (_loc,
-                Ast.ExApp (_loc,
-                  Ast.ExId (_loc,
-                    Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                      Ast.IdLid (_loc, "srules"))),
-                  entry.expr),
-                make_expr_rules _loc entry rl "")
+                (Ast.ExApp (_loc,
+                   (Ast.ExId (_loc,
+                      (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                         (Ast.IdLid (_loc, "srules")))))),
+                   entry.expr)),
+                (make_expr_rules _loc entry rl ""))
           | TXself _loc ->
               Ast.ExId (_loc,
-                Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                  Ast.IdUid (_loc, "Sself")))
+                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                   (Ast.IdUid (_loc, "Sself")))))
           | TXkwd (_loc, kwd) ->
               Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                    Ast.IdUid (_loc, "Skeyword"))),
-                Ast.ExStr (_loc, kwd))
+                (Ast.ExId (_loc,
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                      (Ast.IdUid (_loc, "Skeyword")))))),
+                (Ast.ExStr (_loc, kwd)))
           | TXtok (_loc, match_fun, descr) ->
               Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                    Ast.IdUid (_loc, "Stoken"))),
-                Ast.ExTup (_loc,
-                  Ast.ExCom (_loc, match_fun,
-                    Ast.ExStr (_loc, Ast.safe_string_escaped descr))))
+                (Ast.ExId (_loc,
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                      (Ast.IdUid (_loc, "Stoken")))))),
+                (Ast.ExTup (_loc,
+                   (Ast.ExCom (_loc, match_fun,
+                      (Ast.ExStr (_loc, (Ast.safe_string_escaped descr))))))))
         and make_expr_rules _loc n rl tvar =
           List.fold_left
             (fun txt (sl, ac) ->
@@ -11354,26 +11537,28 @@ module G =
                       let x = make_expr n tvar t
                       in
                         Ast.ExApp (_loc,
-                          Ast.ExApp (_loc,
-                            Ast.ExId (_loc, Ast.IdUid (_loc, "::")), x),
+                          (Ast.ExApp (_loc,
+                             (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))), x)),
                           txt))
-                   sl (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+                   sl (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))))
                in
                  Ast.ExApp (_loc,
-                   Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                     Ast.ExTup (_loc, Ast.ExCom (_loc, sl, ac))),
+                   (Ast.ExApp (_loc,
+                      (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))),
+                      (Ast.ExTup (_loc, (Ast.ExCom (_loc, sl, ac)))))),
                    txt))
-            (Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) rl
+            (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]")))) rl
           
         let expr_of_delete_rule _loc n sl =
           let sl =
             List.fold_right
               (fun s e ->
                  Ast.ExApp (_loc,
-                   Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                     make_expr n "" s.text),
+                   (Ast.ExApp (_loc,
+                      (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))),
+                      (make_expr n "" s.text))),
                    e))
-              sl (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+              sl (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))))
           in ((n.expr), sl)
           
         let rec tvar_of_ident =
@@ -11472,19 +11657,19 @@ module G =
             let _loc = e.name.loc
             in
               Ast.ExTyc (_loc, x.expr,
-                Ast.TyApp (_loc,
-                  Ast.TyId (_loc,
-                    Ast.IdAcc (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                        Ast.IdUid (_loc, "Entry")),
-                      Ast.IdLid (_loc, "t"))),
-                  Ast.TyQuo (_loc, x.tvar))) in
+                (Ast.TyApp (_loc,
+                   (Ast.TyId (_loc,
+                      (Ast.IdAcc (_loc,
+                         (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                            (Ast.IdUid (_loc, "Entry")))),
+                         (Ast.IdLid (_loc, "t")))))),
+                   (Ast.TyQuo (_loc, x.tvar))))) in
           let pos =
             match e.pos with
             | Some pos ->
-                Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdUid (_loc, "Some")),
-                  pos)
-            | None -> Ast.ExId (_loc, Ast.IdUid (_loc, "None")) in
+                Ast.ExApp (_loc,
+                  (Ast.ExId (_loc, (Ast.IdUid (_loc, "Some")))), pos)
+            | None -> Ast.ExId (_loc, (Ast.IdUid (_loc, "None"))) in
           let txt =
             List.fold_right
               (fun level txt ->
@@ -11492,28 +11677,29 @@ module G =
                    match level.label with
                    | Some lab ->
                        Ast.ExApp (_loc,
-                         Ast.ExId (_loc, Ast.IdUid (_loc, "Some")),
-                         Ast.ExStr (_loc, lab))
-                   | None -> Ast.ExId (_loc, Ast.IdUid (_loc, "None")) in
+                         (Ast.ExId (_loc, (Ast.IdUid (_loc, "Some")))),
+                         (Ast.ExStr (_loc, lab)))
+                   | None -> Ast.ExId (_loc, (Ast.IdUid (_loc, "None"))) in
                  let ass =
                    match level.assoc with
                    | Some ass ->
                        Ast.ExApp (_loc,
-                         Ast.ExId (_loc, Ast.IdUid (_loc, "Some")), ass)
-                   | None -> Ast.ExId (_loc, Ast.IdUid (_loc, "None")) in
+                         (Ast.ExId (_loc, (Ast.IdUid (_loc, "Some")))), ass)
+                   | None -> Ast.ExId (_loc, (Ast.IdUid (_loc, "None"))) in
                  let txt =
                    let rl =
                      srules _loc e.name.tvar level.rules e.name.tvar in
                    let e = make_expr_rules _loc e.name rl e.name.tvar
                    in
                      Ast.ExApp (_loc,
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                         Ast.ExTup (_loc,
-                           Ast.ExCom (_loc, lab, Ast.ExCom (_loc, ass, e)))),
+                       (Ast.ExApp (_loc,
+                          (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))),
+                          (Ast.ExTup (_loc,
+                             (Ast.ExCom (_loc, lab,
+                                (Ast.ExCom (_loc, ass, e)))))))),
                        txt)
                  in txt)
-              e.levels (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+              e.levels (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))))
           in (ent, pos, txt)
           
         let let_in_of_extend _loc gram gl el args =
@@ -11542,28 +11728,28 @@ module G =
                     | Ast.ExId (_, (Ast.IdLid (_, i))) -> i
                     | _ -> failwith "internal error in the Grammar extension")
                  in
-                   Ast.BiEq (_loc, Ast.PaId (_loc, Ast.IdLid (_loc, i)),
-                     Ast.ExTyc (_loc,
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc,
-                           Ast.IdLid (_loc, "grammar_entry_create")),
-                         Ast.ExStr (_loc, i)),
-                       Ast.TyApp (_loc,
-                         Ast.TyId (_loc,
-                           Ast.IdAcc (_loc,
-                             Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                               Ast.IdUid (_loc, "Entry")),
-                             Ast.IdLid (_loc, "t"))),
-                         Ast.TyQuo (_loc, x)))) in
+                   Ast.BiEq (_loc, (Ast.PaId (_loc, (Ast.IdLid (_loc, i)))),
+                     (Ast.ExTyc (_loc,
+                        (Ast.ExApp (_loc,
+                           (Ast.ExId (_loc,
+                              (Ast.IdLid (_loc, "grammar_entry_create")))),
+                           (Ast.ExStr (_loc, i)))),
+                        (Ast.TyApp (_loc,
+                           (Ast.TyId (_loc,
+                              (Ast.IdAcc (_loc,
+                                 (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                    (Ast.IdUid (_loc, "Entry")))),
+                                 (Ast.IdLid (_loc, "t")))))),
+                           (Ast.TyQuo (_loc, x))))))) in
                let expr_of_name { expr = e; tvar = x; loc = _loc } =
                  Ast.ExTyc (_loc, e,
-                   Ast.TyApp (_loc,
-                     Ast.TyId (_loc,
-                       Ast.IdAcc (_loc,
-                         Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                           Ast.IdUid (_loc, "Entry")),
-                         Ast.IdLid (_loc, "t"))),
-                     Ast.TyQuo (_loc, x))) in
+                   (Ast.TyApp (_loc,
+                      (Ast.TyId (_loc,
+                         (Ast.IdAcc (_loc,
+                            (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                               (Ast.IdUid (_loc, "Entry")))),
+                            (Ast.IdLid (_loc, "t")))))),
+                      (Ast.TyQuo (_loc, x))))) in
                let e =
                  (match ll with
                   | [] -> args
@@ -11572,30 +11758,31 @@ module G =
                         List.fold_right
                           (fun name acc ->
                              Ast.BiAnd (_loc, acc,
-                               local_binding_of_name name))
+                               (local_binding_of_name name)))
                           xs (local_binding_of_name x) in
                       let entry_mk =
                         (match gram with
                          | Some g ->
                              Ast.ExApp (_loc,
-                               Ast.ExId (_loc,
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                                   Ast.IdAcc (_loc,
-                                     Ast.IdUid (_loc, "Entry"),
-                                     Ast.IdLid (_loc, "mk")))),
-                               Ast.ExId (_loc, g))
+                               (Ast.ExId (_loc,
+                                  (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Entry")),
+                                        (Ast.IdLid (_loc, "mk")))))))),
+                               (Ast.ExId (_loc, g)))
                          | None ->
                              Ast.ExId (_loc,
-                               Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Entry"),
-                                   Ast.IdLid (_loc, "mk")))))
+                               (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Entry")),
+                                     (Ast.IdLid (_loc, "mk"))))))))
                       in
                         Ast.ExLet (_loc, Ast.ReNil,
-                          Ast.BiEq (_loc,
-                            Ast.PaId (_loc,
-                              Ast.IdLid (_loc, "grammar_entry_create")),
-                            entry_mk),
-                          Ast.ExLet (_loc, Ast.ReNil, locals, args)))
+                          (Ast.BiEq (_loc,
+                             (Ast.PaId (_loc,
+                                (Ast.IdLid (_loc, "grammar_entry_create")))),
+                             entry_mk)),
+                          (Ast.ExLet (_loc, Ast.ReNil, locals, args))))
                in
                  (match nl with
                   | [] -> e
@@ -11604,10 +11791,11 @@ module G =
                         List.fold_right
                           (fun name acc ->
                              Ast.BiAnd (_loc, acc,
-                               Ast.BiEq (_loc, Ast.PaAny _loc,
-                                 expr_of_name name)))
+                               (Ast.BiEq (_loc, (Ast.PaAny _loc),
+                                  (expr_of_name name)))))
                           xs
-                          (Ast.BiEq (_loc, Ast.PaAny _loc, expr_of_name x))
+                          (Ast.BiEq (_loc, (Ast.PaAny _loc),
+                             (expr_of_name x)))
                       in Ast.ExLet (_loc, Ast.ReNil, globals, e)))
           
         class subst gmod =
@@ -11630,41 +11818,42 @@ module G =
                    let (ent, pos, txt) = text_of_entry e.name.loc e in
                    let e =
                      Ast.ExApp (_loc,
-                       Ast.ExApp (_loc,
-                         Ast.ExId (_loc,
-                           Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                             Ast.IdLid (_loc, "extend"))),
-                         ent),
-                       Ast.ExApp (_loc,
-                         Ast.ExFun (_loc,
-                           Ast.McArr (_loc,
-                             Ast.PaId (_loc, Ast.IdUid (_loc, "()")),
-                             Ast.ExNil _loc,
-                             Ast.ExTup (_loc, Ast.ExCom (_loc, pos, txt)))),
-                         Ast.ExId (_loc, Ast.IdUid (_loc, "()"))))
+                       (Ast.ExApp (_loc,
+                          (Ast.ExId (_loc,
+                             (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                                (Ast.IdLid (_loc, "extend")))))),
+                          ent)),
+                       (Ast.ExApp (_loc,
+                          (Ast.ExFun (_loc,
+                             (Ast.McArr (_loc,
+                                (Ast.PaId (_loc, (Ast.IdUid (_loc, "()")))),
+                                (Ast.ExNil _loc),
+                                (Ast.ExTup (_loc,
+                                   (Ast.ExCom (_loc, pos, txt)))))))),
+                          (Ast.ExId (_loc, (Ast.IdUid (_loc, "()")))))))
                    in
                      if !split_ext
                      then
                        Ast.ExLet (_loc, Ast.ReNil,
-                         Ast.BiEq (_loc,
-                           Ast.PaId (_loc, Ast.IdLid (_loc, "aux")),
-                           Ast.ExFun (_loc,
-                             Ast.McArr (_loc,
-                               Ast.PaId (_loc, Ast.IdUid (_loc, "()")),
-                               Ast.ExNil _loc, e))),
-                         Ast.ExApp (_loc,
-                           Ast.ExId (_loc, Ast.IdLid (_loc, "aux")),
-                           Ast.ExId (_loc, Ast.IdUid (_loc, "()"))))
+                         (Ast.BiEq (_loc,
+                            (Ast.PaId (_loc, (Ast.IdLid (_loc, "aux")))),
+                            (Ast.ExFun (_loc,
+                               (Ast.McArr (_loc,
+                                  (Ast.PaId (_loc, (Ast.IdUid (_loc, "()")))),
+                                  (Ast.ExNil _loc), e)))))),
+                         (Ast.ExApp (_loc,
+                            (Ast.ExId (_loc, (Ast.IdLid (_loc, "aux")))),
+                            (Ast.ExId (_loc, (Ast.IdUid (_loc, "()")))))))
                      else e)
                 el
             in
               match el with
-              | [] -> Ast.ExId (_loc, Ast.IdUid (_loc, "()"))
+              | [] -> Ast.ExId (_loc, (Ast.IdUid (_loc, "()")))
               | [ e ] -> e
               | e :: el ->
                   Ast.ExSeq (_loc,
-                    List.fold_left (fun acc x -> Ast.ExSem (_loc, acc, x)) e
-                      el)
+                    (List.fold_left (fun acc x -> Ast.ExSem (_loc, acc, x)) e
+                       el))
           in subst_gmod (let_in_of_extend _loc gram gl el args) gmod
           
         let wildcarder =
@@ -11685,15 +11874,15 @@ module G =
             if Ast.is_irrefut_patt p'
             then
               Ast.ExFun (_loc,
-                Ast.McArr (_loc, p', Ast.ExNil _loc,
-                  Ast.ExId (_loc, Ast.IdUid (_loc, "True"))))
+                (Ast.McArr (_loc, p', (Ast.ExNil _loc),
+                   (Ast.ExId (_loc, (Ast.IdUid (_loc, "True")))))))
             else
               Ast.ExFun (_loc,
-                Ast.McOr (_loc,
-                  Ast.McArr (_loc, p', Ast.ExNil _loc,
-                    Ast.ExId (_loc, Ast.IdUid (_loc, "True"))),
-                  Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
-                    Ast.ExId (_loc, Ast.IdUid (_loc, "False"))))) in
+                (Ast.McOr (_loc,
+                   (Ast.McArr (_loc, p', (Ast.ExNil _loc),
+                      (Ast.ExId (_loc, (Ast.IdUid (_loc, "True")))))),
+                   (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc),
+                      (Ast.ExId (_loc, (Ast.IdUid (_loc, "False"))))))))) in
           let descr = string_of_patt p' in
           let text = TXtok (_loc, match_fun, descr)
           in { used = []; text = text; styp = t; pattern = Some p; }
@@ -11830,9 +12019,9 @@ module G =
                                              'semi_sep Gram.Entry.t)) ],
                                     (Gram.Action.mk
                                        (fun _ (e : 'entry)
-                                          (_loc : Gram.Loc.t) -> (e : 'e__15)))) ]) ],
+                                          (_loc : Gram.Loc.t) -> (e : 'e__16)))) ]) ],
                           (Gram.Action.mk
-                             (fun (el : 'e__15 list)
+                             (fun (el : 'e__16 list)
                                 (global_list : 'global option)
                                 ((gram, g) : 'extend_header)
                                 (_loc : Gram.Loc.t) ->
@@ -11851,12 +12040,12 @@ module G =
                               (Gram.Entry.obj (name : 'name Gram.Entry.t));
                             Gram.Skeyword ":";
                             Gram.Slist0sep
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (symbol : 'symbol Gram.Entry.t))),
                               (Gram.Snterm
                                  (Gram.Entry.obj
-                                    (symbol : 'symbol Gram.Entry.t)),
-                              Gram.Snterm
-                                (Gram.Entry.obj
-                                   (semi_sep : 'semi_sep Gram.Entry.t))) ],
+                                    (semi_sep : 'semi_sep Gram.Entry.t)))) ],
                           (Gram.Action.mk
                              (fun (sl : 'symbol list) _ (n : 'name)
                                 (g : 'qualuid) (_loc : Gram.Loc.t) ->
@@ -11864,67 +12053,16 @@ module G =
                                  in
                                    subst_gmod
                                      (Ast.ExApp (_loc,
-                                        Ast.ExApp (_loc,
-                                          Ast.ExId (_loc,
-                                            Ast.IdAcc (_loc,
-                                              Ast.IdUid (_loc, gm),
-                                              Ast.IdLid (_loc, "delete_rule"))),
-                                          e),
+                                        (Ast.ExApp (_loc,
+                                           (Ast.ExId (_loc,
+                                              (Ast.IdAcc (_loc,
+                                                 (Ast.IdUid (_loc, gm)),
+                                                 (Ast.IdLid (_loc,
+                                                    "delete_rule")))))),
+                                           e)),
                                         b))
                                      g :
                                   'delete_rule_body)))) ]) ]))
-                  ());
-             Gram.extend (qualuid : 'qualuid Gram.Entry.t)
-               ((fun () ->
-                   (None,
-                    [ (None, None,
-                       [ ([ Gram.srules qualuid
-                              [ ([ Gram.Stoken
-                                     (((function
-                                        | UIDENT "GLOBAL" -> true
-                                        | _ -> false),
-                                       "UIDENT \"GLOBAL\"")) ],
-                                 (Gram.Action.mk
-                                    (fun (__camlp4_0 : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       match __camlp4_0 with
-                                       | UIDENT "GLOBAL" -> (() : 'e__16)
-                                       | _ -> assert false)));
-                                ([ Gram.Stoken
-                                     (((function
-                                        | LIDENT ((_)) -> true
-                                        | _ -> false),
-                                       "LIDENT ((_))")) ],
-                                 (Gram.Action.mk
-                                    (fun (__camlp4_0 : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       match __camlp4_0 with
-                                       | LIDENT ((_)) -> (() : 'e__16)
-                                       | _ -> assert false))) ] ],
-                          (Gram.Action.mk
-                             (fun _ (_loc : Gram.Loc.t) ->
-                                (Loc.raise _loc
-                                   (Stream.Error
-                                      "Deprecated syntax, the grammar module is expected") :
-                                  'qualuid)))) ]);
-                      (None, None,
-                       [ ([ Gram.Stoken
-                              (((function | UIDENT ((_)) -> true | _ -> false),
-                                "UIDENT _")) ],
-                          (Gram.Action.mk
-                             (fun (i : Gram.Token.t) (_loc : Gram.Loc.t) ->
-                                (let i = Gram.Token.extract_string i
-                                 in Ast.IdUid (_loc, i) : 'qualuid))));
-                         ([ Gram.Stoken
-                              (((function | UIDENT ((_)) -> true | _ -> false),
-                                "UIDENT _"));
-                            Gram.Skeyword "."; Gram.Sself ],
-                          (Gram.Action.mk
-                             (fun (xs : 'qualuid) _ (x : Gram.Token.t)
-                                (_loc : Gram.Loc.t) ->
-                                (let x = Gram.Token.extract_string x
-                                 in Ast.IdAcc (_loc, Ast.IdUid (_loc, x), xs) :
-                                  'qualuid)))) ]) ]))
                   ());
              Gram.extend (qualuid : 'qualuid Gram.Entry.t)
                ((fun () ->
@@ -11975,7 +12113,63 @@ module G =
                              (fun (xs : 'qualuid) _ (x : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 (let x = Gram.Token.extract_string x
-                                 in Ast.IdAcc (_loc, Ast.IdUid (_loc, x), xs) :
+                                 in
+                                   Ast.IdAcc (_loc, (Ast.IdUid (_loc, x)),
+                                     xs) :
+                                  'qualuid)))) ]) ]))
+                  ());
+             Gram.extend (qualuid : 'qualuid Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.srules qualuid
+                              [ ([ Gram.Stoken
+                                     (((function
+                                        | UIDENT "GLOBAL" -> true
+                                        | _ -> false),
+                                       "UIDENT \"GLOBAL\"")) ],
+                                 (Gram.Action.mk
+                                    (fun (__camlp4_0 : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       match __camlp4_0 with
+                                       | UIDENT "GLOBAL" -> (() : 'e__18)
+                                       | _ -> assert false)));
+                                ([ Gram.Stoken
+                                     (((function
+                                        | LIDENT ((_)) -> true
+                                        | _ -> false),
+                                       "LIDENT ((_))")) ],
+                                 (Gram.Action.mk
+                                    (fun (__camlp4_0 : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       match __camlp4_0 with
+                                       | LIDENT ((_)) -> (() : 'e__18)
+                                       | _ -> assert false))) ] ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Gram.Loc.t) ->
+                                (Loc.raise _loc
+                                   (Stream.Error
+                                      "Deprecated syntax, the grammar module is expected") :
+                                  'qualuid)))) ]);
+                      (None, None,
+                       [ ([ Gram.Stoken
+                              (((function | UIDENT ((_)) -> true | _ -> false),
+                                "UIDENT _")) ],
+                          (Gram.Action.mk
+                             (fun (i : Gram.Token.t) (_loc : Gram.Loc.t) ->
+                                (let i = Gram.Token.extract_string i
+                                 in Ast.IdUid (_loc, i) : 'qualuid))));
+                         ([ Gram.Stoken
+                              (((function | UIDENT ((_)) -> true | _ -> false),
+                                "UIDENT _"));
+                            Gram.Skeyword "."; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (xs : 'qualuid) _ (x : Gram.Token.t)
+                                (_loc : Gram.Loc.t) ->
+                                (let x = Gram.Token.extract_string x
+                                 in
+                                   Ast.IdAcc (_loc, (Ast.IdUid (_loc, x)),
+                                     xs) :
                                   'qualuid)))) ]) ]))
                   ());
              Gram.extend (qualid : 'qualid Gram.Entry.t)
@@ -12004,7 +12198,9 @@ module G =
                              (fun (xs : 'qualid) _ (x : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 (let x = Gram.Token.extract_string x
-                                 in Ast.IdAcc (_loc, Ast.IdUid (_loc, x), xs) :
+                                 in
+                                   Ast.IdAcc (_loc, (Ast.IdUid (_loc, x)),
+                                     xs) :
                                   'qualid)))) ]) ]))
                   ());
              Gram.extend (t_qualid : 't_qualid Gram.Entry.t)
@@ -12051,7 +12247,9 @@ module G =
                              (fun (xs : 't_qualid) _ (x : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 (let x = Gram.Token.extract_string x
-                                 in Ast.IdAcc (_loc, Ast.IdUid (_loc, x), xs) :
+                                 in
+                                   Ast.IdAcc (_loc, (Ast.IdUid (_loc, x)),
+                                     xs) :
                                   't_qualid)))) ]) ]))
                   ());
              Gram.extend (global : 'global Gram.Entry.t)
@@ -12115,14 +12313,15 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "LEVEL" ->
                                     (Ast.ExApp (_loc,
-                                       Ast.ExId (_loc,
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Camlp4"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Sig"),
-                                             Ast.IdAcc (_loc,
-                                               Ast.IdUid (_loc, "Grammar"),
-                                               Ast.IdUid (_loc, "Level"))))),
+                                       (Ast.ExId (_loc,
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Camlp4")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Sig")),
+                                                (Ast.IdAcc (_loc,
+                                                   (Ast.IdUid (_loc,
+                                                      "Grammar")),
+                                                   (Ast.IdUid (_loc, "Level")))))))))),
                                        n) :
                                       'position)
                                 | _ -> assert false)));
@@ -12139,14 +12338,15 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "AFTER" ->
                                     (Ast.ExApp (_loc,
-                                       Ast.ExId (_loc,
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Camlp4"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Sig"),
-                                             Ast.IdAcc (_loc,
-                                               Ast.IdUid (_loc, "Grammar"),
-                                               Ast.IdUid (_loc, "After"))))),
+                                       (Ast.ExId (_loc,
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Camlp4")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Sig")),
+                                                (Ast.IdAcc (_loc,
+                                                   (Ast.IdUid (_loc,
+                                                      "Grammar")),
+                                                   (Ast.IdUid (_loc, "After")))))))))),
                                        n) :
                                       'position)
                                 | _ -> assert false)));
@@ -12163,14 +12363,16 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "BEFORE" ->
                                     (Ast.ExApp (_loc,
-                                       Ast.ExId (_loc,
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Camlp4"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Sig"),
-                                             Ast.IdAcc (_loc,
-                                               Ast.IdUid (_loc, "Grammar"),
-                                               Ast.IdUid (_loc, "Before"))))),
+                                       (Ast.ExId (_loc,
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Camlp4")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Sig")),
+                                                (Ast.IdAcc (_loc,
+                                                   (Ast.IdUid (_loc,
+                                                      "Grammar")),
+                                                   (Ast.IdUid (_loc,
+                                                      "Before")))))))))),
                                        n) :
                                       'position)
                                 | _ -> assert false)));
@@ -12185,13 +12387,13 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "LAST" ->
                                     (Ast.ExId (_loc,
-                                       Ast.IdAcc (_loc,
-                                         Ast.IdUid (_loc, "Camlp4"),
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Sig"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Grammar"),
-                                             Ast.IdUid (_loc, "Last"))))) :
+                                       (Ast.IdAcc (_loc,
+                                          (Ast.IdUid (_loc, "Camlp4")),
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Sig")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Grammar")),
+                                                (Ast.IdUid (_loc, "Last"))))))))) :
                                       'position)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -12205,13 +12407,13 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "FIRST" ->
                                     (Ast.ExId (_loc,
-                                       Ast.IdAcc (_loc,
-                                         Ast.IdUid (_loc, "Camlp4"),
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Sig"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Grammar"),
-                                             Ast.IdUid (_loc, "First"))))) :
+                                       (Ast.IdAcc (_loc,
+                                          (Ast.IdUid (_loc, "Camlp4")),
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Sig")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Grammar")),
+                                                (Ast.IdUid (_loc, "First"))))))))) :
                                       'position)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -12221,10 +12423,10 @@ module G =
                     [ (None, None,
                        [ ([ Gram.Skeyword "[";
                             Gram.Slist0sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (level : 'level Gram.Entry.t)),
-                              Gram.Skeyword "|");
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (level : 'level Gram.Entry.t))),
+                              (Gram.Skeyword "|"));
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ (ll : 'level list) _ (_loc : Gram.Loc.t)
@@ -12246,7 +12448,7 @@ module G =
                                           (_loc : Gram.Loc.t) ->
                                           (let x =
                                              Gram.Token.extract_string x
-                                           in x : 'e__18)))) ]);
+                                           in x : 'e__19)))) ]);
                             Gram.Sopt
                               (Gram.Snterm
                                  (Gram.Entry.obj
@@ -12256,7 +12458,7 @@ module G =
                                  (rule_list : 'rule_list Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (rules : 'rule_list) (ass : 'assoc option)
-                                (lab : 'e__18 option) (_loc : Gram.Loc.t) ->
+                                (lab : 'e__19 option) (_loc : Gram.Loc.t) ->
                                 ({ label = lab; assoc = ass; rules = rules; } :
                                   'level)))) ]) ]))
                   ());
@@ -12275,13 +12477,13 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "NONA" ->
                                     (Ast.ExId (_loc,
-                                       Ast.IdAcc (_loc,
-                                         Ast.IdUid (_loc, "Camlp4"),
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Sig"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Grammar"),
-                                             Ast.IdUid (_loc, "NonA"))))) :
+                                       (Ast.IdAcc (_loc,
+                                          (Ast.IdUid (_loc, "Camlp4")),
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Sig")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Grammar")),
+                                                (Ast.IdUid (_loc, "NonA"))))))))) :
                                       'assoc)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -12295,13 +12497,13 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "RIGHTA" ->
                                     (Ast.ExId (_loc,
-                                       Ast.IdAcc (_loc,
-                                         Ast.IdUid (_loc, "Camlp4"),
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Sig"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Grammar"),
-                                             Ast.IdUid (_loc, "RightA"))))) :
+                                       (Ast.IdAcc (_loc,
+                                          (Ast.IdUid (_loc, "Camlp4")),
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Sig")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Grammar")),
+                                                (Ast.IdUid (_loc, "RightA"))))))))) :
                                       'assoc)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -12315,13 +12517,13 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "LEFTA" ->
                                     (Ast.ExId (_loc,
-                                       Ast.IdAcc (_loc,
-                                         Ast.IdUid (_loc, "Camlp4"),
-                                         Ast.IdAcc (_loc,
-                                           Ast.IdUid (_loc, "Sig"),
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Grammar"),
-                                             Ast.IdUid (_loc, "LeftA"))))) :
+                                       (Ast.IdAcc (_loc,
+                                          (Ast.IdUid (_loc, "Camlp4")),
+                                          (Ast.IdAcc (_loc,
+                                             (Ast.IdUid (_loc, "Sig")),
+                                             (Ast.IdAcc (_loc,
+                                                (Ast.IdUid (_loc, "Grammar")),
+                                                (Ast.IdUid (_loc, "LeftA"))))))))) :
                                       'assoc)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -12331,9 +12533,9 @@ module G =
                     [ (None, None,
                        [ ([ Gram.Skeyword "[";
                             Gram.Slist1sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj (rule : 'rule Gram.Entry.t)),
-                              Gram.Skeyword "|");
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj (rule : 'rule Gram.Entry.t))),
+                              (Gram.Skeyword "|"));
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ (rules : 'rule list) _
@@ -12350,22 +12552,22 @@ module G =
                    (None,
                     [ (None, None,
                        [ ([ Gram.Slist0sep
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (psymbol : 'psymbol Gram.Entry.t))),
                               (Gram.Snterm
                                  (Gram.Entry.obj
-                                    (psymbol : 'psymbol Gram.Entry.t)),
-                              Gram.Snterm
-                                (Gram.Entry.obj
-                                   (semi_sep : 'semi_sep Gram.Entry.t))) ],
+                                    (semi_sep : 'semi_sep Gram.Entry.t)))) ],
                           (Gram.Action.mk
                              (fun (psl : 'psymbol list) (_loc : Gram.Loc.t)
                                 -> ({ prod = psl; action = None; } : 'rule))));
                          ([ Gram.Slist0sep
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj
+                                     (psymbol : 'psymbol Gram.Entry.t))),
                               (Gram.Snterm
                                  (Gram.Entry.obj
-                                    (psymbol : 'psymbol Gram.Entry.t)),
-                              Gram.Snterm
-                                (Gram.Entry.obj
-                                   (semi_sep : 'semi_sep Gram.Entry.t)));
+                                    (semi_sep : 'semi_sep Gram.Entry.t))));
                             Gram.Skeyword "->";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
@@ -12400,8 +12602,8 @@ module G =
                                      ->
                                      mk_tok _loc
                                        (Ast.PaApp (_loc,
-                                          Ast.PaId (_loc,
-                                            Ast.IdUid (_loc, u)),
+                                          (Ast.PaId (_loc,
+                                             (Ast.IdUid (_loc, u)))),
                                           p))
                                        s.styp
                                  | _ -> { (s) with pattern = Some p; } :
@@ -12429,10 +12631,10 @@ module G =
                                           | UIDENT "LEVEL" ->
                                               (let s =
                                                  Gram.Token.extract_string s
-                                               in s : 'e__19)
+                                               in s : 'e__20)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (lev : 'e__19 option) (i : Gram.Token.t)
+                             (fun (lev : 'e__20 option) (i : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 (let i = Gram.Token.extract_string i in
                                  let name =
@@ -12467,19 +12669,21 @@ module G =
                                        ->
                                        let match_fun =
                                          Ast.ExFun (_loc,
-                                           Ast.McOr (_loc,
-                                             Ast.McArr (_loc, p',
-                                               Ast.ExNil _loc,
-                                               Ast.ExId (_loc,
-                                                 Ast.IdUid (_loc, "True"))),
-                                             Ast.McArr (_loc, Ast.PaAny _loc,
-                                               Ast.ExNil _loc,
-                                               Ast.ExId (_loc,
-                                                 Ast.IdUid (_loc, "False"))))) in
+                                           (Ast.McOr (_loc,
+                                              (Ast.McArr (_loc, p',
+                                                 (Ast.ExNil _loc),
+                                                 (Ast.ExId (_loc,
+                                                    (Ast.IdUid (_loc, "True")))))),
+                                              (Ast.McArr (_loc,
+                                                 (Ast.PaAny _loc),
+                                                 (Ast.ExNil _loc),
+                                                 (Ast.ExId (_loc,
+                                                    (Ast.IdUid (_loc,
+                                                       "False"))))))))) in
                                        let p' =
                                          Ast.PaAli (_loc, p',
-                                           Ast.PaId (_loc,
-                                             Ast.IdLid (_loc, p))) in
+                                           (Ast.PaId (_loc,
+                                              (Ast.IdLid (_loc, p))))) in
                                        let descr = u ^ " _" in
                                        let text =
                                          TXtok (_loc, match_fun, descr)
@@ -12497,7 +12701,7 @@ module G =
                                          pattern =
                                            Some
                                              (Ast.PaId (_loc,
-                                                Ast.IdLid (_loc, p)));
+                                                (Ast.IdLid (_loc, p))));
                                        } :
                                   'psymbol)))) ]) ]))
                   ());
@@ -12535,7 +12739,7 @@ module G =
                                 | UIDENT "OPT" ->
                                     (let () = check_not_tok s in
                                      let styp =
-                                       STapp (_loc, STlid (_loc, "option"),
+                                       STapp (_loc, (STlid (_loc, "option")),
                                          s.styp) in
                                      let text = TXopt (_loc, s.text)
                                      in
@@ -12568,10 +12772,10 @@ module G =
                                           (__camlp4_0 : Gram.Token.t)
                                           (_loc : Gram.Loc.t) ->
                                           match __camlp4_0 with
-                                          | UIDENT "SEP" -> (t : 'e__21)
+                                          | UIDENT "SEP" -> (t : 'e__22)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (sep : 'e__21 option) (s : 'symbol)
+                             (fun (sep : 'e__22 option) (s : 'symbol)
                                 (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
@@ -12582,7 +12786,7 @@ module G =
                                         | Some symb -> symb.used @ s.used
                                         | None -> s.used) in
                                      let styp =
-                                       STapp (_loc, STlid (_loc, "list"),
+                                       STapp (_loc, (STlid (_loc, "list")),
                                          s.styp) in
                                      let text = slist _loc true sep s
                                      in
@@ -12615,10 +12819,10 @@ module G =
                                           (__camlp4_0 : Gram.Token.t)
                                           (_loc : Gram.Loc.t) ->
                                           match __camlp4_0 with
-                                          | UIDENT "SEP" -> (t : 'e__20)
+                                          | UIDENT "SEP" -> (t : 'e__21)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (sep : 'e__20 option) (s : 'symbol)
+                             (fun (sep : 'e__21 option) (s : 'symbol)
                                 (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
                                 match __camlp4_0 with
@@ -12629,7 +12833,7 @@ module G =
                                         | Some symb -> symb.used @ s.used
                                         | None -> s.used) in
                                      let styp =
-                                       STapp (_loc, STlid (_loc, "list"),
+                                       STapp (_loc, (STlid (_loc, "list")),
                                          s.styp) in
                                      let text = slist _loc false sep s
                                      in
@@ -12668,10 +12872,10 @@ module G =
                                           | UIDENT "LEVEL" ->
                                               (let s =
                                                  Gram.Token.extract_string s
-                                               in s : 'e__23)
+                                               in s : 'e__24)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (lev : 'e__23 option) (n : 'name)
+                             (fun (lev : 'e__24 option) (n : 'name)
                                 (_loc : Gram.Loc.t) ->
                                 ({
                                    used = [ n.tvar ];
@@ -12705,15 +12909,15 @@ module G =
                                           | UIDENT "LEVEL" ->
                                               (let s =
                                                  Gram.Token.extract_string s
-                                               in s : 'e__22)
+                                               in s : 'e__23)
                                           | _ -> assert false))) ]) ],
                           (Gram.Action.mk
-                             (fun (lev : 'e__22 option) (il : 'qualid) _
+                             (fun (lev : 'e__23 option) (il : 'qualid) _
                                 (i : Gram.Token.t) (_loc : Gram.Loc.t) ->
                                 (let i = Gram.Token.extract_string i in
                                  let n =
                                    mk_name _loc
-                                     (Ast.IdAcc (_loc, Ast.IdUid (_loc, i),
+                                     (Ast.IdAcc (_loc, (Ast.IdUid (_loc, i)),
                                         il))
                                  in
                                    {
@@ -12755,34 +12959,38 @@ module G =
                                        AntiquotSyntax.parse_expr _loc s in
                                      let match_fun =
                                        Ast.ExFun (_loc,
-                                         Ast.McOr (_loc,
-                                           Ast.McArr (_loc,
-                                             Ast.PaApp (_loc,
-                                               Ast.PaId (_loc,
-                                                 Ast.IdUid (_loc, x)),
-                                               Ast.PaId (_loc,
-                                                 Ast.IdLid (_loc, "camlp4_x"))),
-                                             Ast.ExApp (_loc,
-                                               Ast.ExApp (_loc,
-                                                 Ast.ExId (_loc,
-                                                   Ast.IdLid (_loc, "=")),
-                                                 Ast.ExId (_loc,
-                                                   Ast.IdLid (_loc,
-                                                     "camlp4_x"))),
-                                               e),
-                                             Ast.ExId (_loc,
-                                               Ast.IdUid (_loc, "True"))),
-                                           Ast.McArr (_loc, Ast.PaAny _loc,
-                                             Ast.ExNil _loc,
-                                             Ast.ExId (_loc,
-                                               Ast.IdUid (_loc, "False"))))) in
+                                         (Ast.McOr (_loc,
+                                            (Ast.McArr (_loc,
+                                               (Ast.PaApp (_loc,
+                                                  (Ast.PaId (_loc,
+                                                     (Ast.IdUid (_loc, x)))),
+                                                  (Ast.PaId (_loc,
+                                                     (Ast.IdLid (_loc,
+                                                        "camlp4_x")))))),
+                                               (Ast.ExApp (_loc,
+                                                  (Ast.ExApp (_loc,
+                                                     (Ast.ExId (_loc,
+                                                        (Ast.IdLid (_loc,
+                                                           "=")))),
+                                                     (Ast.ExId (_loc,
+                                                        (Ast.IdLid (_loc,
+                                                           "camlp4_x")))))),
+                                                  e)),
+                                               (Ast.ExId (_loc,
+                                                  (Ast.IdUid (_loc, "True")))))),
+                                            (Ast.McArr (_loc,
+                                               (Ast.PaAny _loc),
+                                               (Ast.ExNil _loc),
+                                               (Ast.ExId (_loc,
+                                                  (Ast.IdUid (_loc, "False"))))))))) in
                                      let descr = "$" ^ (x ^ (" " ^ s)) in
                                      let text =
                                        TXtok (_loc, match_fun, descr) in
                                      let p =
                                        Ast.PaApp (_loc,
-                                         Ast.PaId (_loc, Ast.IdUid (_loc, x)),
-                                         Ast.PaTup (_loc, Ast.PaAny _loc))
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdUid (_loc, x)))),
+                                         (Ast.PaTup (_loc, (Ast.PaAny _loc))))
                                      in
                                        {
                                          used = [];
@@ -12806,8 +13014,9 @@ module G =
                                  in
                                    mk_tok _loc
                                      (Ast.PaApp (_loc,
-                                        Ast.PaId (_loc, Ast.IdUid (_loc, x)),
-                                        Ast.PaStr (_loc, s)))
+                                        (Ast.PaId (_loc,
+                                           (Ast.IdUid (_loc, x)))),
+                                        (Ast.PaStr (_loc, s))))
                                      (STtok _loc) :
                                   'symbol))));
                          ([ Gram.Stoken
@@ -12819,8 +13028,9 @@ module G =
                                  in
                                    mk_tok _loc
                                      (Ast.PaApp (_loc,
-                                        Ast.PaId (_loc, Ast.IdUid (_loc, x)),
-                                        Ast.PaTup (_loc, Ast.PaAny _loc)))
+                                        (Ast.PaId (_loc,
+                                           (Ast.IdUid (_loc, x)))),
+                                        (Ast.PaTup (_loc, (Ast.PaAny _loc)))))
                                      (STstring_tok _loc) :
                                   'symbol))));
                          ([ Gram.Skeyword "`";
@@ -12831,9 +13041,9 @@ module G =
                                 (mk_tok _loc p (STtok _loc) : 'symbol))));
                          ([ Gram.Skeyword "[";
                             Gram.Slist0sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj (rule : 'rule Gram.Entry.t)),
-                              Gram.Skeyword "|");
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj (rule : 'rule Gram.Entry.t))),
+                              (Gram.Skeyword "|"));
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
                              (fun _ (rl : 'rule list) _ (_loc : Gram.Loc.t)
@@ -12845,7 +13055,7 @@ module G =
                                    {
                                      used = used_of_rule_list rl;
                                      text =
-                                       TXrules (_loc, srules _loc t rl "");
+                                       TXrules (_loc, (srules _loc t rl ""));
                                      styp = STquo (_loc, t);
                                      pattern = None;
                                    } :
@@ -12897,7 +13107,7 @@ module G =
                           (Gram.Action.mk
                              (fun _ (p2 : 'comma_patt) _ (p1 : 'pattern) _
                                 (_loc : Gram.Loc.t) ->
-                                (Ast.PaTup (_loc, Ast.PaCom (_loc, p1, p2)) :
+                                (Ast.PaTup (_loc, (Ast.PaCom (_loc, p1, p2))) :
                                   'pattern))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
@@ -12913,7 +13123,7 @@ module G =
                           (Gram.Action.mk
                              (fun (i : Gram.Token.t) (_loc : Gram.Loc.t) ->
                                 (let i = Gram.Token.extract_string i
-                                 in Ast.PaId (_loc, Ast.IdLid (_loc, i)) :
+                                 in Ast.PaId (_loc, (Ast.IdLid (_loc, i))) :
                                   'pattern)))) ]) ]))
                   ());
              Gram.extend (comma_patt : 'comma_patt Gram.Entry.t)
@@ -12989,25 +13199,25 @@ module G =
   END;
   *)
         let sfold _loc n foldfun f e s =
-          let styp = STquo (_loc, new_type_var ()) in
+          let styp = STquo (_loc, (new_type_var ())) in
           let e =
             Ast.ExApp (_loc,
-              Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                    Ast.IdLid (_loc, foldfun))),
-                f),
+              (Ast.ExApp (_loc,
+                 (Ast.ExId (_loc,
+                    (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                       (Ast.IdLid (_loc, foldfun)))))),
+                 f)),
               e) in
           let t =
             STapp (_loc,
-              STapp (_loc,
-                STtyp
-                  (Ast.TyApp (_loc,
-                     Ast.TyId (_loc,
-                       Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                         Ast.IdLid (_loc, "fold"))),
-                     Ast.TyAny _loc)),
-                s.styp),
+              (STapp (_loc,
+                 (STtyp
+                    (Ast.TyApp (_loc,
+                       (Ast.TyId (_loc,
+                          (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                             (Ast.IdLid (_loc, "fold")))))),
+                       (Ast.TyAny _loc)))),
+                 s.styp)),
               styp)
           in
             {
@@ -13018,25 +13228,25 @@ module G =
             }
           
         let sfoldsep _loc n foldfun f e s sep =
-          let styp = STquo (_loc, new_type_var ()) in
+          let styp = STquo (_loc, (new_type_var ())) in
           let e =
             Ast.ExApp (_loc,
-              Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                    Ast.IdLid (_loc, foldfun))),
-                f),
+              (Ast.ExApp (_loc,
+                 (Ast.ExId (_loc,
+                    (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                       (Ast.IdLid (_loc, foldfun)))))),
+                 f)),
               e) in
           let t =
             STapp (_loc,
-              STapp (_loc,
-                STtyp
-                  (Ast.TyApp (_loc,
-                     Ast.TyId (_loc,
-                       Ast.IdAcc (_loc, Ast.IdUid (_loc, gm),
-                         Ast.IdLid (_loc, "foldsep"))),
-                     Ast.TyAny _loc)),
-                s.styp),
+              (STapp (_loc,
+                 (STtyp
+                    (Ast.TyApp (_loc,
+                       (Ast.TyId (_loc,
+                          (Ast.IdAcc (_loc, (Ast.IdUid (_loc, gm)),
+                             (Ast.IdLid (_loc, "foldsep")))))),
+                       (Ast.TyAny _loc)))),
+                 s.styp)),
               styp)
           in
             {
@@ -13173,7 +13383,7 @@ module G =
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_LIDENT) (_loc : Gram.Loc.t) ->
-                                (Ast.ExId (_loc, Ast.IdLid (_loc, i)) :
+                                (Ast.ExId (_loc, (Ast.IdLid (_loc, i))) :
                                   'simple_expr)))) ]) ]))
                   ()))
           
@@ -13319,26 +13529,26 @@ Added statements:
         let substp _loc env =
           let rec loop =
             function
-            | Ast.ExApp (_, e1, e2) -> Ast.PaApp (_loc, loop e1, loop e2)
+            | Ast.ExApp (_, e1, e2) -> Ast.PaApp (_loc, (loop e1), (loop e2))
             | Ast.ExNil _ -> Ast.PaNil _loc
             | Ast.ExId (_, (Ast.IdLid (_, x))) ->
                 (try List.assoc x env
-                 with | Not_found -> Ast.PaId (_loc, Ast.IdLid (_loc, x)))
+                 with | Not_found -> Ast.PaId (_loc, (Ast.IdLid (_loc, x))))
             | Ast.ExId (_, (Ast.IdUid (_, x))) ->
                 (try List.assoc x env
-                 with | Not_found -> Ast.PaId (_loc, Ast.IdUid (_loc, x)))
+                 with | Not_found -> Ast.PaId (_loc, (Ast.IdUid (_loc, x))))
             | Ast.ExInt (_, x) -> Ast.PaInt (_loc, x)
             | Ast.ExStr (_, s) -> Ast.PaStr (_loc, s)
-            | Ast.ExTup (_, x) -> Ast.PaTup (_loc, loop x)
-            | Ast.ExCom (_, x1, x2) -> Ast.PaCom (_loc, loop x1, loop x2)
+            | Ast.ExTup (_, x) -> Ast.PaTup (_loc, (loop x))
+            | Ast.ExCom (_, x1, x2) -> Ast.PaCom (_loc, (loop x1), (loop x2))
             | Ast.ExRec (_, bi, (Ast.ExNil _)) ->
                 let rec substbi =
                   (function
                    | Ast.RbSem (_, b1, b2) ->
-                       Ast.PaSem (_loc, substbi b1, substbi b2)
-                   | Ast.RbEq (_, i, e) -> Ast.PaEq (_loc, i, loop e)
+                       Ast.PaSem (_loc, (substbi b1), (substbi b2))
+                   | Ast.RbEq (_, i, e) -> Ast.PaEq (_loc, i, (loop e))
                    | _ -> bad_patt _loc)
-                in Ast.PaRec (_loc, substbi bi)
+                in Ast.PaRec (_loc, (substbi bi))
             | _ -> bad_patt _loc
           in loop
           
@@ -13860,7 +14070,7 @@ Added statements:
                               (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExId (_loc, Ast.IdUid (_loc, "()")) :
+                                (Ast.ExId (_loc, (Ast.IdUid (_loc, "()"))) :
                                   'else_expr))));
                          ([ Gram.Skeyword "ELSE";
                             Gram.Snterm
@@ -13887,7 +14097,7 @@ Added statements:
                                     (Gram.Action.mk
                                        (fun _ (si : 'str_item)
                                           (_loc : Gram.Loc.t) ->
-                                          (SdStr si : 'e__24))));
+                                          (SdStr si : 'e__25))));
                                    ([ Gram.Snterm
                                         (Gram.Entry.obj
                                            (macro_def :
@@ -13903,9 +14113,9 @@ Added statements:
                                              (fun a b ->
                                                 Ast.StSem (_loc, a, b))
                                              Then d :
-                                            'e__24)))) ]) ],
+                                            'e__25)))) ]) ],
                           (Gram.Action.mk
-                             (fun (sml : 'e__24 list) (_loc : Gram.Loc.t) ->
+                             (fun (sml : 'e__25 list) (_loc : Gram.Loc.t) ->
                                 (sml : 'smlist_then)))) ]) ]))
                   ());
              Gram.extend (smlist_else : 'smlist_else Gram.Entry.t)
@@ -13924,7 +14134,7 @@ Added statements:
                                     (Gram.Action.mk
                                        (fun _ (si : 'str_item)
                                           (_loc : Gram.Loc.t) ->
-                                          (SdStr si : 'e__25))));
+                                          (SdStr si : 'e__26))));
                                    ([ Gram.Snterm
                                         (Gram.Entry.obj
                                            (macro_def :
@@ -13940,9 +14150,9 @@ Added statements:
                                              (fun a b ->
                                                 Ast.StSem (_loc, a, b))
                                              Else d :
-                                            'e__25)))) ]) ],
+                                            'e__26)))) ]) ],
                           (Gram.Action.mk
-                             (fun (sml : 'e__25 list) (_loc : Gram.Loc.t) ->
+                             (fun (sml : 'e__26 list) (_loc : Gram.Loc.t) ->
                                 (sml : 'smlist_else)))) ]) ]))
                   ());
              Gram.extend (sglist_then : 'sglist_then Gram.Entry.t)
@@ -13951,43 +14161,6 @@ Added statements:
                     [ (None, None,
                        [ ([ Gram.Slist1
                               (Gram.srules sglist_then
-                                 [ ([ Gram.Snterm
-                                        (Gram.Entry.obj
-                                           (sig_item :
-                                             'sig_item Gram.Entry.t));
-                                      Gram.Snterm
-                                        (Gram.Entry.obj
-                                           (semi : 'semi Gram.Entry.t)) ],
-                                    (Gram.Action.mk
-                                       (fun _ (si : 'sig_item)
-                                          (_loc : Gram.Loc.t) ->
-                                          (SdStr si : 'e__26))));
-                                   ([ Gram.Snterm
-                                        (Gram.Entry.obj
-                                           (macro_def_sig :
-                                             'macro_def_sig Gram.Entry.t));
-                                      Gram.Snterm
-                                        (Gram.Entry.obj
-                                           (semi : 'semi Gram.Entry.t)) ],
-                                    (Gram.Action.mk
-                                       (fun _ (d : 'macro_def_sig)
-                                          (_loc : Gram.Loc.t) ->
-                                          (execute_macro_if_active_branch
-                                             _loc (Ast.SgNil _loc)
-                                             (fun a b ->
-                                                Ast.SgSem (_loc, a, b))
-                                             Then d :
-                                            'e__26)))) ]) ],
-                          (Gram.Action.mk
-                             (fun (sgl : 'e__26 list) (_loc : Gram.Loc.t) ->
-                                (sgl : 'sglist_then)))) ]) ]))
-                  ());
-             Gram.extend (sglist_else : 'sglist_else Gram.Entry.t)
-               ((fun () ->
-                   (None,
-                    [ (None, None,
-                       [ ([ Gram.Slist1
-                              (Gram.srules sglist_else
                                  [ ([ Gram.Snterm
                                         (Gram.Entry.obj
                                            (sig_item :
@@ -14013,10 +14186,47 @@ Added statements:
                                              _loc (Ast.SgNil _loc)
                                              (fun a b ->
                                                 Ast.SgSem (_loc, a, b))
-                                             Else d :
+                                             Then d :
                                             'e__27)))) ]) ],
                           (Gram.Action.mk
                              (fun (sgl : 'e__27 list) (_loc : Gram.Loc.t) ->
+                                (sgl : 'sglist_then)))) ]) ]))
+                  ());
+             Gram.extend (sglist_else : 'sglist_else Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Slist1
+                              (Gram.srules sglist_else
+                                 [ ([ Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (sig_item :
+                                             'sig_item Gram.Entry.t));
+                                      Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (semi : 'semi Gram.Entry.t)) ],
+                                    (Gram.Action.mk
+                                       (fun _ (si : 'sig_item)
+                                          (_loc : Gram.Loc.t) ->
+                                          (SdStr si : 'e__28))));
+                                   ([ Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (macro_def_sig :
+                                             'macro_def_sig Gram.Entry.t));
+                                      Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (semi : 'semi Gram.Entry.t)) ],
+                                    (Gram.Action.mk
+                                       (fun _ (d : 'macro_def_sig)
+                                          (_loc : Gram.Loc.t) ->
+                                          (execute_macro_if_active_branch
+                                             _loc (Ast.SgNil _loc)
+                                             (fun a b ->
+                                                Ast.SgSem (_loc, a, b))
+                                             Else d :
+                                            'e__28)))) ]) ],
+                          (Gram.Action.mk
+                             (fun (sgl : 'e__28 list) (_loc : Gram.Loc.t) ->
                                 (sgl : 'sglist_else)))) ]) ]))
                   ());
              Gram.extend (endif : 'endif Gram.Entry.t)
@@ -14046,24 +14256,24 @@ Added statements:
                                 (Some (([], e)) : 'opt_macro_value))));
                          ([ Gram.Skeyword "(";
                             Gram.Slist1sep
-                              (Gram.srules opt_macro_value
-                                 [ ([ Gram.Stoken
-                                        (((function
-                                           | LIDENT ((_)) -> true
-                                           | _ -> false),
-                                          "LIDENT _")) ],
-                                    (Gram.Action.mk
-                                       (fun (x : Gram.Token.t)
-                                          (_loc : Gram.Loc.t) ->
-                                          (let x =
-                                             Gram.Token.extract_string x
-                                           in x : 'e__28)))) ],
-                              Gram.Skeyword ",");
+                              ((Gram.srules opt_macro_value
+                                  [ ([ Gram.Stoken
+                                         (((function
+                                            | LIDENT ((_)) -> true
+                                            | _ -> false),
+                                           "LIDENT _")) ],
+                                     (Gram.Action.mk
+                                        (fun (x : Gram.Token.t)
+                                           (_loc : Gram.Loc.t) ->
+                                           (let x =
+                                              Gram.Token.extract_string x
+                                            in x : 'e__29)))) ]),
+                              (Gram.Skeyword ","));
                             Gram.Skeyword ")"; Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) _ _ (pl : 'e__28 list) _
+                             (fun (e : 'expr) _ _ (pl : 'e__29 list) _
                                 (_loc : Gram.Loc.t) ->
                                 (Some ((pl, e)) : 'opt_macro_value)))) ]) ]))
                   ());
@@ -14124,39 +14334,51 @@ Added statements:
                                        Loc.to_tuple _loc
                                      in
                                        Ast.ExApp (_loc,
-                                         Ast.ExId (_loc,
-                                           Ast.IdAcc (_loc,
-                                             Ast.IdUid (_loc, "Loc"),
-                                             Ast.IdLid (_loc, "of_tuple"))),
-                                         Ast.ExTup (_loc,
-                                           Ast.ExCom (_loc,
-                                             Ast.ExStr (_loc,
-                                               Ast.safe_string_escaped a),
-                                             Ast.ExCom (_loc,
-                                               Ast.ExCom (_loc,
-                                                 Ast.ExCom (_loc,
-                                                   Ast.ExCom (_loc,
-                                                     Ast.ExCom (_loc,
-                                                       Ast.ExCom (_loc,
-                                                         Ast.ExInt (_loc,
-                                                           string_of_int b),
-                                                         Ast.ExInt (_loc,
-                                                           string_of_int c)),
-                                                       Ast.ExInt (_loc,
-                                                         string_of_int d)),
-                                                     Ast.ExInt (_loc,
-                                                       string_of_int e)),
-                                                   Ast.ExInt (_loc,
-                                                     string_of_int f)),
-                                                 Ast.ExInt (_loc,
-                                                   string_of_int g)),
-                                               if h
-                                               then
-                                                 Ast.ExId (_loc,
-                                                   Ast.IdUid (_loc, "True"))
-                                               else
-                                                 Ast.ExId (_loc,
-                                                   Ast.IdUid (_loc, "False")))))) :
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Loc")),
+                                               (Ast.IdLid (_loc, "of_tuple")))))),
+                                         (Ast.ExTup (_loc,
+                                            (Ast.ExCom (_loc,
+                                               (Ast.ExStr (_loc,
+                                                  (Ast.safe_string_escaped a))),
+                                               (Ast.ExCom (_loc,
+                                                  (Ast.ExCom (_loc,
+                                                     (Ast.ExCom (_loc,
+                                                        (Ast.ExCom (_loc,
+                                                           (Ast.ExCom (_loc,
+                                                              (Ast.ExCom
+                                                                 (_loc,
+                                                                 (Ast.ExInt
+                                                                    (_loc,
+                                                                    (
+                                                                    string_of_int
+                                                                    b))),
+                                                                 (Ast.ExInt
+                                                                    (_loc,
+                                                                    (
+                                                                    string_of_int
+                                                                    c))))),
+                                                              (Ast.ExInt
+                                                                 (_loc,
+                                                                 (string_of_int
+                                                                    d))))),
+                                                           (Ast.ExInt (_loc,
+                                                              (string_of_int
+                                                                 e))))),
+                                                        (Ast.ExInt (_loc,
+                                                           (string_of_int f))))),
+                                                     (Ast.ExInt (_loc,
+                                                        (string_of_int g))))),
+                                                  (if h
+                                                   then
+                                                     Ast.ExId (_loc,
+                                                       (Ast.IdUid (_loc,
+                                                          "True")))
+                                                   else
+                                                     Ast.ExId (_loc,
+                                                       (Ast.IdUid (_loc,
+                                                          "False"))))))))))) :
                                       'expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -14170,8 +14392,8 @@ Added statements:
                                 match __camlp4_0 with
                                 | LIDENT "__FILE__" ->
                                     (Ast.ExStr (_loc,
-                                       Ast.safe_string_escaped
-                                         (Loc.file_name _loc)) :
+                                       (Ast.safe_string_escaped
+                                          (Loc.file_name _loc))) :
                                       'expr)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -14321,30 +14543,30 @@ module D =
           function
           | None ->
               Ast.ExId (_loc,
-                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Debug"),
-                  Ast.IdLid (_loc, "mode")))
+                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Debug")),
+                   (Ast.IdLid (_loc, "mode")))))
           | Some m ->
               Ast.ExId (_loc,
-                Ast.IdAcc (_loc, Ast.IdUid (_loc, m),
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Debug"),
-                    Ast.IdLid (_loc, "mode"))))
+                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, m)),
+                   (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Debug")),
+                      (Ast.IdLid (_loc, "mode")))))))
           
         let mk_debug _loc m fmt section args =
           let call =
             apply
               (Ast.ExApp (_loc,
-                 Ast.ExApp (_loc,
-                   Ast.ExId (_loc,
-                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Debug"),
-                       Ast.IdLid (_loc, "printf"))),
-                   Ast.ExStr (_loc, section)),
-                 Ast.ExStr (_loc, fmt)))
+                 (Ast.ExApp (_loc,
+                    (Ast.ExId (_loc,
+                       (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Debug")),
+                          (Ast.IdLid (_loc, "printf")))))),
+                    (Ast.ExStr (_loc, section)))),
+                 (Ast.ExStr (_loc, fmt))))
               args
           in
             Ast.ExIfe (_loc,
-              Ast.ExApp (_loc, mk_debug_mode _loc m,
-                Ast.ExStr (_loc, section)),
-              call, Ast.ExId (_loc, Ast.IdUid (_loc, "()")))
+              (Ast.ExApp (_loc, (mk_debug_mode _loc m),
+                 (Ast.ExStr (_loc, section)))),
+              call, (Ast.ExId (_loc, (Ast.IdUid (_loc, "()")))))
           
         let _ =
           let _ = (expr : 'expr Gram.Entry.t) in
@@ -14369,7 +14591,7 @@ module D =
                                 "STRING _"));
                             Gram.Slist0
                               (Gram.Snterml
-                                 (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                                 ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                                  "."));
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -14385,16 +14607,16 @@ module D =
                                    match (x, (debug_mode section)) with
                                    | (None, false) ->
                                        Ast.ExId (_loc,
-                                         Ast.IdUid (_loc, "()"))
+                                         (Ast.IdUid (_loc, "()")))
                                    | (Some e, false) -> e
                                    | (None, _) ->
                                        mk_debug _loc m fmt section args
                                    | (Some e, _) ->
                                        Ast.ExLet (_loc, Ast.ReNil,
-                                         Ast.BiEq (_loc,
-                                           Ast.PaId (_loc,
-                                             Ast.IdUid (_loc, "()")),
-                                           mk_debug _loc m fmt section args),
+                                         (Ast.BiEq (_loc,
+                                            (Ast.PaId (_loc,
+                                               (Ast.IdUid (_loc, "()")))),
+                                            (mk_debug _loc m fmt section args))),
                                          e) :
                                   'expr)))) ]) ]))
                   ());
@@ -14529,79 +14751,88 @@ module L =
               if Ast.is_irrefut_patt p
               then
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExId (_loc,
-                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
-                        Ast.IdLid (_loc, "map"))),
-                    Ast.ExFun (_loc, Ast.McArr (_loc, p, Ast.ExNil _loc, e))),
+                  (Ast.ExApp (_loc,
+                     (Ast.ExId (_loc,
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "List")),
+                           (Ast.IdLid (_loc, "map")))))),
+                     (Ast.ExFun (_loc,
+                        (Ast.McArr (_loc, p, (Ast.ExNil _loc), e)))))),
                   l)
               else
                 Ast.ExApp (_loc,
-                  Ast.ExApp (_loc,
-                    Ast.ExApp (_loc,
-                      Ast.ExId (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
-                          Ast.IdLid (_loc, "fold_right"))),
-                      Ast.ExFun (_loc,
-                        Ast.McOr (_loc,
-                          Ast.McArr (_loc, p,
-                            Ast.ExId (_loc, Ast.IdUid (_loc, "True")),
-                            Ast.ExApp (_loc,
-                              Ast.ExFun (_loc,
-                                Ast.McArr (_loc,
-                                  Ast.PaId (_loc, Ast.IdLid (_loc, "x")),
-                                  Ast.ExNil _loc,
-                                  Ast.ExFun (_loc,
-                                    Ast.McArr (_loc,
-                                      Ast.PaId (_loc, Ast.IdLid (_loc, "xs")),
-                                      Ast.ExNil _loc,
-                                      Ast.ExApp (_loc,
-                                        Ast.ExApp (_loc,
-                                          Ast.ExId (_loc,
-                                            Ast.IdUid (_loc, "::")),
-                                          Ast.ExId (_loc,
-                                            Ast.IdLid (_loc, "x"))),
-                                        Ast.ExId (_loc,
-                                          Ast.IdLid (_loc, "xs"))))))),
-                              e)),
-                          Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
-                            Ast.ExFun (_loc,
-                              Ast.McArr (_loc,
-                                Ast.PaId (_loc, Ast.IdLid (_loc, "l")),
-                                Ast.ExNil _loc,
-                                Ast.ExId (_loc, Ast.IdLid (_loc, "l")))))))),
-                    l),
-                  Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+                  (Ast.ExApp (_loc,
+                     (Ast.ExApp (_loc,
+                        (Ast.ExId (_loc,
+                           (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "List")),
+                              (Ast.IdLid (_loc, "fold_right")))))),
+                        (Ast.ExFun (_loc,
+                           (Ast.McOr (_loc,
+                              (Ast.McArr (_loc, p,
+                                 (Ast.ExId (_loc, (Ast.IdUid (_loc, "True")))),
+                                 (Ast.ExApp (_loc,
+                                    (Ast.ExFun (_loc,
+                                       (Ast.McArr (_loc,
+                                          (Ast.PaId (_loc,
+                                             (Ast.IdLid (_loc, "x")))),
+                                          (Ast.ExNil _loc),
+                                          (Ast.ExFun (_loc,
+                                             (Ast.McArr (_loc,
+                                                (Ast.PaId (_loc,
+                                                   (Ast.IdLid (_loc, "xs")))),
+                                                (Ast.ExNil _loc),
+                                                (Ast.ExApp (_loc,
+                                                   (Ast.ExApp (_loc,
+                                                      (Ast.ExId (_loc,
+                                                         (Ast.IdUid (_loc,
+                                                            "::")))),
+                                                      (Ast.ExId (_loc,
+                                                         (Ast.IdLid (_loc,
+                                                            "x")))))),
+                                                   (Ast.ExId (_loc,
+                                                      (Ast.IdLid (_loc, "xs")))))))))))))),
+                                    e)))),
+                              (Ast.McArr (_loc, (Ast.PaAny _loc),
+                                 (Ast.ExNil _loc),
+                                 (Ast.ExFun (_loc,
+                                    (Ast.McArr (_loc,
+                                       (Ast.PaId (_loc,
+                                          (Ast.IdLid (_loc, "l")))),
+                                       (Ast.ExNil _loc),
+                                       (Ast.ExId (_loc,
+                                          (Ast.IdLid (_loc, "l")))))))))))))))),
+                     l)),
+                  (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]")))))
           
         let filter _loc p b l =
           if Ast.is_irrefut_patt p
           then
             Ast.ExApp (_loc,
-              Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
-                    Ast.IdLid (_loc, "filter"))),
-                Ast.ExFun (_loc, Ast.McArr (_loc, p, Ast.ExNil _loc, b))),
+              (Ast.ExApp (_loc,
+                 (Ast.ExId (_loc,
+                    (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "List")),
+                       (Ast.IdLid (_loc, "filter")))))),
+                 (Ast.ExFun (_loc,
+                    (Ast.McArr (_loc, p, (Ast.ExNil _loc), b)))))),
               l)
           else
             Ast.ExApp (_loc,
-              Ast.ExApp (_loc,
-                Ast.ExId (_loc,
-                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
-                    Ast.IdLid (_loc, "filter"))),
-                Ast.ExFun (_loc,
-                  Ast.McOr (_loc,
-                    Ast.McArr (_loc, p,
-                      Ast.ExId (_loc, Ast.IdUid (_loc, "True")), b),
-                    Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
-                      Ast.ExId (_loc, Ast.IdUid (_loc, "False")))))),
+              (Ast.ExApp (_loc,
+                 (Ast.ExId (_loc,
+                    (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "List")),
+                       (Ast.IdLid (_loc, "filter")))))),
+                 (Ast.ExFun (_loc,
+                    (Ast.McOr (_loc,
+                       (Ast.McArr (_loc, p,
+                          (Ast.ExId (_loc, (Ast.IdUid (_loc, "True")))), b)),
+                       (Ast.McArr (_loc, (Ast.PaAny _loc), (Ast.ExNil _loc),
+                          (Ast.ExId (_loc, (Ast.IdUid (_loc, "False")))))))))))),
               l)
           
         let concat _loc l =
           Ast.ExApp (_loc,
-            Ast.ExId (_loc,
-              Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
-                Ast.IdLid (_loc, "concat"))),
+            (Ast.ExId (_loc,
+               (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "List")),
+                  (Ast.IdLid (_loc, "concat")))))),
             l)
           
         let rec compr _loc e =
@@ -14667,43 +14898,45 @@ module L =
                    (None,
                     [ (None, None,
                        [ ([ Gram.Snterml
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top") ],
                           (Gram.Action.mk
                              (fun (e : 'expr) (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                                     e),
-                                   Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) :
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdUid (_loc, "::")))),
+                                      e)),
+                                   (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))))) :
                                   'comprehension_or_sem_expr_for_list))));
                          ([ Gram.Snterml
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top");
                             Gram.Skeyword "|";
                             Gram.Slist1sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj (item : 'item Gram.Entry.t)),
-                              Gram.Skeyword ";") ],
+                              ((Gram.Snterm
+                                  (Gram.Entry.obj (item : 'item Gram.Entry.t))),
+                              (Gram.Skeyword ";")) ],
                           (Gram.Action.mk
                              (fun (l : 'item list) _ (e : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (compr _loc e l :
                                   'comprehension_or_sem_expr_for_list))));
                          ([ Gram.Snterml
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top");
                             Gram.Skeyword ";" ],
                           (Gram.Action.mk
                              (fun _ (e : 'expr) (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                                     e),
-                                   Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) :
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdUid (_loc, "::")))),
+                                      e)),
+                                   (Ast.ExId (_loc, (Ast.IdUid (_loc, "[]"))))) :
                                   'comprehension_or_sem_expr_for_list))));
                          ([ Gram.Snterml
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top");
                             Gram.Skeyword ";";
                             Gram.Snterm
@@ -14714,11 +14947,13 @@ module L =
                              (fun (mk : 'sem_expr_for_list) _ (e : 'expr)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.ExApp (_loc,
-                                   Ast.ExApp (_loc,
-                                     Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                                     e),
-                                   mk
-                                     (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))) :
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdUid (_loc, "::")))),
+                                      e)),
+                                   (mk
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdUid (_loc, "[]")))))) :
                                   'comprehension_or_sem_expr_for_list)))) ]) ]))
                   ());
              Gram.extend (item : 'item Gram.Entry.t)
@@ -14728,7 +14963,7 @@ module L =
                        [ ([ (* NP: These rules rely on being on this particular order. Which should
              be improved. *)
                           Gram.Snterml
-                            (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                            ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                             "top") ],
                           (Gram.Action.mk
                              (fun (e : 'expr) (_loc : Gram.Loc.t) ->
@@ -14741,12 +14976,12 @@ module L =
                                       Gram.Skeyword "<-" ],
                                     (Gram.Action.mk
                                        (fun _ (p : 'patt) (_loc : Gram.Loc.t)
-                                          -> (p : 'e__29)))) ]);
+                                          -> (p : 'e__30)))) ]);
                             Gram.Snterml
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top") ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) (p : 'e__29)
+                             (fun (e : 'expr) (p : 'e__30)
                                 (_loc : Gram.Loc.t) ->
                                 (`gen ((p, e)) : 'item)))) ]) ]))
                   ()))
@@ -14766,7 +15001,7 @@ module L =
                      (None,
                       [ (None, None,
                          [ ([ Gram.Snterml
-                                (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                                ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                                 "top");
                               Gram.Skeyword "::";
                               Gram.Snterm
@@ -14775,14 +15010,14 @@ module L =
                                (fun (last : 'expr) _ (e : 'expr)
                                   (_loc : Gram.Loc.t) ->
                                   (Ast.ExApp (_loc,
-                                     Ast.ExApp (_loc,
-                                       Ast.ExId (_loc,
-                                         Ast.IdUid (_loc, "::")),
-                                       e),
+                                     (Ast.ExApp (_loc,
+                                        (Ast.ExId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        e)),
                                      last) :
                                     'comprehension_or_sem_expr_for_list))));
                            ([ Gram.Snterml
-                                (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                                ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                                 "top");
                               Gram.Skeyword ";";
                               Gram.Snterm
@@ -14797,11 +15032,11 @@ module L =
                                   (mk : 'sem_expr_for_list) _ (e : 'expr)
                                   (_loc : Gram.Loc.t) ->
                                   (Ast.ExApp (_loc,
-                                     Ast.ExApp (_loc,
-                                       Ast.ExId (_loc,
-                                         Ast.IdUid (_loc, "::")),
-                                       e),
-                                     mk last) :
+                                     (Ast.ExApp (_loc,
+                                        (Ast.ExId (_loc,
+                                           (Ast.IdUid (_loc, "::")))),
+                                        e)),
+                                     (mk last)) :
                                     'comprehension_or_sem_expr_for_list)))) ]) ]))
                     ()))
           else ()
