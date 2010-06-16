@@ -458,7 +458,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           | [_] -> pp f "@[<2>%a@ %a@]" o#apply_expr x o#apply_expr y
           | al ->
               pp f "@[<2>%a@ (%a)@]" o#apply_expr a
-                 (list o#under_pipe#expr ",@ ") al ]
+                 (* The #apply_expr below may put too much parens.
+                    However using #expr would be wrong: PR#5056. *)
+                 (list o#under_pipe#apply_expr ",@ ") al ]
         else pp f "@[<2>%a@]" (list o#apply_expr "@ ") [a::al]
     | <:expr< $e1$.val := $e2$ >> ->
         pp f "@[<2>%a :=@ %a@]" o#dot_expr e1 o#expr e2
