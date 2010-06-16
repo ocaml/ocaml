@@ -41,14 +41,18 @@ module Make (Structure : Structure.S) = struct
       edesc = Dlevels [] };
 
   value action_parse entry ts : Action.t =
-    Context.call_with_ctx ts
-      (fun c ->
-         try entry.estart 0 c (Context.stream c) with
-         [ Stream.Failure ->
-             Loc.raise (Context.loc_ep c)
-               (Stream.Error ("illegal begin of " ^ entry.ename))
-         | Loc.Exc_located _ _ as exc -> raise exc
-         | exc -> Loc.raise (Context.loc_ep c) exc ]);
+    let loc =
+      match Stream.peek ts with
+      [ Some (_, loc) -> loc
+      | None -> Loc.ghost ]
+    in
+    let c = mk_context loc in
+    try entry.estart 0 c ts with
+    [ Stream.Failure ->
+        Loc.raise (get_loc_ep c)
+          (Stream.Error ("illegal begin of " ^ entry.ename))
+    | Loc.Exc_located _ _ as exc -> raise exc
+    | exc -> Loc.raise (get_loc_ep c) exc ];
 
   value lex entry loc cs = entry.egram.glexer loc cs;
 

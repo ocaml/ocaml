@@ -24,17 +24,38 @@ module Make (Structure : Structure.S) = struct
   open Structure;
   open Sig.Grammar;
 
-  module Stream = struct
-    include Stream;
-    value junk strm = Context.junk strm;
-    value count strm = Context.bp strm;
-  end;
+  module StreamOrig = Stream;
+
+  value njunk strm n =
+    for i = 1 to n do Stream.junk strm done;
+
+  value loc_bp _c strm =
+    let loc =
+      match Stream.peek strm with
+      [ None -> Loc.ghost
+      | Some (_, loc) -> loc ]
+    in loc;
 
   value add_loc c bp parse_fun strm =
     let x = parse_fun c strm in
-    let ep = Context.loc_ep c in
+    let ep = get_loc_ep c in
     let loc = Loc.merge bp ep in
     (x, loc);
+
+  value stream_peek_nth strm n =
+    let rec loop i = fun
+      [ [x :: xs] -> if i = 1 then Some x else loop (i - 1) xs
+      | [] -> None ]
+    in
+    loop n (Stream.npeek n strm);
+
+  (* We don't want Stream's functions to be used implictly.
+     Since they do not update the loc_ep. *)
+  module Stream = struct
+    type t 'a = StreamOrig.t 'a;
+    exception Failure = StreamOrig.Failure;
+    exception Error = StreamOrig.Error;
+  end;
 
   value level_number entry lab =
     let rec lookup levn =
@@ -81,10 +102,10 @@ module Make (Structure : Structure.S) = struct
   ;
 
   (* PR#4603, PR#4330, PR#4551:
-     Here Context.loc_bp replaced Context.loc_ep to fix all these bugs.
+     Here loc_bp replaced get_loc_ep to fix all these bugs.
      If you do change it again look at these bugs. *)
-  value skip_if_empty c bp _ =
-    if Context.loc_bp c = bp then Action.mk (fun _ -> raise Stream.Failure)
+  value skip_if_empty c bp strm =
+    if loc_bp c strm = bp then Action.mk (fun _ -> raise Stream.Failure)
     else
       raise Stream.Failure
   ;
@@ -104,13 +125,12 @@ module Make (Structure : Structure.S) = struct
     if strict_parsing.val then raise (Stream.Error (Failed.tree_failed entry a s son))
     else
       let _ =
-        if strict_parsing_warning.val then
-          do {
+        if strict_parsing_warning.val then begin
             let msg = Failed.tree_failed entry a s son;
             Format.eprintf "Warning: trying to recover from syntax error";
             if entry.ename <> "" then Format.eprintf " in [%s]" entry.ename else ();
             Format.eprintf "\n%s%a@." msg Loc.print loc;
-        } else () in
+        end else () in
       do_recover parser_of_tree entry nlevn alevn loc a s c son strm
   ;
 
@@ -138,8 +158,10 @@ module Make (Structure : Structure.S) = struct
             let ps = parser_of_symbol entry nlevn s in
             let p1 = parser_of_tree entry nlevn alevn son in
             let p1 = parser_cont p1 entry nlevn alevn s son in
-            fun c ->
-              parser bp [: a = ps c; act = p1 c bp a :] -> Action.getf act a
+            fun c strm ->
+              let bp = loc_bp c strm in
+              match strm with parser
+              [: a = ps c; act = p1 c bp a :] -> Action.getf act a
         | Some (tokl, last_tok, son) ->
             let p1 = parser_of_tree entry nlevn alevn son in
             let p1 = parser_cont p1 entry nlevn alevn last_tok son in
@@ -156,8 +178,9 @@ module Make (Structure : Structure.S) = struct
             let p1 = parser_of_tree entry nlevn alevn son in
             let p1 = parser_cont p1 entry nlevn alevn s son in
             let p2 = parser_of_tree entry nlevn alevn bro in
-            fun c ->
-              parser bp
+            fun c strm ->
+              let bp = loc_bp c strm in
+              match strm with parser
               [ [: a = ps c; act = p1 c bp a :] -> Action.getf act a
               | [: a = p2 c :] -> a ]
         | Some (tokl, last_tok, son) ->
@@ -180,17 +203,22 @@ module Make (Structure : Structure.S) = struct
       [ [Stoken (tematch, _) :: tokl] ->
           match tokl with
           [ [] ->
-              let ps c _ =
-                match Context.peek_nth c n with
-                [ Some (tok, _) when tematch tok -> do { Context.njunk c n; Action.mk tok }
+              let ps c strm =
+                match stream_peek_nth strm n with
+                [ Some (tok, loc) when tematch tok ->
+                    (njunk strm n; set_loc_ep c loc; Action.mk tok)
+                | Some (_, loc) -> (set_loc_ep c loc; raise Stream.Failure)
                 | _ -> raise Stream.Failure ]
               in
-              fun c ->
-                parser bp [: a = ps c; act = p1 c bp a :] -> Action.getf act a
+              fun c strm ->
+                let bp = loc_bp c strm in
+                match strm with parser
+                [: a = ps c; act = p1 c bp a :] -> Action.getf act a
           | _ ->
-              let ps c _ =
-                match Context.peek_nth c n with
+              let ps c strm =
+                match stream_peek_nth strm n with
                 [ Some (tok, _) when tematch tok -> tok
+                | Some (_, loc) -> (set_loc_ep c loc; raise Stream.Failure)
                 | _ -> raise Stream.Failure ]
               in
               let p1 = loop (n + 1) tokl in
@@ -200,18 +228,24 @@ module Make (Structure : Structure.S) = struct
       | [Skeyword kwd :: tokl] ->
           match tokl with
           [ [] ->
-              let ps c _ =
-                match Context.peek_nth c n with
-                [ Some (tok, _) when Token.match_keyword kwd tok ->
-                    do { Context.njunk c n; Action.mk tok }
+              let ps c strm =
+                match stream_peek_nth strm n with
+                [ Some (tok, loc) when Token.match_keyword kwd tok ->
+                    (njunk strm n; set_loc_ep c loc; Action.mk tok)
+                | Some (_, loc) ->
+                    (set_loc_ep c loc; raise Stream.Failure)
                 | _ -> raise Stream.Failure ]
               in
-              fun c ->
-                parser bp [: a = ps c; act = p1 c bp a :] -> Action.getf act a
+              fun c strm ->
+                let bp = loc_bp c strm in
+                match strm with parser
+                [: a = ps c; act = p1 c bp a :] -> Action.getf act a
           | _ ->
-              let ps c _ =
-                match Context.peek_nth c n with
+              let ps c strm =
+                match stream_peek_nth strm n with
                 [ Some (tok, _) when Token.match_keyword kwd tok -> tok
+                | Some (_, loc) ->
+                    (set_loc_ep c loc; raise Stream.Failure)
                 | _ -> raise Stream.Failure ]
               in
               let p1 = loop (n + 1) tokl in
@@ -283,8 +317,10 @@ module Make (Structure : Structure.S) = struct
           | [: :] -> Action.mk None ]
     | Stree t ->
         let pt = parser_of_tree entry 1 0 t in
-        fun c ->
-          parser bp [: (act, loc) = add_loc c bp pt :] ->
+        fun c strm ->
+          let bp = loc_bp c strm in
+          match strm with parser
+          [: (act, loc) = add_loc c bp pt :] ->
             Action.getf act loc
     | Snterm e -> fun c -> parser [: a = e.estart 0 c :] -> a
     | Snterml e l ->
@@ -292,17 +328,30 @@ module Make (Structure : Structure.S) = struct
     | Sself -> fun c -> parser [: a = entry.estart 0 c :] -> a
     | Snext -> fun c -> parser [: a = entry.estart nlevn c :] -> a
     | Skeyword kwd ->
-        fun _ ->
-          parser
-          [: `(tok, _) when Token.match_keyword kwd tok :] -> Action.mk tok
+        fun c strm ->
+          match StreamOrig.peek strm with
+          [ Some (tok, loc) when Token.match_keyword kwd tok ->
+            (set_loc_ep c loc; StreamOrig.junk strm; Action.mk tok)
+          | Some (_, loc) -> (set_loc_ep c loc; raise Stream.Failure)
+          | _ -> raise Stream.Failure ]
     | Stoken (f, _) ->
-        fun _ -> parser [: `(tok, _) when f tok :] -> Action.mk tok ]
+        fun c strm ->
+          match StreamOrig.peek strm with
+          [ Some (tok, loc) when f tok ->
+            (set_loc_ep c loc; StreamOrig.junk strm; Action.mk tok)
+          | Some (_, loc) -> (set_loc_ep c loc; raise Stream.Failure)
+          | _ -> raise Stream.Failure ] ]
   and parse_top_symb' entry symb c =
     parser_of_symbol entry 0 (top_symb entry symb) c
   and parse_top_symb entry symb =
     fun strm ->
-      Context.call_with_ctx strm
-        (fun c -> parse_top_symb' entry symb c (Context.stream c));
+      let loc =
+        match StreamOrig.peek strm with
+        [ None -> Loc.ghost
+        | Some (_, loc) -> loc ]
+      in
+      let c = mk_context loc in
+      parse_top_symb' entry symb c strm;
 
   value rec start_parser_of_levels entry clevn =
     fun
@@ -320,8 +369,9 @@ module Make (Structure : Structure.S) = struct
             let p2 = parser_of_tree entry (succ clevn) alevn tree in
             match levs with
             [ [] ->
-                fun levn c ->
-                  parser bp
+                fun levn c strm ->
+                  let bp = loc_bp c strm in
+                  match strm with parser
                   [: (act, loc) = add_loc c bp p2; strm :] ->
                     let a = Action.getf act loc in
                     entry.econtinue levn loc a c strm
@@ -329,7 +379,8 @@ module Make (Structure : Structure.S) = struct
                 fun levn c strm ->
                   if levn > clevn then p1 levn c strm
                   else
-                    match strm with parser bp
+                    let bp = loc_bp c strm in
+                    match strm with parser
                     [ [: (act, loc) = add_loc c bp p2 :] ->
                         let a = Action.getf act loc in
                         entry.econtinue levn loc a c strm
