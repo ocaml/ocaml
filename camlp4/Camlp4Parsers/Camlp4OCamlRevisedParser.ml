@@ -684,7 +684,9 @@ Very old (no more supported) syntax:\n\
         | s = a_FLOAT -> <:expr< $flo:s$ >>
         | s = a_STRING -> <:expr< $str:s$ >>
         | s = a_CHAR -> <:expr< $chr:s$ >>
-        | i = val_longident -> <:expr< $id:i$ >>
+        | i = TRY module_longident_dot_lparen; e = sequence; ")" ->
+            <:expr< let open $i$ in $e$ >>
+        | i = TRY val_longident -> <:expr< $id:i$ >>
         | "`"; s = a_ident -> <:expr< ` $s$ >>
         | "["; "]" -> <:expr< [] >>
         | "["; mk_list = sem_expr_for_list; "::"; last = expr; "]" ->
@@ -1170,6 +1172,12 @@ Very old (no more supported) syntax:\n\
             <:ident< $anti:mk_anti ~c:"ident" n s$ >>
         | i = a_UIDENT -> <:ident< $uid:i$ >>
         | "("; i = SELF; ")" -> i ] ]
+    ;
+    module_longident_dot_lparen:
+      [ [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s; "."; "(" ->
+            <:ident< $anti:mk_anti ~c:"ident" n s$ >>
+        | m = a_UIDENT; "."; l = SELF -> <:ident< $uid:m$.$l$ >>
+        | i = a_UIDENT; "."; "(" -> <:ident< $uid:i$ >> ] ]
     ;
     type_longident:
       [ "apply"
