@@ -282,7 +282,7 @@ installopt_really:
 ###########
 test: dummy
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc test.txt test2.txt odoc*.ml odoc*.mli -v
+	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
 
 test_stdlib: dummy
 	$(MKDIR) $@
