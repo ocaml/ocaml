@@ -732,6 +732,7 @@ Very old (no more supported) syntax:\n\
     ;
     sem_expr_for_list:
       [ [ e = expr; ";"; el = SELF -> fun acc -> <:expr< [ $e$ :: $el acc$ ] >>
+        | e = expr; ";" -> fun acc -> <:expr< [ $e$ :: $acc$ ] >>
         | e = expr -> fun acc -> <:expr< [ $e$ :: $acc$ ] >>
       ] ]
     ;
@@ -921,12 +922,14 @@ Very old (no more supported) syntax:\n\
     ;
     sem_patt:
       [ LEFTA
-        [ p1 = SELF; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
+        [ p1 = patt; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
         | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
+        | p = patt; ";" -> p
         | p = patt -> p ] ]
     ;
     sem_patt_for_list:
       [ [ p = patt; ";"; pl = SELF -> fun acc -> <:patt< [ $p$ :: $pl acc$ ] >>
+        | p = patt; ";" -> fun acc -> <:patt< [ $p$ :: $acc$ ] >>
         | p = patt -> fun acc -> <:patt< [ $p$ :: $acc$ ] >>
       ] ]
     ;
