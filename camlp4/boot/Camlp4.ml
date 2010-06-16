@@ -2335,6 +2335,12 @@ module Sig =
             
             type token_pattern = ((Token.t -> bool) * string)
             
+            type token_info
+            
+            type token_stream = (Token.t * token_info) Stream.t
+            
+            val token_location : token_info -> Loc.t
+              
             type symbol =
               | Smeta of string * symbol list * Action.t
               | Snterm of internal_entry
@@ -2344,6 +2350,7 @@ module Sig =
               | Slist1 of symbol
               | Slist1sep of symbol * symbol
               | Sopt of symbol
+              | Stry of symbol
               | Sself
               | Snext
               | Stoken of token_pattern
@@ -2385,11 +2392,9 @@ module Sig =
                 val mk : gram -> string -> 'a t
                   
                 val of_parser :
-                  gram ->
-                    string -> ((Token.t * Loc.t) Stream.t -> 'a) -> 'a t
+                  gram -> string -> (token_stream -> 'a) -> 'a t
                   
-                val setup_parser :
-                  'a t -> ((Token.t * Loc.t) Stream.t -> 'a) -> unit
+                val setup_parser : 'a t -> (token_stream -> 'a) -> unit
                   
                 val name : 'a t -> string
                   
@@ -2431,8 +2436,7 @@ module Sig =
               
             val filter :
               gram ->
-                ((Token.t * Loc.t) Stream.t) not_filtered ->
-                  (Token.t * Loc.t) Stream.t
+                ((Token.t * Loc.t) Stream.t) not_filtered -> token_stream
               
             val parse : 'a Entry.t -> Loc.t -> char Stream.t -> 'a
               
@@ -2441,8 +2445,7 @@ module Sig =
             val parse_tokens_before_filter :
               'a Entry.t -> ((Token.t * Loc.t) Stream.t) not_filtered -> 'a
               
-            val parse_tokens_after_filter :
-              'a Entry.t -> (Token.t * Loc.t) Stream.t -> 'a
+            val parse_tokens_after_filter : 'a Entry.t -> token_stream -> 'a
               
           end
           
@@ -2456,11 +2459,9 @@ module Sig =
                 
                 val mk : string -> 'a t
                   
-                val of_parser :
-                  string -> ((Token.t * Loc.t) Stream.t -> 'a) -> 'a t
+                val of_parser : string -> (token_stream -> 'a) -> 'a t
                   
-                val setup_parser :
-                  'a t -> ((Token.t * Loc.t) Stream.t -> 'a) -> unit
+                val setup_parser : 'a t -> (token_stream -> 'a) -> unit
                   
                 val name : 'a t -> string
                   
@@ -2499,8 +2500,7 @@ module Sig =
               Loc.t -> string -> ((Token.t * Loc.t) Stream.t) not_filtered
               
             val filter :
-              ((Token.t * Loc.t) Stream.t) not_filtered ->
-                (Token.t * Loc.t) Stream.t
+              ((Token.t * Loc.t) Stream.t) not_filtered -> token_stream
               
             val parse : 'a Entry.t -> Loc.t -> char Stream.t -> 'a
               
@@ -2509,8 +2509,7 @@ module Sig =
             val parse_tokens_before_filter :
               'a Entry.t -> ((Token.t * Loc.t) Stream.t) not_filtered -> 'a
               
-            val parse_tokens_after_filter :
-              'a Entry.t -> (Token.t * Loc.t) Stream.t -> 'a
+            val parse_tokens_after_filter : 'a Entry.t -> token_stream -> 'a
               
           end
           
@@ -15784,99 +15783,6 @@ module Struct =
       
     module Grammar =
       struct
-        module Context =
-          struct
-            module type S =
-              sig
-                module Token : Sig.Token
-                  
-                open Token
-                  
-                type t
-                
-                val call_with_ctx :
-                  (Token.t * Loc.t) Stream.t -> (t -> 'a) -> 'a
-                  
-                val loc_bp : t -> Loc.t
-                  
-                val loc_ep : t -> Loc.t
-                  
-                val stream : t -> (Token.t * Loc.t) Stream.t
-                  
-                val peek_nth : t -> int -> (Token.t * Loc.t) option
-                  
-                val njunk : t -> int -> unit
-                  
-                val junk : (Token.t * Loc.t) Stream.t -> unit
-                  
-                val bp : (Token.t * Loc.t) Stream.t -> Loc.t
-                  
-              end
-              
-            module Make (Token : Sig.Token) : S with module Token = Token =
-              struct
-                module Token = Token
-                  
-                open Token
-                  
-                type t =
-                  { mutable strm : (Token.t * Loc.t) Stream.t;
-                    mutable loc : Loc.t
-                  }
-                
-                let loc_bp c =
-                  match Stream.peek c.strm with
-                  | None -> Loc.ghost
-                  | Some ((_, loc)) -> loc
-                  
-                let loc_ep c = c.loc
-                  
-                let set_loc c =
-                  match Stream.peek c.strm with
-                  | Some ((_, loc)) -> c.loc <- loc
-                  | None -> ()
-                  
-                let mk strm =
-                  match Stream.peek strm with
-                  | Some ((_, loc)) -> { strm = strm; loc = loc; }
-                  | None -> { strm = strm; loc = Loc.ghost; }
-                  
-                let stream c = c.strm
-                  
-                let peek_nth c n =
-                  let list = Stream.npeek n c.strm in
-                  let rec loop list n =
-                    match (list, n) with
-                    | ((((_, loc) as x)) :: _, 1) -> (c.loc <- loc; Some x)
-                    | (_ :: l, n) -> loop l (n - 1)
-                    | ([], _) -> None
-                  in loop list n
-                  
-                let njunk c n =
-                  (for i = 1 to n do Stream.junk c.strm done; set_loc c)
-                  
-                let streams = ref []
-                  
-                let mk strm =
-                  let c = mk strm in
-                  let () = streams := (strm, c) :: !streams in c
-                  
-                let junk strm =
-                  (set_loc (List.assq strm !streams); Stream.junk strm)
-                  
-                let bp strm = loc_bp (List.assq strm !streams)
-                  
-                let call_with_ctx strm f =
-                  let streams_v = !streams in
-                  let r =
-                    try f (mk strm)
-                    with | exc -> (streams := streams_v; raise exc)
-                  in (streams := streams_v; r)
-                  
-              end
-              
-          end
-          
         module Structure =
           struct
             open Sig.Grammar
@@ -15890,8 +15796,6 @@ module Struct =
                 module Lexer : Sig.Lexer with module Loc = Loc
                   and module Token = Token
                   
-                module Context : Context.S with module Token = Token
-                  
                 module Action : Sig.Grammar.Action
                   
                 type gram =
@@ -15902,8 +15806,11 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                type efun =
-                  Context.t -> (Token.t * Loc.t) Stream.t -> Action.t
+                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                
+                type token_stream = (Token.t * token_info) Stream.t
+                
+                type efun = token_stream -> Action.t
                 
                 type token_pattern = ((Token.t -> bool) * string)
                 
@@ -15915,7 +15822,7 @@ module Struct =
                   }
                   and desc =
                   | Dlevels of level list
-                  | Dparser of ((Token.t * Loc.t) Stream.t -> Action.t)
+                  | Dparser of (token_stream -> Action.t)
                   and level =
                   { assoc : assoc; lname : string option; lsuffix : tree;
                     lprefix : tree
@@ -15929,6 +15836,7 @@ module Struct =
                   | Slist1 of symbol
                   | Slist1sep of symbol * symbol
                   | Sopt of symbol
+                  | Stry of symbol
                   | Sself
                   | Snext
                   | Stoken of token_pattern
@@ -16000,10 +15908,11 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                module Context = Context.Make(Token)
-                  
-                type efun =
-                  Context.t -> (Token.t * Loc.t) Stream.t -> Action.t
+                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                
+                type token_stream = (Token.t * token_info) Stream.t
+                
+                type efun = token_stream -> Action.t
                 
                 type token_pattern = ((Token.t -> bool) * string)
                 
@@ -16015,7 +15924,7 @@ module Struct =
                   }
                   and desc =
                   | Dlevels of level list
-                  | Dparser of ((Token.t * Loc.t) Stream.t -> Action.t)
+                  | Dparser of (token_stream -> Action.t)
                   and level =
                   { assoc : assoc; lname : string option; lsuffix : tree;
                     lprefix : tree
@@ -16029,6 +15938,7 @@ module Struct =
                   | Slist1 of symbol
                   | Slist1sep of symbol * symbol
                   | Sopt of symbol
+                  | Stry of symbol
                   | Sself
                   | Snext
                   | Stoken of token_pattern
@@ -16063,6 +15973,8 @@ module Struct =
                         ('a Stream.t -> unit) -> 'a Stream.t -> 'c
                 
                 let get_filter g = g.gfilter
+                  
+                let token_location r = r.cur_loc
                   
                 type 'a not_filtered = 'a
                 
@@ -16143,8 +16055,8 @@ module Struct =
                         (match symb with
                          | Snterm _ | Snterml (_, _) | Slist0 _ |
                              Slist0sep (_, _) | Slist1 _ | Slist1sep (_, _) |
-                             Sopt _ | Stoken _ | Stree _ | Skeyword _ when
-                             symb == prev_symb -> Some symb
+                             Sopt _ | Stry _ | Stoken _ | Stree _ |
+                             Skeyword _ when symb == prev_symb -> Some symb
                          | Slist0 symb ->
                              (match search_symbol symb with
                               | Some symb -> Some (Slist0 symb)
@@ -16171,6 +16083,10 @@ module Struct =
                              (match search_symbol symb with
                               | Some symb -> Some (Sopt symb)
                               | None -> None)
+                         | Stry symb ->
+                             (match search_symbol symb with
+                              | Some symb -> Some (Stry symb)
+                              | None -> None)
                          | Stree t ->
                              (match search_tree t with
                               | Some t -> Some (Stree t)
@@ -16189,8 +16105,52 @@ module Struct =
               struct
                 open Structure
                   
-                let empty_entry ename _ _ _ =
+                let empty_entry ename _ =
                   raise (Stream.Error ("entry [" ^ (ename ^ "] is empty")))
+                  
+                let rec stream_map f (__strm : _ Stream.t) =
+                  match Stream.peek __strm with
+                  | Some x ->
+                      (Stream.junk __strm;
+                       let strm = __strm
+                       in
+                         Stream.lcons (fun _ -> f x)
+                           (Stream.slazy (fun _ -> stream_map f strm)))
+                  | _ -> Stream.sempty
+                  
+                let keep_prev_loc strm =
+                  match Stream.peek strm with
+                  | None -> Stream.sempty
+                  | Some ((_, init_loc)) ->
+                      let rec go prev_loc (__strm : _ Stream.t) =
+                        (match Stream.peek __strm with
+                         | Some ((tok, cur_loc)) ->
+                             (Stream.junk __strm;
+                              let strm = __strm
+                              in
+                                Stream.lcons
+                                  (fun _ ->
+                                     (tok,
+                                      {
+                                        prev_loc = prev_loc;
+                                        cur_loc = cur_loc;
+                                      }))
+                                  (Stream.slazy (fun _ -> go cur_loc strm)))
+                         | _ -> Stream.sempty)
+                      in go init_loc strm
+                  
+                let drop_prev_loc strm =
+                  stream_map (fun (tok, r) -> (tok, (r.cur_loc))) strm
+                  
+                let get_cur_loc strm =
+                  match Stream.peek strm with
+                  | Some ((_, r)) -> r.cur_loc
+                  | None -> Loc.ghost
+                  
+                let get_prev_loc strm =
+                  match Stream.peek strm with
+                  | Some ((_, r)) -> r.prev_loc
+                  | None -> Loc.ghost
                   
                 let is_level_labelled n lev =
                   match lev.lname with | Some n1 -> n = n1 | None -> false
@@ -16227,13 +16187,12 @@ module Struct =
                     | (Sself, Snterm e2) -> entry.ename = e2.ename
                     | (Snterml (e1, l1), Snterml (e2, l2)) ->
                         (e1.ename = e2.ename) && (l1 = l2)
-                    | (Slist0 s1, Slist0 s2) -> eq_symbols s1 s2
-                    | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) ->
+                    | (Slist0 s1, Slist0 s2) | (Slist1 s1, Slist1 s2) |
+                        (Sopt s1, Sopt s2) | (Stry s1, Stry s2) ->
+                        eq_symbols s1 s2
+                    | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) |
+                        (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
                         (eq_symbols s1 s2) && (eq_symbols sep1 sep2)
-                    | (Slist1 s1, Slist1 s2) -> eq_symbols s1 s2
-                    | (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
-                        (eq_symbols s1 s2) && (eq_symbols sep1 sep2)
-                    | (Sopt s1, Sopt s2) -> eq_symbols s1 s2
                     | (Stree t1, Stree t2) -> eq_trees t1 t2
                     | (Stoken ((_, s1)), Stoken ((_, s2))) ->
                         eq_Stoken_ids s1 s2
@@ -16254,13 +16213,12 @@ module Struct =
                   | (Snterm e1, Snterm e2) -> e1 == e2
                   | (Snterml (e1, l1), Snterml (e2, l2)) ->
                       (e1 == e2) && (l1 = l2)
-                  | (Slist0 s1, Slist0 s2) -> eq_symbol s1 s2
-                  | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) ->
+                  | (Slist0 s1, Slist0 s2) | (Slist1 s1, Slist1 s2) |
+                      (Sopt s1, Sopt s2) | (Stry s1, Stry s2) ->
+                      eq_symbol s1 s2
+                  | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) |
+                      (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
                       (eq_symbol s1 s2) && (eq_symbol sep1 sep2)
-                  | (Slist1 s1, Slist1 s2) -> eq_symbol s1 s2
-                  | (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
-                      (eq_symbol s1 s2) && (eq_symbol sep1 sep2)
-                  | (Sopt s1, Sopt s2) -> eq_symbol s1 s2
                   | (Stree _, Stree _) -> false
                   | (Stoken ((_, s1)), Stoken ((_, s2))) ->
                       eq_Stoken_ids s1 s2
@@ -16357,6 +16315,7 @@ module Struct =
                       fprintf ppf "LIST1 %a SEP %a" print_symbol1 s
                         print_symbol1 t
                   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
+                  | Stry s -> fprintf ppf "TRY %a" print_symbol1 s
                   | Snterml (e, l) -> fprintf ppf "%s@ LEVEL@ %S" e.ename l
                   | (Snterm _ | Snext | Sself | Stree _ | Stoken _ |
                        Skeyword _
@@ -16389,7 +16348,7 @@ module Struct =
                       print_level ppf pp_print_space (flatten_tree t)
                   | (Smeta (_, _, _) | Snterml (_, _) | Slist0 _ |
                        Slist0sep (_, _) | Slist1 _ | Slist1sep (_, _) |
-                       Sopt _
+                       Sopt _ | Stry _
                      as s) -> fprintf ppf "(%a)" print_symbol s
                 and print_rule ppf symbols =
                   (fprintf ppf "@[<hov 0>";
@@ -16498,6 +16457,7 @@ module Struct =
                       fprintf ppf "LIST1 %a SEP %a" print_symbol1 s
                         print_symbol1 t
                   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
+                  | Stry s -> fprintf ppf "TRY %a" print_symbol1 s
                   | Snterml (e, l) -> fprintf ppf "%s@ LEVEL@ %S" e.ename l
                   | (Snterm _ | Snext | Sself | Stree _ | Stoken _ |
                        Skeyword _
@@ -16529,7 +16489,7 @@ module Struct =
                   | Stree t -> print_tree ppf t
                   | (Smeta (_, _, _) | Snterml (_, _) | Slist0 _ |
                        Slist0sep (_, _) | Slist1 _ | Slist1sep (_, _) |
-                       Sopt _
+                       Sopt _ | Stry _
                      as s) -> fprintf ppf "(%a)" print_symbol s
                 and print_rule ppf symbols =
                   (fprintf ppf "@[<hov 0>";
@@ -16609,11 +16569,8 @@ module Struct =
                   
                 let rec name_of_symbol_failed entry =
                   function
-                  | Slist0 s -> name_of_symbol_failed entry s
-                  | Slist0sep (s, _) -> name_of_symbol_failed entry s
-                  | Slist1 s -> name_of_symbol_failed entry s
-                  | Slist1sep (s, _) -> name_of_symbol_failed entry s
-                  | Sopt s -> name_of_symbol_failed entry s
+                  | Slist0 s | Slist0sep (s, _) | Slist1 s | Slist1sep (s, _)
+                      | Sopt s | Stry s -> name_of_symbol_failed entry s
                   | Stree t -> name_of_tree_failed entry t
                   | s -> name_of_symbol entry s
                 and name_of_tree_failed entry =
@@ -16686,7 +16643,7 @@ module Struct =
                          | _ ->
                              let txt1 = name_of_symbol_failed entry sep
                              in txt1 ^ (" or " ^ (txt ^ " expected")))
-                    | Sopt _ | Stree _ -> txt ^ " expected"
+                    | Stry _ | Sopt _ | Stree _ -> txt ^ " expected"
                     | _ ->
                         txt ^
                           (" expected after " ^
@@ -16737,20 +16694,61 @@ module Struct =
                   
                 open Sig.Grammar
                   
+                module StreamOrig = Stream
+                  
+                let njunk strm n = for i = 1 to n do Stream.junk strm done
+                  
+                let loc_bp = Tools.get_cur_loc
+                  
+                let loc_ep = Tools.get_prev_loc
+                  
+                let drop_prev_loc = Tools.drop_prev_loc
+                  
+                let add_loc bp parse_fun strm =
+                  let x = parse_fun strm in
+                  let ep = loc_ep strm in
+                  let loc = Loc.merge bp ep in (x, loc)
+                  
+                let stream_peek_nth strm n =
+                  let rec loop i =
+                    function
+                    | x :: xs -> if i = 1 then Some x else loop (i - 1) xs
+                    | [] -> None
+                  in loop n (Stream.npeek n strm)
+                  
                 module Stream =
                   struct
-                    include Stream
+                    type 'a t = 'a StreamOrig.t
+                    
+                    exception Failure = StreamOrig.Failure
                       
-                    let junk strm = Context.junk strm
+                    exception Error = StreamOrig.Error
                       
-                    let count strm = Context.bp strm
+                    let peek = StreamOrig.peek
+                      
+                    let junk = StreamOrig.junk
+                      
+                    let dup strm =
+                      let peek_nth n =
+                        let rec loop n =
+                          function
+                          | [] -> None
+                          | [ x ] -> if n = 0 then Some x else None
+                          | _ :: l -> loop (n - 1) l
+                        in loop n (Stream.npeek (n + 1) strm)
+                      in Stream.from peek_nth
                       
                   end
                   
-                let add_loc c bp parse_fun strm =
-                  let x = parse_fun c strm in
-                  let ep = Context.loc_ep c in
-                  let loc = Loc.merge bp ep in (x, loc)
+                let try_parser ps strm =
+                  let strm' = Stream.dup strm in
+                  let r =
+                    try ps strm'
+                    with
+                    | Stream.Error _ | Loc.Exc_located (_, (Stream.Error _))
+                        -> raise Stream.Failure
+                    | exc -> raise exc
+                  in (njunk strm (StreamOrig.count strm'); r)
                   
                 let level_number entry lab =
                   let rec lookup levn =
@@ -16791,9 +16789,8 @@ module Struct =
                   | Snterml (e, _) -> e
                   | _ -> raise Stream.Failure
                   
-                let continue entry loc a s c son p1 (__strm : _ Stream.t) =
-                  let a =
-                    (entry_of_symb entry s).econtinue 0 loc a c __strm in
+                let continue entry loc a s son p1 (__strm : _ Stream.t) =
+                  let a = (entry_of_symb entry s).econtinue 0 loc a __strm in
                   let act =
                     try p1 __strm
                     with
@@ -16802,26 +16799,26 @@ module Struct =
                           (Stream.Error (Failed.tree_failed entry a s son))
                   in Action.mk (fun _ -> Action.getf act a)
                   
-                let skip_if_empty c bp _ =
-                  if (Context.loc_bp c) = bp
+                let skip_if_empty bp strm =
+                  if (loc_bp strm) = bp
                   then Action.mk (fun _ -> raise Stream.Failure)
                   else raise Stream.Failure
                   
-                let do_recover parser_of_tree entry nlevn alevn loc a s c son
+                let do_recover parser_of_tree entry nlevn alevn loc a s son
                                (__strm : _ Stream.t) =
                   try
-                    parser_of_tree entry nlevn alevn (top_tree entry son) c
+                    parser_of_tree entry nlevn alevn (top_tree entry son)
                       __strm
                   with
                   | Stream.Failure ->
-                      (try skip_if_empty c loc __strm
+                      (try skip_if_empty loc __strm
                        with
                        | Stream.Failure ->
-                           continue entry loc a s c son
-                             (parser_of_tree entry nlevn alevn son c) __strm)
+                           continue entry loc a s son
+                             (parser_of_tree entry nlevn alevn son) __strm)
                   
-                let recover parser_of_tree entry nlevn alevn loc a s c son
-                            strm =
+                let recover parser_of_tree entry nlevn alevn loc a s son strm
+                            =
                   if !strict_parsing
                   then
                     raise (Stream.Error (Failed.tree_failed entry a s son))
@@ -16839,33 +16836,33 @@ module Struct =
                              Format.eprintf "\n%s%a@." msg Loc.print loc))
                        else ()
                      in
-                       do_recover parser_of_tree entry nlevn alevn loc a s c
+                       do_recover parser_of_tree entry nlevn alevn loc a s
                          son strm)
                   
                 let rec parser_of_tree entry nlevn alevn =
                   function
                   | DeadEnd ->
-                      (fun _ (__strm : _ Stream.t) -> raise Stream.Failure)
-                  | LocAct (act, _) -> (fun _ (__strm : _ Stream.t) -> act)
+                      (fun (__strm : _ Stream.t) -> raise Stream.Failure)
+                  | LocAct (act, _) -> (fun (__strm : _ Stream.t) -> act)
                   | Node
                       {
                         node = Sself;
                         son = LocAct (act, _);
                         brother = DeadEnd
                       } ->
-                      (fun c (__strm : _ Stream.t) ->
-                         let a = entry.estart alevn c __strm
+                      (fun (__strm : _ Stream.t) ->
+                         let a = entry.estart alevn __strm
                          in Action.getf act a)
                   | Node { node = Sself; son = LocAct (act, _); brother = bro
                       } ->
                       let p2 = parser_of_tree entry nlevn alevn bro
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           match try Some (entry.estart alevn c __strm)
+                        (fun (__strm : _ Stream.t) ->
+                           match try Some (entry.estart alevn __strm)
                                  with | Stream.Failure -> None
                            with
                            | Some a -> Action.getf act a
-                           | _ -> p2 c __strm)
+                           | _ -> p2 __strm)
                   | Node { node = s; son = son; brother = DeadEnd } ->
                       let tokl =
                         (match s with
@@ -16879,11 +16876,12 @@ module Struct =
                              let p1 = parser_of_tree entry nlevn alevn son in
                              let p1 = parser_cont p1 entry nlevn alevn s son
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm in
-                                  let a = ps c __strm in
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm in
+                                  let a = ps __strm in
                                   let act =
-                                    try p1 c bp a __strm
+                                    try p1 bp a __strm
                                     with
                                     | Stream.Failure ->
                                         raise (Stream.Error "")
@@ -16908,20 +16906,21 @@ module Struct =
                                parser_cont p1 entry nlevn alevn s son in
                              let p2 = parser_of_tree entry nlevn alevn bro
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm
                                   in
-                                    match try Some (ps c __strm)
+                                    match try Some (ps __strm)
                                           with | Stream.Failure -> None
                                     with
                                     | Some a ->
                                         let act =
-                                          (try p1 c bp a __strm
+                                          (try p1 bp a __strm
                                            with
                                            | Stream.Failure ->
                                                raise (Stream.Error ""))
                                         in Action.getf act a
-                                    | _ -> p2 c __strm)
+                                    | _ -> p2 __strm)
                          | Some ((tokl, last_tok, son)) ->
                              let p1 = parser_of_tree entry nlevn alevn son in
                              let p1 =
@@ -16929,18 +16928,18 @@ module Struct =
                              let p1 = parser_of_token_list p1 tokl in
                              let p2 = parser_of_tree entry nlevn alevn bro
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  try p1 c __strm
-                                  with | Stream.Failure -> p2 c __strm))
+                               (fun (__strm : _ Stream.t) ->
+                                  try p1 __strm
+                                  with | Stream.Failure -> p2 __strm))
                 and
-                  parser_cont p1 entry nlevn alevn s son c loc a
+                  parser_cont p1 entry nlevn alevn s son loc a
                               (__strm : _ Stream.t) =
-                  try p1 c __strm
+                  try p1 __strm
                   with
                   | Stream.Failure ->
                       (try
-                         recover parser_of_tree entry nlevn alevn loc a s c
-                           son __strm
+                         recover parser_of_tree entry nlevn alevn loc a s son
+                           __strm
                        with
                        | Stream.Failure ->
                            raise
@@ -16951,63 +16950,65 @@ module Struct =
                     | Stoken ((tematch, _)) :: tokl ->
                         (match tokl with
                          | [] ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when tematch tok ->
-                                    (Context.njunk c n; Action.mk tok)
+                                    (njunk strm n; Action.mk tok)
                                 | _ -> raise Stream.Failure)
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm in
-                                  let a = ps c __strm in
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm in
+                                  let a = ps __strm in
                                   let act =
-                                    try p1 c bp a __strm
+                                    try p1 bp a __strm
                                     with
                                     | Stream.Failure ->
                                         raise (Stream.Error "")
                                   in Action.getf act a)
                          | _ ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when tematch tok -> tok
                                 | _ -> raise Stream.Failure) in
                              let p1 = loop (n + 1) tokl
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let tok = ps c __strm in
+                               (fun (__strm : _ Stream.t) ->
+                                  let tok = ps __strm in
                                   let s = __strm in
-                                  let act = p1 c s in Action.getf act tok))
+                                  let act = p1 s in Action.getf act tok))
                     | Skeyword kwd :: tokl ->
                         (match tokl with
                          | [] ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when
                                     Token.match_keyword kwd tok ->
-                                    (Context.njunk c n; Action.mk tok)
+                                    (njunk strm n; Action.mk tok)
                                 | _ -> raise Stream.Failure)
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm in
-                                  let a = ps c __strm in
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm in
+                                  let a = ps __strm in
                                   let act =
-                                    try p1 c bp a __strm
+                                    try p1 bp a __strm
                                     with
                                     | Stream.Failure ->
                                         raise (Stream.Error "")
                                   in Action.getf act a)
                          | _ ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when
                                     Token.match_keyword kwd tok -> tok
                                 | _ -> raise Stream.Failure) in
                              let p1 = loop (n + 1) tokl
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let tok = ps c __strm in
+                               (fun (__strm : _ Stream.t) ->
+                                  let tok = ps __strm in
                                   let s = __strm in
-                                  let act = p1 c s in Action.getf act tok))
+                                  let act = p1 s in Action.getf act tok))
                     | _ -> invalid_arg "parser_of_token_list"
                   in loop 1 tokl
                 and parser_of_symbol entry nlevn =
@@ -17016,134 +17017,133 @@ module Struct =
                       let act = Obj.magic act entry symbl in
                       let pl = List.map (parser_of_symbol entry nlevn) symbl
                       in
-                        (fun c ->
-                           Obj.magic
-                             (List.fold_left
-                                (fun act p -> Obj.magic act (p c)) act pl))
+                        Obj.magic
+                          (List.fold_left (fun act p -> Obj.magic act p) act
+                             pl)
                   | Slist0 s ->
                       let ps = parser_of_symbol entry nlevn s in
-                      let rec loop c al (__strm : _ Stream.t) =
-                        (match try Some (ps c __strm)
+                      let rec loop al (__strm : _ Stream.t) =
+                        (match try Some (ps __strm)
                                with | Stream.Failure -> None
                          with
-                         | Some a -> loop c (a :: al) __strm
+                         | Some a -> loop (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let a = loop c [] __strm in Action.mk (List.rev a))
+                        (fun (__strm : _ Stream.t) ->
+                           let a = loop [] __strm in Action.mk (List.rev a))
                   | Slist0sep (symb, sep) ->
                       let ps = parser_of_symbol entry nlevn symb in
                       let pt = parser_of_symbol entry nlevn sep in
-                      let rec kont c al (__strm : _ Stream.t) =
-                        (match try Some (pt c __strm)
+                      let rec kont al (__strm : _ Stream.t) =
+                        (match try Some (pt __strm)
                                with | Stream.Failure -> None
                          with
                          | Some v ->
                              let a =
-                               (try ps c __strm
+                               (try ps __strm
                                 with
                                 | Stream.Failure ->
                                     raise
                                       (Stream.Error
                                          (Failed.symb_failed entry v sep symb)))
-                             in kont c (a :: al) __strm
+                             in kont (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           match try Some (ps c __strm)
+                        (fun (__strm : _ Stream.t) ->
+                           match try Some (ps __strm)
                                  with | Stream.Failure -> None
                            with
                            | Some a ->
                                let s = __strm
-                               in Action.mk (List.rev (kont c [ a ] s))
+                               in Action.mk (List.rev (kont [ a ] s))
                            | _ -> Action.mk [])
                   | Slist1 s ->
                       let ps = parser_of_symbol entry nlevn s in
-                      let rec loop c al (__strm : _ Stream.t) =
-                        (match try Some (ps c __strm)
+                      let rec loop al (__strm : _ Stream.t) =
+                        (match try Some (ps __strm)
                                with | Stream.Failure -> None
                          with
-                         | Some a -> loop c (a :: al) __strm
+                         | Some a -> loop (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let a = ps c __strm in
+                        (fun (__strm : _ Stream.t) ->
+                           let a = ps __strm in
                            let s = __strm
-                           in Action.mk (List.rev (loop c [ a ] s)))
+                           in Action.mk (List.rev (loop [ a ] s)))
                   | Slist1sep (symb, sep) ->
                       let ps = parser_of_symbol entry nlevn symb in
                       let pt = parser_of_symbol entry nlevn sep in
-                      let rec kont c al (__strm : _ Stream.t) =
-                        (match try Some (pt c __strm)
+                      let rec kont al (__strm : _ Stream.t) =
+                        (match try Some (pt __strm)
                                with | Stream.Failure -> None
                          with
                          | Some v ->
                              let a =
-                               (try ps c __strm
+                               (try ps __strm
                                 with
                                 | Stream.Failure ->
-                                    (try parse_top_symb' entry symb c __strm
+                                    (try parse_top_symb entry symb __strm
                                      with
                                      | Stream.Failure ->
                                          raise
                                            (Stream.Error
                                               (Failed.symb_failed entry v sep
                                                  symb))))
-                             in kont c (a :: al) __strm
+                             in kont (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let a = ps c __strm in
+                        (fun (__strm : _ Stream.t) ->
+                           let a = ps __strm in
                            let s = __strm
-                           in Action.mk (List.rev (kont c [ a ] s)))
+                           in Action.mk (List.rev (kont [ a ] s)))
                   | Sopt s ->
                       let ps = parser_of_symbol entry nlevn s
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           match try Some (ps c __strm)
+                        (fun (__strm : _ Stream.t) ->
+                           match try Some (ps __strm)
                                  with | Stream.Failure -> None
                            with
                            | Some a -> Action.mk (Some a)
                            | _ -> Action.mk None)
+                  | Stry s ->
+                      let ps = parser_of_symbol entry nlevn s
+                      in try_parser ps
                   | Stree t ->
                       let pt = parser_of_tree entry 1 0 t
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let bp = Stream.count __strm in
-                           let (act, loc) = add_loc c bp pt __strm
+                        (fun strm ->
+                           let bp = loc_bp strm in
+                           let (__strm : _ Stream.t) = strm in
+                           let (act, loc) = add_loc bp pt __strm
                            in Action.getf act loc)
                   | Snterm e ->
-                      (fun c (__strm : _ Stream.t) -> e.estart 0 c __strm)
+                      (fun (__strm : _ Stream.t) -> e.estart 0 __strm)
                   | Snterml (e, l) ->
-                      (fun c (__strm : _ Stream.t) ->
-                         e.estart (level_number e l) c __strm)
+                      (fun (__strm : _ Stream.t) ->
+                         e.estart (level_number e l) __strm)
                   | Sself ->
-                      (fun c (__strm : _ Stream.t) -> entry.estart 0 c __strm)
+                      (fun (__strm : _ Stream.t) -> entry.estart 0 __strm)
                   | Snext ->
-                      (fun c (__strm : _ Stream.t) ->
-                         entry.estart nlevn c __strm)
+                      (fun (__strm : _ Stream.t) -> entry.estart nlevn __strm)
                   | Skeyword kwd ->
-                      (fun _ (__strm : _ Stream.t) ->
+                      (fun (__strm : _ Stream.t) ->
                          match Stream.peek __strm with
                          | Some ((tok, _)) when Token.match_keyword kwd tok
                              -> (Stream.junk __strm; Action.mk tok)
                          | _ -> raise Stream.Failure)
                   | Stoken ((f, _)) ->
-                      (fun _ (__strm : _ Stream.t) ->
+                      (fun (__strm : _ Stream.t) ->
                          match Stream.peek __strm with
                          | Some ((tok, _)) when f tok ->
                              (Stream.junk __strm; Action.mk tok)
                          | _ -> raise Stream.Failure)
-                and parse_top_symb' entry symb c =
-                  parser_of_symbol entry 0 (top_symb entry symb) c
                 and parse_top_symb entry symb strm =
-                  Context.call_with_ctx strm
-                    (fun c -> parse_top_symb' entry symb c (Context.stream c))
+                  parser_of_symbol entry 0 (top_symb entry symb) strm
                   
                 let rec start_parser_of_levels entry clevn =
                   function
                   | [] ->
-                      (fun _ _ (__strm : _ Stream.t) -> raise Stream.Failure)
+                      (fun _ (__strm : _ Stream.t) -> raise Stream.Failure)
                   | lev :: levs ->
                       let p1 = start_parser_of_levels entry (succ clevn) levs
                       in
@@ -17159,24 +17159,25 @@ module Struct =
                              in
                                (match levs with
                                 | [] ->
-                                    (fun levn c (__strm : _ Stream.t) ->
-                                       let bp = Stream.count __strm in
+                                    (fun levn strm ->
+                                       let bp = loc_bp strm in
+                                       let (__strm : _ Stream.t) = strm in
                                        let (act, loc) =
-                                         add_loc c bp p2 __strm in
+                                         add_loc bp p2 __strm in
                                        let strm = __strm in
                                        let a = Action.getf act loc
-                                       in entry.econtinue levn loc a c strm)
+                                       in entry.econtinue levn loc a strm)
                                 | _ ->
-                                    (fun levn c strm ->
+                                    (fun levn strm ->
                                        if levn > clevn
-                                       then p1 levn c strm
+                                       then p1 levn strm
                                        else
-                                         (let (__strm : _ Stream.t) = strm in
-                                          let bp = Stream.count __strm
+                                         (let bp = loc_bp strm in
+                                          let (__strm : _ Stream.t) = strm
                                           in
                                             match try
                                                     Some
-                                                      (add_loc c bp p2 __strm)
+                                                      (add_loc bp p2 __strm)
                                                   with
                                                   | Stream.Failure -> None
                                             with
@@ -17184,19 +17185,19 @@ module Struct =
                                                 let a = Action.getf act loc
                                                 in
                                                   entry.econtinue levn loc a
-                                                    c strm
-                                            | _ -> p1 levn c __strm))))
+                                                    strm
+                                            | _ -> p1 levn __strm))))
                   
                 let start_parser_of_entry entry =
                   match entry.edesc with
                   | Dlevels [] -> Tools.empty_entry entry.ename
                   | Dlevels elev -> start_parser_of_levels entry 0 elev
-                  | Dparser p -> (fun _ _ strm -> p strm)
+                  | Dparser p -> (fun _ -> p)
                   
                 let rec continue_parser_of_levels entry clevn =
                   function
                   | [] ->
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
+                      (fun _ _ _ (__strm : _ Stream.t) ->
                          raise Stream.Failure)
                   | lev :: levs ->
                       let p1 =
@@ -17212,32 +17213,29 @@ module Struct =
                              let p2 =
                                parser_of_tree entry (succ clevn) alevn tree
                              in
-                               (fun c levn bp a strm ->
+                               (fun levn bp a strm ->
                                   if levn > clevn
-                                  then p1 c levn bp a strm
+                                  then p1 levn bp a strm
                                   else
                                     (let (__strm : _ Stream.t) = strm
                                      in
-                                       try p1 c levn bp a __strm
+                                       try p1 levn bp a __strm
                                        with
                                        | Stream.Failure ->
                                            let (act, loc) =
-                                             add_loc c bp p2 __strm in
+                                             add_loc bp p2 __strm in
                                            let a = Action.getf2 act a loc
-                                           in
-                                             entry.econtinue levn loc a c
-                                               strm)))
+                                           in entry.econtinue levn loc a strm)))
                   
                 let continue_parser_of_entry entry =
                   match entry.edesc with
                   | Dlevels elev ->
                       let p = continue_parser_of_levels entry 0 elev
                       in
-                        (fun levn bp a c (__strm : _ Stream.t) ->
-                           try p c levn bp a __strm
-                           with | Stream.Failure -> a)
+                        (fun levn bp a (__strm : _ Stream.t) ->
+                           try p levn bp a __strm with | Stream.Failure -> a)
                   | Dparser _ ->
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
+                      (fun _ _ _ (__strm : _ Stream.t) ->
                          raise Stream.Failure)
                   
               end
@@ -17267,13 +17265,13 @@ module Struct =
                   
                 let rec derive_eps =
                   function
-                  | Slist0 _ -> true
-                  | Slist0sep (_, _) -> true
-                  | Sopt _ -> true
+                  | Slist0 _ | Slist0sep (_, _) | Sopt _ -> true
+                  | Stry s -> derive_eps s
                   | Stree t -> tree_derive_eps t
-                  | Smeta (_, _, _) | Slist1 _ | Slist1sep (_, _) | Snterm _
-                      | Snterml (_, _) | Snext | Sself | Stoken _ |
-                      Skeyword _ -> false
+                  | Slist1 _ | Slist1sep (_, _) | Stoken _ | Skeyword _ ->
+                      false
+                  | Smeta (_, _, _) | Snterm _ | Snterml (_, _) | Snext |
+                      Sself -> false
                 and tree_derive_eps =
                   function
                   | LocAct (_, _) -> true
@@ -17412,9 +17410,8 @@ module Struct =
                       (check_gram entry t; check_gram entry s)
                   | Slist1sep (s, t) ->
                       (check_gram entry t; check_gram entry s)
-                  | Slist0 s -> check_gram entry s
-                  | Slist1 s -> check_gram entry s
-                  | Sopt s -> check_gram entry s
+                  | Slist0 s | Slist1 s | Sopt s | Stry s ->
+                      check_gram entry s
                   | Stree t -> tree_check_gram entry t
                   | Snext | Sself | Stoken _ | Skeyword _ -> ()
                 and tree_check_gram entry =
@@ -17434,11 +17431,9 @@ module Struct =
                   let rec insert =
                     function
                     | Smeta (_, sl, _) -> List.iter insert sl
-                    | Slist0 s -> insert s
-                    | Slist1 s -> insert s
+                    | Slist0 s | Slist1 s | Sopt s | Stry s -> insert s
                     | Slist0sep (s, t) -> (insert s; insert t)
                     | Slist1sep (s, t) -> (insert s; insert t)
-                    | Sopt s -> insert s
                     | Stree t -> tinsert t
                     | Skeyword kwd -> using gram kwd
                     | Snterm _ | Snterml (_, _) | Snext | Sself | Stoken _ ->
@@ -17594,13 +17589,13 @@ module Struct =
                   in
                     (entry.edesc <- Dlevels elev;
                      entry.estart <-
-                       (fun lev c strm ->
+                       (fun lev strm ->
                           let f = Parser.start_parser_of_entry entry
-                          in (entry.estart <- f; f lev c strm));
+                          in (entry.estart <- f; f lev strm));
                      entry.econtinue <-
-                       fun lev bp a c strm ->
+                       fun lev bp a strm ->
                          let f = Parser.continue_parser_of_entry entry
-                         in (entry.econtinue <- f; f lev bp a c strm))
+                         in (entry.econtinue <- f; f lev bp a strm))
                   
               end
               
@@ -17672,13 +17667,12 @@ module Struct =
                   function
                   | Skeyword kwd -> removing gram kwd
                   | Smeta (_, sl, _) -> List.iter (decr_keyw_use gram) sl
-                  | Slist0 s -> decr_keyw_use gram s
-                  | Slist1 s -> decr_keyw_use gram s
+                  | Slist0 s | Slist1 s | Sopt s | Stry s ->
+                      decr_keyw_use gram s
                   | Slist0sep (s1, s2) ->
                       (decr_keyw_use gram s1; decr_keyw_use gram s2)
                   | Slist1sep (s1, s2) ->
                       (decr_keyw_use gram s1; decr_keyw_use gram s2)
-                  | Sopt s -> decr_keyw_use gram s
                   | Stree t -> decr_keyw_use_in_tree gram t
                   | Sself | Snext | Snterm _ | Snterml (_, _) | Stoken _ ->
                       ()
@@ -17759,13 +17753,13 @@ module Struct =
                       in
                         (entry.edesc <- Dlevels levs;
                          entry.estart <-
-                           (fun lev c strm ->
+                           (fun lev strm ->
                               let f = Parser.start_parser_of_entry entry
-                              in (entry.estart <- f; f lev c strm));
+                              in (entry.estart <- f; f lev strm));
                          entry.econtinue <-
-                           (fun lev bp a c strm ->
+                           (fun lev bp a strm ->
                               let f = Parser.continue_parser_of_entry entry
-                              in (entry.econtinue <- f; f lev bp a c strm)))
+                              in (entry.econtinue <- f; f lev bp a strm)))
                   | Dparser _ -> ()
                   
               end
@@ -17802,11 +17796,11 @@ module Struct =
                   
                 module Stream =
                   struct
-                    include Stream
+                    type 'a t = 'a Stream.t
+                    
+                    exception Failure = Stream.Failure
                       
-                    let junk strm = Context.junk strm
-                      
-                    let count strm = Context.bp strm
+                    exception Error = Stream.Error
                       
                   end
                   
@@ -17908,6 +17902,8 @@ module Struct =
                   
                 open Structure
                   
+                open Tools
+                  
                 type 'a t = internal_entry
                 
                 let name e = e.ename
@@ -17920,24 +17916,21 @@ module Struct =
                   {
                     egram = g;
                     ename = n;
-                    estart = Tools.empty_entry n;
+                    estart = empty_entry n;
                     econtinue =
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
+                      (fun _ _ _ (__strm : _ Stream.t) ->
                          raise Stream.Failure);
                     edesc = Dlevels [];
                   }
                   
                 let action_parse entry ts : Action.t =
-                  Context.call_with_ctx ts
-                    (fun c ->
-                       try entry.estart 0 c (Context.stream c)
-                       with
-                       | Stream.Failure ->
-                           Loc.raise (Context.loc_ep c)
-                             (Stream.Error
-                                ("illegal begin of " ^ entry.ename))
-                       | (Loc.Exc_located (_, _) as exc) -> raise exc
-                       | exc -> Loc.raise (Context.loc_ep c) exc)
+                  try entry.estart 0 ts
+                  with
+                  | Stream.Failure ->
+                      Loc.raise (get_prev_loc ts)
+                        (Stream.Error ("illegal begin of " ^ entry.ename))
+                  | (Loc.Exc_located (_, _) as exc) -> raise exc
+                  | exc -> Loc.raise (get_prev_loc ts) exc
                   
                 let lex entry loc cs = entry.egram.glexer loc cs
                   
@@ -17945,7 +17938,8 @@ module Struct =
                   lex entry loc (Stream.of_string str)
                   
                 let filter entry ts =
-                  Token.Filter.filter (get_filter entry.egram) ts
+                  keep_prev_loc
+                    (Token.Filter.filter (get_filter entry.egram) ts)
                   
                 let parse_tokens_after_filter entry ts =
                   Action.get (action_parse entry ts)
@@ -17959,33 +17953,36 @@ module Struct =
                 let parse_string entry loc str =
                   parse_tokens_before_filter entry (lex_string entry loc str)
                   
-                let of_parser g n (p : (Token.t * Loc.t) Stream.t -> 'a) :
-                  'a t =
-                  {
-                    egram = g;
-                    ename = n;
-                    estart = (fun _ _ ts -> Action.mk (p ts));
-                    econtinue =
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
-                         raise Stream.Failure);
-                    edesc = Dparser (fun ts -> Action.mk (p ts));
-                  }
-                  
-                let setup_parser e (p : (Token.t * Loc.t) Stream.t -> 'a) =
+                let of_parser g n
+                  (p : (Token.t * token_info) Stream.t -> 'a) : 'a t =
                   let f ts = Action.mk (p ts)
                   in
-                    (e.estart <- (fun _ _ -> f);
+                    {
+                      egram = g;
+                      ename = n;
+                      estart = (fun _ -> f);
+                      econtinue =
+                        (fun _ _ _ (__strm : _ Stream.t) ->
+                           raise Stream.Failure);
+                      edesc = Dparser f;
+                    }
+                  
+                let setup_parser e
+                                 (p : (Token.t * token_info) Stream.t -> 'a)
+                                 =
+                  let f ts = Action.mk (p ts)
+                  in
+                    (e.estart <- (fun _ -> f);
                      e.econtinue <-
-                       (fun _ _ _ _ (__strm : _ Stream.t) ->
+                       (fun _ _ _ (__strm : _ Stream.t) ->
                           raise Stream.Failure);
                      e.edesc <- Dparser f)
                   
                 let clear e =
                   (e.estart <-
-                     (fun _ _ (__strm : _ Stream.t) -> raise Stream.Failure);
+                     (fun _ (__strm : _ Stream.t) -> raise Stream.Failure);
                    e.econtinue <-
-                     (fun _ _ _ _ (__strm : _ Stream.t) ->
-                        raise Stream.Failure);
+                     (fun _ _ _ (__strm : _ Stream.t) -> raise Stream.Failure);
                    e.edesc <- Dlevels [])
                   
                 let obj x = x
@@ -18011,6 +18008,8 @@ module Struct =
                 module Insert = Insert.Make(Structure)
                   
                 module Fold = Fold.Make(Structure)
+                  
+                module Tools = Tools.Make(Structure)
                   
                 include Structure
                   
@@ -18055,7 +18054,8 @@ module Struct =
                   
                 let lex_string loc str = lex loc (Stream.of_string str)
                   
-                let filter ts = Token.Filter.filter gram.gfilter ts
+                let filter ts =
+                  Tools.keep_prev_loc (Token.Filter.filter gram.gfilter ts)
                   
                 let parse_tokens_after_filter entry ts =
                   Entry.E.parse_tokens_after_filter entry ts
@@ -18104,6 +18104,8 @@ module Struct =
                   
                 module Fold = Fold.Make(Structure)
                   
+                module Tools = Tools.Make(Structure)
+                  
                 include Structure
                   
                 let mk () =
@@ -18123,7 +18125,8 @@ module Struct =
                   
                 let lex_string g loc str = lex g loc (Stream.of_string str)
                   
-                let filter g ts = Token.Filter.filter g.gfilter ts
+                let filter g ts =
+                  Tools.keep_prev_loc (Token.Filter.filter g.gfilter ts)
                   
                 let parse_tokens_after_filter entry ts =
                   Entry.parse_tokens_after_filter entry ts
@@ -18354,9 +18357,11 @@ module Printers =
                         
                       val semisep : sep
                         
-                      val value_val : string
+                      method value_val : string
                         
-                      val value_let : string
+                      method value_let : string
+                        
+                      method andsep : sep
                         
                       method anti : formatter -> string -> unit
                         
@@ -18586,7 +18591,7 @@ module Printers =
               function
               | Ast.LNil -> []
               | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
-              | Ast.LAnt x -> assert false
+              | Ast.LAnt _ -> assert false
               
             let meta_list elt sep f mxs =
               let xs = list_of_meta_list mxs in list elt sep f xs
@@ -18727,17 +18732,17 @@ module Printers =
                   
                 val semisep = (";;" : sep)
                   
-                val andsep = ("@]@ @[<2>and@ " : sep)
-                  
-                val value_val = "val"
-                  
-                val value_let = "let"
-                  
                 val mode = if comments then `comments else `no_comments
                   
                 val curry_constr = init_curry_constr
                   
                 val var_conversion = false
+                  
+                method andsep : sep = "@]@ @[<2>and@ "
+                  
+                method value_val = "val"
+                  
+                method value_let = "let"
                   
                 method semisep = semisep
                   
@@ -18888,7 +18893,7 @@ module Printers =
                       match bi with
                       | Ast.BiNil _ -> ()
                       | Ast.BiAnd (_, b1, b2) ->
-                          (o#binding f b1; pp f andsep; o#binding f b2)
+                          (o#binding f b1; pp f o#andsep; o#binding f b2)
                       | Ast.BiEq (_, p, e) ->
                           let (pl, e) =
                             (match p with
@@ -19020,7 +19025,7 @@ module Printers =
                         pp f "@[<2>%a :@ %a@]" o#var s o#module_type mt
                     | Ast.MbAnd (_, mb1, mb2) ->
                         (o#module_rec_binding f mb1;
-                         pp f andsep;
+                         pp f o#andsep;
                          o#module_rec_binding f mb2)
                     | Ast.MbAnt (_, s) -> o#anti f s
                   
@@ -19578,7 +19583,7 @@ module Printers =
                           pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t
                             semisep
                       | Ast.SgVal (_, s, t) ->
-                          pp f "@[<2>%s %a :@ %a%(%)@]" value_val o#var s
+                          pp f "@[<2>%s %a :@ %a%(%)@]" o#value_val o#var s
                             o#ctyp t semisep
                       | Ast.SgInc (_, mt) ->
                           pp f "@[<2>include@ %a%(%)@]" o#module_type mt
@@ -19641,7 +19646,7 @@ module Printers =
                           pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t
                             semisep
                       | Ast.StVal (_, r, bi) ->
-                          pp f "@[<2>%s %a%a%(%)@]" value_let o#rec_flag r
+                          pp f "@[<2>%s %a%a%(%)@]" o#value_let o#rec_flag r
                             o#binding bi semisep
                       | Ast.StExp (_, e) ->
                           pp f "@[<2>let _ =@ %a%(%)@]" o#expr e semisep
@@ -19697,7 +19702,7 @@ module Printers =
                             o#ident i2
                       | Ast.WcAnd (_, wc1, wc2) ->
                           (o#with_constraint f wc1;
-                           pp f andsep;
+                           pp f o#andsep;
                            o#with_constraint f wc2)
                       | Ast.WcAnt (_, s) -> o#anti f s
                   
@@ -19736,10 +19741,10 @@ module Printers =
                             o#module_type mt
                       | Ast.MePkg (_,
                           (Ast.ExTyc (_, e, (Ast.TyPkg (_, mt))))) ->
-                          pp f "@[<1>(%s %a :@ %a)@]" value_val o#expr e
+                          pp f "@[<1>(%s %a :@ %a)@]" o#value_val o#expr e
                             o#module_type mt
                       | Ast.MePkg (_, e) ->
-                          pp f "@[<1>(%s %a)@]" value_val o#expr e
+                          pp f "@[<1>(%s %a)@]" o#value_val o#expr e
                   
                 method class_expr =
                   fun f ce ->
@@ -19778,7 +19783,7 @@ module Printers =
                       | Ast.CeAnt (_, s) -> o#anti f s
                       | Ast.CeAnd (_, ce1, ce2) ->
                           (o#class_expr f ce1;
-                           pp f andsep;
+                           pp f o#andsep;
                            o#class_expr f ce2)
                       | Ast.CeEq (_, ce1, (Ast.CeFun (_, p, ce2))) when
                           is_irrefut_patt p ->
@@ -19818,7 +19823,7 @@ module Printers =
                       | Ast.CtAnt (_, s) -> o#anti f s
                       | Ast.CtAnd (_, ct1, ct2) ->
                           (o#class_type f ct1;
-                           pp f andsep;
+                           pp f o#andsep;
                            o#class_type f ct2)
                       | Ast.CtCol (_, ct1, ct2) ->
                           pp f "%a :@ %a" o#class_type ct1 o#class_type ct2
@@ -19852,7 +19857,7 @@ module Printers =
                           pp f "@[<2>method virtual %a%a :@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t semisep
                       | Ast.CgVal (_, s, mu, vi, t) ->
-                          pp f "@[<2>%s %a%a%a :@ %a%(%)@]" value_val
+                          pp f "@[<2>%s %a%a%a :@ %a%(%)@]" o#value_val
                             o#mutable_flag mu o#virtual_flag vi o#var s
                             o#ctyp t semisep
                       | Ast.CgAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
@@ -19894,10 +19899,10 @@ module Printers =
                           pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t semisep
                       | Ast.CrVvr (_, s, mu, t) ->
-                          pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" value_val
+                          pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" o#value_val
                             o#mutable_flag mu o#var s o#ctyp t semisep
                       | Ast.CrVal (_, s, ov, mu, e) ->
-                          pp f "@[<2>%s%a %a%a =@ %a%(%)@]" value_val
+                          pp f "@[<2>%s%a %a%a =@ %a%(%)@]" o#value_val
                             o#override_flag ov o#mutable_flag mu o#var s
                             o#expr e semisep
                       | Ast.CrAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
@@ -20076,19 +20081,19 @@ module Printers =
                   PP_o.printer ~curry_constr: init_curry_constr ~comments () as
                   super
                   
-                val semisep = (";" : sep)
-                  
-                val andsep = ("@]@ @[<2>and@ " : sep)
-                  
-                val value_val = "value"
-                  
-                val value_let = "value"
+                val! semisep = (";" : sep)
                   
                 val mode = if comments then `comments else `no_comments
                   
                 val curry_constr = init_curry_constr
                   
                 val first_match_case = true
+                  
+                method andsep : sep = "@]@ @[<2>and@ "
+                  
+                method value_val = "value"
+                  
+                method value_let = "value"
                   
                 method under_pipe = o
                   
