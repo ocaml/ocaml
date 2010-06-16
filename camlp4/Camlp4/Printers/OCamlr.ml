@@ -272,9 +272,16 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   end;
 
   value with_outfile = with_outfile;
-  value print = print;
-  value print_interf = print_interf;
-  value print_implem = print_implem;
+
+  value print output_file fct =
+    let o = new printer () in
+    with_outfile output_file (fct o);
+
+  value print_interf ?input_file:(_) ?output_file sg =
+    print output_file (fun o -> o#interf) sg;
+
+  value print_implem ?input_file:(_) ?output_file st =
+    print output_file (fun o -> o#implem) st;
 
 end;
 
