@@ -73,40 +73,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ Some (KEYWORD ("."|"("),_) -> raise Stream.Failure
       | _ -> () ]);
 
-  (* horrible hacks to be able to parse class_types *)
-
-  value test_ctyp_minusgreater =
-    Gram.Entry.of_parser "test_ctyp_minusgreater"
-      (fun strm ->
-        let rec skip_simple_ctyp n =
-          match stream_peek_nth n strm with
-          [ Some (KEYWORD "->") -> n
-          | Some (KEYWORD ("[" | "[<")) ->
-              skip_simple_ctyp (ignore_upto "]" (n + 1) + 1)
-          | Some (KEYWORD "(") -> skip_simple_ctyp (ignore_upto ")" (n + 1) + 1)
-          | Some
-              (KEYWORD
-                ("as" | "'" | ":" | "*" | "." | "#" | "<" | ">" | ".." | ";" |
-                "_" | "?")) ->
-              skip_simple_ctyp (n + 1)
-          | Some (LIDENT _ | UIDENT _) ->
-              skip_simple_ctyp (n + 1)
-          | Some _ | None -> raise Stream.Failure ]
-        and ignore_upto end_kwd n =
-          match stream_peek_nth n strm with
-          [ Some (KEYWORD prm) when prm = end_kwd -> n
-          | Some (KEYWORD ("[" | "[<")) ->
-              ignore_upto end_kwd (ignore_upto "]" (n + 1) + 1)
-          | Some (KEYWORD "(") -> ignore_upto end_kwd (ignore_upto ")" (n + 1) + 1)
-          | Some _ -> ignore_upto end_kwd (n + 1)
-          | None -> raise Stream.Failure ]
-        in
-        match Stream.peek strm with
-        [ Some ((KEYWORD "[" | LIDENT _ | UIDENT _), _) -> skip_simple_ctyp 1
-        | Some (KEYWORD "object", _) -> raise Stream.Failure
-        | _ -> 1 ])
-  ;
-
   value rec is_ident_constr_call =
     fun
     [ <:ident< $uid:_$ >> -> True
@@ -439,9 +405,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
         | i = OPTLABEL (* FIXME inline a_OPTLABEL *); t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
-        | test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+        | t = TRY [t = ctyp LEVEL "star"; "->" -> t]; ct = SELF ->
             <:class_type< [ $t$ ] -> $ct$ >>
-        | ct = class_type -> ct ] ]
+        | ct = TRY class_type -> ct ] ]
     ;
     class_type_longident_and_param:
       [ [ "["; t = comma_ctyp; "]"; i = class_type_longident ->
