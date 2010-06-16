@@ -33,6 +33,14 @@ let do_something source fmt =
       prerr_endline s ;
       Mutex.unlock debug_mutex) fmt
 
+let do_something_no_id source fmt =
+   ksprintf
+    (fun s ->
+      Mutex.lock debug_mutex ;
+      eprintf "%s: " source ;
+      prerr_endline s ;
+      Mutex.unlock debug_mutex) fmt
+
 let debug_lvl lvl source fmt = do_nothing source fmt
 
 (*DEBUG*)let debug_lvl lvl src fmt =
@@ -41,7 +49,7 @@ let debug_lvl lvl source fmt = do_nothing source fmt
 (*DEBUG*)  end else
 (*DEBUG*)    do_nothing src fmt
 
-let debug src fmt = do_something src fmt
+let debug src fmt = do_something_no_id src fmt
 let debug0 src fmt = debug_lvl 0 src fmt
 and debug1 src fmt = debug_lvl 1 src fmt
 and debug2 src fmt = debug_lvl 2 src fmt

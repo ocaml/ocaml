@@ -18,7 +18,6 @@
 #include <memory.h>
 #include <signals.h>
 #include "unixsupport.h"
-
 CAMLprim value unix_read(value fd, value buf, value ofs, value len)
 {
   long numbytes;
@@ -29,7 +28,9 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value len)
     numbytes = Long_val(len);
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     enter_blocking_section();
+    write(2,"READIN\n",7) ;
     ret = read(Int_val(fd), iobuf, (int) numbytes);
+    write(2,"READOUT\n",8) ;
     leave_blocking_section();
     if (ret == -1) uerror("read", Nothing);
     memmove (&Byte(buf, Long_val(ofs)), iobuf, ret);
