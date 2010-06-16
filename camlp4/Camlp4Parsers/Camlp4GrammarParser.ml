@@ -61,6 +61,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | TXnext of loc
     | TXnterm of loc and name 'e and option string
     | TXopt of loc and text 'e 'p
+    | TXtry of loc and text 'e 'p
     | TXrules of loc and list (list (text 'e 'p) * 'e)
     | TXself of loc
     | TXkwd of loc and string
@@ -349,6 +350,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                 $uid:gm$.Snterm
                     ($uid:gm$.Entry.obj ($n.expr$ : $uid:gm$.Entry.t '$n.tvar$)) >> ]
     | TXopt _loc t -> <:expr< $uid:gm$.Sopt $make_expr entry "" t$ >>
+    | TXtry _loc t -> <:expr< $uid:gm$.Stry $make_expr entry "" t$ >>
     | TXrules _loc rl ->
         <:expr< $uid:gm$.srules $entry.expr$ $make_expr_rules _loc entry rl ""$ >>
     | TXself _loc -> <:expr< $uid:gm$.Sself >>
@@ -769,7 +771,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             let () = check_not_tok s in
             let styp = STapp _loc (STlid _loc "option") s.styp in
             let text = TXopt _loc s.text in
-            {used = s.used; text = text; styp = styp; pattern = None} ]
+            {used = s.used; text = text; styp = styp; pattern = None}
+        | UIDENT "TRY"; s = SELF ->
+            let text = TXtry _loc s.text in
+            {used = s.used; text = text; styp = s.styp; pattern = None} ]
       | [ UIDENT "SELF" ->
             {used = []; text = TXself _loc; styp = STself _loc "SELF"; pattern = None}
         | UIDENT "NEXT" ->

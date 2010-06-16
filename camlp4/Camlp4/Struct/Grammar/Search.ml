@@ -49,7 +49,7 @@ value tree_in_entry prev_symb tree =
       and search_symbol symb =
         match symb with
         [ Snterm _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
-          Slist1sep _ _ | Sopt _ | Stoken _ | Stree _ | Skeyword _
+          Slist1sep _ _ | Sopt _ | Stry _ | Stoken _ | Stree _ | Skeyword _
           when symb == prev_symb ->
             Some symb
         | Slist0 symb ->
@@ -77,6 +77,10 @@ value tree_in_entry prev_symb tree =
         | Sopt symb ->
             match search_symbol symb with
             [ Some symb -> Some (Sopt symb)
+            | None -> None ]
+        | Stry symb ->
+            match search_symbol symb with
+            [ Some symb -> Some (Stry symb)
             | None -> None ]
         | Stree t ->
             match search_tree t with

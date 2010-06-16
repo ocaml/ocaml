@@ -53,7 +53,31 @@ module Make (Structure : Structure.S) = struct
     exception Error = StreamOrig.Error;
     value peek = StreamOrig.peek;
     value junk = StreamOrig.junk;
+
+    value dup strm =
+      (* This version of peek_nth is off-by-one from Stream.peek_nth *)
+      let peek_nth n =
+        loop n (Stream.npeek (n + 1) strm) where rec loop n =
+          fun
+          [ [] -> None
+          | [x] -> if n = 0 then Some x else None
+          | [_ :: l] -> loop (n - 1) l ]
+      in
+      Stream.from peek_nth;
   end;
+
+  value try_parser ps strm =
+    let strm' = Stream.dup strm in
+    let r =
+      try ps strm'
+      with
+      [ Stream.Error _ | Loc.Exc_located _ (Stream.Error _) ->
+          raise Stream.Failure
+      | exc -> raise exc ]
+    in do {
+      njunk strm (StreamOrig.count strm');
+      r;
+    };
 
   value level_number entry lab =
     let rec lookup levn =
@@ -296,6 +320,9 @@ module Make (Structure : Structure.S) = struct
         parser
         [ [: a = ps :] -> Action.mk (Some a)
         | [: :] -> Action.mk None ]
+    | Stry s ->
+        let ps = parser_of_symbol entry nlevn s in
+        try_parser ps
     | Stree t ->
         let pt = parser_of_tree entry 1 0 t in
         fun strm ->

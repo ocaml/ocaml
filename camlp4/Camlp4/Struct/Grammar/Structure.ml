@@ -67,6 +67,7 @@ module type S = sig
     | Slist1 of symbol
     | Slist1sep of symbol and symbol
     | Sopt of symbol
+    | Stry of symbol
     | Sself
     | Snext
     | Stoken of token_pattern
@@ -156,6 +157,7 @@ module Make (Lexer  : Sig.Lexer) = struct
     | Slist1 of symbol
     | Slist1sep of symbol and symbol
     | Sopt of symbol
+    | Stry of symbol
     | Sself
     | Snext
     | Stoken of token_pattern
@@ -227,7 +229,7 @@ value iter_entry f e =
     fun
     [ Smeta _ sl _ -> List.iter do_symbol sl
     | Snterm e | Snterml e _ -> do_entry e
-    | Slist0 s | Slist1 s | Sopt s -> do_symbol s
+    | Slist0 s | Slist1 s | Sopt s | Stry s -> do_symbol s
     | Slist0sep s1 s2 | Slist1sep s1 s2 -> do { do_symbol s1; do_symbol s2 }
     | Stree t -> do_tree t
     | Sself | Snext | Stoken _ | Stoken_fun _ -> () ]
@@ -261,7 +263,7 @@ value fold_entry f e init =
     fun
     [ Smeta _ sl _ -> List.fold_left do_symbol accu sl
     | Snterm e | Snterml e _ -> do_entry accu e
-    | Slist0 s | Slist1 s | Sopt s -> do_symbol accu s
+    | Slist0 s | Slist1 s | Sopt s | Stry s -> do_symbol accu s
     | Slist0sep s1 s2 | Slist1sep s1 s2 ->
         let accu = do_symbol accu s1 in
         do_symbol accu s2

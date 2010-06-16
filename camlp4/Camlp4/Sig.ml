@@ -979,6 +979,7 @@ module Grammar = struct
       | Slist1 of symbol
       | Slist1sep of symbol and symbol
       | Sopt of symbol
+      | Stry of symbol
       | Sself
       | Snext
       | Stoken of token_pattern

@@ -33,12 +33,15 @@ module Make (Structure : Structure.S) = struct
   ;
   value rec derive_eps =
     fun
-    [ Slist0 _ -> True
-    | Slist0sep _ _ -> True
-    | Sopt _ -> True
+    [ Slist0 _ | Slist0sep _ _ | Sopt _ -> True
+    | Stry s -> derive_eps s
     | Stree t -> tree_derive_eps t
-    | Smeta _ _ _ | Slist1 _ | Slist1sep _ _ | Snterm _ | Snterml _ _ | Snext |
-      Sself | Stoken _ | Skeyword _ -> False ]
+    | Slist1 _ | Slist1sep _ _ | Stoken _ | Skeyword _ ->
+        (* For sure we cannot derive epsilon from these *)
+        False
+    | Smeta _ _ _ | Snterm _ | Snterml _ _ | Snext | Sself ->
+        (* Approximation *)
+        False ]
   and tree_derive_eps =
     fun
     [ LocAct _ _ -> True
@@ -172,9 +175,7 @@ module Make (Structure : Structure.S) = struct
     | Smeta _ sl _ -> List.iter (check_gram entry) sl
     | Slist0sep s t -> do { check_gram entry t; check_gram entry s }
     | Slist1sep s t -> do { check_gram entry t; check_gram entry s }
-    | Slist0 s -> check_gram entry s
-    | Slist1 s -> check_gram entry s
-    | Sopt s -> check_gram entry s
+    | Slist0 s | Slist1 s | Sopt s | Stry s -> check_gram entry s
     | Stree t -> tree_check_gram entry t
     | Snext | Sself | Stoken _ | Skeyword _ -> () ]
   and tree_check_gram entry =
@@ -198,11 +199,9 @@ module Make (Structure : Structure.S) = struct
     let rec insert =
       fun
       [ Smeta _ sl _ -> List.iter insert sl
-      | Slist0 s -> insert s
-      | Slist1 s -> insert s
+      | Slist0 s | Slist1 s | Sopt s | Stry s -> insert s
       | Slist0sep s t -> do { insert s; insert t }
       | Slist1sep s t -> do { insert s; insert t }
-      | Sopt s -> insert s
       | Stree t -> tinsert t
       | Skeyword kwd -> using gram kwd
       | Snterm _ | Snterml _ _ | Snext | Sself | Stoken _ -> () ]
