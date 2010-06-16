@@ -965,6 +965,7 @@ module Grammar = struct
     type tree;
 
     type token_pattern = ((Token.t -> bool) * string);
+    type token_stream = Stream.t (Token.t * Loc.t);
 
     type symbol =
       [ Smeta of string and list symbol and Action.t
@@ -1017,11 +1018,11 @@ module Grammar = struct
 
       (** Make a new entry from a name and an hand made token parser. *)
       value of_parser :
-        gram -> string -> (Stream.t (Token.t * Loc.t) -> 'a) -> t 'a;
+        gram -> string -> (token_stream -> 'a) -> t 'a;
 
       (** Clear the entry and setup this parser instead. *)
       value setup_parser :
-        t 'a -> (Stream.t (Token.t * Loc.t) -> 'a) -> unit;
+        t 'a -> (token_stream -> 'a) -> unit;
 
       (** Get the entry name. *)
       value name : t 'a -> string;
@@ -1056,16 +1057,13 @@ module Grammar = struct
     (* value sfold1sep : ('a -> 'b -> 'b) -> 'b -> foldsep _ 'a 'b; *)
 
     (** Use the lexer to produce a non filtered token stream from a char stream. *)
-    value lex : gram -> Loc.t -> Stream.t char
-                    -> not_filtered (Stream.t (Token.t * Loc.t));
+    value lex : gram -> Loc.t -> Stream.t char -> not_filtered (Stream.t (Token.t * Loc.t));
 
     (** Token stream from string. *)
-    value lex_string : gram -> Loc.t -> string
-                            -> not_filtered (Stream.t (Token.t * Loc.t));
+    value lex_string : gram -> Loc.t -> string -> not_filtered (Stream.t (Token.t * Loc.t));
 
     (** Filter a token stream using the {!Token.Filter} module *)
-    value filter : gram -> not_filtered (Stream.t (Token.t * Loc.t))
-                                      -> Stream.t (Token.t * Loc.t);
+    value filter : gram -> not_filtered (Stream.t (Token.t * Loc.t)) -> token_stream;
 
     (** Lex, filter and parse a stream of character. *)
     value parse : Entry.t 'a -> Loc.t -> Stream.t char -> 'a;
@@ -1079,7 +1077,7 @@ module Grammar = struct
 
     (** Parse a token stream that is already filtered. *)
     value parse_tokens_after_filter :
-      Entry.t 'a -> Stream.t (Token.t * Loc.t) -> 'a;
+      Entry.t 'a -> token_stream -> 'a;
 
   end;
 
@@ -1099,11 +1097,11 @@ module Grammar = struct
 
       (** Make a new entry from a name and an hand made token parser. *)
       value of_parser :
-        string -> (Stream.t (Token.t * Loc.t) -> 'a) -> t 'a;
+        string -> (token_stream -> 'a) -> t 'a;
 
       (** Clear the entry and setup this parser instead. *)
       value setup_parser :
-        t 'a -> (Stream.t (Token.t * Loc.t) -> 'a) -> unit;
+        t 'a -> (token_stream -> 'a) -> unit;
 
       (** Get the entry name. *)
       value name : t 'a -> string;
@@ -1137,15 +1135,13 @@ module Grammar = struct
     (* value sfold1sep : ('a -> 'b -> 'b) -> 'b -> foldsep _ 'a 'b; *)
 
     (** Use the lexer to produce a non filtered token stream from a char stream. *)
-    value lex : Loc.t -> Stream.t char
-                      -> not_filtered (Stream.t (Token.t * Loc.t));
+    value lex : Loc.t -> Stream.t char -> not_filtered (Stream.t (Token.t * Loc.t));
+
     (** Token stream from string. *)
-    value lex_string : Loc.t -> string
-                            -> not_filtered (Stream.t (Token.t * Loc.t));
+    value lex_string : Loc.t -> string -> not_filtered (Stream.t (Token.t * Loc.t));
 
     (** Filter a token stream using the {!Token.Filter} module *)
-    value filter : not_filtered (Stream.t (Token.t * Loc.t))
-                              -> Stream.t (Token.t * Loc.t);
+    value filter : not_filtered (Stream.t (Token.t * Loc.t)) -> token_stream;
 
     (** Lex, filter and parse a stream of character. *)
     value parse : Entry.t 'a -> Loc.t -> Stream.t char -> 'a;
@@ -1159,7 +1155,7 @@ module Grammar = struct
 
     (** Parse a token stream that is already filtered. *)
     value parse_tokens_after_filter :
-      Entry.t 'a -> Stream.t (Token.t * Loc.t) -> 'a;
+      Entry.t 'a -> token_stream -> 'a;
 
   end;
 
