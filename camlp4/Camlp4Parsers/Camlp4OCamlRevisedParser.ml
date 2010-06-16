@@ -719,7 +719,9 @@ Very old (no more supported) syntax:\n\
     ;
     do_sequence:
       [ [ seq = TRY ["{"; seq = sequence; "}" -> seq] -> seq
+        | TRY ["{"; "}"] -> <:expr< () >>
         | seq = TRY [seq = sequence; "done" -> seq] -> seq
+        | "done" -> <:expr< () >>
       ] ]
     ;
     infixop5:
