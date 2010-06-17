@@ -14,7 +14,7 @@
 
 open Join_types
 open Printf
-(*DEBUG*)open Join_debug
+open Join_debug
 
 (*
    Active tasks.
@@ -35,8 +35,8 @@ and in_pool = ref 0
 and signaled = ref 0
 and pool_konts = ref 0
 (* Number of threads devoted to join *)
-(*DEBUG*)and nthreads = ref 1
-(*DEBUG*)and suspended = ref 0
+and nthreads = ref 1
+and suspended = ref 0
 
 let nthreads_mutex = Mutex.create()
 
@@ -50,10 +50,10 @@ and decr_locked m r =
   decr r ;
   Mutex.unlock m
 
-(*DEBUG*)let tasks_status () =
-(*DEBUG*)sprintf
-(*DEBUG*)  "act=%i, nth=%i sus=%i pool[in=%i, k=%i, sig=%i]"
-(*DEBUG*) !active !nthreads !suspended !in_pool !pool_konts !signaled
+let tasks_status () =
+  sprintf
+    "act=%i, nth=%i sus=%i pool[in=%i, k=%i, sig=%i]"
+    !active !nthreads !suspended !in_pool !pool_konts !signaled
 
 let become_inactive () =
   decr_locked nthreads_mutex active ;
@@ -111,16 +111,12 @@ let really_create_process f =
     Some t
   with
   | e ->
-      if verbose >= 0 then
-	debug "REAL FORK FAILED"
-	  "%s, %s" (tasks_status ()) (Printexc.to_string e)
-      else begin
-	if !n_msgs <= 0 then begin
-	  debug "Warning" "Threads are exhausted, deadlock may occur" ;
-	  n_msgs := 100
-	end else
-	  decr n_msgs
-      end ;
+(*DEBUG*)debug0 "REAL FORK FAILED"
+(*DEBUG*)  "%s, %s" (tasks_status ()) (Printexc.to_string e) ;
+      if !n_msgs <= 0 then begin
+	debug "Warning" "Threads are exhausted, deadlock may occur" ;
+	n_msgs := 100
+      end else decr n_msgs ;
       decr_locked nthreads_mutex nthreads ;
       None
       
@@ -251,7 +247,8 @@ let inform_suspend () =
   if !pool_konts > 0 then grab_from_pool ()
 
 and inform_unsuspend () =
-(*DEBUG*)decr_locked nthreads_mutex suspended
+(*DEBUG*)decr_locked nthreads_mutex suspended ;
+  ()
 
 
 let kont_create mutex =

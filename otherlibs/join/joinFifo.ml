@@ -38,22 +38,11 @@ let create () =
   { get=get ; put=put; close=close ; kill=kill; }
 
 
-module P = struct 
-  type 'a t =
-    { put : ('a * bool Join.chan) Join.chan ;
-      close : unit -> unit ; }
-end
-
-module C = struct
-  type 'a t =
-    { get :  'a option Join.chan Join.chan ;
-      kill : unit Join.chan ; }
-end
-
 let create_prod_cons () =
   let f = create () in
-  { P.put = f.put ; P.close = f.close ; },
-  { C.get = f.get ; C.kill = f.kill ; }
+  let open JoinCom in
+  { P.get = f.get ; P.kill = f.kill ; },
+  { C.put = f.put ; C.close = f.close ; }
 
 module S = struct
   exception Closed

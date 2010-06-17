@@ -13,7 +13,7 @@
 (* $Id$ *)
 
 open Join_types
-(*DEBUG*)open Printf
+open Printf
 (*DEBUG*)open Join_debug
 
 (*****************************)

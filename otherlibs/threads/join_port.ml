@@ -79,7 +79,8 @@ and listener port when_accepted () =
     try when_accepted link
     with e ->
 (*DEBUG*)debug1 "LISTENER"
-(*DEBUG*)  "acceptor died of %s" (Join_misc.exn_to_string e)
+(*DEBUG*)  "acceptor died of %s" (Join_misc.exn_to_string e) ;
+      ()
   done with  e ->
 (*DEBUG*)debug0 "LISTENER"
 (*DEBUG*)  "died of %s" (Join_misc.exn_to_string e) ;

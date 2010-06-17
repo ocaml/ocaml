@@ -255,7 +255,7 @@ let rec start_listener space addr = match space.listener with
           raise e
         end ;
 	Mutex.unlock mtx
-        
+          
 (* anonymous listener is started at most once *)
 and start_anonymous_listener space = match space.listener with
 | Listen sock -> ()
@@ -388,62 +388,63 @@ and open_link_accepted space rspace link =  match rspace.link with
 and join_handler space rspace link () =
   let rspace_id = rspace.rspace_id in
 (*DEBUG*)debug1 "HANDLER"
-(*DEBUG*)  "start receiving from %s" (string_of_space rspace_id) ;  try
-  while true do
-    let msg = Join_message.input_msg link in
+(*DEBUG*)  "start receiving from %s" (string_of_space rspace_id) ;
+  try
+    while true do
+      let msg = Join_message.input_msg link in
 (*DEBUG*)debug2 "HANDLER"
 (*DEBUG*) "message [%s] from %s"
 (*DEBUG*)    (Join_message.string_of_msg msg)
 (*DEBUG*)    (string_of_space rspace.rspace_id) ;
-    match msg with
-    | AsyncSend (chan, v) ->
-	let auto = find_automaton space chan.auto_id
-	and v = localize_rec space rspace_id v in
-	send_async_ref.async auto chan.chan_id v
-    | AloneSend (uid,v) ->
-        let g = find_async_forwarder space uid
-        and v = localize_rec space rspace_id v in
+      match msg with
+      | AsyncSend (chan, v) ->
+	  let auto = find_automaton space chan.auto_id
+	  and v = localize_rec space rspace_id v in
+	  send_async_ref.async auto chan.chan_id v
+      | AloneSend (uid,v) ->
+          let g = find_async_forwarder space uid
+          and v = localize_rec space rspace_id v in
 (* inlined async call, must match local_send_alone in join.ml *)
-        Join_scheduler.create_process (fun () -> g v)
-    | SyncSend (chan, kid, v) ->
-	let auto = find_automaton space chan.auto_id
-	and v = localize_rec space rspace_id v
-        and idx = chan.chan_id in
-        call_sync space rspace kid
-          (fun v -> send_sync_ref.sync auto idx v) v
-    | AloneSyncSend (uid, kid, v) ->
-        let g = find_sync_forwarder space uid
-        and v = localize_rec space rspace_id v in
-        call_sync space rspace kid g v
-    | Service (key, kid, v) ->
-        let v = localize_rec space rspace_id v
-        and fwd arg =
-          let uid = find_service space key in
-          let g = find_sync_forwarder space uid in
-          let r = g arg	 in
-	  r in
-        call_sync space rspace kid fwd v
-    | ReplySend (kid, v) ->
-	let kont =
-	  try Join_hash.find_remove rspace.konts kid
-	  with Not_found -> assert false
-	and v = localize_rec space rspace_id v in
-	Join_scheduler.reply_to v kont
-    | ReplyExn (kid, e) ->
-	let kont =
-	  try Join_hash.find_remove rspace.konts kid
-	  with Not_found -> assert false in
-	let e = Join_message.localize_exn e in
-	Join_scheduler.reply_to_exn e kont
-  done
-with
-| Join_link.Failed ->
+          Join_scheduler.create_process (fun () -> g v)
+      | SyncSend (chan, kid, v) ->
+	  let auto = find_automaton space chan.auto_id
+	  and v = localize_rec space rspace_id v
+          and idx = chan.chan_id in
+          call_sync space rspace kid
+            (fun v -> send_sync_ref.sync auto idx v) v
+      | AloneSyncSend (uid, kid, v) ->
+          let g = find_sync_forwarder space uid
+          and v = localize_rec space rspace_id v in
+          call_sync space rspace kid g v
+      | Service (key, kid, v) ->
+          let v = localize_rec space rspace_id v
+          and fwd arg =
+            let uid = find_service space key in
+            let g = find_sync_forwarder space uid in
+            let r = g arg	 in
+	    r in
+          call_sync space rspace kid fwd v
+      | ReplySend (kid, v) ->
+	  let kont =
+	    try Join_hash.find_remove rspace.konts kid
+	    with Not_found -> assert false
+	  and v = localize_rec space rspace_id v in
+	  Join_scheduler.reply_to v kont
+      | ReplyExn (kid, e) ->
+	  let kont =
+	    try Join_hash.find_remove rspace.konts kid
+	    with Not_found -> assert false in
+	  let e = Join_message.localize_exn e in
+	  Join_scheduler.reply_to_exn e kont
+    done
+  with
+  | Join_link.Failed ->
 (*DEBUG*)debug1 "HANDLER" "input operation failed" ;
-    close_link space rspace
-| e ->
+      close_link space rspace
+  | e ->
 (*DEBUG*)debug0 "BUG IN HANDLER"
 (*DEBUG*)  "died of %s" (Join_misc.exn_to_string e) ;
-    ()
+      ()
 
 and call_sync space rspace kid g v =
   Join_scheduler.create_process
@@ -459,19 +460,19 @@ and call_sync space rspace kid g v =
 
 
 (* 
-  - When outlink is dead, messages are discarded silently
-    exception handler for NoLink
+   - When outlink is dead, messages are discarded silently
+   exception handler for NoLink
 
-  - If blocking is not allowed, a process is created, since
-    opening the link or sending on it may block (or even fail)
-*)
+   - If blocking is not allowed, a process is created, since
+   opening the link or sending on it may block (or even fail)
+ *)
 
 and blocking_remote_send space rspace do_msg a =
-   try
-     let link = get_link space rspace in
-     sender_work space rspace link
-       (do_msg (globalize_rec space a globalize_flags))
-   with NoLink -> ()
+  try
+    let link = get_link space rspace in
+    sender_work space rspace link
+      (do_msg (globalize_rec space a globalize_flags))
+  with NoLink -> ()
 
 and do_remote_send may_block space rspace do_msg a =
   if may_block then
@@ -497,8 +498,8 @@ and close_link space rspace = match rspace.link with
 | Connected (_, mtx) ->
 (* race condition between concurrent calls to close_link,
    close_link can be called
-    - By the unique join_handler
-    - By all threads that send remote messages through sender_work *)
+   - By the unique join_handler
+   - By all threads that send remote messages through sender_work *)
     Mutex.lock mtx ;
     match rspace.link with
     | NoConnection _|Connecting (_,_) -> assert false
@@ -507,7 +508,7 @@ and close_link space rspace = match rspace.link with
 	rspace.link <- DeadConnection ;
 	Mutex.unlock mtx ;
 (*DEBUG*)debug1 "CLOSE LINK" "starting" ;
- (* assumes failure of 'close link' means double call *)
+        (* assumes failure of 'close link' means double call *)
 	begin try Join_link.close link
 	with Join_link.Failed -> assert false end ;
 (*DEBUG*)debug1 "CLOSE LINK" "link closed" ;
@@ -526,13 +527,13 @@ and close_link space rspace = match rspace.link with
 (* Find route to remote space *)
 
 (*
-and find_route space rspace = match find_routes space rspace with
-| [] ->
+  and find_route space rspace = match find_routes space rspace with
+  | [] ->
 (*DEBUG*)debug0 "FIND ROUTE" "unreachable site: %s"
 (*DEBUG*)  (string_of_space rspace.rspace_id) ;
-    raise RoutingFailed
-| r::_ -> r
-*)
+  raise RoutingFailed
+  | r::_ -> r
+ *)
 
 and find_routes space rspace =
 (*DEBUG*)debug1 "FIND ROUTES" "to %s" (string_of_space rspace.rspace_id) ;
@@ -549,48 +550,48 @@ and find_routes space rspace =
 (*DEBUG*)debug1 "FIND ROUTES" "to %s, found %s"
 (*DEBUG*)  (string_of_space rspace.rspace_id)
 (*DEBUG*)  (string_of_sockaddrs new_routes) ;
-     new_routes
+      new_routes
   | _::_ -> routes (* Easy case *)
 
 (* First race between senders, mtx is locked! *)
 
 and open_link_sender space rspace mtx =  match rspace.link with
-  | DeadConnection  ->    (* lost and connection already dead... *)
-      Mutex.unlock mtx ; raise NoLink
-  | Connected (link,_) ->  (* lost and connection complete *)
+| DeadConnection  ->    (* lost and connection already dead... *)
+    Mutex.unlock mtx ; raise NoLink
+| Connected (link,_) ->  (* lost and connection complete *)
 (*DEBUG*)debug1 "OPEN SENDER" "lost race, connection done" ;
-      Mutex.unlock mtx ; link
-  | Connecting (_,cond) -> (* lost against other sender *)
+    Mutex.unlock mtx ; link
+| Connecting (_,cond) -> (* lost against other sender *)
 (*DEBUG*)debug1 "OPEN SENDER" "lost race, waiting" ;
-      Condition.wait cond mtx ;
-      open_link_sender space rspace mtx
-  | NoConnection _ -> (* won *)
+    Condition.wait cond mtx ;
+    open_link_sender space rspace mtx
+| NoConnection _ -> (* won *)
 (*DEBUG*)debug1 "OPEN SENDER" "won race" ;
-      let cond = Condition.create () in
-      rspace.link <- Connecting (mtx, cond) ;
-      Mutex.unlock mtx ;
-      try
-	let routes = find_routes space rspace in
-        let rec get_link = function 
-          | [] -> raise RoutingFailed
-          | [route] ->  attempt_connect route 0.1, route
-          | route::rem ->
+    let cond = Condition.create () in
+    rspace.link <- Connecting (mtx, cond) ;
+    Mutex.unlock mtx ;
+    try
+      let routes = find_routes space rspace in
+      let rec get_link = function 
+        | [] -> raise RoutingFailed
+        | [route] ->  attempt_connect route 0.1, route
+        | route::rem ->
 (*DEBUG*)debug1 "GET_LINK" "try route %s" (string_of_sockaddr route) ;
-              begin try
-                attempt_connect route 0.1, route
-              with
-              | ConnectFailed _ -> get_link rem
-              end in
-        let link,route = get_link routes in
-	connect_on_link  space rspace (mtx, cond) link route
-      with
-      |	RoutingFailed|ConnectFailed _ as e ->
-(*DEBUG*)debug1 "OPEN SENDER" "failed on %s" (Printexc.to_string e) ;
-          Mutex.lock mtx ;
-          rspace.link <- DeadConnection ;
-          Condition.broadcast cond ;
-          Mutex.unlock mtx ;
-          raise NoLink
+            begin try
+              attempt_connect route 0.1, route
+            with
+            | ConnectFailed _ -> get_link rem
+            end in
+      let link,route = get_link routes in
+      connect_on_link  space rspace (mtx, cond) link route
+    with
+    |	RoutingFailed|ConnectFailed _ as _e ->
+(*DEBUG*)debug1 "OPEN SENDER" "failed on %s" (Printexc.to_string _e) ;
+        Mutex.lock mtx ;
+        rspace.link <- DeadConnection ;
+        Condition.broadcast cond ;
+        Mutex.unlock mtx ;
+        raise NoLink
 
 and connect_on_link space rspace (mtx, cond) link route =
   Join_message.output_value link
@@ -606,7 +607,7 @@ and connect_on_link space rspace (mtx, cond) link route =
       rspace.link <- DeadConnection ;
       Condition.broadcast cond ;
       Mutex.unlock mtx in
-      
+    
     try
       let answer = (Join_message.input_value link : connect_answer)  in
       begin match answer with
@@ -649,7 +650,7 @@ and connect_on_link space rspace (mtx, cond) link route =
     with Join_link.Failed -> () end ;
     get_link space rspace 
   end
-  
+      
 (* Get link for rspace, in case no connection is here yet, create one *)
 and get_link space rspace =  match rspace.link with
 | DeadConnection -> raise NoLink
@@ -676,7 +677,7 @@ and export_stub space stub = match stub.stub_tag with
     let uid = stub.uid and space_id = get_id space in
     if uid <> 0 then space_id, uid
     else begin
-    (* race condition, since several threads can be exporting this stub *)
+      (* race condition, since several threads can be exporting this stub *)
       Mutex.lock space.uid_mutex ;
       let uid = stub.uid in
       if uid <> 0 then begin (* lost *)

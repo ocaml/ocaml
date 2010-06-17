@@ -76,31 +76,15 @@ val create : unit -> 'a t
 
 (** {6 Producer/consumer interface} *)
 
-(** Type of producers *)
-module P :
-  sig
-    type 'a t = {
-      put : ('a * bool Join.chan) Join.chan;
-      close : unit -> unit;
-    }
-  end
-
-
-(** Type of consumers *)
-module C :
-  sig
-    type 'a t = {
-      get : 'a option Join.chan Join.chan;
-      kill : unit Join.chan;
-    }
-  end
-
-
-val create_prod_cons : unit -> 'a P.t * 'a C.t
+val create_prod_cons : unit ->  'a JoinCom.P.t * 'a JoinCom.C.t
 (** Create a pair of producer/consumer connected by
-    a fifo.
-    Producer have the put and close operations, while consumer
-    have the get and kill operations. *)
+    a fifo. [create_prod_cons ()] returns the pair [prod,cons].
+
+    The producer [prod] has the get and kill operations,
+    while the consumer has the put and close operations.
+    Indeed, by the convention of module {!JoinCom},
+    [prod] produces data from the fifo, while [cons] consumes
+    data to feed the fifo. *)
 
 (** {6 Synchronous interface} *)
 
