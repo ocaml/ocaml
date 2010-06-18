@@ -22,7 +22,10 @@
 
   Functions return the pid of the child process that executes
   the program and some I/O channels, exactly which ones depends
-on the function.
+  on the function.
+
+  The functions of module [JoinProc] are to be used in place of
+  the homonymous ones of module [Unix], which are {i not} thread safe.
 *)
 
 

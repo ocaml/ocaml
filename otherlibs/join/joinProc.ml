@@ -17,6 +17,7 @@ open Unix
 let open_proc cmd args input output err toclose =
   match fork () with
   | 0 ->
+      List.iter close toclose ;
       if input <> stdin then begin
 	dup2 input stdin; close input
       end;
@@ -26,7 +27,6 @@ let open_proc cmd args input output err toclose =
       if err <> stderr then begin
 	dup2 err stderr; close err
       end;
-      List.iter close toclose ;
       begin try Unix.execvp cmd args
       with _ -> exit 127 end
   | id -> id
@@ -60,6 +60,7 @@ let open_in_out cmd args =
   let outchan = out_channel_of_descr out_write in
   id, (inchan, outchan)
 
+
 let open_full cmd args =
   let in_read, in_write = pipe() in
   let out_read, out_write = pipe() in
@@ -67,12 +68,11 @@ let open_full cmd args =
   let id =
     open_proc cmd args out_read in_write err_write
       [in_read; out_write; err_read] in
-(* Close as soon as possible, otherwise
-   it seems that some open file desc's remain,
-   Related to in_channel_of_descr being blocking ? *)
+(* Critical section in open_fork, from fork system call *)
   close out_read;
   close in_write;
   close err_write;
+(* End critical section *)
   let inchan = in_channel_of_descr in_read in
   let outchan = out_channel_of_descr out_write in
   let errchan = in_channel_of_descr err_read in

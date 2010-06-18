@@ -1,12 +1,4 @@
 
-module C = struct
-  type 'a t = {
-      put : ('a * bool Join.chan) Join.chan;
-      close : unit -> unit;
-    }
-end
-
-
 (** Producers *)
 module P = struct
   type 'a t = {
@@ -22,10 +14,8 @@ module P = struct
   let of_list xs =
     def st([]) & get(k) = k(None) & st([])
     or  st(x::xs) & get(k) = k(Some x) & st(xs)
-    or  st(_) & kill() = killed()
-
-    or killed() & get(k) = k(None) & killed()
-    or killed() & kill() = killed() in
+    or  st(_) & kill() = st([]) in
+    spawn st(xs) ;
     {get; kill;}
 
   def to_list(prod,k) =
@@ -36,7 +26,9 @@ module P = struct
 
 
   let read_line chan =
-    try Some (Pervasives.input_line chan)
+    try
+      let x = Pervasives.input_line chan in
+      Some x
     with End_of_file -> None
 
   let safe_close_in chan =
@@ -78,8 +70,23 @@ module P = struct
   | None -> k() in
   prod.get(writer)
 
-
-
- 
 end
 
+
+module C = struct
+  type 'a t = {
+      put : ('a * bool Join.chan) Join.chan;
+      close : unit -> unit;
+    }
+end
+
+
+def connect(prod,cons,k) =
+  def reader(line) =  match line with
+  | Some line -> cons.C.put(line,pk)
+  | None -> cons.C.close() ; k()
+  and pk(b) =
+    if b then prod.P.get(reader)
+    else prod.P.kill() in
+  prod.P.get(reader)
+ 

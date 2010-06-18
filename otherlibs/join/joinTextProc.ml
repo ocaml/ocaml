@@ -40,31 +40,64 @@ module Async = struct
         err : producer ;
         waitpid : Unix.process_status Join.chan Join.chan ;
         kill : int -> unit;
-          pid : int ;
+        pid : int ;
       }
 
 
-  let create cmd argv =
-    def fork(input) =
-      let pid,(in_chan, out_chan,err_chan) = JoinProc.open_full cmd argv in
-      debug "TEXT" "ZYVA@%i" pid ;
-      def waitpid(k) & result(st) = k(st) in
-      let out = JoinCom.P.of_text in_chan
-      and err = JoinCom.P.of_text err_chan in
-      def k() = close_out out_chan ; 0 in        
-      JoinCom.P.to_text (input,out_chan,k) &
-      begin
-        let r = safe_wait pid in
-        result(r)
-      end &
-      def kill(sid) = safe_kill pid sid ; reply to kill in
-      reply
-        { out = out;
-          err = err;
-          waitpid=waitpid;
-          kill=kill; pid;}
-       to fork in
-    fork
+  let et =
+    let ep = JoinCom.P.empty() in
+    { out=ep; err=ep;
+      waitpid=(def k(_) = 0 in k);
+      kill=(fun _ -> ());
+      pid=(-1)}
+
+      
+  def producer_to_chan (prod,chan) =
+    def k() = close_out chan ; 0 in        
+    JoinCom.P.to_text (prod,chan,k)
+
+   let async_waitpid pid =
+    def waitpid(k) & result(st) = k(st) in
+    spawn result(safe_wait pid) ;
+    waitpid
+
+  let async_kill pid =
+    def kill(sid) = safe_kill pid sid ; reply to kill in
+    kill
+
+  let add_kill_wait pid r =
+    { r with
+      pid=pid; kill=async_kill pid;
+      waitpid=async_waitpid pid; }      
+
+  let command cmd argv =
+    let pid = JoinProc.command cmd argv in
+    add_kill_wait pid et
+
+  let open_in cmd argv =
+    let pid,in_chan = JoinProc.open_in cmd argv in
+    let out = JoinCom.P.of_text in_chan in
+    add_kill_wait pid { et with out; }
+
+  let open_out cmd argv input =
+    let pid,out_chan = JoinProc.open_out cmd argv in
+    debug "TEXT" "open_out pid=%i" pid ;
+    spawn producer_to_chan (input,out_chan) ;
+    add_kill_wait pid et
+
+  let open_in_out cmd argv input =
+    let pid,(in_chan,out_chan) = JoinProc.open_in_out cmd argv in
+    let out = JoinCom.P.of_text in_chan in
+    spawn producer_to_chan (input,out_chan) ;
+    add_kill_wait pid { et with out; }
+
+  let open_full cmd argv input =
+    let pid,(in_chan, out_chan,err_chan) = JoinProc.open_full cmd argv in
+    let out = JoinCom.P.of_text in_chan
+    and err = JoinCom.P.of_text err_chan in
+    spawn producer_to_chan (input,out_chan) ;
+    add_kill_wait pid { et with out; err;}
+
 end
 
 module Sync = struct
@@ -93,7 +126,7 @@ module Sync = struct
   | [] -> ""
 
   let create cmd argv =
-    let f = Async.create cmd argv in
+    let f = Async.open_full cmd argv in
     def fork(input) =
       let ext = f(list_to_producer(input)) in
       let tagpid = sprintf "SYNC@%i" ext.Async.pid in
