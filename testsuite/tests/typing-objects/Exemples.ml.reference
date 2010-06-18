@@ -24,13 +24,13 @@
 #   val get_x : < get_x : 'a; .. > -> 'a = <fun>
 # val set_x : < set_x : 'a; .. > -> 'a = <fun>
 # - : int list = [10; 5]
-#           [A[A[A[A[A[A# 
-  class [4mref x_init = object
+#           Characters 7-96:
+  ......ref x_init = object
     val mutable x = x_init
     method get = x
     method set y = x <- y
-  end[m;;
-[mError: Some type variables are unbound in this type:
+  end..
+Error: Some type variables are unbound in this type:
          class ref :
            'a ->
            object
@@ -75,15 +75,18 @@ val c' : color_point circle = <obj>
     method move : int -> unit
     method set_center : 'a -> unit
   end
-#   [A[A# 
-  let c'' = new color_circle [4mp[m;;
-[mError: This expression has type point but an expression was expected of type
+#   Characters 28-29:
+  let c'' = new color_circle p;;
+                             ^
+Error: This expression has type point but an expression was expected of type
          #color_point
        The first object type has no method color
 # val c'' : color_point color_circle = <obj>
 #   - : color_point circle = <obj>
-# [A# [4m(c'' :> point circle)[m;;                 (* Echec *)
-[mError: Type
+# Characters 0-21:
+  (c'' :> point circle);;                 (* Echec *)
+  ^^^^^^^^^^^^^^^^^^^^^
+Error: Type
          color_point color_circle =
            < center : color_point; color : string; move : int -> unit;
              set_center : color_point -> unit >
@@ -91,8 +94,10 @@ val c' : color_point circle = <obj>
          point circle =
            < center : point; move : int -> unit; set_center : point -> unit > 
 Type point = point is not a subtype of color_point = color_point 
-# [A# fun x -> [4m(x : color_point color_circle :> point circle)[m;;
-[mError: Type
+# Characters 9-55:
+  fun x -> (x : color_point color_circle :> point circle);;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type
          color_point color_circle =
            < center : color_point; color : string; move : int -> unit;
              set_center : color_point -> unit >
@@ -110,18 +115,10 @@ Type point = point is not a subtype of color_point = color_point
   end
 #   val p : printable_point = <obj>
 # 7- : unit = ()
-#                     [A[A[A[A[A[A[A[A[A[A[A# 
-  class printable_color_point y c = object (self)
-    inherit color_point y c
-    inherit [4mprintable_point y[m as super
-    method print =
-      print_string "(";
-      super#print;
-      print_string ", ";
-      print_string (self#color);
-      print_string ")"
-  end;;
-[mWarning 13: the following instance variables are overridden by the class printable_point :
+#                     Characters 85-102:
+    inherit printable_point y as super
+            ^^^^^^^^^^^^^^^^^
+Warning 13: the following instance variables are overridden by the class printable_point :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class printable_color_point :
@@ -210,8 +207,10 @@ and ['a] cons :
 # val c : int_comparable = <obj>
 # - : unit = ()
 #   val c2 : int_comparable2 = <obj>
-# [A# l#add [4m(c2 :> int_comparable)[m;;      (* Echec : 'a comp2 n'est un sous-type *)
-[mError: Type
+# Characters 6-28:
+  l#add (c2 :> int_comparable);;      (* Echec : 'a comp2 n'est un sous-type *)
+        ^^^^^^^^^^^^^^^^^^^^^^
+Error: Type
          int_comparable2 =
            < leq : int_comparable2 -> bool; set_x : int -> unit; x : int >
        is not a subtype of
@@ -231,8 +230,10 @@ is not a subtype of
   end
 #   val c3 : int_comparable3 = <obj>
 # - : unit = ()
-# [A# (new sorted_list ())#add [4mc3[m;;   (* Echec : leq n'est pas binaire *)
-[mError: This expression has type
+# Characters 25-27:
+  (new sorted_list ())#add c3;;   (* Echec : leq n'est pas binaire *)
+                           ^^
+Error: This expression has type
          int_comparable3 =
            < leq : int_comparable -> bool; setx : int -> unit; x : int >
        but an expression was expected of type
@@ -243,10 +244,10 @@ is not a subtype of
            < leq : int_comparable -> bool; setx : int -> unit; x : int > 
        The first object type has no method setx
 #   val sort : (#comparable as 'a) list -> 'a list = <fun>
-#     [A[A[A# let pr l =
-    [4mList.map (fun c -> print_int c#x; print_string " ") l[m;
-    print_newline ();;
-[mWarning 10: this expression should have type unit.
+#     Characters 13-66:
+    List.map (fun c -> print_int c#x; print_string " ") l;
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Warning 10: this expression should have type unit.
 val pr : < x : int; .. > list -> unit = <fun>
 #   val l : int_comparable list = [<obj>; <obj>; <obj>]
 # 5 2 4 
