@@ -213,7 +213,12 @@ implementation @class-expr@ meets the type specification
 \subsubsection*{Class application}
 
 Class application is denoted by juxtaposition of (possibly labeled)
-expressions. Evaluation works as for expression application.
+expressions. It denotes the class whose constructor is the original
+constructor applied to the given arguments. The arguments are
+evaluated like for expression application, but the constructor itself will
+only be evaluated when objects are created. In particular, side-effects
+caused by the application of the constructor will only occur at object
+creation time.
 
 \subsubsection*{Class function}
 
@@ -240,6 +245,12 @@ is a short form for
 
 The {\tt let} and {\tt let rec} constructs bind value names locally,
 as for the core language expressions.
+
+If a local definition occurs at the very beginning of a class
+definition, it will be evaluated when the class is created (just as if
+the definition was outside of the class).
+Otherwise, it will be evaluated when the object constructor is called.
+
 
 \subsubsection*{Class\label{ss:class-body} body}
 \begin{syntax}
