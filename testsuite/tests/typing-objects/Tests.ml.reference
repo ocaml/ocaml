@@ -4,16 +4,11 @@
 = <fun>
 #               class ['a] c : unit -> object constraint 'a = int method f : 'a c end
 and ['a] d : unit -> object constraint 'a = int method f : 'a c end
-#                 [A[A[A[A[A[A[A[A[A# (* class ['a] c : unit -> object constraint 'a = int method f : 'a c end *)
-  (* and ['a] d : unit -> object constraint 'a = int method f : 'a c end *)
-  
-  (* 'a libre dans classe d *)
-  class ['a] c () = object
-    method f (x : 'a) = ()
-  end and [4md () = object
+#                 Characters 238-275:
+  ........d () = object
     inherit ['a] c ()
-  end[m;;
-[mError: Some type variables are unbound in this type:
+  end..
+Error: Some type variables are unbound in this type:
          class d : unit -> object method f : 'a -> unit end
        The method f has type 'a -> unit where 'a is unbound
 #             class virtual c : unit -> object  end
@@ -24,31 +19,22 @@ and ['a] d : unit -> object constraint 'a = int #c end
 # *             class ['a] c :
   'a -> object ('a) constraint 'a = < f : 'a; .. > method f : 'a end
 # - : ('a c as 'a) -> 'a = <fun>
-# *           [A[A[A[A[A[A[A# (* class ['a] c :
-    'a -> object ('a) constraint 'a = < f : 'a; .. > method f : 'a end *)
-  (* - : ('a c as 'a) -> 'a = <fun> *)
-  
-  class [4mx () = object
+# *           Characters 134-176:
+  ......x () = object
     method virtual f : int
-  end[m;;
-[mError: This class should be virtual. The following methods are undefined : f
-#               [A[A[A[A[A[A[A[A# (* The class x should be virtual:  its methods f is undefined *)
-  
-  (* Methode g en trop *)
-  class virtual c ((x : 'a): < f : int >) = object [4m(_ : 'a)[m end
-  and virtual d x = object (_ : 'a)
-    inherit c x
-    method g = true
-  end;;
-[mError: This pattern cannot match self: it only matches values of type
+  end..
+Error: This class should be virtual. The following methods are undefined : f
+#               Characters 139-147:
+  class virtual c ((x : 'a): < f : int >) = object (_ : 'a) end
+                                                   ^^^^^^^^
+Error: This pattern cannot match self: it only matches values of type
        < f : int >
-#           [A[A[A[A[A[A# 
-  (* Contrainte non respectee *)
-  class [4m['a] c () = object
+#           Characters 38-110:
+  ......['a] c () = object
     constraint 'a = int
     method f x = (x : bool c)
-  end[m;;
-[mError: The abbreviation c is used with parameters bool c
+  end..
+Error: The abbreviation c is used with parameters bool c
        wich are incompatible with constraints int c
 #             class ['a, 'b] c :
   unit ->
@@ -65,30 +51,33 @@ and ['a] d : unit -> object constraint 'a = int #c end
     method f : 'a -> 'b -> unit
   end
 #     val x : '_a list ref = {contents = []}
-#     [A[A[A# class [4m['a] c () = object
+#     Characters 6-50:
+  ......['a] c () = object
     method f = (x : 'a)
-  end[m;;
-[mError: The type of this class,
+  end..
+Error: The type of this class,
        class ['a] c :
          unit -> object constraint 'a = '_b list ref method f : 'a end,
        contains type variables that cannot be generalized
-#       [A[A[A[A# 
-  (* Abreviations *)
-  type[4m 'a c = <f : 'a c; g : 'a d>[m
-  and 'a d = <f : int c>;;
-[mError: In the definition of d, type int c should be 'a c
+#       Characters 24-52:
+  type 'a c = <f : 'a c; g : 'a d>
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: In the definition of d, type int c should be 'a c
 #   type 'a c = < f : 'a c; g : 'a d >
 and 'a d = < f : 'a c >
 #   type 'a c = < f : 'a c >
 and 'a d = < f : int c >
 #   type 'a u = < x : 'a >
 and 'a t = 'a t u
-#   [A[A# type 'a u = 'a
-  and[4m 'a t = 'a t u[m;;
-[mError: The type abbreviation t is cyclic
+#   Characters 18-32:
+  and 'a t = 'a t u;;
+     ^^^^^^^^^^^^^^
+Error: The type abbreviation t is cyclic
 # type 'a u = 'a
-# [A# type [4mt = t u * t u[m;;
-[mError: The type abbreviation t is cyclic
+# Characters 5-18:
+  type t = t u * t u;;
+       ^^^^^^^^^^^^^
+Error: The type abbreviation t is cyclic
 #   type t = < x : 'a > as 'a
 # type 'a u = 'a
 # - : t -> t u -> bool = <fun>
@@ -153,8 +142,10 @@ and 'a t = 'a t u
 and d : unit -> object method f : int end
 # class e : unit -> object method f : int end
 # - : int = 2
-# [A# class c () = object val x = - [4mtrue[m val y = -. () end;;
-[mError: This expression has type bool but an expression was expected of type
+# Characters 30-34:
+  class c () = object val x = - true val y = -. () end;;
+                                ^^^^
+Error: This expression has type bool but an expression was expected of type
          int
 #   class c : unit -> object method f : int method g : int method h : int end
 # class d : unit -> object method h : int method i : int method j : int end
@@ -171,68 +162,26 @@ and d : unit -> object method f : int end
 # - : int * int * int * int * int = (1, 3, 2, 2, 3)
 #   class c : 'a -> object val a : 'a val x : int val y : int val z : int end
 # class d : 'a -> object val b : 'a val t : int val u : int val z : int end
-#                             [A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
-    val x = 3
-    inherit [4mc 5[m
-    val y = 3
-    val t = 3
-    inherit d 7
-    val u = 3
-    method x = x
-    method y = y
-    method z = z
-    method t = t
-    method u = u
-    method a = a
-    method b = b
-  end;;
-[mWarning 13: the following instance variables are overridden by the class c :
+#                             Characters 43-46:
+    inherit c 5
+            ^^^
+Warning 13: the following instance variables are overridden by the class c :
   x
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
-    val x = 3
-    inherit c 5
-    val [4my = 3[m
-    val t = 3
-    inherit d 7
-    val u = 3
-    method x = x
-    method y = y
-    method z = z
-    method t = t
-    method u = u
-    method a = a
-    method b = b
-  end;;
-[m
-
-
+Characters 53-58:
+    val y = 3
+        ^^^^^
 Warning 13: the instance variable y is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
-[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A# class e () = object 
-    val x = 3
-    inherit c 5
-    val y = 3
-    val t = 3
-    inherit [4md 7[m
-    val u = 3
-    method x = x
-    method y = y
-    method z = z
-    method t = t
-    method u = u
-    method a = a
-    method b = b
-  end;;
-[m
-
-
-
-
+Characters 81-84:
+    inherit d 7
+            ^^^
 Warning 13: the following instance variables are overridden by the class d :
   t z
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 Characters 91-96:
+    val u = 3
+        ^^^^^
 Warning 13: the instance variable u is overridden.
 The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)
 class e :
@@ -268,12 +217,12 @@ class e :
 #     * * * * * * * * * * * * * * * * * * * * *                             module M : sig class c : unit -> object method xc : int end end
 #         class d : unit -> object val x : int method xc : int method xd : int end
 # - : int * int = (1, 2)
-#         [A[A[A[A[A# 
-  class [4mvirtual ['a] matrix (sz, init : int * 'a) = object
+#         Characters 7-156:
+  ......virtual ['a] matrix (sz, init : int * 'a) = object
     val m = Array.create_matrix sz sz init
     method add (mtx : 'a matrix) = (mtx#m.(0).(0) : 'a)
-  end[m;;
-[mError: The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >
+  end..
+Error: The abbreviation 'a matrix expands to type < add : 'a matrix -> 'a >
        but is used with type < m : 'a array array; .. >
 #   class c : unit -> object method m : c end
 # - : c = <obj>
@@ -282,12 +231,11 @@ class e :
 #   type uu = A of int | B of (< leq : 'a > as 'a)
 #   class virtual c : unit -> object ('a) method virtual m : 'a end
 #         module S : sig val f : (#c as 'a) -> 'a end
-#         [A[A[A[A[A# module S = ([4mstruct
+#         Characters 12-43:
+  ............struct
     let f (x : #c) = x
-  end[m : sig
-    val f : #c -> #c
-  end);;
-[mError: Signature mismatch:
+  end......
+Error: Signature mismatch:
        Modules do not match:
          sig val f : (#c as 'a) -> 'a end
        is not included in
@@ -296,31 +244,41 @@ class e :
          val f : (#c as 'a) -> 'a
        is not included in
          val f : #c -> #c
-#   [A[A# 
-  module M = struct type t = int [4mclass t () = object end[m end;;
-[mError: Multiple definition of the type name t.
+#   Characters 32-55:
+  module M = struct type t = int class t () = object end end;;
+                                 ^^^^^^^^^^^^^^^^^^^^^^^
+Error: Multiple definition of the type name t.
        Names must be unique in a given structure or signature.
 #   - : < m : (< m : 'a > as 'b) -> 'b as 'a; .. > -> 'b = <fun>
-#   [A[A# 
-  fun x -> [4m(x : int -> bool :> 'a -> 'a)[m;;
-[mError: Type int -> bool is not a subtype of int -> int 
-# [A# fun x -> [4m(x : int -> bool :> int -> int)[m;;
-[mError: Type int -> bool is not a subtype of int -> int 
+#   Characters 10-39:
+  fun x -> (x : int -> bool :> 'a -> 'a);;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type int -> bool is not a subtype of int -> int 
+# Characters 9-40:
+  fun x -> (x : int -> bool :> int -> int);;
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Type int -> bool is not a subtype of int -> int 
 # - : <  > -> <  > = <fun>
 # - : < .. > -> <  > = <fun>
 #   val x : '_a list ref = {contents = []}
 #   module F : functor (X : sig  end) -> sig type t = int end
 # - : < m : int > list ref = {contents = []}
 #   type 'a t
-# [A# fun (x : [4m'a t as 'a[m) -> ();;
-[mError: This alias is bound to type 'a t but is used as an instance of type 'a
-# [A# fun (x : 'a t) -> ([4mx[m : 'a); ();;
-[mError: This expression has type 'a t but an expression was expected of type
+# Characters 9-19:
+  fun (x : 'a t as 'a) -> ();;
+           ^^^^^^^^^^
+Error: This alias is bound to type 'a t but is used as an instance of type 'a
+# Characters 19-20:
+  fun (x : 'a t) -> (x : 'a); ();;
+                     ^
+Error: This expression has type 'a t but an expression was expected of type
          'a
 # type 'a t = < x : 'a >
 # - : ('a t as 'a) -> unit = <fun>
-# [A# fun (x : 'a t) -> [4m(x : 'a)[m; ();;
-[mWarning 10: this expression should have type unit.
+# Characters 18-26:
+  fun (x : 'a t) -> (x : 'a); ();;
+                    ^^^^^^^^
+Warning 10: this expression should have type unit.
 - : ('a t as 'a) -> unit = <fun>
 #         class ['a] c :
   unit -> object constraint 'a = (< .. > as 'b) -> unit method m : 'a end

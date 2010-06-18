@@ -33,7 +33,7 @@ one: lib
 
 exec-one:
 	@echo "Running tests from '$$DIR' ..."
-	@(cd $(DIR) && $(MAKE) BASEDIR=$(BASEDIR) && cd ../..)
+	@(cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) && cd ../..)
 
 lib: FORCE
 	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR) && cd ..)
