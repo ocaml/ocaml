@@ -22,6 +22,9 @@ module P :  sig
       kill : unit Join.chan;
     }
 
+  val empty : unit -> 'a t
+(** Empty producer, always send [None]. *)
+
   val of_list : 'a list -> 'a t
 (** [of_list xs] returns a producer for the elements of xs *)
 

@@ -14,12 +14,17 @@ module P = struct
       kill : unit Join.chan;
     }
 
+  let empty () =
+    def get(k) = k(None)
+    and kill() = 0 in
+    {get; kill;}
+
   let of_list xs =
     def st([]) & get(k) = k(None) & st([])
     or  st(x::xs) & get(k) = k(Some x) & st(xs)
     or  st(_) & kill() = killed()
 
-    or killed() & get(k) = killed()
+    or killed() & get(k) = k(None) & killed()
     or killed() & kill() = killed() in
     {get; kill;}
 
