@@ -1,3 +1,29 @@
+  let safe_close_in chan =
+    try close_in chan
+    with Sys_error msg ->
+      Join.debug "COM" "Sys_error in close_in: \"%s\"" msg ;
+      ()
+
+  let safe_close_out chan =
+    try close_out chan
+    with Sys_error msg ->
+      Join.debug "COM" "Sys_error in close_out: \"%s\"" msg ;
+      ()
+
+  let read_line chan =
+    try
+      let x = Pervasives.input_line chan in
+      Some x
+    with End_of_file -> None
+
+  let output_line chan line =
+    try 
+      output_string chan line ;
+      output_char chan '\n' ;
+      flush chan ;
+      true
+    with Sys_error _msg -> false
+
 
 (** Producers *)
 module P = struct
@@ -11,6 +37,28 @@ module P = struct
     and kill() = 0 in
     {get; kill;}
 
+  let map f prod =
+    def get(k) = kont(k) & prod.get(reader)
+    and kont(k) & reader(x) =
+      let y = match x with
+      | Some x -> Some (f x)
+      | None -> None in
+      k(y) in
+    {get=get;kill=prod.kill}
+
+
+
+  let when_none k_none prod =
+    def get(k) = kont(k) & prod.get(reader)
+    and kont(k) & reader(x) =
+      begin match x with
+      | Some _ -> 0
+      | None -> k_none()
+      end & k(x) in
+    {get=get;kill=prod.kill}
+
+
+        
   let of_list xs =
     def st([]) & get(k) = k(None) & st([])
     or  st(x::xs) & get(k) = k(Some x) & st(xs)
@@ -25,18 +73,6 @@ module P = struct
     st([]) & prod.get(read)
 
 
-  let read_line chan =
-    try
-      let x = Pervasives.input_line chan in
-      Some x
-    with End_of_file -> None
-
-  let safe_close_in chan =
-    try close_in chan
-    with Sys_error msg ->
-      Join.debug "PROD" "Sys_error in close_in: \"%s\"" msg ;
-      ()
-
   let of_text chan =
     def get(k) & alive() =
       alive() &
@@ -45,6 +81,7 @@ module P = struct
         with Sys_error msg ->
           Join.debug "PROD" "Sys_error in read_line: \"%s\"" msg ;
           None in
+      begin match x with None -> safe_close_in chan | Some _ -> () end ;
       k(x)
     or get(k) & dead() = k(None) & dead()
     or kill() & alive() = safe_close_in chan ; dead()
@@ -52,24 +89,19 @@ module P = struct
     spawn alive() ;
     { get=get ; kill=kill ; }
 
-  let output_line chan line =
-    output_string chan line ;
-    output_char chan '\n' ;
-    flush chan ;
-    ()
-
   def to_text(prod,chan,k) =
-    def writer(line) = match line with
+    def writer(line) & lock() = match line with
     | Some line ->
-        let ok =
-          try output_line chan line ;
-            true
-          with Sys_error _msg -> false in
+        let ok = output_line chan line in
+        lock() & 
         if ok then prod.get(writer)
-        else prod.kill()
+        else begin safe_close_out chan ; prod.kill() end
   | None -> k() in
-  prod.get(writer)
+  prod.get(writer) & lock()
 
+  def to_text_close(prod,chan) =
+    def k() = safe_close_out chan ; 0 in
+    to_text(prod,chan,k)
 end
 
 
@@ -78,6 +110,21 @@ module C = struct
       put : ('a * bool Join.chan) Join.chan;
       close : unit -> unit;
     }
+
+
+  let of_text (chan) =
+    def  put(line,k) & alive() =
+      let ok = output_line chan line in
+      k(ok) &
+      if ok then alive() else dead()
+    or put(_,k) & dead() = k(false)
+
+    or close() & alive() = safe_close_out chan ; (dead() & reply to close)
+    or close() & dead() = dead() & reply to close in
+
+    spawn alive() ;
+    {put;close;}
+
 end
 
 
@@ -86,7 +133,7 @@ def connect(prod,cons,k) =
   | Some line -> cons.C.put(line,pk)
   | None -> cons.C.close() ; k()
   and pk(b) =
-    if b then prod.P.get(reader)
-    else prod.P.kill() in
+    begin if not b then prod.P.kill() end &
+    prod.P.get(reader) in
   prod.P.get(reader)
  

@@ -21,6 +21,10 @@ let safe_kill pid s =
   try Unix.kill pid s
   with Unix.Unix_error _ -> ()
 
+let safe_close_out chan =
+  try close_out chan
+  with Sys_error _msg -> ()
+
 let rec safe_wait pid =
   try
     let _,st = Unix.waitpid [] pid in
@@ -52,51 +56,56 @@ module Async = struct
       pid=(-1)}
 
       
-  def producer_to_chan (prod,chan) =
-    def k() = close_out chan ; 0 in        
-    JoinCom.P.to_text (prod,chan,k)
+  def producer_to_chan (prod,chan) = JoinCom.P.to_text_close (prod,chan)
 
-   let async_waitpid pid =
-    def waitpid(k) & result(st) = k(st) in
-    spawn result(safe_wait pid) ;
-    waitpid
-
-  let async_kill pid =
-    def kill(sid) = safe_kill pid sid ; reply to kill in
+  let async_kill pid prods chans =
+    def kill(sid) =
+      List.iter safe_close_out chans ;      
+      safe_kill pid sid ;
+      List.iter (fun p -> spawn p.JoinCom.P.kill()) prods ;
+      reply to kill in
     kill
 
-  let add_kill_wait pid r =
+  let add_kill_wait pid prods chans waited waitpid r =
+    spawn waited(safe_wait pid) ;
     { r with
-      pid=pid; kill=async_kill pid;
-      waitpid=async_waitpid pid; }      
+      pid=pid; kill=async_kill pid prods chans;
+      waitpid=waitpid; }      
+
+  let of_text chan = JoinCom.P.of_text chan
 
   let command cmd argv =
     let pid = JoinProc.command cmd argv in
-    add_kill_wait pid et
+    def waited(st) & waitpid(k) = waited(st) & k(st) in
+    add_kill_wait pid [] [] waited waitpid et
 
   let open_in cmd argv =
     let pid,in_chan = JoinProc.open_in cmd argv in
-    let out = JoinCom.P.of_text in_chan in
-    add_kill_wait pid { et with out; }
+    def waited(st) & waitpid(k) = waited(st) & k(st) in
+    let out = of_text in_chan in
+    add_kill_wait pid [out] [] waited waitpid { et with out; }
 
   let open_out cmd argv input =
     let pid,out_chan = JoinProc.open_out cmd argv in
-    debug "TEXT" "open_out pid=%i" pid ;
+    def waited(st) & waitpid(k) = waited(st) & k(st) in
     spawn producer_to_chan (input,out_chan) ;
-    add_kill_wait pid et
+    add_kill_wait pid [] [out_chan] waited waitpid et
 
   let open_in_out cmd argv input =
     let pid,(in_chan,out_chan) = JoinProc.open_in_out cmd argv in
-    let out = JoinCom.P.of_text in_chan in
+    def waited(st) & waitpid(k) = waited(st) & k(st) in
+    let out = of_text in_chan in
     spawn producer_to_chan (input,out_chan) ;
-    add_kill_wait pid { et with out; }
+    add_kill_wait pid [out] [out_chan] waited waitpid { et with out; }
+
 
   let open_full cmd argv input =
     let pid,(in_chan, out_chan,err_chan) = JoinProc.open_full cmd argv in
-    let out = JoinCom.P.of_text in_chan
-    and err = JoinCom.P.of_text err_chan in
+    def waited(st) & waitpid(k) = waited(st) & k(st) in
+    let out = of_text in_chan
+    and err = of_text err_chan in
     spawn producer_to_chan (input,out_chan) ;
-    add_kill_wait pid { et with out; err;}
+    add_kill_wait pid [out;err] [out_chan] waited waitpid { et with out; err;}
 
 end
 
