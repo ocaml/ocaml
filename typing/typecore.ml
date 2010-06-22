@@ -1663,6 +1663,7 @@ and type_argument env sarg ty_expected' =
     not tvar && List.for_all ((=) "") ls
   in
   let ty_expected = instance ty_expected' in
+  let loc = sarg.pexp_loc in
   match expand_head env ty_expected', sarg with
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
       type_expect env sarg ty_expected
@@ -1679,7 +1680,7 @@ and type_argument env sarg ty_expected' =
         match (expand_head env ty_fun).desc with
         | Tarrow (l,ty_arg,ty_fun,_) when is_optional l ->
             make_args
-              ((Some(option_none (instance ty_arg) sarg.pexp_loc), Optional)
+              ((Some(option_none (instance ty_arg) loc), Optional)
                :: args)
               ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
@@ -1721,6 +1722,37 @@ and type_argument env sarg ty_expected' =
       re { texp with exp_type = ty_fun; exp_desc =
            Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
       end
+  | _, {pexp_desc=Pexp_construct(lid, sarg, explicit_arity)} ->
+      type_construct env loc lid sarg explicit_arity ty_expected'
+  | {desc=Tobject _}, _ ->
+      if !Clflags.principal then begin_def ();
+      let arg = type_exp env sarg in
+      let gen =
+        if !Clflags.principal then begin
+          end_def ();
+          let tv = newvar () in
+          let gen = generalizable tv.level arg.exp_type in
+          (* Format.printf "level=%d@.%a@.%a@." tv.level
+            Printtyp.raw_type_expr arg.exp_type
+            Printtyp.raw_type_expr ty_expected'; *)
+          unify_var env tv arg.exp_type;
+          gen && generalizable (generic_level-1) ty_expected'
+        end else true
+      in
+      let snap = Btype.snapshot () in
+      begin try unify_exp env arg ty_expected
+      with Error _ when free_variables ~env arg.exp_type = []
+                     && free_variables ~env ty_expected = [] ->
+        Btype.backtrack snap;
+        try
+          subtype env arg.exp_type ty_expected ();
+          if not gen then
+            Location.prerr_warning loc
+              (Warnings.Not_principal "this implicit coercion");
+        with Subtype (tr1, tr2) ->
+          raise(Error(loc, Not_subtype(tr1, tr2)))
+      end;
+      arg
   | _ ->
       type_expect env sarg ty_expected
 
@@ -1912,20 +1944,20 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   let (ty_args, ty_res) = instance_constructor constr in
   if !Clflags.principal then begin
     end_def ();
-    List.iter generalize_structure ty_args;
-    generalize_structure ty_res
+    List.iter generalize ty_args;
+    generalize ty_res
   end;
   let texp =
     re {
       exp_desc = Texp_construct(constr, []);
       exp_loc = loc;
-      exp_type = instance ty_res;
+      exp_type = ty_res;
       exp_env = env } in
   unify_exp env texp ty_expected;
   let args = List.map2 (type_argument env) sargs ty_args in
   if constr.cstr_private = Private then
     raise(Error(loc, Private_type ty_res));
-  { texp with exp_desc = Texp_construct(constr, args) }
+  { texp with exp_desc = Texp_construct(constr, args); exp_type = instance ty_res }
 
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)

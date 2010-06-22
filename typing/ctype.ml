@@ -2487,7 +2487,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
   | _ ->
       raise (Failure [])
   with
-    Failure error when trace ->
+    Failure error when trace || error = [] ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
 let match_class_types ?(trace=true) env pat_sch subj_sch =
