@@ -1276,8 +1276,8 @@ let rec type_exp env sexp =
             if !Clflags.principal then begin
               end_def ();
               generalize_structure ty;
-              let ty1 = instance ty and ty2 = instance ty in
-              (type_expect env sarg ty1, ty2)
+              let ty2 = instance ty in
+              (type_argument env sarg ty, ty2)
             end else
               (type_expect env sarg ty, ty)
         | (None, Some sty') ->
