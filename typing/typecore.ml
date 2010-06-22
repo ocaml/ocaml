@@ -1279,7 +1279,7 @@ let rec type_exp env sexp =
               let ty2 = instance ty in
               (type_argument env sarg ty, ty2)
             end else
-              (type_expect env sarg ty, ty)
+              (type_argument env sarg ty, ty)
         | (None, Some sty') ->
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
@@ -1456,7 +1456,7 @@ let rec type_exp env sexp =
         let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
         match desc.val_kind with
           Val_ivar (Mutable, cl_num) ->
-            let newval = type_expect env snewval (instance desc.val_type) in
+            let newval = type_argument env snewval desc.val_type in
             let (path_self, _) =
               Env.lookup_value (Longident.Lident ("self-" ^ cl_num)) env
             in
@@ -1495,7 +1495,7 @@ let rec type_exp env sexp =
           let type_override (lab, snewval) =
             begin try
               let (id, _, _, ty) = Vars.find lab !vars in
-              (Path.Pident id, type_expect env snewval (instance ty))
+              (Path.Pident id, type_argument env snewval ty)
             with
               Not_found ->
                 raise(Error(loc, Unbound_instance_variable lab))
@@ -2102,6 +2102,7 @@ and type_expect ?in_function env sexp ty_expected =
             exp_loc = loc;
             exp_type = ty; exp_env = env } ty_expected in
       begin
+        (* XXX use type_argument ? *)
         match ty.desc with
           Tpoly (ty', []) ->
             if sty <> None then set_type ty;
@@ -2240,6 +2241,7 @@ and type_let env rec_flag spat_sexp_list scope =
   let exp_list =
     List.map2
       (fun (spat, sexp) pat ->
+        (* XXX use type_argument? *)
         match pat.pat_type.desc with
         | Tpoly (ty, tl) ->
             begin_def ();
