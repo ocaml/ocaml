@@ -83,18 +83,20 @@ let rec scrape_class_type =
   | cty                     -> cty
 
 (* Generalize a class type *)
-let rec generalize_class_type =
+let rec iter_class_type f =
   function
     Tcty_constr (_, params, cty) ->
-      List.iter Ctype.generalize params;
-      generalize_class_type cty
+      List.iter f params;
+      iter_class_type f cty
   | Tcty_signature {cty_self = sty; cty_vars = vars; cty_inher = inher} ->
-      Ctype.generalize sty;
-      Vars.iter (fun _ (_, _, ty) -> Ctype.generalize ty) vars;
-      List.iter (fun (_,tl) -> List.iter Ctype.generalize tl) inher
+      f sty;
+      Vars.iter (fun _ (_, _, ty) -> f ty) vars;
+      List.iter (fun (_,tl) -> List.iter f tl) inher
   | Tcty_fun (_, ty, cty) ->
-      Ctype.generalize ty;
-      generalize_class_type cty
+      f ty;
+      iter_class_type f cty
+
+let generalize_class_type = iter_class_type Ctype.generalize
 
 (* Return the virtual methods of a class type *)
 let virtual_methods sign =
@@ -826,7 +828,12 @@ and class_expr cl_num val_env met_env scl =
           cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type);
           cl_env = val_env}
   | Pcl_apply (scl', sargs) ->
+      if !Clflags.principal then Ctype.begin_class_def ();
       let cl = class_expr cl_num val_env met_env scl' in
+      if !Clflags.principal then begin
+        Ctype.end_def ();
+        iter_class_type Ctype.generalize_structure cl.cl_type
+      end;
       let rec nonopt_labels ls ty_fun =
         match ty_fun with
         | Tcty_fun (l, _, ty_res) ->
@@ -909,6 +916,8 @@ and class_expr cl_num val_env met_env scl =
         else
           type_args [] [] cl.cl_type sargs []
       in
+      let cty =
+        if !Clflags.principal then snd (Ctype.instance_class [] cty) else cty in
       rc {cl_desc = Tclass_apply (cl, args);
           cl_loc = scl.pcl_loc;
           cl_type = cty;

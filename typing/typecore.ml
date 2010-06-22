@@ -1724,7 +1724,7 @@ and type_argument env sarg ty_expected' =
       end
   | _, {pexp_desc=Pexp_construct(lid, sarg, explicit_arity)} ->
       type_construct env loc lid sarg explicit_arity ty_expected'
-  | {desc=Tobject _}, _ ->
+  | {desc=(Tobject _ | Tvariant _)}, _ ->
       if !Clflags.principal then begin_def ();
       let arg = type_exp env sarg in
       let gen =
