@@ -126,15 +126,20 @@ let increase_global_level () =
 let restore_global_level gl =
   global_level := gl
 
-(* Abbreviations without parameters *)
+(**** Whether a path points to an object type (with hidden row variable) ****)
+let is_object_type path =
+  let name =
+    match path with Path.Pident id -> Ident.name id
+    | Path.Pdot(_, s,_) -> s
+    | Path.Papply _ -> assert false
+  in name.[0] = '#'
+
+(**** Abbreviations without parameters ****)
 (* Shall reset after generalizing *)
 let simple_abbrevs = ref Mnil
 let proper_abbrevs path tl abbrev =
-  if !Clflags.principal || tl <> [] then abbrev else
-  let name = match path with Path.Pident id -> Ident.name id
-                           | Path.Pdot(_, s,_) -> s
-                           | Path.Papply _ -> assert false in
-  if name.[0] <> '#' then simple_abbrevs else abbrev
+  if !Clflags.principal || tl <> [] || is_object_type path then abbrev
+  else simple_abbrevs
 
 (**** Some type creators ****)
 
@@ -2291,7 +2296,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           normalize_subst subst;
           if List.assq t1 !subst != t2 then raise (Unify [])
         with Not_found ->
-          (*if List.exists (fun (_, t) -> t == t2) !subst then raise (Unify []);*)
+          if List.exists (fun (_, t) -> t == t2) !subst then raise (Unify []);
           subst := (t1, t2) :: !subst
         end
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
@@ -2312,7 +2317,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 normalize_subst subst;
                 if List.assq t1' !subst != t2' then raise (Unify [])
               with Not_found ->
-                (*if List.exists (fun (_, t) -> t == t2') !subst then raise (Unify []);*)
+                if List.exists (fun (_, t) -> t == t2') !subst then raise (Unify []);
                 subst := (t1', t2') :: !subst
               end
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -3168,15 +3173,6 @@ let unalias ty =
   | _ ->
       newty2 ty.level ty.desc
 
-let unroll_abbrev id tl ty =
-  let ty = repr ty in
-  if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl) then
-    ty
-  else
-    let ty' = newty2 ty.level ty.desc in
-    link_type ty (newty2 ty.level (Tconstr (Path.Pident id, tl, ref Mnil)));
-    ty'
-
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
   match (repr ty).desc with
@@ -3348,6 +3344,16 @@ let nondep_type env id ty =
   with Not_found ->
     clear_hash ();
     raise Not_found
+
+let unroll_abbrev id tl ty =
+  let ty = repr ty and path = Path.Pident id in
+  if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl)
+  || is_object_type path then
+    ty
+  else
+    let ty' = newty2 ty.level ty.desc in
+    link_type ty (newty2 ty.level (Tconstr (path, tl, ref Mnil)));
+    ty'
 
 (* Preserve sharing inside type declarations. *)
 let nondep_type_decl env mid id is_covariant decl =
