@@ -326,10 +326,11 @@ See `caml-types-location-re' for annotation file format.
   (let* ((type-path (caml-types-locate-type-file target-path))
          (type-date (nth 5 (file-attributes (file-chase-links type-path))))
          (target-date (nth 5 (file-attributes target-file))))
-    (unless (and caml-types-annotation-tree
-                 type-date
-                 caml-types-annotation-date
-                 (not (caml-types-date< caml-types-annotation-date type-date)))
+    (unless
+        (and caml-types-annotation-tree
+             type-date
+             caml-types-annotation-date
+             (not (caml-types-date< caml-types-annotation-date type-date)))
       (if (and type-date target-date (caml-types-date< type-date target-date))
           (error (format "`%s' is more recent than `%s'" target-path type-path)))
       (message "Reading annotation file...")
@@ -338,30 +339,47 @@ See `caml-types-location-re' for annotation file format.
                     (widen)
                     (goto-char (point-min))
                     (caml-types-build-tree
-                     (file-name-nondirectory target-path)))))
+                     ; (file-name-nondirectory type-path)
+                     type-path
+                     ))))
         (setq caml-types-annotation-tree tree
               caml-types-annotation-date type-date)
         (kill-buffer type-buf)
         (message "done"))
       )))
 
+(defun caml-types-annot-sibling-file (sibling)
+  (message "?: %S" sibling)
+  (let ((sibling-gz (concat sibling ".gz")))
+    (if (file-exists-p sibling)
+        (if (file-newer-than-file-p sibling sibling-gz)
+            sibling sibling-gz)
+      (if (file-exists-p sibling-gz) sibling-gz nil)
+    )))
+
+
+(defun parent-dir (d) (file-name-directory (directory-file-name d)))
+
 (defun caml-types-locate-type-file (target-path)
- (let ((sibling (concat (file-name-sans-extension target-path) ".annot")))
-   (if (file-exists-p sibling)
-       sibling
-     (defun parent-dir (d) (file-name-directory (directory-file-name d)))
-     (let ((project-dir (file-name-directory sibling))
-           type-path)
-       (while (not (file-exists-p
-                    (setq type-path
-                          (expand-file-name
-                           (file-relative-name sibling project-dir)
-                           (expand-file-name "_build" project-dir)))))
-         (if (equal project-dir (parent-dir project-dir))
-             (error (concat "No annotation file. "
-                            "You should compile with option \"-annot\".")))
-         (setq project-dir (parent-dir project-dir)))
-       type-path))))
+  (let ((sibling (concat (file-name-sans-extension target-path) ".annot"))
+        (found))
+    (if (setq found (caml-types-annot-sibling-file sibling))
+        found
+      (let ((project-dir (file-name-directory sibling))
+            type-path type-path-gz)
+        (while (not
+                (setq found
+                      (caml-types-annot-sibling-file
+                       (setq type-path
+                             (expand-file-name
+                              (file-relative-name sibling project-dir)
+                              (expand-file-name "_build" project-dir))))
+                      ))
+          (if (equal project-dir (parent-dir project-dir))
+              (error (concat "No annotation file found. "
+                             "You should compile with option \"-annot\".")))
+          (setq project-dir (parent-dir project-dir)))
+        found))))
 
 (defun caml-types-date< (date1 date2)
   (or (< (car date1) (car date2))
@@ -573,7 +591,8 @@ See `caml-types-location-re' for annotation file format.
    (t
     (error (format "Can't read the annotation file `%s'" name)))
     )
-  buf))
+  buf)
+)
 
 (defun caml-types-mouse-ignore (event)
   (interactive "e")
