@@ -5,6 +5,9 @@
 set -e
 cd `dirname $0`/..
 
+. config/config.sh
+export PATH=$BINDIR:$PATH
+
 TMPTARGETS="\
   camlp4/boot/Lexer.ml"
 

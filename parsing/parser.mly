@@ -93,14 +93,19 @@ let mkuminus name arg =
       mkexp(Pexp_constant(Const_int64(Int64.neg n)))
   | "-", Pexp_constant(Const_nativeint n) ->
       mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
-  | _, Pexp_constant(Const_float f) ->
+  | ("-" | "-."), Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
 let mkuplus name arg =
-  match name, arg.pexp_desc with
-  | "+", desc -> mkexp desc
+  let desc = arg.pexp_desc in
+  match name, desc with
+  | "+", Pexp_constant(Const_int _)
+  | "+", Pexp_constant(Const_int32 _)
+  | "+", Pexp_constant(Const_int64 _)
+  | "+", Pexp_constant(Const_nativeint _)
+  | ("+" | "+."), Pexp_constant(Const_float _) -> mkexp desc
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 

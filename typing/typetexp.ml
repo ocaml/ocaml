@@ -76,7 +76,8 @@ let find_component lookup make_error env loc lid =
     | Longident.Ldot (Longident.Lident "*predef*", s) -> lookup (Longident.Lident s) Env.initial
     | _ -> lookup lid env
   with Not_found ->
-    narrow_unbound_lid_error env loc lid make_error;
+    (narrow_unbound_lid_error env loc lid make_error
+     : unit (* to avoid a warning *));
     assert false
 
 let find_type = find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
