@@ -14,14 +14,19 @@
 
 (** Convenience functions for forking Unix commands.
 
-  All functions fork commands given in the style
+  All functions provided by this module
+  fork commands given in the style
   of the {!Unix.execvp} function.
   That is, a command is a program name plus an array
   of command line arguments and the program name is searched
   in path.
 
-  Functions return the pid of the child process that executes
-  the program and some I/O channels, exactly which ones depends
+@see <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Unix.html#VALexecvp> [Unix.execvp]. *)
+
+(**
+  The functions provided by this module
+  return the pid of the child process that executes
+  the program, plus some I/O channels, exactly which ones depends
   on the function.
 
   The functions of module [JoinProc] are to be used in place of

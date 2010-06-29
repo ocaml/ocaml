@@ -31,8 +31,8 @@ let rec safe_wait pid =
     debug "TEXT" "WAIT@%i: %s" pid (pp_status st);
     st
   with
-  | Unix.Unix_error _ -> safe_wait pid
-  | _ -> assert false
+  | Unix.Unix_error (Unix.EINTR,_,_) -> safe_wait pid
+
 
 
 module Async = struct
@@ -43,17 +43,14 @@ module Async = struct
       { out : producer ;
         err : producer ;
         waitpid : Unix.process_status Join.chan Join.chan ;
-        kill : int -> unit;
-        pid : int ;
-      }
+        kill : int -> unit;  }
 
 
   let et =
     let ep = JoinCom.P.empty() in
     { out=ep; err=ep;
       waitpid=(def k(_) = 0 in k);
-      kill=(fun _ -> ());
-      pid=(-1)}
+      kill=(fun _ -> ()); }
 
       
   def producer_to_chan (prod,chan) = JoinCom.P.to_text_close (prod,chan)
@@ -70,7 +67,7 @@ module Async = struct
   let add_kill_wait pid prods chans waited waitpid r =
     spawn waited(safe_wait pid) ;
     { r with
-      pid=pid; kill=async_kill pid prods chans;
+      kill=async_kill pid prods chans;
       waitpid=waitpid; }      
 
   let of_text chan = JoinCom.P.of_text chan
@@ -123,6 +120,8 @@ module Sync = struct
         out : text ;
         err : text ; }
 
+  let er = { st=Unix.WEXITED (-1) ; out=[]; err=[]; }
+    
   type t =
       { wait : unit  -> result;
         kill : int -> unit; }
@@ -139,17 +138,47 @@ module Sync = struct
   | x::_ -> x
   | [] -> ""
 
-  let create cmd argv =
+  let tagsync = "SYNC"
+
+  let verb tag k =
+     def v(r) =  debug tagsync "%s: %s" tag (fst r) ; k(r) in v
+
+  let command cmd argv =
+    let ext = Async.command cmd argv in
+    def wait_ter() & waitpid(st) =
+      reply { er with st=st; } to wait_ter in
+    let () = spawn ext.Async.waitpid(waitpid) in
+    { wait=wait_ter; kill=ext.Async.kill; }
+
+  let open_in cmd argv =
+    let ext = Async.open_in cmd argv in
+    def wait_ter() & waitpid(st) & out(os) =
+      reply { er with st=st; out=os; } to wait_ter in
+    let () = spawn begin
+      consume(ext.Async.out,verb "OUT" out) &
+      ext.Async.waitpid(waitpid)
+    end in
+    { wait=wait_ter; kill=ext.Async.kill; }
+
+
+  let open_in_out cmd argv =
+    let f = Async.open_in_out cmd argv in
+    def fork(input) =
+      let ext = f(list_to_producer(input)) in
+      def wait_ter() & waitpid(st) & out(os) =
+        reply { er with st=st; out=os; } to wait_ter in
+      consume(ext.Async.out,verb "OUT" out) &
+      ext.Async.waitpid(waitpid) &
+      reply { wait=wait_ter; kill=ext.Async.kill; } to fork in
+    fork
+
+
+  let open_full cmd argv =
     let f = Async.open_full cmd argv in
     def fork(input) =
       let ext = f(list_to_producer(input)) in
-      let tagpid = sprintf "SYNC@%i" ext.Async.pid in
       def wait_ter() & waitpid(st) & out(os) & err(es) =
-        debug tagpid "%s" (fst os) ;
         reply { st=st; out=os; err=es } to wait_ter in
-      let verb tag k =
-        def v(r) =
-          debug tagpid "%s: %s" tag (fst r) ; k(r) in v in
       consume(ext.Async.out,verb "OUT" out) &
       consume(ext.Async.err,verb "ERR" err) &
       ext.Async.waitpid(waitpid) &
