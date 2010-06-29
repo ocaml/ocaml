@@ -616,7 +616,7 @@ let reset_def scp =
   def_ids := []
 
 (* All channels defined by a join definition *)
-let auto_chans = ref ([] : (Ident.t * type_expr * Location.t) list)
+let auto_chans = ref ([] : (Ident.t * type_expr * Location.t * type_expr) list)
 let reset_auto () = auto_chans := []
 
 
@@ -638,19 +638,20 @@ let create_channel chan =
           raise (Error (chan.pjident_loc, Multiply_bound_variable name)) ;
         let id = Ident.create  chan.pjident_desc
         and ty =  newvar()
-	and loc = chan.pjident_loc in
+	and loc = chan.pjident_loc
+        and ty_arg = newvar() in
         def_ids := id :: !def_ids ;
-        auto_chans := (id, ty, loc) :: !auto_chans ;
+        auto_chans := (id, ty, loc, ty_arg) :: !auto_chans ;
 	begin
 	  let name = chan.pjident_desc in
 	  match !def_scope with
 	  | None -> ()
 	  | Some s -> Stypes.record (Stypes.An_ident (loc, name, s));
 	end;
-        (id, ty)
-    | (id, ty, _)::rem ->
+        (id, ty, ty_arg)
+    | (id, ty, _,ty_arg)::rem ->
         if Ident.name id = name then
-          (id, ty)
+          (id, ty, ty_arg)
         else
           do_rec rem in
   do_rec !auto_chans
@@ -678,7 +679,7 @@ let rec get_type id env = match env with
     if Ident.same id jd then ty,loc
     else get_type id env
 
-let type_auto_lhs env scope {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
+let type_auto_lhs tenv scope {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
 (* Type patterns *)
   reset_auto () ;
   let auto =
@@ -690,9 +691,11 @@ let type_auto_lhs env scope {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
           List.map
             (fun sjpat ->
               let schan, sarg = sjpat.pjpat_desc in
-              let (id, ty) =  enter_channel schan in
-              let chan = mk_jident id schan.pjident_loc ty env
-              and arg = type_pat env sarg in
+              let (id, ty, ty_arg) =  enter_channel schan in
+              let chan = mk_jident id schan.pjident_loc ty tenv
+              and arg = type_pat tenv sarg in
+              (* Unify arguments before compilation of patterns in join patterns *)
+              unify_pat tenv arg ty_arg ;
               {jpat_desc = chan, arg;
                jpat_kont = ref None ;
                jpat_loc  = sjpat.pjpat_loc;})
@@ -701,11 +704,12 @@ let type_auto_lhs env scope {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
         (get_ref pattern_variables, get_ref pattern_force))
       sauto in
 (* get orginal channel names now *)
-  let env =  get_ref auto_chans in
-  let original = List.map (fun (id,_,_) -> id) env in
+  let env =  get_ref auto_chans in (* get rid of [now useless] argument types *)
+  let original = List.map (fun (id,_,_,_) -> id) env in
 (* compile algebraic pattern in joinpatterns *)
   let (disps, reacs), new_names = Joinmatching.compile auto_loc auto in
 (* collect all names *)
+  let env = List.map (fun (id,ty,loc,_) -> id,ty,loc) env in
   let env =
     List.fold_right
       (fun (id, ids) r ->

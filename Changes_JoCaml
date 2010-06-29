@@ -1,4 +1,17 @@
-- Added new librairies JoinHelper and JoinPool
+- Corrected bug in typing : arguments of join-patterns must
+  get unified, channel per channel, before compiling algebraic
+  patterns in join-patterns. Reason: the compilation assumes
+  that patterns are type-correct.
+
+- Added new librairy JoinTextProc
+
+- Corrected subtle threading bug in JoinProc: fork & parent channels
+  closing in critical section.
+ 
+- Added new librairy JoinCom [producer/consumers, previously in JoinFifo]
+
+- Added new librairies JoinHelper, JoinPool and JoinProc (replacement
+  for Unix fork/exec helpers, which are not thread safe at all)
 
 - Corrected incorrect handling of channel names in object bodies. Costly
   (bug #1, rev 10200)
