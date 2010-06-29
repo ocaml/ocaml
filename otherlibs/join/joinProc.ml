@@ -14,10 +14,14 @@
 
 open Unix
 
+let try_set_close_on_exec fd =
+  try set_close_on_exec fd; true with Invalid_argument _ -> false
+
 let open_proc cmd args input output err toclose =
+  let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork () with
   | 0 ->
-      List.iter close toclose ;
+      if not cloexec then List.iter close toclose;
       if input <> stdin then begin
 	dup2 input stdin; close input
       end;

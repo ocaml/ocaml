@@ -60,9 +60,10 @@ module Async = struct
 
   let async_kill pid prods chans =
     def kill(sid) =
+      debug "TEXT" "KILL %i -> %i" sid pid ;
+      List.iter (fun p -> spawn p.JoinCom.P.kill()) prods ;
       List.iter safe_close_out chans ;      
       safe_kill pid sid ;
-      List.iter (fun p -> spawn p.JoinCom.P.kill()) prods ;
       reply to kill in
     kill
 
@@ -81,18 +82,21 @@ module Async = struct
 
   let open_in cmd argv =
     let pid,in_chan = JoinProc.open_in cmd argv in
+    debug "TEXT" "START %i" pid ;
     def waited(st) & waitpid(k) = waited(st) & k(st) in
     let out = of_text in_chan in
     add_kill_wait pid [out] [] waited waitpid { et with out; }
 
   let open_out cmd argv input =
     let pid,out_chan = JoinProc.open_out cmd argv in
+    debug "TEXT" "START %i" pid ;
     def waited(st) & waitpid(k) = waited(st) & k(st) in
     spawn producer_to_chan (input,out_chan) ;
     add_kill_wait pid [] [out_chan] waited waitpid et
 
   let open_in_out cmd argv input =
     let pid,(in_chan,out_chan) = JoinProc.open_in_out cmd argv in
+    debug "TEXT" "START %i" pid ;
     def waited(st) & waitpid(k) = waited(st) & k(st) in
     let out = of_text in_chan in
     spawn producer_to_chan (input,out_chan) ;
@@ -101,6 +105,7 @@ module Async = struct
 
   let open_full cmd argv input =
     let pid,(in_chan, out_chan,err_chan) = JoinProc.open_full cmd argv in
+    debug "TEXT" "START %i" pid ;
     def waited(st) & waitpid(k) = waited(st) & k(st) in
     let out = of_text in_chan
     and err = of_text err_chan in

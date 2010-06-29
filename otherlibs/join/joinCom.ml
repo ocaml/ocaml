@@ -1,23 +1,39 @@
-  let safe_close_in chan =
-    try close_in chan
-    with Sys_error msg ->
-      Join.debug "COM" "Sys_error in close_in: \"%s\"" msg ;
-      ()
+ let verbose =
+  try
+    int_of_string (Sys.getenv "COMVERBOSE")
+  with _ -> 0
+
+
+open Printf
+
+let debug tag =
+  if verbose > 0 then Join.debug tag
+  else  ksprintf (fun _ -> ())
+
+let safe_close_in chan =
+  debug "COM" "close_in" ;
+  try close_in chan
+  with Sys_error msg ->
+   debug "COM" "Sys_error in close_in: \"%s\"" msg ;
+    ()
 
   let safe_close_out chan =
+  debug "COM" "close_out" ;
     try close_out chan
     with Sys_error msg ->
-      Join.debug "COM" "Sys_error in close_out: \"%s\"" msg ;
+      debug "COM" "Sys_error in close_out: \"%s\"" msg ;
       ()
 
   let read_line chan =
     try
       let x = Pervasives.input_line chan in
+      debug "COM" "read_line: '%s'" x ;
       Some x
     with End_of_file -> None
 
   let output_line chan line =
-    try 
+    try
+      debug "COM" "output_line: '%s'" line ;
       output_string chan line ;
       output_char chan '\n' ;
       flush chan ;
@@ -96,7 +112,7 @@ module P = struct
         lock() & 
         if ok then prod.get(writer)
         else begin safe_close_out chan ; prod.kill() end
-  | None -> k() in
+  | None -> lock() & k() in
   prod.get(writer) & lock()
 
   def to_text_close(prod,chan) =
