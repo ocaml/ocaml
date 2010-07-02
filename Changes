@@ -127,6 +127,7 @@ Bug Fixes:
 - PR#5057: fatal typing error with local module + functor + polymorphic variant
 - Wrong type for Obj.add_offset.
 - Small problem with the representation of Int32, Int64, and Nativeint constants.
+- Use RTLD_LOCAL for native dynlink in private mode.
 
 Objective Caml 3.11.2:
 ----------------------
