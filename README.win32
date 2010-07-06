@@ -117,12 +117,13 @@ to adjust the paths accordingly.
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
     echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
     echo FLPATH="`cygpath 'C:\Program Files\flexdll'`" >>C:\cygwin\tmp\msenv
+    echo PATH="${VCPATH}:$PATH:${FLPATH}" >>C:\cygwin\tmp\msenv
+    echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
+    echo export OCAMLBUILD_FIND=/usr/bin/find >>C:\cygwin\tmp\msenv
 
   Open a Cygwin shell and enter the following commands:
     tr -d '\r' </tmp/msenv >.msenv
     echo '. $HOME/.msenv' >>.bashrc
-    echo 'PATH="${VCPATH}:$PATH:${FLPATH}"' >>.bashrc
-    echo 'export PATH LIB LIBPATH INCLUDE' >>.bashrc
 
 Now, close the Command Prompt and the shell and you're set up for
 using the MS tools under Cygwin.
