@@ -606,23 +606,23 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc otherlibraries ocamlbuild-mixed-boot ocamlbuild.byte
-	OCAMLBUILD_FIND=/usr/bin/find ./build/camlp4-byte-only.sh
+	./build/camlp4-byte-only.sh
 camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
-	OCAMLBUILD_FIND=/usr/bin/find ./build/camlp4-native-only.sh
+	./build/camlp4-native-only.sh
 
 # Ocamlbuild
 
 ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
-	OCAMLBUILD_FIND=/usr/bin/find ./build/ocamlbuild-byte-only.sh
+	./build/ocamlbuild-byte-only.sh
 ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	OCAMLBUILD_FIND=/usr/bin/find ./build/ocamlbuild-native-only.sh
+	./build/ocamlbuild-native-only.sh
 ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
-	OCAMLBUILD_FIND=/usr/bin/find ./build/ocamlbuildlib-native-only.sh
+	./build/ocamlbuildlib-native-only.sh
 
 
 .PHONY: ocamlbuild-mixed-boot
 ocamlbuild-mixed-boot:
-	OCAMLBUILD_FIND=/usr/bin/find ./build/mixed-boot.sh
+	./build/mixed-boot.sh
 partialclean::
 	rm -rf _build
 
