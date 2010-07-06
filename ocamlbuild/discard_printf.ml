@@ -11,6 +11,5 @@
 
 
 (* Original author: Nicolas Pouillard *)
-let rec greedy _ = greedy
 
-let discard_printf _fmt = Obj.magic greedy
+let discard_printf fmt = Format.ifprintf Format.std_formatter fmt;;
