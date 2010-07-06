@@ -9,7 +9,7 @@ having to add any ".cmo" file on the command line for the linking
 phase. Similarly, in interactive use, these globals can be used in
 toplevel phrases without having to load any ".cmo" file in memory.
 
-Unlike the "Pervasive" module from the core library, the modules from the
+Unlike the "Pervasives" module from the core library, the modules from the
 standard library are not automatically ``opened'' when a compilation
 starts, or when the toplevel system is launched. Hence it is necessary
 to use qualified identifiers to refer to the functions provided by these
