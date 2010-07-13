@@ -1574,7 +1574,7 @@ fi
 if ./hasgot -i bfd.h -lbfd -ldl; then
   echo "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
-  echo "LIBBFD_LINK=-lbfd -ldl" >> Makefile
+  echo "LIBBFD_LINK=-lbfd -ldl -liberty" >> Makefile
 else
   echo "BFD library not found, 'objinfo' will be unable to display info on .cmxs files"
   echo "LIBBFD_LINK=" >> Makefile
