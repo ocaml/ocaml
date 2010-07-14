@@ -1573,7 +1573,8 @@ fi
 
 # Look for BFD library
 
-if ./hasgot -i bfd.h -lbfd -ldl -liberty -lz; then
+if ./hasgot -i bfd.h && \
+   ./hasgot -lbfd -ldl -liberty -lz bfd_openr; then
   echo "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
   echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
