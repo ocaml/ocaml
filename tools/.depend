@@ -10,10 +10,6 @@ depend.cmo: ../parsing/parsetree.cmi ../parsing/longident.cmi \
     ../parsing/location.cmi depend.cmi
 depend.cmx: ../parsing/parsetree.cmi ../parsing/longident.cmx \
     ../parsing/location.cmx depend.cmi
-dumpapprox.cmo: ../utils/config.cmi ../asmcomp/compilenv.cmi \
-    ../asmcomp/clambda.cmi
-dumpapprox.cmx: ../utils/config.cmx ../asmcomp/compilenv.cmx \
-    ../asmcomp/clambda.cmx
 dumpobj.cmo: ../utils/tbl.cmi opnames.cmo ../bytecomp/opcodes.cmo \
     ../parsing/location.cmi ../bytecomp/lambda.cmi ../bytecomp/instruct.cmi \
     ../typing/ident.cmi ../bytecomp/emitcode.cmi ../utils/config.cmi \
@@ -24,12 +20,14 @@ dumpobj.cmx: ../utils/tbl.cmx opnames.cmx ../bytecomp/opcodes.cmx \
     ../typing/ident.cmx ../bytecomp/emitcode.cmx ../utils/config.cmx \
     ../bytecomp/cmo_format.cmi ../bytecomp/bytesections.cmx \
     ../parsing/asttypes.cmi
-lexer301.cmo: ../utils/warnings.cmi ../utils/misc.cmi ../parsing/location.cmi
-lexer301.cmx: ../utils/warnings.cmx ../utils/misc.cmx ../parsing/location.cmx
 myocamlbuild_config.cmo:
 myocamlbuild_config.cmx:
-objinfo.cmo: ../utils/config.cmi ../bytecomp/cmo_format.cmi
-objinfo.cmx: ../utils/config.cmx ../bytecomp/cmo_format.cmi
+objinfo.cmo: ../utils/misc.cmi ../utils/config.cmi ../asmcomp/cmx_format.cmi \
+    ../bytecomp/cmo_format.cmi ../asmcomp/clambda.cmi \
+    ../bytecomp/bytesections.cmi
+objinfo.cmx: ../utils/misc.cmx ../utils/config.cmx ../asmcomp/cmx_format.cmi \
+    ../bytecomp/cmo_format.cmi ../asmcomp/clambda.cmx \
+    ../bytecomp/bytesections.cmx
 ocaml299to3.cmo:
 ocaml299to3.cmx:
 ocamlcp.cmo: ../driver/main_args.cmi
@@ -60,5 +58,5 @@ primreq.cmo: ../utils/config.cmi ../bytecomp/cmo_format.cmi
 primreq.cmx: ../utils/config.cmx ../bytecomp/cmo_format.cmi
 profiling.cmo: profiling.cmi
 profiling.cmx: profiling.cmi
-scrapelabels.cmo: lexer301.cmo
-scrapelabels.cmx: lexer301.cmx
+scrapelabels.cmo:
+scrapelabels.cmx:
