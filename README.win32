@@ -110,7 +110,7 @@ in their default directories.  If this is not the case, you will need
 to adjust the paths accordingly.
 
   Open a Windows Command Prompt and enter the following commands:
-    cd "C:\Program Files\Visual Studio 9.0\VC\bin"
+    cd "C:\Program Files\Microsoft Visual Studio 9.0\VC\bin"
     vcvars32
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
     echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
@@ -231,7 +231,7 @@ companion MSYS tools: these have problems with long command lines.
 Instead, use the version of MinGW provided by Cygwin.
 
 Start a Cygwin shell and unpack the source distribution
-(ocaml-X.YZ.tar.gz) with "tar xzf".  Change to the top-level
+(ocaml-X.YY.Z.tar.gz) with "tar xzf".  Change to the top-level
 directory of the OCaml distribution.  Then, do
 
         cp config/m-nt.h config/m.h
