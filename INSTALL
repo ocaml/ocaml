@@ -227,6 +227,9 @@ ocamlbuild instead of make (it replaces steps 2 to 5):
 
         ./build/fastworld.sh
 
+If it doesn't work, just use one of the make-based procedures described
+above.
+
 6- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during
 autoconfiguration):
