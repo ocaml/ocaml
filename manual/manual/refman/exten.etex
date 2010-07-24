@@ -460,12 +460,12 @@ fragment is more self-contained).
 \begin{syntax}
 pattern:
     ...
-  | '{' field ('=' pattern)? { ';' (field '=' pattern)? } ( ';' '_' )? '}'
+  | '{' field ['=' pattern] { ';' field ['=' pattern] } [';' '_' ] '}'
 ;
 expr:
      ...
-  | '{' field ('=' expr)? { ';' field ('=' expr)? } '}'
-  | '{' expr 'with' field ('=' expr?) { ';' field ('=' expr)? } '}'
+  | '{' field ['=' expr] { ';' field ['=' expr] } '}'
+  | '{' expr 'with' field ['=' expr] { ';' field ['=' expr] } '}'
 ;
 \end{syntax}
 
@@ -606,15 +606,15 @@ first-class modules.
 \begin{syntax}
 typexpr:
       ...
-    | ('module' package-type)
+    | '(''module' package-type')'
 ;
 module-expr:
       ...
-    | ('val' expr ':' package-type)
+    | '(''val' expr ':' package-type')'
 ;
 expr:
       ...
-    | ('module' module-expr ':' package-type)
+    | '(''module' module-expr ':' package-type')'
 ;
 package-type:
       modtype-path
@@ -892,7 +892,7 @@ or to rename one:
 Note that you can also remove manifest types, by substituting with the
 same type.
 \caml
-\?module type ComparableInt = Comparable with type t = int
+\?module type ComparableInt = Comparable with type t = int ;;
 \:module type ComparableInt = sig type t = int val compare : t -> t -> int end
 \?module type CompareInt = ComparableInt with type t := int ;;
 \:module type CompareInt = sig val compare : int -> int -> int end
