@@ -15,21 +15,8 @@ CONTEXT
 * plus: the POSIX threads library 'phreads' is required.
 
 
-<<<<<<< .courant
-=======
-* Under HP/UX, the GNU C compiler gcc, the GNU assembler gas, and GNU make
-  are all *required*.  The vendor-provided compiler, assembler and make
-  have major problems.
-
-* GNU make is needed to build ocamlbuild and camlp4.  If your system's
-  default make is not GNU make, you need to define the GNUMAKE environment
-  variable to the name of GNU make, typically with this command:
-
-    export GNUMAKE=gnumake
-
 INSTALLATION INSTRUCTIONS
 
->>>>>>> .fusion-droit.r10497
 1- Configure the system. From the top directory, do:
 
         ./configure
@@ -184,6 +171,48 @@ them to bytecode so far).  Just do:
 JoCaml commands (in the binary directory selected during
 autoconfiguration).
 
+<<<<<<< .courant
+=======
+An alternative, and faster approach to steps 2 to 5 is
+
+        make world.opt          # to build using native-code compilers
+
+The result is equivalent to "make world opt opt.opt", but this may
+fail if anything goes wrong in native-code generation.
+
+Another alternative, is to use the experimental build system that use
+ocamlbuild instead of make (it replaces steps 2 to 5):
+
+        ./build/fastworld.sh
+
+If it doesn't work, just use one of the make-based procedures described
+above.
+
+6- You can now install the Objective Caml system. This will create the
+following commands (in the binary directory selected during
+autoconfiguration):
+
+        ocamlc           the batch bytecode compiler
+        ocamlopt         the batch native-code compiler (if supported)
+        ocamlrun         the runtime system for the bytecode compiler
+        ocamlyacc        the parser generator
+        ocamllex         the lexer generator
+        ocaml            the interactive, toplevel-based system
+        ocamlmktop       a tool to make toplevel systems that integrate
+                         user-defined C primitives and Caml code
+        ocamldebug       the source-level replay debugger
+        ocamldep         generator of "make" dependencies for Caml sources
+        ocamldoc         documentation generator
+        ocamlprof        execution count profiler
+        ocamlcp          the bytecode compiler in profiling mode
+
+and also, if you built them during step 5,
+
+        ocamlc.opt       the batch bytecode compiler compiled with ocamlopt
+        ocamlopt.opt     the batch native-code compiler compiled with ocamlopt
+        ocamllex.opt     the lexer generator compiled with ocamlopt
+
+>>>>>>> .fusion-droit.r10632
 From the top directory, become superuser and do:
 
         umask 022       # make sure to give read & execute permission to all
