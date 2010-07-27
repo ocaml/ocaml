@@ -49,18 +49,18 @@ The remainder of this document gives more information on each port.
 
 REQUIREMENTS:
 
-This port runs under MS Windows 7, Vista, XP, and 2000.
+This port runs under MS Windows 7 (32 and 64 bits), Vista, XP, and 2000.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
 The native-code compiler (ocamlopt) requires the Microsoft Windows SDK
-(item [1]) and the flexdll tool (item [3]).
+(item [1]) and the flexdll tool (item [2]).
 
 Statically linking Caml bytecode with C code (ocamlc -custom) also requires
-items [1] and [3].
+items [1] and [2].
 
-The LablTk GUI requires Tcl/Tk 8.5 (item [2]).
+The LablTk GUI requires Tcl/Tk 8.5 (item [3]).
 
 
 INSTALLATION:
@@ -85,11 +85,11 @@ THIRD-PARTY SOFTWARE:
     http://www.microsoft.com/downloads/en/default.aspx
     under the name "Microsoft Windows 7 SDK".
 
-[2] TCL/TK version 8.5.  Windows binaries are available as part of the
-    ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
-
-[3] flexdll version 0.23 or later.
+[2] flexdll version 0.23 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
+
+[3] TCL/TK version 8.5.  Windows binaries are available as part of the
+    ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
 
 
 RECOMPILATION FROM THE SOURCES:
@@ -99,8 +99,10 @@ distribution (ocaml-X.YY.Z.tar.gz), which also contains the files modified
 for Windows.
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, XP, Vista, or 7.
+- Windows NT, 2000, XP, Vista, or 7 (32 or 64 bits).
 - Items [1], [2] and [3] from the list of recommended software above.
+  Make sure to install the 32-bit version of TCL/TK, even if you are
+  compiling on a 64-bit Windows.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages: diffutils, make, ncurses.
 
@@ -109,21 +111,27 @@ tools.  The following assumes that you have installed [1], [2], and [3]
 in their default directories.  If this is not the case, you will need
 to adjust the paths accordingly.
 
-  Open a Windows Command Prompt and enter the following commands:
-    cd "C:\Program Files\Microsoft Visual Studio 9.0\VC\bin"
+  Open a Windows Command Prompt and enter the following command:
+    set PFPATH=C:\Program Files
+  If you are compiling on the 64-bit version of Windows 7, enter the
+  following instead:
+    set PFPATH=C:\Program Files (x86)
+
+  Then enter the following commands:
+    cd "%PFPATH%\Microsoft Visual Studio 9.0\VC\bin"
     vcvars32
     echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
     echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
     echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
     echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
-    echo FLPATH="`cygpath 'C:\Program Files\flexdll'`" >>C:\cygwin\tmp\msenv
+    echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
     echo PATH="${VCPATH}:$PATH:${FLPATH}" >>C:\cygwin\tmp\msenv
     echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
     echo export OCAMLBUILD_FIND=/usr/bin/find >>C:\cygwin\tmp\msenv
 
   Open a Cygwin shell and enter the following commands:
-    tr -d '\r' </tmp/msenv >.msenv
-    echo '. $HOME/.msenv' >>.bashrc
+    tr -d '\r' </tmp/msenv >.msenv32
+    echo '. $HOME/.msenv32' >>.bashrc
 
 Now, close the Command Prompt and the shell and you're set up for
 using the MS tools under Cygwin.
@@ -301,7 +309,8 @@ The replay debugger is supported.
 
 REQUIREMENTS:
 
-This port runs under MS Windows XP 64 and Server 64 on Intel64/AMD64 machines.
+This port runs under MS Windows XP 64, Windows Server 64, and
+Windows 7 64 on Intel64/AMD64 machines.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
@@ -313,6 +322,7 @@ Microsoft Platform SDK compiler (item [1] in the section
 The native-code compiler (ocamlopt) requires the Microsoft compiler
 and the Microsoft assembler MASM64 (item [1]) and the flexdll tool (item [2]).
 
+The LablTk GUI is not available in this version.
 
 INSTALLATION:
 
@@ -322,18 +332,13 @@ described below.
 
 THIRD-PARTY SOFTWARE:
 
-[1] Microsoft Windows Server 2003 R2 Platform SDK for AMD64 (PSDK-amd64.exe).
-    Can be downloaded for free from http://www.microsoft.com/.
-    Includes all we need, namely a C compiler, the masm64 assembler,
-    Windows libraries and include files.
+[1] Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 Service Pack 1.
+    Can be downloaded for free from
+    http://www.microsoft.com/downloads/en/default.aspx
+    under the name "Microsoft Windows 7 SDK".
 
-    Alternatively, the more recent SDK:
-      Microsoft Windows SDK for Windows 7 and .NET Framework 3.5 Service Pack 1
-    can be used.
-
-[2] flexdll.
+[2] flexdll version 0.23 or later.
     Can be downloaded from http://alain.frisch.fr/flexdll.html
-
 
 
 RECOMPILATION FROM THE SOURCES:
@@ -343,13 +348,38 @@ distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
 for Windows.
 
 You will need the following software components to perform the recompilation:
-- Windows XP 64 or Server 64.
-- The Platform SDK (item [1] from the list of recommended software above).
+- Windows XP 64, Windows Server 64, or Windows 7 64.
+- Items [1] and [2] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
   Install at least the following packages: diffutils, make, ncurses.
-- The flexdll tool (see above).
 
-To recompile, start a Cygwin shell and change to the top-level
+First, you need to set up your cygwin environment for using the MS
+tools.  The following assumes that you have installed [1] and [2]
+in their default directories.  If this is not the case, you will need
+to adjust the paths accordingly.
+
+  Open a Windows Command Prompt and enter the following commands:
+    set PFPATH=C:\Program Files (x86)
+    cd "%PFPATH%\Microsoft Visual Studio 9.0\VC\bin"
+    vcvars64
+    echo VCPATH="`cygpath -p '%Path%'`" >C:\cygwin\tmp\msenv
+    echo LIB="%LIB%;C:\Tcl\lib" >>C:\cygwin\tmp\msenv
+    echo LIBPATH="%LIBPATH%" >>C:\cygwin\tmp\msenv
+    echo INCLUDE="%INCLUDE%;C:\Tcl\include" >>C:\cygwin\tmp\msenv
+    echo FLPATH="`cygpath '%PFPATH%\flexdll'`" >>C:\cygwin\tmp\msenv
+    echo PATH="${VCPATH}:$PATH:${FLPATH}" >>C:\cygwin\tmp\msenv
+    echo export PATH LIB LIBPATH INCLUDE >>C:\cygwin\tmp\msenv
+    echo export OCAMLBUILD_FIND=/usr/bin/find >>C:\cygwin\tmp\msenv
+
+  Open a Cygwin shell and enter the following commands:
+    tr -d '\r' </tmp/msenv >.msenv64
+    echo '. $HOME/.msenv64' >>.bashrc
+
+Now, close the Command Prompt and the shell and you're set up for
+using the MS tools under Cygwin.
+
+
+To recompile OCaml, start a Cygwin shell and change to the top-level
 directory of the OCaml distribution.  Then, do
 
         cp config/m-nt.h config/m.h
@@ -359,12 +389,6 @@ directory of the OCaml distribution.  Then, do
 Then, edit config/Makefile as needed, following the comments in this file.
 Normally, the only variable that need to be changed is
         PREFIX      where to install everything
-
-If, for whatever reason, you want to use the Microsoft Visual C++ 2005
-compiler for AMD64 instead of the Platform SDK compiler, replace the line
-        EXTRALIBS=bufferoverflowu.lib
-by
-        EXTRALIBS=
 
 Finally, use "make -f Makefile.nt" to build the system, e.g.
 
