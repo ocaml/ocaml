@@ -44,8 +44,8 @@ The remainder of this document gives more information on each port.
 
 ------------------------------------------------------------------------------
 
-           The native Win32 port built with Microsoft Visual C
-           ---------------------------------------------------
+           The native Win32 port built with Microsoft Windows SDK
+           ------------------------------------------------------
 
 REQUIREMENTS:
 
@@ -198,7 +198,7 @@ and the flexdll tool, available at
         http://alain.frisch.fr/flexdll.html
 You will need to install at least the following Cygwin packages (use
 the Setup tool from Cygwin):
-binutils, gcc-core, gcc-mingw-core, mingw-runtime, w32-api.
+binutils, gcc-core, gcc-mingw-core, mingw-runtime, w32api.
 
 Do *not* install the Mingw/MSYS development tools from www.mingw.org:
 these are not compatible with this Caml port (@responsefile not
@@ -207,6 +207,8 @@ recognized on the command line).
 The LablTk GUI requires Tcl/Tk 8.5.  Windows binaries are available
 as part of the ActiveTCL distribution at
 http://www.activestate.com/products/ActiveTcl/
+Note that you will need to install the 32-bit version of ActiveTCL,
+even if you are on a 64-bit version of Windows.
 
 INSTALLATION:
 
@@ -304,8 +306,8 @@ The replay debugger is supported.
 
 ------------------------------------------------------------------------------
 
-       The native Win64 port built with the Microsoft Platform SDK compilers
-       ---------------------------------------------------------------------
+       The native Win64 port built with Microsoft Windows SDK
+       ------------------------------------------------------
 
 REQUIREMENTS:
 
@@ -379,7 +381,7 @@ Now, close the Command Prompt and the shell and you're set up for
 using the MS tools under Cygwin.
 
 
-To recompile OCaml, start a Cygwin shell and change to the top-level
+To recompile OCaml, start a new Cygwin shell and change to the top-level
 directory of the OCaml distribution.  Then, do
 
         cp config/m-nt.h config/m.h
