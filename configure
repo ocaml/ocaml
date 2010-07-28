@@ -576,14 +576,11 @@ if test $withsharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin10.*)
-      if test $arch64 == true; then
-          mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
-          bytecccompopts="$dl_defs $bytecccompopts"
-          dl_needs_underscore=false
-          shared_libraries_supported=true
-      else
-          shared_libraries_supported=false
-      fi;;
+       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
+       bytecccompopts="$dl_defs $bytecccompopts"
+       dl_needs_underscore=false
+       shared_libraries_supported=true
+       ;;
     i[3456]86-*-darwin*)
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
