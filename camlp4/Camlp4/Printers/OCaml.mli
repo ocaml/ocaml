@@ -68,8 +68,9 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     value pipe : bool;
     value semi : bool;
     value semisep : sep;
-    value value_val : string;
-    value value_let : string;
+    method value_val : string;
+    method value_let : string;
+    method andsep : sep;
     method anti : formatter -> string -> unit;
     method class_declaration :
       formatter -> Ast.class_expr -> unit;
@@ -113,10 +114,10 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
             option Ast.module_type);
     method module_rec_binding : formatter -> Ast.module_binding -> unit;
     method module_type : formatter -> Ast.module_type -> unit;
-    method mutable_flag : formatter -> Ast.meta_bool -> unit;
-    method direction_flag : formatter -> Ast.meta_bool -> unit;
-    method rec_flag : formatter -> Ast.meta_bool -> unit;
-    method flag : formatter -> Ast.meta_bool -> string -> unit;
+    method override_flag : formatter -> Ast.override_flag -> unit;
+    method mutable_flag : formatter -> Ast.mutable_flag -> unit;
+    method direction_flag : formatter -> Ast.direction_flag -> unit;
+    method rec_flag : formatter -> Ast.rec_flag -> unit;
     method node : formatter -> 'b -> ('b -> Loc.t) -> unit;
     method patt : formatter -> Ast.patt -> unit;
     method patt1 : formatter -> Ast.patt -> unit;
@@ -130,8 +131,8 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method patt_class_expr_fun_args :
       formatter -> (Ast.patt * Ast.class_expr) -> unit;
     method print_comments_before : Loc.t -> formatter -> unit;
-    method private_flag : formatter -> Ast.meta_bool -> unit;
-    method virtual_flag : formatter -> Ast.meta_bool -> unit;
+    method private_flag : formatter -> Ast.private_flag -> unit;
+    method virtual_flag : formatter -> Ast.virtual_flag -> unit;
     method quoted_string : formatter -> string -> unit;
     method raise_match_failure : formatter -> Loc.t -> unit;
     method reset : 'a;

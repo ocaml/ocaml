@@ -267,6 +267,10 @@ opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 otherlibrariesopt \
 	 ocamllex.opt ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
 
+base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
+	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
+	 otherlibrariesopt
+
 # Installation
 install:
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi

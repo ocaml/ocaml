@@ -25,7 +25,6 @@ module type S = sig
   module Lexer        : Sig.Lexer
                         with module Loc   = Loc
                          and module Token = Token;
-  module Context      : Context.S with module Token = Token;
   module Action       : Sig.Grammar.Action;
 
   type gram =
@@ -35,7 +34,13 @@ module type S = sig
       warning_verbose : ref bool;
       error_verbose   : ref bool };
 
-  type efun = Context.t -> Stream.t (Token.t * Loc.t) -> Action.t;
+  type token_info = { prev_loc : Loc.t
+                    ; cur_loc : Loc.t
+                    };
+
+  type token_stream = Stream.t (Token.t * token_info);
+
+  type efun = token_stream -> Action.t;
 
   type token_pattern = ((Token.t -> bool) * string);
 
@@ -47,7 +52,7 @@ module type S = sig
       edesc     : mutable desc }
   and desc =
     [ Dlevels of list level
-    | Dparser of Stream.t (Token.t * Loc.t) -> Action.t ]
+    | Dparser of token_stream -> Action.t ]
   and level =
     { assoc   : assoc         ;
       lname   : option string ;
@@ -62,6 +67,7 @@ module type S = sig
     | Slist1 of symbol
     | Slist1sep of symbol and symbol
     | Sopt of symbol
+    | Stry of symbol
     | Sself
     | Snext
     | Stoken of token_pattern
@@ -118,9 +124,13 @@ module Make (Lexer  : Sig.Lexer) = struct
       warning_verbose : ref bool;
       error_verbose   : ref bool };
 
-  module Context = Context.Make Token;
+  type token_info = { prev_loc : Loc.t
+                    ; cur_loc : Loc.t
+                    };
 
-  type efun = Context.t -> Stream.t (Token.t * Loc.t) -> Action.t;
+  type token_stream = Stream.t (Token.t * token_info);
+
+  type efun = token_stream -> Action.t;
 
   type token_pattern = ((Token.t -> bool) * string);
 
@@ -132,7 +142,7 @@ module Make (Lexer  : Sig.Lexer) = struct
       edesc     : mutable desc }
   and desc =
     [ Dlevels of list level
-    | Dparser of Stream.t (Token.t * Loc.t) -> Action.t ]
+    | Dparser of token_stream -> Action.t ]
   and level =
     { assoc   : assoc         ;
       lname   : option string ;
@@ -147,6 +157,7 @@ module Make (Lexer  : Sig.Lexer) = struct
     | Slist1 of symbol
     | Slist1sep of symbol and symbol
     | Sopt of symbol
+    | Stry of symbol
     | Sself
     | Snext
     | Stoken of token_pattern
@@ -177,6 +188,7 @@ module Make (Lexer  : Sig.Lexer) = struct
       (Stream.t 'a -> 'b) -> (Stream.t 'a -> unit) -> Stream.t 'a -> 'c;
 
   value get_filter g = g.gfilter;
+  value token_location r = r.cur_loc;
 
   type not_filtered 'a = 'a;
   value using { gkeywords = table; gfilter = filter } kwd =
@@ -217,7 +229,7 @@ value iter_entry f e =
     fun
     [ Smeta _ sl _ -> List.iter do_symbol sl
     | Snterm e | Snterml e _ -> do_entry e
-    | Slist0 s | Slist1 s | Sopt s -> do_symbol s
+    | Slist0 s | Slist1 s | Sopt s | Stry s -> do_symbol s
     | Slist0sep s1 s2 | Slist1sep s1 s2 -> do { do_symbol s1; do_symbol s2 }
     | Stree t -> do_tree t
     | Sself | Snext | Stoken _ | Stoken_fun _ -> () ]
@@ -251,7 +263,7 @@ value fold_entry f e init =
     fun
     [ Smeta _ sl _ -> List.fold_left do_symbol accu sl
     | Snterm e | Snterml e _ -> do_entry accu e
-    | Slist0 s | Slist1 s | Sopt s -> do_symbol accu s
+    | Slist0 s | Slist1 s | Sopt s | Stry s -> do_symbol accu s
     | Slist0sep s1 s2 | Slist1sep s1 s2 ->
         let accu = do_symbol accu s1 in
         do_symbol accu s2

@@ -201,5 +201,12 @@ module Make (Syntax : Sig.Camlp4Syntax)
   add_quotation "module_binding"
                 module_binding_quot ME.meta_module_binding MP.meta_module_binding;
   add_quotation "ident" ident_quot ME.meta_ident MP.meta_ident;
+  add_quotation "rec_flag" rec_flag_quot ME.meta_rec_flag MP.meta_rec_flag;
+  add_quotation "private_flag" private_flag_quot ME.meta_private_flag MP.meta_private_flag;
+  add_quotation "row_var_flag" row_var_flag_quot ME.meta_row_var_flag MP.meta_row_var_flag;
+  add_quotation "mutable_flag" mutable_flag_quot ME.meta_mutable_flag MP.meta_mutable_flag;
+  add_quotation "virtual_flag" virtual_flag_quot ME.meta_virtual_flag MP.meta_virtual_flag;
+  add_quotation "override_flag" override_flag_quot ME.meta_override_flag MP.meta_override_flag;
+  add_quotation "direction_flag" direction_flag_quot ME.meta_direction_flag MP.meta_direction_flag;
 
 end;

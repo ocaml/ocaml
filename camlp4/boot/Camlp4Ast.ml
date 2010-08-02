@@ -568,7 +568,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeLet")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_rec_flag _loc x1))
                            (meta_binding _loc x2))
                         (meta_class_expr _loc x3)
                   | Ast.CeFun x0 x1 x2 ->
@@ -590,7 +590,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeCon")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_virtual_flag _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CeApp x0 x1 x2 ->
@@ -622,7 +622,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CgVir")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_private_flag _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CgVal x0 x1 x2 x3 x4 ->
                       Ast.ExApp _loc
@@ -635,8 +635,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                           (Ast.IdUid _loc "CgVal")))
                                     (meta_loc _loc x0))
                                  (meta_string _loc x1))
-                              (meta_meta_bool _loc x2))
-                           (meta_meta_bool _loc x3))
+                              (meta_mutable_flag _loc x2))
+                           (meta_virtual_flag _loc x3))
                         (meta_ctyp _loc x4)
                   | Ast.CgMth x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -648,7 +648,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CgMth")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_private_flag _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CgInh x0 x1 ->
                       Ast.ExApp _loc
@@ -697,7 +697,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CrVvr")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_mutable_flag _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CrVir x0 x1 x2 x3 ->
                       Ast.ExApp _loc
@@ -709,21 +709,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CrVir")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_private_flag _loc x2))
                         (meta_ctyp _loc x3)
-                  | Ast.CrVal x0 x1 x2 x3 ->
-                      Ast.ExApp _loc
-                        (Ast.ExApp _loc
-                           (Ast.ExApp _loc
-                              (Ast.ExApp _loc
-                                 (Ast.ExId _loc
-                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                       (Ast.IdUid _loc "CrVal")))
-                                 (meta_loc _loc x0))
-                              (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
-                        (meta_expr _loc x3)
-                  | Ast.CrMth x0 x1 x2 x3 x4 ->
+                  | Ast.CrVal x0 x1 x2 x3 x4 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExApp _loc
@@ -731,12 +719,29 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.ExApp _loc
                                     (Ast.ExId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                          (Ast.IdUid _loc "CrMth")))
+                                          (Ast.IdUid _loc "CrVal")))
                                     (meta_loc _loc x0))
                                  (meta_string _loc x1))
-                              (meta_meta_bool _loc x2))
-                           (meta_expr _loc x3))
-                        (meta_ctyp _loc x4)
+                              (meta_override_flag _loc x2))
+                           (meta_mutable_flag _loc x3))
+                        (meta_expr _loc x4)
+                  | Ast.CrMth x0 x1 x2 x3 x4 x5 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExApp _loc
+                                    (Ast.ExApp _loc
+                                       (Ast.ExId _loc
+                                          (Ast.IdAcc _loc
+                                             (Ast.IdUid _loc "Ast")
+                                             (Ast.IdUid _loc "CrMth")))
+                                       (meta_loc _loc x0))
+                                    (meta_string _loc x1))
+                                 (meta_override_flag _loc x2))
+                              (meta_private_flag _loc x3))
+                           (meta_expr _loc x4))
+                        (meta_ctyp _loc x5)
                   | Ast.CrIni x0 x1 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -745,16 +750,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "CrIni")))
                            (meta_loc _loc x0))
                         (meta_expr _loc x1)
-                  | Ast.CrInh x0 x1 x2 ->
+                  | Ast.CrInh x0 x1 x2 x3 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExApp _loc
-                              (Ast.ExId _loc
-                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                    (Ast.IdUid _loc "CrInh")))
-                              (meta_loc _loc x0))
-                           (meta_class_expr _loc x1))
-                        (meta_string _loc x2)
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrInh")))
+                                 (meta_loc _loc x0))
+                              (meta_override_flag _loc x1))
+                           (meta_class_expr _loc x2))
+                        (meta_string _loc x3)
                   | Ast.CrCtr x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -843,7 +850,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CtCon")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_virtual_flag _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CtNil x0 ->
@@ -1088,7 +1095,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdUid _loc "TyObj")))
                               (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
-                        (meta_meta_bool _loc x2)
+                        (meta_row_var_flag _loc x2)
                   | Ast.TyDcl x0 x1 x2 x3 x4 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -1186,6 +1193,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "TyNil")))
                         (meta_loc _loc x0) ]
+                and meta_direction_flag _loc =
+                  fun
+                  [ Ast.DiAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.DiDownto ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "DiDownto"))
+                  | Ast.DiTo ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "DiTo")) ]
                 and meta_expr _loc =
                   fun
                   [ Ast.ExPkg x0 x1 ->
@@ -1385,7 +1403,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExLet")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_rec_flag _loc x1))
                            (meta_binding _loc x2))
                         (meta_expr _loc x3)
                   | Ast.ExLaz x0 x1 ->
@@ -1473,7 +1491,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (meta_string _loc x1))
                                  (meta_expr _loc x2))
                               (meta_expr _loc x3))
-                           (meta_meta_bool _loc x4))
+                           (meta_direction_flag _loc x4))
                         (meta_expr _loc x5)
                   | Ast.ExFlo x0 x1 ->
                       Ast.ExApp _loc
@@ -1860,6 +1878,28 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MtNil")))
                         (meta_loc _loc x0) ]
+                and meta_mutable_flag _loc =
+                  fun
+                  [ Ast.MuAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.MuNil ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "MuNil"))
+                  | Ast.MuMutable ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "MuMutable")) ]
+                and meta_override_flag _loc =
+                  fun
+                  [ Ast.OvAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.OvNil ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvNil"))
+                  | Ast.OvOverride ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvOverride")) ]
                 and meta_patt _loc =
                   fun
                   [ Ast.PaLaz x0 x1 ->
@@ -2099,6 +2139,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "PaNil")))
                         (meta_loc _loc x0) ]
+                and meta_private_flag _loc =
+                  fun
+                  [ Ast.PrAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.PrNil ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "PrNil"))
+                  | Ast.PrPrivate ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "PrPrivate")) ]
                 and meta_rec_binding _loc =
                   fun
                   [ Ast.RbAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -2128,6 +2179,28 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "RbNil")))
                         (meta_loc _loc x0) ]
+                and meta_rec_flag _loc =
+                  fun
+                  [ Ast.ReAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.ReNil ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ReNil"))
+                  | Ast.ReRecursive ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ReRecursive")) ]
+                and meta_row_var_flag _loc =
+                  fun
+                  [ Ast.RvAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.RvNil ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "RvNil"))
+                  | Ast.RvRowVar ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "RvRowVar")) ]
                 and meta_sig_item _loc =
                   fun
                   [ Ast.SgAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -2266,7 +2339,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StVal")))
                               (meta_loc _loc x0))
-                           (meta_meta_bool _loc x1))
+                           (meta_rec_flag _loc x1))
                         (meta_binding _loc x2)
                   | Ast.StTyp x0 x1 ->
                       Ast.ExApp _loc
@@ -2392,6 +2465,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "StNil")))
                         (meta_loc _loc x0) ]
+                and meta_virtual_flag _loc =
+                  fun
+                  [ Ast.ViAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.ViNil ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ViNil"))
+                  | Ast.ViVirtual ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ViVirtual")) ]
                 and meta_with_constr _loc =
                   fun
                   [ Ast.WcAnt x0 x1 -> Ast.ExAnt x0 x1
@@ -2552,7 +2636,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeLet")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_rec_flag _loc x1))
                            (meta_binding _loc x2))
                         (meta_class_expr _loc x3)
                   | Ast.CeFun x0 x1 x2 ->
@@ -2574,7 +2658,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CeCon")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_virtual_flag _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CeApp x0 x1 x2 ->
@@ -2606,7 +2690,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CgVir")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_private_flag _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CgVal x0 x1 x2 x3 x4 ->
                       Ast.PaApp _loc
@@ -2619,8 +2703,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                           (Ast.IdUid _loc "CgVal")))
                                     (meta_loc _loc x0))
                                  (meta_string _loc x1))
-                              (meta_meta_bool _loc x2))
-                           (meta_meta_bool _loc x3))
+                              (meta_mutable_flag _loc x2))
+                           (meta_virtual_flag _loc x3))
                         (meta_ctyp _loc x4)
                   | Ast.CgMth x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -2632,7 +2716,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CgMth")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_private_flag _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CgInh x0 x1 ->
                       Ast.PaApp _loc
@@ -2681,7 +2765,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CrVvr")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_mutable_flag _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CrVir x0 x1 x2 x3 ->
                       Ast.PaApp _loc
@@ -2693,21 +2777,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                        (Ast.IdUid _loc "CrVir")))
                                  (meta_loc _loc x0))
                               (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
+                           (meta_private_flag _loc x2))
                         (meta_ctyp _loc x3)
-                  | Ast.CrVal x0 x1 x2 x3 ->
-                      Ast.PaApp _loc
-                        (Ast.PaApp _loc
-                           (Ast.PaApp _loc
-                              (Ast.PaApp _loc
-                                 (Ast.PaId _loc
-                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                       (Ast.IdUid _loc "CrVal")))
-                                 (meta_loc _loc x0))
-                              (meta_string _loc x1))
-                           (meta_meta_bool _loc x2))
-                        (meta_expr _loc x3)
-                  | Ast.CrMth x0 x1 x2 x3 x4 ->
+                  | Ast.CrVal x0 x1 x2 x3 x4 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaApp _loc
@@ -2715,12 +2787,29 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.PaApp _loc
                                     (Ast.PaId _loc
                                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                          (Ast.IdUid _loc "CrMth")))
+                                          (Ast.IdUid _loc "CrVal")))
                                     (meta_loc _loc x0))
                                  (meta_string _loc x1))
-                              (meta_meta_bool _loc x2))
-                           (meta_expr _loc x3))
-                        (meta_ctyp _loc x4)
+                              (meta_override_flag _loc x2))
+                           (meta_mutable_flag _loc x3))
+                        (meta_expr _loc x4)
+                  | Ast.CrMth x0 x1 x2 x3 x4 x5 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaApp _loc
+                                    (Ast.PaApp _loc
+                                       (Ast.PaId _loc
+                                          (Ast.IdAcc _loc
+                                             (Ast.IdUid _loc "Ast")
+                                             (Ast.IdUid _loc "CrMth")))
+                                       (meta_loc _loc x0))
+                                    (meta_string _loc x1))
+                                 (meta_override_flag _loc x2))
+                              (meta_private_flag _loc x3))
+                           (meta_expr _loc x4))
+                        (meta_ctyp _loc x5)
                   | Ast.CrIni x0 x1 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -2729,16 +2818,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "CrIni")))
                            (meta_loc _loc x0))
                         (meta_expr _loc x1)
-                  | Ast.CrInh x0 x1 x2 ->
+                  | Ast.CrInh x0 x1 x2 x3 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaApp _loc
-                              (Ast.PaId _loc
-                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
-                                    (Ast.IdUid _loc "CrInh")))
-                              (meta_loc _loc x0))
-                           (meta_class_expr _loc x1))
-                        (meta_string _loc x2)
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrInh")))
+                                 (meta_loc _loc x0))
+                              (meta_override_flag _loc x1))
+                           (meta_class_expr _loc x2))
+                        (meta_string _loc x3)
                   | Ast.CrCtr x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -2827,7 +2918,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "CtCon")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_virtual_flag _loc x1))
                            (meta_ident _loc x2))
                         (meta_ctyp _loc x3)
                   | Ast.CtNil x0 ->
@@ -3072,7 +3163,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdUid _loc "TyObj")))
                               (meta_loc _loc x0))
                            (meta_ctyp _loc x1))
-                        (meta_meta_bool _loc x2)
+                        (meta_row_var_flag _loc x2)
                   | Ast.TyDcl x0 x1 x2 x3 x4 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -3170,6 +3261,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "TyNil")))
                         (meta_loc _loc x0) ]
+                and meta_direction_flag _loc =
+                  fun
+                  [ Ast.DiAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.DiDownto ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "DiDownto"))
+                  | Ast.DiTo ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "DiTo")) ]
                 and meta_expr _loc =
                   fun
                   [ Ast.ExPkg x0 x1 ->
@@ -3369,7 +3471,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                        (Ast.IdUid _loc "ExLet")))
                                  (meta_loc _loc x0))
-                              (meta_meta_bool _loc x1))
+                              (meta_rec_flag _loc x1))
                            (meta_binding _loc x2))
                         (meta_expr _loc x3)
                   | Ast.ExLaz x0 x1 ->
@@ -3457,7 +3559,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                     (meta_string _loc x1))
                                  (meta_expr _loc x2))
                               (meta_expr _loc x3))
-                           (meta_meta_bool _loc x4))
+                           (meta_direction_flag _loc x4))
                         (meta_expr _loc x5)
                   | Ast.ExFlo x0 x1 ->
                       Ast.PaApp _loc
@@ -3844,6 +3946,28 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "MtNil")))
                         (meta_loc _loc x0) ]
+                and meta_mutable_flag _loc =
+                  fun
+                  [ Ast.MuAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.MuNil ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "MuNil"))
+                  | Ast.MuMutable ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "MuMutable")) ]
+                and meta_override_flag _loc =
+                  fun
+                  [ Ast.OvAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.OvNil ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvNil"))
+                  | Ast.OvOverride ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "OvOverride")) ]
                 and meta_patt _loc =
                   fun
                   [ Ast.PaLaz x0 x1 ->
@@ -4083,6 +4207,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "PaNil")))
                         (meta_loc _loc x0) ]
+                and meta_private_flag _loc =
+                  fun
+                  [ Ast.PrAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.PrNil ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "PrNil"))
+                  | Ast.PrPrivate ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "PrPrivate")) ]
                 and meta_rec_binding _loc =
                   fun
                   [ Ast.RbAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -4112,6 +4247,28 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "RbNil")))
                         (meta_loc _loc x0) ]
+                and meta_rec_flag _loc =
+                  fun
+                  [ Ast.ReAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.ReNil ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ReNil"))
+                  | Ast.ReRecursive ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ReRecursive")) ]
+                and meta_row_var_flag _loc =
+                  fun
+                  [ Ast.RvAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.RvNil ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "RvNil"))
+                  | Ast.RvRowVar ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "RvRowVar")) ]
                 and meta_sig_item _loc =
                   fun
                   [ Ast.SgAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -4250,7 +4407,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "StVal")))
                               (meta_loc _loc x0))
-                           (meta_meta_bool _loc x1))
+                           (meta_rec_flag _loc x1))
                         (meta_binding _loc x2)
                   | Ast.StTyp x0 x1 ->
                       Ast.PaApp _loc
@@ -4376,6 +4533,17 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                               (Ast.IdUid _loc "StNil")))
                         (meta_loc _loc x0) ]
+                and meta_virtual_flag _loc =
+                  fun
+                  [ Ast.ViAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.ViNil ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ViNil"))
+                  | Ast.ViVirtual ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ViVirtual")) ]
                 and meta_with_constr _loc =
                   fun
                   [ Ast.WcAnt x0 x1 -> Ast.PaAnt x0 x1
@@ -4475,6 +4643,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | WcAnt _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in WcAnt _x _x_i1 ];
+        method virtual_flag : virtual_flag -> virtual_flag =
+          fun
+          [ ViVirtual -> ViVirtual
+          | ViNil -> ViNil
+          | ViAnt _x -> let _x = o#string _x in ViAnt _x ];
         method str_item : str_item -> str_item =
           fun
           [ StNil _x -> let _x = o#loc _x in StNil _x
@@ -4526,7 +4699,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in let _x_i1 = o#ctyp _x_i1 in StTyp _x _x_i1
           | StVal _x _x_i1 _x_i2 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i1 = o#rec_flag _x_i1 in
               let _x_i2 = o#binding _x_i2 in StVal _x _x_i1 _x_i2
           | StAnt _x _x_i1 ->
               let _x = o#loc _x in
@@ -4582,6 +4755,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | SgAnt _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in SgAnt _x _x_i1 ];
+        method row_var_flag : row_var_flag -> row_var_flag =
+          fun
+          [ RvRowVar -> RvRowVar
+          | RvNil -> RvNil
+          | RvAnt _x -> let _x = o#string _x in RvAnt _x ];
+        method rec_flag : rec_flag -> rec_flag =
+          fun
+          [ ReRecursive -> ReRecursive
+          | ReNil -> ReNil
+          | ReAnt _x -> let _x = o#string _x in ReAnt _x ];
         method rec_binding : rec_binding -> rec_binding =
           fun
           [ RbNil _x -> let _x = o#loc _x in RbNil _x
@@ -4596,6 +4779,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | RbAnt _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in RbAnt _x _x_i1 ];
+        method private_flag : private_flag -> private_flag =
+          fun
+          [ PrPrivate -> PrPrivate
+          | PrNil -> PrNil
+          | PrAnt _x -> let _x = o#string _x in PrAnt _x ];
         method patt : patt -> patt =
           fun
           [ PaNil _x -> let _x = o#loc _x in PaNil _x
@@ -4685,6 +4873,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x_i1 = o#string _x_i1 in PaVrn _x _x_i1
           | PaLaz _x _x_i1 ->
               let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaLaz _x _x_i1 ];
+        method override_flag : override_flag -> override_flag =
+          fun
+          [ OvOverride -> OvOverride
+          | OvNil -> OvNil
+          | OvAnt _x -> let _x = o#string _x in OvAnt _x ];
+        method mutable_flag : mutable_flag -> mutable_flag =
+          fun
+          [ MuMutable -> MuMutable
+          | MuNil -> MuNil
+          | MuAnt _x -> let _x = o#string _x in MuAnt _x ];
         method module_type : module_type -> module_type =
           fun
           [ MtNil _x -> let _x = o#loc _x in MtNil _x
@@ -4861,7 +5059,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x_i1 = o#string _x_i1 in
               let _x_i2 = o#expr _x_i2 in
               let _x_i3 = o#expr _x_i3 in
-              let _x_i4 = o#meta_bool _x_i4 in
+              let _x_i4 = o#direction_flag _x_i4 in
               let _x_i5 = o#expr _x_i5
               in ExFor _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5
           | ExFun _x _x_i1 ->
@@ -4892,7 +5090,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in ExLaz _x _x_i1
           | ExLet _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i1 = o#rec_flag _x_i1 in
               let _x_i2 = o#binding _x_i2 in
               let _x_i3 = o#expr _x_i3 in ExLet _x _x_i1 _x_i2 _x_i3
           | ExLmd _x _x_i1 _x_i2 _x_i3 ->
@@ -4967,6 +5165,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | ExPkg _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#module_expr _x_i1 in ExPkg _x _x_i1 ];
+        method direction_flag : direction_flag -> direction_flag =
+          fun
+          [ DiTo -> DiTo
+          | DiDownto -> DiDownto
+          | DiAnt _x -> let _x = o#string _x in DiAnt _x ];
         method ctyp : ctyp -> ctyp =
           fun
           [ TyNil _x -> let _x = o#loc _x in TyNil _x
@@ -5011,7 +5214,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | TyObj _x _x_i1 _x_i2 ->
               let _x = o#loc _x in
               let _x_i1 = o#ctyp _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in TyObj _x _x_i1 _x_i2
+              let _x_i2 = o#row_var_flag _x_i2 in TyObj _x _x_i1 _x_i2
           | TyOlb _x _x_i1 _x_i2 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
@@ -5102,7 +5305,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           [ CtNil _x -> let _x = o#loc _x in CtNil _x
           | CtCon _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i1 = o#virtual_flag _x_i1 in
               let _x_i2 = o#ident _x_i2 in
               let _x_i3 = o#ctyp _x_i3 in CtCon _x _x_i1 _x_i2 _x_i3
           | CtFun _x _x_i1 _x_i2 ->
@@ -5139,32 +5342,36 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#ctyp _x_i1 in
               let _x_i2 = o#ctyp _x_i2 in CrCtr _x _x_i1 _x_i2
-          | CrInh _x _x_i1 _x_i2 ->
+          | CrInh _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
-              let _x_i1 = o#class_expr _x_i1 in
-              let _x_i2 = o#string _x_i2 in CrInh _x _x_i1 _x_i2
+              let _x_i1 = o#override_flag _x_i1 in
+              let _x_i2 = o#class_expr _x_i2 in
+              let _x_i3 = o#string _x_i3 in CrInh _x _x_i1 _x_i2 _x_i3
           | CrIni _x _x_i1 ->
               let _x = o#loc _x in let _x_i1 = o#expr _x_i1 in CrIni _x _x_i1
-          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
-              let _x_i3 = o#expr _x_i3 in
-              let _x_i4 = o#ctyp _x_i4 in CrMth _x _x_i1 _x_i2 _x_i3 _x_i4
-          | CrVal _x _x_i1 _x_i2 _x_i3 ->
+              let _x_i2 = o#override_flag _x_i2 in
+              let _x_i3 = o#private_flag _x_i3 in
+              let _x_i4 = o#expr _x_i4 in
+              let _x_i5 = o#ctyp _x_i5
+              in CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5
+          | CrVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
-              let _x_i3 = o#expr _x_i3 in CrVal _x _x_i1 _x_i2 _x_i3
+              let _x_i2 = o#override_flag _x_i2 in
+              let _x_i3 = o#mutable_flag _x_i3 in
+              let _x_i4 = o#expr _x_i4 in CrVal _x _x_i1 _x_i2 _x_i3 _x_i4
           | CrVir _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i2 = o#private_flag _x_i2 in
               let _x_i3 = o#ctyp _x_i3 in CrVir _x _x_i1 _x_i2 _x_i3
           | CrVvr _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i2 = o#mutable_flag _x_i2 in
               let _x_i3 = o#ctyp _x_i3 in CrVvr _x _x_i1 _x_i2 _x_i3
           | CrAnt _x _x_i1 ->
               let _x = o#loc _x in
@@ -5186,18 +5393,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | CgMth _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i2 = o#private_flag _x_i2 in
               let _x_i3 = o#ctyp _x_i3 in CgMth _x _x_i1 _x_i2 _x_i3
           | CgVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
-              let _x_i3 = o#meta_bool _x_i3 in
+              let _x_i2 = o#mutable_flag _x_i2 in
+              let _x_i3 = o#virtual_flag _x_i3 in
               let _x_i4 = o#ctyp _x_i4 in CgVal _x _x_i1 _x_i2 _x_i3 _x_i4
           | CgVir _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in
-              let _x_i2 = o#meta_bool _x_i2 in
+              let _x_i2 = o#private_flag _x_i2 in
               let _x_i3 = o#ctyp _x_i3 in CgVir _x _x_i1 _x_i2 _x_i3
           | CgAnt _x _x_i1 ->
               let _x = o#loc _x in
@@ -5211,7 +5418,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x_i2 = o#expr _x_i2 in CeApp _x _x_i1 _x_i2
           | CeCon _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i1 = o#virtual_flag _x_i1 in
               let _x_i2 = o#ident _x_i2 in
               let _x_i3 = o#ctyp _x_i3 in CeCon _x _x_i1 _x_i2 _x_i3
           | CeFun _x _x_i1 _x_i2 ->
@@ -5220,7 +5427,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x_i2 = o#class_expr _x_i2 in CeFun _x _x_i1 _x_i2
           | CeLet _x _x_i1 _x_i2 _x_i3 ->
               let _x = o#loc _x in
-              let _x_i1 = o#meta_bool _x_i1 in
+              let _x_i1 = o#rec_flag _x_i1 in
               let _x_i2 = o#binding _x_i2 in
               let _x_i3 = o#class_expr _x_i3 in CeLet _x _x_i1 _x_i2 _x_i3
           | CeStr _x _x_i1 _x_i2 ->
@@ -5287,6 +5494,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#loc _x in
               let o = o#with_constr _x_i1 in let o = o#with_constr _x_i2 in o
           | WcAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
+        method virtual_flag : virtual_flag -> 'self_type =
+          fun
+          [ ViVirtual -> o
+          | ViNil -> o
+          | ViAnt _x -> let o = o#string _x in o ];
         method str_item : str_item -> 'self_type =
           fun
           [ StNil _x -> let o = o#loc _x in o
@@ -5324,7 +5536,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | StTyp _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
           | StVal _x _x_i1 _x_i2 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in let o = o#binding _x_i2 in o
+              let o = o#rec_flag _x_i1 in let o = o#binding _x_i2 in o
           | StAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method sig_item : sig_item -> 'self_type =
           fun
@@ -5361,6 +5573,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#loc _x in
               let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
           | SgAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
+        method row_var_flag : row_var_flag -> 'self_type =
+          fun
+          [ RvRowVar -> o
+          | RvNil -> o
+          | RvAnt _x -> let o = o#string _x in o ];
+        method rec_flag : rec_flag -> 'self_type =
+          fun
+          [ ReRecursive -> o
+          | ReNil -> o
+          | ReAnt _x -> let o = o#string _x in o ];
         method rec_binding : rec_binding -> 'self_type =
           fun
           [ RbNil _x -> let o = o#loc _x in o
@@ -5371,6 +5593,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#loc _x in
               let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
           | RbAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
+        method private_flag : private_flag -> 'self_type =
+          fun
+          [ PrPrivate -> o
+          | PrNil -> o
+          | PrAnt _x -> let o = o#string _x in o ];
         method patt : patt -> 'self_type =
           fun
           [ PaNil _x -> let o = o#loc _x in o
@@ -5427,6 +5654,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | PaTyp _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
           | PaVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
           | PaLaz _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o ];
+        method override_flag : override_flag -> 'self_type =
+          fun
+          [ OvOverride -> o
+          | OvNil -> o
+          | OvAnt _x -> let o = o#string _x in o ];
+        method mutable_flag : mutable_flag -> 'self_type =
+          fun
+          [ MuMutable -> o
+          | MuNil -> o
+          | MuAnt _x -> let o = o#string _x in o ];
         method module_type : module_type -> 'self_type =
           fun
           [ MtNil _x -> let o = o#loc _x in o
@@ -5554,7 +5791,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#string _x_i1 in
               let o = o#expr _x_i2 in
               let o = o#expr _x_i3 in
-              let o = o#meta_bool _x_i4 in let o = o#expr _x_i5 in o
+              let o = o#direction_flag _x_i4 in let o = o#expr _x_i5 in o
           | ExFun _x _x_i1 ->
               let o = o#loc _x in let o = o#match_case _x_i1 in o
           | ExIfe _x _x_i1 _x_i2 _x_i3 ->
@@ -5574,7 +5811,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | ExLaz _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
           | ExLet _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in
+              let o = o#rec_flag _x_i1 in
               let o = o#binding _x_i2 in let o = o#expr _x_i3 in o
           | ExLmd _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
@@ -5625,6 +5862,11 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#string _x_i1 in let o = o#expr _x_i2 in o
           | ExPkg _x _x_i1 ->
               let o = o#loc _x in let o = o#module_expr _x_i1 in o ];
+        method direction_flag : direction_flag -> 'self_type =
+          fun
+          [ DiTo -> o
+          | DiDownto -> o
+          | DiAnt _x -> let o = o#string _x in o ];
         method ctyp : ctyp -> 'self_type =
           fun
           [ TyNil _x -> let o = o#loc _x in o
@@ -5659,7 +5901,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               in o
           | TyObj _x _x_i1 _x_i2 ->
               let o = o#loc _x in
-              let o = o#ctyp _x_i1 in let o = o#meta_bool _x_i2 in o
+              let o = o#ctyp _x_i1 in let o = o#row_var_flag _x_i2 in o
           | TyOlb _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
@@ -5718,7 +5960,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           [ CtNil _x -> let o = o#loc _x in o
           | CtCon _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in
+              let o = o#virtual_flag _x_i1 in
               let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
           | CtFun _x _x_i1 _x_i2 ->
               let o = o#loc _x in
@@ -5746,27 +5988,30 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | CrCtr _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
-          | CrInh _x _x_i1 _x_i2 ->
+          | CrInh _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#class_expr _x_i1 in let o = o#string _x_i2 in o
+              let o = o#override_flag _x_i1 in
+              let o = o#class_expr _x_i2 in let o = o#string _x_i3 in o
           | CrIni _x _x_i1 -> let o = o#loc _x in let o = o#expr _x_i1 in o
-          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 ->
+          | CrMth _x _x_i1 _x_i2 _x_i3 _x_i4 _x_i5 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in
-              let o = o#expr _x_i3 in let o = o#ctyp _x_i4 in o
-          | CrVal _x _x_i1 _x_i2 _x_i3 ->
+              let o = o#override_flag _x_i2 in
+              let o = o#private_flag _x_i3 in
+              let o = o#expr _x_i4 in let o = o#ctyp _x_i5 in o
+          | CrVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in let o = o#expr _x_i3 in o
+              let o = o#override_flag _x_i2 in
+              let o = o#mutable_flag _x_i3 in let o = o#expr _x_i4 in o
           | CrVir _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+              let o = o#private_flag _x_i2 in let o = o#ctyp _x_i3 in o
           | CrVvr _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+              let o = o#mutable_flag _x_i2 in let o = o#ctyp _x_i3 in o
           | CrAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method class_sig_item : class_sig_item -> 'self_type =
           fun
@@ -5783,16 +6028,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | CgMth _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+              let o = o#private_flag _x_i2 in let o = o#ctyp _x_i3 in o
           | CgVal _x _x_i1 _x_i2 _x_i3 _x_i4 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in
-              let o = o#meta_bool _x_i3 in let o = o#ctyp _x_i4 in o
+              let o = o#mutable_flag _x_i2 in
+              let o = o#virtual_flag _x_i3 in let o = o#ctyp _x_i4 in o
           | CgVir _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
               let o = o#string _x_i1 in
-              let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+              let o = o#private_flag _x_i2 in let o = o#ctyp _x_i3 in o
           | CgAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method class_expr : class_expr -> 'self_type =
           fun
@@ -5802,14 +6047,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#class_expr _x_i1 in let o = o#expr _x_i2 in o
           | CeCon _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in
+              let o = o#virtual_flag _x_i1 in
               let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
           | CeFun _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#patt _x_i1 in let o = o#class_expr _x_i2 in o
           | CeLet _x _x_i1 _x_i2 _x_i3 ->
               let o = o#loc _x in
-              let o = o#meta_bool _x_i1 in
+              let o = o#rec_flag _x_i1 in
               let o = o#binding _x_i2 in let o = o#class_expr _x_i3 in o
           | CeStr _x _x_i1 _x_i2 ->
               let o = o#loc _x in

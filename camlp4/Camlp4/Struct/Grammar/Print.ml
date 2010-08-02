@@ -39,6 +39,7 @@ module Make (Structure : Structure.S) = struct
     | Slist1sep s t ->
         fprintf ppf "LIST1 %a SEP %a" print_symbol1 s print_symbol1 t
     | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
+    | Stry s -> fprintf ppf "TRY %a" print_symbol1 s
     | Snterml e l -> fprintf ppf "%s@ LEVEL@ %S" e.ename l
     | Snterm _ | Snext | Sself | Stree _ | Stoken _ | Skeyword _ as s ->
         print_symbol1 ppf s ]
@@ -64,7 +65,7 @@ module Make (Structure : Structure.S) = struct
     | Skeyword s -> fprintf ppf "%S" s
     | Stree t -> print_level ppf pp_print_space (flatten_tree t)
     | Smeta _ _ _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
-      Slist1sep _ _ | Sopt _ as s ->
+      Slist1sep _ _ | Sopt _ | Stry _ as s ->
         fprintf ppf "(%a)" print_symbol s ]
   and print_rule ppf symbols =
     do {
@@ -174,6 +175,7 @@ module MakeDump (Structure : Structure.S) = struct
     | Slist1sep s t ->
         fprintf ppf "LIST1 %a SEP %a" print_symbol1 s print_symbol1 t
     | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
+    | Stry s -> fprintf ppf "TRY %a" print_symbol1 s
     | Snterml e l -> fprintf ppf "%s@ LEVEL@ %S" e.ename l
     | Snterm _ | Snext | Sself | Stree _ | Stoken _ | Skeyword _ as s ->
         print_symbol1 ppf s ]
@@ -199,7 +201,7 @@ module MakeDump (Structure : Structure.S) = struct
     | Skeyword s -> fprintf ppf "%S" s
     | Stree t -> print_tree ppf t
     | Smeta _ _ _ | Snterml _ _ | Slist0 _ | Slist0sep _ _ | Slist1 _ |
-      Slist1sep _ _ | Sopt _ as s ->
+      Slist1sep _ _ | Sopt _ | Stry _ as s ->
         fprintf ppf "(%a)" print_symbol s ]
   and print_rule ppf symbols =
     do {

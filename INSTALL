@@ -222,11 +222,6 @@ An alternative, and faster approach to steps 2 to 5 is
 The result is equivalent to "make world opt opt.opt", but this may
 fail if anything goes wrong in native-code generation.
 
-Another alternative, is to use the experimental build system that use
-ocamlbuild instead of make (it replaces steps 2 to 5):
-
-        ./build/fastworld.sh
-
 6- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during
 autoconfiguration):

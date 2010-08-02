@@ -320,10 +320,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       parser_case parser_case_list;
     expr: LEVEL "top"
       [ [ "parser"; po = OPT parser_ipatt; pcl = parser_case_list ->
-            <:expr< $cparser _loc po pcl$ >>
+            cparser _loc po pcl
         | "match"; e = sequence; "with"; "parser"; po = OPT parser_ipatt;
           pcl = parser_case_list ->
-            <:expr< $cparser_match _loc e po pcl$ >>
+            cparser_match _loc e po pcl
       ] ]
     ;
     parser_case_list:

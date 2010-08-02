@@ -26,10 +26,11 @@ module Make (Structure : Structure.S) = struct
   module Fail = Failed.Make Structure;
   open Sig.Grammar;
 
+  (* Prevent from implict usage. *)
   module Stream = struct
-    include Stream;
-    value junk strm = Context.junk strm;
-    value count strm = Context.bp strm;
+    type t 'a = Stream.t 'a;
+    exception Failure = Stream.Failure;
+    exception Error = Stream.Error;
   end;
 
   value sfold0 f e _entry _symbl psymb =

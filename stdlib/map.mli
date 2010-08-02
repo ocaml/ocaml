@@ -147,7 +147,7 @@ module type S =
      *)
 
     val max_binding: 'a t -> (key * 'a)
-    (** Same as {!Map.S.max_binding}, but returns the largest binding
+    (** Same as {!Map.S.min_binding}, but returns the largest binding
         of the given map.
         @since 3.12.0
      *)

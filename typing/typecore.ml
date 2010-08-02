@@ -690,7 +690,31 @@ let rec is_nonexpansive exp =
       Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
       !count = 0
+  | Texp_pack mexp ->
+      is_nonexpansive_mod mexp
   | _ -> false
+
+and is_nonexpansive_mod mexp =
+  match mexp.mod_desc with
+  | Tmod_ident _ -> true
+  | Tmod_functor _ -> true
+  | Tmod_unpack (e, _) -> is_nonexpansive e
+  | Tmod_constraint (m, _, _) -> is_nonexpansive_mod m
+  | Tmod_structure items ->
+      List.for_all
+        (function
+          | Tstr_eval _ | Tstr_primitive _ | Tstr_type _ | Tstr_modtype _
+          | Tstr_open _ | Tstr_cltype _ | Tstr_exn_rebind _ -> true
+          | Tstr_value (_, pat_exp_list) ->
+              List.for_all (fun (_, exp) -> is_nonexpansive exp) pat_exp_list
+          | Tstr_module (_, m) | Tstr_include (m, _) -> is_nonexpansive_mod m
+          | Tstr_recmodule id_mod_list ->
+              List.for_all (fun (_, m) -> is_nonexpansive_mod m) id_mod_list
+          | Tstr_exception _ -> false (* true would be unsound *)
+          | Tstr_class _ -> false (* could be more precise *)
+        )
+        items
+  | Tmod_apply _ -> false
 
 and is_nonexpansive_opt = function
     None -> true
@@ -1135,31 +1159,9 @@ let rec type_exp env sexp =
                                   row_name = None});
         exp_env = env }
   | Pexp_record(lid_sexp_list, opt_sexp) ->
-      let ty = newvar() in
-      let num_fields = ref 0 in
-      let type_label_exp (lid, sarg) =
-        let label = Typetexp.find_label env loc lid in
-        begin_def ();
-        if !Clflags.principal then begin_def ();
-        let (vars, ty_arg, ty_res) = instance_label true label in
-        if !Clflags.principal then begin
-          end_def ();
-          generalize_structure ty_arg;
-          generalize_structure ty_res
-        end;
-        begin try
-          unify env (instance ty_res) ty
-        with Unify trace ->
-          raise(Error(loc, Label_mismatch(lid, trace)))
-        end;
-        let arg = type_argument env sarg ty_arg in
-        end_def ();
-        check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
-        num_fields := Array.length label.lbl_all;
-        if label.lbl_private = Private then
-          raise(Error(loc, Private_type ty));
-        (label, {arg with exp_type = instance arg.exp_type}) in
-      let lbl_exp_list = type_label_a_list type_label_exp lid_sexp_list in
+      let ty = newvar () in
+      let lbl_exp_list =
+        type_label_a_list (type_label_exp true env loc ty) lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
           ((lid, _) :: rem1, (lbl, _) :: rem2) ->
@@ -1187,7 +1189,10 @@ let rec type_exp env sexp =
             Some(type_expect env sexp ty_exp)
         | _ -> assert false
       in
-      if opt_sexp = None && List.length lid_sexp_list <> !num_fields then begin
+      let num_fields =
+        match lbl_exp_list with [] -> assert false
+        | (lbl,_)::_ -> Array.length lbl.lbl_all in
+      if opt_sexp = None && List.length lid_sexp_list <> num_fields then begin
         let present_indices =
           List.map (fun (lbl, _) -> lbl.lbl_pos) lbl_exp_list in
         let label_names = extract_label_names sexp env ty in
@@ -1200,7 +1205,7 @@ let rec type_exp env sexp =
         let missing = missing_labels 0 label_names in
         raise(Error(loc, Label_missing missing))
       end
-      else if opt_sexp <> None && List.length lid_sexp_list = !num_fields then
+      else if opt_sexp <> None && List.length lid_sexp_list = num_fields then
         Location.prerr_warning loc Warnings.Useless_record_with;
       re {
         exp_desc = Texp_record(lbl_exp_list, opt_exp);
@@ -1219,17 +1224,10 @@ let rec type_exp env sexp =
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
       let record = type_exp env srecord in
-      let label = Typetexp.find_label env loc lid in
+      let (label, newval) =
+        type_label_exp false env loc record.exp_type (lid, snewval) in
       if label.lbl_mut = Immutable then
         raise(Error(loc, Label_not_mutable lid));
-      begin_def ();
-      let (vars, ty_arg, ty_res) = instance_label true label in
-      unify_exp env record ty_res;
-      let newval = type_expect env snewval ty_arg in
-      end_def ();
-      check_univars env (vars <> []) "field value" newval label.lbl_arg vars;
-      if label.lbl_private = Private then
-        raise(Error(loc, Private_label(lid, ty_res)));
       re {
         exp_desc = Texp_setfield(record, label, newval);
         exp_loc = loc;
@@ -1642,6 +1640,45 @@ let rec type_exp env sexp =
         exp_env = env }
   | Pexp_open (lid, e) ->
       type_exp (!type_open env sexp.pexp_loc lid) e
+
+and type_label_exp create env loc ty (lid, sarg) =
+  let label = Typetexp.find_label env sarg.pexp_loc lid in
+  begin_def ();
+  if !Clflags.principal then begin_def ();
+  let (vars, ty_arg, ty_res) = instance_label true label in
+  if !Clflags.principal then begin
+    end_def ();
+    generalize_structure ty_arg;
+    generalize_structure ty_res
+  end;
+  begin try
+    unify env (instance ty_res) ty
+  with Unify trace ->
+    raise(Error(loc , Label_mismatch(lid, trace)))
+  end;
+  if label.lbl_private = Private then
+    raise(Error(loc, if create then Private_type ty else Private_label (lid, ty)));
+  let arg =
+    let snap = if vars = [] then None else Some (Btype.snapshot ()) in
+    let arg = type_argument env sarg ty_arg in
+    end_def ();
+    try
+      check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
+      arg
+    with exn when not (is_nonexpansive arg) -> try
+      (* Try to retype without propagating ty_arg, cf PR#4862 *)
+      may Btype.backtrack snap;
+      begin_def ();
+      let arg = type_exp env sarg in
+      end_def ();
+      generalize_expansive env arg.exp_type;
+      unify_exp env arg ty_arg;
+      check_univars env false "field value" arg label.lbl_arg vars;
+      arg
+    with Error (_, Less_general _) as e -> raise e
+    | _ -> raise exn    (* In case of failure return the first error *)
+  in
+  (label, {arg with exp_type = instance arg.exp_type})
 
 and type_argument env sarg ty_expected' =
   (* ty_expected' may be generic *)

@@ -43,14 +43,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   object (o)
     inherit PP_o.printer ~curry_constr:init_curry_constr ~comments () as super;
 
-    value semisep : sep = ";";
-    value andsep : sep = "@]@ @[<2>and@ ";
-    value value_val = "value";
-    value value_let = "value";
+    value! semisep : sep = ";";
     value mode = if comments then `comments else `no_comments;
     value curry_constr = init_curry_constr;
     value first_match_case = True;
 
+    method andsep : sep = "@]@ @[<2>and@ ";
+    method value_val = "value";
+    method value_let = "value";
     method under_pipe = o;
     method under_semi = o;
     method reset_semi = o;
@@ -164,7 +164,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<2>%a@ :=@ %a@]" o#dot_expr e1 o#expr e2
     | <:expr< fun $p$ -> $e$ >> when Ast.is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`patt p, e)
-    | Ast.ExFUN _ i e ->
+    | <:expr< fun (type $i$) -> $e$ >> ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`newtype i, e)
     | <:expr< fun [ $a$ ] >> ->
         pp f "@[<hv0>fun%a@]" o#match_case a
@@ -272,9 +272,16 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   end;
 
   value with_outfile = with_outfile;
-  value print = print;
-  value print_interf = print_interf;
-  value print_implem = print_implem;
+
+  value print output_file fct =
+    let o = new printer () in
+    with_outfile output_file (fct o);
+
+  value print_interf ?input_file:(_) ?output_file sg =
+    print output_file (fun o -> o#interf) sg;
+
+  value print_implem ?input_file:(_) ?output_file st =
+    print output_file (fun o -> o#implem) st;
 
 end;
 

@@ -68,11 +68,9 @@ value rec decr_keyw_use gram =
   fun
   [ Skeyword kwd -> removing gram kwd
   | Smeta _ sl _ -> List.iter (decr_keyw_use gram) sl
-  | Slist0 s -> decr_keyw_use gram s
-  | Slist1 s -> decr_keyw_use gram s
+  | Slist0 s | Slist1 s | Sopt s | Stry s -> decr_keyw_use gram s
   | Slist0sep s1 s2 -> do { decr_keyw_use gram s1; decr_keyw_use gram s2 }
   | Slist1sep s1 s2 -> do { decr_keyw_use gram s1; decr_keyw_use gram s2 }
-  | Sopt s -> decr_keyw_use gram s
   | Stree t -> decr_keyw_use_in_tree gram t
   | Sself | Snext | Snterm _ | Snterml _ _ | Stoken _ -> () ]
 and decr_keyw_use_in_tree gram =
@@ -149,13 +147,13 @@ value delete_rule entry sl =
       do {
         entry.edesc := Dlevels levs;
         entry.estart :=
-          fun lev c strm ->
+          fun lev strm ->
             let f = Parser.start_parser_of_entry entry in
-            do { entry.estart := f; f lev c strm };
+            do { entry.estart := f; f lev strm };
         entry.econtinue :=
-          fun lev bp a c strm ->
+          fun lev bp a strm ->
             let f = Parser.continue_parser_of_entry entry in
-            do { entry.econtinue := f; f lev bp a c strm }
+            do { entry.econtinue := f; f lev bp a strm }
       }
   | Dparser _ -> () ]
 ;

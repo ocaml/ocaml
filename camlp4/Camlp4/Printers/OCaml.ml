@@ -56,7 +56,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     fun
     [ Ast.LNil -> []
     | Ast.LCons x xs -> [x :: list_of_meta_list xs]
-    | Ast.LAnt x -> assert False ];
+    | Ast.LAnt _ -> assert False ];
 
   value meta_list elt sep f mxs =
     let xs = list_of_meta_list mxs in
@@ -135,7 +135,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           let (pl, e) = expr_fun_args e in
           ([`patt p :: pl], e)
         else ([], ge)
-    | Ast.ExFUN _ i e ->
+    | <:expr< fun (type $i$) -> $e$ >> ->
         let (pl, e) = expr_fun_args e in
         ([`newtype i :: pl], e)
     | ge -> ([], ge) ];
@@ -169,12 +169,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method reset =      {< pipe = False; semi = False >};
 
     value semisep : sep = ";;";
-    value andsep : sep = "@]@ @[<2>and@ ";
-    value value_val = "val";
-    value value_let = "let";
     value mode = if comments then `comments else `no_comments;
     value curry_constr = init_curry_constr;
     value var_conversion = False;
+
+    method andsep : sep = "@]@ @[<2>and@ ";
+    method value_val = "val";
+    method value_let = "let";
 
     method semisep = semisep;
     method set_semisep s = {< semisep = s >};
@@ -232,15 +233,31 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<1>%a,@ %a@]" o#class_params t1 o#class_params t2
       | x -> o#ctyp f x ];
 
-    method mutable_flag f b = o#flag f b "mutable";
-    method rec_flag f b = o#flag f b "rec";
-    method virtual_flag f b = o#flag f b "virtual";
-    method private_flag f b = o#flag f b "private";
-    method flag f b n =
-      match b with
-      [ Ast.BTrue -> do { pp_print_string f n; pp f "@ " }
-      | Ast.BFalse -> ()
-      | Ast.BAnt s -> o#anti f s ];
+    method override_flag f =
+      fun
+      [ Ast.OvOverride -> pp f "!"
+      | Ast.OvNil -> ()
+      | Ast.OvAnt s -> o#anti f s ];
+
+    method mutable_flag f = fun
+      [ Ast.MuMutable -> pp f "mutable@ "
+      | Ast.MuNil -> ()
+      | Ast.MuAnt s -> o#anti f s ];
+
+    method rec_flag f = fun
+      [ Ast.ReRecursive -> pp f "rec@ "
+      | Ast.ReNil -> ()
+      | Ast.ReAnt s -> o#anti f s ];
+
+    method virtual_flag f = fun
+      [ Ast.ViVirtual -> pp f "virtual@ "
+      | Ast.ViNil -> ()
+      | Ast.ViAnt s -> o#anti f s ];
+
+    method private_flag f = fun
+      [ Ast.PrPrivate -> pp f "private@ "
+      | Ast.PrNil -> ()
+      | Ast.PrAnt s -> o#anti f s ];
 
     method anti f s = pp f "$%s$" s;
 
@@ -283,7 +300,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       match bi with
       [ <:binding<>> -> ()
       | <:binding< $b1$ and $b2$ >> ->
-          do { o#binding f b1; pp f andsep; o#binding f b2 }
+          do { o#binding f b1; pp f o#andsep; o#binding f b2 }
       | <:binding< $p$ = $e$ >> ->
           let (pl, e) =
             match p with
@@ -383,7 +400,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
            pp f "@[<2>%a :@ %a@]" o#var s o#module_type mt
       | <:module_binding< $mb1$ and $mb2$ >> ->
           do { o#module_rec_binding f mb1;
-               pp f andsep;
+               pp f o#andsep;
                o#module_rec_binding f mb2 }
       | <:module_binding< $anti:s$ >> -> o#anti f s ];
 
@@ -441,7 +458,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           | [_] -> pp f "@[<2>%a@ %a@]" o#apply_expr x o#apply_expr y
           | al ->
               pp f "@[<2>%a@ (%a)@]" o#apply_expr a
-                 (list o#under_pipe#expr ",@ ") al ]
+                 (* The #apply_expr below may put too much parens.
+                    However using #expr would be wrong: PR#5056. *)
+                 (list o#under_pipe#apply_expr ",@ ") al ]
         else pp f "@[<2>%a@]" (list o#apply_expr "@ ") [a::al]
     | <:expr< $e1$.val := $e2$ >> ->
         pp f "@[<2>%a :=@ %a@]" o#dot_expr e1 o#expr e2
@@ -451,7 +470,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<2>fun@ _@ ->@ %a@]" o#raise_match_failure loc
     | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`patt p, e)
-    | Ast.ExFUN _ i e ->
+    | <:expr< fun (type $i$) -> $e$ >> ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (`newtype i, e)
     | <:expr< fun [ $a$ ] >> ->
         pp f "@[<hv0>function%a@]" o#match_case a
@@ -563,7 +582,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< $_$ $_$ >> | <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
       <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
       <:expr< $_$ # $_$ >> |
-      <:expr< fun [ $_$ ] >> | Ast.ExFUN _ _ _ | <:expr< match $_$ with [ $_$ ] >> |
+      <:expr< fun [ $_$ ] >> | <:expr< fun (type $_$) -> $_$ >> | <:expr< match $_$ with [ $_$ ] >> |
       <:expr< try $_$ with [ $_$ ] >> |
       <:expr< if $_$ then $_$ else $_$ >> |
       <:expr< let $rec:_$ $_$ in $_$ >> |
@@ -576,9 +595,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     method direction_flag f b =
       match b with
-      [ Ast.BTrue -> pp_print_string f "to"
-      | Ast.BFalse -> pp_print_string f "downto"
-      | Ast.BAnt s -> o#anti f s ];
+      [ Ast.DiTo -> pp_print_string f "to"
+      | Ast.DiDownto -> pp_print_string f "downto"
+      | Ast.DiAnt s -> o#anti f s ];
 
     method patt f p =
     let () = o#node f p Ast.loc_of_patt in match p with
@@ -694,8 +713,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           (list o#simple_ctyp "@ ") [a::al]
     | <:ctyp< [ > $t$ ] >> -> pp f "@[<2>[>@ %a@]@,]" o#sum_type t
     | <:ctyp< # $i$ >> -> pp f "@[<2>#%a@]" o#ident i
-    | <:ctyp< $t1$ == $t2$ >> ->
-        pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#simple_ctyp t2
     | <:ctyp< `$s$ >> -> pp f "`%a" o#var s
     | <:ctyp< $t1$ * $t2$ >> -> pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
     | <:ctyp<>> -> assert False
@@ -721,6 +738,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< $t1$ and $t2$ >> -> pp f "%a@ and %a" o#ctyp t1 o#ctyp t2
     | <:ctyp< mutable $t$ >> -> pp f "@[<2>mutable@ %a@]" o#ctyp t
     | <:ctyp< $t1$ & $t2$ >> -> pp f "%a@ &@ %a" o#ctyp t1 o#ctyp t2
+    | <:ctyp< $t1$ == $t2$ >> ->
+        pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#ctyp t2
     | Ast.TyDcl _ tn tp te cl -> do {
         pp f "@[<2>%a%a@]" o#type_params tp o#var tn;
         match te with
@@ -787,7 +806,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t semisep
       | <:sig_item< value $s$ : $t$ >> ->
           pp f "@[<2>%s %a :@ %a%(%)@]"
-            value_val o#var s o#ctyp t semisep
+            o#value_val o#var s o#ctyp t semisep
       | <:sig_item< include $mt$ >> ->
           pp f "@[<2>include@ %a%(%)@]" o#module_type mt semisep
       | <:sig_item< class type $ct$ >> ->
@@ -839,7 +858,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:str_item< type $t$ >> ->
             pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t semisep
       | <:str_item< value $rec:r$ $bi$ >> ->
-            pp f "@[<2>%s %a%a%(%)@]" value_let o#rec_flag r o#binding bi semisep
+            pp f "@[<2>%s %a%a%(%)@]" o#value_let o#rec_flag r o#binding bi semisep
       | <:str_item< $exp:e$ >> ->
             pp f "@[<2>let _ =@ %a%(%)@]" o#expr e semisep
       | <:str_item< include $me$ >> ->
@@ -882,7 +901,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:with_constr< module $i1$ := $i2$ >> ->
           pp f "@[<2>module@ %a :=@ %a@]" o#ident i1 o#ident i2
     | <:with_constr< $wc1$ and $wc2$ >> ->
-          do { o#with_constraint f wc1; pp f andsep; o#with_constraint f wc2 }
+          do { o#with_constraint f wc1; pp f o#andsep; o#with_constraint f wc2 }
     | <:with_constr< $anti:s$ >> -> o#anti f s ];
 
     method module_expr f me =
@@ -909,9 +928,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:module_expr< ( $me$ : $mt$ ) >> ->
           pp f "@[<1>(%a :@ %a)@]" o#module_expr me o#module_type mt
     | <:module_expr< (value $e$ : $mt$ ) >> ->
-          pp f "@[<1>(%s %a :@ %a)@]" value_val o#expr e o#module_type mt
+          pp f "@[<1>(%s %a :@ %a)@]" o#value_val o#expr e o#module_type mt
     | <:module_expr< (value $e$ ) >> ->
-          pp f "@[<1>(%s %a)@]" value_val o#expr e
+          pp f "@[<1>(%s %a)@]" o#value_val o#expr e
     ];
 
     method class_expr f ce =
@@ -941,7 +960,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<1>(%a :@ %a)@]" o#class_expr ce o#class_type ct
     | <:class_expr< $anti:s$ >> -> o#anti f s
     | <:class_expr< $ce1$ and $ce2$ >> ->
-          do { o#class_expr f ce1; pp f andsep; o#class_expr f ce2 }
+          do { o#class_expr f ce1; pp f o#andsep; o#class_expr f ce2 }
     | <:class_expr< $ce1$ = fun $p$ -> $ce2$ >> when is_irrefut_patt p ->
           pp f "@[<2>%a@ %a" o#class_expr ce1
             o#patt_class_expr_fun_args (p, ce2)
@@ -969,7 +988,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             o#ctyp t o#class_sig_item csg
     | <:class_type< $anti:s$ >> -> o#anti f s
     | <:class_type< $ct1$ and $ct2$ >> ->
-          do { o#class_type f ct1; pp f andsep; o#class_type f ct2 }
+          do { o#class_type f ct1; pp f o#andsep; o#class_type f ct2 }
     | <:class_type< $ct1$ : $ct2$ >> ->
           pp f "%a :@ %a" o#class_type ct1 o#class_type ct2
     | <:class_type< $ct1$ = $ct2$ >> ->
@@ -997,7 +1016,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
               o#private_flag pr o#var s o#ctyp t semisep
       | <:class_sig_item< value $mutable:mu$ $virtual:vi$ $s$ : $t$ >> ->
             pp f "@[<2>%s %a%a%a :@ %a%(%)@]"
-              value_val o#mutable_flag mu o#virtual_flag vi o#var s o#ctyp t
+              o#value_val o#mutable_flag mu o#virtual_flag vi o#var s o#ctyp t
               semisep
       | <:class_sig_item< $anti:s$ >> ->
             pp f "%a%(%)" o#anti s semisep ];
@@ -1013,27 +1032,27 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             do { o#class_str_item f cst1; cut f; o#class_str_item f cst2 }
       | <:class_str_item< constraint $t1$ = $t2$ >> ->
             pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
-      | <:class_str_item< inherit $ce$ >> ->
-            pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce semisep
-      | <:class_str_item< inherit $ce$ as $lid:s$ >> ->
-            pp f "@[<2>inherit@ %a as@ %a%(%)@]" o#class_expr ce o#var s semisep
+      | <:class_str_item< inherit $override:ov$ $ce$ >> ->
+            pp f "@[<2>inherit%a@ %a%(%)@]" o#override_flag ov o#class_expr ce semisep
+      | <:class_str_item< inherit $override:ov$ $ce$ as $lid:s$ >> ->
+            pp f "@[<2>inherit%a@ %a as@ %a%(%)@]" o#override_flag ov o#class_expr ce o#var s semisep
       | <:class_str_item< initializer $e$ >> ->
             pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
-      | <:class_str_item< method $private:pr$ $s$ = $e$ >> ->
-            pp f "@[<2>method %a%a =@ %a%(%)@]"
-              o#private_flag pr o#var s o#expr e semisep
-      | <:class_str_item< method $private:pr$ $s$ : $t$ = $e$ >> ->
-            pp f "@[<2>method %a%a :@ %a =@ %a%(%)@]"
-              o#private_flag pr o#var s o#ctyp t o#expr e semisep
+      | <:class_str_item< method $override:ov$ $private:pr$ $s$ = $e$ >> ->
+            pp f "@[<2>method%a %a%a =@ %a%(%)@]"
+              o#override_flag ov o#private_flag pr o#var s o#expr e semisep
+      | <:class_str_item< method $override:ov$ $private:pr$ $s$ : $t$ = $e$ >> ->
+            pp f "@[<2>method%a %a%a :@ %a =@ %a%(%)@]"
+              o#override_flag ov o#private_flag pr o#var s o#ctyp t o#expr e semisep
       | <:class_str_item< method virtual $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
               o#private_flag pr o#var s o#ctyp t semisep
       | <:class_str_item< value virtual $mutable:mu$ $s$ : $t$ >> ->
             pp f "@[<2>%s virtual %a%a :@ %a%(%)@]"
-              value_val o#mutable_flag mu o#var s o#ctyp t semisep
-      | <:class_str_item< value $mutable:mu$ $s$ = $e$ >> ->
-            pp f "@[<2>%s %a%a =@ %a%(%)@]"
-              value_val o#mutable_flag mu o#var s o#expr e semisep
+              o#value_val o#mutable_flag mu o#var s o#ctyp t semisep
+      | <:class_str_item< value $override:ov$ $mutable:mu$ $s$ = $e$ >> ->
+            pp f "@[<2>%s%a %a%a =@ %a%(%)@]"
+              o#value_val o#override_flag ov o#mutable_flag mu o#var s o#expr e semisep
       | <:class_str_item< $anti:s$ >> ->
             pp f "%a%(%)" o#anti s semisep ];
 

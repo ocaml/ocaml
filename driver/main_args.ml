@@ -712,6 +712,7 @@ struct
     mk_nopervasives F._nopervasives;
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
+    mk_dlambda F._dlambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;

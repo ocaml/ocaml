@@ -602,6 +602,20 @@ module Sig =
         
         type module_binding
         
+        type rec_flag
+        
+        type direction_flag
+        
+        type mutable_flag
+        
+        type private_flag
+        
+        type virtual_flag
+        
+        type row_var_flag
+        
+        type override_flag
+        
         (** {6 Location accessors} *)
         val loc_of_ctyp : ctyp -> loc
           
@@ -706,6 +720,20 @@ module Sig =
               
             method ident : ident -> ident
               
+            method override_flag : override_flag -> override_flag
+              
+            method mutable_flag : mutable_flag -> mutable_flag
+              
+            method private_flag : private_flag -> private_flag
+              
+            method virtual_flag : virtual_flag -> virtual_flag
+              
+            method direction_flag : direction_flag -> direction_flag
+              
+            method rec_flag : rec_flag -> rec_flag
+              
+            method row_var_flag : row_var_flag -> row_var_flag
+              
             method unknown : 'a. 'a -> 'a
               
           end
@@ -766,6 +794,20 @@ module Sig =
               
             method ident : ident -> 'self_type
               
+            method rec_flag : rec_flag -> 'self_type
+              
+            method direction_flag : direction_flag -> 'self_type
+              
+            method mutable_flag : mutable_flag -> 'self_type
+              
+            method private_flag : private_flag -> 'self_type
+              
+            method virtual_flag : virtual_flag -> 'self_type
+              
+            method row_var_flag : row_var_flag -> 'self_type
+              
+            method override_flag : override_flag -> 'self_type
+              
             method unknown : 'a. 'a -> 'self_type
               
           end
@@ -813,6 +855,20 @@ module Sig =
           t
           and meta_bool =
           | BTrue | BFalse | BAnt of string
+          and rec_flag =
+          | ReRecursive | ReNil | ReAnt of string
+          and direction_flag =
+          | DiTo | DiDownto | DiAnt of string
+          and mutable_flag =
+          | MuMutable | MuNil | MuAnt of string
+          and private_flag =
+          | PrPrivate | PrNil | PrAnt of string
+          and virtual_flag =
+          | ViVirtual | ViNil | ViAnt of string
+          and override_flag =
+          | OvOverride | OvNil | OvAnt of string
+          and row_var_flag =
+          | RvRowVar | RvNil | RvAnt of string
           and 'a meta_option =
           | ONone | OSome of 'a | OAnt of string
           and 'a meta_list =
@@ -856,7 +912,7 @@ module Sig =
           TyDcl of loc * string * ctyp list * ctyp * (ctyp * ctyp) list
           | (* < (t)? (..)? > *)
           (* < move : int -> 'a .. > as 'a  *)
-          TyObj of loc * ctyp * meta_bool
+          TyObj of loc * ctyp * row_var_flag
           | TyOlb of loc * string * ctyp
           | (* ?s:t *)
           TyPol of loc * ctyp * ctyp
@@ -997,7 +1053,7 @@ module Sig =
           ExFlo of loc * string
           | (* 3.14 *)
           (* for s = e to/downto e do { e } *)
-          ExFor of loc * string * expr * expr * meta_bool * expr
+          ExFor of loc * string * expr * expr * direction_flag * expr
           | ExFun of loc * match_case
           | (* fun [ mc ] *)
           ExIfe of loc * expr * expr * expr
@@ -1012,7 +1068,7 @@ module Sig =
           ExLaz of loc * expr
           | (* lazy e *)
           (* let b in e or let rec b in e *)
-          ExLet of loc * meta_bool * binding * expr
+          ExLet of loc * rec_flag * binding * expr
           | (* let module s = me in e *)
           ExLmd of loc * string * module_expr * expr
           | (* match e with [ mc ] *)
@@ -1197,13 +1253,13 @@ module Sig =
           | (* type t *)
           StTyp of loc * ctyp
           | (* value (rec)? bi *)
-          StVal of loc * meta_bool * binding
+          StVal of loc * rec_flag * binding
           | StAnt of loc * string
           and (* $s$ *)
           class_type =
           | CtNil of loc
           | (* (virtual)? i ([ t ])? *)
-          CtCon of loc * meta_bool * ident * ctyp
+          CtCon of loc * virtual_flag * ident * ctyp
           | (* [t] -> ct *)
           CtFun of loc * ctyp * class_type
           | (* object ((t))? (csg)? end *)
@@ -1225,11 +1281,11 @@ module Sig =
           | (* inherit ct *)
           CgInh of loc * class_type
           | (* method s : t or method private s : t *)
-          CgMth of loc * string * meta_bool * ctyp
+          CgMth of loc * string * private_flag * ctyp
           | (* value (virtual)? (mutable)? s : t *)
-          CgVal of loc * string * meta_bool * meta_bool * ctyp
-          | (* method virtual (mutable)? s : t *)
-          CgVir of loc * string * meta_bool * ctyp
+          CgVal of loc * string * mutable_flag * virtual_flag * ctyp
+          | (* method virtual (private)? s : t *)
+          CgVir of loc * string * private_flag * ctyp
           | CgAnt of loc * string
           and (* $s$ *)
           class_expr =
@@ -1237,11 +1293,11 @@ module Sig =
           | (* ce e *)
           CeApp of loc * class_expr * expr
           | (* (virtual)? i ([ t ])? *)
-          CeCon of loc * meta_bool * ident * ctyp
+          CeCon of loc * virtual_flag * ident * ctyp
           | (* fun p -> ce *)
           CeFun of loc * patt * class_expr
           | (* let (rec)? bi in ce *)
-          CeLet of loc * meta_bool * binding * class_expr
+          CeLet of loc * rec_flag * binding * class_expr
           | (* object ((p))? (cst)? end *)
           CeStr of loc * patt * class_str_item
           | (* ce : ct *)
@@ -1258,18 +1314,18 @@ module Sig =
           CrSem of loc * class_str_item * class_str_item
           | (* type t = t *)
           CrCtr of loc * ctyp * ctyp
-          | (* inherit ce or inherit ce as s *)
-          CrInh of loc * class_expr * string
+          | (* inherit(!)? ce (as s)? *)
+          CrInh of loc * override_flag * class_expr * string
           | (* initializer e *)
           CrIni of loc * expr
-          | (* method (private)? s : t = e or method (private)? s = e *)
-          CrMth of loc * string * meta_bool * expr * ctyp
-          | (* value (mutable)? s = e *)
-          CrVal of loc * string * meta_bool * expr
+          | (* method(!)? (private)? s : t = e or method(!)? (private)? s = e *)
+          CrMth of loc * string * override_flag * private_flag * expr * ctyp
+          | (* value(!)? (mutable)? s = e *)
+          CrVal of loc * string * override_flag * mutable_flag * expr
           | (* method virtual (private)? s : t *)
-          CrVir of loc * string * meta_bool * ctyp
-          | (* value virtual (private)? s : t *)
-          CrVvr of loc * string * meta_bool * ctyp
+          CrVir of loc * string * private_flag * ctyp
+          | (* value virtual (mutable)? s : t *)
+          CrVvr of loc * string * mutable_flag * ctyp
           | CrAnt of loc * string
         
         val loc_of_ctyp : ctyp -> loc
@@ -1391,6 +1447,20 @@ module Sig =
                       
                     val meta_with_constr : loc -> with_constr -> expr
                       
+                    val meta_rec_flag : loc -> rec_flag -> expr
+                      
+                    val meta_mutable_flag : loc -> mutable_flag -> expr
+                      
+                    val meta_virtual_flag : loc -> virtual_flag -> expr
+                      
+                    val meta_private_flag : loc -> private_flag -> expr
+                      
+                    val meta_row_var_flag : loc -> row_var_flag -> expr
+                      
+                    val meta_override_flag : loc -> override_flag -> expr
+                      
+                    val meta_direction_flag : loc -> direction_flag -> expr
+                      
                   end
                   
                 module Patt :
@@ -1441,6 +1511,20 @@ module Sig =
                     val meta_str_item : loc -> str_item -> patt
                       
                     val meta_with_constr : loc -> with_constr -> patt
+                      
+                    val meta_rec_flag : loc -> rec_flag -> patt
+                      
+                    val meta_mutable_flag : loc -> mutable_flag -> patt
+                      
+                    val meta_virtual_flag : loc -> virtual_flag -> patt
+                      
+                    val meta_private_flag : loc -> private_flag -> patt
+                      
+                    val meta_row_var_flag : loc -> row_var_flag -> patt
+                      
+                    val meta_override_flag : loc -> override_flag -> patt
+                      
+                    val meta_direction_flag : loc -> direction_flag -> patt
                       
                   end
                   
@@ -1500,6 +1584,20 @@ module Sig =
               
             method ident : ident -> ident
               
+            method mutable_flag : mutable_flag -> mutable_flag
+              
+            method private_flag : private_flag -> private_flag
+              
+            method virtual_flag : virtual_flag -> virtual_flag
+              
+            method direction_flag : direction_flag -> direction_flag
+              
+            method rec_flag : rec_flag -> rec_flag
+              
+            method row_var_flag : row_var_flag -> row_var_flag
+              
+            method override_flag : override_flag -> override_flag
+              
             method unknown : 'a. 'a -> 'a
               
           end
@@ -1558,6 +1656,20 @@ module Sig =
             method match_case : match_case -> 'self_type
               
             method ident : ident -> 'self_type
+              
+            method rec_flag : rec_flag -> 'self_type
+              
+            method direction_flag : direction_flag -> 'self_type
+              
+            method mutable_flag : mutable_flag -> 'self_type
+              
+            method private_flag : private_flag -> 'self_type
+              
+            method virtual_flag : virtual_flag -> 'self_type
+              
+            method row_var_flag : row_var_flag -> 'self_type
+              
+            method override_flag : override_flag -> 'self_type
               
             method unknown : 'a. 'a -> 'self_type
               
@@ -1710,7 +1822,14 @@ module Sig =
       and type class_str_item = M.class_str_item and type binding = M.binding
       and type rec_binding = M.rec_binding
       and type module_binding = M.module_binding
-      and type match_case = M.match_case and type ident = M.ident = M
+      and type match_case = M.match_case and type ident = M.ident
+      and type rec_flag = M.rec_flag
+      and type direction_flag = M.direction_flag
+      and type mutable_flag = M.mutable_flag
+      and type private_flag = M.private_flag
+      and type virtual_flag = M.virtual_flag
+      and type row_var_flag = M.row_var_flag
+      and type override_flag = M.override_flag = M
       
     module MakeCamlp4Ast (Loc : Type) =
       struct
@@ -1719,6 +1838,20 @@ module Sig =
           t
           and meta_bool =
           | BTrue | BFalse | BAnt of string
+          and rec_flag =
+          | ReRecursive | ReNil | ReAnt of string
+          and direction_flag =
+          | DiTo | DiDownto | DiAnt of string
+          and mutable_flag =
+          | MuMutable | MuNil | MuAnt of string
+          and private_flag =
+          | PrPrivate | PrNil | PrAnt of string
+          and virtual_flag =
+          | ViVirtual | ViNil | ViAnt of string
+          and override_flag =
+          | OvOverride | OvNil | OvAnt of string
+          and row_var_flag =
+          | RvRowVar | RvNil | RvAnt of string
           and 'a meta_option =
           | ONone | OSome of 'a | OAnt of string
           and 'a meta_list =
@@ -1740,7 +1873,7 @@ module Sig =
           | TyId of loc * ident
           | TyMan of loc * ctyp * ctyp
           | TyDcl of loc * string * ctyp list * ctyp * (ctyp * ctyp) list
-          | TyObj of loc * ctyp * meta_bool
+          | TyObj of loc * ctyp * row_var_flag
           | TyOlb of loc * string * ctyp
           | TyPol of loc * ctyp * ctyp
           | TyQuo of loc * string
@@ -1811,7 +1944,7 @@ module Sig =
           | ExChr of loc * string
           | ExCoe of loc * expr * ctyp * ctyp
           | ExFlo of loc * string
-          | ExFor of loc * string * expr * expr * meta_bool * expr
+          | ExFor of loc * string * expr * expr * direction_flag * expr
           | ExFun of loc * match_case
           | ExIfe of loc * expr * expr * expr
           | ExInt of loc * string
@@ -1820,7 +1953,7 @@ module Sig =
           | ExNativeInt of loc * string
           | ExLab of loc * string * expr
           | ExLaz of loc * expr
-          | ExLet of loc * meta_bool * binding * expr
+          | ExLet of loc * rec_flag * binding * expr
           | ExLmd of loc * string * module_expr * expr
           | ExMat of loc * expr * match_case
           | ExNew of loc * ident
@@ -1918,11 +2051,11 @@ module Sig =
           | StMty of loc * string * module_type
           | StOpn of loc * ident
           | StTyp of loc * ctyp
-          | StVal of loc * meta_bool * binding
+          | StVal of loc * rec_flag * binding
           | StAnt of loc * string
           and class_type =
           | CtNil of loc
-          | CtCon of loc * meta_bool * ident * ctyp
+          | CtCon of loc * virtual_flag * ident * ctyp
           | CtFun of loc * ctyp * class_type
           | CtSig of loc * ctyp * class_sig_item
           | CtAnd of loc * class_type * class_type
@@ -1934,16 +2067,16 @@ module Sig =
           | CgCtr of loc * ctyp * ctyp
           | CgSem of loc * class_sig_item * class_sig_item
           | CgInh of loc * class_type
-          | CgMth of loc * string * meta_bool * ctyp
-          | CgVal of loc * string * meta_bool * meta_bool * ctyp
-          | CgVir of loc * string * meta_bool * ctyp
+          | CgMth of loc * string * private_flag * ctyp
+          | CgVal of loc * string * mutable_flag * virtual_flag * ctyp
+          | CgVir of loc * string * private_flag * ctyp
           | CgAnt of loc * string
           and class_expr =
           | CeNil of loc
           | CeApp of loc * class_expr * expr
-          | CeCon of loc * meta_bool * ident * ctyp
+          | CeCon of loc * virtual_flag * ident * ctyp
           | CeFun of loc * patt * class_expr
-          | CeLet of loc * meta_bool * binding * class_expr
+          | CeLet of loc * rec_flag * binding * class_expr
           | CeStr of loc * patt * class_str_item
           | CeTyc of loc * class_expr * class_type
           | CeAnd of loc * class_expr * class_expr
@@ -1953,12 +2086,13 @@ module Sig =
           | CrNil of loc
           | CrSem of loc * class_str_item * class_str_item
           | CrCtr of loc * ctyp * ctyp
-          | CrInh of loc * class_expr * string
+          | CrInh of loc * override_flag * class_expr * string
           | CrIni of loc * expr
-          | CrMth of loc * string * meta_bool * expr * ctyp
-          | CrVal of loc * string * meta_bool * expr
-          | CrVir of loc * string * meta_bool * ctyp
-          | CrVvr of loc * string * meta_bool * ctyp
+          | CrMth of loc * string * override_flag * private_flag * expr
+                     * ctyp
+          | CrVal of loc * string * override_flag * mutable_flag * expr
+          | CrVir of loc * string * private_flag * ctyp
+          | CrVvr of loc * string * mutable_flag * ctyp
           | CrAnt of loc * string
         
       end
@@ -2201,6 +2335,12 @@ module Sig =
             
             type token_pattern = ((Token.t -> bool) * string)
             
+            type token_info
+            
+            type token_stream = (Token.t * token_info) Stream.t
+            
+            val token_location : token_info -> Loc.t
+              
             type symbol =
               | Smeta of string * symbol list * Action.t
               | Snterm of internal_entry
@@ -2210,6 +2350,7 @@ module Sig =
               | Slist1 of symbol
               | Slist1sep of symbol * symbol
               | Sopt of symbol
+              | Stry of symbol
               | Sself
               | Snext
               | Stoken of token_pattern
@@ -2251,11 +2392,9 @@ module Sig =
                 val mk : gram -> string -> 'a t
                   
                 val of_parser :
-                  gram ->
-                    string -> ((Token.t * Loc.t) Stream.t -> 'a) -> 'a t
+                  gram -> string -> (token_stream -> 'a) -> 'a t
                   
-                val setup_parser :
-                  'a t -> ((Token.t * Loc.t) Stream.t -> 'a) -> unit
+                val setup_parser : 'a t -> (token_stream -> 'a) -> unit
                   
                 val name : 'a t -> string
                   
@@ -2297,8 +2436,7 @@ module Sig =
               
             val filter :
               gram ->
-                ((Token.t * Loc.t) Stream.t) not_filtered ->
-                  (Token.t * Loc.t) Stream.t
+                ((Token.t * Loc.t) Stream.t) not_filtered -> token_stream
               
             val parse : 'a Entry.t -> Loc.t -> char Stream.t -> 'a
               
@@ -2307,8 +2445,7 @@ module Sig =
             val parse_tokens_before_filter :
               'a Entry.t -> ((Token.t * Loc.t) Stream.t) not_filtered -> 'a
               
-            val parse_tokens_after_filter :
-              'a Entry.t -> (Token.t * Loc.t) Stream.t -> 'a
+            val parse_tokens_after_filter : 'a Entry.t -> token_stream -> 'a
               
           end
           
@@ -2322,11 +2459,9 @@ module Sig =
                 
                 val mk : string -> 'a t
                   
-                val of_parser :
-                  string -> ((Token.t * Loc.t) Stream.t -> 'a) -> 'a t
+                val of_parser : string -> (token_stream -> 'a) -> 'a t
                   
-                val setup_parser :
-                  'a t -> ((Token.t * Loc.t) Stream.t -> 'a) -> unit
+                val setup_parser : 'a t -> (token_stream -> 'a) -> unit
                   
                 val name : 'a t -> string
                   
@@ -2365,8 +2500,7 @@ module Sig =
               Loc.t -> string -> ((Token.t * Loc.t) Stream.t) not_filtered
               
             val filter :
-              ((Token.t * Loc.t) Stream.t) not_filtered ->
-                (Token.t * Loc.t) Stream.t
+              ((Token.t * Loc.t) Stream.t) not_filtered -> token_stream
               
             val parse : 'a Entry.t -> Loc.t -> char Stream.t -> 'a
               
@@ -2375,8 +2509,7 @@ module Sig =
             val parse_tokens_before_filter :
               'a Entry.t -> ((Token.t * Loc.t) Stream.t) not_filtered -> 'a
               
-            val parse_tokens_after_filter :
-              'a Entry.t -> (Token.t * Loc.t) Stream.t -> 'a
+            val parse_tokens_after_filter : 'a Entry.t -> token_stream -> 'a
               
           end
           
@@ -2596,7 +2729,9 @@ module Sig =
           
         val cvalue_binding : Ast.expr Gram.Entry.t
           
-        val direction_flag : Ast.meta_bool Gram.Entry.t
+        val direction_flag : Ast.direction_flag Gram.Entry.t
+          
+        val direction_flag_quot : Ast.direction_flag Gram.Entry.t
           
         val dummy : unit Gram.Entry.t
           
@@ -2648,7 +2783,7 @@ module Sig =
           
         val let_binding : Ast.binding Gram.Entry.t
           
-        val meth_list : (Ast.ctyp * Ast.meta_bool) Gram.Entry.t
+        val meth_list : (Ast.ctyp * Ast.row_var_flag) Gram.Entry.t
           
         val meth_decl : Ast.ctyp Gram.Entry.t
           
@@ -2688,7 +2823,9 @@ module Sig =
           
         val opt_comma_ctyp : Ast.ctyp Gram.Entry.t
           
-        val opt_dot_dot : Ast.meta_bool Gram.Entry.t
+        val opt_dot_dot : Ast.row_var_flag Gram.Entry.t
+          
+        val row_var_flag_quot : Ast.row_var_flag Gram.Entry.t
           
         val opt_eq_ctyp : Ast.ctyp Gram.Entry.t
           
@@ -2696,15 +2833,27 @@ module Sig =
           
         val opt_meth_list : Ast.ctyp Gram.Entry.t
           
-        val opt_mutable : Ast.meta_bool Gram.Entry.t
+        val opt_mutable : Ast.mutable_flag Gram.Entry.t
+          
+        val mutable_flag_quot : Ast.mutable_flag Gram.Entry.t
+          
+        val opt_override : Ast.override_flag Gram.Entry.t
+          
+        val override_flag_quot : Ast.override_flag Gram.Entry.t
           
         val opt_polyt : Ast.ctyp Gram.Entry.t
           
-        val opt_private : Ast.meta_bool Gram.Entry.t
+        val opt_private : Ast.private_flag Gram.Entry.t
           
-        val opt_rec : Ast.meta_bool Gram.Entry.t
+        val private_flag_quot : Ast.private_flag Gram.Entry.t
           
-        val opt_virtual : Ast.meta_bool Gram.Entry.t
+        val opt_rec : Ast.rec_flag Gram.Entry.t
+          
+        val rec_flag_quot : Ast.rec_flag Gram.Entry.t
+          
+        val opt_virtual : Ast.virtual_flag Gram.Entry.t
+          
+        val virtual_flag_quot : Ast.virtual_flag Gram.Entry.t
           
         val opt_when_expr : Ast.expr Gram.Entry.t
           
@@ -3372,7 +3521,7 @@ module Struct =
                   }
                 
                 let err error loc =
-                  raise (Loc.Exc_located (loc, Error.E error))
+                  raise (Loc.Exc_located (loc, (Error.E error)))
                   
                 let keyword_conversion tok is_kwd =
                   match tok with
@@ -3728,7 +3877,8 @@ module Struct =
                     pos_bol = pos.pos_cnum - chars;
                   }
               
-            let err error loc = raise (Loc.Exc_located (loc, Error.E error))
+            let err error loc =
+              raise (Loc.Exc_located (loc, (Error.E error)))
               
             let warn error loc =
               Format.eprintf "Warning: %a: %a@." Loc.print loc Error.print
@@ -3762,9 +3912,9 @@ module Struct =
     \240\018\051\019\018\020\048\020\255\255\015\021\238\021\015\022\
     \079\022\255\255\031\023\254\255\164\001\251\255\010\000\252\255\
     \253\255\128\000\079\001\255\255\095\023\030\024\238\024\190\025\
-    \254\255\154\026\253\255\254\255\201\000\116\027\077\028\255\255\
-    \028\001\029\029\206\001\251\255\080\001\013\000\253\255\254\255\
-    \255\255\252\255\093\029\028\030\236\030\188\031";
+    \254\255\190\026\253\255\254\255\153\001\143\027\110\028\255\255\
+    \167\001\062\029\206\001\251\255\080\001\013\000\253\255\254\255\
+    \255\255\252\255\126\029\061\030\013\031\221\031";
                 Lexing.lex_backtrk =
                   "\255\255\255\255\255\255\030\000\255\255\028\000\030\000\030\000\
     \030\000\030\000\028\000\028\000\028\000\028\000\028\000\255\255\
@@ -3820,7 +3970,7 @@ module Struct =
     \255\255\255\255\255\255\255\255\000\000\255\255\255\255\255\255\
     \255\255\000\000\255\255\000\000\189\000\000\000\255\255\000\000\
     \000\000\255\255\255\255\000\000\255\255\255\255\255\255\255\255\
-    \000\000\202\000\000\000\000\000\255\255\255\255\255\255\000\000\
+    \000\000\205\000\000\000\000\000\255\255\255\255\255\255\000\000\
     \255\255\255\255\211\000\000\000\255\255\255\255\000\000\000\000\
     \000\000\000\000\255\255\255\255\255\255\255\255";
                 Lexing.lex_trans =
@@ -3854,9 +4004,9 @@ module Struct =
     \024\000\024\000\024\000\024\000\024\000\024\000\024\000\025\000\
     \025\000\025\000\025\000\025\000\025\000\025\000\025\000\025\000\
     \025\000\025\000\025\000\025\000\025\000\025\000\025\000\025\000\
-    \025\000\025\000\025\000\025\000\025\000\025\000\025\000\208\000\
+    \025\000\025\000\025\000\025\000\025\000\025\000\025\000\000\000\
     \025\000\025\000\025\000\025\000\025\000\025\000\025\000\025\000\
-    \002\000\003\000\000\000\203\000\003\000\003\000\003\000\051\000\
+    \002\000\003\000\000\000\000\000\003\000\003\000\003\000\051\000\
     \255\255\255\255\003\000\003\000\048\000\003\000\003\000\003\000\
     \039\000\039\000\039\000\039\000\039\000\039\000\039\000\039\000\
     \039\000\039\000\003\000\144\000\003\000\003\000\003\000\003\000\
@@ -3865,8 +4015,8 @@ module Struct =
     \046\000\046\000\046\000\046\000\046\000\046\000\046\000\084\000\
     \147\000\084\000\084\000\084\000\003\000\096\000\003\000\039\000\
     \102\000\000\000\171\000\101\000\003\000\038\000\000\000\003\000\
-    \009\000\009\000\208\000\000\000\084\000\003\000\003\000\000\000\
-    \003\000\006\000\009\000\000\000\068\000\000\000\203\000\068\000\
+    \009\000\009\000\000\000\000\000\084\000\003\000\003\000\000\000\
+    \003\000\006\000\009\000\000\000\068\000\000\000\000\000\068\000\
     \106\000\171\000\084\000\096\000\003\000\085\000\003\000\006\000\
     \006\000\006\000\003\000\009\000\171\000\171\000\000\000\000\000\
     \000\000\003\000\000\000\068\000\003\000\121\000\121\000\000\000\
@@ -3879,12 +4029,12 @@ module Struct =
     \084\000\003\000\000\000\000\000\003\000\005\000\121\000\085\000\
     \000\000\006\000\006\000\006\000\003\000\009\000\191\000\000\000\
     \255\255\190\000\000\000\003\000\000\000\000\000\003\000\009\000\
-    \009\000\000\000\000\000\094\000\003\000\003\000\000\000\003\000\
-    \009\000\009\000\000\000\000\000\120\000\005\000\003\000\000\000\
-    \000\000\003\000\005\000\009\000\098\000\000\000\009\000\009\000\
-    \009\000\003\000\009\000\000\000\000\000\000\000\000\000\000\000\
+    \009\000\000\000\208\000\094\000\003\000\003\000\000\000\003\000\
+    \009\000\009\000\000\000\000\000\120\000\005\000\003\000\208\000\
+    \208\000\003\000\005\000\009\000\098\000\000\000\009\000\009\000\
+    \009\000\003\000\009\000\203\000\000\000\208\000\000\000\000\000\
     \214\000\000\000\000\000\213\000\117\000\117\000\000\000\000\000\
-    \194\000\000\000\193\000\111\000\111\000\115\000\117\000\005\000\
+    \194\000\203\000\193\000\111\000\111\000\115\000\117\000\005\000\
     \000\000\085\000\005\000\003\000\109\000\111\000\003\000\094\000\
     \009\000\116\000\216\000\116\000\115\000\115\000\000\000\117\000\
     \114\000\000\000\109\000\112\000\112\000\000\000\111\000\111\000\
@@ -4679,72 +4829,134 @@ module Struct =
     \199\000\199\000\199\000\199\000\199\000\199\000\199\000\199\000\
     \199\000\199\000\199\000\199\000\199\000\199\000\199\000\199\000\
     \199\000\199\000\199\000\199\000\199\000\000\000\199\000\199\000\
-    \199\000\199\000\199\000\199\000\199\000\199\000\207\000\000\000\
-    \000\000\205\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \204\000\000\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\203\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\000\000\000\000\000\000\
-    \000\000\205\000\206\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\000\000\000\000\000\000\
+    \199\000\199\000\199\000\199\000\199\000\199\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\204\000\
+    \202\000\202\000\207\000\202\000\202\000\000\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\204\000\202\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \203\000\202\000\202\000\202\000\202\000\202\000\202\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\202\000\202\000\202\000\202\000\000\000\206\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\202\000\202\000\
+    \202\000\202\000\202\000\202\000\202\000\202\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\000\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\000\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\255\255\209\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\203\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\209\000\209\000\209\000\
+    \000\000\000\000\000\000\000\000\000\000\202\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\202\000\209\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\255\255\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\000\000\
-    \000\000\000\000\000\000\209\000\000\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\000\000\209\000\209\000\209\000\209\000\
+    \209\000\203\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\000\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\208\000\000\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\203\000\
+    \209\000\209\000\000\000\000\000\000\000\000\000\209\000\000\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\000\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\000\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\208\000\
+    \000\000\000\000\000\000\000\000\000\000\209\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\208\000\000\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \203\000\000\000\000\000\000\000\000\000\000\000\000\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\000\000\000\000\000\000\000\000\209\000\000\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \000\000\000\000\000\000\000\000\209\000\000\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\000\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \203\000\000\000\000\000\000\000\000\000\000\000\000\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\000\000\000\000\000\000\000\000\209\000\000\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\000\000\000\000\000\000\000\000\000\000\000\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\000\000\000\000\000\000\000\000\221\000\000\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\000\000\000\000\000\000\000\000\000\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\000\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\000\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\000\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\000\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \000\000\000\000\000\000\000\000\220\000\000\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -4753,25 +4965,43 @@ module Struct =
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\000\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\203\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \000\000\000\000\000\000\000\000\209\000\000\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\221\000\221\000\
+    \000\000\000\000\000\000\000\000\000\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\000\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\000\000\
+    \000\000\217\000\000\000\000\000\000\000\218\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \000\000\000\000\000\000\000\000\220\000\000\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\000\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\221\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\000\000\
+    \000\000\217\000\000\000\000\000\000\000\000\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
@@ -4779,15 +5009,15 @@ module Struct =
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \000\000\000\000\000\000\000\000\000\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\000\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\000\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\221\000\221\000\221\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
+    \000\000\000\000\000\000\000\000\000\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\000\000\221\000\221\000\221\000\
@@ -4795,83 +5025,7 @@ module Struct =
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\000\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\000\000\
-    \000\000\000\000\000\000\220\000\000\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\000\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\000\000\000\000\
-    \217\000\000\000\000\000\000\000\218\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\000\000\
-    \000\000\000\000\000\000\220\000\000\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\000\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\221\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\000\000\000\000\
-    \217\000\000\000\000\000\000\000\000\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\000\000\
-    \000\000\000\000\000\000\221\000\000\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\000\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\000\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\000\000";
+    \221\000\221\000\221\000\221\000\221\000\000\000";
                 Lexing.lex_check =
                   "\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\000\000\000\000\029\000\000\000\000\000\101\000\107\000\
@@ -4903,9 +5057,9 @@ module Struct =
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\204\000\
+    \000\000\000\000\000\000\000\000\000\000\000\000\000\000\255\255\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
-    \000\000\003\000\255\255\204\000\003\000\003\000\003\000\050\000\
+    \000\000\003\000\255\255\255\255\003\000\003\000\003\000\050\000\
     \103\000\106\000\003\000\003\000\020\000\003\000\003\000\003\000\
     \039\000\039\000\039\000\039\000\039\000\039\000\039\000\039\000\
     \039\000\039\000\003\000\143\000\003\000\003\000\003\000\003\000\
@@ -4914,8 +5068,8 @@ module Struct =
     \038\000\038\000\038\000\038\000\038\000\038\000\038\000\005\000\
     \143\000\005\000\005\000\005\000\003\000\005\000\003\000\039\000\
     \104\000\255\255\171\000\104\000\006\000\039\000\255\255\006\000\
-    \006\000\006\000\208\000\255\255\006\000\006\000\006\000\255\255\
-    \006\000\006\000\006\000\255\255\068\000\255\255\208\000\068\000\
+    \006\000\006\000\255\255\255\255\006\000\006\000\006\000\255\255\
+    \006\000\006\000\006\000\255\255\068\000\255\255\255\255\068\000\
     \104\000\171\000\005\000\005\000\003\000\006\000\003\000\006\000\
     \006\000\006\000\006\000\006\000\170\000\170\000\255\255\255\255\
     \255\255\007\000\255\255\068\000\007\000\007\000\007\000\255\255\
@@ -4928,12 +5082,12 @@ module Struct =
     \006\000\006\000\255\255\255\255\007\000\007\000\007\000\008\000\
     \255\255\008\000\008\000\008\000\008\000\008\000\188\000\255\255\
     \020\000\188\000\255\255\009\000\255\255\255\255\009\000\009\000\
-    \009\000\255\255\255\255\009\000\009\000\009\000\255\255\009\000\
-    \009\000\009\000\255\255\255\255\007\000\007\000\007\000\255\255\
-    \255\255\008\000\008\000\008\000\009\000\255\255\009\000\009\000\
-    \009\000\009\000\009\000\255\255\255\255\255\255\255\255\255\255\
+    \009\000\255\255\204\000\009\000\009\000\009\000\255\255\009\000\
+    \009\000\009\000\255\255\255\255\007\000\007\000\007\000\204\000\
+    \208\000\008\000\008\000\008\000\009\000\255\255\009\000\009\000\
+    \009\000\009\000\009\000\204\000\255\255\208\000\255\255\255\255\
     \210\000\255\255\255\255\210\000\011\000\011\000\255\255\255\255\
-    \188\000\255\255\188\000\013\000\013\000\011\000\011\000\013\000\
+    \188\000\208\000\188\000\013\000\013\000\011\000\011\000\013\000\
     \255\255\008\000\008\000\008\000\013\000\013\000\009\000\009\000\
     \009\000\011\000\210\000\011\000\011\000\011\000\255\255\011\000\
     \013\000\255\255\013\000\013\000\013\000\255\255\013\000\014\000\
@@ -5728,45 +5882,49 @@ module Struct =
     \199\000\199\000\199\000\199\000\199\000\199\000\199\000\199\000\
     \199\000\199\000\199\000\199\000\199\000\199\000\199\000\199\000\
     \199\000\199\000\199\000\199\000\199\000\255\255\199\000\199\000\
-    \199\000\199\000\199\000\199\000\199\000\199\000\201\000\255\255\
-    \255\255\201\000\255\255\255\255\255\255\255\255\255\255\255\255\
-    \201\000\255\255\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\201\000\201\000\201\000\201\000\255\255\255\255\255\255\
-    \255\255\255\255\255\255\201\000\201\000\201\000\201\000\201\000\
+    \199\000\199\000\199\000\199\000\199\000\199\000\201\000\201\000\
     \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
     \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\201\000\201\000\201\000\201\000\255\255\255\255\255\255\
+    \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
+    \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
+    \201\000\201\000\201\000\201\000\201\000\255\255\201\000\201\000\
+    \201\000\201\000\201\000\201\000\201\000\201\000\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \201\000\201\000\201\000\201\000\201\000\201\000\201\000\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\201\000\201\000\201\000\201\000\255\255\201\000\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
     \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
     \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\201\000\201\000\201\000\201\000\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\255\255\201\000\201\000\201\000\201\000\201\000\201\000\
     \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
     \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
     \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\255\255\201\000\201\000\201\000\201\000\201\000\201\000\
-    \201\000\201\000\201\000\205\000\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\255\255\
-    \255\255\255\255\255\255\255\255\255\255\205\000\205\000\205\000\
+    \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
+    \201\000\201\000\201\000\201\000\201\000\201\000\201\000\201\000\
+    \201\000\201\000\201\000\201\000\201\000\201\000\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\201\000\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\201\000\205\000\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\201\000\205\000\
+    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
+    \205\000\205\000\255\255\255\255\255\255\255\255\255\255\255\255\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\255\255\
-    \255\255\255\255\255\255\205\000\255\255\205\000\205\000\205\000\
+    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
+    \205\000\205\000\255\255\255\255\255\255\255\255\205\000\255\255\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\255\255\
+    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
+    \205\000\205\000\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -5774,84 +5932,84 @@ module Struct =
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\205\000\205\000\205\000\205\000\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\205\000\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\255\255\205\000\205\000\205\000\205\000\
+    \205\000\205\000\205\000\205\000\205\000\205\000\255\255\205\000\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
     \205\000\205\000\205\000\205\000\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\255\255\205\000\205\000\205\000\205\000\
-    \205\000\205\000\205\000\205\000\206\000\255\255\255\255\255\255\
-    \255\255\255\255\255\255\206\000\255\255\206\000\206\000\206\000\
+    \205\000\205\000\205\000\205\000\205\000\205\000\255\255\205\000\
+    \205\000\205\000\205\000\205\000\205\000\205\000\205\000\206\000\
+    \255\255\255\255\255\255\255\255\255\255\206\000\255\255\255\255\
+    \255\255\255\255\255\255\255\255\206\000\255\255\206\000\206\000\
     \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
+    \206\000\255\255\255\255\255\255\255\255\255\255\255\255\206\000\
+    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
+    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
+    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
+    \206\000\255\255\255\255\255\255\255\255\206\000\255\255\206\000\
+    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
+    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
+    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
+    \206\000\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\206\000\206\000\
     \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
     \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \255\255\255\255\255\255\255\255\206\000\255\255\206\000\206\000\
-    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\255\255\206\000\206\000\206\000\
+    \206\000\206\000\206\000\206\000\206\000\255\255\206\000\206\000\
     \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
     \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
     \206\000\206\000\206\000\206\000\206\000\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\209\000\206\000\206\000\206\000\
-    \206\000\206\000\206\000\206\000\206\000\209\000\209\000\209\000\
+    \206\000\206\000\206\000\206\000\206\000\209\000\206\000\206\000\
+    \206\000\206\000\206\000\206\000\206\000\206\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \255\255\255\255\255\255\255\255\255\255\255\255\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \255\255\255\255\255\255\255\255\209\000\255\255\209\000\209\000\
+    \209\000\255\255\255\255\255\255\255\255\255\255\255\255\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \255\255\255\255\255\255\255\255\255\255\255\255\218\000\218\000\
+    \209\000\255\255\255\255\255\255\255\255\209\000\255\255\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
+    \209\000\255\255\255\255\255\255\255\255\255\255\255\255\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
-    \255\255\255\255\255\255\255\255\218\000\255\255\218\000\218\000\
+    \218\000\255\255\255\255\255\255\255\255\218\000\255\255\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
-    \255\255\255\255\255\255\255\255\255\255\209\000\209\000\209\000\
+    \218\000\255\255\255\255\255\255\255\255\255\255\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\255\255\209\000\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\255\255\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
     \209\000\209\000\209\000\209\000\209\000\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\255\255\209\000\209\000\209\000\
-    \209\000\209\000\209\000\209\000\209\000\218\000\218\000\218\000\
+    \209\000\209\000\209\000\209\000\209\000\255\255\209\000\209\000\
+    \209\000\209\000\209\000\209\000\209\000\209\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
-    \218\000\218\000\218\000\218\000\255\255\218\000\218\000\218\000\
+    \218\000\218\000\218\000\218\000\218\000\255\255\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
     \218\000\218\000\218\000\218\000\218\000\218\000\218\000\218\000\
-    \218\000\218\000\218\000\218\000\255\255\218\000\218\000\218\000\
-    \218\000\218\000\218\000\218\000\218\000\219\000\219\000\219\000\
+    \218\000\218\000\218\000\218\000\218\000\255\255\218\000\218\000\
+    \218\000\218\000\218\000\218\000\218\000\218\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
-    \219\000\219\000\219\000\219\000\219\000\219\000\219\000\255\255\
-    \255\255\255\255\255\255\219\000\255\255\219\000\219\000\219\000\
+    \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
+    \255\255\255\255\255\255\255\255\219\000\255\255\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
-    \219\000\219\000\219\000\219\000\219\000\219\000\219\000\255\255\
+    \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
@@ -5860,67 +6018,67 @@ module Struct =
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
     \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\219\000\219\000\219\000\219\000\
+    \255\255\255\255\255\255\255\255\255\255\219\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
-    \219\000\219\000\219\000\255\255\219\000\219\000\219\000\219\000\
+    \219\000\219\000\219\000\219\000\255\255\219\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
     \219\000\219\000\219\000\219\000\219\000\219\000\219\000\219\000\
-    \219\000\219\000\219\000\220\000\219\000\219\000\219\000\219\000\
-    \219\000\219\000\219\000\219\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\255\255\255\255\
-    \220\000\255\255\255\255\255\255\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \219\000\219\000\219\000\219\000\220\000\219\000\219\000\219\000\
+    \219\000\219\000\219\000\219\000\219\000\220\000\220\000\220\000\
     \220\000\220\000\220\000\220\000\220\000\220\000\220\000\255\255\
-    \255\255\255\255\255\255\220\000\255\255\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\255\255\220\000\220\000\220\000\220\000\
+    \255\255\220\000\255\255\255\255\255\255\220\000\220\000\220\000\
     \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
     \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
     \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\221\000\220\000\220\000\220\000\220\000\
-    \220\000\220\000\220\000\220\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\255\255\255\255\
-    \221\000\255\255\255\255\255\255\255\255\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \255\255\255\255\255\255\255\255\220\000\255\255\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\255\255\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\221\000\220\000\220\000\220\000\
+    \220\000\220\000\220\000\220\000\220\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\255\255\
-    \255\255\255\255\255\255\221\000\255\255\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
-    \255\255\255\255\255\255\255\255\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\255\255\221\000\221\000\221\000\221\000\
+    \255\255\221\000\255\255\255\255\255\255\255\255\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
     \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\255\255\221\000\221\000\221\000\221\000\
-    \221\000\221\000\221\000\221\000\255\255";
+    \255\255\255\255\255\255\255\255\221\000\255\255\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\255\
+    \255\255\255\255\255\255\255\255\255\255\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\255\255\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\255\255\221\000\221\000\221\000\
+    \221\000\221\000\221\000\221\000\221\000\255\255";
                 Lexing.lex_base_code =
                   "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
     \000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\
@@ -6312,7 +6470,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       lexbuf.Lexing.lex_curr_pos
                   in
-                    (try INT (int_of_string i, i)
+                    (try INT ((int_of_string i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "int") (Loc.of_lexbuf lexbuf))
@@ -6321,7 +6479,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       lexbuf.Lexing.lex_curr_pos
                   in
-                    (try FLOAT (float_of_string f, f)
+                    (try FLOAT ((float_of_string f), f)
                      with
                      | Failure _ ->
                          err (Literal_overflow "float")
@@ -6331,7 +6489,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    (try INT32 (Int32.of_string i, i)
+                    (try INT32 ((Int32.of_string i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "int32")
@@ -6341,7 +6499,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    (try INT64 (Int64.of_string i, i)
+                    (try INT64 ((Int64.of_string i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "int64")
@@ -6351,27 +6509,29 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    (try NATIVEINT (Nativeint.of_string i, i)
+                    (try NATIVEINT ((Nativeint.of_string i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "nativeint")
                            (Loc.of_lexbuf lexbuf))
               | 11 ->
                   (with_curr_loc string c;
-                   let s = buff_contents c in STRING (TokenEval.string s, s))
+                   let s = buff_contents c
+                   in STRING ((TokenEval.string s), s))
               | 12 ->
                   let x =
                     Lexing.sub_lexeme lexbuf
                       (lexbuf.Lexing.lex_start_pos + 1)
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    (update_loc c None 1 false 1; CHAR (TokenEval.char x, x))
+                    (update_loc c None 1 false 1;
+                     CHAR ((TokenEval.char x), x))
               | 13 ->
                   let x =
                     Lexing.sub_lexeme lexbuf
                       (lexbuf.Lexing.lex_start_pos + 1)
                       (lexbuf.Lexing.lex_curr_pos + (-1))
-                  in CHAR (TokenEval.char x, x)
+                  in CHAR ((TokenEval.char x), x)
               | 14 ->
                   let c =
                     Lexing.sub_lexeme_char lexbuf
@@ -6663,7 +6823,7 @@ module Struct =
             and __ocaml_lex_antiquot_rec name c lexbuf __ocaml_lex_state =
               match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf
               with
-              | 0 -> (set_start_p c; ANTIQUOT (name, buff_contents c))
+              | 0 -> (set_start_p c; ANTIQUOT (name, (buff_contents c)))
               | 1 -> err Unterminated_antiquot (loc c)
               | 2 ->
                   (update_loc c None 1 false 0;
@@ -6800,9 +6960,9 @@ module Struct =
               let rec self =
                 function
                 | Ast.ExApp (_loc, e1, e2) ->
-                    Ast.IdApp (_loc, self e1, self e2)
+                    Ast.IdApp (_loc, (self e1), (self e2))
                 | Ast.ExAcc (_loc, e1, e2) ->
-                    Ast.IdAcc (_loc, self e1, self e2)
+                    Ast.IdAcc (_loc, (self e1), (self e2))
                 | Ast.ExId (_, (Ast.IdLid (_, _))) -> error ()
                 | Ast.ExId (_, i) ->
                     if is_module_longident i then i else error ()
@@ -6819,7 +6979,7 @@ module Struct =
               let rec self =
                 function
                 | Ast.TyApp (_loc, t1, t2) ->
-                    Ast.IdApp (_loc, self t1, self t2)
+                    Ast.IdApp (_loc, (self t1), (self t2))
                 | Ast.TyId (_, (Ast.IdLid (_, _))) -> error ()
                 | Ast.TyId (_, i) ->
                     if is_module_longident i then i else error ()
@@ -6833,7 +6993,7 @@ module Struct =
               let rec self =
                 function
                 | Ast.PaApp (_loc, p1, p2) ->
-                    Ast.IdApp (_loc, self p1, self p2)
+                    Ast.IdApp (_loc, (self p1), (self p2))
                 | Ast.PaId (_, (Ast.IdLid (_, _))) -> error ()
                 | Ast.PaId (_, i) ->
                     if is_module_longident i then i else error ()
@@ -6900,7 +7060,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_ctyp t
-                  in Ast.TyOr (_loc, t, tyOr_of_list ts)
+                  in Ast.TyOr (_loc, t, (tyOr_of_list ts))
               
             let rec tyAnd_of_list =
               function
@@ -6908,7 +7068,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_ctyp t
-                  in Ast.TyAnd (_loc, t, tyAnd_of_list ts)
+                  in Ast.TyAnd (_loc, t, (tyAnd_of_list ts))
               
             let rec tySem_of_list =
               function
@@ -6916,7 +7076,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_ctyp t
-                  in Ast.TySem (_loc, t, tySem_of_list ts)
+                  in Ast.TySem (_loc, t, (tySem_of_list ts))
               
             let rec tyCom_of_list =
               function
@@ -6924,7 +7084,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_ctyp t
-                  in Ast.TyCom (_loc, t, tyCom_of_list ts)
+                  in Ast.TyCom (_loc, t, (tyCom_of_list ts))
               
             let rec tyAmp_of_list =
               function
@@ -6932,7 +7092,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_ctyp t
-                  in Ast.TyAmp (_loc, t, tyAmp_of_list ts)
+                  in Ast.TyAmp (_loc, t, (tyAmp_of_list ts))
               
             let rec tySta_of_list =
               function
@@ -6940,7 +7100,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_ctyp t
-                  in Ast.TySta (_loc, t, tySta_of_list ts)
+                  in Ast.TySta (_loc, t, (tySta_of_list ts))
               
             let rec stSem_of_list =
               function
@@ -6948,7 +7108,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_str_item t
-                  in Ast.StSem (_loc, t, stSem_of_list ts)
+                  in Ast.StSem (_loc, t, (stSem_of_list ts))
               
             let rec sgSem_of_list =
               function
@@ -6956,7 +7116,7 @@ module Struct =
               | [ t ] -> t
               | t :: ts ->
                   let _loc = loc_of_sig_item t
-                  in Ast.SgSem (_loc, t, sgSem_of_list ts)
+                  in Ast.SgSem (_loc, t, (sgSem_of_list ts))
               
             let rec biAnd_of_list =
               function
@@ -6964,7 +7124,7 @@ module Struct =
               | [ b ] -> b
               | b :: bs ->
                   let _loc = loc_of_binding b
-                  in Ast.BiAnd (_loc, b, biAnd_of_list bs)
+                  in Ast.BiAnd (_loc, b, (biAnd_of_list bs))
               
             let rec rbSem_of_list =
               function
@@ -6972,7 +7132,7 @@ module Struct =
               | [ b ] -> b
               | b :: bs ->
                   let _loc = loc_of_rec_binding b
-                  in Ast.RbSem (_loc, b, rbSem_of_list bs)
+                  in Ast.RbSem (_loc, b, (rbSem_of_list bs))
               
             let rec wcAnd_of_list =
               function
@@ -6980,7 +7140,7 @@ module Struct =
               | [ w ] -> w
               | w :: ws ->
                   let _loc = loc_of_with_constr w
-                  in Ast.WcAnd (_loc, w, wcAnd_of_list ws)
+                  in Ast.WcAnd (_loc, w, (wcAnd_of_list ws))
               
             let rec idAcc_of_list =
               function
@@ -6988,7 +7148,7 @@ module Struct =
               | [ i ] -> i
               | i :: is ->
                   let _loc = loc_of_ident i
-                  in Ast.IdAcc (_loc, i, idAcc_of_list is)
+                  in Ast.IdAcc (_loc, i, (idAcc_of_list is))
               
             let rec idApp_of_list =
               function
@@ -6996,7 +7156,7 @@ module Struct =
               | [ i ] -> i
               | i :: is ->
                   let _loc = loc_of_ident i
-                  in Ast.IdApp (_loc, i, idApp_of_list is)
+                  in Ast.IdApp (_loc, i, (idApp_of_list is))
               
             let rec mcOr_of_list =
               function
@@ -7004,7 +7164,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_match_case x
-                  in Ast.McOr (_loc, x, mcOr_of_list xs)
+                  in Ast.McOr (_loc, x, (mcOr_of_list xs))
               
             let rec mbAnd_of_list =
               function
@@ -7012,7 +7172,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_module_binding x
-                  in Ast.MbAnd (_loc, x, mbAnd_of_list xs)
+                  in Ast.MbAnd (_loc, x, (mbAnd_of_list xs))
               
             let rec meApp_of_list =
               function
@@ -7020,7 +7180,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_module_expr x
-                  in Ast.MeApp (_loc, x, meApp_of_list xs)
+                  in Ast.MeApp (_loc, x, (meApp_of_list xs))
               
             let rec ceAnd_of_list =
               function
@@ -7028,7 +7188,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_class_expr x
-                  in Ast.CeAnd (_loc, x, ceAnd_of_list xs)
+                  in Ast.CeAnd (_loc, x, (ceAnd_of_list xs))
               
             let rec ctAnd_of_list =
               function
@@ -7036,7 +7196,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_class_type x
-                  in Ast.CtAnd (_loc, x, ctAnd_of_list xs)
+                  in Ast.CtAnd (_loc, x, (ctAnd_of_list xs))
               
             let rec cgSem_of_list =
               function
@@ -7044,7 +7204,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_class_sig_item x
-                  in Ast.CgSem (_loc, x, cgSem_of_list xs)
+                  in Ast.CgSem (_loc, x, (cgSem_of_list xs))
               
             let rec crSem_of_list =
               function
@@ -7052,7 +7212,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_class_str_item x
-                  in Ast.CrSem (_loc, x, crSem_of_list xs)
+                  in Ast.CrSem (_loc, x, (crSem_of_list xs))
               
             let rec paSem_of_list =
               function
@@ -7060,7 +7220,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_patt x
-                  in Ast.PaSem (_loc, x, paSem_of_list xs)
+                  in Ast.PaSem (_loc, x, (paSem_of_list xs))
               
             let rec paCom_of_list =
               function
@@ -7068,7 +7228,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_patt x
-                  in Ast.PaCom (_loc, x, paCom_of_list xs)
+                  in Ast.PaCom (_loc, x, (paCom_of_list xs))
               
             let rec exSem_of_list =
               function
@@ -7076,7 +7236,7 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_expr x
-                  in Ast.ExSem (_loc, x, exSem_of_list xs)
+                  in Ast.ExSem (_loc, x, (exSem_of_list xs))
               
             let rec exCom_of_list =
               function
@@ -7084,22 +7244,23 @@ module Struct =
               | [ x ] -> x
               | x :: xs ->
                   let _loc = loc_of_expr x
-                  in Ast.ExCom (_loc, x, exCom_of_list xs)
+                  in Ast.ExCom (_loc, x, (exCom_of_list xs))
               
             let ty_of_stl =
               function
-              | (_loc, s, []) -> Ast.TyId (_loc, Ast.IdUid (_loc, s))
+              | (_loc, s, []) -> Ast.TyId (_loc, (Ast.IdUid (_loc, s)))
               | (_loc, s, tl) ->
-                  Ast.TyOf (_loc, Ast.TyId (_loc, Ast.IdUid (_loc, s)),
-                    tyAnd_of_list tl)
+                  Ast.TyOf (_loc, (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                    (tyAnd_of_list tl))
               
             let ty_of_sbt =
               function
               | (_loc, s, true, t) ->
-                  Ast.TyCol (_loc, Ast.TyId (_loc, Ast.IdLid (_loc, s)),
-                    Ast.TyMut (_loc, t))
+                  Ast.TyCol (_loc, (Ast.TyId (_loc, (Ast.IdLid (_loc, s)))),
+                    (Ast.TyMut (_loc, t)))
               | (_loc, s, false, t) ->
-                  Ast.TyCol (_loc, Ast.TyId (_loc, Ast.IdLid (_loc, s)), t)
+                  Ast.TyCol (_loc, (Ast.TyId (_loc, (Ast.IdLid (_loc, s)))),
+                    t)
               
             let bi_of_pe (p, e) =
               let _loc = loc_of_patt p in Ast.BiEq (_loc, p, e)
@@ -7239,57 +7400,71 @@ module Struct =
                       let (a, b, c, d, e, f, g, h) = Loc.to_tuple location
                       in
                         Ast.PaApp (_loc,
-                          Ast.PaId (_loc,
-                            Ast.IdAcc (_loc, Ast.IdUid (_loc, "Loc"),
-                              Ast.IdLid (_loc, "of_tuple"))),
-                          Ast.PaTup (_loc,
-                            Ast.PaCom (_loc,
-                              Ast.PaStr (_loc, Ast.safe_string_escaped a),
-                              Ast.PaCom (_loc,
-                                Ast.PaCom (_loc,
-                                  Ast.PaCom (_loc,
-                                    Ast.PaCom (_loc,
-                                      Ast.PaCom (_loc,
-                                        Ast.PaCom (_loc,
-                                          Ast.PaInt (_loc, string_of_int b),
-                                          Ast.PaInt (_loc, string_of_int c)),
-                                        Ast.PaInt (_loc, string_of_int d)),
-                                      Ast.PaInt (_loc, string_of_int e)),
-                                    Ast.PaInt (_loc, string_of_int f)),
-                                  Ast.PaInt (_loc, string_of_int g)),
-                                if h
-                                then
-                                  Ast.PaId (_loc, Ast.IdUid (_loc, "True"))
-                                else
-                                  Ast.PaId (_loc, Ast.IdUid (_loc, "False"))))))
+                          (Ast.PaId (_loc,
+                             (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Loc")),
+                                (Ast.IdLid (_loc, "of_tuple")))))),
+                          (Ast.PaTup (_loc,
+                             (Ast.PaCom (_loc,
+                                (Ast.PaStr (_loc,
+                                   (Ast.safe_string_escaped a))),
+                                (Ast.PaCom (_loc,
+                                   (Ast.PaCom (_loc,
+                                      (Ast.PaCom (_loc,
+                                         (Ast.PaCom (_loc,
+                                            (Ast.PaCom (_loc,
+                                               (Ast.PaCom (_loc,
+                                                  (Ast.PaInt (_loc,
+                                                     (string_of_int b))),
+                                                  (Ast.PaInt (_loc,
+                                                     (string_of_int c))))),
+                                               (Ast.PaInt (_loc,
+                                                  (string_of_int d))))),
+                                            (Ast.PaInt (_loc,
+                                               (string_of_int e))))),
+                                         (Ast.PaInt (_loc, (string_of_int f))))),
+                                      (Ast.PaInt (_loc, (string_of_int g))))),
+                                   (if h
+                                    then
+                                      Ast.PaId (_loc,
+                                        (Ast.IdUid (_loc, "True")))
+                                    else
+                                      Ast.PaId (_loc,
+                                        (Ast.IdUid (_loc, "False")))))))))))
                       
                     let meta_loc_expr _loc location =
                       let (a, b, c, d, e, f, g, h) = Loc.to_tuple location
                       in
                         Ast.ExApp (_loc,
-                          Ast.ExId (_loc,
-                            Ast.IdAcc (_loc, Ast.IdUid (_loc, "Loc"),
-                              Ast.IdLid (_loc, "of_tuple"))),
-                          Ast.ExTup (_loc,
-                            Ast.ExCom (_loc,
-                              Ast.ExStr (_loc, Ast.safe_string_escaped a),
-                              Ast.ExCom (_loc,
-                                Ast.ExCom (_loc,
-                                  Ast.ExCom (_loc,
-                                    Ast.ExCom (_loc,
-                                      Ast.ExCom (_loc,
-                                        Ast.ExCom (_loc,
-                                          Ast.ExInt (_loc, string_of_int b),
-                                          Ast.ExInt (_loc, string_of_int c)),
-                                        Ast.ExInt (_loc, string_of_int d)),
-                                      Ast.ExInt (_loc, string_of_int e)),
-                                    Ast.ExInt (_loc, string_of_int f)),
-                                  Ast.ExInt (_loc, string_of_int g)),
-                                if h
-                                then
-                                  Ast.ExId (_loc, Ast.IdUid (_loc, "True"))
-                                else
-                                  Ast.ExId (_loc, Ast.IdUid (_loc, "False"))))))
+                          (Ast.ExId (_loc,
+                             (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Loc")),
+                                (Ast.IdLid (_loc, "of_tuple")))))),
+                          (Ast.ExTup (_loc,
+                             (Ast.ExCom (_loc,
+                                (Ast.ExStr (_loc,
+                                   (Ast.safe_string_escaped a))),
+                                (Ast.ExCom (_loc,
+                                   (Ast.ExCom (_loc,
+                                      (Ast.ExCom (_loc,
+                                         (Ast.ExCom (_loc,
+                                            (Ast.ExCom (_loc,
+                                               (Ast.ExCom (_loc,
+                                                  (Ast.ExInt (_loc,
+                                                     (string_of_int b))),
+                                                  (Ast.ExInt (_loc,
+                                                     (string_of_int c))))),
+                                               (Ast.ExInt (_loc,
+                                                  (string_of_int d))))),
+                                            (Ast.ExInt (_loc,
+                                               (string_of_int e))))),
+                                         (Ast.ExInt (_loc, (string_of_int f))))),
+                                      (Ast.ExInt (_loc, (string_of_int g))))),
+                                   (if h
+                                    then
+                                      Ast.ExId (_loc,
+                                        (Ast.IdUid (_loc, "True")))
+                                    else
+                                      Ast.ExId (_loc,
+                                        (Ast.IdUid (_loc, "False")))))))))))
                       
                   end
                   
@@ -7297,23 +7472,23 @@ module Struct =
                   struct
                     let meta_loc_patt _loc _ =
                       Ast.PaId (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Loc"),
-                          Ast.IdLid (_loc, "ghost")))
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Loc")),
+                           (Ast.IdLid (_loc, "ghost")))))
                       
                     let meta_loc_expr _loc _ =
                       Ast.ExId (_loc,
-                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "Loc"),
-                          Ast.IdLid (_loc, "ghost")))
+                        (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Loc")),
+                           (Ast.IdLid (_loc, "ghost")))))
                       
                   end
                   
                 module MetaLocVar =
                   struct
                     let meta_loc_patt _loc _ =
-                      Ast.PaId (_loc, Ast.IdLid (_loc, !Loc.name))
+                      Ast.PaId (_loc, (Ast.IdLid (_loc, !Loc.name)))
                       
                     let meta_loc_expr _loc _ =
-                      Ast.ExId (_loc, Ast.IdLid (_loc, !Loc.name))
+                      Ast.ExId (_loc, (Ast.IdLid (_loc, !Loc.name)))
                       
                   end
                   
@@ -7336,2095 +7511,2274 @@ module Struct =
                         let meta_bool _loc =
                           function
                           | false ->
-                              Ast.ExId (_loc, Ast.IdUid (_loc, "False"))
-                          | true -> Ast.ExId (_loc, Ast.IdUid (_loc, "True"))
+                              Ast.ExId (_loc, (Ast.IdUid (_loc, "False")))
+                          | true ->
+                              Ast.ExId (_loc, (Ast.IdUid (_loc, "True")))
                           
                         let rec meta_list mf_a _loc =
                           function
-                          | [] -> Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))
+                          | [] -> Ast.ExId (_loc, (Ast.IdUid (_loc, "[]")))
                           | x :: xs ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
-                                  mf_a _loc x),
-                                meta_list mf_a _loc xs)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc, (Ast.IdUid (_loc, "::")))),
+                                   (mf_a _loc x))),
+                                (meta_list mf_a _loc xs))
                           
                         let rec meta_binding _loc =
                           function
                           | Ast.BiAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.BiEq (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "BiEq"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "BiEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.BiAnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "BiAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_binding _loc x1),
-                                meta_binding _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "BiAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_binding _loc x1))),
+                                (meta_binding _loc x2))
                           | Ast.BiNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "BiNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "BiNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_expr _loc =
                           function
                           | Ast.CeAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.CeEq (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeEq"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_class_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_class_expr _loc x2))
                           | Ast.CeAnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_class_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_class_expr _loc x2))
                           | Ast.CeTyc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CeStr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeStr"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_class_str_item _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeStr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_class_str_item _loc x2))
                           | Ast.CeLet (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CeLet"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_binding _loc x2),
-                                meta_class_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CeLet")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_rec_flag _loc x1))),
+                                   (meta_binding _loc x2))),
+                                (meta_class_expr _loc x3))
                           | Ast.CeFun (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeFun"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_class_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeFun")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_class_expr _loc x2))
                           | Ast.CeCon (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CeCon"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_ident _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CeCon")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_virtual_flag _loc x1))),
+                                   (meta_ident _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CeApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeApp"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.CeNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CeNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CeNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_sig_item _loc =
                           function
                           | Ast.CgAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.CgVir (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CgVir"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CgVir")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_private_flag _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CgVal (x0, x1, x2, x3, x4) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExApp (_loc,
-                                        Ast.ExId (_loc,
-                                          Ast.IdAcc (_loc,
-                                            Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "CgVal"))),
-                                        meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_meta_bool _loc x3),
-                                meta_ctyp _loc x4)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExApp (_loc,
+                                            (Ast.ExId (_loc,
+                                               (Ast.IdAcc (_loc,
+                                                  (Ast.IdUid (_loc, "Ast")),
+                                                  (Ast.IdUid (_loc, "CgVal")))))),
+                                            (meta_loc _loc x0))),
+                                         (meta_string _loc x1))),
+                                      (meta_mutable_flag _loc x2))),
+                                   (meta_virtual_flag _loc x3))),
+                                (meta_ctyp _loc x4))
                           | Ast.CgMth (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CgMth"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CgMth")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_private_flag _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CgInh (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "CgInh"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "CgInh")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.CgSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CgSem"))),
-                                    meta_loc _loc x0),
-                                  meta_class_sig_item _loc x1),
-                                meta_class_sig_item _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CgSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_sig_item _loc x1))),
+                                (meta_class_sig_item _loc x2))
                           | Ast.CgCtr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CgCtr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CgCtr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.CgNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CgNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CgNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_str_item _loc =
                           function
                           | Ast.CrAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.CrVvr (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVvr"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CrVvr")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_mutable_flag _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CrVir (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVir"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
-                          | Ast.CrVal (x0, x1, x2, x3) ->
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CrVir")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_private_flag _loc x2))),
+                                (meta_ctyp _loc x3))
+                          | Ast.CrVal (x0, x1, x2, x3, x4) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVal"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_expr _loc x3)
-                          | Ast.CrMth (x0, x1, x2, x3, x4) ->
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExApp (_loc,
+                                            (Ast.ExId (_loc,
+                                               (Ast.IdAcc (_loc,
+                                                  (Ast.IdUid (_loc, "Ast")),
+                                                  (Ast.IdUid (_loc, "CrVal")))))),
+                                            (meta_loc _loc x0))),
+                                         (meta_string _loc x1))),
+                                      (meta_override_flag _loc x2))),
+                                   (meta_mutable_flag _loc x3))),
+                                (meta_expr _loc x4))
+                          | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExApp (_loc,
-                                        Ast.ExId (_loc,
-                                          Ast.IdAcc (_loc,
-                                            Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "CrMth"))),
-                                        meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_expr _loc x3),
-                                meta_ctyp _loc x4)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExApp (_loc,
+                                            (Ast.ExApp (_loc,
+                                               (Ast.ExId (_loc,
+                                                  (Ast.IdAcc (_loc,
+                                                     (Ast.IdUid (_loc, "Ast")),
+                                                     (Ast.IdUid (_loc,
+                                                        "CrMth")))))),
+                                               (meta_loc _loc x0))),
+                                            (meta_string _loc x1))),
+                                         (meta_override_flag _loc x2))),
+                                      (meta_private_flag _loc x3))),
+                                   (meta_expr _loc x4))),
+                                (meta_ctyp _loc x5))
                           | Ast.CrIni (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "CrIni"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
-                          | Ast.CrInh (x0, x1, x2) ->
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "CrIni")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
+                          | Ast.CrInh (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrInh"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_string _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CrInh")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_override_flag _loc x1))),
+                                   (meta_class_expr _loc x2))),
+                                (meta_string _loc x3))
                           | Ast.CrCtr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrCtr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CrCtr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.CrSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrSem"))),
-                                    meta_loc _loc x0),
-                                  meta_class_str_item _loc x1),
-                                meta_class_str_item _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CrSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_str_item _loc x1))),
+                                (meta_class_str_item _loc x2))
                           | Ast.CrNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CrNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CrNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_type _loc =
                           function
                           | Ast.CtAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.CtEq (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtEq"))),
-                                    meta_loc _loc x0),
-                                  meta_class_type _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_type _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtCol (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtCol"))),
-                                    meta_loc _loc x0),
-                                  meta_class_type _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtCol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_type _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtAnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_class_type _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_type _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtSig (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtSig"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_class_sig_item _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtSig")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_class_sig_item _loc x2))
                           | Ast.CtFun (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtFun"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtFun")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtCon (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CtCon"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_ident _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CtCon")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_virtual_flag _loc x1))),
+                                   (meta_ident _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CtNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CtNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CtNil")))))),
+                                (meta_loc _loc x0))
                         and meta_ctyp _loc =
                           function
                           | Ast.TyAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.TyPkg (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyPkg"))),
-                                  meta_loc _loc x0),
-                                meta_module_type _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyPkg")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_type _loc x1))
                           | Ast.TyOfAmp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOfAmp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOfAmp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyAmp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyAmp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyAmp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyVrnInfSup (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyVrnInfSup"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyVrnInfSup")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyVrnInf (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrnInf"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrnInf")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyVrnSup (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrnSup"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrnSup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyVrnEq (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrnEq"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrnEq")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TySta (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TySta"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TySta")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyTup (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyTup"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyTup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyMut (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyMut"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyMut")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyPrv (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyPrv"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyPrv")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyOr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyAnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyOf (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOf"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOf")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TySum (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TySum"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TySum")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyCom (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyCom"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyCom")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TySem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TySem"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TySem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyCol (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyCol"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyCol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyRec (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyRec"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyRec")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyVrn (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrn"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyQuM (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyQuM"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyQuM")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyQuP (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyQuP"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyQuP")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyQuo (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyQuo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyQuo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyPol (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyPol"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyPol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyOlb (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOlb"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOlb")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyObj (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyObj"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_meta_bool _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyObj")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_row_var_flag _loc x2))
                           | Ast.TyDcl (x0, x1, x2, x3, x4) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExApp (_loc,
-                                        Ast.ExId (_loc,
-                                          Ast.IdAcc (_loc,
-                                            Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "TyDcl"))),
-                                        meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_list meta_ctyp _loc x2),
-                                  meta_ctyp _loc x3),
-                                meta_list
-                                  (fun _loc (x1, x2) ->
-                                     Ast.ExTup (_loc,
-                                       Ast.ExCom (_loc, meta_ctyp _loc x1,
-                                         meta_ctyp _loc x2)))
-                                  _loc x4)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExApp (_loc,
+                                            (Ast.ExId (_loc,
+                                               (Ast.IdAcc (_loc,
+                                                  (Ast.IdUid (_loc, "Ast")),
+                                                  (Ast.IdUid (_loc, "TyDcl")))))),
+                                            (meta_loc _loc x0))),
+                                         (meta_string _loc x1))),
+                                      (meta_list meta_ctyp _loc x2))),
+                                   (meta_ctyp _loc x3))),
+                                (meta_list
+                                   (fun _loc (x1, x2) ->
+                                      Ast.ExTup (_loc,
+                                        (Ast.ExCom (_loc,
+                                           (meta_ctyp _loc x1),
+                                           (meta_ctyp _loc x2)))))
+                                   _loc x4))
                           | Ast.TyMan (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyMan"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyMan")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyId (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.TyLab (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyLab"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyLab")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyCls (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyCls"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyCls")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.TyArr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyArr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyArr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyApp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyAny x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "TyAny"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyAny")))))),
+                                (meta_loc _loc x0))
                           | Ast.TyAli (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyAli"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyAli")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "TyNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_direction_flag _loc =
+                          function
+                          | Ast.DiAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.DiDownto ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "DiDownto")))))
+                          | Ast.DiTo ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "DiTo")))))
                         and meta_expr _loc =
                           function
                           | Ast.ExPkg (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExPkg"))),
-                                  meta_loc _loc x0),
-                                meta_module_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExPkg")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.ExFUN (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExFUN"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExFUN")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExOpI (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExOpI"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExOpI")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExWhi (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExWhi"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExWhi")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExVrn (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExVrn"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExVrn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExTyc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.ExCom (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExCom"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExCom")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExTup (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExTup"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExTup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExTry (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExTry"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_match_case _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExTry")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_match_case _loc x2))
                           | Ast.ExStr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExStr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExStr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExSte (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExSte"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExSte")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExSnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExSnd"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_string _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExSnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_string _loc x2))
                           | Ast.ExSeq (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExSeq"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExSeq")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExRec (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExRec"))),
-                                    meta_loc _loc x0),
-                                  meta_rec_binding _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExRec")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_rec_binding _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExOvr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExOvr"))),
-                                  meta_loc _loc x0),
-                                meta_rec_binding _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExOvr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_rec_binding _loc x1))
                           | Ast.ExOlb (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExOlb"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExOlb")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExObj (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExObj"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_class_str_item _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExObj")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_class_str_item _loc x2))
                           | Ast.ExNew (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExNew"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExNew")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.ExMat (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExMat"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_match_case _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExMat")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_match_case _loc x2))
                           | Ast.ExLmd (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExLmd"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_expr _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExLmd")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_expr _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExLet (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExLet"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_binding _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExLet")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_rec_flag _loc x1))),
+                                   (meta_binding _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExLaz (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExLaz"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExLaz")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExLab (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExLab"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExLab")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExNativeInt (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExNativeInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExNativeInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExInt64 (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExInt64"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExInt64")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExInt32 (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExInt32"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExInt32")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExInt (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExIfe (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExIfe"))),
-                                      meta_loc _loc x0),
-                                    meta_expr _loc x1),
-                                  meta_expr _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExIfe")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_expr _loc x1))),
+                                   (meta_expr _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExFun (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExFun"))),
-                                  meta_loc _loc x0),
-                                meta_match_case _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExFun")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_match_case _loc x1))
                           | Ast.ExFor (x0, x1, x2, x3, x4, x5) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExApp (_loc,
-                                        Ast.ExApp (_loc,
-                                          Ast.ExId (_loc,
-                                            Ast.IdAcc (_loc,
-                                              Ast.IdUid (_loc, "Ast"),
-                                              Ast.IdUid (_loc, "ExFor"))),
-                                          meta_loc _loc x0),
-                                        meta_string _loc x1),
-                                      meta_expr _loc x2),
-                                    meta_expr _loc x3),
-                                  meta_meta_bool _loc x4),
-                                meta_expr _loc x5)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExApp (_loc,
+                                            (Ast.ExApp (_loc,
+                                               (Ast.ExId (_loc,
+                                                  (Ast.IdAcc (_loc,
+                                                     (Ast.IdUid (_loc, "Ast")),
+                                                     (Ast.IdUid (_loc,
+                                                        "ExFor")))))),
+                                               (meta_loc _loc x0))),
+                                            (meta_string _loc x1))),
+                                         (meta_expr _loc x2))),
+                                      (meta_expr _loc x3))),
+                                   (meta_direction_flag _loc x4))),
+                                (meta_expr _loc x5))
                           | Ast.ExFlo (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExFlo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExFlo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExCoe (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExCoe"))),
-                                      meta_loc _loc x0),
-                                    meta_expr _loc x1),
-                                  meta_ctyp _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExCoe")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_expr _loc x1))),
+                                   (meta_ctyp _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.ExChr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExChr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExChr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExAss (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExAss"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExAss")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExAsr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExAsr"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExAsr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExAsf x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "ExAsf"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "ExAsf")))))),
+                                (meta_loc _loc x0))
                           | Ast.ExSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExSem"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExArr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExArr"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExArr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExAre (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExAre"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExAre")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExApp"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.ExAcc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExAcc"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExAcc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExId (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.ExNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "ExNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "ExNil")))))),
+                                (meta_loc _loc x0))
                         and meta_ident _loc =
                           function
                           | Ast.IdAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.IdUid (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "IdUid"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "IdUid")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.IdLid (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "IdLid"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "IdLid")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.IdApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "IdApp"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "IdApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.IdAcc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "IdAcc"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "IdAcc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                         and meta_match_case _loc =
                           function
                           | Ast.McAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.McArr (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "McArr"))),
-                                      meta_loc _loc x0),
-                                    meta_patt _loc x1),
-                                  meta_expr _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "McArr")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_patt _loc x1))),
+                                   (meta_expr _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.McOr (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "McOr"))),
-                                    meta_loc _loc x0),
-                                  meta_match_case _loc x1),
-                                meta_match_case _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "McOr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_match_case _loc x1))),
+                                (meta_match_case _loc x2))
                           | Ast.McNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "McNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "McNil")))))),
+                                (meta_loc _loc x0))
                         and meta_meta_bool _loc =
                           function
                           | Ast.BAnt x0 -> Ast.ExAnt (_loc, x0)
                           | Ast.BFalse ->
                               Ast.ExId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BFalse")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "BFalse")))))
                           | Ast.BTrue ->
                               Ast.ExId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BTrue")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "BTrue")))))
                         and meta_meta_list mf_a _loc =
                           function
                           | Ast.LAnt x0 -> Ast.ExAnt (_loc, x0)
                           | Ast.LCons (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "LCons"))),
-                                  mf_a _loc x0),
-                                meta_meta_list mf_a _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "LCons")))))),
+                                   (mf_a _loc x0))),
+                                (meta_meta_list mf_a _loc x1))
                           | Ast.LNil ->
                               Ast.ExId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "LNil")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "LNil")))))
                         and meta_meta_option mf_a _loc =
                           function
                           | Ast.OAnt x0 -> Ast.ExAnt (_loc, x0)
                           | Ast.OSome x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "OSome"))),
-                                mf_a _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "OSome")))))),
+                                (mf_a _loc x0))
                           | Ast.ONone ->
                               Ast.ExId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "ONone")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ONone")))))
                         and meta_module_binding _loc =
                           function
                           | Ast.MbAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.MbCol (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MbCol"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MbCol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.MbColEq (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "MbColEq"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_type _loc x2),
-                                meta_module_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "MbColEq")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_type _loc x2))),
+                                (meta_module_expr _loc x3))
                           | Ast.MbAnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MbAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_module_binding _loc x1),
-                                meta_module_binding _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MbAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_binding _loc x1))),
+                                (meta_module_binding _loc x2))
                           | Ast.MbNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "MbNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "MbNil")))))),
+                                (meta_loc _loc x0))
                         and meta_module_expr _loc =
                           function
                           | Ast.MeAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.MePkg (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MePkg"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MePkg")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.MeTyc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MeTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_module_expr _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MeTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_expr _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.MeStr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MeStr"))),
-                                  meta_loc _loc x0),
-                                meta_str_item _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MeStr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_str_item _loc x1))
                           | Ast.MeFun (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "MeFun"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_type _loc x2),
-                                meta_module_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "MeFun")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_type _loc x2))),
+                                (meta_module_expr _loc x3))
                           | Ast.MeApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MeApp"))),
-                                    meta_loc _loc x0),
-                                  meta_module_expr _loc x1),
-                                meta_module_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MeApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_expr _loc x1))),
+                                (meta_module_expr _loc x2))
                           | Ast.MeId (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MeId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MeId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.MeNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "MeNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "MeNil")))))),
+                                (meta_loc _loc x0))
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.MtWit (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MtWit"))),
-                                    meta_loc _loc x0),
-                                  meta_module_type _loc x1),
-                                meta_with_constr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MtWit")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_type _loc x1))),
+                                (meta_with_constr _loc x2))
                           | Ast.MtSig (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MtSig"))),
-                                  meta_loc _loc x0),
-                                meta_sig_item _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtSig")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_sig_item _loc x1))
                           | Ast.MtQuo (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MtQuo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtQuo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.MtFun (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "MtFun"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_type _loc x2),
-                                meta_module_type _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "MtFun")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_type _loc x2))),
+                                (meta_module_type _loc x3))
                           | Ast.MtId (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MtId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.MtNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "MtNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "MtNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_mutable_flag _loc =
+                          function
+                          | Ast.MuAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.MuNil ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "MuNil")))))
+                          | Ast.MuMutable ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "MuMutable")))))
+                        and meta_override_flag _loc =
+                          function
+                          | Ast.OvAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.OvNil ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "OvNil")))))
+                          | Ast.OvOverride ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "OvOverride")))))
                         and meta_patt _loc =
                           function
                           | Ast.PaLaz (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaLaz"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaLaz")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaVrn (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaVrn"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaVrn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaTyp (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaTyp"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaTyp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.PaTyc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.PaTup (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaTup"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaTup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaStr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaStr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaStr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaEq (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaEq"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaRec (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaRec"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaRec")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaRng (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaRng"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaRng")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaOrp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaOrp"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaOrp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaOlbi (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "PaOlbi"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_patt _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "PaOlbi")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_patt _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.PaOlb (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaOlb"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaOlb")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaLab (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaLab"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaLab")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaFlo (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaFlo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaFlo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaNativeInt (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaNativeInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaNativeInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaInt64 (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaInt64"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaInt64")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaInt32 (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaInt32"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaInt32")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaInt (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaChr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaChr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaChr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaSem"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaCom (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaCom"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaCom")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaArr (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaArr"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaArr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaApp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaApp"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaAny x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "PaAny"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "PaAny")))))),
+                                (meta_loc _loc x0))
                           | Ast.PaAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.PaAli (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaAli"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaAli")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaId (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.PaNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "PaNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "PaNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_private_flag _loc =
+                          function
+                          | Ast.PrAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.PrNil ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "PrNil")))))
+                          | Ast.PrPrivate ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "PrPrivate")))))
                         and meta_rec_binding _loc =
                           function
                           | Ast.RbAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.RbEq (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "RbEq"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "RbEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.RbSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "RbSem"))),
-                                    meta_loc _loc x0),
-                                  meta_rec_binding _loc x1),
-                                meta_rec_binding _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "RbSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_rec_binding _loc x1))),
+                                (meta_rec_binding _loc x2))
                           | Ast.RbNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "RbNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "RbNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_rec_flag _loc =
+                          function
+                          | Ast.ReAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.ReNil ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ReNil")))))
+                          | Ast.ReRecursive ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ReRecursive")))))
+                        and meta_row_var_flag _loc =
+                          function
+                          | Ast.RvAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.RvNil ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "RvNil")))))
+                          | Ast.RvRowVar ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "RvRowVar")))))
                         and meta_sig_item _loc =
                           function
                           | Ast.SgAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.SgVal (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgVal"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgVal")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.SgTyp (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgTyp"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgTyp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.SgOpn (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgOpn"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgOpn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.SgMty (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgMty"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgMty")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.SgRecMod (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgRecMod"))),
-                                  meta_loc _loc x0),
-                                meta_module_binding _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgRecMod")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_binding _loc x1))
                           | Ast.SgMod (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgMod"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgMod")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.SgInc (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgInc"))),
-                                  meta_loc _loc x0),
-                                meta_module_type _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgInc")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_type _loc x1))
                           | Ast.SgExt (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "SgExt"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_ctyp _loc x2),
-                                meta_meta_list meta_string _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "SgExt")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_ctyp _loc x2))),
+                                (meta_meta_list meta_string _loc x3))
                           | Ast.SgExc (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgExc"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgExc")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.SgDir (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgDir"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgDir")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.SgSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgSem"))),
-                                    meta_loc _loc x0),
-                                  meta_sig_item _loc x1),
-                                meta_sig_item _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_sig_item _loc x1))),
+                                (meta_sig_item _loc x2))
                           | Ast.SgClt (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgClt"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgClt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.SgCls (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgCls"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgCls")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.SgNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "SgNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "SgNil")))))),
+                                (meta_loc _loc x0))
                         and meta_str_item _loc =
                           function
                           | Ast.StAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.StVal (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StVal"))),
-                                    meta_loc _loc x0),
-                                  meta_meta_bool _loc x1),
-                                meta_binding _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StVal")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_rec_flag _loc x1))),
+                                (meta_binding _loc x2))
                           | Ast.StTyp (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StTyp"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StTyp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.StOpn (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StOpn"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StOpn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.StMty (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StMty"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StMty")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.StRecMod (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StRecMod"))),
-                                  meta_loc _loc x0),
-                                meta_module_binding _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StRecMod")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_binding _loc x1))
                           | Ast.StMod (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StMod"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StMod")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_expr _loc x2))
                           | Ast.StInc (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StInc"))),
-                                  meta_loc _loc x0),
-                                meta_module_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StInc")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.StExt (x0, x1, x2, x3) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExApp (_loc,
-                                      Ast.ExId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "StExt"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_ctyp _loc x2),
-                                meta_meta_list meta_string _loc x3)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExApp (_loc,
+                                         (Ast.ExId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "StExt")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_ctyp _loc x2))),
+                                (meta_meta_list meta_string _loc x3))
                           | Ast.StExp (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StExp"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StExp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.StExc (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StExc"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_meta_option meta_ident _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StExc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_meta_option meta_ident _loc x2))
                           | Ast.StDir (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StDir"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StDir")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.StSem (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StSem"))),
-                                    meta_loc _loc x0),
-                                  meta_str_item _loc x1),
-                                meta_str_item _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_str_item _loc x1))),
+                                (meta_str_item _loc x2))
                           | Ast.StClt (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StClt"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StClt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.StCls (x0, x1) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StCls"))),
-                                  meta_loc _loc x0),
-                                meta_class_expr _loc x1)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StCls")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_expr _loc x1))
                           | Ast.StNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "StNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "StNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_virtual_flag _loc =
+                          function
+                          | Ast.ViAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.ViNil ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ViNil")))))
+                          | Ast.ViVirtual ->
+                              Ast.ExId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ViVirtual")))))
                         and meta_with_constr _loc =
                           function
                           | Ast.WcAnt (x0, x1) -> Ast.ExAnt (x0, x1)
                           | Ast.WcAnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_with_constr _loc x1),
-                                meta_with_constr _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_with_constr _loc x1))),
+                                (meta_with_constr _loc x2))
                           | Ast.WcMoS (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcMoS"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcMoS")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.WcTyS (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcTyS"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcTyS")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.WcMod (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcMod"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcMod")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.WcTyp (x0, x1, x2) ->
                               Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcTyp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcTyp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.WcNil x0 ->
                               Ast.ExApp (_loc,
-                                Ast.ExId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "WcNil"))),
-                                meta_loc _loc x0)
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "WcNil")))))),
+                                (meta_loc _loc x0))
                           
                       end
                       
@@ -9443,2095 +9797,2274 @@ module Struct =
                         let meta_bool _loc =
                           function
                           | false ->
-                              Ast.PaId (_loc, Ast.IdUid (_loc, "False"))
-                          | true -> Ast.PaId (_loc, Ast.IdUid (_loc, "True"))
+                              Ast.PaId (_loc, (Ast.IdUid (_loc, "False")))
+                          | true ->
+                              Ast.PaId (_loc, (Ast.IdUid (_loc, "True")))
                           
                         let rec meta_list mf_a _loc =
                           function
-                          | [] -> Ast.PaId (_loc, Ast.IdUid (_loc, "[]"))
+                          | [] -> Ast.PaId (_loc, (Ast.IdUid (_loc, "[]")))
                           | x :: xs ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc, Ast.IdUid (_loc, "::")),
-                                  mf_a _loc x),
-                                meta_list mf_a _loc xs)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc, (Ast.IdUid (_loc, "::")))),
+                                   (mf_a _loc x))),
+                                (meta_list mf_a _loc xs))
                           
                         let rec meta_binding _loc =
                           function
                           | Ast.BiAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.BiEq (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "BiEq"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "BiEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.BiAnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "BiAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_binding _loc x1),
-                                meta_binding _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "BiAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_binding _loc x1))),
+                                (meta_binding _loc x2))
                           | Ast.BiNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "BiNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "BiNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_expr _loc =
                           function
                           | Ast.CeAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.CeEq (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeEq"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_class_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_class_expr _loc x2))
                           | Ast.CeAnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_class_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_class_expr _loc x2))
                           | Ast.CeTyc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CeStr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeStr"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_class_str_item _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeStr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_class_str_item _loc x2))
                           | Ast.CeLet (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CeLet"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_binding _loc x2),
-                                meta_class_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CeLet")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_rec_flag _loc x1))),
+                                   (meta_binding _loc x2))),
+                                (meta_class_expr _loc x3))
                           | Ast.CeFun (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeFun"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_class_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeFun")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_class_expr _loc x2))
                           | Ast.CeCon (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CeCon"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_ident _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CeCon")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_virtual_flag _loc x1))),
+                                   (meta_ident _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CeApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CeApp"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CeApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.CeNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CeNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CeNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_sig_item _loc =
                           function
                           | Ast.CgAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.CgVir (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CgVir"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CgVir")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_private_flag _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CgVal (x0, x1, x2, x3, x4) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaApp (_loc,
-                                        Ast.PaId (_loc,
-                                          Ast.IdAcc (_loc,
-                                            Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "CgVal"))),
-                                        meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_meta_bool _loc x3),
-                                meta_ctyp _loc x4)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaApp (_loc,
+                                            (Ast.PaId (_loc,
+                                               (Ast.IdAcc (_loc,
+                                                  (Ast.IdUid (_loc, "Ast")),
+                                                  (Ast.IdUid (_loc, "CgVal")))))),
+                                            (meta_loc _loc x0))),
+                                         (meta_string _loc x1))),
+                                      (meta_mutable_flag _loc x2))),
+                                   (meta_virtual_flag _loc x3))),
+                                (meta_ctyp _loc x4))
                           | Ast.CgMth (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CgMth"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CgMth")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_private_flag _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CgInh (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "CgInh"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "CgInh")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.CgSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CgSem"))),
-                                    meta_loc _loc x0),
-                                  meta_class_sig_item _loc x1),
-                                meta_class_sig_item _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CgSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_sig_item _loc x1))),
+                                (meta_class_sig_item _loc x2))
                           | Ast.CgCtr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CgCtr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CgCtr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.CgNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CgNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CgNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_str_item _loc =
                           function
                           | Ast.CrAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.CrVvr (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVvr"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CrVvr")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_mutable_flag _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CrVir (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVir"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_ctyp _loc x3)
-                          | Ast.CrVal (x0, x1, x2, x3) ->
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CrVir")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_private_flag _loc x2))),
+                                (meta_ctyp _loc x3))
+                          | Ast.CrVal (x0, x1, x2, x3, x4) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CrVal"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_meta_bool _loc x2),
-                                meta_expr _loc x3)
-                          | Ast.CrMth (x0, x1, x2, x3, x4) ->
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaApp (_loc,
+                                            (Ast.PaId (_loc,
+                                               (Ast.IdAcc (_loc,
+                                                  (Ast.IdUid (_loc, "Ast")),
+                                                  (Ast.IdUid (_loc, "CrVal")))))),
+                                            (meta_loc _loc x0))),
+                                         (meta_string _loc x1))),
+                                      (meta_override_flag _loc x2))),
+                                   (meta_mutable_flag _loc x3))),
+                                (meta_expr _loc x4))
+                          | Ast.CrMth (x0, x1, x2, x3, x4, x5) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaApp (_loc,
-                                        Ast.PaId (_loc,
-                                          Ast.IdAcc (_loc,
-                                            Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "CrMth"))),
-                                        meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_meta_bool _loc x2),
-                                  meta_expr _loc x3),
-                                meta_ctyp _loc x4)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaApp (_loc,
+                                            (Ast.PaApp (_loc,
+                                               (Ast.PaId (_loc,
+                                                  (Ast.IdAcc (_loc,
+                                                     (Ast.IdUid (_loc, "Ast")),
+                                                     (Ast.IdUid (_loc,
+                                                        "CrMth")))))),
+                                               (meta_loc _loc x0))),
+                                            (meta_string _loc x1))),
+                                         (meta_override_flag _loc x2))),
+                                      (meta_private_flag _loc x3))),
+                                   (meta_expr _loc x4))),
+                                (meta_ctyp _loc x5))
                           | Ast.CrIni (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "CrIni"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
-                          | Ast.CrInh (x0, x1, x2) ->
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "CrIni")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
+                          | Ast.CrInh (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrInh"))),
-                                    meta_loc _loc x0),
-                                  meta_class_expr _loc x1),
-                                meta_string _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CrInh")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_override_flag _loc x1))),
+                                   (meta_class_expr _loc x2))),
+                                (meta_string _loc x3))
                           | Ast.CrCtr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrCtr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CrCtr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.CrSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CrSem"))),
-                                    meta_loc _loc x0),
-                                  meta_class_str_item _loc x1),
-                                meta_class_str_item _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CrSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_str_item _loc x1))),
+                                (meta_class_str_item _loc x2))
                           | Ast.CrNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CrNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CrNil")))))),
+                                (meta_loc _loc x0))
                         and meta_class_type _loc =
                           function
                           | Ast.CtAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.CtEq (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtEq"))),
-                                    meta_loc _loc x0),
-                                  meta_class_type _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_type _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtCol (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtCol"))),
-                                    meta_loc _loc x0),
-                                  meta_class_type _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtCol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_type _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtAnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_class_type _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_class_type _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtSig (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtSig"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_class_sig_item _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtSig")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_class_sig_item _loc x2))
                           | Ast.CtFun (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "CtFun"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_class_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "CtFun")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_class_type _loc x2))
                           | Ast.CtCon (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "CtCon"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_ident _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "CtCon")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_virtual_flag _loc x1))),
+                                   (meta_ident _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.CtNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "CtNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "CtNil")))))),
+                                (meta_loc _loc x0))
                         and meta_ctyp _loc =
                           function
                           | Ast.TyAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.TyPkg (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyPkg"))),
-                                  meta_loc _loc x0),
-                                meta_module_type _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyPkg")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_type _loc x1))
                           | Ast.TyOfAmp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOfAmp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOfAmp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyAmp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyAmp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyAmp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyVrnInfSup (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyVrnInfSup"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyVrnInfSup")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyVrnInf (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrnInf"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrnInf")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyVrnSup (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrnSup"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrnSup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyVrnEq (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrnEq"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrnEq")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TySta (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TySta"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TySta")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyTup (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyTup"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyTup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyMut (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyMut"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyMut")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyPrv (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyPrv"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyPrv")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyOr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyAnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyOf (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOf"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOf")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TySum (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TySum"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TySum")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyCom (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyCom"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyCom")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TySem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TySem"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TySem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyCol (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyCol"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyCol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyRec (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyRec"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyRec")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.TyVrn (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyVrn"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyVrn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyQuM (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyQuM"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyQuM")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyQuP (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyQuP"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyQuP")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyQuo (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyQuo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyQuo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.TyPol (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyPol"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyPol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyOlb (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyOlb"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyOlb")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyObj (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyObj"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_meta_bool _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyObj")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_row_var_flag _loc x2))
                           | Ast.TyDcl (x0, x1, x2, x3, x4) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaApp (_loc,
-                                        Ast.PaId (_loc,
-                                          Ast.IdAcc (_loc,
-                                            Ast.IdUid (_loc, "Ast"),
-                                            Ast.IdUid (_loc, "TyDcl"))),
-                                        meta_loc _loc x0),
-                                      meta_string _loc x1),
-                                    meta_list meta_ctyp _loc x2),
-                                  meta_ctyp _loc x3),
-                                meta_list
-                                  (fun _loc (x1, x2) ->
-                                     Ast.PaTup (_loc,
-                                       Ast.PaCom (_loc, meta_ctyp _loc x1,
-                                         meta_ctyp _loc x2)))
-                                  _loc x4)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaApp (_loc,
+                                            (Ast.PaId (_loc,
+                                               (Ast.IdAcc (_loc,
+                                                  (Ast.IdUid (_loc, "Ast")),
+                                                  (Ast.IdUid (_loc, "TyDcl")))))),
+                                            (meta_loc _loc x0))),
+                                         (meta_string _loc x1))),
+                                      (meta_list meta_ctyp _loc x2))),
+                                   (meta_ctyp _loc x3))),
+                                (meta_list
+                                   (fun _loc (x1, x2) ->
+                                      Ast.PaTup (_loc,
+                                        (Ast.PaCom (_loc,
+                                           (meta_ctyp _loc x1),
+                                           (meta_ctyp _loc x2)))))
+                                   _loc x4))
                           | Ast.TyMan (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyMan"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyMan")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyId (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.TyLab (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyLab"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyLab")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyCls (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "TyCls"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "TyCls")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.TyArr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyArr"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyArr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyApp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyAny x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "TyAny"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyAny")))))),
+                                (meta_loc _loc x0))
                           | Ast.TyAli (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "TyAli"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyAli")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "TyNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_direction_flag _loc =
+                          function
+                          | Ast.DiAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.DiDownto ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "DiDownto")))))
+                          | Ast.DiTo ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "DiTo")))))
                         and meta_expr _loc =
                           function
                           | Ast.ExPkg (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExPkg"))),
-                                  meta_loc _loc x0),
-                                meta_module_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExPkg")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.ExFUN (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExFUN"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExFUN")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExOpI (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExOpI"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExOpI")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExWhi (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExWhi"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExWhi")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExVrn (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExVrn"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExVrn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExTyc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.ExCom (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExCom"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExCom")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExTup (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExTup"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExTup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExTry (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExTry"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_match_case _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExTry")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_match_case _loc x2))
                           | Ast.ExStr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExStr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExStr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExSte (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExSte"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExSte")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExSnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExSnd"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_string _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExSnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_string _loc x2))
                           | Ast.ExSeq (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExSeq"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExSeq")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExRec (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExRec"))),
-                                    meta_loc _loc x0),
-                                  meta_rec_binding _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExRec")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_rec_binding _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExOvr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExOvr"))),
-                                  meta_loc _loc x0),
-                                meta_rec_binding _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExOvr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_rec_binding _loc x1))
                           | Ast.ExOlb (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExOlb"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExOlb")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExObj (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExObj"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_class_str_item _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExObj")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_class_str_item _loc x2))
                           | Ast.ExNew (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExNew"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExNew")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.ExMat (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExMat"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_match_case _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExMat")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_match_case _loc x2))
                           | Ast.ExLmd (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExLmd"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_expr _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExLmd")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_expr _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExLet (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExLet"))),
-                                      meta_loc _loc x0),
-                                    meta_meta_bool _loc x1),
-                                  meta_binding _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExLet")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_rec_flag _loc x1))),
+                                   (meta_binding _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExLaz (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExLaz"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExLaz")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExLab (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExLab"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExLab")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExNativeInt (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExNativeInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExNativeInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExInt64 (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExInt64"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExInt64")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExInt32 (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExInt32"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExInt32")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExInt (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExIfe (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExIfe"))),
-                                      meta_loc _loc x0),
-                                    meta_expr _loc x1),
-                                  meta_expr _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExIfe")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_expr _loc x1))),
+                                   (meta_expr _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.ExFun (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExFun"))),
-                                  meta_loc _loc x0),
-                                meta_match_case _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExFun")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_match_case _loc x1))
                           | Ast.ExFor (x0, x1, x2, x3, x4, x5) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaApp (_loc,
-                                        Ast.PaApp (_loc,
-                                          Ast.PaId (_loc,
-                                            Ast.IdAcc (_loc,
-                                              Ast.IdUid (_loc, "Ast"),
-                                              Ast.IdUid (_loc, "ExFor"))),
-                                          meta_loc _loc x0),
-                                        meta_string _loc x1),
-                                      meta_expr _loc x2),
-                                    meta_expr _loc x3),
-                                  meta_meta_bool _loc x4),
-                                meta_expr _loc x5)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaApp (_loc,
+                                            (Ast.PaApp (_loc,
+                                               (Ast.PaId (_loc,
+                                                  (Ast.IdAcc (_loc,
+                                                     (Ast.IdUid (_loc, "Ast")),
+                                                     (Ast.IdUid (_loc,
+                                                        "ExFor")))))),
+                                               (meta_loc _loc x0))),
+                                            (meta_string _loc x1))),
+                                         (meta_expr _loc x2))),
+                                      (meta_expr _loc x3))),
+                                   (meta_direction_flag _loc x4))),
+                                (meta_expr _loc x5))
                           | Ast.ExFlo (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExFlo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExFlo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExCoe (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "ExCoe"))),
-                                      meta_loc _loc x0),
-                                    meta_expr _loc x1),
-                                  meta_ctyp _loc x2),
-                                meta_ctyp _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "ExCoe")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_expr _loc x1))),
+                                   (meta_ctyp _loc x2))),
+                                (meta_ctyp _loc x3))
                           | Ast.ExChr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExChr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExChr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.ExAss (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExAss"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExAss")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExAsr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExAsr"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExAsr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExAsf x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "ExAsf"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "ExAsf")))))),
+                                (meta_loc _loc x0))
                           | Ast.ExSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExSem"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExArr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExArr"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExArr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.ExAre (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExAre"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExAre")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExApp"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.ExAcc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "ExAcc"))),
-                                    meta_loc _loc x0),
-                                  meta_expr _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "ExAcc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_expr _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.ExId (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "ExId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "ExId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.ExNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "ExNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "ExNil")))))),
+                                (meta_loc _loc x0))
                         and meta_ident _loc =
                           function
                           | Ast.IdAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.IdUid (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "IdUid"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "IdUid")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.IdLid (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "IdLid"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "IdLid")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.IdApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "IdApp"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "IdApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.IdAcc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "IdAcc"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "IdAcc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                         and meta_match_case _loc =
                           function
                           | Ast.McAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.McArr (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "McArr"))),
-                                      meta_loc _loc x0),
-                                    meta_patt _loc x1),
-                                  meta_expr _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "McArr")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_patt _loc x1))),
+                                   (meta_expr _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.McOr (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "McOr"))),
-                                    meta_loc _loc x0),
-                                  meta_match_case _loc x1),
-                                meta_match_case _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "McOr")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_match_case _loc x1))),
+                                (meta_match_case _loc x2))
                           | Ast.McNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "McNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "McNil")))))),
+                                (meta_loc _loc x0))
                         and meta_meta_bool _loc =
                           function
                           | Ast.BAnt x0 -> Ast.PaAnt (_loc, x0)
                           | Ast.BFalse ->
                               Ast.PaId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BFalse")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "BFalse")))))
                           | Ast.BTrue ->
                               Ast.PaId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "BTrue")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "BTrue")))))
                         and meta_meta_list mf_a _loc =
                           function
                           | Ast.LAnt x0 -> Ast.PaAnt (_loc, x0)
                           | Ast.LCons (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "LCons"))),
-                                  mf_a _loc x0),
-                                meta_meta_list mf_a _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "LCons")))))),
+                                   (mf_a _loc x0))),
+                                (meta_meta_list mf_a _loc x1))
                           | Ast.LNil ->
                               Ast.PaId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "LNil")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "LNil")))))
                         and meta_meta_option mf_a _loc =
                           function
                           | Ast.OAnt x0 -> Ast.PaAnt (_loc, x0)
                           | Ast.OSome x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "OSome"))),
-                                mf_a _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "OSome")))))),
+                                (mf_a _loc x0))
                           | Ast.ONone ->
                               Ast.PaId (_loc,
-                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                  Ast.IdUid (_loc, "ONone")))
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ONone")))))
                         and meta_module_binding _loc =
                           function
                           | Ast.MbAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.MbCol (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MbCol"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MbCol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.MbColEq (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "MbColEq"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_type _loc x2),
-                                meta_module_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "MbColEq")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_type _loc x2))),
+                                (meta_module_expr _loc x3))
                           | Ast.MbAnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MbAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_module_binding _loc x1),
-                                meta_module_binding _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MbAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_binding _loc x1))),
+                                (meta_module_binding _loc x2))
                           | Ast.MbNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "MbNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "MbNil")))))),
+                                (meta_loc _loc x0))
                         and meta_module_expr _loc =
                           function
                           | Ast.MeAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.MePkg (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MePkg"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MePkg")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.MeTyc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MeTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_module_expr _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MeTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_expr _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.MeStr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MeStr"))),
-                                  meta_loc _loc x0),
-                                meta_str_item _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MeStr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_str_item _loc x1))
                           | Ast.MeFun (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "MeFun"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_type _loc x2),
-                                meta_module_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "MeFun")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_type _loc x2))),
+                                (meta_module_expr _loc x3))
                           | Ast.MeApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MeApp"))),
-                                    meta_loc _loc x0),
-                                  meta_module_expr _loc x1),
-                                meta_module_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MeApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_expr _loc x1))),
+                                (meta_module_expr _loc x2))
                           | Ast.MeId (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MeId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MeId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.MeNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "MeNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "MeNil")))))),
+                                (meta_loc _loc x0))
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.MtWit (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "MtWit"))),
-                                    meta_loc _loc x0),
-                                  meta_module_type _loc x1),
-                                meta_with_constr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "MtWit")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_module_type _loc x1))),
+                                (meta_with_constr _loc x2))
                           | Ast.MtSig (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MtSig"))),
-                                  meta_loc _loc x0),
-                                meta_sig_item _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtSig")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_sig_item _loc x1))
                           | Ast.MtQuo (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MtQuo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtQuo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.MtFun (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "MtFun"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_module_type _loc x2),
-                                meta_module_type _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "MtFun")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_module_type _loc x2))),
+                                (meta_module_type _loc x3))
                           | Ast.MtId (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "MtId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.MtNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "MtNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "MtNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_mutable_flag _loc =
+                          function
+                          | Ast.MuAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.MuNil ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "MuNil")))))
+                          | Ast.MuMutable ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "MuMutable")))))
+                        and meta_override_flag _loc =
+                          function
+                          | Ast.OvAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.OvNil ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "OvNil")))))
+                          | Ast.OvOverride ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "OvOverride")))))
                         and meta_patt _loc =
                           function
                           | Ast.PaLaz (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaLaz"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaLaz")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaVrn (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaVrn"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaVrn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaTyp (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaTyp"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaTyp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.PaTyc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaTyc"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaTyc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.PaTup (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaTup"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaTup")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaStr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaStr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaStr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaEq (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaEq"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaRec (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaRec"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaRec")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaRng (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaRng"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaRng")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaOrp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaOrp"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaOrp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaOlbi (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "PaOlbi"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_patt _loc x2),
-                                meta_expr _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "PaOlbi")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_patt _loc x2))),
+                                (meta_expr _loc x3))
                           | Ast.PaOlb (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaOlb"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaOlb")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaLab (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaLab"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaLab")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaFlo (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaFlo"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaFlo")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaNativeInt (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaNativeInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaNativeInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaInt64 (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaInt64"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaInt64")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaInt32 (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaInt32"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaInt32")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaInt (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaInt"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaInt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaChr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaChr"))),
-                                  meta_loc _loc x0),
-                                meta_string _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaChr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaSem"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaCom (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaCom"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaCom")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaArr (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaArr"))),
-                                  meta_loc _loc x0),
-                                meta_patt _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaArr")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_patt _loc x1))
                           | Ast.PaApp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaApp"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaApp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaAny x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "PaAny"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "PaAny")))))),
+                                (meta_loc _loc x0))
                           | Ast.PaAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.PaAli (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "PaAli"))),
-                                    meta_loc _loc x0),
-                                  meta_patt _loc x1),
-                                meta_patt _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "PaAli")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_patt _loc x1))),
+                                (meta_patt _loc x2))
                           | Ast.PaId (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "PaId"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaId")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.PaNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "PaNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "PaNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_private_flag _loc =
+                          function
+                          | Ast.PrAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.PrNil ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "PrNil")))))
+                          | Ast.PrPrivate ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "PrPrivate")))))
                         and meta_rec_binding _loc =
                           function
                           | Ast.RbAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.RbEq (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "RbEq"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "RbEq")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.RbSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "RbSem"))),
-                                    meta_loc _loc x0),
-                                  meta_rec_binding _loc x1),
-                                meta_rec_binding _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "RbSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_rec_binding _loc x1))),
+                                (meta_rec_binding _loc x2))
                           | Ast.RbNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "RbNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "RbNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_rec_flag _loc =
+                          function
+                          | Ast.ReAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.ReNil ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ReNil")))))
+                          | Ast.ReRecursive ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ReRecursive")))))
+                        and meta_row_var_flag _loc =
+                          function
+                          | Ast.RvAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.RvNil ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "RvNil")))))
+                          | Ast.RvRowVar ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "RvRowVar")))))
                         and meta_sig_item _loc =
                           function
                           | Ast.SgAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.SgVal (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgVal"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgVal")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.SgTyp (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgTyp"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgTyp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.SgOpn (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgOpn"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgOpn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.SgMty (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgMty"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgMty")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.SgRecMod (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgRecMod"))),
-                                  meta_loc _loc x0),
-                                meta_module_binding _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgRecMod")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_binding _loc x1))
                           | Ast.SgMod (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgMod"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgMod")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.SgInc (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgInc"))),
-                                  meta_loc _loc x0),
-                                meta_module_type _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgInc")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_type _loc x1))
                           | Ast.SgExt (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "SgExt"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_ctyp _loc x2),
-                                meta_meta_list meta_string _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "SgExt")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_ctyp _loc x2))),
+                                (meta_meta_list meta_string _loc x3))
                           | Ast.SgExc (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgExc"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgExc")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.SgDir (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgDir"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgDir")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.SgSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "SgSem"))),
-                                    meta_loc _loc x0),
-                                  meta_sig_item _loc x1),
-                                meta_sig_item _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "SgSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_sig_item _loc x1))),
+                                (meta_sig_item _loc x2))
                           | Ast.SgClt (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgClt"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgClt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.SgCls (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "SgCls"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "SgCls")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.SgNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "SgNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "SgNil")))))),
+                                (meta_loc _loc x0))
                         and meta_str_item _loc =
                           function
                           | Ast.StAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.StVal (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StVal"))),
-                                    meta_loc _loc x0),
-                                  meta_meta_bool _loc x1),
-                                meta_binding _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StVal")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_rec_flag _loc x1))),
+                                (meta_binding _loc x2))
                           | Ast.StTyp (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StTyp"))),
-                                  meta_loc _loc x0),
-                                meta_ctyp _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StTyp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ctyp _loc x1))
                           | Ast.StOpn (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StOpn"))),
-                                  meta_loc _loc x0),
-                                meta_ident _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StOpn")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_ident _loc x1))
                           | Ast.StMty (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StMty"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_type _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StMty")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_type _loc x2))
                           | Ast.StRecMod (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StRecMod"))),
-                                  meta_loc _loc x0),
-                                meta_module_binding _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StRecMod")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_binding _loc x1))
                           | Ast.StMod (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StMod"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_module_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StMod")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_module_expr _loc x2))
                           | Ast.StInc (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StInc"))),
-                                  meta_loc _loc x0),
-                                meta_module_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StInc")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.StExt (x0, x1, x2, x3) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaApp (_loc,
-                                      Ast.PaId (_loc,
-                                        Ast.IdAcc (_loc,
-                                          Ast.IdUid (_loc, "Ast"),
-                                          Ast.IdUid (_loc, "StExt"))),
-                                      meta_loc _loc x0),
-                                    meta_string _loc x1),
-                                  meta_ctyp _loc x2),
-                                meta_meta_list meta_string _loc x3)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaApp (_loc,
+                                         (Ast.PaId (_loc,
+                                            (Ast.IdAcc (_loc,
+                                               (Ast.IdUid (_loc, "Ast")),
+                                               (Ast.IdUid (_loc, "StExt")))))),
+                                         (meta_loc _loc x0))),
+                                      (meta_string _loc x1))),
+                                   (meta_ctyp _loc x2))),
+                                (meta_meta_list meta_string _loc x3))
                           | Ast.StExp (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StExp"))),
-                                  meta_loc _loc x0),
-                                meta_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StExp")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_expr _loc x1))
                           | Ast.StExc (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StExc"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_meta_option meta_ident _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StExc")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_meta_option meta_ident _loc x2))
                           | Ast.StDir (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StDir"))),
-                                    meta_loc _loc x0),
-                                  meta_string _loc x1),
-                                meta_expr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StDir")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_string _loc x1))),
+                                (meta_expr _loc x2))
                           | Ast.StSem (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "StSem"))),
-                                    meta_loc _loc x0),
-                                  meta_str_item _loc x1),
-                                meta_str_item _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "StSem")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_str_item _loc x1))),
+                                (meta_str_item _loc x2))
                           | Ast.StClt (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StClt"))),
-                                  meta_loc _loc x0),
-                                meta_class_type _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StClt")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_type _loc x1))
                           | Ast.StCls (x0, x1) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaId (_loc,
-                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                      Ast.IdUid (_loc, "StCls"))),
-                                  meta_loc _loc x0),
-                                meta_class_expr _loc x1)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "StCls")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_class_expr _loc x1))
                           | Ast.StNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "StNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "StNil")))))),
+                                (meta_loc _loc x0))
+                        and meta_virtual_flag _loc =
+                          function
+                          | Ast.ViAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.ViNil ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ViNil")))))
+                          | Ast.ViVirtual ->
+                              Ast.PaId (_loc,
+                                (Ast.IdAcc (_loc, (Ast.IdUid (_loc, "Ast")),
+                                   (Ast.IdUid (_loc, "ViVirtual")))))
                         and meta_with_constr _loc =
                           function
                           | Ast.WcAnt (x0, x1) -> Ast.PaAnt (x0, x1)
                           | Ast.WcAnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcAnd"))),
-                                    meta_loc _loc x0),
-                                  meta_with_constr _loc x1),
-                                meta_with_constr _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcAnd")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_with_constr _loc x1))),
+                                (meta_with_constr _loc x2))
                           | Ast.WcMoS (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcMoS"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcMoS")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.WcTyS (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcTyS"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcTyS")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.WcMod (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcMod"))),
-                                    meta_loc _loc x0),
-                                  meta_ident _loc x1),
-                                meta_ident _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcMod")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ident _loc x1))),
+                                (meta_ident _loc x2))
                           | Ast.WcTyp (x0, x1, x2) ->
                               Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "WcTyp"))),
-                                    meta_loc _loc x0),
-                                  meta_ctyp _loc x1),
-                                meta_ctyp _loc x2)
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "WcTyp")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.WcNil x0 ->
                               Ast.PaApp (_loc,
-                                Ast.PaId (_loc,
-                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
-                                    Ast.IdUid (_loc, "WcNil"))),
-                                meta_loc _loc x0)
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "WcNil")))))),
+                                (meta_loc _loc x0))
                           
                       end
                       
@@ -11580,6 +12113,12 @@ module Struct =
                   | WcAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in WcAnt (_x, _x_i1)
+                  
+                method virtual_flag : virtual_flag -> virtual_flag =
+                  function
+                  | ViVirtual -> ViVirtual
+                  | ViNil -> ViNil
+                  | ViAnt _x -> let _x = o#string _x in ViAnt _x
                   
                 method str_item : str_item -> str_item =
                   function
@@ -11638,7 +12177,7 @@ module Struct =
                       let _x_i1 = o#ctyp _x_i1 in StTyp (_x, _x_i1)
                   | StVal (_x, _x_i1, _x_i2) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i1 = o#rec_flag _x_i1 in
                       let _x_i2 = o#binding _x_i2 in StVal (_x, _x_i1, _x_i2)
                   | StAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
@@ -11702,6 +12241,18 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in SgAnt (_x, _x_i1)
                   
+                method row_var_flag : row_var_flag -> row_var_flag =
+                  function
+                  | RvRowVar -> RvRowVar
+                  | RvNil -> RvNil
+                  | RvAnt _x -> let _x = o#string _x in RvAnt _x
+                  
+                method rec_flag : rec_flag -> rec_flag =
+                  function
+                  | ReRecursive -> ReRecursive
+                  | ReNil -> ReNil
+                  | ReAnt _x -> let _x = o#string _x in ReAnt _x
+                  
                 method rec_binding : rec_binding -> rec_binding =
                   function
                   | RbNil _x -> let _x = o#loc _x in RbNil _x
@@ -11717,6 +12268,12 @@ module Struct =
                   | RbAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in RbAnt (_x, _x_i1)
+                  
+                method private_flag : private_flag -> private_flag =
+                  function
+                  | PrPrivate -> PrPrivate
+                  | PrNil -> PrNil
+                  | PrAnt _x -> let _x = o#string _x in PrAnt _x
                   
                 method patt : patt -> patt =
                   function
@@ -11813,6 +12370,18 @@ module Struct =
                   | PaLaz (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#patt _x_i1 in PaLaz (_x, _x_i1)
+                  
+                method override_flag : override_flag -> override_flag =
+                  function
+                  | OvOverride -> OvOverride
+                  | OvNil -> OvNil
+                  | OvAnt _x -> let _x = o#string _x in OvAnt _x
+                  
+                method mutable_flag : mutable_flag -> mutable_flag =
+                  function
+                  | MuMutable -> MuMutable
+                  | MuNil -> MuNil
+                  | MuAnt _x -> let _x = o#string _x in MuAnt _x
                   
                 method module_type : module_type -> module_type =
                   function
@@ -12018,7 +12587,7 @@ module Struct =
                       let _x_i1 = o#string _x_i1 in
                       let _x_i2 = o#expr _x_i2 in
                       let _x_i3 = o#expr _x_i3 in
-                      let _x_i4 = o#meta_bool _x_i4 in
+                      let _x_i4 = o#direction_flag _x_i4 in
                       let _x_i5 = o#expr _x_i5
                       in ExFor (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5)
                   | ExFun (_x, _x_i1) ->
@@ -12051,7 +12620,7 @@ module Struct =
                       let _x_i1 = o#expr _x_i1 in ExLaz (_x, _x_i1)
                   | ExLet (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i1 = o#rec_flag _x_i1 in
                       let _x_i2 = o#binding _x_i2 in
                       let _x_i3 = o#expr _x_i3
                       in ExLet (_x, _x_i1, _x_i2, _x_i3)
@@ -12134,6 +12703,12 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#module_expr _x_i1 in ExPkg (_x, _x_i1)
                   
+                method direction_flag : direction_flag -> direction_flag =
+                  function
+                  | DiTo -> DiTo
+                  | DiDownto -> DiDownto
+                  | DiAnt _x -> let _x = o#string _x in DiAnt _x
+                  
                 method ctyp : ctyp -> ctyp =
                   function
                   | TyNil _x -> let _x = o#loc _x in TyNil _x
@@ -12179,7 +12754,7 @@ module Struct =
                   | TyObj (_x, _x_i1, _x_i2) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#ctyp _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2
+                      let _x_i2 = o#row_var_flag _x_i2
                       in TyObj (_x, _x_i1, _x_i2)
                   | TyOlb (_x, _x_i1, _x_i2) ->
                       let _x = o#loc _x in
@@ -12278,7 +12853,7 @@ module Struct =
                   | CtNil _x -> let _x = o#loc _x in CtNil _x
                   | CtCon (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i1 = o#virtual_flag _x_i1 in
                       let _x_i2 = o#ident _x_i2 in
                       let _x_i3 = o#ctyp _x_i3
                       in CtCon (_x, _x_i1, _x_i2, _x_i3)
@@ -12323,36 +12898,40 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#ctyp _x_i1 in
                       let _x_i2 = o#ctyp _x_i2 in CrCtr (_x, _x_i1, _x_i2)
-                  | CrInh (_x, _x_i1, _x_i2) ->
+                  | CrInh (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#class_expr _x_i1 in
-                      let _x_i2 = o#string _x_i2 in CrInh (_x, _x_i1, _x_i2)
+                      let _x_i1 = o#override_flag _x_i1 in
+                      let _x_i2 = o#class_expr _x_i2 in
+                      let _x_i3 = o#string _x_i3
+                      in CrInh (_x, _x_i1, _x_i2, _x_i3)
                   | CrIni (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#expr _x_i1 in CrIni (_x, _x_i1)
-                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
-                      let _x_i3 = o#expr _x_i3 in
-                      let _x_i4 = o#ctyp _x_i4
-                      in CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4)
-                  | CrVal (_x, _x_i1, _x_i2, _x_i3) ->
+                      let _x_i2 = o#override_flag _x_i2 in
+                      let _x_i3 = o#private_flag _x_i3 in
+                      let _x_i4 = o#expr _x_i4 in
+                      let _x_i5 = o#ctyp _x_i5
+                      in CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5)
+                  | CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
-                      let _x_i3 = o#expr _x_i3
-                      in CrVal (_x, _x_i1, _x_i2, _x_i3)
+                      let _x_i2 = o#override_flag _x_i2 in
+                      let _x_i3 = o#mutable_flag _x_i3 in
+                      let _x_i4 = o#expr _x_i4
+                      in CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4)
                   | CrVir (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i2 = o#private_flag _x_i2 in
                       let _x_i3 = o#ctyp _x_i3
                       in CrVir (_x, _x_i1, _x_i2, _x_i3)
                   | CrVvr (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i2 = o#mutable_flag _x_i2 in
                       let _x_i3 = o#ctyp _x_i3
                       in CrVvr (_x, _x_i1, _x_i2, _x_i3)
                   | CrAnt (_x, _x_i1) ->
@@ -12377,20 +12956,20 @@ module Struct =
                   | CgMth (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i2 = o#private_flag _x_i2 in
                       let _x_i3 = o#ctyp _x_i3
                       in CgMth (_x, _x_i1, _x_i2, _x_i3)
                   | CgVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
-                      let _x_i3 = o#meta_bool _x_i3 in
+                      let _x_i2 = o#mutable_flag _x_i2 in
+                      let _x_i3 = o#virtual_flag _x_i3 in
                       let _x_i4 = o#ctyp _x_i4
                       in CgVal (_x, _x_i1, _x_i2, _x_i3, _x_i4)
                   | CgVir (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in
-                      let _x_i2 = o#meta_bool _x_i2 in
+                      let _x_i2 = o#private_flag _x_i2 in
                       let _x_i3 = o#ctyp _x_i3
                       in CgVir (_x, _x_i1, _x_i2, _x_i3)
                   | CgAnt (_x, _x_i1) ->
@@ -12406,7 +12985,7 @@ module Struct =
                       let _x_i2 = o#expr _x_i2 in CeApp (_x, _x_i1, _x_i2)
                   | CeCon (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i1 = o#virtual_flag _x_i1 in
                       let _x_i2 = o#ident _x_i2 in
                       let _x_i3 = o#ctyp _x_i3
                       in CeCon (_x, _x_i1, _x_i2, _x_i3)
@@ -12417,7 +12996,7 @@ module Struct =
                       in CeFun (_x, _x_i1, _x_i2)
                   | CeLet (_x, _x_i1, _x_i2, _x_i3) ->
                       let _x = o#loc _x in
-                      let _x_i1 = o#meta_bool _x_i1 in
+                      let _x_i1 = o#rec_flag _x_i1 in
                       let _x_i2 = o#binding _x_i2 in
                       let _x_i3 = o#class_expr _x_i3
                       in CeLet (_x, _x_i1, _x_i2, _x_i3)
@@ -12499,6 +13078,12 @@ module Struct =
                   | WcAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   
+                method virtual_flag : virtual_flag -> 'self_type =
+                  function
+                  | ViVirtual -> o
+                  | ViNil -> o
+                  | ViAnt _x -> let o = o#string _x in o
+                  
                 method str_item : str_item -> 'self_type =
                   function
                   | StNil _x -> let o = o#loc _x in o
@@ -12542,7 +13127,7 @@ module Struct =
                       let o = o#loc _x in let o = o#ctyp _x_i1 in o
                   | StVal (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
+                      let o = o#rec_flag _x_i1 in
                       let o = o#binding _x_i2 in o
                   | StAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
@@ -12590,6 +13175,18 @@ module Struct =
                   | SgAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   
+                method row_var_flag : row_var_flag -> 'self_type =
+                  function
+                  | RvRowVar -> o
+                  | RvNil -> o
+                  | RvAnt _x -> let o = o#string _x in o
+                  
+                method rec_flag : rec_flag -> 'self_type =
+                  function
+                  | ReRecursive -> o
+                  | ReNil -> o
+                  | ReAnt _x -> let o = o#string _x in o
+                  
                 method rec_binding : rec_binding -> 'self_type =
                   function
                   | RbNil _x -> let o = o#loc _x in o
@@ -12602,6 +13199,12 @@ module Struct =
                       let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
                   | RbAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
+                  
+                method private_flag : private_flag -> 'self_type =
+                  function
+                  | PrPrivate -> o
+                  | PrNil -> o
+                  | PrAnt _x -> let o = o#string _x in o
                   
                 method patt : patt -> 'self_type =
                   function
@@ -12671,6 +13274,18 @@ module Struct =
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   | PaLaz (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#patt _x_i1 in o
+                  
+                method override_flag : override_flag -> 'self_type =
+                  function
+                  | OvOverride -> o
+                  | OvNil -> o
+                  | OvAnt _x -> let o = o#string _x in o
+                  
+                method mutable_flag : mutable_flag -> 'self_type =
+                  function
+                  | MuMutable -> o
+                  | MuNil -> o
+                  | MuAnt _x -> let o = o#string _x in o
                   
                 method module_type : module_type -> 'self_type =
                   function
@@ -12836,7 +13451,8 @@ module Struct =
                       let o = o#string _x_i1 in
                       let o = o#expr _x_i2 in
                       let o = o#expr _x_i3 in
-                      let o = o#meta_bool _x_i4 in let o = o#expr _x_i5 in o
+                      let o = o#direction_flag _x_i4 in
+                      let o = o#expr _x_i5 in o
                   | ExFun (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#match_case _x_i1 in o
                   | ExIfe (_x, _x_i1, _x_i2, _x_i3) ->
@@ -12858,7 +13474,7 @@ module Struct =
                       let o = o#loc _x in let o = o#expr _x_i1 in o
                   | ExLet (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
+                      let o = o#rec_flag _x_i1 in
                       let o = o#binding _x_i2 in let o = o#expr _x_i3 in o
                   | ExLmd (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
@@ -12918,6 +13534,12 @@ module Struct =
                   | ExPkg (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#module_expr _x_i1 in o
                   
+                method direction_flag : direction_flag -> 'self_type =
+                  function
+                  | DiTo -> o
+                  | DiDownto -> o
+                  | DiAnt _x -> let o = o#string _x in o
+                  
                 method ctyp : ctyp -> 'self_type =
                   function
                   | TyNil _x -> let o = o#loc _x in o
@@ -12954,7 +13576,8 @@ module Struct =
                       in o
                   | TyObj (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
-                      let o = o#ctyp _x_i1 in let o = o#meta_bool _x_i2 in o
+                      let o = o#ctyp _x_i1 in
+                      let o = o#row_var_flag _x_i2 in o
                   | TyOlb (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
@@ -13025,7 +13648,7 @@ module Struct =
                   | CtNil _x -> let o = o#loc _x in o
                   | CtCon (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
+                      let o = o#virtual_flag _x_i1 in
                       let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
                   | CtFun (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
@@ -13059,29 +13682,35 @@ module Struct =
                   | CrCtr (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
-                  | CrInh (_x, _x_i1, _x_i2) ->
+                  | CrInh (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#class_expr _x_i1 in
-                      let o = o#string _x_i2 in o
+                      let o = o#override_flag _x_i1 in
+                      let o = o#class_expr _x_i2 in
+                      let o = o#string _x_i3 in o
                   | CrIni (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#expr _x_i1 in o
-                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
+                  | CrMth (_x, _x_i1, _x_i2, _x_i3, _x_i4, _x_i5) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in
-                      let o = o#expr _x_i3 in let o = o#ctyp _x_i4 in o
-                  | CrVal (_x, _x_i1, _x_i2, _x_i3) ->
+                      let o = o#override_flag _x_i2 in
+                      let o = o#private_flag _x_i3 in
+                      let o = o#expr _x_i4 in let o = o#ctyp _x_i5 in o
+                  | CrVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in let o = o#expr _x_i3 in o
+                      let o = o#override_flag _x_i2 in
+                      let o = o#mutable_flag _x_i3 in
+                      let o = o#expr _x_i4 in o
                   | CrVir (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                      let o = o#private_flag _x_i2 in
+                      let o = o#ctyp _x_i3 in o
                   | CrVvr (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                      let o = o#mutable_flag _x_i2 in
+                      let o = o#ctyp _x_i3 in o
                   | CrAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   
@@ -13100,16 +13729,19 @@ module Struct =
                   | CgMth (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                      let o = o#private_flag _x_i2 in
+                      let o = o#ctyp _x_i3 in o
                   | CgVal (_x, _x_i1, _x_i2, _x_i3, _x_i4) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in
-                      let o = o#meta_bool _x_i3 in let o = o#ctyp _x_i4 in o
+                      let o = o#mutable_flag _x_i2 in
+                      let o = o#virtual_flag _x_i3 in
+                      let o = o#ctyp _x_i4 in o
                   | CgVir (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
                       let o = o#string _x_i1 in
-                      let o = o#meta_bool _x_i2 in let o = o#ctyp _x_i3 in o
+                      let o = o#private_flag _x_i2 in
+                      let o = o#ctyp _x_i3 in o
                   | CgAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   
@@ -13121,14 +13753,14 @@ module Struct =
                       let o = o#class_expr _x_i1 in let o = o#expr _x_i2 in o
                   | CeCon (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
+                      let o = o#virtual_flag _x_i1 in
                       let o = o#ident _x_i2 in let o = o#ctyp _x_i3 in o
                   | CeFun (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#patt _x_i1 in let o = o#class_expr _x_i2 in o
                   | CeLet (_x, _x_i1, _x_i2, _x_i3) ->
                       let o = o#loc _x in
-                      let o = o#meta_bool _x_i1 in
+                      let o = o#rec_flag _x_i1 in
                       let o = o#binding _x_i2 in
                       let o = o#class_expr _x_i3 in o
                   | CeStr (_x, _x_i1, _x_i2) ->
@@ -13480,11 +14112,11 @@ module Struct =
                 | Loc.Exc_located (qloc, exc) ->
                     raise
                       (Loc.Exc_located (qloc,
-                         Error.E ((name, pos_tag, Finding, exc))))
+                         (Error.E ((name, pos_tag, Finding, exc)))))
                 | exc ->
                     raise
                       (Loc.Exc_located (loc,
-                         Error.E ((name, pos_tag, Finding, exc)))) in
+                         (Error.E ((name, pos_tag, Finding, exc))))) in
               let loc = Loc.join (Loc.move `start quotation.q_shift loc)
               in expand_quotation loc expander pos_tag quotation
               
@@ -13605,13 +14237,17 @@ module Struct =
               | Ptyp_poly (_, _) -> t
               | _ -> { (t) with ptyp_desc = Ptyp_poly ([], t); }
               
-            let mb2b =
+            let mkvirtual =
               function
-              | Ast.BTrue -> true
-              | Ast.BFalse -> false
-              | Ast.BAnt _ -> assert false
+              | Ast.ViVirtual -> Virtual
+              | Ast.ViNil -> Concrete
+              | _ -> assert false
               
-            let mkvirtual m = if mb2b m then Virtual else Concrete
+            let mkdirection =
+              function
+              | Ast.DiTo -> Upto
+              | Ast.DiDownto -> Downto
+              | _ -> assert false
               
             let lident s = Lident s
               
@@ -13640,9 +14276,9 @@ module Struct =
               
             let mkrf =
               function
-              | Ast.BTrue -> Recursive
-              | Ast.BFalse -> Nonrecursive
-              | Ast.BAnt _ -> assert false
+              | Ast.ReRecursive -> Recursive
+              | Ast.ReNil -> Nonrecursive
+              | _ -> assert false
               
             let mkli s =
               let rec loop f =
@@ -13660,7 +14296,7 @@ module Struct =
                 | Ast.IdAcc (_, i1, i2) -> self i2 (Some (self i1 acc))
                 | Ast.IdApp (_, i1, i2) ->
                     let i' =
-                      Lapply (fst (self i1 None), fst (self i2 None)) in
+                      Lapply ((fst (self i1 None)), (fst (self i2 None))) in
                     let x =
                       (match acc with
                        | None -> i'
@@ -13738,30 +14374,33 @@ module Struct =
                      | (t, TyQuo (_, s)) -> (t, s)
                      | (TyQuo (_, s), t) -> (t, s)
                      | _ -> error loc "invalid alias type")
-                  in mktyp loc (Ptyp_alias (ctyp t, i))
+                  in mktyp loc (Ptyp_alias ((ctyp t), i))
               | TyAny loc -> mktyp loc Ptyp_any
               | (TyApp (loc, _, _) as f) ->
                   let (f, al) = ctyp_fa [] f in
                   let (is_cls, li) = ctyp_long_id f
                   in
                     if is_cls
-                    then mktyp loc (Ptyp_class (li, List.map ctyp al, []))
-                    else mktyp loc (Ptyp_constr (li, List.map ctyp al))
+                    then mktyp loc (Ptyp_class (li, (List.map ctyp al), []))
+                    else mktyp loc (Ptyp_constr (li, (List.map ctyp al)))
               | TyArr (loc, (TyLab (_, lab, t1)), t2) ->
-                  mktyp loc (Ptyp_arrow (lab, ctyp t1, ctyp t2))
+                  mktyp loc (Ptyp_arrow (lab, (ctyp t1), (ctyp t2)))
               | TyArr (loc, (TyOlb (loc1, lab, t1)), t2) ->
                   let t1 =
-                    TyApp (loc1, Ast.TyId (loc1, Ast.IdLid (loc1, "option")),
-                      t1)
-                  in mktyp loc (Ptyp_arrow ("?" ^ lab, ctyp t1, ctyp t2))
+                    TyApp (loc1,
+                      (Ast.TyId (loc1, (Ast.IdLid (loc1, "option")))), t1)
+                  in
+                    mktyp loc
+                      (Ptyp_arrow (("?" ^ lab), (ctyp t1), (ctyp t2)))
               | TyArr (loc, t1, t2) ->
-                  mktyp loc (Ptyp_arrow ("", ctyp t1, ctyp t2))
-              | Ast.TyObj (loc, fl, Ast.BFalse) ->
+                  mktyp loc (Ptyp_arrow ("", (ctyp t1), (ctyp t2)))
+              | Ast.TyObj (loc, fl, Ast.RvNil) ->
                   mktyp loc (Ptyp_object (meth_list fl []))
-              | Ast.TyObj (loc, fl, Ast.BTrue) ->
+              | Ast.TyObj (loc, fl, Ast.RvRowVar) ->
                   mktyp loc
                     (Ptyp_object (meth_list fl [ mkfield loc Pfield_var ]))
-              | TyCls (loc, id) -> mktyp loc (Ptyp_class (ident id, [], []))
+              | TyCls (loc, id) ->
+                  mktyp loc (Ptyp_class ((ident id), [], []))
               | Ast.TyPkg (loc, pt) ->
                   let (i, cs) = package_type pt
                   in mktyp loc (Ptyp_package (i, cs))
@@ -13772,7 +14411,7 @@ module Struct =
               | TyOlb (loc, _, _) ->
                   error loc "labelled type not allowed here"
               | TyPol (loc, t1, t2) ->
-                  mktyp loc (Ptyp_poly (ty_var_list_of_ctyp t1, ctyp t2))
+                  mktyp loc (Ptyp_poly ((ty_var_list_of_ctyp t1), (ctyp t2)))
               | TyQuo (loc, s) -> mktyp loc (Ptyp_var s)
               | TyRec (loc, _) -> error loc "record type not allowed here"
               | TySum (loc, _) -> error loc "sum type not allowed here"
@@ -13793,28 +14432,29 @@ module Struct =
                     (Ptyp_tuple
                        (List.map ctyp (list_of_ctyp t1 (list_of_ctyp t2 []))))
               | Ast.TyVrnEq (loc, t) ->
-                  mktyp loc (Ptyp_variant (row_field t, true, None))
+                  mktyp loc (Ptyp_variant ((row_field t), true, None))
               | Ast.TyVrnSup (loc, t) ->
-                  mktyp loc (Ptyp_variant (row_field t, false, None))
+                  mktyp loc (Ptyp_variant ((row_field t), false, None))
               | Ast.TyVrnInf (loc, t) ->
-                  mktyp loc (Ptyp_variant (row_field t, true, Some []))
+                  mktyp loc (Ptyp_variant ((row_field t), true, (Some [])))
               | Ast.TyVrnInfSup (loc, t, t') ->
                   mktyp loc
-                    (Ptyp_variant (row_field t, true, Some (name_tags t')))
+                    (Ptyp_variant ((row_field t), true,
+                       (Some (name_tags t'))))
               | TyAnt (loc, _) -> error loc "antiquotation not allowed here"
               | TyOfAmp (_, _, _) | TyAmp (_, _, _) | TySta (_, _, _) |
                   TyCom (_, _, _) | TyVrn (_, _) | TyQuM (_, _) |
                   TyQuP (_, _) | TyDcl (_, _, _, _, _) |
-                  TyObj (_, _, (BAnt _)) | TyNil _ | TyTup (_, _) ->
+                  TyObj (_, _, (RvAnt _)) | TyNil _ | TyTup (_, _) ->
                   assert false
             and row_field =
               function
               | Ast.TyNil _ -> []
               | Ast.TyVrn (_, i) -> [ Rtag (i, true, []) ]
               | Ast.TyOfAmp (_, (Ast.TyVrn (_, i)), t) ->
-                  [ Rtag (i, true, List.map ctyp (list_of_ctyp t [])) ]
+                  [ Rtag (i, true, (List.map ctyp (list_of_ctyp t []))) ]
               | Ast.TyOf (_, (Ast.TyVrn (_, i)), t) ->
-                  [ Rtag (i, false, List.map ctyp (list_of_ctyp t [])) ]
+                  [ Rtag (i, false, (List.map ctyp (list_of_ctyp t []))) ]
               | Ast.TyOr (_, t1, t2) -> (row_field t1) @ (row_field t2)
               | t -> [ Rinherit (ctyp t) ]
             and name_tags =
@@ -13827,7 +14467,7 @@ module Struct =
               | Ast.TyNil _ -> acc
               | Ast.TySem (_, t1, t2) -> meth_list t1 (meth_list t2 acc)
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, lab)))), t) ->
-                  (mkfield loc (Pfield (lab, mkpolytype (ctyp t)))) :: acc
+                  (mkfield loc (Pfield (lab, (mkpolytype (ctyp t))))) :: acc
               | _ -> assert false
             and package_type_constraints wc acc =
               match wc with
@@ -13862,7 +14502,11 @@ module Struct =
               
             let mkprivate' m = if m then Private else Public
               
-            let mkprivate m = mkprivate' (mb2b m)
+            let mkprivate =
+              function
+              | Ast.PrPrivate -> Private
+              | Ast.PrNil -> Public
+              | _ -> assert false
               
             let mktrecord =
               function
@@ -13917,7 +14561,11 @@ module Struct =
               | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
               | Ast.LAnt _ -> assert false
               
-            let mkmutable m = if mb2b m then Mutable else Immutable
+            let mkmutable =
+              function
+              | Ast.MuMutable -> Mutable
+              | Ast.MuNil -> Immutable
+              | _ -> assert false
               
             let paolab lab p =
               match (lab, p) with
@@ -14002,8 +14650,8 @@ module Struct =
               then mkghpat loc (Ppat_constant (Const_char c1))
               else
                 mkghpat loc
-                  (Ppat_or (mkghpat loc (Ppat_constant (Const_char c1)),
-                     deep_mkrangepat loc (Char.chr ((Char.code c1) + 1)) c2))
+                  (Ppat_or ((mkghpat loc (Ppat_constant (Const_char c1))),
+                     (deep_mkrangepat loc (Char.chr ((Char.code c1) + 1)) c2)))
               
             let rec mkrangepat loc c1 c2 =
               if c1 > c2
@@ -14013,16 +14661,17 @@ module Struct =
                 then mkpat loc (Ppat_constant (Const_char c1))
                 else
                   mkpat loc
-                    (Ppat_or (mkghpat loc (Ppat_constant (Const_char c1)),
-                       deep_mkrangepat loc (Char.chr ((Char.code c1) + 1)) c2))
+                    (Ppat_or ((mkghpat loc (Ppat_constant (Const_char c1))),
+                       (deep_mkrangepat loc (Char.chr ((Char.code c1) + 1))
+                          c2)))
               
             let rec patt =
               function
               | Ast.PaId (loc, (Ast.IdLid (_, s))) -> mkpat loc (Ppat_var s)
               | Ast.PaId (loc, i) ->
                   let p =
-                    Ppat_construct (long_uident ~conv_con i, None,
-                      constructors_arity ())
+                    Ppat_construct ((long_uident ~conv_con i), None,
+                      (constructors_arity ()))
                   in mkpat loc p
               | PaAli (loc, p1, p2) ->
                   let (p, i) =
@@ -14030,14 +14679,14 @@ module Struct =
                      | (p, Ast.PaId (_, (Ast.IdLid (_, s)))) -> (p, s)
                      | (Ast.PaId (_, (Ast.IdLid (_, s))), p) -> (p, s)
                      | _ -> error loc "invalid alias pattern")
-                  in mkpat loc (Ppat_alias (patt p, i))
+                  in mkpat loc (Ppat_alias ((patt p), i))
               | PaAnt (loc, _) -> error loc "antiquotation not allowed here"
               | PaAny loc -> mkpat loc Ppat_any
               | Ast.PaApp (loc, (Ast.PaId (_, (Ast.IdUid (_, s)))),
                   (Ast.PaTup (_, (Ast.PaAny loc_any)))) ->
                   mkpat loc
-                    (Ppat_construct (lident (conv_con s),
-                       Some (mkpat loc_any Ppat_any), false))
+                    (Ppat_construct ((lident (conv_con s)),
+                       (Some (mkpat loc_any Ppat_any)), false))
               | (PaApp (loc, _, _) as f) ->
                   let (f, al) = patt_fa [] f in
                   let al = List.map patt al
@@ -14048,13 +14697,15 @@ module Struct =
                          then
                            mkpat loc
                              (Ppat_construct (li,
-                                Some (mkpat loc (Ppat_tuple al)), true))
+                                (Some (mkpat loc (Ppat_tuple al))), true))
                          else
                            (let a =
                               match al with
                               | [ a ] -> a
                               | _ -> mkpat loc (Ppat_tuple al)
-                            in mkpat loc (Ppat_construct (li, Some a, false)))
+                            in
+                              mkpat loc
+                                (Ppat_construct (li, (Some a), false)))
                      | Ppat_variant (s, None) ->
                          let a =
                            if constructors_arity ()
@@ -14063,7 +14714,7 @@ module Struct =
                              (match al with
                               | [ a ] -> a
                               | _ -> mkpat loc (Ppat_tuple al))
-                         in mkpat loc (Ppat_variant (s, Some a))
+                         in mkpat loc (Ppat_variant (s, (Some a)))
                      | _ ->
                          error (loc_of_patt f)
                            "this is not a constructor, it cannot be applied in a pattern")
@@ -14111,7 +14762,8 @@ module Struct =
                   error loc "labeled pattern not allowed here"
               | PaOlb (loc, _, _) | PaOlbi (loc, _, _, _) ->
                   error loc "labeled pattern not allowed here"
-              | PaOrp (loc, p1, p2) -> mkpat loc (Ppat_or (patt p1, patt p2))
+              | PaOrp (loc, p1, p2) ->
+                  mkpat loc (Ppat_or ((patt p1), (patt p2)))
               | PaRng (loc, p1, p2) ->
                   (match (p1, p2) with
                    | (PaChr (loc1, c1), PaChr (loc2, c2)) ->
@@ -14139,7 +14791,7 @@ module Struct =
                        (List.map patt (list_of_patt p1 (list_of_patt p2 []))))
               | Ast.PaTup (loc, _) -> error loc "singleton tuple pattern"
               | PaTyc (loc, p, t) ->
-                  mkpat loc (Ppat_constraint (patt p, ctyp t))
+                  mkpat loc (Ppat_constraint ((patt p), (ctyp t)))
               | PaTyp (loc, i) -> mkpat loc (Ppat_type (long_type_ident i))
               | PaVrn (loc, s) -> mkpat loc (Ppat_variant (s, None))
               | PaLaz (loc, p) -> mkpat loc (Ppat_lazy (patt p))
@@ -14173,14 +14825,22 @@ module Struct =
                   let rec normalize_acc =
                     (function
                      | Ast.IdAcc (_loc, i1, i2) ->
-                         Ast.ExAcc (_loc, normalize_acc i1, normalize_acc i2)
+                         Ast.ExAcc (_loc, (normalize_acc i1),
+                           (normalize_acc i2))
                      | Ast.IdApp (_loc, i1, i2) ->
-                         Ast.ExApp (_loc, normalize_acc i1, normalize_acc i2)
+                         Ast.ExApp (_loc, (normalize_acc i1),
+                           (normalize_acc i2))
                      | (Ast.IdAnt (_loc, _) | Ast.IdUid (_loc, _) |
                           Ast.IdLid (_loc, _)
                         as i) -> Ast.ExId (_loc, i))
                   in sep_expr_acc l (normalize_acc i)
               | e -> ((loc_of_expr e), [], e) :: l
+              
+            let override_flag loc =
+              function
+              | Ast.OvOverride -> Override
+              | Ast.OvNil -> Fresh
+              | _ -> error loc "antiquotation not allowed here"
               
             let list_of_opt_ctyp ot acc =
               match ot with | Ast.TyNil _ -> acc | t -> list_of_ctyp t acc
@@ -14189,7 +14849,7 @@ module Struct =
               function
               | Ast.ExAcc (loc, x, (Ast.ExId (_, (Ast.IdLid (_, "val"))))) ->
                   mkexp loc
-                    (Pexp_apply (mkexp loc (Pexp_ident (Lident "!")),
+                    (Pexp_apply ((mkexp loc (Pexp_ident (Lident "!"))),
                        [ ("", (expr x)) ]))
               | (ExAcc (loc, _, _) | Ast.ExId (loc, (Ast.IdAcc (_, _, _))) as
                  e) ->
@@ -14199,7 +14859,7 @@ module Struct =
                          let ca = constructors_arity ()
                          in
                            ((mkexp loc
-                               (Pexp_construct (mkli (conv_con s) ml, None,
+                               (Pexp_construct ((mkli (conv_con s) ml), None,
                                   ca))),
                             l)
                      | (loc, ml, Ast.ExId (_, (Ast.IdLid (_, s)))) :: l ->
@@ -14215,7 +14875,7 @@ module Struct =
                              in
                                (loc,
                                 (mkexp loc
-                                   (Pexp_field (e1, mkli (conv_lab s) ml))))
+                                   (Pexp_field (e1, (mkli (conv_lab s) ml)))))
                          | _ ->
                              error (loc_of_expr e2)
                                "lowercase identifier expected")
@@ -14234,7 +14894,7 @@ module Struct =
                            then
                              mkexp loc
                                (Pexp_construct (li,
-                                  Some (mkexp loc (Pexp_tuple al)), true))
+                                  (Some (mkexp loc (Pexp_tuple al))), true))
                            else
                              (let a =
                                 match al with
@@ -14242,7 +14902,7 @@ module Struct =
                                 | _ -> mkexp loc (Pexp_tuple al)
                               in
                                 mkexp loc
-                                  (Pexp_construct (li, Some a, false)))
+                                  (Pexp_construct (li, (Some a), false)))
                      | Pexp_variant (s, None) ->
                          let al = List.map snd al in
                          let a =
@@ -14252,12 +14912,13 @@ module Struct =
                              (match al with
                               | [ a ] -> a
                               | _ -> mkexp loc (Pexp_tuple al))
-                         in mkexp loc (Pexp_variant (s, Some a))
-                     | _ -> mkexp loc (Pexp_apply (expr f, al)))
+                         in mkexp loc (Pexp_variant (s, (Some a)))
+                     | _ -> mkexp loc (Pexp_apply ((expr f), al)))
               | ExAre (loc, e1, e2) ->
                   mkexp loc
                     (Pexp_apply
-                       (mkexp loc (Pexp_ident (array_function "Array" "get")),
+                       ((mkexp loc
+                           (Pexp_ident (array_function "Array" "get"))),
                        [ ("", (expr e1)); ("", (expr e2)) ]))
               | ExArr (loc, e) ->
                   mkexp loc (Pexp_array (List.map expr (list_of_expr e [])))
@@ -14267,24 +14928,24 @@ module Struct =
                     (match e with
                      | Ast.ExAcc (loc, x,
                          (Ast.ExId (_, (Ast.IdLid (_, "val"))))) ->
-                         Pexp_apply (mkexp loc (Pexp_ident (Lident ":=")),
+                         Pexp_apply ((mkexp loc (Pexp_ident (Lident ":="))),
                            [ ("", (expr x)); ("", (expr v)) ])
                      | ExAcc (loc, _, _) ->
                          (match (expr e).pexp_desc with
                           | Pexp_field (e, lab) ->
-                              Pexp_setfield (e, lab, expr v)
+                              Pexp_setfield (e, lab, (expr v))
                           | _ -> error loc "bad record access")
                      | ExAre (_, e1, e2) ->
                          Pexp_apply
-                           (mkexp loc
-                              (Pexp_ident (array_function "Array" "set")),
+                           ((mkexp loc
+                               (Pexp_ident (array_function "Array" "set"))),
                            [ ("", (expr e1)); ("", (expr e2)); ("", (expr v)) ])
                      | Ast.ExId (_, (Ast.IdLid (_, lab))) ->
-                         Pexp_setinstvar (lab, expr v)
+                         Pexp_setinstvar (lab, (expr v))
                      | ExSte (_, e1, e2) ->
                          Pexp_apply
-                           (mkexp loc
-                              (Pexp_ident (array_function "String" "set")),
+                           ((mkexp loc
+                               (Pexp_ident (array_function "String" "set"))),
                            [ ("", (expr e1)); ("", (expr e2)); ("", (expr v)) ])
                      | _ -> error loc "bad left part of assignment")
                   in mkexp loc e
@@ -14295,14 +14956,18 @@ module Struct =
               | ExCoe (loc, e, t1, t2) ->
                   let t1 =
                     (match t1 with | Ast.TyNil _ -> None | t -> Some (ctyp t))
-                  in mkexp loc (Pexp_constraint (expr e, t1, Some (ctyp t2)))
+                  in
+                    mkexp loc
+                      (Pexp_constraint ((expr e), t1, (Some (ctyp t2))))
               | ExFlo (loc, s) ->
                   mkexp loc
                     (Pexp_constant (Const_float (remove_underscores s)))
               | ExFor (loc, i, e1, e2, df, el) ->
-                  let e3 = ExSeq (loc, el) in
-                  let df = if mb2b df then Upto else Downto
-                  in mkexp loc (Pexp_for (i, expr e1, expr e2, df, expr e3))
+                  let e3 = ExSeq (loc, el)
+                  in
+                    mkexp loc
+                      (Pexp_for (i, (expr e1), (expr e2), (mkdirection df),
+                         (expr e3)))
               | Ast.ExFun (loc, (Ast.McArr (_, (PaLab (_, lab, po)), w, e)))
                   ->
                   mkexp loc
@@ -14313,20 +14978,20 @@ module Struct =
                   let lab = paolab lab p
                   in
                     mkexp loc
-                      (Pexp_function ("?" ^ lab, Some (expr e1),
+                      (Pexp_function (("?" ^ lab), (Some (expr e1)),
                          [ ((patt p), (when_expr e2 w)) ]))
               | Ast.ExFun (loc, (Ast.McArr (_, (PaOlb (_, lab, p)), w, e)))
                   ->
                   let lab = paolab lab p
                   in
                     mkexp loc
-                      (Pexp_function ("?" ^ lab, None,
+                      (Pexp_function (("?" ^ lab), None,
                          [ ((patt_of_lab loc lab p), (when_expr e w)) ]))
               | ExFun (loc, a) ->
-                  mkexp loc (Pexp_function ("", None, match_case a []))
+                  mkexp loc (Pexp_function ("", None, (match_case a [])))
               | ExIfe (loc, e1, e2, e3) ->
                   mkexp loc
-                    (Pexp_ifthenelse (expr e1, expr e2, Some (expr e3)))
+                    (Pexp_ifthenelse ((expr e1), (expr e2), (Some (expr e3))))
               | ExInt (loc, s) ->
                   let i =
                     (try int_of_string s
@@ -14363,11 +15028,11 @@ module Struct =
                   error loc "labeled expression not allowed here"
               | ExLaz (loc, e) -> mkexp loc (Pexp_lazy (expr e))
               | ExLet (loc, rf, bi, e) ->
-                  mkexp loc (Pexp_let (mkrf rf, binding bi [], expr e))
+                  mkexp loc (Pexp_let ((mkrf rf), (binding bi []), (expr e)))
               | ExLmd (loc, i, me, e) ->
-                  mkexp loc (Pexp_letmodule (i, module_expr me, expr e))
+                  mkexp loc (Pexp_letmodule (i, (module_expr me), (expr e)))
               | ExMat (loc, e, a) ->
-                  mkexp loc (Pexp_match (expr e, match_case a []))
+                  mkexp loc (Pexp_match ((expr e), (match_case a [])))
               | ExNew (loc, id) -> mkexp loc (Pexp_new (long_type_ident id))
               | ExObj (loc, po, cfl) ->
                   let p =
@@ -14386,54 +15051,55 @@ module Struct =
                          (match eo with
                           | Ast.ExNil _ -> None
                           | e -> Some (expr e))
-                       in mkexp loc (Pexp_record (mklabexp lel [], eo)))
+                       in mkexp loc (Pexp_record ((mklabexp lel []), eo)))
               | ExSeq (_loc, e) ->
                   let rec loop =
                     (function
-                     | [] -> expr (Ast.ExId (_loc, Ast.IdUid (_loc, "()")))
+                     | [] -> expr (Ast.ExId (_loc, (Ast.IdUid (_loc, "()"))))
                      | [ e ] -> expr e
                      | e :: el ->
                          let _loc = Loc.merge (loc_of_expr e) _loc
-                         in mkexp _loc (Pexp_sequence (expr e, loop el)))
+                         in mkexp _loc (Pexp_sequence ((expr e), (loop el))))
                   in loop (list_of_expr e [])
-              | ExSnd (loc, e, s) -> mkexp loc (Pexp_send (expr e, s))
+              | ExSnd (loc, e, s) -> mkexp loc (Pexp_send ((expr e), s))
               | ExSte (loc, e1, e2) ->
                   mkexp loc
                     (Pexp_apply
-                       (mkexp loc
-                          (Pexp_ident (array_function "String" "get")),
+                       ((mkexp loc
+                           (Pexp_ident (array_function "String" "get"))),
                        [ ("", (expr e1)); ("", (expr e2)) ]))
               | ExStr (loc, s) ->
                   mkexp loc
                     (Pexp_constant
                        (Const_string (string_of_string_token loc s)))
               | ExTry (loc, e, a) ->
-                  mkexp loc (Pexp_try (expr e, match_case a []))
+                  mkexp loc (Pexp_try ((expr e), (match_case a [])))
               | Ast.ExTup (loc, (Ast.ExCom (_, e1, e2))) ->
                   mkexp loc
                     (Pexp_tuple
                        (List.map expr (list_of_expr e1 (list_of_expr e2 []))))
               | Ast.ExTup (loc, _) -> error loc "singleton tuple"
               | ExTyc (loc, e, t) ->
-                  mkexp loc (Pexp_constraint (expr e, Some (ctyp t), None))
+                  mkexp loc
+                    (Pexp_constraint ((expr e), (Some (ctyp t)), None))
               | Ast.ExId (loc, (Ast.IdUid (_, "()"))) ->
-                  mkexp loc (Pexp_construct (lident "()", None, true))
+                  mkexp loc (Pexp_construct ((lident "()"), None, true))
               | Ast.ExId (loc, (Ast.IdLid (_, s))) ->
                   mkexp loc (Pexp_ident (lident s))
               | Ast.ExId (loc, (Ast.IdUid (_, s))) ->
                   mkexp loc
-                    (Pexp_construct (lident (conv_con s), None, true))
+                    (Pexp_construct ((lident (conv_con s)), None, true))
               | ExVrn (loc, s) -> mkexp loc (Pexp_variant (s, None))
               | ExWhi (loc, e1, el) ->
                   let e2 = ExSeq (loc, el)
-                  in mkexp loc (Pexp_while (expr e1, expr e2))
+                  in mkexp loc (Pexp_while ((expr e1), (expr e2)))
               | Ast.ExOpI (loc, i, e) ->
-                  mkexp loc (Pexp_open (long_uident i, expr e))
+                  mkexp loc (Pexp_open ((long_uident i), (expr e)))
               | Ast.ExPkg (loc, (Ast.MeTyc (_, me, pt))) ->
-                  mkexp loc (Pexp_pack (module_expr me, package_type pt))
+                  mkexp loc (Pexp_pack ((module_expr me), (package_type pt)))
               | Ast.ExPkg (loc, _) ->
                   error loc "(module_expr : package_type) expected here"
-              | ExFUN (loc, i, e) -> mkexp loc (Pexp_newtype (i, expr e))
+              | ExFUN (loc, i, e) -> mkexp loc (Pexp_newtype (i, (expr e)))
               | Ast.ExCom (loc, _, _) ->
                   error loc "expr, expr: not allowed here"
               | Ast.ExSem (loc, _, _) ->
@@ -14443,11 +15109,13 @@ module Struct =
                   error (loc_of_expr e) "invalid expr"
             and patt_of_lab _loc lab =
               function
-              | Ast.PaNil _ -> patt (Ast.PaId (_loc, Ast.IdLid (_loc, lab)))
+              | Ast.PaNil _ ->
+                  patt (Ast.PaId (_loc, (Ast.IdLid (_loc, lab))))
               | p -> patt p
             and expr_of_lab _loc lab =
               function
-              | Ast.ExNil _ -> expr (Ast.ExId (_loc, Ast.IdLid (_loc, lab)))
+              | Ast.ExNil _ ->
+                  expr (Ast.ExId (_loc, (Ast.IdLid (_loc, lab))))
               | e -> expr e
             and label_expr =
               function
@@ -14460,7 +15128,7 @@ module Struct =
               | Ast.BiAnd (_, x, y) -> binding x (binding y acc)
               | Ast.BiEq (_loc, p,
                   (Ast.ExTyc (_, e, (Ast.TyPol (_, vs, ty))))) ->
-                  ((patt (Ast.PaTyc (_loc, p, Ast.TyPol (_loc, vs, ty)))),
+                  ((patt (Ast.PaTyc (_loc, p, (Ast.TyPol (_loc, vs, ty))))),
                    (expr e)) :: acc
               | Ast.BiEq (_, p, e) -> ((patt p), (expr e)) :: acc
               | Ast.BiNil _ -> acc
@@ -14474,7 +15142,7 @@ module Struct =
             and when_expr e w =
               match w with
               | Ast.ExNil _ -> expr e
-              | w -> mkexp (loc_of_expr w) (Pexp_when (expr w, expr e))
+              | w -> mkexp (loc_of_expr w) (Pexp_when ((expr w), (expr e)))
             and mklabexp x acc =
               match x with
               | Ast.RbSem (_, x, y) -> mklabexp x (mklabexp y acc)
@@ -14510,13 +15178,13 @@ module Struct =
               | Ast.MtId (loc, i) -> mkmty loc (Pmty_ident (long_uident i))
               | Ast.MtFun (loc, n, nt, mt) ->
                   mkmty loc
-                    (Pmty_functor (n, module_type nt, module_type mt))
+                    (Pmty_functor (n, (module_type nt), (module_type mt)))
               | Ast.MtQuo (loc, _) ->
                   error loc "module type variable not allowed here"
               | Ast.MtSig (loc, sl) ->
                   mkmty loc (Pmty_signature (sig_item sl []))
               | Ast.MtWit (loc, mt, wc) ->
-                  mkmty loc (Pmty_with (module_type mt, mkwithc wc []))
+                  mkmty loc (Pmty_with ((module_type mt), (mkwithc wc [])))
               | Ast.MtAnt (_, _) -> assert false
             and sig_item s l =
               match s with
@@ -14536,22 +15204,22 @@ module Struct =
               | Ast.SgSem (_, sg1, sg2) -> sig_item sg1 (sig_item sg2 l)
               | SgDir (_, _, _) -> l
               | Ast.SgExc (loc, (Ast.TyId (_, (Ast.IdUid (_, s))))) ->
-                  (mksig loc (Psig_exception (conv_con s, []))) :: l
+                  (mksig loc (Psig_exception ((conv_con s), []))) :: l
               | Ast.SgExc (loc,
                   (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, s)))), t))) ->
                   (mksig loc
-                     (Psig_exception (conv_con s,
-                        List.map ctyp (list_of_ctyp t [])))) ::
+                     (Psig_exception ((conv_con s),
+                        (List.map ctyp (list_of_ctyp t []))))) ::
                     l
               | SgExc (_, _) -> assert false
               | SgExt (loc, n, t, sl) ->
                   (mksig loc
-                     (Psig_value (n, mkvalue_desc t (list_of_meta_list sl)))) ::
+                     (Psig_value (n, (mkvalue_desc t (list_of_meta_list sl))))) ::
                     l
               | SgInc (loc, mt) ->
                   (mksig loc (Psig_include (module_type mt))) :: l
               | SgMod (loc, n, mt) ->
-                  (mksig loc (Psig_module (n, module_type mt))) :: l
+                  (mksig loc (Psig_module (n, (module_type mt)))) :: l
               | SgRecMod (loc, mb) ->
                   (mksig loc (Psig_recmodule (module_sig_binding mb []))) ::
                     l
@@ -14566,7 +15234,7 @@ module Struct =
               | SgTyp (loc, tdl) ->
                   (mksig loc (Psig_type (mktype_decl tdl []))) :: l
               | SgVal (loc, n, t) ->
-                  (mksig loc (Psig_value (n, mkvalue_desc t []))) :: l
+                  (mksig loc (Psig_value (n, (mkvalue_desc t [])))) :: l
               | Ast.SgAnt (loc, _) -> error loc "antiquotation in sig_item"
             and module_sig_binding x acc =
               match x with
@@ -14586,17 +15254,18 @@ module Struct =
               | Ast.MeNil loc -> error loc "nil module expression"
               | Ast.MeId (loc, i) -> mkmod loc (Pmod_ident (long_uident i))
               | Ast.MeApp (loc, me1, me2) ->
-                  mkmod loc (Pmod_apply (module_expr me1, module_expr me2))
+                  mkmod loc
+                    (Pmod_apply ((module_expr me1), (module_expr me2)))
               | Ast.MeFun (loc, n, mt, me) ->
                   mkmod loc
-                    (Pmod_functor (n, module_type mt, module_expr me))
+                    (Pmod_functor (n, (module_type mt), (module_expr me)))
               | Ast.MeStr (loc, sl) ->
                   mkmod loc (Pmod_structure (str_item sl []))
               | Ast.MeTyc (loc, me, mt) ->
                   mkmod loc
-                    (Pmod_constraint (module_expr me, module_type mt))
+                    (Pmod_constraint ((module_expr me), (module_type mt)))
               | Ast.MePkg (loc, (Ast.ExTyc (_, e, (Ast.TyPkg (_, pt))))) ->
-                  mkmod loc (Pmod_unpack (expr e, package_type pt))
+                  mkmod loc (Pmod_unpack ((expr e), (package_type pt)))
               | Ast.MePkg (loc, _) ->
                   error loc "(value expr) not supported yet"
               | Ast.MeAnt (loc, _) ->
@@ -14620,55 +15289,58 @@ module Struct =
               | StDir (_, _, _) -> l
               | Ast.StExc (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), Ast.
                   ONone) ->
-                  (mkstr loc (Pstr_exception (conv_con s, []))) :: l
+                  (mkstr loc (Pstr_exception ((conv_con s), []))) :: l
               | Ast.StExc (loc,
                   (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, s)))), t)), Ast.
                   ONone) ->
                   (mkstr loc
-                     (Pstr_exception (conv_con s,
-                        List.map ctyp (list_of_ctyp t [])))) ::
+                     (Pstr_exception ((conv_con s),
+                        (List.map ctyp (list_of_ctyp t []))))) ::
                     l
               | Ast.StExc (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))),
                   (Ast.OSome i)) ->
-                  (mkstr loc (Pstr_exn_rebind (conv_con s, ident i))) :: l
+                  (mkstr loc (Pstr_exn_rebind ((conv_con s), (ident i)))) ::
+                    l
               | StExc (_, _, _) -> assert false
               | StExp (loc, e) -> (mkstr loc (Pstr_eval (expr e))) :: l
               | StExt (loc, n, t, sl) ->
                   (mkstr loc
                      (Pstr_primitive (n,
-                        mkvalue_desc t (list_of_meta_list sl)))) ::
+                        (mkvalue_desc t (list_of_meta_list sl))))) ::
                     l
               | StInc (loc, me) ->
                   (mkstr loc (Pstr_include (module_expr me))) :: l
               | StMod (loc, n, me) ->
-                  (mkstr loc (Pstr_module (n, module_expr me))) :: l
+                  (mkstr loc (Pstr_module (n, (module_expr me)))) :: l
               | StRecMod (loc, mb) ->
                   (mkstr loc (Pstr_recmodule (module_str_binding mb []))) ::
                     l
               | StMty (loc, n, mt) ->
-                  (mkstr loc (Pstr_modtype (n, module_type mt))) :: l
+                  (mkstr loc (Pstr_modtype (n, (module_type mt)))) :: l
               | StOpn (loc, id) ->
                   (mkstr loc (Pstr_open (long_uident id))) :: l
               | StTyp (loc, tdl) ->
                   (mkstr loc (Pstr_type (mktype_decl tdl []))) :: l
               | StVal (loc, rf, bi) ->
-                  (mkstr loc (Pstr_value (mkrf rf, binding bi []))) :: l
+                  (mkstr loc (Pstr_value ((mkrf rf), (binding bi [])))) :: l
               | Ast.StAnt (loc, _) -> error loc "antiquotation in str_item"
             and class_type =
               function
-              | CtCon (loc, Ast.BFalse, id, tl) ->
+              | CtCon (loc, ViNil, id, tl) ->
                   mkcty loc
-                    (Pcty_constr (long_class_ident id,
-                       List.map ctyp (list_of_opt_ctyp tl [])))
+                    (Pcty_constr ((long_class_ident id),
+                       (List.map ctyp (list_of_opt_ctyp tl []))))
               | CtFun (loc, (TyLab (_, lab, t)), ct) ->
-                  mkcty loc (Pcty_fun (lab, ctyp t, class_type ct))
+                  mkcty loc (Pcty_fun (lab, (ctyp t), (class_type ct)))
               | CtFun (loc, (TyOlb (loc1, lab, t)), ct) ->
                   let t =
-                    TyApp (loc1, Ast.TyId (loc1, Ast.IdLid (loc1, "option")),
-                      t)
-                  in mkcty loc (Pcty_fun ("?" ^ lab, ctyp t, class_type ct))
+                    TyApp (loc1,
+                      (Ast.TyId (loc1, (Ast.IdLid (loc1, "option")))), t)
+                  in
+                    mkcty loc
+                      (Pcty_fun (("?" ^ lab), (ctyp t), (class_type ct)))
               | CtFun (loc, t, ct) ->
-                  mkcty loc (Pcty_fun ("", ctyp t, class_type ct))
+                  mkcty loc (Pcty_fun ("", (ctyp t), (class_type ct)))
               | CtSig (loc, t_o, ctfl) ->
                   let t =
                     (match t_o with | Ast.TyNil _ -> Ast.TyAny loc | t -> t) in
@@ -14690,7 +15362,7 @@ module Struct =
                           (List.split (class_parameters t []))))
                   in
                     {
-                      pci_virt = if mb2b vir then Virtual else Concrete;
+                      pci_virt = mkvirtual vir;
                       pci_params = (params, (mkloc loc_params));
                       pci_name = name;
                       pci_expr = class_expr ce;
@@ -14712,7 +15384,7 @@ module Struct =
                           (List.split (class_parameters t []))))
                   in
                     {
-                      pci_virt = if mb2b vir then Virtual else Concrete;
+                      pci_virt = mkvirtual vir;
                       pci_params = (params, (mkloc loc_params));
                       pci_name = name;
                       pci_expr = class_type ct;
@@ -14749,38 +15421,40 @@ module Struct =
               | (CeApp (loc, _, _) as c) ->
                   let (ce, el) = class_expr_fa [] c in
                   let el = List.map label_expr el
-                  in mkpcl loc (Pcl_apply (class_expr ce, el))
-              | CeCon (loc, Ast.BFalse, id, tl) ->
+                  in mkpcl loc (Pcl_apply ((class_expr ce), el))
+              | CeCon (loc, ViNil, id, tl) ->
                   mkpcl loc
-                    (Pcl_constr (long_class_ident id,
-                       List.map ctyp (list_of_opt_ctyp tl [])))
+                    (Pcl_constr ((long_class_ident id),
+                       (List.map ctyp (list_of_opt_ctyp tl []))))
               | CeFun (loc, (PaLab (_, lab, po)), ce) ->
                   mkpcl loc
-                    (Pcl_fun (lab, None, patt_of_lab loc lab po,
-                       class_expr ce))
+                    (Pcl_fun (lab, None, (patt_of_lab loc lab po),
+                       (class_expr ce)))
               | CeFun (loc, (PaOlbi (_, lab, p, e)), ce) ->
                   let lab = paolab lab p
                   in
                     mkpcl loc
-                      (Pcl_fun ("?" ^ lab, Some (expr e), patt p,
-                         class_expr ce))
+                      (Pcl_fun (("?" ^ lab), (Some (expr e)), (patt p),
+                         (class_expr ce)))
               | CeFun (loc, (PaOlb (_, lab, p)), ce) ->
                   let lab = paolab lab p
                   in
                     mkpcl loc
-                      (Pcl_fun ("?" ^ lab, None, patt_of_lab loc lab p,
-                         class_expr ce))
+                      (Pcl_fun (("?" ^ lab), None, (patt_of_lab loc lab p),
+                         (class_expr ce)))
               | CeFun (loc, p, ce) ->
-                  mkpcl loc (Pcl_fun ("", None, patt p, class_expr ce))
+                  mkpcl loc (Pcl_fun ("", None, (patt p), (class_expr ce)))
               | CeLet (loc, rf, bi, ce) ->
-                  mkpcl loc (Pcl_let (mkrf rf, binding bi [], class_expr ce))
+                  mkpcl loc
+                    (Pcl_let ((mkrf rf), (binding bi []), (class_expr ce)))
               | CeStr (loc, po, cfl) ->
                   let p =
                     (match po with | Ast.PaNil _ -> Ast.PaAny loc | p -> p) in
                   let cil = class_str_item cfl []
                   in mkpcl loc (Pcl_structure (((patt p), cil)))
               | CeTyc (loc, ce, ct) ->
-                  mkpcl loc (Pcl_constraint (class_expr ce, class_type ct))
+                  mkpcl loc
+                    (Pcl_constraint ((class_expr ce), (class_type ct)))
               | CeCon (loc, _, _, _) ->
                   error loc "invalid virtual class inside a class expression"
               | CeAnt (_, _) | CeEq (_, _, _) | CeAnd (_, _, _) | CeNil _ ->
@@ -14792,29 +15466,34 @@ module Struct =
                   (Pcf_cstr (((ctyp t1), (ctyp t2), (mkloc loc)))) :: l
               | Ast.CrSem (_, cst1, cst2) ->
                   class_str_item cst1 (class_str_item cst2 l)
-              | CrInh (_, ce, "") ->
-                  (Pcf_inher (Fresh, class_expr ce, None)) :: l
-              | CrInh (_, ce, pb) ->
-                  (Pcf_inher (Fresh, class_expr ce, Some pb)) :: l
+              | CrInh (loc, ov, ce, pb) ->
+                  let opb = if pb = "" then None else Some pb
+                  in
+                    (Pcf_inher ((override_flag loc ov), (class_expr ce), opb)) ::
+                      l
               | CrIni (_, e) -> (Pcf_init (expr e)) :: l
-              | CrMth (loc, s, b, e, t) ->
+              | CrMth (loc, s, ov, pf, e, t) ->
                   let t =
                     (match t with
                      | Ast.TyNil _ -> None
                      | t -> Some (mkpolytype (ctyp t))) in
-                  let e = mkexp loc (Pexp_poly (expr e, t))
+                  let e = mkexp loc (Pexp_poly ((expr e), t))
                   in
-                    (Pcf_meth ((s, (mkprivate b), Fresh, e, (mkloc loc)))) ::
+                    (Pcf_meth
+                       ((s, (mkprivate pf), (override_flag loc ov), e,
+                         (mkloc loc)))) ::
                       l
-              | CrVal (loc, s, b, e) ->
-                  (Pcf_val ((s, (mkmutable b), Fresh, (expr e), (mkloc loc)))) ::
+              | CrVal (loc, s, ov, mf, e) ->
+                  (Pcf_val
+                     ((s, (mkmutable mf), (override_flag loc ov), (expr e),
+                       (mkloc loc)))) ::
                     l
-              | CrVir (loc, s, b, t) ->
+              | CrVir (loc, s, pf, t) ->
                   (Pcf_virt
-                     ((s, (mkprivate b), (mkpolytype (ctyp t)), (mkloc loc)))) ::
+                     ((s, (mkprivate pf), (mkpolytype (ctyp t)), (mkloc loc)))) ::
                     l
-              | CrVvr (loc, s, b, t) ->
-                  (Pcf_valvirt ((s, (mkmutable b), (ctyp t), (mkloc loc)))) ::
+              | CrVvr (loc, s, mf, t) ->
+                  (Pcf_valvirt ((s, (mkmutable mf), (ctyp t), (mkloc loc)))) ::
                     l
               | CrAnt (_, _) -> assert false
               
@@ -14833,7 +15512,7 @@ module Struct =
               
             let phrase =
               function
-              | StDir (_, d, dp) -> Ptop_dir (d, directive dp)
+              | StDir (_, d, dp) -> Ptop_dir (d, (directive dp))
               | si -> Ptop_def (str_item si)
               
           end
@@ -15115,7 +15794,7 @@ module Struct =
                   | Dynlink.Error e ->
                       raise
                         (Error ("Camlp4's dynamic loader initialization",
-                           Dynlink.error_message e)))
+                           (Dynlink.error_message e))))
                else ();
                let fname =
                  try find_in_path _path file
@@ -15126,7 +15805,7 @@ module Struct =
                  try Dynlink.loadfile fname
                  with
                  | Dynlink.Error e ->
-                     raise (Error (fname, Dynlink.error_message e)))
+                     raise (Error (fname, (Dynlink.error_message e))))
           
         let is_native = Dynlink.is_native
           
@@ -15269,9 +15948,9 @@ module Struct =
                       Ast.ExLab (_, s, (Ast.ExNil _)) |
                       Ast.ExOlb (_, s, (Ast.ExNil _)) ->
                       if S.mem s env then o else {< free = f s free; >}
-                  | Ast.ExLet (_, Ast.BFalse, bi, e) ->
+                  | Ast.ExLet (_, Ast.ReNil, bi, e) ->
                       (((o#add_binding bi)#expr e)#set_env env)#binding bi
-                  | Ast.ExLet (_, Ast.BTrue, bi, e) ->
+                  | Ast.ExLet (_, Ast.ReRecursive, bi, e) ->
                       (((o#add_binding bi)#expr e)#binding bi)#set_env env
                   | Ast.ExFor (_, s, e1, e2, _, e3) ->
                       ((((o#expr e1)#expr e2)#add_atom s)#expr e3)#set_env
@@ -15290,9 +15969,9 @@ module Struct =
                 method str_item =
                   function
                   | Ast.StExt (_, s, t, _) -> (o#ctyp t)#add_atom s
-                  | Ast.StVal (_, Ast.BFalse, bi) ->
+                  | Ast.StVal (_, Ast.ReNil, bi) ->
                       (o#binding bi)#add_binding bi
-                  | Ast.StVal (_, Ast.BTrue, bi) ->
+                  | Ast.StVal (_, Ast.ReRecursive, bi) ->
                       (o#add_binding bi)#binding bi
                   | st -> super#str_item st
                   
@@ -15300,10 +15979,10 @@ module Struct =
                   function
                   | Ast.CeFun (_, p, ce) ->
                       ((o#add_patt p)#class_expr ce)#set_env env
-                  | Ast.CeLet (_, Ast.BFalse, bi, ce) ->
+                  | Ast.CeLet (_, Ast.ReNil, bi, ce) ->
                       (((o#binding bi)#add_binding bi)#class_expr ce)#set_env
                         env
-                  | Ast.CeLet (_, Ast.BTrue, bi, ce) ->
+                  | Ast.CeLet (_, Ast.ReRecursive, bi, ce) ->
                       (((o#add_binding bi)#binding bi)#class_expr ce)#set_env
                         env
                   | Ast.CeStr (_, p, cst) ->
@@ -15312,9 +15991,10 @@ module Struct =
                   
                 method class_str_item =
                   function
-                  | (Ast.CrInh (_, _, "") as cst) -> super#class_str_item cst
-                  | Ast.CrInh (_, ce, s) -> (o#class_expr ce)#add_atom s
-                  | Ast.CrVal (_, s, _, e) -> (o#expr e)#add_atom s
+                  | (Ast.CrInh (_, _, _, "") as cst) ->
+                      super#class_str_item cst
+                  | Ast.CrInh (_, _, ce, s) -> (o#class_expr ce)#add_atom s
+                  | Ast.CrVal (_, s, _, _, e) -> (o#expr e)#add_atom s
                   | Ast.CrVvr (_, s, _, t) -> (o#ctyp t)#add_atom s
                   | cst -> super#class_str_item cst
                   
@@ -15335,99 +16015,6 @@ module Struct =
       
     module Grammar =
       struct
-        module Context =
-          struct
-            module type S =
-              sig
-                module Token : Sig.Token
-                  
-                open Token
-                  
-                type t
-                
-                val call_with_ctx :
-                  (Token.t * Loc.t) Stream.t -> (t -> 'a) -> 'a
-                  
-                val loc_bp : t -> Loc.t
-                  
-                val loc_ep : t -> Loc.t
-                  
-                val stream : t -> (Token.t * Loc.t) Stream.t
-                  
-                val peek_nth : t -> int -> (Token.t * Loc.t) option
-                  
-                val njunk : t -> int -> unit
-                  
-                val junk : (Token.t * Loc.t) Stream.t -> unit
-                  
-                val bp : (Token.t * Loc.t) Stream.t -> Loc.t
-                  
-              end
-              
-            module Make (Token : Sig.Token) : S with module Token = Token =
-              struct
-                module Token = Token
-                  
-                open Token
-                  
-                type t =
-                  { mutable strm : (Token.t * Loc.t) Stream.t;
-                    mutable loc : Loc.t
-                  }
-                
-                let loc_bp c =
-                  match Stream.peek c.strm with
-                  | None -> Loc.ghost
-                  | Some ((_, loc)) -> loc
-                  
-                let loc_ep c = c.loc
-                  
-                let set_loc c =
-                  match Stream.peek c.strm with
-                  | Some ((_, loc)) -> c.loc <- loc
-                  | None -> ()
-                  
-                let mk strm =
-                  match Stream.peek strm with
-                  | Some ((_, loc)) -> { strm = strm; loc = loc; }
-                  | None -> { strm = strm; loc = Loc.ghost; }
-                  
-                let stream c = c.strm
-                  
-                let peek_nth c n =
-                  let list = Stream.npeek n c.strm in
-                  let rec loop list n =
-                    match (list, n) with
-                    | ((((_, loc) as x)) :: _, 1) -> (c.loc <- loc; Some x)
-                    | (_ :: l, n) -> loop l (n - 1)
-                    | ([], _) -> None
-                  in loop list n
-                  
-                let njunk c n =
-                  (for i = 1 to n do Stream.junk c.strm done; set_loc c)
-                  
-                let streams = ref []
-                  
-                let mk strm =
-                  let c = mk strm in
-                  let () = streams := (strm, c) :: !streams in c
-                  
-                let junk strm =
-                  (set_loc (List.assq strm !streams); Stream.junk strm)
-                  
-                let bp strm = loc_bp (List.assq strm !streams)
-                  
-                let call_with_ctx strm f =
-                  let streams_v = !streams in
-                  let r =
-                    try f (mk strm)
-                    with | exc -> (streams := streams_v; raise exc)
-                  in (streams := streams_v; r)
-                  
-              end
-              
-          end
-          
         module Structure =
           struct
             open Sig.Grammar
@@ -15441,8 +16028,6 @@ module Struct =
                 module Lexer : Sig.Lexer with module Loc = Loc
                   and module Token = Token
                   
-                module Context : Context.S with module Token = Token
-                  
                 module Action : Sig.Grammar.Action
                   
                 type gram =
@@ -15453,8 +16038,11 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                type efun =
-                  Context.t -> (Token.t * Loc.t) Stream.t -> Action.t
+                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                
+                type token_stream = (Token.t * token_info) Stream.t
+                
+                type efun = token_stream -> Action.t
                 
                 type token_pattern = ((Token.t -> bool) * string)
                 
@@ -15466,7 +16054,7 @@ module Struct =
                   }
                   and desc =
                   | Dlevels of level list
-                  | Dparser of ((Token.t * Loc.t) Stream.t -> Action.t)
+                  | Dparser of (token_stream -> Action.t)
                   and level =
                   { assoc : assoc; lname : string option; lsuffix : tree;
                     lprefix : tree
@@ -15480,6 +16068,7 @@ module Struct =
                   | Slist1 of symbol
                   | Slist1sep of symbol * symbol
                   | Sopt of symbol
+                  | Stry of symbol
                   | Sself
                   | Snext
                   | Stoken of token_pattern
@@ -15551,10 +16140,11 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                module Context = Context.Make(Token)
-                  
-                type efun =
-                  Context.t -> (Token.t * Loc.t) Stream.t -> Action.t
+                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                
+                type token_stream = (Token.t * token_info) Stream.t
+                
+                type efun = token_stream -> Action.t
                 
                 type token_pattern = ((Token.t -> bool) * string)
                 
@@ -15566,7 +16156,7 @@ module Struct =
                   }
                   and desc =
                   | Dlevels of level list
-                  | Dparser of ((Token.t * Loc.t) Stream.t -> Action.t)
+                  | Dparser of (token_stream -> Action.t)
                   and level =
                   { assoc : assoc; lname : string option; lsuffix : tree;
                     lprefix : tree
@@ -15580,6 +16170,7 @@ module Struct =
                   | Slist1 of symbol
                   | Slist1sep of symbol * symbol
                   | Sopt of symbol
+                  | Stry of symbol
                   | Sself
                   | Snext
                   | Stoken of token_pattern
@@ -15614,6 +16205,8 @@ module Struct =
                         ('a Stream.t -> unit) -> 'a Stream.t -> 'c
                 
                 let get_filter g = g.gfilter
+                  
+                let token_location r = r.cur_loc
                   
                 type 'a not_filtered = 'a
                 
@@ -15694,8 +16287,8 @@ module Struct =
                         (match symb with
                          | Snterm _ | Snterml (_, _) | Slist0 _ |
                              Slist0sep (_, _) | Slist1 _ | Slist1sep (_, _) |
-                             Sopt _ | Stoken _ | Stree _ | Skeyword _ when
-                             symb == prev_symb -> Some symb
+                             Sopt _ | Stry _ | Stoken _ | Stree _ |
+                             Skeyword _ when symb == prev_symb -> Some symb
                          | Slist0 symb ->
                              (match search_symbol symb with
                               | Some symb -> Some (Slist0 symb)
@@ -15722,6 +16315,10 @@ module Struct =
                              (match search_symbol symb with
                               | Some symb -> Some (Sopt symb)
                               | None -> None)
+                         | Stry symb ->
+                             (match search_symbol symb with
+                              | Some symb -> Some (Stry symb)
+                              | None -> None)
                          | Stree t ->
                              (match search_tree t with
                               | Some t -> Some (Stree t)
@@ -15740,8 +16337,52 @@ module Struct =
               struct
                 open Structure
                   
-                let empty_entry ename _ _ _ =
+                let empty_entry ename _ =
                   raise (Stream.Error ("entry [" ^ (ename ^ "] is empty")))
+                  
+                let rec stream_map f (__strm : _ Stream.t) =
+                  match Stream.peek __strm with
+                  | Some x ->
+                      (Stream.junk __strm;
+                       let strm = __strm
+                       in
+                         Stream.lcons (fun _ -> f x)
+                           (Stream.slazy (fun _ -> stream_map f strm)))
+                  | _ -> Stream.sempty
+                  
+                let keep_prev_loc strm =
+                  match Stream.peek strm with
+                  | None -> Stream.sempty
+                  | Some ((_, init_loc)) ->
+                      let rec go prev_loc (__strm : _ Stream.t) =
+                        (match Stream.peek __strm with
+                         | Some ((tok, cur_loc)) ->
+                             (Stream.junk __strm;
+                              let strm = __strm
+                              in
+                                Stream.lcons
+                                  (fun _ ->
+                                     (tok,
+                                      {
+                                        prev_loc = prev_loc;
+                                        cur_loc = cur_loc;
+                                      }))
+                                  (Stream.slazy (fun _ -> go cur_loc strm)))
+                         | _ -> Stream.sempty)
+                      in go init_loc strm
+                  
+                let drop_prev_loc strm =
+                  stream_map (fun (tok, r) -> (tok, (r.cur_loc))) strm
+                  
+                let get_cur_loc strm =
+                  match Stream.peek strm with
+                  | Some ((_, r)) -> r.cur_loc
+                  | None -> Loc.ghost
+                  
+                let get_prev_loc strm =
+                  match Stream.peek strm with
+                  | Some ((_, r)) -> r.prev_loc
+                  | None -> Loc.ghost
                   
                 let is_level_labelled n lev =
                   match lev.lname with | Some n1 -> n = n1 | None -> false
@@ -15778,13 +16419,12 @@ module Struct =
                     | (Sself, Snterm e2) -> entry.ename = e2.ename
                     | (Snterml (e1, l1), Snterml (e2, l2)) ->
                         (e1.ename = e2.ename) && (l1 = l2)
-                    | (Slist0 s1, Slist0 s2) -> eq_symbols s1 s2
-                    | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) ->
+                    | (Slist0 s1, Slist0 s2) | (Slist1 s1, Slist1 s2) |
+                        (Sopt s1, Sopt s2) | (Stry s1, Stry s2) ->
+                        eq_symbols s1 s2
+                    | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) |
+                        (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
                         (eq_symbols s1 s2) && (eq_symbols sep1 sep2)
-                    | (Slist1 s1, Slist1 s2) -> eq_symbols s1 s2
-                    | (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
-                        (eq_symbols s1 s2) && (eq_symbols sep1 sep2)
-                    | (Sopt s1, Sopt s2) -> eq_symbols s1 s2
                     | (Stree t1, Stree t2) -> eq_trees t1 t2
                     | (Stoken ((_, s1)), Stoken ((_, s2))) ->
                         eq_Stoken_ids s1 s2
@@ -15805,13 +16445,12 @@ module Struct =
                   | (Snterm e1, Snterm e2) -> e1 == e2
                   | (Snterml (e1, l1), Snterml (e2, l2)) ->
                       (e1 == e2) && (l1 = l2)
-                  | (Slist0 s1, Slist0 s2) -> eq_symbol s1 s2
-                  | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) ->
+                  | (Slist0 s1, Slist0 s2) | (Slist1 s1, Slist1 s2) |
+                      (Sopt s1, Sopt s2) | (Stry s1, Stry s2) ->
+                      eq_symbol s1 s2
+                  | (Slist0sep (s1, sep1), Slist0sep (s2, sep2)) |
+                      (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
                       (eq_symbol s1 s2) && (eq_symbol sep1 sep2)
-                  | (Slist1 s1, Slist1 s2) -> eq_symbol s1 s2
-                  | (Slist1sep (s1, sep1), Slist1sep (s2, sep2)) ->
-                      (eq_symbol s1 s2) && (eq_symbol sep1 sep2)
-                  | (Sopt s1, Sopt s2) -> eq_symbol s1 s2
                   | (Stree _, Stree _) -> false
                   | (Stoken ((_, s1)), Stoken ((_, s2))) ->
                       eq_Stoken_ids s1 s2
@@ -15908,6 +16547,7 @@ module Struct =
                       fprintf ppf "LIST1 %a SEP %a" print_symbol1 s
                         print_symbol1 t
                   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
+                  | Stry s -> fprintf ppf "TRY %a" print_symbol1 s
                   | Snterml (e, l) -> fprintf ppf "%s@ LEVEL@ %S" e.ename l
                   | (Snterm _ | Snext | Sself | Stree _ | Stoken _ |
                        Skeyword _
@@ -15940,7 +16580,7 @@ module Struct =
                       print_level ppf pp_print_space (flatten_tree t)
                   | (Smeta (_, _, _) | Snterml (_, _) | Slist0 _ |
                        Slist0sep (_, _) | Slist1 _ | Slist1sep (_, _) |
-                       Sopt _
+                       Sopt _ | Stry _
                      as s) -> fprintf ppf "(%a)" print_symbol s
                 and print_rule ppf symbols =
                   (fprintf ppf "@[<hov 0>";
@@ -16009,7 +16649,8 @@ module Struct =
                     | DeadEnd -> List.rev acc
                     | LocAct (_, _) -> List.rev acc
                     | Node { node = n; brother = b; son = s } ->
-                        get_brothers ((Bro (n, get_brothers [] s)) :: acc) b
+                        get_brothers ((Bro (n, (get_brothers [] s))) :: acc)
+                          b
                   and print_brothers ppf brothers =
                     if brothers = []
                     then fprintf ppf "@ []"
@@ -16049,6 +16690,7 @@ module Struct =
                       fprintf ppf "LIST1 %a SEP %a" print_symbol1 s
                         print_symbol1 t
                   | Sopt s -> fprintf ppf "OPT %a" print_symbol1 s
+                  | Stry s -> fprintf ppf "TRY %a" print_symbol1 s
                   | Snterml (e, l) -> fprintf ppf "%s@ LEVEL@ %S" e.ename l
                   | (Snterm _ | Snext | Sself | Stree _ | Stoken _ |
                        Skeyword _
@@ -16080,7 +16722,7 @@ module Struct =
                   | Stree t -> print_tree ppf t
                   | (Smeta (_, _, _) | Snterml (_, _) | Slist0 _ |
                        Slist0sep (_, _) | Slist1 _ | Slist1sep (_, _) |
-                       Sopt _
+                       Sopt _ | Stry _
                      as s) -> fprintf ppf "(%a)" print_symbol s
                 and print_rule ppf symbols =
                   (fprintf ppf "@[<hov 0>";
@@ -16160,11 +16802,8 @@ module Struct =
                   
                 let rec name_of_symbol_failed entry =
                   function
-                  | Slist0 s -> name_of_symbol_failed entry s
-                  | Slist0sep (s, _) -> name_of_symbol_failed entry s
-                  | Slist1 s -> name_of_symbol_failed entry s
-                  | Slist1sep (s, _) -> name_of_symbol_failed entry s
-                  | Sopt s -> name_of_symbol_failed entry s
+                  | Slist0 s | Slist0sep (s, _) | Slist1 s | Slist1sep (s, _)
+                      | Sopt s | Stry s -> name_of_symbol_failed entry s
                   | Stree t -> name_of_tree_failed entry t
                   | s -> name_of_symbol entry s
                 and name_of_tree_failed entry =
@@ -16237,7 +16876,7 @@ module Struct =
                          | _ ->
                              let txt1 = name_of_symbol_failed entry sep
                              in txt1 ^ (" or " ^ (txt ^ " expected")))
-                    | Sopt _ | Stree _ -> txt ^ " expected"
+                    | Stry _ | Sopt _ | Stree _ -> txt ^ " expected"
                     | _ ->
                         txt ^
                           (" expected after " ^
@@ -16288,20 +16927,61 @@ module Struct =
                   
                 open Sig.Grammar
                   
+                module StreamOrig = Stream
+                  
+                let njunk strm n = for i = 1 to n do Stream.junk strm done
+                  
+                let loc_bp = Tools.get_cur_loc
+                  
+                let loc_ep = Tools.get_prev_loc
+                  
+                let drop_prev_loc = Tools.drop_prev_loc
+                  
+                let add_loc bp parse_fun strm =
+                  let x = parse_fun strm in
+                  let ep = loc_ep strm in
+                  let loc = Loc.merge bp ep in (x, loc)
+                  
+                let stream_peek_nth strm n =
+                  let rec loop i =
+                    function
+                    | x :: xs -> if i = 1 then Some x else loop (i - 1) xs
+                    | [] -> None
+                  in loop n (Stream.npeek n strm)
+                  
                 module Stream =
                   struct
-                    include Stream
+                    type 'a t = 'a StreamOrig.t
+                    
+                    exception Failure = StreamOrig.Failure
                       
-                    let junk strm = Context.junk strm
+                    exception Error = StreamOrig.Error
                       
-                    let count strm = Context.bp strm
+                    let peek = StreamOrig.peek
+                      
+                    let junk = StreamOrig.junk
+                      
+                    let dup strm =
+                      let peek_nth n =
+                        let rec loop n =
+                          function
+                          | [] -> None
+                          | [ x ] -> if n = 0 then Some x else None
+                          | _ :: l -> loop (n - 1) l
+                        in loop n (Stream.npeek (n + 1) strm)
+                      in Stream.from peek_nth
                       
                   end
                   
-                let add_loc c bp parse_fun strm =
-                  let x = parse_fun c strm in
-                  let ep = Context.loc_ep c in
-                  let loc = Loc.merge bp ep in (x, loc)
+                let try_parser ps strm =
+                  let strm' = Stream.dup strm in
+                  let r =
+                    try ps strm'
+                    with
+                    | Stream.Error _ | Loc.Exc_located (_, (Stream.Error _))
+                        -> raise Stream.Failure
+                    | exc -> raise exc
+                  in (njunk strm (StreamOrig.count strm'); r)
                   
                 let level_number entry lab =
                   let rec lookup levn =
@@ -16324,7 +17004,7 @@ module Struct =
                   function
                   | Sself | Snext -> Snterm entry
                   | Snterml (e, _) -> Snterm e
-                  | Slist1sep (s, sep) -> Slist1sep (top_symb entry s, sep)
+                  | Slist1sep (s, sep) -> Slist1sep ((top_symb entry s), sep)
                   | _ -> raise Stream.Failure
                   
                 let top_tree entry =
@@ -16342,9 +17022,8 @@ module Struct =
                   | Snterml (e, _) -> e
                   | _ -> raise Stream.Failure
                   
-                let continue entry loc a s c son p1 (__strm : _ Stream.t) =
-                  let a =
-                    (entry_of_symb entry s).econtinue 0 loc a c __strm in
+                let continue entry loc a s son p1 (__strm : _ Stream.t) =
+                  let a = (entry_of_symb entry s).econtinue 0 loc a __strm in
                   let act =
                     try p1 __strm
                     with
@@ -16353,26 +17032,26 @@ module Struct =
                           (Stream.Error (Failed.tree_failed entry a s son))
                   in Action.mk (fun _ -> Action.getf act a)
                   
-                let skip_if_empty c bp _ =
-                  if (Context.loc_bp c) = bp
+                let skip_if_empty bp strm =
+                  if (loc_bp strm) = bp
                   then Action.mk (fun _ -> raise Stream.Failure)
                   else raise Stream.Failure
                   
-                let do_recover parser_of_tree entry nlevn alevn loc a s c son
+                let do_recover parser_of_tree entry nlevn alevn loc a s son
                                (__strm : _ Stream.t) =
                   try
-                    parser_of_tree entry nlevn alevn (top_tree entry son) c
+                    parser_of_tree entry nlevn alevn (top_tree entry son)
                       __strm
                   with
                   | Stream.Failure ->
-                      (try skip_if_empty c loc __strm
+                      (try skip_if_empty loc __strm
                        with
                        | Stream.Failure ->
-                           continue entry loc a s c son
-                             (parser_of_tree entry nlevn alevn son c) __strm)
+                           continue entry loc a s son
+                             (parser_of_tree entry nlevn alevn son) __strm)
                   
-                let recover parser_of_tree entry nlevn alevn loc a s c son
-                            strm =
+                let recover parser_of_tree entry nlevn alevn loc a s son strm
+                            =
                   if !strict_parsing
                   then
                     raise (Stream.Error (Failed.tree_failed entry a s son))
@@ -16390,33 +17069,33 @@ module Struct =
                              Format.eprintf "\n%s%a@." msg Loc.print loc))
                        else ()
                      in
-                       do_recover parser_of_tree entry nlevn alevn loc a s c
+                       do_recover parser_of_tree entry nlevn alevn loc a s
                          son strm)
                   
                 let rec parser_of_tree entry nlevn alevn =
                   function
                   | DeadEnd ->
-                      (fun _ (__strm : _ Stream.t) -> raise Stream.Failure)
-                  | LocAct (act, _) -> (fun _ (__strm : _ Stream.t) -> act)
+                      (fun (__strm : _ Stream.t) -> raise Stream.Failure)
+                  | LocAct (act, _) -> (fun (__strm : _ Stream.t) -> act)
                   | Node
                       {
                         node = Sself;
                         son = LocAct (act, _);
                         brother = DeadEnd
                       } ->
-                      (fun c (__strm : _ Stream.t) ->
-                         let a = entry.estart alevn c __strm
+                      (fun (__strm : _ Stream.t) ->
+                         let a = entry.estart alevn __strm
                          in Action.getf act a)
                   | Node { node = Sself; son = LocAct (act, _); brother = bro
                       } ->
                       let p2 = parser_of_tree entry nlevn alevn bro
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           match try Some (entry.estart alevn c __strm)
+                        (fun (__strm : _ Stream.t) ->
+                           match try Some (entry.estart alevn __strm)
                                  with | Stream.Failure -> None
                            with
                            | Some a -> Action.getf act a
-                           | _ -> p2 c __strm)
+                           | _ -> p2 __strm)
                   | Node { node = s; son = son; brother = DeadEnd } ->
                       let tokl =
                         (match s with
@@ -16430,11 +17109,12 @@ module Struct =
                              let p1 = parser_of_tree entry nlevn alevn son in
                              let p1 = parser_cont p1 entry nlevn alevn s son
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm in
-                                  let a = ps c __strm in
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm in
+                                  let a = ps __strm in
                                   let act =
-                                    try p1 c bp a __strm
+                                    try p1 bp a __strm
                                     with
                                     | Stream.Failure ->
                                         raise (Stream.Error "")
@@ -16459,20 +17139,21 @@ module Struct =
                                parser_cont p1 entry nlevn alevn s son in
                              let p2 = parser_of_tree entry nlevn alevn bro
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm
                                   in
-                                    match try Some (ps c __strm)
+                                    match try Some (ps __strm)
                                           with | Stream.Failure -> None
                                     with
                                     | Some a ->
                                         let act =
-                                          (try p1 c bp a __strm
+                                          (try p1 bp a __strm
                                            with
                                            | Stream.Failure ->
                                                raise (Stream.Error ""))
                                         in Action.getf act a
-                                    | _ -> p2 c __strm)
+                                    | _ -> p2 __strm)
                          | Some ((tokl, last_tok, son)) ->
                              let p1 = parser_of_tree entry nlevn alevn son in
                              let p1 =
@@ -16480,18 +17161,18 @@ module Struct =
                              let p1 = parser_of_token_list p1 tokl in
                              let p2 = parser_of_tree entry nlevn alevn bro
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  try p1 c __strm
-                                  with | Stream.Failure -> p2 c __strm))
+                               (fun (__strm : _ Stream.t) ->
+                                  try p1 __strm
+                                  with | Stream.Failure -> p2 __strm))
                 and
-                  parser_cont p1 entry nlevn alevn s son c loc a
+                  parser_cont p1 entry nlevn alevn s son loc a
                               (__strm : _ Stream.t) =
-                  try p1 c __strm
+                  try p1 __strm
                   with
                   | Stream.Failure ->
                       (try
-                         recover parser_of_tree entry nlevn alevn loc a s c
-                           son __strm
+                         recover parser_of_tree entry nlevn alevn loc a s son
+                           __strm
                        with
                        | Stream.Failure ->
                            raise
@@ -16502,63 +17183,65 @@ module Struct =
                     | Stoken ((tematch, _)) :: tokl ->
                         (match tokl with
                          | [] ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when tematch tok ->
-                                    (Context.njunk c n; Action.mk tok)
+                                    (njunk strm n; Action.mk tok)
                                 | _ -> raise Stream.Failure)
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm in
-                                  let a = ps c __strm in
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm in
+                                  let a = ps __strm in
                                   let act =
-                                    try p1 c bp a __strm
+                                    try p1 bp a __strm
                                     with
                                     | Stream.Failure ->
                                         raise (Stream.Error "")
                                   in Action.getf act a)
                          | _ ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when tematch tok -> tok
                                 | _ -> raise Stream.Failure) in
                              let p1 = loop (n + 1) tokl
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let tok = ps c __strm in
+                               (fun (__strm : _ Stream.t) ->
+                                  let tok = ps __strm in
                                   let s = __strm in
-                                  let act = p1 c s in Action.getf act tok))
+                                  let act = p1 s in Action.getf act tok))
                     | Skeyword kwd :: tokl ->
                         (match tokl with
                          | [] ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when
                                     Token.match_keyword kwd tok ->
-                                    (Context.njunk c n; Action.mk tok)
+                                    (njunk strm n; Action.mk tok)
                                 | _ -> raise Stream.Failure)
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let bp = Stream.count __strm in
-                                  let a = ps c __strm in
+                               (fun strm ->
+                                  let bp = loc_bp strm in
+                                  let (__strm : _ Stream.t) = strm in
+                                  let a = ps __strm in
                                   let act =
-                                    try p1 c bp a __strm
+                                    try p1 bp a __strm
                                     with
                                     | Stream.Failure ->
                                         raise (Stream.Error "")
                                   in Action.getf act a)
                          | _ ->
-                             let ps c _ =
-                               (match Context.peek_nth c n with
+                             let ps strm =
+                               (match stream_peek_nth strm n with
                                 | Some ((tok, _)) when
                                     Token.match_keyword kwd tok -> tok
                                 | _ -> raise Stream.Failure) in
                              let p1 = loop (n + 1) tokl
                              in
-                               (fun c (__strm : _ Stream.t) ->
-                                  let tok = ps c __strm in
+                               (fun (__strm : _ Stream.t) ->
+                                  let tok = ps __strm in
                                   let s = __strm in
-                                  let act = p1 c s in Action.getf act tok))
+                                  let act = p1 s in Action.getf act tok))
                     | _ -> invalid_arg "parser_of_token_list"
                   in loop 1 tokl
                 and parser_of_symbol entry nlevn =
@@ -16567,134 +17250,133 @@ module Struct =
                       let act = Obj.magic act entry symbl in
                       let pl = List.map (parser_of_symbol entry nlevn) symbl
                       in
-                        (fun c ->
-                           Obj.magic
-                             (List.fold_left
-                                (fun act p -> Obj.magic act (p c)) act pl))
+                        Obj.magic
+                          (List.fold_left (fun act p -> Obj.magic act p) act
+                             pl)
                   | Slist0 s ->
                       let ps = parser_of_symbol entry nlevn s in
-                      let rec loop c al (__strm : _ Stream.t) =
-                        (match try Some (ps c __strm)
+                      let rec loop al (__strm : _ Stream.t) =
+                        (match try Some (ps __strm)
                                with | Stream.Failure -> None
                          with
-                         | Some a -> loop c (a :: al) __strm
+                         | Some a -> loop (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let a = loop c [] __strm in Action.mk (List.rev a))
+                        (fun (__strm : _ Stream.t) ->
+                           let a = loop [] __strm in Action.mk (List.rev a))
                   | Slist0sep (symb, sep) ->
                       let ps = parser_of_symbol entry nlevn symb in
                       let pt = parser_of_symbol entry nlevn sep in
-                      let rec kont c al (__strm : _ Stream.t) =
-                        (match try Some (pt c __strm)
+                      let rec kont al (__strm : _ Stream.t) =
+                        (match try Some (pt __strm)
                                with | Stream.Failure -> None
                          with
                          | Some v ->
                              let a =
-                               (try ps c __strm
+                               (try ps __strm
                                 with
                                 | Stream.Failure ->
                                     raise
                                       (Stream.Error
                                          (Failed.symb_failed entry v sep symb)))
-                             in kont c (a :: al) __strm
+                             in kont (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           match try Some (ps c __strm)
+                        (fun (__strm : _ Stream.t) ->
+                           match try Some (ps __strm)
                                  with | Stream.Failure -> None
                            with
                            | Some a ->
                                let s = __strm
-                               in Action.mk (List.rev (kont c [ a ] s))
+                               in Action.mk (List.rev (kont [ a ] s))
                            | _ -> Action.mk [])
                   | Slist1 s ->
                       let ps = parser_of_symbol entry nlevn s in
-                      let rec loop c al (__strm : _ Stream.t) =
-                        (match try Some (ps c __strm)
+                      let rec loop al (__strm : _ Stream.t) =
+                        (match try Some (ps __strm)
                                with | Stream.Failure -> None
                          with
-                         | Some a -> loop c (a :: al) __strm
+                         | Some a -> loop (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let a = ps c __strm in
+                        (fun (__strm : _ Stream.t) ->
+                           let a = ps __strm in
                            let s = __strm
-                           in Action.mk (List.rev (loop c [ a ] s)))
+                           in Action.mk (List.rev (loop [ a ] s)))
                   | Slist1sep (symb, sep) ->
                       let ps = parser_of_symbol entry nlevn symb in
                       let pt = parser_of_symbol entry nlevn sep in
-                      let rec kont c al (__strm : _ Stream.t) =
-                        (match try Some (pt c __strm)
+                      let rec kont al (__strm : _ Stream.t) =
+                        (match try Some (pt __strm)
                                with | Stream.Failure -> None
                          with
                          | Some v ->
                              let a =
-                               (try ps c __strm
+                               (try ps __strm
                                 with
                                 | Stream.Failure ->
-                                    (try parse_top_symb' entry symb c __strm
+                                    (try parse_top_symb entry symb __strm
                                      with
                                      | Stream.Failure ->
                                          raise
                                            (Stream.Error
                                               (Failed.symb_failed entry v sep
                                                  symb))))
-                             in kont c (a :: al) __strm
+                             in kont (a :: al) __strm
                          | _ -> al)
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let a = ps c __strm in
+                        (fun (__strm : _ Stream.t) ->
+                           let a = ps __strm in
                            let s = __strm
-                           in Action.mk (List.rev (kont c [ a ] s)))
+                           in Action.mk (List.rev (kont [ a ] s)))
                   | Sopt s ->
                       let ps = parser_of_symbol entry nlevn s
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           match try Some (ps c __strm)
+                        (fun (__strm : _ Stream.t) ->
+                           match try Some (ps __strm)
                                  with | Stream.Failure -> None
                            with
                            | Some a -> Action.mk (Some a)
                            | _ -> Action.mk None)
+                  | Stry s ->
+                      let ps = parser_of_symbol entry nlevn s
+                      in try_parser ps
                   | Stree t ->
                       let pt = parser_of_tree entry 1 0 t
                       in
-                        (fun c (__strm : _ Stream.t) ->
-                           let bp = Stream.count __strm in
-                           let (act, loc) = add_loc c bp pt __strm
+                        (fun strm ->
+                           let bp = loc_bp strm in
+                           let (__strm : _ Stream.t) = strm in
+                           let (act, loc) = add_loc bp pt __strm
                            in Action.getf act loc)
                   | Snterm e ->
-                      (fun c (__strm : _ Stream.t) -> e.estart 0 c __strm)
+                      (fun (__strm : _ Stream.t) -> e.estart 0 __strm)
                   | Snterml (e, l) ->
-                      (fun c (__strm : _ Stream.t) ->
-                         e.estart (level_number e l) c __strm)
+                      (fun (__strm : _ Stream.t) ->
+                         e.estart (level_number e l) __strm)
                   | Sself ->
-                      (fun c (__strm : _ Stream.t) -> entry.estart 0 c __strm)
+                      (fun (__strm : _ Stream.t) -> entry.estart 0 __strm)
                   | Snext ->
-                      (fun c (__strm : _ Stream.t) ->
-                         entry.estart nlevn c __strm)
+                      (fun (__strm : _ Stream.t) -> entry.estart nlevn __strm)
                   | Skeyword kwd ->
-                      (fun _ (__strm : _ Stream.t) ->
+                      (fun (__strm : _ Stream.t) ->
                          match Stream.peek __strm with
                          | Some ((tok, _)) when Token.match_keyword kwd tok
                              -> (Stream.junk __strm; Action.mk tok)
                          | _ -> raise Stream.Failure)
                   | Stoken ((f, _)) ->
-                      (fun _ (__strm : _ Stream.t) ->
+                      (fun (__strm : _ Stream.t) ->
                          match Stream.peek __strm with
                          | Some ((tok, _)) when f tok ->
                              (Stream.junk __strm; Action.mk tok)
                          | _ -> raise Stream.Failure)
-                and parse_top_symb' entry symb c =
-                  parser_of_symbol entry 0 (top_symb entry symb) c
                 and parse_top_symb entry symb strm =
-                  Context.call_with_ctx strm
-                    (fun c -> parse_top_symb' entry symb c (Context.stream c))
+                  parser_of_symbol entry 0 (top_symb entry symb) strm
                   
                 let rec start_parser_of_levels entry clevn =
                   function
                   | [] ->
-                      (fun _ _ (__strm : _ Stream.t) -> raise Stream.Failure)
+                      (fun _ (__strm : _ Stream.t) -> raise Stream.Failure)
                   | lev :: levs ->
                       let p1 = start_parser_of_levels entry (succ clevn) levs
                       in
@@ -16710,24 +17392,25 @@ module Struct =
                              in
                                (match levs with
                                 | [] ->
-                                    (fun levn c (__strm : _ Stream.t) ->
-                                       let bp = Stream.count __strm in
+                                    (fun levn strm ->
+                                       let bp = loc_bp strm in
+                                       let (__strm : _ Stream.t) = strm in
                                        let (act, loc) =
-                                         add_loc c bp p2 __strm in
+                                         add_loc bp p2 __strm in
                                        let strm = __strm in
                                        let a = Action.getf act loc
-                                       in entry.econtinue levn loc a c strm)
+                                       in entry.econtinue levn loc a strm)
                                 | _ ->
-                                    (fun levn c strm ->
+                                    (fun levn strm ->
                                        if levn > clevn
-                                       then p1 levn c strm
+                                       then p1 levn strm
                                        else
-                                         (let (__strm : _ Stream.t) = strm in
-                                          let bp = Stream.count __strm
+                                         (let bp = loc_bp strm in
+                                          let (__strm : _ Stream.t) = strm
                                           in
                                             match try
                                                     Some
-                                                      (add_loc c bp p2 __strm)
+                                                      (add_loc bp p2 __strm)
                                                   with
                                                   | Stream.Failure -> None
                                             with
@@ -16735,19 +17418,19 @@ module Struct =
                                                 let a = Action.getf act loc
                                                 in
                                                   entry.econtinue levn loc a
-                                                    c strm
-                                            | _ -> p1 levn c __strm))))
+                                                    strm
+                                            | _ -> p1 levn __strm))))
                   
                 let start_parser_of_entry entry =
                   match entry.edesc with
                   | Dlevels [] -> Tools.empty_entry entry.ename
                   | Dlevels elev -> start_parser_of_levels entry 0 elev
-                  | Dparser p -> (fun _ _ strm -> p strm)
+                  | Dparser p -> (fun _ -> p)
                   
                 let rec continue_parser_of_levels entry clevn =
                   function
                   | [] ->
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
+                      (fun _ _ _ (__strm : _ Stream.t) ->
                          raise Stream.Failure)
                   | lev :: levs ->
                       let p1 =
@@ -16763,32 +17446,29 @@ module Struct =
                              let p2 =
                                parser_of_tree entry (succ clevn) alevn tree
                              in
-                               (fun c levn bp a strm ->
+                               (fun levn bp a strm ->
                                   if levn > clevn
-                                  then p1 c levn bp a strm
+                                  then p1 levn bp a strm
                                   else
                                     (let (__strm : _ Stream.t) = strm
                                      in
-                                       try p1 c levn bp a __strm
+                                       try p1 levn bp a __strm
                                        with
                                        | Stream.Failure ->
                                            let (act, loc) =
-                                             add_loc c bp p2 __strm in
+                                             add_loc bp p2 __strm in
                                            let a = Action.getf2 act a loc
-                                           in
-                                             entry.econtinue levn loc a c
-                                               strm)))
+                                           in entry.econtinue levn loc a strm)))
                   
                 let continue_parser_of_entry entry =
                   match entry.edesc with
                   | Dlevels elev ->
                       let p = continue_parser_of_levels entry 0 elev
                       in
-                        (fun levn bp a c (__strm : _ Stream.t) ->
-                           try p c levn bp a __strm
-                           with | Stream.Failure -> a)
+                        (fun levn bp a (__strm : _ Stream.t) ->
+                           try p levn bp a __strm with | Stream.Failure -> a)
                   | Dparser _ ->
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
+                      (fun _ _ _ (__strm : _ Stream.t) ->
                          raise Stream.Failure)
                   
               end
@@ -16818,13 +17498,13 @@ module Struct =
                   
                 let rec derive_eps =
                   function
-                  | Slist0 _ -> true
-                  | Slist0sep (_, _) -> true
-                  | Sopt _ -> true
+                  | Slist0 _ | Slist0sep (_, _) | Sopt _ -> true
+                  | Stry s -> derive_eps s
                   | Stree t -> tree_derive_eps t
-                  | Smeta (_, _, _) | Slist1 _ | Slist1sep (_, _) | Snterm _
-                      | Snterml (_, _) | Snext | Sself | Stoken _ |
-                      Skeyword _ -> false
+                  | Slist1 _ | Slist1sep (_, _) | Stoken _ | Skeyword _ ->
+                      false
+                  | Smeta (_, _, _) | Snterm _ | Snterml (_, _) | Snext |
+                      Sself -> false
                 and tree_derive_eps =
                   function
                   | LocAct (_, _) -> true
@@ -16963,9 +17643,8 @@ module Struct =
                       (check_gram entry t; check_gram entry s)
                   | Slist1sep (s, t) ->
                       (check_gram entry t; check_gram entry s)
-                  | Slist0 s -> check_gram entry s
-                  | Slist1 s -> check_gram entry s
-                  | Sopt s -> check_gram entry s
+                  | Slist0 s | Slist1 s | Sopt s | Stry s ->
+                      check_gram entry s
                   | Stree t -> tree_check_gram entry t
                   | Snext | Sself | Stoken _ | Skeyword _ -> ()
                 and tree_check_gram entry =
@@ -16985,11 +17664,9 @@ module Struct =
                   let rec insert =
                     function
                     | Smeta (_, sl, _) -> List.iter insert sl
-                    | Slist0 s -> insert s
-                    | Slist1 s -> insert s
+                    | Slist0 s | Slist1 s | Sopt s | Stry s -> insert s
                     | Slist0sep (s, t) -> (insert s; insert t)
                     | Slist1sep (s, t) -> (insert s; insert t)
-                    | Sopt s -> insert s
                     | Stree t -> tinsert t
                     | Skeyword kwd -> using gram kwd
                     | Snterm _ | Snterml (_, _) | Snext | Sself | Stoken _ ->
@@ -17022,7 +17699,7 @@ module Struct =
                                    "<W> Grammar extension: in [%s] some rule has been masked@."
                                    entry.ename
                                else ()
-                             in LocAct (action, old_action :: action_list)
+                             in LocAct (action, (old_action :: action_list))
                          | DeadEnd -> LocAct (action, []))
                   and insert_in_tree s sl tree =
                     match try_insert s sl tree with
@@ -17145,13 +17822,13 @@ module Struct =
                   in
                     (entry.edesc <- Dlevels elev;
                      entry.estart <-
-                       (fun lev c strm ->
+                       (fun lev strm ->
                           let f = Parser.start_parser_of_entry entry
-                          in (entry.estart <- f; f lev c strm));
+                          in (entry.estart <- f; f lev strm));
                      entry.econtinue <-
-                       fun lev bp a c strm ->
+                       fun lev bp a strm ->
                          let f = Parser.continue_parser_of_entry entry
-                         in (entry.econtinue <- f; f lev bp a c strm))
+                         in (entry.econtinue <- f; f lev bp a strm))
                   
               end
               
@@ -17223,13 +17900,12 @@ module Struct =
                   function
                   | Skeyword kwd -> removing gram kwd
                   | Smeta (_, sl, _) -> List.iter (decr_keyw_use gram) sl
-                  | Slist0 s -> decr_keyw_use gram s
-                  | Slist1 s -> decr_keyw_use gram s
+                  | Slist0 s | Slist1 s | Sopt s | Stry s ->
+                      decr_keyw_use gram s
                   | Slist0sep (s1, s2) ->
                       (decr_keyw_use gram s1; decr_keyw_use gram s2)
                   | Slist1sep (s1, s2) ->
                       (decr_keyw_use gram s1; decr_keyw_use gram s2)
-                  | Sopt s -> decr_keyw_use gram s
                   | Stree t -> decr_keyw_use_in_tree gram t
                   | Sself | Snext | Snterm _ | Snterml (_, _) | Stoken _ ->
                       ()
@@ -17310,13 +17986,13 @@ module Struct =
                       in
                         (entry.edesc <- Dlevels levs;
                          entry.estart <-
-                           (fun lev c strm ->
+                           (fun lev strm ->
                               let f = Parser.start_parser_of_entry entry
-                              in (entry.estart <- f; f lev c strm));
+                              in (entry.estart <- f; f lev strm));
                          entry.econtinue <-
-                           (fun lev bp a c strm ->
+                           (fun lev bp a strm ->
                               let f = Parser.continue_parser_of_entry entry
-                              in (entry.econtinue <- f; f lev bp a c strm)))
+                              in (entry.econtinue <- f; f lev bp a strm)))
                   | Dparser _ -> ()
                   
               end
@@ -17353,11 +18029,11 @@ module Struct =
                   
                 module Stream =
                   struct
-                    include Stream
+                    type 'a t = 'a Stream.t
+                    
+                    exception Failure = Stream.Failure
                       
-                    let junk strm = Context.junk strm
-                      
-                    let count strm = Context.bp strm
+                    exception Error = Stream.Error
                       
                   end
                   
@@ -17459,6 +18135,8 @@ module Struct =
                   
                 open Structure
                   
+                open Tools
+                  
                 type 'a t = internal_entry
                 
                 let name e = e.ename
@@ -17471,24 +18149,21 @@ module Struct =
                   {
                     egram = g;
                     ename = n;
-                    estart = Tools.empty_entry n;
+                    estart = empty_entry n;
                     econtinue =
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
+                      (fun _ _ _ (__strm : _ Stream.t) ->
                          raise Stream.Failure);
                     edesc = Dlevels [];
                   }
                   
                 let action_parse entry ts : Action.t =
-                  Context.call_with_ctx ts
-                    (fun c ->
-                       try entry.estart 0 c (Context.stream c)
-                       with
-                       | Stream.Failure ->
-                           Loc.raise (Context.loc_ep c)
-                             (Stream.Error
-                                ("illegal begin of " ^ entry.ename))
-                       | (Loc.Exc_located (_, _) as exc) -> raise exc
-                       | exc -> Loc.raise (Context.loc_ep c) exc)
+                  try entry.estart 0 ts
+                  with
+                  | Stream.Failure ->
+                      Loc.raise (get_prev_loc ts)
+                        (Stream.Error ("illegal begin of " ^ entry.ename))
+                  | (Loc.Exc_located (_, _) as exc) -> raise exc
+                  | exc -> Loc.raise (get_prev_loc ts) exc
                   
                 let lex entry loc cs = entry.egram.glexer loc cs
                   
@@ -17496,7 +18171,8 @@ module Struct =
                   lex entry loc (Stream.of_string str)
                   
                 let filter entry ts =
-                  Token.Filter.filter (get_filter entry.egram) ts
+                  keep_prev_loc
+                    (Token.Filter.filter (get_filter entry.egram) ts)
                   
                 let parse_tokens_after_filter entry ts =
                   Action.get (action_parse entry ts)
@@ -17510,33 +18186,36 @@ module Struct =
                 let parse_string entry loc str =
                   parse_tokens_before_filter entry (lex_string entry loc str)
                   
-                let of_parser g n (p : (Token.t * Loc.t) Stream.t -> 'a) :
-                  'a t =
-                  {
-                    egram = g;
-                    ename = n;
-                    estart = (fun _ _ ts -> Action.mk (p ts));
-                    econtinue =
-                      (fun _ _ _ _ (__strm : _ Stream.t) ->
-                         raise Stream.Failure);
-                    edesc = Dparser (fun ts -> Action.mk (p ts));
-                  }
-                  
-                let setup_parser e (p : (Token.t * Loc.t) Stream.t -> 'a) =
+                let of_parser g n
+                  (p : (Token.t * token_info) Stream.t -> 'a) : 'a t =
                   let f ts = Action.mk (p ts)
                   in
-                    (e.estart <- (fun _ _ -> f);
+                    {
+                      egram = g;
+                      ename = n;
+                      estart = (fun _ -> f);
+                      econtinue =
+                        (fun _ _ _ (__strm : _ Stream.t) ->
+                           raise Stream.Failure);
+                      edesc = Dparser f;
+                    }
+                  
+                let setup_parser e
+                                 (p : (Token.t * token_info) Stream.t -> 'a)
+                                 =
+                  let f ts = Action.mk (p ts)
+                  in
+                    (e.estart <- (fun _ -> f);
                      e.econtinue <-
-                       (fun _ _ _ _ (__strm : _ Stream.t) ->
+                       (fun _ _ _ (__strm : _ Stream.t) ->
                           raise Stream.Failure);
                      e.edesc <- Dparser f)
                   
                 let clear e =
                   (e.estart <-
-                     (fun _ _ (__strm : _ Stream.t) -> raise Stream.Failure);
+                     (fun _ (__strm : _ Stream.t) -> raise Stream.Failure);
                    e.econtinue <-
-                     (fun _ _ _ _ (__strm : _ Stream.t) ->
-                        raise Stream.Failure);
+                     (fun _ _ _ (__strm : _ Stream.t) -> raise Stream.Failure);
                    e.edesc <- Dlevels [])
                   
                 let obj x = x
@@ -17562,6 +18241,8 @@ module Struct =
                 module Insert = Insert.Make(Structure)
                   
                 module Fold = Fold.Make(Structure)
+                  
+                module Tools = Tools.Make(Structure)
                   
                 include Structure
                   
@@ -17606,7 +18287,8 @@ module Struct =
                   
                 let lex_string loc str = lex loc (Stream.of_string str)
                   
-                let filter ts = Token.Filter.filter gram.gfilter ts
+                let filter ts =
+                  Tools.keep_prev_loc (Token.Filter.filter gram.gfilter ts)
                   
                 let parse_tokens_after_filter entry ts =
                   Entry.E.parse_tokens_after_filter entry ts
@@ -17655,6 +18337,8 @@ module Struct =
                   
                 module Fold = Fold.Make(Structure)
                   
+                module Tools = Tools.Make(Structure)
+                  
                 include Structure
                   
                 let mk () =
@@ -17674,7 +18358,8 @@ module Struct =
                   
                 let lex_string g loc str = lex g loc (Stream.of_string str)
                   
-                let filter g ts = Token.Filter.filter g.gfilter ts
+                let filter g ts =
+                  Tools.keep_prev_loc (Token.Filter.filter g.gfilter ts)
                   
                 let parse_tokens_after_filter entry ts =
                   Entry.parse_tokens_after_filter entry ts
@@ -17905,9 +18590,11 @@ module Printers =
                         
                       val semisep : sep
                         
-                      val value_val : string
+                      method value_val : string
                         
-                      val value_let : string
+                      method value_let : string
+                        
+                      method andsep : sep
                         
                       method anti : formatter -> string -> unit
                         
@@ -17990,16 +18677,16 @@ module Printers =
                       method module_type :
                         formatter -> Ast.module_type -> unit
                         
+                      method override_flag :
+                        formatter -> Ast.override_flag -> unit
+                        
                       method mutable_flag :
-                        formatter -> Ast.meta_bool -> unit
+                        formatter -> Ast.mutable_flag -> unit
                         
                       method direction_flag :
-                        formatter -> Ast.meta_bool -> unit
+                        formatter -> Ast.direction_flag -> unit
                         
-                      method rec_flag : formatter -> Ast.meta_bool -> unit
-                        
-                      method flag :
-                        formatter -> Ast.meta_bool -> string -> unit
+                      method rec_flag : formatter -> Ast.rec_flag -> unit
                         
                       method node : formatter -> 'b -> ('b -> Loc.t) -> unit
                         
@@ -18027,10 +18714,10 @@ module Printers =
                         Loc.t -> formatter -> unit
                         
                       method private_flag :
-                        formatter -> Ast.meta_bool -> unit
+                        formatter -> Ast.private_flag -> unit
                         
                       method virtual_flag :
-                        formatter -> Ast.meta_bool -> unit
+                        formatter -> Ast.virtual_flag -> unit
                         
                       method quoted_string : formatter -> string -> unit
                         
@@ -18137,7 +18824,7 @@ module Printers =
               function
               | Ast.LNil -> []
               | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
-              | Ast.LAnt x -> assert false
+              | Ast.LAnt _ -> assert false
               
             let meta_list elt sep f mxs =
               let xs = list_of_meta_list mxs in list elt sep f xs
@@ -18278,17 +18965,17 @@ module Printers =
                   
                 val semisep = (";;" : sep)
                   
-                val andsep = ("@]@ @[<2>and@ " : sep)
-                  
-                val value_val = "val"
-                  
-                val value_let = "let"
-                  
                 val mode = if comments then `comments else `no_comments
                   
                 val curry_constr = init_curry_constr
                   
                 val var_conversion = false
+                  
+                method andsep : sep = "@]@ @[<2>and@ "
+                  
+                method value_val = "val"
+                  
+                method value_let = "let"
                   
                 method semisep = semisep
                   
@@ -18360,20 +19047,40 @@ module Printers =
                           o#class_params t2
                     | x -> o#ctyp f x
                   
-                method mutable_flag = fun f b -> o#flag f b "mutable"
+                method override_flag =
+                  fun f ->
+                    function
+                    | Ast.OvOverride -> pp f "!"
+                    | Ast.OvNil -> ()
+                    | Ast.OvAnt s -> o#anti f s
                   
-                method rec_flag = fun f b -> o#flag f b "rec"
+                method mutable_flag =
+                  fun f ->
+                    function
+                    | Ast.MuMutable -> pp f "mutable@ "
+                    | Ast.MuNil -> ()
+                    | Ast.MuAnt s -> o#anti f s
                   
-                method virtual_flag = fun f b -> o#flag f b "virtual"
+                method rec_flag =
+                  fun f ->
+                    function
+                    | Ast.ReRecursive -> pp f "rec@ "
+                    | Ast.ReNil -> ()
+                    | Ast.ReAnt s -> o#anti f s
                   
-                method private_flag = fun f b -> o#flag f b "private"
+                method virtual_flag =
+                  fun f ->
+                    function
+                    | Ast.ViVirtual -> pp f "virtual@ "
+                    | Ast.ViNil -> ()
+                    | Ast.ViAnt s -> o#anti f s
                   
-                method flag =
-                  fun f b n ->
-                    match b with
-                    | Ast.BTrue -> (pp_print_string f n; pp f "@ ")
-                    | Ast.BFalse -> ()
-                    | Ast.BAnt s -> o#anti f s
+                method private_flag =
+                  fun f ->
+                    function
+                    | Ast.PrPrivate -> pp f "private@ "
+                    | Ast.PrNil -> ()
+                    | Ast.PrAnt s -> o#anti f s
                   
                 method anti = fun f s -> pp f "$%s$" s
                   
@@ -18419,7 +19126,7 @@ module Printers =
                       match bi with
                       | Ast.BiNil _ -> ()
                       | Ast.BiAnd (_, b1, b2) ->
-                          (o#binding f b1; pp f andsep; o#binding f b2)
+                          (o#binding f b1; pp f o#andsep; o#binding f b2)
                       | Ast.BiEq (_, p, e) ->
                           let (pl, e) =
                             (match p with
@@ -18551,7 +19258,7 @@ module Printers =
                         pp f "@[<2>%a :@ %a@]" o#var s o#module_type mt
                     | Ast.MbAnd (_, mb1, mb2) ->
                         (o#module_rec_binding f mb1;
-                         pp f andsep;
+                         pp f o#andsep;
                          o#module_rec_binding f mb2)
                     | Ast.MbAnt (_, s) -> o#anti f s
                   
@@ -18570,15 +19277,16 @@ module Printers =
                     in
                       o#expr f
                         (Ast.ExApp (_loc,
-                           Ast.ExId (_loc, Ast.IdLid (_loc, "raise")),
-                           Ast.ExApp (_loc,
-                             Ast.ExApp (_loc,
-                               Ast.ExApp (_loc,
-                                 Ast.ExId (_loc,
-                                   Ast.IdUid (_loc, "Match_failure")),
-                                 Ast.ExStr (_loc, Ast.safe_string_escaped n)),
-                               Ast.ExInt (_loc, string_of_int l)),
-                             Ast.ExInt (_loc, string_of_int c))))
+                           (Ast.ExId (_loc, (Ast.IdLid (_loc, "raise")))),
+                           (Ast.ExApp (_loc,
+                              (Ast.ExApp (_loc,
+                                 (Ast.ExApp (_loc,
+                                    (Ast.ExId (_loc,
+                                       (Ast.IdUid (_loc, "Match_failure")))),
+                                    (Ast.ExStr (_loc,
+                                       (Ast.safe_string_escaped n))))),
+                                 (Ast.ExInt (_loc, (string_of_int l))))),
+                              (Ast.ExInt (_loc, (string_of_int c)))))))
                   
                 method node : 'a. formatter -> 'a -> ('a -> Loc.t) -> unit =
                   fun f node loc_of_node ->
@@ -18639,7 +19347,7 @@ module Printers =
                                      o#apply_expr y
                                | al ->
                                    pp f "@[<2>%a@ (%a)@]" o#apply_expr a
-                                     (list o#under_pipe#expr ",@ ") al)
+                                     (list o#under_pipe#apply_expr ",@ ") al)
                             else
                               pp f "@[<2>%a@]" (list o#apply_expr "@ ")
                                 (a :: al)
@@ -18811,9 +19519,9 @@ module Printers =
                 method direction_flag =
                   fun f b ->
                     match b with
-                    | Ast.BTrue -> pp_print_string f "to"
-                    | Ast.BFalse -> pp_print_string f "downto"
-                    | Ast.BAnt s -> o#anti f s
+                    | Ast.DiTo -> pp_print_string f "to"
+                    | Ast.DiDownto -> pp_print_string f "downto"
+                    | Ast.DiAnt s -> o#anti f s
                   
                 method patt =
                   fun f p ->
@@ -18960,13 +19668,12 @@ module Printers =
                           pp f "@[<2>%s:@ %a@]" s o#simple_ctyp t
                       | Ast.TyOlb (_, s, t) ->
                           pp f "@[<2>?%s:@ %a@]" s o#simple_ctyp t
-                      | Ast.TyObj (_, (Ast.TyNil _), Ast.BFalse) ->
-                          pp f "< >"
-                      | Ast.TyObj (_, (Ast.TyNil _), Ast.BTrue) ->
+                      | Ast.TyObj (_, (Ast.TyNil _), Ast.RvNil) -> pp f "< >"
+                      | Ast.TyObj (_, (Ast.TyNil _), Ast.RvRowVar) ->
                           pp f "< .. >"
-                      | Ast.TyObj (_, t, Ast.BTrue) ->
+                      | Ast.TyObj (_, t, Ast.RvRowVar) ->
                           pp f "@[<0>@[<2><@ %a;@ ..@]@ >@]" o#ctyp t
-                      | Ast.TyObj (_, t, Ast.BFalse) ->
+                      | Ast.TyObj (_, t, Ast.RvNil) ->
                           pp f "@[<0>@[<2><@ %a@]@ >@]" o#ctyp t
                       | Ast.TyQuo (_, s) -> pp f "'%a" o#var s
                       | Ast.TyRec (_, t) -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
@@ -18986,9 +19693,6 @@ module Printers =
                       | Ast.TyVrnSup (_, t) ->
                           pp f "@[<2>[>@ %a@]@,]" o#sum_type t
                       | Ast.TyCls (_, i) -> pp f "@[<2>#%a@]" o#ident i
-                      | Ast.TyMan (_, t1, t2) ->
-                          pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1
-                            o#simple_ctyp t2
                       | Ast.TyVrn (_, s) -> pp f "`%a" o#var s
                       | Ast.TySta (_, t1, t2) ->
                           pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
@@ -19028,6 +19732,8 @@ module Printers =
                           pp f "@[<2>mutable@ %a@]" o#ctyp t
                       | Ast.TyAmp (_, t1, t2) ->
                           pp f "%a@ &@ %a" o#ctyp t1 o#ctyp t2
+                      | Ast.TyMan (_, t1, t2) ->
+                          pp f "@[<2>%a =@ %a@]" o#simple_ctyp t1 o#ctyp t2
                       | Ast.TyDcl (_, tn, tp, te, cl) ->
                           (pp f "@[<2>%a%a@]" o#type_params tp o#var tn;
                            (match te with
@@ -19110,7 +19816,7 @@ module Printers =
                           pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t
                             semisep
                       | Ast.SgVal (_, s, t) ->
-                          pp f "@[<2>%s %a :@ %a%(%)@]" value_val o#var s
+                          pp f "@[<2>%s %a :@ %a%(%)@]" o#value_val o#var s
                             o#ctyp t semisep
                       | Ast.SgInc (_, mt) ->
                           pp f "@[<2>include@ %a%(%)@]" o#module_type mt
@@ -19173,7 +19879,7 @@ module Printers =
                           pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t
                             semisep
                       | Ast.StVal (_, r, bi) ->
-                          pp f "@[<2>%s %a%a%(%)@]" value_let o#rec_flag r
+                          pp f "@[<2>%s %a%a%(%)@]" o#value_let o#rec_flag r
                             o#binding bi semisep
                       | Ast.StExp (_, e) ->
                           pp f "@[<2>let _ =@ %a%(%)@]" o#expr e semisep
@@ -19229,7 +19935,7 @@ module Printers =
                             o#ident i2
                       | Ast.WcAnd (_, wc1, wc2) ->
                           (o#with_constraint f wc1;
-                           pp f andsep;
+                           pp f o#andsep;
                            o#with_constraint f wc2)
                       | Ast.WcAnt (_, s) -> o#anti f s
                   
@@ -19268,10 +19974,10 @@ module Printers =
                             o#module_type mt
                       | Ast.MePkg (_,
                           (Ast.ExTyc (_, e, (Ast.TyPkg (_, mt))))) ->
-                          pp f "@[<1>(%s %a :@ %a)@]" value_val o#expr e
+                          pp f "@[<1>(%s %a :@ %a)@]" o#value_val o#expr e
                             o#module_type mt
                       | Ast.MePkg (_, e) ->
-                          pp f "@[<1>(%s %a)@]" value_val o#expr e
+                          pp f "@[<1>(%s %a)@]" o#value_val o#expr e
                   
                 method class_expr =
                   fun f ce ->
@@ -19280,14 +19986,15 @@ module Printers =
                       match ce with
                       | Ast.CeApp (_, ce, e) ->
                           pp f "@[<2>%a@ %a@]" o#class_expr ce o#expr e
-                      | Ast.CeCon (_, Ast.BFalse, i, (Ast.TyNil _)) ->
+                      | Ast.CeCon (_, Ast.ViNil, i, (Ast.TyNil _)) ->
                           pp f "@[<2>%a@]" o#ident i
-                      | Ast.CeCon (_, Ast.BFalse, i, t) ->
+                      | Ast.CeCon (_, Ast.ViNil, i, t) ->
                           pp f "@[<2>@[<1>[%a]@]@ %a@]" o#class_params t
                             o#ident i
-                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                      | Ast.CeCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)),
                           (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
-                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
+                      | Ast.CeCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)), t)
+                          ->
                           pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]"
                             o#class_params t o#var i
                       | Ast.CeFun (_, p, ce) ->
@@ -19309,7 +20016,7 @@ module Printers =
                       | Ast.CeAnt (_, s) -> o#anti f s
                       | Ast.CeAnd (_, ce1, ce2) ->
                           (o#class_expr f ce1;
-                           pp f andsep;
+                           pp f o#andsep;
                            o#class_expr f ce2)
                       | Ast.CeEq (_, ce1, (Ast.CeFun (_, p, ce2))) when
                           is_irrefut_patt p ->
@@ -19325,14 +20032,15 @@ module Printers =
                     let () = o#node f ct Ast.loc_of_class_type
                     in
                       match ct with
-                      | Ast.CtCon (_, Ast.BFalse, i, (Ast.TyNil _)) ->
+                      | Ast.CtCon (_, Ast.ViNil, i, (Ast.TyNil _)) ->
                           pp f "@[<2>%a@]" o#ident i
-                      | Ast.CtCon (_, Ast.BFalse, i, t) ->
+                      | Ast.CtCon (_, Ast.ViNil, i, t) ->
                           pp f "@[<2>[@,%a@]@,]@ %a" o#class_params t 
                             o#ident i
-                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                      | Ast.CtCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)),
                           (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
-                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
+                      | Ast.CtCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)), t)
+                          ->
                           pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#class_params
                             t o#var i
                       | Ast.CtFun (_, t, ct) ->
@@ -19348,7 +20056,7 @@ module Printers =
                       | Ast.CtAnt (_, s) -> o#anti f s
                       | Ast.CtAnd (_, ct1, ct2) ->
                           (o#class_type f ct1;
-                           pp f andsep;
+                           pp f o#andsep;
                            o#class_type f ct2)
                       | Ast.CtCol (_, ct1, ct2) ->
                           pp f "%a :@ %a" o#class_type ct1 o#class_type ct2
@@ -19382,7 +20090,7 @@ module Printers =
                           pp f "@[<2>method virtual %a%a :@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t semisep
                       | Ast.CgVal (_, s, mu, vi, t) ->
-                          pp f "@[<2>%s %a%a%a :@ %a%(%)@]" value_val
+                          pp f "@[<2>%s %a%a%a :@ %a%(%)@]" o#value_val
                             o#mutable_flag mu o#virtual_flag vi o#var s
                             o#ctyp t semisep
                       | Ast.CgAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
@@ -19403,30 +20111,33 @@ module Printers =
                       | Ast.CrCtr (_, t1, t2) ->
                           pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1
                             o#ctyp t2 semisep
-                      | Ast.CrInh (_, ce, "") ->
-                          pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce
+                      | Ast.CrInh (_, ov, ce, "") ->
+                          pp f "@[<2>inherit%a@ %a%(%)@]" o#override_flag ov
+                            o#class_expr ce semisep
+                      | Ast.CrInh (_, ov, ce, s) ->
+                          pp f "@[<2>inherit%a@ %a as@ %a%(%)@]"
+                            o#override_flag ov o#class_expr ce o#var s
                             semisep
-                      | Ast.CrInh (_, ce, s) ->
-                          pp f "@[<2>inherit@ %a as@ %a%(%)@]" o#class_expr
-                            ce o#var s semisep
                       | Ast.CrIni (_, e) ->
                           pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
-                      | Ast.CrMth (_, s, pr, e, (Ast.TyNil _)) ->
-                          pp f "@[<2>method %a%a =@ %a%(%)@]" o#private_flag
-                            pr o#var s o#expr e semisep
-                      | Ast.CrMth (_, s, pr, e, t) ->
-                          pp f "@[<2>method %a%a :@ %a =@ %a%(%)@]"
-                            o#private_flag pr o#var s o#ctyp t o#expr e
-                            semisep
+                      | Ast.CrMth (_, s, ov, pr, e, (Ast.TyNil _)) ->
+                          pp f "@[<2>method%a %a%a =@ %a%(%)@]"
+                            o#override_flag ov o#private_flag pr o#var s
+                            o#expr e semisep
+                      | Ast.CrMth (_, s, ov, pr, e, t) ->
+                          pp f "@[<2>method%a %a%a :@ %a =@ %a%(%)@]"
+                            o#override_flag ov o#private_flag pr o#var s
+                            o#ctyp t o#expr e semisep
                       | Ast.CrVir (_, s, pr, t) ->
                           pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t semisep
                       | Ast.CrVvr (_, s, mu, t) ->
-                          pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" value_val
+                          pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" o#value_val
                             o#mutable_flag mu o#var s o#ctyp t semisep
-                      | Ast.CrVal (_, s, mu, e) ->
-                          pp f "@[<2>%s %a%a =@ %a%(%)@]" value_val
-                            o#mutable_flag mu o#var s o#expr e semisep
+                      | Ast.CrVal (_, s, ov, mu, e) ->
+                          pp f "@[<2>%s%a %a%a =@ %a%(%)@]" o#value_val
+                            o#override_flag ov o#mutable_flag mu o#var s
+                            o#expr e semisep
                       | Ast.CrAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
                   
                 method implem =
@@ -19603,19 +20314,19 @@ module Printers =
                   PP_o.printer ~curry_constr: init_curry_constr ~comments () as
                   super
                   
-                val semisep = (";" : sep)
-                  
-                val andsep = ("@]@ @[<2>and@ " : sep)
-                  
-                val value_val = "value"
-                  
-                val value_let = "value"
+                val! semisep = (";" : sep)
                   
                 val mode = if comments then `comments else `no_comments
                   
                 val curry_constr = init_curry_constr
                   
                 val first_match_case = true
+                  
+                method andsep : sep = "@]@ @[<2>and@ "
+                  
+                method value_val = "value"
+                  
+                method value_let = "value"
                   
                 method under_pipe = o
                   
@@ -19892,14 +20603,15 @@ module Printers =
                       | Ast.CtFun (_, t, ct) ->
                           pp f "@[<2>[ %a ] ->@ %a@]" o#simple_ctyp t
                             o#class_type ct
-                      | Ast.CtCon (_, Ast.BFalse, i, (Ast.TyNil _)) ->
+                      | Ast.CtCon (_, Ast.ViNil, i, (Ast.TyNil _)) ->
                           pp f "@[<2>%a@]" o#ident i
-                      | Ast.CtCon (_, Ast.BFalse, i, t) ->
+                      | Ast.CtCon (_, Ast.ViNil, i, t) ->
                           pp f "@[<2>%a [@,%a@]@,]" o#ident i o#class_params
                             t
-                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                      | Ast.CtCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)),
                           (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
-                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
+                      | Ast.CtCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)), t)
+                          ->
                           pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#var i
                             o#class_params t
                       | ct -> super#class_type f ct
@@ -19909,14 +20621,15 @@ module Printers =
                     let () = o#node f ce Ast.loc_of_class_expr
                     in
                       match ce with
-                      | Ast.CeCon (_, Ast.BFalse, i, (Ast.TyNil _)) ->
+                      | Ast.CeCon (_, Ast.ViNil, i, (Ast.TyNil _)) ->
                           pp f "@[<2>%a@]" o#ident i
-                      | Ast.CeCon (_, Ast.BFalse, i, t) ->
+                      | Ast.CeCon (_, Ast.ViNil, i, t) ->
                           pp f "@[<2>%a@ @[<1>[%a]@]@]" o#ident i
                             o#class_params t
-                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                      | Ast.CeCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)),
                           (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
-                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
+                      | Ast.CeCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)), t)
+                          ->
                           pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i
                             o#ctyp t
                       | ce -> super#class_expr f ce
@@ -19925,11 +20638,14 @@ module Printers =
               
             let with_outfile = with_outfile
               
-            let print = print
+            let print output_file fct =
+              let o = new printer () in with_outfile output_file (fct o)
               
-            let print_interf = print_interf
+            let print_interf ?input_file:(_) ?output_file sg =
+              print output_file (fun o -> o#interf) sg
               
-            let print_implem = print_implem
+            let print_implem ?input_file:(_) ?output_file st =
+              print output_file (fun o -> o#implem) st
               
           end
           
@@ -20113,6 +20829,8 @@ module OCamlInitSyntax =
           
         let direction_flag = Gram.Entry.mk "direction_flag"
           
+        let direction_flag_quot = Gram.Entry.mk "direction_flag_quot"
+          
         let dummy = Gram.Entry.mk "dummy"
           
         let entry_eoi = Gram.Entry.mk "entry_eoi"
@@ -20206,6 +20924,8 @@ module OCamlInitSyntax =
           
         let opt_dot_dot = Gram.Entry.mk "opt_dot_dot"
           
+        let row_var_flag_quot = Gram.Entry.mk "row_var_flag_quot"
+          
         let opt_eq_ctyp = Gram.Entry.mk "opt_eq_ctyp"
           
         let opt_expr = Gram.Entry.mk "opt_expr"
@@ -20214,17 +20934,29 @@ module OCamlInitSyntax =
           
         let opt_mutable = Gram.Entry.mk "opt_mutable"
           
+        let mutable_flag_quot = Gram.Entry.mk "mutable_flag_quot"
+          
         let opt_polyt = Gram.Entry.mk "opt_polyt"
           
         let opt_private = Gram.Entry.mk "opt_private"
           
+        let private_flag_quot = Gram.Entry.mk "private_flag_quot"
+          
         let opt_rec = Gram.Entry.mk "opt_rec"
+          
+        let rec_flag_quot = Gram.Entry.mk "rec_flag_quot"
           
         let opt_sig_items = Gram.Entry.mk "opt_sig_items"
           
         let opt_str_items = Gram.Entry.mk "opt_str_items"
           
         let opt_virtual = Gram.Entry.mk "opt_virtual"
+          
+        let virtual_flag_quot = Gram.Entry.mk "virtual_flag_quot"
+          
+        let opt_override = Gram.Entry.mk "opt_override"
+          
+        let override_flag_quot = Gram.Entry.mk "override_flag_quot"
           
         let opt_when_expr = Gram.Entry.mk "opt_when_expr"
           

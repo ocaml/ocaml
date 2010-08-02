@@ -52,6 +52,7 @@ external ( || ) : bool -> bool -> bool = "%sequor"
 
 external ( ~- ) : int -> int = "%negint"
 external ( ~+ ) : int -> int = "%identity"
+external (~+) : int -> int = "%identity"
 external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
 external ( + ) : int -> int -> int = "%addint"

@@ -126,15 +126,20 @@ let increase_global_level () =
 let restore_global_level gl =
   global_level := gl
 
-(* Abbreviations without parameters *)
+(**** Whether a path points to an object type (with hidden row variable) ****)
+let is_object_type path =
+  let name =
+    match path with Path.Pident id -> Ident.name id
+    | Path.Pdot(_, s,_) -> s
+    | Path.Papply _ -> assert false
+  in name.[0] = '#'
+
+(**** Abbreviations without parameters ****)
 (* Shall reset after generalizing *)
 let simple_abbrevs = ref Mnil
 let proper_abbrevs path tl abbrev =
-  if !Clflags.principal || tl <> [] then abbrev else
-  let name = match path with Path.Pident id -> Ident.name id
-                           | Path.Pdot(_, s,_) -> s
-                           | Path.Papply _ -> assert false in
-  if name.[0] <> '#' then simple_abbrevs else abbrev
+  if !Clflags.principal || tl <> [] || is_object_type path then abbrev
+  else simple_abbrevs
 
 (**** Some type creators ****)
 
@@ -2291,6 +2296,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           normalize_subst subst;
           if List.assq t1 !subst != t2 then raise (Unify [])
         with Not_found ->
+          if List.exists (fun (_, t) -> t == t2) !subst then raise (Unify []);
           subst := (t1, t2) :: !subst
         end
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
@@ -2311,6 +2317,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 normalize_subst subst;
                 if List.assq t1' !subst != t2' then raise (Unify [])
               with Not_found ->
+                if List.exists (fun (_, t) -> t == t2') !subst then raise (Unify []);
                 subst := (t1', t2') :: !subst
               end
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -2485,10 +2492,10 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
   | _ ->
       raise (Failure [])
   with
-    Failure error when trace ->
+    Failure error when trace || error = [] ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
-let match_class_types env pat_sch subj_sch =
+let match_class_types ?(trace=true) env pat_sch subj_sch =
   let type_pairs = TypePairs.create 53 in
   let old_level = !current_level in
   current_level := generic_level - 1;
@@ -2572,7 +2579,7 @@ let match_class_types env pat_sch subj_sch =
     match error with
       [] ->
         begin try
-          moregen_clty true type_pairs env patt subj;
+          moregen_clty trace type_pairs env patt subj;
           []
         with
           Failure r -> r
@@ -2614,7 +2621,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
         Vars.iter
           (fun lab (_, _, ty) ->
              let (_, _, ty') = Vars.find lab sign1.cty_vars in
-             try eqtype true type_pairs subst env ty ty' with Unify trace ->
+             try eqtype true type_pairs subst env ty' ty with Unify trace ->
                raise (Failure [CM_Val_type_mismatch
                                   (lab, expand_trace env trace)]))
           sign2.cty_vars
@@ -2626,8 +2633,6 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
     Failure error when trace ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
-(* XXX On pourrait autoriser l'instantiation du type des parametres... *)
-(* XXX Correct ? (variables de type dans parametres et corps de classe *)
 let match_class_declarations env patt_params patt_type subj_params subj_type =
   let type_pairs = TypePairs.create 53 in
   let subst = ref [] in
@@ -2714,8 +2719,14 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
             raise (Failure [CM_Type_parameter_mismatch
                                (expand_trace env trace)]))
           patt_params subj_params;
-        equal_clty false type_pairs subst env patt_type subj_type;
-        []
+        (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
+        equal_clty false type_pairs subst env
+          (Tcty_signature sign1) (Tcty_signature sign2);
+        (* Use moregeneral for class parameters, need to recheck everything to
+           keeps relationships (PR#4824) *)
+        let clty_params = List.fold_right (fun ty cty -> Tcty_fun ("*",ty,cty)) in
+        match_class_types ~trace:false env
+          (clty_params patt_params patt_type) (clty_params subj_params subj_type)
       with
         Failure r -> r
       end
@@ -3162,15 +3173,6 @@ let unalias ty =
   | _ ->
       newty2 ty.level ty.desc
 
-let unroll_abbrev id tl ty =
-  let ty = repr ty in
-  if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl) then
-    ty
-  else
-    let ty' = newty2 ty.level ty.desc in
-    link_type ty (newty2 ty.level (Tconstr (Path.Pident id, tl, ref Mnil)));
-    ty'
-
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
   match (repr ty).desc with
@@ -3342,6 +3344,16 @@ let nondep_type env id ty =
   with Not_found ->
     clear_hash ();
     raise Not_found
+
+let unroll_abbrev id tl ty =
+  let ty = repr ty and path = Path.Pident id in
+  if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl)
+  || is_object_type path then
+    ty
+  else
+    let ty' = newty2 ty.level ty.desc in
+    link_type ty (newty2 ty.level (Tconstr (path, tl, ref Mnil)));
+    ty'
 
 (* Preserve sharing inside type declarations. *)
 let nondep_type_decl env mid id is_covariant decl =

@@ -433,10 +433,11 @@ esac
 # Determine alignment constraints
 
 case "$host" in
-  sparc*-*-*|hppa*-*-*)
+  sparc*-*-*|hppa*-*-*|arm*-*-*)
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
+    # PR#5088 suggests same problem on ARM.
     # But there's a knack (PR#2572):
     # if we're in 64-bit mode (sizeof(long) == 8),
     # we must not doubleword-align floats...
@@ -464,7 +465,8 @@ esac
 
 if $int64_native; then
   case "$host" in
-    sparc*-*-*|hppa*-*-*)
+    # PR#5088: autodetection is unreliable on ARM
+    sparc*-*-*|hppa*-*-*|arm*-*-*)
       if test $2 = 8; then
         echo "64-bit integers can be word-aligned."
         echo "#undef ARCH_ALIGN_INT64" >> m.h
@@ -574,14 +576,11 @@ if test $withsharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin10.*)
-      if test $arch64 == true; then
-          mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
-          bytecccompopts="$dl_defs $bytecccompopts"
-          dl_needs_underscore=false
-          shared_libraries_supported=true
-      else
-          shared_libraries_supported=false
-      fi;;
+       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
+       bytecccompopts="$dl_defs $bytecccompopts"
+       dl_needs_underscore=false
+       shared_libraries_supported=true
+       ;;
     i[3456]86-*-darwin*)
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
@@ -1571,10 +1570,11 @@ fi
 
 # Look for BFD library
 
-if ./hasgot -i bfd.h -lbfd -ldl; then
+if ./hasgot -i bfd.h && \
+   ./hasgot -lbfd -ldl -liberty -lz bfd_openr; then
   echo "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
-  echo "LIBBFD_LINK=-lbfd -ldl -liberty" >> Makefile
+  echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
 else
   echo "BFD library not found, 'objinfo' will be unable to display info on .cmxs files"
   echo "LIBBFD_LINK=" >> Makefile
