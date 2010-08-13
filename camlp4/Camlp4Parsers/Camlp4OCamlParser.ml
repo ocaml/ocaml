@@ -616,11 +616,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | `UIDENT s -> s
       ] ]
     ;
+    (* Fix for PR#5090: dummy tokens introduced by the toplevel's lexer
+       to compensate for the lookahead done by the location-handling code *)
     top_phrase:
-      [ [ "#"; n = a_LIDENT; dp = opt_expr; ";;" ->
+      [ [ OPT "%%dummy"; "#"; n = a_LIDENT; dp = opt_expr; ";;" ->
             Some <:str_item< # $n$ $dp$ >>
-        | l = LIST1 str_item; ";;" -> Some (Ast.stSem_of_list l)
-        | `EOI -> None
+        | OPT "%%dummy"; l = LIST1 str_item; ";;" -> Some (Ast.stSem_of_list l)
+        | OPT "%%dummy"; `EOI -> None
       ] ]
     ;
   END;

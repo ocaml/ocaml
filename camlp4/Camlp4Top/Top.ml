@@ -62,6 +62,15 @@ end;
 
 value lookup x xs = try Some (List.assq x xs) with [ Not_found -> None ];
 
+(* Fix for PR#5090: dummy tokens introduced by the toplevel's lexer
+   to compensate for the lookahead done by the location-handling code *)
+value rec add_dummies x =
+  match x with parser
+  [ [: `(KEYWORD x, l); strm :] ->
+       [: `(KEYWORD x, l); `(KEYWORD "%% dummy %%", l); add_dummies strm :]
+  | [: `x; strm :] -> [: `x; add_dummies strm :] ]
+;
+
 value wrap parse_fun =
   let token_streams = ref [] in
   let cleanup lb =
@@ -101,7 +110,8 @@ value wrap parse_fun =
         } ];
 
 value toplevel_phrase token_stream =
-  match Gram.parse_tokens_after_filter Syntax.top_phrase token_stream with
+  match Gram.parse_tokens_after_filter Syntax.top_phrase
+                                       (add_dummies token_stream) with
     [ Some str_item ->
         let str_item =
           AstFilters.fold_topphrase_filters (fun t filter -> filter t) str_item
