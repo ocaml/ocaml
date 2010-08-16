@@ -1614,11 +1614,9 @@ Very old (no more supported) syntax:\n\
         | l = LIST0 [ st = str_item; semi -> st ] -> Ast.stSem_of_list l
       ] ]
     ;
-    (* Fix for PR#5090: dummy tokens introduced by the toplevel's lexer
-       to compensate for the lookahead done by the location-handling code *)
     top_phrase:
-      [ [ OPT "%% dummy %%"; ph = phrase -> Some ph
-        | OPT "%% dummy %%"; `EOI -> None
+      [ [ ph = phrase -> Some ph
+        | `EOI -> None
       ] ]
     ;
     use_file:

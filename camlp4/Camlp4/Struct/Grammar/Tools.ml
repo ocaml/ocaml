@@ -16,6 +16,10 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
+
+(* PR#5090: don't do lookahead on get_prev_loc. *)
+value get_prev_loc_only = ref False;
+
 module Make (Structure : Structure.S) = struct
   open Structure;
 
@@ -29,10 +33,17 @@ module Make (Structure : Structure.S) = struct
   value keep_prev_loc strm =
     match Stream.peek strm with
     [ None -> [: :]
-    | Some (_,init_loc) ->
-      let rec go prev_loc = parser
-        [ [: `(tok,cur_loc); strm :] -> [: `(tok,{prev_loc;cur_loc}); go cur_loc strm :]
-        | [: :] -> [: :] ]
+    | Some (tok0,init_loc) ->
+      let rec go prev_loc strm1 =
+        if get_prev_loc_only.val then
+          [: `(tok0, {prev_loc; cur_loc = prev_loc; prev_loc_only = True});
+             go prev_loc strm1 :]
+        else
+          match strm1 with parser
+          [ [: `(tok,cur_loc); strm :] ->
+              [: `(tok, {prev_loc; cur_loc; prev_loc_only = False});
+                 go cur_loc strm :]
+          | [: :] -> [: :] ]
       in go init_loc strm ];
 
   value drop_prev_loc strm = stream_map (fun (tok,r) -> (tok,r.cur_loc)) strm;
@@ -43,9 +54,18 @@ module Make (Structure : Structure.S) = struct
     | None -> Loc.ghost ];
 
   value get_prev_loc strm =
-    match Stream.peek strm with
-    [ Some (_,r) -> r.prev_loc
-    | None -> Loc.ghost ];
+    do {
+      get_prev_loc_only.val := True;
+      let result = match Stream.peek strm with
+        [ Some (_, {prev_loc; prev_loc_only = True}) ->
+            do {Stream.junk strm; prev_loc}
+        | Some (_, {prev_loc; prev_loc_only = False}) -> prev_loc
+        | None -> Loc.ghost ]
+      in do {
+        get_prev_loc_only.val := False;
+        result
+      }
+    };
 
   value is_level_labelled n lev =
     match lev.lname with
