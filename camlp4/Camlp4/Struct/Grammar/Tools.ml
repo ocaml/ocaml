@@ -54,18 +54,16 @@ module Make (Structure : Structure.S) = struct
     | None -> Loc.ghost ];
 
   value get_prev_loc strm =
-    do {
+    begin
       get_prev_loc_only.val := True;
       let result = match Stream.peek strm with
         [ Some (_, {prev_loc; prev_loc_only = True}) ->
-            do {Stream.junk strm; prev_loc}
+            begin Stream.junk strm; prev_loc end
         | Some (_, {prev_loc; prev_loc_only = False}) -> prev_loc
-        | None -> Loc.ghost ]
-      in do {
-        get_prev_loc_only.val := False;
-        result
-      }
-    };
+        | None -> Loc.ghost ];
+      get_prev_loc_only.val := False;
+      result
+    end;
 
   value is_level_labelled n lev =
     match lev.lname with
