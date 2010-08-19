@@ -91,6 +91,16 @@ let rec make_params n = function
 
 let wrap_param s = {ptyp_desc=Ptyp_var s; ptyp_loc=Location.none}
 
+let make_next_first rs rem =
+  if rs = Trec_first then
+    match rem with
+      Tsig_type (id, decl, Trec_next) :: rem ->
+        Tsig_type (id, decl, Trec_first) :: rem
+    | Tsig_module (id, mty, Trec_next) :: rem ->
+        Tsig_module (id, mty, Trec_first) :: rem
+    | _ -> rem
+  else rem
+
 let merge_constraint initial_env loc sg lid constr =
   let real_id = ref None in
   let rec merge env sg namelist row_id =
@@ -134,7 +144,7 @@ let merge_constraint initial_env loc sg lid constr =
           Typedecl.transl_with_constraint initial_env id None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         real_id := Some id;
-        rem
+        make_next_first rs rem
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = Typetexp.find_module initial_env loc lid in
@@ -147,7 +157,7 @@ let merge_constraint initial_env loc sg lid constr =
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         real_id := Some id;
-        rem
+        make_next_first rs rem
     | (Tsig_module(id, mty, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let newsg = merge env (extract_sig env loc mty) namelist None in
