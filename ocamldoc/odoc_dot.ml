@@ -18,6 +18,17 @@ open Odoc_info
 
 module F = Format
 
+let dot_include_all = ref false
+
+let dot_types = ref false
+
+let dot_reduce = ref false
+
+let dot_colors  = ref (List.flatten Odoc_messages.default_dot_colors)
+
+module Generator =
+struct
+
 (** This class generates a dot file showing the top modules dependencies. *)
 class dot =
   object (self)
@@ -29,7 +40,7 @@ class dot =
     val mutable modules = []
 
     (** Colors to use when finding new locations of modules. *)
-    val mutable colors = !Args.dot_colors
+    val mutable colors = !dot_colors
 
     (** Graph header. *)
     method header =
@@ -73,7 +84,7 @@ class dot =
     method generate_for_module fmt m =
       let l = List.filter
           (fun n ->
-            !Args.dot_include_all or
+            !dot_include_all or
             (List.exists (fun m -> m.Module.m_name = n) modules))
           m.Module.m_top_deps
       in
@@ -88,11 +99,11 @@ class dot =
 
     method generate_types types =
       try
-        let oc = open_out !Args.out_file in
+        let oc = open_out !Global.out_file in
         let fmt = F.formatter_of_out_channel oc in
         F.fprintf fmt "%s" self#header;
         let graph = Odoc_info.Dep.deps_of_types
-            ~kernel: !Args.dot_reduce
+            ~kernel: !dot_reduce
             types
         in
         List.iter (self#generate_for_type fmt) graph;
@@ -106,11 +117,11 @@ class dot =
     method generate_modules modules_list =
       try
         modules <- modules_list ;
-        let oc = open_out !Args.out_file in
+        let oc = open_out !Global.out_file in
         let fmt = F.formatter_of_out_channel oc in
         F.fprintf fmt "%s" self#header;
 
-        if !Args.dot_reduce then
+        if !dot_reduce then
           Odoc_info.Dep.kernel_deps_of_modules modules_list;
 
         List.iter (self#generate_for_module fmt) modules_list;
@@ -123,9 +134,13 @@ class dot =
 
     (** Generate the dot code in the file {!Odoc_info.Args.out_file}. *)
     method generate (modules_list : Odoc_info.Module.t_module list) =
-      colors <- !Args.dot_colors;
-      if !Args.dot_types then
+      colors <- !dot_colors;
+      if !dot_types then
         self#generate_types (Odoc_info.Search.types modules_list)
       else
         self#generate_modules modules_list
   end
+end
+
+module type Dot_generator = module type of Generator
+

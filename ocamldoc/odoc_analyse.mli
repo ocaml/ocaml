@@ -19,7 +19,7 @@
 *)
 val analyse_files :
     ?init: Odoc_module.t_module list ->
-      Odoc_args.source_file list ->
+      Odoc_global.source_file list ->
         Odoc_module.t_module list
 
 (** Dump of a list of modules into a file.

@@ -85,19 +85,9 @@ let _ =
           prerr_endline (Odoc_messages.load_file_error file s);
           exit 1
 
-let _ = print_DEBUG "Fin du chargement dynamique eventuel"
+let () = print_DEBUG "Fin du chargement dynamique eventuel"
 
-let default_html_generator = new Odoc_html.html
-let default_latex_generator = new Odoc_latex.latex
-let default_texi_generator = new Odoc_texi.texi
-let default_man_generator = new Odoc_man.man
-let default_dot_generator = new Odoc_dot.dot
-let _ = Odoc_args.parse
-    (default_html_generator :> Odoc_args.doc_generator)
-    (default_latex_generator :> Odoc_args.doc_generator)
-    (default_texi_generator :> Odoc_args.doc_generator)
-    (default_man_generator :> Odoc_args.doc_generator)
-    (default_dot_generator :> Odoc_args.doc_generator)
+let () = Odoc_args.parse ()
 
 
 let loaded_modules =
@@ -114,13 +104,13 @@ let loaded_modules =
            incr Odoc_global.errors ;
            []
        )
-       !Odoc_args.load
+       !Odoc_global.load
     )
 
-let modules = Odoc_analyse.analyse_files ~init: loaded_modules !Odoc_args.files
+let modules = Odoc_analyse.analyse_files ~init: loaded_modules !Odoc_global.files
 
 let _ =
-  match !Odoc_args.dump with
+  match !Odoc_global.dump with
     None -> ()
   | Some f ->
       try Odoc_analyse.dump_modules f modules
@@ -128,13 +118,15 @@ let _ =
         prerr_endline s ;
         incr Odoc_global.errors
 
+
 let _ =
-  match !Odoc_args.doc_generator with
+  match !Odoc_args.current_generator with
     None ->
       ()
   | Some gen ->
+      let generator = Odoc_gen.get_minimal_generator gen in
       Odoc_info.verbose Odoc_messages.generating_doc;
-      gen#generate modules;
+      generator#generate modules;
       Odoc_info.verbose Odoc_messages.ok
 
 let _ =

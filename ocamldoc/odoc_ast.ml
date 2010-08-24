@@ -1174,7 +1174,7 @@ module Analyser =
                     ty_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
                     ty_code =
                       (
-                       if !Odoc_args.keep_code then
+                       if !Odoc_global.keep_code then
                          Some (get_string_of_file loc_start new_end)
                        else
                          None
@@ -1214,7 +1214,7 @@ module Analyser =
               ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
               ex_code =
                 (
-                 if !Odoc_args.keep_code then
+                 if !Odoc_global.keep_code then
                    Some (get_string_of_file loc_start loc_end)
                  else
                    None
@@ -1260,7 +1260,7 @@ module Analyser =
                  tt_module_expr
              in
              let code =
-               if !Odoc_args.keep_code then
+               if !Odoc_global.keep_code then
                  let loc = module_expr.Parsetree.pmod_loc in
                  let st = loc.Location.loc_start.Lexing.pos_cnum in
                  let en = loc.Location.loc_end.Lexing.pos_cnum in
@@ -1622,7 +1622,7 @@ module Analyser =
               p_modtype tt_modtype
           in
           let tt_modtype = Odoc_env.subst_module_type env tt_modtype in
-          if !Odoc_args.filter_with_module_constraints then
+          if !Odoc_global.filter_with_module_constraints then
             filter_module_with_module_type_constraint m_base2 tt_modtype;
           {
             m_base with
@@ -1725,7 +1725,7 @@ module Analyser =
          m_kind = kind ;
          m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
          m_top_deps = [] ;
-         m_code = (if !Odoc_args.keep_code then Some !file else None) ;
+         m_code = (if !Odoc_global.keep_code then Some !file else None) ;
          m_code_intf = None ;
          m_text_only = false ;
        }

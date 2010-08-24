@@ -684,7 +684,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
          | (_, None) ->
              match parent_name with
                None ->
-                 Odoc_messages.pwarning (Odoc_messages.cross_element_not_found initial_name);
+                 Odoc_global.pwarning (Odoc_messages.cross_element_not_found initial_name);
                  Ref (initial_name, None, text_option)
              | Some p ->
                  let parent_name =
@@ -745,7 +745,7 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
            | (_, None) ->
                match parent_name with
                  None ->
-                   Odoc_messages.pwarning (not_found_of_kind kind initial_name);
+                   Odoc_global.pwarning (not_found_of_kind kind initial_name);
                    Ref (initial_name, None, text_option)
                | Some p ->
                    let parent_name =
@@ -987,7 +987,7 @@ let associate module_list =
    | l ->
        List.iter
          (fun nf ->
-           Odoc_messages.pwarning
+           Odoc_global.pwarning
              (
               match nf with
                 NF_m n -> Odoc_messages.cross_module_not_found n

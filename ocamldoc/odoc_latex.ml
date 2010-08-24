@@ -23,6 +23,28 @@ open Exception
 open Class
 open Module
 
+
+
+let separate_files = ref false
+
+let latex_titles = ref [
+  1, "section" ;
+  2, "subsection" ;
+  3, "subsubsection" ;
+  4, "paragraph" ;
+  5, "subparagraph" ;
+]
+
+let latex_value_prefix = ref Odoc_messages.default_latex_value_prefix
+let latex_type_prefix = ref Odoc_messages.default_latex_type_prefix
+let latex_exception_prefix = ref Odoc_messages.default_latex_exception_prefix
+let latex_module_prefix = ref Odoc_messages.default_latex_module_prefix
+let latex_module_type_prefix = ref Odoc_messages.default_latex_module_type_prefix
+let latex_class_prefix = ref Odoc_messages.default_latex_class_prefix
+let latex_class_type_prefix = ref Odoc_messages.default_latex_class_type_prefix
+let latex_attribute_prefix = ref Odoc_messages.default_latex_attribute_prefix
+let latex_method_prefix = ref Odoc_messages.default_latex_method_prefix
+
 let new_buf () = Buffer.create 1024
 let new_fmt () =
   let b = new_buf () in
@@ -60,7 +82,7 @@ class text =
        and with the given latex code. *)
     method section_style level s =
       try
-        let sec = List.assoc level !Args.latex_titles in
+        let sec = List.assoc level !latex_titles in
         "\\"^sec^"{"^s^"}\n"
       with Not_found -> s
 
@@ -182,31 +204,31 @@ class text =
       Buffer.contents buf
 
     (** Make a correct label from a value name. *)
-    method value_label ?no_ name = !Args.latex_value_prefix^(self#label ?no_ name)
+    method value_label ?no_ name = !latex_value_prefix^(self#label ?no_ name)
 
     (** Make a correct label from an attribute name. *)
-    method attribute_label ?no_ name = !Args.latex_attribute_prefix^(self#label ?no_ name)
+    method attribute_label ?no_ name = !latex_attribute_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a method name. *)
-    method method_label ?no_ name = !Args.latex_method_prefix^(self#label ?no_ name)
+    method method_label ?no_ name = !latex_method_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a class name. *)
-    method class_label ?no_ name = !Args.latex_class_prefix^(self#label ?no_ name)
+    method class_label ?no_ name = !latex_class_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a class type name. *)
-    method class_type_label ?no_ name = !Args.latex_class_type_prefix^(self#label ?no_ name)
+    method class_type_label ?no_ name = !latex_class_type_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a module name. *)
-    method module_label ?no_ name = !Args.latex_module_prefix^(self#label ?no_ name)
+    method module_label ?no_ name = !latex_module_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a module type name. *)
-    method module_type_label ?no_ name = !Args.latex_module_type_prefix^(self#label ?no_ name)
+    method module_type_label ?no_ name = !latex_module_type_prefix^(self#label ?no_ name)
 
     (** Make a correct label from an exception name. *)
-    method exception_label ?no_ name = !Args.latex_exception_prefix^(self#label ?no_ name)
+    method exception_label ?no_ name = !latex_exception_prefix^(self#label ?no_ name)
 
     (** Make a correct label from a type name. *)
-    method type_label ?no_ name = !Args.latex_type_prefix^(self#label ?no_ name)
+    method type_label ?no_ name = !latex_type_prefix^(self#label ?no_ name)
 
     (** Return latex code for the label of a given label. *)
     method make_label label = "\\label{"^label^"}"
@@ -413,6 +435,8 @@ class virtual info =
         (self#text_of_info ~block info_opt)
   end
 
+module Generator =
+struct
 (** This class is used to create objects which can generate a simple LaTeX documentation. *)
 class latex =
   object (self)
@@ -1082,7 +1106,7 @@ class latex =
       ps fmt "\\usepackage{url} \n";
       ps fmt "\\usepackage{ocamldoc}\n";
       (
-       match !Args.title with
+       match !Global.title with
          None -> ()
        | Some s ->
            ps fmt "\\title{";
@@ -1090,15 +1114,15 @@ class latex =
            ps fmt "}\n"
       );
       ps fmt "\\begin{document}\n";
-      (match !Args.title with
+      (match !Global.title with
         None -> () |
         Some _ -> ps fmt "\\maketitle\n"
       );
-      if !Args.with_toc then ps fmt "\\tableofcontents\n";
+      if !Global.with_toc then ps fmt "\\tableofcontents\n";
       (
        let info = Odoc_info.apply_opt
            (Odoc_info.info_of_comment_file module_list)
-           !Odoc_info.Args.intro_file
+           !Odoc_info.Global.intro_file
        in
        (match info with None -> () | Some _ -> ps fmt "\\vspace{0.2cm}");
        self#latex_of_info fmt info;
@@ -1109,7 +1133,7 @@ class latex =
     (** Generate the LaTeX style file, if it does not exists. *)
     method generate_style_file =
       try
-        let dir = Filename.dirname !Args.out_file in
+        let dir = Filename.dirname !Global.out_file in
         let file = Filename.concat dir "ocamldoc.sty" in
         if Sys.file_exists file then
           Odoc_info.verbose (Odoc_messages.file_exists_dont_generate file)
@@ -1126,12 +1150,12 @@ class latex =
           prerr_endline s ;
           incr Odoc_info.errors ;
 
-    (** Generate the LaTeX file from a module list, in the {!Odoc_info.Args.out_file} file. *)
+    (** Generate the LaTeX file from a module list, in the {!Odoc_info.Global.out_file} file. *)
     method generate module_list =
       self#generate_style_file ;
-      let main_file = !Args.out_file in
+      let main_file = !Global.out_file in
       let dir = Filename.dirname main_file in
-      if !Args.separate_files then
+      if !separate_files then
         (
          let f m =
            try
@@ -1154,16 +1178,16 @@ class latex =
       try
         let chanout = open_out main_file in
         let fmt = Format.formatter_of_out_channel chanout in
-        if !Args.with_header then self#latex_header fmt module_list;
+        if !Global.with_header then self#latex_header fmt module_list;
         List.iter
           (fun m ->
-            if !Args.separate_files then
+            if !separate_files then
               ps fmt ("\\input{"^((Name.simple m.m_name))^".tex}\n")
             else
               self#generate_for_top_module fmt m
           )
           module_list ;
-        if !Args.with_trailer then ps fmt "\\end{document}";
+        if !Global.with_trailer then ps fmt "\\end{document}";
         Format.pp_print_flush fmt ();
         close_out chanout
       with
@@ -1172,3 +1196,6 @@ class latex =
           prerr_endline s ;
           incr Odoc_info.errors
   end
+end
+
+module type Latex_generator = module type of Generator

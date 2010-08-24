@@ -529,7 +529,7 @@ module Analyser =
                 ex_loc = { loc_impl = None ; loc_inter = Some (!file_name, pos_start_ele) } ;
                 ex_code =
                    (
-                    if !Odoc_args.keep_code then
+                    if !Odoc_global.keep_code then
                       Some (get_string_of_file pos_start_ele pos_end_ele)
                     else
                       None
@@ -617,7 +617,7 @@ module Analyser =
                       };
                       ty_code =
                         (
-                         if !Odoc_args.keep_code then
+                         if !Odoc_global.keep_code then
                            Some (get_string_of_file loc_start new_end)
                          else
                            None
@@ -660,7 +660,7 @@ module Analyser =
             in
             let module_kind = analyse_module_kind env complete_name module_type sig_module_type in
             let code_intf =
-              if !Odoc_args.keep_code then
+              if !Odoc_global.keep_code then
                 let loc = module_type.Parsetree.pmty_loc in
                 let st = loc.Location.loc_start.Lexing.pos_cnum in
                 let en = loc.Location.loc_end.Lexing.pos_cnum in
@@ -751,7 +751,7 @@ module Analyser =
                   (* associate the comments to each constructor and build the [Type.t_type] *)
                   let module_kind = analyse_module_kind new_env complete_name modtype sig_module_type in
                   let code_intf =
-                    if !Odoc_args.keep_code then
+                    if !Odoc_global.keep_code then
                       let loc = modtype.Parsetree.pmty_loc in
                       let st = loc.Location.loc_start.Lexing.pos_cnum in
                       let en = loc.Location.loc_end.Lexing.pos_cnum in
@@ -1283,7 +1283,7 @@ module Analyser =
         analyse_parsetree Odoc_env.empty signat mod_name len (String.length !file) ast
       in
       let code_intf =
-        if !Odoc_args.keep_code then
+        if !Odoc_global.keep_code then
           Some !file
         else
           None

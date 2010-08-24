@@ -178,7 +178,7 @@ and special_comment = parse
            let s2 = lecture_string () in
            let s3 = remove_blanks s2 in
            let s4 =
-             if !Odoc_args.remove_stars then
+             if !Odoc_global.remove_stars then
                remove_stars s3
              else
                s3
@@ -244,14 +244,14 @@ and special_comment_part2 = parse
         if !comments_level = 1 then
           (* finally we return the description we kept *)
           let desc =
-            if !Odoc_args.remove_stars then
+            if !Odoc_global.remove_stars then
               remove_stars !description
              else
               !description
           in
           let remain = lecture_string () in
           let remain2 =
-            if !Odoc_args.remove_stars then
+            if !Odoc_global.remove_stars then
               remove_stars remain
              else
                remain
@@ -322,7 +322,7 @@ and elements = parse
          | "return" ->
              T_RETURN
          | s ->
-             if !Odoc_args.no_custom_tags then
+             if !Odoc_global.no_custom_tags then
                raise (Failure (Odoc_messages.not_a_valid_tag s))
              else
                T_CUSTOM s

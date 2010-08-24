@@ -203,18 +203,18 @@ let process_error exn =
 
 (** Process the given file, according to its extension. Return the Module.t created, if any.*)
 let process_file ppf sourcefile =
-  if !Odoc_args.verbose then
+  if !Odoc_global.verbose then
     (
      let f = match sourcefile with
-       Odoc_args.Impl_file f
-     | Odoc_args.Intf_file f -> f
-     | Odoc_args.Text_file f -> f
+       Odoc_global.Impl_file f
+     | Odoc_global.Intf_file f -> f
+     | Odoc_global.Text_file f -> f
      in
      print_string (Odoc_messages.analysing f) ;
      print_newline ();
     );
   match sourcefile with
-    Odoc_args.Impl_file file ->
+    Odoc_global.Impl_file file ->
       (
        Location.input_name := file;
        try
@@ -228,7 +228,7 @@ let process_file ppf sourcefile =
              in
              file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
 
-             if !Odoc_args.verbose then
+             if !Odoc_global.verbose then
                (
                 print_string Odoc_messages.ok;
                 print_newline ()
@@ -246,7 +246,7 @@ let process_file ppf sourcefile =
            incr Odoc_global.errors ;
            None
       )
-  | Odoc_args.Intf_file file ->
+  | Odoc_global.Intf_file file ->
       (
        Location.input_name := file;
        try
@@ -257,7 +257,7 @@ let process_file ppf sourcefile =
 
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
 
-         if !Odoc_args.verbose then
+         if !Odoc_global.verbose then
            (
             print_string Odoc_messages.ok;
             print_newline ()
@@ -275,7 +275,7 @@ let process_file ppf sourcefile =
            incr Odoc_global.errors ;
            None
       )
-  | Odoc_args.Text_file file ->
+  | Odoc_global.Text_file file ->
       Location.input_name := file;
       try
         let mod_name =
@@ -474,20 +474,20 @@ let analyse_files ?(init=[]) files =
   in
   (* Remove elements between the stop special comments, if needed. *)
   let modules =
-    if !Odoc_args.no_stop then
+    if !Odoc_global.no_stop then
       modules_pre
     else
       remove_elements_between_stop modules_pre
   in
 
 
-  if !Odoc_args.verbose then
+  if !Odoc_global.verbose then
     (
      print_string Odoc_messages.merging;
      print_newline ()
     );
-  let merged_modules = Odoc_merge.merge !Odoc_args.merge_options modules in
-  if !Odoc_args.verbose then
+  let merged_modules = Odoc_merge.merge !Odoc_global.merge_options modules in
+  if !Odoc_global.verbose then
     (
      print_string Odoc_messages.ok;
      print_newline ();
@@ -499,20 +499,20 @@ let analyse_files ?(init=[]) files =
        merged_modules
     )
   in
-  if !Odoc_args.verbose then
+  if !Odoc_global.verbose then
     (
      print_string Odoc_messages.cross_referencing;
      print_newline ()
     );
   let _ = Odoc_cross.associate modules_list in
 
-  if !Odoc_args.verbose then
+  if !Odoc_global.verbose then
     (
      print_string Odoc_messages.ok;
      print_newline ();
     );
 
-  if !Odoc_args.sort_modules then
+  if !Odoc_global.sort_modules then
     Sort.list (fun m1 -> fun m2 -> m1.Odoc_module.m_name < m2.Odoc_module.m_name) merged_modules
   else
     merged_modules

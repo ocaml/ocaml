@@ -72,8 +72,8 @@ COMPFLAGS=$(INCLUDES) -warn-error A
 LINKFLAGS=$(INCLUDES) -nostdlib
 
 CMOFILES= odoc_config.cmo \
-	odoc_global.cmo\
 	odoc_messages.cmo\
+	odoc_global.cmo\
 	odoc_types.cmo\
 	odoc_misc.cmo\
 	odoc_text_parser.cmo\
@@ -88,7 +88,6 @@ CMOFILES= odoc_config.cmo \
 	odoc_module.cmo\
 	odoc_print.cmo \
 	odoc_str.cmo\
-	odoc_args.cmo\
 	odoc_comments_global.cmo\
 	odoc_parser.cmo\
 	odoc_lexer.cmo\
@@ -121,6 +120,8 @@ EXECMOFILES=$(CMOFILES) \
 	odoc_latex.cmo \
 	odoc_texi.cmo \
 	odoc_dot.cmo \
+	odoc_gen.cmo \
+	odoc_args.cmo\
 	odoc.cmo
 
 EXECMXFILES= $(EXECMOFILES:.cmo=.cmx)
