@@ -47,6 +47,11 @@ INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 
 ODOC_TEST=odoc_test.cmo
 
+GENERATORS_CMOS= \
+	generators/odoc_todo.cmo \
+	generators/odoc_literate.cmo
+GENERATORS_CMXS=$(GENERATORS_CMOS:.cmo=.cmxs)
+
 
 # Compilation
 #############
@@ -189,15 +194,18 @@ STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/bigarray/bigarray.mli \
 	../otherlibs/num/num.mli
 
-all: exe lib
+all: exe lib generators
 
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
+generators: $(GENERATORS_CMOS)
 
-opt.opt: exeopt libopt
+opt.opt: exeopt libopt generatorsopt
 	$(MAKE) manpages
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
+generatorsopt: $(GENERATORS_CMXS)
+
 debug:
 	make OCAMLPP=""
 
@@ -237,7 +245,7 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 # generic rules :
 #################
 
-.SUFFIXES: .mll .mly .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .mll .mly .ml .mli .cmo .cmi .cmx .cmxs
 
 .ml.cmo:
 	$(OCAMLC) $(OCAMLPP) $(COMPFLAGS) -c $<
@@ -247,6 +255,9 @@ odoc_see_lexer.ml: odoc_see_lexer.mll
 
 .ml.cmx:
 	$(OCAMLOPT) $(OCAMLPP) $(COMPFLAGS) -c $<
+
+.ml.cmxs:
+	$(OCAMLOPT) -shared -o $@ $(OCAMLPP) $(COMPFLAGS) $<
 
 .mll.ml:
 	$(OCAMLLEX) $<
@@ -284,6 +295,10 @@ installopt_really:
 test: dummy
 	$(MKDIR) $@
 	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
+	$(MKDIR) $@-custom
+	$(OCAMLDOC_RUN) -colorize-code -sort -d $@-custom $(INCLUDES) \
+	-g generators/odoc_literate.cmo -g generators/odoc_todo.cmo \
+	-load $@/ocamldoc.odoc -v
 
 test_stdlib: dummy
 	$(MKDIR) $@
