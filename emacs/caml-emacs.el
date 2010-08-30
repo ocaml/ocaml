@@ -39,7 +39,8 @@
          (or (member 'drag modifiers)
              (member 'click modifiers)))))
 
-(defun caml-string-to-int (x)
-  (if (fboundp 'string-to-number) (string-to-number x) (string-to-int x)))
+(if (fboundp 'string-to-number)
+   (defalias 'caml-string-to-int 'string-to-number)
+ (defalias 'caml-string-to-int 'string-to-int))
 
 (provide 'caml-emacs)

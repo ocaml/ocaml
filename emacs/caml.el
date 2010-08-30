@@ -813,8 +813,9 @@ from an error message produced by camlc.")
 (defvar caml-error-overlay nil)
 (defvar caml-next-error-skip-warnings-flag nil)
 
-(defun caml-string-to-int (x)
-  (if (fboundp 'string-to-number) (string-to-number x) (string-to-int x)))
+(if (fboundp 'string-to-number)
+   (defalias 'caml-string-to-int 'string-to-number)
+ (defalias 'caml-string-to-int 'string-to-int))
 
 ;;itz 04-21-96 somebody didn't get the documentation for next-error
 ;;right. When the optional argument is a number n, it should move
