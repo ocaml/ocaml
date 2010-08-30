@@ -163,7 +163,7 @@ Input and output via buffer `*inferior-caml*'."
       (setq count (+ count 1)))
     (if  (equal (buffer-name (current-buffer))
                 inferior-caml-buffer-name)
-        (end-of-buffer))
+        (goto-char (point-max)))
     (while
         (> count 0)
       (previous-multiframe-window)
@@ -201,7 +201,7 @@ Input and output via buffer `*inferior-caml*'."
                   (re-search-backward
                    (concat comint-prompt-regexp
                            "[ \t]*Characters[ \t]+\\([0-9]+\\)-[0-9]+:$"))
-                  (string-to-int (match-string 1))))))
+                  (caml-string-to-int (match-string 1))))))
     (goto-char loc)))
 
 
@@ -265,8 +265,8 @@ should lies."
           (cond ((re-search-forward
                   " *Characters \\([01-9][01-9]*\\)-\\([1-9][01-9]*\\):\n[^W]"
                   (point-max) t)
-                 (setq beg (string-to-int (caml-match-string 1)))
-                 (setq end (string-to-int (caml-match-string 2)))
+                 (setq beg (caml-string-to-int (caml-match-string 1)))
+                 (setq end (caml-string-to-int (caml-match-string 2)))
                  (switch-to-buffer buf)
                  (goto-char orig)
                  (forward-byte end)
