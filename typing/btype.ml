@@ -510,3 +510,9 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
+
+(**** Sets, maps and hashtables of types ****)
+
+module TypeSet = Set.Make(TypeOps)
+module TypeMap = Map.Make (TypeOps)
+module TypeHash = Hashtbl.Make(TypeOps)

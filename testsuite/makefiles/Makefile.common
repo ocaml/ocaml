@@ -6,9 +6,9 @@ include $(TOPDIR)/config/Makefile
 
 BOOTDIR=$(TOPDIR)/boot
 OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
-OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml$(EXE)
-OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc$(EXE)
-OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt$(EXE)
+OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml$(EXE) -I $(TOPDIR)/stdlib
+OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc$(EXE) -I $(TOPDIR)/stdlib
+OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt$(EXE) -I $(TOPDIR)/stdlib
 OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc$(EXE)
 OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex$(EXE)
 OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib$(EXE)

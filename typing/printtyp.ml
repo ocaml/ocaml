@@ -899,8 +899,11 @@ let print_tags ppf fields =
 
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
-    Tfield _, _ | _, Tfield _
-  | Tunivar, Tvar | Tvar, Tunivar
+    Tunivar, Tunivar ->
+      let free_univars = add_free_univars [] in
+      TypeSet.mem t3 free_univars || TypeSet.mem t4 free_univars
+  | Tfield _, _ | _, Tfield _
+  | Tunivar, _ | _, Tunivar
   | Tvariant _, Tvariant _ -> true
   | Tconstr (p, _, _), Tvar | Tvar, Tconstr (p, _, _) ->
       unif && min t3.level t4.level < Path.binding_time p
@@ -930,8 +933,14 @@ let explanation unif t3 t4 ppf =
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p
+  | Tunivar, Tunivar ->
+      fprintf ppf "@,Universal variables %a and %a are incompatible"
+        type_expr t3 type_expr t4
   | Tvar, Tunivar | Tunivar, Tvar ->
       fprintf ppf "@,The universal variable %a would escape its scope"
+        type_expr (if t3.desc = Tunivar then t3 else t4)
+  | _, Tunivar | Tunivar, _ ->
+      fprintf ppf "@,The universal variable %a cannot be instantiated"
         type_expr (if t3.desc = Tunivar then t3 else t4)
   | Tfield (lab, _, _, _), _
   | _, Tfield (lab, _, _, _) when lab = dummy_method ->
