@@ -756,7 +756,7 @@ and the ground types "int" (resp. "string"). The constructor "Pair" is
 more complex. One wants to give a witness of type equality between
 "'a" and a type of the form "t1 * t2" together with the representations
 for "t1" and "t2". However, these two types are unknown. The code above
-should how to use first-class modules to simulate existentials.
+shows how to use first-class modules to simulate existentials.
 
 Here is how to construct values of type "'a typ":
 
