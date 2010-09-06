@@ -30,7 +30,7 @@ val transl_value_decl:
     Env.t -> Parsetree.value_description -> value_description
 
 val transl_with_constraint:
-    Env.t -> Ident.t -> Path.t option ->
+    Env.t -> Ident.t -> Path.t option -> type_declaration ->
     Parsetree.type_declaration -> type_declaration
 
 val abstract_type_decl: int -> type_declaration
