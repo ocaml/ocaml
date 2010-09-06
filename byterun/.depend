@@ -112,6 +112,9 @@ signals.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h signals_machdep.h \
   sys.h
+signals_byt.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
+  minor_gc.h osdeps.h signals.h signals_machdep.h
 stacks.o: stacks.c config.h ../config/m.h ../config/s.h compatibility.h \
   fail.h misc.h mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h
@@ -250,6 +253,9 @@ signals.d.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h signals_machdep.h \
   sys.h
+signals_byt.d.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
+  minor_gc.h osdeps.h signals.h signals_machdep.h
 stacks.d.o: stacks.c config.h ../config/m.h ../config/s.h compatibility.h \
   fail.h misc.h mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h
@@ -379,13 +385,13 @@ printexc.pic.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
 roots.pic.o: roots.c finalise.h roots.h misc.h compatibility.h config.h \
   ../config/m.h ../config/s.h memory.h gc.h mlvalues.h major_gc.h \
   freelist.h minor_gc.h globroots.h stacks.h
-signals_byt.pic.o: signals_byt.c config.h ../config/m.h ../config/s.h \
-  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
-  minor_gc.h osdeps.h signals.h signals_machdep.h
 signals.pic.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h signals_machdep.h \
   sys.h
+signals_byt.pic.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
+  minor_gc.h osdeps.h signals.h signals_machdep.h
 stacks.pic.o: stacks.c config.h ../config/m.h ../config/s.h compatibility.h \
   fail.h misc.h mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h \
   minor_gc.h

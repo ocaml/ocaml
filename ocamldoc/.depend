@@ -300,8 +300,6 @@ odoc_value.cmo: ../typing/types.cmi ../typing/printtyp.cmi odoc_types.cmi \
     odoc_parameter.cmo odoc_name.cmi
 odoc_value.cmx: ../typing/types.cmx ../typing/printtyp.cmx odoc_types.cmx \
     odoc_parameter.cmx odoc_name.cmx
-t.cmo:
-t.cmx:
 odoc_analyse.cmi: odoc_module.cmo odoc_args.cmi
 odoc_args.cmi: odoc_types.cmi odoc_module.cmo
 odoc_ast.cmi: ../typing/types.cmi ../typing/typedtree.cmi ../typing/path.cmi \
