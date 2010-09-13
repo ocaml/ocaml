@@ -160,11 +160,11 @@ let transl_declaration env (name, sdecl) id =
                     (name, List.map (transl_simple_type env true) args))
               cstrs)
 	    else
-            Type_generalized_variant
-              (List.map
-                 (fun (name, args,ret_type_opt, loc) ->
-                    (name, List.map (transl_simple_type env true) args,may_map (transl_simple_type env true) ret_type_opt))
-              cstrs)
+	      Type_generalized_variant
+		(List.map
+                   (fun (name, args,ret_type_opt, loc) ->
+                     (name, List.map (transl_simple_type env false) args,may_map (transl_simple_type env false) ret_type_opt)) (* GAH: calling transl_simple_type with fixed=false, ask garrigue if this is ok *)
+		   cstrs)
         | Ptype_record lbls ->
             let all_labels = ref StringSet.empty in
             List.iter
