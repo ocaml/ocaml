@@ -1153,12 +1153,10 @@ let rec type_exp env sexp  =
   | Pexp_match(sarg, caselist) ->
       let arg = type_exp env sarg in
       let ty_res = newvar() in
-      Format.fprintf Format.std_formatter "  match type before type_cases_gadt : %a\n%! " Printtyp.raw_type_expr  ty_res ;
       let cases, partial =
         type_cases_gadt env arg.exp_type ty_res (Some loc) caselist
       in
-      
-  Format.fprintf Format.std_formatter " match type : %a\n%! " Printtyp.raw_type_expr  ty_res ;
+      Format.fprintf Format.std_formatter " match type : %a\n%! " Printtyp.raw_type_expr  ty_res ;
       re {
         exp_desc = Texp_match(arg, cases, partial);
         exp_loc = loc;
@@ -2100,7 +2098,7 @@ and type_expect ?in_function env sexp ty_expected =
         else ty_arg
       in
       let cases, partial =
-        type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
+        type_cases_gadt ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
           (Some loc) caselist in
       let not_function ty  = 
         let ls, tvar = list_labels env ty in
