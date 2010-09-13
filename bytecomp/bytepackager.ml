@@ -222,18 +222,19 @@ let package_object_files files targetfile targetname coercion =
 (* The entry point *)
 
 let package_files files targetfile =
-  let files =
+    let files =
     List.map
-      (fun f ->
+	(fun f ->
         try find_in_path !Config.load_path f
         with Not_found -> raise(Error(File_not_found f)))
-      files in
-  let prefix = chop_extensions targetfile in
-  let targetcmi = prefix ^ ".cmi" in
-  let targetname = String.capitalize(Filename.basename prefix) in
-  try
-    let coercion = Typemod.package_units files targetcmi targetname in
-    package_object_files files targetfile targetname coercion
+	files in
+    let prefix = chop_extensions targetfile in
+    let targetcmi = prefix ^ ".cmi" in
+    let targetname = String.capitalize(Filename.basename prefix) in
+    try
+      let coercion = Typemod.package_units files targetcmi targetname in
+    let ret = package_object_files files targetfile targetname coercion in 
+    ret
   with x ->
     remove_file targetfile; raise x
 

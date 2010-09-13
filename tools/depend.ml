@@ -67,7 +67,7 @@ let add_opt add_fn bv = function
     None -> ()
   | Some x -> add_fn bv x
 
-let add_type_declaration bv td =
+let add_type_declaration bv td = (* GAH: no idea if this is correct *)
   List.iter
     (fun (ty1, ty2, _) -> add_type bv ty1; add_type bv ty2)
     td.ptype_cstrs;
@@ -75,7 +75,7 @@ let add_type_declaration bv td =
   let rec add_tkind = function
     Ptype_abstract -> ()
   | Ptype_variant cstrs ->
-      List.iter (fun (c, args, _) -> List.iter (add_type bv) args) cstrs
+      List.iter (fun (c, args, rty, _) -> List.iter (add_type bv) args; Misc.may (add_type bv) rty) cstrs
   | Ptype_record lbls ->
       List.iter (fun (l, mut, ty, _) -> add_type bv ty) lbls in
   add_tkind td.ptype_kind

@@ -46,7 +46,7 @@ and core_field_desc =
   | Pfield_var
 
 and row_field =
-    Rtag of label * bool * core_type list
+    Rtag of label * bool * core_type list 
   | Rinherit of core_type
 
 (* Type expressions for the class language *)
@@ -138,7 +138,7 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list * Location.t) list
+  | Ptype_variant of (string * core_type list * core_type option * Location.t) list
   | Ptype_record of
       (string * mutable_flag * core_type * Location.t) list
 

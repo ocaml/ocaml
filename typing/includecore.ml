@@ -161,21 +161,29 @@ let report_type_mismatch first second decl ppf =
       Format.fprintf ppf "@ %a." (report_type_mismatch0 first second decl) err)
 
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
-  match cstrs1, cstrs2 with
+  match cstrs1, cstrs2 with (* GAH: most likely wrong, but I don't know what this function does *)
     [], []           -> []
-  | [], (cstr2,_)::_ -> [Field_missing (true, cstr2)]
-  | (cstr1,_)::_, [] -> [Field_missing (false, cstr1)]
-  | (cstr1, arg1)::rem1, (cstr2, arg2)::rem2 ->
+  | [], (cstr2,_,_)::_ -> [Field_missing (true, cstr2)]
+  | (cstr1,_,_)::_, [] -> [Field_missing (false, cstr1)]
+  | (cstr1, arg1, ret1)::rem1, (cstr2, arg2,ret2)::rem2 ->
       if cstr1 <> cstr2 then [Field_names (n, cstr1, cstr2)] else
       if List.length arg1 <> List.length arg2 then [Field_arity cstr1] else
-      if Misc.for_all2
-          (fun ty1 ty2 ->
-            Ctype.equal env true (ty1::decl1.type_params)
-                                 (ty2::decl2.type_params))
-          arg1 arg2
-      then compare_variants env decl1 decl2 (n+1) rem1 rem2
-      else [Field_type cstr1]
-
+      match ret1, ret2 with
+      | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> 
+	  [Field_type cstr1]
+      | Some _, None | None, Some _ ->
+	  [Field_type cstr1]
+      | _ ->      
+	  if Misc.for_all2
+	      (fun ty1 ty2 ->
+		Ctype.equal env true (ty1::decl1.type_params)
+		  (ty2::decl2.type_params))
+	      (arg1) (arg2) 
+	  then 
+	    compare_variants env decl1 decl2 (n+1) rem1 rem2
+	  else [Field_type cstr1]
+	      
+	    
 let rec compare_records env decl1 decl2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []
@@ -195,6 +203,9 @@ let type_declarations env id decl1 decl2 =
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
     | (Type_variant cstrs1, Type_variant cstrs2) ->
+	let gen_variants lst = List.map (fun (a,b) -> (a,b,None)) lst in 
+        compare_variants env decl1 decl2 1 (gen_variants cstrs1) (gen_variants cstrs2)
+    | (Type_generalized_variant cstrs1, Type_generalized_variant cstrs2) ->
         compare_variants env decl1 decl2 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
         let err = compare_records env decl1 decl2 1 labels1 labels2 in
@@ -222,7 +233,7 @@ let type_declarations env id decl1 decl2 =
   in
   if err <> [] then err else
   if match decl2.type_kind with
-  | Type_record (_,_) | Type_variant _ -> decl2.type_private = Private
+  | Type_record (_,_) | Type_generalized_variant _ | Type_variant _ -> decl2.type_private = Private
   | Type_abstract ->
       match decl2.type_manifest with
       | None -> true

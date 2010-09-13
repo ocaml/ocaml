@@ -457,8 +457,19 @@ let closed_type_decl decl =
     begin match decl.type_kind with
       Type_abstract ->
         ()
+    | Type_generalized_variant v ->
+        List.iter 
+	  (fun (_, tyl,ret_type_opt) -> 
+	    match ret_type_opt with
+	    | Some _ -> ()
+	    | None ->
+		List.iter closed_type tyl)
+	  v (* GAH: is this correct ? *)
     | Type_variant v ->
-        List.iter (fun (_, tyl) -> List.iter closed_type tyl) v
+        List.iter 
+	  (fun (_, tyl) -> 
+	    List.iter closed_type tyl)
+	  v (* GAH: is this correct ? *)
     | Type_record(r, rep) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
     end;
@@ -1539,60 +1550,91 @@ let deep_occur t0 ty =
       abbreviated.  It would be possible to check whether some
       information is indeed lost, but it probably does not worth it.
 *)
+
+let pattern_unification = ref false
+let local_unifier = ref []
+
+
+let set_unification_type x = 
+  match x with
+  | `Pattern -> 
+      pattern_unification := true
+  | `Expression ->
+      pattern_unification := false
+
+let get_unification_type () = 
+  match !pattern_unification with
+  | true -> `Pattern
+  | false -> `Expression
+
+let reset_local_unifier () = 
+  local_unifier := []
+
+let get_local_unifier () = !local_unifier
+let uni_equalities = ref TypeSetPair.empty
+let uni_eq t1 t2 = t1 == t2 || TypeSetPair.mem   (t1,t2) !uni_equalities   || TypeSetPair.mem   (t2,t1)  !uni_equalities
+let add_equality t1 t2 = 
+  uni_equalities := TypeSetPair.add  (t1, t2) !uni_equalities
+
+
 let rec unify env t1 t2 =
   (* First step: special cases (optimizations) *)
-  if t1 == t2 then () else
+  if uni_eq t1 t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
-  if t1 == t2 then () else
-
+  if uni_eq t1 t2 then () else
   try
     type_changed := true;
     match (t1.desc, t2.desc) with
-      (Tvar, Tconstr _) when deep_occur t1 t2 ->
+    | (Tvar, Tconstr _) when deep_occur t1 t2  -> 
         unify2 env t1 t2
-    | (Tconstr _, Tvar) when deep_occur t2 t1 ->
+    | (Tconstr _, Tvar) when deep_occur t2 t1  -> 
         unify2 env t1 t2
-    | (Tvar, _) ->
+    | (Tvar, _)  -> 
         occur env t1 t2; occur_univar env t2;
         update_level env t1.level t2;
         link_type t1 t2
-    | (_, Tvar) ->
+    | (_, Tvar)  -> 
         occur env t2 t1; occur_univar env t1;
         update_level env t2.level t1;
         link_type t2 t1
-    | (Tunivar, Tunivar) ->
+    | (Tunivar, Tunivar)  ->  (* GAH : ask garrigue: when do we unify univars? *)
         unify_univar t1 t2 !univar_pairs;
         update_level env t1.level t2;
         link_type t1 t2
+
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
           when Path.same p1 p2
             (* This optimization assumes that t1 does not expand to t2
                (and conversely), so we fall back to the general case
                when any of the types has a cached expansion. *)
             && not (has_cached_expansion p1 !a1
-                 || has_cached_expansion p2 !a2) ->
+                 || has_cached_expansion p2 !a2)  -> 
         update_level env t1.level t2;
         link_type t1 t2
-    | _ ->
+
+
+    | _  -> 
         unify2 env t1 t2
   with Unify trace ->
     raise (Unify ((t1, t2)::trace))
 
 and unify2 env t1 t2 =
+
+
+
   (* Second step: expansion of abbreviations *)
   let rec expand_both t1'' t2'' =
     let t1' = expand_head_unif env t1 in
     let t2' = expand_head_unif env t2 in
     (* Expansion may have changed the representative of the types... *)
-    if t1' == t1'' && t2' == t2'' then (t1',t2') else
+    if uni_eq t1' t1'' && uni_eq t2' t2'' then (t1',t2') else
     expand_both t1' t2'
   in
   let t1', t2' = expand_both t1 t2 in
-  if t1' == t2' then () else
-
+  if uni_eq t1' t2' then () else
   let t1 = repr t1 and t2 = repr t2 in
-  if (t1 == t1') || (t2 != t2') then
+  if (uni_eq t1 t1') || (not (uni_eq t2 t2')) then (* GAH: ask garrigue why this code seems so strange *)
     unify3 env t1 t1' t2 t2'
   else
     try unify3 env t2 t2' t1 t1' with Unify trace ->
@@ -1606,16 +1648,22 @@ and unify3 env t1 t1' t2 t2' =
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
   occur env t1' t2;
   update_level env t1'.level t2;
-  link_type t1' t2;
 
+  add_equality t1' t2;
+
+
+  
   try
     begin match (d1, d2) with
       (Tvar, _) ->
+	link_type t1' t2;
         occur_univar env t2
     | (_, Tvar) ->
-        let td1 = newgenty d1 in
+	link_type t2' t1;
+        occur_univar env t1;
+(*        let td1 = newgenty d1 in
         occur env t2' td1;
-        occur_univar env td1;
+
         if t1 == t1' then begin
           (* The variable must be instantiated... *)
           let ty = newty2 t1'.level d1 in
@@ -1626,7 +1674,7 @@ and unify3 env t1 t1' t2 t2' =
           t1'.desc <- d1;
           update_level env t2'.level t1;
           link_type t2' t1
-        end
+        end*)
     | (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         unify env t1 t2; unify env u1 u2;
@@ -1669,6 +1717,18 @@ and unify3 env t1 t1' t2 t2' =
         enter_poly env univar_pairs t1 tl1 t2 tl2 (unify env)
     | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when Path.same p1 p2 && n1 = n2 ->
         unify_list env tl1 tl2
+    | (Tunivar,_)  -> 
+	
+	if !pattern_unification then 
+	  local_unifier:= (t1,t2) :: !local_unifier
+	else
+          raise (Unify [])
+    | (_,Tunivar)  -> 
+	
+	if !pattern_unification then 
+	  local_unifier:= (t2,t1) :: !local_unifier
+	else
+          ( raise (Unify []) )
     | (_, _) ->
         raise (Unify [])
     end;
@@ -1887,12 +1947,18 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
       set_row_field e2 f1
   | _ -> raise (Unify [])
 
+;;
+
 
 let unify env ty1 ty2 =
   try
-    unify env ty1 ty2
+    uni_equalities := TypeSetPair.empty;
+    unify env ty1 ty2;
+    uni_equalities := TypeSetPair.empty;
   with Unify trace ->
+    uni_equalities := TypeSetPair.empty;
     raise (Unify (expand_trace env trace))
+
 
 let unify_var env t1 t2 =
   let t1 = repr t1 and t2 = repr t2 in
@@ -3371,7 +3437,17 @@ let nondep_type_decl env mid id is_covariant decl =
       | Type_variant cstrs ->
           Type_variant
             (List.map
-               (fun (c, tl) -> (c, List.map (nondep_type_rec env mid) tl))
+               (fun (c, tl) -> 
+		 (c, List.map (nondep_type_rec env mid) tl)) (* GAH: HERE TOO? *)
+               cstrs)
+      | Type_generalized_variant cstrs ->
+          Type_generalized_variant
+            (List.map
+               (fun (c, tl,ret_type_opt) -> 
+		 let ret_type_opt = 
+		   may_map (nondep_type_rec env mid) ret_type_opt
+		 in
+		 (c, List.map (nondep_type_rec env mid) tl,ret_type_opt)) (* GAH: HERE TOO? *)
                cstrs)
       | Type_record(lbls, rep) ->
           Type_record
@@ -3478,3 +3554,11 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
+
+
+     
+
+
+
+	
+  

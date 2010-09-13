@@ -250,3 +250,7 @@ val arity: type_expr -> int
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
+val reset_local_unifier: unit -> unit
+val get_local_unifier: unit -> (type_expr * type_expr) list
+val set_unification_type : [`Pattern | `Expression] -> unit
+val get_unification_type : unit -> [`Pattern | `Expression] 

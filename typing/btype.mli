@@ -157,5 +157,6 @@ val log_type: type_expr -> unit
 (**** Sets, maps and hashtables of types ****)
 
 module TypeSet  : Set.S with type elt = type_expr
+module TypeSetPair  : Set.S with type elt = type_expr * type_expr
 module TypeMap  : Map.S with type key = type_expr
 module TypeHash : Hashtbl.S with type key = type_expr

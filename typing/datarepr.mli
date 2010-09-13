@@ -17,9 +17,9 @@
 
 open Asttypes
 open Types
-
+  
 val constructor_descrs:
-  type_expr -> (string * type_expr list) list -> private_flag ->
+  type_expr -> (string * type_expr list * type_expr option) list -> private_flag ->
     (string * constructor_description) list
 val exception_descr:
   Path.t -> type_expr list -> constructor_description
@@ -31,4 +31,4 @@ val label_descrs:
 exception Constr_not_found
 
 val find_constr_by_tag:
-  constructor_tag -> (string * type_expr list) list -> string * type_expr list
+  constructor_tag -> (string * type_expr list * type_expr option) list -> string * type_expr list * type_expr option

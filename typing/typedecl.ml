@@ -145,18 +145,25 @@ let transl_declaration env (name, sdecl) id =
         | Ptype_variant cstrs ->
             let all_constrs = ref StringSet.empty in
             List.iter
-              (fun (name, args, loc) ->
+              (fun (name, _, _, loc) ->
                 if StringSet.mem name !all_constrs then
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
-            if List.length (List.filter (fun (_, args, _) -> args <> []) cstrs)
+            if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs) (* GAH: MIGHT BE WRONG *)
                > (Config.max_tag + 1) then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
+	    if List.for_all (fun (_,_,x,_) -> match x with Some _ -> false | None -> true) cstrs then
             Type_variant
               (List.map
-                 (fun (name, args, loc) ->
+                 (fun (name, args,_, loc) ->
                     (name, List.map (transl_simple_type env true) args))
+              cstrs)
+	    else
+            Type_generalized_variant
+              (List.map
+                 (fun (name, args,ret_type_opt, loc) ->
+                    (name, List.map (transl_simple_type env true) args,may_map (transl_simple_type env true) ret_type_opt))
               cstrs)
         | Ptype_record lbls ->
             let all_labels = ref StringSet.empty in
@@ -219,7 +226,9 @@ let generalize_decl decl =
     Type_abstract ->
       ()
   | Type_variant v ->
-      List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
+      List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v  (* GAH: almost sure this is wrong *)
+  | Type_generalized_variant v ->
+      List.iter (fun (_, tyl,ret_type_opt) -> List.iter Ctype.generalize tyl; may Ctype.generalize ret_type_opt) v  (* GAH: almost sure this is wrong *)
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
   end;
@@ -261,24 +270,36 @@ let rec check_constraints_rec env loc visited ty =
 
 let check_constraints env (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
-  begin match decl.type_kind with
-  | Type_abstract -> ()
-  | Type_variant l ->
+  let process_variants l = 
       let rec find_pl = function
           Ptype_variant pl -> pl
         | Ptype_record _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       List.iter
-        (fun (name, tyl) ->
-          let styl =
-            try let (_,sty,_) = List.find (fun (n,_,_) -> n = name) pl in sty
+        (fun (name, tyl,ret_type_opt) -> (* GAH: again, no idea *)
+          let styl,sret_type_opt =
+            try let (_,sty,ret_type_opt (* added by me *) ,_) = List.find (fun (n,_,_,_) -> n = name)  pl in sty,ret_type_opt (* GAH: lord, I have no idea what this is about *)
             with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
               check_constraints_rec env sty.ptyp_loc visited ty)
-            styl tyl)
-        l
+            styl tyl;
+	  match sret_type_opt,ret_type_opt with
+	  | Some sr,Some r ->
+	      check_constraints_rec env sr.ptyp_loc visited r
+	  | _ ->
+	      ())
+	l
+  in
+  begin match decl.type_kind with
+  | Type_abstract -> ()
+  | Type_variant l ->
+      let gen_variants lst = List.map (fun (a,b) -> (a,b,None)) lst in 
+      process_variants (gen_variants l)
+  | Type_generalized_variant l ->
+      process_variants l
+
   | Type_record (l, _) ->
       let rec find_pl = function
           Ptype_record pl -> pl
@@ -479,9 +500,12 @@ let compute_variance env tvl nega posi cntr ty =
 let make_variance ty = (ty, ref false, ref false, ref false)
 let whole_type decl =
   match decl.type_kind with
-    Type_variant tll ->
+  | Type_generalized_variant tll ->
       Btype.newgenty
-        (Ttuple (List.map (fun (_, tl) -> Btype.newgenty (Ttuple tl)) tll))
+        (Ttuple (List.map (fun (_, tl,_ (* added by me *)) -> Btype.newgenty (Ttuple tl)) tll)) (* GAH: WHAT?*)
+  | Type_variant tll ->
+      Btype.newgenty
+        (Ttuple (List.map (fun (_, tl) -> Btype.newgenty (Ttuple tl)) tll)) (* GAH: WHAT?*)
   | Type_record (ftl, _) ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, _, ty) -> ty) ftl))
@@ -503,15 +527,24 @@ let compute_variance_decl env check decl (required, loc) =
   let tvl2 = List.map make_variance fvl in
   let tvl = tvl0 @ tvl1 in
   begin match decl.type_kind with
-    Type_abstract ->
+  | Type_abstract ->
       begin match decl.type_manifest with
         None -> assert false
       | Some ty -> compute_variance env tvl true false false ty
       end
-  | Type_variant tll ->
+  | Type_variant tll -> (* GAH: what in the blazes *)
       List.iter
         (fun (_,tl) ->
-          List.iter (compute_variance env tvl true false false) tl)
+              List.iter (compute_variance env tvl true false false) tl)
+        tll
+  | Type_generalized_variant tll -> (* GAH: what in the blazes *)
+      List.iter
+        (fun (_,tl,ret_type_opt) ->
+	  match ret_type_opt with
+	  | None ->
+              List.iter (compute_variance env tvl true false false) tl
+	  | Some ret_type ->
+	      List.iter (compute_variance env tvl true true true) tl) (* GAH: variance calculation, is this right *)
         tll
   | Type_record (ftl, _) ->
       List.iter
@@ -612,7 +645,7 @@ let check_duplicates name_sdecl_list =
     (fun (name, sdecl) -> match sdecl.ptype_kind with
       Ptype_variant cl ->
         List.iter
-          (fun (cname, _, loc) ->
+          (fun (cname, _, _, loc) -> (* probably right *)
             try
               let name' = Hashtbl.find constrs cname in
               Location.prerr_warning loc
@@ -940,9 +973,14 @@ let report_error ppf = function
       fprintf ppf "A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
-        Type_variant tl, _ ->
-          explain_unbound ppf ty tl (fun (_,tl) -> Btype.newgenty (Ttuple tl))
-            "case" (fun (lab,_) -> lab ^ " of ")
+      | Type_generalized_variant tl, _ ->
+          explain_unbound ppf ty tl (fun (_,tl,_) -> 
+	    Btype.newgenty (Ttuple tl)) 
+            "case" (fun (lab,_,_) -> lab ^ " of ") 
+      | Type_variant tl, _ ->
+          explain_unbound ppf ty tl (fun (_,tl) -> 
+	    Btype.newgenty (Ttuple tl)) 
+            "case" (fun (lab,_) -> lab ^ " of ") 
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun (_,_,t) -> t)
             "field" (fun (lab,_,_) -> lab ^ ": ")

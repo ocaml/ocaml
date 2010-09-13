@@ -347,7 +347,7 @@ and type_declaration i ppf x =
   line i ppf "ptype_manifest =\n";
   option (i+1) core_type ppf x.ptype_manifest;
 
-and type_kind i ppf x =
+and type_kind i ppf x = (* GAH: why doesn't this module use Format?? *)
   match x with
   | Ptype_abstract ->
       line i ppf "Ptype_abstract\n"
@@ -663,9 +663,17 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct1;
   core_type (i+1) ppf ct2;
 
-and string_x_core_type_list_x_location i ppf (s, l, loc) =
-  line i ppf "\"%s\" %a\n" s fmt_location loc;
-  list (i+1) core_type ppf l;
+and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) = 
+  match r_opt with
+  | None ->
+      line i ppf "\"%s\" %a\n" s fmt_location loc;
+      list (i+1) core_type ppf l;
+  | Some ret_type ->  (* GAH: this is definately wrong *)
+      line i ppf "\"%s\" %a\n" s fmt_location loc;
+      list (i+1) core_type ppf l;      
+      core_type i ppf ret_type
+  
+
 
 and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
   line i ppf "\"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
@@ -734,3 +742,8 @@ let interface ppf x = list 0 signature_item ppf x;;
 let implementation ppf x = list 0 structure_item ppf x;;
 
 let top_phrase ppf x = toplevel_phrase 0 ppf x;;
+
+let print_expression = expression 0 ;;
+
+let print_pattern = pattern 0 ;;
+

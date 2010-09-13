@@ -49,7 +49,11 @@ val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype: Longident.t -> t -> Path.t * cltype_declaration
 
+val map_values: (Path.t * value_description -> Path.t * value_description) -> t -> t
+
 (* Insertion by identifier *)
+
+
 
 val add_value: Ident.t -> value_description -> t -> t
 val add_annot: Ident.t -> Annot.ident -> t -> t

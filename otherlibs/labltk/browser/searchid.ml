@@ -230,6 +230,8 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
             Type_abstract -> false
           | Type_variant l ->
             List.exists l ~f:(fun (_, l) -> List.exists l ~f:matches)
+          | Type_generalized_variant l -> (* pretty sure this is wrong *)
+            List.exists l ~f:(fun (_, l, r) -> List.exists l ~f:matches || (match r with None -> false | Some x -> matches x))
           | Type_record(l, rep) ->
             List.exists l ~f:(fun (_, _, t) -> matches t)
           end

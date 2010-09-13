@@ -14520,9 +14520,9 @@ module Struct =
             let mkvariant =
               function
               | Ast.TyId (loc, (Ast.IdUid (_, s))) ->
-                  ((conv_con s), [], (mkloc loc))
+                  ((conv_con s), [], None,(mkloc loc)) (* GAH: probably wrong *)
               | Ast.TyOf (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
-                  ((conv_con s), (List.map ctyp (list_of_ctyp t [])),
+                  ((conv_con s), (List.map ctyp (list_of_ctyp t [])),None, (* GAH: probably wrong *)
                    (mkloc loc))
               | _ -> assert false
               

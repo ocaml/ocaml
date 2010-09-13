@@ -319,9 +319,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False (*FIXME*) ];
   value mkvariant =
     fun
-    [ <:ctyp@loc< $uid:s$ >> -> (conv_con s, [], mkloc loc)
+    [ <:ctyp@loc< $uid:s$ >> -> (conv_con s, [], None, mkloc loc) (* GAH : pretty sure this is wrong *)
     | <:ctyp@loc< $uid:s$ of $t$ >> ->
-        (conv_con s, List.map ctyp (list_of_ctyp t []), mkloc loc)
+        (conv_con s, List.map ctyp (list_of_ctyp t []), None, mkloc loc) (* GAH: dunno what I'm doing *)
     | _ -> assert False (*FIXME*) ];
   value rec type_decl tl cl loc m pflag =
     fun

@@ -132,6 +132,9 @@ let rec get_type_descr ty tenv =
 let rec get_constr tag ty tenv =
   match get_type_descr ty tenv with
   | {type_kind=Type_variant constr_list} ->
+      let gen_variants lst = List.map (fun (a,b) -> (a,b,None)) lst in 
+      Datarepr.find_constr_by_tag tag (gen_variants constr_list)
+  | {type_kind=Type_generalized_variant constr_list} ->
       Datarepr.find_constr_by_tag tag constr_list
   | {type_manifest = Some _} ->
       get_constr tag (Ctype.expand_head_once tenv (clean_copy ty)) tenv
@@ -162,7 +165,7 @@ let get_constr_name tag ty tenv  = match tag with
 | Cstr_exception path -> Path.name path
 | _ ->
   try
-    let name,_ = get_constr tag ty tenv in name
+    let name,_,_ = get_constr tag ty tenv in name
   with
   | Datarepr.Constr_not_found -> "*Unknown constructor*"
 
@@ -715,13 +718,19 @@ let complete_constrs p all_tags = match p.pat_desc with
       let not_tags = complete_tags  c.cstr_consts c.cstr_nonconsts all_tags in
       List.map
         (fun tag ->
-          let _,targs = get_constr tag p.pat_type p.pat_env in
+          let _,targs,ret_type_opt = get_constr tag p.pat_type p.pat_env in (* GAH: is this correct? don't forget the existentials! *)
+	  let ret_type = 
+	    match ret_type_opt with
+	    | None -> c.cstr_res
+	    | Some ret_type -> ret_type
+	  in
           {c with
-      cstr_tag = tag ;
-      cstr_args = targs ;
-      cstr_arity = List.length targs})
+	   cstr_res = ret_type ;
+	   cstr_tag = tag ;
+	   cstr_args = targs ;
+	     cstr_arity = List.length targs})
         not_tags
-with
+    with
 | Datarepr.Constr_not_found ->
     fatal_error "Parmatch.complete_constr: constr_not_found"
     end

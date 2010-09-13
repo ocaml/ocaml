@@ -84,6 +84,8 @@ and functor_components = {
   fcomp_cache: (Path.t, module_components) Hashtbl.t  (* For memoization *)
 }
 
+let map_values f t = {t with values = Ident.map_tbl f t.values}
+
 let empty = {
   values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
   labels = Ident.empty; types = Ident.empty;
@@ -451,11 +453,15 @@ let rec scrape_modtype mty env =
 (* Compute constructor descriptions *)
 
 let constructors_of_type ty_path decl =
-  match decl.type_kind with
-    Type_variant cstrs ->
+  let handle_variants cstrs = 
       Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         cstrs decl.type_private
+  in
+  match decl.type_kind with
+  | Type_variant cstrs -> 
+      handle_variants (List.map (fun (a,b) -> (a,b,None)) cstrs)
+  | Type_generalized_variant cstrs -> handle_variants cstrs
   | Type_record _ | Type_abstract -> []
 
 (* Compute label descriptions *)
@@ -466,7 +472,7 @@ let labels_of_type ty_path decl =
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private
-  | Type_variant _ | Type_abstract -> []
+  | Type_variant _ | Type_generalized_variant _ | Type_abstract -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)

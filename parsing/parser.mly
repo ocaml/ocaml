@@ -1284,12 +1284,26 @@ constructor_declarations:
   | constructor_declarations BAR constructor_declaration { $3 :: $1 }
 ;
 constructor_declaration:
-    constr_ident constructor_arguments          { ($1, $2, symbol_rloc()) }
+    constr_ident constructor_arguments          {  ($1, $2, None, symbol_rloc()) }
 ;
+
+constructor_declaration:
+    constr_ident generalized_constructor_arguments          
+                                                { let arg_types,ret_type = $2 in 
+						     ($1, arg_types,Some ret_type, symbol_rloc()) }
+;
+
 constructor_arguments:
     /*empty*/                                   { [] }
   | OF core_type_list                           { List.rev $2 }
 ;
+
+generalized_constructor_arguments:
+  | COLON core_type_list MINUSGREATER simple_core_type                      
+                                                { (List.rev $2,$4) } 
+;
+
+
 label_declarations:
     label_declaration                           { [$1] }
   | label_declarations SEMI label_declaration   { $3 :: $1 }

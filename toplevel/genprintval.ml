@@ -235,19 +235,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           | Tconstr(path, ty_list, _) ->
               begin try
                 let decl = Env.find_type path env in
-                match decl with
-                | {type_kind = Type_abstract; type_manifest = None} ->
-                    Oval_stuff "<abstr>"
-                | {type_kind = Type_abstract; type_manifest = Some body} ->
-                    tree_of_val depth obj
-                      (try Ctype.apply env decl.type_params body ty_list with
-                         Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_variant constr_list} ->
+		let process_variants constr_list = 
                     let tag =
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let (constr_name, constr_args) =
+                    let (constr_name, constr_args,_) = (* GAH: this is definately wrong *)
                       Datarepr.find_constr_by_tag tag constr_list in
                     let ty_args =
                       List.map
@@ -257,6 +250,18 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                         constr_args in
                     tree_of_constr_with_args (tree_of_constr env path)
                                            constr_name 0 depth obj ty_args
+		in
+                match decl with
+                | {type_kind = Type_abstract; type_manifest = None} ->
+                    Oval_stuff "<abstr>"
+                | {type_kind = Type_abstract; type_manifest = Some body} ->
+                    tree_of_val depth obj
+                      (try Ctype.apply env decl.type_params body ty_list with
+                         Ctype.Cannot_apply -> abstract_type)
+                | {type_kind = Type_variant constr_list} ->
+		    process_variants (List.map (fun (a,b) -> (a,b,None)) constr_list)
+                | {type_kind = Type_generalized_variant constr_list} ->
+		    process_variants  constr_list
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x

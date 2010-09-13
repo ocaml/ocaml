@@ -350,7 +350,7 @@ and print_out_sig_item ppf =
         (if vir_flag then " virtual" else "") print_out_class_params params
         name !out_class_type clt
   | Osig_exception (id, tyl) ->
-      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl)
+      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl,None)
   | Osig_modtype (name, Omty_abstract) ->
       fprintf ppf "@[<2>module type %s@]" name
   | Osig_modtype (name, mty) ->
@@ -428,12 +428,22 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
     print_name_args
     print_out_tkind ty
     print_constraints constraints
-and print_out_constr ppf (name, tyl) =
-  match tyl with
-    [] -> fprintf ppf "%s" name
-  | _ ->
-      fprintf ppf "@[<2>%s of@ %a@]" name
-        (print_typlist print_simple_out_type " *") tyl
+and print_out_constr ppf (name, tyl,ret_type_opt) =
+  match ret_type_opt with
+  | None ->
+      begin match tyl with
+      | [] -> fprintf ppf "%s" name
+      | _ ->
+	  fprintf ppf "@[<2>%s of@ %a@]" name
+            (print_typlist print_simple_out_type " *") tyl end
+  | Some ret_type ->
+      begin match tyl with
+      | [] -> fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type (* GAH: IS THIS CORRECT? *)
+      | _ ->
+	  fprintf ppf "@[<2>%s :@ %a -> %a@]" name
+            (print_typlist print_simple_out_type " *") tyl print_simple_out_type ret_type end      
+
+
 and print_out_label ppf (name, mut, arg) =
   fprintf ppf "@[<2>%s%s :@ %a@];" (if mut then "mutable " else "") name
     !out_type arg
