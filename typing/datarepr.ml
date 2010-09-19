@@ -19,18 +19,53 @@ open Misc
 open Asttypes
 open Types
 
+module Duplicated_code = (* GAH: causes a stack overflow when encountering recursive type *) 
+struct
+  let rec free_vars ty =
+    let ret = ref [] in
+    let rec loop ty = 
+      let ty = Btype.repr ty in
+      if ty.level >= Btype.lowest_level then begin
+	ty.level <- Btype.pivot_level - ty.level;
+	match ty.desc with
+	| Tvar ->
+            ret := ty :: !ret
+	| _ ->
+	    Btype.iter_type_expr loop ty
+      end
+    in
+    loop ty;
+    Btype.unmark_type ty;
+    !ret
+end
+
+
+let constructor_descrs_called = ref 0
+
 let constructor_descrs ty_res cstrs priv =
   let num_consts = ref 0 and num_nonconsts = ref 0 in
   List.iter
     (function (name, [],_) -> incr num_consts
             | (name, _,_)  -> incr num_nonconsts)
     cstrs;
+  let all_ty_res = 
+    List.map
+      (fun (_, _,x) ->  x)
+      cstrs
+  in
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
     | (name, ty_args, ty_res_opt) :: rem ->
 	let ty_res = 
 	  match ty_res_opt with
-	  | Some ty_res -> ty_res
+	  | Some ty_res' -> 
+	      (match ty_res.desc, ty_res'.desc with
+	      | Tconstr (p,_,_), Tconstr(p',_,_) ->
+		  if not (Path.same p p') then 
+		    failwith "the return type of a generalized constructor has incorrect type" 
+		  else
+		    ty_res'
+	      | _ -> fatal_error "return type must be a Tconstr")
 	  | None -> ty_res
 	in
         let (tag, descr_rem) =
@@ -39,25 +74,34 @@ let constructor_descrs ty_res cstrs priv =
                    describe_constructors (idx_const+1) idx_nonconst rem)
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
-(*	let existentials = 
+	let existentials = 
 	    match ty_res_opt with
 	    | None -> []
 	    | Some type_ret ->
-		let res_vars = List.fold_right Btype.TypeSet.add (free_vars type_ret) Btype.TypeSet.empty in
-		let other_types
-*)
-
+		let res_vars = List.fold_right Btype.TypeSet.add (Duplicated_code.free_vars type_ret) Btype.TypeSet.empty in
+		let arg_vars = 
+		  List.fold_left 
+		    (fun s list -> List.fold_right Btype.TypeSet.add list s)
+		    Btype.TypeSet.empty 
+		    (List.map Duplicated_code.free_vars ty_args)
+		in
+		Btype.TypeSet.elements (Btype.TypeSet.diff arg_vars res_vars)
+	in
+	incr constructor_descrs_called;
         let cstr =
           { cstr_res = ty_res;    
-	    cstr_existentials = [] ; (* GAH: HOW DO I GET THE EXISTENTIALS OF A TYPE?? *)
+	    cstr_existentials = existentials ; (* GAH: HOW DO I GET THE EXISTENTIALS OF A TYPE?? *)
             cstr_args = ty_args;
             cstr_arity = List.length ty_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
+	    cstr_all_ty_res = all_ty_res;
             cstr_private = priv } in
         (name, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs
+  describe_constructors 0 0 cstrs 
+
+
 
 let exception_descr path_exc decl =
   { cstr_res = Predef.type_exn;
@@ -67,6 +111,7 @@ let exception_descr path_exc decl =
     cstr_tag = Cstr_exception path_exc;
     cstr_consts = -1;
     cstr_nonconsts = -1;
+    cstr_all_ty_res = [];
     cstr_private = Public }
 
 let none = {desc = Ttuple []; level = -1; id = -1}

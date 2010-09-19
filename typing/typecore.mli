@@ -65,6 +65,8 @@ val self_coercion : (Path.t * Location.t list ref) list ref
 type error =
     Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
+  | Constructor_inhabit_tunivar of type_expr * Longident.t
+  | Constant_inhabit_tunivar of type_expr
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable of string

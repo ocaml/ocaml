@@ -259,6 +259,10 @@ and pretty_lvals lbls ppf = function
 let top_pretty ppf v =
   fprintf ppf "@[%a@]@?" pretty_val v
 
+let pretty_pat_now p =
+  top_pretty Format.str_formatter p ;
+  prerr_endline (Format.flush_str_formatter ())
+
 
 let prerr_pat v =
   top_pretty str_formatter v ;
@@ -618,11 +622,33 @@ let row_of_pat pat =
   not.
 *)
 
+let initial_env = ref Env.empty
+
+let unifiable t t' = 
+  let snap = Btype.snapshot () in
+  try
+    Ctype.unify_gadt (ref !initial_env) t t'; (* GAH: ask garrigue: unify in which environment??? *)
+    Btype.backtrack snap;
+    true
+  with
+    _ -> 
+      Btype.backtrack snap;
+      false
+
 let full_match closing env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ ->
     false
-| ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
-    List.length env = c.cstr_consts + c.cstr_nonconsts
+| ({pat_desc = Tpat_construct(c,_);pat_type=typ},_) :: _ -> 
+
+    let all_ty_res = c.cstr_all_ty_res in 
+    let possibles = ref 0 in
+    List.iter
+      (function 
+	| None -> incr possibles
+	| Some t ->
+	    if unifiable typ t then incr possibles)
+      all_ty_res;
+    List.length env = !possibles (*c.cstr_consts + c.cstr_nonconsts*)
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
       List.map
@@ -711,12 +737,16 @@ let rec pat_of_constrs ex_pat = function
         (pat_of_constr ex_pat cstr,
          pat_of_constrs ex_pat rem, None)}
 
+
+
 (* Sends back a pattern that complements constructor tags all_tag *)
-let complete_constrs p all_tags = match p.pat_desc with
+let complete_constrs p all_tags  = 
+  let ty = p.pat_type in 
+  match p.pat_desc with
 | Tpat_construct (c,_) ->
     begin try
       let not_tags = complete_tags  c.cstr_consts c.cstr_nonconsts all_tags in
-      List.map
+      map_filter
         (fun tag ->
           let _,targs,ret_type_opt = get_constr tag p.pat_type p.pat_env in (* GAH: is this correct? don't forget the existentials! *)
 	  let ret_type = 
@@ -724,18 +754,22 @@ let complete_constrs p all_tags = match p.pat_desc with
 	    | None -> c.cstr_res
 	    | Some ret_type -> ret_type
 	  in
-          {c with
-	   cstr_res = ret_type ;
-	   cstr_tag = tag ;
-	   cstr_args = targs ;
-	     cstr_arity = List.length targs})
+	  if not (unifiable ty ret_type) then 
+	    None
+	  else
+	    Some
+              {c with
+	       cstr_res = ret_type ;
+	       cstr_tag = tag ;
+	       cstr_args = targs ;
+	       cstr_arity = List.length targs})
         not_tags
     with
-| Datarepr.Constr_not_found ->
-    fatal_error "Parmatch.complete_constr: constr_not_found"
+    | Datarepr.Constr_not_found ->
+	fatal_error "Parmatch.complete_constr: constr_not_found"
     end
 | _ -> fatal_error "Parmatch.complete_constr"
-
+      
 
 (* Auxiliary for build_other *)
 
@@ -752,7 +786,8 @@ let build_other_constant proj make first next p env =
   in the first column of env
 *)
 
-let build_other ext env =  match env with
+let build_other ext env =  
+match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_)
   ::_ ->
     make_pat
@@ -771,7 +806,9 @@ let build_other ext env =  match env with
           | {pat_desc = Tpat_construct (c,_)} -> c.cstr_tag
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-        pat_of_constrs p (complete_constrs p all_tags)
+	let cnstrs  = complete_constrs p all_tags in
+        let ret = pat_of_constrs p cnstrs in 
+	ret
     end
 | ({pat_desc = Tpat_variant (_,_,r)} as p,_) :: _ ->
     let tags =
@@ -951,29 +988,53 @@ let rec try_many f = function
       | r -> r
       end
 
-let rec exhaust ext pss n = match pss with
+(*let pretty_pss pss = 
+  let print_lst ppf lst = 
+    fprintf ppf "{";
+    List.iter
+      (top_pretty ppf)
+      lst;
+    fprintf ppf "}";
+  in
+  let print_lstlst ppf lstlst = 
+    fprintf ppf "[";
+    List.iter
+      (print_lst ppf)
+      lstlst;
+    fprintf ppf "]"
+  in
+  Format.fprintf Format.str_formatter "[%a]%!"
+    print_lstlst pss;
+  print_endline (Format.flush_str_formatter ())*)
+
+
+
+let rec exhaust ext pss n  = 
+  match pss with
 | []    ->  Rsome (omegas n)
 | []::_ ->  Rnone
-| pss   ->
-    let q0 = discr_pat omega pss in
+| pss   -> 
+    let q0  = discr_pat omega pss in
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
-    | [] ->
+    | [] -> 
         begin match exhaust ext (filter_extra pss) (n-1) with
         | Rsome r -> Rsome (q0::r)
         | r -> r
       end
-    | constrs ->
+    | constrs -> 
         let try_non_omega (p,pss) =
           if is_absent_pat p then
             Rnone
           else
-            match
-              exhaust
-                ext pss (List.length (simple_match_args p omega) + n - 1)
-            with
-            | Rsome r -> Rsome (set_args p r)
-            | r       -> r in
+	    begin
+              match
+		exhaust
+                  ext pss (List.length (simple_match_args p omega) + n - 1)
+              with
+              | Rsome r -> Rsome (set_args p r)
+              | r       -> r end in
+	    
         if
           full_match false constrs && not (should_extend ext constrs)
         then
@@ -987,6 +1048,7 @@ let rec exhaust ext pss n = match pss with
              * D exhaustive => pss exhaustive
              * D non-exhaustive => we have a non-filtered value
           *)
+	  
           let r =  exhaust ext (filter_extra pss) (n-1) in
           match r with
           | Rnone -> Rnone
@@ -1063,6 +1125,9 @@ type answer =
 let pretty_pat p =
   top_pretty Format.str_formatter p ;
   prerr_string (Format.flush_str_formatter ())
+
+
+
 
 type matrix = pattern list list
 
@@ -1316,6 +1381,7 @@ and every_both pss qs q1 q2 =
 
 
 (* le_pat p q  means, forall V,  V matches q implies V matches p *)
+(* GAH: ask garrigue: does le mean "less than or equal" ? *)
 let rec le_pat p q =
   match (p.pat_desc, q.pat_desc) with
   | (Tpat_var _|Tpat_any),_ -> true
@@ -1450,7 +1516,7 @@ let rec initial_matrix = function
   | (pat, act) :: rem ->
       if has_guard act
       then
-        initial_matrix rem
+        initial_matrix rem 
       else
         [pat] :: initial_matrix rem
 
@@ -1535,6 +1601,7 @@ let do_check_partial loc casel pss = match pss with
           Then match MUST be considered non-exhaustive,
           otherwise compilation of PM is broken.
           *)
+    (* GAH: ask garrigue: what's PM? *)
     begin match casel with
     | [] -> ()
     | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
@@ -1646,7 +1713,8 @@ let do_check_fragile loc casel pss =
    on exhaustive matches only.
 *)
 
-let check_partial loc casel =
+let check_partial  loc casel env  =
+  initial_env := env; (* GAH : make this more functional *)
   if Warnings.is_active (Warnings.Partial_match "") then begin
     let pss = initial_matrix casel in
     let pss = get_mins le_pats pss in

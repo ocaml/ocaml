@@ -121,6 +121,9 @@ module StringSet =
     let compare = compare
   end)
 
+
+
+
 let transl_declaration env (name, sdecl) id =
   (* Bind type parameters *)
   reset_type_variables();
@@ -150,21 +153,32 @@ let transl_declaration env (name, sdecl) id =
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
+
             if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs) (* GAH: MIGHT BE WRONG *)
                > (Config.max_tag + 1) then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
-	    if List.for_all (fun (_,_,x,_) -> match x with Some _ -> false | None -> true) cstrs then
+(*	    if List.for_all (fun (_,_,x,_) -> match x with Some _ -> false | None -> true) cstrs then
             Type_variant
               (List.map
                  (fun (name, args,_, loc) ->
                     (name, List.map (transl_simple_type env true) args))
               cstrs)
-	    else
+	    else*)
+
+	    let ret = 
 	      Type_generalized_variant
 		(List.map
                    (fun (name, args,ret_type_opt, loc) ->
-                     (name, List.map (transl_simple_type env false) args,may_map (transl_simple_type env false) ret_type_opt)) (* GAH: calling transl_simple_type with fixed=false, ask garrigue if this is ok *)
+		     let gadt = 
+		       match ret_type_opt with
+		       | None -> None
+		       | Some _ -> Some (ref [])
+		     in
+                     (name, List.map (transl_simple_type ~gadt env false) args,may_map (transl_simple_type ~gadt env false) ret_type_opt)) (* GAH: calling transl_simple_type with fixed=false, ask garrigue if this is ok *)
 		   cstrs)
+	    in
+	    ret
+	    
         | Ptype_record lbls ->
             let all_labels = ref StringSet.empty in
             List.iter
@@ -195,6 +209,9 @@ let transl_declaration env (name, sdecl) id =
         end;
       type_variance = List.map (fun _ -> true, true, true) params;
     } in
+
+
+
 
   (* Check constraints *)
   List.iter
@@ -247,6 +264,7 @@ module TypeSet =
     end)
 
 let rec check_constraints_rec env loc visited ty =
+
   let ty = Ctype.repr ty in
   if TypeSet.mem ty !visited then () else begin
   visited := TypeSet.add ty !visited;
@@ -279,17 +297,19 @@ let check_constraints env (_, sdecl) (_, decl) =
       List.iter
         (fun (name, tyl,ret_type_opt) -> (* GAH: again, no idea *)
           let styl,sret_type_opt =
-            try let (_,sty,ret_type_opt (* added by me *) ,_) = List.find (fun (n,_,_,_) -> n = name)  pl in sty,ret_type_opt (* GAH: lord, I have no idea what this is about *)
+            try let (_,sty,sret_type_opt (* added by me *) ,_) = List.find (fun (n,_,_,_) -> n = name)  pl in sty,sret_type_opt (* GAH: lord, I have no idea what this is about *)
             with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
               check_constraints_rec env sty.ptyp_loc visited ty)
             styl tyl;
+
+	  (* GAH : ask garrigue how to do the following: *)
 	  match sret_type_opt,ret_type_opt with
 	  | Some sr,Some r ->
 	      check_constraints_rec env sr.ptyp_loc visited r
 	  | _ ->
-	      ())
+	      () )
 	l
   in
   begin match decl.type_kind with
@@ -526,7 +546,23 @@ let compute_variance_decl env check decl (required, loc) =
   let tvl1 = List.map make_variance fvl in
   let tvl2 = List.map make_variance fvl in
   let tvl = tvl0 @ tvl1 in
-  begin match decl.type_kind with
+  let is_gadt = 
+    match decl.type_kind with
+    | Type_generalized_variant tll -> (* GAH: what in the blazes *)
+	let ret = ref false in 
+	List.iter
+          (function 
+	    | (_,_,Some _) ->
+		ret:=true;
+	    | _ -> ())
+	  tll;
+	!ret
+    | _ -> false
+  in
+  if is_gadt then
+    List.map (fun _ -> (true,true,true)) params
+  else
+  begin begin match decl.type_kind with
   | Type_abstract ->
       begin match decl.type_manifest with
         None -> assert false
@@ -544,8 +580,8 @@ let compute_variance_decl env check decl (required, loc) =
 	  | None ->
               List.iter (compute_variance env tvl true false false) tl
 	  | Some ret_type ->
-	      List.iter (compute_variance env tvl true true true) tl) (* GAH: variance calculation, is this right *)
-        tll
+	      fatal_error "gadt not properly handled")
+        tll;
   | Type_record (ftl, _) ->
       List.iter
         (fun (_, mut, ty) ->
@@ -566,7 +602,7 @@ let compute_variance_decl env check decl (required, loc) =
     tvl0 required;
   List.iter2
     (fun (ty, c1, n1, t1) (_, c2, n2, t2) ->
-      if !c1 && not !c2 || !n1 && not !n2
+      if !c1 && not !c2 || !n1 && not !n2  
       (* || !t1 && not !t2 && decl.type_kind = Type_abstract *)
       then raise (Error(loc,
                         if not (!c2 || !n2) then Unbound_type_var (ty, decl)
@@ -582,6 +618,7 @@ let compute_variance_decl env check decl (required, loc) =
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
+  end
 
 let is_sharp id =
   let s = Ident.name id in
@@ -613,6 +650,7 @@ let rec compute_variance_fixpoint env decls required variances =
       (fun (id, decl) req -> if not (is_sharp id) then
         ignore (compute_variance_decl new_env true decl req))
       new_decls required;
+
     new_decls, new_env
   end
 
@@ -679,6 +717,8 @@ let name_recursion sdecl id decl =
       {decl with type_manifest = Some ty'}
     else decl
   | _ -> decl
+
+
 
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
@@ -753,6 +793,7 @@ let transl_type_decl env name_sdecl_list =
     List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
       name_sdecl_list
   in
+
   let final_decls, final_env =
     compute_variance_fixpoint env decls required (List.map init_variance decls)
   in
@@ -818,7 +859,7 @@ let transl_with_constraint env id row_path sdecl =
          Ctype.unify env (transl_simple_type env false ty)
                          (transl_simple_type env false ty')
        with Ctype.Unify tr ->
-         raise(Error(loc, Unconsistent_constraint tr)))
+         raise(Error(loc, Unconsistent_constraint tr))) (* GAH : Unconsistent is not a word *)
     sdecl.ptype_cstrs;
   let no_row = not (is_fixed_type sdecl) in
   let decl =

@@ -809,12 +809,14 @@ and class_expr cl_num val_env met_env scl =
         | _ -> true
       in
       let partial =
-        Parmatch.check_partial pat.pat_loc
+        Parmatch.check_partial pat.pat_loc 
           [pat, (* Dummy expression *)
            {exp_desc = Texp_constant (Asttypes.Const_int 1);
             exp_loc = Location.none;
             exp_type = Ctype.none;
-            exp_env = Env.empty }] in
+            exp_env = Env.empty }] 
+	  val_env (* GAH : whoa, I don't know what val_env is, and quite frankly I'm scared. Ask garrigue *)
+      in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in
       Ctype.end_def ();

@@ -148,6 +148,8 @@ val set_free_univars: Btype.TypeSet.t -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
+val unify_gadt: Env.t ref -> type_expr -> type_expr -> unit
+        (* Unify the two types given and update the environment with the local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
@@ -250,7 +252,11 @@ val arity: type_expr -> int
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
-val reset_local_unifier: unit -> unit
-val get_local_unifier: unit -> (type_expr * type_expr) list
 val set_unification_type : [`Pattern | `Expression] -> unit
 val get_unification_type : unit -> [`Pattern | `Expression] 
+val bare_tunivar : type_expr -> bool
+val bare_tvar : type_expr -> bool
+
+val set_gadt_pattern_level : unit -> unit
+val get_gadt_pattern_level : unit -> int
+

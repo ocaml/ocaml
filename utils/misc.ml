@@ -195,3 +195,15 @@ let rev_split_words s =
       | _ -> split2 res i (j+1)
     end
   in split1 [] 0
+
+let map_filter f  = 
+  let rec loop = 
+    function 
+      | [] -> []
+      | x :: xs ->
+	  match f x with
+	  | None -> loop xs
+	  | Some y -> 
+	      y :: loop xs
+  in
+  loop

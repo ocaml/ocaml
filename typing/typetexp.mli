@@ -17,7 +17,7 @@
 open Format;;
 
 val transl_simple_type:
-        Env.t -> bool -> Parsetree.core_type -> Types.type_expr
+        Env.t -> bool -> ?gadt:(string*Types.type_expr) list ref option -> Parsetree.core_type -> Types.type_expr
 val transl_simple_type_univars:
         Env.t -> Parsetree.core_type -> Types.type_expr
 val transl_simple_type_delayed:

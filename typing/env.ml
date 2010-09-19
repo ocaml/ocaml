@@ -21,6 +21,7 @@ open Longident
 open Path
 open Types
 
+let store_type_called = ref 0
 
 type error =
     Not_an_interface of string
@@ -451,12 +452,13 @@ let rec scrape_modtype mty env =
   | _ -> mty
 
 (* Compute constructor descriptions *)
-
 let constructors_of_type ty_path decl =
   let handle_variants cstrs = 
-      Datarepr.constructor_descrs
+      let ret = Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         cstrs decl.type_private
+      in
+      ret
   in
   match decl.type_kind with
   | Type_variant cstrs -> 

@@ -23,7 +23,7 @@ let generic_level = 100000000
 (* Used to mark a type during a traversal. *)
 let lowest_level = 0
 let pivot_level = 2 * lowest_level - 1
-    (* pivot_level - lowest_level < lowest_level *)
+    (* pivot_level - lowest_level < lowest_level *) 
 
 (**** Some type creators ****)
 
@@ -197,6 +197,11 @@ let iter_type_expr f ty =
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
   | Tpackage (_, _, l)  -> List.iter f l
 
+
+
+
+
+
 let rec iter_abbrev f = function
     Mnil                   -> ()
   | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem
@@ -286,7 +291,7 @@ let cleanup_types () =
 
 (* Mark a type. *)
 let rec mark_type ty =
-  let ty = repr ty in
+  let ty = repr ty in (* GAH : why do we call repr? *)
   if ty.level >= lowest_level then begin
     ty.level <- pivot_level - ty.level;
     iter_type_expr mark_type ty
@@ -519,6 +524,7 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
+
 
 (**** Sets, maps and hashtables of types ****)
 

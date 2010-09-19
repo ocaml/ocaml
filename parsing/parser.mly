@@ -1300,7 +1300,9 @@ constructor_arguments:
 
 generalized_constructor_arguments:
   | COLON core_type_list MINUSGREATER simple_core_type                      
-                                                { (List.rev $2,$4) } 
+                                                { (List.rev $2, $4) } 
+  | COLON simple_core_type                       
+                                                { ([],$2) } 
 ;
 
 

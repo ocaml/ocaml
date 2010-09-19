@@ -747,3 +747,5 @@ let print_expression = expression 0 ;;
 
 let print_pattern = pattern 0 ;;
 
+let print_core_type = core_type 0 ;;
+
