@@ -479,8 +479,8 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_env = !env }
   |Ppat_tuple spl -> 
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in 
-      let pl = List.map (fun (p,t) -> type_pat env p t) spl_ann in
       unify_pat_types loc !env expected_ty (newty (Ttuple(List.map snd spl_ann)));
+      let pl = List.map (fun (p,t) -> type_pat env p t) spl_ann in
       rp {
         pat_desc = Tpat_tuple pl;
         pat_loc = loc;
@@ -2233,12 +2233,9 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         let loc = sexp.pexp_loc in
         if !Clflags.principal then begin_def ();
         let scope = Some (Annot.Idef loc) in
-	
         let (pat, ext_env, force) = 
 	  type_pattern env spat scope ty_arg
 	in
-
-
         let pat =
           if !Clflags.principal then begin
             end_def ();
