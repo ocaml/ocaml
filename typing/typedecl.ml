@@ -125,11 +125,20 @@ module StringSet =
 
 
 let transl_declaration env (name, sdecl) id =
+  let param_counter = ref 0 in 
   (* Bind type parameters *)
   reset_type_variables();
   Ctype.begin_def ();
   let params =
-    try List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
+    try 
+      List.map 
+	(function
+	  | None ->
+	      incr param_counter ;
+	      enter_type_variable true sdecl.ptype_loc (Printf.sprintf "*%d" !param_counter)
+	  | Some x ->
+	      enter_type_variable true sdecl.ptype_loc x)
+	sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter))
   in
@@ -846,11 +855,19 @@ let transl_value_decl env valdecl =
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
 let transl_with_constraint env id row_path sdecl =
+  let param_counter = ref 0 in 
   reset_type_variables();
   Ctype.begin_def();
   let params =
     try
-      List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
+      List.map
+	(function
+	  | None ->
+	      incr param_counter ;
+	      enter_type_variable true sdecl.ptype_loc  (Printf.sprintf "*%d" !param_counter)
+	  | Some x ->
+	      enter_type_variable true sdecl.ptype_loc  x)
+        sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
   List.iter

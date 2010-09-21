@@ -1400,7 +1400,7 @@ let occur_univar env ty =
       match ty.desc with
         Tunivar ->
           if not (TypeSet.mem ty bound) && not (TypeSet.mem ty !free_univars)
-          then (print_endline "raising occur_univar";raise (Unify [ty, newgenvar()]))
+          then raise (Unify [ty, newgenvar()])
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound  ty
@@ -1649,9 +1649,6 @@ let unify_eq t1 t2 =
 
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
-
-
-
   if unify_eq t1 t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
@@ -1779,9 +1776,7 @@ and unify3 env t1 t1' t2 t2' =
 
     | (Tconstr (Path.Pident p,[],_)),_  when !pattern_unification -> (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
 	let t2 = copy t2 in
-
 	reify env t2 ;
-
 	let decl = {
           type_params = [];
           type_arity = 0;
@@ -1807,6 +1802,10 @@ and unify3 env t1 t1' t2 t2' =
 	in
 	let new_env = Env.add_type p decl !env in
 	env := new_env 
+
+    | Tconstr _, Tconstr _ when !pattern_unification ->
+	reify env t1;
+	reify env t2
     | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
 	link_type t1' t2;
         unify_fields env fi1 fi2;

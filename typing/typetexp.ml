@@ -158,7 +158,6 @@ let type_variable loc name =
   try
     Tbl.find name !type_variables
   with Not_found ->
-    print_endline "raising type_variable";
     raise(Error(loc, Unbound_type_variable ("'" ^ name)))
 
 let wrap_method ty =
@@ -228,9 +227,8 @@ let rec transl_type env policy styp =
       in
       List.iter2
         (fun (sty, ty) ty' ->
-	  Format.fprintf Format.std_formatter " ty: %a \n ty': %a \n\n%! " Printtyp.raw_type_expr ty Printtyp.raw_type_expr ty' ;
            try unify_param env ty' ty with Unify trace ->
-             (print_endline "mismatch from trans_type ";raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace)))))
+             raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       let constr = newconstr path args in
       begin try
@@ -530,7 +528,6 @@ let make_fixed_univars ty =
 let create_package_mty = create_package_mty false
 
 let globalize_used_variables env fixed =
-  Printf.printf "globalize_used_variables, fixed: %B\n%!" fixed;
   let r = ref [] in
   Tbl.iter
     (fun name (ty, loc) ->
@@ -542,7 +539,6 @@ let globalize_used_variables env fixed =
       with Not_found ->
         if fixed && (repr ty).desc = Tvar then
 	  begin
-	    print_endline "raising";
             raise(Error(loc, Unbound_type_variable ("'"^name)))
 	  end;
         let v2 = new_global_var () in
@@ -558,14 +554,8 @@ let globalize_used_variables env fixed =
       !r
 
 let transl_simple_type env fixed ?(gadt=None) styp = (* GAH : ask garrigue about this *)
-  (match gadt with
-  | Some _ -> print_endline "doing gadt thing"
-  | None ->
-      print_endline "not doing gadt thing");
   univars := []; used_variables := Tbl.empty;gadt_map:=gadt;
-  Format.fprintf Format.std_formatter " styp = %a\n%! " Printast.print_core_type styp ;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
-  Format.fprintf Format.std_formatter " typ: %a \n\n%! " Printtyp.raw_type_expr typ;
   globalize_used_variables env fixed ();
   make_fixed_univars typ;
   typ

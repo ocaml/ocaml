@@ -479,8 +479,10 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_env = !env }
   |Ppat_tuple spl -> 
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in 
-      unify_pat_types loc !env expected_ty (newty (Ttuple(List.map snd spl_ann)));
+      let ty = newty (Ttuple(List.map snd spl_ann)) in
+      unify_pat_types loc !env expected_ty ty;
       let pl = List.map (fun (p,t) -> type_pat env p t) spl_ann in
+
       rp {
         pat_desc = Tpat_tuple pl;
         pat_loc = loc;
@@ -488,13 +490,21 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_env = !env }
   |Ppat_construct(lid, sarg, explicit_arity) -> 
 
-      
-      
-      
-      
-      if bare_tunivar expected_ty then 	
-	raise (Error(loc,Constructor_inhabit_tunivar(expected_ty,lid )));
+
+(*      if bare_tunivar expected_ty then 	
+	raise (Error(loc,Constructor_inhabit_tunivar(expected_ty,lid ))); (* GAH : this code is wrong, must change *)*)
       let constr = Typetexp.find_constructor !env loc lid in
+      let _ = (* GAH : there must be an easier way to do this, ask garrigue *)
+	let (_, ty_res) = instance_constructor constr in
+	match ty_res.desc with
+	| Tconstr(p,args,m) ->
+	    ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m);
+	    unify_pat_types loc !env expected_ty ty_res
+	| _ -> fatal_error "constructor type does not have correct description" 
+      in
+      
+	
+
       let sargs =
         match sarg with
           None -> []

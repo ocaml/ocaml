@@ -1227,7 +1227,7 @@ type_declarations:
 ;
 
 type_declaration:
-    type_parameters LIDENT type_kind constraints
+    optional_type_parameters LIDENT type_kind constraints
       { let (params, variance) = List.split $1 in
         let (kind, private_flag, manifest) = $3 in
         ($2, {ptype_params = params;
@@ -1262,6 +1262,22 @@ type_kind:
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $6), $4, Some $2) }
 ;
+optional_type_parameters:
+    /*empty*/                                   { [] }
+  | optional_type_parameter                              { [$1] }
+  | LPAREN optional_type_parameter_list RPAREN  { List.rev $2 }
+;
+optional_type_parameter:
+    type_variance QUOTE ident                   { Some $3, $1 }
+  | type_variance UNDERSCORE                    { None, $1 }
+;
+optional_type_parameter_list:
+    optional_type_parameter                              { [$1] }
+  | optional_type_parameter_list COMMA optional_type_parameter    { $3 :: $1 }
+;
+
+
+
 type_parameters:
     /*empty*/                                   { [] }
   | type_parameter                              { [$1] }
@@ -1323,7 +1339,7 @@ with_constraints:
 with_constraint:
     TYPE type_parameters label_longident with_type_binder core_type constraints
       { let params, variance = List.split $2 in
-        ($3, Pwith_type {ptype_params = params;
+        ($3, Pwith_type {ptype_params = List.map (fun x -> Some x) params;
                          ptype_cstrs = List.rev $6;
                          ptype_kind = Ptype_abstract;
                          ptype_manifest = Some $5;
@@ -1334,7 +1350,7 @@ with_constraint:
        functor applications in type path */
   | TYPE type_parameters label_longident COLONEQUAL core_type
       { let params, variance = List.split $2 in
-        ($3, Pwith_typesubst {ptype_params = params;
+        ($3, Pwith_typesubst {ptype_params = List.map (fun x -> Some x) params;
                               ptype_cstrs = [];
                               ptype_kind = Ptype_abstract;
                               ptype_manifest = Some $5;

@@ -128,7 +128,7 @@ and value_description =
 (* Type declarations *)
 
 and type_declaration =
-  { ptype_params: string list;
+  { ptype_params: string option list;
     ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_private: private_flag;

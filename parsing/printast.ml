@@ -334,11 +334,18 @@ and value_description i ppf x =
   core_type (i+1) ppf x.pval_type;
   list (i+1) string ppf x.pval_prim;
 
+and string_option_underscore i ppf = 
+  function
+    | Some x ->
+	string i ppf x
+    | None ->
+	string i ppf "_"
+
 and type_declaration i ppf x =
   line i ppf "type_declaration %a\n" fmt_location x.ptype_loc;
   let i = i+1 in
   line i ppf "ptype_params =\n";
-  list (i+1) string ppf x.ptype_params;
+  list (i+1) string_option_underscore ppf x.ptype_params;
   line i ppf "ptype_cstrs =\n";
   list (i+1) core_type_x_core_type_x_location ppf x.ptype_cstrs;
   line i ppf "ptype_kind =\n";
