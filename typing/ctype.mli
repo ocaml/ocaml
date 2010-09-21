@@ -29,11 +29,10 @@ val init_def: int -> unit
         (* Set the initial variable level *)
 val begin_def: unit -> unit
         (* Raise the variable level by one at the beginning of a definition. *)
-val begin_class_def: unit -> unit
-        (* Same as begin_def, but do not raise nongen_level *)
-val raise_nongen_level: unit -> unit
 val end_def: unit -> unit
-        (* Return to the previous variable levels *)
+        (* Lower the variable level by one at the end of a definition *)
+val begin_class_def: unit -> unit
+val raise_nongen_level: unit -> unit
 val reset_global_level: unit -> unit
         (* Reset the global level before typing an expression *)
 val increase_global_level: unit -> int
@@ -139,12 +138,6 @@ val expand_head_opt: Env.t -> type_expr -> type_expr
 val full_expand: Env.t -> type_expr -> type_expr
 
 val enforce_constraints: Env.t -> type_expr -> unit
-
-val add_free_univars: type_expr list -> Btype.TypeSet.t
-        (* add some free univars (allows unifying them with variables),
-           returning the original set *)
-val set_free_univars: Btype.TypeSet.t -> unit
-        (* return to a previous set of free univars *)
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)

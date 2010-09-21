@@ -496,7 +496,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
       let constr = Typetexp.find_constructor !env loc lid in
       let _ = (* GAH : there must be an easier way to do this, ask garrigue *)
 	let (_, ty_res) = instance_constructor constr in
-	match ty_res.desc with
+	match (repr ty_res).desc with
 	| Tconstr(p,args,m) ->
 	    ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m);
 	    unify_pat_types loc !env expected_ty ty_res
@@ -707,9 +707,7 @@ let type_self_pattern cl_num privty val_env met_env par_env spat  =
   (pat, meths, vars, val_env, met_env, par_env)
 
 let delayed_checks = ref []
-let reset_delayed_checks () =
-  delayed_checks := [];
-  set_free_univars TypeSet.empty (* Hook this here. Better name? *)
+let reset_delayed_checks () = delayed_checks := []
 let add_delayed_check f  =  delayed_checks := f :: !delayed_checks
 let force_delayed_checks () =
   (* checks may change type levels *)
@@ -1038,7 +1036,9 @@ let check_univars env expans kind exp ty_expected vars  =
       (fun t ->
         let t = repr t in
         generalize t;
-        t.level = generic_level)
+        if t.desc = Tvar && t.level = generic_level then
+          (log_type t; t.desc <- Tunivar; true)
+        else false)
       vars in
   if List.length vars = List.length vars' then () else
   let ty = newgenty (Tpoly(repr exp.exp_type, vars'))
@@ -1731,12 +1731,10 @@ and type_label_exp create env loc ty (lid, sarg)  =
     raise(Error(loc, if create then Private_type ty else Private_label (lid, ty)));
   let arg =
     let snap = if vars = [] then None else Some (Btype.snapshot ()) in
-    let old = add_free_univars vars in
     let arg = type_argument env sarg ty_arg in
     end_def ();
     try
       check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
-      set_free_univars old;
       arg
     with exn when not (is_nonexpansive arg) -> try
       (* Try to retype without propagating ty_arg, cf PR#4862 *)
@@ -1747,7 +1745,6 @@ and type_label_exp create env loc ty (lid, sarg)  =
       generalize_expansive env arg.exp_type;
       unify_exp env arg ty_arg;
       check_univars env false "field value" arg label.lbl_arg vars;
-      set_free_univars old;
       arg
     with Error (_, Less_general _) as e -> raise e
     | _ -> raise exn    (* In case of failure return the first error *)
@@ -2178,11 +2175,9 @@ and type_expect ?in_function env sexp ty_expected =
             (* One more level to generalize locally *)
             begin_def ();
             let vars, ty'' = instance_poly true tl ty' in
-            let old = add_free_univars vars in
             let exp = type_expect env sbody ty'' in
             end_def ();
             check_univars env false "method" exp ty_expected vars;
-            set_free_univars old;
             re { exp with exp_type = ty }
         | _ -> assert false
       end
@@ -2341,11 +2336,9 @@ and type_let env rec_flag spat_sexp_list scope   =
         | Tpoly (ty, tl) ->
             begin_def ();
             let vars, ty' = instance_poly true tl ty in
-            let old = add_free_univars vars in
             let exp = type_expect exp_env sexp ty' in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
-            set_free_univars old;
             {exp with exp_type = instance exp.exp_type}
         | _ -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_list in

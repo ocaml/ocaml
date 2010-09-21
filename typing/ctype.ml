@@ -990,7 +990,7 @@ let rec copy_sep fixed free bound visited ty =
           (* We shall really check the level on the row variable *)
           let keep = more.desc = Tvar && more.level <> generic_level in
           let more' = copy_rec more in
-          let fixed' = fixed && (repr more').desc = Tunivar in
+          let fixed' = fixed && (repr more').desc = Tvar in
           let row = copy_row copy_rec fixed' row keep more' in
           Tvariant row
       | Tpoly (t1, tl) ->
@@ -1006,8 +1006,7 @@ let rec copy_sep fixed free bound visited ty =
   end
 
 let instance_poly fixed univars sch =
-  let mkvar = if fixed then (fun () -> newty Tunivar) else newvar in
-  let vars = List.map (fun _ -> mkvar ()) univars in
+  let vars = List.map (fun _ -> newvar ()) univars in
   let pairs = List.map2 (fun u v -> repr u, (v, [])) univars vars in
   delayed_copy := [];
   let ty = copy_sep fixed (compute_univars sch) [] pairs sch in
@@ -1369,14 +1368,6 @@ let rec unify_univar t1 t2 = function
       end
   | [] -> raise (Unify [])
 
-(* Free univars. One can unify them with variables. *)
-let free_univars = ref TypeSet.empty
-let add_free_univars tl =
-  let old = !free_univars in
-  free_univars := List.fold_right TypeSet.add tl old;
-  old
-
-let set_free_univars tl = free_univars := tl
 
 (* Test the occurence of free univars in a type *)
 (* that's way too expansive. Must do some kind of cacheing *)
@@ -1399,8 +1390,7 @@ let occur_univar env ty =
     then
       match ty.desc with
         Tunivar ->
-          if not (TypeSet.mem ty bound) && not (TypeSet.mem ty !free_univars)
-          then raise (Unify [ty, newgenvar()])
+          if not (TypeSet.mem ty bound) then raise (Unify [ty, newgenvar()])
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound  ty

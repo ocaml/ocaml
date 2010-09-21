@@ -529,6 +529,5 @@ let backtrack (changes, old) =
 (**** Sets, maps and hashtables of types ****)
 
 module TypeSet = Set.Make(TypeOps)
-module TypeSetPair = Set.Make(struct type t = TypeOps.t * TypeOps.t let compare (x1,x2) (y1,y2) = let r = TypeOps.compare x1 y1 in if r == 0 then TypeOps.compare x2 y2 else r end)
 module TypeMap = Map.Make (TypeOps)
 module TypeHash = Hashtbl.Make(TypeOps)
