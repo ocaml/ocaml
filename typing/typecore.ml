@@ -492,22 +492,15 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_type = expected_ty;
         pat_env = !env }
   |Ppat_construct(lid, sarg, explicit_arity) -> 
-
-
-(*      if bare_tunivar expected_ty then 	
-	raise (Error(loc,Constructor_inhabit_tunivar(expected_ty,lid ))); (* GAH : this code is wrong, must change *)*)
       let constr = Typetexp.find_constructor !env loc lid in
       let _ = (* GAH : there must be an easier way to do this, ask garrigue *)
 	let (_, ty_res) = instance_constructor constr in
 	match (repr ty_res).desc with
 	| Tconstr(p,args,m) ->
-	    ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m);
+	    ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m); (* GAH: ask garrigue if this is the best way to only unify the head *)
 	    unify_pat_types loc !env expected_ty ty_res
 	| _ -> fatal_error "constructor type does not have correct description" 
       in
-      
-	
-
       let sargs =
         match sarg with
           None -> []
@@ -522,7 +515,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, Constructor_arity_mismatch(lid,
                                      constr.cstr_arity, List.length sargs)));
-      let (ty_args, ty_res) = instance_constructor constr in
+      let (ty_args, ty_res) = instance_constructor ~in_pattern:(Some env) constr in
       unify_pat_types_gadt loc env expected_ty ty_res;
       let args: Typedtree.pattern list = List.map2 (fun p t -> type_pat env p t) sargs ty_args in (* GAH : might be wrong *)
       rp {
