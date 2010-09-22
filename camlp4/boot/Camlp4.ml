@@ -14614,7 +14614,7 @@ module Struct =
                 (id,
                  (pwith_type
                     {
-                      ptype_params = params;
+                      ptype_params = List.map (fun x -> Some x) params; (*GAH: change this! *)
                       ptype_cstrs = [];
                       ptype_kind = kind;
                       ptype_private = priv;
@@ -15168,7 +15168,7 @@ module Struct =
                       cl
                   in
                     (c,
-                     (type_decl (List.fold_right type_parameters tl []) cl td)) ::
+                     (type_decl (List.map (fun (x,y) -> Some x, y) (List.fold_right type_parameters tl [])) cl td)) ::  (* GAH : so very wrong *)
                       acc
               | _ -> assert false
             and module_type =

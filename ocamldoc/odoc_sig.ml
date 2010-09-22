@@ -237,7 +237,7 @@ module Analyser =
           in
           Odoc_type.Type_variant (List.map f l)
       | Types.Type_generalized_variant l ->
-          let f (constructor_name, type_expr_list,(_:Parsetree.core_type option)) =
+          let f (constructor_name, type_expr_list,_) = (* GAH : most likely wrong! *)
             let comment_opt =
               try
                 match List.assoc constructor_name name_comment_list with
@@ -252,7 +252,6 @@ module Analyser =
             }
           in
           Odoc_type.Type_variant (List.map f l)
-
       | Types.Type_record (l, _) ->
           let f (field_name, mutable_flag, type_expr) =
             let comment_opt =

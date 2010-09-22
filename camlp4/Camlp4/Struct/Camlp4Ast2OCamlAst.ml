@@ -375,10 +375,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value rec type_parameters t acc =
     match t with
-    [ <:ctyp< $t1$ $t2$ >> -> type_parameters t1 (type_parameters t2 acc)
-    | <:ctyp< +'$s$ >> -> [(s, (True, False)) :: acc]
-    | <:ctyp< -'$s$ >> -> [(s, (False, True)) :: acc]
-    | <:ctyp< '$s$ >> -> [(s, (False, False)) :: acc]
+    [ <:ctyp< $t1$ $t2$ >> -> type_parameters t1 (type_parameters t2 acc)  
+    | <:ctyp< +'$s$ >> -> [(Some s, (True, False)) :: acc] (* GAH: so wrong *)
+    | <:ctyp< -'$s$ >> -> [(Some s, (False, True)) :: acc]
+    | <:ctyp< '$s$ >> -> [(Some s, (False, False)) :: acc]
     | _ -> assert False ];
 
   value rec class_parameters t acc =
@@ -402,7 +402,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     let (params, variance) = List.split tpl in
     let (kind, priv, ct) = opt_private_ctyp ct in
     (id, pwith_type
-      {ptype_params = params; ptype_cstrs = [];
+      {ptype_params = params; ptype_cstrs = []; (* GAH : fix this *)
         ptype_kind = kind;
         ptype_private = priv;
         ptype_manifest = Some ct;

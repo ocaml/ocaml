@@ -549,7 +549,9 @@ let globalize_used_variables env fixed =
   fun () ->
     List.iter
       (function (loc, t1, t2) ->
-        try unify env t1 t2 with Unify trace ->
+        try 
+	  unify env t1 t2 ;
+	with Unify trace ->
           raise (Error(loc, Type_mismatch trace)))
       !r
 

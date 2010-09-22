@@ -1708,8 +1708,24 @@ and unify3 env t1 t1' t2 t2' =
   try
     begin match (d1, d2) with
       (Tvar, _) ->
+(*	link_type t1' t2;
+        occur_univar !env t2*)
 	link_type t1' t2;
-        occur_univar !env t2
+        let td2 = newgenty d2 in
+        occur !env t1' td2;
+        occur_univar !env td2;
+        if t2 == t2' then begin
+          (* The variable must be instantiated... *)
+          let ty = newty2 t2'.level d2 in
+          update_level !env t1'.level ty;
+          link_type t1' ty
+        end else begin
+          log_type t2';
+          t2'.desc <- d2;
+          update_level !env t1'.level t2;
+          link_type t1' t2
+        end
+
     | (_, Tvar) ->
 	link_type t2' t1;
         let td1 = newgenty d1 in
