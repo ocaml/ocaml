@@ -25,8 +25,6 @@ open Ctype
 type error =
     Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
-  | Constructor_inhabit_tunivar of type_expr * Longident.t
-  | Constant_inhabit_tunivar of type_expr
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
   | Multiply_bound_variable of string
@@ -71,8 +69,6 @@ let type_module =
 
 let type_open =
   ref (fun _ -> assert false)
-
-
 
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 let type_object =
@@ -144,7 +140,6 @@ let rec extract_label_names sexp env ty  =
 
 (* Typing of patterns *)
 
-
 let unify_pat_types loc env ty ty' = 
   try
     unify env ty ty'
@@ -153,7 +148,6 @@ let unify_pat_types loc env ty ty' =
       raise(Error(loc, Pattern_type_clash(trace)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
-
 
 let unify_pat_types_gadt loc env ty ty' = 
   try
@@ -421,7 +415,6 @@ let check_recordpat_labels loc lbl_pat_list closed  =
 (* Typing of patterns *)
 
 let rec type_pat (env:Env.t ref) sp expected_ty  = 
-  
   let loc = sp.ppat_loc in
   match sp.ppat_desc with
   |Ppat_any -> 
@@ -431,9 +424,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_type = expected_ty;
         pat_env = !env }
   | Ppat_var name -> 
-
       let id = enter_variable loc name expected_ty in (* GAH : what does this do? *)
-      
       rp {
         pat_desc = Tpat_var id;
         pat_loc = loc;
@@ -472,8 +463,6 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_type = q.pat_type;
         pat_env = !env }
   |Ppat_constant cst -> 
-      if bare_tunivar expected_ty then 	
-	raise (Error(loc,Constant_inhabit_tunivar(expected_ty)));
       unify_pat_types loc !env expected_ty (type_constant cst);
       rp {
         pat_desc = Tpat_constant cst;
@@ -626,7 +615,6 @@ let add_pattern_variables env  =
     )
     pv env
 
-
 let type_pattern env spat scope expected_ty  = 
   reset_pattern scope;
   set_gadt_pattern_level ();
@@ -634,7 +622,6 @@ let type_pattern env spat scope expected_ty  =
   let pat = type_pat new_env spat expected_ty in
   let new_env = add_pattern_variables !new_env in
   (pat, new_env, get_ref pattern_force)
-
 
 let type_pattern_list env spatl scope expected_tys  = 
   reset_pattern scope;
@@ -691,7 +678,7 @@ let type_self_pattern cl_num privty val_env met_env par_env spat  =
   let vars = ref Vars.empty in
   let pv = !pattern_variables in
   pattern_variables := [];
-  let ((val_env:Env.t), met_env, par_env) =
+  let (val_env, met_env, par_env) =
     List.fold_right
       (fun (id, ty, _loc) (val_env, met_env, par_env) ->
          (Env.add_value id {val_type = ty; val_kind = Val_unbound} val_env,
@@ -1091,7 +1078,6 @@ let unify_exp env exp expected_ty  =
       raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
 
 let rec type_exp env sexp  = 
-  
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
   | Pexp_ident lid ->
@@ -1154,7 +1140,6 @@ let rec type_exp env sexp  =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_function _ ->     (* defined in type_expect *)
-      
       type_expect env sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
       begin_def (); (* one more level for non-returning functions *)
@@ -2025,7 +2010,6 @@ and type_construct env loc lid sarg explicit_arity ty_expected  =
    Some constructs are treated specially to provide better error messages. *)
 
 and type_expect ?in_function env sexp ty_expected =
-  
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
     Pexp_constant(Const_string s as cst) ->
@@ -2119,7 +2103,6 @@ and type_expect ?in_function env sexp ty_expected =
               raise(Error(loc_fun,
                           Too_many_arguments (in_function <> None, ty_fun)))
       in
-
       let ty_arg =
         if is_optional l then
           let tv = newvar() in
@@ -2228,8 +2211,6 @@ and type_statement env sexp  =
 
 (* Typing of match cases *)
 
-
-
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 (*  let ty_arg' = newvar () in *) (* GAH : must ask garrigue about this *)
   let pattern_force = ref [] in
@@ -2264,8 +2245,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     List.iter (iter_pattern finalize_variant) patl
   end;
   (* `Contaminating' unifications start here *)
-  
-
   List.iter (fun f -> f()) !pattern_force;
 
 (*  begin match pat_env_list with [] -> ()
@@ -2285,13 +2264,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     | None -> Partial
     | Some partial_loc ->  
 	  Parmatch.check_partial partial_loc cases env 
-(*	  begin match r with
-	  |  Partial ->
-	      List.iter (fun (p,_) -> Format.fprintf Format.std_formatter "p description: %a \np type:%a\n%!" Parmatch.top_pretty p Printtyp.raw_type_expr p.pat_type) cases
-	  | _ ->
-	      () end;
-	  r*)
-
   in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
@@ -2398,14 +2370,6 @@ let report_error ppf  =  function
        "@[The constructor %a@ expects %i argument(s),@ \
         but is applied here to %i argument(s)@]"
        longident lid expected provided 
-  | Constructor_inhabit_tunivar(t,lid) ->
-      fprintf ppf
-       "The constructor %a does not inhabit the univarsal type %a"
-       longident lid type_scheme t
-  | Constant_inhabit_tunivar t ->
-      fprintf ppf
-       "This constant does not inhabit the type universal type %a"
-       type_scheme t
   | Label_mismatch(lid, trace) ->
       report_unification_error ppf trace
         (function ppf ->

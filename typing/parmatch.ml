@@ -263,7 +263,6 @@ let pretty_pat_now p =
   top_pretty Format.str_formatter p ;
   prerr_endline (Format.flush_str_formatter ())
 
-
 let prerr_pat v =
   top_pretty str_formatter v ;
   prerr_string (flush_str_formatter ())
@@ -988,27 +987,6 @@ let rec try_many f = function
       | r -> r
       end
 
-(*let pretty_pss pss = 
-  let print_lst ppf lst = 
-    fprintf ppf "{";
-    List.iter
-      (top_pretty ppf)
-      lst;
-    fprintf ppf "}";
-  in
-  let print_lstlst ppf lstlst = 
-    fprintf ppf "[";
-    List.iter
-      (print_lst ppf)
-      lstlst;
-    fprintf ppf "]"
-  in
-  Format.fprintf Format.str_formatter "[%a]%!"
-    print_lstlst pss;
-  print_endline (Format.flush_str_formatter ())*)
-
-
-
 let rec exhaust ext pss n  = 
   match pss with
 | []    ->  Rsome (omegas n)
@@ -1047,8 +1025,7 @@ let rec exhaust ext pss n  =
              Essentially :
              * D exhaustive => pss exhaustive
              * D non-exhaustive => we have a non-filtered value
-          *)
-	  
+          *)	  
           let r =  exhaust ext (filter_extra pss) (n-1) in
           match r with
           | Rnone -> Rnone
@@ -1125,9 +1102,6 @@ type answer =
 let pretty_pat p =
   top_pretty Format.str_formatter p ;
   prerr_string (Format.flush_str_formatter ())
-
-
-
 
 type matrix = pattern list list
 

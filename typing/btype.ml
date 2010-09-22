@@ -197,11 +197,6 @@ let iter_type_expr f ty =
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
   | Tpackage (_, _, l)  -> List.iter f l
 
-
-
-
-
-
 let rec iter_abbrev f = function
     Mnil                   -> ()
   | Mcons(_, _, ty, ty', rem) -> f ty; f ty'; iter_abbrev f rem

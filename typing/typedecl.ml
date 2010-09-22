@@ -121,9 +121,6 @@ module StringSet =
     let compare = compare
   end)
 
-
-
-
 let transl_declaration env (name, sdecl) id =
   let param_counter = ref 0 in 
   (* Bind type parameters *)
@@ -162,7 +159,6 @@ let transl_declaration env (name, sdecl) id =
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
-
             if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs) (* GAH: MIGHT BE WRONG *)
                > (Config.max_tag + 1) then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
@@ -218,10 +214,6 @@ let transl_declaration env (name, sdecl) id =
         end;
       type_variance = List.map (fun _ -> true, true, true) params;
     } in
-
-
-
-
   (* Check constraints *)
   List.iter
     (fun (ty, ty', loc) ->
@@ -273,7 +265,6 @@ module TypeSet =
     end)
 
 let rec check_constraints_rec env loc visited ty =
-
   let ty = Ctype.repr ty in
   if TypeSet.mem ty !visited then () else begin
   visited := TypeSet.add ty !visited;
@@ -312,7 +303,6 @@ let check_constraints env (_, sdecl) (_, decl) =
             (fun sty ty ->
               check_constraints_rec env sty.ptyp_loc visited ty)
             styl tyl;
-
 	  (* GAH : ask garrigue how to do the following: *)
 	  match sret_type_opt,ret_type_opt with
 	  | Some sr,Some r ->
@@ -659,7 +649,6 @@ let rec compute_variance_fixpoint env decls required variances =
       (fun (id, decl) req -> if not (is_sharp id) then
         ignore (compute_variance_decl new_env true decl req))
       new_decls required;
-
     new_decls, new_env
   end
 
@@ -726,8 +715,6 @@ let name_recursion sdecl id decl =
       {decl with type_manifest = Some ty'}
     else decl
   | _ -> decl
-
-
 
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
@@ -802,7 +789,6 @@ let transl_type_decl env name_sdecl_list =
     List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
       name_sdecl_list
   in
-
   let final_decls, final_env =
     compute_variance_fixpoint env decls required (List.map init_variance decls)
   in

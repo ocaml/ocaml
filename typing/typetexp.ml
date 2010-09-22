@@ -234,7 +234,7 @@ let rec transl_type env policy styp =
       begin try
         Ctype.enforce_constraints env constr
       with Unify trace ->
-        (print_endline "another mismatch from trans_type"; raise (Error(styp.ptyp_loc, Type_mismatch trace)))
+        raise (Error(styp.ptyp_loc, Type_mismatch trace))
       end;
       constr
   | Ptyp_object fields ->
@@ -276,7 +276,7 @@ let rec transl_type env policy styp =
       List.iter2
         (fun (sty, ty) ty' ->
            try unify_var env ty' ty with Unify trace ->
-             (print_endline "yet another";raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace)))))
+             raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       let ty =
         try Ctype.expand_head env (newconstr path args)
@@ -495,11 +495,6 @@ and transl_fields env policy seen =
       let ty2 = transl_fields env policy (s::seen) l in
         newty (Tfield (s, Fpresent, ty1, ty2))
 
-
-
-
-    
-
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars ty =
   let ty = repr ty in
@@ -538,12 +533,11 @@ let globalize_used_variables env fixed =
         r := (loc, v,  Tbl.find name !type_variables) :: !r
       with Not_found ->
         if fixed && (repr ty).desc = Tvar then
-	  begin
-            raise(Error(loc, Unbound_type_variable ("'"^name)))
-	  end;
-        let v2 = new_global_var () in
-        r := (loc, v, v2) :: !r;
-        type_variables := Tbl.add name v2 !type_variables)
+          raise(Error(loc, Unbound_type_variable ("'"^name)))
+	else
+          let v2 = new_global_var () in
+          r := (loc, v, v2) :: !r;
+          type_variables := Tbl.add name v2 !type_variables)
     !used_variables;
   used_variables := Tbl.empty;
   fun () ->

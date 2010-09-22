@@ -753,6 +753,3 @@ let top_phrase ppf x = toplevel_phrase 0 ppf x;;
 let print_expression = expression 0 ;;
 
 let print_pattern = pattern 0 ;;
-
-let print_core_type = core_type 0 ;;
-

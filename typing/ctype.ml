@@ -10,180 +10,6 @@
 (*                                                                     *)
 (***********************************************************************)
 
-
-module Printtyp_ = 
-struct
-
-open Misc
-open Format
-open Longident
-open Path
-open Asttypes
-open Types
-open Btype
-open Outcometree
-
-(* Print a long identifier *)
-
-let rec longident ppf = function
-  | Lident s -> fprintf ppf "%s" s
-  | Ldot(p, s) -> fprintf ppf "%a.%s" longident p s
-  | Lapply(p1, p2) -> fprintf ppf "%a(%a)" longident p1 longident p2
-
-(* Print an identifier *)
-
-let unique_names = ref Ident.empty
-
-let ident_name id =
-  try Ident.find_same id !unique_names with Not_found -> Ident.name id
-
-let add_unique id =
-  try ignore (Ident.find_same id !unique_names)
-  with Not_found ->
-    unique_names := Ident.add id (Ident.unique_toplevel_name id) !unique_names
-
-let ident ppf id = fprintf ppf "%s" (ident_name id)
-
-(* Print a path *)
-
-let ident_pervasive = Ident.create_persistent "Pervasives"
-
-let rec tree_of_path = function
-  | Pident id ->
-      Oide_ident (ident_name id)
-  | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
-      Oide_ident s
-  | Pdot(p, s, pos) ->
-      Oide_dot (tree_of_path p, s)
-  | Papply(p1, p2) ->
-      Oide_apply (tree_of_path p1, tree_of_path p2)
-
-let rec path ppf = function
-  | Pident id ->
-      ident ppf id
-  | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
-      fprintf ppf "%s" s
-  | Pdot(p, s, pos) ->
-      fprintf ppf "%a.%s" path p s
-  | Papply(p1, p2) ->
-      fprintf ppf "%a(%a)" path p1 path p2
-
-(* Print a recursive annotation *)
-
-let tree_of_rec = function
-  | Trec_not -> Orec_not
-  | Trec_first -> Orec_first
-  | Trec_next -> Orec_next
-
-(* Print a raw type expression, with sharing *)
-
-let raw_list pr ppf = function
-    [] -> fprintf ppf "[]"
-  | a :: l ->
-      fprintf ppf "@[<1>[%a%t]@]" pr a
-        (fun ppf -> List.iter (fun x -> fprintf ppf ";@,%a" pr x) l)
-
-let rec safe_kind_repr v = function
-    Fvar {contents=Some k}  ->
-      if List.memq k v then "Fvar loop" else
-      safe_kind_repr (k::v) k
-  | Fvar _ -> "Fvar None"
-  | Fpresent -> "Fpresent"
-  | Fabsent -> "Fabsent"
-
-let rec safe_commu_repr v = function
-    Cok -> "Cok"
-  | Cunknown -> "Cunknown"
-  | Clink r ->
-      if List.memq r v then "Clink loop" else
-      safe_commu_repr (r::v) !r
-
-let rec safe_repr v = function
-    {desc = Tlink t} when not (List.memq t v) ->
-      safe_repr (t::v) t
-  | t -> t
-
-let rec list_of_memo = function
-    Mnil -> []
-  | Mcons (priv, p, t1, t2, rem) -> p :: list_of_memo rem
-  | Mlink rem -> list_of_memo !rem
-
-let visited = ref []
-let rec raw_type ppf ty =
-  let ty = safe_repr [] ty in
-  if List.memq ty !visited then fprintf ppf "{id=%d}" ty.id else begin
-    visited := ty :: !visited;
-    fprintf ppf "@[<1>{id=%d;level=%d;desc=@,%a}@]" ty.id ty.level
-      raw_type_desc ty.desc
-  end
-and raw_type_list tl = raw_list raw_type tl
-and raw_type_desc ppf = function
-    Tvar -> fprintf ppf "Tvar"
-  | Tarrow(l,t1,t2,c) ->
-      fprintf ppf "@[<hov1>Tarrow(%s,@,%a,@,%a,@,%s)@]"
-        l raw_type t1 raw_type t2
-        (safe_commu_repr [] c)
-  | Ttuple tl ->
-      fprintf ppf "@[<1>Ttuple@,%a@]" raw_type_list tl
-  | Tconstr (p, tl, abbrev) ->
-      fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" path p
-        raw_type_list tl
-        (raw_list path) (list_of_memo !abbrev)
-  | Tobject (t, nm) ->
-      fprintf ppf "@[<hov1>Tobject(@,%a,@,@[<1>ref%t@])@]" raw_type t
-        (fun ppf ->
-          match !nm with None -> fprintf ppf " None"
-          | Some(p,tl) ->
-              fprintf ppf "(Some(@,%a,@,%a))" path p raw_type_list tl)
-  | Tfield (f, k, t1, t2) ->
-      fprintf ppf "@[<hov1>Tfield(@,%s,@,%s,@,%a,@;<0 -1>%a)@]" f
-        (safe_kind_repr [] k)
-        raw_type t1 raw_type t2
-  | Tnil -> fprintf ppf "Tnil"
-  | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
-  | Tsubst t -> fprintf ppf "@[<1>Tsubst@,%a@]" raw_type t
-  | Tunivar -> fprintf ppf "Tunivar"
-  | Tpoly (t, tl) ->
-      fprintf ppf "@[<hov1>Tpoly(@,%a,@,%a)@]"
-        raw_type t
-        raw_type_list tl
-  | Tvariant row ->
-      fprintf ppf
-        "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@ %s%b;@ %s%b;@ @[<1>%s%t@]}@]"
-        "row_fields="
-        (raw_list (fun ppf (l, f) ->
-          fprintf ppf "@[%s,@ %a@]" l raw_field f))
-        row.row_fields
-        "row_more=" raw_type row.row_more
-        "row_closed=" row.row_closed
-        "row_fixed=" row.row_fixed
-        "row_name="
-        (fun ppf ->
-          match row.row_name with None -> fprintf ppf "None"
-          | Some(p,tl) ->
-              fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
-  | Tpackage (p, _, tl) ->
-      fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
-        raw_type_list tl
-
-and raw_field ppf = function
-    Rpresent None -> fprintf ppf "Rpresent None"
-  | Rpresent (Some t) -> fprintf ppf "@[<1>Rpresent(Some@,%a)@]" raw_type t
-  | Reither (c,tl,m,e) ->
-      fprintf ppf "@[<hov1>Reither(%b,@,%a,@,%b,@,@[<1>ref%t@])@]" c
-        raw_type_list tl m
-        (fun ppf ->
-          match !e with None -> fprintf ppf " None"
-          | Some f -> fprintf ppf "@,@[<1>(%a)@]" raw_field f)
-  | Rabsent -> fprintf ppf "Rabsent"
-
-let raw_type_expr ppf t =
-  visited := [];
-  raw_type ppf t;
-  visited := []
-end
-
-
 (* $Id$ *)
 
 (* Operations on core types *)
@@ -253,11 +79,6 @@ open Btype
    - Traitement de la trace de l'unification separe de la fonction
      [unify].
 *)
-
-
-
-
-
 
 (**** Errors ****)
 
@@ -1068,7 +889,7 @@ let instance_constructor ?(in_pattern=None) cstr = (* GAH : how the blazes does 
 	let ty = newvar () in
 	Ident.set_current_time ty.level;
 	let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
-	let to_unify = newty2 generic_level (Tconstr (Path.Pident id,[],ref Mnil)) in (* GAH : ask garrigue, what in the world is an abbrev_memo ?? *)
+	let to_unify = newty2 existential.level (Tconstr (Path.Pident id,[],ref Mnil)) in (* GAH : ask garrigue, what in the world is an abbrev_memo ?? *)
 	link_type existential to_unify 
       in
       List.iter process existentials end;
@@ -1800,17 +1621,6 @@ let reify env t =  (* GAH: ask garrigue; is this right? *)
   in
   iter_type_expr iterator (full_expand !env t)
 
-
-let print_path_names t1 t2 = 
-  match t1.desc,t2.desc with 
-  | Tconstr (p1,[],_),Tconstr (p2,[],_)    -> 
-      begin match p1,p2 with
-      | Path.Pident q1,Path.Pident q2 ->
-	  Printf.printf "different paths but %s %s\n%!" (Ident.name q1) (Ident.name q2)
-      | _ -> print_endline "not idents"
-      end
-  | _ -> print_endline "not constructors"
-
 let unify_eq_set = Btype.TypeHash.create 10 
 
 let add_type_equality t1 t2 = 
@@ -1948,35 +1758,14 @@ and unify3 env t1 t1' t2 t2' =
         | _ -> ()
         end
     | (Ttuple tl1, Ttuple tl2) ->
-
         unify_list env tl1 tl2
     | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-
         unify_list env tl1 tl2
-
     | _,(Tconstr (Path.Pident p,[],_))  when not !pattern_unification -> (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
 	raise (Unify [])
-
-(*	let _,td =  Env.lookup_type (Longident.parse (Ident.name p)) !env in*)
-(*	let td = Env.lookup_type  (Ident.name "t") !env in	
-	(match td.type_manifest with
-	| None ->
-	    print_endline "no manifest 1"
-	| Some ty ->
-	    print_endline (string_of_bool (ty == t1));
-	    print_endline "have a manifest 1");
-*)
-
-(*	ignore(Env.find_type_expansion  (Path.Pident p) !env);*)
-
-	
-
     | Tconstr (p1,[],_),Tconstr (p2,[],_)  when Path.same p1 p2  -> 
 	print_endline "same path yo";
-
-
 (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
-
     | (Tconstr (Path.Pident p,[],_)),_  when !pattern_unification -> (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
 	let t2 = copy t2 in
 	reify env t2 ;
@@ -2265,19 +2054,6 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | _ -> raise (Unify [])
 
 ;;
-
-
-let bare_tunivar x = (* GAH: ask garrigue about this. is it correct *)
-    match (repr x).desc with
-    | Tunivar -> true
-    | _ -> false
-
-let bare_tvar x = (* GAH: ask garrigue about this. is it correct *)
-    match (repr x).desc with
-    | Tvar -> true
-    | _ -> false
-
-      
 
 let unify env ty1 ty2 =
   try
