@@ -172,8 +172,6 @@ let unify_pat env pat expected_ty  =
       raise(Typetexp.Error(pat.pat_loc, Typetexp.Variant_tags (l1, l2)))*)
 
 
-
-
 (* make all Reither present in open variants *)
 let finalize_variant pat  = 
   match pat.pat_desc with
@@ -482,11 +480,12 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_env = !env }
   |Ppat_construct(lid, sarg, explicit_arity) -> 
       let constr = Typetexp.find_constructor !env loc lid in
-      let _ = (* GAH : there must be an easier way to do this, ask garrigue *)
+      let _ = 
 	let (_, ty_res) = instance_constructor constr in
 	match (repr ty_res).desc with
 	| Tconstr(p,args,m) ->
 	    ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m); (* GAH: ask garrigue if this is the best way to only unify the head *)
+	    enforce_constraints  !env ty_res;
 	    unify_pat_types loc !env expected_ty ty_res
 	| _ -> fatal_error "constructor type does not have correct description" 
       in
@@ -570,7 +569,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_or(sp1, sp2) ->  (* GAH: what do we do for or patterns? ask garrigue if this is ok *)
+  |Ppat_or(sp1, sp2) ->  (* GAH: note to self, lock it *)
       let initial_pattern_variables = !pattern_variables in
       let p1 = type_pat env sp1 expected_ty in 
       let p1_variables = !pattern_variables in
@@ -617,7 +616,6 @@ let add_pattern_variables env  =
 
 let type_pattern env spat scope expected_ty  = 
   reset_pattern scope;
-  set_gadt_pattern_level ();
   let new_env = ref env in 
   let pat = type_pat new_env spat expected_ty in
   let new_env = add_pattern_variables !new_env in
@@ -625,7 +623,6 @@ let type_pattern env spat scope expected_ty  =
 
 let type_pattern_list env spatl scope expected_tys  = 
   reset_pattern scope;
-  set_gadt_pattern_level ();
   let new_env = ref env in 
   let patl = 
     List.map2 
@@ -1079,6 +1076,7 @@ let unify_exp env exp expected_ty  =
 
 let rec type_exp env sexp  = 
   let loc = sexp.pexp_loc in
+  let ret = 
   match sexp.pexp_desc with
   | Pexp_ident lid ->
       begin
@@ -1436,7 +1434,7 @@ let rec type_exp env sexp  =
         exp_loc = loc;
         exp_type = body.exp_type;
         exp_env = env }
-  | Pexp_send (e, met) ->
+  | Pexp_send (e, met) ->      
       if !Clflags.principal then begin_def ();
       let obj = type_exp env e in
       begin try
@@ -1462,6 +1460,7 @@ let rec type_exp env sexp  =
               with
                 (_, ({val_kind = Val_self (meths, _, _, privty)} as desc)),
                 (path, _) ->
+		  print_endline "FOCUSING ON THIS GUY";
                   let (_, typ) =
                     filter_self_method env met Private meths privty
                   in
@@ -1695,6 +1694,10 @@ let rec type_exp env sexp  =
         exp_env = env }
   | Pexp_open (lid, e) ->
       type_exp (!type_open env sexp.pexp_loc lid) e
+  in
+  ret
+    
+
 
 and type_label_exp create env loc ty (lid, sarg)  = 
   let label = Typetexp.find_label env sarg.pexp_loc lid in
@@ -2012,7 +2015,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected  =
 and type_expect ?in_function env sexp ty_expected =
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
-    Pexp_constant(Const_string s as cst) ->
+  | Pexp_constant(Const_string s as cst) ->
       let exp =
         re {
           exp_desc = Texp_constant cst;
@@ -2166,7 +2169,7 @@ and type_expect ?in_function env sexp ty_expected =
         | _ -> assert false
       end
 
-  | Pexp_match(sarg, caselist) -> (* GAH : check with garrigue that this is ok *)
+  | Pexp_match(sarg, caselist) ->
       let arg = type_exp env sarg in
       let cases, partial =
         type_cases env arg.exp_type ty_expected (Some loc) caselist
@@ -2176,9 +2179,7 @@ and type_expect ?in_function env sexp ty_expected =
         exp_loc = loc;
         exp_type = ty_expected;
         exp_env = env }
-
-
-  | _ ->
+  | _ -> 
       let exp = type_exp env sexp in
       unify_exp env exp ty_expected;
       exp
@@ -2212,7 +2213,12 @@ and type_statement env sexp  =
 (* Typing of match cases *)
 
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
-(*  let ty_arg' = newvar () in *) (* GAH : must ask garrigue about this *)
+(*  let closed = free_variables ~env ty_arg = [] in*)
+(*  let ty_arg' = newvar () in *) 
+  begin_def ();
+  let ty = newvar () in
+  Ident.set_current_time ty.level;
+  Ctype.init_def(Ident.current_time());
   let pattern_force = ref [] in
   let pat_env_list = 
     List.map
@@ -2231,7 +2237,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
             { pat with pat_type = instance pat.pat_type }
           end else pat
         in
-	
 (*        unify_pat env pat ty_arg'; (* GAH: probably wrong. what in the blazes does ty_arg' do?? *)*)
         (pat, ext_env))
       caselist in
@@ -2239,7 +2244,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 
 
   let patl = List.map fst pat_env_list in
-  
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
     List.iter (iter_pattern finalize_variant) patl
@@ -2248,9 +2252,10 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   List.iter (fun f -> f()) !pattern_force;
 
 (*  begin match pat_env_list with [] -> ()
-  | (pat, _) :: _ -> unify_pat env pat ty_arg (* GAH: probably incorrect; check with garrigue. if we readd this code then it doesn't work *)
+  | (pat, _) :: _ -> unify_pat env pat ty_arg (* GAH: ask garrigue, contamination *) 
   end;*)
   let in_function = if List.length caselist = 1 then in_function else None in
+
   let cases =
     List.map2
       (fun (pat, ext_env) (spat, sexp) ->
@@ -2259,12 +2264,14 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 	(pat, exp))
       pat_env_list caselist
   in
+  end_def ();
   let partial =
     match partial_loc with
     | None -> Partial
     | Some partial_loc ->  
 	  Parmatch.check_partial partial_loc cases env 
   in
+(* List.iter2 (fun (_,env) (_,exp) -> unify_exp env exp (newvar ())) pat_env_list cases; *)
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
 
@@ -2274,7 +2281,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 (* Typing of let bindings *)
 
 and type_let env rec_flag spat_sexp_list scope   = 
-  
   begin_def();
   if !Clflags.principal then begin_def ();
   let spatl = List.map (fun (spat, sexp) -> spat) spat_sexp_list in
@@ -2283,6 +2289,7 @@ and type_let env rec_flag spat_sexp_list scope   =
   if rec_flag = Recursive then
     List.iter2
       (fun pat (_, sexp) ->
+
         let pat =
           match pat.pat_type.desc with
           | Tpoly (ty, tl) ->
@@ -2295,6 +2302,7 @@ and type_let env rec_flag spat_sexp_list scope   =
       end_def ();
       List.map
         (fun pat ->
+
           iter_pattern (fun pat -> generalize_structure pat.pat_type) pat;
           {pat with pat_type = instance pat.pat_type})
         pat_list
@@ -2323,7 +2331,8 @@ and type_let env rec_flag spat_sexp_list scope   =
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
             {exp with exp_type = instance exp.exp_type}
-        | _ -> type_expect exp_env sexp pat.pat_type)
+        | _ -> 
+	    type_expect exp_env sexp pat.pat_type )
       spat_sexp_list pat_list in
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp] env))
@@ -2509,3 +2518,7 @@ let report_error ppf  =  function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+
+
+
+  

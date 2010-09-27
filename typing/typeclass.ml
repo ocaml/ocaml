@@ -559,6 +559,7 @@ let rec class_field cl_num self_type meths vars
           let texp = type_expect met_env meth_expr meth_type in
           Ctype.end_def ();
           Cf_meth (lab, texp)
+
         end in
       (val_env, met_env, par_env, field::fields,
        Concr.add lab concr_meths, warn_vals, inher)
@@ -625,7 +626,6 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
 
   (* Private self is used for private method calls *)
   let private_self = if final then Ctype.newvar () else self_type in
-
   (* Self binder *)
   let (pat, meths, vars, val_env, meth_env, par_env) =
     type_self_pattern cl_num private_self val_env met_env par_env spat
@@ -795,6 +795,7 @@ and class_expr cl_num val_env met_env scl =
         Ctype.end_def ();
         iter_pattern (fun {pat_type=ty} -> Ctype.generalize_structure ty) pat
       end;
+
       let pv =
         List.map
           (function (id, id', ty) ->
@@ -815,7 +816,7 @@ and class_expr cl_num val_env met_env scl =
             exp_loc = Location.none;
             exp_type = Ctype.none;
             exp_env = Env.empty }] 
-	  val_env (* GAH : whoa, I don't know what val_env is, and quite frankly I'm scared. Ask garrigue *)
+	  val_env
       in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in

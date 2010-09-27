@@ -81,6 +81,9 @@ end
 
 module OrderedString = struct type t = string let compare = compare end
 module Meths = Map.Make(OrderedString)
+
+
+
 module Vars = Meths
 
 (* Value descriptions *)
@@ -110,7 +113,7 @@ type constructor_description =
     cstr_args: type_expr list;                 (* Type of the arguments *)
     cstr_arity: int;                           (* Number of arguments *)
     cstr_tag: constructor_tag;                 (* Tag for heap blocks *)
-    cstr_consts: int;                          (* Number of constant constructors *) (* GAH: ask garrigue: why is this field here?? is it the same for each constructor?*)
+    cstr_consts: int;                          (* Number of constant constructors *)
     cstr_nonconsts: int;                       (* Number of non-const constructors *)
     cstr_all_ty_res: type_expr option list;    (* The return type of all the constructors of the type *)
     cstr_private: private_flag }               (* Read-only constructor? *)

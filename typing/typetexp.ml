@@ -533,11 +533,10 @@ let globalize_used_variables env fixed =
         r := (loc, v,  Tbl.find name !type_variables) :: !r
       with Not_found ->
         if fixed && (repr ty).desc = Tvar then
-          raise(Error(loc, Unbound_type_variable ("'"^name)))
-	else
-          let v2 = new_global_var () in
-          r := (loc, v, v2) :: !r;
-          type_variables := Tbl.add name v2 !type_variables)
+          raise(Error(loc, Unbound_type_variable ("'"^name)));
+        let v2 = new_global_var () in
+        r := (loc, v, v2) :: !r;
+        type_variables := Tbl.add name v2 !type_variables)
     !used_variables;
   used_variables := Tbl.empty;
   fun () ->
@@ -549,7 +548,7 @@ let globalize_used_variables env fixed =
           raise (Error(loc, Type_mismatch trace)))
       !r
 
-let transl_simple_type env fixed ?(gadt=None) styp = (* GAH : ask garrigue about this *)
+let transl_simple_type env fixed ?(gadt=None) styp = (* GAH : ask garrigue, might be ugly *)
   univars := []; used_variables := Tbl.empty;gadt_map:=gadt;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
   globalize_used_variables env fixed ();

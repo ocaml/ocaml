@@ -626,7 +626,7 @@ let initial_env = ref Env.empty
 let unifiable t t' = 
   let snap = Btype.snapshot () in
   try
-    Ctype.unify_gadt (ref !initial_env) t t'; (* GAH: ask garrigue: unify in which environment??? *)
+    Ctype.unify_gadt (ref !initial_env) t t';
     Btype.backtrack snap;
     true
   with
@@ -1355,7 +1355,6 @@ and every_both pss qs q1 q2 =
 
 
 (* le_pat p q  means, forall V,  V matches q implies V matches p *)
-(* GAH: ask garrigue: does le mean "less than or equal" ? *)
 let rec le_pat p q =
   match (p.pat_desc, q.pat_desc) with
   | (Tpat_var _|Tpat_any),_ -> true
@@ -1575,7 +1574,6 @@ let do_check_partial loc casel pss = match pss with
           Then match MUST be considered non-exhaustive,
           otherwise compilation of PM is broken.
           *)
-    (* GAH: ask garrigue: what's PM? *)
     begin match casel with
     | [] -> ()
     | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded

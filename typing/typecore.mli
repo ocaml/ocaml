@@ -111,3 +111,4 @@ val type_object:
    Typedtree.class_structure * class_signature * string list) ref
 
 val create_package_type: Location.t -> Env.t -> Parsetree.package_type -> type_expr
+
