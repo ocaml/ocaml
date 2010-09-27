@@ -102,8 +102,6 @@ let nongen_level = ref 0
 let global_level = ref 1
 let saved_level = ref []
 
-let get_current_level = !current_level
-
 let init_def level = current_level := level; nongen_level := level
 let begin_def () =
   saved_level := (!current_level, !nongen_level) :: !saved_level;
@@ -152,7 +150,6 @@ let newty desc         = newty2 !current_level desc
 let new_global_ty desc = newty2 !global_level desc
 
 let newvar ()          = newty2 !current_level Tvar
-let newtunivar ()      = newty2 !current_level Tunivar
 let newvar2 level      = newty2 level Tvar
 let new_global_var ()  = newty2 !global_level Tvar
 
@@ -166,16 +163,6 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
 (* Re-export repr *)
 let repr = repr
-let test_poly ty' = 
-  (match repr ty' with
-    {desc = Tpoly (ty, [])} ->
-      false
-  | {desc = Tpoly (ty, tl); level = l} ->
-      false
-  | {desc = Tvar}  ->
-      false
-  | _ ->
-      true)
 
 (**** Type maps ****)
 
@@ -639,7 +626,6 @@ let rec update_level env level ty =
       Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-(*ignore(!forward_try_expand_once env ty);*)
           link_type ty (!forward_try_expand_once env ty);
           update_level env level ty
         with Cannot_expand ->
@@ -670,8 +656,6 @@ let rec update_level env level ty =
         iter_type_expr (update_level env level) ty
     end
   end
-
-
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
 
@@ -1383,8 +1367,7 @@ let occur env ty0 ty =
 
 (* Since we cannot duplicate universal variables, unification must
    be done at meta-level, using bindings in univar_pairs *)
-let rec unify_univar t1 t2 = 
-function
+let rec unify_univar t1 t2 = function
     (cl1, cl2) :: rem ->
       let find_univ t cl =
         try
@@ -1786,7 +1769,6 @@ and unify3 env t1 t1' t2 t2' =
 	reify env t1;
 	reify env t2
     | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
-	link_type t1' t2;
         unify_fields env fi1 fi2;
         (* Type [t2'] may have been instantiated by [unify_fields] *)
         (* XXX One should do some kind of unification... *)
@@ -1800,13 +1782,10 @@ and unify3 env t1 t1' t2 t2' =
             ()
         end
     | (Tvariant row1, Tvariant row2) ->
-	link_type t1' t2;
         unify_row env row1 row2
     | (Tfield _, Tfield _) ->           (* Actually unused *)
-	link_type t1' t2;
         unify_fields env t1' t2'
     | (Tfield(f,kind,_,rem), Tnil) | (Tnil, Tfield(f,kind,_,rem)) ->
-	link_type t1' t2;
         begin match field_kind_repr kind with
           Fvar r when f <> dummy_method -> set_kind r Fabsent
         | _      -> raise (Unify [])
@@ -1814,12 +1793,7 @@ and unify3 env t1 t1' t2 t2' =
     | (Tnil, Tnil) ->
         ()
     | (Tpoly (t1, []), Tpoly (t2, [])) ->
-
-(*	if !debugmode then begin 
-	  Format.printf "DEBUG MODE \nt1 = \n%a\n\nt2 = \n%a\n%!" Printtyp_.raw_type_expr t1 Printtyp_.raw_type_expr t2; 
-	end;
-	link_type t1' t2;*)
-        unify env  t1 t2
+        unify env t1 t2
     | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
         enter_poly !env univar_pairs t1 tl1 t2 tl2 (unify env)
     | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)) when Path.same p1 p2 && n1 = n2 ->
@@ -1890,9 +1864,7 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
     List.iter
       (fun (n, k1, t1, k2, t2) ->
         unify_kind k1 k2;
-        try 
-          unify env t1 t2
-	with Unify trace ->
+        try unify env t1 t2 with Unify trace ->
           raise (Unify ((newty (Tfield(n, k1, t1, va)),
                          newty (Tfield(n, k2, t2, va)))::trace)))
       pairs
@@ -2001,7 +1973,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
   if f1 == f2 then () else
   match f1, f2 with
-    Rpresent(Some t1), Rpresent(Some t2) -> unify  env t1 t2
+    Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
   | Rpresent None, Rpresent None -> ()
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
@@ -2044,7 +2016,6 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
       set_row_field e2 f1
   | _ -> raise (Unify [])
 
-;;
 
 let unify env ty1 ty2 =
   try
@@ -2158,9 +2129,6 @@ let rec filter_method env name priv ty =
 
 let check_filter_method env name priv ty =
   ignore(filter_method env name priv ty)
-
-
-
 
 let filter_self_method env lab priv meths ty =
   let ty' = filter_method env lab priv ty in
@@ -3662,11 +3630,3 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
-
-
-     
-
-
-
-	
-  

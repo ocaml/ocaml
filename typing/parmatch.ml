@@ -259,9 +259,6 @@ and pretty_lvals lbls ppf = function
 let top_pretty ppf v =
   fprintf ppf "@[%a@]@?" pretty_val v
 
-let pretty_pat_now p =
-  top_pretty Format.str_formatter p ;
-  prerr_endline (Format.flush_str_formatter ())
 
 let prerr_pat v =
   top_pretty str_formatter v ;
@@ -736,8 +733,6 @@ let rec pat_of_constrs ex_pat = function
         (pat_of_constr ex_pat cstr,
          pat_of_constrs ex_pat rem, None)}
 
-
-
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags  = 
   let ty = p.pat_type in 
@@ -763,12 +758,12 @@ let complete_constrs p all_tags  =
 	       cstr_args = targs ;
 	       cstr_arity = List.length targs})
         not_tags
-    with
-    | Datarepr.Constr_not_found ->
-	fatal_error "Parmatch.complete_constr: constr_not_found"
+with
+| Datarepr.Constr_not_found ->
+    fatal_error "Parmatch.complete_constr: constr_not_found"
     end
 | _ -> fatal_error "Parmatch.complete_constr"
-      
+
 
 (* Auxiliary for build_other *)
 
@@ -785,8 +780,7 @@ let build_other_constant proj make first next p env =
   in the first column of env
 *)
 
-let build_other ext env =  
-match env with
+let build_other ext env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_)
   ::_ ->
     make_pat
@@ -987,32 +981,29 @@ let rec try_many f = function
       | r -> r
       end
 
-let rec exhaust ext pss n  = 
-  match pss with
+let rec exhaust ext pss n = match pss with
 | []    ->  Rsome (omegas n)
 | []::_ ->  Rnone
-| pss   -> 
-    let q0  = discr_pat omega pss in
+| pss   ->
+    let q0 = discr_pat omega pss in
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
-    | [] -> 
+    | [] ->
         begin match exhaust ext (filter_extra pss) (n-1) with
         | Rsome r -> Rsome (q0::r)
         | r -> r
       end
-    | constrs -> 
+    | constrs ->
         let try_non_omega (p,pss) =
           if is_absent_pat p then
             Rnone
           else
-	    begin
-              match
-		exhaust
-                  ext pss (List.length (simple_match_args p omega) + n - 1)
-              with
-              | Rsome r -> Rsome (set_args p r)
-              | r       -> r end in
-	    
+            match
+              exhaust
+                ext pss (List.length (simple_match_args p omega) + n - 1)
+            with
+            | Rsome r -> Rsome (set_args p r)
+            | r       -> r in
         if
           full_match false constrs && not (should_extend ext constrs)
         then
@@ -1025,7 +1016,7 @@ let rec exhaust ext pss n  =
              Essentially :
              * D exhaustive => pss exhaustive
              * D non-exhaustive => we have a non-filtered value
-          *)	  
+          *)
           let r =  exhaust ext (filter_extra pss) (n-1) in
           match r with
           | Rnone -> Rnone
@@ -1489,7 +1480,7 @@ let rec initial_matrix = function
   | (pat, act) :: rem ->
       if has_guard act
       then
-        initial_matrix rem 
+        initial_matrix rem
       else
         [pat] :: initial_matrix rem
 
