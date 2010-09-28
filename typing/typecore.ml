@@ -321,6 +321,7 @@ let rec build_as_type env p =
   | Tpat_array _ | Tpat_lazy _ -> p.pat_type
 
 let build_or_pat env loc lid =
+  let expected_tys = ref [] in 
   let path, decl = Typetexp.find_type env loc lid
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
@@ -338,6 +339,7 @@ let build_or_pat env loc lid =
             (l,None) :: pats,
             (l, Reither(true,[], true, ref None)) :: fields
         | Rpresent (Some ty) ->
+	    expected_tys := ty :: !expected_tys;
             (l, Some {pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
                       pat_type=ty})
             :: pats,
@@ -349,6 +351,7 @@ let build_or_pat env loc lid =
       row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
+  expected_tys := ty :: !expected_tys;
   let gloc = {loc with Location.loc_ghost=true} in
   let row' = ref {row with row_more=newvar()} in
   let pats =
@@ -364,7 +367,7 @@ let build_or_pat env loc lid =
           (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some row0);
                             pat_loc=gloc; pat_env=env; pat_type=ty})
           pat pats in
-      rp { r with pat_loc = loc }
+      (rp { r with pat_loc = loc },!expected_tys)
 
 let rec find_record_qual = function
   | [] -> None
@@ -599,8 +602,10 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
       let p = type_pat env sp expected_ty in (* GAH: so wrong *)
       pattern_force := force :: !pattern_force;
       p (* GAH: this pattern will have the wrong location! *)
-  |Ppat_type lid -> (* GAH : no idea what this is about *)
-      build_or_pat !env loc lid
+  |Ppat_type lid -> 
+      let (r,tys) = build_or_pat !env loc lid in 
+      List.iter (fun t -> unify_pat_types loc !env expected_ty t) tys;
+      r
 
 let get_ref r =
   let v = !r in r := []; v
