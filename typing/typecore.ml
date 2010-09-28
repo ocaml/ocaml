@@ -339,7 +339,6 @@ let build_or_pat env loc lid =
             (l,None) :: pats,
             (l, Reither(true,[], true, ref None)) :: fields
         | Rpresent (Some ty) ->
-	    expected_tys := ty :: !expected_tys;
             (l, Some {pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
                       pat_type=ty})
             :: pats,
@@ -604,7 +603,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
       p (* GAH: this pattern will have the wrong location! *)
   |Ppat_type lid -> 
       let (r,tys) = build_or_pat !env loc lid in 
-      List.iter (fun t -> unify_pat_types loc !env expected_ty t) tys;
+      List.iter (fun t -> unify_pat_types loc !env t expected_ty) tys;
       r
 
 let get_ref r =
