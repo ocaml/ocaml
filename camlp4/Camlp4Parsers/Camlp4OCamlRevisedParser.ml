@@ -33,19 +33,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value help_sequences () =
     do {
       Printf.eprintf "\
-New syntax:\n\
-    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\n\
-    while e do e1; e2; ... ; en done\n\
-    for v = v1 to/downto v2 do e1; e2; ... ; en done\n\
-Old syntax (still supported):\n\
-    do {e1; e2; ... ; en}\n\
-    while e do {e1; e2; ... ; en}\n\
-    for v = v1 to/downto v2 do {e1; e2; ... ; en}\n\
-Very old (no more supported) syntax:\n\
-    do e1; e2; ... ; en-1; return en\n\
-    while e do e1; e2; ... ; en; done\n\
-    for v = v1 to/downto v2 do e1; e2; ... ; en; done\n\
-  ";
+New syntax:\
+\n    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\
+\n    while e do e1; e2; ... ; en done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en done\
+\nOld syntax (still supported):\
+\n    do {e1; e2; ... ; en}\
+\n    while e do {e1; e2; ... ; en}\
+\n    for v = v1 to/downto v2 do {e1; e2; ... ; en}\
+\nVery old (no more supported) syntax:\
+\n    do e1; e2; ... ; en-1; return en\
+\n    while e do e1; e2; ... ; en; done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en; done\
+\n";
       flush stderr;
       exit 1
     }
