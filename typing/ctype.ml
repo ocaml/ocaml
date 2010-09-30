@@ -2513,6 +2513,8 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   eqtype rename type_pairs subst env rest1 rest2;
+  let miss1 = List.filter (function (_,Fvar _,_) -> false | _ -> true) miss1 in (* GAH: should probably remove this *)
+  let miss2 = List.filter (function (_,Fvar _,_) -> false | _ -> true) miss2 in
   if (miss1 <> []) || (miss2 <> []) then raise (Unify []);
   List.iter
     (function (n, k1, t1, k2, t2) ->
