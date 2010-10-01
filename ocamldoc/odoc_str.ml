@@ -183,11 +183,16 @@ let string_of_type t =
          (List.map
             (fun cons ->
               "  | "^cons.M.vc_name^
-              (match cons.M.vc_args with
-                [] -> ""
-              | l ->
+              (match cons.M.vc_args,cons.M.vc_ret with
+              | [], None -> ""
+              | l, None ->
                   " of "^(String.concat " * "
                             (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))
+              | [], Some r -> " : " ^ Odoc_print.string_of_type_expr r
+              | l, Some r ->
+                  " : "^(String.concat " * "
+                            (List.map (fun t -> "("^(Odoc_print.string_of_type_expr t)^")") l))^
+                        " -> " ^ Odoc_print.string_of_type_expr r
               )^
               (match cons.M.vc_text with
                 None ->

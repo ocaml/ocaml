@@ -179,14 +179,14 @@ module Analyser =
             match cons_core_type_list_list with
               [] ->
                 (0, acc)
-            | (name, (_ : Parsetree.core_type list),(_:Parsetree.core_type option), loc) :: [] ->
+            | (name, _, _, loc) :: [] ->
                 let s = get_string_of_file
                     loc.Location.loc_end.Lexing.pos_cnum
                     pos_limit
                 in
                 let (len, comment_opt) =  My_ir.just_after_special !file_name s in
                 (len, acc @ [ (name, comment_opt) ])
-            | (name, core_type_list, _, loc) :: (name2, core_type_list2, (ret_type2:Parsetree.core_type option), loc2)
+            | (name, _, _, loc) :: (name2, core_type_list2, ret_type2, loc2)
               :: q ->
                 let pos_end_first = loc.Location.loc_end.Lexing.pos_cnum in
                 let pos_start_second = loc2.Location.loc_start.Lexing.pos_cnum in
@@ -232,12 +232,13 @@ module Analyser =
             {
               vc_name = constructor_name ;
               vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
+	      vc_ret = None ;
               vc_text = comment_opt
             }
           in
           Odoc_type.Type_variant (List.map f l)
       | Types.Type_generalized_variant l ->
-          let f (constructor_name, type_expr_list,_) = (* GAH : most likely wrong! *)
+          let f (constructor_name, type_expr_list, ret_type) =
             let comment_opt =
               try
                 match List.assoc constructor_name name_comment_list with
@@ -248,10 +249,12 @@ module Analyser =
             {
               vc_name = constructor_name ;
               vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
+	      vc_ret =  may_map (Odoc_env.subst_type env) ret_type;
               vc_text = comment_opt
             }
           in
           Odoc_type.Type_variant (List.map f l)
+
       | Types.Type_record (l, _) ->
           let f (field_name, mutable_flag, type_expr) =
             let comment_opt =

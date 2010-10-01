@@ -22,6 +22,7 @@ type private_flag = Asttypes.private_flag =
 type variant_constructor = {
     vc_name : string ;
     vc_args : Types.type_expr list ; (** arguments of the constructor *)
+    vc_ret : Types.type_expr option ;
     mutable vc_text : Odoc_types.text option ; (** optional user description *)
   }
 

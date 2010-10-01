@@ -1459,11 +1459,19 @@ class html =
             bs b "<code>";
             bs b (self#constructor constr.vc_name);
             (
-             match constr.vc_args with
-               [] -> ()
-             | l ->
+             match constr.vc_args, constr.vc_ret with
+               [], None -> ()
+             | l,None ->
                  bs b (" " ^ (self#keyword "of") ^ " ");
                  self#html_of_type_expr_list ~par: false b father " * " l;
+             | [],Some r ->
+                 bs b (" " ^ (self#keyword ":") ^ " ");
+                 self#html_of_type_expr b father r;
+             | l,Some r ->
+                 bs b (" " ^ (self#keyword ":") ^ " ");
+                 self#html_of_type_expr_list ~par: false b father " * " l;
+		 bs b (" " ^ (self#keyword "->") ^ " ");
+                 self#html_of_type_expr b father r;		 
             );
             bs b "</code></td>\n";
             (
