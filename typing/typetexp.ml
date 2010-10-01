@@ -174,7 +174,6 @@ let rec swap_list = function
 
 type policy = Fixed | Extensible | Univars
 
-let gadt_map = ref None
 
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
@@ -186,25 +185,16 @@ let rec transl_type env policy styp =
   | Ptyp_var name ->
       if name <> "" && name.[0] = '_' then
         raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
-      begin 
-	match !gadt_map with
-	| Some lst ->
-	    begin try
-	      List.assoc name !lst
-	    with Not_found ->
-	      let ret = newvar () in 
-	      lst := (name,ret) :: !lst;
-	      ret end
-	| None ->
-	    try
-              instance (List.assoc name !univars)
-	    with Not_found -> try
-              instance (fst(Tbl.find name !used_variables))
-	    with Not_found ->
-              let v =
-		if policy = Univars then new_pre_univar () else newvar () in
-              used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
-              v
+      begin
+	try
+          instance (List.assoc name !univars)
+	with Not_found -> try
+          instance (fst(Tbl.find name !used_variables)) 
+	with Not_found ->
+          let v =
+	    if policy = Univars then new_pre_univar () else newvar () in
+          used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
+          v
       end
   | Ptyp_arrow(l, st1, st2) ->
       let ty1 = transl_type env policy st1 in

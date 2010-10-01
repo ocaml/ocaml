@@ -181,6 +181,7 @@ let transl_declaration env (name, sdecl) id =
 			  narrow and then widen so as to not introduce any new constraints *)
 		       | Some _ -> 
 			   let z = narrow () in 
+			   reset_type_variables ();
 			   (fun () -> widen z)
 		     in
 		     let args = List.map (transl_simple_type env false) args in 
