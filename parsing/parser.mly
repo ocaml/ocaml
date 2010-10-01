@@ -1269,7 +1269,7 @@ optional_type_parameters:
 ;
 optional_type_parameter:
     type_variance QUOTE ident                   { Some $3, $1 }
-  | type_variance UNDERSCORE                    { None, $1 }
+  | UNDERSCORE                                  { None, (false,false) }
 ;
 optional_type_parameter_list:
     optional_type_parameter                              { [$1] }
