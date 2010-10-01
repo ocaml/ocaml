@@ -319,9 +319,13 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False (*FIXME*) ];
   value mkvariant =
     fun
-    [ <:ctyp@loc< $uid:s$ >> -> (conv_con s, [], None, mkloc loc) (* GAH : pretty sure this is wrong *)
+    [ <:ctyp@loc< $uid:s$ >> -> (conv_con s, [], None, mkloc loc)
     | <:ctyp@loc< $uid:s$ of $t$ >> ->
-        (conv_con s, List.map ctyp (list_of_ctyp t []), None, mkloc loc) (* GAH: dunno what I'm doing *)
+        (conv_con s, List.map ctyp (list_of_ctyp t []), None, mkloc loc)
+    | <:ctyp@loc< $uid:s$ : $t1$ -> $t2$ >> ->
+        (conv_con s, List.map ctyp (list_of_ctyp t1 []), Some (ctyp t2),mkloc loc)
+    | <:ctyp@loc< $uid:s$ : $t$ >> ->
+        (conv_con s, [], Some (ctyp t), mkloc loc)
     | _ -> assert False (*FIXME*) ];
   value rec type_decl tl cl loc m pflag =
     fun
@@ -375,10 +379,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value rec type_parameters t acc =
     match t with
-    [ <:ctyp< $t1$ $t2$ >> -> type_parameters t1 (type_parameters t2 acc)  
-    | <:ctyp< +'$s$ >> -> [(Some s, (True, False)) :: acc] (* GAH: so wrong *)
+    [ <:ctyp< $t1$ $t2$ >> -> type_parameters t1 (type_parameters t2 acc)
+    | <:ctyp< +'$s$ >> -> [(Some s, (True, False)) :: acc]
     | <:ctyp< -'$s$ >> -> [(Some s, (False, True)) :: acc]
     | <:ctyp< '$s$ >> -> [(Some s, (False, False)) :: acc]
+    | <:ctyp< _ >> -> [(None, (True, False)) :: acc]
     | _ -> assert False ];
 
   value rec class_parameters t acc =
@@ -402,7 +407,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     let (params, variance) = List.split tpl in
     let (kind, priv, ct) = opt_private_ctyp ct in
     (id, pwith_type
-      {ptype_params = params; ptype_cstrs = []; (* GAH : fix this *)
+      {ptype_params = params; ptype_cstrs = [];
         ptype_kind = kind;
         ptype_private = priv;
         ptype_manifest = Some ct;

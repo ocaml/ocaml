@@ -234,10 +234,14 @@ and print_simple_out_type ppf =
       fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
   in
   print_tkind ppf
-and print_out_constr ppf (name, tyl,_) = (* GAH : so wrong *)
-  match tyl with
-  [ [] -> fprintf ppf "%s" name
-  | _ ->
+and print_out_constr ppf (name, tyl, ret) =
+  match (tyl,ret) with
+  [ ([], None) -> fprintf ppf "%s" name
+  | ([], Some r) -> fprintf ppf "@[<2>%s:@ %a@]" name print_out_type r
+  | (_,Some r) ->
+      fprintf ppf "@[<2>%s:@ %a -> %a@]" name
+        (print_typlist print_out_type " and") tyl print_out_type r
+  | (_,None) ->
       fprintf ppf "@[<2>%s of@ %a@]" name
         (print_typlist print_out_type " and") tyl ]
 and print_out_label ppf (name, mut, arg) =
@@ -368,7 +372,7 @@ and print_out_sig_item ppf =
         (if vir_flag then " virtual" else "") print_out_class_params params
         name Toploop.print_out_class_type.val clt
   | Osig_exception id tyl ->
-      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl, None)
+      fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl,None)
   | Osig_modtype name Omty_abstract ->
       fprintf ppf "@[<2>module type %s@]" name
   | Osig_modtype name mty ->
