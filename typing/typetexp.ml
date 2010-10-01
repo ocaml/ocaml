@@ -324,16 +324,7 @@ let rec transl_type env policy styp =
           let t =
 	    try List.assoc alias !univars 
 	    with Not_found ->		
-	      match !gadt_map with
-	      | Some lst ->
-		  begin try
-		    List.assoc alias !lst
-		  with Not_found ->
-		    let ret = newvar () in 
-		    lst := (alias,ret) :: !lst;
-		    ret end
-	      | None ->
-		  instance (fst(Tbl.find alias !used_variables))
+	      instance (fst(Tbl.find alias !used_variables))
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty with Unify trace ->
@@ -548,15 +539,15 @@ let globalize_used_variables env fixed =
           raise (Error(loc, Type_mismatch trace)))
       !r
 
-let transl_simple_type env fixed ?(gadt=None) styp = (* GAH : ask garrigue, might be ugly *)
-  univars := []; used_variables := Tbl.empty;gadt_map:=gadt;
+let transl_simple_type env fixed styp = (* GAH : ask garrigue, might be ugly *)
+  univars := []; used_variables := Tbl.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
   globalize_used_variables env fixed ();
   make_fixed_univars typ;
   typ
 
 let transl_simple_type_univars env styp =
-  univars := []; used_variables := Tbl.empty; pre_univars := [];gadt_map:=None;
+  univars := []; used_variables := Tbl.empty; pre_univars := [];
   begin_def ();
   let typ = transl_type env Univars styp in
   (* Only keep already global variables in used_variables *)
@@ -582,13 +573,13 @@ let transl_simple_type_univars env styp =
   instance (Btype.newgenty (Tpoly (typ, univs)))
 
 let transl_simple_type_delayed env styp =
-  univars := []; used_variables := Tbl.empty;gadt_map:=None;
+  univars := []; used_variables := Tbl.empty;
   let typ = transl_type env Extensible styp in
   make_fixed_univars typ;
   (typ, globalize_used_variables env false)
 
 let transl_type_scheme env styp =
-  reset_type_variables();gadt_map:=None;
+  reset_type_variables();
   begin_def();
   let typ = transl_simple_type env false styp in
   end_def();

@@ -173,13 +173,20 @@ let transl_declaration env (name, sdecl) id =
 	    let ret = 
 	      Type_generalized_variant
 		(List.map
-                   (fun (name, args,ret_type_opt, loc) ->
-		     let gadt = 
-		       match ret_type_opt with
-		       | None -> None
-		       | Some _ -> Some (ref [])
+                   (fun (name, args,ret_type, loc) ->
+		     let restore = 
+		       match ret_type with
+		       | None -> (fun () -> ())
+                       (* if it's a generalized constructor we must first 
+			  narrow and then widen so as to not introduce any new constraints *)
+		       | Some _ -> 
+			   let z = narrow () in 
+			   (fun () -> widen z)
 		     in
-                     (name, List.map (transl_simple_type ~gadt env false) args,may_map (transl_simple_type ~gadt env false) ret_type_opt)) (* GAH: calling transl_simple_type with fixed=false, ask garrigue if this is ok *)
+		     let args = List.map (transl_simple_type env false) args in 
+		     let ret_type = may_map (transl_simple_type env false) ret_type in
+		     restore ();
+                     (name, args,ret_type)) (* GAH: calling transl_simple_type with fixed=false, ask garrigue if this is ok *)
 		   cstrs)
 	    in
 	    ret
