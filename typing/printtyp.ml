@@ -510,7 +510,7 @@ let rec tree_of_type_decl id decl =
 
   let params = filter_params decl.type_params in
 
-  List.iter add_alias (List.map proxy params);
+  List.iter add_alias params;
   List.iter mark_loops params;
   List.iter check_name_of_type (List.map proxy params);
   let ty_manifest =
