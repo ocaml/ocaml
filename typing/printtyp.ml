@@ -510,7 +510,7 @@ let rec tree_of_type_decl id decl =
 
   let params = filter_params decl.type_params in
 
-  List.iter add_alias params;
+  List.iter add_alias (List.map proxy params);
   List.iter mark_loops params;
   List.iter check_name_of_type (List.map proxy params);
   let ty_manifest =
@@ -742,7 +742,7 @@ let tree_of_class_declaration id cl rs =
   reset ();
   List.iter add_alias params;
   prepare_class_type params cl.cty_type;
-  let sty = self_type cl.cty_type in
+  let sty = Ctype.self_type cl.cty_type in
   List.iter mark_loops params;
 
   List.iter check_name_of_type (List.map proxy params);
@@ -764,7 +764,7 @@ let tree_of_cltype_declaration id cl rs =
   reset ();
   List.iter add_alias params;
   prepare_class_type params cl.clty_type;
-  let sty = self_type cl.clty_type in
+  let sty = Ctype.self_type cl.clty_type in
   List.iter mark_loops params;
 
   List.iter check_name_of_type (List.map proxy params);

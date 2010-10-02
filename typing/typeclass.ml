@@ -360,7 +360,7 @@ let rec class_type_field env self_type meths (val_sig, concr_meths, inher) =
 
 and class_signature env sty sign =
   let meths = ref Meths.empty in
-  let self_type = transl_simple_type env false sty in
+  let self_type = Ctype.expand_head env (transl_simple_type env false sty) in
 
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
@@ -719,7 +719,9 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   let added = List.filter (fun x -> List.mem x l1) l2 in
   if added <> [] then
     Location.prerr_warning loc (Warnings.Implicit_public_methods added);
-  {cl_field = fields; cl_meths = meths}, sign
+  {cl_field = fields; cl_meths = meths},
+  if final then sign else
+  {sign with cty_self = Ctype.expand_head val_env public_self}
 
 and class_expr cl_num val_env met_env scl =
   match scl.pcl_desc with

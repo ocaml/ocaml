@@ -177,6 +177,11 @@ module TypePairs =
                   (*  Miscellaneous operations on object types  *)
                   (**********************************************)
 
+(* Note:
+   We need to maintain some invariants:
+   * cty_self must be a Tobject
+   * ...
+*)
 
 (**** Object field manipulation. ****)
 
