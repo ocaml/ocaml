@@ -149,9 +149,16 @@ let unify_pat_types loc env ty ty' =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
 
+let pattern_level = ref None
+
 let unify_pat_types_gadt loc env ty ty' = 
+  let pattern_level = 
+    match !pattern_level with
+    | None -> assert false
+    | Some x -> x
+  in
   try
-    unify_gadt env ty ty'
+    unify_gadt pattern_level env ty ty'
   with
     Unify trace ->
       raise(Error(loc, Pattern_type_clash(trace)))
@@ -603,6 +610,18 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
       let (r,ty) = build_or_pat !env loc lid in 
       unify_pat_types loc !env ty expected_ty;
       r
+
+let type_pat env sp expected_ty = 
+  pattern_level := Some (get_current_level ());
+  try
+    let r = type_pat env sp expected_ty in
+    pattern_level := None;
+    r
+  with
+    e -> 
+      pattern_level := None;
+      raise e
+  
 
 let get_ref r =
   let v = !r in r := []; v
@@ -2208,9 +2227,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 (*  let closed = free_variables ~env ty_arg = [] in*)
 (*  let ty_arg' = newvar () in *) 
   begin_def ();
-  let ty = newvar () in
-  Ident.set_current_time ty.level;
-  Ctype.init_def(Ident.current_time());
+  Ident.set_current_time (get_current_level ());
   let pattern_force = ref [] in
   let pat_env_list =
     List.map
@@ -2240,7 +2257,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   end;
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
-
+  Ctype.init_def(Ident.current_time());
 (*  begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat env pat ty_arg (* GAH: ask garrigue, contamination *) 
   end;*)

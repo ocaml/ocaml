@@ -623,7 +623,7 @@ let initial_env = ref Env.empty
 let unifiable t t' = 
   let snap = Btype.snapshot () in
   try
-    Ctype.unify_gadt (ref !initial_env) t t';
+    Ctype.unify_gadt 0 (ref !initial_env) t t'; (* GAH: we need separate algorithm for GADTs *)
     Btype.backtrack snap;
     true
   with

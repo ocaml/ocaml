@@ -102,6 +102,7 @@ let nongen_level = ref 0
 let global_level = ref 1
 let saved_level = ref []
 
+let get_current_level () = !current_level
 let init_def level = current_level := level; nongen_level := level
 let begin_def () =
   saved_level := (!current_level, !nongen_level) :: !saved_level;
@@ -1571,7 +1572,14 @@ let deep_occur t0 ty =
 
 let pattern_unification = ref false
 
+let pattern_level = ref None
+
 let reify env t =  
+  let pattern_level = 
+    match !pattern_level with
+    | None -> assert false
+    | Some x -> x
+  in
   let rec iterator ty = 
     match (repr ty).desc with 
     | Tvar -> 
@@ -1585,7 +1593,7 @@ let reify env t =
       }
       in
       let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
-      let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in
+      let to_unify = newty2 pattern_level (Tconstr (Path.Pident id,[],ref Mnil)) in
       env := new_env;
       link_type ty to_unify
     | _ ->
@@ -1679,47 +1687,19 @@ and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
-
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
-  occur !env t1' t2;
-  update_level !env t1'.level t2;
-  add_type_equality t1' t2;
+  occur !env t1' t2';
+  add_type_equality t1' t2';
   try
     begin match (d1, d2) with
       (Tvar, _) ->
-(*	link_type t1' t2;
-        occur_univar !env t2*)
+	update_level !env t1'.level t2;
 	link_type t1' t2;
-        let td2 = newgenty d2 in
-        occur !env t1' td2;
-        occur_univar !env td2;
-        if t2 == t2' then begin
-          (* The variable must be instantiated... *)
-          let ty = newty2 t2'.level d2 in
-          update_level !env t1'.level ty;
-          link_type t1' ty
-        end else begin
-          log_type t2';
-          t2'.desc <- d2;
-          update_level !env t1'.level t2;
-          link_type t1' t2
-        end
+        occur_univar !env t2
     | (_, Tvar) ->
+	update_level !env t2'.level t1;
 	link_type t2' t1;
-        let td1 = newgenty d1 in
-        occur !env t2' td1;
-        occur_univar !env td1;
-        if t1 == t1' then begin
-          (* The variable must be instantiated... *)
-          let ty = newty2 t1'.level d1 in
-          update_level !env t2'.level ty;
-          link_type t2' ty
-        end else begin
-          log_type t1';
-          t1'.desc <- d1;
-          update_level !env t2'.level t1;
-          link_type t2' t1
-        end
+        occur_univar !env t1
     | (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         unify  env t1 t2; unify env  u1 u2;
@@ -2023,7 +2003,7 @@ let unify env ty1 ty2 =
   with Unify trace ->
     raise (Unify (expand_trace !env trace))
 
-let unify_gadt (env:Env.t ref) ty1 ty2 =
+let unify_gadt pattern_level (env:Env.t ref) ty1 ty2 =
   try
     pattern_unification:=true;
     unify env ty1 ty2;

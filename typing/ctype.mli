@@ -141,7 +141,7 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
-val unify_gadt: Env.t ref -> type_expr -> type_expr -> unit
+val unify_gadt: int -> Env.t ref -> type_expr -> type_expr -> unit
         (* Unify the two types given and update the environment with the local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
@@ -245,3 +245,5 @@ val arity: type_expr -> int
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
+
+val get_current_level: unit -> int
