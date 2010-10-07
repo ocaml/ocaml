@@ -42,17 +42,30 @@ end
 
 let constructor_descrs_called = ref 0
 
+let gadt_ty_res existentials ty_res = 
+  match ty_res.desc with
+  | Tconstr(_,lst,_) ->
+      let contains_non_variables = 
+	let is_not_variable t = 
+	  match t.desc with
+	  | Tvar -> false
+	  | _ -> true 
+	in
+	List.length (List.filter is_not_variable lst) <> 0 
+      in
+      contains_non_variables || 
+      List.length existentials <> 0 ||
+      (let s = List.fold_right Btype.TypeSet.add  lst Btype.TypeSet.empty in 
+      Btype.TypeSet.cardinal s <> List.length lst) 
+    | _ -> assert false
+
+
 let constructor_descrs ty_res cstrs priv =
   let num_consts = ref 0 and num_nonconsts = ref 0 in
   List.iter
     (function (name, [],_) -> incr num_consts
             | (name, _,_)  -> incr num_nonconsts)
     cstrs;
-  let all_ty_res = 
-    List.map
-      (fun (_, _,x) ->  x)
-      cstrs
-  in
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
     | (name, ty_args, ty_res_opt) :: rem ->
@@ -88,20 +101,30 @@ let constructor_descrs ty_res cstrs priv =
 		Btype.TypeSet.elements (Btype.TypeSet.diff arg_vars res_vars)
 	in
 	incr constructor_descrs_called;
-        let cstr =
+	let is_generalized = gadt_ty_res existentials ty_res in
+	let cstr =
           { cstr_res = ty_res;    
-	    cstr_existentials = existentials ; (* GAH: HOW DO I GET THE EXISTENTIALS OF A TYPE?? *)
+	    cstr_existentials = existentials; 
             cstr_args = ty_args;
             cstr_arity = List.length ty_args;
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
-	    cstr_all_ty_res = all_ty_res;
-            cstr_private = priv } in
+	    cstr_normal = 0;
+            cstr_private = priv;
+	    cstr_generalized = is_generalized
+	  } in
         (name, cstr) :: descr_rem in
-  describe_constructors 0 0 cstrs 
-
-
+  let ret = 
+    describe_constructors 0 0 cstrs 
+  in
+  let normal = 
+    List.length 
+      (List.filter 
+	 (fun (_,d) -> not (d.cstr_generalized)) 
+	 ret) 
+  in 
+  List.map (fun (n,r) -> (n,{r with cstr_normal = normal})) ret
 
 let exception_descr path_exc decl =
   { cstr_res = Predef.type_exn;
@@ -111,8 +134,9 @@ let exception_descr path_exc decl =
     cstr_tag = Cstr_exception path_exc;
     cstr_consts = -1;
     cstr_nonconsts = -1;
-    cstr_all_ty_res = [];
-    cstr_private = Public }
+    cstr_private = Public;
+    cstr_normal = -1;
+    cstr_generalized = false }
 
 let none = {desc = Ttuple []; level = -1; id = -1}
                                         (* Clearly ill-formed type *)

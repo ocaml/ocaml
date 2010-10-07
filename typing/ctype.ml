@@ -2034,6 +2034,7 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
 
 let unify env ty1 ty2 =
   try
+    TypeHash.clear unify_eq_set;
     unify env ty1 ty2
   with Unify trace ->
     raise (Unify (expand_trace !env trace))

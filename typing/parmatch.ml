@@ -618,27 +618,11 @@ let row_of_pat pat =
   not.
 *)
 
-let is_gadt_type decl = 
-  match (Ctype.repr (decl.Types.cstr_res)).desc with
-  | Tconstr(_,lst,_) ->
-      let contains_non_variables = 
-      let is_not_variable t = 
-	match t.desc with
-	| Tvar -> false
-	| _ -> true 
-      in
-      List.length (List.filter is_not_variable lst) <> 0 
-      in
-      contains_non_variables || 
-      List.length (decl.Types.cstr_existentials) <> 0 ||
-      (let s = List.fold_right Btype.TypeSet.add  lst Btype.TypeSet.empty in 
-      Btype.TypeSet.cardinal s <> List.length lst) 
-  | _ -> assert false
-
 let generalized_constructor x = 
   match x with 
     ({pat_desc = Tpat_construct(c,_);pat_env=env},_) ->
-      is_gadt_type c
+      c.cstr_generalized
+
   | _ -> assert false
 
 let clean_env env = 
@@ -656,11 +640,7 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_construct(c,_);pat_type=typ},_) :: _ -> 
     (* remove generalized constructors; those cases will be handled separately *)
     let env = clean_env env in 
-    let num_normal_constructors = 
-      (* GAH: this is wrong, must rewrite this since constraints can generate GADTs *)
-      List.length (List.filter (function Some x -> false | None -> true) c.cstr_all_ty_res) 
-    in 
-    List.length env = num_normal_constructors
+    List.length env = c.cstr_normal
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
       List.map
@@ -757,8 +737,8 @@ let complete_constrs p all_tags  =
       let not_tags = complete_tags  c.cstr_consts c.cstr_nonconsts all_tags in
       map_filter
         (fun tag ->
-          let _,targs,ret_type_opt = get_constr tag p.pat_type p.pat_env in (* GAH: is this correct? don't forget the existentials! *)
-	  if is_gadt_type c then 
+          let _,targs,ret_type_opt = get_constr tag p.pat_type p.pat_env in
+	  if c.cstr_generalized then 
 	    None
 	  else
 	    Some

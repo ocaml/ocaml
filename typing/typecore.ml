@@ -720,7 +720,6 @@ let generate_all (env:Env.t) : Parsetree.pattern -> Parsetree.pattern list =
 		   (List.combine (List.map fst args) subpattern,
 		    flag))) 
 	    subpatterns
-	  
   in
   loop
 
