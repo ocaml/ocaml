@@ -632,26 +632,44 @@ struct
 (* GADT by brute force *)
 (***********************)
 
+let filter_map f = 
+  let rec loop = 
+    function
+      | [] -> []
+      | x :: xs ->
+	  match f x with
+	    None -> loop xs
+	  | Some y -> y :: loop xs
+  in
+  loop 
+
+
+(* given a set of patterns P it will generate 
+    { q : exists p in P and branches b in p such that q = P[C/b] 
+  where C is a list of generalized constructors} *)
 let generate_all (env:Env.t) : Parsetree.pattern -> Parsetree.pattern list = 
   let make_pat desc = 
     {ppat_desc = desc;
      ppat_loc = Location.none}
   in
   let make_constr lid (s,args,_) = 
-    let rec switch_last  = (* GAH: this may be wrong, I don't know if I understand the order of long idents *)
-      function
+    let lid  = 
+      match lid with
 	| Longident.Lident _ -> Longident.Lident s
-	| Longident.Ldot (x,y) -> Longident.Ldot (switch_last x,y)
+	| Longident.Ldot (x,y) -> Longident.Ldot (x,s)
 	| _ -> assert false
     in
-    let lid : Longident.t = switch_last lid in 
-    match args with
-    | [] ->
-	make_pat (Ppat_construct (lid,None,false)) 
-    | _ ->
-	let arg = make_pat (Ppat_tuple (List.map (fun _ -> make_pat Ppat_any) args)) in 
+    let constr = Env.lookup_constructor lid env in 
+    if not (constr.cstr_generalized) then 
+      None
+    else
+      match args with
+      | [] ->
+	  Some (make_pat (Ppat_construct (lid,None,false))) 
+      | _ ->
+	  let arg = make_pat (Ppat_tuple (List.map (fun _ -> make_pat Ppat_any) args)) in 
 (* GAH: what is the third argument of Ppat_construct? In parser.mly it is always false *)
-	make_pat (Ppat_construct (lid,Some arg,false))
+	  Some (make_pat (Ppat_construct (lid,Some arg,false)))
   in
   let rec select : 'a list list -> 'a list list = 
     function
@@ -680,7 +698,7 @@ let generate_all (env:Env.t) : Parsetree.pattern -> Parsetree.pattern list =
 	    let decl = get_type_descr ty_res env in 
 	    begin match decl.type_kind with
 	    | Type_generalized_variant constr_list ->
-		List.map (make_constr lid) constr_list
+		filter_map (make_constr lid) constr_list
 	    | _ -> [] end
 	  in  
 	  begin match arg with
