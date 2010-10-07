@@ -326,7 +326,8 @@ let check_sig_item type_names module_names modtype_names loc = function
 
 let rec remove_values ids = function
     [] -> []
-  | Tsig_value (id, _) :: rem when List.exists (Ident.equal id) ids -> rem
+  | Tsig_value (id, _) :: rem
+    when List.exists (Ident.equal id) ids -> remove_values ids rem
   | f :: rem -> f :: remove_values ids rem
 
 let rec get_values = function
