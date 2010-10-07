@@ -882,10 +882,11 @@ let instance_constructor ?(in_pattern=None) cstr = (* GAH : how the blazes does 
           type_private = Public;
           type_manifest = None;
           type_variance = [];
-	  type_newtype = false;
+	  type_newtype = true;
 	}
 	in
 	let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
+	env := new_env;
 	let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in 
 	link_type existential to_unify 
       in
@@ -1578,7 +1579,7 @@ let pattern_level = ref None
 let reify env t =  
   let pattern_level = 
     match !pattern_level with
-    | None -> print_endline "asserting false";assert false
+    | None -> assert false
     | Some x -> x
   in
   let rec iterator ty = 
@@ -1614,29 +1615,19 @@ let add_type_equality t1 t2 =
       TypeHash.add unify_eq_set t1 (ref (TypeSet.add t2 TypeSet.empty))
 
 let is_newtype env p = 
-  try
-    let decl = Env.find_type p env in 
-    decl.type_newtype
-  with
-  | Not_found -> 
-      (* if it is not in the environment then it was necessarily added by a newtype *)
-      true
+  let decl = Env.find_type p env in 
+  decl.type_newtype
     
 
 let incompatible_types env p1 p2 = 
   let is_abstract p = 
-    try
-      let decl = Env.find_type p env in
-      match decl.type_manifest with
-      | Some _ -> false
-      | None ->
-	  match decl.type_kind with
-	  | Type_abstract -> true
-	  | (Type_variant _ | Type_record _ | Type_generalized_variant _) -> false
-    with
-    | Not_found ->
-	(* must be a newtype *)
-	true
+    let decl = Env.find_type p env in
+    match decl.type_manifest with
+    | Some _ -> false
+    | None ->
+	match decl.type_kind with
+	| Type_abstract -> true
+	| (Type_variant _ | Type_record _ | Type_generalized_variant _) -> false
   in
   let in_current_module = 
     function
