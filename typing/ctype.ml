@@ -882,6 +882,7 @@ let instance_constructor ?(in_pattern=None) cstr = (* GAH : how the blazes does 
           type_private = Public;
           type_manifest = None;
           type_variance = [];
+	  type_newtype = false;
 	}
 	in
 	let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
@@ -1577,7 +1578,7 @@ let pattern_level = ref None
 let reify env t =  
   let pattern_level = 
     match !pattern_level with
-    | None -> assert false
+    | None -> print_endline "asserting false";assert false
     | Some x -> x
   in
   let rec iterator ty = 
@@ -1590,6 +1591,7 @@ let reify env t =
         type_private = Public;
         type_manifest = None;
         type_variance = [];
+	type_newtype = true;
       }
       in
       let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
@@ -1611,6 +1613,38 @@ let add_type_equality t1 t2 =
   | Not_found ->
       TypeHash.add unify_eq_set t1 (ref (TypeSet.add t2 TypeSet.empty))
 
+let is_newtype env p = 
+  try
+    let decl = Env.find_type p env in 
+    decl.type_newtype
+  with
+  | Not_found -> 
+      (* if it is not in the environment then it was necessarily added by a newtype *)
+      true
+    
+
+let incompatible_types env p1 p2 = 
+  let is_abstract p = 
+    try
+      let decl = Env.find_type p env in
+      match decl.type_manifest with
+      | Some _ -> false
+      | None ->
+	  match decl.type_kind with
+	  | Type_abstract -> true
+	  | (Type_variant _ | Type_record _ | Type_generalized_variant _) -> false
+    with
+    | Not_found ->
+	(* must be a newtype *)
+	true
+  in
+  let in_current_module = 
+    function
+      | Path.Pident _ -> true
+      | (Path.Pdot _ | Path.Papply _) -> false
+  in
+  (not (Path.same p1 p2)) && is_abstract p1 && is_abstract p2 &&
+  in_current_module p1 && in_current_module p2 
 
 
 
@@ -1712,11 +1746,10 @@ and unify3 env t1 t1' t2 t2' =
         unify_list env tl1 tl2
     | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
         unify_list env tl1 tl2
-    | _,(Tconstr (Path.Pident p,[],_))  when not !pattern_unification -> (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
-	raise (Unify [])
-    | Tconstr (p1,[],_),Tconstr (p2,[],_)  when Path.same p1 p2  -> ()
-(* GAH : must be abstract or else it would have been expanded, ask garrigue *)
-    | (Tconstr (Path.Pident p,[],_)),_  when !pattern_unification -> (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
+(*    | _,(Tconstr (Path.Pident p,[],_))  when not !pattern_unification -> (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
+	raise (Unify [])*)
+(*    | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when incompatible_types !env p1 p2 -> raise (Unify [])*)
+    | (Tconstr ((Path.Pident p) as path,[],_)),_  when is_newtype !env path && !pattern_unification -> (* GAH : must be abstract or else it would have been expanded, ask garrigue *)
 	let t2 = copy t2 in
 	reify env t2 ;
 	let decl = {
@@ -1726,11 +1759,12 @@ and unify3 env t1 t1' t2 t2' =
           type_private = Public;
           type_manifest = Some t2;
           type_variance = [];
+	  type_newtype = false;
 	}
 	in
 	let new_env = Env.add_type  p decl !env in
 	env := new_env
-    | _,(Tconstr (Path.Pident p,[],_)) when !pattern_unification -> 
+    | _,(Tconstr ((Path.Pident p) as path,[],_)) when is_newtype !env path && !pattern_unification -> 
 	let t1 = copy t1 in
 	reify env t1 ;
 	let decl = {
@@ -1740,12 +1774,13 @@ and unify3 env t1 t1' t2 t2' =
           type_private = Public;
           type_manifest = Some t1;
           type_variance = [];
+	  type_newtype = false;
 	}
 	in
 	let new_env = Env.add_type p decl !env in
 	env := new_env 
 
-    | Tconstr _, Tconstr _ when !pattern_unification ->
+    | Tconstr (p1,_,_), Tconstr (p2,_,_) when  !pattern_unification && not (incompatible_types !env p1 p2)  ->
 	reify env t1;
 	reify env t2
     | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
@@ -2003,13 +2038,21 @@ let unify env ty1 ty2 =
   with Unify trace ->
     raise (Unify (expand_trace !env trace))
 
-let unify_gadt pattern_level (env:Env.t ref) ty1 ty2 =
+
+let unify_gadt plev (env:Env.t ref) ty1 ty2 =
   try
+    pattern_level := Some plev;
     pattern_unification:=true;
     unify env ty1 ty2;
     pattern_unification:=false;
-  with Unify trace ->
-    raise (Unify (expand_trace !env trace))
+    pattern_level := None;
+  with 
+    | Unify trace ->
+	raise (Unify (expand_trace !env trace))
+    | e -> 
+	pattern_unification := false;
+	pattern_level := None;
+	raise e
 
 
 let unify_var env t1 t2 =
@@ -3534,6 +3577,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_manifest = tm;
       type_private = priv;
       type_variance = decl.type_variance;
+      type_newtype = false;
     }
   with Not_found ->
     clear_hash ();

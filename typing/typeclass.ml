@@ -815,7 +815,6 @@ and class_expr cl_num val_env met_env scl =
             exp_loc = Location.none;
             exp_type = Ctype.none;
             exp_env = Env.empty }] 
-	  val_env
       in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in
@@ -1017,7 +1016,9 @@ let temp_abbrev env id arity =
        type_kind = Type_abstract;
        type_private = Public;
        type_manifest = Some ty;
-       type_variance = List.map (fun _ -> true, true, true) !params}
+       type_variance = List.map (fun _ -> true, true, true) !params;
+       type_newtype = false;
+     }
       env
   in
   (!params, ty, env)
@@ -1228,7 +1229,9 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some obj_ty;
-     type_variance = List.map (fun _ -> true, true, true) obj_params}
+     type_variance = List.map (fun _ -> true, true, true) obj_params;
+     type_newtype = false;
+   }
   in
   let (cl_params, cl_ty) =
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
@@ -1241,7 +1244,9 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some cl_ty;
-     type_variance = List.map (fun _ -> true, true, true) cl_params}
+     type_variance = List.map (fun _ -> true, true, true) cl_params;
+     type_newtype = false
+   }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,

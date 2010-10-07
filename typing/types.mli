@@ -141,7 +141,8 @@ type type_declaration =
     type_kind: type_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool) list }
+    type_variance: (bool * bool * bool) list;
+    type_newtype: bool }
             (* covariant, contravariant, weakly contravariant *)
 
 and type_kind =
