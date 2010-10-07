@@ -2433,6 +2433,11 @@ let matches env ty ty' =
                  (*  Equivalence between parameterized types  *)
                  (*********************************************)
 
+let rec get_object_row ty =
+  match repr ty with
+  | {desc=Tfield (_, _, _, tl)} -> get_object_row tl
+  | ty -> ty
+
 let expand_head_rigid env ty =
   let old = !rigid_variants in
   rigid_variants := true;
@@ -2520,6 +2525,14 @@ and eqtype_list rename type_pairs subst env tl1 tl2 =
   List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
+  (* First check if same row => already equal *)
+  let row1 = get_object_row ty1 and row2 = get_object_row ty2 in
+  let same_row =
+    row1 == row2 || TypePairs.mem type_pairs (row1,row2) ||
+    (rename && List.mem (row1, row2) !subst)
+  in
+  if same_row then () else
+  (* Start the real work *)
   let (fields2, rest2) = flatten_fields ty2 in
   (* Try expansion, needed when called from Includecore.type_manifest *)
   match expand_head_rigid env rest2 with
@@ -2528,8 +2541,10 @@ and eqtype_fields rename type_pairs subst env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   eqtype rename type_pairs subst env rest1 rest2;
+(*
   let miss1 = List.filter (function (_,Fvar _,_) -> false | _ -> true) miss1 in (* GAH: should probably remove this *)
   let miss2 = List.filter (function (_,Fvar _,_) -> false | _ -> true) miss2 in
+*)
   if (miss1 <> []) || (miss2 <> []) then raise (Unify []);
   List.iter
     (function (n, k1, t1, k2, t2) ->
