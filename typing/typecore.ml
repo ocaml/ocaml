@@ -671,7 +671,7 @@ let generate_all (env:Env.t) : Parsetree.pattern -> Parsetree.pattern list =
   in
   let rec loop (p:Parsetree.pattern) : Parsetree.pattern list = 
     match p.ppat_desc with
-      | Ppat_any | Ppat_var _ ->
+      | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ ->
 	  [make_pat Ppat_any]
       | Ppat_construct (lid,arg,status) -> 
 	  let constr = Typetexp.find_constructor env p.ppat_loc lid in
@@ -692,6 +692,9 @@ let generate_all (env:Env.t) : Parsetree.pattern -> Parsetree.pattern list =
 		  (fun p -> make_pat (Ppat_construct(lid,Some p,status))) ps 
 	      in
 	      current_constructors @ other_constructors end
+      | Ppat_array pats -> 
+	  let subpatterns = select (List.map loop pats) in 
+	  List.map (fun ps -> make_pat (Ppat_array ps)) subpatterns 	  
       | Ppat_or (p1,p2) ->
 	  loop p1 @ loop p2
       | Ppat_variant (label,arg) -> 
@@ -701,11 +704,23 @@ let generate_all (env:Env.t) : Parsetree.pattern -> Parsetree.pattern list =
 	      let args = loop arg in 
 	      List.map (fun p -> make_pat (Ppat_variant (label,Some p))) args end
       | Ppat_tuple lst -> 
-	  let subpatterns = List.map loop lst in 
-	  let subpatterns = select subpatterns in 
-	  let r = List.map (fun ps -> make_pat (Ppat_tuple ps)) subpatterns in 
-	  r
-      | _ -> assert false (* GAH : add later *)
+	  let subpatterns = select (List.map loop lst) in 
+	  List.map (fun ps -> make_pat (Ppat_tuple ps)) subpatterns 
+      | Ppat_alias (p,_) | Ppat_constraint (p,_) ->
+	  loop p
+      | Ppat_lazy p ->
+	  let subpatterns = loop p in
+	  List.map (fun subpat -> make_pat (Ppat_lazy subpat)) subpatterns
+      | Ppat_record (args,flag) ->
+	  let subpatterns = select (List.map (fun (_,p) -> loop p) args) in 
+	  List.map 
+	    (fun subpattern -> 
+	      make_pat 
+		(Ppat_record 
+		   (List.combine (List.map fst args) subpattern,
+		    flag))) 
+	    subpatterns
+	  
   in
   loop
 
