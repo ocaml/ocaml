@@ -1,4 +1,4 @@
-(* $Id: weaktest.ml 8766 2008-01-11 11:55:36Z doligez $ *)
+(* $Id$ *)
 
 let debug = false;;
 

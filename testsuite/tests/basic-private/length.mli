@@ -1,4 +1,4 @@
-(* $Id: length.mli 8482 2007-11-06 21:06:18Z weis $
+(* $Id$
 
 A testbed file for private type abbreviation definitions.
 
