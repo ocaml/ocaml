@@ -510,15 +510,18 @@ Name the output files {\it prefix}".ml", {\it prefix}".mli",
 {\it prefix}".output", instead of the default naming convention.
 
 \item["-q"]
-This option has not effect.
+This option has no effect.
 
 \item["-v"]
 Generate a description of the parsing tables and a report on conflicts
 resulting from ambiguities in the grammar. The description is put in
 file \var{grammar}".output".
 
-\item["-version"] 
-Print version and exit.
+\item["-version"]
+Print version string and exit.
+
+\item["-vnum"]
+Print short version number and exit.
 
 \item["-"]
 Read the grammar specification from standard input.  The default
