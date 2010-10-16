@@ -101,7 +101,12 @@ let constructor_descrs ty_res cstrs priv =
 		Btype.TypeSet.elements (Btype.TypeSet.diff arg_vars res_vars)
 	in
 	incr constructor_descrs_called;
-	let is_generalized = gadt_ty_res existentials ty_res in
+	let is_generalized = 
+	  match ty_res_opt with
+	    None -> false
+	  | Some ty_res ->
+	      gadt_ty_res existentials ty_res 
+	in
 	let cstr =
           { cstr_res = ty_res;    
 	    cstr_existentials = existentials; 

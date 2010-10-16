@@ -150,6 +150,18 @@ let unify_pat_types loc env ty ty' =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
 
+
+let unify_exp_types loc env ty expected_ty =
+  (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
+    Printtyp.raw_type_expr expected_ty; *)
+  try
+    unify env ty expected_ty
+  with
+    Unify trace ->
+      raise(Error(loc, Expr_type_clash(trace)))
+  | Tags(l1,l2) ->
+      raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
+
 let pattern_level = ref None
 
 let unify_pat_types_gadt loc env ty ty' = 
@@ -440,7 +452,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
                     ({ptyp_desc=Ptyp_poly _} as sty)) ->
       (* explicitly polymorphic type *)
       let ty, force = Typetexp.transl_simple_type_delayed !env sty in
-      unify_pat_types loc !env expected_ty ty;      
+      unify_pat_types loc !env ty expected_ty;      
 
       pattern_force := force :: !pattern_force;
       begin match ty.desc with
@@ -469,7 +481,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_type = q.pat_type;
         pat_env = !env }
   |Ppat_constant cst -> 
-      unify_pat_types loc !env expected_ty (type_constant cst);
+      unify_pat_types loc !env (type_constant cst) expected_ty;
       rp {
         pat_desc = Tpat_constant cst;
         pat_loc = loc;
@@ -478,7 +490,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
   |Ppat_tuple spl -> 
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in 
       let ty = newty (Ttuple(List.map snd spl_ann)) in
-      unify_pat_types loc !env expected_ty ty;
+      unify_pat_types loc !env ty expected_ty;
       let pl = List.map (fun (p,t) -> type_pat env p t) spl_ann in
 
       rp {
@@ -494,7 +506,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
 	| Tconstr(p,args,m) ->
 	    ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m); (* GAH: ask garrigue if this is the best way to only unify the head *)
 	    enforce_constraints  !env ty_res;
-	    unify_pat_types loc !env expected_ty ty_res
+	    unify_pat_types loc !env ty_res expected_ty
 	| _ -> fatal_error "constructor type does not have correct description" 
       in
       let sargs =
@@ -512,7 +524,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         raise(Error(loc, Constructor_arity_mismatch(lid,
                                      constr.cstr_arity, List.length sargs)));
       let (ty_args, ty_res) = instance_constructor ~in_pattern:(Some env) constr in
-      unify_pat_types_gadt loc env expected_ty ty_res;
+      unify_pat_types_gadt loc env ty_res expected_ty;
       let args: Typedtree.pattern list = List.map2 (fun p t -> type_pat env p t) sargs ty_args in (* GAH : might be wrong *)
       rp {
         pat_desc = Tpat_construct(constr, args);
@@ -529,21 +541,21 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
-      unify_pat_types loc !env expected_ty (newty (Tvariant row)); (* GAH : probably wrong *)
+      unify_pat_types loc !env (newty (Tvariant row)) expected_ty; (* GAH : probably wrong *)
       rp {
         pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
         pat_loc = loc;
         pat_type =  expected_ty; (*newty (Tvariant row); (* GAH : should probably expected_ty *)*)
         pat_env = !env }
   |Ppat_record(lid_sp_list, closed) -> 
-      let ty = expected_ty in
+
       let type_label_pat (lid, sarg) =
         let label = Typetexp.find_label !env loc lid in
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
         if vars = [] then end_def ();
         begin try
-          unify_pat_types loc !env ty ty_res 
+          unify_pat_types loc !env ty_res expected_ty
         with Unify trace ->
           raise(Error(loc, Label_mismatch(lid, trace)))
         end;
@@ -565,11 +577,11 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
       rp {
         pat_desc = Tpat_record lbl_pat_list;
         pat_loc = loc;
-        pat_type = ty;
+        pat_type = expected_ty;
         pat_env = !env }
   |Ppat_array spl -> 
       let ty_elt = newvar() in
-      unify_pat_types loc !env expected_ty (instance (Predef.type_array ty_elt));
+      unify_pat_types loc !env (instance (Predef.type_array ty_elt)) expected_ty;
       let spl_ann = List.map (fun p -> (p,newvar())) spl in 
       let pl = List.map (fun (p,t) -> type_pat env p ty_elt) spl_ann in
       rp {
@@ -594,7 +606,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_env = !env }
   |Ppat_lazy sp1 -> 
       let nv = newvar () in 
-      unify_pat_types loc !env expected_ty (instance (Predef.type_lazy_t nv));
+      unify_pat_types loc !env (instance (Predef.type_lazy_t nv)) expected_ty;
       let p1 = type_pat env sp1 nv in
       rp {
         pat_desc = Tpat_lazy p1;
@@ -603,7 +615,7 @@ let rec type_pat (env:Env.t ref) sp expected_ty  =
         pat_env = !env }
   |Ppat_constraint(sp, sty) -> 
       let ty, force = Typetexp.transl_simple_type_delayed !env sty in
-      unify_pat_types loc !env expected_ty ty;
+      unify_pat_types loc !env ty expected_ty;
       let p = type_pat env sp expected_ty in (* GAH: so wrong *)
       pattern_force := force :: !pattern_force;
       p (* GAH: this pattern will have the wrong location! *)
@@ -625,176 +637,39 @@ let type_pat env sp expected_ty =
   
 
 
-module GADT_check = 
-struct
-
-(***********************)
-(* GADT by brute force *)
-(***********************)
-
-let filter_map f = 
-  let rec loop = 
-    function
-      | [] -> []
-      | x :: xs ->
-	  match f x with
-	    None -> loop xs
-	  | Some y -> y :: loop xs
-  in
-  loop 
 
 
-(* given a set of patterns P it will generate 
-    { q : exists p in P and branches b in p such that q = P[C/b] 
-  where C is a list of generalized constructors} *)
-let generate_all (env:Env.t) : Parsetree.pattern -> Parsetree.pattern list = 
-  let make_pat desc = 
-    {ppat_desc = desc;
-     ppat_loc = Location.none}
-  in
-  let make_constr lid (s,args,_) = 
-    let lid  = 
-      match lid with
-	| Longident.Lident _ -> Longident.Lident s
-	| Longident.Ldot (x,y) -> Longident.Ldot (x,s)
-	| _ -> assert false
-    in
-    let constr = Env.lookup_constructor lid env in 
-    if not (constr.cstr_generalized) then 
-      None
-    else
-      match args with
-      | [] ->
-	  Some (make_pat (Ppat_construct (lid,None,false))) 
-      | _ ->
-	  let arg = make_pat (Ppat_tuple (List.map (fun _ -> make_pat Ppat_any) args)) in 
-(* GAH: what is the third argument of Ppat_construct? In parser.mly it is always false *)
-	  Some (make_pat (Ppat_construct (lid,Some arg,false)))
-  in
-  let rec select : 'a list list -> 'a list list = 
-    function
-      | xs :: [] -> List.map (fun y -> [y]) xs
-      | (x::xs)::ys ->
-	  List.map
-	    (fun lst -> x :: lst)
-	    (select ys)
-	    @
-	      select (xs::ys)
-      | _ -> []
-  in
-  let rec get_type_descr ty tenv =
-    match (Ctype.repr ty).desc with
-    | Tconstr (path,_,_) -> Env.find_type path tenv
-    | _ -> fatal_error "Parmatch.get_type_descr"
-  in
-  let rec loop (p:Parsetree.pattern) : Parsetree.pattern list = 
-    match p.ppat_desc with
-      | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ ->
-	  [make_pat Ppat_any]
-      | Ppat_construct (lid,arg,status) -> 
-	  let constr = Typetexp.find_constructor env p.ppat_loc lid in
-	  let other_constructors = 
-	    let (_, ty_res) = Ctype.instance_constructor constr in
-	    let decl = get_type_descr ty_res env in 
-	    begin match decl.type_kind with
-	    | Type_generalized_variant constr_list ->
-		filter_map (make_constr lid) constr_list
-	    | _ -> [] end
-	  in  
-	  begin match arg with
-	  | None -> make_pat (Ppat_construct(lid,None,status)) :: other_constructors
-	  | Some p ->
-	      let ps = loop p in 
-	      let current_constructors = 
-		List.map 
-		  (fun p -> make_pat (Ppat_construct(lid,Some p,status))) ps 
-	      in
-	      current_constructors @ other_constructors end
-      | Ppat_array pats -> 
-	  let subpatterns = select (List.map loop pats) in 
-	  List.map (fun ps -> make_pat (Ppat_array ps)) subpatterns 	  
-      | Ppat_or (p1,p2) ->
-	  loop p1 @ loop p2
-      | Ppat_variant (label,arg) -> 
-	  begin match arg with
-	  | None -> [make_pat (Ppat_variant (label,None))]
-	  | Some arg ->
-	      let args = loop arg in 
-	      List.map (fun p -> make_pat (Ppat_variant (label,Some p))) args end
-      | Ppat_tuple lst -> 
-	  let subpatterns = select (List.map loop lst) in 
-	  List.map (fun ps -> make_pat (Ppat_tuple ps)) subpatterns 
-      | Ppat_alias (p,_) | Ppat_constraint (p,_) ->
-	  loop p
-      | Ppat_lazy p ->
-	  let subpatterns = loop p in
-	  List.map (fun subpat -> make_pat (Ppat_lazy subpat)) subpatterns
-      | Ppat_record (args,flag) ->
-	  let subpatterns = select (List.map (fun (_,p) -> loop p) args) in 
-	  List.map 
-	    (fun subpattern -> 
-	      make_pat 
-		(Ppat_record 
-		   (List.combine (List.map fst args) subpattern,
-		    flag))) 
-	    subpatterns
-  in
-  loop
-
-  let generate_all ps env  = 
-    List.concat 
-      (List.map (fun p -> generate_all  env p) ps)
-
-  let rec get_first f = 
-    function
-      | [] -> None
-      | x :: xs -> 
-	  match f x with 
-	  | None -> get_first f xs
-	  | x -> x
-
-  let check_partial loc env expected_ty  (ps:Parsetree.pattern list) (typed_ps:pattern list)    = 
-    let qs = generate_all ps env   in 
-    let rec covered q = 
-      let rec loop = 
-	function
-	  | [] -> false
-	  | p :: ps -> if Parmatch.le_pat p q then true else loop ps
-      in
-      loop typed_ps
-    in
+(*let check_partial_gadt loc env expected_ty ps typed_ps = *)
+  let partial_pred env expected_ty p = 
     pattern_level := Some (get_current_level ());
-    let filter p = 
-      let snap = snapshot () in 
-      try 
+    let snap = snapshot () in 
+    let ret = 
+      begin try 
 	let typed_p =
 	  type_pat (ref env) p expected_ty
 	in
 	backtrack snap;
-	if not (covered typed_p) then Some typed_p else None
+	Some typed_p
       with
 	_ ->
 	  backtrack snap;
-	  None
+	  None end
     in
     pattern_level := None;
-    match get_first filter qs with
-    | None -> Total
-    | Some v ->
-	let errmsg = 
-          let buf = Buffer.create 16 in
-          let fmt = Format.formatter_of_buffer buf in
-          Parmatch.top_pretty fmt v; 
-	  Buffer.contents buf
-	in
-	Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
-	Partial
-
-end
+    ret
+(*  in
+  Parmatch.GADT_check.check_partial loc env  expected_ty pred ps typed_ps*)
 
 
-
-
+let rec iter4 f lst1 lst2 lst3 lst4 = 
+  match lst1,lst2,lst3,lst4 with
+  | x1::xs1,x2::xs2,x3::xs3,x4::xs4 ->
+      f x1 x2 x3 x4;
+      iter4 f xs1 xs2 xs3 xs4
+  | [],[],[],[] ->
+      ()
+  | _ ->
+      assert false
 
 let get_ref r =
   let v = !r in r := []; v
@@ -1531,6 +1406,7 @@ let rec type_exp env sexp =
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
+
       let (arg, ty') =
         match (sty, sty') with
           (None, None) ->               (* Case actually unused *)
@@ -2364,6 +2240,16 @@ and type_expect ?in_function env sexp ty_expected =
         exp_loc = loc;
         exp_type = ty_expected;
         exp_env = env }
+  | Pexp_tuple sexpl ->
+      let subtypes = List.map (fun _ -> newvar ()) sexpl in 
+      let to_unify = newty (Ttuple subtypes) in
+      unify_exp_types loc env to_unify ty_expected ;
+      let expl = List.map2 (fun body ty -> type_expect env body ty) sexpl subtypes in
+      re {
+        exp_desc = Texp_tuple expl;
+        exp_loc = loc;
+        exp_type = ty_expected;
+        exp_env = env }
   | _ -> 
       let exp = type_exp env sexp in
       unify_exp env exp ty_expected;
@@ -2398,6 +2284,7 @@ and type_statement env sexp =
 (* Typing of match cases *)
 
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
+
 (*  let closed = free_variables ~env ty_arg = [] in*)
 (*  let ty_arg' = newvar () in *) 
 
@@ -2450,18 +2337,23 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
       pat_env_list caselist
   in
 
-  let check_partial_gadt partial_loc cases = 
+(*  let check_partial_gadt partial_loc cases = 
     match Parmatch.check_partial partial_loc cases with
     | Partial -> Partial
     | Total -> 
-	GADT_check.check_partial partial_loc env ty_arg  (List.map fst caselist)  (List.map fst cases) 
-  in
+	check_partial_gadt partial_loc env ty_arg  (List.map fst caselist)  (List.map fst cases) 
+  in*)
+  let check_partial loc cases = 
+    Parmatch.check_partial_gadt env (partial_pred env ty_arg) loc cases (List.map fst caselist)
+  in 
+
+
   end_def ();
   let partial =
     match partial_loc with
     | None -> Partial
     | Some partial_loc ->  
-	check_partial_gadt partial_loc cases 
+	check_partial partial_loc cases 
   in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
@@ -2519,9 +2411,13 @@ and type_let env rec_flag spat_sexp_list scope =
             {exp with exp_type = instance exp.exp_type}
         | _ -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_list in
-  List.iter2
-    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
-    pat_list exp_list;
+
+  let check_partial nv (untyped_pat:Parsetree.pattern) loc cases = 
+    Parmatch.check_partial_gadt env (partial_pred env nv) loc cases [untyped_pat]
+  in 
+  iter4
+    (fun pat exp nv untyped_pat -> ignore(check_partial nv untyped_pat pat.pat_loc [pat, exp]))
+    pat_list exp_list nvs spatl;
   end_def();
   List.iter2
     (fun pat exp ->

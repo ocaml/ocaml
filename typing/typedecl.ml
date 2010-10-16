@@ -163,13 +163,13 @@ let transl_declaration env (name, sdecl) id =
             if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs) (* GAH: MIGHT BE WRONG *)
                > (Config.max_tag + 1) then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
-	    if List.for_all (fun (_,_,x,_) -> match x with Some _ -> false | None -> true) cstrs then
+(*	    if List.for_all (fun (_,_,x,_) -> match x with Some _ -> false | None -> true) cstrs then
             Type_variant
               (List.map
                  (fun (name, args,_, loc) ->
                     (name, List.map (transl_simple_type env true) args))
               cstrs)
-	    else
+	    else*)
 
 	    let ret = 
 	      Type_generalized_variant

@@ -1657,29 +1657,7 @@ let do_check_fragile loc casel pss =
           exts
 
 
-(********************************)
-(* Exported exhustiveness check *)
-(********************************)
 
-(*
-   Fragile check is performed when required and
-   on exhaustive matches only.
-*)
-
-let check_partial loc casel =
-
-  if Warnings.is_active (Warnings.Partial_match "") then begin
-    let pss = initial_matrix casel in
-    let pss = get_mins le_pats pss in
-    let total = do_check_partial loc casel pss in
-    if
-      total = Total && Warnings.is_active (Warnings.Fragile_match "")
-    then begin
-      do_check_fragile loc casel pss
-    end ;
-    total
-  end else
-    Partial
 
 
 (********************************)
@@ -1745,3 +1723,235 @@ let rec inactive pat = match pat with
 (* A `fluid' pattern is both irrefutable and inactive *)
 
 let fluid pat = irrefutable pat && inactive pat.pat_desc
+
+
+
+
+module GADT_check = 
+struct
+  open Parsetree
+(***********************)
+(* GADT by brute force *)
+(***********************)
+
+let filter_map f = 
+  let rec loop = 
+    function
+      | [] -> []
+      | x :: xs ->
+	  match f x with
+	    None -> loop xs
+	  | Some y -> y :: loop xs
+  in
+  loop 
+
+
+(* given a set of patterns P it will generate 
+    { q : exists p in P and branches b in p such that q = P[C/b] 
+  where C is a list of generalized constructors} *)
+let generate_all (env:Env.t) : pattern -> pattern list = 
+  let make_pat desc = 
+    {ppat_desc = desc;
+     ppat_loc = Location.none}
+  in
+  let make_constr ty_res lid (s,args,ret) = 
+    let original_constructor_name = 
+      match lid with
+	| Longident.Lident s ->  s
+	| Longident.Ldot (x,y) -> y
+	| _ -> assert false	
+    in
+    if original_constructor_name = s then 
+      None
+    else
+      let lid  =  (* GAH: ask garrigue, this piece of code seems useless, it's never an Ldot for some reason *)
+	match lid with
+	| Longident.Lident _ -> Longident.Lident s
+	| Longident.Ldot (x,y) -> Longident.Ldot (x,s)
+	| _ -> assert false
+      in
+      let constr = Env.lookup_constructor lid env in 
+      if not (constr.cstr_generalized) then 
+	None
+      else
+	let ty_res = 
+	  match ret with
+	  | None -> ty_res
+	  | Some t -> t
+	in
+	match args with
+	| [] ->
+	    Some (make_pat (Ppat_construct (lid,None,false)),ty_res) 
+	| _ ->
+	    let arg = make_pat (Ppat_tuple (List.map (fun _ -> make_pat Ppat_any) args)) in 
+(* GAH: what is the third argument of Ppat_construct? In parser.mly it is always false *)
+	    Some (make_pat (Ppat_construct (lid,Some arg,false)),ty_res)
+  in
+  let rec select : 'a list list -> 'a list list = 
+    function
+      | xs :: [] -> List.map (fun y -> [y]) xs
+      | (x::xs)::ys ->
+	  List.map
+	    (fun lst -> x :: lst)
+	    (select ys)
+	    @
+	      select (xs::ys)
+      | _ -> []
+  in
+  let rec get_type_descr ty tenv =
+    match (Ctype.repr ty).desc with
+    | Tconstr (path,_,_) -> Env.find_type path tenv
+    | _ -> fatal_error "Parmatch.get_type_descr"
+  in
+  let mem pred elt = 
+    let rec loop = 
+      function
+	| [] -> false
+	| x :: xs ->
+	    if pred x elt then true else loop xs 
+    in
+    loop
+  in
+
+  let uniquefy pred = 
+    let rec loop sofar = 
+      function
+	| [] -> sofar
+	| x :: xs ->
+	    if mem pred x sofar then loop sofar xs else loop (x :: sofar) xs
+    in
+    loop []
+  in
+  let type_equivalence (_,t) (_,t') = 
+    Ctype.equal Env.empty true [t] [t']  
+  in
+  let rec loop (p:pattern) : pattern list = 
+    match p.ppat_desc with
+      | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ ->
+	  [make_pat Ppat_any]
+      | Ppat_construct (lid,arg,status) -> 
+(* GAH : check if this is correct, might need typetexp.find_constructor. ask garrigue what's the difference *)
+	  let constr = Env.lookup_constructor  (*p.ppat_loc*) lid env in 
+	  let other_constructors = 
+	    let (_, ty_res) = Ctype.instance_constructor constr in
+	    let decl = get_type_descr ty_res env in 
+	    begin match decl.type_kind with
+	    | Type_generalized_variant constr_list ->
+		let constrs = filter_map (make_constr ty_res lid) constr_list in 
+		let constrs = uniquefy type_equivalence constrs in 
+		List.map fst constrs
+	    | _ -> [] end
+	  in  
+	  begin match arg with
+	  | None -> make_pat (Ppat_construct(lid,None,status)) :: other_constructors
+	  | Some p ->
+	      let ps = loop p in 
+	      let current_constructors = 
+		List.map 
+		  (fun p -> make_pat (Ppat_construct(lid,Some p,status))) ps 
+	      in
+	      current_constructors @ other_constructors end
+      | Ppat_array pats -> 
+	  let subpatterns = select (List.map loop pats) in 
+	  List.map (fun ps -> make_pat (Ppat_array ps)) subpatterns 	  
+      | Ppat_or (p1,p2) ->
+	  loop p1 @ loop p2
+      | Ppat_variant (label,arg) -> 
+	  begin match arg with
+	  | None -> [make_pat (Ppat_variant (label,None))]
+	  | Some arg ->
+	      let args = loop arg in 
+	      List.map (fun p -> make_pat (Ppat_variant (label,Some p))) args end
+      | Ppat_tuple lst -> 
+	  let subpatterns = select (List.map loop lst) in 
+	  List.map (fun ps -> make_pat (Ppat_tuple ps)) subpatterns 
+      | Ppat_alias (p,_) | Ppat_constraint (p,_) ->
+	  loop p
+      | Ppat_lazy p ->
+	  let subpatterns = loop p in
+	  List.map (fun subpat -> make_pat (Ppat_lazy subpat)) subpatterns
+      | Ppat_record (args,flag) ->
+	  let subpatterns = select (List.map (fun (_,p) -> loop p) args) in 
+	  List.map 
+	    (fun subpattern -> 
+	      make_pat 
+		(Ppat_record 
+		   (List.combine (List.map fst args) subpattern,
+		    flag))) 
+	    subpatterns
+  in
+  loop
+
+  let generate_all ps env  = 
+    List.concat 
+      (List.map (fun p -> generate_all  env p) ps)
+
+  let rec get_first f = 
+    function
+      | [] -> None
+      | x :: xs -> 
+	  match f x with 
+	  | None -> get_first f xs
+	  | x -> x
+
+  let check_partial loc env pred  ps typed_ps = 
+    let qs = generate_all ps env   in 
+    let rec comparable q = 
+      let rec loop = 
+	function
+	  | [] -> false
+	  | p :: ps -> if le_pat q p || le_pat p q then true else loop ps
+      in
+      loop typed_ps
+    in
+
+    let filter p = 
+      match pred p with
+      | None -> None
+      | Some p ->
+	  if comparable p then None else Some p
+    in
+    match get_first filter qs with
+    | None -> Total
+    | Some v ->
+	let errmsg = 
+          let buf = Buffer.create 16 in
+          let fmt = Format.formatter_of_buffer buf in
+          top_pretty fmt v; 
+	  Buffer.contents buf
+	in
+	Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
+	Partial
+
+end
+
+
+(********************************)
+(* Exported exhustiveness check *)
+(********************************)
+
+(*
+   Fragile check is performed when required and
+   on exhaustive matches only.
+*)
+
+let check_partial loc casel = 
+    if Warnings.is_active (Warnings.Partial_match "") then begin
+      let pss = initial_matrix casel in
+      let pss = get_mins le_pats pss in
+      let total = do_check_partial loc casel pss in
+      if
+	total = Total && Warnings.is_active (Warnings.Fragile_match "")
+      then begin
+	do_check_fragile loc casel pss
+      end ;
+      total
+    end else
+      Partial  
+
+let check_partial_gadt env pred loc casel untyped_ps =
+  let first_check = check_partial loc casel in
+  match first_check with
+  | Partial -> Partial
+  | Total ->
+      GADT_check.check_partial loc env pred untyped_ps (List.map fst casel) 
