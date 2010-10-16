@@ -1830,8 +1830,12 @@ let generate_all (env:Env.t) : pattern -> pattern list =
       | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ ->
 	  [make_pat Ppat_any]
       | Ppat_construct (lid,arg,status) -> 
-(* GAH : check if this is correct, might need typetexp.find_constructor. ask garrigue what's the difference *)
-	  let constr = Env.lookup_constructor  (*p.ppat_loc*) lid env in 
+	  let constr = 
+	    match lid with
+	    | Longident.Ldot (Longident.Lident "*predef*", s) -> Env.lookup_constructor (Longident.Lident s) Env.initial
+	    | _ -> 
+		Env.lookup_constructor lid env 		
+	  in 
 	  let other_constructors = 
 	    let (_, ty_res) = Ctype.instance_constructor constr in
 	    let decl = get_type_descr ty_res env in 
@@ -1951,6 +1955,7 @@ let check_partial loc casel =
 
 let check_partial_gadt env pred loc casel untyped_ps =
   let first_check = check_partial loc casel in
+(*  first_check*)
   match first_check with
   | Partial -> Partial
   | Total ->
