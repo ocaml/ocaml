@@ -1886,7 +1886,7 @@ let unify_eq t1 t2 =
   in
   if t1 == t2 then true else
   if t1.id <= t2.id then do_it t1 t2 else do_it t2 t1 
-
+	
 (* mcomp type_pairs subst env t1 t2 does not raise an 
    exception if it is possible that t1 and t2 are actually
    equal, assuming the types in type_pairs are equal and 

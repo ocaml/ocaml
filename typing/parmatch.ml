@@ -1764,6 +1764,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
     if original_constructor_name = s then 
       None
     else
+      (* GAH: ask garrigue, this code seems suspicious *)
       let lid  =  (* GAH: ask garrigue, this piece of code seems useless, it's never an Ldot for some reason *)
 	match lid with
 	| Longident.Lident _ -> Longident.Lident s

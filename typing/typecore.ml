@@ -1406,7 +1406,6 @@ let rec type_exp env sexp =
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
-
       let (arg, ty') =
         match (sty, sty') with
           (None, None) ->               (* Case actually unused *)
@@ -1415,6 +1414,8 @@ let rec type_exp env sexp =
         | (Some sty, None) ->
             if !Clflags.principal then begin_def ();
             let ty = Typetexp.transl_simple_type env false sty in
+(*	    Format.printf "%a@." Printtyp.raw_type_expr ty;
+	    Format.printf "%a@." Printtyp.raw_type_expr (expand_head env ty);*)
             if !Clflags.principal then begin
               end_def ();
               generalize_structure ty;
