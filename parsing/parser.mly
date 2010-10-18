@@ -218,7 +218,7 @@ let varify_constructors var_names =
 	  Ptyp_arrow(label, loop core_type, loop core_type')
       | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
       | Ptyp_constr(Lident s, []) when List.mem s var_names ->
-	  Ptyp_var s
+	  Ptyp_var ("&s" ^ s)
       | Ptyp_constr(longident, lst) ->
 	  Ptyp_constr(longident, List.map loop lst) 
       | Ptyp_object lst ->
