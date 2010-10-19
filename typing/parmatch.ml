@@ -634,13 +634,16 @@ let clean_env env =
   in
   loop env
 
-let full_match closing env =  match env with
+let full_match ignore_generalized closing env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ ->
     false
 | ({pat_desc = Tpat_construct(c,_);pat_type=typ},_) :: _ -> 
-    (* remove generalized constructors; those cases will be handled separately *)
-    let env = clean_env env in 
-    List.length env = c.cstr_normal
+    if ignore_generalized then
+      (* remove generalized constructors; those cases will be handled separately *)
+      let env = clean_env env in 
+      List.length env = c.cstr_normal
+    else
+      List.length env = c.cstr_consts + c.cstr_nonconsts
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
       List.map
@@ -938,7 +941,7 @@ let rec satisfiable pss qs = match pss with
           (* first column of pss is made of variables only *)
         | [] -> satisfiable (filter_extra pss) qs
         | constrs  ->
-            if full_match false constrs then
+            if full_match false false constrs then
               List.exists
                 (fun (p,pss) ->
                   not (is_absent_pat p) &&
@@ -995,7 +998,7 @@ let rec exhaust ext pss n = match pss with
             | Rsome r -> Rsome (set_args p r)
             | r       -> r in
         if
-          full_match false constrs && not (should_extend ext constrs)
+          full_match true false constrs && not (should_extend ext constrs)
         then
           try_many try_non_omega constrs
         else
@@ -1044,12 +1047,12 @@ let rec pressure_variants tdefs = function
                 try_non_omega rem && ok
             | [] -> true
           in
-          if full_match (tdefs=None) constrs then
+          if full_match false (tdefs=None) constrs then (* GAH : ask garrigue about this, should we ignore generalized constructors?*)
             try_non_omega constrs
           else if tdefs = None then
             pressure_variants None (filter_extra pss)
           else
-            let full = full_match true constrs in
+            let full = full_match false true constrs in
             let ok =
               if full then try_non_omega constrs
               else try_non_omega (filter_all q0 (mark_partial pss))
