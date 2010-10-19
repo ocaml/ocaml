@@ -433,6 +433,11 @@ let opened_object ty =
   | Tconstr _          -> true
   | _                  -> false
 
+let concrete_object ty =
+  match (object_row ty).desc with
+  | Tvar               -> false
+  | _                  -> true
+
 (**** Close an object ****)
 
 let close_object ty =
@@ -1970,8 +1975,8 @@ and mcomp_list type_pairs subst env tl1 tl2 =
   List.iter2 (mcomp type_pairs subst env) tl1 tl2
 
 and mcomp_fields type_pairs subst env ty1 ty2 =
-  if opened_object ty1 || opened_object ty2 then
-    fatal_error "object was not closed, this is an error";
+  if not (concrete_object ty1) || not (concrete_object ty2) then
+    fatal_error "object was not closed";
   let (fields2, rest2) = flatten_fields ty2 in
   (* Try expansion, needed when called from Includecore.type_manifest *)
   match expand_head env rest2 with
@@ -2147,7 +2152,10 @@ and unify3 mode env t1 t1' t2 t2' =
 	reify env t2;
 	mcomp !env t1 t2
     | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
-        unify_fields Old env fi1 fi2;
+        if concrete_object t1' && concrete_object t2' then
+           unify_fields mode env fi1 fi2
+        else
+           unify_fields Old env fi1 fi2;
         (* Type [t2'] may have been instantiated by [unify_fields] *)
         (* XXX One should do some kind of unification... *)
         begin match (repr t2').desc with
