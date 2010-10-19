@@ -1771,8 +1771,6 @@ let deep_occur t0 ty =
       information is indeed lost, but it probably does not worth it.
 *)
 
-let pattern_unification = ref false
-
 let pattern_level = ref None
 
 let reify env t =
@@ -1872,6 +1870,11 @@ type unification_mode =
   | Expression (* unification in expression *)
   | Pattern (* unification in pattern which may add local constraints *)
   | Old (* unification in pattern, old style. local constraints are not used nor generated *)
+
+let use_local = 
+  function
+  | Expression | Pattern -> true
+  | Old -> false
 
 let unify_eq mode t1 t2 =
   match mode with
@@ -2028,9 +2031,7 @@ and mcomp_row type_pairs subst env row1 row2 =
 *)
 
 let mcomp env t1 t2 = 
-  mcomp (TypePairs.create 5) () env t1 t2
-
-
+  mcomp (TypePairs.create 4) () env t1 t2
 
 let rec unify mode (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
@@ -2076,9 +2077,10 @@ let rec unify mode (env:Env.t ref) t1 t2 =
 
 and unify2 mode env t1 t2 =
   (* Second step: expansion of abbreviations *)
+  let use_local = use_local mode in 
   let rec expand_both t1'' t2'' =
-    let t1' = expand_head_unif !env t1 in
-    let t2' = expand_head_unif !env t2 in
+    let t1' = expand_head_unif ~use_local !env t1 in
+    let t2' = expand_head_unif ~use_local !env t2 in
     (* Expansion may have changed the representative of the types... *)
     if unify_eq mode t1' t1'' && unify_eq mode t2' t2'' then (t1',t2') else
     expand_both t1' t2'
@@ -2124,7 +2126,7 @@ and unify3 mode env t1 t1' t2 t2' =
         unify_list mode env tl1 tl2
     | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
         unify_list mode env tl1 tl2
-    | (Tconstr ((Path.Pident p) as path,[],_)),_  when is_abstract_newtype !env path && !pattern_unification -> 
+    | (Tconstr ((Path.Pident p) as path,[],_)),_  when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t2 ;
 	begin_def ();
 	let t2 = duplicate_type t2 in
@@ -2132,7 +2134,7 @@ and unify3 mode env t1 t1' t2 t2' =
 	generalize t2 ;
 	let decl = new_declaration true (Some t2) in
         env := Env.add_type p decl !env 
-    | _,(Tconstr ((Path.Pident p) as path,[],_)) when is_abstract_newtype !env path && !pattern_unification -> 
+    | _,(Tconstr ((Path.Pident p) as path,[],_)) when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t1 ;
 	begin_def ();
 	let t1 = duplicate_type t1 in
@@ -2140,7 +2142,7 @@ and unify3 mode env t1 t1' t2 t2' =
 	generalize t1 ;
 	let decl = new_declaration true (Some t1) in
         env := Env.add_type p decl !env 
-    | Tconstr (p1,_,_), Tconstr (p2,_,_) when !pattern_unification ->
+    | Tconstr (p1,_,_), Tconstr (p2,_,_) when mode = Pattern ->
 	reify env t1;
 	reify env t2;
 	mcomp !env t1 t2
@@ -2183,7 +2185,7 @@ and unify3 mode env t1 t1' t2 t2' =
       match t2.desc with
         Tconstr (p, tl, abbrev) ->
           forget_abbrev abbrev p;
-          let t2'' = expand_head_unif !env t2 in
+          let t2'' = expand_head_unif ~use_local:(use_local mode)  !env t2 in
           if not (closed_parameterized_type tl t2'') then
             link_type (repr t2) (repr t2')
       | _ ->
@@ -2404,15 +2406,12 @@ let unify mode env ty1 ty2 =
 let unify_gadt plev (env:Env.t ref) ty1 ty2 =
   try
     pattern_level := Some plev;
-    pattern_unification:=true;
     unify Pattern env ty1 ty2;
-    pattern_unification:=false;
     pattern_level := None;
   with 
     | Unify e ->
 	raise (Unify e)
     | e -> 
-	pattern_unification := false;
 	pattern_level := None;
 	raise e
 
