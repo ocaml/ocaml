@@ -40,9 +40,9 @@ let maybe_pointer exp =
         | {type_kind = Type_variant []} -> true (* type exn *)
         | {type_kind = Type_generalized_variant []} -> true (* type exn *)
         | {type_kind = Type_variant cstrs} ->
-            List.exists (fun (name, args) -> args <> []) cstrs (* GAH: dunno what's going on *)
+            List.exists (fun (name, args) -> args <> []) cstrs
         | {type_kind = Type_generalized_variant cstrs} ->
-            List.exists (fun (name, args,_) -> args <> []) cstrs (* GAH: dunno what's going on *)
+            List.exists (fun (name, args,_) -> args <> []) cstrs
         | _ -> true
       with Not_found -> true
         (* This can happen due to e.g. missing -I options,
@@ -72,10 +72,10 @@ let array_element_kind env ty =
             {type_kind = Type_abstract} ->
               Pgenarray
           | {type_kind = Type_variant cstrs}
-            when List.for_all (fun (name, args) -> args = []) cstrs -> (* GAH: guess? *)
+            when List.for_all (fun (name, args) -> args = []) cstrs ->
               Pintarray
           | {type_kind = Type_generalized_variant cstrs}
-            when List.for_all (fun (name, args,_) -> args = []) cstrs -> (* GAH: guess? *)
+            when List.for_all (fun (name, args,_) -> args = []) cstrs ->
               Pintarray
           | {type_kind = _} ->
               Paddrarray

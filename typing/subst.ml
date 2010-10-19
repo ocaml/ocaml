@@ -169,7 +169,7 @@ let type_declaration s decl =
         | Type_variant cstrs ->
             Type_variant(
               List.map (fun (n, args) -> 
-		(n, List.map (typexp s) args)) (* GAH: WHAT DOES typexp DO? *)
+		(n, List.map (typexp s) args))
               cstrs)
         | Type_generalized_variant cstrs ->
             Type_generalized_variant(
@@ -177,7 +177,7 @@ let type_declaration s decl =
 		let ret_type_opt = 
 		  Misc.may_map (typexp s) ret_type_opt
 		in
-		(n, List.map (typexp s) args,ret_type_opt)) (* GAH: WHAT DOES typexp DO? *)
+		(n, List.map (typexp s) args,ret_type_opt))
               cstrs)
         | Type_record(lbls, rep) ->
             Type_record(

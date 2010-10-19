@@ -161,7 +161,7 @@ let report_type_mismatch first second decl ppf =
       Format.fprintf ppf "@ %a." (report_type_mismatch0 first second decl) err)
 
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
-  match cstrs1, cstrs2 with (* GAH: most likely wrong, but I don't know what this function does *)
+  match cstrs1, cstrs2 with
     [], []           -> []
   | [], (cstr2,_,_)::_ -> [Field_missing (true, cstr2)]
   | (cstr1,_,_)::_, [] -> [Field_missing (false, cstr1)]

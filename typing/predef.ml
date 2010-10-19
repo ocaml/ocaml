@@ -96,7 +96,7 @@ let build_initial_env add_type add_exception empty_env =
   and decl_bool =
     {type_params = [];
      type_arity = 0;
-     type_kind = Type_variant(["false", []; "true", []]); (* GAH: HOW DO I DEFINE THE BASIC BOOL TYPE? *) 
+     type_kind = Type_variant(["false", []; "true", []]);
      type_private = Public;
      type_manifest = None;
      type_variance = [];
@@ -131,7 +131,7 @@ let build_initial_env add_type add_exception empty_env =
     {type_params = [tvar];
      type_arity = 1;
      type_kind =
-     Type_variant(["[]", []; "::", [tvar; type_list tvar]]); (* GAH: IS THIS CORRECT? *)
+     Type_variant(["[]", []; "::", [tvar; type_list tvar]]);
      type_private = Public;
      type_manifest = None;
      type_variance = [true, false, false];

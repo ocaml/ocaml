@@ -286,7 +286,7 @@ let cleanup_types () =
 
 (* Mark a type. *)
 let rec mark_type ty =
-  let ty = repr ty in (* GAH : why do we call repr? *)
+  let ty = repr ty in
   if ty.level >= lowest_level then begin
     ty.level <- pivot_level - ty.level;
     iter_type_expr mark_type ty
@@ -317,13 +317,13 @@ let unmark_type_decl decl =
       List.iter 
 	(fun (c, tl) -> 
 	  List.iter unmark_type tl)
-	cstrs (* GAH: WHAT DOES UNMARK DO??? *)
+	cstrs
   | Type_generalized_variant cstrs ->
       List.iter 
 	(fun (c, tl,ret_type_opt) -> 
 	  List.iter unmark_type tl;
 	  Misc.may unmark_type ret_type_opt)
-	cstrs (* GAH: WHAT DOES UNMARK DO??? *)
+	cstrs
   | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;

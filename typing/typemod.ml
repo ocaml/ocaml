@@ -169,7 +169,7 @@ let merge_constraint initial_env loc sg lid constr =
                 List.map
                   (function {ptyp_desc=Ptyp_var s} -> s | _ -> raise Exit)
                   stl in
-              if (List.map (fun x -> Some x) params) <> sdecl.ptype_params then raise Exit; (* GAH : ask garrigue, is this ok? *)
+              if (List.map (fun x -> Some x) params) <> sdecl.ptype_params then raise Exit; (* GAH : ask garrigue, is this ok? where does the optional return type enter? *)
               lid
           | _ -> raise Exit
           with Exit -> raise (Error (sdecl.ptype_loc, With_need_typeconstr))

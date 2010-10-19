@@ -1130,7 +1130,7 @@ let_binding:
 	let core_type = varify_constructors newtypes core_type in
 	
 	(ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
-                               ghtyp(Ptyp_poly(newtypes,core_type)))),
+                               ghtyp(Ptyp_poly(List.map (fun s -> "&" ^ s) newtypes,core_type)))),
          exp)
       }
   | pattern EQUAL seq_expr

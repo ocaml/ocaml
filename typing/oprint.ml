@@ -438,7 +438,7 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
             (print_typlist print_simple_out_type " *") tyl end
   | Some ret_type ->
       begin match tyl with
-      | [] -> fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type (* GAH: IS THIS CORRECT? *)
+      | [] -> fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type
       | _ ->
 	  fprintf ppf "@[<2>%s :@ %a -> %a@]" name
             (print_typlist print_simple_out_type " *") tyl print_simple_out_type ret_type end      

@@ -529,7 +529,7 @@ let globalize_used_variables env fixed =
           raise (Error(loc, Type_mismatch trace)))
       !r
 
-let transl_simple_type env fixed styp = (* GAH : ask garrigue, might be ugly *)
+let transl_simple_type env fixed styp =
   univars := []; used_variables := Tbl.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
   globalize_used_variables env fixed ();

@@ -19,7 +19,7 @@ open Misc
 open Asttypes
 open Types
 
-module Duplicated_code = (* GAH: causes a stack overflow when encountering recursive type *) 
+module Duplicated_code = (* GAH : I'm duplicating this code from ctype *)
 struct
   let rec free_vars ty =
     let ret = ref [] in
@@ -133,7 +133,7 @@ let constructor_descrs ty_res cstrs priv =
 
 let exception_descr path_exc decl =
   { cstr_res = Predef.type_exn;
-    cstr_existentials = [] ; (* GAH: is this correct? *)
+    cstr_existentials = [];
     cstr_args = decl;
     cstr_arity = List.length decl;
     cstr_tag = Cstr_exception path_exc;
@@ -170,7 +170,7 @@ let label_descrs ty_res lbls repres priv =
 
 exception Constr_not_found
 
-let rec find_constr tag num_const num_nonconst = function  (* GAH: is this correct? *)
+let rec find_constr tag num_const num_nonconst = function
     [] ->
       raise Constr_not_found
   | (name, ([] as cstr),(_ as ret_type_opt)) :: rem ->

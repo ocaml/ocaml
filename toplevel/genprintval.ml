@@ -240,7 +240,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let (constr_name, constr_args,_) = (* GAH: this is definately wrong *)
+                    let (constr_name, constr_args,_) = (* GAH: this is definitely wrong *)
                       Datarepr.find_constr_by_tag tag constr_list in
                     let ty_args =
                       List.map

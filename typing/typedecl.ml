@@ -30,7 +30,7 @@ type error =
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr * Includecore.type_mismatch list
   | Constraint_failed of type_expr * type_expr
-  | Unconsistent_constraint of (type_expr * type_expr) list
+  | Inconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
@@ -160,9 +160,9 @@ let transl_declaration env (name, sdecl) id =
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
-            if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs) (* GAH: MIGHT BE WRONG *)
+            if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs)
                > (Config.max_tag + 1) then
-              raise(Error(sdecl.ptype_loc, Too_many_constructors));
+              raise(Error(sdecl.ptype_loc, Too_many_constructors)); (* GAH : decide or not to add the following code *)
 (*	    if List.for_all (fun (_,_,x,_) -> match x with Some _ -> false | None -> true) cstrs then
             Type_variant
               (List.map
@@ -188,7 +188,7 @@ let transl_declaration env (name, sdecl) id =
 		     let args = List.map (transl_simple_type env false) args in 
 		     let ret_type = may_map (transl_simple_type env false) ret_type in
 		     restore ();
-                     (name, args,ret_type)) (* GAH: calling transl_simple_type with fixed=false, ask garrigue if this is ok *)
+                     (name, args,ret_type))
 		   cstrs)
 	    in
 	    ret
@@ -228,7 +228,7 @@ let transl_declaration env (name, sdecl) id =
   List.iter
     (fun (ty, ty', loc) ->
       try Ctype.unify env ty ty' with Ctype.Unify tr ->
-        raise(Error(loc, Unconsistent_constraint tr)))
+        raise(Error(loc, Inconsistent_constraint tr)))
     cstrs;
   Ctype.end_def ();
   (* Add abstract row *)
@@ -254,9 +254,9 @@ let generalize_decl decl =
     Type_abstract ->
       ()
   | Type_variant v ->
-      List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v  (* GAH: almost sure this is wrong *)
+      List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
   | Type_generalized_variant v ->
-      List.iter (fun (_, tyl,ret_type_opt) -> List.iter Ctype.generalize tyl; may Ctype.generalize ret_type_opt) v  (* GAH: almost sure this is wrong *)
+      List.iter (fun (_, tyl,ret_type_opt) -> List.iter Ctype.generalize tyl; may Ctype.generalize ret_type_opt) v
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
   end;
@@ -305,9 +305,9 @@ let check_constraints env (_, sdecl) (_, decl) =
       in
       let pl = find_pl sdecl.ptype_kind in
       List.iter
-        (fun (name, tyl,ret_type_opt) -> (* GAH: again, no idea *)
+        (fun (name, tyl,ret_type_opt) ->
           let styl,sret_type_opt =
-            try let (_,sty,sret_type_opt (* added by me *) ,_) = List.find (fun (n,_,_,_) -> n = name)  pl in sty,sret_type_opt (* GAH: lord, I have no idea what this is about *)
+            try let (_,sty,sret_type_opt,_) = List.find (fun (n,_,_,_) -> n = name)  pl in sty,sret_type_opt
             with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
@@ -531,10 +531,10 @@ let whole_type decl =
   match decl.type_kind with
   | Type_generalized_variant tll ->
       Btype.newgenty
-        (Ttuple (List.map (fun (_, tl,_ (* added by me *)) -> Btype.newgenty (Ttuple tl)) tll)) (* GAH: WHAT?*)
+        (Ttuple (List.map (fun (_, tl,_) -> Btype.newgenty (Ttuple tl)) tll)) 
   | Type_variant tll ->
       Btype.newgenty
-        (Ttuple (List.map (fun (_, tl) -> Btype.newgenty (Ttuple tl)) tll)) (* GAH: WHAT?*)
+        (Ttuple (List.map (fun (_, tl) -> Btype.newgenty (Ttuple tl)) tll))
   | Type_record (ftl, _) ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, _, ty) -> ty) ftl))
@@ -557,7 +557,7 @@ let compute_variance_decl env check decl (required, loc) =
   let tvl = tvl0 @ tvl1 in
   let is_gadt = 
     match decl.type_kind with
-    | Type_generalized_variant tll -> (* GAH: what in the blazes *)
+    | Type_generalized_variant tll ->
 	let ret = ref false in 
 	List.iter
           (function 
@@ -577,12 +577,12 @@ let compute_variance_decl env check decl (required, loc) =
         None -> assert false
       | Some ty -> compute_variance env tvl true false false ty
       end
-  | Type_variant tll -> (* GAH: what in the blazes *)
+  | Type_variant tll ->
       List.iter
         (fun (_,tl) ->
               List.iter (compute_variance env tvl true false false) tl)
         tll
-  | Type_generalized_variant tll -> (* GAH: what in the blazes *)
+  | Type_generalized_variant tll ->
       List.iter
         (fun (_,tl,ret_type_opt) ->
 	  match ret_type_opt with
@@ -872,7 +872,7 @@ let transl_with_constraint env id row_path sdecl =
          Ctype.unify env (transl_simple_type env false ty)
                          (transl_simple_type env false ty')
        with Ctype.Unify tr ->
-         raise(Error(loc, Unconsistent_constraint tr))) (* GAH : Unconsistent is not a word *)
+         raise(Error(loc, Inconsistent_constraint tr)))
     sdecl.ptype_cstrs;
   let no_row = not (is_fixed_type sdecl) in
   let decl =
@@ -1008,7 +1008,7 @@ let report_error ppf = function
       fprintf ppf
         "@[<hv>In the definition of %s, type@ %a@ should be@ %a@]"
         (Path.name path) Printtyp.type_expr ty Printtyp.type_expr ty'
-  | Unconsistent_constraint trace ->
+  | Inconsistent_constraint trace ->
       fprintf ppf "The type constraints are not consistent.@.";
       Printtyp.report_unification_error ppf trace
         (fun ppf -> fprintf ppf "Type")

@@ -608,7 +608,7 @@ and tree_of_constructor (name, args) =
 and tree_of_constructor_ret =
   function
     | None -> None
-    | Some ret_type -> Some (tree_of_typexp false ret_type) (* GAH: WHY FALSE?? *)
+    | Some ret_type -> Some (tree_of_typexp false ret_type)
 
 and tree_of_label (name, mut, arg) =
   (name, mut = Mutable, tree_of_typexp false arg)
