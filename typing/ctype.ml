@@ -2106,18 +2106,26 @@ and unify3 mode env t1 t1' t2 t2' =
   let d1 = t1'.desc and d2 = t2'.desc in
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
   occur !env t1' t2';
+  let old_link () = 
+    occur !env t1' t2;
+    update_level !env t1'.level t2;
+    link_type t1' t2
+  in
+  let switch_to_old_link () = 
+    match mode with
+     | Pattern | Expression -> old_link ();
+     | Old -> () (* old_link was already called *)
+  in
   begin match mode with
   | Old ->
-      link_type t1' t2
+     old_link ()
   | Pattern | Expression ->
-      add_type_equality t1' t2' end;
+     add_type_equality t1' t2' end;
   try
     begin match (d1, d2) with
-      (Tvar, _) ->
-	(* case taken care of in unify *)
-	assert false
+      (Tvar, _) 
     | (_, Tvar) ->
-	(* case taken care of in unify *)
+	(* cases taken care of in unify *)
 	assert false
     | (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
@@ -2154,8 +2162,11 @@ and unify3 mode env t1 t1' t2 t2' =
     | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
         if concrete_object t1' && concrete_object t2' then
            unify_fields mode env fi1 fi2
-        else
-           unify_fields Old env fi1 fi2;
+        else          
+           begin 
+              switch_to_old_link ();
+              unify_fields Old env fi1 fi2;
+           end;
         (* Type [t2'] may have been instantiated by [unify_fields] *)
         (* XXX One should do some kind of unification... *)
         begin match (repr t2').desc with
@@ -2168,6 +2179,7 @@ and unify3 mode env t1 t1' t2 t2' =
             ()
         end
     | (Tvariant row1, Tvariant row2) ->
+        switch_to_old_link ();
         unify_row env row1 row2
     | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields mode env t1' t2'
