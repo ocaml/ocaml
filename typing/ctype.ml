@@ -1937,14 +1937,13 @@ let rec mcomp type_pairs subst env t1 t2 =
           | (Ttuple tl1, Ttuple tl2) ->
               mcomp_list type_pairs subst env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
+	      let unique_declaration env p = 
+		definitely_abstract env p || in_pervasives p
+	      in
 	      if Path.same p1 p2 then
 		mcomp_list type_pairs subst env tl1 tl2
-	      else if definitely_abstract env p1 && definitely_abstract env p2 then
+	      else if unique_declaration env p1 && unique_declaration env p2 then
 		raise (Unify [])
-	      else ()
-	  | Tconstr (p1,_,_), _ 
-	  | _,Tconstr (p1,_,_) ->
-	      if in_pervasives p1 then raise (Unify [])
 	      else ()
           | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2) when Path.same p1 p2 && n1 = n2 ->
               mcomp_list type_pairs subst env tl1 tl2

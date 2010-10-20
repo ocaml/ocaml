@@ -42,7 +42,7 @@ end
 
 let constructor_descrs_called = ref 0
 
-let gadt_ty_res existentials ty_res = 
+let maybe_gadt_ty_res existentials ty_res = 
   match ty_res.desc with
   | Tconstr(_,lst,_) ->
       let contains_non_variables = 
@@ -105,7 +105,7 @@ let constructor_descrs ty_res cstrs priv =
 	  match ty_res_opt with
 	    None -> false
 	  | Some ty_res ->
-	      gadt_ty_res existentials ty_res 
+	      maybe_gadt_ty_res existentials ty_res 
 	in
 	let cstr =
           { cstr_res = ty_res;    
