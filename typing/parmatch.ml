@@ -622,7 +622,6 @@ let generalized_constructor x =
   match x with 
     ({pat_desc = Tpat_construct(c,_);pat_env=env},_) ->
       c.cstr_generalized
-
   | _ -> assert false
 
 let clean_env env = 
@@ -644,6 +643,7 @@ let full_match ignore_generalized closing env =  match env with
       List.length env = c.cstr_normal
     else
       List.length env = c.cstr_consts + c.cstr_nonconsts
+
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
       List.map
@@ -741,9 +741,7 @@ let complete_constrs p all_tags  =
       map_filter
         (fun tag ->
           let _,targs,ret_type_opt = get_constr tag p.pat_type p.pat_env in
-	  if c.cstr_generalized then 
-	    None
-	  else
+	  (* GAH: should figure out how to remove generalized constructors *)
 	    Some
               {c with
 	       cstr_res = c.cstr_res ;
