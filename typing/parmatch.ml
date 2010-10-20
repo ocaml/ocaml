@@ -1047,12 +1047,12 @@ let rec pressure_variants tdefs = function
                 try_non_omega rem && ok
             | [] -> true
           in
-          if full_match false (tdefs=None) constrs then (* GAH : ask garrigue about this, should we ignore generalized constructors?*)
+          if full_match true (tdefs=None) constrs then (* GAH : ask garrigue about this, should we ignore generalized constructors?*)
             try_non_omega constrs
           else if tdefs = None then
             pressure_variants None (filter_extra pss)
           else
-            let full = full_match false true constrs in
+            let full = full_match true true constrs in
             let ok =
               if full then try_non_omega constrs
               else try_non_omega (filter_all q0 (mark_partial pss))
@@ -1786,6 +1786,9 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 	match args with
 	| [] ->
 	    Some (make_pat (Ppat_construct (lid,None,false)),ty_res) 
+	| [x] ->
+	    let arg = make_pat Ppat_any in 
+	    Some (make_pat (Ppat_construct (lid,Some arg,false)),ty_res)
 	| _ ->
 	    let arg = make_pat (Ppat_tuple (List.map (fun _ -> make_pat Ppat_any) args)) in 
 (* GAH: what is the third argument of Ppat_construct? In parser.mly it is always false *)
@@ -1912,7 +1915,6 @@ let generate_all (env:Env.t) : pattern -> pattern list =
       in
       loop typed_ps
     in
-
     let filter p = 
       match pred p with
       | None -> None
