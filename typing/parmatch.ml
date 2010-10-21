@@ -1850,10 +1850,12 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 	    begin match decl.type_kind with
 	    | Type_generalized_variant constr_list ->
 		let lid_of_tyres = 
-		  match ty_res.desc with
+		  match (Ctype.repr ty_res).desc with (* GAH : ask garrigue, without this repr it will not work *)
 		  | Tconstr(p,_,_) ->
 		      Ctype.lid_of_path "" p
-		  | _ -> assert false
+		  | _ -> 
+		      Format.printf "%a@." Printtyp.raw_type_expr  ty_res; 
+		      assert false
 		in
 		let constrs = filter_map (make_constr ty_res lid_of_tyres lid) constr_list in 
 		let constrs = uniquefy type_equivalence constrs in 
