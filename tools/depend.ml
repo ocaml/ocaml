@@ -67,7 +67,7 @@ let add_opt add_fn bv = function
     None -> ()
   | Some x -> add_fn bv x
 
-let add_type_declaration bv td = (* GAH: no idea if this is correct *)
+let add_type_declaration bv td =
   List.iter
     (fun (ty1, ty2, _) -> add_type bv ty1; add_type bv ty2)
     td.ptype_cstrs;
