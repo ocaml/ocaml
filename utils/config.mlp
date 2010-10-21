@@ -50,7 +50,7 @@ let mkexe = "%%MKEXE%%"
 let mkmaindll = "%%MKMAINDLL%%"
 
 let exec_magic_number = "Caml1999X008"
-and cmi_magic_number = "Caml1999I012"
+and cmi_magic_number = "Caml1999I013"
 and cmo_magic_number = "Caml1999O007"
 and cma_magic_number = "Caml1999A008"
 and cmx_magic_number = "Caml1999Y011"

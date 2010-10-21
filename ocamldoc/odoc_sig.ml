@@ -219,25 +219,7 @@ module Analyser =
       match type_kind with
         Types.Type_abstract ->
           Odoc_type.Type_abstract
-
-      | Types.Type_variant l ->
-          let f (constructor_name, type_expr_list) =
-            let comment_opt =
-              try
-                match List.assoc constructor_name name_comment_list with
-                  None -> None
-                | Some d -> d.Odoc_types.i_desc
-              with Not_found -> None
-            in
-            {
-              vc_name = constructor_name ;
-              vc_args = List.map (Odoc_env.subst_type env) type_expr_list ;
-	      vc_ret = None ;
-              vc_text = comment_opt
-            }
-          in
-          Odoc_type.Type_variant (List.map f l)
-      | Types.Type_generalized_variant l ->
+      | Types.Type_generalized_variant l -> (* GAH: don't know if this is right *)
           let f (constructor_name, type_expr_list, ret_type) =
             let comment_opt =
               try

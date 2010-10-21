@@ -253,8 +253,6 @@ let generalize_decl decl =
   begin match decl.type_kind with
     Type_abstract ->
       ()
-  | Type_variant v ->
-      List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
   | Type_generalized_variant v ->
       List.iter (fun (_, tyl,ret_type_opt) -> List.iter Ctype.generalize tyl; may Ctype.generalize ret_type_opt) v
   | Type_record(r, rep) ->
@@ -323,12 +321,8 @@ let check_constraints env (_, sdecl) (_, decl) =
   in
   begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant l ->
-      let gen_variants lst = List.map (fun (a,b) -> (a,b,None)) lst in 
-      process_variants (gen_variants l)
   | Type_generalized_variant l ->
       process_variants l
-
   | Type_record (l, _) ->
       let rec find_pl = function
           Ptype_record pl -> pl
@@ -361,7 +355,7 @@ let check_constraints env (_, sdecl) (_, decl) =
 *)
 let check_abbrev env (_, sdecl) (id, decl) =
   match decl with
-    {type_kind = (Type_variant _ | Type_record _); type_manifest = Some ty} ->
+    {type_kind = (Type_generalized_variant _ | Type_record _); type_manifest = Some ty} ->
       begin match (Ctype.repr ty).desc with
         Tconstr(path, args, _) ->
           begin try
@@ -532,9 +526,6 @@ let whole_type decl =
   | Type_generalized_variant tll ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, tl,_) -> Btype.newgenty (Ttuple tl)) tll)) 
-  | Type_variant tll ->
-      Btype.newgenty
-        (Ttuple (List.map (fun (_, tl) -> Btype.newgenty (Ttuple tl)) tll))
   | Type_record (ftl, _) ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, _, ty) -> ty) ftl))
@@ -577,11 +568,6 @@ let compute_variance_decl env check decl (required, loc) =
         None -> assert false
       | Some ty -> compute_variance env tvl true false false ty
       end
-  | Type_variant tll ->
-      List.iter
-        (fun (_,tl) ->
-              List.iter (compute_variance env tvl true false false) tl)
-        tll
   | Type_generalized_variant tll ->
       List.iter
         (fun (_,tl,ret_type_opt) ->
@@ -1033,10 +1019,6 @@ let report_error ppf = function
           explain_unbound ppf ty tl (fun (_,tl,_) -> 
 	    Btype.newgenty (Ttuple tl)) 
             "case" (fun (lab,_,_) -> lab ^ " of ") 
-      | Type_variant tl, _ ->
-          explain_unbound ppf ty tl (fun (_,tl) -> 
-	    Btype.newgenty (Ttuple tl)) 
-            "case" (fun (lab,_) -> lab ^ " of ") 
       | Type_record (tl, _), _ ->
           explain_unbound ppf ty tl (fun (_,_,t) -> t)
             "field" (fun (lab,_,_) -> lab ^ ": ")

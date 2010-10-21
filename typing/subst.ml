@@ -166,11 +166,6 @@ let type_declaration s decl =
       type_kind =
         begin match decl.type_kind with
           Type_abstract -> Type_abstract
-        | Type_variant cstrs ->
-            Type_variant(
-              List.map (fun (n, args) -> 
-		(n, List.map (typexp s) args))
-              cstrs)
         | Type_generalized_variant cstrs ->
             Type_generalized_variant(
               List.map (fun (n, args,ret_type_opt) -> 

@@ -671,7 +671,7 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct2;
 
 and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) = 
-  match r_opt with (* GAH : probably wrong, ask garrigue *)
+  match r_opt with
   | None ->
       line i ppf "\"%s\" %a\n" s fmt_location loc;
       list (i+1) core_type ppf l;

@@ -667,11 +667,6 @@ let closed_type_decl decl =
 	    | None ->
 		List.iter closed_type tyl)
 	  v 
-    | Type_variant v ->
-        List.iter 
-	  (fun (_, tyl) -> 
-	    List.iter closed_type tyl)
-	  v 
     | Type_record(r, rep) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
     end;
@@ -1805,7 +1800,7 @@ let reify env t =
 	let t = create_fresh_constr true in 
 	link_type tvar t;
 	iter_type_expr (iterator visited) ty
-    | Tvariant r -> (* GAH: ask garrigue, what about [< `Foo of a & b] ? *)
+    | Tvariant r ->
 	if static_row r then 
 	  ()
 	else
@@ -1854,7 +1849,7 @@ let definitely_abstract env p =
     | None ->
 	match decl.type_kind with
 	| Type_abstract -> true
-	| (Type_variant _ | Type_record _ | Type_generalized_variant _) -> false
+	| (Type_record _ | Type_generalized_variant _) -> false
   in
   let in_current_module = 
     function
@@ -3938,12 +3933,6 @@ let nondep_type_decl env mid id is_covariant decl =
       try match decl.type_kind with
         Type_abstract ->
           Type_abstract
-      | Type_variant cstrs ->
-          Type_variant
-            (List.map
-               (fun (c, tl) -> 
-		 (c, List.map (nondep_type_rec env mid) tl)) 
-               cstrs)
       | Type_generalized_variant cstrs ->
           Type_generalized_variant
             (List.map

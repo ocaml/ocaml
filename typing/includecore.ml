@@ -202,9 +202,6 @@ let type_declarations env id decl1 decl2 =
   if not (private_flags decl1 decl2) then [Privacy] else
   let err = match (decl1.type_kind, decl2.type_kind) with
       (_, Type_abstract) -> []
-    | (Type_variant cstrs1, Type_variant cstrs2) ->
-	let gen_variants lst = List.map (fun (a,b) -> (a,b,None)) lst in 
-        compare_variants env decl1 decl2 1 (gen_variants cstrs1) (gen_variants cstrs2)
     | (Type_generalized_variant cstrs1, Type_generalized_variant cstrs2) ->
         compare_variants env decl1 decl2 1 cstrs1 cstrs2
     | (Type_record(labels1,rep1), Type_record(labels2,rep2)) ->
@@ -233,7 +230,7 @@ let type_declarations env id decl1 decl2 =
   in
   if err <> [] then err else
   if match decl2.type_kind with
-  | Type_record (_,_) | Type_generalized_variant _ | Type_variant _ -> decl2.type_private = Private
+  | Type_record (_,_) | Type_generalized_variant _  -> decl2.type_private = Private
   | Type_abstract ->
       match decl2.type_manifest with
       | None -> true

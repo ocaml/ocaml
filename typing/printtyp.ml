@@ -533,17 +533,11 @@ let rec tree_of_type_decl id decl =
   in
   begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant [] -> ()
   | Type_generalized_variant cstrs ->
       List.iter 
 	(fun (_, args,ret_type_opt) -> 
 	  List.iter mark_loops args;
 	  may mark_loops ret_type_opt)
-	cstrs
-  | Type_variant cstrs ->
-      List.iter 
-	(fun (_, args) -> 
-	  List.iter mark_loops args)
 	cstrs
   | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
@@ -559,7 +553,7 @@ let rec tree_of_type_decl id decl =
       match decl.type_kind with
         Type_abstract ->
           decl.type_manifest = None || decl.type_private = Private
-      | Type_variant _ | Type_generalized_variant _ | Type_record _ ->
+      | Type_generalized_variant _ | Type_record _ ->
           decl.type_private = Private
     in
     let vari =
@@ -587,9 +581,6 @@ let rec tree_of_type_decl id decl =
         | Some ty ->
             tree_of_typexp false ty, decl.type_private
         end
-    | Type_variant cstrs ->
-        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
-        decl.type_private
     | Type_generalized_variant cstrs ->
         tree_of_manifest (Otyp_sum (List.map tree_of_generalized_constructor cstrs)),
         decl.type_private

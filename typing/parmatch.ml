@@ -131,9 +131,6 @@ let rec get_type_descr ty tenv =
 
 let rec get_constr tag ty tenv =
   match get_type_descr ty tenv with
-  | {type_kind=Type_variant constr_list} ->
-      let gen_variants lst = List.map (fun (a,b) -> (a,b,None)) lst in 
-      Datarepr.find_constr_by_tag tag (gen_variants constr_list)
   | {type_kind=Type_generalized_variant constr_list} ->
       Datarepr.find_constr_by_tag tag constr_list
   | {type_manifest = Some _} ->
@@ -1755,9 +1752,9 @@ let generate_all (env:Env.t) : pattern -> pattern list =
     {ppat_desc = desc;
      ppat_loc = Location.none}
   in
-  let make_constr ty_res lid (s,args,ret) = 
+  let make_constr ty_res lid' (s,args,ret) = 
     let original_constructor_name = 
-      match lid with
+      match lid' with
 	| Longident.Lident s ->  s
 	| Longident.Ldot (x,y) -> y
 	| _ -> assert false	
@@ -1767,12 +1764,18 @@ let generate_all (env:Env.t) : pattern -> pattern list =
     else
       (* GAH: ask garrigue, this code seems suspicious *)
       let lid  =  (* GAH: ask garrigue, this piece of code seems useless, it's never an Ldot for some reason *)
-	match lid with
+	match lid' with
 	| Longident.Lident _ -> Longident.Lident s
 	| Longident.Ldot (x,y) -> Longident.Ldot (x,s)
 	| _ -> assert false
       in
-      let constr = Env.lookup_constructor lid env in 
+      let constr = 
+	match lid with
+	| Longident.Ldot (Longident.Lident "*predef*", s) -> 
+	    Env.lookup_constructor (Longident.Lident s) Env.initial
+	| _ -> 
+	    Env.lookup_constructor lid env 		
+      in 
       if not (constr.cstr_generalized) then 
 	None
       else
@@ -1837,9 +1840,10 @@ let generate_all (env:Env.t) : pattern -> pattern list =
       | Ppat_construct (lid,arg,status) -> 
 	  let constr = 
 	    match lid with
-	    | Longident.Ldot (Longident.Lident "*predef*", s) -> Env.lookup_constructor (Longident.Lident s) Env.initial
+	    | Longident.Ldot (Longident.Lident "*predef*", s) -> 
+		  Env.lookup_constructor (Longident.Lident s) Env.initial
 	    | _ -> 
-		Env.lookup_constructor lid env 		
+		  Env.lookup_constructor lid env 		
 	  in 
 	  let other_constructors = 
 	    let (_, ty_res) = Ctype.instance_constructor constr in

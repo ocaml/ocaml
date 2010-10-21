@@ -313,11 +313,6 @@ let unmark_type_decl decl =
   List.iter unmark_type decl.type_params;
   begin match decl.type_kind with
     Type_abstract -> ()
-  | Type_variant cstrs ->
-      List.iter 
-	(fun (c, tl) -> 
-	  List.iter unmark_type tl)
-	cstrs
   | Type_generalized_variant cstrs ->
       List.iter 
 	(fun (c, tl,ret_type_opt) -> 

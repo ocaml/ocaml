@@ -462,8 +462,6 @@ let constructors_of_type ty_path decl =
       ret
   in
   match decl.type_kind with
-  | Type_variant cstrs -> 
-      handle_variants (List.map (fun (a,b) -> (a,b,None)) cstrs)
   | Type_generalized_variant cstrs -> handle_variants cstrs
   | Type_record _ | Type_abstract -> []
 
@@ -475,7 +473,7 @@ let labels_of_type ty_path decl =
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private
-  | Type_variant _ | Type_generalized_variant _ | Type_abstract -> []
+  | Type_generalized_variant _ | Type_abstract -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)
