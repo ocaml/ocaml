@@ -315,7 +315,7 @@ let unmark_type_decl decl =
     Type_abstract -> ()
   | Type_generalized_variant cstrs ->
       List.iter 
-	(fun (c, tl,ret_type_opt) -> 
+	(fun (c, tl, ret_type_opt) -> 
 	  List.iter unmark_type tl;
 	  Misc.may unmark_type ret_type_opt)
 	cstrs

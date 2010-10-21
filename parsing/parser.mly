@@ -123,7 +123,7 @@ let rec mktailexp = function
 
 let rec mktailpat = function
     [] ->
-      ghpat(Ppat_construct(Lident "[]", None, false))
+      ghpat(Ppat_construct(Lident "[]", None, false,None))
   | p1 :: pl ->
       let pat_pl = mktailpat pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
@@ -131,7 +131,7 @@ let rec mktailpat = function
                loc_ghost = true}
       in
       let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
-      {ppat_desc = Ppat_construct(Lident "::", Some arg, false); ppat_loc = l}
+      {ppat_desc = Ppat_construct(Lident "::", Some arg, false,None); ppat_loc = l}
 
 let ghstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = {e.pexp_loc with loc_ghost = true} }
@@ -1211,15 +1211,15 @@ pattern:
   | pattern_comma_list  %prec below_COMMA
       { mkpat(Ppat_tuple(List.rev $1)) }
   | constr_longident pattern %prec prec_constr_appl
-      { mkpat(Ppat_construct($1, Some $2, false)) }
+      { mkpat(Ppat_construct($1, Some $2, false,None)) }
   | name_tag pattern %prec prec_constr_appl
       { mkpat(Ppat_variant($1, Some $2)) }
   | pattern COLONCOLON pattern
       { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$1;$3])),
-                             false)) }
+                             false, None)) }
   | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
       { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$5;$7])),
-                             false)) }
+                             false, None)) }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
   | LAZY simple_pattern
@@ -1235,7 +1235,7 @@ simple_pattern:
   | CHAR DOTDOT CHAR
       { mkrangepat $1 $3 }
   | constr_longident
-      { mkpat(Ppat_construct($1, None, false)) }
+      { mkpat(Ppat_construct($1, None, false, None)) }
   | name_tag
       { mkpat(Ppat_variant($1, None)) }
   | SHARP type_longident

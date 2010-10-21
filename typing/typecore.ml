@@ -502,9 +502,27 @@ let rec type_pat mode (env:Env.t ref) sp expected_ty  =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_construct(lid, sarg, explicit_arity) -> 
-      let constr = Typetexp.find_constructor !env loc lid in
-      let _ = 
+  |Ppat_construct(lid, sarg, explicit_arity, type_lid) -> 
+      let constr = 
+	match type_lid with
+	| None ->
+	    Typetexp.find_constructor !env loc lid 	    
+	| Some type_lid ->
+	    let constructor_name = Longident.last lid in 
+	    let constructors = 
+	      match type_lid with
+	      | Longident.Ldot (Longident.Lident "*predef*", s) -> 
+		  Env.lookup_constructors_by_type (Longident.Lident s) Env.initial
+	      | _ -> 
+		  Env.lookup_constructors_by_type type_lid !env 		
+	    in
+	    match List.filter (fun (n,_) -> n = constructor_name) constructors with
+	    | [] -> raise Not_found
+	    | [(_,c)] -> 
+		c
+	    | _ -> assert false
+      in
+      let () = 
 	let (_, ty_res) = instance_constructor constr in
 	match (repr ty_res).desc with
 	| Tconstr(p,args,m) ->
@@ -523,7 +541,8 @@ let rec type_pat mode (env:Env.t ref) sp expected_ty  =
               Location.prerr_warning sp.ppat_loc
                                      Warnings.Wildcard_arg_to_constant_constr;
             replicate_list sp constr.cstr_arity
-        | Some sp -> [sp] in
+        | Some sp -> [sp] 
+      in
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, Constructor_arity_mismatch(lid,
                                      constr.cstr_arity, List.length sargs)));
@@ -2124,12 +2143,12 @@ and type_expect ?in_function env sexp ty_expected =
             Ppat_construct
               (Longident.(Ldot (Lident "*predef*", "Some")),
                Some {ppat_loc = default_loc; ppat_desc = Ppat_var "*sth*"},
-               false)},
+               false, None)},
          {pexp_loc = default_loc;
           pexp_desc = Pexp_ident(Longident.Lident "*sth*")};
          {ppat_loc = default_loc;
           ppat_desc = Ppat_construct
-            (Longident.(Ldot (Lident "*predef*", "None")), None, false)},
+            (Longident.(Ldot (Lident "*predef*", "None")), None, false, None)},
          default;
       ] in
       let smatch = {

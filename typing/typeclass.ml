@@ -768,11 +768,11 @@ and class_expr cl_num val_env met_env scl =
         [{ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.(Ldot (Lident"*predef*", "Some")),
                          Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
-                         false)},
+                         false, None)},
          {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
          {ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.(Ldot (Lident"*predef*", "None")),
-                         None, false)},
+                         None, false, None)},
          default] in
       let smatch =
         {pexp_loc = loc; pexp_desc =

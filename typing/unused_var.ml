@@ -67,7 +67,7 @@ let rec get_vars ((vacc, asacc) as acc) p =
       get_vars (vacc, ((v, p.ppat_loc, ref false) :: asacc)) pp
   | Ppat_constant _ -> acc
   | Ppat_tuple pl -> List.fold_left get_vars acc pl
-  | Ppat_construct (_, po, _) -> get_vars_option acc po
+  | Ppat_construct (_, po, _, _) -> get_vars_option acc po
   | Ppat_variant (_, po) -> get_vars_option acc po
   | Ppat_record (ipl, cls) ->
       List.fold_left (fun a (_, p) -> get_vars a p) acc ipl

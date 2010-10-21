@@ -154,10 +154,9 @@ type type_declaration =
 
 and type_kind =
     Type_abstract
-(*  | Type_variant of (string * type_expr list) list*)
   | Type_record of
       (string * mutable_flag * type_expr) list * record_representation
-  | Type_generalized_variant of (string * type_expr list * type_expr option) list
+  | Type_generalized_variant of (string * type_expr list * type_expr option) list 
 
 type exception_declaration = type_expr list
 

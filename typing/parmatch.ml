@@ -1743,7 +1743,6 @@ let filter_map f =
   in
   loop 
 
-
 (* given a set of patterns P it will generate 
     { q : exists p in P and branches b in p such that q = P[C/b] 
   where C is a list of generalized constructors} *)
@@ -1752,7 +1751,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
     {ppat_desc = desc;
      ppat_loc = Location.none}
   in
-  let make_constr ty_res lid' (s,args,ret) = 
+  let make_constr ty_res ty_res_lid lid' (s,args,ret) = 
     let original_constructor_name = 
       match lid' with
 	| Longident.Lident s ->  s
@@ -1786,14 +1785,14 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 	in
 	match args with
 	| [] ->
-	    Some (make_pat (Ppat_construct (lid,None,false)),ty_res) 
+	    Some (make_pat (Ppat_construct (lid,None,false,Some ty_res_lid)),ty_res) 
 	| [x] ->
 	    let arg = make_pat Ppat_any in 
-	    Some (make_pat (Ppat_construct (lid,Some arg,false)),ty_res)
+	    Some (make_pat (Ppat_construct (lid,Some arg,false,Some ty_res_lid)),ty_res)
 	| _ ->
 	    let arg = make_pat (Ppat_tuple (List.map (fun _ -> make_pat Ppat_any) args)) in 
 (* GAH: what is the third argument of Ppat_construct? In parser.mly it is always false *)
-	    Some (make_pat (Ppat_construct (lid,Some arg,false)),ty_res)
+	    Some (make_pat (Ppat_construct (lid,Some arg,false,Some ty_res_lid)),ty_res)
   in
   let rec select : 'a list list -> 'a list list = 
     function
@@ -1833,11 +1832,11 @@ let generate_all (env:Env.t) : pattern -> pattern list =
   let type_equivalence (_,t) (_,t') = 
     Ctype.equal Env.empty true [t] [t']  
   in
-  let rec loop (p:pattern) : pattern list = 
+  let rec loop p = 
     match p.ppat_desc with
       | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ ->
 	  [make_pat Ppat_any]
-      | Ppat_construct (lid,arg,status) -> 
+      | Ppat_construct (lid,arg,status,_) -> 
 	  let constr = 
 	    match lid with
 	    | Longident.Ldot (Longident.Lident "*predef*", s) -> 
@@ -1850,18 +1849,24 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 	    let decl = get_type_descr ty_res env in 
 	    begin match decl.type_kind with
 	    | Type_generalized_variant constr_list ->
-		let constrs = filter_map (make_constr ty_res lid) constr_list in 
+		let lid_of_tyres = 
+		  match ty_res.desc with
+		  | Tconstr(p,_,_) ->
+		      Ctype.lid_of_path "" p
+		  | _ -> assert false
+		in
+		let constrs = filter_map (make_constr ty_res lid_of_tyres lid) constr_list in 
 		let constrs = uniquefy type_equivalence constrs in 
 		List.map fst constrs
 	    | _ -> [] end
 	  in  
 	  begin match arg with
-	  | None -> make_pat (Ppat_construct(lid,None,status)) :: other_constructors
+	  | None -> make_pat (Ppat_construct(lid, None, status, None)) :: other_constructors
 	  | Some p ->
 	      let ps = loop p in 
 	      let current_constructors = 
 		List.map 
-		  (fun p -> make_pat (Ppat_construct(lid,Some p,status))) ps 
+		  (fun p -> make_pat (Ppat_construct(lid, Some p, status, None))) ps 
 	      in
 	      current_constructors @ other_constructors end
       | Ppat_array pats -> 
@@ -1908,7 +1913,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 	  | x -> x
 
   let check_partial loc env pred  ps typed_ps = 
-    let qs = generate_all ps env   in 
+    let qs = generate_all ps env in 
     let rec comparable q = 
       let rec loop = 
 	function

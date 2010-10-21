@@ -182,7 +182,7 @@ and pattern i ppf x =
   | Ppat_tuple (l) ->
       line i ppf "Ppat_tuple\n";
       list i pattern ppf l;
-  | Ppat_construct (li, po, b) ->
+  | Ppat_construct (li, po, b, _) ->
       line i ppf "Ppat_construct %a\n" fmt_longident li;
       option i pattern ppf po;
       bool i ppf b;

@@ -247,4 +247,4 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
 
 val get_current_level: unit -> int
-
+val lid_of_path: string -> Path.t -> Longident.t

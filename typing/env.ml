@@ -21,8 +21,6 @@ open Longident
 open Path
 open Types
 
-let store_type_called = ref 0
-
 type error =
     Not_an_interface of string
   | Corrupted_interface of string
@@ -47,6 +45,7 @@ type t = {
   values: (Path.t * value_description) Ident.tbl;
   annotations: (Path.t * Annot.ident) Ident.tbl;
   constrs: constructor_description Ident.tbl;
+  constrs_by_type: (string * constructor_description) list Ident.tbl;
   labels: label_description Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
   modules: (Path.t * module_type) Ident.tbl;
@@ -67,6 +66,7 @@ and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
   mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
+  mutable comp_constrs_by_type: (string, ((string * constructor_description) list * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
   mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
@@ -92,7 +92,7 @@ let empty = {
   labels = Ident.empty; types = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
-  cltypes = Ident.empty;
+  cltypes = Ident.empty; constrs_by_type = Ident.empty ;
   summary = Env_empty }
 
 let diff_keys is_local tbl1 tbl2 =
@@ -116,6 +116,7 @@ let is_local_exn = function
 let diff env1 env2 =
   diff_keys is_local env1.values env2.values @
   diff_keys is_local_exn env1.constrs env2.constrs @
+(*  diff_keys is_local env1.constrs_by_type env2.constrs_by_type @ (* GAH: not sure this is correct *) *)
   diff_keys is_local env1.modules env2.modules @
   diff_keys is_local env1.classes env2.classes
 
@@ -429,6 +430,8 @@ let lookup_annot id e =
   lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
 and lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
+and lookup_constructors_by_type =
+  lookup_simple (fun env -> env.constrs_by_type) (fun sc -> sc.comp_constrs_by_type)
 and lookup_label =
   lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
 and lookup_type =
@@ -455,11 +458,9 @@ let rec scrape_modtype mty env =
 (* Compute constructor descriptions *)
 let constructors_of_type ty_path decl =
   let handle_variants cstrs = 
-      let ret = Datarepr.constructor_descrs
-        (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        cstrs decl.type_private
-      in
-      ret
+    Datarepr.constructor_descrs
+      (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
+      cstrs decl.type_private
   in
   match decl.type_kind with
   | Type_generalized_variant cstrs -> handle_variants cstrs
@@ -521,7 +522,7 @@ let rec components_of_module env sub path mty =
     Tmty_signature sg ->
       let c =
         { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
-          comp_constrs = Tbl.empty;
+          comp_constrs = Tbl.empty; comp_constrs_by_type = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
@@ -547,10 +548,15 @@ let rec components_of_module env sub path mty =
             let decl' = Subst.type_declaration sub decl in
             c.comp_types <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_types;
+	    let constructors = constructors_of_type path decl' in
+	    let constrs_by_type = 
+	      Tbl.add (Ident.name id) (constructors,nopos) c.comp_constrs_by_type
+	    in
+	    c.comp_constrs_by_type <- constrs_by_type;
             List.iter
               (fun (name, descr) ->
                 c.comp_constrs <- Tbl.add name (descr, nopos) c.comp_constrs)
-              (constructors_of_type path decl');
+              constructors;
             List.iter
               (fun (name, descr) ->
                 c.comp_labels <- Tbl.add name (descr, nopos) c.comp_labels)
@@ -601,7 +607,7 @@ let rec components_of_module env sub path mty =
   | Tmty_ident p ->
         Structure_comps {
           comp_values = Tbl.empty; comp_annotations = Tbl.empty;
-          comp_constrs = Tbl.empty;
+          comp_constrs = Tbl.empty; comp_constrs_by_type = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
@@ -621,13 +627,15 @@ and store_annot id path annot env =
   else env
 
 and store_type id path info env =
+  let constructors = constructors_of_type path info in
   { env with
     constrs =
       List.fold_right
         (fun (name, descr) constrs ->
           Ident.add (Ident.create name) descr constrs)
-        (constructors_of_type path info)
+        constructors 
         env.constrs;
+    constrs_by_type = Ident.add id constructors env.constrs_by_type;
     labels =
       List.fold_right
         (fun (name, descr) labels ->

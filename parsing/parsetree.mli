@@ -71,7 +71,7 @@ and pattern_desc =
   | Ppat_alias of pattern * string
   | Ppat_constant of constant
   | Ppat_tuple of pattern list
-  | Ppat_construct of Longident.t * pattern option * bool
+  | Ppat_construct of Longident.t * pattern option * bool * Longident.t option
   | Ppat_variant of label * pattern option
   | Ppat_record of (Longident.t * pattern) list * closed_flag
   | Ppat_array of pattern list
