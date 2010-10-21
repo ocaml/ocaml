@@ -686,7 +686,7 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc otherlibraries ocamlbuild-mixed-boot ocamlbuild.byte
+camlp4out: ocamlc ocamlbuild.byte
 	./build/camlp4-byte-only.sh
 
 camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
@@ -694,19 +694,20 @@ camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot ocamlbuild.native
 
 # Ocamlbuild
 
-ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-mixed-boot
+ocamlbuild.byte: ocamlc ocamlbuild-mixed-boot
 	./build/ocamlbuild-byte-only.sh
 
-ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
+ocamlbuild.native: ocamlopt ocamlbuild-mixed-boot
 	./build/ocamlbuild-native-only.sh
-ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-mixed-boot
+ocamlbuildlib.native: ocamlopt ocamlbuild-mixed-boot
 	./build/ocamlbuildlib-native-only.sh
 
-ocamlbuild-mixed-boot: ocamlc otherlibraries
+ocamlbuild-mixed-boot: ocamlc
 	./build/mixed-boot.sh
+	touch ocamlbuild-mixed-boot
 
 partialclean::
-	rm -rf _build
+	rm -rf _build ocamlbuild-mixed-boot
 
 # Check that the stack limit is reasonable.
 

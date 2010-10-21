@@ -116,7 +116,8 @@
     | PaTyc of loc and patt and ctyp (* (p : t) *)
     | PaTyp of loc and ident (* #i *)
     | PaVrn of loc and string (* `s *)
-    | PaLaz of loc and patt (* lazy p *) ]
+    | PaLaz of loc and patt (* lazy p *)
+    | PaMod of loc and string (* (module M) *) ]
   and expr =
     [ ExNil of loc
     | ExId  of loc and ident (* i *)

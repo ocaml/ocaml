@@ -108,12 +108,12 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
       | Ast.PaLab _ _ p -> is_irrefut_patt p
       | Ast.PaLaz _ p -> is_irrefut_patt p
       | Ast.PaId _ _ -> False
-      | (* here one need to know the arity of constructors *)
-          Ast.PaVrn _ _ | Ast.PaStr _ _ | Ast.PaRng _ _ _ | Ast.PaFlo _ _ |
-            Ast.PaNativeInt _ _ | Ast.PaInt64 _ _ | Ast.PaInt32 _ _ |
-            Ast.PaInt _ _ | Ast.PaChr _ _ | Ast.PaTyp _ _ | Ast.PaArr _ _ |
-            Ast.PaAnt _ _
-          -> False ];
+      | (* here one need to know the arity of constructors *) Ast.PaMod _ _
+          -> True
+      | Ast.PaVrn _ _ | Ast.PaStr _ _ | Ast.PaRng _ _ _ | Ast.PaFlo _ _ |
+          Ast.PaNativeInt _ _ | Ast.PaInt64 _ _ | Ast.PaInt32 _ _ |
+          Ast.PaInt _ _ | Ast.PaChr _ _ | Ast.PaTyp _ _ | Ast.PaArr _ _ |
+          Ast.PaAnt _ _ -> False ];
     value rec is_constructor =
       fun
       [ Ast.IdAcc _ _ i -> is_constructor i
@@ -1902,7 +1902,15 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdUid _loc "OvOverride")) ]
                 and meta_patt _loc =
                   fun
-                  [ Ast.PaLaz x0 x1 ->
+                  [ Ast.PaMod x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaMod")))
+                           (meta_loc _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaLaz x0 x1 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
                            (Ast.ExId _loc
@@ -3970,7 +3978,15 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                            (Ast.IdUid _loc "OvOverride")) ]
                 and meta_patt _loc =
                   fun
-                  [ Ast.PaLaz x0 x1 ->
+                  [ Ast.PaMod x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaMod")))
+                           (meta_loc _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaLaz x0 x1 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
                            (Ast.PaId _loc
@@ -4872,7 +4888,10 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in PaVrn _x _x_i1
           | PaLaz _x _x_i1 ->
-              let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaLaz _x _x_i1 ];
+              let _x = o#loc _x in let _x_i1 = o#patt _x_i1 in PaLaz _x _x_i1
+          | PaMod _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#string _x_i1 in PaMod _x _x_i1 ];
         method override_flag : override_flag -> override_flag =
           fun
           [ OvOverride -> OvOverride
@@ -5653,7 +5672,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let o = o#patt _x_i1 in let o = o#ctyp _x_i2 in o
           | PaTyp _x _x_i1 -> let o = o#loc _x in let o = o#ident _x_i1 in o
           | PaVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
-          | PaLaz _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o ];
+          | PaLaz _x _x_i1 -> let o = o#loc _x in let o = o#patt _x_i1 in o
+          | PaMod _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method override_flag : override_flag -> 'self_type =
           fun
           [ OvOverride -> o

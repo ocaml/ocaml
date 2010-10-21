@@ -653,6 +653,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:patt< $id:i$ >> -> o#var_ident f i
     | <:patt< $anti:s$ >> -> o#anti f s
     | <:patt< _ >> -> pp f "_"
+    | <:patt< ( module $m$ ) >> -> pp f "(module %s)" m
     | <:patt< ( $tup:p$ ) >> -> pp f "@[<1>(%a)@]" o#patt3 p
     | <:patt< { $p$ } >> -> pp f "@[<hv2>{@ %a@]@ }" o#patt p
     | <:patt< $str:s$ >> -> pp f "\"%s\"" s

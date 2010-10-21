@@ -1647,7 +1647,7 @@ module Analyser =
             m_kind = Module_struct elements2 ;
           }
 
-      | (Parsetree.Pmod_unpack (p_exp, pkg_type),
+      | (Parsetree.Pmod_unpack (p_exp),
          Typedtree.Tmod_unpack (t_exp, tt_modtype)) ->
           print_DEBUG ("Odoc_ast: case Parsetree.Pmod_unpack + Typedtree.Tmod_unpack "^module_name);
           let code =
@@ -1658,7 +1658,13 @@ module Analyser =
             let s = get_string_of_file exp_loc_end loc_end in
             Printf.sprintf "(val ...%s" s
           in
-          let name = Odoc_env.full_module_type_name env (Name.from_longident (fst pkg_type)) in
+          (* let name = Odoc_env.full_module_type_name env (Name.from_path (fst pkg_type)) in *)
+          let name =
+            match tt_modtype with
+            | Tmty_ident p ->
+                Odoc_env.full_module_type_name env (Name.from_path p)
+            | _ -> ""
+          in
           let alias = { mta_name = name ; mta_module = None } in
           { m_base with
             m_type = Odoc_env.subst_module_type env tt_modtype ;

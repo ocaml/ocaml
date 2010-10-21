@@ -3668,6 +3668,29 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (p : 'patt) _ (_loc : Gram.Loc.t) ->
                                 (p : 'patt))));
+                         ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (package_type : 'package_type Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (pt : 'package_type) _ (m : 'a_UIDENT) _
+                                _ (_loc : Gram.Loc.t) ->
+                                (Ast.PaTyc (_loc, (Ast.PaMod (_loc, m)),
+                                   (Ast.TyPkg (_loc, pt))) :
+                                  'patt))));
+                         ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (m : 'a_UIDENT) _ _ (_loc : Gram.Loc.t)
+                                -> (Ast.PaMod (_loc, m) : 'patt))));
                          ([ Gram.Skeyword "("; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
@@ -4116,6 +4139,29 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun _ (p : 'ipatt) _ (_loc : Gram.Loc.t) ->
                                 (p : 'ipatt))));
+                         ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (package_type : 'package_type Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (pt : 'package_type) _ (m : 'a_UIDENT) _
+                                _ (_loc : Gram.Loc.t) ->
+                                (Ast.PaTyc (_loc, (Ast.PaMod (_loc, m)),
+                                   (Ast.TyPkg (_loc, pt))) :
+                                  'ipatt))));
+                         ([ Gram.Skeyword "("; Gram.Skeyword "module";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (m : 'a_UIDENT) _ _ (_loc : Gram.Loc.t)
+                                -> (Ast.PaMod (_loc, m) : 'ipatt))));
                          ([ Gram.Skeyword "("; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Gram.Loc.t) ->
@@ -15204,8 +15250,7 @@ module B =
               load [ "Camlp4ExceptionTracer" ]
           | (("Filters" | ""), ("prof" | "camlp4profiler.cmo")) ->
               load [ "Camlp4Profiler" ]
-          | (* map is now an alias of fold since fold handles map too *)
-              (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
+          | (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
               load [ "Camlp4FoldGenerator" ]
           | (("Filters" | ""), ("fold" | "camlp4foldgenerator.cmo")) ->
               load [ "Camlp4FoldGenerator" ]
@@ -15233,6 +15278,7 @@ module B =
               in real_load (try find_in_path y with | Not_found -> x));
          !rcall_callback ())
       
+    (* map is now an alias of fold since fold handles map too *)
     let print_warning = eprintf "%a:\n%s@." Loc.print
       
     let rec parse_file dyn_loader name pa getdir =
@@ -15308,17 +15354,17 @@ Options:\n\
 <file>.%s Load this module inside the Camlp4 core@."
          (if DynLoader.is_native then "cmxs     " else "(cmo|cma)");
        Options.print_usage_list ini_sl;
-       (* loop (ini_sl @ ext_sl) where rec loop =
-      fun
-      [ [(y, _, _) :: _] when y = "-help" -> ()
-      | [_ :: sl] -> loop sl
-      | [] -> eprintf "  -help         Display this list of options.@." ];    *)
        if ext_sl <> []
        then
          (eprintf "Options added by loaded object files:@.";
           Options.print_usage_list ext_sl)
        else ())
       
+    (* loop (ini_sl @ ext_sl) where rec loop =
+      fun
+      [ [(y, _, _) :: _] when y = "-help" -> ()
+      | [_ :: sl] -> loop sl
+      | [] -> eprintf "  -help         Display this list of options.@." ];    *)
     let warn_noassert () =
       eprintf
         "\

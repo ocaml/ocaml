@@ -538,6 +538,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | PaTyp loc i -> mkpat loc (Ppat_type (long_type_ident i))
     | PaVrn loc s -> mkpat loc (Ppat_variant s None)
     | PaLaz loc p -> mkpat loc (Ppat_lazy (patt p))
+    | PaMod loc m -> mkpat loc (Ppat_unpack m)
     | PaEq _ _ _ | PaSem _ _ _ | PaCom _ _ _ | PaNil _ as p ->
         error (loc_of_patt p) "invalid pattern" ]
   and mklabpat =
@@ -776,9 +777,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:expr@loc< let open $i$ in $e$ >> ->
         mkexp loc (Pexp_open (long_uident i) (expr e))
     | <:expr@loc< (module $me$ : $pt$) >> ->
-        mkexp loc (Pexp_pack (module_expr me) (package_type pt))
-    | <:expr@loc< (module $_$) >> ->
-        error loc "(module_expr : package_type) expected here"
+        mkexp loc (Pexp_constraint (mkexp loc (Pexp_pack (module_expr me)),
+                    Some (mktyp loc (Ptyp_package (package_type pt))), None))
+    | <:expr@loc< (module $me$) >> ->
+        mkexp loc (Pexp_pack (module_expr me))
     | ExFUN loc i e ->
         mkexp loc (Pexp_newtype i (expr e))
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
@@ -918,9 +920,12 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:module_expr@loc< ($me$ : $mt$) >> ->
         mkmod loc (Pmod_constraint (module_expr me) (module_type mt))
     | <:module_expr@loc< (value $e$ : $pt$) >> ->
-        mkmod loc (Pmod_unpack (expr e) (package_type pt))
-    | <:module_expr@loc< (value $_$) >> ->
-        error loc "(value expr) not supported yet"
+        mkmod loc (Pmod_unpack (
+                   mkexp loc (Pexp_constraint (expr e,
+                              Some (mktyp loc (Ptyp_package (package_type pt))),
+                              None))))
+    | <:module_expr@loc< (value $e$) >> ->
+        mkmod loc (Pmod_unpack (expr e))
     | <:module_expr@loc< $anti:_$ >> -> error loc "antiquotation in module_expr" ]
   and str_item s l =
     match s with

@@ -1927,9 +1927,9 @@ let rec filter_arrow env t l =
   let t = expand_head_unif env t in
   match t.desc with
     Tvar ->
-      let t1 = newvar () and t2 = newvar () in
-      let t' = newty (Tarrow (l, t1, t2, Cok)) in
-      update_level env t.level t';
+      let lv = t.level in
+      let t1 = newvar2 lv and t2 = newvar2 lv in
+      let t' = newty2 lv (Tarrow (l, t1, t2, Cok)) in
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _)
@@ -2763,16 +2763,16 @@ let rec filter_visited = function
 let memq_warn t visited =
   if List.memq t visited then (warn := true; true) else false
 
-let rec lid_of_path sharp = function
+let rec lid_of_path ?(sharp="") = function
     Path.Pident id ->
       Longident.Lident (sharp ^ Ident.name id)
   | Path.Pdot (p1, s, _) ->
-      Longident.Ldot (lid_of_path "" p1, sharp ^ s)
+      Longident.Ldot (lid_of_path p1, sharp ^ s)
   | Path.Papply (p1, p2) ->
-      Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
+      Longident.Lapply (lid_of_path ~sharp p1, lid_of_path p2)
 
 let find_cltype_for_path env p =
-  let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
+  let path, cl_abbr = Env.lookup_type (lid_of_path ~sharp:"#" p) env in
   match cl_abbr.type_manifest with
     Some ty ->
       begin match (repr ty).desc with
@@ -2977,6 +2977,23 @@ let private_abbrev env path =
     decl.type_private = Private && decl.type_manifest <> None
   with Not_found -> false
 
+(* check list inclusion, assuming lists are ordered *)
+let rec included nl1 nl2 =
+  match nl1, nl2 with
+    (a::nl1', b::nl2') ->
+      if a = b then included nl1' nl2' else
+      a > b && included nl1 nl2'
+  | ([], _) -> true
+  | (_, []) -> false
+
+let rec extract_assoc nl1 nl2 tl2 =
+  match (nl1, nl2, tl2) with
+    (a::nl1', b::nl2, t::tl2) ->
+      if a = b then t :: extract_assoc nl1' nl2 tl2
+      else extract_assoc nl1 nl2 tl2
+  | ([], _, _) -> []
+  | _ -> assert false
+
 let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
@@ -3047,6 +3064,11 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Unify _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
+    | (Tpackage (p1, nl1, tl1), Tpackage (p2, nl2, tl2))
+      when Path.same p1 p2 && included nl2 nl1 ->
+        List.map2 (fun t1 t2 -> (trace, t1, t2, !univar_pairs))
+          (extract_assoc nl2 nl1 tl1) tl2
+        @ cstrs
     | (_, _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
   end
