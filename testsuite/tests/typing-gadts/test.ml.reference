@@ -1,0 +1,12 @@
+File "test.ml", line 52, characters 6-27:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+C1 _
+File "test.ml", line 65, characters 6-63:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(Foo _, Bar _)
+File "test.ml", line 88, characters 21-22:
+Error: This expression has type &x36 t but an expression was expected of type
+         &x36 t
+       The type constructor &x36 would escape its scope
