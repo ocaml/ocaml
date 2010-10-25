@@ -95,6 +95,8 @@ exception Cannot_apply
 
 exception Recursive_abbrev
 
+exception Unification_recursive_abbrev of (type_expr * type_expr) list
+
 (**** Type level management ****)
 
 let current_level = ref 0
@@ -1939,6 +1941,7 @@ and unify3 mode env t1 t1' t2 t2' =
         unify_list mode env tl1 tl2
     | (Tconstr ((Path.Pident p) as path,[],_)),_  when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t2 ;
+	correct_abbrev !env (Path.Pident p) [] t2;
 	begin_def ();
 	let t2 = duplicate_type t2 in
 	end_def ();
@@ -1947,10 +1950,12 @@ and unify3 mode env t1 t1' t2 t2' =
         env := Env.add_type p decl !env 
     | _,(Tconstr ((Path.Pident p) as path,[],_)) when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t1 ;
+	correct_abbrev !env (Path.Pident p) [] t2;
 	begin_def ();
 	let t1 = duplicate_type t1 in
 	end_def ();
 	generalize t1 ;
+
 	let decl = new_declaration true (Some t1) in
         env := Env.add_type p decl !env 
     | Tconstr (p1,_,_), Tconstr (p2,_,_) when mode = Pattern ->
@@ -2217,8 +2222,11 @@ let unify mode env ty1 ty2 =
   try
     TypePairs.clear unify_eq_set;
     unify mode env ty1 ty2
-  with Unify trace ->
-    raise (Unify (expand_trace !env trace))
+  with 
+  | Unify trace ->
+      raise (Unify (expand_trace !env trace))
+  | Recursive_abbrev ->
+      raise (Unification_recursive_abbrev (expand_trace !env [(ty1,ty2)]))
 
 
 let unify_gadt plev (env:Env.t ref) ty1 ty2 =
@@ -3559,6 +3567,7 @@ let cyclic_abbrev env id ty =
     let ty = repr ty in
     match ty.desc with
       Tconstr (p, tl, abbrev) ->
+	print_endline (Path.name p);
         p = Path.Pident id || List.memq ty seen ||
         begin try
           check_cycle (ty :: seen) (expand_abbrev_opt env ty)
@@ -3567,8 +3576,11 @@ let cyclic_abbrev env id ty =
         | Unify _ -> true
         end
     | _ ->
+	print_endline "false";
         false
-  in check_cycle [] ty
+  in
+  print_endline "calling cyclic_abbrev";
+  check_cycle [] ty
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)

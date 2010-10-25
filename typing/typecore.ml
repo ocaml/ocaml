@@ -57,6 +57,7 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Recursive_local_constraint of (type_expr * type_expr) list
 
 exception Error of Location.t * error
 
@@ -177,6 +178,8 @@ let unify_pat_types_gadt loc env ty ty' =
       raise(Error(loc, Pattern_type_clash(trace)))
   | Tags(l1,l2) ->
       raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
+  | Unification_recursive_abbrev trace ->
+      raise(Error(loc, Recursive_local_constraint trace))
 
 
 (* Creating new conjunctive types is not allowed when typing patterns *)
@@ -2625,3 +2628,9 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+  | Recursive_local_constraint trace ->
+      report_unification_error ppf trace
+        (function ppf ->
+           fprintf ppf "Recursive local constraint when unifying")
+        (function ppf ->
+           fprintf ppf "with")      

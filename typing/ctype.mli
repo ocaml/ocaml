@@ -24,6 +24,7 @@ exception Subtype of
 exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev
+exception Unification_recursive_abbrev of (type_expr * type_expr) list
 
 val init_def: int -> unit
         (* Set the initial variable level *)

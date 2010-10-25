@@ -96,7 +96,7 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
-
+  | Recursive_local_constraint of (type_expr * type_expr) list
 exception Error of Location.t * error
 
 val report_error: formatter -> error -> unit
