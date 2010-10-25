@@ -1289,9 +1289,9 @@ let generic_abbrev env path =
 exception Occur
 
 (* The marks are already used by [expand_abbrev]... *)
-let visited = ref []
+(*let visited = ref []*)
 
-let rec non_recursive_abbrev env ty0 ty =
+let rec non_recursive_abbrev visited env ty0 ty =
   let ty = repr ty in
   if ty == repr ty0 then raise Recursive_abbrev;
   if not (List.memq ty !visited) then begin
@@ -1299,32 +1299,61 @@ let rec non_recursive_abbrev env ty0 ty =
     match ty.desc with
       Tconstr(p, args, abbrev) ->
         begin try
-          non_recursive_abbrev env ty0 (try_expand_once_opt env ty)
+          non_recursive_abbrev visited env ty0 (try_expand_once_opt env ty)
         with Cannot_expand ->
           if !Clflags.recursive_types then () else
-          iter_type_expr (non_recursive_abbrev env ty0) ty
+          iter_type_expr (non_recursive_abbrev visited env ty0) ty
         end
     | Tobject _ | Tvariant _ ->
         ()
     | _ ->
         if !Clflags.recursive_types then () else
-        iter_type_expr (non_recursive_abbrev env ty0) ty
+        iter_type_expr (non_recursive_abbrev visited env ty0) ty
   end
+
+let non_recursive_abbrev = non_recursive_abbrev (ref [])
+
+
+(* GAH: same as above, but for local constraints
+    ask garrigue about this *)
+let rec local_non_recursive_abbrev visited env p ty =
+  let ty = repr ty in
+  if not (List.memq ty !visited) then begin
+    visited := ty :: !visited;
+    match ty.desc with
+      Tconstr(p', args, abbrev) ->
+	if Path.same p p' then raise Recursive_abbrev;
+        begin try
+          local_non_recursive_abbrev visited env p (try_expand_once_opt env ty)
+        with Cannot_expand ->
+          if !Clflags.recursive_types then () else
+          iter_type_expr (local_non_recursive_abbrev visited env p) ty
+        end
+    | Tobject _ | Tvariant _ ->
+        ()
+    | _ ->
+        if !Clflags.recursive_types then () else
+        iter_type_expr (local_non_recursive_abbrev visited env p) ty
+  end
+
+let local_non_recursive_abbrev = local_non_recursive_abbrev (ref [])
+
+
 
 let correct_abbrev env path params ty =
   check_abbrev_env env;
   let ty0 = newgenvar () in
-  visited := [];
+(*  visited := [];*)
   let abbrev = Mcons (Public, path, ty0, ty0, Mnil) in
   simple_abbrevs := abbrev;
   try
     non_recursive_abbrev env ty0
       (subst env generic_level Public (ref abbrev) None [] [] ty);
     simple_abbrevs := Mnil;
-    visited := []
+(*    visited := []*)
   with exn ->
     simple_abbrevs := Mnil;
-    visited := [];
+(*    visited := [];*)
     raise exn
 
 let rec occur_rec env visited ty0 ty =
@@ -1941,7 +1970,7 @@ and unify3 mode env t1 t1' t2 t2' =
         unify_list mode env tl1 tl2
     | (Tconstr ((Path.Pident p) as path,[],_)),_  when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t2 ;
-	correct_abbrev !env (Path.Pident p) [] t2;
+	local_non_recursive_abbrev !env (Path.Pident p) t2;
 	begin_def ();
 	let t2 = duplicate_type t2 in
 	end_def ();
@@ -1950,7 +1979,7 @@ and unify3 mode env t1 t1' t2 t2' =
         env := Env.add_type p decl !env 
     | _,(Tconstr ((Path.Pident p) as path,[],_)) when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t1 ;
-	correct_abbrev !env (Path.Pident p) [] t2;
+	local_non_recursive_abbrev !env (Path.Pident p) t1;
 	begin_def ();
 	let t1 = duplicate_type t1 in
 	end_def ();
@@ -3567,7 +3596,6 @@ let cyclic_abbrev env id ty =
     let ty = repr ty in
     match ty.desc with
       Tconstr (p, tl, abbrev) ->
-	print_endline (Path.name p);
         p = Path.Pident id || List.memq ty seen ||
         begin try
           check_cycle (ty :: seen) (expand_abbrev_opt env ty)
@@ -3576,10 +3604,8 @@ let cyclic_abbrev env id ty =
         | Unify _ -> true
         end
     | _ ->
-	print_endline "false";
         false
   in
-  print_endline "calling cyclic_abbrev";
   check_cycle [] ty
 
 (* Normalize a type before printing, saving... *)
