@@ -75,6 +75,7 @@ val set_object_name:
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
 val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
+val lid_of_path: ?sharp:string -> Path.t -> Longident.t
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
 val merge_row_fields:
@@ -248,4 +249,3 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
 
 val get_current_level: unit -> int
-val lid_of_path: string -> Path.t -> Longident.t

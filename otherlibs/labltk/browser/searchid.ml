@@ -406,7 +406,7 @@ open Parsetree
 
 let rec bound_variables pat =
   match pat.ppat_desc with
-    Ppat_any | Ppat_constant _ | Ppat_type _ -> []
+    Ppat_any | Ppat_constant _ | Ppat_type _ | Ppat_unpack _ -> []
   | Ppat_var s -> [s]
   | Ppat_alias (pat,s) -> s :: bound_variables pat
   | Ppat_tuple l -> List2.flat_map l ~f:bound_variables

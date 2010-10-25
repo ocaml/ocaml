@@ -39,6 +39,8 @@ type error =
   | Interface_not_compiled of string
   | Not_allowed_in_functor_body
   | With_need_typeconstr
+  | Not_a_packed_module of type_expr
+  | Incomplete_packed_module of type_expr
 
 exception Error of Location.t * error
 
@@ -632,6 +634,40 @@ let check_recmodule_inclusion env bindings =
     end
   in check_incl true (List.length bindings) env Subst.identity
 
+(* Helper for unpack *)
+
+let modtype_of_package env loc p nl tl =
+  try match Env.find_modtype p env with
+  | Tmodtype_manifest mty when nl <> [] ->
+      let sg = extract_sig env loc mty in
+      let ntl = List.combine nl tl in
+      let sg' =
+        List.map
+          (function
+              Tsig_type (id, ({type_params=[]} as td), rs) 
+              when List.mem (Ident.name id) nl ->
+                let ty = List.assoc (Ident.name id) ntl in
+                Tsig_type (id, {td with type_manifest = Some ty}, rs)
+            | item -> item)
+          sg in
+      Tmty_signature sg'
+  | _ ->
+      if nl = [] then Tmty_ident p
+      else raise(Error(loc, Signature_expected))
+  with Not_found ->
+    raise(Typetexp.Error(loc, Typetexp.Unbound_modtype (Ctype.lid_of_path p)))
+
+let wrap_constraint env arg mty =
+  let coercion =
+    try
+      Includemod.modtypes env arg.mod_type mty
+    with Includemod.Error msg ->
+      raise(Error(arg.mod_loc, Not_included msg)) in
+  { mod_desc = Tmod_constraint(arg, mty, coercion);
+    mod_type = mty;
+    mod_env = env;
+    mod_loc = arg.mod_loc }
+
 (* Type a module value expression *)
 
 let rec type_module sttn funct_body anchor env smod =
@@ -692,23 +728,35 @@ let rec type_module sttn funct_body anchor env smod =
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module true funct_body anchor env sarg in
       let mty = transl_modtype env smty in
-      let coercion =
-        try
-          Includemod.modtypes env arg.mod_type mty
-        with Includemod.Error msg ->
-          raise(Error(sarg.pmod_loc, Not_included msg)) in
-      rm { mod_desc = Tmod_constraint(arg, mty, coercion);
-           mod_type = mty;
-           mod_env = env;
-           mod_loc = smod.pmod_loc }
+      rm {(wrap_constraint env arg mty) with mod_loc = smod.pmod_loc}
 
-  | Pmod_unpack (sexp, (p, l)) ->
+  | Pmod_unpack sexp ->
       if funct_body then
         raise (Error (smod.pmod_loc, Not_allowed_in_functor_body));
-      let l, mty = Typetexp.create_package_mty smod.pmod_loc env (p, l) in
-      let mty = transl_modtype env mty in
-      let exp = Typecore.type_expect env sexp
-          (Typecore.create_package_type smod.pmod_loc env (p, l)) in
+      if !Clflags.principal then Ctype.begin_def ();
+      let exp = Typecore.type_exp env sexp in
+      if !Clflags.principal then begin
+        Ctype.end_def ();
+        Ctype.generalize_structure exp.exp_type
+      end;
+      let mty =
+        match Ctype.expand_head env exp.exp_type with
+          {desc = Tpackage (p, nl, tl)} ->
+            if List.exists (fun t -> Ctype.free_variables t <> []) tl then
+              raise (Error (smod.pmod_loc,
+                            Incomplete_packed_module exp.exp_type));
+            if !Clflags.principal &&
+              not (Typecore.generalizable (Btype.generic_level-1) exp.exp_type)
+            then
+              Location.prerr_warning smod.pmod_loc
+                (Warnings.Not_principal "this module unpacking");
+            modtype_of_package env smod.pmod_loc p nl tl
+        | {desc = Tvar} ->
+            raise (Typecore.Error
+                     (smod.pmod_loc, Typecore.Cannot_infer_signature))
+        | _ ->
+            raise (Error (smod.pmod_loc, Not_a_packed_module exp.exp_type))
+      in
       rm { mod_desc = Tmod_unpack(exp, mty);
            mod_type = mty;
            mod_env = env;
@@ -954,12 +1002,34 @@ let type_module_type_of env smod =
     raise(Error(smod.pmod_loc, Non_generalizable_module mty));
   mty
 
+(* For Typecore *)
+
+let rec get_manifest_types = function
+    [] -> []
+  | Tsig_type (id, {type_params=[]; type_manifest=Some ty}, _) :: rem ->
+      (Ident.name id, ty) :: get_manifest_types rem
+  | _ :: rem -> get_manifest_types rem
+
+let type_package env m p nl tl =
+  let modl = type_module env m in
+  if nl = [] then (wrap_constraint env modl (Tmty_ident p), []) else
+  let msig = extract_sig env modl.mod_loc modl.mod_type in
+  let mtypes = get_manifest_types msig in
+  let tl' =
+    List.map2
+      (fun name ty -> try List.assoc name mtypes with Not_found -> ty)
+      nl tl
+  in
+  let mty = modtype_of_package env modl.mod_loc p nl tl' in
+  (wrap_constraint env modl mty, tl')
+
 (* Fill in the forward declarations *)
 let () =
   Typecore.type_module := type_module;
   Typetexp.transl_modtype_longident := transl_modtype_longident;
   Typetexp.transl_modtype := transl_modtype;
   Typecore.type_open := type_open;
+  Typecore.type_package := type_package;
   type_module_type_of_fwd := type_module_type_of
 
 (* Typecheck an implementation file *)
@@ -1107,3 +1177,11 @@ let report_error ppf = function
   | With_need_typeconstr ->
       fprintf ppf
         "Only type constructors with identical parameters can be substituted."
+  | Not_a_packed_module ty ->
+      fprintf ppf
+        "This expression is not a packed module. It has type@ %a"
+        type_expr ty
+  | Incomplete_packed_module ty ->
+      fprintf ppf
+        "The type of this packed module contains variables:@ %a"
+        type_expr ty

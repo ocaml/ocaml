@@ -18,6 +18,7 @@ module Exp =
 	    (eval f) (eval a)
 	| Abs f -> f 
   end
+;;
 
 module List = 
   struct
@@ -36,8 +37,7 @@ module List =
 	| Nil -> 0
 	| Cons (a,b) -> length b
   end
-
-    
+;;
 
 module Nonexhaustive = 
   struct
@@ -66,6 +66,7 @@ module Nonexhaustive =
 	| Foo _ , Foo _ -> true
 	| Bar _, Bar _ -> true
   end
+;;
 
 module Exhaustive = 
   struct
@@ -80,6 +81,7 @@ module Exhaustive =
 	| Foo _ , Foo _ -> true
 	| Bar _, Bar _ -> true    
   end
+;;
 
 module Existential_escape = 
   struct
@@ -87,3 +89,42 @@ module Existential_escape =
     type u = D : 'a t -> u
     let eval (D x) = x
   end
+;;
+
+module Rectype = 
+  struct
+    type (_,_) t = C : ('a,'a) t 
+    let _ = 
+      fun (type s) ->
+	let a : (s, s * s) t = failwith "foo" in 
+	match a with
+	  C ->
+	    ()
+  end
+;;
+
+module Or_patterns = 
+struct
+      type _ t = 
+      | IntLit : int -> int t
+      | BoolLit : bool -> bool t
+
+    let rec eval : type s . s t -> unit = 
+      function
+	| (IntLit _ | BoolLit _) -> ()
+
+end
+;;
+
+module Polymorphic_variants = 
+  struct
+      type _ t = 
+      | IntLit : int -> int t
+      | BoolLit : bool -> bool t
+
+    let rec eval : type s . [`A] * s t -> unit = 
+      function
+	| `A, IntLit _ -> ()
+	| `A, BoolLit _ -> ()
+  end    
+;;

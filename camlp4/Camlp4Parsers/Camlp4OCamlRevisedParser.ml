@@ -890,6 +890,9 @@ Very old (no more supported) syntax:\n\
         | "[|"; pl = sem_patt; "|]" -> <:patt< [| $pl$ |] >>
         | "{"; pl = label_patt_list; "}" -> <:patt< { $pl$ } >>
         | "("; ")" -> <:patt< () >>
+        | "("; "module"; m = a_UIDENT; ")" -> <:patt< (module $m$) >>
+        | "("; "module"; m = a_UIDENT; ":"; pt = package_type; ")" ->
+            <:patt< ((module $m$) : (module $pt$)) >>
         | "("; p = SELF; ")" -> p
         | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
         | "("; p = SELF; "as"; p2 = SELF; ")" -> <:patt< ($p$ as $p2$) >>
@@ -958,6 +961,9 @@ Very old (no more supported) syntax:\n\
             <:patt< ($tup:<:patt< $anti:mk_anti ~c:"patt" n s$ >>$) >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.patt_tag
         | "("; ")" -> <:patt< () >>
+        | "("; "module"; m = a_UIDENT; ")" -> <:patt< (module $m$) >>
+        | "("; "module"; m = a_UIDENT; ":"; pt = package_type; ")" ->
+            <:patt< ((module $m$) : (module $pt$)) >>
         | "("; p = SELF; ")" -> p
         | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
         | "("; p = SELF; "as"; p2 = SELF; ")" -> <:patt< ($p$ as $p2$) >>

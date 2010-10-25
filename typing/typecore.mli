@@ -57,6 +57,7 @@ val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
 val iter_pattern: (Typedtree.pattern -> unit) -> Typedtree.pattern -> unit
+val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
 
@@ -97,6 +98,10 @@ type error =
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
   | Recursive_local_constraint of (type_expr * type_expr) list
+  | Modules_not_allowed
+  | Cannot_infer_signature
+  | Not_a_packed_module of type_expr
+
 exception Error of Location.t * error
 
 val report_error: formatter -> error -> unit
@@ -109,6 +114,9 @@ val type_open: (Env.t -> Location.t -> Longident.t -> Env.t) ref
 val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * class_signature * string list) ref
+val type_package:
+  (Env.t -> Parsetree.module_expr -> Path.t -> string list -> type_expr list ->
+   Typedtree.module_expr * type_expr list) ref
 
 val create_package_type: Location.t -> Env.t -> Parsetree.package_type -> type_expr
 

@@ -341,6 +341,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "[|"; pl = sem_patt; "|]" -> <:patt< [| $pl$ |] >>
         | "{"; pl = label_patt_list; "}" -> <:patt< { $pl$ } >>
         | "("; ")" -> <:patt< () >>
+        | "("; "module"; m = a_UIDENT; ")" -> <:patt< (module $m$) >>
+        | "("; "module"; m = a_UIDENT; ":"; pt = package_type; ")" ->
+            <:patt< ((module $m$) : (module $pt$)) >>
         | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
         | "("; p = patt; ")" -> <:patt< $p$ >>
         | "_" -> <:patt< _ >>

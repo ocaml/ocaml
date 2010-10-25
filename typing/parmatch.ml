@@ -1834,7 +1834,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
   in
   let rec loop p = 
     match p.ppat_desc with
-      | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ ->
+      | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ | Ppat_unpack _ ->
 	  [make_pat Ppat_any]
       | Ppat_construct (lid,arg,status,_) -> 
 	  let constr = 
@@ -1852,7 +1852,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 		let lid_of_tyres = 
 		  match (Ctype.repr ty_res).desc with (* GAH : ask garrigue, without this repr it will not work *)
 		  | Tconstr(p,_,_) ->
-		      Ctype.lid_of_path "" p
+		      Ctype.lid_of_path ~sharp:"" p
 		  | _ -> 
 		      Format.printf "%a@." Printtyp.raw_type_expr  ty_res; 
 		      assert false

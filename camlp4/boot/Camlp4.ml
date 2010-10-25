@@ -1023,7 +1023,9 @@ module Sig =
           PaVrn of loc * string
           | (* `s *)
           PaLaz of loc * patt
-          and (* lazy p *)
+          | (* lazy p *)
+          PaMod of loc * string
+          and (* (module M) *)
           expr =
           | ExNil of loc
           | ExId of loc * ident
@@ -1885,7 +1887,7 @@ module Sig =
           | TySem of loc * ctyp * ctyp
           | TyCom of loc * ctyp * ctyp
           | TySum of loc * ctyp
-          | TyOf of loc * ctyp * ctyp 
+          | TyOf of loc * ctyp * ctyp
           | TyAnd of loc * ctyp * ctyp
           | TyOr of loc * ctyp * ctyp
           | TyPrv of loc * ctyp
@@ -1929,6 +1931,7 @@ module Sig =
           | PaTyp of loc * ident
           | PaVrn of loc * string
           | PaLaz of loc * patt
+          | PaMod of loc * string
           and expr =
           | ExNil of loc
           | ExId of loc * ident
@@ -7027,6 +7030,7 @@ module Struct =
               | Ast.PaLab (_, _, p) -> is_irrefut_patt p
               | Ast.PaLaz (_, p) -> is_irrefut_patt p
               | Ast.PaId (_, _) -> false
+              | Ast.PaMod (_, _) -> true
               | Ast.PaVrn (_, _) | Ast.PaStr (_, _) | Ast.PaRng (_, _, _) |
                   Ast.PaFlo (_, _) | Ast.PaNativeInt (_, _) |
                   Ast.PaInt64 (_, _) | Ast.PaInt32 (_, _) | Ast.PaInt (_, _)
@@ -9081,6 +9085,15 @@ module Struct =
                                    (Ast.IdUid (_loc, "OvOverride")))))
                         and meta_patt _loc =
                           function
+                          | Ast.PaMod (x0, x1) ->
+                              Ast.ExApp (_loc,
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaMod")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaLaz (x0, x1) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
@@ -11367,6 +11380,15 @@ module Struct =
                                    (Ast.IdUid (_loc, "OvOverride")))))
                         and meta_patt _loc =
                           function
+                          | Ast.PaMod (x0, x1) ->
+                              Ast.PaApp (_loc,
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "PaMod")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_string _loc x1))
                           | Ast.PaLaz (x0, x1) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
@@ -12370,6 +12392,9 @@ module Struct =
                   | PaLaz (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#patt _x_i1 in PaLaz (_x, _x_i1)
+                  | PaMod (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#string _x_i1 in PaMod (_x, _x_i1)
                   
                 method override_flag : override_flag -> override_flag =
                   function
@@ -13274,6 +13299,8 @@ module Struct =
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   | PaLaz (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#patt _x_i1 in o
+                  | PaMod (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#string _x_i1 in o
                   
                 method override_flag : override_flag -> 'self_type =
                   function
@@ -14516,7 +14543,7 @@ module Struct =
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, s)))), t) ->
                   (s, Immutable, (mkpolytype (ctyp t)), (mkloc loc))
               | _ -> assert false
-              
+
             let mkvariant =
               function
               | Ast.TyId (loc, (Ast.IdUid (_, s))) ->
@@ -14530,8 +14557,7 @@ module Struct =
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
                   ((conv_con s), [], Some (ctyp t),
                    (mkloc loc))
-
-              | _ -> assert false
+              | _ -> assert false              
               
             let rec type_decl tl cl loc m pflag =
               function
@@ -14573,6 +14599,7 @@ module Struct =
               | Ast.MuMutable -> Mutable
               | Ast.MuNil -> Immutable
               | _ -> assert false
+
               
             let paolab lab p =
               match (lab, p) with
@@ -14613,7 +14640,12 @@ module Struct =
                   type_parameters_and_type_name t1 (type_parameters t2 acc)
               | Ast.TyId (_, i) -> ((ident i), acc)
               | _ -> assert false
+
               
+
+
+
+
             let mkwithtyp pwith_type loc id_tpl ct =
               let (id, tpl) = type_parameters_and_type_name id_tpl [] in
               let (params, variance) = List.split tpl in
@@ -14803,6 +14835,7 @@ module Struct =
               | PaTyp (loc, i) -> mkpat loc (Ppat_type (long_type_ident i))
               | PaVrn (loc, s) -> mkpat loc (Ppat_variant (s, None))
               | PaLaz (loc, p) -> mkpat loc (Ppat_lazy (patt p))
+              | PaMod (loc, m) -> mkpat loc (Ppat_unpack m)
               | (PaEq (_, _, _) | PaSem (_, _, _) | PaCom (_, _, _) | PaNil _
                  as p) -> error (loc_of_patt p) "invalid pattern"
             and mklabpat =
@@ -15104,9 +15137,12 @@ module Struct =
               | Ast.ExOpI (loc, i, e) ->
                   mkexp loc (Pexp_open ((long_uident i), (expr e)))
               | Ast.ExPkg (loc, (Ast.MeTyc (_, me, pt))) ->
-                  mkexp loc (Pexp_pack ((module_expr me), (package_type pt)))
-              | Ast.ExPkg (loc, _) ->
-                  error loc "(module_expr : package_type) expected here"
+                  mkexp loc
+                    (Pexp_constraint
+                       (((mkexp loc (Pexp_pack (module_expr me))),
+                         (Some (mktyp loc (Ptyp_package (package_type pt)))),
+                         None)))
+              | Ast.ExPkg (loc, me) -> mkexp loc (Pexp_pack (module_expr me))
               | ExFUN (loc, i, e) -> mkexp loc (Pexp_newtype (i, (expr e)))
               | Ast.ExCom (loc, _, _) ->
                   error loc "expr, expr: not allowed here"
@@ -15273,9 +15309,15 @@ module Struct =
                   mkmod loc
                     (Pmod_constraint ((module_expr me), (module_type mt)))
               | Ast.MePkg (loc, (Ast.ExTyc (_, e, (Ast.TyPkg (_, pt))))) ->
-                  mkmod loc (Pmod_unpack ((expr e), (package_type pt)))
-              | Ast.MePkg (loc, _) ->
-                  error loc "(value expr) not supported yet"
+                  mkmod loc
+                    (Pmod_unpack
+                       (mkexp loc
+                          (Pexp_constraint
+                             (((expr e),
+                               (Some
+                                  (mktyp loc (Ptyp_package (package_type pt)))),
+                               None)))))
+              | Ast.MePkg (loc, e) -> mkmod loc (Pmod_unpack (expr e))
               | Ast.MeAnt (loc, _) ->
                   error loc "antiquotation in module_expr"
             and str_item s l =
@@ -16341,6 +16383,12 @@ module Struct =
           
         module Tools =
           struct
+            type prev_locs =
+              { mutable pl_strm : Obj.t; mutable pl_locs : (int * Obj.t) list
+              }
+            
+            let prev_locs = ref ([] : prev_locs list)
+              
             module Make (Structure : Structure.S) =
               struct
                 open Structure
@@ -16362,25 +16410,42 @@ module Struct =
                   match Stream.peek strm with
                   | None -> Stream.sempty
                   | Some ((_, init_loc)) ->
+                      let myrecord =
+                        {
+                          pl_strm = Obj.repr Stream.sempty;
+                          pl_locs = [ (0, (Obj.repr init_loc)) ];
+                        } in
                       let rec go prev_loc (__strm : _ Stream.t) =
                         (match Stream.peek __strm with
                          | Some ((tok, cur_loc)) ->
                              (Stream.junk __strm;
                               let strm = __strm
                               in
-                                Stream.lcons
-                                  (fun _ ->
-                                     (tok,
-                                      {
-                                        prev_loc = prev_loc;
-                                        cur_loc = cur_loc;
-                                      }))
-                                  (Stream.slazy (fun _ -> go cur_loc strm)))
-                         | _ -> Stream.sempty)
-                      in go init_loc strm
+                                (myrecord.pl_locs <-
+                                   myrecord.pl_locs @
+                                     [ ((Stream.count strm),
+                                        (Obj.repr cur_loc)) ];
+                                 Stream.lcons
+                                   (fun _ ->
+                                      (tok,
+                                       {
+                                         prev_loc = prev_loc;
+                                         cur_loc = cur_loc;
+                                       }))
+                                   (Stream.slazy (fun _ -> go cur_loc strm))))
+                         | _ ->
+                             (prev_locs :=
+                                List.filter (( != ) myrecord) !prev_locs;
+                              Stream.
+                              sempty)) in
+                      let result = go init_loc strm
+                      in
+                        (prev_locs := myrecord :: !prev_locs;
+                         myrecord.pl_strm <- Obj.repr result;
+                         result)
                   
                 let drop_prev_loc strm =
-                  stream_map (fun (tok, r) -> (tok, (r.cur_loc))) strm
+                  stream_map (fun (tok, r) -> (tok, r)) strm
                   
                 let get_cur_loc strm =
                   match Stream.peek strm with
@@ -16388,9 +16453,29 @@ module Struct =
                   | None -> Loc.ghost
                   
                 let get_prev_loc strm =
-                  match Stream.peek strm with
-                  | Some ((_, r)) -> r.prev_loc
-                  | None -> Loc.ghost
+                  let c = Stream.count strm in
+                  let rec drop l =
+                    match l with
+                    | [] -> []
+                    | (i, _) :: ll -> if i < c then drop ll else l in
+                  let rec find l =
+                    match l with
+                    | [] -> None
+                    | h :: t ->
+                        if h.pl_strm == (Obj.repr strm)
+                        then Some h
+                        else find t
+                  in
+                    match find !prev_locs with
+                    | None -> Loc.ghost
+                    | Some r ->
+                        (r.pl_locs <- drop r.pl_locs;
+                         (match r.pl_locs with
+                          | [] -> Loc.ghost
+                          | (i, loc) :: _ ->
+                              if i = c
+                              then (Obj.obj loc : Loc.t)
+                              else Loc.ghost))
                   
                 let is_level_labelled n lev =
                   match lev.lname with | Some n1 -> n = n1 | None -> false
@@ -19624,6 +19709,7 @@ module Printers =
                       | Ast.PaId (_, i) -> o#var_ident f i
                       | Ast.PaAnt (_, s) -> o#anti f s
                       | Ast.PaAny _ -> pp f "_"
+                      | Ast.PaMod (_, m) -> pp f "(module %s)" m
                       | Ast.PaTup (_, p) -> pp f "@[<1>(%a)@]" o#patt3 p
                       | Ast.PaRec (_, p) -> pp f "@[<hv2>{@ %a@]@ }" o#patt p
                       | Ast.PaStr (_, s) -> pp f "\"%s\"" s

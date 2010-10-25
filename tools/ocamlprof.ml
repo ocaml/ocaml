@@ -287,7 +287,7 @@ and rw_exp iflag sexp =
 
   | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
   | Pexp_open (_, e) -> rewrite_exp iflag e
-  | Pexp_pack (smod, _) -> rewrite_mod iflag smod
+  | Pexp_pack (smod) -> rewrite_mod iflag smod
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
@@ -362,7 +362,7 @@ and rewrite_mod iflag smod =
   | Pmod_functor(param, smty, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
   | Pmod_constraint(smod, smty) -> rewrite_mod iflag smod
-  | Pmod_unpack(sexp, _) -> rewrite_exp iflag sexp
+  | Pmod_unpack(sexp) -> rewrite_exp iflag sexp
 
 and rewrite_str_item iflag item =
   match item.pstr_desc with
