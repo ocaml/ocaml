@@ -1,12 +1,69 @@
-File "test.ml", line 52, characters 6-27:
+
+#                                         module Exp :
+  sig
+    type 'a t =
+        IntLit : int -> int t
+      | BoolLit : bool -> bool t
+      | Pair : 'b t * 'c t -> ('b * 'c) t
+      | App : ('e -> 'd) t * 'e t -> 'd t
+      | Abs : ('f -> 'g) -> ('f -> 'g) t
+    val eval : 'a t -> 'a
+  end
+#                                     module List :
+  sig
+    type zero
+    type 'a t = Nil : zero t | Cons : 'b * 'c t -> ('b * 'c) t
+    val head : ('a * 'b) t -> 'a
+    val tail : ('a * 'b) t -> 'b t
+    val length : 'a t -> int
+  end
+#                                                         Characters 206-227:
+  ......function
+  	| C2 x -> x
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 C1 _
-File "test.ml", line 65, characters 6-63:
+Characters 469-526:
+  ......function
+  	| Foo _ , Foo _ -> true
+  	| Bar _, Bar _ -> true
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (Foo _, Bar _)
-File "test.ml", line 88, characters 21-22:
+module Nonexhaustive :
+  sig
+    type 'a u = C1 : int -> int u | C2 : bool -> bool u
+    type 'a v = C1 : int -> int v
+    val unexhaustive : 'a u -> 'a
+    module M : sig type t type u end
+    type 'a t = Foo : M.t -> M.t t | Bar : M.u -> M.u t
+    val same_type : 'a t * 'a t -> bool
+  end
+#                             module Exhaustive :
+  sig
+    type t = int
+    type u = bool
+    type 'a v = Foo : t -> t v | Bar : u -> u v
+    val same_type : 'a v * 'a v -> bool
+  end
+#               Characters 119-120:
+      let eval (D x) = x
+                       ^
 Error: This expression has type &x36 t but an expression was expected of type
          &x36 t
        The type constructor &x36 would escape its scope
+#                       Characters 157-158:
+  	  C ->
+     ^
+Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
+#                         Characters 174-182:
+  	| (IntLit _ | BoolLit _) -> ()
+      ^^^^^^^^
+Error: This pattern matches values of type int t
+       but a pattern was expected which matches values of type s t
+#                         Characters 191-203:
+  	| `A, IntLit _ -> ()
+     ^^^^^^^^^^^^
+Error: This pattern matches values of type [ `A ] * s t
+       but a pattern was expected which matches values of type [ `A ] * int t
+# 
