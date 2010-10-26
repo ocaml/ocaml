@@ -1968,7 +1968,18 @@ and unify3 mode env t1 t1' t2 t2' =
         unify_list mode env tl1 tl2
     | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
         unify_list mode env tl1 tl2
-    | (Tconstr ((Path.Pident p) as path,[],_)),_  when is_abstract_newtype !env path && mode = Pattern -> 
+    | Tconstr ((Path.Pident p) as path,[],_), Tconstr ((Path.Pident p') as path',[],_)  
+      when is_abstract_newtype !env path && is_abstract_newtype !env path' && mode = Pattern -> 
+	(* we can assume that path != path' (this is taken care of in unify *)
+	let source,destination = 
+	  if Ident.binding_time p > Ident.binding_time p' then 
+	    p,t2
+	  else
+	    p',t1
+	in
+	let decl = new_declaration true (Some t2) in 
+	env := Env.add_type source decl !env
+    | Tconstr ((Path.Pident p) as path,[],_), _  when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t2 ;
 	local_non_recursive_abbrev !env (Path.Pident p) t2;
 	begin_def ();
@@ -1977,7 +1988,7 @@ and unify3 mode env t1 t1' t2 t2' =
 	generalize t2 ;
 	let decl = new_declaration true (Some t2) in
         env := Env.add_type p decl !env 
-    | _,(Tconstr ((Path.Pident p) as path,[],_)) when is_abstract_newtype !env path && mode = Pattern -> 
+    | _, Tconstr ((Path.Pident p) as path,[],_) when is_abstract_newtype !env path && mode = Pattern -> 
 	reify env t1 ;
 	local_non_recursive_abbrev !env (Path.Pident p) t1;
 	begin_def ();
