@@ -1314,33 +1314,6 @@ let rec non_recursive_abbrev visited env ty0 ty =
 
 let non_recursive_abbrev = non_recursive_abbrev (ref [])
 
-
-(* GAH: same as above, but for local constraints
-    ask garrigue about this *)
-let rec local_non_recursive_abbrev visited env p ty =
-  let ty = repr ty in
-  if not (List.memq ty !visited) then begin
-    visited := ty :: !visited;
-    match ty.desc with
-      Tconstr(p', args, abbrev) ->
-	if Path.same p p' then raise Recursive_abbrev;
-        begin try
-          local_non_recursive_abbrev visited env p (try_expand_once_opt env ty)
-        with Cannot_expand ->
-          if !Clflags.recursive_types then () else
-          iter_type_expr (local_non_recursive_abbrev visited env p) ty
-        end
-    | Tobject _ | Tvariant _ ->
-        ()
-    | _ ->
-        if !Clflags.recursive_types then () else
-        iter_type_expr (local_non_recursive_abbrev visited env p) ty
-  end
-
-let local_non_recursive_abbrev = local_non_recursive_abbrev (ref [])
-
-
-
 let correct_abbrev env path params ty =
   check_abbrev_env env;
   let ty0 = newgenvar () in
@@ -1397,6 +1370,31 @@ let occur env ty0 ty =
   with exn ->
     merge type_changed old;
     raise (match exn with Occur -> Unify [] | _ -> exn)
+
+
+let rec local_non_recursive_abbrev visited env p ty =
+  let ty = repr ty in
+  if not (List.memq ty !visited) then begin
+    visited := ty :: !visited;
+    match ty.desc with
+      Tconstr(p', args, abbrev) ->
+	if Path.same p p' then raise Recursive_abbrev;
+        begin try
+          local_non_recursive_abbrev visited env p (try_expand_once_opt env ty)
+        with Cannot_expand ->
+          if !Clflags.recursive_types then () else
+          iter_type_expr (local_non_recursive_abbrev visited env p) ty
+        end
+    | Tobject _ | Tvariant _ ->
+        ()
+    | _ ->
+        if !Clflags.recursive_types then () else
+        iter_type_expr (local_non_recursive_abbrev visited env p) ty
+  end
+
+let local_non_recursive_abbrev = local_non_recursive_abbrev (ref [])
+
+
 
 
                    (*****************************)

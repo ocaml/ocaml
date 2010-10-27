@@ -1810,7 +1810,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
     | Tconstr (path,_,_) -> Env.find_type path tenv
     | _ -> fatal_error "Parmatch.get_type_descr"
   in
-  let mem pred elt = 
+(*  let mem pred elt = 
     let rec loop = 
       function
 	| [] -> false
@@ -1819,7 +1819,6 @@ let generate_all (env:Env.t) : pattern -> pattern list =
     in
     loop
   in
-
   let uniquefy pred = 
     let rec loop sofar = 
       function
@@ -1831,7 +1830,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
   in
   let type_equivalence (_,t) (_,t') = 
     Ctype.equal Env.empty true [t] [t']  
-  in
+  in*)
   let rec loop p = 
     match p.ppat_desc with
       | Ppat_any | Ppat_var _ | Ppat_constant _ | Ppat_type _ | Ppat_unpack _ ->
@@ -1858,7 +1857,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 		      assert false
 		in
 		let constrs = filter_map (make_constr ty_res lid_of_tyres lid) constr_list in 
-		let constrs = uniquefy type_equivalence constrs in 
+(*		let constrs = uniquefy type_equivalence constrs in *)
 		List.map fst constrs
 	    | _ -> [] end
 	  in  
