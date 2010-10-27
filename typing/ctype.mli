@@ -105,7 +105,7 @@ val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 
-val instance: type_expr -> type_expr
+val instance: ?partial:bool -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)

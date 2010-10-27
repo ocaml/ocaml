@@ -776,17 +776,18 @@ let rec find_repr p1 =
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
-let rec copy ty =
+let rec copy ?(partial=false) ty =
+  let copy = copy ~partial in
   let ty = repr ty in
   match ty.desc with
     Tsubst ty -> ty
   | _ ->
-    if ty.level <> generic_level then ty else
+    if ty.level <> generic_level && not partial then ty else
     let desc = ty.desc in
     save_desc ty desc;
     let t = newvar() in          (* Stub *)
     ty.desc <- Tsubst t;
-    t.desc <-
+    if ty.level = generic_level then t.desc <-
       begin match desc with
       | Tconstr (p, tl, _) ->
           let abbrevs = proper_abbrevs p tl !abbreviations in
@@ -851,8 +852,8 @@ let rec copy ty =
 
 (**** Variants of instantiations ****)
 
-let instance sch =
-  let ty = copy sch in
+let instance ?partial sch =
+  let ty = copy ?partial sch in
   cleanup_types ();
   ty
 
