@@ -1766,14 +1766,8 @@ let rec mcomp type_pairs subst env t1 t2 =
           | (Ttuple tl1, Ttuple tl2) ->
               mcomp_list type_pairs subst env tl1 tl2
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
-	      let unique_declaration env p = 
-		definitely_abstract env p || in_pervasives p
-	      in
-	      if Path.same p1 p2 then
-		mcomp_list type_pairs subst env tl1 tl2
-	      else if unique_declaration env p1 && unique_declaration env p2 then
-		raise (Unify [])
-	      else ()
+	      mcomp_type_decl type_pairs subst env p1 p2;
+	      mcomp_list type_pairs subst env tl1 tl2
           | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2) when Path.same p1 p2 && n1 = n2 ->
               mcomp_list type_pairs subst env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
@@ -1854,6 +1848,56 @@ and mcomp_row type_pairs subst env row1 row2 =
       | _ -> raise (Unify []))
     pairs
 
+and mcomp_type_decl type_pairs subst env p1 p2 = 
+  if Path.same p1 p2 then () else
+  let decl = Env.find_type p1 env in
+  let decl' = Env.find_type p2 env in 
+  match decl.type_kind, decl'.type_kind with
+  | Type_record (lst,r), Type_record (lst',r') ->
+      if r = r' then 
+	mcomp_record_description type_pairs subst env lst lst'
+      else
+	raise (Unify [])
+  | Type_generalized_variant v1, Type_generalized_variant v2 ->
+      mcomp_variant_description type_pairs subst env v1 v2
+  | _ ->
+      let unique_declaration env p = 
+	definitely_abstract env p || in_pervasives p
+      in if unique_declaration env p1 && unique_declaration env p2 then 
+	raise (Unify [])
+      else 
+	()
+and mcomp_type_option type_pairs subst env t t' = 
+  match t, t' with
+    None, None -> ()
+  | Some t, Some t' -> mcomp type_pairs subst env t t' 
+  | _ -> raise (Unify []) 
+
+and mcomp_variant_description type_pairs subst env = 
+  let rec iter = fun x y ->
+    match x, y with
+    (name,mflag,t) :: xs, (name', mflag', t') :: ys   ->
+      mcomp_type_option type_pairs subst env t t';
+      if name = name' && mflag = mflag' 
+      then iter xs ys
+      else raise (Unify [])
+    | [],[] -> ()
+    | _ -> raise (Unify [])
+  in
+  iter
+
+and mcomp_record_description type_pairs subst env = 
+  let rec iter = fun x y ->
+    match x, y with 
+      (name, mutable_flag, t) :: xs, (name', mutable_flag', t') :: ys ->
+	mcomp type_pairs subst env t t';
+	if name = name' && mutable_flag = mutable_flag' 
+	then iter xs ys
+	else raise (Unify [])
+    | [], [] -> ()
+    | _ -> raise (Unify [])
+  in
+  iter
 
 
 (* mcomp type_pairs subst env t1 t2 does not raise an 

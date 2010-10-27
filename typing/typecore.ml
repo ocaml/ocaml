@@ -2506,7 +2506,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     | Total -> 
 	check_partial_gadt partial_loc env ty_arg  (List.map fst caselist)  (List.map fst cases) 
   in*)
-
   let check_partial loc cases = 
     Parmatch.check_partial_gadt env (partial_pred env ty_arg) loc cases (List.map fst caselist)
   in 
