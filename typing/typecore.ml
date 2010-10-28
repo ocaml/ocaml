@@ -1184,7 +1184,8 @@ let create_package_type loc env (p, l) =
                    List.map (Typetexp.transl_simple_type env false) (List.map snd l)))
 
 	
-let contains_polymorphic_variants p = 
+(* same as has_variants, for an untyped tree *)
+let untyped_has_variants p = 
   let rec iter_pattern p f = 
     match p.ppat_desc with
     | Ppat_any | Ppat_var _ | Ppat_constant _ 
@@ -2439,7 +2440,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   begin_def ();
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   Ident.set_current_time (get_current_level ()); 
-(*  let ty_arg' = newvar () in*)
+  let ty_arg' = newvar () in
   let pattern_force = ref [] in
   let pat_env_list =
     List.map
@@ -2448,14 +2449,15 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) = 
-	  if contains_polymorphic_variants spat then 
-	    let ty_arg' = newvar () in 
-	    let ret = type_pattern env spat scope ty_arg' in
-	    unify_pat_types spat.ppat_loc env ty_arg ty_arg';
-	    ret
+	  if untyped_has_variants spat then 
+	    type_pattern env spat scope (newvar ()) 
 	  else
+	    (* ty_arg must be created here so that it has the right level
+	       for principality *)
+	    let ty_arg = instance ~partial:!Clflags.principal ty_arg in 
 	    type_pattern env spat scope ty_arg 
 	in
+	
         pattern_force := force @ !pattern_force;
         let pat =
           if !Clflags.principal then begin
@@ -2464,6 +2466,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
             { pat with pat_type = instance pat.pat_type }
           end else pat
         in
+        unify_pat env pat ty_arg'; (* for variants *)
         (pat, (ext_env, unpacks)))
       caselist in
 
@@ -2477,9 +2480,9 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
   Ctype.init_def(Ident.current_time());
-(*  begin match pat_env_list with [] -> ()
-  | (pat, _) :: _ -> unify_pat env pat ty_arg (* GAH: ask garrigue, contamination *) 
-  end;*)
+  begin match pat_env_list with [] -> ()
+  | (pat, _) :: _ -> unify_pat env pat (instance ty_arg)
+  end;
 
   if !Clflags.principal then begin
     let patl = List.map fst pat_env_list in
