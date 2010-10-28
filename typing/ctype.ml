@@ -2032,7 +2032,7 @@ and unify3 mode env t1 t1' t2 t2' =
 	      else
 		p',t1
 	    in
-	    let decl = new_declaration true (Some t2) in 
+	    let decl = new_declaration true (Some destination) in 
 	    env := Env.add_type source decl !env
 	| Tconstr ((Path.Pident p) as path,[],_), _  when is_abstract_newtype !env path && mode = Pattern -> 
 	    reify env t2 ;
