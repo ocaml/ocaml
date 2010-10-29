@@ -885,13 +885,13 @@ let instance_constructor ?(in_pattern=None) cstr =
   let ty_args = List.map copy cstr.cstr_args in
   begin match in_pattern with
   | None -> ()
-  | Some env ->
+  | Some (env,pattern_lev) ->
       let existentials = List.map copy cstr.cstr_existentials in
       let process existential = 
 	let decl = new_declaration true None in
 	let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
 	env := new_env;
-	let to_unify = newty (Tconstr (Path.Pident id,[],ref Mnil)) in 
+	let to_unify = newty2 pattern_lev (Tconstr (Path.Pident id,[],ref Mnil)) in 
 	link_type existential to_unify 
       in
       List.iter process existentials end;

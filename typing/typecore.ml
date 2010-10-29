@@ -172,6 +172,10 @@ let unify_exp_types loc env ty expected_ty =
       raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
 
 let pattern_level = ref None
+let get_pattern_level () = 
+  match !pattern_level with
+    Some y -> y
+  | None -> assert false
 
 let unify_pat_types_gadt loc env ty ty' = 
   let pattern_level = 
@@ -574,7 +578,7 @@ let rec type_pat mode (env:Env.t ref) sp expected_ty  =
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, Constructor_arity_mismatch(lid,
                                      constr.cstr_arity, List.length sargs)));
-      let (ty_args, ty_res) = instance_constructor ~in_pattern:(Some env) constr in
+      let (ty_args, ty_res) = instance_constructor ~in_pattern:(Some (env,get_pattern_level ())) constr in
       begin match mode with
       | Inside_or ->
 	  unify_pat_types loc !env ty_res expected_ty

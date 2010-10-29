@@ -110,7 +110,7 @@ val instance: ?partial:bool -> type_expr -> type_expr
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
-        ?in_pattern:Env.t ref option -> constructor_description -> type_expr list * type_expr
+        ?in_pattern:(Env.t ref * int) option -> constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
 val instance_parameterized_type:
         type_expr list -> type_expr -> type_expr list * type_expr
