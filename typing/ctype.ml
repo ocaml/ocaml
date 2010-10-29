@@ -1765,9 +1765,8 @@ let rec mcomp type_pairs subst env t1 t2 =
               mcomp type_pairs subst env u1 u2;
           | (Ttuple tl1, Ttuple tl2) ->
               mcomp_list type_pairs subst env tl1 tl2
-          | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
+          | (Tconstr (p1, _, _), Tconstr (p2, _, _)) ->
 	      mcomp_type_decl type_pairs subst env p1 p2;
-	      mcomp_list type_pairs subst env tl1 tl2
           | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2) when Path.same p1 p2 && n1 = n2 ->
               mcomp_list type_pairs subst env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
@@ -1850,23 +1849,37 @@ and mcomp_row type_pairs subst env row1 row2 =
 
 and mcomp_type_decl type_pairs subst env p1 p2 = 
   if Path.same p1 p2 then () else
+  let both_current_module = 
+    match p1, p2 with
+      Path.Pident _, Path.Pident _ -> true
+    | _ -> false
+  in
+
   let decl = Env.find_type p1 env in
   let decl' = Env.find_type p2 env in 
-  match decl.type_kind, decl'.type_kind with
-  | Type_record (lst,r), Type_record (lst',r') ->
-      if r = r' then 
-	mcomp_record_description type_pairs subst env lst lst'
-      else
-	raise (Unify [])
-  | Type_generalized_variant v1, Type_generalized_variant v2 ->
-      mcomp_variant_description type_pairs subst env v1 v2
-  | _ ->
-      let unique_declaration env p = 
-	definitely_abstract env p || in_pervasives p
-      in if unique_declaration env p1 && unique_declaration env p2 then 
-	raise (Unify [])
-      else 
-	()
+  let both_manifestless = 
+    match decl.type_manifest,decl'.type_manifest with
+      None,None -> true
+    | _ -> true
+  in
+  if 
+    (both_current_module && both_manifestless) ||
+    (in_pervasives p1 && in_pervasives p2)
+  then 
+    raise (Unify [])
+  else
+    match decl.type_kind, decl'.type_kind with
+    | Type_record (lst,r), Type_record (lst',r') ->
+	if r = r' then 
+	  mcomp_record_description type_pairs subst env lst lst'
+	else
+	  raise (Unify [])
+    | Type_generalized_variant v1, Type_generalized_variant v2 ->
+	mcomp_variant_description type_pairs subst env v1 v2
+    | _ -> ()
+
+
+
 and mcomp_type_option type_pairs subst env t t' = 
   match t, t' with
     None, None -> ()
