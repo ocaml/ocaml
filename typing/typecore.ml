@@ -683,8 +683,13 @@ let rec type_pat mode (env:Env.t ref) sp expected_ty  =
       unify_pat_types loc !env ty expected_ty;
       r
 
-let type_pat env sp expected_ty = 
-  pattern_level := Some (get_current_level ());
+let type_pat ?lev env sp expected_ty = 
+  pattern_level := 
+    begin match lev with
+	None ->
+	  Some (get_current_level ())
+      | Some x ->
+	Some x end;
   try
     let r = type_pat Normal env sp expected_ty in
     pattern_level := None;
@@ -743,10 +748,10 @@ let add_pattern_variables env =
     pv env,
    get_ref module_variables)
 
-let type_pattern env spat scope expected_ty  = 
+let type_pattern ~lev env spat scope expected_ty  = 
   reset_pattern scope true;
   let new_env = ref env in 
-  let pat = type_pat new_env spat expected_ty in
+  let pat = type_pat ~lev new_env spat expected_ty in
   let new_env, unpacks = add_pattern_variables !new_env in
   (pat, new_env, get_ref pattern_force, unpacks)
 
@@ -2442,8 +2447,9 @@ and type_statement env sexp =
 
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   begin_def ();
-  if !Clflags.principal then begin_def (); (* propagation of the argument *)
   Ident.set_current_time (get_current_level ()); 
+  let lev = get_current_level () in
+  if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
   let pat_env_list =
@@ -2454,12 +2460,12 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) = 
 	  if untyped_has_variants spat then 
-	    type_pattern env spat scope (newvar ()) 
+	    type_pattern ~lev env spat scope (newvar ()) 
 	  else
 	    (* ty_arg must be created here so that it has the right level
 	       for principality *)
 	    let ty_arg = instance ~partial:!Clflags.principal ty_arg in 
-	    type_pattern env spat scope ty_arg 
+	    type_pattern ~lev env spat scope ty_arg 
 	in
 	
         pattern_force := force @ !pattern_force;
@@ -2475,7 +2481,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
       caselist in
 
   (* Check for polymorphic variants to close *)
-
   let patl = List.map fst pat_env_list in
   if List.exists has_variants patl then begin
     Parmatch.pressure_variants env patl;
@@ -2483,11 +2488,9 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   end;
   (* `Contaminating' unifications start here *)
   List.iter (fun f -> f()) !pattern_force;
-  Ctype.init_def(Ident.current_time());
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat env pat (instance ty_arg)
   end;
-
   if !Clflags.principal then begin
     let patl = List.map fst pat_env_list in
     List.iter (iter_pattern (fun {pat_type=t} -> unify_var env t (newvar())))
@@ -2495,6 +2498,8 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     end_def ();
     List.iter (iter_pattern (fun {pat_type=t} -> generalize_structure t)) patl
   end;
+  (* to make sure the new constructors don't escape*)
+  Ctype.init_def(Ident.current_time()); 
   let in_function = if List.length caselist = 1 then in_function else None in
   let ty_arg' = instance ty_arg in
   let cases =
@@ -2506,13 +2511,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         ({pat with pat_type = ty_arg'}, exp))
       pat_env_list caselist
   in
-
-(*  let check_partial_gadt partial_loc cases = 
-    match Parmatch.check_partial partial_loc cases with
-    | Partial -> Partial
-    | Total -> 
-	check_partial_gadt partial_loc env ty_arg  (List.map fst caselist)  (List.map fst cases) 
-  in*)
   let check_partial loc cases = 
     Parmatch.check_partial_gadt env (partial_pred env ty_arg) loc cases (List.map fst caselist)
   in 
