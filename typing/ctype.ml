@@ -1619,7 +1619,7 @@ let reify env t =
 	let name = get_new_abstract_name () in 
 	if row then name ^ "#row" else name
       in
-      let (id, new_env) = Env.enter_local_constraint name decl !env in    
+      let (id, new_env) = Env.enter_type name decl !env in    
       let t = newty2 pattern_level (Tconstr (Path.Pident id,[],ref Mnil))  in 
       env := new_env;
       t
@@ -2046,7 +2046,7 @@ and unify3 mode env t1 t1' t2 t2' =
 		p',t1
 	    in
 	    let decl = new_declaration true (Some destination) in 
-	    env := Env.add_type source decl !env
+	    env := Env.add_local_constraint source decl !env
 	| Tconstr ((Path.Pident p) as path,[],_), _  when is_abstract_newtype !env path && mode = Pattern -> 
 	    reify env t2 ;
 	    local_non_recursive_abbrev !env (Path.Pident p) t2;
@@ -2055,7 +2055,7 @@ and unify3 mode env t1 t1' t2 t2' =
 	    end_def ();
 	    generalize t2 ;
 	    let decl = new_declaration true (Some t2) in
-            env := Env.add_type p decl !env 
+            env := Env.add_local_constraint p decl !env 
 	| _, Tconstr ((Path.Pident p) as path,[],_) when is_abstract_newtype !env path && mode = Pattern -> 
 	    reify env t1 ;
 	    local_non_recursive_abbrev !env (Path.Pident p) t1;
@@ -2063,9 +2063,8 @@ and unify3 mode env t1 t1' t2 t2' =
 	    let t1 = duplicate_type t1 in
 	    end_def ();
 	    generalize t1 ;
-	    
 	    let decl = new_declaration true (Some t1) in
-            env := Env.add_type p decl !env 
+            env := Env.add_local_constraint p decl !env 
 	| Tconstr (p1,_,_), Tconstr (p2,_,_) when mode = Pattern ->
 	    reify env t1;
 	    reify env t2;

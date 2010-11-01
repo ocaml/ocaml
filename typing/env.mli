@@ -66,6 +66,7 @@ val add_module: Ident.t -> module_type -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> cltype_declaration -> t -> t
+val add_local_constraint: Ident.t -> type_declaration -> t -> t
 
 (* Insertion of all fields of a signature. *)
 
@@ -82,7 +83,6 @@ val open_pers_signature: string -> t -> t
 
 val enter_value: string -> value_description -> t -> Ident.t * t
 val enter_type: string -> type_declaration -> t -> Ident.t * t
-val enter_local_constraint: string -> type_declaration -> t -> Ident.t * t
 val enter_exception: string -> exception_declaration -> t -> Ident.t * t
 val enter_module: string -> module_type -> t -> Ident.t * t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t

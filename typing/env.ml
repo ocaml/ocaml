@@ -732,6 +732,10 @@ and add_class id ty env =
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
 
+let add_local_constraint id info env =
+  let env = add_type id info env in 
+  { env with local_constraints = true }
+
 (* Insertion of bindings by name *)
 
 let enter store_fun name data env =
@@ -745,9 +749,6 @@ and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
 
-let enter_local_constraint x y z = 
-  let (ident,env) = enter_type x y z in 
-  (ident, { env with local_constraints = true })
 (* Insertion of all components of a signature *)
 
 let add_item comp env =
