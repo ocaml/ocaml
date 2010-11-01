@@ -53,7 +53,8 @@ type t = {
   components: (Path.t * module_components) Ident.tbl;
   classes: (Path.t * class_declaration) Ident.tbl;
   cltypes: (Path.t * cltype_declaration) Ident.tbl;
-  summary: summary
+  summary: summary;
+  local_constraints: bool;
 }
 
 and module_components = module_components_repr Lazy.t
@@ -93,7 +94,7 @@ let empty = {
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty; constrs_by_type = Ident.empty ;
-  summary = Env_empty }
+  summary = Env_empty; local_constraints = false; }
 
 let diff_keys is_local tbl1 tbl2 =
   let keys2 = Ident.keys tbl2 in
@@ -742,6 +743,9 @@ and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
 
+let enter_local_constraint x y z = 
+  let (ident,env) = enter_type x y z in 
+  (ident, { env with local_constraints = true })
 (* Insertion of all components of a signature *)
 
 let add_item comp env =

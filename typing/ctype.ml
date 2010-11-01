@@ -1619,7 +1619,7 @@ let reify env t =
 	let name = get_new_abstract_name () in 
 	if row then name ^ "#row" else name
       in
-      let (id, new_env) = Env.enter_type name decl !env in    
+      let (id, new_env) = Env.enter_local_constraint name decl !env in    
       let t = newty2 pattern_level (Tconstr (Path.Pident id,[],ref Mnil))  in 
       env := new_env;
       t
