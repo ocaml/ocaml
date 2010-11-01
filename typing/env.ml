@@ -307,6 +307,8 @@ let find_modtype_expansion path env =
     Tmodtype_abstract     -> raise Not_found
   | Tmodtype_manifest mty -> mty
 
+let has_local_constraints env = env.local_constraints
+
 let find_module path env =
   match path with
     Pident id ->

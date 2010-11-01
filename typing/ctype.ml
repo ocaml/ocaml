@@ -2373,6 +2373,10 @@ let unify_pairs env ty1 ty2 pairs =
   univar_pairs := pairs;
   unify Expression env ty1 ty2
 
+let unify_old env ty1 ty2 =
+  univar_pairs := [];
+  unify Old (ref env) ty1 ty2
+
 let unify env ty1 ty2 =
   univar_pairs := [];
   unify Expression (ref env) ty1 ty2

@@ -37,6 +37,8 @@ val find_type_expansion_opt: Path.t -> t -> type_expr list * type_expr
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> Types.module_type
 
+val has_local_constraints: t -> bool
+
 (* Lookup by long identifiers *)
 
 val lookup_value: Longident.t -> t -> Path.t * value_description

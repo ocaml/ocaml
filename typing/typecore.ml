@@ -164,7 +164,10 @@ let unify_exp_types loc env ty expected_ty =
   (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
     Printtyp.raw_type_expr expected_ty; *)
   try
-    unify env ty expected_ty
+    if Env.has_local_constraints env then 
+      unify env ty expected_ty
+    else
+      unify_old env ty expected_ty
   with
     Unify trace ->
       raise(Error(loc, Expr_type_clash(trace)))
@@ -1238,13 +1241,7 @@ let wrap_unpacks sexp unpacks =
 let unify_exp env exp expected_ty =
   (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
     Printtyp.raw_type_expr expected_ty; *)
-  try
-    unify env exp.exp_type expected_ty
-  with
-    Unify trace ->
-      raise(Error(exp.exp_loc, Expr_type_clash(trace)))
-  | Tags(l1,l2) ->
-      raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
+    unify_exp_types exp.exp_loc env exp.exp_type expected_ty
 
 let rec type_exp env sexp =
   let loc = sexp.pexp_loc in
