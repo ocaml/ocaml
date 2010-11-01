@@ -2445,7 +2445,9 @@ and type_statement env sexp =
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   begin_def ();
   Ident.set_current_time (get_current_level ()); 
-  let lev = get_current_level () in
+  let lev = get_current_level () + 1000 in
+  Ctype.init_def lev;
+
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
@@ -2456,11 +2458,13 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) = 
-	  if untyped_has_variants spat then 
+(*	  if untyped_has_variants spat then 
 	    type_pattern ~lev env spat scope (newvar ()) 
 	  else
+*)
 	    (* ty_arg must be created here so that it has the right level
 	       for principality *)
+
 	    let ty_arg = instance ~partial:!Clflags.principal ty_arg in 
 	    type_pattern ~lev env spat scope ty_arg 
 	in
@@ -2496,14 +2500,13 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     List.iter (iter_pattern (fun {pat_type=t} -> generalize_structure t)) patl
   end;
   (* to make sure the new constructors don't escape*)
-  Ctype.init_def(Ident.current_time()); 
+(*  Ctype.init_def(Ident.current_time()); *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let ty_arg' = instance ty_arg in
   let cases =
     List.map2
       (fun (pat, (ext_env, unpacks)) (spat, sexp) ->
         let sexp = wrap_unpacks sexp unpacks in
-	let ty_res = expand_head ext_env ty_res in
         let exp = type_expect ?in_function ext_env sexp ty_res in
         ({pat with pat_type = ty_arg'}, exp))
       pat_env_list caselist
@@ -2514,6 +2517,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 
 
   end_def ();
+  unify_exp_types Location.none env ty_res (newvar ()) ;
   let partial =
     match partial_loc with
     | None -> Partial
