@@ -2445,7 +2445,7 @@ and type_statement env sexp =
 and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
   begin_def ();
   Ident.set_current_time (get_current_level ()); 
-  let lev = get_current_level () + 1000 in
+  let lev = Ident.current_time () + 1000 in
   Ctype.init_def lev;
 
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
