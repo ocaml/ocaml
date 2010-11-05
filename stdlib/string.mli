@@ -94,6 +94,13 @@ val iter : (char -> unit) -> string -> unit
    the characters of [s].  It is equivalent to
    [f s.[0]; f s.[1]; ...; f s.[String.length s - 1]; ()]. *)
 
+val iteri : (int -> char -> unit) -> string -> unit
+(** Same as {!String.iter}, but the
+   function is applied to the index of the element as first argument (counting from 0),
+   and the character itself as second argument.
+   @since 3.13.0
+*)
+
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
    represented by escape sequences, following the lexical
