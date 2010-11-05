@@ -40,8 +40,6 @@ struct
 end
 
 
-let constructor_descrs_called = ref 0
-
 let maybe_gadt_ty_res existentials ty_res = 
   match ty_res.desc with
   | Tconstr(_,lst,_) ->
@@ -100,7 +98,6 @@ let constructor_descrs ty_res cstrs priv =
 		in
 		Btype.TypeSet.elements (Btype.TypeSet.diff arg_vars res_vars)
 	in
-	incr constructor_descrs_called;
 	let is_generalized = 
 	  match ty_res_opt with
 	    None -> false

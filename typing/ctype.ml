@@ -1990,8 +1990,10 @@ and unify3 mode env t1 t1' t2 t2' =
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
-
-
+  if !Clflags.principal then begin
+    update_level !env t1.level t2;
+    update_level !env t2.level t1;
+  end;
   let old_link () = 
     occur !env t1' t2';
     update_level !env t1'.level t2;

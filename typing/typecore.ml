@@ -2375,8 +2375,8 @@ and type_expect ?in_function env sexp ty_expected' =
         exp_type = ty_expected;
         exp_env = env }
   | Pexp_tuple sexpl ->
-      let subtypes = List.map (fun _ -> newvar ()) sexpl in 
-      let to_unify = newty (Ttuple subtypes) in
+      let subtypes = List.map (fun _ -> newgenvar ()) sexpl in 
+      let to_unify = newgenty (Ttuple subtypes) in
       unify_exp_types loc env to_unify ty_expected ;
       let expl = List.map2 (fun body ty -> type_expect env body ty) sexpl subtypes in
       re {
