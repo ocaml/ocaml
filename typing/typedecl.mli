@@ -71,6 +71,7 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
+  | Varying_anonymous
 
 exception Error of Location.t * error
 

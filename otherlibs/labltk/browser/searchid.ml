@@ -222,14 +222,19 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
           if matches vd.val_type then [lid_of_id id, Pvalue] else []
       | Tsig_type (id, td, _) ->
           if
+          matches (newconstr (Pident id) td.type_params) ||
           begin match td.type_manifest with
             None -> false
           | Some t -> matches t
           end ||
           begin match td.type_kind with
             Type_abstract -> false
-          | Type_generalized_variant l -> (* GAH: pretty sure this is wrong *)
-            List.exists l ~f:(fun (_, l, r) -> List.exists l ~f:matches || (match r with None -> false | Some x -> matches x))
+          | Type_variant l ->
+            List.exists l ~f:
+            begin fun (_, l, r) ->
+              List.exists l ~f:matches ||
+              match r with None -> false | Some x -> matches x
+            end
           | Type_record(l, rep) ->
             List.exists l ~f:(fun (_, _, t) -> matches t)
           end

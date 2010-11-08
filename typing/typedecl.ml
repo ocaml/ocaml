@@ -42,6 +42,7 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
+  | Varying_anonymous
 
 exception Error of Location.t * error
 
@@ -172,7 +173,7 @@ let transl_declaration env (name, sdecl) id =
 	    else*)
 
 	    let ret = 
-	      Type_generalized_variant
+	      Type_variant
 		(List.map
                    (fun (name, args,ret_type, loc) ->
 		     let restore = 
@@ -253,7 +254,7 @@ let generalize_decl decl =
   begin match decl.type_kind with
     Type_abstract ->
       ()
-  | Type_generalized_variant v ->
+  | Type_variant v ->
       List.iter (fun (_, tyl,ret_type_opt) -> List.iter Ctype.generalize tyl; may Ctype.generalize ret_type_opt) v
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
@@ -265,12 +266,7 @@ let generalize_decl decl =
 
 (* Check that all constraints are enforced *)
 
-module TypeSet =
-  Set.Make
-    (struct
-      type t = type_expr
-      let compare t1 t2 = t1.id - t2.id
-    end)
+module TypeSet = Btype.TypeSet
 
 let rec check_constraints_rec env loc visited ty =
   let ty = Ctype.repr ty in
@@ -321,7 +317,7 @@ let check_constraints env (_, sdecl) (_, decl) =
   in
   begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_generalized_variant l ->
+  | Type_variant l ->
       process_variants l
   | Type_record (l, _) ->
       let rec find_pl = function
@@ -355,7 +351,7 @@ let check_constraints env (_, sdecl) (_, decl) =
 *)
 let check_abbrev env (_, sdecl) (id, decl) =
   match decl with
-    {type_kind = (Type_generalized_variant _ | Type_record _); type_manifest = Some ty} ->
+    {type_kind = (Type_variant _ | Type_record _); type_manifest = Some ty} ->
       begin match (Ctype.repr ty).desc with
         Tconstr(path, args, _) ->
           begin try
@@ -523,7 +519,7 @@ let compute_variance env tvl nega posi cntr ty =
 let make_variance ty = (ty, ref false, ref false, ref false)
 let whole_type decl =
   match decl.type_kind with
-  | Type_generalized_variant tll ->
+  | Type_variant tll ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, tl,_) -> Btype.newgenty (Ttuple tl)) tll)) 
   | Type_record (ftl, _) ->
@@ -534,56 +530,16 @@ let whole_type decl =
         Some ty -> ty
       | _ -> Btype.newgenty (Ttuple [])
 
-let compute_variance_decl env check decl (required, loc) =
-  if decl.type_kind = Type_abstract && decl.type_manifest = None then
-    List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
-      required
-  else
+let compute_variance_type env check (required, loc) decl tyl =
   let params = List.map Btype.repr decl.type_params in
   let tvl0 = List.map make_variance params in
-  let fvl = if check then Ctype.free_variables (whole_type decl) else [] in
+  let body = Btype.newgenty (Ttuple (List.map snd tyl)) in
+  let fvl = if check then Ctype.free_variables body else [] in
   let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
   let tvl1 = List.map make_variance fvl in
   let tvl2 = List.map make_variance fvl in
   let tvl = tvl0 @ tvl1 in
-  let is_gadt = 
-    match decl.type_kind with
-    | Type_generalized_variant tll ->
-	let ret = ref false in 
-	List.iter
-          (function 
-	    | (_,_,Some _) ->
-		ret:=true;
-	    | _ -> ())
-	  tll;
-	!ret
-    | _ -> false
-  in
-  if is_gadt then
-    List.map (fun _ -> (true,true,true)) params
-  else
-  begin begin match decl.type_kind with
-  | Type_abstract ->
-      begin match decl.type_manifest with
-        None -> assert false
-      | Some ty -> compute_variance env tvl true false false ty
-      end
-  | Type_generalized_variant tll ->
-      List.iter
-        (fun (_,tl,ret_type_opt) ->
-	  match ret_type_opt with
-	  | None ->
-              List.iter (compute_variance env tvl true false false) tl
-	  | Some ret_type ->
-	      fatal_error "gadt not properly handled")
-        tll;
-  | Type_record (ftl, _) ->
-      List.iter
-        (fun (_, mut, ty) ->
-          let cn = (mut = Mutable) in
-          compute_variance env tvl true cn cn ty)
-        ftl
-  end;
+  List.iter (fun (cn,ty) -> compute_variance env tvl true cn cn ty) tyl;
   let required =
     List.map (fun (c,n as r) -> if c || n then r else (true,true))
       required
@@ -613,7 +569,63 @@ let compute_variance_decl env check decl (required, loc) =
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
-  end
+
+let add_false = List.map (fun ty -> false, ty)
+
+let rec anonymous env ty =
+  match (Ctype.expand_head env ty).desc with
+  | Tvar -> false
+  | Tobject (fi, _) ->
+      let _, rv = Ctype.flatten_fields fi in anonymous env rv
+  | Tvariant row ->
+      let rv = Btype.row_more row in anonymous env rv
+  | _ -> true
+      
+let compute_variance_decl env check decl (required, loc as rloc) =
+  if decl.type_kind = Type_abstract && decl.type_manifest = None then
+    List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
+      required
+  else match decl.type_kind with
+  | Type_abstract ->
+      begin match decl.type_manifest with
+        None -> assert false
+      | Some ty -> compute_variance_type env check rloc decl [false, ty]
+      end
+  | Type_variant tll ->
+      if List.for_all (fun (_,_,ret) -> ret = None) tll then
+        compute_variance_type env check rloc decl
+          (add_false (List.flatten (List.map (fun (_,tyl,_) -> tyl) tll)))
+      else begin match
+        List.map
+          (fun (_,tl,ret_type_opt) ->
+	    match ret_type_opt with
+	    | None ->
+                compute_variance_type env check rloc
+                  {decl with type_private = Private}
+                  (add_false tl)
+	    | Some ret_type ->
+                match Ctype.repr ret_type with
+                | {desc=Tconstr (path, tyl, _)} ->
+                    let varying =
+                      List.filter
+                        (fun ((ty1,ty2),(c,n)) -> (c||n) && anonymous env ty2)
+                        (List.combine (List.combine decl.type_params tyl)
+                           required)
+                    in
+                    let vpar, vret = List.split (List.map fst varying) in
+                    if not (Ctype.equal env true vpar vret) then
+                      raise (Error(loc, Varying_anonymous));
+                    compute_variance_type env check rloc
+                      {decl with type_params = tyl; type_private = Private}
+                      (add_false tl)
+                | _ -> assert false)
+          tll
+      with vari :: _ -> vari
+      | _ -> assert false
+      end
+  | Type_record (ftl, _) ->
+      compute_variance_type env check rloc decl
+        (List.map (fun (_, mut, ty) -> (mut = Mutable, ty)) ftl)
 
 let is_sharp id =
   let s = Ident.name id in
@@ -983,10 +995,10 @@ let report_error ppf = function
         (Includecore.report_type_mismatch "the original" "this" "definition")
         errs
   | Constraint_failed (ty, ty') ->
-      fprintf ppf "Constraints are not satisfied in this type.@.";
       Printtyp.reset_and_mark_loops ty;
       Printtyp.mark_loops ty';
-      fprintf ppf "@[<hv>Type@ %a@ should be an instance of@ %a@]"
+      fprintf ppf "@[%s@ @[<hv>Type@ %a@ should be an instance of@ %a@]@]"
+        "Constraints are not satisfied in this type."
         Printtyp.type_expr ty Printtyp.type_expr ty'
   | Parameters_differ (path, ty, ty') ->
       Printtyp.reset_and_mark_loops ty;
@@ -1015,7 +1027,7 @@ let report_error ppf = function
       fprintf ppf "A type variable is unbound in this type declaration";
       let ty = Ctype.repr ty in
       begin match decl.type_kind, decl.type_manifest with
-      | Type_generalized_variant tl, _ ->
+      | Type_variant tl, _ ->
           explain_unbound ppf ty tl (fun (_,tl,_) -> 
 	    Btype.newgenty (Ttuple tl)) 
             "case" (fun (lab,_,_) -> lab ^ " of ") 
@@ -1050,12 +1062,11 @@ let report_error ppf = function
         | _ -> "th"
       in
       if n < 1 then
-        fprintf ppf "%s@ %s@ %s"
-          "In this definition, a type variable"
-          "has a variance that is not reflected"
-          "by its occurrence in type parameters."
+        fprintf ppf "@[%s@ %s@]"
+          "In this definition, a type variable has a variance that"
+          "is not reflected by its occurrence in type parameters."
       else
-        fprintf ppf "%s@ %s@ %s %d%s %s %s,@ %s %s"
+        fprintf ppf "@[%s@ %s@ %s %d%s %s %s,@ %s %s@]"
           "In this definition, expected parameter"
           "variances are not satisfied."
           "The" n (suffix n)
@@ -1065,3 +1076,7 @@ let report_error ppf = function
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
       fprintf ppf "This fixed type %s" r
+  | Varying_anonymous ->
+      fprintf ppf "@[%s@ %s@ %s@]"
+        "In this GADT definition," "the variance of some parameter"
+        "cannot be checked"

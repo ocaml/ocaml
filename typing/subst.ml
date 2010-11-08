@@ -166,8 +166,8 @@ let type_declaration s decl =
       type_kind =
         begin match decl.type_kind with
           Type_abstract -> Type_abstract
-        | Type_generalized_variant cstrs ->
-            Type_generalized_variant(
+        | Type_variant cstrs ->
+            Type_variant(
               List.map (fun (n, args, ret_type_opt) -> 
 		let ret_type_opt = 
 		  Misc.may_map (typexp s) ret_type_opt

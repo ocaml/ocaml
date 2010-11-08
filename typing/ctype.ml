@@ -465,7 +465,7 @@ let closed_type_decl decl =
     begin match decl.type_kind with
       Type_abstract ->
         ()
-    | Type_generalized_variant v ->
+    | Type_variant v ->
         List.iter 
 	  (fun (_, tyl,ret_type_opt) -> 
 	    match ret_type_opt with
@@ -1683,7 +1683,7 @@ let definitely_abstract env p =
     | None ->
 	match decl.type_kind with
 	| Type_abstract -> true
-	| (Type_record _ | Type_generalized_variant _) -> false
+	| (Type_record _ | Type_variant _) -> false
   in
   let in_current_module = 
     function
@@ -1874,7 +1874,7 @@ and mcomp_type_decl type_pairs subst env p1 p2 =
 	  mcomp_record_description type_pairs subst env lst lst'
 	else
 	  raise (Unify [])
-    | Type_generalized_variant v1, Type_generalized_variant v2 ->
+    | Type_variant v1, Type_variant v2 ->
 	mcomp_variant_description type_pairs subst env v1 v2
     | _ -> ()
 
@@ -3883,8 +3883,8 @@ let nondep_type_decl env mid id is_covariant decl =
       try match decl.type_kind with
         Type_abstract ->
           Type_abstract
-      | Type_generalized_variant cstrs ->
-          Type_generalized_variant
+      | Type_variant cstrs ->
+          Type_variant
             (List.map
                (fun (c, tl,ret_type_opt) -> 
 		 let ret_type_opt = 

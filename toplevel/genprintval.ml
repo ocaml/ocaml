@@ -267,7 +267,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                     tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_generalized_variant constr_list} ->
+                | {type_kind = Type_variant constr_list} ->
 		    process_variants  constr_list
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with

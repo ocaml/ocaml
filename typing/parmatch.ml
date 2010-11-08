@@ -131,7 +131,7 @@ let rec get_type_descr ty tenv =
 
 let rec get_constr tag ty tenv =
   match get_type_descr ty tenv with
-  | {type_kind=Type_generalized_variant constr_list} ->
+  | {type_kind=Type_variant constr_list} ->
       Datarepr.find_constr_by_tag tag constr_list
   | {type_manifest = Some _} ->
       get_constr tag (Ctype.expand_head_once tenv (clean_copy ty)) tenv
@@ -1847,7 +1847,7 @@ let generate_all (env:Env.t) : pattern -> pattern list =
 	    let (_, ty_res) = Ctype.instance_constructor constr in
 	    let decl = get_type_descr ty_res env in 
 	    begin match decl.type_kind with
-	    | Type_generalized_variant constr_list ->
+	    | Type_variant constr_list ->
 		let lid_of_tyres = 
 		  match (Ctype.repr ty_res).desc with (* GAH : ask garrigue, without this repr it will not work *)
 		  | Tconstr(p,_,_) ->

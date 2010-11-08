@@ -219,7 +219,7 @@ module Analyser =
       match type_kind with
         Types.Type_abstract ->
           Odoc_type.Type_abstract
-      | Types.Type_generalized_variant l -> (* GAH: don't know if this is right *)
+      | Types.Type_variant l -> (* GAH: don't know if this is right *)
           let f (constructor_name, type_expr_list, ret_type) =
             let comment_opt =
               try
