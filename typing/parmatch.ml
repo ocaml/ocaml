@@ -1696,10 +1696,11 @@ let check_partial_all v casel =
 
   let rec get_first f = 
     function
-      | [] -> None
+      | [] -> print_endline "failure";None
       | x :: xs -> 
+	  print_endline "trying";
 	  match f x with 
-	  | None -> get_first f xs
+	  | None -> print_endline "sucess"; get_first f xs
 	  | x -> x
 
 
@@ -1775,16 +1776,20 @@ let rec record_lid env ty =
 	    | _ -> assert false
 	  in
 	  let results = select (List.map loop lst) in
-	  List.map 
-	    (fun lst ->
-	      let arg = 
-		match lst with
-		  [] -> None
-		| [x] -> Some x
-		| _ -> Some (mkpat (Ppat_tuple lst))
-	      in
-	      mkpat (Ppat_construct(Longident.Lident name_of_constructor, arg, false, Some typ_lid)))
-	    results
+	  begin match lst with
+	    [] ->
+	      [mkpat (Ppat_construct(Longident.Lident name_of_constructor, None, false, Some typ_lid))]
+          | _ ->
+	      List.map 
+		(fun lst ->
+		  let arg = 
+		    match lst with
+		      [] -> assert false
+		    | [x] -> Some x
+		    | _ -> Some (mkpat (Ppat_tuple lst))
+		  in
+		  mkpat (Ppat_construct(Longident.Lident name_of_constructor, arg, false, Some typ_lid)))
+		results end
       | Tpat_variant(label,p_opt,row_desc) ->
 	  begin match p_opt with
 	  | None ->
