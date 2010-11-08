@@ -1113,11 +1113,9 @@ let rec exhaust_gadt ext pss n = match pss with
             with
             | Rsome r -> Rsome (List.map (fun row ->  (set_args p row)) r)
             | r       -> r in
-	let before = 
-          try_many_gadt try_non_omega constrs
-	in
+	let before = try_many_gadt try_non_omega constrs in
         if
-	  full_match_gadt constrs
+	  full_match_gadt constrs && not (should_extend ext constrs)
         then
 	  before
         else
@@ -2069,7 +2067,13 @@ let check_partial_gadt pred loc casel =
     if Warnings.is_active (Warnings.Partial_match "") then begin
       let pss = initial_matrix casel in
       let pss = get_mins le_pats pss in
-      do_check_partial ~pred exhaust_gadt loc casel pss 
+      let total = do_check_partial ~pred exhaust_gadt loc casel pss in 
+      if
+	total = Total && Warnings.is_active (Warnings.Fragile_match "")
+      then begin
+	do_check_fragile_gadt loc casel pss
+      end ;
+      total
     end else
       Partial  
 
