@@ -1696,11 +1696,10 @@ let check_partial_all v casel =
 
   let rec get_first f = 
     function
-      | [] -> print_endline "failure";None
+      | [] -> None
       | x :: xs -> 
-	  print_endline "trying";
 	  match f x with 
-	  | None -> print_endline "sucess"; get_first f xs
+	  | None -> get_first f xs
 	  | x -> x
 
 
