@@ -14820,7 +14820,7 @@ module Struct =
                   let is_closed = if wildcards = [] then Closed else Open
                   in
                     mkpat loc
-                      (Ppat_record (((List.map mklabpat ps), is_closed)))
+                      (Ppat_record (((List.map mklabpat ps), is_closed, None)))
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant

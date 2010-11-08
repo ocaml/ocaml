@@ -532,7 +532,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let is_wildcard = fun [ <:patt< _ >> -> True | _ -> False ] in
         let (wildcards,ps) = List.partition is_wildcard ps in
         let is_closed = if wildcards = [] then Closed else Open in
-        mkpat loc (Ppat_record (List.map mklabpat ps, is_closed))
+        mkpat loc (Ppat_record (List.map mklabpat ps, is_closed, None))
     | PaStr loc s ->
         mkpat loc (Ppat_constant (Const_string (string_of_string_token loc s)))
     | <:patt@loc< ($p1$, $p2$) >> ->

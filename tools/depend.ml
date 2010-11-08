@@ -110,7 +110,7 @@ let rec add_pattern bv pat =
   | Ppat_constant _ -> ()
   | Ppat_tuple pl -> List.iter (add_pattern bv) pl
   | Ppat_construct(c, op, _, _) -> add bv c; add_opt add_pattern bv op
-  | Ppat_record(pl, _) ->
+  | Ppat_record(pl, _, _) ->
       List.iter (fun (lbl, p) -> add bv lbl; add_pattern bv p) pl
   | Ppat_array pl -> List.iter (add_pattern bv) pl
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
