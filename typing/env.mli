@@ -46,6 +46,7 @@ val lookup_annot: Longident.t -> t -> Path.t * Annot.ident
 val lookup_constructor: Longident.t -> t -> constructor_description
 val lookup_constructors_by_type: Longident.t -> t -> (string * constructor_description) list
 val lookup_label: Longident.t -> t -> label_description
+val lookup_labels_by_type: Longident.t -> t -> (string * label_description) list
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
 val lookup_module: Longident.t -> t -> Path.t * module_type
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration

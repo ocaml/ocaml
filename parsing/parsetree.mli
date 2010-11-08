@@ -73,7 +73,7 @@ and pattern_desc =
   | Ppat_tuple of pattern list
   | Ppat_construct of Longident.t * pattern option * bool * Longident.t option
   | Ppat_variant of label * pattern option
-  | Ppat_record of (Longident.t * pattern) list * closed_flag
+  | Ppat_record of (Longident.t * pattern) list * closed_flag * Longident.t option
   | Ppat_array of pattern list
   | Ppat_or of pattern * pattern
   | Ppat_constraint of pattern * core_type

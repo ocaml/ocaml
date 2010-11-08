@@ -69,7 +69,7 @@ let rec get_vars ((vacc, asacc) as acc) p =
   | Ppat_tuple pl -> List.fold_left get_vars acc pl
   | Ppat_construct (_, po, _, _) -> get_vars_option acc po
   | Ppat_variant (_, po) -> get_vars_option acc po
-  | Ppat_record (ipl, cls) ->
+  | Ppat_record (ipl, cls, _) ->
       List.fold_left (fun a (_, p) -> get_vars a p) acc ipl
   | Ppat_array pl -> List.fold_left get_vars acc pl
   | Ppat_or (p1, _p2) -> get_vars acc p1

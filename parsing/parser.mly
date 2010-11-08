@@ -1258,7 +1258,7 @@ simple_pattern:
   | SHARP type_longident
       { mkpat(Ppat_type $2) }
   | LBRACE lbl_pattern_list record_pattern_end RBRACE
-      { mkpat(Ppat_record(List.rev $2, $3)) }
+      { mkpat(Ppat_record(List.rev $2, $3, None)) }
   | LBRACE lbl_pattern_list opt_semi error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET

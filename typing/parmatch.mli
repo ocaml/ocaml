@@ -56,11 +56,10 @@ val check_partial:
     (pattern * expression) list -> 
     partial
 val check_partial_gadt: 
-    Env.t -> 
+(*    Env.t -> *)
     (Parsetree.pattern -> Typedtree.pattern option) -> 
     Location.t -> 
     (pattern * expression) list -> 
-    Parsetree.pattern list -> 
     partial
 val check_unused: Env.t -> (pattern * expression) list -> unit
 

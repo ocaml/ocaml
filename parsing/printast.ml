@@ -189,7 +189,7 @@ and pattern i ppf x =
   | Ppat_variant (l, po) ->
       line i ppf "Ppat_variant \"%s\"\n" l;
       option i pattern ppf po;
-  | Ppat_record (l, c) ->
+  | Ppat_record (l, c, _) ->
       line i ppf "Ppat_record\n";
       list i longident_x_pattern ppf l;
   | Ppat_array (l) ->

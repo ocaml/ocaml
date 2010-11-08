@@ -47,6 +47,7 @@ type t = {
   constrs: constructor_description Ident.tbl;
   constrs_by_type: (string * constructor_description) list Ident.tbl;
   labels: label_description Ident.tbl;
+  labels_by_type: (string * label_description) list Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
@@ -69,6 +70,7 @@ and structure_components = {
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_constrs_by_type: (string, ((string * constructor_description) list * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
+  mutable comp_labels_by_type: (string, ((string * label_description) list * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
   mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
@@ -90,7 +92,7 @@ let map_values f t = {t with values = Ident.map_tbl f t.values}
 
 let empty = {
   values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
-  labels = Ident.empty; types = Ident.empty;
+  labels = Ident.empty; labels_by_type = Ident.empty; types = Ident.empty; 
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty; constrs_by_type = Ident.empty ;
@@ -437,6 +439,8 @@ and lookup_constructors_by_type =
   lookup_simple (fun env -> env.constrs_by_type) (fun sc -> sc.comp_constrs_by_type)
 and lookup_label =
   lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
+and lookup_labels_by_type =
+  lookup_simple (fun env -> env.labels_by_type) (fun sc -> sc.comp_labels_by_type)
 and lookup_type =
   lookup (fun env -> env.types) (fun sc -> sc.comp_types)
 and lookup_modtype =
@@ -527,6 +531,7 @@ let rec components_of_module env sub path mty =
         { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
           comp_constrs = Tbl.empty; comp_constrs_by_type = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
+	  comp_labels_by_type = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in
@@ -560,10 +565,15 @@ let rec components_of_module env sub path mty =
               (fun (name, descr) ->
                 c.comp_constrs <- Tbl.add name (descr, nopos) c.comp_constrs)
               constructors;
+	    let labels = labels_of_type path decl' in
+	    let labels_by_type = 
+	      Tbl.add (Ident.name id) (labels,nopos) c.comp_labels_by_type
+	    in
+	    c.comp_labels_by_type <- labels_by_type;
             List.iter
               (fun (name, descr) ->
                 c.comp_labels <- Tbl.add name (descr, nopos) c.comp_labels)
-              (labels_of_type path decl');
+              (labels);
             env := store_type_infos id path decl !env
         | Tsig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
@@ -611,7 +621,8 @@ let rec components_of_module env sub path mty =
         Structure_comps {
           comp_values = Tbl.empty; comp_annotations = Tbl.empty;
           comp_constrs = Tbl.empty; comp_constrs_by_type = Tbl.empty;
-          comp_labels = Tbl.empty; comp_types = Tbl.empty;
+          comp_labels = Tbl.empty; comp_labels_by_type = Tbl.empty;
+          comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty })
@@ -631,6 +642,7 @@ and store_annot id path annot env =
 
 and store_type id path info env =
   let constructors = constructors_of_type path info in
+  let labels = labels_of_type path info in 
   { env with
     constrs =
       List.fold_right
@@ -643,8 +655,9 @@ and store_type id path info env =
       List.fold_right
         (fun (name, descr) labels ->
           Ident.add (Ident.create name) descr labels)
-        (labels_of_type path info)
+        labels
         env.labels;
+    labels_by_type = Ident.add id labels env.labels_by_type;
     types = Ident.add id (path, info) env.types;
     summary = Env_type(env.summary, id, info) }
 

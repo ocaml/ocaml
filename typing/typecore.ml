@@ -609,10 +609,27 @@ let rec type_pat mode (env:Env.t ref) sp expected_ty  =
         pat_loc = loc;
         pat_type =  expected_ty;
         pat_env = !env }
-  |Ppat_record(lid_sp_list, closed) -> 
-
+  | Ppat_record(lid_sp_list, closed,typ_lid) -> 
       let type_label_pat (lid, sarg) =
-        let label = Typetexp.find_label !env loc lid in
+        let label = 
+	  match typ_lid with
+	  | None ->
+	      Typetexp.find_label !env loc lid 
+	  | Some lid ->
+	    let label_name = Longident.last lid in 
+	    let labels = 
+	      match lid with
+	      | Longident.Ldot (Longident.Lident "*predef*", s) -> 
+		  Env.lookup_labels_by_type (Longident.Lident s) Env.initial
+	      | _ -> 
+		  Env.lookup_labels_by_type lid !env 		
+	    in
+	    match List.filter (fun (n,_) -> n = label_name) labels with
+	    | [] -> raise Not_found
+	    | [(_,c)] -> 
+		c
+	    | _ -> assert false
+	in
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
         if vars = [] then end_def ();
@@ -695,6 +712,7 @@ let type_pat ?lev env sp expected_ty =
 	Some x end;
   try
     let r = type_pat Normal env sp expected_ty in
+    iter_pattern (fun p -> p.pat_env <- !env) r;
     pattern_level := None;
     r
   with
@@ -1214,7 +1232,7 @@ let untyped_has_variants p =
     | Ppat_alias (p,_) | Ppat_constraint (p,_) 
     | Ppat_lazy p ->
 	f p 
-    | Ppat_record (args,flag) ->
+    | Ppat_record (args,flag,_) ->
 	List.iter (fun (_,p) -> f p) args 
   in
   let rec loop status p = 
@@ -2512,7 +2530,7 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
       pat_env_list caselist
   in
   let check_partial loc cases = 
-    Parmatch.check_partial_gadt env (partial_pred env ty_arg) loc cases (List.map fst caselist)
+    Parmatch.check_partial_gadt (*env*) (partial_pred env ty_arg) loc cases(* (List.map fst caselist)*)
   in 
 
 
@@ -2585,7 +2603,7 @@ and type_let env rec_flag spat_sexp_list scope allow =
       spat_sexp_list pat_list in
 
   let check_partial nv (untyped_pat:Parsetree.pattern) loc cases = 
-    Parmatch.check_partial_gadt env (partial_pred env nv) loc cases [untyped_pat]
+    Parmatch.check_partial_gadt (*env*) (partial_pred env nv) loc cases (*[untyped_pat]*)
   in 
   iter4
     (fun pat exp nv untyped_pat -> ignore(check_partial nv untyped_pat pat.pat_loc [pat, exp]))
