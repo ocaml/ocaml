@@ -1879,10 +1879,10 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
     end
 
 let do_check_partial_normal loc casel pss = 
-  do_check_partial exhaust_gadt loc casel pss
+  do_check_partial exhaust loc casel pss
 
 let do_check_partial_gadt pred loc casel pss = 
-  do_check_partial ~pred exhaust loc casel pss
+  do_check_partial ~pred exhaust_gadt loc casel pss
 
 
 
