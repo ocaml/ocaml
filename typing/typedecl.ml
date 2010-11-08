@@ -533,8 +533,8 @@ let whole_type decl =
 let compute_variance_type env check (required, loc) decl tyl =
   let params = List.map Btype.repr decl.type_params in
   let tvl0 = List.map make_variance params in
-  let body = Btype.newgenty (Ttuple (List.map snd tyl)) in
-  let fvl = if check then Ctype.free_variables body else [] in
+  let args = Btype.newgenty (Ttuple params) in
+  let fvl = if check then Ctype.free_variables args else [] in
   let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
   let tvl1 = List.map make_variance fvl in
   let tvl2 = List.map make_variance fvl in
@@ -553,11 +553,8 @@ let compute_variance_type env check (required, loc) decl tyl =
     tvl0 required;
   List.iter2
     (fun (ty, c1, n1, t1) (_, c2, n2, t2) ->
-      if !c1 && not !c2 || !n1 && not !n2  
-      (* || !t1 && not !t2 && decl.type_kind = Type_abstract *)
-      then raise (Error(loc,
-                        if not (!c2 || !n2) then Unbound_type_var (ty, decl)
-                        else Bad_variance (0, (!c1,!n1), (!c2,!n2)))))
+      if !c1 && not !c2 || !n1 && not !n2
+      then raise (Error(loc, Bad_variance (0, (!c1,!n1), (!c2,!n2)))))
     tvl1 tvl2;
   let pos = ref 0 in
   List.map2
