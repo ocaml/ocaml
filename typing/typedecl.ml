@@ -163,36 +163,32 @@ let transl_declaration env (name, sdecl) id =
               cstrs;
             if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs)
                > (Config.max_tag + 1) then
-              raise(Error(sdecl.ptype_loc, Too_many_constructors)); (* GAH : decide or not to add the following code *)
-(*	    if List.for_all (fun (_,_,x,_) -> match x with Some _ -> false | None -> true) cstrs then
-            Type_variant
-              (List.map
-                 (fun (name, args,_, loc) ->
-                    (name, List.map (transl_simple_type env true) args))
-              cstrs)
-	    else*)
-
-	    let ret = 
-	      Type_variant
-		(List.map
-                   (fun (name, args,ret_type, loc) ->
-		     let restore = 
-		       match ret_type with
-		       | None -> (fun () -> ())
-                       (* if it's a generalized constructor we must first 
-			  narrow and then widen so as to not introduce any new constraints *)
-		       | Some _ -> 
-			   let z = narrow () in 
-			   reset_type_variables ();
-			   (fun () -> widen z)
-		     in
-		     let args = List.map (transl_simple_type env false) args in 
-		     let ret_type = may_map (transl_simple_type env false) ret_type in
-		     restore ();
-                     (name, args,ret_type))
-		   cstrs)
-	    in
-	    ret
+              raise(Error(sdecl.ptype_loc, Too_many_constructors));
+	    let make_cstr (name, args, ret_type, loc) =
+	      let restore = 
+		match ret_type with
+		| None -> (fun () -> ())
+                (* if it's a generalized constructor we must first narrow and
+                   then widen so as to not introduce any new constraints *)
+		| Some _ -> 
+		    let z = narrow () in 
+		    reset_type_variables ();
+		    (fun () -> widen z)
+	      in
+	      let args = List.map (transl_simple_type env false) args in 
+              let make_ret sty =
+                let ty = transl_simple_type env false sty in
+                let p = Path.Pident id in
+                match (Ctype.repr ty).desc with
+                  Tconstr (p', _, _) when Path.same p p' -> ty
+                | _ -> raise(Error(sty.ptyp_loc,
+                       Constraint_failed (ty, Ctype.newconstr p params)))
+              in
+	      let ret_type = may_map make_ret ret_type in
+	      restore ();
+              (name, args, ret_type)
+  	    in
+	    Type_variant (List.map make_cstr cstrs)
 	    
         | Ptype_record lbls ->
             let all_labels = ref StringSet.empty in
