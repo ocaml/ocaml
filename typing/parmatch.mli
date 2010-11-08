@@ -56,7 +56,6 @@ val check_partial:
     (pattern * expression) list -> 
     partial
 val check_partial_gadt: 
-(*    Env.t -> *)
     (Parsetree.pattern -> Typedtree.pattern option) -> 
     Location.t -> 
     (pattern * expression) list -> 

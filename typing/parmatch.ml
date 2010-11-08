@@ -1878,8 +1878,11 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
         fatal_error "Parmatch.check_partial"
     end
 
+let do_check_partial_normal loc casel pss = 
+  do_check_partial exhaust_gadt loc casel pss
 
-
+let do_check_partial_gadt pred loc casel pss = 
+  do_check_partial ~pred exhaust loc casel pss
 
 
 
@@ -1930,7 +1933,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
       the type is extended.
 *)
 
-let do_check_fragile loc casel pss =
+let do_check_fragile_param exhaust loc casel pss =
   let exts =
     List.fold_left
       (fun r (p,_) -> collect_paths_from_pat r p)
@@ -1950,29 +1953,8 @@ let do_check_fragile loc casel pss =
             | Rsome _ -> ())
           exts
 
-let do_check_fragile_gadt loc casel pss =
-  let exts =
-    List.fold_left
-      (fun r (p,_) -> collect_paths_from_pat r p)
-      [] casel in
-  match exts with
-  | [] -> ()
-  | _ -> match pss with
-    | [] -> ()
-    | ps::_ ->
-        List.iter
-          (fun ext ->
-            match exhaust_gadt (Some ext) pss (List.length ps) with
-            | Rnone ->
-                Location.prerr_warning
-                  loc
-                  (Warnings.Fragile_match (Path.name ext))
-            | Rsome _ -> ())
-          exts
-
-
-
-
+let do_check_fragile_normal = do_check_fragile_param exhaust
+let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
 
 (********************************)
 (* Exported unused clause check *)
@@ -2053,11 +2035,11 @@ let fluid pat = irrefutable pat && inactive pat.pat_desc
    on exhaustive matches only.
 *)
 
-let check_partial loc casel = 
+let check_partial_param do_check_partial do_check_fragile loc casel = 
     if Warnings.is_active (Warnings.Partial_match "") then begin
       let pss = initial_matrix casel in
       let pss = get_mins le_pats pss in
-      let total = do_check_partial exhaust loc casel pss in
+      let total = do_check_partial loc casel pss in
       if
 	total = Total && Warnings.is_active (Warnings.Fragile_match "")
       then begin
@@ -2067,24 +2049,16 @@ let check_partial loc casel =
     end else
       Partial  
 
-let check_partial_gadt pred loc casel = 
-    if Warnings.is_active (Warnings.Partial_match "") then begin
-      let pss = initial_matrix casel in
-      let pss = get_mins le_pats pss in
-      let total = do_check_partial ~pred exhaust_gadt loc casel pss in 
-      if
-	total = Total && Warnings.is_active (Warnings.Fragile_match "")
-      then begin
-	do_check_fragile_gadt loc casel pss
-      end ;
-      total
-    end else
-      Partial  
+let check_partial = 
+    check_partial_param 
+      do_check_partial_normal 
+      do_check_fragile_normal
 
 let check_partial_gadt pred loc casel =
+  (*ignores GADT constructors *)
   let first_check = check_partial loc casel in
-(*  first_check*)
   match first_check with
   | Partial -> Partial
   | Total -> 
-      check_partial_gadt pred loc casel (* env pred untyped_ps (List.map fst casel) *)
+      (* checks for missing GADT constructors *)
+      check_partial_param (do_check_partial_gadt pred) do_check_fragile_gadt loc casel
