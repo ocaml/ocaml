@@ -56,6 +56,12 @@ let rec map f = function
     [] -> []
   | a::l -> let r = f a in r :: map f l
 
+let rec mapi i f = function
+    [] -> []
+  | a::l -> let r = f i a in r :: mapi (i + 1) f l
+
+let mapi f l = mapi 0 f l
+
 let rev_map f l =
   let rec rmap_f accu = function
     | [] -> accu
@@ -67,6 +73,12 @@ let rev_map f l =
 let rec iter f = function
     [] -> ()
   | a::l -> f a; iter f l
+
+let rec iteri i f = function
+    [] -> ()
+  | a::l -> f i a; iteri (i + 1) f l
+
+let iteri f l = iteri 0 f l
 
 let rec fold_left f accu l =
   match l with

@@ -75,10 +75,24 @@ val iter : f:('a -> unit) -> 'a list -> unit
    [a1; ...; an]. It is equivalent to
    [begin f a1; f a2; ...; f an; () end]. *)
 
+val iteri : f:(int -> 'a -> unit) -> 'a list -> unit
+(** Same as {!List.iter}, but the
+   function is applied to the index of the element as first argument (counting from 0),
+   and the element itself as second argument.
+   @since 3.13.0
+*)
+
 val map : f:('a -> 'b) -> 'a list -> 'b list
 (** [List.map f [a1; ...; an]] applies function [f] to [a1, ..., an],
    and builds the list [[f a1; ...; f an]]
    with the results returned by [f].  Not tail-recursive. *)
+
+val mapi : f:(int -> 'a -> 'b) -> 'a list -> 'b list
+(** Same as {!List.map}, but the
+   function is applied to the index of the element as first argument (counting from 0),
+   and the element itself as second argument.
+   @since 3.13.0
+*)
 
 val rev_map : f:('a -> 'b) -> 'a list -> 'b list
 (** [List.rev_map f l] gives the same result as
