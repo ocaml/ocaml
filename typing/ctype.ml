@@ -1990,10 +1990,6 @@ and unify3 mode env t1 t1' t2 t2' =
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
-  if !Clflags.principal then begin
-    update_level !env t1.level t2;
-    update_level !env t2.level t1;
-  end;
   let old_link () = 
     occur !env t1' t2';
     update_level !env t1'.level t2;
@@ -2001,16 +1997,25 @@ and unify3 mode env t1 t1' t2 t2' =
   in
   let switch_to_old_link () = 
     match mode with
-     | Pattern | Expression -> old_link ();
-     | Old -> () (* old_link was already called *)
+    | Pattern | Expression -> old_link ();
+    | Old -> () (* old_link was already called *)
   in
-  match d2 with
-  | Tvar ->
-      occur !env t2' t1';
+  match d1, d2 with
+  | Tvar,_ ->
+      occur !env t1 t2';
+      occur_univar !env t2;
+      update_level !env t1'.level t2;
+      link_type t1' t2;      
+  | _, Tvar ->
+      occur !env t2 t1';
       occur_univar !env t1;
-      update_level !env t2.level t1;
-      link_type t2 t1;
+      update_level !env t2'.level t1;
+      link_type t2' t1;
   | _ ->
+      if !Clflags.principal then begin
+	update_level !env t1'.level t2;
+	update_level !env t2'.level t1;
+      end;
       begin match mode with
       | Old ->
 	  old_link ()
@@ -2018,13 +2023,9 @@ and unify3 mode env t1 t1' t2 t2' =
 	  add_type_equality t1' t2' end;
       try
 	begin match (d1, d2) with
-	| (Tvar, _) ->
-	    occur !env t1' t2';
-	    occur_univar !env t2;
-            update_level !env t1.level t2;
-            link_type t1 t2;
+	| (Tvar, _) 
 	| (_, Tvar) ->
-	    (* case taken care of *)
+	    (* cases taken care of *)
 	    assert false
 	| (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
 	|| !Clflags.classic && not (is_optional l1 || is_optional l2) ->
@@ -2040,7 +2041,6 @@ and unify3 mode env t1 t1' t2 t2' =
             unify_list mode env tl1 tl2
 	| Tconstr ((Path.Pident p) as path,[],_), Tconstr ((Path.Pident p') as path',[],_)  
 	  when is_abstract_newtype !env path && is_abstract_newtype !env path' && mode = Pattern -> 
-	    (* we can assume that path != path' (this is taken care of in unify) *)
 	    let source,destination = 
 	      if Ident.binding_time p > Ident.binding_time p' then 
 		p,t2
