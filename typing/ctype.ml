@@ -2835,20 +2835,18 @@ and eqtype_list rename type_pairs subst env tl1 tl2 =
   List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
 
 and eqtype_fields rename type_pairs subst env ty1 ty2 =
+  let (fields1, rest1) = flatten_fields ty1 in
+  let (fields2, rest2) = flatten_fields ty2 in
   (* First check if same row => already equal *)
-  let row1 = get_object_row ty1 and row2 = get_object_row ty2 in
   let same_row =
-    row1 == row2 || TypePairs.mem type_pairs (row1,row2) ||
-    (rename && List.mem (row1, row2) !subst)
+    rest1 == rest2 || TypePairs.mem type_pairs (rest1,rest2) ||
+    (rename && List.mem (rest1, rest2) !subst)
   in
   if same_row then () else
-  (* Start the real work *)
-  let (fields2, rest2) = flatten_fields ty2 in
   (* Try expansion, needed when called from Includecore.type_manifest *)
   match expand_head_rigid env rest2 with
     {desc=Tobject(ty2,_)} -> eqtype_fields rename type_pairs subst env ty1 ty2
   | _ ->
-  let (fields1, rest1) = flatten_fields ty1 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   eqtype rename type_pairs subst env rest1 rest2;
   if (miss1 <> []) || (miss2 <> []) then raise (Unify []);

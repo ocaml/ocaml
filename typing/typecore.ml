@@ -2383,9 +2383,14 @@ and type_expect ?in_function env sexp ty_expected' =
         | _ -> assert false
       end
   | Pexp_match(sarg, caselist) ->
+      if !Clflags.principal then begin_def ();
       let arg = type_exp env sarg in
+      if !Clflags.principal then begin
+          end_def ();
+          generalize_structure arg.exp_type;
+      end;
       let cases, partial =
-        type_cases env arg.exp_type ty_expected (Some loc) caselist
+        type_cases env arg.exp_type ty_expected' (Some loc) caselist
       in
       re {
         exp_desc = Texp_match(arg, cases, partial);
@@ -2395,7 +2400,7 @@ and type_expect ?in_function env sexp ty_expected' =
   | Pexp_tuple sexpl ->
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in 
       let to_unify = newgenty (Ttuple subtypes) in
-      unify_exp_types loc env to_unify ty_expected ;
+      unify_exp_types loc env to_unify ty_expected' ;
       let expl = List.map2 (fun body ty -> type_expect env body ty) sexpl subtypes in
       re {
         exp_desc = Texp_tuple expl;
@@ -2525,10 +2530,22 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     List.map2
       (fun (pat, (ext_env, unpacks)) (spat, sexp) ->
         let sexp = wrap_unpacks sexp unpacks in
-        let exp = type_expect ?in_function ext_env sexp ty_res in
-        ({pat with pat_type = ty_arg'}, exp))
+        let ty_res' =
+          if !Clflags.principal then begin
+            begin_def ();
+            let ty = instance ~partial:true ty_res in
+            end_def ();
+            generalize_structure ty; ty
+          end else ty_res in
+        let exp = type_expect ?in_function ext_env sexp ty_res' in
+        ({pat with pat_type = ty_arg'},
+         {exp with exp_type = instance ty_res'}))
       pat_env_list caselist
   in
+  if !Clflags.principal then begin
+    let ty_res' = instance ty_res in
+    List.iter (fun (_,exp) -> unify_exp env exp ty_res') cases
+  end;
   let check_partial loc cases = 
     Parmatch.check_partial_gadt (*env*) (partial_pred env ty_arg) loc cases(* (List.map fst caselist)*)
   in 
