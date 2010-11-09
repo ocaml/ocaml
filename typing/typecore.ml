@@ -595,7 +595,9 @@ let rec type_pat mode env sp expected_ty  =
       if List.length sargs <> constr.cstr_arity then
         raise(Error(loc, Constructor_arity_mismatch(lid,
                                      constr.cstr_arity, List.length sargs)));
-      let (ty_args, ty_res) = instance_constructor ~in_pattern:(Some (env,get_pattern_level ())) constr in
+      let (ty_args, ty_res) = 
+	instance_constructor ~in_pattern:(Some (env,get_pattern_level ())) constr 
+      in
       begin match mode with
       | Inside_or ->
 	  unify_pat_types loc !env ty_res expected_ty
@@ -663,7 +665,8 @@ let rec type_pat mode env sp expected_ty  =
         pat_env = !env }
   |Ppat_array spl -> 
       let ty_elt = newvar() in
-      unify_pat_types loc !env (instance (Predef.type_array ty_elt)) expected_ty;
+      unify_pat_types 
+	loc !env (instance (Predef.type_array ty_elt)) expected_ty;
       let spl_ann = List.map (fun p -> (p,newvar())) spl in 
       let pl = List.map (fun (p,t) -> type_pat mode env p ty_elt) spl_ann in
       rp {
@@ -2365,7 +2368,9 @@ and type_expect ?in_function env sexp ty_expected' =
       let subtypes = List.map (fun _ -> newgenvar ()) sexpl in 
       let to_unify = newgenty (Ttuple subtypes) in
       unify_exp_types loc env to_unify ty_expected' ;
-      let expl = List.map2 (fun body ty -> type_expect env body ty) sexpl subtypes in
+      let expl = 
+	List.map2 (fun body ty -> type_expect env body ty) sexpl subtypes 
+      in
       re {
         exp_desc = Texp_tuple expl;
         exp_loc = loc;
@@ -2517,7 +2522,9 @@ and type_let env rec_flag spat_sexp_list scope allow =
   if !Clflags.principal then begin_def ();
   let spatl = List.map (fun (spat, sexp) -> spat) spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
-  let (pat_list, new_env, force, unpacks) = type_pattern_list env spatl scope nvs allow in
+  let (pat_list, new_env, force, unpacks) = 
+    type_pattern_list env spatl scope nvs allow 
+  in
   if rec_flag = Recursive then
     List.iter2
       (fun pat (_, sexp) ->
