@@ -1,3 +1,5 @@
+
+
 module Exp = 
   struct
 
@@ -127,4 +129,23 @@ module Polymorphic_variants =
 	| `A, IntLit _ -> ()
 	| `A, BoolLit _ -> ()
   end    
+;;
+
+module Propagation = 
+  struct
+ type _ t = 
+     IntLit : int -> int t
+   | BoolLit : bool -> bool t
+
+let check : type s. s t -> s = function
+  | IntLit n -> n
+  | BoolLit b -> b
+;;
+let check : type s. s t -> s = fun x ->
+  let r = match x with
+  | IntLit n -> (n : s )
+  | BoolLit b -> b
+  in r
+;;
+end
 ;;
