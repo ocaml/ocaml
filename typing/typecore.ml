@@ -1213,37 +1213,6 @@ let create_package_type loc env (p, l) =
                    List.map fst l,
                    List.map (Typetexp.transl_simple_type env false) (List.map snd l)))
 
-	
-(* same as has_variants, for an untyped tree *)
-let untyped_has_variants p = 
-  let rec iter_pattern p f = 
-    match p.ppat_desc with
-    | Ppat_any | Ppat_var _ | Ppat_constant _ 
-    | Ppat_type _ | Ppat_unpack _ | Ppat_construct _ -> ()    
-    | Ppat_array pats -> 
-	List.iter f pats
-    | Ppat_or (p1,p2) ->
-	f p1;
-	f p2
-    | Ppat_variant (label,arg) -> 
-	may f arg
-    | Ppat_tuple lst -> 
-	List.iter f lst
-    | Ppat_alias (p,_) | Ppat_constraint (p,_) 
-    | Ppat_lazy p ->
-	f p 
-    | Ppat_record (args,flag,_) ->
-	List.iter (fun (_,p) -> f p) args 
-  in
-  let rec loop status p = 
-    match p.ppat_desc with 
-      Ppat_variant _ -> status := true
-    | _ -> iter_pattern p (loop status)
-  in
-  let ret = ref false in 
-  loop ret p;
-  !ret
-
 let wrap_unpacks sexp unpacks =
   List.fold_left
     (fun sexp (name, loc) ->
@@ -1364,7 +1333,7 @@ let rec type_exp env sexp =
       end;
       let ty_res = newvar() in
       let cases, partial =
-        type_cases env arg.exp_type ty_res (Some loc) caselist
+        type_cases env arg.exp_type ty_res true loc caselist
       in
       re {
         exp_desc = Texp_match(arg, cases, partial);
@@ -1374,7 +1343,7 @@ let rec type_exp env sexp =
   | Pexp_try(sbody, caselist) ->
       let body = type_exp env sbody in
       let cases, _ =
-        type_cases env Predef.type_exn body.exp_type None caselist in
+        type_cases env Predef.type_exn body.exp_type false loc caselist in
       re {
         exp_desc = Texp_try(body, cases);
         exp_loc = loc;
@@ -2332,7 +2301,7 @@ and type_expect ?in_function env sexp ty_expected' =
       end;
       let cases, partial =
         type_cases ~in_function:(loc_fun,ty_fun) env ty_arg ty_res
-          (Some loc) caselist in
+          true loc caselist in
       let not_function ty =
         let ls, tvar = list_labels env ty in
         ls = [] && not tvar
@@ -2390,7 +2359,7 @@ and type_expect ?in_function env sexp ty_expected' =
           generalize_structure arg.exp_type;
       end;
       let cases, partial =
-        type_cases env arg.exp_type ty_expected' (Some loc) caselist
+        type_cases env arg.exp_type ty_expected' true loc caselist
       in
       re {
         exp_desc = Texp_match(arg, cases, partial);
@@ -2465,7 +2434,7 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 
-and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
+and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   begin_def ();
   Ident.set_current_time (get_current_level ()); 
   let lev = Ident.current_time () + 1000 in
@@ -2481,15 +2450,8 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) = 
-(*	  if untyped_has_variants spat then 
-	    type_pattern ~lev env spat scope (newvar ()) 
-	  else
-*)
-	    (* ty_arg must be created here so that it has the right level
-	       for principality *)
-
-	    let ty_arg = instance ~partial:!Clflags.principal ty_arg in 
-	    type_pattern ~lev env spat scope ty_arg 
+	  let ty_arg = instance ~partial:!Clflags.principal ty_arg in 
+	  type_pattern ~lev env spat scope ty_arg 
 	in
 	
         pattern_force := force @ !pattern_force;
@@ -2522,8 +2484,6 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     end_def ();
     List.iter (iter_pattern (fun {pat_type=t} -> generalize_structure t)) patl
   end;
-  (* to make sure the new constructors don't escape*)
-(*  Ctype.init_def(Ident.current_time()); *)
   let in_function = if List.length caselist = 1 then in_function else None in
   let ty_arg' = instance ty_arg in
   let cases =
@@ -2546,18 +2506,14 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
     let ty_res' = instance ty_res in
     List.iter (fun (_,exp) -> unify_exp env exp ty_res') cases
   end;
-  let check_partial loc cases = 
-    Parmatch.check_partial_gadt (*env*) (partial_pred env ty_arg) loc cases(* (List.map fst caselist)*)
-  in 
-
-
   end_def ();
-  unify_exp_types Location.none env ty_res (newvar ()) ;
+  unify_exp_types loc env ty_res (newvar ()) ;
   let partial =
-    match partial_loc with
-    | None -> Partial
-    | Some partial_loc ->  
-	check_partial partial_loc cases 
+    if partial_flag then
+      Parmatch.check_partial_gadt
+	(partial_pred env ty_arg) loc cases
+    else
+      Partial
   in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
   cases, partial
