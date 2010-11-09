@@ -29,7 +29,7 @@ Characters 469-526:
   	| Bar _, Bar _ -> true
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-(Foo _, Bar _)
+(Bar _, Foo _)
 module Nonexhaustive :
   sig
     type 'a u = C1 : int -> int u | C2 : bool -> bool u
@@ -49,9 +49,9 @@ module Nonexhaustive :
 #               Characters 119-120:
       let eval (D x) = x
                        ^
-Error: This expression has type &x36 t but an expression was expected of type
-         &x36 t
-       The type constructor &x36 would escape its scope
+Error: This expression has type &x7 t but an expression was expected of type
+         &x7 t
+       The type constructor &x7 would escape its scope
 #                       Characters 157-158:
   	  C ->
      ^
@@ -61,9 +61,9 @@ Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
       ^^^^^^^^
 Error: This pattern matches values of type int t
        but a pattern was expected which matches values of type s t
-#                         Characters 191-203:
-  	| `A, IntLit _ -> ()
-     ^^^^^^^^^^^^
-Error: This pattern matches values of type [ `A ] * s t
-       but a pattern was expected which matches values of type [ `A ] * int t
+#                         module Polymorphic_variants :
+  sig
+    type 'a t = IntLit : int -> int t | BoolLit : bool -> bool t
+    val eval : [ `A ] * 'a t -> unit
+  end
 # 
