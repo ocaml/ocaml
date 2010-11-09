@@ -680,9 +680,6 @@ let full_match_gadt env = match env with
     List.length env - List.length cleaned_env = c.cstr_consts + c.cstr_nonconsts - c.cstr_normal
 | _ -> true
 
-
-
-
 let extendable_match env = match env with
 | ({pat_desc = Tpat_construct({cstr_tag=(Cstr_constant _|Cstr_block _)},_)} as p,_) :: _ ->
     let path = get_type_path p.pat_type p.pat_env in
@@ -738,21 +735,14 @@ let rec pat_of_constrs ex_pat = function
         (pat_of_constr ex_pat cstr,
          pat_of_constrs ex_pat rem, None)}
 
-
-
-
-
 (* Sends back a pattern that complements constructor tags all_tag *)
-let complete_constrs p all_tags  = 
-  match p.pat_desc with
+let complete_constrs p all_tags = match p.pat_desc with
 | Tpat_construct (c,_) ->
     begin try
-      let not_tags = complete_tags  c.cstr_consts c.cstr_nonconsts all_tags in
-      map_filter
+      let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
+      List.map
         (fun tag ->
           let _,targs,ret_type_opt = get_constr tag p.pat_type p.pat_env in
-	  (* GAH: should figure out how to remove generalized constructors *)
-	    Some
               {c with
 	       cstr_res = c.cstr_res ;
 	       cstr_tag = tag ;
@@ -800,9 +790,7 @@ let build_other ext env =  match env with
           | {pat_desc = Tpat_construct (c,_)} -> c.cstr_tag
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-	let cnstrs  = complete_constrs p all_tags in
-        let ret = pat_of_constrs p cnstrs in 
-	ret
+	pat_of_constrs p (complete_constrs p all_tags)
     end
 | ({pat_desc = Tpat_variant (_,_,r)} as p,_) :: _ ->
     let tags =
@@ -986,26 +974,15 @@ type 'a result =
   | Rnone           (* No matching value *)
   | Rsome of 'a     (* This matching value *)
 
-(*let rec try_many cont f = function
-  | [] -> Rnone
-  | (p,pss)::rest ->
-      begin match f (p,pss) with
-      | Rnone -> try_many cont f rest
-      | r -> r
-      end
-*)
-let rec orify x y = 
-  make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env	
-
 let rec orify_many =
+  let rec orify x y = 
+    make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env	
+  in
   function
     | [] -> assert false
     | [x] -> x
     | x :: xs -> orify x (orify_many xs)
-
   
-  
-
 let rec try_many  f = function
   | [] -> Rnone
   | (p,pss)::rest ->
@@ -1165,7 +1142,6 @@ let exhaust_gadt ext pss n =
       in
       Rsome [orify_many singletons]
 
-
 (*
    Another exhaustiveness check, enforcing variant typing.
    Note that it does not check exact exhaustiveness, but whether a
@@ -1192,7 +1168,7 @@ let rec pressure_variants tdefs = function
                 try_non_omega rem && ok
             | [] -> true
           in
-          if full_match true (tdefs=None) constrs then (* GAH : ask garrigue about this, should we ignore generalized constructors?*)
+          if full_match true (tdefs=None) constrs then
             try_non_omega constrs
           else if tdefs = None then
             pressure_variants None (filter_extra pss)
