@@ -95,6 +95,7 @@ exception Cannot_apply
 
 exception Recursive_abbrev
 
+(* GADT: recursive abbrevs can appear as a result of local constraints *)
 exception Unification_recursive_abbrev of (type_expr * type_expr) list
 
 (**** Type level management ****)
@@ -776,6 +777,8 @@ let rec find_repr p1 =
 let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
+(* partial: we may not wish to copy the non generic types
+   before we call type_pat *)
 let rec copy ?(partial=false) ty =
   let copy = copy ~partial in
   let ty = repr ty in
@@ -864,6 +867,9 @@ let instance_list schl =
 
 let reified_var_counter = ref 0
     
+(* names given to new type constructors. 
+   Used for existential types and 
+   local constraints *)
 let get_new_abstract_name () = 
   let ret = Printf.sprintf "&x%d" !reified_var_counter in
   incr reified_var_counter;
@@ -1057,7 +1063,7 @@ let instance_label fixed lbl =
 
 let unify' = (* Forward declaration *)
   ref (fun env ty1 ty2 -> raise (Unify []))
-    
+
 let rec subst env level priv abbrev ty params args body =
   if List.length params <> List.length args then raise (Unify []);
   let old_level = !current_level in
@@ -1167,12 +1173,12 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           | _ -> ()
           end;
           ty'
-
-
       end
   | _ ->
       assert false
 
+(* inside objects and variants we do not want to 
+   use local constraints *)
 let expand_abbrev ?(use_local=true) = expand_abbrev_gen Public (Env.find_type_expansion ~use_local)
 
 let safe_abbrev env ty =
@@ -1290,9 +1296,9 @@ let generic_abbrev env path =
 exception Occur
 
 (* The marks are already used by [expand_abbrev]... *)
-(*let visited = ref []*)
+let visited = ref []
 
-let rec non_recursive_abbrev visited env ty0 ty =
+let rec non_recursive_abbrev env ty0 ty =
   let ty = repr ty in
   if ty == repr ty0 then raise Recursive_abbrev;
   if not (List.memq ty !visited) then begin
@@ -1300,34 +1306,32 @@ let rec non_recursive_abbrev visited env ty0 ty =
     match ty.desc with
       Tconstr(p, args, abbrev) ->
         begin try
-          non_recursive_abbrev visited env ty0 (try_expand_once_opt env ty)
+          non_recursive_abbrev env ty0 (try_expand_once_opt env ty)
         with Cannot_expand ->
           if !Clflags.recursive_types then () else
-          iter_type_expr (non_recursive_abbrev visited env ty0) ty
+          iter_type_expr (non_recursive_abbrev env ty0) ty
         end
     | Tobject _ | Tvariant _ ->
         ()
     | _ ->
         if !Clflags.recursive_types then () else
-        iter_type_expr (non_recursive_abbrev visited env ty0) ty
+        iter_type_expr (non_recursive_abbrev env ty0) ty
   end
-
-let non_recursive_abbrev = non_recursive_abbrev (ref [])
 
 let correct_abbrev env path params ty =
   check_abbrev_env env;
   let ty0 = newgenvar () in
-(*  visited := [];*)
+  visited := [];
   let abbrev = Mcons (Public, path, ty0, ty0, Mnil) in
   simple_abbrevs := abbrev;
   try
     non_recursive_abbrev env ty0
       (subst env generic_level Public (ref abbrev) None [] [] ty);
     simple_abbrevs := Mnil;
-(*    visited := []*)
+    visited := []
   with exn ->
     simple_abbrevs := Mnil;
-(*    visited := [];*)
+    visited := [];
     raise exn
 
 let rec occur_rec env visited ty0 ty =
@@ -1371,7 +1375,7 @@ let occur env ty0 ty =
     merge type_changed old;
     raise (match exn with Occur -> Unify [] | _ -> exn)
 
-
+(* checks that a local constraint is non recursive *)
 let rec local_non_recursive_abbrev visited env p ty =
   let ty = repr ty in
   if not (List.memq ty !visited) then begin
@@ -1393,9 +1397,6 @@ let rec local_non_recursive_abbrev visited env p ty =
   end
 
 let local_non_recursive_abbrev = local_non_recursive_abbrev (ref [])
-
-
-
 
                    (*****************************)
                    (*  Polymorphic Unification  *)
@@ -1422,7 +1423,6 @@ let rec unify_univar t1 t2 = function
           raise (Unify [])
       end
   | [] -> raise (Unify [])
-
 
 (* Test the occurence of free univars in a type *)
 (* that's way too expansive. Must do some kind of cacheing *)
@@ -1607,6 +1607,9 @@ let deep_occur t0 ty =
 
 let pattern_level = ref None
 
+(* a local constraint can be added only if the rhs 
+   of the constraint does not contain any Tvars.
+   They need to be removed using this function *)
 let reify env t =
   let pattern_level = 
     match !pattern_level with
@@ -2901,18 +2904,6 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       | _ -> raise (Unify []))
     pairs
 
-
-
-
-
-
-
-
-
-
-
-
-
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
   try
@@ -3711,8 +3702,7 @@ let cyclic_abbrev env id ty =
         end
     | _ ->
         false
-  in
-  check_cycle [] ty
+  in check_cycle [] ty
 
 (* Normalize a type before printing, saving... *)
 (* Cannot use mark_type because deep_occur uses it too *)
