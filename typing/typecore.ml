@@ -553,7 +553,7 @@ let rec type_pat mode env sp expected_ty  =
         pat_loc = loc;
         pat_type = q.pat_type;
         pat_env = !env }
-  |Ppat_constant cst -> 
+  | Ppat_constant cst -> 
       unify_pat_types loc !env (type_constant cst) expected_ty;
       rp {
         pat_desc = Tpat_constant cst;
@@ -663,7 +663,7 @@ let rec type_pat mode env sp expected_ty  =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_array spl -> 
+  | Ppat_array spl -> 
       let ty_elt = newvar() in
       unify_pat_types 
 	loc !env (instance (Predef.type_array ty_elt)) expected_ty;
@@ -2523,8 +2523,7 @@ and type_let env rec_flag spat_sexp_list scope allow =
   let spatl = List.map (fun (spat, sexp) -> spat) spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
   let (pat_list, new_env, force, unpacks) = 
-    type_pattern_list env spatl scope nvs allow 
-  in
+    type_pattern_list env spatl scope nvs allow in
   if rec_flag = Recursive then
     List.iter2
       (fun pat (_, sexp) ->

@@ -23,7 +23,7 @@ let generic_level = 100000000
 (* Used to mark a type during a traversal. *)
 let lowest_level = 0
 let pivot_level = 2 * lowest_level - 1
-    (* pivot_level - lowest_level < lowest_level *) 
+    (* pivot_level - lowest_level < lowest_level *)
 
 (**** Some type creators ****)
 
@@ -514,7 +514,6 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
-
 
 (**** Sets, maps and hashtables of types ****)
 

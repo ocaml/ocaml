@@ -119,4 +119,3 @@ val type_package:
    Typedtree.module_expr * type_expr list) ref
 
 val create_package_type: Location.t -> Env.t -> Parsetree.package_type -> type_expr
-

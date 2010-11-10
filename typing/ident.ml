@@ -95,13 +95,6 @@ and 'a data =
     data: 'a;
     previous: 'a data option }
 
-let rec map_tbl f =
-  function
-    | Empty -> Empty
-    | Node (t,{ident=id;data=d;previous=p},t',i) ->
-	Node(map_tbl f t,{ident=id;data=f d;previous=p},map_tbl f t',i)
-
-
 let empty = Empty
 
 (* Inline expansion of height for better speed

@@ -235,12 +235,19 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           | Tconstr(path, ty_list, _) ->
               begin try
                 let decl = Env.find_type path env in
-		let process_variants constr_list = 
+                match decl with
+                | {type_kind = Type_abstract; type_manifest = None} ->
+                    Oval_stuff "<abstr>"
+                | {type_kind = Type_abstract; type_manifest = Some body} ->
+                    tree_of_val depth obj
+                      (try Ctype.apply env decl.type_params body ty_list with
+                         Ctype.Cannot_apply -> abstract_type)
+                | {type_kind = Type_variant constr_list} ->
                     let tag =
                       if O.is_block obj
                       then Cstr_block(O.tag obj)
                       else Cstr_constant(O.obj obj) in
-                    let (constr_name, constr_args,ret_type) = (* GAH: this is definitely wrong *)
+                    let (constr_name, constr_args,ret_type) =
                       Datarepr.find_constr_by_tag tag constr_list in
 		    let type_params = 
 		      match ret_type with
@@ -258,17 +265,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                              Ctype.Cannot_apply -> abstract_type)
                         constr_args in
                     tree_of_constr_with_args (tree_of_constr env path)
-                                           constr_name 0 depth obj ty_args
-		in
-                match decl with
-                | {type_kind = Type_abstract; type_manifest = None} ->
-                    Oval_stuff "<abstr>"
-                | {type_kind = Type_abstract; type_manifest = Some body} ->
-                    tree_of_val depth obj
-                      (try Ctype.apply env decl.type_params body ty_list with
-                         Ctype.Cannot_apply -> abstract_type)
-                | {type_kind = Type_variant constr_list} ->
-		    process_variants  constr_list
+                                           constr_name 0 depth obj ty_args		    
                 | {type_kind = Type_record(lbl_list, rep)} ->
                     begin match check_depth depth obj ty with
                       Some x -> x

@@ -288,6 +288,8 @@ let rec check_constraints_rec env loc visited ty =
 
 let check_constraints env (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
+  (* GAH: ask garrigue if he changed this, 
+   some lines were removed*)
   let process_variants l = 
       let rec find_pl = function
           Ptype_variant pl -> pl
@@ -515,7 +517,7 @@ let compute_variance env tvl nega posi cntr ty =
 let make_variance ty = (ty, ref false, ref false, ref false)
 let whole_type decl =
   match decl.type_kind with
-  | Type_variant tll ->
+    Type_variant tll ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, tl,_) -> Btype.newgenty (Ttuple tl)) tll)) 
   | Type_record (ftl, _) ->
@@ -682,7 +684,7 @@ let check_duplicates name_sdecl_list =
     (fun (name, sdecl) -> match sdecl.ptype_kind with
       Ptype_variant cl ->
         List.iter
-          (fun (cname, _, _, loc) -> (* probably right *)
+          (fun (cname, _, _, loc) ->
             try
               let name' = Hashtbl.find constrs cname in
               Location.prerr_warning loc

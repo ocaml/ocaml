@@ -671,7 +671,7 @@ class texi =
                   (List.map
                      (fun constr ->
                        (Raw ("  | " ^ constr.vc_name)) ::
-                       (Raw (self#string_of_type_args constr.vc_args constr.vc_ret (*None*))) ::
+                       (Raw (self#string_of_type_args constr.vc_args constr.vc_ret)) ::
                        (match constr.vc_text with
                        | None -> [ Newline ]
                        | Some t ->

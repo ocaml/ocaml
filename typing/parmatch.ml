@@ -790,7 +790,7 @@ let build_other ext env =  match env with
           | {pat_desc = Tpat_construct (c,_)} -> c.cstr_tag
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-	pat_of_constrs p (complete_constrs p all_tags)
+	 pat_of_constrs p (complete_constrs p all_tags)
     end
 | ({pat_desc = Tpat_variant (_,_,r)} as p,_) :: _ ->
     let tags =

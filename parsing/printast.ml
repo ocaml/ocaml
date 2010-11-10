@@ -747,7 +747,3 @@ let interface ppf x = list 0 signature_item ppf x;;
 let implementation ppf x = list 0 structure_item ppf x;;
 
 let top_phrase ppf x = toplevel_phrase 0 ppf x;;
-
-let print_expression = expression 0 ;;
-
-let print_pattern = pattern 0 ;;

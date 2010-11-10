@@ -81,9 +81,6 @@ end
 
 module OrderedString = struct type t = string let compare = compare end
 module Meths = Map.Make(OrderedString)
-
-
-
 module Vars = Meths
 
 (* Value descriptions *)
@@ -108,16 +105,16 @@ and value_kind =
 (* Constructor descriptions *)
 
 type constructor_description =
-  { cstr_res: type_expr;                       (* Type of the result *)
-    cstr_existentials: type_expr list;         (* list of existentials *)
-    cstr_args: type_expr list;                 (* Type of the arguments *)
-    cstr_arity: int;                           (* Number of arguments *)
-    cstr_tag: constructor_tag;                 (* Tag for heap blocks *)
-    cstr_consts: int;                          (* Number of constant constructors *)
-    cstr_nonconsts: int;                       (* Number of non-const constructors *)
-    cstr_normal: int;                          (* Number of non generalized constructors *)
-    cstr_generalized: bool;                    (* Does it have any constraints on its return type? *)
-    cstr_private: private_flag }               (* Read-only constructor? *)
+  { cstr_res: type_expr;                (* Type of the result *)
+    cstr_existentials: type_expr list;  (* list of existentials *)
+    cstr_args: type_expr list;          (* Type of the arguments *)
+    cstr_arity: int;                    (* Number of arguments *)
+    cstr_tag: constructor_tag;          (* Tag for heap blocks *)
+    cstr_consts: int;                   (* Number of constant constructors *)
+    cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_normal: int;                   (* Number of non generalized constructors *)
+    cstr_generalized: bool;             (* Does it have any constraints on its return type? *)
+    cstr_private: private_flag }        (* Read-only constructor? *)
 
 and constructor_tag =
     Cstr_constant of int                (* Constant constructor (an int) *)

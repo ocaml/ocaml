@@ -21,6 +21,7 @@ open Longident
 open Path
 open Types
 
+
 type error =
     Not_an_interface of string
   | Corrupted_interface of string
@@ -68,9 +69,11 @@ and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
   mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
-  mutable comp_constrs_by_type: (string, ((string * constructor_description) list * int)) Tbl.t;
+  mutable comp_constrs_by_type: 
+      (string, ((string * constructor_description) list * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
-  mutable comp_labels_by_type: (string, ((string * label_description) list * int)) Tbl.t;
+  mutable comp_labels_by_type: 
+      (string, ((string * label_description) list * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
   mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
@@ -87,8 +90,6 @@ and functor_components = {
   fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
   fcomp_cache: (Path.t, module_components) Hashtbl.t  (* For memoization *)
 }
-
-let map_values f t = {t with values = Ident.map_tbl f t.values}
 
 let empty = {
   values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
@@ -309,8 +310,6 @@ let find_modtype_expansion path env =
     Tmodtype_abstract     -> raise Not_found
   | Tmodtype_manifest mty -> mty
 
-let has_local_constraints env = env.local_constraints
-
 let find_module path env =
   match path with
     Pident id ->
@@ -429,6 +428,8 @@ let lookup_simple proj1 proj2 lid env =
   | Lapply(l1, l2) ->
       raise Not_found
 
+let has_local_constraints env = env.local_constraints
+
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
 let lookup_annot id e =
@@ -463,6 +464,7 @@ let rec scrape_modtype mty env =
   | _ -> mty
 
 (* Compute constructor descriptions *)
+
 let constructors_of_type ty_path decl =
   let handle_variants cstrs = 
     Datarepr.constructor_descrs

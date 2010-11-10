@@ -174,7 +174,6 @@ let rec swap_list = function
 
 type policy = Fixed | Extensible | Univars
 
-
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
   | Ptyp_any ->
@@ -185,16 +184,15 @@ let rec transl_type env policy styp =
   | Ptyp_var name ->
       if name <> "" && name.[0] = '_' then
         raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
-      begin
-	try
-          instance (List.assoc name !univars)
-	with Not_found -> try
-          instance (fst(Tbl.find name !used_variables)) 
-	with Not_found ->
-          let v =
-	    if policy = Univars then new_pre_univar () else newvar () in
-          used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
-          v
+      begin try
+        instance (List.assoc name !univars)
+      with Not_found -> try
+        instance (fst(Tbl.find name !used_variables))
+      with Not_found ->
+        let v =
+          if policy = Univars then new_pre_univar () else newvar () in
+        used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
+        v
       end
   | Ptyp_arrow(l, st1, st2) ->
       let ty1 = transl_type env policy st1 in
@@ -312,9 +310,9 @@ let rec transl_type env policy styp =
       begin
         try
           let t =
-	    try List.assoc alias !univars 
-	    with Not_found ->		
-	      instance (fst(Tbl.find alias !used_variables))
+            try List.assoc alias !univars
+            with Not_found ->
+              instance (fst(Tbl.find alias !used_variables))
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty with Unify trace ->
@@ -476,6 +474,7 @@ and transl_fields env policy seen =
       let ty2 = transl_fields env policy (s::seen) l in
         newty (Tfield (s, Fpresent, ty1, ty2))
 
+
 (* Make the rows "fixed" in this type, to make universal check easier *)
 let rec make_fixed_univars ty =
   let ty = repr ty in
@@ -523,9 +522,7 @@ let globalize_used_variables env fixed =
   fun () ->
     List.iter
       (function (loc, t1, t2) ->
-        try 
-	  unify env t1 t2 ;
-	with Unify trace ->
+        try unify env t1 t2 with Unify trace ->
           raise (Error(loc, Type_mismatch trace)))
       !r
 

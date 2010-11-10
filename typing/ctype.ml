@@ -468,7 +468,7 @@ let closed_type_decl decl =
         ()
     | Type_variant v ->
         List.iter 
-	  (fun (_, tyl,ret_type_opt) -> 
+	  (fun (_, tyl,ret_type_opt) ->
 	    match ret_type_opt with
 	    | Some _ -> ()
 	    | None ->
@@ -2364,7 +2364,6 @@ let unify_var env t1 t2 =
         update_level env t1.level t2;
         link_type t1 t2
       with Unify trace ->
-	Printexc.print_backtrace stdout;
 	let expanded_trace = expand_trace env ((t1,t2)::trace) in 
         raise (Unify expanded_trace)
       end

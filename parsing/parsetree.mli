@@ -46,7 +46,7 @@ and core_field_desc =
   | Pfield_var
 
 and row_field =
-    Rtag of label * bool * core_type list 
+    Rtag of label * bool * core_type list
   | Rinherit of core_type
 
 (* Type expressions for the class language *)

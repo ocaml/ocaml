@@ -123,7 +123,7 @@ let rec mktailexp = function
 
 let rec mktailpat = function
     [] ->
-      ghpat(Ppat_construct(Lident "[]", None, false,None))
+      ghpat(Ppat_construct(Lident "[]", None, false, None))
   | p1 :: pl ->
       let pat_pl = mktailpat pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
