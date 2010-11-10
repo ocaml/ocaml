@@ -467,8 +467,11 @@ CAMLprim value caml_gc_major_slice (value v)
 
 CAMLprim value caml_gc_compaction(value v)
 {                                                    Assert (v == Val_unit);
+  caml_gc_message (0x10, "Heap compaction requested\n", 0);
   caml_empty_minor_heap ();
   caml_finish_major_cycle ();
+  caml_final_do_calls ();
+  caml_empty_minor_heap ();
   caml_finish_major_cycle ();
   caml_compact_heap ();
   caml_final_do_calls ();
