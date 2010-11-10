@@ -123,24 +123,26 @@ module StringSet =
     let compare = compare
   end)
 
-let transl_declaration env (name, sdecl) id =
+let make_params sdecl =
   let param_counter = ref 0 in 
+  try 
+    List.map 
+      (function
+	  None ->
+	    incr param_counter ;
+	    enter_type_variable true sdecl.ptype_loc
+	      (Printf.sprintf "*%d" !param_counter)
+	| Some x ->
+	    enter_type_variable true sdecl.ptype_loc x)
+      sdecl.ptype_params
+  with Already_bound ->
+    raise(Error(sdecl.ptype_loc, Repeated_parameter))
+
+let transl_declaration env (name, sdecl) id =
   (* Bind type parameters *)
   reset_type_variables();
   Ctype.begin_def ();
-  let params =
-    try 
-      List.map 
-	(function
-	  | None ->
-	      incr param_counter ;
-	      enter_type_variable true sdecl.ptype_loc (Printf.sprintf "*%d" !param_counter)
-	  | Some x ->
-	      enter_type_variable true sdecl.ptype_loc x)
-	sdecl.ptype_params
-    with Already_bound ->
-      raise(Error(sdecl.ptype_loc, Repeated_parameter))
-  in
+  let params = make_params sdecl in
   let cstrs = List.map
       (fun (sty, sty', loc) ->
         transl_simple_type env false sty,
@@ -161,32 +163,30 @@ let transl_declaration env (name, sdecl) id =
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
-            if List.length (List.filter (fun (_, args, _, _) -> args <> []) cstrs)
-               > (Config.max_tag + 1) then
+            if List.length
+		(List.filter (fun (_, args, _, _) -> args <> []) cstrs)
+		> (Config.max_tag + 1) then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
 	    let make_cstr (name, args, ret_type, loc) =
-	      let restore = 
-		match ret_type with
-		| None -> (fun () -> ())
+	      match ret_type with
+	      | None ->
+		  (name, List.map (transl_simple_type env true) args, None)
+	      | Some sty -> 
                 (* if it's a generalized constructor we must first narrow and
                    then widen so as to not introduce any new constraints *)
-		| Some _ -> 
-		    let z = narrow () in 
-		    reset_type_variables ();
-		    (fun () -> widen z)
-	      in
-	      let args = List.map (transl_simple_type env false) args in 
-              let make_ret sty =
-                let ty = transl_simple_type env false sty in
-                let p = Path.Pident id in
-                match (Ctype.repr ty).desc with
-                  Tconstr (p', _, _) when Path.same p p' -> ty
-                | _ -> raise(Error(sty.ptyp_loc,
-                       Constraint_failed (ty, Ctype.newconstr p params)))
-              in
-	      let ret_type = may_map make_ret ret_type in
-	      restore ();
-              (name, args, ret_type)
+		  let z = narrow () in 
+		  reset_type_variables ();
+		  let args = List.map (transl_simple_type env false) args in 
+		  let ret_type =
+                    let ty = transl_simple_type env false sty in
+                    let p = Path.Pident id in
+                    match (Ctype.repr ty).desc with
+                      Tconstr (p', _, _) when Path.same p p' -> ty
+                    | _ -> raise(Error(sty.ptyp_loc,
+                             Constraint_failed (ty, Ctype.newconstr p params)))
+		  in
+		  widen z;
+		  (name, args, Some ret_type)
   	    in
 	    Type_variant (List.map make_cstr cstrs)
 	    
@@ -221,6 +221,7 @@ let transl_declaration env (name, sdecl) id =
       type_variance = List.map (fun _ -> true, true, true) params;
       type_newtype = false;
     } in
+
   (* Check constraints *)
   List.iter
     (fun (ty, ty', loc) ->
@@ -251,7 +252,11 @@ let generalize_decl decl =
     Type_abstract ->
       ()
   | Type_variant v ->
-      List.iter (fun (_, tyl,ret_type_opt) -> List.iter Ctype.generalize tyl; may Ctype.generalize ret_type_opt) v
+      List.iter
+	(fun (_, tyl, ret_type) ->
+	  List.iter Ctype.generalize tyl;
+	  may Ctype.generalize ret_type)
+	v
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
   end;
@@ -288,35 +293,32 @@ let rec check_constraints_rec env loc visited ty =
 
 let check_constraints env (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
-  (* GAH: ask garrigue if he changed this, 
-   some lines were removed*)
-  let process_variants l = 
+  begin match decl.type_kind with
+  | Type_abstract -> ()
+  | Type_variant l ->
       let rec find_pl = function
           Ptype_variant pl -> pl
         | Ptype_record _ | Ptype_abstract -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       List.iter
-        (fun (name, tyl,ret_type_opt) ->
-          let styl,sret_type_opt =
-            try let (_,sty,sret_type_opt,_) = List.find (fun (n,_,_,_) -> n = name)  pl in sty,sret_type_opt
+        (fun (name, tyl, ret_type) ->
+          let (styl, sret_type) =
+            try
+	      let (_, sty, sret_type, _) =
+		List.find (fun (n,_,_,_) -> n = name)  pl
+	      in (sty, sret_type)
             with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
               check_constraints_rec env sty.ptyp_loc visited ty)
             styl tyl;
-	  (* GAH : ask garrigue how to do the following: *)
-	  match sret_type_opt,ret_type_opt with
-	  | Some sr,Some r ->
+	  match sret_type, ret_type with
+	  | Some sr, Some r ->
 	      check_constraints_rec env sr.ptyp_loc visited r
 	  | _ ->
 	      () )
 	l
-  in
-  begin match decl.type_kind with
-  | Type_abstract -> ()
-  | Type_variant l ->
-      process_variants l
   | Type_record (l, _) ->
       let rec find_pl = function
           Ptype_record pl -> pl
@@ -519,7 +521,7 @@ let whole_type decl =
   match decl.type_kind with
     Type_variant tll ->
       Btype.newgenty
-        (Ttuple (List.map (fun (_, tl,_) -> Btype.newgenty (Ttuple tl)) tll)) 
+        (Ttuple (List.map (fun (_, tl, _) -> Btype.newgenty (Ttuple tl)) tll)) 
   | Type_record (ftl, _) ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, _, ty) -> ty) ftl))
@@ -844,21 +846,9 @@ let transl_value_decl env valdecl =
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
 let transl_with_constraint env id row_path sdecl =
-  let param_counter = ref 0 in 
   reset_type_variables();
   Ctype.begin_def();
-  let params =
-    try
-      List.map
-	(function
-	  | None ->
-	      incr param_counter ;
-	      enter_type_variable true sdecl.ptype_loc  (Printf.sprintf "*%d" !param_counter)
-	  | Some x ->
-	      enter_type_variable true sdecl.ptype_loc  x)
-        sdecl.ptype_params
-    with Already_bound ->
-      raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
+  let params = make_params sdecl in
   List.iter
     (function (ty, ty', loc) ->
        try

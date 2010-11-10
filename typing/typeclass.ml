@@ -553,7 +553,7 @@ let rec class_field cl_num self_type meths vars
       let field =
         lazy begin
           let meth_type =
-            Ctype.newty (Tarrow("", self_type, Ctype.instance ty, Cok)) in
+            Btype.newgenty (Tarrow("", self_type, ty, Cok)) in
           Ctype.raise_nongen_level ();
           vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in

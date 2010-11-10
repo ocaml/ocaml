@@ -1,5 +1,5 @@
 
-#                                         module Exp :
+#                                             module Exp :
   sig
     type 'a t =
         IntLit : int -> int t
@@ -65,5 +65,10 @@ Error: This pattern matches values of type int t
   sig
     type 'a t = IntLit : int -> int t | BoolLit : bool -> bool t
     val eval : [ `A ] * 'a t -> unit
+  end
+#                                     module Propagation :
+  sig
+    type 'a t = IntLit : int -> int t | BoolLit : bool -> bool t
+    val check : 'a t -> 'a
   end
 # 

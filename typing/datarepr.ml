@@ -18,65 +18,43 @@
 open Misc
 open Asttypes
 open Types
+open Btype
 
-module Duplicated_code = (* GAH : I'm duplicating this code from ctype *)
-struct
-  let rec free_vars ty =
-    let ret = ref [] in
-    let rec loop ty = 
-      let ty = Btype.repr ty in
-      if ty.level >= Btype.lowest_level then begin
-	ty.level <- Btype.pivot_level - ty.level;
-	match ty.desc with
-	| Tvar ->
-            ret := ty :: !ret
-	| _ ->
-	    Btype.iter_type_expr loop ty
-      end
-    in
-    loop ty;
-    Btype.unmark_type ty;
-    !ret
-end
-
-
-let maybe_gadt_ty_res existentials ty_res = 
-  match ty_res.desc with
-  | Tconstr(_,lst,_) ->
-      let contains_non_variables = 
-	let is_not_variable t = 
-	  match t.desc with
-	  | Tvar -> false
-	  | _ -> true 
-	in
-	List.length (List.filter is_not_variable lst) <> 0 
-      in
-      contains_non_variables || 
-      List.length existentials <> 0 ||
-      (let s = List.fold_right Btype.TypeSet.add  lst Btype.TypeSet.empty in 
-      Btype.TypeSet.cardinal s <> List.length lst) 
-    | _ -> assert false
-
+(* Simplified version of Ctype.free_vars *)
+let rec free_vars ty =
+  let ret = ref TypeSet.empty in
+  let rec loop ty = 
+    let ty = repr ty in
+    if ty.level >= lowest_level then begin
+      ty.level <- pivot_level - ty.level;
+      match ty.desc with
+      | Tvar ->
+          ret := TypeSet.add ty !ret
+      | Tvariant row ->
+          let row = row_repr row in
+          iter_row loop row;
+          if not (static_row row) then loop row.row_more
+      | _ ->
+	  iter_type_expr loop ty
+    end
+  in
+  loop ty;
+  unmark_type ty;
+  !ret
 
 let constructor_descrs ty_res cstrs priv =
-  let num_consts = ref 0 and num_nonconsts = ref 0 in
+  let num_consts = ref 0 and num_nonconsts = ref 0  and num_normal = ref 0 in
   List.iter
-    (function (name, [],_) -> incr num_consts
-            | (name, _,_)  -> incr num_nonconsts)
+    (fun (name, args, ret) ->
+      if args = [] then incr num_consts else incr num_nonconsts;
+      if ret = None then incr num_normal)
     cstrs;
   let rec describe_constructors idx_const idx_nonconst = function
       [] -> []
     | (name, ty_args, ty_res_opt) :: rem ->
 	let ty_res = 
 	  match ty_res_opt with
-	  | Some ty_res' -> 
-	      (match ty_res.desc, ty_res'.desc with
-	      | Tconstr (p,_,_), Tconstr(p',_,_) ->
-		  if not (Path.same p p') then 
-		    failwith "the return type of a generalized constructor has incorrect type" 
-		  else
-		    ty_res'
-	      | _ -> fatal_error "return type must be a Tconstr")
+	  | Some ty_res' -> ty_res'
 	  | None -> ty_res
 	in
         let (tag, descr_rem) =
@@ -86,23 +64,15 @@ let constructor_descrs ty_res cstrs priv =
           | _  -> (Cstr_block idx_nonconst,
                    describe_constructors idx_const (idx_nonconst+1) rem) in
 	let existentials = 
-	    match ty_res_opt with
-	    | None -> []
-	    | Some type_ret ->
-		let res_vars = List.fold_right Btype.TypeSet.add (Duplicated_code.free_vars type_ret) Btype.TypeSet.empty in
-		let arg_vars = 
-		  List.fold_left 
-		    (fun s list -> List.fold_right Btype.TypeSet.add list s)
-		    Btype.TypeSet.empty 
-		    (List.map Duplicated_code.free_vars ty_args)
-		in
-		Btype.TypeSet.elements (Btype.TypeSet.diff arg_vars res_vars)
-	in
-	let is_generalized = 
 	  match ty_res_opt with
-	    None -> false
-	  | Some ty_res ->
-	      maybe_gadt_ty_res existentials ty_res 
+	  | None -> []
+	  | Some type_ret ->
+	      let res_vars = free_vars type_ret in
+	      let arg_vars = 
+		List.fold_left TypeSet.union TypeSet.empty
+		  (List.map free_vars ty_args)
+	      in
+	      TypeSet.elements (TypeSet.diff arg_vars res_vars)
 	in
 	let cstr =
           { cstr_res = ty_res;    
@@ -112,21 +82,12 @@ let constructor_descrs ty_res cstrs priv =
             cstr_tag = tag;
             cstr_consts = !num_consts;
             cstr_nonconsts = !num_nonconsts;
-	    cstr_normal = 0;
+	    cstr_normal = !num_normal;
             cstr_private = priv;
-	    cstr_generalized = is_generalized
+	    cstr_generalized = ty_res_opt <> None
 	  } in
         (name, cstr) :: descr_rem in
-  let ret = 
-    describe_constructors 0 0 cstrs 
-  in
-  let normal = 
-    List.length 
-      (List.filter 
-	 (fun (_,d) -> not (d.cstr_generalized)) 
-	 ret) 
-  in 
-  List.map (fun (n,r) -> (n,{r with cstr_normal = normal})) ret
+  describe_constructors 0 0 cstrs 
 
 let exception_descr path_exc decl =
   { cstr_res = Predef.type_exn;

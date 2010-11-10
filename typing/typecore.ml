@@ -2347,6 +2347,11 @@ and type_expect ?in_function env sexp ty_expected' =
             end_def ();
             check_univars env false "method" exp ty_expected vars;
             re { exp with exp_type = ty }
+	| Tvar ->
+	    let exp = type_exp env sbody in
+	    let exp = {exp with exp_type = newty (Tpoly (exp.exp_type, []))} in
+	    unify_exp env exp ty;
+	    re exp
         | _ -> assert false
       end
   | Pexp_match(sarg, caselist) ->

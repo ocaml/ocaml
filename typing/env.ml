@@ -120,7 +120,6 @@ let is_local_exn = function
 let diff env1 env2 =
   diff_keys is_local env1.values env2.values @
   diff_keys is_local_exn env1.constrs env2.constrs @
-(*  diff_keys is_local env1.constrs_by_type env2.constrs_by_type @ (* GAH: not sure this is correct *) *)
   diff_keys is_local env1.modules env2.modules @
   diff_keys is_local env1.classes env2.classes
 

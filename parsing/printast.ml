@@ -671,14 +671,9 @@ and core_type_x_core_type_x_location i ppf (ct1, ct2, l) =
   core_type (i+1) ppf ct2;
 
 and string_x_core_type_list_x_location i ppf (s, l, r_opt, loc) = 
-  match r_opt with
-  | None ->
-      line i ppf "\"%s\" %a\n" s fmt_location loc;
-      list (i+1) core_type ppf l;
-  | Some ret_type ->  (* GAH: this is definitely wrong *)
-      line i ppf "\"%s\" %a\n" s fmt_location loc;
-      list (i+1) core_type ppf l;      
-      core_type i ppf ret_type
+  line i ppf "\"%s\" %a\n" s fmt_location loc;
+  list (i+1) core_type ppf l;
+  option (i+1) core_type ppf r_opt;
 
 and string_x_mutable_flag_x_core_type_x_location i ppf (s, mf, ct, loc) =
   line i ppf "\"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
