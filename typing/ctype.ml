@@ -748,6 +748,47 @@ let limited_generalize ty0 ty =
     graph
 
 
+(* Compute statically the free univars of all nodes in a type *)
+(* This avoids doing it repeatedly during instantiation *)
+
+type inv_type_expr =
+    { inv_type : type_expr;
+      mutable inv_parents : inv_type_expr list }
+
+let rec inv_type hash pty ty =
+  let ty = repr ty in
+  try
+    let inv = TypeHash.find hash ty in
+    inv.inv_parents <- pty @ inv.inv_parents
+  with Not_found ->
+    let inv = { inv_type = ty; inv_parents = pty } in
+    TypeHash.add hash ty inv;
+    iter_type_expr (inv_type hash [inv]) ty
+
+let compute_univars ty =
+  let inverted = TypeHash.create 17 in
+  inv_type inverted [] ty;
+  let node_univars = TypeHash.create 17 in
+  let rec add_univar univ inv =
+    match inv.inv_type.desc with
+      Tpoly (ty, tl) when List.memq univ (List.map repr tl) -> ()
+    | _ ->
+        try
+          let univs = TypeHash.find node_univars inv.inv_type in
+          if not (TypeSet.mem univ !univs) then begin
+            univs := TypeSet.add univ !univs;
+            List.iter (add_univar univ) inv.inv_parents
+          end
+        with Not_found ->
+          TypeHash.add node_univars inv.inv_type (ref(TypeSet.singleton univ));
+          List.iter (add_univar univ) inv.inv_parents
+  in
+  TypeHash.iter (fun ty inv -> if ty.desc = Tunivar then add_univar ty inv)
+    inverted;
+  fun ty ->
+    try !(TypeHash.find node_univars ty) with Not_found -> TypeSet.empty
+
+
                               (*******************)
                               (*  Instantiation  *)
                               (*******************)
@@ -779,18 +820,27 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?(partial=false) ty =
-  let copy = copy ~partial in
+let rec copy ?partial ty =
+  let copy = copy ?partial in
   let ty = repr ty in
   match ty.desc with
     Tsubst ty -> ty
   | _ ->
-    if ty.level <> generic_level && not partial then ty else
+    if ty.level <> generic_level && partial = None then ty else
+    (* We only forget types that are non generic and do not contain
+       free univars *)
+    let forget =
+      ty.level <> generic_level &&
+      match partial with
+        None -> assert false
+      | Some free_univars -> TypeSet.is_empty (free_univars ty)
+    in
+    if forget then newvar () else
     let desc = ty.desc in
     save_desc ty desc;
     let t = newvar() in          (* Stub *)
     ty.desc <- Tsubst t;
-    if ty.level = generic_level then t.desc <-
+    t.desc <-
       begin match desc with
       | Tconstr (p, tl, _) ->
           let abbrevs = proper_abbrevs p tl !abbreviations in
@@ -855,7 +905,9 @@ let rec copy ?(partial=false) ty =
 
 (**** Variants of instantiations ****)
 
-let instance ?partial sch =
+let instance ?(partial=false) sch =
+  let partial =
+    if partial then Some (compute_univars sch) else None in
   let ty = copy ?partial sch in
   cleanup_types ();
   ty
@@ -939,43 +991,6 @@ let instance_class params cty =
   (params', cty')
 
 (**** Instanciation for types with free universal variables ****)
-
-type inv_type_expr =
-    { inv_type : type_expr;
-      mutable inv_parents : inv_type_expr list }
-
-let rec inv_type hash pty ty =
-  let ty = repr ty in
-  try
-    let inv = TypeHash.find hash ty in
-    inv.inv_parents <- pty @ inv.inv_parents
-  with Not_found ->
-    let inv = { inv_type = ty; inv_parents = pty } in
-    TypeHash.add hash ty inv;
-    iter_type_expr (inv_type hash [inv]) ty
-
-let compute_univars ty =
-  let inverted = TypeHash.create 17 in
-  inv_type inverted [] ty;
-  let node_univars = TypeHash.create 17 in
-  let rec add_univar univ inv =
-    match inv.inv_type.desc with
-      Tpoly (ty, tl) when List.memq univ (List.map repr tl) -> ()
-    | _ ->
-        try
-          let univs = TypeHash.find node_univars inv.inv_type in
-          if not (TypeSet.mem univ !univs) then begin
-            univs := TypeSet.add univ !univs;
-            List.iter (add_univar univ) inv.inv_parents
-          end
-        with Not_found ->
-          TypeHash.add node_univars inv.inv_type (ref(TypeSet.singleton univ));
-          List.iter (add_univar univ) inv.inv_parents
-  in
-  TypeHash.iter (fun ty inv -> if ty.desc = Tunivar then add_univar ty inv)
-    inverted;
-  fun ty ->
-    try !(TypeHash.find node_univars ty) with Not_found -> TypeSet.empty
 
 let rec diff_list l1 l2 =
   if l1 == l2 then [] else
