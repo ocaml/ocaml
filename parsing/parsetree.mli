@@ -73,7 +73,8 @@ and pattern_desc =
   | Ppat_tuple of pattern list
   | Ppat_construct of Longident.t * pattern option * bool * Longident.t option
   | Ppat_variant of label * pattern option
-  | Ppat_record of (Longident.t * pattern) list * closed_flag * Longident.t option
+  | Ppat_record of
+      (Longident.t * pattern) list * closed_flag * Longident.t option
   | Ppat_array of pattern list
   | Ppat_or of pattern * pattern
   | Ppat_constraint of pattern * core_type
@@ -139,7 +140,8 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list * core_type option * Location.t) list
+  | Ptype_variant of
+      (string * core_type list * core_type option * Location.t) list
   | Ptype_record of
       (string * mutable_flag * core_type * Location.t) list
 

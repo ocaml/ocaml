@@ -1209,7 +1209,27 @@ let create_package_type loc env (p, l) =
   let s = !Typetexp.transl_modtype_longident loc env p in
   newty (Tpackage (s,
                    List.map fst l,
-                   List.map (Typetexp.transl_simple_type env false) (List.map snd l)))
+                   List.map (Typetexp.transl_simple_type env false)
+                     (List.map snd l)))
+
+let iter_ppat f p = 
+  match p.ppat_desc with
+  | Ppat_any | Ppat_var _ | Ppat_constant _ 
+  | Ppat_type _ | Ppat_unpack _ | Ppat_construct _ -> ()    
+  | Ppat_array pats -> List.iter f pats
+  | Ppat_or (p1,p2) -> f p1; f p2
+  | Ppat_variant (label, arg) -> may f arg
+  | Ppat_tuple lst ->  List.iter f lst
+  | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p 
+  | Ppat_record (args, flag, _) -> List.iter (fun (_,p) -> f p) args 
+
+let contains_polymorphic_variant p = 
+  let rec loop p = 
+    match p.ppat_desc with 
+      Ppat_variant _ | Ppat_type _ -> raise Exit
+    | _ -> iter_ppat loop p
+  in
+  try loop p; false with Exit -> true
 
 let wrap_unpacks sexp unpacks =
   List.fold_left
@@ -2446,6 +2466,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   Ctype.init_def lev;
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
+  let dont_propagate =
+    List.exists (fun (p,_) -> contains_polymorphic_variant p) caselist in
   let pattern_force = ref [] in
   let pat_env_list =
     List.map
@@ -2454,8 +2476,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) = 
-	  let ty_arg = instance ~partial:!Clflags.principal ty_arg in 
-	  type_pattern ~lev env spat scope ty_arg 
+	  let ty_arg =
+            if dont_propagate then newvar () else
+            instance ~partial:!Clflags.principal ty_arg
+          in type_pattern ~lev env spat scope ty_arg 
 	in	
         pattern_force := force @ !pattern_force;
         let pat =
@@ -2512,8 +2536,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   unify_exp_types loc env ty_res (newvar ()) ;
   let partial =
     if partial_flag then
-      Parmatch.check_partial_gadt
-	(partial_pred env ty_arg) loc cases
+      Parmatch.check_partial_gadt (partial_pred env ty_arg) loc cases
     else
       Partial
   in

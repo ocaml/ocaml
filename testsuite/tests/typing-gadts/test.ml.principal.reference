@@ -55,7 +55,8 @@ Error: This expression has type &x7 t but an expression was expected of type
 #                       Characters 157-158:
   	  C ->
      ^
-Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
+Error: This pattern matches values of type (s, s) t
+       but a pattern was expected which matches values of type (s, s * s) t
 #                         Characters 174-182:
   	| (IntLit _ | BoolLit _) -> ()
       ^^^^^^^^
@@ -66,9 +67,8 @@ Error: This pattern matches values of type int t
      ^^^^^^^^^^^^^
 Error: This pattern matches values of type ([? `A ] as 'a) * bool t
        but a pattern was expected which matches values of type 'a * int t
-#                                     module Propagation :
-  sig
-    type 'a t = IntLit : int -> int t | BoolLit : bool -> bool t
-    val check : 'a t -> 'a
-  end
+#                                     Characters 288-289:
+    | BoolLit b -> b
+                   ^
+Error: This expression has type bool but an expression was expected of type s
 # 
