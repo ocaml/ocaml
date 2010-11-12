@@ -37,10 +37,12 @@ let rec binding_time = function
   | Pdot(p, s, pos) -> binding_time p
   | Papply(p1, p2) -> max (binding_time p1) (binding_time p2)
 
-let rec name = function
+let kfalse x = false
+
+let rec name ?(paren=kfalse) = function
     Pident id -> Ident.name id
-  | Pdot(p, s, pos) -> name p ^ "." ^ s
-  | Papply(p1, p2) -> name p1 ^ "(" ^ name p2 ^ ")"
+  | Pdot(p, s, pos) -> name ~paren p ^ if paren s then ".( " ^ s ^ " )" else s
+  | Papply(p1, p2) -> name ~paren p1 ^ "(" ^ name ~paren p2 ^ ")"
 
 let rec head = function
     Pident id -> id
