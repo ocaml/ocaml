@@ -1396,9 +1396,7 @@ constructor_declarations:
 constructor_declaration:
     constr_ident constructor_arguments          {  ($1, $2, None, symbol_rloc()) }
 ;
-
-constructor_declaration:
-    constr_ident generalized_constructor_arguments          
+  | constr_ident generalized_constructor_arguments          
                                                 { let arg_types,ret_type = $2 in 
 						     ($1, arg_types,Some ret_type, symbol_rloc()) }
 ;

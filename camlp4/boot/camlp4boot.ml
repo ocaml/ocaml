@@ -4951,6 +4951,46 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (constructor_arg_list :
+                                   'constructor_arg_list Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (ret : 'constructor_arg_list) _
+                                (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
+                                (match Ast.list_of_ctyp ret [] with
+                                 | [ c ] ->
+                                     Ast.TyCol (_loc,
+                                       (Ast.TyId (_loc,
+                                          (Ast.IdUid (_loc, s)))),
+                                       c)
+                                 | _ ->
+                                     raise
+                                       (Stream.Error
+                                          "invalid generalized constructor type") :
+                                  'constructor_declarations))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (constructor_arg_list :
+                                   'constructor_arg_list Gram.Entry.t));
+                            Gram.Skeyword "->";
+                            Gram.Snterm
+                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (ret : 'ctyp) _ (t : 'constructor_arg_list)
+                                _ (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
+                                (Ast.TyCol (_loc,
+                                   (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                                   (Ast.TyArr (_loc, t, ret))) :
+                                  'constructor_declarations))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
                             Gram.Skeyword "of";
                             Gram.Snterm
                               (Gram.Entry.obj

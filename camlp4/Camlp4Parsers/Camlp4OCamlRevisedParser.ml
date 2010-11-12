@@ -1116,6 +1116,12 @@ Very old (no more supported) syntax:\n\
             <:ctyp< $t1$ | $t2$ >>
         | s = a_UIDENT; "of"; t = constructor_arg_list ->
             <:ctyp< $uid:s$ of $t$ >>
+        | s = a_UIDENT; ":"; t = constructor_arg_list ; "->" ; ret = ctyp ->
+            <:ctyp< $uid:s$ : ($t$ -> $ret$) >>
+        | s = a_UIDENT; ":"; ret = constructor_arg_list ->
+	    match Ast.list_of_ctyp ret [] with 
+	      [ [c] -> <:ctyp<  $uid:s$ : $c$ >>
+	    | _ -> raise (Stream.Error "invalid generalized constructor type") ] 
         | s = a_UIDENT ->
             <:ctyp< $uid:s$ >>
       ] ]

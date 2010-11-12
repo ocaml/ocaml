@@ -14543,7 +14543,7 @@ module Struct =
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, s)))), t) ->
                   (s, Immutable, (mkpolytype (ctyp t)), (mkloc loc))
               | _ -> assert false
-
+              
             let mkvariant =
               function
               | Ast.TyId (loc, (Ast.IdUid (_, s))) ->
@@ -14551,13 +14551,13 @@ module Struct =
               | Ast.TyOf (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
                   ((conv_con s), (List.map ctyp (list_of_ctyp t [])), None,
                    (mkloc loc))
-              | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), TyArr(_,t1,t2)) ->
+              | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))),
+                  (Ast.TyArr (_, t1, t2))) ->
                   ((conv_con s), (List.map ctyp (list_of_ctyp t1 [])),
-                   Some (ctyp t2),(mkloc loc))
+                   (Some (ctyp t2)), (mkloc loc))
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
-                  ((conv_con s), [], Some (ctyp t),
-                   (mkloc loc))
-              | _ -> assert false              
+                  ((conv_con s), [], (Some (ctyp t)), (mkloc loc))
+              | _ -> assert false
               
             let rec type_decl tl cl loc m pflag =
               function
@@ -14599,7 +14599,6 @@ module Struct =
               | Ast.MuMutable -> Mutable
               | Ast.MuNil -> Immutable
               | _ -> assert false
-
               
             let paolab lab p =
               match (lab, p) with
@@ -14619,10 +14618,10 @@ module Struct =
               match t with
               | Ast.TyApp (_, t1, t2) ->
                   type_parameters t1 (type_parameters t2 acc)
-              | Ast.TyQuP (_, s) -> (Some s, (true, false)) :: acc
-              | Ast.TyQuM (_, s) -> (Some s, (false, true)) :: acc
-              | Ast.TyQuo (_, s) -> (Some s, (false, false)) :: acc
-              | Ast.TyNil _ -> (None, (true, false)) :: acc
+              | Ast.TyQuP (_, s) -> ((Some s), (true, false)) :: acc
+              | Ast.TyQuM (_, s) -> ((Some s), (false, true)) :: acc
+              | Ast.TyQuo (_, s) -> ((Some s), (false, false)) :: acc
+              | Ast.TyAny _ -> (None, (true, false)) :: acc
               | _ -> assert false
               
             let rec class_parameters t acc =
@@ -14640,12 +14639,7 @@ module Struct =
                   type_parameters_and_type_name t1 (type_parameters t2 acc)
               | Ast.TyId (_, i) -> ((ident i), acc)
               | _ -> assert false
-
               
-
-
-
-
             let mkwithtyp pwith_type loc id_tpl ct =
               let (id, tpl) = type_parameters_and_type_name id_tpl [] in
               let (params, variance) = List.split tpl in
@@ -14737,7 +14731,8 @@ module Struct =
                          then
                            mkpat loc
                              (Ppat_construct (li,
-                                (Some (mkpat loc (Ppat_tuple al))), true, None))
+                                (Some (mkpat loc (Ppat_tuple al))), true,
+                                None))
                          else
                            (let a =
                               match al with
@@ -14820,7 +14815,8 @@ module Struct =
                   let is_closed = if wildcards = [] then Closed else Open
                   in
                     mkpat loc
-                      (Ppat_record (((List.map mklabpat ps), is_closed, None)))
+                      (Ppat_record
+                         (((List.map mklabpat ps), is_closed, None)))
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant
