@@ -54,11 +54,11 @@ let rec pattern_vars pat =
   | Ppat_tuple l
   | Ppat_array l ->
       List.concat (List.map pattern_vars l)
-  | Ppat_construct (_, Some pat, _)
+  | Ppat_construct (_, Some pat, _, _)
   | Ppat_variant (_, Some pat)
   | Ppat_constraint (pat, _) ->
       pattern_vars pat
-  | Ppat_record(l, _) ->
+  | Ppat_record(l, _, _) ->
       List.concat (List.map l ~f:(fun (_,p) -> pattern_vars p))
   | Ppat_or (pat1, pat2) ->
       pattern_vars pat1 @ pattern_vars pat2
