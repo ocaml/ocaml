@@ -2015,7 +2015,9 @@ and unify3 mode env t1 t1' t2 t2' =
   in
   let switch_to_old_link () = 
     match mode with
-    | Pattern | Expression -> old_link ();
+    | Pattern | Expression -> 
+	cleanup_abbrev ();
+	old_link ();
     | Old -> () (* old_link was already called *)
   in
   match d1, d2 with
@@ -2391,13 +2393,12 @@ let unify_pairs env ty1 ty2 pairs =
   univar_pairs := pairs;
   unify Expression env ty1 ty2
 
-let unify_old env ty1 ty2 =
-  univar_pairs := [];
-  unify Old (ref env) ty1 ty2
-
 let unify env ty1 ty2 =
   univar_pairs := [];
-  unify Expression (ref env) ty1 ty2
+  if Env.has_local_constraints env then 
+    unify Expression (ref env) ty1 ty2
+  else
+    unify Old (ref env) ty1 ty2
 
 let unify_gadt env ty1 ty2 = 
   univar_pairs := [];

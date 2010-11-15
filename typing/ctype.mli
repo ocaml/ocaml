@@ -141,8 +141,6 @@ val full_expand: Env.t -> type_expr -> type_expr
 
 val enforce_constraints: Env.t -> type_expr -> unit
 
-val unify_old: Env.t -> type_expr -> type_expr -> unit
-        (* Unify the two types given. Raise [Unify] if not possible. Use the old method of unification *)
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_gadt: int -> Env.t ref -> type_expr -> type_expr -> unit

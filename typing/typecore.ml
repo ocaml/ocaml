@@ -165,10 +165,7 @@ let unify_exp_types loc env ty expected_ty =
   (* Format.eprintf "@[%a@ %a@]@." Printtyp.raw_type_expr exp.exp_type
     Printtyp.raw_type_expr expected_ty; *)
   try
-    if Env.has_local_constraints env then 
-      unify env ty expected_ty
-    else
-      unify_old env ty expected_ty
+    unify env ty expected_ty
   with
     Unify trace ->
       raise(Error(loc, Expr_type_clash(trace)))
