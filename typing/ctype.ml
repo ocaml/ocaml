@@ -186,6 +186,11 @@ type unification_mode =
 
 let umode = ref Expression
 
+let use_local () = 
+  match !umode with
+  | Expression | Pattern -> true
+  | Old -> false
+
 let set_mode mode f = 
   let old_unification_mode = !umode in
   try
@@ -1242,7 +1247,9 @@ let expand_abbrev_gen kind find_type_expansion env ty =
 
 (* inside objects and variants we do not want to 
    use local constraints *)
-let expand_abbrev ?(use_local=true) = expand_abbrev_gen Public (Env.find_type_expansion ~use_local)
+let expand_abbrev ty =
+  let use_local = use_local () in
+  expand_abbrev_gen Public (Env.find_type_expansion ~use_local) ty
 
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
@@ -1251,10 +1258,10 @@ let safe_abbrev env ty =
     Btype.backtrack snap;
     false
 
-let try_expand_once ?(use_local=true) env ty =
+let try_expand_once env ty =
   let ty = repr ty in
   match ty.desc with
-    Tconstr _ -> repr (expand_abbrev ~use_local env ty)
+    Tconstr _ -> repr (expand_abbrev env ty)
   | _ -> raise Cannot_expand
 
 let _ = forward_try_expand_once := try_expand_once
@@ -1262,8 +1269,8 @@ let _ = forward_try_expand_once := try_expand_once
 (* Fully expand the head of a type.
    Raise Cannot_expand if the type cannot be expanded.
    May raise Unify, if a recursion was hidden in the type. *)
-let rec try_expand_head ?(use_local=true) env ty =
-  let ty' = try_expand_once ~use_local env ty in
+let rec try_expand_head env ty =
+  let ty' = try_expand_once env ty in
   begin try
     try_expand_head env ty'
   with Cannot_expand ->
@@ -1275,8 +1282,8 @@ let expand_head_once env ty =
   try expand_abbrev env (repr ty) with Cannot_expand -> assert false
 
 (* Fully expand the head of a type. *)
-let expand_head_unif ?(use_local=true) env ty =
-  try try_expand_head ~use_local env ty with Cannot_expand -> repr ty
+let expand_head_unif env ty =
+  try try_expand_head env ty with Cannot_expand -> repr ty
 
 let expand_head env ty =
   let snap = Btype.snapshot () in
@@ -1766,11 +1773,6 @@ let in_pervasives p =
     with
       _ -> false
 
-let use_local () = 
-  match !umode with
-  | Expression | Pattern -> true
-  | Old -> false
-
 let unify_eq t1 t2 =
   match !umode with
   | Old ->
@@ -2028,10 +2030,9 @@ let rec unify (env:Env.t ref) t1 t2 =
 
 and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
-  let use_local = use_local () in 
   let rec expand_both t1'' t2'' =
-    let t1' = expand_head_unif ~use_local !env t1 in
-    let t2' = expand_head_unif ~use_local !env t2 in
+    let t1' = expand_head_unif !env t1 in
+    let t2' = expand_head_unif !env t2 in
     (* Expansion may have changed the representative of the types... *)
     if unify_eq t1' t1'' && unify_eq t2' t2'' then (t1',t2') else
     expand_both t1' t2'
@@ -2181,7 +2182,7 @@ and unify3 env t1 t1' t2 t2' =
 	  match t2.desc with
             Tconstr (p, tl, abbrev) ->
               forget_abbrev abbrev p;
-              let t2'' = expand_head_unif ~use_local:(use_local ())  !env t2 in
+              let t2'' = expand_head_unif !env t2 in
               if not (closed_parameterized_type tl t2'') then
 		link_type (repr t2) (repr t2')
 	  | _ ->
@@ -2605,11 +2606,14 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2) when Path.same p1 p2 && n1 = n2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
-              moregen_row inst_nongen type_pairs env row1 row2
+              change_mode Old
+                (fun () -> moregen_row inst_nongen type_pairs env row1 row2)
           | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
-              moregen_fields inst_nongen type_pairs env fi1 fi2
+              change_mode Old
+                (fun () -> moregen_fields inst_nongen type_pairs env fi1 fi2)
           | (Tfield _, Tfield _) ->           (* Actually unused *)
-              moregen_fields inst_nongen type_pairs env t1' t2'
+              change_mode Old
+                (fun () -> moregen_fields inst_nongen type_pairs env t1' t2')
           | (Tnil, Tnil) ->
               ()
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
