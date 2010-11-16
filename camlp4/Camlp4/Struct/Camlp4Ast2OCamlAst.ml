@@ -456,7 +456,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     [ <:patt@loc< $lid:s$ >> -> mkpat loc (Ppat_var s)
     | <:patt@loc< $id:i$ >> ->
         let p = Ppat_construct (long_uident ~conv_con i)
-                  None (constructors_arity ()) None
+                  None (constructors_arity ())
         in mkpat loc p
     | PaAli loc p1 p2 ->
         let (p, i) =
@@ -470,21 +470,21 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | PaAny loc -> mkpat loc Ppat_any
     | <:patt@loc< $uid:s$ ($tup:<:patt@loc_any< _ >>$) >> ->
         mkpat loc (Ppat_construct (lident (conv_con s))
-              (Some (mkpat loc_any Ppat_any)) False None)
+              (Some (mkpat loc_any Ppat_any)) False)
     | PaApp loc _ _ as f ->
         let (f, al) = patt_fa [] f in
         let al = List.map patt al in
         match (patt f).ppat_desc with
-        [ Ppat_construct li None _ _ ->
+        [ Ppat_construct li None _ ->
             if constructors_arity () then
-              mkpat loc (Ppat_construct li (Some (mkpat loc (Ppat_tuple al))) True None)
+              mkpat loc (Ppat_construct li (Some (mkpat loc (Ppat_tuple al))) True)
             else
               let a =
                 match al with
                 [ [a] -> a
                 | _ -> mkpat loc (Ppat_tuple al) ]
               in
-              mkpat loc (Ppat_construct li (Some a) False None)
+              mkpat loc (Ppat_construct li (Some a) False)
         | Ppat_variant s None ->
             let a =
               if constructors_arity () then
@@ -532,7 +532,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let is_wildcard = fun [ <:patt< _ >> -> True | _ -> False ] in
         let (wildcards,ps) = List.partition is_wildcard ps in
         let is_closed = if wildcards = [] then Closed else Open in
-        mkpat loc (Ppat_record (List.map mklabpat ps, is_closed, None))
+        mkpat loc (Ppat_record (List.map mklabpat ps, is_closed))
     | PaStr loc s ->
         mkpat loc (Ppat_constant (Const_string (string_of_string_token loc s)))
     | <:patt@loc< ($p1$, $p2$) >> ->

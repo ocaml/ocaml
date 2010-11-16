@@ -735,20 +735,38 @@ let rec pat_of_constrs ex_pat = function
         (pat_of_constr ex_pat cstr,
          pat_of_constrs ex_pat rem, None)}
 
+exception Not_an_adt
+
+let rec adt_lid env ty =
+  match get_type_descr ty env with
+  | {type_kind=Type_variant constr_list} ->
+      begin match (Ctype.repr ty).desc with
+      | Tconstr (path,_,_) ->
+	  path
+      | _ -> assert false end
+  | {type_manifest = Some _} ->
+      adt_lid env (Ctype.expand_head_once env (clean_copy ty))
+  | _ -> raise Not_an_adt
+;;
+
+let rec map_filter f  = 
+  function
+      [] -> []
+    | x :: xs ->
+	match f x with
+	| None -> map_filter f xs
+	| Some y -> y :: map_filter f xs
+
 (* Sends back a pattern that complements constructor tags all_tag *)
 let complete_constrs p all_tags = match p.pat_desc with
 | Tpat_construct (c,_) ->
     begin try
       let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-      List.map
-        (fun tag ->
-          let _,targs,ret_type_opt = get_constr tag p.pat_type p.pat_env in
-              {c with
-	       cstr_res = c.cstr_res ;
-	       cstr_tag = tag ;
-	       cstr_args = targs ;
-	       cstr_arity = List.length targs})
-        not_tags
+      let constrs = Env.find_constructors (adt_lid p.pat_env p.pat_type) p.pat_env in
+      map_filter
+        (fun cnstr ->
+	  if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
+	constrs
 with
 | Datarepr.Constr_not_found ->
     fatal_error "Parmatch.complete_constr: constr_not_found"
@@ -1700,35 +1718,19 @@ struct
       | _ -> []
 ;;
 
-exception Not_an_adt
-exception Not_a_record
-    
-let rec adt_lid env ty =
-  match get_type_descr ty env with
-  | {type_kind=Type_variant constr_list} ->
-      begin match (Ctype.repr ty).desc with
-      | Tconstr (path,_,_) ->
-	  Ctype.lid_of_path ~sharp:"" path
-      | _ -> assert false end
-  | {type_manifest = Some _} ->
-      adt_lid env (Ctype.expand_head_once env (clean_copy ty))
-  | _ -> raise Not_an_adt
-;;
+let name_counter = ref 0 
+let fresh () = 
+  let current = !name_counter in 
+  name_counter := !name_counter + 1;
+  "#$%^@*@" ^ string_of_int current
 
-let rec record_lid env ty =
-  match get_type_descr ty env with
-  | {type_kind=Type_record _} ->
-      begin match (Ctype.repr ty).desc with
-      | Tconstr (path,_,_) ->
-	  Ctype.lid_of_path ~sharp:"" path
-      | _ -> assert false end
-  | {type_manifest = Some _} ->
-      adt_lid env (Ctype.expand_head_once env (clean_copy ty))
-  | _ -> raise Not_a_record
-;;
-
-
-  let conv : Typedtree.pattern -> Parsetree.pattern list = 
+  let conv (typed: Typedtree.pattern) : 
+      Parsetree.pattern list * 
+	 (string,Types.constructor_description) Hashtbl.t * 
+	 (string,Types.label_description) Hashtbl.t
+      = 
+    let constrs = Hashtbl.create 0 in 
+    let labels = Hashtbl.create 0 in 
     let rec loop pat = 
       match pat.pat_desc with
 	Tpat_or (a,b,_) ->
@@ -1742,18 +1744,12 @@ let rec record_lid env ty =
 	    (fun lst -> mkpat (Ppat_tuple lst))
 	    results
       | Tpat_construct (cstr,lst) ->
-	  let typ_lid = adt_lid pat.pat_env pat.pat_type in
-	  let cnstrs = Env.lookup_constructors_by_type typ_lid pat.pat_env in
-	  let name_of_constructor = 
-	    let possible = List.filter (fun (_,c) -> c.cstr_tag = cstr.cstr_tag) cnstrs in 
-	    match possible with
-	      [(name,_)] -> name
-	    | _ -> assert false
-	  in
+	  let id = fresh () in 
+	  Hashtbl.add constrs id cstr;
 	  let results = select (List.map loop lst) in
 	  begin match lst with
 	    [] ->
-	      [mkpat (Ppat_construct(Longident.Lident name_of_constructor, None, false, Some typ_lid))]
+	      [mkpat (Ppat_construct(Longident.Lident id, None, false))]
           | _ ->
 	      List.map 
 		(fun lst ->
@@ -1763,7 +1759,7 @@ let rec record_lid env ty =
 		    | [x] -> Some x
 		    | _ -> Some (mkpat (Ppat_tuple lst))
 		  in
-		  mkpat (Ppat_construct(Longident.Lident name_of_constructor, arg, false, Some typ_lid)))
+		  mkpat (Ppat_construct(Longident.Lident id, arg, false)))
 		results end
       | Tpat_variant(label,p_opt,row_desc) ->
 	  begin match p_opt with
@@ -1782,14 +1778,16 @@ let rec record_lid env ty =
 	  in
 	  let label_idents = 
 	    List.map 
-	      (fun (lbl,_) -> Longident.Lident lbl.lbl_name)  
+	      (fun (lbl,_) -> 
+		let id = fresh () in 
+		Hashtbl.add labels id lbl;
+		Longident.Lident id)  
 	      subpatterns
 	  in 
-	  let typ_lid = record_lid pat.pat_env pat.pat_type in
 	  List.map
 	    (fun lst ->
 	      let lst = List.combine label_idents lst in
-	      mkpat (Ppat_record (lst, Open, Some typ_lid)))
+	      mkpat (Ppat_record (lst, Open)))
 	    pats
       | Tpat_array lst ->
 	  let results = select (List.map loop lst) in 
@@ -1798,7 +1796,8 @@ let rec record_lid env ty =
 	  let results = loop p in 
 	  List.map (fun p -> mkpat (Ppat_lazy p)) results
     in
-    loop
+    let ps = loop typed in 
+    (ps, constrs, labels)
 end
 
 
@@ -1824,7 +1823,8 @@ let do_check_partial ?pred exhaust loc casel pss = match pss with
 	let v = 
 	  match pred with 
 	  | Some pred ->
-	      get_first pred (Conv.conv u)
+	      let (patterns,constrs,labels) = Conv.conv u in 
+	      get_first (pred constrs labels) patterns
 	  | None -> Some u
 	in
 	begin match v with

@@ -14705,7 +14705,7 @@ module Struct =
               | Ast.PaId (loc, i) ->
                   let p =
                     Ppat_construct ((long_uident ~conv_con i), None,
-                      (constructors_arity ()), None)
+                      (constructors_arity ()))
                   in mkpat loc p
               | PaAli (loc, p1, p2) ->
                   let (p, i) =
@@ -14720,19 +14720,19 @@ module Struct =
                   (Ast.PaTup (_, (Ast.PaAny loc_any)))) ->
                   mkpat loc
                     (Ppat_construct ((lident (conv_con s)),
-                       (Some (mkpat loc_any Ppat_any)), false, None))
+                       (Some (mkpat loc_any Ppat_any)), false))
               | (PaApp (loc, _, _) as f) ->
                   let (f, al) = patt_fa [] f in
                   let al = List.map patt al
                   in
                     (match (patt f).ppat_desc with
-                     | Ppat_construct (li, None, _, _) ->
+                     | Ppat_construct (li, None, _) ->
                          if constructors_arity ()
                          then
                            mkpat loc
                              (Ppat_construct (li,
-                                (Some (mkpat loc (Ppat_tuple al))), true,
-                                None))
+                                (Some (mkpat loc (Ppat_tuple al))), true
+                                ))
                          else
                            (let a =
                               match al with
@@ -14740,7 +14740,7 @@ module Struct =
                               | _ -> mkpat loc (Ppat_tuple al)
                             in
                               mkpat loc
-                                (Ppat_construct (li, (Some a), false, None)))
+                                (Ppat_construct (li, (Some a), false)))
                      | Ppat_variant (s, None) ->
                          let a =
                            if constructors_arity ()
@@ -14816,7 +14816,7 @@ module Struct =
                   in
                     mkpat loc
                       (Ppat_record
-                         (((List.map mklabpat ps), is_closed, None)))
+                         (((List.map mklabpat ps), is_closed)))
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant

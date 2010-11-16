@@ -53,7 +53,10 @@ val complete_constrs :
 val pressure_variants: Env.t -> pattern list -> unit
 val check_partial: Location.t -> (pattern * expression) list -> partial
 val check_partial_gadt: 
-    (Parsetree.pattern -> Typedtree.pattern option) -> 
+    ((string,Types.constructor_description) Hashtbl.t -> 
+      (string,Types.label_description) Hashtbl.t -> 
+	Parsetree.pattern -> 
+	  Typedtree.pattern option) -> 
     Location.t -> 
     (pattern * expression) list -> 
     partial

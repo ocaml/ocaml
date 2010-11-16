@@ -182,14 +182,14 @@ and pattern i ppf x =
   | Ppat_tuple (l) ->
       line i ppf "Ppat_tuple\n";
       list i pattern ppf l;
-  | Ppat_construct (li, po, b, _) ->
+  | Ppat_construct (li, po, b) ->
       line i ppf "Ppat_construct %a\n" fmt_longident li;
       option i pattern ppf po;
       bool i ppf b;
   | Ppat_variant (l, po) ->
       line i ppf "Ppat_variant \"%s\"\n" l;
       option i pattern ppf po;
-  | Ppat_record (l, c, _) ->
+  | Ppat_record (l, c) ->
       line i ppf "Ppat_record\n";
       list i longident_x_pattern ppf l;
   | Ppat_array (l) ->

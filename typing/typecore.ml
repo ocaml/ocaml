@@ -447,34 +447,6 @@ let check_recordpat_labels loc lbl_pat_list closed =
         end
       end
 
-(* for finding a constructor using its name and longident *)
-let find_constructor_by_type env type_lid constructor_name = 
-  let constructors = 
-    match type_lid with
-    | Longident.Ldot (Longident.Lident "*predef*", s) -> 
-	Env.lookup_constructors_by_type (Longident.Lident s) Env.initial
-    | _ -> 
-	Env.lookup_constructors_by_type type_lid env 		
-  in
-  match List.filter (fun (n,_) -> n = constructor_name) constructors with
-  | [(_,c)] -> c
-  | _ -> assert false
-;;
-
-(* for finding a label using its name and longident *)
-let find_label_by_type env type_lid label_name =
-  let labels = 
-    match type_lid with
-    | Longident.Ldot (Longident.Lident "*predef*", s) -> 
-	Env.lookup_labels_by_type (Longident.Lident s) Env.initial
-    | _ -> 
-	Env.lookup_labels_by_type type_lid env 		
-  in
-  match List.filter (fun (n,_) -> n = label_name) labels with
-  | [(_,c)] -> 
-      c
-  | _ -> assert false
-
 (* unification of a type with a tconstr with 
    freshly created arguments *)	
 let unify_head_only loc env ty constr = 
@@ -494,8 +466,10 @@ type type_pat_mode =
   | Normal 
   | Inside_or 
 
-(* GADT: type_pat propagates the expected type *)
-let rec type_pat mode env sp expected_ty  = 
+(* type_pat now propagates the expected type as well
+ as a map of constructors *)
+let rec type_pat constrs labels mode env sp expected_ty  = 
+  let type_pat = type_pat constrs labels in
   let loc = sp.ppat_loc in
   match sp.ppat_desc with
     Ppat_any ->
@@ -567,15 +541,17 @@ let rec type_pat mode env sp expected_ty  =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_construct(lid, sarg, explicit_arity, type_lid) -> 
+  |Ppat_construct(lid, sarg, explicit_arity) -> 
       let constr = 
-	match type_lid with
-	| None ->
-	    Typetexp.find_constructor !env loc lid 	    
-	| Some type_lid ->
-	    let constructor_name = Longident.last lid in 
-	      find_constructor_by_type 
-		!env type_lid constructor_name 
+	match lid with
+	  Longident.Lident s ->
+	    begin try
+	      let ret = Hashtbl.find constrs s in
+	      ret
+	    with 
+	      Not_found ->
+		Typetexp.find_constructor !env loc lid end
+	| _ ->  Typetexp.find_constructor !env loc lid
       in
       unify_head_only loc !env expected_ty constr;
       let sargs =
@@ -622,15 +598,17 @@ let rec type_pat mode env sp expected_ty  =
         pat_loc = loc;
         pat_type =  expected_ty;
         pat_env = !env }
-  | Ppat_record(lid_sp_list, closed, typ_lid) -> 
+  | Ppat_record(lid_sp_list, closed) -> 
       let type_label_pat (lid, sarg) =
         let label = 
-	  match typ_lid with
-	  | None ->
-	      Typetexp.find_label !env loc lid 
-	  | Some lid ->
-	    let label_name = Longident.last lid in 
-	    find_label_by_type !env lid label_name
+	  match lid with
+	    Longident.Lident s ->
+	      begin try
+		Hashtbl.find labels s 
+	      with 
+		Not_found ->
+		  Typetexp.find_label !env loc lid  end
+	  | _ -> Typetexp.find_label !env loc lid
 	in
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
@@ -706,7 +684,7 @@ let rec type_pat mode env sp expected_ty  =
       unify_pat_types loc !env ty expected_ty;
       r
 
-let type_pat ?lev env sp expected_ty = 
+let type_pat ?constrs ?labels ?lev env sp expected_ty = 
   pattern_level := 
     begin match lev with
 	None ->
@@ -714,7 +692,17 @@ let type_pat ?lev env sp expected_ty =
       | Some x ->
 	Some x end;
   try
-    let r = type_pat Normal env sp expected_ty in
+    let constrs =  
+      match constrs with
+	None -> Hashtbl.create 0
+      | Some x -> x
+    in
+    let labels = 
+      match labels with
+	None -> Hashtbl.create 0
+      | Some x -> x
+    in
+    let r = type_pat constrs labels Normal env sp expected_ty in
     iter_pattern (fun p -> p.pat_env <- !env) r;
     pattern_level := None;
     r
@@ -723,15 +711,16 @@ let type_pat ?lev env sp expected_ty =
       pattern_level := None;
       raise e  
 
+
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *) 
-let partial_pred env expected_ty p = 
+let partial_pred env expected_ty constrs labels p = 
   pattern_level := Some (get_current_level ());
   let snap = snapshot () in 
   let ret = 
     begin try 
       let typed_p =
-	type_pat (ref env) p expected_ty
+	type_pat ~constrs ~labels (ref env) p expected_ty
       in
       backtrack snap;
       Some typed_p
@@ -1218,7 +1207,7 @@ let iter_ppat f p =
   | Ppat_variant (label, arg) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
   | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p 
-  | Ppat_record (args, flag, _) -> List.iter (fun (_,p) -> f p) args 
+  | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args 
 
 let contains_polymorphic_variant p = 
   let rec loop p = 
@@ -1338,12 +1327,12 @@ and type_expect ?in_function env sexp ty_expected =
             Ppat_construct
               (Longident.(Ldot (Lident "*predef*", "Some")),
                Some {ppat_loc = default_loc; ppat_desc = Ppat_var "*sth*"},
-               false, None)},
+               false)},
          {pexp_loc = default_loc;
           pexp_desc = Pexp_ident(Longident.Lident "*sth*")};
          {ppat_loc = default_loc;
           ppat_desc = Ppat_construct
-            (Longident.(Ldot (Lident "*predef*", "None")), None, false, None)},
+            (Longident.(Ldot (Lident "*predef*", "None")), None, false)},
          default;
       ] in
       let smatch = {
