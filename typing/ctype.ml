@@ -197,6 +197,28 @@ let set_mode mode f =
       umode := old_unification_mode;
       raise e
 
+let change_mode mode f = 
+  let old_unification_mode = !umode in
+  if old_unification_mode = mode then f () else
+  try
+    begin match old_unification_mode, mode with
+      Expression,Pattern -> 
+	umode := mode; 
+	f ();
+	umode := old_unification_mode;
+    | _ -> 
+	umode := mode; 
+	cleanup_abbrev (); 
+	f (); 
+	cleanup_abbrev ();
+	umode := old_unification_mode end
+  with
+    e -> 
+      umode := old_unification_mode;
+      cleanup_abbrev ();
+      raise e
+
+
 let expression_mode env f = 
   if Env.has_local_constraints env then
     set_mode Expression f 
@@ -2037,11 +2059,10 @@ and unify3 env t1 t1' t2 t2' =
   let switch_to_old_link f = 
     match !umode with
     | Pattern | Expression ->
-	set_mode Old 
-	(fun () ->
-	  cleanup_abbrev ();
-	  old_link ();
-	  f ())
+	change_mode Old 
+	  (fun () ->
+	    old_link (); 
+	    f ())
     | Old -> f () (* old_link was already called *)
   in
   match d1, d2 with
