@@ -335,6 +335,29 @@ and type_kind i ppf x =
       line i ppf "Ptype_record\n";
       list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
 
+and contract_declaration i ppf x =
+  line i ppf "contract_declaration %a\n" fmt_location x.ptopctr_loc;
+  line (i+1) ppf "function_name = %s\n" x.ptopctr_id;
+  core_contract (i+1) ppf x.ptopctr_desc;
+
+and core_contract i ppf x =
+  line i ppf "core_contract %a\n" fmt_location x.pctr_loc;
+  core_contract_desc i ppf x.pctr_desc;
+
+and core_contract_desc i ppf x = 
+  match x with
+    Pctr_pred (x,e) -> 
+      line i ppf "Pctr_pred \"%s\"\n" x;
+      expression i ppf e;
+  | Pctr_arrow (vo, c1, c2) -> 
+      option i string ppf vo;
+      core_contract i ppf c1;
+      core_contract i ppf c2;
+  | Pctr_tuple (cs) -> 
+      line i ppf "Pctr_tuple\n";
+      list i core_contract ppf cs;
+
+
 and exception_declaration i ppf x = list i core_type ppf x
 
 and class_type i ppf x =
@@ -506,6 +529,9 @@ and signature_item i ppf x =
   | Psig_type (l) ->
       line i ppf "Psig_type\n";
       list i string_x_type_declaration ppf l;
+  | Psig_contract (l) ->
+      line i ppf "Psig_contract\n";
+      list i string_x_contract_declaration ppf l;
   | Psig_exception (s, ed) ->
       line i ppf "Psig_exception \"%s\"\n" s;
       exception_declaration i ppf ed;
@@ -582,6 +608,9 @@ and structure_item i ppf x =
   | Pstr_type (l) ->
       line i ppf "Pstr_type\n";
       list i string_x_type_declaration ppf l;
+  | Pstr_contract (l) -> 
+      line i ppf "Pstr_contract\n";
+      list i string_x_contract_declaration ppf l;
   | Pstr_exception (s, ed) ->
       line i ppf "Pstr_exception \"%s\"\n" s;
       exception_declaration i ppf ed;
@@ -610,6 +639,9 @@ and structure_item i ppf x =
 and string_x_type_declaration i ppf (s, td) =
   string i ppf s;
   type_declaration (i+1) ppf td;
+
+and string_x_contract_declaration i ppf (c) =
+  contract_declaration (i+1) ppf c;
 
 and string_x_module_type i ppf (s, mty) =
   string i ppf s;

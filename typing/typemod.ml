@@ -23,6 +23,14 @@ open Types
 open Typedtree
 open Format
 
+(* naxu's temp file starts. *)
+
+let fmt_contract_declaration ppf (cdecl:Types.contract_declaration) = 
+  !Oprint.out_contract_declaration ppf cdecl
+
+(* naxu's temp file ends. *)
+
+
 type error =
     Unbound_module of Longident.t
   | Unbound_modtype of Longident.t
@@ -384,6 +392,22 @@ and transl_signature env sg =
                      Tsig_type(i', d', rs);
                      Tsig_type(i'', d'', rs)])
                  classes [rem])
+	| Psig_contract(cds) -> 
+            (* check contract before translation:
+               1. we want to make sure that a contract C_f in a signature 
+                  (i.e. .mli) is syntactically equivalent (up to 
+                  alpha-conversion) to the contract C_f in .ml.
+                  The reason is that we have sub-typing relationship between
+                  signatures, sig1 <: sig2, but static sub-contracting is not 
+                  decidable, so we check syntactic equivalence. 
+               2. As a contract may contain function calls, all function 
+                  called must be exported in the signature as well.
+            *)
+            let cdecls = Typedecl.transl_contract_decls_in_sig env cds in
+	    (* val cdecls : (Ident.t * Types.contract_declaration) list *)
+            let rem = transl_sig env srem in
+            map_rec' (fun rs (id, decl) -> 
+	                  Tsig_contract(id, decl, rs)) cdecls rem
     in transl_sig env sg
 
 and transl_modtype_info env sinfo =
@@ -582,7 +606,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
-      let (str, sg, finalenv) = type_structure anchor env sstr smod.pmod_loc in
+      let (str, sg, finalenv) = type_structure anchor env sstr smod.pmod_loc in      
       rm { mod_desc = Tmod_structure str;
            mod_type = Tmty_signature sg;
            mod_env = env;
@@ -689,6 +713,12 @@ and type_structure anchor env sstr scope =
         (Tstr_type decls :: str_rem,
          map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls sig_rem,
          final_env)
+    | {pstr_desc = Pstr_contract(sdecls)} :: srem  -> 
+        (* we skip type inference for the contract declaration in this 
+           local function type_struct because we only need to 
+           type-check contracts. Type-checking of contracts occurs at 
+           the end of type_structure after type_struct is called. *) 
+        type_struct env srem 
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
         let arg = Typedecl.transl_exception env sarg in
         let (id, newenv) = Env.enter_exception name arg env in
@@ -746,6 +776,8 @@ and type_structure anchor env sstr scope =
     | {pstr_desc = Pstr_open lid; pstr_loc = loc} :: srem ->
         let (path, mty) = type_module_path env loc lid in
         let sg = extract_sig_open env loc mty in
+	(* renaming function f in contracts to its full path name e.g. M.f 
+	   is done in Env.open_signature *)
         type_struct (Env.open_signature path sg env) srem
     | {pstr_desc = Pstr_class cl; pstr_loc = loc} :: srem ->
          List.iter
@@ -809,7 +841,29 @@ and type_structure anchor env sstr scope =
   in
   if !Clflags.annotations
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
-  type_struct env sstr
+  let (str, sg, finalenv) = type_struct env sstr in
+  (* filter out all contracts from both sstr and finalenv; 
+     type-check contracts with finalenv *)
+  let rec extract_contracts xs = 
+           match xs with
+           | [] -> []
+           | ({pstr_desc = Pstr_contract (ds)} ::rem) -> ds@(extract_contracts rem)
+           | (_::rem) -> extract_contracts rem
+  in 
+  let pstr_contracts = extract_contracts sstr in
+  let contract_decls = Typedecl.transl_contract_decls finalenv pstr_contracts in 
+  let newstr = (Tstr_contract contract_decls) :: str in
+  (* In newstr2, we put opened contracts as Tstr_opened_contracts *)
+  let opened_contracts = Env.fetch_contracts finalenv in
+  let newstr2 = (Tstr_opened_contracts opened_contracts) :: newstr in
+  (* put contract in .ml in inferred sig *)
+  let newsg = sg @ (List.map (fun c -> 
+                   Tsig_contract (Path.head c.ttopctr_id, 
+                                  contract_declaration_to_iface c, 
+                                  Trec_not)) 
+		   contract_decls) in
+  (newstr2, newsg, finalenv)   (* end of type-checking for contracts *)
+  
 
 let type_module = type_module None
 let type_structure = type_structure None

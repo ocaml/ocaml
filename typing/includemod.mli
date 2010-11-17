@@ -26,6 +26,7 @@ val type_declarations:
 
 type error =
     Missing_field of Ident.t
+ | Contract_declarations of Ident.t * Types.contract_declaration * Types.contract_declaration
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration * type_declaration
   | Exception_declarations of
@@ -41,6 +42,7 @@ type error =
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
   | Unbound_modtype_path of Path.t
+
 
 exception Error of error list
 

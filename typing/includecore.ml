@@ -20,9 +20,14 @@ open Path
 open Types
 open Typedtree
 
-(* Inclusion between value descriptions *)
+(* Inclusion between contract declarations *)
+
+let contract_declarations cdecl1 cdecl2 = 
+    eqContract cdecl1.Types.ttopctr_desc cdecl2.Types.ttopctr_desc 
 
 exception Dont_match
+
+(* Inclusion between value descriptions *)
 
 let value_descriptions env vd1 vd2 =
   if Ctype.moregeneral env true vd1.val_type vd2.val_type then begin

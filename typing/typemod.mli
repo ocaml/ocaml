@@ -24,7 +24,7 @@ val type_structure:
           Typedtree.structure * signature * Env.t
 val type_implementation:
         string -> string -> string -> Env.t -> Parsetree.structure ->
-                               Typedtree.structure * Typedtree.module_coercion
+                               Typedtree.structure * Types.module_coercion
 val transl_signature:
         Env.t -> Parsetree.signature -> signature
 val check_nongen_schemes:
@@ -33,7 +33,7 @@ val check_nongen_schemes:
 val simplify_signature: signature -> signature
 
 val package_units:
-        string list -> string -> string -> Typedtree.module_coercion
+        string list -> string -> string -> Types.module_coercion
 
 type error =
     Unbound_module of Longident.t

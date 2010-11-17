@@ -23,11 +23,14 @@ open Types
 open Typedtree
 open Typeopt
 open Lambda
+open Format
 
 type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Illegal_tuple_contract
+  | Illegal_contract_wrapper
 
 exception Error of Location.t * error
 
@@ -292,10 +295,10 @@ let transl_prim prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim.prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
+      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
+    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -528,6 +531,30 @@ let primitive_is_ccall = function
     Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ -> true
   | _ -> false
 
+(* Contracts *)
+let contract_failed loc pathop = 
+  (* [Location.get_pos_info] is too expensive 
+     Code below modifies assert_failed by adding one more field to blame func_name *)
+  let filename = match loc.Location.loc_start.Lexing.pos_fname with
+              | "" -> !Location.input_name
+              | x -> x
+  in
+  let func_name = match pathop with
+                  | Some path -> (Path.name path)      
+                  | None ->  ""
+  in 
+  let pos = loc.Location.loc_start in
+  let line = pos.Lexing.pos_lnum in
+  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
+  Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
+                      [transl_path Predef.path_contract_failure;
+	    	       Lconst(Const_block(0,
+			[Const_base(Const_string filename);
+			 Const_base(Const_int line);
+			 Const_base(Const_int char);
+                         Const_base(Const_string ("Blame: " ^ func_name))]))])])
+               
+
 (* Assertions *)
 
 let assert_failed loc =
@@ -652,7 +679,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(cstr, args) ->
+  | Texp_construct(_, cstr, args) ->
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -777,7 +804,7 @@ and transl_exp0 e =
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Texp_function(_, _)
-      | Texp_construct ({cstr_arity = 0}, _)
+      | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
@@ -823,6 +850,101 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
+  | Texp_contract (c, e, callee, caller) -> 
+      let lexp = transl_exp e in
+      if !Clflags.nocontract 
+      then lexp
+      else let wrapped_expr = transl_contract c e callee caller in
+           transl_exp wrapped_expr
+(*           let iface_e = Typedtree.expression_desc_to_iface 
+	              Typedtree.expression_to_iface wrapped_expr.exp_desc in 
+           fprintf std_formatter "@[wrapped_expr:%a@]" 
+	     !Oprint.out_expression_desc iface_e;
+           transl_exp wrapped_expr 
+*)
+  | Texp_bad bl -> transl_blame bl
+  | Texp_unr bl -> transl_blame bl
+
+and transl_blame bl = 
+   match bl with
+   | Blame (loc, pathop) -> contract_failed loc pathop
+   | UnknownBlame -> lambda_unit
+
+(* We expand the wrapped expression at typedtree level, then do overall
+translation to lambda.
+val transl_contract: Typedtree.expression_desc ->  Typedtree.expression
+*)
+
+and transl_contract cntr e callee caller =
+  let cty  = e.exp_type in
+  let mkpat var = { pat_desc = Tpat_var var; 
+                    pat_loc  = e.exp_loc;
+                    pat_type = e.exp_type;
+                    pat_env  = e.exp_env } in
+  let mkexp ed = {e with exp_desc = ed } in
+  let mkident i ty = Texp_ident (Pident i , { val_type = ty;
+                                              val_kind = Val_reg}) in
+  let ce:expression_desc = match cntr.contract_desc with
+     | Tctr_pred (x, p) -> 
+       (* e |>r1,r2<| {x | p} = if (let x = e in p) then e 
+                                 else r1 
+          This forces evaluation of e, that is, if e diverges, RHS diverges;
+          if e crashes, RHS crashes *)
+        let cond = Texp_let (Nonrecursive, [(mkpat x, e)], p) in
+        Texp_ifthenelse (mkexp cond, e, Some callee)
+     | Tctr_arrow (xop, c1, c2) -> 
+      (* picky version:
+         <<x:c1 -> c2>> e = \x. (<<c2[(<<c1>> x)/x]>> (e (<<c1>> x)))
+         lax version: 
+         <<x:c1 -> c2>> e = \x. (<<c2>> (e (<<c1>> x))) 
+         we are implementing the picky version. *)      
+         let res = match xop with
+         | Some x -> 
+	     let xvar = mkexp (mkident x cty) in
+             let c1x = transl_contract c1 xvar caller callee in
+	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
+	     let c2subst = subst_contract x c1x c2 in (* picky *)
+	     let resfun = transl_contract c2subst (mkexp resarg) callee caller in
+	     Texp_function ([(mkpat x, resfun)], Partial)
+         | None -> let x = Ident.create "c" in
+                   let xvar = mkexp (mkident x cty) in
+                   let c1x = transl_contract c1 xvar caller callee in
+   		   let resarg = Texp_apply (e, [(Some c1x, Required)]) in
+          	   let resfun = transl_contract c2 (mkexp resarg) callee caller in
+                   Texp_function ([(mkpat x, resfun)], Partial)
+         in res
+     | Tctr_tuple cs -> 
+      (* <<(c1, c2)>> e = match e with 
+                           (x1, x2) -> (<<c1>> x1, <<c2>> x2)  *)
+        begin
+         match e.exp_desc with 
+         | Texp_tuple es -> 
+             let ces = List.map (fun (c, e) -> transl_contract c e callee caller)
+                                     (List.combine cs es)  in
+             Texp_tuple ces                      
+         | _ -> (* contract and e should have the same type
+                   so this is an impossible case *)
+                raise(Error(e.exp_loc, Illegal_tuple_contract)) 
+        end                            
+  in mkexp ce
+
+and subst_contract v e cntr = 
+  let mkpat var = { pat_desc = Tpat_var var; 
+                    pat_loc  = e.exp_loc;
+                    pat_type = e.exp_type;
+                    pat_env  = e.exp_env } in
+  let sc = match cntr.contract_desc with
+             Tctr_pred (x, p) -> 
+               (* {x | p} [e/v]   is expressed as  {x | let v = e in p} *) 
+               let sp = Texp_let (Nonrecursive, [(mkpat v, e)], p) in
+               Tctr_pred (x, { e with exp_desc = sp }) 
+           | Tctr_arrow (xop, c1, c2) -> 
+               let sc1 = subst_contract v e c1 in
+               let sc2 = subst_contract v e c2 in
+               Tctr_arrow (xop, sc1, sc2)
+           | Tctr_tuple cs -> Tctr_tuple (List.map (subst_contract v e) cs)
+  in { cntr with contract_desc = sc }
+   
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -1034,7 +1156,7 @@ let transl_exception id path decl =
 
 (* Error report *)
 
-open Format
+(* open Format *)
 
 let report_error ppf = function
   | Illegal_letrec_pat ->
@@ -1046,3 +1168,10 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Illegal_tuple_contract -> 
+      fprintf ppf
+        "Tuple contract expects tuple expression"
+  | Illegal_contract_wrapper -> 
+      fprintf ppf
+        "Contract wrapper must have callee's function name"
+

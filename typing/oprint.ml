@@ -14,6 +14,9 @@
 
 open Format
 open Outcometree
+open Types
+open Asttypes
+open Printast
 
 exception Ellipsis
 
@@ -302,6 +305,232 @@ and print_out_class_sig_item ppf =
 
 let out_class_type = ref print_out_class_type
 
+
+(* Contract *)
+
+let rec print_out_core_contract_desc ppf = 
+  function
+    Tctr_pred  (x, e) -> fprintf ppf "@[{@ %s@ |@ %a@ }@]" (Ident.name x) 
+                         print_out_expression e
+  | Tctr_arrow (xop, c1, c2) -> 
+    begin
+      match xop with
+      | None -> fprintf ppf "@[%a@ -> @ %a@]" 
+                print_out_core_contract c1
+                print_out_core_contract c2
+      | Some x -> fprintf ppf "@[%s:(%a)@ -> @ %a@]" (Ident.name x)
+                print_out_core_contract c1
+                print_out_core_contract c2
+    end
+  | Tctr_tuple (cs) -> fprintf ppf "@[[%a]@]" 
+                       (print_list_init print_out_core_contract
+                                  (fun ppf -> fprintf ppf ",@ "))
+                                   cs
+
+and print_out_core_contract ppf c = 
+      print_out_core_contract_desc ppf c.contract_desc
+
+and print_out_contract_declaration ppf cdecl = 
+      print_out_core_contract_desc ppf cdecl.ttopctr_desc.contract_desc
+
+and top_bindings ppf p_e_list = 
+	let spc = ref false in
+        List.iter
+	  (fun (pi, ei) -> 
+	    if !spc then fprintf ppf "@ " else spc := true;
+	    fprintf ppf "@[<3>%a@ =@ %a@]" print_out_pattern pi 
+	      print_out_expression ei)
+        p_e_list
+
+and bindings ppf p_e_list = 
+	let spc = ref false in
+        List.iter
+	  (fun (pi, ei) -> 
+	    if !spc then fprintf ppf "@ " else spc := true;
+	    fprintf ppf "@[<4> |@ %a@ ->@ %a@]" print_out_pattern pi 
+	      print_out_expression ei)
+        p_e_list
+
+
+and print_out_expression_desc ppf = 
+  function
+    Texp_ident (path, vd) -> Path.print ppf path
+  | Texp_constant (c) -> fmt_constant ppf c
+  | Texp_let (rflag, pat_exp_list, e) -> 
+       begin 
+         match rflag with
+             | Recursive -> 
+		 fprintf ppf "@[<2>let rec@ @[<hv 1>%a@] @[<2>in@ %a@]@]"
+		   top_bindings pat_exp_list
+		   print_out_expression e
+             | Nonrecursive -> 
+		 fprintf ppf "@[<hv 2>let@ @[<hv 1>%a@] @[<2>in@ %a@]@]"
+		   top_bindings pat_exp_list
+		   print_out_expression e
+             | Default -> 
+		 fprintf ppf "@[<2>let@ @[<hv 1>%a@]@]"
+		   top_bindings pat_exp_list
+       end 
+  | Texp_function (pat_exp_list, pl) -> 
+       fprintf ppf "@[<2>function@ @[<hv 1>%a@]@]" bindings pat_exp_list
+  | Texp_apply (e1, eop_opl_list) -> 
+       let rec picke xs = match xs with 
+                      | [] -> []
+                      | (x::ss) -> begin match x with
+                                   | (Some e, opl) -> e::(picke ss)
+			           | (None, _) -> picke ss 
+                                   end
+       in
+       let es = picke eop_opl_list in
+       fprintf ppf "@[<2>(%a@ %a) @]" 
+       print_out_expression e1
+       (print_list_init print_out_expression  
+	               (fun ppf -> fprintf ppf "@ "))
+                       es
+  | Texp_match (e, pat_exp_list, pl) -> 
+       fprintf ppf "@[<2>match@ %a @[<2>with@ %a @]" 
+       print_out_expression e
+       bindings pat_exp_list
+  | Texp_tuple (es) -> 
+       fprintf ppf "@[%a@]"
+       (print_list_init print_out_expression
+	               (fun ppf -> fprintf ppf ",@ "))
+                       es
+  | Texp_construct (path, constr_desc, es) -> 
+       let c = match constr_desc.cstr_tag with
+	        Cstr_constant (i) -> if i>0 then "true" else "false"
+                | Cstr_block (i) -> "block"
+                | Cstr_exception (p)-> "exception"
+       in 
+       (* fprintf ppf "@[%s @ %a@]" (String.concat "." [Path.name path;  c]) *)
+       fprintf ppf "@[%s @ %a@]" c
+        (print_list_init print_out_expression  
+	               (fun ppf -> fprintf ppf ",@ "))
+                       es
+  | Texp_ifthenelse (e, then_exp, else_expop) -> 
+     begin
+       match else_expop with
+         None -> fprintf ppf "@[<hv 1>if@ %a then @ %a @]" 
+                         print_out_expression e
+                         print_out_expression then_exp
+      | Some else_exp -> fprintf ppf "@[<hv 1>if@ @[%a@] @[then@ %a@] @[else@ %a@] @]" 
+                         print_out_expression e
+                         print_out_expression then_exp
+	                 print_out_expression else_exp
+     end
+  | Texp_try (e, pat_exp_list) -> 
+      fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@)@]"
+	print_out_expression e bindings pat_exp_list
+  | Texp_sequence(e1, e2) ->
+      fprintf ppf "@[<2>(%a@ ; %a)@]" 
+        print_out_expression e1
+        print_out_expression e2
+  | Texp_while (e1, e2) ->
+      fprintf ppf "@[<2>(while@ (%a)@ @[{%a@]})@]" 
+        print_out_expression e1
+        print_out_expression e2
+  | Texp_for (id, e1, e2, dir_flag, e3) -> 
+      fprintf ppf "@[<2>(for %a@ %a@ %s@ %a@ %a)@]"
+	Ident.print id
+	print_out_expression e1
+	(match dir_flag with Upto -> "to" | Downto -> "downto")
+	print_out_expression e2
+	print_out_expression e3
+  | Texp_array (e_list) -> 
+      fprintf ppf "@[ %a @]"
+        (print_list_init print_out_expression 
+	   (fun ppf -> fprintf ppf ","))
+        e_list
+  | Texp_when (e1, e2) -> 
+      fprintf ppf "@[<2>(when@ (%a)@ @[{%a@]})@]" 
+        print_out_expression e1
+        print_out_expression e2
+  | Texp_send (e, m) -> fprintf ppf "@[%a@]" print_out_expression e
+  | Texp_assert (e) -> fprintf ppf "@[%a@]" print_out_expression e
+  | Texp_assertfalse -> fprintf ppf "%s" "assertfalse"
+  | Texp_lazy (e) -> fprintf ppf "@[%a@]" print_out_expression e
+  | Texp_contract (ccontract, e, r1, r2) ->
+      begin
+      match (r1.exp_desc, r2.exp_desc) with
+        (Texp_bad _, Texp_unr _) -> 
+	  fprintf ppf "@[(%a@ |>@ %a)@]" print_out_expression e
+	    print_out_core_contract ccontract
+      | (Texp_unr _, Texp_bad _) ->
+	  fprintf ppf "@[(%a@ <|@ %a)@]" print_out_expression e
+	    print_out_core_contract ccontract
+      | (_,_) -> fprintf ppf "%s" "typing/oprint.ml: contract not done yet"
+      end
+  | Texp_bad (bl) -> fprintf ppf "@[BAD@ %a@]" print_blame bl
+  | Texp_unr (bl) -> fprintf ppf "@[UNR@ %a@]" print_blame bl
+(*
+  | Texp_variant (lbl, expop) -> fprintf ppf "%s" "Texp_variant"
+  | Texp_record of (label_description * expression) list * expression option
+  | Texp_field of expression * label_description
+  | Texp_setfield of expression * label_description * expression
+  | Texp_when of expression * expression
+  | Texp_send of expression * meth
+  | Texp_new of Path.t * class_declaration
+  | Texp_instvar of Path.t * Path.t
+  | Texp_setinstvar of Path.t * Path.t * expression
+  | Texp_override of Path.t * (Path.t * expression) list
+  | Texp_letmodule of Ident.t * module_expr * expression 
+  | Texp_object of class_structure * class_signature * string list
+*)
+  | others -> fprintf ppf "%s" "typing/oprint.ml: not done yet"
+
+and print_blame ppf bl = match bl with
+    Blame (loc, pathopt) -> 
+      begin 
+         match pathopt with
+           None -> fprintf ppf "%s" "Blame _"
+         | Some path -> fprintf ppf "@[%s @]" (Path.name path) 
+      end
+  | UnknownBlame -> fprintf ppf "%s" "UnknownBlame"
+
+and print_out_pattern ppf pat = print_out_pattern_desc ppf pat.pat_desc
+
+and print_out_expression ppf exp = print_out_expression_desc ppf exp.exp_desc
+
+and print_out_pattern_desc ppf = 
+  function 
+    Tpat_any -> fprintf ppf "%s" "_"
+  | Tpat_var (id) -> fprintf ppf "%s" (Ident.name id)
+  | Tpat_alias (pat, id) -> 
+      fprintf ppf "%a, @%s" print_out_pattern pat (Ident.name id)
+  | Tpat_constant (c) -> fprintf ppf "%a" fmt_constant c
+  | Tpat_tuple (pat_list) -> 
+      fprintf ppf "@[ %a @]"
+        (print_list_init print_out_pattern
+	   (fun ppf -> fprintf ppf ","))
+        pat_list
+  | Tpat_construct (path, constr_desc, pat_list) ->
+       fprintf ppf "@[%s @ %a@]" (Path.name path) 
+        (print_list_init print_out_pattern
+	   (fun ppf -> fprintf ppf ","))
+        pat_list
+  | Tpat_variant (lbl, patop, rdescref) ->
+      fprintf ppf "%s" "typing/oprint.ml: not done yet"
+  | Tpat_record (lbldesc_pat_list) -> 
+      fprintf ppf "@[ %a @]"
+        (print_list_init print_out_pattern
+	   (fun ppf -> fprintf ppf ","))
+        (List.map (fun (b,c) -> c) lbldesc_pat_list)
+  | Tpat_array (pat_list) -> 
+      fprintf ppf "@[ %a @]"
+        (print_list_init print_out_pattern
+	   (fun ppf -> fprintf ppf ","))
+	pat_list
+  | Tpat_or (pat1, pat2, rdescop) -> fprintf ppf "%a, @%a" 
+	                      print_out_pattern pat1
+	                      print_out_pattern pat2
+  | Tpat_lazy (pat) -> fprintf ppf "%a" print_out_pattern pat
+
+                                             
+let out_contract_declaration = ref print_out_contract_declaration
+let out_core_contract = ref print_out_core_contract
+let out_expression = ref print_out_expression
+let out_expression_desc = ref print_out_expression_desc
+
 (* Signature *)
 
 let out_module_type = ref (fun _ -> failwith "Oprint.out_module_type")
@@ -362,6 +591,11 @@ and print_out_sig_item ppf =
       in
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
+  | Osig_contract (id, decl, rs) -> 
+      let kwd = "contract" in
+      fprintf ppf "@[<2>%s %a =@ %a@]" kwd value_ident id 
+              print_out_core_contract_desc (decl.ttopctr_desc).contract_desc
+
 
 and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   let print_constraints ppf params =

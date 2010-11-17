@@ -51,7 +51,8 @@ val none: type_expr
         (* A dummy type expression *)
 
 val repr: type_expr -> type_expr
-        (* Return the canonical representative of a type. *)
+        (* Return the canonical representative of a type. 
+           It replaces Tlink by its real type. *)
 
 val dummy_method: label
 val object_fields: type_expr -> type_expr

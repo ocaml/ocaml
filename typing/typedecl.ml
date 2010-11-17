@@ -42,6 +42,7 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
+  | Illegal_contract_id of Longident.t
 
 exception Error of Location.t * error
 
@@ -715,6 +716,54 @@ let transl_exn_rebind env loc lid =
     Cstr_exception path -> (path, cdescr.cstr_args)
   | _ -> raise(Error(loc, Not_an_exception lid))
 
+
+(* Type-check a contract and then translate untyped contract to 
+   typed contract declaration. 
+   The parameter *cdecls* is in the form:
+     contract f = ...
+     and g = ...
+   where f and g may be mutually recursive. 
+*)
+
+let rec transl_contract_decls env cdecls =
+  match cdecls with
+  | []     -> []
+  | (d::ds) -> let t_loc   = d.ptopctr_loc in
+               let x       = d.ptopctr_id in  (* x has type string *)
+               let longx   = Longident.Lident x in
+               let (path, vd) = try 
+                                  Env.lookup_value longx env 
+	                        with Not_found ->
+                                raise(Error(t_loc, Illegal_contract_id(longx))) in
+               let ty = vd.val_type in
+               let t_desc  = Typecore.tc_contract env d.ptopctr_desc ty in
+	       let t_d     = { Typedtree.ttopctr_id   = path; (* unique internal name *)
+                               ttopctr_desc = t_desc;
+                               ttopctr_type = ty; 
+                               ttopctr_loc  = t_loc } in
+               let t_ds    = transl_contract_decls env ds in
+               t_d::t_ds
+
+let rec transl_contract_decls_in_sig env cdecls =
+  match cdecls with
+  | []     -> []
+  | (d::ds) -> let t_loc   = d.ptopctr_loc in
+               let x       = d.ptopctr_id in  (* x has type string *)
+               let longx   = Longident.Lident x in
+               let (path, vd) = try 
+                                  Env.lookup_value longx env 
+	                        with Not_found ->
+                                raise(Error(t_loc, Illegal_contract_id(longx))) in
+               let ty = vd.val_type in
+               let t_desc  = Typecore.tc_contract_in_sig env d.ptopctr_desc ty in
+	       let t_decl = { Types.ttopctr_id   = path;
+                              ttopctr_desc = t_desc;
+                              ttopctr_type = ty;
+                              ttopctr_loc  = t_loc } in
+               let t_ds    = transl_contract_decls_in_sig env ds in
+               (Path.head path, t_decl)::t_ds
+
+
 (* Translate a value declaration *)
 let transl_value_decl env valdecl =
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
@@ -950,3 +999,4 @@ let report_error ppf = function
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
       fprintf ppf "This fixed type %s" r
+  | Illegal_contract_id lid -> fprintf ppf "No function for Contract id %a"  Printtyp.longident lid

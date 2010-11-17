@@ -96,6 +96,7 @@ and structure_item ppf tbl s =
   | Pstr_value (recflag, pel) -> let_pel ppf tbl recflag pel None;
   | Pstr_primitive _ -> ()
   | Pstr_type _ -> ()
+  | Pstr_contract _ -> ()
   | Pstr_exception _ -> ()
   | Pstr_exn_rebind _ -> ()
   | Pstr_module (_, me) -> module_expr ppf tbl me;

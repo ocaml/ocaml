@@ -133,6 +133,7 @@ let main () =
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
+       "-nocontract", Arg.Set nocontract, " Don't compile contract checks";
        "-noautolink", Arg.Set no_auto_link,
              " Don't automatically link C libraries specified in .cmxa files";
        "-nodynlink", Arg.Clear dlcode,
@@ -193,6 +194,7 @@ let main () =
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
+       "-dtypedtree", Arg.Set dump_typedtree, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
        "-dlambda", Arg.Set dump_lambda, " (undocumented)";
        "-dcmm", Arg.Set dump_cmm, " (undocumented)";

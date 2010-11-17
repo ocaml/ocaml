@@ -41,6 +41,7 @@ let keyword_table =
     "begin", BEGIN;
     "class", CLASS;
     "constraint", CONSTRAINT;
+    "contract", CONTRACT;            
     "do", DO;
     "done", DONE;
     "downto", DOWNTO;
@@ -79,7 +80,7 @@ let keyword_table =
     "true", TRUE;
     "try", TRY;
     "type", TYPE;
-    "val", VAL;
+    "val", VAL; 
     "virtual", VIRTUAL;
     "when", WHEN;
     "while", WHILE;

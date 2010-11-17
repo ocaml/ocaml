@@ -57,3 +57,9 @@ val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
 val find_name: string -> 'a tbl -> 'a
 val keys: 'a tbl -> t list
+
+val get_known_new_name: t -> t list -> t
+
+val merge: 'a tbl -> 'a tbl -> 'a tbl
+val raw_keys: t tbl -> t list
+(* val find: Path.t -> 'a tbl -> 'a *)

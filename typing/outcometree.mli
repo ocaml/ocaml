@@ -90,6 +90,8 @@ and out_sig_item =
   | Osig_module of string * out_module_type * out_rec_status
   | Osig_type of out_type_decl * out_rec_status
   | Osig_value of string * out_type * string list
+  | Osig_contract of string * Types.contract_declaration * out_rec_status
+
 and out_type_decl =
   string * (string * (bool * bool)) list * out_type * Asttypes.private_flag *
   (out_type * out_type) list
@@ -102,3 +104,10 @@ type out_phrase =
   | Ophr_eval of out_value * out_type
   | Ophr_signature of (out_sig_item * out_value option) list
   | Ophr_exception of (exn * out_value)
+
+
+type out_contract_declaration = Types.contract_declaration
+type out_core_contract = Types.core_contract
+type out_expression = Types.expression
+type out_expression_desc = Types.expression_desc
+

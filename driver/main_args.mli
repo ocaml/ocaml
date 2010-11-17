@@ -34,6 +34,7 @@ module Make_options (F :
       val _linkall : unit -> unit
       val _make_runtime : unit -> unit
       val _noassert : unit -> unit
+      val _nocontract : unit -> unit
       val _noautolink : unit -> unit
       val _nolabels : unit -> unit
       val _nostdlib : unit -> unit
@@ -57,6 +58,7 @@ module Make_options (F :
 
       val _nopervasives : unit -> unit
       val _dparsetree : unit -> unit
+      val _dtypedtree : unit -> unit
       val _drawlambda : unit -> unit
       val _dlambda : unit -> unit
       val _dinstr : unit -> unit

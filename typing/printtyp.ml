@@ -33,7 +33,7 @@ let rec longident ppf = function
 
 (* Print an identifier *)
 
-let ident ppf id = fprintf ppf "%s" (Ident.name id)
+let ident ppf id = Ident.print ppf id (* fprintf ppf "%s" (Ident.name id) *)
 
 (* Print a path *)
 
@@ -810,6 +810,9 @@ and tree_of_signature = function
       tree_of_class_declaration id decl rs :: tree_of_signature rem
   | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
       tree_of_cltype_declaration id decl rs :: tree_of_signature rem
+  | Tsig_contract(id, decl, rs) :: rem -> 
+      Osig_contract (Ident.name id, decl, tree_of_rec rs) :: 
+      tree_of_signature rem
   | _ ->
       assert false
 
@@ -835,6 +838,28 @@ let print_signature ppf tree =
 
 let signature ppf sg =
   fprintf ppf "%a" print_signature (tree_of_signature sg)
+
+(* Print a contract declaration *)
+
+let contract_declaration id ppf decl = 
+  fprintf ppf "@[<v>%a@]" !Oprint.out_contract_declaration decl
+
+(* -dtypedtree prints the outcometree *)
+
+let structure_item ppf x = match x with
+  | Typedtree.Tstr_eval (e) -> 
+      let iface_e = Typedtree.expression_to_iface e in
+      fprintf ppf "@[<1>Tstr_eval(%a)@]" !Oprint.out_expression iface_e;
+  | Typedtree.Tstr_value (rec_flag, pat_expr_list) ->
+      let (p, e) = List.hd pat_expr_list in
+      let dummy_e = {e with Typedtree.exp_desc = Typedtree.Texp_assertfalse } in 
+      let edesc = Typedtree.Texp_let (Default, pat_expr_list, dummy_e) in
+      let iface_e = Typedtree.expression_desc_to_iface 
+	              Typedtree.expression_to_iface edesc in 
+      fprintf ppf "@[<1>Tstr_value(%a)@]" !Oprint.out_expression_desc iface_e;  
+  | _ -> fprintf std_formatter "typing/printtyp: ONLY eval, value are printed!\n"
+
+let implementation ppf (x,_) = raw_list structure_item ppf x
 
 (* Print an unification error *)
 

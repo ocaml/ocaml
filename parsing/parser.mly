@@ -20,6 +20,10 @@ open Asttypes
 open Longident
 open Parsetree
 
+let mktopctr i d =  (* toplevel contract *)
+  { ptopctr_id = i; ptopctr_desc = d; ptopctr_loc = symbol_rloc() }
+let mkctr d =   (* local contract *)
+  { pctr_desc = d; pctr_loc = symbol_rloc() }
 let mktyp d =
   { ptyp_desc = d; ptyp_loc = symbol_rloc() }
 let mkpat d =
@@ -207,6 +211,9 @@ let bigarray_set arr arg newval =
 %token COLONGREATER
 %token COMMA
 %token CONSTRAINT
+%token CONTRACT
+%token CLPAREN	/* contract: this is not used yet */
+%token CRPAREN	/* contract: this is not used yet */
 %token DO
 %token DONE
 %token DOT
@@ -357,7 +364,7 @@ The precedences must be listed from low to high.
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT LDPAREN RDPAREN
 
 
 /* Entry points */
@@ -449,6 +456,8 @@ structure_item:
       { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
+  | CONTRACT contract_declarations
+      { mkstr(Pstr_contract(List.rev $2)) } 
   | EXCEPTION UIDENT constructor_arguments
       { mkstr(Pstr_exception($2, $3)) }
   | EXCEPTION UIDENT EQUAL constr_longident
@@ -515,6 +524,8 @@ signature_item:
       { mksig(Psig_value($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
+  | CONTRACT contract_declarations
+      { mksig(Psig_contract(List.rev $2)) } 
   | EXCEPTION UIDENT constructor_arguments
       { mksig(Psig_exception($2, $3)) }
   | MODULE UIDENT module_declaration
@@ -1057,6 +1068,25 @@ type_constraint:
   | COLON error                                 { syntax_error() }
   | COLONGREATER error                          { syntax_error() }
 ;
+core_contract:
+    core_contract_desc           { mkctr($1) }
+;
+core_contract_desc:
+    LBRACE val_ident BAR expr RBRACE         
+      { Pctr_pred($2, $4) }
+  | val_ident COLON core_contract_desc MINUSGREATER core_contract_desc
+      { Pctr_arrow(Some $1, mkctr($3), mkctr($5)) } 
+  | core_contract_desc MINUSGREATER core_contract_desc
+      { Pctr_arrow(None, mkctr($1), mkctr($3)) } 
+  | LPAREN core_contract_desc RPAREN
+      { $2 }
+  | LPAREN contract_comma_list RPAREN
+      { Pctr_tuple(List.rev $2) }
+;
+contract_comma_list:
+    contract_comma_list STAR core_contract_desc        { mkctr($3) :: $1 }
+  | core_contract_desc STAR core_contract_desc         { [mkctr($3); mkctr($1)] }
+;
 
 /* Patterns */
 
@@ -1139,6 +1169,17 @@ lbl_pattern_list:
 primitive_declaration:
     STRING                                      { [$1] }
   | STRING primitive_declaration                { $1 :: $2 }
+;
+
+/* Contract declarations */
+
+contract_declarations:
+    contract_declaration                                { [$1] }
+  | contract_declarations AND contract_declaration      { $3 :: $1 }
+;
+contract_declaration:
+    val_ident EQUAL core_contract		
+      { mktopctr $1 $3 }
 ;
 
 /* Type declarations */

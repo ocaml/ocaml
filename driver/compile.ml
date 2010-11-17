@@ -122,12 +122,18 @@ let implementation ppf sourcefile outputprefix =
       raise x
   end else begin
     let objfile = outputprefix ^ ".cmo" in
-    let oc = open_out_bin objfile in
+    let oc = open_out_bin objfile in                                                                                                                       
     try
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ Unused_var.warn ppf
       ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ begin
+          if !Clflags.nocontract
+           then fun x -> x
+           else Translmod.transl_contracts 
+         end
+      ++ print_if ppf Clflags.dump_typedtree Printtyp.implementation
       ++ Translmod.transl_implementation modulename
       ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       ++ Simplif.simplify_lambda

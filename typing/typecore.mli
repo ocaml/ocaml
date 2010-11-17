@@ -46,6 +46,13 @@ val type_self_pattern:
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+
+val tc_contract:
+        Env.t -> Parsetree.core_contract -> type_expr -> Typedtree.core_contract
+
+val tc_contract_in_sig:
+        Env.t -> Parsetree.core_contract -> type_expr -> Types.core_contract
+
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_approx:
@@ -100,6 +107,7 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Contract_wrong_type of Parsetree.core_contract * type_expr
 
 exception Error of Location.t * error
 
@@ -111,3 +119,6 @@ val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
 val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * class_signature * string list) ref
+
+(* added by Dana as it is used in transl_contract_decl in typedecl.ml 
+val enter_variable: Location.t -> string -> Types.type_expr -> Ident.t *)

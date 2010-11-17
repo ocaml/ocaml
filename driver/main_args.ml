@@ -34,6 +34,7 @@ module Make_options (F :
      val _linkall : unit -> unit
      val _make_runtime : unit -> unit
      val _noassert : unit -> unit
+     val _nocontract : unit -> unit
      val _noautolink : unit -> unit
      val _nolabels : unit -> unit
      val _nostdlib : unit -> unit
@@ -57,6 +58,7 @@ module Make_options (F :
 
      val _nopervasives : unit -> unit
      val _dparsetree : unit -> unit
+     val _dtypedtree : unit -> unit
      val _drawlambda : unit -> unit
      val _dlambda : unit -> unit
      val _dinstr : unit -> unit
@@ -100,6 +102,7 @@ struct
            " (deprecated) same as -make-runtime";
     "-modern", Arg.Unit F._labels, " (deprecated) same as -labels";
     "-noassert", Arg.Unit F._noassert, " Don't compile assertion checks";
+    "-nocontract", Arg.Unit F._nocontract, " Don't compile contract checks";
     "-noautolink", Arg.Unit F._noautolink,
            " Don't automatically link C libraries specified in .cma files";
     "-nolabels", Arg.Unit F._nolabels, " Ignore non-optional labels in types";
@@ -155,6 +158,7 @@ struct
            " Print location of standard library and exit";
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
+    "-dtypedtree", Arg.Unit F._dtypedtree, " (undocumented)";
     "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
     "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
     "-dinstr", Arg.Unit F._dinstr, " (undocumented)";

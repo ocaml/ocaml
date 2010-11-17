@@ -60,6 +60,7 @@ let main () =
            "<file>  Load <file> instead of default init file";
      "-labels", Arg.Clear classic, " Labels commute (default)";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
+     "-nocontract", Arg.Set nocontract, " Do not compile contract checkings";
      "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
      "-noprompt", Arg.Set noprompt, " Suppress all prompts";
      "-nostdlib", Arg.Set no_std_include,
@@ -91,6 +92,7 @@ let main () =
          \032    default setting is a (all warnings are non-fatal)";
 
      "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
+     "-dtypedtree", Arg.Set dump_typedtree, " (undocumented)";
      "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)";

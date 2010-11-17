@@ -109,6 +109,7 @@ module Options = Main_args.Make_options (struct
   let _make_runtime () =
     custom_runtime := true; make_runtime := true; link_everything := true
   let _noassert = set noassert
+  let _nocontract = set nocontract
   let _nolabels = set classic
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include
@@ -131,6 +132,7 @@ module Options = Main_args.Make_options (struct
   let _verbose = set verbose
   let _nopervasives = set nopervasives
   let _dparsetree = set dump_parsetree
+  let _dtypedtree = set dump_typedtree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr

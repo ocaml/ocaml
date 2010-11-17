@@ -21,7 +21,6 @@ open Longident
 open Path
 open Types
 
-
 type error =
     Not_an_interface of string
   | Corrupted_interface of string
@@ -35,6 +34,9 @@ type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
+  (* Env_contract contains contracts in the current module,
+     opened contracts are kept in Tstr_opened_contracts *)
+  | Env_contract of summary * Path.t * contract_declaration
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration
@@ -42,12 +44,15 @@ type summary =
   | Env_cltype of summary * Ident.t * cltype_declaration
   | Env_open of summary * Path.t
 
+
 type t = {
   values: (Path.t * value_description) Ident.tbl;
   annotations: (Path.t * Annot.ident) Ident.tbl;
-  constrs: constructor_description Ident.tbl;
-  labels: label_description Ident.tbl;
+  (* constrs, the Path.t is added by naxu *)
+  constrs: (Path.t * constructor_description) Ident.tbl; 
+  labels: (Path.t * label_description) Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
+  contracts: (Path.t, contract_declaration) Tbl.t;
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
@@ -68,6 +73,7 @@ and structure_components = {
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
+  mutable comp_contracts: (string, contract_declaration * int) Tbl.t;
   mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
@@ -84,9 +90,11 @@ and functor_components = {
   fcomp_cache: (Path.t, module_components) Hashtbl.t  (* For memoization *)
 }
 
+(* empty environment *)
 let empty = {
   values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
   labels = Ident.empty; types = Ident.empty;
+  contracts = Tbl.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty;
@@ -112,7 +120,8 @@ let is_local_exn = function
 
 let diff env1 env2 =
   diff_keys is_local env1.values env2.values @
-  diff_keys is_local_exn env1.constrs env2.constrs @
+(*  diff_keys is_local_exn env1.constrs env2.constrs @ *)
+  diff_keys is_local env1.constrs env2.constrs @ 
   diff_keys is_local env1.modules env2.modules @
   diff_keys is_local env1.classes env2.classes
 
@@ -268,6 +277,10 @@ and find_class =
   find (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
+(* and find_contract =
+  find (fun env -> env.contracts) (fun sc -> sc.comp_contracts) *)
+
+let fetch_contracts env = env.contracts
 
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
@@ -406,7 +419,8 @@ let lookup proj1 proj2 lid env =
 let lookup_simple proj1 proj2 lid env =
   match lid with
     Lident s ->
-      Ident.find_name s (proj1 env)
+      let (path, data) = Ident.find_name s (proj1 env) in
+      data
   | Ldot(l, s) ->
       let (p, desc) = lookup_module_descr l env in
       begin match Lazy.force desc with
@@ -425,8 +439,12 @@ let lookup_annot id e =
   lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
 and lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
+and lookup_constructor_and_path =
+  lookup (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
   lookup_simple (fun env -> env.labels) (fun sc -> sc.comp_labels)
+and lookup_label_and_path =
+  lookup (fun env -> env.labels) (fun sc -> sc.comp_labels)
 and lookup_type =
   lookup (fun env -> env.types) (fun sc -> sc.comp_types)
 and lookup_modtype =
@@ -435,6 +453,8 @@ and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
+(* and lookup_contract =
+  lookup (fun env -> env.contracts) (fun sc -> sc.comp_contracts) *)
 
 (* Expand manifest module type names at the top of the given module type *)
 
@@ -476,7 +496,8 @@ let rec prefix_idents root pos sub = function
   | Tsig_value(id, decl) :: rem ->
       let p = Pdot(root, Ident.name id, pos) in
       let nextpos = match decl.val_kind with Val_prim _ -> pos | _ -> pos+1 in
-      let (pl, final_sub) = prefix_idents root nextpos sub rem in
+      let (pl, final_sub) = 
+	prefix_idents root nextpos (Subst.add_value id p sub) rem in
       (p::pl, final_sub)
   | Tsig_type(id, decl, _) :: rem ->
       let p = Pdot(root, Ident.name id, nopos) in
@@ -506,6 +527,14 @@ let rec prefix_idents root pos sub = function
       let p = Pdot(root, Ident.name id, nopos) in
       let (pl, final_sub) = prefix_idents root pos sub rem in
       (p::pl, final_sub)
+  | Tsig_contract(id, decl, _) :: rem -> 
+      let p = Pdot(root, Ident.name id, pos) in
+      (* we have added subst when we see Tsig_value,
+	 as we assume val is defined before contract in .mli, 
+	 we do not need to add subst here any more. *)
+      let (pl, final_sub) = prefix_idents root pos sub rem in
+      (p::pl, final_sub)
+
 
 (* Compute structure descriptions *)
 
@@ -516,6 +545,7 @@ let rec components_of_module env sub path mty =
         { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
+          comp_contracts = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in
@@ -577,7 +607,11 @@ let rec components_of_module env sub path mty =
         | Tsig_cltype(id, decl, _) ->
             let decl' = Subst.cltype_declaration sub decl in
             c.comp_cltypes <-
-              Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes)
+              Tbl.add (Ident.name id) (decl', !pos) c.comp_cltypes;
+        | Tsig_contract(id, decl, _) -> 
+	    let decl' = Subst.contract_declaration sub decl in
+            c.comp_contracts <-
+	      Tbl.add (Ident.name id) (decl', !pos) c.comp_contracts)
         sg pl;
         Structure_comps c
   | Tmty_functor(param, ty_arg, ty_res) ->
@@ -596,6 +630,7 @@ let rec components_of_module env sub path mty =
           comp_values = Tbl.empty; comp_annotations = Tbl.empty;
           comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
+          comp_contracts = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty })
@@ -618,17 +653,18 @@ and store_type id path info env =
     constrs =
       List.fold_right
         (fun (name, descr) constrs ->
-          Ident.add (Ident.create name) descr constrs)
+          Ident.add (Ident.create name) (path, descr) constrs)
         (constructors_of_type path info)
         env.constrs;
     labels =
       List.fold_right
         (fun (name, descr) labels ->
-          Ident.add (Ident.create name) descr labels)
+          Ident.add (Ident.create name) (path, descr) labels)
         (labels_of_type path info)
         env.labels;
     types = Ident.add id (path, info) env.types;
     summary = Env_type(env.summary, id, info) }
+
 
 and store_type_infos id path info env =
   (* Simplified version of store_type that doesn't compute and store
@@ -642,7 +678,7 @@ and store_type_infos id path info env =
 
 and store_exception id path decl env =
   { env with
-    constrs = Ident.add id (Datarepr.exception_descr path decl) env.constrs;
+    constrs = Ident.add id (path, Datarepr.exception_descr path decl) env.constrs;
     summary = Env_exception(env.summary, id, decl) }
 
 and store_module id path mty env =
@@ -667,6 +703,11 @@ and store_cltype id path desc env =
   { env with
     cltypes = Ident.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
+
+and store_contract path cdecl env = 
+  { env with 
+    contracts = Tbl.add path cdecl env.contracts;
+    summary = Env_contract(env.summary, path, cdecl) }
 
 (* Compute the components of a functor application in a path. *)
 
@@ -714,6 +755,9 @@ and add_class id ty env =
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
 
+and add_contract path contract_decl env =
+  store_contract path contract_decl env
+
 (* Insertion of bindings by name *)
 
 let enter store_fun name data env =
@@ -726,6 +770,7 @@ and enter_module = enter store_module
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
+(* and enter_contract = enter store_contract *)
 
 (* Insertion of all components of a signature *)
 
@@ -738,6 +783,7 @@ let add_item comp env =
   | Tsig_modtype(id, decl)   -> add_modtype id decl env
   | Tsig_class(id, decl, _)  -> add_class id decl env
   | Tsig_cltype(id, decl, _) -> add_cltype id decl env
+  | Tsig_contract(id, decl, _)-> add_contract (Pident id) decl env
 
 let rec add_signature sg env =
   match sg with
@@ -774,7 +820,9 @@ let open_signature root sg env =
                         (Subst.class_declaration sub decl) env
         | Tsig_cltype(id, decl, _) ->
             store_cltype (Ident.hide id) p
-                         (Subst.cltype_declaration sub decl) env)
+                         (Subst.cltype_declaration sub decl) env
+        | Tsig_contract(id, decl, _) -> 
+            store_contract p (Subst.contract_declaration sub decl) env)
       env sg pl in
   { newenv with summary = Env_open(env.summary, root) }
   

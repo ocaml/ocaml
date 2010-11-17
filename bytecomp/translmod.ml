@@ -27,9 +27,12 @@ open Translobj
 open Translcore
 open Translclass
 
+
+type module_coercion = Types.module_coercion
+
 type error =
   Circular_dependency of Ident.t
-
+ 
 exception Error of Location.t * error
 
 (* Compile a coercion *)
@@ -156,6 +159,8 @@ let init_shape modl =
         :: init_shape_struct env rem
     | Tsig_cltype(id, ctyp, _) :: rem ->
         init_shape_struct env rem
+    | Tsig_contract(id, cdecl, _) :: rem -> 
+        init_shape_struct (Env.add_contract (Pident id) cdecl env) rem
   in
   try
     Some(undefined_location modl.mod_loc,
@@ -267,28 +272,28 @@ let rec transl_module cc rootpath mexp =
   | Tmod_constraint(arg, mty, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
 
-and transl_structure fields cc rootpath = function
+and transl_structure fields cc rootpath  = function
     [] ->
-      begin match cc with
-        Tcoerce_none ->
-          Lprim(Pmakeblock(0, Immutable),
-                List.map (fun id -> Lvar id) (List.rev fields))
-      | Tcoerce_structure pos_cc_list ->
-          let v = Array.of_list (List.rev fields) in
-          Lprim(Pmakeblock(0, Immutable),
-                List.map
-                  (fun (pos, cc) ->
-                    match cc with
-                      Tcoerce_primitive p -> transl_primitive p
-                    | _ -> apply_coercion cc (Lvar v.(pos)))
-                  pos_cc_list)
-      | _ ->
-          fatal_error "Translmod.transl_structure"
-      end
+	begin match cc with
+          Tcoerce_none ->
+            Lprim(Pmakeblock(0, Immutable),
+                  List.map (fun id -> Lvar id) (List.rev fields))
+	| Tcoerce_structure pos_cc_list ->
+            let v = Array.of_list (List.rev fields) in
+            Lprim(Pmakeblock(0, Immutable),
+                  List.map
+                    (fun (pos, cc) ->
+                      match cc with
+			Tcoerce_primitive p -> transl_primitive p
+                      | _ -> apply_coercion cc (Lvar v.(pos)))
+                    pos_cc_list)
+	| _ ->
+            fatal_error "Translmod.transl_structure"
+	end
   | Tstr_eval expr :: rem ->
       Lsequence(transl_exp expr, transl_structure fields cc rootpath rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
-      let ext_fields = rev_let_bound_idents pat_expr_list @ fields in
+      let ext_fields = rev_let_bound_idents pat_expr_list @ fields in     
       transl_let rec_flag pat_expr_list
                  (transl_structure ext_fields cc rootpath rem)
   | Tstr_primitive(id, descr) :: rem ->
@@ -304,8 +309,8 @@ and transl_structure fields cc rootpath = function
            transl_structure (id :: fields) cc rootpath rem)
   | Tstr_module(id, modl) :: rem ->
       Llet(Strict, id,
-           transl_module Tcoerce_none (field_path rootpath id) modl,
-           transl_structure (id :: fields) cc rootpath rem)
+	   transl_module Tcoerce_none (field_path rootpath id) modl,
+	   transl_structure (id :: fields) cc rootpath rem)
   | Tstr_recmodule bindings :: rem ->
       let ext_fields = List.rev_append (List.map fst bindings) fields in
       compile_recmodule
@@ -336,6 +341,154 @@ and transl_structure fields cc rootpath = function
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
+  | Tstr_contract(decls) :: rem -> 
+      transl_structure fields cc rootpath rem
+  | Tstr_opened_contracts(tbl) :: rem -> 
+      transl_structure fields cc rootpath rem
+
+
+(* fetch_contract takes a function name and lookup its contract in the
+set of contract declarations. *)
+let fetch_contract_by_pattern p contract_decls = 
+   List.find (fun x -> match p.pat_desc with
+            | Tpat_var (i) -> begin
+                       match x.ttopctr_id with
+                       | Pident (j) -> j = i
+    		       | _ -> false 
+                     end       
+            | _ -> false) contract_decls
+      
+let fetch_contract_by_path p contract_decls = 
+  List.find (fun x -> match p with 
+   | Pident (i) -> begin 
+                    match x.ttopctr_id with
+                    | Pident (j) -> j = i
+                    | _ -> false
+                   end
+   | _ -> false) contract_decls
+
+let rec print_list ppf l =
+  match l with 
+   | [] -> ()
+   | (y::ys) -> Printtyp.path ppf y; 
+                print_list ppf ys
+
+let wrap_id_with_contract contract_decls opened_contracts caller_pathop expr = 
+  let contracted_exp_desc = match expr.exp_desc with
+       | Texp_ident (callee_path, value_desc) -> 
+         begin
+          try (* lookup for contracts in current module *)
+           let c = fetch_contract_by_path callee_path contract_decls in
+           requiresC c.ttopctr_desc expr caller_pathop (Some callee_path) 
+          with Not_found -> 
+	    try (* lookup for contracts in opened modules *)
+	      let c = Tbl.generic_find Path.cmpPath_byname callee_path opened_contracts in 
+              requiresC (core_contract_from_iface c.Types.ttopctr_desc) 
+		        expr caller_pathop (Some callee_path) 
+ 	    with Not_found -> 	    
+	      expr.exp_desc
+         end
+       | others -> others
+  in { expr with exp_desc = contracted_exp_desc }
+
+(* contract_id_in_expr wrapped all functions called in expression with its contract
+if it has any contract. E.g. f x = ..f (x - 1) ... g x
+ becomes f x = ..(f <| C_f) (x - 1) ... (g <| C_g) x
+val contract_id_in_expr: core_contract list -> 
+                         (Path.t * core_contract) Ident.tbl ->  
+                         Path.t option -> 
+                         expression -> expression
+*)
+let contract_id_in_expr contract_decls opened_contracts caller_pathop expr = 
+    map_expression (wrap_id_with_contract contract_decls 
+		                          opened_contracts 
+		                          caller_pathop) expr    
+
+(* val transl_str_contracts : core_contract list -> 
+                              (Path.t, contract_declaration) Tbl.t ->
+                              Typedtree.structure -> 
+                              Typedtree.structure       *)
+
+let rec transl_str_contracts contract_decls opened_contracts strs = 
+ let contract_val (pat, expr) =                      
+       let fpathop = match pat.pat_desc with
+                       | Tpat_var p -> Some (Pident p)
+                       | others -> None
+       in
+       let cexpr = contract_id_in_expr contract_decls 
+	                               opened_contracts
+	                               fpathop expr in 
+       (pat, cexpr)
+       (* for dynamic contract checking, we do not need f = e |> t 
+          we only need to wrap function's contract at caller site.
+       let mkexp e_desc = { expr with exp_desc = e_desc } in      
+       try
+         let c  = fetch_contract_by_pattern pat contract_decls in
+         let ce = ensuresC c.ttopctr_desc cexpr fpathop in
+         // we can send ce for static contract checking
+         (pat, mkexp ce)  
+       with Not_found -> 
+     	 (pat, cexpr)
+       *) 
+  in
+  match strs with
+   [] -> []
+ | Tstr_value(rec_flag, pat_expr_list) :: rem ->
+   (* We lookup tstr_contracts to see there is any contract for this function. 
+      If there is one, we fetch the contract and wrap the function body with it.
+      For each function called in the body of this function including a 
+      recursive call, if the function has a contract, we also fetch the contract 
+      and wrap the function call with its contract. For example,
+      let f = fun x -> ... f (x - 1)  + g x ...
+        becomes
+      let f = fun x -> ... (f <| C_f) (x - 1)  
+   	                 + (g <| C_g) x ...
+    *)       
+     let new_pat_expr_list = List.map contract_val pat_expr_list in
+     let contract_rem = transl_str_contracts contract_decls opened_contracts rem in
+     (Tstr_value(rec_flag, new_pat_expr_list))::contract_rem
+ | (Tstr_module(id, mexpr) :: rem) -> 
+    let new_module_expr_desc = 
+         begin
+          match mexpr.mod_desc with
+          | (Tmod_structure str) -> 
+              Tmod_structure (transl_str_contracts contract_decls 
+				                   opened_contracts str)
+          | others ->  others 
+         end 
+    in 
+    let new_str_module = Tstr_module (id, 
+                                  { mod_desc = new_module_expr_desc;
+                                    mod_loc  = mexpr.mod_loc;
+                                    mod_type = mexpr.mod_type;
+                                    mod_env  = mexpr.mod_env }) in
+    let contract_rem = transl_str_contracts contract_decls opened_contracts rem in
+    new_str_module :: contract_rem
+ | (other_str :: rem) -> other_str :: (transl_str_contracts contract_decls 
+					                    opened_contracts rem)
+	 
+(* Function trasl_contracts does a typedtree-to-typedtree transformation that 
+transforms contract declarations away i.e. embed it into the definitions. 
+Tstr_contract(ds) contains contracts declared in the current module while
+Tstr_opened_contracts(t) contains imported contracts.
+Function transl_contracts is called in driver/compile.ml *)
+
+and transl_contracts (str, cc) = 
+  let rec extract_contracts xs = 
+        match xs with
+           | [] -> ([], Tbl.empty)		 
+	   | (Tstr_opened_contracts(t) :: rem) ->
+	       let (current_contracts, opened_contracts) = extract_contracts rem in
+	       (current_contracts, Tbl.merge t opened_contracts) 
+           | ((Tstr_contract (ds)) :: rem) -> 
+	       let (current_contracts, opened_contracts) = extract_contracts rem in
+	       (ds@current_contracts, opened_contracts)
+           | (_::rem) -> extract_contracts rem
+  in
+  let (tstr_contracts, opened_contracts) = extract_contracts str in
+  (transl_str_contracts tstr_contracts opened_contracts str, cc)
+
+
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -444,6 +597,10 @@ let transl_store_structure glob map prims str =
       Llet(Strict, mid,
            subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
+  | Tstr_contract(decls) :: rem ->
+      transl_store subst rem
+  | Tstr_opened_contracts(tbl) :: rem ->
+      transl_store subst rem
 
   and store_ident id =
     try
@@ -497,6 +654,8 @@ let rec defined_idents = function
       List.map (fun (i, _, _, _, _) -> i) cl_list @ defined_idents rem
   | Tstr_cltype cl_list :: rem -> defined_idents rem
   | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
+  | Tstr_contract decls :: rem -> defined_idents rem
+  | Tstr_opened_contracts tbl :: rem -> defined_idents rem
 
 (* Transform a coercion and the list of value identifiers defined by
    a toplevel structure into a table [id -> (pos, coercion)],
@@ -648,6 +807,10 @@ let transl_toplevel_item = function
           Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
+  | Tstr_contract(decls) ->
+      lambda_unit
+  | Tstr_opened_contracts(tbl) ->
+      lambda_unit
 
 let transl_toplevel_item_and_close itm =
   close_toplevel_term (transl_label_init (transl_toplevel_item itm))
@@ -710,3 +873,4 @@ let report_error ppf = function
       fprintf ppf
         "@[Cannot safely evaluate the definition@ of the recursively-defined module %a@]"
         Printtyp.ident id
+ 

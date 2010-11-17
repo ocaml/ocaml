@@ -19,8 +19,10 @@ type ('a, 'b) t
 
 val empty: ('a, 'b) t
 val add: 'a -> 'b -> ('a, 'b) t -> ('a, 'b) t
+val generic_find: ('a -> 'a -> int) -> 'a -> ('a, 'b) t -> 'b
 val find: 'a -> ('a, 'b) t -> 'b
 val mem: 'a -> ('a, 'b) t -> bool
+val merge: ('a, 'b) t -> ('a, 'b) t -> ('a, 'b) t
 val remove: 'a -> ('a,  'b) t -> ('a, 'b) t
 val iter: ('a -> 'b -> 'c) -> ('a, 'b) t -> unit
 val map: ('a -> 'b -> 'c) -> ('a, 'b) t -> ('a, 'c) t
