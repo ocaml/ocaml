@@ -195,8 +195,9 @@ let set_mode mode f =
   let old_unification_mode = !umode in
   try
     umode := mode;
-    f ();
-    umode := old_unification_mode
+    let ret = f () in
+    umode := old_unification_mode;
+    ret
   with
     e ->
       umode := old_unification_mode;
@@ -2433,23 +2434,18 @@ let unify_var env t1 t2 =
       unify (ref env) t1 t2
 
 let unify_var env t1 t2 = 
-  expression_mode env
-    (fun () -> unify_var env t1 t2)
+  unify_var env t1 t2
 
 let _ = unify' := unify_var
 
 let unify_pairs env ty1 ty2 pairs =
   univar_pairs := pairs;
-  expression_mode !env (fun () -> unify env ty1 ty2)
+  unify env ty1 ty2
 
 let unify env ty1 ty2 =
   univar_pairs := [];
-  expression_mode env
-    (fun () -> unify (ref env) ty1 ty2)
+  unify (ref env) ty1 ty2
 
-let unify_gadt env ty1 ty2 = 
-  univar_pairs := [];
-  unify_gadt env ty1 ty2
 
 
 (**** Special cases of unification ****)
@@ -4051,3 +4047,88 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
+
+
+(****** exported_functions *****)
+
+
+
+let generalize_expansive env t = 
+  expression_mode env (fun () -> generalize_expansive env t)
+
+let apply env tlst1 t tlst2 =  
+  expression_mode env (fun () -> apply env tlst1 t tlst2)
+let expand_head_once env type_expr = 
+  expression_mode env (fun () -> expand_head_once env type_expr)
+let expand_head env type_expr = 
+  expression_mode env (fun () -> expand_head env type_expr)
+let try_expand_once_opt env type_expr = 
+  expression_mode env (fun () -> try_expand_once_opt env type_expr)
+let expand_head_opt env type_expr = 
+  expression_mode env (fun () -> expand_head_opt env type_expr)
+
+let full_expand env t1 =
+  expression_mode env (fun () -> full_expand env t1)
+let enforce_constraints env t1 =
+  expression_mode env (fun () -> enforce_constraints env t1)
+let unify env t1 t2 =
+  expression_mode env (fun () -> unify env t1 t2)
+let unify_gadt env ty1 ty2 = 
+  univar_pairs := [];
+  unify_gadt env ty1 ty2
+let unify_var env t1 t2 =
+  expression_mode env (fun () -> unify_var env t1 t2)
+let filter_arrow env t1 label =
+  expression_mode env (fun () -> filter_arrow env t1 label)
+let filter_method env string private_flag t1 =
+  expression_mode env (fun () -> filter_method env string private_flag t1)
+let check_filter_method env string private_flag t1 =
+  expression_mode env (fun () -> check_filter_method env string private_flag t1)
+let filter_self_method env string private_flag x t1 =
+  expression_mode env (fun () -> filter_self_method env string private_flag x t1)
+let moregeneral env bool t1 t2 =
+  expression_mode env (fun () -> moregeneral env bool t1 t2)
+let all_distinct_vars env tlst =
+  expression_mode env (fun () -> all_distinct_vars env tlst)
+let matches env t1 t2 =
+  expression_mode env (fun () -> matches env t1 t2)
+let match_class_types ?trace env class_type class_type' =
+  expression_mode env
+    (fun () -> match_class_types ?trace env class_type class_type')
+let equal env bool t1 list =
+  expression_mode env (fun () -> equal env bool t1 list)
+let match_class_declarations env tlst class_type tlst' class_type' =
+  expression_mode env
+    (fun () -> match_class_declarations env tlst class_type tlst' class_type')
+let enlarge_type env t1 =
+  expression_mode env (fun () -> enlarge_type env t1)
+let subtype env t1 t2 unit =
+  expression_mode env (fun () -> subtype env t1 t2 unit)
+let nondep_type env ident t1 =
+  expression_mode env (fun () -> nondep_type env ident t1)
+let nondep_type_decl env ident ident' bool type_declaration =
+  expression_mode env
+    (fun () -> nondep_type_decl env ident ident' bool type_declaration)
+let nondep_class_declaration env ident class_declaration =
+  expression_mode env
+    (fun () -> nondep_class_declaration env ident class_declaration)
+let nondep_cltype_declaration env ident cltype_declaration =
+  expression_mode env
+    (fun () -> nondep_cltype_declaration env ident cltype_declaration)
+let correct_abbrev env path tlst t2 =
+  expression_mode env (fun () -> correct_abbrev env path tlst t2)
+let cyclic_abbrev env ident t1 =
+  expression_mode env (fun () -> cyclic_abbrev env ident t1)
+let normalize_type env t1 =
+  expression_mode env (fun () -> normalize_type env t1)
+let free_variables ?env t1 =  
+  match env with
+    Some env' ->
+      expression_mode env' (fun () -> free_variables ?env t1)
+  | None -> free_variables ?env t1
+let collapse_conj_params env tlst =
+  expression_mode env (fun () -> collapse_conj_params env tlst)
+
+
+
+
