@@ -182,9 +182,19 @@ module TypePairs =
 type unification_mode = 
   | Expression (* unification in expression *)
   | Pattern (* unification in pattern which may add local constraints *)
-  | Old (* unification in pattern, old style. local constraints are not used nor generated *)
+  | Old
+      (* unification in pattern, old style. 
+	 local constraints are not used nor generated *)
 
 let umode = ref Expression
+
+let actual_mode env = 
+  match !umode with
+  | Old -> Old
+  | Expression
+    when not (Env.has_local_constraints env) ->
+      Old
+  | Pattern | Expression -> !umode
 
 let use_local () = 
   match !umode with
@@ -223,13 +233,6 @@ let change_mode mode f =
       umode := old_unification_mode;
       cleanup_abbrev ();
       raise e
-
-
-let expression_mode env f = 
-  if Env.has_local_constraints env then
-    set_mode Expression f 
-  else
-    set_mode Old f
 
                   (**********************************************)
                   (*  Miscellaneous operations on object types  *)
@@ -1774,8 +1777,9 @@ let in_pervasives p =
     with
       _ -> false
 
-let unify_eq t1 t2 =
-  match !umode with
+let unify_eq env t1 t2 =
+  let umode = actual_mode env in 
+  match umode with
   | Old ->
       t1 == t2
   | Pattern | Expression ->
@@ -1989,10 +1993,10 @@ let mcomp env t1 t2 =
 
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
-  if unify_eq t1 t2 then () else
+  if unify_eq !env t1 t2 then () else
   let t1 = repr t1 in
   let t2 = repr t2 in
-  if unify_eq t1 t2 then () else
+  if unify_eq !env t1 t2 then () else
   
   try
     type_changed := true;
@@ -2035,14 +2039,14 @@ and unify2 env t1 t2 =
     let t1' = expand_head_unif !env t1 in
     let t2' = expand_head_unif !env t2 in
     (* Expansion may have changed the representative of the types... *)
-    if unify_eq t1' t1'' && unify_eq t2' t2'' then (t1',t2') else
+    if unify_eq !env t1' t1'' && unify_eq !env t2' t2'' then (t1',t2') else
     expand_both t1' t2'
   in
   let t1', t2' = expand_both t1 t2 in
-  if unify_eq t1' t2' then () else
+  if unify_eq !env t1' t2' then () else
 
   let t1 = repr t1 and t2 = repr t2 in
-  if unify_eq t1 t1' || not (unify_eq t2 t2') then
+  if unify_eq !env t1 t1' || not (unify_eq !env t2 t2') then
     unify3 env t1 t1' t2 t2'
   else
     try unify3 env t2 t2' t1 t1' with Unify trace ->
@@ -2058,8 +2062,9 @@ and unify3 env t1 t1' t2 t2' =
       update_level !env t1'.level t2;
       link_type t1' t2
   in
+  let umode = actual_mode !env in
   let switch_to_old_link f = 
-    match !umode with
+    match umode with
     | Pattern | Expression ->
 	change_mode Old 
 	  (fun () ->
@@ -2083,7 +2088,7 @@ and unify3 env t1 t1' t2 t2' =
 	update_level !env t1'.level t2;
 	update_level !env t2'.level t1;
       end;
-      begin match !umode with
+      begin match umode with
       | Old ->
 	  old_link ()
       | Pattern | Expression ->
@@ -2107,7 +2112,7 @@ and unify3 env t1 t1' t2 t2' =
 	| (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
             unify_list env tl1 tl2
 	| Tconstr ((Path.Pident p) as path,[],_), Tconstr ((Path.Pident p') as path',[],_)  
-	  when is_abstract_newtype !env path && is_abstract_newtype !env path' && !umode = Pattern -> 
+	  when is_abstract_newtype !env path && is_abstract_newtype !env path' && umode = Pattern -> 
 	    let source,destination = 
 	      if Ident.binding_time p > Ident.binding_time p' then 
 		p,t2
@@ -2115,8 +2120,9 @@ and unify3 env t1 t1' t2 t2' =
 		p',t1
 	    in
 	    let decl = new_declaration true (Some destination) in 
-	    env := Env.add_local_constraint source decl !env
-	| Tconstr ((Path.Pident p) as path,[],_), _  when is_abstract_newtype !env path && !umode = Pattern -> 
+	    env := Env.add_local_constraint source decl !env;
+	    cleanup_abbrev ()	       
+	| Tconstr ((Path.Pident p) as path,[],_), _  when is_abstract_newtype !env path && umode = Pattern -> 
 	    reify env t2 ;
 	    local_non_recursive_abbrev !env (Path.Pident p) t2;
 	    begin_def ();
@@ -2124,8 +2130,9 @@ and unify3 env t1 t1' t2 t2' =
 	    end_def ();
 	    generalize t2 ;
 	    let decl = new_declaration true (Some t2) in
-            env := Env.add_local_constraint p decl !env 
-	| _, Tconstr ((Path.Pident p) as path,[],_) when is_abstract_newtype !env path && !umode = Pattern -> 
+            env := Env.add_local_constraint p decl !env;
+	    cleanup_abbrev ()	       
+	| _, Tconstr ((Path.Pident p) as path,[],_) when is_abstract_newtype !env path && umode = Pattern -> 
 	    reify env t1 ;
 	    local_non_recursive_abbrev !env (Path.Pident p) t1;
 	    begin_def ();
@@ -2133,8 +2140,9 @@ and unify3 env t1 t1' t2 t2' =
 	    end_def ();
 	    generalize t1 ;
 	    let decl = new_declaration true (Some t1) in
-            env := Env.add_local_constraint p decl !env 
-	| Tconstr (p1,_,_), Tconstr (p2,_,_) when !umode = Pattern ->
+            env := Env.add_local_constraint p decl !env; 
+	    cleanup_abbrev ()
+	| Tconstr (p1,_,_), Tconstr (p2,_,_) when umode = Pattern ->
 	    reify env t1;
 	    reify env t2;
 	    mcomp !env t1 t2
@@ -4048,87 +4056,6 @@ let rec collapse_conj env visited ty =
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
 
-
-(****** exported_functions *****)
-
-
-
-let generalize_expansive env t = 
-  expression_mode env (fun () -> generalize_expansive env t)
-
-let apply env tlst1 t tlst2 =  
-  expression_mode env (fun () -> apply env tlst1 t tlst2)
-let expand_head_once env type_expr = 
-  expression_mode env (fun () -> expand_head_once env type_expr)
-let expand_head env type_expr = 
-  expression_mode env (fun () -> expand_head env type_expr)
-let try_expand_once_opt env type_expr = 
-  expression_mode env (fun () -> try_expand_once_opt env type_expr)
-let expand_head_opt env type_expr = 
-  expression_mode env (fun () -> expand_head_opt env type_expr)
-
-let full_expand env t1 =
-  expression_mode env (fun () -> full_expand env t1)
-let enforce_constraints env t1 =
-  expression_mode env (fun () -> enforce_constraints env t1)
-let unify env t1 t2 =
-  expression_mode env (fun () -> unify env t1 t2)
 let unify_gadt env ty1 ty2 = 
   univar_pairs := [];
   unify_gadt env ty1 ty2
-let unify_var env t1 t2 =
-  expression_mode env (fun () -> unify_var env t1 t2)
-let filter_arrow env t1 label =
-  expression_mode env (fun () -> filter_arrow env t1 label)
-let filter_method env string private_flag t1 =
-  expression_mode env (fun () -> filter_method env string private_flag t1)
-let check_filter_method env string private_flag t1 =
-  expression_mode env (fun () -> check_filter_method env string private_flag t1)
-let filter_self_method env string private_flag x t1 =
-  expression_mode env (fun () -> filter_self_method env string private_flag x t1)
-let moregeneral env bool t1 t2 =
-  expression_mode env (fun () -> moregeneral env bool t1 t2)
-let all_distinct_vars env tlst =
-  expression_mode env (fun () -> all_distinct_vars env tlst)
-let matches env t1 t2 =
-  expression_mode env (fun () -> matches env t1 t2)
-let match_class_types ?trace env class_type class_type' =
-  expression_mode env
-    (fun () -> match_class_types ?trace env class_type class_type')
-let equal env bool t1 list =
-  expression_mode env (fun () -> equal env bool t1 list)
-let match_class_declarations env tlst class_type tlst' class_type' =
-  expression_mode env
-    (fun () -> match_class_declarations env tlst class_type tlst' class_type')
-let enlarge_type env t1 =
-  expression_mode env (fun () -> enlarge_type env t1)
-let subtype env t1 t2 unit =
-  expression_mode env (fun () -> subtype env t1 t2 unit)
-let nondep_type env ident t1 =
-  expression_mode env (fun () -> nondep_type env ident t1)
-let nondep_type_decl env ident ident' bool type_declaration =
-  expression_mode env
-    (fun () -> nondep_type_decl env ident ident' bool type_declaration)
-let nondep_class_declaration env ident class_declaration =
-  expression_mode env
-    (fun () -> nondep_class_declaration env ident class_declaration)
-let nondep_cltype_declaration env ident cltype_declaration =
-  expression_mode env
-    (fun () -> nondep_cltype_declaration env ident cltype_declaration)
-let correct_abbrev env path tlst t2 =
-  expression_mode env (fun () -> correct_abbrev env path tlst t2)
-let cyclic_abbrev env ident t1 =
-  expression_mode env (fun () -> cyclic_abbrev env ident t1)
-let normalize_type env t1 =
-  expression_mode env (fun () -> normalize_type env t1)
-let free_variables ?env t1 =  
-  match env with
-    Some env' ->
-      expression_mode env' (fun () -> free_variables ?env t1)
-  | None -> free_variables ?env t1
-let collapse_conj_params env tlst =
-  expression_mode env (fun () -> collapse_conj_params env tlst)
-
-
-
-
