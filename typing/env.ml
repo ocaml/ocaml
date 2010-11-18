@@ -528,7 +528,7 @@ let rec components_of_module env sub path mty =
         { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
           comp_constrs = Tbl.empty; 
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
-	  comp_constrs_by_path = Tbl.empty;
+          comp_constrs_by_path = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in

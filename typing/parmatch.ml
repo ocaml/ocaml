@@ -758,20 +758,21 @@ let rec map_filter f  =
 	| Some y -> y :: map_filter f xs
 
 (* Sends back a pattern that complements constructor tags all_tag *)
-let complete_constrs p all_tags = match p.pat_desc with
-| Tpat_construct (c,_) ->
-    begin try
-      let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-      let constrs = Env.find_constructors (adt_lid p.pat_env p.pat_type) p.pat_env in
-      map_filter
-        (fun cnstr ->
-	  if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
-	constrs
-with
-| Datarepr.Constr_not_found ->
-    fatal_error "Parmatch.complete_constr: constr_not_found"
-    end
-| _ -> fatal_error "Parmatch.complete_constr"
+let complete_constrs p all_tags = 
+  match p.pat_desc with
+  | Tpat_construct (c,_) ->
+      begin try
+	let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
+	let constrs = Env.find_constructors (adt_lid p.pat_env p.pat_type) p.pat_env in
+	map_filter
+          (fun cnstr ->
+	    if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
+	  constrs
+      with
+      | Datarepr.Constr_not_found ->
+	  fatal_error "Parmatch.complete_constr: constr_not_found"
+      end
+  | _ -> fatal_error "Parmatch.complete_constr"
 
 
 (* Auxiliary for build_other *)

@@ -17,7 +17,7 @@
 
 open Asttypes
 open Types
-  
+
 val constructor_descrs:
   type_expr -> (string * type_expr list * type_expr option) list -> private_flag ->
     (string * constructor_description) list

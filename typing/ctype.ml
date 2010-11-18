@@ -2411,6 +2411,7 @@ let unify env ty1 ty2 =
 
 let unify_gadt plev (env:Env.t ref) ty1 ty2 =
   try
+    univar_pairs := [];
     pattern_level := Some plev;
     set_mode Pattern (fun () -> unify env ty1 ty2);
     pattern_level := None;
@@ -4054,7 +4055,3 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
-
-let unify_gadt env ty1 ty2 = 
-  univar_pairs := [];
-  unify_gadt env ty1 ty2

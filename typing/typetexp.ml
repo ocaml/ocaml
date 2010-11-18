@@ -176,7 +176,7 @@ type policy = Fixed | Extensible | Univars
 
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
-  | Ptyp_any ->
+    Ptyp_any ->
       if policy = Univars then new_pre_univar () else
       if policy = Fixed then
         raise (Error (styp.ptyp_loc, Unbound_type_variable "_"))
