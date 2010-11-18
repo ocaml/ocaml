@@ -737,7 +737,7 @@ let rec pat_of_constrs ex_pat = function
 
 exception Not_an_adt
 
-let rec adt_lid env ty =
+let rec adt_path env ty =
   match get_type_descr ty env with
   | {type_kind=Type_variant constr_list} ->
       begin match (Ctype.repr ty).desc with
@@ -745,7 +745,7 @@ let rec adt_lid env ty =
 	  path
       | _ -> assert false end
   | {type_manifest = Some _} ->
-      adt_lid env (Ctype.expand_head_once env (clean_copy ty))
+      adt_path env (Ctype.expand_head_once env (clean_copy ty))
   | _ -> raise Not_an_adt
 ;;
 
@@ -763,7 +763,7 @@ let complete_constrs p all_tags =
   | Tpat_construct (c,_) ->
       begin try
 	let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
-	let constrs = Env.find_constructors (adt_lid p.pat_env p.pat_type) p.pat_env in
+	let constrs = Env.find_constructors (adt_path p.pat_env p.pat_type) p.pat_env in
 	map_filter
           (fun cnstr ->
 	    if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
