@@ -319,9 +319,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False (*FIXME*) ];
   value mkvariant =
     fun
-    [ <:ctyp@loc< $uid:s$ >> -> (conv_con s, [], None, mkloc loc)
+    [ <:ctyp@loc< $uid:s$ >> -> (conv_con s, [], mkloc loc)
     | <:ctyp@loc< $uid:s$ of $t$ >> ->
-        (conv_con s, List.map ctyp (list_of_ctyp t []), None, mkloc loc)
+        (conv_con s, List.map ctyp (list_of_ctyp t []), mkloc loc)
     | _ -> assert False (*FIXME*) ];
   value rec type_decl tl cl loc m pflag =
     fun
@@ -381,14 +381,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp< '$s$ >> -> [(s, (False, False)) :: acc]
     | _ -> assert False ];
 
-  value rec optional_type_parameters t acc =
-    match t with
-    [ <:ctyp< $t1$ $t2$ >> -> optional_type_parameters t1 (optional_type_parameters t2 acc)
-    | <:ctyp< +'$s$ >> -> [(Some s, (True, False)) :: acc]
-    | <:ctyp< -'$s$ >> -> [(Some s, (False, True)) :: acc]
-    | <:ctyp< '$s$ >> -> [(Some s, (False, False)) :: acc]
-    | _ -> assert False ];
-
   value rec class_parameters t acc =
     match t with
     [ <:ctyp< $t1$, $t2$ >> -> class_parameters t1 (class_parameters t2 acc)
@@ -401,7 +393,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match t with
     [ <:ctyp< $t1$ $t2$ >> ->
         type_parameters_and_type_name t1
-          (optional_type_parameters t2 acc)
+          (type_parameters t2 acc)
     | <:ctyp< $id:i$ >> -> (ident i, acc)
     | _ -> assert False ];
 
@@ -853,7 +845,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
               (ctyp t1, ctyp t2, mkloc loc))
             cl
         in
-        [(c, type_decl (List.fold_right optional_type_parameters tl []) cl td) :: acc]
+        [(c, type_decl (List.fold_right type_parameters tl []) cl td) :: acc]
     | _ -> assert False ]
   and module_type =
     fun
