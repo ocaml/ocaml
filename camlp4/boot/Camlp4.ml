@@ -14551,12 +14551,6 @@ module Struct =
               | Ast.TyOf (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
                   ((conv_con s), (List.map ctyp (list_of_ctyp t [])), None,
                    (mkloc loc))
-              | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))),
-                  (Ast.TyArr (_, t1, t2))) ->
-                  ((conv_con s), (List.map ctyp (list_of_ctyp t1 [])),
-                   (Some (ctyp t2)), (mkloc loc))
-              | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
-                  ((conv_con s), [], (Some (ctyp t)), (mkloc loc))
               | _ -> assert false
               
             let rec type_decl tl cl loc m pflag =
@@ -14618,10 +14612,18 @@ module Struct =
               match t with
               | Ast.TyApp (_, t1, t2) ->
                   type_parameters t1 (type_parameters t2 acc)
-              | Ast.TyQuP (_, s) -> ((Some s), (true, false)) :: acc
-              | Ast.TyQuM (_, s) -> ((Some s), (false, true)) :: acc
-              | Ast.TyQuo (_, s) -> ((Some s), (false, false)) :: acc
-              | Ast.TyAny _ -> (None, (true, false)) :: acc
+              | Ast.TyQuP (_, s) -> (s, (true, false)) :: acc
+              | Ast.TyQuM (_, s) -> (s, (false, true)) :: acc
+              | Ast.TyQuo (_, s) -> (s, (false, false)) :: acc
+              | _ -> assert false
+
+            let rec optional_type_parameters t acc =
+              match t with
+              | Ast.TyApp (_, t1, t2) ->
+                  optional_type_parameters t1 (optional_type_parameters t2 acc)
+              | Ast.TyQuP (_, s) -> (Some s, (true, false)) :: acc
+              | Ast.TyQuM (_, s) -> (Some s, (false, true)) :: acc
+              | Ast.TyQuo (_, s) -> (Some s, (false, false)) :: acc
               | _ -> assert false
               
             let rec class_parameters t acc =
@@ -14636,7 +14638,7 @@ module Struct =
             let rec type_parameters_and_type_name t acc =
               match t with
               | Ast.TyApp (_, t1, t2) ->
-                  type_parameters_and_type_name t1 (type_parameters t2 acc)
+                  type_parameters_and_type_name t1 (optional_type_parameters t2 acc)
               | Ast.TyId (_, i) -> ((ident i), acc)
               | _ -> assert false
               
@@ -14731,8 +14733,7 @@ module Struct =
                          then
                            mkpat loc
                              (Ppat_construct (li,
-                                (Some (mkpat loc (Ppat_tuple al))), true
-                                ))
+                                (Some (mkpat loc (Ppat_tuple al))), true))
                          else
                            (let a =
                               match al with
@@ -14815,8 +14816,7 @@ module Struct =
                   let is_closed = if wildcards = [] then Closed else Open
                   in
                     mkpat loc
-                      (Ppat_record
-                         (((List.map mklabpat ps), is_closed)))
+                      (Ppat_record (((List.map mklabpat ps), is_closed)))
               | PaStr (loc, s) ->
                   mkpat loc
                     (Ppat_constant
@@ -15208,7 +15208,7 @@ module Struct =
                       cl
                   in
                     (c,
-                     (type_decl (List.fold_right type_parameters tl []) cl td)) ::
+                     (type_decl (List.fold_right optional_type_parameters tl []) cl td)) ::
                       acc
               | _ -> assert false
             and module_type =
