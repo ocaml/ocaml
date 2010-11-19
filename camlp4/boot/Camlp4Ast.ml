@@ -1042,6 +1042,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "TyVrn")))
                            (meta_loc _loc x0))
                         (meta_string _loc x1)
+                  | Ast.TyAnM x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyAnM")))
+                        (meta_loc _loc x0)
+                  | Ast.TyAnP x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyAnP")))
+                        (meta_loc _loc x0)
                   | Ast.TyQuM x0 x1 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -1066,6 +1078,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "TyQuo")))
                            (meta_loc _loc x0))
                         (meta_string _loc x1)
+                  | Ast.TyTypePol x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyTypePol")))
+                              (meta_loc _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
                   | Ast.TyPol x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -3118,6 +3140,18 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "TyVrn")))
                            (meta_loc _loc x0))
                         (meta_string _loc x1)
+                  | Ast.TyAnM x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyAnM")))
+                        (meta_loc _loc x0)
+                  | Ast.TyAnP x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyAnP")))
+                        (meta_loc _loc x0)
                   | Ast.TyQuM x0 x1 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -3142,6 +3176,16 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdUid _loc "TyQuo")))
                            (meta_loc _loc x0))
                         (meta_string _loc x1)
+                  | Ast.TyTypePol x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyTypePol")))
+                              (meta_loc _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
                   | Ast.TyPol x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -5242,6 +5286,10 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#ctyp _x_i1 in
               let _x_i2 = o#ctyp _x_i2 in TyPol _x _x_i1 _x_i2
+          | TyTypePol _x _x_i1 _x_i2 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#ctyp _x_i1 in
+              let _x_i2 = o#ctyp _x_i2 in TyTypePol _x _x_i1 _x_i2
           | TyQuo _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in TyQuo _x _x_i1
@@ -5251,6 +5299,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | TyQuM _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in TyQuM _x _x_i1
+          | TyAnP _x -> let _x = o#loc _x in TyAnP _x
+          | TyAnM _x -> let _x = o#loc _x in TyAnM _x
           | TyVrn _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in TyVrn _x _x_i1
@@ -5928,9 +5978,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | TyPol _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+          | TyTypePol _x _x_i1 _x_i2 ->
+              let o = o#loc _x in
+              let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
           | TyQuo _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
           | TyQuP _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
           | TyQuM _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
+          | TyAnP _x -> let o = o#loc _x in o
+          | TyAnM _x -> let o = o#loc _x in o
           | TyVrn _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o
           | TyRec _x _x_i1 -> let o = o#loc _x in let o = o#ctyp _x_i1 in o
           | TyCol _x _x_i1 _x_i2 ->

@@ -932,6 +932,8 @@ Very old (no more supported) syntax:\n\
             grammar_entry_create "string_list"
           and opt_override : 'opt_override Gram.Entry.t =
             grammar_entry_create "opt_override"
+          and unquoted_typevars : 'unquoted_typevars Gram.Entry.t =
+            grammar_entry_create "unquoted_typevars"
           and value_val_opt_override : 'value_val_opt_override Gram.Entry.t =
             grammar_entry_create "value_val_opt_override"
           and method_opt_override : 'method_opt_override Gram.Entry.t =
@@ -939,6 +941,9 @@ Very old (no more supported) syntax:\n\
           and module_longident_dot_lparen :
             'module_longident_dot_lparen Gram.Entry.t =
             grammar_entry_create "module_longident_dot_lparen"
+          and optional_type_parameter :
+            'optional_type_parameter Gram.Entry.t =
+            grammar_entry_create "optional_type_parameter"
           and fun_def_cont_no_when : 'fun_def_cont_no_when Gram.Entry.t =
             grammar_entry_create "fun_def_cont_no_when"
           and fun_def_cont : 'fun_def_cont Gram.Entry.t =
@@ -4469,10 +4474,10 @@ Very old (no more supported) syntax:\n\
                             Gram.Slist0
                               (Gram.Snterm
                                  (Gram.Entry.obj
-                                    (type_parameter :
-                                      'type_parameter Gram.Entry.t))) ],
+                                    (optional_type_parameter :
+                                      'optional_type_parameter Gram.Entry.t))) ],
                           (Gram.Action.mk
-                             (fun (tpl : 'type_parameter list)
+                             (fun (tpl : 'optional_type_parameter list)
                                 (i : 'a_LIDENT) (_loc : Gram.Loc.t) ->
                                 ((i, tpl) : 'type_ident_and_parameters)))) ]) ]))
                   ());
@@ -4575,6 +4580,76 @@ Very old (no more supported) syntax:\n\
                                     ->
                                     (Ast.TyAnt (_loc, (mk_anti n s)) :
                                       'type_parameter)
+                                | _ -> assert false))) ]) ]))
+                  ());
+             Gram.extend
+               (optional_type_parameter :
+                 'optional_type_parameter Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Skeyword "_" ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Gram.Loc.t) ->
+                                (Ast.TyAny _loc : 'optional_type_parameter))));
+                         ([ Gram.Skeyword "-"; Gram.Skeyword "_" ],
+                          (Gram.Action.mk
+                             (fun _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.TyAnM _loc : 'optional_type_parameter))));
+                         ([ Gram.Skeyword "+"; Gram.Skeyword "_" ],
+                          (Gram.Action.mk
+                             (fun _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.TyAnP _loc : 'optional_type_parameter))));
+                         ([ Gram.Skeyword "-"; Gram.Skeyword "'";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_ident : 'a_ident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i : 'a_ident) _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.TyQuM (_loc, i) :
+                                  'optional_type_parameter))));
+                         ([ Gram.Skeyword "+"; Gram.Skeyword "'";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_ident : 'a_ident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i : 'a_ident) _ _ (_loc : Gram.Loc.t) ->
+                                (Ast.TyQuP (_loc, i) :
+                                  'optional_type_parameter))));
+                         ([ Gram.Skeyword "'";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_ident : 'a_ident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i : 'a_ident) _ (_loc : Gram.Loc.t) ->
+                                (Ast.TyQuo (_loc, i) :
+                                  'optional_type_parameter))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t)
+                                (_loc : Gram.Loc.t) ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'optional_type_parameter)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "typ" | "anti"), _) ->
+                                     true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\"), _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t)
+                                (_loc : Gram.Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("" | "typ" | "anti" as n)), s)
+                                    ->
+                                    (Ast.TyAnt (_loc, (mk_anti n s)) :
+                                      'optional_type_parameter)
                                 | _ -> assert false))) ]) ]))
                   ());
              Gram.extend (ctyp : 'ctyp Gram.Entry.t)
@@ -4947,6 +5022,46 @@ Very old (no more supported) syntax:\n\
                           (Gram.Action.mk
                              (fun (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
                                 (Ast.TyId (_loc, (Ast.IdUid (_loc, s))) :
+                                  'constructor_declarations))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (constructor_arg_list :
+                                   'constructor_arg_list Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (ret : 'constructor_arg_list) _
+                                (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
+                                (match Ast.list_of_ctyp ret [] with
+                                 | [ c ] ->
+                                     Ast.TyCol (_loc,
+                                       (Ast.TyId (_loc,
+                                          (Ast.IdUid (_loc, s)))),
+                                       c)
+                                 | _ ->
+                                     raise
+                                       (Stream.Error
+                                          "invalid generalized constructor type") :
+                                  'constructor_declarations))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (constructor_arg_list :
+                                   'constructor_arg_list Gram.Entry.t));
+                            Gram.Skeyword "->";
+                            Gram.Snterm
+                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (ret : 'ctyp) _ (t : 'constructor_arg_list)
+                                _ (s : 'a_UIDENT) (_loc : Gram.Loc.t) ->
+                                (Ast.TyCol (_loc,
+                                   (Ast.TyId (_loc, (Ast.IdUid (_loc, s)))),
+                                   (Ast.TyArr (_loc, t, ret))) :
                                   'constructor_declarations))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -6378,6 +6493,23 @@ Very old (no more supported) syntax:\n\
                                           "unexpected polytype here")
                                  | _ -> Ast.ExCoe (_loc, e, t, t2) :
                                   'cvalue_binding))));
+                         ([ Gram.Skeyword ":"; Gram.Skeyword "type";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (unquoted_typevars :
+                                   'unquoted_typevars Gram.Entry.t));
+                            Gram.Skeyword ".";
+                            Gram.Snterm
+                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
+                            Gram.Skeyword "=";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) _ (t2 : 'ctyp) _
+                                (t1 : 'unquoted_typevars) _ _
+                                (_loc : Gram.Loc.t) ->
+                                (let u = Ast.TyTypePol (_loc, t1, t2)
+                                 in Ast.ExTyc (_loc, e, u) : 'cvalue_binding))));
                          ([ Gram.Skeyword ":";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -7082,6 +7214,52 @@ Very old (no more supported) syntax:\n\
                              (fun (t2 : 'typevars) (t1 : 'typevars)
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.TyApp (_loc, t1, t2) : 'typevars)))) ]) ]))
+                  ());
+             Gram.extend
+               (unquoted_typevars : 'unquoted_typevars Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_ident : 'a_ident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i : 'a_ident) (_loc : Gram.Loc.t) ->
+                                (Ast.TyId (_loc, (Ast.IdLid (_loc, i))) :
+                                  'unquoted_typevars))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t)
+                                (_loc : Gram.Loc.t) ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'unquoted_typevars)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "typ"), _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t)
+                                (_loc : Gram.Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("" | "typ" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       (mk_anti ~c: "ctyp" n s)) :
+                                      'unquoted_typevars)
+                                | _ -> assert false)));
+                         ([ Gram.Sself; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (t2 : 'unquoted_typevars)
+                                (t1 : 'unquoted_typevars) (_loc : Gram.Loc.t)
+                                ->
+                                (Ast.TyApp (_loc, t1, t2) :
+                                  'unquoted_typevars)))) ]) ]))
                   ());
              Gram.extend (row_field : 'row_field Gram.Entry.t)
                ((fun () ->

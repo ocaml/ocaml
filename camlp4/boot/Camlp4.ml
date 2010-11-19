@@ -918,12 +918,19 @@ module Sig =
           TyPol of loc * ctyp * ctyp
           | (* ! t . t *)
           (* ! 'a . list 'a -> 'a *)
+          TyTypePol of loc * ctyp * ctyp
+          | (* type t . t *)
+          (* type a . list a -> a *)
           TyQuo of loc * string
           | (* 's *)
           TyQuP of loc * string
           | (* +'s *)
           TyQuM of loc * string
           | (* -'s *)
+          TyAnP of loc
+          | (* +_ *)
+          TyAnM of loc
+          | (* -_ *)
           TyVrn of loc * string
           | (* `s *)
           TyRec of loc * ctyp
@@ -1878,9 +1885,12 @@ module Sig =
           | TyObj of loc * ctyp * row_var_flag
           | TyOlb of loc * string * ctyp
           | TyPol of loc * ctyp * ctyp
+          | TyTypePol of loc * ctyp * ctyp
           | TyQuo of loc * string
           | TyQuP of loc * string
           | TyQuM of loc * string
+          | TyAnP of loc
+          | TyAnM of loc
           | TyVrn of loc * string
           | TyRec of loc * ctyp
           | TyCol of loc * ctyp * ctyp
@@ -8139,6 +8149,20 @@ module Struct =
                                          (Ast.IdUid (_loc, "TyVrn")))))),
                                    (meta_loc _loc x0))),
                                 (meta_string _loc x1))
+                          | Ast.TyAnM x0 ->
+                              Ast.ExApp (_loc,
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyAnM")))))),
+                                (meta_loc _loc x0))
+                          | Ast.TyAnP x0 ->
+                              Ast.ExApp (_loc,
+                                (Ast.ExId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyAnP")))))),
+                                (meta_loc _loc x0))
                           | Ast.TyQuM (x0, x1) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
@@ -8166,6 +8190,17 @@ module Struct =
                                          (Ast.IdUid (_loc, "TyQuo")))))),
                                    (meta_loc _loc x0))),
                                 (meta_string _loc x1))
+                          | Ast.TyTypePol (x0, x1, x2) ->
+                              Ast.ExApp (_loc,
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExApp (_loc,
+                                      (Ast.ExId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyTypePol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyPol (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
@@ -10434,6 +10469,20 @@ module Struct =
                                          (Ast.IdUid (_loc, "TyVrn")))))),
                                    (meta_loc _loc x0))),
                                 (meta_string _loc x1))
+                          | Ast.TyAnM x0 ->
+                              Ast.PaApp (_loc,
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyAnM")))))),
+                                (meta_loc _loc x0))
+                          | Ast.TyAnP x0 ->
+                              Ast.PaApp (_loc,
+                                (Ast.PaId (_loc,
+                                   (Ast.IdAcc (_loc,
+                                      (Ast.IdUid (_loc, "Ast")),
+                                      (Ast.IdUid (_loc, "TyAnP")))))),
+                                (meta_loc _loc x0))
                           | Ast.TyQuM (x0, x1) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
@@ -10461,6 +10510,17 @@ module Struct =
                                          (Ast.IdUid (_loc, "TyQuo")))))),
                                    (meta_loc _loc x0))),
                                 (meta_string _loc x1))
+                          | Ast.TyTypePol (x0, x1, x2) ->
+                              Ast.PaApp (_loc,
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaApp (_loc,
+                                      (Ast.PaId (_loc,
+                                         (Ast.IdAcc (_loc,
+                                            (Ast.IdUid (_loc, "Ast")),
+                                            (Ast.IdUid (_loc, "TyTypePol")))))),
+                                      (meta_loc _loc x0))),
+                                   (meta_ctyp _loc x1))),
+                                (meta_ctyp _loc x2))
                           | Ast.TyPol (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
@@ -12789,6 +12849,11 @@ module Struct =
                       let _x = o#loc _x in
                       let _x_i1 = o#ctyp _x_i1 in
                       let _x_i2 = o#ctyp _x_i2 in TyPol (_x, _x_i1, _x_i2)
+                  | TyTypePol (_x, _x_i1, _x_i2) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#ctyp _x_i1 in
+                      let _x_i2 = o#ctyp _x_i2
+                      in TyTypePol (_x, _x_i1, _x_i2)
                   | TyQuo (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in TyQuo (_x, _x_i1)
@@ -12798,6 +12863,8 @@ module Struct =
                   | TyQuM (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in TyQuM (_x, _x_i1)
+                  | TyAnP _x -> let _x = o#loc _x in TyAnP _x
+                  | TyAnM _x -> let _x = o#loc _x in TyAnM _x
                   | TyVrn (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in TyVrn (_x, _x_i1)
@@ -13611,12 +13678,17 @@ module Struct =
                   | TyPol (_x, _x_i1, _x_i2) ->
                       let o = o#loc _x in
                       let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
+                  | TyTypePol (_x, _x_i1, _x_i2) ->
+                      let o = o#loc _x in
+                      let o = o#ctyp _x_i1 in let o = o#ctyp _x_i2 in o
                   | TyQuo (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   | TyQuP (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   | TyQuM (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
+                  | TyAnP _x -> let o = o#loc _x in o
+                  | TyAnM _x -> let o = o#loc _x in o
                   | TyVrn (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   | TyRec (_x, _x_i1) ->
@@ -14471,9 +14543,9 @@ module Struct =
               | TyAnt (loc, _) -> error loc "antiquotation not allowed here"
               | TyOfAmp (_, _, _) | TyAmp (_, _, _) | TySta (_, _, _) |
                   TyCom (_, _, _) | TyVrn (_, _) | TyQuM (_, _) |
-                  TyQuP (_, _) | TyDcl (_, _, _, _, _) |
-                  TyObj (_, _, (RvAnt _)) | TyNil _ | TyTup (_, _) ->
-                  assert false
+                  TyQuP (_, _) | TyDcl (_, _, _, _, _) | TyAnP _ | TyAnM _ |
+                  TyTypePol (_, _, _) | TyObj (_, _, (RvAnt _)) | TyNil _ |
+                  TyTup (_, _) -> assert false
             and row_field =
               function
               | Ast.TyNil _ -> []
@@ -14616,14 +14688,15 @@ module Struct =
               | Ast.TyQuM (_, s) -> (s, (false, true)) :: acc
               | Ast.TyQuo (_, s) -> (s, (false, false)) :: acc
               | _ -> assert false
-
+              
             let rec optional_type_parameters t acc =
               match t with
               | Ast.TyApp (_, t1, t2) ->
-                  optional_type_parameters t1 (optional_type_parameters t2 acc)
-              | Ast.TyQuP (_, s) -> (Some s, (true, false)) :: acc
-              | Ast.TyQuM (_, s) -> (Some s, (false, true)) :: acc
-              | Ast.TyQuo (_, s) -> (Some s, (false, false)) :: acc
+                  optional_type_parameters t1
+                    (optional_type_parameters t2 acc)
+              | Ast.TyQuP (_, s) -> ((Some s), (true, false)) :: acc
+              | Ast.TyQuM (_, s) -> ((Some s), (false, true)) :: acc
+              | Ast.TyQuo (_, s) -> ((Some s), (false, false)) :: acc
               | _ -> assert false
               
             let rec class_parameters t acc =
@@ -14638,7 +14711,8 @@ module Struct =
             let rec type_parameters_and_type_name t acc =
               match t with
               | Ast.TyApp (_, t1, t2) ->
-                  type_parameters_and_type_name t1 (optional_type_parameters t2 acc)
+                  type_parameters_and_type_name t1
+                    (optional_type_parameters t2 acc)
               | Ast.TyId (_, i) -> ((ident i), acc)
               | _ -> assert false
               
@@ -15208,7 +15282,9 @@ module Struct =
                       cl
                   in
                     (c,
-                     (type_decl (List.fold_right optional_type_parameters tl []) cl td)) ::
+                     (type_decl
+                        (List.fold_right optional_type_parameters tl []) cl
+                        td)) ::
                       acc
               | _ -> assert false
             and module_type =
@@ -19754,6 +19830,8 @@ module Printers =
                       | Ast.TyId (_, i) -> o#ident f i
                       | Ast.TyAnt (_, s) -> o#anti f s
                       | Ast.TyAny _ -> pp f "_"
+                      | Ast.TyAnP _ -> pp f "+_"
+                      | Ast.TyAnM _ -> pp f "-_"
                       | Ast.TyLab (_, s, t) ->
                           pp f "@[<2>%s:@ %a@]" s o#simple_ctyp t
                       | Ast.TyOlb (_, s, t) ->
@@ -19850,6 +19928,11 @@ module Printers =
                         in
                           pp f "@[<2>%a.@ %a@]" (list o#ctyp "@ ") (a :: al)
                             o#ctyp t2
+                    | Ast.TyTypePol ((_, t1, t2)) ->
+                        let (a, al) = get_ctyp_args t1 []
+                        in
+                          pp f "@[<2>type %a.@ %a@]" (list o#ctyp "@ ")
+                            (a :: al) o#ctyp t2
                     | Ast.TyPrv (_, t) ->
                         pp f "@[private@ %a@]" o#simple_ctyp t
                     | t -> o#simple_ctyp f t

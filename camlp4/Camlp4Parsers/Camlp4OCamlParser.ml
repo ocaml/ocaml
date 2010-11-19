@@ -519,9 +519,23 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | t = type_parameter -> fun acc -> <:ctyp< $acc$ $t$ >>
       ] ]
     ;
+
+    optional_type_parameter:
+      [ [ `ANTIQUOT (""|"typ"|"anti" as n) s -> <:ctyp< $anti:mk_anti n s$ >>
+        | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
+        | "+"; "_" -> Ast.TyAnP _loc 
+        | "+"; "'"; i = a_ident -> <:ctyp< +'$lid:i$ >>
+        | "-"; "_" -> Ast.TyAnM _loc
+        | "-"; "'"; i = a_ident -> <:ctyp< -'$lid:i$ >>
+        | "_" -> Ast.TyAny _loc
+        | "'"; i = a_ident -> <:ctyp< '$lid:i$ >>
+
+ ] ]
+    ;
+
     type_ident_and_parameters:
-      [ [ "("; tpl = LIST1 type_parameter SEP ","; ")"; i = a_LIDENT -> (i, tpl)
-        | t = type_parameter; i = a_LIDENT -> (i, [t])
+      [ [ "("; tpl = LIST1 optional_type_parameter SEP ","; ")"; i = a_LIDENT -> (i, tpl)
+        | t = optional_type_parameter; i = a_LIDENT -> (i, [t])
         | i = a_LIDENT -> (i, [])
       ] ]
     ;

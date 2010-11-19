@@ -261,6 +261,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TyAnt loc _ -> error loc "antiquotation not allowed here"
     | TyOfAmp _ _ _ |TyAmp _ _ _ |TySta _ _ _ |
       TyCom _ _ _ |TyVrn _ _ |TyQuM _ _ |TyQuP _ _ |TyDcl _ _ _ _ _ |
+	  TyAnP _ | TyAnM _ | TyTypePol _ _ _ |
       TyObj _ _ (RvAnt _) | TyNil _ | TyTup _ _ ->
         assert False ]
   and row_field = fun
