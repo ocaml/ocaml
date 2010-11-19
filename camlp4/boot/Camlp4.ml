@@ -14547,9 +14547,9 @@ module Struct =
             let mkvariant =
               function
               | Ast.TyId (loc, (Ast.IdUid (_, s))) ->
-                  ((conv_con s), [], (mkloc loc))
+                  ((conv_con s), [], None, (mkloc loc))
               | Ast.TyOf (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
-                  ((conv_con s), (List.map ctyp (list_of_ctyp t [])),
+                  ((conv_con s), (List.map ctyp (list_of_ctyp t [])), None,
                    (mkloc loc))
               | _ -> assert false
               
@@ -14616,6 +14616,16 @@ module Struct =
               | Ast.TyQuM (_, s) -> (s, (false, true)) :: acc
               | Ast.TyQuo (_, s) -> (s, (false, false)) :: acc
               | _ -> assert false
+
+            let rec optional_type_parameters t acc =
+              match t with
+              | Ast.TyApp (_, t1, t2) ->
+                  optional_type_parameters t1 (optional_type_parameters t2 acc)
+              | Ast.TyQuP (_, s) -> (Some s, (true, false)) :: acc
+              | Ast.TyQuM (_, s) -> (Some s, (false, true)) :: acc
+              | Ast.TyQuo (_, s) -> (Some s, (false, false)) :: acc
+              | _ -> assert false
+
               
             let rec class_parameters t acc =
               match t with
@@ -14629,7 +14639,7 @@ module Struct =
             let rec type_parameters_and_type_name t acc =
               match t with
               | Ast.TyApp (_, t1, t2) ->
-                  type_parameters_and_type_name t1 (type_parameters t2 acc)
+                  type_parameters_and_type_name t1 (optional_type_parameters t2 acc)
               | Ast.TyId (_, i) -> ((ident i), acc)
               | _ -> assert false
               
@@ -15199,7 +15209,7 @@ module Struct =
                       cl
                   in
                     (c,
-                     (type_decl (List.fold_right type_parameters tl []) cl td)) ::
+                     (type_decl (List.fold_right optional_type_parameters tl []) cl td)) ::
                       acc
               | _ -> assert false
             and module_type =
