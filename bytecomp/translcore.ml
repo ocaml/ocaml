@@ -29,8 +29,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
-  | Illegal_tuple_contract
-  | Illegal_contract_wrapper
+  | Illegal_tuple_expr
 
 exception Error of Location.t * error
 
@@ -541,7 +540,7 @@ let contract_failed loc pathop =
   in
   let func_name = match pathop with
                   | Some path -> (Path.name path)      
-                  | None ->  ""
+                  | None ->  "_"
   in 
   let pos = loc.Location.loc_start in
   let line = pos.Lexing.pos_lnum in
@@ -856,12 +855,6 @@ and transl_exp0 e =
       then lexp
       else let wrapped_expr = transl_contract c e callee caller in
            transl_exp wrapped_expr
-(*           let iface_e = Typedtree.expression_desc_to_iface 
-	              Typedtree.expression_to_iface wrapped_expr.exp_desc in 
-           fprintf std_formatter "@[wrapped_expr:%a@]" 
-	     !Oprint.out_expression_desc iface_e;
-           transl_exp wrapped_expr 
-*)
   | Texp_bad bl -> transl_blame bl
   | Texp_unr bl -> transl_blame bl
 
@@ -877,11 +870,11 @@ val transl_contract: Typedtree.expression_desc ->  Typedtree.expression
 
 and transl_contract cntr e callee caller =
   let cty  = e.exp_type in
-  let mkpat var = { pat_desc = Tpat_var var; 
+  let mkpat id ty = { pat_desc = Tpat_var id; 
                     pat_loc  = e.exp_loc;
-                    pat_type = e.exp_type;
+                    pat_type = ty;
                     pat_env  = e.exp_env } in
-  let mkexp ed = {e with exp_desc = ed } in
+  let mkexp ed ty = {e with exp_desc = ed ; exp_type = ty} in
   let mkident i ty = Texp_ident (Pident i , { val_type = ty;
                                               val_kind = Val_reg}) in
   let ce:expression_desc = match cntr.contract_desc with
@@ -889,45 +882,67 @@ and transl_contract cntr e callee caller =
        (* e |>r1,r2<| {x | p} = if (let x = e in p) then e 
                                  else r1 
           This forces evaluation of e, that is, if e diverges, RHS diverges;
-          if e crashes, RHS crashes *)
-        let cond = Texp_let (Nonrecursive, [(mkpat x, e)], p) in
-        Texp_ifthenelse (mkexp cond, e, Some callee)
+          if e crashes, RHS crashes 
+       *)
+        let cond = Texp_let (Nonrecursive, [(mkpat x cty, e)], p) in
+        Texp_ifthenelse (mkexp cond Predef.type_bool, e, Some callee)
      | Tctr_arrow (xop, c1, c2) -> 
       (* picky version:
          <<x:c1 -> c2>> e = \x. (<<c2[(<<c1>> x)/x]>> (e (<<c1>> x)))
          lax version: 
          <<x:c1 -> c2>> e = \x. (<<c2>> (e (<<c1>> x))) 
          we are implementing the picky version. *)      
+         let c1_type = c1.contract_type in
+         let c2_type = c2.contract_type in
          let res = match xop with
          | Some x -> 
-	     let xvar = mkexp (mkident x cty) in
+	     let xvar = mkexp (mkident x c1_type) c1_type in
              let c1x = transl_contract c1 xvar caller callee in
 	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
-	     let c2subst = subst_contract x c1x c2 in (* picky *)
-	     let resfun = transl_contract c2subst (mkexp resarg) callee caller in
-	     Texp_function ([(mkpat x, resfun)], Partial)
-         | None -> let x = Ident.create "c" in
-                   let xvar = mkexp (mkident x cty) in
-                   let c1x = transl_contract c1 xvar caller callee in
-   		   let resarg = Texp_apply (e, [(Some c1x, Required)]) in
-          	   let resfun = transl_contract c2 (mkexp resarg) callee caller in
-                   Texp_function ([(mkpat x, resfun)], Partial)
+              (* e.g. x:({a | a > 0} -> {b | true}) -> {c | x 0 > c} 
+                 we want to blame the x in {c | x 0 > c} 
+  	      *)
+	     let blame_x = mkexp (Texp_bad (Blame (c2.contract_loc, None))) cty in
+	     let c1x_picky = transl_contract c1 xvar caller blame_x in
+	     let c2subst = subst_contract x c1x_picky c2 in 
+	     let resfun = transl_contract c2subst (mkexp resarg c2_type) callee caller in
+	     Texp_function ([(mkpat x c1_type, resfun)], Partial)
+         | None -> 
+	     let x = Ident.create "c" in
+             let xvar = mkexp (mkident x c1_type) c1_type in
+             let c1x = transl_contract c1 xvar caller callee in
+   	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
+             let resfun = transl_contract c2 (mkexp resarg c2_type) callee caller in
+             Texp_function ([(mkpat x c1_type, resfun)], Partial)
          in res
      | Tctr_tuple cs -> 
       (* <<(c1, c2)>> e = match e with 
                            (x1, x2) -> (<<c1>> x1, <<c2>> x2)  *)
-        begin
-         match e.exp_desc with 
-         | Texp_tuple es -> 
-             let ces = List.map (fun (c, e) -> transl_contract c e callee caller)
-                                     (List.combine cs es)  in
-             Texp_tuple ces                      
-         | _ -> (* contract and e should have the same type
-                   so this is an impossible case *)
-                raise(Error(e.exp_loc, Illegal_tuple_contract)) 
-        end                            
-  in mkexp ce
+       begin 	
+	  let new_ids =  (Ident.create_idents "x" (List.length cs))  in
+          let typs = match (Ctype.repr cty).desc with
+                         | Ttuple ts -> ts
+                         | _ -> raise(Error(e.exp_loc,Illegal_tuple_expr)) in
+          let (ps, es) = List.split (List.map (fun (i, t) -> 
+                                let vd = {val_type = t; val_kind = Val_reg} in
+				let exp = { exp_desc = Texp_ident (Pident i, vd);
+					    exp_loc = e.exp_loc;
+                                            exp_type = t;
+					    exp_env = e.exp_env
+					      } in
+		   	        (mkpat i t, exp))
+                            (List.combine new_ids typs)) in
+          let ces = List.map (fun (c, ei) -> transl_contract c ei callee caller) 
+			    (List.combine cs es) in
+          let newpat = { pat_desc = Tpat_tuple ps;
+                         pat_loc = e.exp_loc;
+                         pat_type = cty;
+                         pat_env = e.exp_env } in
+          Texp_match (e, [(newpat, mkexp (Texp_tuple ces) cty)], Total)
+       end
+  in mkexp ce cty
 
+(* Given x:t1 -> t2, the subst_contract computes t2[(v |><| t1)/x] *)
 and subst_contract v e cntr = 
   let mkpat var = { pat_desc = Tpat_var var; 
                     pat_loc  = e.exp_loc;
@@ -1168,10 +1183,7 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
-  | Illegal_tuple_contract -> 
+  | Illegal_tuple_expr -> 
       fprintf ppf
-        "Tuple contract expects tuple expression"
-  | Illegal_contract_wrapper -> 
-      fprintf ppf
-        "Contract wrapper must have callee's function name"
+        "This expression is not of type tuple"
 

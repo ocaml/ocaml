@@ -33,3 +33,4 @@ val dump : string -> unit;;
 
 val get_location : annotation -> Location.t;;
 val get_info : unit -> annotation list;;
+val print_location: Format.formatter ->  Location.t -> unit;;

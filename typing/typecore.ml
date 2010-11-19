@@ -1986,13 +1986,13 @@ and tc_contract_aux env c ty =
           let (typed_c1, env_after_c1) = tc_contract_aux env c1 ty1 in
           let (id_xop, env_for_c2) = 
                 match xop with
-                   Some x -> let id_x = enter_variable loc x ty1 in
-                             let ty1_val_desc = { val_type = ty1; val_kind = Val_reg } in
+                   Some x -> let val1_desc = { val_type = ty1; val_kind = Val_reg } in
+		             let (id_x, new_env) = enter_value x val1_desc env in
                              (* putting a in the env
                                 a:{x | x > 0} -> {y | y > a} 
                                 It is ok to write such contract:
                                 x:{x | x > 0} -> {y | y > x} *)
-                             (Some id_x, add_value id_x ty1_val_desc env_after_c1)
+                             (Some id_x, new_env)
                  | None   -> begin 
                               match typed_c1.contract_desc with
 			      (* we convert  {x | x > 0} -> {y | y > x} to
@@ -2318,4 +2318,4 @@ let report_error ppf = function
         (fun ppf -> fprintf ppf "which is less general than")
   | Contract_wrong_type (c,ty) -> 
       Printast.core_contract 0 ppf c;
-      fprintf ppf "does not have type %a" type_expr ty
+      fprintf ppf "is expected to have type %a" type_expr ty

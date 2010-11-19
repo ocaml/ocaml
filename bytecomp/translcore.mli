@@ -37,8 +37,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
-  | Illegal_tuple_contract 
-  | Illegal_contract_wrapper
+  | Illegal_tuple_expr
 
 exception Error of Location.t * error
 

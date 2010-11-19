@@ -86,7 +86,7 @@ val enter_module: string -> module_type -> t -> Ident.t * t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
-(* val enter_contract: string -> contract_declaration -> t -> Ident.t * t *)
+val enter_contract: Path.t -> contract_declaration -> t -> t 
 
 (* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit

@@ -999,4 +999,4 @@ let report_error ppf = function
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
       fprintf ppf "This fixed type %s" r
-  | Illegal_contract_id lid -> fprintf ppf "No function for Contract id %a"  Printtyp.longident lid
+  | Illegal_contract_id lid -> fprintf ppf "No val declaration for contract id: %a"  Printtyp.longident lid

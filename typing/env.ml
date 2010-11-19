@@ -770,7 +770,7 @@ and enter_module = enter store_module
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
-(* and enter_contract = enter store_contract *)
+and enter_contract = store_contract 
 
 (* Insertion of all components of a signature *)
 

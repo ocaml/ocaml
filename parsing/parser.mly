@@ -47,6 +47,7 @@ let mkcty d =
 
 let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
+let reloc_ctr x = { x with pctr_loc = symbol_rloc () };;
 
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
@@ -1074,18 +1075,18 @@ core_contract:
 core_contract_desc:
     LBRACE val_ident BAR expr RBRACE         
       { Pctr_pred($2, $4) }
-  | val_ident COLON core_contract_desc MINUSGREATER core_contract_desc
-      { Pctr_arrow(Some $1, mkctr($3), mkctr($5)) } 
-  | core_contract_desc MINUSGREATER core_contract_desc
-      { Pctr_arrow(None, mkctr($1), mkctr($3)) } 
+  | val_ident COLON core_contract MINUSGREATER core_contract
+      { Pctr_arrow(Some $1, $3, $5) } 
+  | core_contract MINUSGREATER core_contract
+      { Pctr_arrow(None, $1, $3) } 
   | LPAREN core_contract_desc RPAREN
       { $2 }
-  | LPAREN contract_comma_list RPAREN
-      { Pctr_tuple(List.rev $2) }
+  | contract_comma_list 
+      { Pctr_tuple(List.rev $1) }
 ;
 contract_comma_list:
-    contract_comma_list STAR core_contract_desc        { mkctr($3) :: $1 }
-  | core_contract_desc STAR core_contract_desc         { [mkctr($3); mkctr($1)] }
+    contract_comma_list STAR core_contract        { $3 :: $1 }
+  | core_contract STAR core_contract         { [$3; $1] }
 ;
 
 /* Patterns */

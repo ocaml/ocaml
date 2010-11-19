@@ -17,6 +17,7 @@
 type t
 
 val create: string -> t
+val create_idents: string -> int -> t list
 val create_persistent: string -> t
 val create_predef_exn: string -> t
 val rename: t -> t

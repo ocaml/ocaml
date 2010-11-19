@@ -229,6 +229,15 @@ and approx_sig env ssg =
                  Tsig_type(i2, d2, rs);
                  Tsig_type(i3, d3, rs)])
               decls [rem])
+      | Psig_contract cdecls -> 
+	  let typed_cdecls = Typedecl.transl_contract_decls env cdecls in
+	  let iface_cdecls = List.map Typedtree.contract_declaration_to_iface typed_cdecls in
+          let sg = List.map (fun c -> Tsig_contract (head c.Types.ttopctr_id, c, Trec_not)) 
+	                    iface_cdecls in
+          (* let newenv = List.fold_right (fun (i,c) -> 
+	                  Env.enter_contract (Pident i) c) 
+	                  typed_cdecls env in *)
+	  sg @ approx_sig env srem
       | _ ->
           approx_sig env srem
 
