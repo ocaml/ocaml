@@ -45,6 +45,7 @@ val view_type_id : Longident.t -> env:Env.t -> unit
 val view_class_id : Longident.t -> env:Env.t -> unit
 val view_cltype_id : Longident.t -> env:Env.t -> unit
 val view_modtype_id : Longident.t -> env:Env.t -> unit
+val view_contract_id : Longident.t -> env:Env.t -> unit
 val view_type_decl : Path.t -> env:Env.t -> unit
 
 type skind = [`Type|`Class|`Module|`Modtype]

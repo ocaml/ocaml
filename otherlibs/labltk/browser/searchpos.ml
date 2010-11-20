@@ -219,6 +219,7 @@ let rec search_pos_signature l ~pos ~env =
       (* The last cases should not happen in generated interfaces *) 
       | Psig_open lid -> add_found_sig (`Module, lid) ~env ~loc:pt.psig_loc
       | Psig_include t -> search_pos_module t ~pos ~env
+      | Psig_contract _ -> ()
       end;
     env
   end)
@@ -295,6 +296,7 @@ let edit_source ~file ~path ~sign =
         | Tsig_modtype (id, _) -> id, Pmodtype
         | Tsig_class (id, _, _) -> id, Pclass
         | Tsig_cltype (id, _, _) -> id, Pcltype
+        | Tsig_contract (id, _, _) -> id, Pcontract
       in
       let prefix = List.tl (list_of_path path) and name = Ident.name id in
       let pos =
@@ -462,6 +464,9 @@ and view_type_decl path ~env =
 and view_type_id li ~env =
   let path, decl = lookup_type li env in
   view_type_decl path ~env
+
+(* To be Done *)
+and view_contract_id li ~env = ()
 
 and view_class_id li ~env =
   let path, cl = lookup_class li env in
@@ -677,6 +682,8 @@ let rec search_pos_structure ~pos str =
       List.iter l ~f:(fun (id, _, _, cl, _) -> search_pos_class_expr cl ~pos)
   | Tstr_cltype _ -> ()
   | Tstr_include (m, _) -> search_pos_module_expr m ~pos
+  | Tstr_contract _ -> ()
+  | Tstr_opened_contracts _ -> ()
   end
 
 and search_pos_class_structure ~pos cls =
@@ -767,7 +774,7 @@ and search_pos_expr ~pos exp =
         search_pos_expr exp ~pos
       end
   | Texp_tuple l -> List.iter l ~f:(search_pos_expr ~pos)
-  | Texp_construct (_, l) -> List.iter l ~f:(search_pos_expr ~pos)
+  | Texp_construct (_, _, l) -> List.iter l ~f:(search_pos_expr ~pos)
   | Texp_variant (_, None) -> ()
   | Texp_variant (_, Some exp) -> search_pos_expr exp ~pos
   | Texp_record (l, opt) ->
@@ -806,6 +813,9 @@ and search_pos_expr ~pos exp =
   | Texp_letmodule (id, modexp, exp) ->
       search_pos_module_expr modexp ~pos;
       search_pos_expr exp ~pos
+  | Texp_contract (c,e, _, _) -> search_pos_expr e ~pos
+  | Texp_bad (_) -> ()
+  | Texp_unr (_) -> ()
   | Texp_assertfalse -> ()
   | Texp_assert exp ->
       search_pos_expr exp ~pos
@@ -830,7 +840,7 @@ and search_pos_pat ~pos ~env pat =
       add_found_str (`Exp(`Const, pat.pat_type)) ~env ~loc:pat.pat_loc
   | Tpat_tuple l ->
       List.iter l ~f:(search_pos_pat ~pos ~env)
-  | Tpat_construct (_, l) ->
+  | Tpat_construct (_, _, l) ->
       List.iter l ~f:(search_pos_pat ~pos ~env)
   | Tpat_variant (_, None, _) -> ()
   | Tpat_variant (_, Some pat, _) -> search_pos_pat pat ~pos ~env

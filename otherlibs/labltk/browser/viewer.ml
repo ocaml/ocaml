@@ -83,6 +83,7 @@ let view_symbol ~kind ~env ?path id =
   | Pmodtype -> view_modtype_id id ~env
   | Pclass -> view_class_id id ~env
   | Pcltype -> view_cltype_id id ~env
+  | Pcontract -> view_contract_id id ~env
 
 
 (* Create a list of symbols you can choose from *)
@@ -224,6 +225,7 @@ let ident_of_decl ~modlid = function
   | Tsig_modtype (id, _) -> Lident (Ident.name id), Pmodtype
   | Tsig_class (id, _, _) -> Lident (Ident.name id), Pclass
   | Tsig_cltype (id, _, _) -> Lident (Ident.name id), Pcltype
+  | Tsig_contract (id, _, _) -> Lident (Ident.name id), Pcontract
 
 let view_defined ~env ?(show_all=false) modlid =
   try match lookup_module modlid env with path, Tmty_signature sign ->

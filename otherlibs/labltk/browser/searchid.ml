@@ -37,6 +37,7 @@ type pkind =
   | Pmodtype
   | Pclass
   | Pcltype
+  | Pcontract
 
 let string_of_kind = function
     Pvalue -> "v"
@@ -47,6 +48,7 @@ let string_of_kind = function
   | Pmodtype -> "s"
   | Pclass -> "c"
   | Pcltype -> "ct"
+  | Pcontract -> "contr"
 
 let rec longident_of_path = function
     Pident id -> Lident (Ident.name id)
@@ -256,6 +258,7 @@ let rec search_type_in_signature t ~sign ~prefix ~mode =
           (* || List.exists (get_fields ~prefix ~sign self)
               ~f:(fun (_,_,ty_field) -> matches ty_field) *)
           then [lid_of_id id, Pclass] else []
+      | Tsig_contract _ -> []
   end
 
 let search_all_types t ~mode =
