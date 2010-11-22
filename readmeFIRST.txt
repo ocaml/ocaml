@@ -7,7 +7,7 @@ $make world
 
 http://gallium.inria.fr/~naxu/research/testcontracts.tar.bz2
 
-[I assume directories /contracts and /testcontracts are at the same level ]
+[I assume directories /contracts and /testcontracts are under the same directory ]
 
 $tar -jxvf testcontracts.tar.bz2
 $cd testcontracts
@@ -25,8 +25,11 @@ to point to the newly generated ocamlc.
 $./basic
 
 If it gives error msg saying bad interpreter /usr/local/bin/ocamlrun, 
-you can link it to where you installed your ocamlrun by linking, e.g.
+you can link it to /contracts/boot/camlrun by
 
 $ln /usr/local/bin/ocamlrun <path to contracts dir>/contracts/boot/ocamlrun
 
+If it still does not work, you can just do
+
+$../contracts/boot/ocamlrun ./basic
 
