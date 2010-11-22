@@ -1390,10 +1390,10 @@ Very old (no more supported) syntax:\n\
     ;
     cvalue_binding:
       [ [ "="; e = expr -> e
-        | ":"; t = poly_type; "="; e = expr -> <:expr< ($e$ : $t$) >>
         | ":"; "type"; t1 = unquoted_typevars; "." ; t2 = ctyp ; "="; e = expr -> 
 	let u = Ast.TyTypePol _loc t1 t2 in
 	<:expr< ($e$ : $u$) >>
+        | ":"; t = poly_type; "="; e = expr -> <:expr< ($e$ : $t$) >>
         | ":"; t = poly_type; ":>"; t2 = ctyp; "="; e = expr ->
             match t with
             [ <:ctyp< ! $_$ . $_$ >> -> raise (Stream.Error "unexpected polytype here")

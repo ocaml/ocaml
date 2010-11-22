@@ -14623,6 +14623,12 @@ module Struct =
               | Ast.TyOf (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
                   ((conv_con s), (List.map ctyp (list_of_ctyp t [])), None,
                    (mkloc loc))
+              | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))),
+                  (Ast.TyArr (_, t, u))) ->
+                  ((conv_con s), (List.map ctyp (list_of_ctyp t [])),
+                   (Some (ctyp u)), (mkloc loc))
+              | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdUid (_, s)))), t) ->
+                  ((conv_con s), [], (Some (ctyp t)), (mkloc loc))
               | _ -> assert false
               
             let rec type_decl tl cl loc m pflag =
@@ -14695,8 +14701,11 @@ module Struct =
                   optional_type_parameters t1
                     (optional_type_parameters t2 acc)
               | Ast.TyQuP (_, s) -> ((Some s), (true, false)) :: acc
+              | Ast.TyAnP _loc -> (None, (true, false)) :: acc
               | Ast.TyQuM (_, s) -> ((Some s), (false, true)) :: acc
+              | Ast.TyAnM _loc -> (None, (false, true)) :: acc
               | Ast.TyQuo (_, s) -> ((Some s), (false, false)) :: acc
+              | Ast.TyAny _loc -> (None, (false, false)) :: acc
               | _ -> assert false
               
             let rec class_parameters t acc =
@@ -14955,6 +14964,49 @@ module Struct =
               
             let list_of_opt_ctyp ot acc =
               match ot with | Ast.TyNil _ -> acc | t -> list_of_ctyp t acc
+              
+            let varify_constructors var_names =
+              let rec loop t =
+                let desc =
+                  match t.ptyp_desc with
+                  | Ptyp_any -> Ptyp_any
+                  | Ptyp_var x -> Ptyp_var x
+                  | Ptyp_arrow (label, core_type, core_type') ->
+                      Ptyp_arrow (label, (loop core_type), (loop core_type'))
+                  | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
+                  | Ptyp_constr ((Lident s), []) when List.mem s var_names ->
+                      Ptyp_var ("&" ^ s)
+                  | Ptyp_constr (longident, lst) ->
+                      Ptyp_constr (longident, (List.map loop lst))
+                  | Ptyp_object lst ->
+                      Ptyp_object (List.map loop_core_field lst)
+                  | Ptyp_class (longident, lst, lbl_list) ->
+                      Ptyp_class ((longident, (List.map loop lst), lbl_list))
+                  | Ptyp_alias (core_type, string) ->
+                      Ptyp_alias (((loop core_type), string))
+                  | Ptyp_variant (row_field_list, flag, lbl_lst_option) ->
+                      Ptyp_variant
+                        (((List.map loop_row_field row_field_list), flag,
+                          lbl_lst_option))
+                  | Ptyp_poly (string_lst, core_type) ->
+                      Ptyp_poly ((string_lst, (loop core_type)))
+                  | Ptyp_package (longident, lst) ->
+                      Ptyp_package
+                        ((longident,
+                          (List.map (fun (n, typ) -> (n, (loop typ))) lst)))
+                in { (t) with ptyp_desc = desc; }
+              and loop_core_field t =
+                let desc =
+                  match t.pfield_desc with
+                  | Pfield ((n, typ)) -> Pfield ((n, (loop typ)))
+                  | Pfield_var -> Pfield_var
+                in { (t) with pfield_desc = desc; }
+              and loop_row_field x =
+                match x with
+                | Rtag ((label, flag, lst)) ->
+                    Rtag ((label, flag, (List.map loop lst)))
+                | Rinherit t -> Rinherit (loop t)
+              in loop
               
             let rec expr =
               function
@@ -15240,6 +15292,40 @@ module Struct =
             and binding x acc =
               match x with
               | Ast.BiAnd (_, x, y) -> binding x (binding y acc)
+              | Ast.BiEq (_loc, (Ast.PaId (_, (Ast.IdLid (_, bind_name)))),
+                  (Ast.ExTyc (_, e, (TyTypePol (_, vs, ty))))) ->
+                  let rec id_to_string x =
+                    (match x with
+                     | Ast.TyId (_, (Ast.IdLid (_, x))) -> [ x ]
+                     | Ast.TyApp (_, x, y) ->
+                         (id_to_string x) @ (id_to_string y)
+                     | _ -> assert false) in
+                  let vars = id_to_string vs in
+                  let ampersand_vars = List.map (fun x -> "&" ^ x) vars in
+                  let rec merge_quoted_vars lst =
+                    (match lst with
+                     | [ x ] -> x
+                     | x :: y -> Ast.TyApp (_loc, x, (merge_quoted_vars y))
+                     | [] -> assert false) in
+                  let ty' = varify_constructors vars (ctyp ty) in
+                  let mkexp = mkexp _loc in
+                  let mkpat = mkpat _loc in
+                  let e =
+                    mkexp
+                      (Pexp_constraint ((expr e), (Some (ctyp ty)), None)) in
+                  let rec mk_newtypes x =
+                    (match x with
+                     | [ newtype ] -> mkexp (Pexp_newtype ((newtype, e)))
+                     | newtype :: newtypes ->
+                         mkexp
+                           (Pexp_newtype ((newtype, (mk_newtypes newtypes))))
+                     | [] -> assert false) in
+                  let pat =
+                    mkpat
+                      (Ppat_constraint
+                         (((mkpat (Ppat_var bind_name)),
+                           (mktyp _loc (Ptyp_poly (ampersand_vars, ty')))))) in
+                  let e = mk_newtypes vars in (pat, e) :: acc
               | Ast.BiEq (_loc, p,
                   (Ast.ExTyc (_, e, (Ast.TyPol (_, vs, ty))))) ->
                   ((patt (Ast.PaTyc (_loc, p, (Ast.TyPol (_loc, vs, ty))))),

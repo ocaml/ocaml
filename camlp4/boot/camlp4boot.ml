@@ -6493,6 +6493,17 @@ Very old (no more supported) syntax:\n\
                                           "unexpected polytype here")
                                  | _ -> Ast.ExCoe (_loc, e, t, t2) :
                                   'cvalue_binding))));
+                         ([ Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (poly_type : 'poly_type Gram.Entry.t));
+                            Gram.Skeyword "=";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) _ (t : 'poly_type) _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.ExTyc (_loc, e, t) : 'cvalue_binding))));
                          ([ Gram.Skeyword ":"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -6510,17 +6521,6 @@ Very old (no more supported) syntax:\n\
                                 (_loc : Gram.Loc.t) ->
                                 (let u = Ast.TyTypePol (_loc, t1, t2)
                                  in Ast.ExTyc (_loc, e, u) : 'cvalue_binding))));
-                         ([ Gram.Skeyword ":";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (poly_type : 'poly_type Gram.Entry.t));
-                            Gram.Skeyword "=";
-                            Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (e : 'expr) _ (t : 'poly_type) _
-                                (_loc : Gram.Loc.t) ->
-                                (Ast.ExTyc (_loc, e, t) : 'cvalue_binding))));
                          ([ Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],

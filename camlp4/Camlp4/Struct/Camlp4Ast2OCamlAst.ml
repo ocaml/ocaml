@@ -323,6 +323,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     [ <:ctyp@loc< $uid:s$ >> -> (conv_con s, [], None, mkloc loc)
     | <:ctyp@loc< $uid:s$ of $t$ >> ->
         (conv_con s, List.map ctyp (list_of_ctyp t []), None, mkloc loc)
+    | <:ctyp@loc< $uid:s$ : ($t$ -> $u$) >> ->
+        (conv_con s, List.map ctyp (list_of_ctyp t []), Some (ctyp u), mkloc loc)
+    | <:ctyp@loc< $uid:s$ : $t$ >> ->
+        (conv_con s, [], Some (ctyp t), mkloc loc)
+
     | _ -> assert False (*FIXME*) ];
   value rec type_decl tl cl loc m pflag =
     fun
@@ -386,8 +391,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match t with
     [ <:ctyp< $t1$ $t2$ >> -> optional_type_parameters t1 (optional_type_parameters t2 acc)
     | <:ctyp< +'$s$ >> -> [(Some s, (True, False)) :: acc]
+    | Ast.TyAnP _loc  -> [(None, (True, False)) :: acc]
     | <:ctyp< -'$s$ >> -> [(Some s, (False, True)) :: acc]
+    | Ast.TyAnM _loc -> [(None, (False, True)) :: acc]
     | <:ctyp< '$s$ >> -> [(Some s, (False, False)) :: acc]
+    | Ast.TyAny _loc -> [(None, (False, False)) :: acc]
     | _ -> assert False ];
 
   value rec class_parameters t acc =
@@ -598,6 +606,55 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match ot with
     [ <:ctyp<>> -> acc
     | t -> list_of_ctyp t acc ];
+
+value varify_constructors var_names = 
+  let rec loop t = 
+    let desc = 
+      match t.ptyp_desc with
+	  [
+       Ptyp_any -> Ptyp_any
+      | Ptyp_var x -> Ptyp_var x
+      | Ptyp_arrow label core_type core_type' ->
+	  Ptyp_arrow label (loop core_type) (loop core_type')
+      | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
+      | Ptyp_constr (Lident s) [] when List.mem s var_names ->
+	  Ptyp_var ("&" ^ s)
+      | Ptyp_constr longident lst ->
+	  Ptyp_constr longident (List.map loop lst) 
+      | Ptyp_object lst ->
+	  Ptyp_object (List.map loop_core_field lst)		    
+      | Ptyp_class longident lst lbl_list ->
+	  Ptyp_class (longident, List.map loop lst, lbl_list) 
+      | Ptyp_alias core_type string ->
+	  Ptyp_alias(loop core_type, string) 
+      | Ptyp_variant row_field_list flag lbl_lst_option -> 
+	  Ptyp_variant(List.map loop_row_field row_field_list, flag, lbl_lst_option) 
+      | Ptyp_poly string_lst core_type ->
+	  Ptyp_poly(string_lst, loop core_type) 
+      | Ptyp_package longident lst ->
+	  Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
+]
+    in
+    {(t) with ptyp_desc = desc}
+  and loop_core_field t = 
+    let desc = 
+      match t.pfield_desc with
+      [ Pfield(n,typ) ->
+	  Pfield(n,loop typ)
+      | Pfield_var ->
+	  Pfield_var]
+    in
+    { (t) with pfield_desc=desc}
+  and loop_row_field x  = 
+    match x with
+      [ Rtag(label,flag,lst) ->
+	  Rtag(label,flag,List.map loop lst) 
+      | Rinherit t ->
+	  Rinherit (loop t) ]
+  in
+  loop;
+
+
 
   value rec expr =
     fun
@@ -813,6 +870,39 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match x with
     [ <:binding< $x$ and $y$ >> ->
          binding x (binding y acc)
+    | <:binding@_loc< $lid:bind_name$ = ($e$ : $TyTypePol _ vs ty$) >> ->
+      (* this code is not pretty because it is temporary *)
+      let rec id_to_string x = 
+	match x with 
+	    [ <:ctyp< $lid:x$ >> -> [x]
+	    | <:ctyp< $x$ $y$ >> -> (id_to_string x) @ (id_to_string y)
+	    | _ -> assert False]
+      in
+      let vars = id_to_string vs in
+      let ampersand_vars = List.map (fun x -> "&" ^ x) vars in
+      let rec merge_quoted_vars lst = 
+	match lst with
+	  [
+	    [x] -> x
+	  | [x::y] -> <:ctyp<$x$ $merge_quoted_vars y$ >>
+	  | [] -> assert False ]
+      in
+      let ty' = varify_constructors vars (ctyp ty) in
+      let mkexp = mkexp _loc in
+      let mkpat = mkpat _loc in
+      let e = mkexp (Pexp_constraint (expr e) (Some (ctyp ty)) None) in
+      let rec mk_newtypes x = 
+	match x with
+	  [ [newtype :: []] -> mkexp (Pexp_newtype(newtype, e))
+	  | [newtype :: newtypes] ->
+	    mkexp(Pexp_newtype (newtype,mk_newtypes newtypes))
+	  | [] -> assert False]
+      in
+      let pat = 
+	mkpat (Ppat_constraint (mkpat (Ppat_var bind_name), mktyp _loc (Ptyp_poly ampersand_vars ty')))
+      in
+      let e = mk_newtypes vars in
+      [( pat, e) :: acc]
     | <:binding@_loc< $p$ = ($e$ : ! $vs$ . $ty$) >> ->
         [(patt <:patt< ($p$ : ! $vs$ . $ty$ ) >>, expr e) :: acc]
     | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
