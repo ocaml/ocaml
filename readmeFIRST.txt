@@ -27,6 +27,19 @@ e.g.4 {x | x > 0} * {y | y < 0} -> {z | z = x + y}
 Note that, we do not support dependent tuple contract yet, i.e.
 NO {x | x >=0} * {y | y > x}
 
+Currently, only toplevel contract declaration is allowed.
+e.g.5
+contract f = {x | x >= 0} -> {y | y > x}
+let f x = x + 5
+
+Contracts are declared directly in .ml files with the keyword "contract". Exported contracts are in .mli files where they should be syntactically the same as those in .ml files and declared after their types. 
+
+e.g.6 (in a .mli file)
+val f: int -> int
+contract f = {x | x >= 0} -> {y | y > x}
+
+It is possible not to write a .mli file. In this case, all contracts declared in
+the .ml file are presumed to be exported. 
 
 *To test contract checking with some small examples, you can download examples from 
 
