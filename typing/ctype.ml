@@ -1807,57 +1807,54 @@ let rec mcomp type_pairs subst env t1 t2 =
   let t1 = repr t1 in
   let t2 = repr t2 in
   if t1 == t2 then () else
-  try
     match (t1.desc, t2.desc) with
-    | (Tvar, _)  
-    | (_, Tvar)  ->
+      | (Tvar, _)  
+      | (_, Tvar)  ->
         fatal_error "types should not include variables"
-    | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
+      | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
-    | _ ->
+      | _ ->
         let t1' = expand_head_opt env t1 in
         let t2' = expand_head_opt env t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
-        begin try
-          TypePairs.find type_pairs (t1', t2')
-        with Not_found ->
-          TypePairs.add type_pairs (t1', t2') ();
-          match (t1'.desc, t2'.desc) with
-            (Tvar, Tvar) ->
-              fatal_error "types should not include variables"
-          | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
-            || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
-              mcomp type_pairs subst env t1 t2;
-              mcomp type_pairs subst env u1 u2;
-          | (Ttuple tl1, Ttuple tl2) ->
-              mcomp_list type_pairs subst env tl1 tl2
-          | (Tconstr (p1, _, _), Tconstr (p2, _, _)) ->
-              mcomp_type_decl type_pairs subst env p1 p2;
-          | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)
-            when Path.same p1 p2 && n1 = n2 ->
-              mcomp_list type_pairs subst env tl1 tl2
-          | (Tvariant row1, Tvariant row2) ->
-              mcomp_row type_pairs subst env row1 row2
-          | (Tobject (fi1, _), Tobject (fi2, _)) ->
-              mcomp_fields type_pairs subst env fi1 fi2
-          | (Tfield _, Tfield _) ->       (* Actually unused *)
-              mcomp_fields type_pairs subst env t1' t2'
-          | (Tnil, Tnil) ->
-              ()
-          | (Tpoly (t1, []), Tpoly (t2, [])) ->
-              mcomp type_pairs subst env t1 t2
-          | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
-              enter_poly env univar_pairs t1 tl1 t2 tl2
-                (mcomp type_pairs subst env)
-          | (Tunivar, Tunivar) ->
-              unify_univar t1' t2' !univar_pairs
-          | (_, _) ->
-              raise (Unify [])
-        end
-  with Unify trace ->
-    raise (Unify ((t1, t2)::trace))
+          begin try TypePairs.find type_pairs (t1', t2')
+          with Not_found ->
+              TypePairs.add type_pairs (t1', t2') ();
+              match (t1'.desc, t2'.desc) with
+                  (Tvar, Tvar) ->
+                    fatal_error "types should not include variables"
+                | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
+                  || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
+                  mcomp type_pairs subst env t1 t2;
+                  mcomp type_pairs subst env u1 u2;
+                | (Ttuple tl1, Ttuple tl2) ->
+                  mcomp_list type_pairs subst env tl1 tl2
+                | (Tconstr (p1, _, _), Tconstr (p2, _, _)) ->
+                  mcomp_type_decl type_pairs subst env p1 p2;
+                | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)
+                  when Path.same p1 p2 && n1 = n2 ->
+                  mcomp_list type_pairs subst env tl1 tl2
+                | (Tvariant row1, Tvariant row2) ->
+                  mcomp_row type_pairs subst env row1 row2
+                | (Tobject (fi1, _), Tobject (fi2, _)) ->
+                  mcomp_fields type_pairs subst env fi1 fi2
+                | (Tfield _, Tfield _) ->       (* Actually unused *)
+                  mcomp_fields type_pairs subst env t1' t2'
+                | (Tnil, Tnil) ->
+                  ()
+                | (Tpoly (t1, []), Tpoly (t2, [])) ->
+                  mcomp type_pairs subst env t1 t2
+                | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
+                  enter_poly env univar_pairs t1 tl1 t2 tl2
+                    (mcomp type_pairs subst env)
+                | (Tunivar, Tunivar) ->
+                  unify_univar t1' t2' !univar_pairs
+                | (_, _) ->
+                  raise (Unify [])
+          end
+
 
 and mcomp_list type_pairs subst env tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
@@ -1875,9 +1872,7 @@ and mcomp_fields type_pairs subst env ty1 ty2 =
   List.iter
     (function (n, k1, t1, k2, t2) ->
        mcomp_kind k1 k2;
-       try mcomp type_pairs subst env t1 t2 with Unify trace ->
-         raise (Unify ((newty (Tfield(n, k1, t1, rest2)),
-                        newty (Tfield(n, k2, t2, rest2)))::trace)))
+       mcomp type_pairs subst env t1 t2)
     pairs
 
 and mcomp_kind k1 k2 =
