@@ -208,7 +208,54 @@ let exp_of_label lbl =
 let pat_of_label lbl =
   mkpat (Ppat_var(Longident.last lbl))
 
-let varify_constructors var_names = 
+let variables_of_type = 
+  let rec loop t = 
+      match t.ptyp_desc with
+      | Ptyp_any -> []
+      | Ptyp_var x ->  [x]
+      | Ptyp_arrow (label,core_type,core_type') ->
+	  loop core_type @ loop core_type'
+      | Ptyp_tuple lst -> List.concat (List.map loop lst)
+      | Ptyp_constr(longident, lst) ->
+	  List.concat (List.map loop lst) 
+      | Ptyp_object lst ->
+	  List.concat (List.map loop_core_field lst)		    
+      | Ptyp_class (longident, lst, lbl_list) ->
+	  List.concat (List.map loop lst)
+      | Ptyp_alias(core_type, str) ->
+	  str :: loop core_type 
+      | Ptyp_variant(row_field_list, flag, lbl_lst_option) -> 
+	  List.concat (List.map loop_row_field row_field_list)
+      | Ptyp_poly(string_lst, core_type) ->
+	  loop core_type
+      | Ptyp_package(longident,lst) ->
+	  List.concat (List.map (fun (n,typ) -> (loop typ)) lst)
+  and loop_core_field t = 
+      match t.pfield_desc with
+      | Pfield(n,typ) ->
+	  loop typ
+      | Pfield_var ->
+	[]
+  and loop_row_field  = 
+    function
+      | Rtag(label,flag,lst) ->
+	  List.concat (List.map loop lst) 
+      | Rinherit t ->
+	  loop t
+  in
+  loop  
+
+let varify_constructors var_names t = 
+  let counter = ref 0 in 
+  let offlimits = variables_of_type t in
+  let rec fresh () = 
+    let ret = "x" ^ (string_of_int !counter) in 
+    counter := !counter + 1;
+    if List.mem ret offlimits then fresh () 
+    else
+      ret
+  in
+  let sofar : (string,string) Hashtbl.t = Hashtbl.create 0 in
   let rec loop t = 
     let desc = 
       match t.ptyp_desc with
@@ -218,7 +265,13 @@ let varify_constructors var_names =
 	  Ptyp_arrow(label, loop core_type, loop core_type')
       | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
       | Ptyp_constr(Lident s, []) when List.mem s var_names ->
-	  Ptyp_var ("&" ^ s)
+	begin try 
+		Ptyp_var (Hashtbl.find sofar s)
+	  with
+	    | Not_found ->
+	      let name = fresh () in 
+	      Hashtbl.add sofar s name;
+	      Ptyp_var name end
       | Ptyp_constr(longident, lst) ->
 	  Ptyp_constr(longident, List.map loop lst) 
       | Ptyp_object lst ->
@@ -251,7 +304,7 @@ let varify_constructors var_names =
       | Rinherit t ->
 	  Rinherit (loop t)
   in
-  loop
+  loop t
 
 
 %}
