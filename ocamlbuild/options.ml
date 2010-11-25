@@ -195,6 +195,7 @@ let spec =
    "-ocamlc", set_cmd ocamlc, "<command> Set the OCaml bytecode compiler";
    "-ocamlopt", set_cmd ocamlopt, "<command> Set the OCaml native compiler";
    "-ocamldep", set_cmd ocamldep, "<command> Set the OCaml dependency tool";
+   "-ocamldoc", set_cmd ocamldoc, "<command> Set the OCaml documentation generator";
    "-ocamlyacc", set_cmd ocamlyacc, "<command> Set the ocamlyacc tool";
    "-menhir", set_cmd ocamlyacc, "<command> Set the menhir tool (use it after -use-menhir)";
    "-ocamllex", set_cmd ocamllex, "<command> Set the ocamllex tool";

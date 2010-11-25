@@ -9,6 +9,9 @@ Bug fixes:
 - PR#5110: invalid module name when using optional argument
 - PR#5177: Gc.compact implies Gc.full_major
 
+Feature wishes:
+- PR#5065: added '-ocamldoc' option to ocamlbuild
+
 Objective Caml 3.12.0:
 ----------------------
 
