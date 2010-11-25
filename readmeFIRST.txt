@@ -71,3 +71,8 @@ If it still does not work, you can just do
 
 $../contracts/boot/ocamlrun ./basic
 
+*By default, contract checking is switched on. 
+*To switch contract checking off, you can use flag
+
+-nocontract
+
