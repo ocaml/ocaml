@@ -129,7 +129,12 @@ let print_dependencies target_file deps =
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string ":";
   Depend.StringSet.iter
-    (fun dep -> print_char ' '; print_string dep)
+    (fun dep ->
+      if (String.length dep > 0)
+          && (match dep.[0] with 'A'..'Z' -> true | _ -> false) then begin
+            print_char ' ';
+            print_string dep
+          end)
     deps;
   print_char '\n'
 
