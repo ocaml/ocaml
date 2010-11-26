@@ -879,13 +879,13 @@ and transl_contract cntr e callee caller =
                                               val_kind = Val_reg}) in
   let ce:expression_desc = match cntr.contract_desc with
      | Tctr_pred (x, p) -> 
-       (* e |>r1,r2<| {x | p} = if (let x = e in p) then e 
-                                 else r1 
+       (* e |>r1,r2<| {x | p} =  let x = e in if p then x else r1 
           This forces evaluation of e, that is, if e diverges, RHS diverges;
           if e crashes, RHS crashes 
-       *)
-        let cond = Texp_let (Nonrecursive, [(mkpat x cty, e)], p) in
-        Texp_ifthenelse (mkexp cond Predef.type_bool, e, Some callee)
+       *) 
+        let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
+        let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
+	Texp_let (Nonrecursive, [(mkpat x cty, e)], mkexp cond cty) 
      | Tctr_arrow (xop, c1, c2) -> 
       (* picky version:
          <<x:c1 -> c2>> e = \x. (<<c2[(<<c1>> x)/x]>> (e (<<c1>> x)))

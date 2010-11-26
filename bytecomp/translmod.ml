@@ -391,6 +391,41 @@ let wrap_id_with_contract contract_decls opened_contracts caller_pathop expr =
        | others -> others
   in { expr with exp_desc = contracted_exp_desc }
 
+let contract_id_in_expr contract_decls opened_contracts caller_pathop expr = 
+    map_expression (wrap_id_with_contract contract_decls 
+		                          opened_contracts 
+		                          caller_pathop) expr    
+
+(* contract_id_in_contract wrapped all functions called in a contract with its
+contract if it has any conract. E.g. 
+contract h = {x | not (null x)} -> {y | true}
+contract f = {x | true)} -> {y | h x < y}
+
+becomes f = {x | true)} -> {y | (h <| C_h) x < y}
+This checking for contracts makes sure that we only have crash-free contracts
+during static contract checking for functions in a program. 
+val contract_id_in_contract: core_contract list -> 
+                         (Path.t * core_contract) Ident.tbl ->  
+                         core_contract -> core_contract
+
+*)
+let rec contract_id_in_contract contract_decls opened_contracts caller_pathop c = 
+  let new_desc = match c.contract_desc with
+	  | Tctr_pred (id, e) -> 
+              let new_e = contract_id_in_expr contract_decls opened_contracts
+                                                 caller_pathop e in
+              Tctr_pred (id, new_e)
+          | Tctr_arrow (idopt, c1, c2) -> 
+	      let new_c1 = contract_id_in_contract contract_decls 
+                                   opened_contracts caller_pathop c1 in
+	      let new_c2 = contract_id_in_contract contract_decls 
+                                   opened_contracts caller_pathop c2 in
+              Tctr_arrow (idopt, new_c1, new_c2)
+          | Tctr_tuple (cs) -> 
+              Tctr_tuple (List.map (fun c -> contract_id_in_contract 
+			   contract_decls opened_contracts caller_pathop c) cs)
+  in {c with contract_desc = new_desc}
+
 (* contract_id_in_expr wrapped all functions called in expression with its contract
 if it has any contract. E.g. f x = ..f (x - 1) ... g x
  becomes f x = ..(f <| C_f) (x - 1) ... (g <| C_g) x
@@ -399,10 +434,6 @@ val contract_id_in_expr: core_contract list ->
                          Path.t option -> 
                          expression -> expression
 *)
-let contract_id_in_expr contract_decls opened_contracts caller_pathop expr = 
-    map_expression (wrap_id_with_contract contract_decls 
-		                          opened_contracts 
-		                          caller_pathop) expr    
 
 (* val transl_str_contracts : core_contract list -> 
                               (Path.t, contract_declaration) Tbl.t ->
@@ -482,11 +513,17 @@ and transl_contracts (str, cc) =
 	       (current_contracts, Tbl.merge t opened_contracts) 
            | ((Tstr_contract (ds)) :: rem) -> 
 	       let (current_contracts, opened_contracts) = extract_contracts rem in
+	       
 	       (ds@current_contracts, opened_contracts)
            | (_::rem) -> extract_contracts rem
   in
   let (tstr_contracts, opened_contracts) = extract_contracts str in
-  (transl_str_contracts tstr_contracts opened_contracts str, cc)
+  let new_tstr_contracts = List.map (fun c -> 
+                 let new_c_desc = contract_id_in_contract tstr_contracts 
+				    opened_contracts (Some c.ttopctr_id)
+                                    c.ttopctr_desc in
+                 {c with ttopctr_desc = new_c_desc}) tstr_contracts in
+  (transl_str_contracts new_tstr_contracts opened_contracts str, cc)
 
 
 
