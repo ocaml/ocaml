@@ -12,6 +12,8 @@ Bug fixes:
 
 Feature wishes:
 - PR#5065: added '-ocamldoc' option to ocamlbuild
+- PR#5180: improved instruction selection for float operations on amd64
+
 
 Objective Caml 3.12.0:
 ----------------------

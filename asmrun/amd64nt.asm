@@ -67,43 +67,43 @@ L105:
         mov     caml_gc_regs, rsp
     ; Save floating-point registers
         sub     rsp, 16*8
-        movlpd  QWORD PTR [rsp + 0*8], xmm0
-        movlpd  QWORD PTR [rsp + 1*8], xmm1
-        movlpd  QWORD PTR [rsp + 2*8], xmm2
-        movlpd  QWORD PTR [rsp + 3*8], xmm3
-        movlpd  QWORD PTR [rsp + 4*8], xmm4
-        movlpd  QWORD PTR [rsp + 5*8], xmm5
-        movlpd  QWORD PTR [rsp + 6*8], xmm6
-        movlpd  QWORD PTR [rsp + 7*8], xmm7
-        movlpd  QWORD PTR [rsp + 8*8], xmm8
-        movlpd  QWORD PTR [rsp + 9*8], xmm9
-        movlpd  QWORD PTR [rsp + 10*8], xmm10
-        movlpd  QWORD PTR [rsp + 11*8], xmm11
-        movlpd  QWORD PTR [rsp + 12*8], xmm12
-        movlpd  QWORD PTR [rsp + 13*8], xmm13
-        movlpd  QWORD PTR [rsp + 14*8], xmm14
-        movlpd  QWORD PTR [rsp + 15*8], xmm15
+        movsd   QWORD PTR [rsp + 0*8], xmm0
+        movsd   QWORD PTR [rsp + 1*8], xmm1
+        movsd   QWORD PTR [rsp + 2*8], xmm2
+        movsd   QWORD PTR [rsp + 3*8], xmm3
+        movsd   QWORD PTR [rsp + 4*8], xmm4
+        movsd   QWORD PTR [rsp + 5*8], xmm5
+        movsd   QWORD PTR [rsp + 6*8], xmm6
+        movsd   QWORD PTR [rsp + 7*8], xmm7
+        movsd   QWORD PTR [rsp + 8*8], xmm8
+        movsd   QWORD PTR [rsp + 9*8], xmm9
+        movsd   QWORD PTR [rsp + 10*8], xmm10
+        movsd   QWORD PTR [rsp + 11*8], xmm11
+        movsd   QWORD PTR [rsp + 12*8], xmm12
+        movsd   QWORD PTR [rsp + 13*8], xmm13
+        movsd   QWORD PTR [rsp + 14*8], xmm14
+        movsd   QWORD PTR [rsp + 15*8], xmm15
     ; Call the garbage collector
         sub rsp, 32      ; PR#5008: bottom 32 bytes are reserved for callee
         call caml_garbage_collection
         add rsp, 32      ; PR#5008
     ; Restore all regs used by the code generator
-        movlpd  xmm0, QWORD PTR [rsp + 0*8]
-        movlpd  xmm1, QWORD PTR [rsp + 1*8]
-        movlpd  xmm2, QWORD PTR [rsp + 2*8]
-        movlpd  xmm3, QWORD PTR [rsp + 3*8]
-        movlpd  xmm4, QWORD PTR [rsp + 4*8]
-        movlpd  xmm5, QWORD PTR [rsp + 5*8]
-        movlpd  xmm6, QWORD PTR [rsp + 6*8]
-        movlpd  xmm7, QWORD PTR [rsp + 7*8]
-        movlpd  xmm8, QWORD PTR [rsp + 8*8]
-        movlpd  xmm9, QWORD PTR [rsp + 9*8]
-        movlpd  xmm10, QWORD PTR [rsp + 10*8]
-        movlpd  xmm11, QWORD PTR [rsp + 11*8]
-        movlpd  xmm12, QWORD PTR [rsp + 12*8]
-        movlpd  xmm13, QWORD PTR [rsp + 13*8]
-        movlpd  xmm14, QWORD PTR [rsp + 14*8]
-        movlpd  xmm15, QWORD PTR [rsp + 15*8]
+        movsd   xmm0, QWORD PTR [rsp + 0*8]
+        movsd   xmm1, QWORD PTR [rsp + 1*8]
+        movsd   xmm2, QWORD PTR [rsp + 2*8]
+        movsd   xmm3, QWORD PTR [rsp + 3*8]
+        movsd   xmm4, QWORD PTR [rsp + 4*8]
+        movsd   xmm5, QWORD PTR [rsp + 5*8]
+        movsd   xmm6, QWORD PTR [rsp + 6*8]
+        movsd   xmm7, QWORD PTR [rsp + 7*8]
+        movsd   xmm8, QWORD PTR [rsp + 8*8]
+        movsd   xmm9, QWORD PTR [rsp + 9*8]
+        movsd   xmm10, QWORD PTR [rsp + 10*8]
+        movsd   xmm11, QWORD PTR [rsp + 11*8]
+        movsd   xmm12, QWORD PTR [rsp + 12*8]
+        movsd   xmm13, QWORD PTR [rsp + 13*8]
+        movsd   xmm14, QWORD PTR [rsp + 14*8]
+        movsd   xmm15, QWORD PTR [rsp + 15*8]
         add     rsp, 16*8
         pop     rax
         pop     rbx
