@@ -128,6 +128,7 @@ Specify merge options between interfaces and implementations.
         \item["v"] merge @version
         \item["l"] merge @see
         \item["s"] merge @since
+        \item["b"] merge @before
         \item["o"] merge @deprecated
         \item["p"] merge @param
         \item["e"] merge @raise
@@ -838,7 +839,10 @@ with the given text as comment. \\ \hline
 document name (written between double quotes), with the given text
 as comment. \\ \hline
 
-"@since "{\em string} & Indicates when the element was introduced. \\ \hline
+"@since "{\em string} & Indicate when the element was introduced. \\ \hline
+
+"@before "{\em v text} & Associate the given description ({\em text}) to the
+given version {\em v} in order to document compatibility issues. \\ \hline
 
 "@version "{\em string} & The version number for the element. \\ \hline
 \end{tabular}
