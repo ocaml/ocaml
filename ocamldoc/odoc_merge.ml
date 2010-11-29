@@ -103,7 +103,16 @@ let merge_info merge_options (m1 : info) (m2 : info) =
         else
           Some v1
   in
-  let new_before = merge_before_tags (m1.i_before @ m2.i_before) in
+  let new_before =
+    match m1.i_before, m2.i_before with
+      [], [] -> []
+    | l, []
+    | [], l -> l
+    | l1, l2 ->
+        if List.mem Merge_before merge_options then
+          merge_before_tags (m1.i_before @ m2.i_before)
+        else
+          l1 in
   let new_dep =
     match m1.i_deprecated, m2.i_deprecated with
       None, None -> None

@@ -70,6 +70,7 @@ let analyse_merge_options s =
     (M.merge_version, [Odoc_types.Merge_version]) ;
     (M.merge_see, [Odoc_types.Merge_see]) ;
     (M.merge_since, [Odoc_types.Merge_since]) ;
+    (M.merge_before, [Odoc_types.Merge_before]) ;
     (M.merge_deprecated, [Odoc_types.Merge_deprecated]) ;
     (M.merge_param, [Odoc_types.Merge_param]) ;
     (M.merge_raised_exception, [Odoc_types.Merge_raised_exception]) ;

@@ -172,6 +172,7 @@ let merge_author = ('a', "merge @author")
 let merge_version = ('v', "merge @version")
 let merge_see = ('l', "merge @see")
 let merge_since = ('s', "merge @since")
+let merge_before = ('b', "merge @before")
 let merge_deprecated = ('o', "merge @deprecated")
 let merge_param = ('p', "merge @param")
 let merge_raised_exception = ('e', "merge @raise")
@@ -199,6 +200,7 @@ let merge_options =
        merge_version ;
        merge_see ;
        merge_since ;
+       merge_before ;
        merge_deprecated ;
        merge_param ;
        merge_raised_exception ;
