@@ -244,6 +244,12 @@ rule "ocaml: p.cmxa & p.a -> p.cmxs & p.so"
   ~deps:["%.p.cmxa"; x_p_a]
   (Ocaml_compiler.native_shared_library_link ~tags:["profile";"linkall"] "%.p.cmxa" "%.p.cmxs");;
 
+rule "ocaml: cmx & o -> cmxs"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"]
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_shared_library_link "%.cmx" "%.cmxs");;
+
 rule "ocaml: cmx & o -> cmxs & so"
   ~tags:["ocaml"; "native"; "shared"; "library"]
   ~prods:["%.cmxs"; x_dll]
