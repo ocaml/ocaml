@@ -8,6 +8,7 @@ Bug fixes:
 - PR#5095: ocamlbuild ignores some tags when building bytecode objects
 - PR#5103: build and install objinfo when building with ocamlbuild
 - PR#5110: invalid module name when using optional argument
+- PR#5165: ocamlbuild does not pass '-thread' option to ocamlfind
 - PR#5177: Gc.compact implies Gc.full_major
 
 Feature wishes:

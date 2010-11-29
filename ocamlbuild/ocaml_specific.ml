@@ -515,6 +515,8 @@ if not !Options.use_ocamlfind then begin
   flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);
   flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);
   flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"])
+end else begin
+  flag ["ocaml"; "link"; "thread"; "program"] (A "-thread")
 end;;
 
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
