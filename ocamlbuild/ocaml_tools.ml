@@ -27,7 +27,7 @@ let ocamldep_command' tags =
 let menhir_ocamldep_command' tags ~menhir_spec out =
   let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
   Cmd(S[menhir; T tags; A"--raw-depend";
-        A"--ocamldep"; Quote (ocamldep_command' tags);
+        A"--ocamldep"; Quote (ocamldep_command' Tags.empty);
         menhir_spec ; Sh ">"; Px out])
 
 let menhir_ocamldep_command arg out env _build =
