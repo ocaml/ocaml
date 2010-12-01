@@ -382,7 +382,7 @@ The precedences must be listed from low to high.
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BANG BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT UNDERSCORE
 
 
 /* Entry points */
@@ -969,6 +969,8 @@ expr:
 simple_expr:
     val_longident
       { mkexp(Pexp_ident $1) }
+  | UNDERSCORE
+      { mkexp Pexp_implicit }
   | constant
       { mkexp(Pexp_constant $1) }
   | constr_longident %prec prec_constant_constructor

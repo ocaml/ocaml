@@ -28,6 +28,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Cannot_generate_implicit_value of type_expr
 
 exception Error of Location.t * error
 
@@ -552,6 +553,69 @@ let rec cut n l =
   match l with [] -> failwith "Translcore.cut"
   | a::l -> let (l1,l2) = cut (n-1) l in (a::l1,l2)
 
+(* Implicit values *)
+
+let transl_implicit loc env ty (gen, non_gen) =
+  let open Btype in
+  let open Ctype in
+
+  let ty = correct_levels ty in
+  let vars = rigidify ty in
+  if vars <> [] then
+    raise (Error (loc, Cannot_generate_implicit_value ty));
+
+  let values = Env.values env in
+  let rec build depth seen ty =
+    let ty = expand_head env ty in
+    try
+      match ty.desc with
+      | Ttuple tyl ->
+          Lprim(Pmakeblock(0, Immutable), List.map (build depth seen) tyl)
+      | _ -> raise (Unify [])
+    with Unify _ ->
+      if List.memq ty seen || depth > 10 then raise (Unify []);
+      let seen = ty :: seen in
+      let depth = succ depth in
+
+      let rec try_decl can_gen id =
+        let (path, decl) = Ident.find_same id values in
+        if equal env false [ty] [decl.val_type] then
+          transl_path path
+        else
+          let t = expand_head env (if can_gen then instance decl.val_type else decl.val_type) in
+          match t.desc with
+          | Tarrow ("", ty_arg, ty_res, _) ->
+              let snap = snapshot () in
+              begin try
+                cleanup_abbrev ();
+                if can_gen then begin
+                  unify env ty_res ty;
+                  if not (all_distinct_vars env vars) then raise (Unify []);
+                  let vars = rigidify ty_arg in
+                  if vars <> [] then raise (Unify []);
+                end else
+                  if not (equal env false [ty] [ty_res]) then raise (Unify []);
+
+                let arg = build depth seen ty_arg in
+                backtrack snap;
+                Lapply (transl_path path, [arg], Location.none)
+              with exn ->
+                backtrack snap;
+                raise exn
+              end
+          | _ ->
+              raise (Unify [])
+      in
+      let rec try_candidates can_gen = function
+        | [] -> raise (Unify [])
+        | decl :: rest -> try try_decl can_gen decl with Unify _ -> try_candidates can_gen rest
+      in
+      try try_candidates false non_gen with Unify _ -> try_candidates true gen
+  in
+  try build 0 [] ty
+  with Unify _ -> raise (Error (loc, Cannot_generate_implicit_value ty))
+
+
 (* Translation of expressions *)
 
 let rec transl_exp e =
@@ -825,6 +889,8 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
+  | Texp_implicit ids ->
+      transl_implicit e.exp_loc e.exp_env e.exp_type ids
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -1048,3 +1114,6 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Cannot_generate_implicit_value ty ->
+      fprintf ppf
+        "Cannot generate implicit value for type %a" Printtyp.type_expr ty

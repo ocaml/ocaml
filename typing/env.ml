@@ -850,6 +850,8 @@ let initial = Predef.build_initial_env add_type add_exception empty
 
 let summary env = env.summary
 
+let values env = env.values
+
 (* Error report *)
 
 open Format

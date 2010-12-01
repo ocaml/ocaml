@@ -177,6 +177,7 @@ and expression ppf tbl e =
   | Pexp_newtype (_, e) -> expression ppf tbl e
   | Pexp_pack me -> module_expr ppf tbl me
   | Pexp_open (_, e) -> expression ppf tbl e
+  | Pexp_implicit _ -> ()
 
 and expression_option ppf tbl eo =
   match eo with

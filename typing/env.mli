@@ -126,6 +126,8 @@ type summary =
 
 val summary: t -> summary
 
+val values: t -> (Path.t * value_description) Ident.tbl
+
 (* Error report *)
 
 type error =

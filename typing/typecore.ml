@@ -1060,6 +1060,22 @@ let unify_exp env exp expected_ty =
 let rec type_exp env sexp =
   let loc = sexp.pexp_loc in
   match sexp.pexp_desc with
+  | Pexp_implicit ->
+      let values = Env.values env in
+      let ids = List.filter (fun id -> (Ident.name id).[0] = '_') (Ident.keys values) in
+      let ids =
+        List.partition
+          (fun id ->
+            let (_, decl) = Ident.find_same id values in
+            Ctype.check_generic decl.val_type
+          )
+          ids
+      in
+      re {
+        exp_desc = Texp_implicit ids;
+        exp_loc = loc;
+        exp_type = newvar ();
+        exp_env = env }
   | Pexp_ident lid ->
       begin
         if !Clflags.annotations then begin

@@ -2213,6 +2213,24 @@ let moregeneral env inst_nongen pat_sch subj_sch =
   current_level := old_level;
   res
 
+let rec check_generic_rec ty =
+  let ty = repr ty in
+  if ty.level >= lowest_level then
+    if ty.level = generic_level then begin
+      ty.level <- pivot_level - ty.level;
+      iter_type_expr check_generic_rec ty
+    end else
+      raise Exit
+
+let check_generic ty =
+  try
+    check_generic_rec ty;
+    unmark_type ty;
+    true
+  with Exit ->
+    unmark_type ty;
+    false
+
 
 (* Alternative approach: "rigidify" a type scheme,
    and check validity after unification *)
