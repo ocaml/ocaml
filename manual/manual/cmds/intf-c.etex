@@ -1957,7 +1957,7 @@ In addition, the following options are recognized:
 \item["-cclib", "-ccopt", "-I", "-linkall"]
 These options are passed as is to "ocamlc" or "ocamlopt".
 See the documentation of these commands.
-\item["-pthread", "-rpath", "-R", "-Wl,-rpath", "-Wl,-R"]
+\item["-rpath", "-R", "-Wl,-rpath", "-Wl,-R"]
 These options are passed as is to the C compiler.  Refer to the
 documentation of the C compiler.
 \item["-custom"] Force the construction of a statically linked library
