@@ -1927,15 +1927,18 @@ and type_application env funct sargs =
                                              (extract_option_type env ty)))
             end
           with Not_found ->
+            let has_non_labeled = List.mem_assoc "" sargs || List.mem_assoc "" more_sargs in
             sargs, more_sargs,
             if optional = Optional &&
-              (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+              has_non_labeled
             then begin
               may_warn funct.exp_loc
                 (Warnings.Without_principality "eliminated optional argument");
               ignored := (l,ty,lv) :: !ignored;
               Some (fun () -> option_none (instance ty) Location.none)
-            end else begin
+            end else if has_non_labeled && l.[0] = '_' then
+              Some (fun () -> type_argument env {pexp_desc = Pexp_implicit; pexp_loc = Location.none} ty)
+            else begin
               may_warn funct.exp_loc
                 (Warnings.Without_principality "commuted an argument");
               None
