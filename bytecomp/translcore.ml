@@ -579,7 +579,9 @@ let transl_implicit loc env ty (gen, non_gen) =
 
       let rec try_decl can_gen id =
         let (path, decl) = Ident.find_same id values in
-        if equal env false [ty] [decl.val_type] then
+        if equal env false [ty] [decl.val_type] ||
+          (can_gen && Ctype.matches env ty decl.val_type)
+        then
           transl_path path
         else
           let t = expand_head env (if can_gen then instance decl.val_type else decl.val_type) in
