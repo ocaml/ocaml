@@ -1937,7 +1937,7 @@ and type_application env funct sargs =
               ignored := (l,ty,lv) :: !ignored;
               Some (fun () -> option_none (instance ty) Location.none)
             end else if has_non_labeled && l.[0] = '_' then
-              Some (fun () -> type_argument env {pexp_desc = Pexp_implicit; pexp_loc = Location.none} ty)
+              Some (fun () -> type_argument env {pexp_desc = Pexp_implicit; pexp_loc = {funct.exp_loc with Location.loc_ghost = true}} ty)
             else begin
               may_warn funct.exp_loc
                 (Warnings.Without_principality "commuted an argument");
