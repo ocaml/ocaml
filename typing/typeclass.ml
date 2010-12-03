@@ -1017,7 +1017,7 @@ let temp_abbrev env id arity =
        type_private = Public;
        type_manifest = Some ty;
        type_variance = List.map (fun _ -> true, true, true) !params;
-       type_newtype = false;
+       type_newtype_level = None;
      }
       env
   in
@@ -1230,7 +1230,7 @@ let class_infos define_class kind
      type_private = Public;
      type_manifest = Some obj_ty;
      type_variance = List.map (fun _ -> true, true, true) obj_params;
-     type_newtype = false;
+     type_newtype_level = None;
    }
   in
   let (cl_params, cl_ty) =
@@ -1245,7 +1245,7 @@ let class_infos define_class kind
      type_private = Public;
      type_manifest = Some cl_ty;
      type_variance = List.map (fun _ -> true, true, true) cl_params;
-     type_newtype = false
+     type_newtype_level = None
    }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,

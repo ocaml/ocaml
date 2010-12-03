@@ -190,7 +190,7 @@ let type_declaration s decl =
         end;
       type_private = decl.type_private;
       type_variance = decl.type_variance;
-      type_newtype = false;
+      type_newtype_level = None;
     }
   in
   cleanup_types ();

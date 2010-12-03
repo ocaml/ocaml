@@ -2021,10 +2021,9 @@ and type_expect ?in_function env sexp ty_expected =
         type_private = Public;
         type_manifest = None;
         type_variance = [];
-	type_newtype = true;
+	type_newtype_level = Some (get_current_level ());
       }
       in
-
       let ty = newvar () in
       (* remember original level *)
       begin_def ();

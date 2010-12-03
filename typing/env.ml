@@ -281,7 +281,7 @@ and find_cltype =
    - the type should have an associated manifest type. *)
 let find_type_expansion ?(use_local=true) path env =
   let decl = find_type path env in
-  if not use_local && decl.type_newtype then raise Not_found;
+  if not use_local && not (decl.type_newtype_level = None) then raise Not_found;
   match decl.type_manifest with
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract

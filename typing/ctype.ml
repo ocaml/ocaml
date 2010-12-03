@@ -680,11 +680,21 @@ let forward_try_expand_once = (* Forward declaration *)
       module M = struct type t let _ = (x : t list ref) end
     (without this constraint, the type system would actually be unsound.)
 *)
+let get_level env p = 
+  try
+    match (Env.find_type p env).type_newtype_level with
+      | None -> Path.binding_time p
+      | Some x -> x
+  with 
+    | _ -> 
+      (* no newtypes in predef *)
+      Path.binding_time p
+
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
     begin match ty.desc with
-      Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
+      Tconstr(p, tl, abbrev)  when level < get_level env p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
           link_type ty (!forward_try_expand_once env ty);
@@ -693,16 +703,16 @@ let rec update_level env level ty =
           (* +++ Levels should be restored... *)
           raise (Unify [(ty, newvar2 level)])
         end
-    | Tpackage (p, _, _) when level < Path.binding_time p ->
+    | Tpackage (p, _, _) when level < get_level env p ->
         raise (Unify [(ty, newvar2 level)])
     | Tobject(_, ({contents=Some(p, tl)} as nm))
-      when level < Path.binding_time p ->
+      when level < get_level env p ->
         set_name nm None;
         update_level env level ty
     | Tvariant row ->
         let row = row_repr row in
         begin match row.row_name with
-        | Some (p, tl) when level < Path.binding_time p ->
+        | Some (p, tl) when level < get_level env p ->
             log_type ty;
             ty.desc <- Tvariant {row with row_name = None}
         | _ -> ()
@@ -992,7 +1002,7 @@ let new_declaration newtype manifest =
     type_private = Public;
     type_manifest = manifest;
     type_variance = [];
-    type_newtype = newtype;
+    type_newtype_level = newtype;
   }
 
 exception Misplaced_existential
@@ -1007,7 +1017,7 @@ let instance_constructor ~allow_existentials ?(in_pattern=None) cstr =
   | Some (env,pattern_lev) ->
       let existentials = List.map copy cstr.cstr_existentials in
       let process existential = 
-        let decl = new_declaration true None in
+        let decl = new_declaration (Some (get_current_level ())) None in
         let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
         env := new_env;
         let to_unify = newty2 pattern_lev (Tconstr (Path.Pident id,[],ref Mnil)) in 
@@ -1695,7 +1705,7 @@ let reify env t =
     | Some x -> x
   in
   let create_fresh_constr row = 
-      let decl = new_declaration true None in
+      let decl = new_declaration (Some (pattern_level)) None in
       let name = 
         let name = get_new_abstract_name () in 
         if row then name ^ "#row" else name
@@ -1752,7 +1762,7 @@ let add_type_equality t1 t2 =
         
 let is_abstract_newtype env p = 
   let decl = Env.find_type p env in 
-  decl.type_newtype &&
+  not (decl.type_newtype_level = None) &&
   decl.type_manifest = None &&
   decl.type_kind = Type_abstract
 
@@ -1920,7 +1930,7 @@ and mcomp_type_decl type_pairs subst env p1 p2 =
 
   let decl = Env.find_type p1 env in
   let decl' = Env.find_type p2 env in
-  let both_oldtypes = not (decl.type_newtype || decl'.type_newtype) in
+  let both_oldtypes = decl.type_newtype_level = None && decl'.type_newtype_level = None in
   if 
     (both_current_module && both_oldtypes) ||
     (in_pervasives p1 && in_pervasives p2)
@@ -1981,6 +1991,12 @@ and mcomp_record_description type_pairs subst env =
 
 let mcomp env t1 t2 = 
   mcomp (TypePairs.create 4) () env t1 t2
+
+let get_newtype_level env path = 
+  match (Env.find_type path env).type_newtype_level with
+    | None -> assert false
+    | Some x -> x
+        
 
 let rec unify (env:Env.t ref) t1 t2 =
   (* First step: special cases (optimizations) *)
@@ -2107,12 +2123,13 @@ and unify3 env t1 t1' t2 t2' =
           when is_abstract_newtype !env path && is_abstract_newtype !env path'
           && umode = Pattern -> 
             let source,destination = 
-              if Ident.binding_time p > Ident.binding_time p' then 
+              if get_newtype_level !env path > get_newtype_level !env path' then 
                 p,t2
               else
                 p',t1
             in
-            let decl = new_declaration true (Some destination) in 
+            let source_lev = get_newtype_level !env path in
+            let decl = new_declaration (Some source_lev) (Some destination) in 
             env := Env.add_local_constraint source decl !env;
             cleanup_abbrev ()          
         | (Tconstr ((Path.Pident p) as path,[],_), _)
@@ -2123,7 +2140,8 @@ and unify3 env t1 t1' t2 t2' =
             let t2 = duplicate_type t2 in
             end_def ();
             generalize t2 ;
-            let decl = new_declaration true (Some t2) in
+            let source_level = get_newtype_level !env path in
+            let decl = new_declaration (Some source_level) (Some t2) in
             env := Env.add_local_constraint p decl !env;
             cleanup_abbrev ()          
         | (_, Tconstr ((Path.Pident p) as path,[],_))
@@ -2134,7 +2152,8 @@ and unify3 env t1 t1' t2 t2' =
             let t1 = duplicate_type t1 in
             end_def ();
             generalize t1 ;
-            let decl = new_declaration true (Some t1) in
+            let source_level = get_newtype_level !env path in
+            let decl = new_declaration (Some source_level) (Some t1) in
             env := Env.add_local_constraint p decl !env; 
             cleanup_abbrev ()
         | (Tconstr (p1,_,_), Tconstr (p2,_,_)) when umode = Pattern ->
@@ -3975,7 +3994,7 @@ let nondep_type_decl env mid id is_covariant decl =
       type_manifest = tm;
       type_private = priv;
       type_variance = decl.type_variance;
-      type_newtype = false;
+      type_newtype_level = None;
     }
   with Not_found ->
     clear_hash ();
