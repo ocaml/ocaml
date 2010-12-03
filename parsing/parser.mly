@@ -1450,11 +1450,10 @@ constructor_declarations:
   | constructor_declarations BAR constructor_declaration { $3 :: $1 }
 ;
 constructor_declaration:
-    constr_ident constructor_arguments          {  ($1, $2, None, symbol_rloc()) }
-;
+
   | constr_ident generalized_constructor_arguments          
-                                                { let arg_types,ret_type = $2 in 
-						     ($1, arg_types,Some ret_type, symbol_rloc()) }
+      { let arg_types,ret_type = $2 in 
+	($1, arg_types,ret_type, symbol_rloc()) }
 ;
 
 constructor_arguments:
@@ -1463,11 +1462,13 @@ constructor_arguments:
 ;
 
 generalized_constructor_arguments:
-  | COLON core_type_list MINUSGREATER simple_core_type                      
-                                                { (List.rev $2, $4) } 
+    /*empty*/                                   { ([],None) }
+  | OF core_type_list                           { (List.rev $2,None) }
+  | OF core_type_list COLON simple_core_type    { (List.rev $2,Some $4) }
   | COLON simple_core_type                       
-                                                { ([],$2) } 
+                                                { ([],Some $2) } 
 ;
+
 
 
 label_declarations:
