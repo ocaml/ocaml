@@ -995,9 +995,13 @@ let new_declaration newtype manifest =
     type_newtype = newtype;
   }
 
-let instance_constructor ?(in_pattern=None) cstr =
+exception Misplaced_existential
+
+let instance_constructor ~allow_existentials ?(in_pattern=None) cstr =
   let ty_res = copy cstr.cstr_res in
   let ty_args = List.map copy cstr.cstr_args in
+  if (not allow_existentials) && not (cstr.cstr_existentials = []) then
+    raise Misplaced_existential;
   begin match in_pattern with
   | None -> ()
   | Some (env,pattern_lev) ->

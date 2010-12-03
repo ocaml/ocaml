@@ -25,6 +25,7 @@ exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev
 exception Unification_recursive_abbrev of (type_expr * type_expr) list
+exception Misplaced_existential
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -110,7 +111,10 @@ val instance: ?partial:bool -> type_expr -> type_expr
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
-        ?in_pattern:(Env.t ref * int) option -> constructor_description -> type_expr list * type_expr
+  allow_existentials:bool -> 
+  ?in_pattern:(Env.t ref * int) option -> 
+  constructor_description -> 
+  type_expr list * type_expr
         (* Same, for a constructor *)
 val instance_parameterized_type:
         type_expr list -> type_expr -> type_expr list * type_expr

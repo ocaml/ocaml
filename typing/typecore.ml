@@ -61,6 +61,7 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
+  | Unexpected_existential
 
 exception Error of Location.t * error
 
@@ -305,7 +306,8 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
           raise (Error (loc, Orpat_vars min_var)) in
   unify_vars p1_vs p2_vs
 
-let rec build_as_type env p =
+let rec build_as_type allow_existentials env p =
+  let build_as_type = build_as_type allow_existentials in
   match p.pat_desc with
     Tpat_alias(p1, _) -> build_as_type env p1
   | Tpat_tuple pl ->
@@ -314,7 +316,7 @@ let rec build_as_type env p =
   | Tpat_construct(cstr, pl) ->
       if cstr.cstr_private = Private then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
-      let ty_args, ty_res = instance_constructor cstr in
+      let ty_args, ty_res = instance_constructor ~allow_existentials:false cstr in
       List.iter2 (fun (p,ty) -> unify_pat env {p with pat_type = ty})
         (List.combine pl tyl) ty_args;
       ty_res
@@ -450,7 +452,7 @@ let check_recordpat_labels loc lbl_pat_list closed =
 (* unification of a type with a tconstr with 
    freshly created arguments *)	
 let unify_head_only loc env ty constr = 
-  let (_, ty_res) = instance_constructor constr in
+  let (_, ty_res) = instance_constructor ~allow_existentials:true constr in
   match (repr ty_res).desc with
   | Tconstr(p,args,m) ->
       ty_res.desc <- Tconstr(p,List.map (fun _ -> newvar ()) args,m); 
@@ -460,6 +462,20 @@ let unify_head_only loc env ty constr =
 
 (* Typing of patterns *)
 
+let instance_constructor_ex 
+    loc
+    ~allow_existentials
+    ?in_pattern
+    constr = 
+  try
+    instance_constructor
+      ~allow_existentials
+      ?in_pattern
+      constr
+  with
+      Misplaced_existential ->
+        raise (Error (loc, Unexpected_existential))
+
 (* type_pat does not generate local constraints
    inside or patterns *)
 type type_pat_mode = 
@@ -468,8 +484,8 @@ type type_pat_mode =
 
 (* type_pat now propagates the expected type as well
  as a map of constructors *)
-let rec type_pat constrs labels mode env sp expected_ty  = 
-  let type_pat = type_pat constrs labels in
+let rec type_pat constrs labels ?(allow_existentials=false) mode env sp expected_ty  = 
+  let type_pat = type_pat constrs labels ~allow_existentials in
   let loc = sp.ppat_loc in
   match sp.ppat_desc with
     Ppat_any ->
@@ -515,7 +531,7 @@ let rec type_pat constrs labels mode env sp expected_ty  =
   |Ppat_alias(sq, name) -> 
       let q = type_pat mode env sq expected_ty in
       begin_def ();
-      let ty_var = build_as_type !env q in
+      let ty_var = build_as_type allow_existentials !env q in
       end_def ();
       generalize ty_var;
       let id = enter_variable loc name ty_var in
@@ -571,7 +587,11 @@ let rec type_pat constrs labels mode env sp expected_ty  =
         raise(Error(loc, Constructor_arity_mismatch(lid,
                                      constr.cstr_arity, List.length sargs)));
       let (ty_args, ty_res) = 
-	instance_constructor ~in_pattern:(Some (env,get_pattern_level ())) constr 
+	instance_constructor_ex
+          loc
+          ~allow_existentials 
+          ~in_pattern:(Some (env,get_pattern_level ())) 
+          constr  
       in
       begin match mode with
       | Inside_or ->
@@ -685,8 +705,7 @@ let rec type_pat constrs labels mode env sp expected_ty  =
       let (r,ty) = build_or_pat !env loc lid in 
       unify_pat_types loc !env ty expected_ty;
       r
-
-let type_pat ?constrs ?labels ?lev env sp expected_ty = 
+let type_pat ?(allow_existentials=false) ?constrs ?labels ?lev env sp expected_ty = 
   pattern_level := 
     begin match lev with
 	None ->
@@ -704,7 +723,7 @@ let type_pat ?constrs ?labels ?lev env sp expected_ty =
 	None -> Hashtbl.create 0
       | Some x -> x
     in
-    let r = type_pat constrs labels Normal env sp expected_ty in
+    let r = type_pat ~allow_existentials constrs labels Normal env sp expected_ty in
     iter_pattern (fun p -> p.pat_env <- !env) r;
     pattern_level := None;
     r
@@ -760,7 +779,7 @@ let add_pattern_variables env =
 let type_pattern ~lev env spat scope expected_ty  = 
   reset_pattern scope true;
   let new_env = ref env in 
-  let pat = type_pat ~lev new_env spat expected_ty in
+  let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
   let new_env, unpacks = add_pattern_variables !new_env in
   (pat, new_env, get_ref pattern_force, unpacks)
 
@@ -2364,7 +2383,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
     raise(Error(loc, Constructor_arity_mismatch
                   (lid, constr.cstr_arity, List.length sargs)));
   if !Clflags.principal then (begin_def (); begin_def ());
-  let (ty_args, ty_res) = instance_constructor constr in
+  let (ty_args, ty_res) = instance_constructor_ex loc ~allow_existentials:true constr in
   let texp =
     re {
       exp_desc = Texp_construct(constr, []);
@@ -2566,13 +2585,6 @@ and type_let env rec_flag spat_sexp_list scope allow =
        if not (is_nonexpansive exp) then
          iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
     pat_list exp_list;
-  List.iter 
-    (fun pat -> iter_pattern
-      (fun pat ->
-        let snap = snapshot () in 
-        unify_exp_types pat.pat_loc env pat.pat_type (newty Tvar);
-        backtrack snap) pat)
-    pat_list;
   List.iter
     (fun pat -> iter_pattern 
       (fun pat -> generalize pat.pat_type) pat)
@@ -2769,3 +2781,6 @@ let report_error ppf = function
       fprintf ppf
         "This expression is packed module, but the expected type is@ %a"
         type_expr ty
+  | Unexpected_existential ->
+      fprintf ppf
+        "Unexpected existential"    

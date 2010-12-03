@@ -101,6 +101,7 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
+  | Unexpected_existential
 
 exception Error of Location.t * error
 
