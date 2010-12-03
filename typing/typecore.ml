@@ -2566,13 +2566,16 @@ and type_let env rec_flag spat_sexp_list scope allow =
        if not (is_nonexpansive exp) then
          iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
     pat_list exp_list;
-  List.iter
-    (fun pat -> iter_pattern 
-      (fun pat -> 
+  List.iter 
+    (fun pat -> iter_pattern
+      (fun pat ->
         let snap = snapshot () in 
         unify_exp_types pat.pat_loc env pat.pat_type (newty Tvar);
-        backtrack snap;
-        generalize pat.pat_type) pat)
+        backtrack snap) pat)
+    pat_list;
+  List.iter
+    (fun pat -> iter_pattern 
+      (fun pat -> generalize pat.pat_type) pat)
     pat_list;
   (List.combine pat_list exp_list, new_env, unpacks)
 
