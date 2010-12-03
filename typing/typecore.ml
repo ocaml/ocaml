@@ -553,7 +553,9 @@ let rec type_pat constrs labels mode env sp expected_ty  =
 		Typetexp.find_constructor !env loc lid end
 	| _ ->  Typetexp.find_constructor !env loc lid
       in
-      unify_head_only loc !env expected_ty constr;
+      (* if constructor is gadt, we must verify that the expected type has the
+         correct head *)
+      if constr.cstr_generalized then unify_head_only loc !env expected_ty constr;
       let sargs =
         match sarg with
           None -> []
@@ -573,9 +575,9 @@ let rec type_pat constrs labels mode env sp expected_ty  =
       in
       begin match mode with
       | Inside_or ->
-	  unify_pat_types loc !env ty_res expected_ty
+	unify_pat_types loc !env ty_res expected_ty
       | Normal ->
-	  unify_pat_types_gadt loc env ty_res expected_ty end;
+	unify_pat_types_gadt loc env ty_res expected_ty end;
       let args = List.map2 (fun p t -> type_pat mode env p t) sargs ty_args in
       rp {
         pat_desc = Tpat_construct(constr, args);
@@ -2565,7 +2567,12 @@ and type_let env rec_flag spat_sexp_list scope allow =
          iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
     pat_list exp_list;
   List.iter
-    (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
+    (fun pat -> iter_pattern 
+      (fun pat -> 
+        let snap = snapshot () in 
+        unify_exp_types pat.pat_loc env pat.pat_type (newty Tvar);
+        backtrack snap;
+        generalize pat.pat_type) pat)
     pat_list;
   (List.combine pat_list exp_list, new_env, unpacks)
 
