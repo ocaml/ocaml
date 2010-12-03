@@ -248,12 +248,15 @@ let variables_of_type =
 let varify_constructors var_names t = 
   let counter = ref 0 in 
   let offlimits = variables_of_type t in
+  let freshly_created = ref [] in
   let rec fresh () = 
     let ret = "x" ^ (string_of_int !counter) in 
     counter := !counter + 1;
     if List.mem ret offlimits then fresh () 
     else
-      ret
+      begin 
+        freshly_created := ret :: !freshly_created;
+        ret end
   in
   let sofar : (string,string) Hashtbl.t = Hashtbl.create 0 in
   let rec loop t = 
@@ -304,7 +307,7 @@ let varify_constructors var_names t =
       | Rinherit t ->
 	  Rinherit (loop t)
   in
-  loop t
+  (!freshly_created,loop t)
 
 
 %}
@@ -1197,10 +1200,10 @@ let_binding:
 	    | [] -> assert false
 	in
 	let exp = mk_newtypes newtypes in
-	let core_type = varify_constructors newtypes core_type in
+	let polyvars, core_type = varify_constructors newtypes core_type in
 	
 	(ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
-                               ghtyp(Ptyp_poly(List.map (fun s -> "&" ^ s) newtypes,core_type)))),
+                               ghtyp(Ptyp_poly(polyvars,core_type)))),
          exp)
       }
   | pattern EQUAL seq_expr
