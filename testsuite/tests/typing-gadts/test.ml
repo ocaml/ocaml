@@ -2,11 +2,11 @@ module Exp =
   struct
 
     type _ t = 
-      | IntLit of int : int t
-      | BoolLit of bool : bool t
-      | Pair of 'a t * 'b t : ('a * 'b) t
-      | App of ('a -> 'b) t * 'a t : 'b t
-      | Abs of ('a -> 'b) : ('a -> 'b) t 
+      | IntLit : int -> int t
+      | BoolLit : bool -> bool t
+      | Pair : 'a t * 'b t -> ('a * 'b) t
+      | App : ('a -> 'b) t * 'a t -> 'b t
+      | Abs : ('a -> 'b) -> ('a -> 'b) t 
 
 
     let rec eval : type s . s t -> s = 
@@ -25,7 +25,7 @@ module List =
     type zero
     type _ t = 
       | Nil : zero t
-      | Cons of 'a * 'b t : ('a * 'b) t
+      | Cons : 'a * 'b t -> ('a * 'b) t
     let head =
       function
 	| Cons (a,b) -> a
@@ -42,11 +42,11 @@ module List =
 module Nonexhaustive = 
   struct
     type 'a u = 
-      | C1 of int : int u 
-      | C2 of bool : bool u
+      | C1 : int -> int u 
+      | C2 : bool -> bool u
 	    
     type 'a v = 
-      | C1 of int : int v
+      | C1 : int -> int v
 
     let unexhaustive : type s . s u -> s = 
       function
@@ -59,8 +59,8 @@ module Nonexhaustive =
         type u = bool
       end	    
     type 'a t = 
-      | Foo of M.t : M.t t 
-      | Bar of M.u : M.u t
+      | Foo : M.t -> M.t t 
+      | Bar : M.u -> M.u t
     let same_type : type s . s t * s t -> bool  =
       function
 	| Foo _ , Foo _ -> true
@@ -73,8 +73,8 @@ module Exhaustive =
     type t = int
     type u = bool
     type 'a v = 
-      | Foo of t : t v 
-      | Bar of u : u v
+      | Foo : t -> t v 
+      | Bar : u -> u v
 
     let same_type : type s . s v * s v -> bool  =
       function
@@ -85,8 +85,8 @@ module Exhaustive =
 
 module Existential_escape = 
   struct
-    type _ t = C of int : int t
-    type u = D of 'a t : u
+    type _ t = C : int -> int t
+    type u = D : 'a t -> u
     let eval (D x) = x
   end
 ;;
@@ -106,8 +106,8 @@ module Rectype =
 module Or_patterns = 
 struct
       type _ t = 
-      | IntLit of int : int t
-      | BoolLit of bool : bool t
+      | IntLit : int -> int t
+      | BoolLit : bool -> bool t
 
     let rec eval : type s . s t -> unit = 
       function
@@ -119,8 +119,8 @@ end
 module Polymorphic_variants = 
   struct
       type _ t = 
-      | IntLit of int : int t
-      | BoolLit of bool : bool t
+      | IntLit : int -> int t
+      | BoolLit : bool -> bool t
 
     let rec eval : type s . [`A] * s t -> unit = 
       function
@@ -132,8 +132,8 @@ module Polymorphic_variants =
 module Propagation = 
   struct
  type _ t = 
-     IntLit of int : int t
-   | BoolLit of bool : bool t
+     IntLit : int -> int t
+   | BoolLit : bool -> bool t
 
 let check : type s. s t -> s = function
   | IntLit n -> n

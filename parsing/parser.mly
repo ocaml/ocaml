@@ -1464,7 +1464,7 @@ constructor_arguments:
 generalized_constructor_arguments:
     /*empty*/                                   { ([],None) }
   | OF core_type_list                           { (List.rev $2,None) }
-  | OF core_type_list COLON simple_core_type    { (List.rev $2,Some $4) }
+  | COLON core_type_list MINUSGREATER simple_core_type    { (List.rev $2,Some $4) }
   | COLON simple_core_type                       
                                                 { ([],Some $2) } 
 ;
