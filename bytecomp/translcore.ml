@@ -30,6 +30,7 @@ type error =
   | Illegal_letrec_expr
   | Free_super_var
   | Illegal_tuple_expr
+  | Illegal_contracted_expr
 
 exception Error of Location.t * error
 
@@ -850,11 +851,12 @@ and transl_exp0 e =
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
   | Texp_contract (c, e, callee, caller) -> 
-      let lexp = transl_exp e in
-      if !Clflags.nocontract 
-      then lexp
-      else let wrapped_expr = transl_contract c e callee caller in
-           transl_exp wrapped_expr
+    (* This branch should not be reached as we expand e |><| c with
+       deep_transl_contract in transmod.ml. The purpose of doing this expansion 
+       at transmod is to expand it only once and send the result tree to 
+       a static contract checker (followed by/or) a dynamic contract checker. For 
+       static contract checking, it basically checks the reachability of Texp_bad. *)   
+      raise(Error(e.exp_loc,Illegal_contracted_expr)) 
   | Texp_bad bl -> transl_blame bl
   | Texp_unr bl -> transl_blame bl
 
@@ -863,7 +865,7 @@ and transl_blame bl =
    | Blame (loc, pathop) -> contract_failed loc pathop
    | UnknownBlame -> lambda_unit
 
-(* We expand the wrapped expression at typedtree level, then do overall
+(* We expand the wrapped expression (e |><| c) at typedtree level, then do overall
 translation to lambda.
 val transl_contract: Typedtree.expression_desc ->  Typedtree.expression
 *)
@@ -959,6 +961,12 @@ and subst_contract v e cntr =
                Tctr_arrow (xop, sc1, sc2)
            | Tctr_tuple cs -> Tctr_tuple (List.map (subst_contract v e) cs)
   in { cntr with contract_desc = sc }
+
+(* deep_transl_contract takes e and expands all ei |><| ci in e *)
+and deep_transl_contract expr = 
+      Typedtree.map_expression (fun ei -> match ei.exp_desc with
+          | Texp_contract (c, e, r1, r2) -> transl_contract c e r1 r2
+          | _ -> ei) expr
    
 
 and transl_list expr_list =
@@ -1186,4 +1194,7 @@ let report_error ppf = function
   | Illegal_tuple_expr -> 
       fprintf ppf
         "This expression is not of type tuple"
+  | Illegal_contracted_expr -> 
+      fprintf ppf
+        "Illegal contracted expr: please report this as a bug"
 

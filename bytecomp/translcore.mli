@@ -38,6 +38,7 @@ type error =
   | Illegal_letrec_expr
   | Free_super_var
   | Illegal_tuple_expr
+  | Illegal_contracted_expr
 
 exception Error of Location.t * error
 
@@ -51,8 +52,10 @@ val transl_module :
 val transl_object :
       (Ident.t -> string list -> class_expr -> lambda) ref
 
-(* Translate wrapped expression e |><| c to unwrapped expression *)
+(* Translate wrapped expression e |><| c to unwrapped expression 
 val transl_contract: Typedtree.core_contract -> 
                      Typedtree.expression -> 
                      Typedtree.expression -> Typedtree.expression -> 
                      Typedtree.expression 
+*)
+val deep_transl_contract: Typedtree.expression -> Typedtree.expression 

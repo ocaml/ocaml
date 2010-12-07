@@ -391,6 +391,14 @@ let wrap_id_with_contract contract_decls opened_contracts caller_pathop expr =
        | others -> others
   in { expr with exp_desc = contracted_exp_desc }
 
+(* contract_id_in_expr wrapped all functions called in expression with its contract
+if it has any contract. E.g. f x = ..f (x - 1) ... g x
+ becomes f x = ..(f <| C_f) (x - 1) ... (g <| C_g) x
+val contract_id_in_expr: core_contract list -> 
+                         (Path.t * core_contract) Ident.tbl ->  
+                         Path.t option -> 
+                         expression -> expression
+*)
 let contract_id_in_expr contract_decls opened_contracts caller_pathop expr = 
     map_expression (wrap_id_with_contract contract_decls 
 		                          opened_contracts 
@@ -402,8 +410,9 @@ contract h = {x | not (null x)} -> {y | true}
 contract f = {x | true)} -> {y | h x < y}
 
 becomes f = {x | true)} -> {y | (h <| C_h) x < y}
-This checking for contracts makes sure that we only have crash-free contracts
-during static contract checking for functions in a program. 
+This checking for contracts makes sure that we have crash-free contracts.
+It is good for dynamic contract checking and 
+essential for static contract checking for functions in a program. 
 val contract_id_in_contract: core_contract list -> 
                          (Path.t * core_contract) Ident.tbl ->  
                          core_contract -> core_contract
@@ -412,9 +421,10 @@ val contract_id_in_contract: core_contract list ->
 let rec contract_id_in_contract contract_decls opened_contracts caller_pathop c = 
   let new_desc = match c.contract_desc with
 	  | Tctr_pred (id, e) -> 
-              let new_e = contract_id_in_expr contract_decls opened_contracts
+              let ce = contract_id_in_expr contract_decls opened_contracts
                                                  caller_pathop e in
-              Tctr_pred (id, new_e)
+              let expanded_ce = deep_transl_contract ce in
+              Tctr_pred (id, expanded_ce)
           | Tctr_arrow (idopt, c1, c2) -> 
 	      let new_c1 = contract_id_in_contract contract_decls 
                                    opened_contracts caller_pathop c1 in
@@ -425,15 +435,6 @@ let rec contract_id_in_contract contract_decls opened_contracts caller_pathop c 
               Tctr_tuple (List.map (fun c -> contract_id_in_contract 
 			   contract_decls opened_contracts caller_pathop c) cs)
   in {c with contract_desc = new_desc}
-
-(* contract_id_in_expr wrapped all functions called in expression with its contract
-if it has any contract. E.g. f x = ..f (x - 1) ... g x
- becomes f x = ..(f <| C_f) (x - 1) ... (g <| C_g) x
-val contract_id_in_expr: core_contract list -> 
-                         (Path.t * core_contract) Ident.tbl ->  
-                         Path.t option -> 
-                         expression -> expression
-*)
 
 (* val transl_str_contracts : core_contract list -> 
                               (Path.t, contract_declaration) Tbl.t ->
@@ -449,14 +450,15 @@ let rec transl_str_contracts contract_decls opened_contracts strs =
        let cexpr = contract_id_in_expr contract_decls 
 	                               opened_contracts
 	                               fpathop expr in 
-       (pat, cexpr)
+       let expanded_cexpr = deep_transl_contract  cexpr in 
+       (pat, expanded_cexpr)
        (* for dynamic contract checking, we do not need f = e |> t 
           we only need to wrap function's contract at caller site.
        let mkexp e_desc = { expr with exp_desc = e_desc } in      
        try
          let c  = fetch_contract_by_pattern pat contract_decls in
          let ce = ensuresC c.ttopctr_desc cexpr fpathop in
-         // we can send ce for static contract checking
+         // we can send (Translcore.transl_contract ce) for static contract checking
          (pat, mkexp ce)  
        with Not_found -> 
      	 (pat, cexpr)
