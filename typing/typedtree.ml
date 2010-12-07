@@ -288,7 +288,7 @@ and map_expression f (expr:expression) =
     | Texp_let (rec_flag, pat_expr_list, expr1) -> 
         Texp_let (rec_flag, 
                     List.map (fun (p, e) -> (p, map_expression f e)) pat_expr_list, 
-                    map_expression f expr1)                       
+                    map_expression f expr1)                               
     | Texp_function (pat_expr_list, partial) ->
         Texp_function (List.map (fun (p, e) -> (p, map_expression f e)) 
                                 pat_expr_list, partial) 
@@ -346,10 +346,12 @@ and map_expression f (expr:expression) =
     | Texp_lazy (expr1) -> Texp_lazy (map_expression f expr1)
 (*    | Texp_object (class_str, class_sig, string_list) -> 
         Texp_object (class_str, class_sig, string_list)  *)
-    | others -> (f expr).exp_desc
+    | Texp_contract (c, e, r1, r2) -> 
+        Texp_contract (c, map_expression f e, r1, r2)
+    | others -> others
   in 
   let result_exp_desc = map_expression_aux f expr in
-  { expr with exp_desc = result_exp_desc }
+  f {expr with exp_desc = result_exp_desc }
 
 
 (* We want to convert expression to Types.expression *)

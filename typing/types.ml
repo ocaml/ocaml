@@ -657,8 +657,10 @@ and map_expression f (expr:expression) =
     | Texp_lazy (expr1) -> Texp_lazy (map_expression f expr1)
 (*    | Texp_object (class_str, class_sig, string_list) -> 
         Texp_object (class_str, class_sig, string_list)  *)
-    | others -> (f expr).exp_desc
+    | Texp_contract (c, e, r1, r2) -> 
+        Texp_contract (c, map_expression f e, r1, r2)
+    | others -> others
   in 
   let result_exp_desc = map_expression_aux f expr in
-  { expr with exp_desc = result_exp_desc }
+  f { expr with exp_desc = result_exp_desc }
 

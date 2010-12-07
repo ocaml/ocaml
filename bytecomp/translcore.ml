@@ -964,8 +964,9 @@ and subst_contract v e cntr =
 
 (* deep_transl_contract takes e and expands all ei |><| ci in e *)
 and deep_transl_contract expr = 
-      Typedtree.map_expression (fun ei -> match ei.exp_desc with
-          | Texp_contract (c, e, r1, r2) -> transl_contract c e r1 r2
+     Typedtree.map_expression (fun ei -> match ei.exp_desc with
+          | Texp_contract (c, e, r1, r2) -> 
+            transl_contract c e r1 r2
           | _ -> ei) expr
    
 
