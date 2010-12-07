@@ -63,9 +63,14 @@ rule "target files"
   begin fun env build ->
     let itarget = env "%.itarget" in
     let dir = Pathname.dirname itarget in
-    List.iter ignore_good
-      (build (List.map (fun x -> [dir/x]) (string_list_of_file itarget)));
-    Nop
+    let targets = string_list_of_file itarget in
+    List.iter ignore_good (build (List.map (fun x -> [dir/x]) targets));
+    if !Options.make_links then
+      let link x =
+        Cmd (S [A"ln"; A"-sf"; P (!Options.build_dir/x); A Pathname.parent_dir_name]) in
+      Seq (List.map (fun x -> link (dir/x)) targets)
+    else
+      Nop
   end;;
 
 rule "ocaml: mli -> cmi"
