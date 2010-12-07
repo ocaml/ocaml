@@ -25,10 +25,12 @@ module ANSI =
     let clear_to_eol oc () = fp oc "\027[K";;
     let bol oc () = fp oc "\r";;
     let get_columns () =
-      try
-        int_of_string (String.chomp (My_unix.run_and_read "tput cols"))
-      with
-      | Failure _ -> 80
+      if Sys.os_type = "Unix" then
+        try
+          int_of_string (String.chomp (My_unix.run_and_read "tput cols"))
+        with
+        | Failure _ -> 80
+      else 80
   end
 ;;
 (* ***)
