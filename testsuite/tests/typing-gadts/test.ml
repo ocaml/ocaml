@@ -13,10 +13,12 @@ module Exp =
       function
 	| IntLit x -> x
 	| BoolLit y -> y
-	| Pair (x,y) -> (eval x,eval y)
+	| Pair (x,y) ->
+            (eval x,eval y)
 	| App (f,a) ->
-	  (eval f) (eval a)
+	    (eval f) (eval a)
 	| Abs f -> f 
+
   end
 ;;
 
