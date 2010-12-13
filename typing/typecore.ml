@@ -2514,7 +2514,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     List.iter (fun (_,exp) -> unify_exp env exp ty_res') cases
   end;
   end_def ();
-  unify_exp_types loc env ty_res (newvar ()) ;
+  (* Ensure that existential types do not escape *)
+  unify_exp_types loc env (instance ty_res) (newvar ()) ;
   let partial =
     if partial_flag then
       Parmatch.check_partial_gadt (partial_pred env ty_arg) loc cases
