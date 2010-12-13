@@ -178,6 +178,9 @@ and structure_item =
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
   | Tstr_contract of contract_declaration list
+ (* contracts in module type signature are put in Tstr_mty_contracts *)
+  | Tstr_mty_contracts of (Path.t, Types.contract_declaration) Tbl.t
+ (* opened contracts are put in Tstr_opened_contracts *)
   | Tstr_opened_contracts of (Path.t, Types.contract_declaration) Tbl.t
 
 (* We use the module_coercion in Types 
@@ -383,6 +386,7 @@ and structure_item_to_iface f str_item = match str_item with
   | Tstr_cltype (ls) -> Types.Tstr_cltype (ls)  
   | Tstr_include (modexp, ids) -> Types.Tstr_include (f modexp, ids)
   | Tstr_contract (ls) -> Types.Tstr_contract 
+  | Tstr_mty_contracts(cs) -> Types.Tstr_contract
   | Tstr_opened_contracts (ctbl) -> Types.Tstr_contract
 
 and module_expr_desc_to_iface f modexpr = match modexpr with

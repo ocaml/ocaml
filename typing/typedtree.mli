@@ -164,6 +164,7 @@ and structure_item =
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
   | Tstr_contract of contract_declaration list
+  | Tstr_mty_contracts of (Path.t, Types.contract_declaration) Tbl.t
   | Tstr_opened_contracts of (Path.t, Types.contract_declaration) Tbl.t
 
 (* Auxiliary functions over the a.s.t. *)

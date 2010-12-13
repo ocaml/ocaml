@@ -404,8 +404,8 @@ and transl_signature env sg =
 	| Psig_contract(cds) -> 
             (* check contract before translation:
                1. we want to make sure that a contract C_f in a signature 
-                  (i.e. .mli) is syntactically equivalent (up to 
-                  alpha-conversion) to the contract C_f in .ml.
+                  (or .mli) is syntactically equivalent (up to 
+                  alpha-conversion) to the contract C_f in its struct (or .ml).
                   The reason is that we have sub-typing relationship between
                   signatures, sig1 <: sig2, but static sub-contracting is not 
                   decidable, so we check syntactic equivalence. 
@@ -725,7 +725,8 @@ and type_structure anchor env sstr scope =
     | {pstr_desc = Pstr_contract(sdecls)} :: srem  -> 
         (* we skip type inference for the contract declaration in this 
            local function type_struct because we only need to 
-           type-check contracts. Type-checking of contracts occurs at 
+           type-check contracts. Contracts are declared before function definitions,
+           so type-checking of contracts occurs at 
            the end of type_structure after type_struct is called. *) 
         type_struct env srem 
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
@@ -778,8 +779,17 @@ and type_structure anchor env sstr scope =
         check "module type" loc modtype_names name;
         let mty = transl_modtype env smty in
         let (id, newenv) = Env.enter_modtype name (Tmodtype_manifest mty) env in
+        let extract_contracts_from_sig sg = 
+             Env.fetch_contracts (Env.open_signature (Pident id) sg newenv) in           
+        let rec extract_contracts mty = match mty with
+           | Tmty_ident(path) -> Tbl.empty
+           | Tmty_signature(sg) -> extract_contracts_from_sig sg
+           | Tmty_functor(id, mty1, mty2) -> 
+              Tbl.merge (extract_contracts mty1) (extract_contracts mty1)
+        in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (Tstr_modtype(id, mty) :: str_rem,
+        (Tstr_modtype(id, mty) :: 
+         Tstr_mty_contracts(extract_contracts mty) :: str_rem,
          Tsig_modtype(id, Tmodtype_manifest mty) :: sig_rem,
          final_env)
     | {pstr_desc = Pstr_open lid; pstr_loc = loc} :: srem ->
@@ -787,7 +797,7 @@ and type_structure anchor env sstr scope =
         let sg = extract_sig_open env loc mty in
 	(* renaming function f in contracts to its full path name e.g. M.f 
 	   is done in Env.open_signature *)
-        type_struct (Env.open_signature path sg env) srem
+        type_struct (Env.open_signature path sg env) srem 
     | {pstr_desc = Pstr_class cl; pstr_loc = loc} :: srem ->
          List.iter
            (fun {pci_name = name} -> check "type" loc type_names name)
@@ -856,7 +866,7 @@ and type_structure anchor env sstr scope =
   let rec extract_contracts xs = 
            match xs with
            | [] -> []
-           | ({pstr_desc = Pstr_contract (ds)} ::rem) -> ds@(extract_contracts rem)
+           | ({pstr_desc = Pstr_contract(ds)} :: rem) -> ds@extract_contracts rem 
            | (_::rem) -> extract_contracts rem
   in 
   let pstr_contracts = extract_contracts sstr in

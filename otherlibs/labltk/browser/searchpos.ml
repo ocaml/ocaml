@@ -683,6 +683,7 @@ let rec search_pos_structure ~pos str =
   | Tstr_cltype _ -> ()
   | Tstr_include (m, _) -> search_pos_module_expr m ~pos
   | Tstr_contract _ -> ()
+  | Tstr_mty_contracts _ -> ()
   | Tstr_opened_contracts _ -> ()
   end
 

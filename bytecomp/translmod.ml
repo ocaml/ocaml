@@ -343,6 +343,8 @@ and transl_structure fields cc rootpath  = function
            rebind_idents 0 fields ids)
   | Tstr_contract(decls) :: rem -> 
       transl_structure fields cc rootpath rem
+  | Tstr_mty_contracts(decls) :: rem ->
+      transl_structure fields cc rootpath rem
   | Tstr_opened_contracts(tbl) :: rem -> 
       transl_structure fields cc rootpath rem
 
@@ -510,22 +512,24 @@ and transl_contracts (str, cc) =
   let rec extract_contracts xs = 
         match xs with
            | [] -> ([], Tbl.empty)		 
+           | (Tstr_mty_contracts(t) :: rem) ->
+               let (current_contracts, mty_opened_contracts) = extract_contracts rem in
+               (current_contracts, Tbl.merge t mty_opened_contracts)
 	   | (Tstr_opened_contracts(t) :: rem) ->
-	       let (current_contracts, opened_contracts) = extract_contracts rem in
-	       (current_contracts, Tbl.merge t opened_contracts) 
+	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in
+	       (current_contracts, Tbl.merge t mty_opened_contracts) 
            | ((Tstr_contract (ds)) :: rem) -> 
-	       let (current_contracts, opened_contracts) = extract_contracts rem in
-	       
-	       (ds@current_contracts, opened_contracts)
+	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in	       
+	       (ds@current_contracts, mty_opened_contracts)
            | (_::rem) -> extract_contracts rem
   in
-  let (tstr_contracts, opened_contracts) = extract_contracts str in
+  let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
   let new_tstr_contracts = List.map (fun c -> 
                  let new_c_desc = contract_id_in_contract tstr_contracts 
-				    opened_contracts (Some c.ttopctr_id)
+				    mty_opened_contracts (Some c.ttopctr_id)
                                     c.ttopctr_desc in
                  {c with ttopctr_desc = new_c_desc}) tstr_contracts in
-  (transl_str_contracts new_tstr_contracts opened_contracts str, cc)
+  (transl_str_contracts new_tstr_contracts mty_opened_contracts str, cc)
 
 
 
@@ -638,6 +642,8 @@ let transl_store_structure glob map prims str =
            store_idents 0 ids)
   | Tstr_contract(decls) :: rem ->
       transl_store subst rem
+  | Tstr_mty_contracts(decls) :: rem -> 
+      transl_store subst rem
   | Tstr_opened_contracts(tbl) :: rem ->
       transl_store subst rem
 
@@ -694,6 +700,7 @@ let rec defined_idents = function
   | Tstr_cltype cl_list :: rem -> defined_idents rem
   | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
   | Tstr_contract decls :: rem -> defined_idents rem
+  | Tstr_mty_contracts decls :: rem -> defined_idents rem
   | Tstr_opened_contracts tbl :: rem -> defined_idents rem
 
 (* Transform a coercion and the list of value identifiers defined by
@@ -847,6 +854,8 @@ let transl_toplevel_item = function
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
   | Tstr_contract(decls) ->
+      lambda_unit
+  | Tstr_mty_contracts(decls) -> 
       lambda_unit
   | Tstr_opened_contracts(tbl) ->
       lambda_unit
