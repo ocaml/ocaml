@@ -1,0 +1,84 @@
+
+# * * * * *                   type ('a, 'b) sum = Inl of 'a | Inr of 'b
+type zero
+type 'a succ
+type 'a nat = NZ : zero nat | NS : 'b nat -> 'b succ nat
+#                   type 'a rep =
+    Rint : int rep
+  | Rchar : char rep
+  | Runit : unit rep
+  | Rpair : 'b rep * 'c rep -> ('b * 'c) rep
+  | Rsum : 'd rep * 'e rep -> ('d, 'e) sum rep
+val t1 : (int * char, unit * int) sum rep =
+  Rsum (Rpair (Rint, Rchar), Rpair (Runit, Rint))
+#               val sumR : 'a rep -> 'a -> int = <fun>
+#                   val sum2 : 'a rep -> 'a -> int = <fun>
+#       type ('a, 'b) seq =
+    Snil : ('c, zero) seq
+  | Scons : 'd * ('d, 'e) seq -> ('d, 'e succ) seq
+#               type tp
+type nd
+type ('a, 'b) fk
+type 'a shape =
+    Tp : tp shape
+  | Nd : nd shape
+  | Fk : 'b shape * 'c shape -> ('b, 'c) fk shape
+#           type tt
+type ff
+type 'a boolean = BT : tt boolean | BF : ff boolean
+#           type ('a, 'b) path =
+    Pnone : 'c -> (tp, 'c) path
+  | Phere : (nd, 'd) path
+  | Pleft : ('e, 'g) path -> (('e, 'f) fk, 'g) path
+  | Pright : ('i, 'j) path -> (('h, 'i) fk, 'j) path
+#         type ('a, 'b) tree =
+    Ttip : (tp, 'c) tree
+  | Tnode : 'd -> (nd, 'd) tree
+  | Tfork : ('e, 'g) tree * ('f, 'g) tree -> (('e, 'f) fk, 'g) tree
+#   val tree1 : (((tp, nd) fk, (nd, nd) fk) fk, int) tree =
+  Tfork (Tfork (Ttip, Tnode 4), Tfork (Tnode 4, Tnode 3))
+#                     val find : ('a -> 'a -> bool) -> 'a -> ('b, 'a) tree -> ('b, 'a) path list =
+  <fun>
+#             val extract : ('a, 'b) path -> ('a, 'b) tree -> 'b = <fun>
+#       type ('a, 'b, 'c) plus =
+    PlusZ : 'd nat -> (zero, 'd, 'd) plus
+  | PlusS : ('e, 'f, 'g) plus -> ('e succ, 'f, 'g succ) plus
+#       type ('a, 'b) le =
+    LeZ : 'c nat -> (zero, 'c) le
+  | LeS : ('d, 'e) le -> ('d succ, 'e succ) le
+#       type 'a even = EvenZ : zero even | EvenSS : 'b even -> 'b succ succ even
+#         type one = zero succ
+type two = one succ
+type three = two succ
+type four = three succ
+#       val even0 : zero even = EvenZ
+val even2 : two even = EvenSS EvenZ
+val even4 : four even = EvenSS (EvenSS EvenZ)
+#   val p1 : (two, one, three) plus = PlusS (PlusS (PlusZ (NS NZ)))
+#         val summandLessThanSum : ('a, 'b, 'c) plus -> ('a, 'c) le = <fun>
+#                           type ('a, 'b) equal = Eq : ('c, 'c) equal
+val sameNat : 'a nat -> 'b nat -> ('a, 'b) equal option = <fun>
+#                             type ('a, 'b, 'c) balance =
+    Less : ('d, 'd succ, 'd succ) balance
+  | Same : ('e, 'e, 'e) balance
+  | More : ('f succ, 'f, 'f succ) balance
+type 'a avl =
+    Leaf : zero avl
+  | Node : ('c, 'd, 'b) balance * 'c avl * int * 'd avl -> 'b succ avl
+type avl' = Avl : 'a avl -> avl'
+#                 val empty : avl' = Avl Leaf
+val elem : int -> 'a avl -> bool = <fun>
+#                           val rotr :
+  'a succ succ avl ->
+  int -> 'a avl -> ('a succ succ avl, 'a succ succ succ avl) sum = <fun>
+#                         val rotl :
+  'a avl ->
+  int -> 'a succ succ avl -> ('a succ succ avl, 'a succ succ succ avl) sum =
+  <fun>
+#                                               val ins : int -> 'a avl -> ('a avl, 'a succ avl) sum = <fun>
+#                                                                                                                                   val del_min : 'a succ avl -> int * ('a avl, 'a succ avl) sum = <fun>
+type 'a avl_del =
+    Dsame : 'b avl -> 'b avl_del
+  | Ddecr : ('d succ, 'c) equal * 'd avl -> 'c avl_del
+val del : int -> 'a avl -> 'a avl_del = <fun>
+# 
