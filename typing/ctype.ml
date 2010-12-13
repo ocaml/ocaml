@@ -701,6 +701,7 @@ let rec update_level env level ty =
           update_level env level ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
+          (* Format.printf "update_level: %i < %i@." level (get_level env p); *)
           raise (Unify [(ty, newvar2 level)])
         end
     | Tpackage (p, _, _) when level < get_level env p ->
@@ -1017,10 +1018,12 @@ let instance_constructor ~allow_existentials ?(in_pattern=None) cstr =
   | Some (env,pattern_lev) ->
       let existentials = List.map copy cstr.cstr_existentials in
       let process existential = 
-        let decl = new_declaration (Some (get_current_level ())) None in
-        let (id, new_env) = Env.enter_type (get_new_abstract_name ()) decl !env in
+        let decl = new_declaration (Some pattern_lev) None in
+        let (id, new_env) =
+          Env.enter_type (get_new_abstract_name ()) decl !env in
         env := new_env;
-        let to_unify = newty2 pattern_lev (Tconstr (Path.Pident id,[],ref Mnil)) in 
+        let to_unify =
+          newty (Tconstr (Path.Pident id,[],ref Mnil)) in 
         link_type existential to_unify 
       in
       List.iter process existentials end;
@@ -1711,7 +1714,7 @@ let reify env t =
         if row then name ^ "#row" else name
       in
       let (id, new_env) = Env.enter_type name decl !env in    
-      let t = newty2 pattern_level (Tconstr (Path.Pident id,[],ref Mnil))  in 
+      let t = newty (Tconstr (Path.Pident id,[],ref Mnil))  in 
       env := new_env;
       t
   in

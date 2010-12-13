@@ -705,7 +705,9 @@ let rec type_pat constrs labels ?(allow_existentials=false) mode env sp expected
       let (r,ty) = build_or_pat !env loc lid in 
       unify_pat_types loc !env ty expected_ty;
       r
-let type_pat ?(allow_existentials=false) ?constrs ?labels ?lev env sp expected_ty = 
+
+let type_pat
+    ?(allow_existentials=false) ?constrs ?labels ?lev env sp expected_ty = 
   pattern_level := 
     begin match lev with
 	None ->
@@ -723,7 +725,8 @@ let type_pat ?(allow_existentials=false) ?constrs ?labels ?lev env sp expected_t
 	None -> Hashtbl.create 0
       | Some x -> x
     in
-    let r = type_pat ~allow_existentials constrs labels Normal env sp expected_ty in
+    let r =
+      type_pat ~allow_existentials constrs labels Normal env sp expected_ty in
     iter_pattern (fun p -> p.pat_env <- !env) r;
     pattern_level := None;
     r
@@ -1439,7 +1442,7 @@ and type_expect ?in_function env sexp ty_expected =
         if List.memq ty seen then () else
         match ty.desc with
           Tarrow (l, ty_arg, ty_fun, com) ->
-            unify_var env (newvar()) ty_arg;
+            (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
             lower_args (ty::seen) ty_fun
         | _ -> ()
       in
@@ -2436,13 +2439,15 @@ and type_statement env sexp =
 and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   begin_def ();
   Ident.set_current_time (get_current_level ()); 
-  let lev = Ident.current_time () + 1000 in
-  Ctype.init_def lev;
+  let lev = Ident.current_time () in
+  Ctype.init_def (lev+1000);
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let dont_propagate =
     List.exists (fun (p,_) -> contains_polymorphic_variant p) caselist in
   let pattern_force = ref [] in
+  (* Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
+    Printtyp.raw_type_expr ty_arg; *)
   let pat_env_list =
     List.map
       (fun (spat, sexp) ->
@@ -2497,6 +2502,8 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             end_def ();
             generalize_structure ty; ty
           end else ty_res in
+        (* Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
+          Printtyp.raw_type_expr ty_res'; *)
         let exp = type_expect ?in_function ext_env sexp ty_res' in
         ({pat with pat_type = ty_arg'},
          {exp with exp_type = instance ty_res'}))
