@@ -2235,10 +2235,10 @@ let rec rigidify_rec vars ty =
         iter_type_expr (rigidify_rec vars) ty
   end
 
-let rigidify ty =
+let rigidify tyl =
   let vars = ref [] in
-  rigidify_rec vars ty;
-  unmark_type ty;
+  List.iter (rigidify_rec vars) tyl;
+  List.iter unmark_type tyl;
   !vars
 
 let all_distinct_vars env vars =
@@ -2252,7 +2252,7 @@ let all_distinct_vars env vars =
 
 let matches env ty ty' =
   let snap = snapshot () in
-  let vars = rigidify ty in
+  let vars = rigidify [ty] in
   cleanup_abbrev ();
   let ok =
     try unify env ty ty'; all_distinct_vars env vars

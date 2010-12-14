@@ -157,8 +157,8 @@ val filter_self_method:
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
         (* Check if the first type scheme is more general than the second. *)
 
-val rigidify: type_expr -> type_expr list
-        (* "Rigidify" a type and return its type variable *)
+val rigidify: type_expr list -> type_expr list
+        (* "Rigidify" a list of types and return their type variables *)
 val all_distinct_vars: Env.t -> type_expr list -> bool
         (* Check those types are all distinct type variables *)
 val matches : Env.t -> type_expr -> type_expr -> bool

@@ -1741,11 +1741,16 @@ and type_argument env sarg ty_expected' =
       in
       let snap = Btype.snapshot () in
       begin try unify_exp env arg ty_expected
-      with Error _ when free_variables ~env arg.exp_type = []
-                     && free_variables ~env ty_expected = [] ->
+      with Error _ as exn ->
         Btype.backtrack snap;
         try
+          let vars = rigidify [arg.exp_type; ty_expected] in
           subtype env arg.exp_type ty_expected ();
+          if not (all_distinct_vars env vars) then
+            begin
+              Btype.backtrack snap;
+              raise exn
+            end;
           if not gen then
             Location.prerr_warning loc
               (Warnings.Not_principal "this implicit coercion");
