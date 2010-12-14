@@ -742,7 +742,7 @@ let partial_pred ~lev env expected_ty constrs labels p =
   let snap = snapshot () in 
   try 
     let typed_p =
-      type_pat ~allow_existentials:true
+      type_pat ~allow_existentials:true ~lev
         ~constrs ~labels (ref env) p expected_ty
     in
     backtrack snap;
