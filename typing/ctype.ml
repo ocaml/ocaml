@@ -2144,9 +2144,13 @@ and unify3 env t1 t1' t2 t2' =
           when is_abstract_newtype !env path && is_abstract_newtype !env path'
           && umode = Pattern -> 
             let source,destination = 
-              if get_newtype_level !env path > get_newtype_level !env path'
-              then  p,t2'
-              else  p',t1'
+              let left_lev = get_newtype_level !env path in 
+              let right_lev = get_newtype_level !env path' in 
+              if left_lev = right_lev && (Ident.name p).[0]='&' then 
+                p,t2'
+              else if left_lev > right_lev
+              then p,t2'
+              else p',t1'
             in
             let destination = duplicate_type destination in 
             let source_lev = get_newtype_level !env (Path.Pident source) in
