@@ -690,6 +690,10 @@ let get_level env p =
       (* no newtypes in predef *)
       Path.binding_time p
 
+let is_newtype env p =
+  try (Env.find_type p env).type_newtype_level <> None
+  with Not_found -> false
+
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
@@ -697,6 +701,7 @@ let rec update_level env level ty =
       Tconstr(p, tl, abbrev)  when level < get_level env p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
+          if is_newtype env p then raise Cannot_expand;
           link_type ty (!forward_try_expand_once env ty);
           update_level env level ty
         with Cannot_expand ->
@@ -2128,45 +2133,36 @@ and unify3 env t1 t1' t2 t2' =
           && umode = Pattern -> 
             let source,destination = 
               if get_newtype_level !env path > get_newtype_level !env path'
-              then  p,t2
-              else  p',t1
+              then  p,t2'
+              else  p',t1'
             in
-            begin_def ();
             let destination = duplicate_type destination in 
-            end_def ();
-            generalize destination;  
             let source_lev = get_newtype_level !env (Path.Pident source) in
             let decl = new_declaration (Some source_lev) (Some destination) in 
             env := Env.add_local_constraint source decl !env;
             cleanup_abbrev ()          
         | (Tconstr ((Path.Pident p) as path,[],_), _)
           when is_abstract_newtype !env path && umode = Pattern -> 
-            reify env t2 ;
-            local_non_recursive_abbrev !env (Path.Pident p) t2;
-            begin_def ();
-            let t2 = duplicate_type t2 in
-            end_def ();
-            generalize t2 ;
+            reify env t2';
+            local_non_recursive_abbrev !env (Path.Pident p) t2';
+            let t2' = duplicate_type t2' in
             let source_level = get_newtype_level !env path in
-            let decl = new_declaration (Some source_level) (Some t2) in
+            let decl = new_declaration (Some source_level) (Some t2') in
             env := Env.add_local_constraint p decl !env;
             cleanup_abbrev ()          
         | (_, Tconstr ((Path.Pident p) as path,[],_))
           when is_abstract_newtype !env path && umode = Pattern -> 
-            reify env t1 ;
-            local_non_recursive_abbrev !env (Path.Pident p) t1;
-            begin_def ();
-            let t1 = duplicate_type t1 in
-            end_def ();
-            generalize t1 ;
+            reify env t1' ;
+            local_non_recursive_abbrev !env (Path.Pident p) t1';
+            let t1' = duplicate_type t1' in
             let source_level = get_newtype_level !env path in
-            let decl = new_declaration (Some source_level) (Some t1) in
+            let decl = new_declaration (Some source_level) (Some t1') in
             env := Env.add_local_constraint p decl !env; 
             cleanup_abbrev ()
         | (Tconstr (p1,_,_), Tconstr (p2,_,_)) when umode = Pattern ->
-            reify env t1;
-            reify env t2;
-            mcomp !env t1 t2
+            reify env t1';
+            reify env t2';
+            mcomp !env t1' t2'
         | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
             if concrete_object t1' && concrete_object t2' then
               unify_fields env fi1 fi2
