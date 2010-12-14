@@ -740,7 +740,8 @@ let type_pat
    to type check gadt nonexhaustiveness *) 
 let partial_pred ~lev env expected_ty constrs labels p = 
   let snap = snapshot () in 
-  try 
+  try
+    reset_pattern None true;
     let typed_p =
       type_pat ~allow_existentials:true ~lev
         ~constrs ~labels (ref env) p expected_ty
