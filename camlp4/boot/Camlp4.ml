@@ -15135,23 +15135,25 @@ module Struct =
                   ->
                   mkexp loc
                     (Pexp_function (lab, None,
-                       [ ((patt_of_lab loc lab po), (when_expr e w)) ]))
+                       [ ([],(patt_of_lab loc lab po), (when_expr e w)) ]))
               | Ast.ExFun (loc,
                   (Ast.McArr (_, (PaOlbi (_, lab, p, e1)), w, e2))) ->
                   let lab = paolab lab p
                   in
                     mkexp loc
                       (Pexp_function (("?" ^ lab), (Some (expr e1)),
-                         [ ((patt p), (when_expr e2 w)) ]))
+                         [ ([],(patt p), (when_expr e2 w)) ]))
               | Ast.ExFun (loc, (Ast.McArr (_, (PaOlb (_, lab, p)), w, e)))
                   ->
                   let lab = paolab lab p
                   in
                     mkexp loc
                       (Pexp_function (("?" ^ lab), None,
-                         [ ((patt_of_lab loc lab p), (when_expr e w)) ]))
+                         [ ([],(patt_of_lab loc lab p), (when_expr e w)) ]))
               | ExFun (loc, a) ->
-                  mkexp loc (Pexp_function ("", None, (match_case a [])))
+                let mc = match_case a [] in 
+                let mc = List.map (fun (a,b) -> ([],a,b)) mc in
+                  mkexp loc (Pexp_function ("", None, mc))
               | ExIfe (loc, e1, e2, e3) ->
                   mkexp loc
                     (Pexp_ifthenelse ((expr e1), (expr e2), (Some (expr e3))))
@@ -15195,7 +15197,9 @@ module Struct =
               | ExLmd (loc, i, me, e) ->
                   mkexp loc (Pexp_letmodule (i, (module_expr me), (expr e)))
               | ExMat (loc, e, a) ->
-                  mkexp loc (Pexp_match ((expr e), (match_case a [])))
+                let mc = match_case a [] in 
+                let mc = List.map (fun (a,b) -> ([],a,b)) mc in
+                  mkexp loc (Pexp_match ((expr e), mc))
               | ExNew (loc, id) -> mkexp loc (Pexp_new (long_type_ident id))
               | ExObj (loc, po, cfl) ->
                   let p =
@@ -21016,7 +21020,7 @@ module OCamlInitSyntax =
         let and_ctyp = Gram.Entry.mk "and_ctyp"
           
         let match_case = Gram.Entry.mk "match_case"
-          
+
         let match_case0 = Gram.Entry.mk "match_case0"
           
         let binding = Gram.Entry.mk "binding"
