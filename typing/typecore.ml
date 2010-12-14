@@ -174,20 +174,20 @@ let unify_exp_types loc env ty expected_ty =
       raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
 
 (* level at which to create the local type declarations *)
-let pattern_level = ref None
-let get_pattern_level () = 
-  match !pattern_level with
+let newtype_level = ref None
+let get_newtype_level () = 
+  match !newtype_level with
     Some y -> y
   | None -> assert false
 
 let unify_pat_types_gadt loc env ty ty' = 
-  let pattern_level = 
-    match !pattern_level with
+  let newtype_level = 
+    match !newtype_level with
     | None -> assert false
     | Some x -> x
   in
   try
-    unify_gadt pattern_level env ty ty'
+    unify_gadt ~newtype_level env ty ty'
   with
     Unify trace ->
       raise(Error(loc, Pattern_type_clash(trace)))
@@ -590,7 +590,7 @@ let rec type_pat constrs labels ?(allow_existentials=false) mode env sp expected
 	instance_constructor_ex
           loc
           ~allow_existentials 
-          ~in_pattern:(Some (env,get_pattern_level ())) 
+          ~in_pattern:(Some (env,get_newtype_level ())) 
           constr  
       in
       begin match mode with
@@ -708,7 +708,7 @@ let rec type_pat constrs labels ?(allow_existentials=false) mode env sp expected
 
 let type_pat
     ?(allow_existentials=false) ?constrs ?labels ?lev env sp expected_ty = 
-  pattern_level := 
+  newtype_level := 
     begin match lev with
 	None ->
 	  Some (get_current_level ())
@@ -728,33 +728,29 @@ let type_pat
     let r =
       type_pat ~allow_existentials constrs labels Normal env sp expected_ty in
     iter_pattern (fun p -> p.pat_env <- !env) r;
-    pattern_level := None;
+    newtype_level := None;
     r
   with
     e -> 
-      pattern_level := None;
+      newtype_level := None;
       raise e  
 
 
 (* this function is passed to Partial.parmatch
    to type check gadt nonexhaustiveness *) 
-let partial_pred env expected_ty constrs labels p = 
-  pattern_level := Some (get_current_level ());
+let partial_pred ~lev env expected_ty constrs labels p = 
   let snap = snapshot () in 
-  let ret = 
-    begin try 
-      let typed_p =
-	type_pat ~constrs ~labels (ref env) p expected_ty
-      in
-      backtrack snap;
-      Some typed_p
-    with
-    | _ ->
-	backtrack snap;
-	None end
-  in
-  pattern_level := None;
-  ret
+  try 
+    let typed_p =
+      type_pat ~allow_existentials:true
+        ~constrs ~labels (ref env) p expected_ty
+    in
+    backtrack snap;
+    (* types are invalidated but we don't need them here *)
+    Some typed_p
+  with _ ->
+    backtrack snap;
+    None
 
 let rec iter3 f lst1 lst2 lst3 = 
   match lst1,lst2,lst3 with
@@ -2518,7 +2514,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   unify_exp_types loc env (instance ty_res) (newvar ()) ;
   let partial =
     if partial_flag then
-      Parmatch.check_partial_gadt (partial_pred env ty_arg) loc cases
+      Parmatch.check_partial_gadt (partial_pred ~lev env ty_arg) loc cases
     else
       Partial
   in
@@ -2580,12 +2576,9 @@ and type_let env rec_flag spat_sexp_list scope allow =
             {exp with exp_type = instance exp.exp_type}
         | _ -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_list in
-  let check_partial nv loc cases = 
-    Parmatch.check_partial_gadt (partial_pred env nv) loc cases
-  in 
-  iter3
-    (fun pat exp nv -> ignore(check_partial nv pat.pat_loc [pat, exp]))
-    pat_list exp_list nvs;
+  List.iter2
+    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
+    pat_list exp_list;
   end_def();
   List.iter2
     (fun pat exp ->

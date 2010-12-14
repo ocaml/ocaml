@@ -1696,36 +1696,37 @@ let deep_occur t0 ty =
       information is indeed lost, but it probably does not worth it.
 *)
 
-let pattern_level = ref None
+let newtype_level = ref None
 
 (* a local constraint can be added only if the rhs 
    of the constraint does not contain any Tvars.
    They need to be removed using this function *)
 let reify env t =
-  let pattern_level = 
-    match !pattern_level with
+  let newtype_level = 
+    match !newtype_level with
     | None -> assert false
     | Some x -> x
   in
-  let create_fresh_constr row = 
-      let decl = new_declaration (Some (pattern_level)) None in
+  let create_fresh_constr lev row = 
+      let decl = new_declaration (Some (newtype_level)) None in
       let name = 
         let name = get_new_abstract_name () in 
         if row then name ^ "#row" else name
       in
       let (id, new_env) = Env.enter_type name decl !env in    
-      let t = newty (Tconstr (Path.Pident id,[],ref Mnil))  in 
+      let t = newty2 lev (Tconstr (Path.Pident id,[],ref Mnil))  in 
       env := new_env;
       t
   in
   let rec iterator visited ty = 
     if TypeSet.mem ty visited then () else
     let visited = TypeSet.add t visited in
-    match (repr ty).desc with 
+    let ty = repr ty in
+    match ty.desc with 
     | Tobject _ ->
         close_object ty;
         let tvar = row_variable ty in 
-        let t = create_fresh_constr true in 
+        let t = create_fresh_constr tvar.level true in 
         link_type tvar t;
         iter_type_expr (iterator visited) ty
     | Tvariant r ->
@@ -1734,9 +1735,9 @@ let reify env t =
         else
           begin
             let row = row_repr r in
-            let t = create_fresh_constr true in
+            let t = create_fresh_constr row.row_more.level true in
             let t = 
-              newty 
+              newty2 ty.level
                 (Tvariant 
                  {row with row_fields=[]; 
                   row_fixed=true; 
@@ -1748,7 +1749,7 @@ let reify env t =
           end;
         iter_type_expr (iterator visited) ty
     | Tvar -> 
-        let t = create_fresh_constr false in
+        let t = create_fresh_constr ty.level false in
         link_type ty t
     | _ ->
         iter_type_expr (iterator visited) ty
@@ -2126,12 +2127,15 @@ and unify3 env t1 t1' t2 t2' =
           when is_abstract_newtype !env path && is_abstract_newtype !env path'
           && umode = Pattern -> 
             let source,destination = 
-              if get_newtype_level !env path > get_newtype_level !env path' then 
-                p,t2
-              else
-                p',t1
+              if get_newtype_level !env path > get_newtype_level !env path'
+              then  p,t2
+              else  p',t1
             in
-            let source_lev = get_newtype_level !env path in
+            begin_def ();
+            let destination = duplicate_type destination in 
+            end_def ();
+            generalize destination;  
+            let source_lev = get_newtype_level !env (Path.Pident source) in
             let decl = new_declaration (Some source_lev) (Some destination) in 
             env := Env.add_local_constraint source decl !env;
             cleanup_abbrev ()          
@@ -2430,17 +2434,17 @@ let unify env ty1 ty2 =
       raise (Unification_recursive_abbrev (expand_trace !env [(ty1,ty2)]))
 
 
-let unify_gadt plev (env:Env.t ref) ty1 ty2 =
+let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
   try
     univar_pairs := [];
-    pattern_level := Some plev;
+    newtype_level := Some lev;
     set_mode Pattern (fun () -> unify env ty1 ty2);
-    pattern_level := None;
+    newtype_level := None;
   with 
     | Unify e ->
         raise (Unify e)
     | e -> 
-        pattern_level := None;
+        newtype_level := None;
         raise e
 
 
