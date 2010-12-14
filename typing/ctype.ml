@@ -1000,6 +1000,18 @@ let get_new_abstract_name () =
   incr reified_var_counter;
   ret
 
+let existential_var_counter = ref 0
+    
+(* names given to new type constructors. 
+   Used for existential types and 
+   local constraints *)
+let get_new_existential_name () = 
+  let ret = Printf.sprintf "&y%d" !existential_var_counter in
+  incr existential_var_counter;
+  ret
+
+
+
 let new_declaration newtype manifest = 
   {
     type_params = [];
@@ -1025,7 +1037,7 @@ let instance_constructor ~allow_existentials ?(in_pattern=None) cstr =
       let process existential = 
         let decl = new_declaration (Some pattern_lev) None in
         let (id, new_env) =
-          Env.enter_type (get_new_abstract_name ()) decl !env in
+          Env.enter_type (get_new_existential_name ()) decl !env in
         env := new_env;
         let to_unify =
           newty (Tconstr (Path.Pident id,[],ref Mnil)) in 
@@ -4078,8 +4090,6 @@ let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
 
 exception Not_fresh of Ident.t * type_expr
-
-
 
 let enter_pattern_newtype pattern_lev source_ident env = 
   let enter_declaration t env = 
