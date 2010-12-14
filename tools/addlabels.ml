@@ -104,9 +104,12 @@ let rec insertion_point2 pos ~text =
   then Some (!pos' - 1)
   else None
 
+
+
 let rec insert_labels ~labels ~text expr =
   match labels, expr.pexp_desc with
-    l::labels, Pexp_function(l', _, [pat, rem]) ->
+(* GAH : not sure about this next line *)
+    l::labels, Pexp_function(l', _, [[],pat, rem]) ->
       if l <> "" && l.[0] <> '?' && l' = "" then begin
         let start_c = pat.ppat_loc.Location.loc_start.Lexing.pos_cnum in
         let pos = insertion_point start_c ~text in
@@ -128,9 +131,9 @@ let rec insert_labels ~labels ~text expr =
         | None ->
             add_insertion pos ("fun ~" ^ l ^ " -> ")
       end;
-      List.iter lst ~f:(fun (p,e) -> insert_labels ~labels ~text e)
+      List.iter lst ~f:(fun (_,p,e) -> insert_labels ~labels ~text e)
   | _, Pexp_match( _, lst) ->
-      List.iter lst ~f:(fun (p,e) -> insert_labels ~labels ~text e)
+      List.iter lst ~f:(fun (_,p,e) -> insert_labels ~labels ~text e)
   | _, Pexp_try(expr, lst) ->
       insert_labels ~labels ~text expr;
       List.iter lst ~f:(fun (p,e) -> insert_labels ~labels ~text e)
@@ -236,10 +239,14 @@ let rec add_labels_expr ~text ~values ~classes expr =
       add_labels_rec expr ~values:vals
   | Pexp_function (_, None, lst) ->
       List.iter lst ~f:
-        (fun (p,e) ->
+        (fun (_,p,e) ->
           add_labels_rec e ~values:(SMap.removes (pattern_vars p) values))
   | Pexp_function (_, Some e, lst)
-  | Pexp_match (e, lst)
+  | Pexp_match (e, lst) ->
+      add_labels_rec e;
+      List.iter lst ~f:
+        (fun (_,p,e) ->
+          add_labels_rec e ~values:(SMap.removes (pattern_vars p) values))
   | Pexp_try (e, lst) ->
       add_labels_rec e;
       List.iter lst ~f:

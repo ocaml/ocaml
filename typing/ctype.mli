@@ -26,6 +26,7 @@ exception Cannot_apply
 exception Recursive_abbrev
 exception Unification_recursive_abbrev of (type_expr * type_expr) list
 exception Misplaced_existential
+exception Not_fresh of Ident.t * type_expr
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -253,3 +254,8 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
 
 val get_current_level: unit -> int
+
+val new_declaration :
+  int option -> Types.type_expr option -> Types.type_declaration
+
+val enter_pattern_newtype : int -> Ident.t -> Env.t -> Env.t

@@ -62,6 +62,8 @@ type error =
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
   | Unexpected_existential
+  | Not_fresh of Ident.t * type_expr
+  | Duplicate_binders of string
 
 exception Error of Location.t * error
 
@@ -776,11 +778,61 @@ let add_pattern_variables env =
     pv env,
    get_ref module_variables)
 
-let type_pattern ~lev env spat scope expected_ty  = 
+exception Dup of string
+let check_unique lst = 
+  let rec loop sofar = 
+    function
+      | [] -> ()
+      | x :: xs ->
+        if List.mem x sofar 
+        then raise (Dup x) 
+        else loop (x::sofar) xs
+  in
+  loop [] lst
+
+let add_newtypes_to_env newtypes (env:Env.t) = 
+  check_unique newtypes;
+  let rec loop names env : string list -> _ * Env.t = 
+    function
+      | [] -> names, env
+      | name :: xs ->
+        let var = newvar () in
+        let decl = Ctype.new_declaration None (Some var) in
+        let (id, new_env) = Env.enter_type name decl env in    
+        loop (id :: names) new_env xs
+  in
+  loop [] env newtypes
+
+
+
+let finalize_pattern_newtypes pattern_lev idents env : Env.t = 
+  let rec loop sofar = 
+    function
+      | [] -> sofar
+      | x :: xs ->
+        loop (enter_pattern_newtype pattern_lev x sofar) xs
+  in
+  loop env idents 
+
+let type_pattern newtypes ~lev env spat scope expected_ty  = 
   reset_pattern scope true;
-  let new_env = ref env in 
+  let newtype_idents,env = 
+    try
+      add_newtypes_to_env newtypes env 
+    with
+      | Dup x ->
+        raise (Error(spat.ppat_loc,Duplicate_binders x))
+  in
+  let new_env = ref env in
   let pat = type_pat ~allow_existentials:true ~lev new_env spat expected_ty in
   let new_env, unpacks = add_pattern_variables !new_env in
+  let new_env = 
+    try
+      finalize_pattern_newtypes lev newtype_idents new_env
+    with
+      | Ctype.Not_fresh (i,e) ->
+        raise (Error (spat.ppat_loc,Not_fresh (i,e)))
+  in
   (pat, new_env, get_ref pattern_force, unpacks)
 
 let type_pattern_list env spatl scope expected_tys allow =
@@ -1127,11 +1179,11 @@ let rec approx_type env sty =
 let rec type_approx env sexp =
   match sexp.pexp_desc with
     Pexp_let (_, _, e) -> type_approx env e
-  | Pexp_function (p,_,(_,e)::_) when is_optional p ->
+  | Pexp_function (p,_,(_,_,e)::_) when is_optional p ->
        newty (Tarrow(p, type_option (newvar ()), type_approx env e, Cok))
-  | Pexp_function (p,_,(_,e)::_) ->
+  | Pexp_function (p,_,(_,_,e)::_) ->
        newty (Tarrow(p, newvar (), type_approx env e, Cok))
-  | Pexp_match (_, (_,e)::_) -> type_approx env e
+  | Pexp_match (_, (_,_,e)::_) -> type_approx env e
   | Pexp_try (e, _) -> type_approx env e
   | Pexp_tuple l -> newty (Ttuple(List.map (type_approx env) l))
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
@@ -1339,10 +1391,12 @@ and type_expect ?in_function env sexp ty_expected =
         exp_desc = Texp_let(rec_flag, pat_exp_list, body);
         exp_loc = loc;
         exp_type = body.exp_type;
-        exp_env = env }
-  | Pexp_function (l, Some default, [spat, sbody]) ->
+        exp_env = env }        
+        (* GAH: check with Garrigue *)
+  | Pexp_function (l, Some default, [[],spat, sbody]) ->
       let default_loc = default.pexp_loc in
       let scases = [
+        [],
          {ppat_loc = default_loc;
           ppat_desc =
             Ppat_construct
@@ -1351,6 +1405,7 @@ and type_expect ?in_function env sexp ty_expected =
                false)},
          {pexp_loc = default_loc;
           pexp_desc = Pexp_ident(Longident.Lident "*sth*")};
+        [],
          {ppat_loc = default_loc;
           ppat_desc = Ppat_construct
             (Longident.(Ldot (Lident "*predef*", "None")), None, false)},
@@ -1371,7 +1426,7 @@ and type_expect ?in_function env sexp ty_expected =
         pexp_desc =
          Pexp_function (
            l, None,
-           [ {ppat_loc = loc;
+           [[], {ppat_loc = loc;
               ppat_desc = Ppat_var "*opt*"},
              {pexp_loc = loc;
               pexp_desc = Pexp_let(Default, [spat, smatch], sbody);
@@ -1439,7 +1494,7 @@ and type_expect ?in_function env sexp ty_expected =
         if List.memq ty seen then () else
         match ty.desc with
           Tarrow (l, ty_arg, ty_fun, com) ->
-            (try unify_var env (newvar()) ty_arg with Unify _ -> assert false);
+            unify_var env (newvar()) ty_arg;
             lower_args (ty::seen) ty_fun
         | _ -> ()
       in
@@ -1472,6 +1527,7 @@ and type_expect ?in_function env sexp ty_expected =
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
       let body = type_expect env sbody ty_expected in
+      let caselist = List.map (fun (a,b) -> ([],a,b)) caselist in
       let cases, _ =
         type_cases env Predef.type_exn ty_expected false loc caselist in
       re {
@@ -2441,13 +2497,13 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let dont_propagate =
-    List.exists (fun (p,_) -> contains_polymorphic_variant p) caselist in
+    List.exists (fun (_,p,_) -> contains_polymorphic_variant p) caselist in
   let pattern_force = ref [] in
   (* Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
     Printtyp.raw_type_expr ty_arg; *)
   let pat_env_list =
     List.map
-      (fun (spat, sexp) ->
+      (fun (newtypes, spat, sexp) ->
         let loc = sexp.pexp_loc in
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
@@ -2455,7 +2511,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 	  let ty_arg =
             if dont_propagate then newvar () else
             instance ~partial:!Clflags.principal ty_arg
-          in type_pattern ~lev env spat scope ty_arg 
+          in type_pattern newtypes ~lev env spat scope ty_arg 
 	in	
         pattern_force := force @ !pattern_force;
         let pat =
@@ -2490,7 +2546,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   let ty_arg' = instance ty_arg in
   let cases =
     List.map2
-      (fun (pat, (ext_env, unpacks)) (spat, sexp) ->
+      (fun (pat, (ext_env, unpacks)) (_,spat, sexp) ->
         let sexp = wrap_unpacks sexp unpacks in
         let ty_res' =
           if !Clflags.principal then begin
@@ -2785,3 +2841,11 @@ let report_error ppf = function
   | Unexpected_existential ->
       fprintf ppf
         "Unexpected existential"    
+  | Not_fresh (i,e) ->
+      fprintf ppf
+        "@[<v>Pattern newtype %s is not assigned to a fresh newtype:@;@[<2>%a@]@]"    
+        (Ident.name i)
+        Printtyp.type_expr e
+  | Duplicate_binders s ->
+      fprintf ppf
+        "The binder %s appears twice" s

@@ -751,18 +751,24 @@ value varify_constructors var_names =
         let e3 = ExSeq loc el in
         mkexp loc (Pexp_for i (expr e1) (expr e2) (mkdirection df) (expr e3))
     | <:expr@loc< fun [ $PaLab _ lab po$ when $w$ -> $e$ ] >> ->
+      (* GAH: change the following: *)
         mkexp loc
           (Pexp_function lab None
-            [(patt_of_lab loc lab po, when_expr e w)])
+            [([],patt_of_lab loc lab po, when_expr e w)])
     | <:expr@loc< fun [ $PaOlbi _ lab p e1$ when $w$ -> $e2$ ] >> ->
+      (* GAH: check here *)
         let lab = paolab lab p in
         mkexp loc
-          (Pexp_function ("?" ^ lab) (Some (expr e1)) [(patt p, when_expr e2 w)])
+          (Pexp_function ("?" ^ lab) (Some (expr e1)) [([],patt p, when_expr e2 w)])
     | <:expr@loc< fun [ $PaOlb _ lab p$ when $w$ -> $e$ ] >> ->
+      (* GAH: check here *)
         let lab = paolab lab p in
         mkexp loc
-          (Pexp_function ("?" ^ lab) None [(patt_of_lab loc lab p, when_expr e w)])
-    | ExFun loc a -> mkexp loc (Pexp_function "" None (match_case a []))
+          (Pexp_function ("?" ^ lab) None [([],patt_of_lab loc lab p, when_expr e w)])
+    | ExFun loc a -> 
+      (* GAH: check here *)
+      let mc = List.map (fun (a,b) -> ([],a,b)) (match_case a []) in
+      mkexp loc (Pexp_function "" None mc)
     | ExIfe loc e1 e2 e3 ->
         mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
     | ExInt loc s ->
@@ -786,7 +792,10 @@ value varify_constructors var_names =
     | ExLet loc rf bi e ->
         mkexp loc (Pexp_let (mkrf rf) (binding bi []) (expr e))
     | ExLmd loc i me e -> mkexp loc (Pexp_letmodule i (module_expr me) (expr e))
-    | ExMat loc e a -> mkexp loc (Pexp_match (expr e) (match_case a []))
+    | ExMat loc e a -> 
+      (* GAH : check here *)
+      let mc = List.map (fun (a,b) -> ([],a,b)) (match_case a []) in
+      mkexp loc (Pexp_match (expr e) mc)
     | ExNew loc id -> mkexp loc (Pexp_new (long_type_ident id))
     | ExObj loc po cfl ->
         let p =

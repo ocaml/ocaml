@@ -126,10 +126,10 @@ let rec add_expr bv exp =
   | Pexp_constant _ -> ()
   | Pexp_let(_, pel, e) -> add_pat_expr_list bv pel; add_expr bv e
   | Pexp_function (_, opte, pel) ->
-      add_opt add_expr bv opte; add_pat_expr_list bv pel
+      add_opt add_expr bv opte; newtype_add_pat_expr_list bv pel
   | Pexp_apply(e, el) ->
       add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) el
-  | Pexp_match(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
+  | Pexp_match(e, pel) -> add_expr bv e; newtype_add_pat_expr_list bv pel
   | Pexp_try(e, pel) -> add_expr bv e; add_pat_expr_list bv pel
   | Pexp_tuple el -> List.iter (add_expr bv) el
   | Pexp_construct(c, opte, _) -> add bv c; add_opt add_expr bv opte
@@ -168,6 +168,8 @@ let rec add_expr bv exp =
   | Pexp_open (m, e) -> addmodule bv m; add_expr bv e
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel
+and newtype_add_pat_expr_list bv pel =
+  List.iter (fun (_,p, e) -> add_pattern bv p; add_expr bv e) pel
 
 and add_modtype bv mty =
   match mty.pmty_desc with

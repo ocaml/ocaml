@@ -102,7 +102,8 @@ type error =
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
   | Unexpected_existential
-
+  | Not_fresh of Ident.t * type_expr
+  | Duplicate_binders of string
 exception Error of Location.t * error
 
 val report_error: formatter -> error -> unit

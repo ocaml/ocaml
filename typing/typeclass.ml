@@ -309,7 +309,7 @@ let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
 let make_method cl_num expr =
   { pexp_desc =
       Pexp_function ("", None,
-                     [mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
+                     [[],mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
                                          "self-" ^ cl_num)),
                       expr]);
     pexp_loc = expr.pexp_loc }
@@ -765,11 +765,13 @@ and class_expr cl_num val_env met_env scl =
   | Pcl_fun (l, Some default, spat, sbody) ->
       let loc = default.pexp_loc in
       let scases =
-        [{ppat_loc = loc; ppat_desc =
+        [[],
+         {ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.(Ldot (Lident"*predef*", "Some")),
                          Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
                          false)},
          {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
+         [],
          {ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.(Ldot (Lident"*predef*", "None")),
                          None, false)},

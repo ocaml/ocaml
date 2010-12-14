@@ -4076,3 +4076,30 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
+
+exception Not_fresh of Ident.t * type_expr
+
+
+
+let enter_pattern_newtype pattern_lev source_ident env = 
+  let enter_declaration t env = 
+    let t' = expand_head env t in
+    match t'.desc with
+      | Tconstr ((Path.Pident ident) as path ,[],_) ->
+        let decl = Env.find_type path env  in
+        if (decl.type_newtype_level = None) ||
+          not ((Ident.name ident).[0] = '&') 
+        then raise (Not_fresh (ident,t));
+        begin_def ();
+        let t = duplicate_type t in
+        end_def ();
+        generalize t;      
+        let env = Env.add_type source_ident (new_declaration (Some pattern_lev) (Some t)) env in
+        env
+      | _ -> raise (Not_fresh (source_ident,t))
+  in
+  let decl = Env.find_type (Path.Pident source_ident) env in
+  match decl.type_manifest with
+    | None -> assert false
+    | Some x ->
+      enter_declaration x env
