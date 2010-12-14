@@ -208,6 +208,12 @@ let rec ins : type n. int -> n avl -> (n avl, (n succ) avl) sum =
       end
 ;;
 
+let insert x (Avl t) =
+  match ins x t with
+  | Inl t -> Avl t
+  | Inr t -> Avl t
+;;
+
 let rec del_min : type n. (n succ) avl -> int * (n avl, (n succ) avl) sum =
   function
   | Node (Less, Leaf, x, r) -> (x, Inl r)
@@ -272,4 +278,94 @@ let rec del : type n. int -> n avl -> n avl_del = fun y t ->
                 | Inr t -> Dsame t
             end
       end
+;;
+
+let delete x (Avl t) =
+  match del x t with
+  | Dsame t -> Avl t
+  | Ddecr (_, t) -> Avl t
+;;
+
+
+(* Red-black trees *)
+
+type red
+type black
+type (_,_) sub_tree =
+  | Bleaf : (black, zero) sub_tree
+  | Rnode :
+      (black, 'n) sub_tree * int * (black, 'n) sub_tree -> (red, 'n) sub_tree
+  | Bnode :
+      ('cL, 'n) sub_tree * int * ('cR, 'n) sub_tree -> (black, 'n succ) sub_tree
+
+type rb_tree = Root : (black, 'n) sub_tree -> rb_tree
+;;
+
+type dir = LeftD | RightD
+
+type (_,_) ctxt =
+  | CNil : (black,'n) ctxt
+  | CRed : int * dir * (black,'n) sub_tree * (red,'n) ctxt -> (black,'n) ctxt
+  | CBlk : int * dir * ('c1,'n) sub_tree * (black, 'n succ) ctxt -> ('c,'n) ctxt
+;;
+
+let blacken = function
+    Rnode (l, e, r) -> Bnode (l, e, r)
+
+type _ crep =
+  | Red : red crep
+  | Black : black crep
+
+let color : type c n. (c,n) sub_tree -> c crep = function
+  | Bleaf -> Black
+  | Rnode _ -> Red
+  | Bnode _ -> Black
+;;
+
+let rec fill : type c n. (c,n) ctxt -> (c,n) sub_tree -> rb_tree =
+  fun ct t ->
+  match ct with
+  | CNil -> Root t
+  | CRed (e, LeftD, uncle, c) -> fill c (Rnode (uncle, e, t))
+  | CRed (e, RightD, uncle, c) -> fill c (Rnode (t, e, uncle))
+  | CBlk (e, LeftD, uncle, c) -> fill c (Bnode (uncle, e, t))
+  | CBlk (e, RightD, uncle, c) -> fill c (Bnode (t, e, uncle))
+;;
+let recolor d1 pE sib d2 gE uncle t =
+  match d1, d2 with
+  | LeftD, RightD -> Rnode (Bnode (sib, pE, t), gE, uncle)
+  | RightD, RightD -> Rnode (Bnode (t, pE, sib), gE, uncle)
+  | LeftD, LeftD -> Rnode (uncle, gE, Bnode (sib, pE, t))
+  | RightD, LeftD -> Rnode (uncle, gE, Bnode (t, pE, sib))
+;;
+let rotate d1 pE sib d2 gE uncle (Rnode (x, e, y)) =
+  match d1, d2 with
+  | RightD, RightD -> Bnode (Rnode (x,e,y), pE, Rnode (sib, gE, uncle))
+  | LeftD,  RightD -> Bnode (Rnode (sib, pE, x), e, Rnode (y, gE, uncle))
+  | LeftD,  LeftD  -> Bnode (Rnode (uncle, gE, sib), pE, Rnode (x,e,y))
+  | RightD, LeftD  -> Bnode (Rnode (uncle, gE, x), e, Rnode (y, pE, sib))
+;;
+let rec repair : type c n. (red,n) sub_tree -> (c,n) ctxt -> rb_tree =
+  fun t ct ->
+  match ct with
+  | CNil -> Root (blacken t)
+  | CBlk (e, LeftD, sib, c) -> fill c (Bnode (sib, e, t))
+  | CBlk (e, RightD, sib, c) -> fill c (Bnode (t, e, sib))
+  | CRed (e, dir, sib, CBlk (e', dir', uncle, ct)) ->
+      match color uncle with
+      | Red -> repair (recolor dir e sib dir' e' (blacken uncle) t) ct
+      | Black -> fill ct (rotate dir e sib dir' e' uncle t)
+;;
+let rec ins : type c n. int -> (c,n) sub_tree -> (c,n) ctxt -> rb_tree =
+  fun e t ct ->
+  match t with
+  | Rnode (l, e', r) ->
+      if e < e' then ins e l (CRed (e', RightD, r, ct))
+                else ins e r (CRed (e', LeftD, l, ct))
+  | Bnode (l, e', r) ->
+      if e < e' then ins e l (CBlk (e', RightD, r, ct))
+                else ins e r (CBlk (e', LeftD, l, ct))
+  | Bleaf -> repair (Rnode (Bleaf, e, Bleaf)) ct
+;;
+let insert e (Root t) = ins e t CNil
 ;;

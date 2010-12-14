@@ -76,9 +76,50 @@ val elem : int -> 'a avl -> bool = <fun>
   int -> 'a succ succ avl -> ('a succ succ avl, 'a succ succ succ avl) sum =
   <fun>
 #                                               val ins : int -> 'a avl -> ('a avl, 'a succ avl) sum = <fun>
+#           val insert : int -> avl' -> avl' = <fun>
 #                                                                                                                                   val del_min : 'a succ avl -> int * ('a avl, 'a succ avl) sum = <fun>
 type 'a avl_del =
     Dsame : 'b avl -> 'b avl_del
   | Ddecr : ('d succ, 'c) equal * 'd avl -> 'c avl_del
 val del : int -> 'a avl -> 'a avl_del = <fun>
+#           val delete : int -> avl' -> avl' = <fun>
+#                             type red
+type black
+type ('a, 'b) sub_tree =
+    Bleaf : (black, zero) sub_tree
+  | Rnode : (black, 'c) sub_tree * int *
+      (black, 'c) sub_tree -> (red, 'c) sub_tree
+  | Bnode : ('e, 'd) sub_tree * int *
+      ('f, 'd) sub_tree -> (black, 'd succ) sub_tree
+type rb_tree = Root : (black, 'a) sub_tree -> rb_tree
+#               type dir = LeftD | RightD
+type ('a, 'b) ctxt =
+    CNil : (black, 'c) ctxt
+  | CRed : int * dir * (black, 'd) sub_tree *
+      (red, 'd) ctxt -> (black, 'd) ctxt
+  | CBlk : int * dir * ('g, 'f) sub_tree *
+      (black, 'f succ) ctxt -> ('e, 'f) ctxt
+#                         val blacken : (red, 'a) sub_tree -> (black, 'a succ) sub_tree = <fun>
+type 'a crep = Red : red crep | Black : black crep
+val color : ('a, 'b) sub_tree -> 'a crep = <fun>
+#                   val fill : ('a, 'b) ctxt -> ('a, 'b) sub_tree -> rb_tree = <fun>
+#             val recolor :
+  dir ->
+  int ->
+  ('a, 'b) sub_tree ->
+  dir ->
+  int ->
+  (black, 'b succ) sub_tree -> ('c, 'b) sub_tree -> (red, 'b succ) sub_tree =
+  <fun>
+#             val rotate :
+  dir ->
+  int ->
+  (black, 'a) sub_tree ->
+  dir ->
+  int ->
+  (black, 'a) sub_tree -> (red, 'a) sub_tree -> (black, 'a succ) sub_tree =
+  <fun>
+#                     val repair : (red, 'a) sub_tree -> ('b, 'a) ctxt -> rb_tree = <fun>
+#                     val ins : int -> ('a, 'b) sub_tree -> ('a, 'b) ctxt -> rb_tree = <fun>
+#   val insert : int -> rb_tree -> rb_tree = <fun>
 # 
