@@ -218,9 +218,8 @@ let rec del_min : type n. (n succ) avl -> int * (n avl, (n succ) avl) sum =
   function
   | Node (Less, Leaf, x, r) -> (x, Inl r)
   | Node (Same, Leaf, x, r) -> (x, Inl r)
-  | Node (bal, Node (v, a, y, b) , x, r) ->
-      (* Cannot write (Node _ as l) *)
-      match del_min (Node (v, a, y, b)) with
+  | Node (bal, (Node _ as l) , x, r) ->
+      match del_min l with
       | y, Inr l -> (y, Inr (Node (bal, l, x, r)))
       | y, Inl l ->
           (y, match bal with

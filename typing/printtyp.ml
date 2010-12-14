@@ -931,13 +931,13 @@ let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
   | Tfield _, Tvar | Tvar, Tfield _ ->
       fprintf ppf "@,Self type cannot escape its class"
-  | Tconstr (p, _, _), Tvar
-    when unif && t4.level < Path.binding_time p ->
+  | Tconstr (p, tl, _), Tvar
+    when unif && (tl = [] || t4.level < Path.binding_time p) ->
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p
-  | Tvar, Tconstr (p, _, _)
-    when unif && t3.level < Path.binding_time p ->
+  | Tvar, Tconstr (p, tl, _)
+    when unif && (tl = [] || t3.level < Path.binding_time p) ->
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p

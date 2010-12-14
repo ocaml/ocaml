@@ -1011,19 +1011,15 @@ let new_declaration newtype manifest =
     type_newtype_level = newtype;
   }
 
-exception Misplaced_existential
-
-let instance_constructor ~allow_existentials ?(in_pattern=None) cstr =
+let instance_constructor ?in_pattern cstr =
   let ty_res = copy cstr.cstr_res in
   let ty_args = List.map copy cstr.cstr_args in
-  if (not allow_existentials) && not (cstr.cstr_existentials = []) then
-    raise Misplaced_existential;
   begin match in_pattern with
   | None -> ()
-  | Some (env,pattern_lev) ->
+  | Some (env, newtype_lev) ->
       let existentials = List.map copy cstr.cstr_existentials in
       let process existential = 
-        let decl = new_declaration (Some pattern_lev) None in
+        let decl = new_declaration (Some newtype_lev) None in
         let (id, new_env) =
           Env.enter_type (get_new_abstract_name ()) decl !env in
         env := new_env;

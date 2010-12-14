@@ -77,7 +77,7 @@ val elem : int -> 'a avl -> bool = <fun>
   <fun>
 #                                               val ins : int -> 'a avl -> ('a avl, 'a succ avl) sum = <fun>
 #           val insert : int -> avl' -> avl' = <fun>
-#                                                                                                                                   val del_min : 'a succ avl -> int * ('a avl, 'a succ avl) sum = <fun>
+#                                                                                                                                 val del_min : 'a succ avl -> int * ('a avl, 'a succ avl) sum = <fun>
 type 'a avl_del =
     Dsame : 'b avl -> 'b avl_del
   | Ddecr : ('d succ, 'c) equal * 'd avl -> 'c avl_del
