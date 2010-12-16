@@ -675,10 +675,9 @@ let full_match ignore_generalized closing env =  match env with
 | _ -> fatal_error "Parmatch.full_match"
 
 let full_match_gadt env = match env with
-| ({pat_desc = Tpat_construct(c,_);pat_type=typ},_) :: _ -> 
-    let cleaned_env = clean_env env in 
-    List.length env - List.length cleaned_env = c.cstr_consts + c.cstr_nonconsts - c.cstr_normal
-| _ -> true
+  | ({pat_desc = Tpat_construct(c,_);pat_type=typ},_) :: _ -> 
+    List.length env = c.cstr_consts + c.cstr_nonconsts
+  | _ -> true
 
 let extendable_match env = match env with
 | ({pat_desc = Tpat_construct({cstr_tag=(Cstr_constant _|Cstr_block _)},_)} as p,_) :: _ ->
@@ -927,7 +926,6 @@ let build_other_gadt ext env =
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
 	let cnstrs  = complete_constrs p all_tags in
-	let cnstrs = List.filter (fun cstr -> cstr.cstr_generalized) cnstrs in
 	List.map (pat_of_constr p) cnstrs
     | _ -> assert false
 	  
@@ -1085,7 +1083,8 @@ let combinations f lst lst' =
   in
   iter lst
     
-
+(* strictly more powerful than exhaust; however, exhaust
+   was kept for backwards compatibility *)
 let rec exhaust_gadt ext pss n = match pss with
 | []    ->  Rsome [omegas n]
 | []::_ ->  Rnone
