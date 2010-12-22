@@ -232,11 +232,11 @@ and approx_sig env ssg =
       | Psig_contract cdecls -> 
 	  let typed_cdecls = Typedecl.transl_contract_decls env cdecls in
 	  let iface_cdecls = List.map Typedtree.contract_declaration_to_iface typed_cdecls in
-          let sg = List.map (fun c -> Tsig_contract (head c.Types.ttopctr_id, c, Trec_not)) 
+          let sg = List.map (fun c -> Tsig_contract (Path.head c.Types.ttopctr_id, c, Trec_not)) 
 	                    iface_cdecls in
-          (* let newenv = List.fold_right (fun (i,c) -> 
-	                  Env.enter_contract (Pident i) c) 
-	                  typed_cdecls env in *)
+          (* let newenv = List.fold_right (fun c -> 
+	                  Env.enter_contract c.Types.ttopctr_id c) 
+	                  iface_cdecls env in *)
 	  sg @ approx_sig env srem
       | _ ->
           approx_sig env srem
@@ -417,7 +417,9 @@ and transl_signature env sg =
             let rem = transl_sig env srem in
             map_rec' (fun rs (id, decl) -> 
 	                  Tsig_contract(id, decl, rs)) cdecls rem
-    in transl_sig env sg
+    in transl_sig env sg 
+
+
 
 and transl_modtype_info env sinfo =
   match sinfo with
@@ -674,6 +676,32 @@ and type_structure anchor env sstr scope =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
+  (* we want to put contracts in local modules in Tstr_mty_contracts(..) *)
+  let extract_contracts_from_sig id sg env1 = 
+             Env.fetch_contracts (Env.open_signature (Pident id) sg env1) in  
+  let rec extract_contracts id mty env1 = match mty with
+           | Tmty_ident(path) -> Tbl.empty
+           | Tmty_signature(sg) -> extract_contracts_from_sig id sg env1
+           | Tmty_functor(id, mty1, mty2) -> 
+              Tbl.merge (extract_contracts id mty1 env1) 
+                        (extract_contracts id mty2 env1)
+  (* it is easier for programmers to declare a contract for a function 
+     before function definition, but we can only typecheck the contract after
+     inferring the type for the function. So we re-order the sstr such that
+     the contract is after the function definition. *)
+  in 
+  let rec re_order xs = match xs with
+       | [] -> []
+       | [x] -> [x]
+       | (x::y::rem) -> begin match (x,y) with
+         | ({pstr_desc = Pstr_contract (ds)}, {pstr_desc = Pstr_open(m)}) ->
+                   x :: y :: (re_order rem)
+         | ({pstr_desc = Pstr_contract (ds1)}, {pstr_desc = Pstr_contract(ds2)}) ->
+                   re_order ({y with pstr_desc = Pstr_contract(ds1@ds2)} :: rem)
+         | ({pstr_desc = Pstr_contract (ds)}, _) -> y :: re_order (x :: rem)
+         | (_, _) -> x :: re_order (y :: rem)
+         end
+  in
   let rec type_struct env sstr =
     Ctype.init_def(Ident.current_time());
     match sstr with
@@ -728,7 +756,10 @@ and type_structure anchor env sstr scope =
            type-check contracts. Contracts are declared before function definitions,
            so type-checking of contracts occurs at 
            the end of type_structure after type_struct is called. *) 
-        type_struct env srem 
+        let contract_decls = Typedecl.transl_contract_decls env sdecls in 
+        let (str_rem, sig_rem, final_env) = type_struct env srem in
+        let newstr = (Tstr_contract contract_decls) :: str_rem in
+        (newstr, sig_rem, final_env)
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
         let arg = Typedecl.transl_exception env sarg in
         let (id, newenv) = Env.enter_exception name arg env in
@@ -749,7 +780,8 @@ and type_structure anchor env sstr scope =
         let mty = enrich_module_type anchor name modl.mod_type env in
         let (id, newenv) = Env.enter_module name mty env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (Tstr_module(id, modl) :: str_rem,
+        (Tstr_module(id, modl) :: 
+         Tstr_mty_contracts(extract_contracts id mty newenv) :: str_rem,
          Tsig_module(id, modl.mod_type, Trec_not) :: sig_rem,
          final_env)
     | {pstr_desc = Pstr_recmodule sbind; pstr_loc = loc} :: srem ->
@@ -779,17 +811,9 @@ and type_structure anchor env sstr scope =
         check "module type" loc modtype_names name;
         let mty = transl_modtype env smty in
         let (id, newenv) = Env.enter_modtype name (Tmodtype_manifest mty) env in
-        let extract_contracts_from_sig sg = 
-             Env.fetch_contracts (Env.open_signature (Pident id) sg newenv) in           
-        let rec extract_contracts mty = match mty with
-           | Tmty_ident(path) -> Tbl.empty
-           | Tmty_signature(sg) -> extract_contracts_from_sig sg
-           | Tmty_functor(id, mty1, mty2) -> 
-              Tbl.merge (extract_contracts mty1) (extract_contracts mty1)
-        in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (Tstr_modtype(id, mty) :: 
-         Tstr_mty_contracts(extract_contracts mty) :: str_rem,
+         Tstr_mty_contracts(extract_contracts id mty newenv) :: str_rem,
          Tsig_modtype(id, Tmodtype_manifest mty) :: sig_rem,
          final_env)
     | {pstr_desc = Pstr_open lid; pstr_loc = loc} :: srem ->
@@ -860,9 +884,17 @@ and type_structure anchor env sstr scope =
   in
   if !Clflags.annotations
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
-  let (str, sg, finalenv) = type_struct env sstr in
-  (* filter out all contracts from both sstr and finalenv; 
-     type-check contracts with finalenv *)
+  let (str, sg, finalenv) = type_struct env (re_order sstr) in
+  let rec extract_typed_contracts xs = 
+           match xs with
+           | [] -> []
+           | (Tstr_contract(ds) :: rem) -> 
+	            ds@extract_typed_contracts rem 
+           | (_::rem) -> extract_typed_contracts rem
+  in 
+  (* OLD code: filter out all contracts from both sstr and finalenv; 
+     type-check contracts with finalenv. The lookup_value fetches wrong type 
+     due to shadowing if we have Pstr_open after Pstr_conract 
   let rec extract_contracts xs = 
            match xs with
            | [] -> []
@@ -871,10 +903,11 @@ and type_structure anchor env sstr scope =
   in 
   let pstr_contracts = extract_contracts sstr in
   let contract_decls = Typedecl.transl_contract_decls finalenv pstr_contracts in 
-  let newstr = (Tstr_contract contract_decls) :: str in
+  let newstr = (Tstr_contract contract_decls) :: str in *)
+  let contract_decls = extract_typed_contracts str in 
   (* In newstr2, we put opened contracts as Tstr_opened_contracts *)
   let opened_contracts = Env.fetch_contracts finalenv in
-  let newstr2 = (Tstr_opened_contracts opened_contracts) :: newstr in
+  let newstr2 = (Tstr_opened_contracts opened_contracts) :: str in
   (* put contract in .ml in inferred sig *)
   let newsg = sg @ (List.map (fun c -> 
                    Tsig_contract (Path.head c.ttopctr_id, 

@@ -282,7 +282,7 @@ let rec rename_bound_idents s idents = function
       rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
                           (id' :: idents) sg
   | Tsig_value(id, _) :: sg ->
-      let id' = Ident.rename id in
+      let id' = Ident.rename id in 
       rename_bound_idents (add_value id (Pident id') s) (id' :: idents) sg 
   | (Tsig_exception(id, _) | 
      Tsig_class(id, _, _) | Tsig_cltype(id, _, _)) :: sg ->

@@ -34,8 +34,6 @@ type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
-  (* Env_contract contains contracts in the current module,
-     opened contracts are kept in Tstr_opened_contracts *)
   | Env_contract of summary * Path.t * contract_declaration
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type

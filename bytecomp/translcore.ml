@@ -553,7 +553,6 @@ let contract_failed loc pathop =
 			 Const_base(Const_int line);
 			 Const_base(Const_int char);
                          Const_base(Const_string ("Blame: " ^ func_name))]))])])
-               
 
 (* Assertions *)
 
@@ -872,7 +871,7 @@ val transl_contract: Typedtree.expression_desc ->  Typedtree.expression
 
 and transl_contract cntr e callee caller =
   let cty  = e.exp_type in
-  let mkpat id ty = { pat_desc = Tpat_var id; 
+  let mkpat desc ty = { pat_desc =  desc; 
                     pat_loc  = e.exp_loc;
                     pat_type = ty;
                     pat_env  = e.exp_env } in
@@ -887,8 +886,47 @@ and transl_contract cntr e callee caller =
        *) 
         let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
         let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
-	Texp_let (Nonrecursive, [(mkpat x cty, e)], mkexp cond cty) 
-     | Tctr_arrow (xop, c1, c2) -> 
+	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
+       (* e |>r1,r2<| {x | p} = if (try let x = e in p
+                                    with user_defined_exn -> false
+                                         others -> raise others)
+                                then e else r1
+          This forces evaluation of e, that is, if e diverges, RHS diverges;
+          However, if e throws an exception, we still test p[e/x], which may 
+          allow certain exceptions. If p[e/x] throws exceptions, we treat it
+          as false, thus raise exception r1.
+        *)
+      (*
+        let iexp i ty = Texp_ident (Pident i, 
+                         {val_type = ty; val_kind = Val_reg}) in       
+	let letexp = Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], p) in
+        let cexn_path = Predef.path_contract_failure in
+        let cexn_ctag = Cstr_exception(cexn_path) in
+        (* This is to make up a pattern Contract(loc, pathop). Since contract checking 
+         is done after type checking, we leave cstr_args as []. *)
+        let cexn_cdesc = { cstr_res = Predef.type_exn;
+                           cstr_args = []; 
+                           cstr_arity = 2;
+                           cstr_tag = cexn_ctag;
+                           cstr_consts = 2;
+                           cstr_nonconsts = 0;
+                           cstr_private = Asttypes.Public } in
+        let dummy_type_expr = { desc = Tvar; level = 0; id =0 } in
+        let loc_id = Ident.create "l" in
+        let pathop_id = Ident.create "p" in 
+        let cpat = Tpat_construct(cexn_path, cexn_cdesc, 
+                   [mkpat (Tpat_var loc_id) dummy_type_expr; 
+                    mkpat (Tpat_var pathop_id) dummy_type_expr]) in
+        let bad_exp = Texp_bad(Blame(iexp loc_id dummy_type_expr, 
+                           iexp pathop_id dummy_type_expr)) in
+        let trycond = Texp_try(mkexp letexp Predef.type_bool,
+	    [(mkpat cpat Predef.type_exn,
+              mkexp bad_exp Predef.type_exn);
+             (mkpat Tpat_any Predef.type_exn, 
+              mkexp (Texp_constant(Const_int 0)) Predef.type_bool)]) in
+        Texp_ifthenelse (mkexp trycond Predef.type_bool, e, Some callee) 
+*)
+      | Tctr_arrow (xop, c1, c2) -> 
       (* picky version:
          <<x:c1 -> c2>> e = \x. (<<c2[(<<c1>> x)/x]>> (e (<<c1>> x)))
          lax version: 
@@ -908,14 +946,14 @@ and transl_contract cntr e callee caller =
 	     let c1x_picky = transl_contract c1 xvar caller blame_x in
 	     let c2subst = subst_contract x c1x_picky c2 in 
 	     let resfun = transl_contract c2subst (mkexp resarg c2_type) callee caller in
-	     Texp_function ([(mkpat x c1_type, resfun)], Partial)
+	     Texp_function ([(mkpat (Tpat_var x) c1_type, resfun)], Partial)
          | None -> 
 	     let x = Ident.create "c" in
              let xvar = mkexp (mkident x c1_type) c1_type in
              let c1x = transl_contract c1 xvar caller callee in
    	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
              let resfun = transl_contract c2 (mkexp resarg c2_type) callee caller in
-             Texp_function ([(mkpat x c1_type, resfun)], Partial)
+             Texp_function ([(mkpat (Tpat_var x) c1_type, resfun)], Partial)
          in res
      | Tctr_tuple cs -> 
       (* <<(c1, c2)>> e = match e with 
@@ -932,7 +970,7 @@ and transl_contract cntr e callee caller =
                                             exp_type = t;
 					    exp_env = e.exp_env
 					      } in
-		   	        (mkpat i t, exp))
+		   	        (mkpat (Tpat_var i) t, exp))
                             (List.combine new_ids typs)) in
           let ces = List.map (fun (c, ei) -> transl_contract c ei callee caller) 
 			    (List.combine cs es) in
@@ -964,9 +1002,8 @@ and subst_contract v e cntr =
 
 (* deep_transl_contract takes e and expands all ei |><| ci in e *)
 and deep_transl_contract expr = 
-     Typedtree.map_expression (fun ei -> match ei.exp_desc with
-          | Texp_contract (c, e, r1, r2) -> 
-            transl_contract c e r1 r2
+      Typedtree.map_expression (fun ei -> match ei.exp_desc with
+          | Texp_contract (c, e, r1, r2) -> transl_contract c e r1 r2
           | _ -> ei) expr
    
 
