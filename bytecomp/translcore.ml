@@ -884,12 +884,14 @@ and transl_contract cntr e callee caller =
           This forces evaluation of e, that is, if e diverges, RHS diverges;
           if e crashes, RHS crashes 
        *) 
+       
         let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
         let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
+       
        (* e |>r1,r2<| {x | p} = if (try let x = e in p
-                                    with user_defined_exn -> false
-                                         others -> raise others)
+                                    with contract_exn -> raise 
+                                         _ -> false)
                                 then e else r1
           This forces evaluation of e, that is, if e diverges, RHS diverges;
           However, if e throws an exception, we still test p[e/x], which may 
@@ -917,20 +919,20 @@ and transl_contract cntr e callee caller =
         let cpat = Tpat_construct(cexn_path, cexn_cdesc, 
                    [mkpat (Tpat_var loc_id) dummy_type_expr; 
                     mkpat (Tpat_var pathop_id) dummy_type_expr]) in
-        let bad_exp = Texp_bad(Blame(iexp loc_id dummy_type_expr, 
-                           iexp pathop_id dummy_type_expr)) in
+        let raise_contract_exn = 
+             Texp_apply (Texp_ident( in
         let trycond = Texp_try(mkexp letexp Predef.type_bool,
 	    [(mkpat cpat Predef.type_exn,
               mkexp bad_exp Predef.type_exn);
              (mkpat Tpat_any Predef.type_exn, 
               mkexp (Texp_constant(Const_int 0)) Predef.type_bool)]) in
         Texp_ifthenelse (mkexp trycond Predef.type_bool, e, Some callee) 
-*)
-      | Tctr_arrow (xop, c1, c2) -> 
+      *)
+     | Tctr_arrow (xop, c1, c2) -> 
       (* picky version:
-         <<x:c1 -> c2>> e = \x. (<<c2[(<<c1>> x)/x]>> (e (<<c1>> x)))
+         e |>r1,r2<| x:c1 -> c2 = \x. (e (x |>r2,r1<| c1)) |>r1,r2<| c2[(x |>r2,r1<| c1)/x]
          lax version: 
-         <<x:c1 -> c2>> e = \x. (<<c2>> (e (<<c1>> x))) 
+         e |>r1,r2<| x:c1 -> c2 = \x. (e (x |>r2,r1<| c1)) |>r1,r2<| c2
          we are implementing the picky version. *)      
          let c1_type = c1.contract_type in
          let c2_type = c2.contract_type in
@@ -941,11 +943,20 @@ and transl_contract cntr e callee caller =
 	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
               (* e.g. x:({a | a > 0} -> {b | true}) -> {c | x 0 > c} 
                  we want to blame the x in {c | x 0 > c} 
-  	      *)
-	     let blame_x = mkexp (Texp_bad (Blame (c2.contract_loc, None))) cty in
-	     let c1x_picky = transl_contract c1 xvar caller blame_x in
+                 This is done in translmod.ml now because it can give more
+                 previse caller-location-to-be-blamed.  
+  	     
+             let callee_path = match callee.exp_desc with
+                             | Texp_bad (Blame (loc, pathopt)) -> pathopt
+                             | Texp_unr (Blame (loc, pathopt)) -> pathopt
+                             | _ -> None
+             in
+	     let blame_x = mkexp (Texp_bad (Blame (x.exp_loc, callee_path))) cty in
+	      let c1x_picky = transl_contract c1 xvar caller blame_x in 
 	     let c2subst = subst_contract x c1x_picky c2 in 
 	     let resfun = transl_contract c2subst (mkexp resarg c2_type) callee caller in
+             *)
+	     let resfun = transl_contract c2 (mkexp resarg c2_type) callee caller in
 	     Texp_function ([(mkpat (Tpat_var x) c1_type, resfun)], Partial)
          | None -> 
 	     let x = Ident.create "c" in

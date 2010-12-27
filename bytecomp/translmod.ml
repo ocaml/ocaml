@@ -381,19 +381,34 @@ let rec print_list ppf l =
    | (y::ys) -> Printtyp.path ppf y; 
                 print_list ppf ys
 
-let wrap_id_with_contract contract_decls opened_contracts caller_pathop expr = 
+(* local_fun_contracts contains x:t1 in contract x:t1 -> t2.
+   contract_decls contains contract declaration in the current module
+       contract f = {...} -> {...}
+   opened_contracts contains contracts from open ... and 
+   contracts exported from nested modules.
+*)
+let wrap_id_with_contract local_fun_contracts contract_decls opened_contracts 
+            caller_pathop expr = 
   let contracted_exp_desc = match expr.exp_desc with
        | Texp_ident (callee_path, value_desc) -> 
          begin
+          try (* lookup for dependent contract first *)
+           let id = match callee_path with
+                     | Pident(i) -> i
+                     | _ -> raise Not_found
+           in
+           let c = Ident.find_same id local_fun_contracts in
+           requiresC c expr caller_pathop (Some callee_path)                
+          with Not_found -> 
           try (* lookup for contracts in current module *)
            let c = fetch_contract_by_path callee_path contract_decls in
            requiresC c.ttopctr_desc expr caller_pathop (Some callee_path) 
           with Not_found -> 
-	    try (* lookup for contracts in opened modules *)
-	      let c = Tbl.generic_find Path.cmpPath_byname callee_path opened_contracts in 
-              requiresC (core_contract_from_iface c.Types.ttopctr_desc) 
+	  try (* lookup for contracts in opened modules *)
+	   let c = Tbl.generic_find Path.cmpPath_byname callee_path opened_contracts in 
+             requiresC (core_contract_from_iface c.Types.ttopctr_desc) 
 		        expr caller_pathop (Some callee_path) 
- 	    with Not_found -> 	    
+ 	  with Not_found -> 	    
              (* Format.fprintf Format.std_formatter "%s" (name callee_path); *)
 	      expr.exp_desc
          end
@@ -408,8 +423,10 @@ val contract_id_in_expr: core_contract list ->
                          Path.t option -> 
                          expression -> expression
 *)
-let contract_id_in_expr contract_decls opened_contracts caller_pathop expr = 
-    map_expression (wrap_id_with_contract contract_decls 
+let contract_id_in_expr local_fun_contracts contract_decls opened_contracts 
+                        caller_pathop expr = 
+    map_expression (wrap_id_with_contract local_fun_contracts
+                                          contract_decls 
 		                          opened_contracts 
 		                          caller_pathop) expr    
 
@@ -427,21 +444,28 @@ val contract_id_in_contract: core_contract list ->
                          core_contract -> core_contract
 
 *)
-let rec contract_id_in_contract contract_decls opened_contracts caller_pathop c = 
+let rec contract_id_in_contract local_fun_contracts contract_decls opened_contracts 
+                                caller_pathop c = 
   let new_desc = match c.contract_desc with
 	  | Tctr_pred (id, e) -> 
-              let ce = contract_id_in_expr contract_decls opened_contracts
-                                                 caller_pathop e in
+              let ce = contract_id_in_expr local_fun_contracts 
+                                           contract_decls 
+                                           opened_contracts
+                                           caller_pathop e in
               let expanded_ce = deep_transl_contract ce in
               Tctr_pred (id, expanded_ce)
           | Tctr_arrow (idopt, c1, c2) -> 
-	      let new_c1 = contract_id_in_contract contract_decls 
+	      let new_c1 = contract_id_in_contract local_fun_contracts contract_decls 
                                    opened_contracts caller_pathop c1 in
-	      let new_c2 = contract_id_in_contract contract_decls 
+              let new_local = match idopt with 
+                              | Some (id) -> Ident.add id c1 local_fun_contracts
+                              | None -> local_fun_contracts               
+              in
+	      let new_c2 = contract_id_in_contract new_local contract_decls 
                                    opened_contracts caller_pathop c2 in
               Tctr_arrow (idopt, new_c1, new_c2)
           | Tctr_tuple (cs) -> 
-              Tctr_tuple (List.map (fun c -> contract_id_in_contract 
+              Tctr_tuple (List.map (fun c -> contract_id_in_contract local_fun_contracts
 			   contract_decls opened_contracts caller_pathop c) cs)
   in {c with contract_desc = new_desc}
 
@@ -456,7 +480,8 @@ let rec transl_str_contracts contract_decls opened_contracts strs =
                        | Tpat_var p -> Some (Pident p)
                        | others -> None
        in
-       let cexpr = contract_id_in_expr contract_decls 
+       let cexpr = contract_id_in_expr Ident.empty 
+                                       contract_decls 
 	                               opened_contracts
 	                               fpathop expr in 
        let expanded_cexpr = deep_transl_contract  cexpr in 
@@ -532,8 +557,11 @@ and transl_contracts (str, cc) =
   in
   let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
   let checked_tstr_contracts = List.map (fun c -> 
-                 let new_c_desc = contract_id_in_contract tstr_contracts 
-				    mty_opened_contracts (Some c.ttopctr_id)
+                 let new_c_desc = contract_id_in_contract 
+                                    Ident.empty
+                                    tstr_contracts 
+				    mty_opened_contracts 
+                                    (Some c.ttopctr_id)
                                     c.ttopctr_desc in
                  {c with ttopctr_desc = new_c_desc}) tstr_contracts in
   (transl_str_contracts checked_tstr_contracts mty_opened_contracts str, cc)
