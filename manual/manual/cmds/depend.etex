@@ -36,6 +36,12 @@ and no dependencies are generated. For programs that span multiple
 directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
 
+\item["-ml-synonym" \var{.ext}]
+Consider the given extension (with leading dot) to be a synonym for .ml.
+
+\item["-mli-synonym" \var{.ext}]
+Consider the given extension (with leading dot) to be a synonym for .mli.
+
 \item["-modules"]
 Output raw dependencies of the form
 \begin{verbatim}
