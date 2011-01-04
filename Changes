@@ -18,6 +18,7 @@ Bug fixes:
 - PR#5177: Gc.compact implies Gc.full_major
 
 Feature wishes:
+- PR#4992: added '-ml-synonym' and '-mli-synonym' options to ocamldep
 - PR#5065: added '-ocamldoc' option to ocamlbuild
 - PR#5180: improved instruction selection for float operations on amd64
 
