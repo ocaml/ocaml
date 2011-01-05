@@ -7,7 +7,7 @@
 
 type ('a,'b) sum = Inl of 'a | Inr of 'b
 
-type zero
+type zero = Zero
 type _ succ
 type _ nat =
   | NZ : zero nat
@@ -367,4 +367,168 @@ let rec ins : type c n. int -> (c,n) sub_tree -> (c,n) ctxt -> rb_tree =
   | Bleaf -> repair (Rnode (Bleaf, e, Bleaf)) ct
 ;;
 let insert e (Root t) = ins e t CNil
+;;
+
+(* 5.7 typed object languages using GADTs *)
+
+type _ term =
+  | Const : int -> int term
+  | Add   : (int * int -> int) term
+  | LT    : (int * int -> bool) term
+  | Ap    : ('a -> 'b) term * 'a term -> 'b term
+  | Pair  : 'a term * 'b term -> ('a * 'b) term
+
+let ex1 = Ap (Add, Pair (Const 3, Const 5))
+let ex2 = Pair (ex1, Const 1)
+
+let rec eval_term : type a. a term -> a = function
+  | Const x -> x
+  | Add -> fun (x,y) -> x+y
+  | LT  -> fun (x,y) -> x<y
+  | Ap(f,x) -> eval_term f (eval_term x)
+  | Pair(x,y) -> (eval_term x, eval_term y)
+
+type _ rep =
+  | Rint  : int rep
+  | Rbool : bool rep
+  | Rpair : 'a rep * 'b rep -> ('a * 'b) rep
+  | Rfun  : 'a rep * 'b rep -> ('a -> 'b) rep
+
+type (_,_) equal = Eq : ('a,'a) equal
+
+let rec rep_equal : type a b. a rep -> b rep -> (a, b) equal option =
+  fun ra rb ->
+  match ra, rb with
+  | Rint, Rint -> Some Eq
+  | Rbool, Rbool -> Some Eq
+  | Rpair (a1, a2), Rpair (b1, b2) ->
+      begin match rep_equal a1 b1 with
+      | None -> None
+      | Some Eq -> match rep_equal a2 b2 with
+        | None -> None
+        | Some Eq -> Some Eq
+      end
+  | Rfun (a1, a2), Rfun (b1, b2) ->
+      begin match rep_equal a1 b1 with
+      | None -> None
+      | Some Eq -> match rep_equal a2 b2 with
+        | None -> None
+        | Some Eq -> Some Eq
+      end
+  | _ -> None
+;;
+
+type _ term =
+  | Var   : string * 'a rep -> 'a term
+  | Abs   : string * 'a rep * 'b term -> ('a -> 'b) term
+  | Const : int -> int term
+  | Add   : (int * int -> int) term
+  | LT    : (int * int -> bool) term
+  | Ap    : ('a -> 'b) term * 'a term -> 'b term
+  | Pair  : 'a term * 'b term -> ('a * 'b) term
+
+type binding = Bind : string * 'a rep * 'a -> binding
+
+let rec assoc_binding : type a. string -> a rep -> binding list -> a =
+  fun x r -> function
+  | [] -> raise Not_found
+  | Bind (x', r', v) :: env ->
+      if x = x' then
+        match rep_equal r r' with
+        | None -> failwith ("Wrong type for " ^ x)
+        | Some Eq -> v
+      else assoc_binding x r env
+
+let rec eval_term : type a. binding list -> a term -> a =
+  fun env -> function
+  | Var (x, r) -> assoc_binding x r env
+  | Abs (x, r, e) -> fun v -> eval_term (Bind (x, r, v) :: env) e
+  | Const x -> x
+  | Add -> fun (x,y) -> x+y
+  | LT  -> fun (x,y) -> x<y
+  | Ap(f,x) -> eval_term env f (eval_term env x)
+  | Pair(x,y) -> (eval_term env x, eval_term env y)
+;;
+
+let ex3 = Abs ("x", Rint, Ap (Add, Pair (Var("x",Rint), Var("x",Rint))))
+let ex4 = Ap (ex3, Const 3)
+
+let v4 = eval_term [] ex4
+;;
+
+(* 5.9/5.10 Language with binding *)
+
+type rnil
+type (_,_,_) rcons
+
+type _ is_row =
+  | Rnil  : rnil is_row
+  | Rcons : 'c is_row -> ('a,'b,'c) rcons is_row
+
+type (_,_) lam =
+  | Var : 'a -> (('a,'t,'e) rcons, 't) lam
+  | Shift : ('e,'t) lam -> (('a,'q,'e) rcons, 't) lam
+  | Abs : 'a * (('a,'s,'e) rcons, 't) lam -> ('e, 's -> 't) lam
+  | App : ('e, 's -> 't) lam * ('e, 's) lam -> ('e, 't) lam
+
+type x = X
+type y = Y
+
+let ex1 = App (Var X, Shift (Var Y))
+let ex2 = Abs (X, Abs (Y, App (Shift (Var X), Var Y)))
+;;
+
+type _ env =
+  | Enil : rnil env
+  | Econs : 'a * 't * 'e env -> ('a, 't, 'e) rcons env
+
+let rec eval_lam : type e t. e env -> (e, t) lam -> t =
+  fun env m ->
+  match env, m with
+  | Econs (_, v, r), Var _ -> v
+  | Econs (_, _, r), Shift e -> eval_lam r e
+  | _, Abs (n, body) -> fun x -> eval_lam (Econs (n, x, env)) body
+  | _, App (f, x)    -> eval_lam env f (eval_lam env x)
+;;
+
+type add = Add
+type suc = Suc
+
+let env0 = Econs (Zero, 0, Econs (Suc, succ, Econs (Add, (+), Enil)))
+
+let _0 : (_, int) lam = Var Zero
+let suc x = App (Shift (Var Suc : (_, int -> int) lam), x)
+let _1 = suc _0
+let _2 = suc _1
+let _3 = suc _2
+let add = Shift (Shift (Var Add : (_, int -> int -> int) lam))
+
+let double = Abs (X, App (App (Shift add, Var X), Var X))
+let ex3 = App (double, _3)
+;;
+
+let v3 = eval_lam env0 ex3
+;;
+
+(* 5.12 Soundness *)
+
+type pexp
+type pval
+type _ is_mode =
+  | Pexp : pexp is_mode
+  | Pval : pval is_mode
+
+type (_,_) tarr
+type tint
+
+type (_,_) rel =
+  | IntR : (tint, int) rel
+  | IntTo : ('b, 's) rel -> ((tint, 'b) tarr, int -> 's) rel
+
+type (_,_,_) lam =
+  | Const : ('a,'b) rel * 'b -> (pval, 'env, 'a) lam
+  | Var : 'a -> (pval, ('a,'t,'e) rcons, 't) lam
+  | Shift : ('m,'e,'t) lam -> ('m, ('a,'q,'e) rcons, 't) lam
+  | Abs : 'a * ('m, ('a,'s,'e) rcons, 't) lam -> (pval, 'e, 's -> 't) lam
+  | App : ('m1, 'e, 's -> 't) lam * ('m2, 'e, 's) lam -> (pexp, 'e, 't) lam
 ;;

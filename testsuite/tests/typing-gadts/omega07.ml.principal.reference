@@ -1,6 +1,6 @@
 
 # * * * * *                   type ('a, 'b) sum = Inl of 'a | Inr of 'b
-type zero
+type zero = Zero
 type 'a succ
 type 'a nat = NZ : zero nat | NS : 'b nat -> 'b succ nat
 #                   type 'a rep =
@@ -122,4 +122,115 @@ val color : ('a, 'b) sub_tree -> 'a crep = <fun>
 #                     val repair : (red, 'a) sub_tree -> ('b, 'a) ctxt -> rb_tree = <fun>
 #                     val ins : int -> ('a, 'b) sub_tree -> ('a, 'b) ctxt -> rb_tree = <fun>
 #   val insert : int -> rb_tree -> rb_tree = <fun>
+#                                                                                                 type 'a term =
+    Const : int -> int term
+  | Add : (int * int -> int) term
+  | LT : (int * int -> bool) term
+  | Ap : ('c -> 'b) term * 'c term -> 'b term
+  | Pair : 'd term * 'e term -> ('d * 'e) term
+val ex1 : int term = Ap (Add, Pair (Const 3, Const 5))
+val ex2 : (int * int) term =
+  Pair (Ap (Add, Pair (Const 3, Const 5)), Const 1)
+val eval_term : 'a term -> 'a = <fun>
+type 'a rep =
+    Rint : int rep
+  | Rbool : bool rep
+  | Rpair : 'b rep * 'c rep -> ('b * 'c) rep
+  | Rfun : 'd rep * 'e rep -> ('d -> 'e) rep
+type ('a, 'b) equal = Eq : ('c, 'c) equal
+val rep_equal : 'a rep -> 'b rep -> ('a, 'b) equal option = <fun>
+#                                                               type 'a term =
+    Var : string * 'b rep -> 'b term
+  | Abs : string * 'c rep * 'd term -> ('c -> 'd) term
+  | Const : int -> int term
+  | Add : (int * int -> int) term
+  | LT : (int * int -> bool) term
+  | Ap : ('f -> 'e) term * 'f term -> 'e term
+  | Pair : 'g term * 'h term -> ('g * 'h) term
+type binding = Bind : string * 'a rep * 'a -> binding
+val assoc_binding : string -> 'a rep -> binding list -> 'a = <fun>
+val eval_term : binding list -> 'a term -> 'a = <fun>
+#           val ex3 : (int -> int) term =
+  Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint))))
+val ex4 : int term =
+  Ap (Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint)))),
+   Const 3)
+val v4 : int = 6
+#                                           type rnil
+type ('a, 'b, 'c) rcons
+type 'a is_row =
+    Rnil : rnil is_row
+  | Rcons : 'd is_row -> ('b, 'c, 'd) rcons is_row
+type ('a, 'b) lam =
+    Var : 'c -> (('c, 'd, 'e) rcons, 'd) lam
+  | Shift : ('h, 'i) lam -> (('f, 'g, 'h) rcons, 'i) lam
+  | Abs : 'm * (('m, 'k, 'j) rcons, 'l) lam -> ('j, 'k -> 'l) lam
+  | App : ('n, 'p -> 'o) lam * ('n, 'p) lam -> ('n, 'o) lam
+type x = X
+type y = Y
+val ex1 : ((x, 'a -> 'b, (y, 'a, 'c) rcons) rcons, 'b) lam =
+  App (Var X, Shift (Var Y))
+val ex2 : ('a, ('b -> 'c) -> 'b -> 'c) lam =
+  Abs (<poly>, Abs (<poly>, App (Shift (Var <poly>), Var <poly>)))
+#                         type 'a env =
+    Enil : rnil env
+  | Econs : 'b * 'c * 'd env -> ('b, 'c, 'd) rcons env
+val eval_lam : 'a env -> ('a, 'b) lam -> 'b = <fun>
+#                               type add = Add
+type suc = Suc
+val env0 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons env = Econs (Zero, 0, Econs (Suc, <fun>, Econs (Add, <fun>, Enil)))
+val _0 : ((zero, int, 'a) rcons, int) lam = Var Zero
+val suc :
+  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam ->
+  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam = <fun>
+val _1 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam = App (Shift (Var Suc), Var Zero)
+val _2 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam = App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))
+val _3 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam =
+  App (Shift (Var Suc),
+   App (Shift (Var Suc), App (Shift (Var Suc), Var Zero)))
+val add :
+  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+   int -> int -> int)
+  lam = Shift (Shift (Var Add))
+val double :
+  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+   int -> int)
+  lam =
+  Abs (<poly>,
+   App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>))
+val ex3 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam =
+  App
+   (Abs (<poly>,
+     App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
+   App (Shift (Var Suc),
+    App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))))
+#     val v3 : int = 6
+#                                             type pexp
+type pval
+type 'a is_mode = Pexp : pexp is_mode | Pval : pval is_mode
+type ('a, 'b) tarr
+type tint
+type ('a, 'b) rel =
+    IntR : (tint, int) rel
+  | IntTo : ('c, 'd) rel -> ((tint, 'c) tarr, int -> 'd) rel
+type ('a, 'b, 'c) lam =
+    Const : ('e, 'f) rel * 'f -> (pval, 'd, 'e) lam
+  | Var : 'g -> (pval, ('g, 'h, 'i) rcons, 'h) lam
+  | Shift : ('j, 'm, 'n) lam -> ('j, ('k, 'l, 'm) rcons, 'n) lam
+  | Abs : 'r * ('s, ('r, 'p, 'o) rcons, 'q) lam -> (pval, 'o, 'p -> 'q) lam
+  | App : ('v, 't, 'w -> 'u) lam * ('x, 't, 'w) lam -> (pexp, 't, 'u) lam
 # 
