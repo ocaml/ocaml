@@ -57,16 +57,12 @@ clean::
 .SUFFIXES: .d.o .pic.o
 
 .c.d.o:
-	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
-	$(CC) -c $(DFLAGS) $<
-	mv $*.o $*.d.o
-	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+	ln -s -f $*.c $*.d.c
+	$(CC) -c $(DFLAGS) $*.d.c
 
 .c.pic.o:
-	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
-	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $<
-	mv $*.o $*.pic.o
-	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+	ln -s -f $*.c $*.pic.c
+	$(CC) -c $(CFLAGS) $(SHAREDCCCOMPOPTS) $*.pic.c
 
 depend : prims.c opnames.h jumptbl.h version.h
 	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend

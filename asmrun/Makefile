@@ -164,16 +164,12 @@ clean::
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
 .c.d.o:
-	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
-	$(CC) -c $(DFLAGS) $<
-	mv $*.o $*.d.o
-	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+	ln -s -f $*.c $*.d.c
+	$(CC) -c $(DFLAGS) $*.d.c
 
 .c.p.o:
-	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
-	$(CC) -c $(PFLAGS) $<
-	mv $*.o $*.p.o
-	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+	ln -s -f $*.c $*.p.c
+	$(CC) -c $(PFLAGS) $*.p.c
 
 .s.o:
 	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s
