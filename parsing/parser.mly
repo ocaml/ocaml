@@ -1069,25 +1069,37 @@ type_constraint:
   | COLON error                                 { syntax_error() }
   | COLONGREATER error                          { syntax_error() }
 ;
+
 core_contract:
-    core_contract_desc           { mkctr($1) }
+    simple_core_contract_or_tuple
+      { $1 }
+  | val_ident COLON simple_core_contract_or_tuple MINUSGREATER core_contract
+      { mkctr(Pctr_arrow(Some $1, $3, $5)) } 
+  | simple_core_contract_or_tuple MINUSGREATER core_contract
+      { mkctr(Pctr_arrow(None, $1, $3)) } 
+ ;
+
+simple_core_contract_or_tuple:
+    simple_core_contract                     { $1 }
+  | contract_star_list
+      { mkctr(Pctr_tuple(List.rev $1)) } 
+
+contract_star_list:
+  | contract_star_list STAR dep_core_contract       { $3 :: $1 }
+  | dep_core_contract STAR dep_core_contract         { [$3; $1] }
 ;
-core_contract_desc:
+
+dep_core_contract:
+    val_ident COLON simple_core_contract        { (Some $1, $3) } 
+  | simple_core_contract                 { (None, $1) }  
+;   
+
+simple_core_contract:
     LBRACE val_ident BAR expr RBRACE         
-      { Pctr_pred($2, $4) }
-  | val_ident COLON core_contract MINUSGREATER core_contract
-      { Pctr_arrow(Some $1, $3, $5) } 
-  | core_contract MINUSGREATER core_contract
-      { Pctr_arrow(None, $1, $3) } 
-  | LPAREN core_contract_desc RPAREN
+      { mkctr(Pctr_pred($2, $4)) }
+  | LPAREN core_contract RPAREN
       { $2 }
-  | contract_comma_list 
-      { Pctr_tuple(List.rev $1) }
-;
-contract_comma_list:
-    contract_comma_list STAR core_contract        { $3 :: $1 }
-  | core_contract STAR core_contract         { [$3; $1] }
-;
+
 
 /* Patterns */
 

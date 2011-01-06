@@ -127,7 +127,7 @@ and core_contract =
 and core_contract_desc = 
     Pctr_pred of string * expression
   | Pctr_arrow of string option * core_contract * core_contract
-  | Pctr_tuple of core_contract list
+  | Pctr_tuple of (string option * core_contract) list
 
 (* Type declarations *)
 

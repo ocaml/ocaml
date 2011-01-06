@@ -256,11 +256,14 @@ let expression s expr =
 let rec core_contract s c = 
   {c with contract_desc = core_contract_desc s c.contract_desc}
 
+and dep_core_contract s = function (vo, c) -> 
+   (vo, core_contract s c)
+
 and core_contract_desc s = function 
     Tctr_pred (id, expr) -> Tctr_pred (id, expression s expr)
   | Tctr_arrow (id_opt, cc1, cc2) -> 
       Tctr_arrow (id_opt, core_contract s cc1, core_contract s cc2) 
-  | Tctr_tuple (cc_list) -> Tctr_tuple (List.map (core_contract s) cc_list)
+  | Tctr_tuple (cs) -> Tctr_tuple (List.map (dep_core_contract s) cs)
 
 
 let contract_declaration s decl = 

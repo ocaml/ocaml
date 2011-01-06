@@ -90,7 +90,7 @@ and core_contract =
 and core_contract_desc = 
     Tctr_pred of Ident.t * expression
   | Tctr_arrow of Ident.t option * core_contract * core_contract
-  | Tctr_tuple of core_contract list
+  | Tctr_tuple of (Ident.t option * core_contract) list
 
 and contract_declaration =  
   { ttopctr_id: Path.t;

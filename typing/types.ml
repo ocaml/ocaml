@@ -263,7 +263,7 @@ and core_contract =
 and core_contract_desc = 
     Tctr_pred of Ident.t * expression
   | Tctr_arrow of Ident.t option * core_contract * core_contract
-  | Tctr_tuple of core_contract list
+  | Tctr_tuple of (Ident.t option * core_contract) list
 
 and contract_declaration =  
   { ttopctr_id: Path.t;
@@ -539,7 +539,9 @@ let rec eqContract_desc c1 c2 =
       | (_, _) -> false
       end
   | (Tctr_tuple (clist1), Tctr_tuple (clist2)) -> 
-      List.for_all (fun (c1,c2) -> eqContract c1 c2) (List.combine clist1 clist2)
+      List.for_all (fun ((vo1,c1),(vo2,c2)) -> 
+          vo1 = vo2 &&  eqContract c1 c2) 
+      (List.combine clist1 clist2)
   | (_, _) -> false
 
 and eqContract c1 c2 = eqContract_desc c1.contract_desc c2.contract_desc

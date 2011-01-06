@@ -890,7 +890,7 @@ and transl_contract cntr e callee caller =
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
        
        (* e |>r1,r2<| {x | p} = if (try let x = e in p
-                                    with contract_exn -> raise 
+                                    with contract_exn -> raise contract_exn
                                          _ -> false)
                                 then e else r1
           This forces evaluation of e, that is, if e diverges, RHS diverges;
@@ -967,8 +967,9 @@ and transl_contract cntr e callee caller =
              Texp_function ([(mkpat (Tpat_var x) c1_type, resfun)], Partial)
          in res
      | Tctr_tuple cs -> 
-      (* <<(c1, c2)>> e = match e with 
-                           (x1, x2) -> (<<c1>> x1, <<c2>> x2)  *)
+      (* e |>r1,r2<| (x:c1, c2) = match e with 
+                           (x1, x2) -> (x1 |>r1,r2<| c1, 
+                                        x2 |>r1,r2<| c2[(x1 |>r2,r1<| c1)/x])  *)
        begin 	
 	  let new_ids =  (Ident.create_idents "x" (List.length cs))  in
           let typs = match (Ctype.repr cty).desc with
@@ -983,8 +984,11 @@ and transl_contract cntr e callee caller =
 					      } in
 		   	        (mkpat (Tpat_var i) t, exp))
                             (List.combine new_ids typs)) in
-          let ces = List.map (fun (c, ei) -> transl_contract c ei callee caller) 
-			    (List.combine cs es) in
+          (* similar to dependent function contract, the substitution
+            c2[(x1 |>r2,r1<| c1)/x] is done in transmod.ml *)
+          let ces = List.map (fun ((vo,c), ei) -> 
+                             transl_contract c ei callee caller)
+                             (List.combine cs es) in
           let newpat = { pat_desc = Tpat_tuple ps;
                          pat_loc = e.exp_loc;
                          pat_type = cty;
@@ -1008,7 +1012,8 @@ and subst_contract v e cntr =
                let sc1 = subst_contract v e c1 in
                let sc2 = subst_contract v e c2 in
                Tctr_arrow (xop, sc1, sc2)
-           | Tctr_tuple cs -> Tctr_tuple (List.map (subst_contract v e) cs)
+           | Tctr_tuple cs -> 
+               Tctr_tuple (List.map (fun (vo,c) -> (vo, subst_contract v e c)) cs)
   in { cntr with contract_desc = sc }
 
 (* deep_transl_contract takes e and expands all ei |><| ci in e *)

@@ -107,7 +107,7 @@ and core_contract =
 and core_contract_desc = 
     Tctr_pred of Ident.t * expression
   | Tctr_arrow of Ident.t option * core_contract * core_contract
-  | Tctr_tuple of core_contract list
+  | Tctr_tuple of (Ident.t option * core_contract) list
 
 and contract_declaration =  
   { ttopctr_id: Path.t;
@@ -525,7 +525,7 @@ and core_contract_to_iface ccntr =
   let core_contract_desc_to_iface f desc = match desc with
       | Tctr_pred (i, e) -> Types.Tctr_pred(i, expression_to_iface e)
       | Tctr_arrow (iop, c1, c2) -> Types.Tctr_arrow (iop, f c1, f c2)
-      | Tctr_tuple (cs) -> Types.Tctr_tuple (List.map f cs)
+      | Tctr_tuple (cs) -> Types.Tctr_tuple (List.map (fun (vo,c) -> (vo, f c)) cs)
   in
   { Types.contract_desc = core_contract_desc_to_iface core_contract_to_iface 
 						      ccntr.contract_desc;
@@ -809,7 +809,7 @@ and core_contract_from_iface ccntr =
   let core_contract_desc_from_iface f desc = match desc with
       | Types.Tctr_pred (i, e) -> Tctr_pred(i, expression_from_iface e)
       | Types.Tctr_arrow (iop, c1, c2) -> Tctr_arrow (iop, f c1, f c2)
-      | Types.Tctr_tuple (cs) -> Tctr_tuple (List.map f cs)
+      | Types.Tctr_tuple (cs) -> Tctr_tuple (List.map (fun (vo, c) -> (vo, f c)) cs)
   in
   { contract_desc = core_contract_desc_from_iface core_contract_from_iface 
 						      ccntr.Types.contract_desc;

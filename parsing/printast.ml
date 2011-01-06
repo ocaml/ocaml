@@ -344,6 +344,10 @@ and core_contract i ppf x =
   line i ppf "core_contract %a\n" fmt_location x.pctr_loc;
   core_contract_desc i ppf x.pctr_desc;
 
+and dep_core_contract i ppf = function (vo,c) ->
+  option i string ppf vo;
+  core_contract i ppf c;
+
 and core_contract_desc i ppf x = 
   match x with
     Pctr_pred (x,e) -> 
@@ -355,7 +359,7 @@ and core_contract_desc i ppf x =
       core_contract i ppf c2;
   | Pctr_tuple (cs) -> 
       line i ppf "Pctr_tuple\n";
-      list i core_contract ppf cs;
+      list i dep_core_contract ppf cs;
 
 
 and exception_declaration i ppf x = list i core_type ppf x

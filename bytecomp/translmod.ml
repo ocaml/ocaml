@@ -465,8 +465,17 @@ let rec contract_id_in_contract local_fun_contracts contract_decls opened_contra
                                    opened_contracts caller_pathop c2 in
               Tctr_arrow (idopt, new_c1, new_c2)
           | Tctr_tuple (cs) -> 
-              Tctr_tuple (List.map (fun c -> contract_id_in_contract local_fun_contracts
-			   contract_decls opened_contracts caller_pathop c) cs)
+              let rec sub_dep xs local = begin match xs with
+                | [] -> []
+                | (vo, c)::l -> 
+                  let new_c = contract_id_in_contract local
+			       contract_decls opened_contracts caller_pathop c in
+                  let new_local = match vo with
+                       | None -> local_fun_contracts
+                       | Some (id) -> Ident.add id c local
+                  in (vo, new_c) :: sub_dep l new_local 
+                end
+             in Tctr_tuple (sub_dep cs local_fun_contracts)
   in {c with contract_desc = new_desc}
 
 (* val transl_str_contracts : core_contract list -> 

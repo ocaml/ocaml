@@ -323,12 +323,19 @@ let rec print_out_core_contract_desc ppf =
                 print_out_core_contract c2
     end
   | Tctr_tuple (cs) -> fprintf ppf "@[[%a]@]" 
-                       (print_list_init print_out_core_contract
+                       (print_list_init print_out_dep_core_contract
                                   (fun ppf -> fprintf ppf ",@ "))
                                    cs
 
 and print_out_core_contract ppf c = 
       print_out_core_contract_desc ppf c.contract_desc
+
+and print_out_dep_core_contract ppf = function (vo, c) ->
+      match vo with
+      | None -> fprintf ppf "@[%a@]" 
+                print_out_core_contract c
+      | Some x -> fprintf ppf "@[%s:(%a)@]" (Ident.name x)
+                  print_out_core_contract c
 
 and print_out_contract_declaration ppf cdecl = 
       print_out_core_contract_desc ppf cdecl.ttopctr_desc.contract_desc
