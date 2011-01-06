@@ -251,10 +251,6 @@ From the top directory, become superuser and do:
         umask 022       # make sure to give read & execute permission to all
         make install
 
-      In the ocamlbuild setting instead of make install do:
-
-        ./build/install.sh
-
 7- Installation is complete. Time to clean up. From the toplevel
 directory, do "make clean".
 
