@@ -139,7 +139,9 @@ type 'a rep =
   | Rfun : 'd rep * 'e rep -> ('d -> 'e) rep
 type ('a, 'b) equal = Eq : ('c, 'c) equal
 val rep_equal : 'a rep -> 'b rep -> ('a, 'b) equal option = <fun>
-#                                                               type 'a term =
+#                                                               type assoc = Assoc : string * 'a rep * 'a -> assoc
+val assoc : string -> 'a rep -> assoc list -> 'a = <fun>
+type 'a term =
     Var : string * 'b rep -> 'b term
   | Abs : string * 'c rep * 'd term -> ('c -> 'd) term
   | Const : int -> int term
@@ -147,32 +149,31 @@ val rep_equal : 'a rep -> 'b rep -> ('a, 'b) equal option = <fun>
   | LT : (int * int -> bool) term
   | Ap : ('f -> 'e) term * 'f term -> 'e term
   | Pair : 'g term * 'h term -> ('g * 'h) term
-type binding = Bind : string * 'a rep * 'a -> binding
-val assoc_binding : string -> 'a rep -> binding list -> 'a = <fun>
-val eval_term : binding list -> 'a term -> 'a = <fun>
+val eval_term : assoc list -> 'a term -> 'a = <fun>
 #           val ex3 : (int -> int) term =
   Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint))))
 val ex4 : int term =
   Ap (Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint)))),
    Const 3)
 val v4 : int = 6
-#                                           type rnil
+#                                             type rnil
 type ('a, 'b, 'c) rcons
 type 'a is_row =
     Rnil : rnil is_row
   | Rcons : 'd is_row -> ('b, 'c, 'd) rcons is_row
 type ('a, 'b) lam =
-    Var : 'c -> (('c, 'd, 'e) rcons, 'd) lam
-  | Shift : ('h, 'i) lam -> (('f, 'g, 'h) rcons, 'i) lam
-  | Abs : 'm * (('m, 'k, 'j) rcons, 'l) lam -> ('j, 'k -> 'l) lam
-  | App : ('n, 'p -> 'o) lam * ('n, 'p) lam -> ('n, 'o) lam
+    Const : int -> ('c, int) lam
+  | Var : 'd -> (('d, 'e, 'f) rcons, 'e) lam
+  | Shift : ('i, 'j) lam -> (('g, 'h, 'i) rcons, 'j) lam
+  | Abs : 'n * (('n, 'l, 'k) rcons, 'm) lam -> ('k, 'l -> 'm) lam
+  | App : ('o, 'q -> 'p) lam * ('o, 'q) lam -> ('o, 'p) lam
 type x = X
 type y = Y
 val ex1 : ((x, 'a -> 'b, (y, 'a, 'c) rcons) rcons, 'b) lam =
   App (Var X, Shift (Var Y))
 val ex2 : ('a, ('b -> 'c) -> 'b -> 'c) lam =
   Abs (<poly>, Abs (<poly>, App (Shift (Var <poly>), Var <poly>)))
-#                         type 'a env =
+#                           type 'a env =
     Enil : rnil env
   | Econs : 'b * 'c * 'd env -> ('b, 'c, 'd) rcons env
 val eval_lam : 'a env -> ('a, 'b) lam -> 'b = <fun>
@@ -219,9 +220,49 @@ val ex3 :
    App (Shift (Var Suc),
     App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))))
 #     val v3 : int = 6
+#       *                                       type 'a rep = I : int rep | Ar : 'b rep * 'c rep -> ('b -> 'c) rep
+val compare : 'a rep -> 'b rep -> (string, ('a, 'b) equal) sum = <fun>
+#                     type term =
+    C of int
+  | Ab : string * 'a rep * term -> term
+  | Ap of term * term
+  | V of string
+type 'a ctx =
+    Cnil : rnil ctx
+  | Ccons : 'b * string * 'c rep * 'd ctx -> ('b, 'c, 'd) rcons ctx
+#                             type 'a checked =
+    Cerror of string
+  | Cok : ('b, 'c) lam * 'c rep -> 'b checked
+val lookup : string -> 'a ctx -> 'a checked = <fun>
+#                                                   val tc : 'a nat -> 'b ctx -> term -> 'b checked = <fun>
+#             val ctx0 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons ctx =
+  Ccons (Zero, "0", I,
+   Ccons (Suc, "S", Ar (I, I), Ccons (Add, "+", Ar (I, Ar (I, I)), Cnil)))
+val ex1 : term = Ab ("x", I, Ap (Ap (V "+", V "x"), V "x"))
+# val c1 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons checked =
+  Cok
+   (Abs (<poly>,
+     App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
+   Ar (I, I))
+# val ex2 : term = Ap (Ab ("x", I, Ap (Ap (V "+", V "x"), V "x")), C 3)
+# val c2 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons checked =
+  Cok
+   (App
+     (Abs (<poly>,
+       App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
+     Const 3),
+   I)
+#           val eval_checked : 'a env -> 'a checked -> int = <fun>
+#   val v2 : int = 6
 #                                             type pexp
 type pval
-type 'a is_mode = Pexp : pexp is_mode | Pval : pval is_mode
+type 'a mode = Pexp : pexp mode | Pval : pval mode
 type ('a, 'b) tarr
 type tint
 type ('a, 'b) rel =
@@ -231,6 +272,24 @@ type ('a, 'b, 'c) lam =
     Const : ('e, 'f) rel * 'f -> (pval, 'd, 'e) lam
   | Var : 'g -> (pval, ('g, 'h, 'i) rcons, 'h) lam
   | Shift : ('j, 'm, 'n) lam -> ('j, ('k, 'l, 'm) rcons, 'n) lam
-  | Abs : 'r * ('s, ('r, 'p, 'o) rcons, 'q) lam -> (pval, 'o, 'p -> 'q) lam
-  | App : ('v, 't, 'w -> 'u) lam * ('x, 't, 'w) lam -> (pexp, 't, 'u) lam
+  | Lam : 'r *
+      ('s, ('r, 'p, 'o) rcons, 'q) lam -> (pval, 'o, ('p, 'q) tarr) lam
+  | App : ('v, 't, ('w, 'u) tarr) lam *
+      ('x, 't, 'w) lam -> (pexp, 't, 'u) lam
+#                   val ex1 : (pexp, 'a, tint) lam =
+  App (Lam (<poly>, Var <poly>), Const (IntR, <poly>))
+val mode : ('a, 'b, 'c) lam -> 'a mode = <fun>
+#               type ('a, 'b) sub =
+    Id : ('c, 'c) sub
+  | Bind : 'd * ('h, 'g, 'e) lam *
+      ('f, 'g) sub -> (('d, 'e, 'f) rcons, 'g) sub
+  | Push : ('k, 'l) sub -> (('i, 'j, 'k) rcons, ('i, 'j, 'l) rcons) sub
+type ('a, 'b) lam' = Ex : ('e, 'c, 'd) lam -> ('c, 'd) lam'
+#                               val subst : ('a, 'b, 'c) lam -> ('b, 'd) sub -> ('d, 'c) lam' = <fun>
+#       type closed = rnil
+type 'a rlam = ((pexp, closed, 'a) lam, (pval, closed, 'a) lam) sum
+#                             val rule :
+  (pval, closed, ('a, 'b) tarr) lam -> (pval, closed, 'a) lam -> 'b rlam =
+  <fun>
+#                                 val onestep : ('a, closed, 'b) lam -> 'b rlam = <fun>
 # 

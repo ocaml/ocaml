@@ -418,6 +418,18 @@ let rec rep_equal : type a b. a rep -> b rep -> (a, b) equal option =
   | _ -> None
 ;;
 
+type assoc = Assoc : string * 'a rep * 'a -> assoc
+
+let rec assoc : type a. string -> a rep -> assoc list -> a =
+  fun x r -> function
+  | [] -> raise Not_found
+  | Assoc (x', r', v) :: env ->
+      if x = x' then
+        match rep_equal r r' with
+        | None -> failwith ("Wrong type for " ^ x)
+        | Some Eq -> v
+      else assoc x r env
+
 type _ term =
   | Var   : string * 'a rep -> 'a term
   | Abs   : string * 'a rep * 'b term -> ('a -> 'b) term
@@ -427,22 +439,10 @@ type _ term =
   | Ap    : ('a -> 'b) term * 'a term -> 'b term
   | Pair  : 'a term * 'b term -> ('a * 'b) term
 
-type binding = Bind : string * 'a rep * 'a -> binding
-
-let rec assoc_binding : type a. string -> a rep -> binding list -> a =
-  fun x r -> function
-  | [] -> raise Not_found
-  | Bind (x', r', v) :: env ->
-      if x = x' then
-        match rep_equal r r' with
-        | None -> failwith ("Wrong type for " ^ x)
-        | Some Eq -> v
-      else assoc_binding x r env
-
-let rec eval_term : type a. binding list -> a term -> a =
+let rec eval_term : type a. assoc list -> a term -> a =
   fun env -> function
-  | Var (x, r) -> assoc_binding x r env
-  | Abs (x, r, e) -> fun v -> eval_term (Bind (x, r, v) :: env) e
+  | Var (x, r) -> assoc x r env
+  | Abs (x, r, e) -> fun v -> eval_term (Assoc (x, r, v) :: env) e
   | Const x -> x
   | Add -> fun (x,y) -> x+y
   | LT  -> fun (x,y) -> x<y
@@ -466,6 +466,7 @@ type _ is_row =
   | Rcons : 'c is_row -> ('a,'b,'c) rcons is_row
 
 type (_,_) lam =
+  | Const : int -> ('e, int) lam
   | Var : 'a -> (('a,'t,'e) rcons, 't) lam
   | Shift : ('e,'t) lam -> (('a,'q,'e) rcons, 't) lam
   | Abs : 'a * (('a,'s,'e) rcons, 't) lam -> ('e, 's -> 't) lam
@@ -485,6 +486,7 @@ type _ env =
 let rec eval_lam : type e t. e env -> (e, t) lam -> t =
   fun env m ->
   match env, m with
+  | _, Const n -> n
   | Econs (_, v, r), Var _ -> v
   | Econs (_, _, r), Shift e -> eval_lam r e
   | _, Abs (n, body) -> fun x -> eval_lam (Econs (n, x, env)) body
@@ -510,13 +512,107 @@ let ex3 = App (double, _3)
 let v3 = eval_lam env0 ex3
 ;;
 
+(* 5.13: Constructing typing derivations at runtime *)
+
+(* Modified slightly to use the language of 5.10, since this is more fun.
+   Of course this works also with the language of 5.12. *)
+
+type _ rep =
+  | I : int rep
+  | Ar : 'a rep * 'b rep -> ('a -> 'b) rep
+
+let rec compare : type a b. a rep -> b rep -> (string, (a,b) equal) sum =
+  fun a b ->
+  match a, b with
+  | I, I -> Inr Eq
+  | Ar(x,y), Ar(s,t) ->
+      begin match compare x s with
+      | Inl _ as e -> e
+      | Inr Eq -> match compare y t with
+        | Inl _ as e -> e
+        | Inr Eq as e -> e
+      end
+  | I, Ar _ -> Inl "I <> Ar _"
+  | Ar _, I -> Inl "Ar _ <> I"
+;;
+
+type term =
+  | C of int
+  | Ab : string * 'a rep * term -> term
+  | Ap of term * term
+  | V of string
+
+type _ ctx =
+  | Cnil : rnil ctx
+  | Ccons : 't * string * 'x rep * 'e ctx -> ('t,'x,'e) rcons ctx
+;;
+
+type _ checked =
+  | Cerror of string
+  | Cok : ('e,'t) lam * 't rep -> 'e checked
+
+let rec lookup : type e. string -> e ctx -> e checked =
+  fun name ctx ->
+  match ctx with
+  | Cnil -> Cerror ("Name not found: " ^ name)
+  | Ccons (l,s,t,rs) ->
+      if s = name then Cok (Var l,t) else
+      match lookup name rs with
+      | Cerror m -> Cerror m
+      | Cok (v, t) -> Cok (Shift v, t)
+;;
+
+let rec tc : type n e. n nat -> e ctx -> term -> e checked =
+  fun n ctx t ->
+  match t with
+  | V s -> lookup s ctx
+  | Ap(f,x) ->
+      begin match tc n ctx f with
+      | Cerror _ as e -> e
+      | Cok (f', ft) -> match tc n ctx x with
+        | Cerror _ as e -> e
+        | Cok (x', xt) ->
+            match ft with
+            | Ar (a, b) ->
+                begin match compare a xt with
+                | Inl s -> Cerror s
+                | Inr Eq -> Cok (App (f',x'), b)
+                end
+            | _ -> Cerror "Non fun in Ap"
+      end
+  | Ab(s,t,body) ->
+      begin match tc (NS n) (Ccons (n, s, t, ctx)) body with
+      | Cerror _ as e -> e
+      | Cok (body', et) -> Cok (Abs (n, body'), Ar (t, et))
+      end
+  | C m -> Cok (Const m, I)
+;;
+
+let ctx0 =
+  Ccons (Zero, "0", I,
+         Ccons (Suc, "S", Ar(I,I),
+                Ccons (Add, "+", Ar(I,Ar(I,I)), Cnil)))
+
+let ex1 = Ab ("x", I, Ap(Ap(V"+",V"x"),V"x"));;
+let c1 = tc NZ ctx0 ex1;;
+let ex2 = Ap (ex1, C 3);;
+let c2 = tc NZ ctx0 ex2;;
+
+let eval_checked env = function
+  | Cerror s -> failwith s
+  | Cok (e, I) -> (eval_lam env e : int)
+  | Cok _ -> failwith "Can only evaluate expressions of type I"
+;;
+
+let v2 = eval_checked env0 c2 ;;
+
 (* 5.12 Soundness *)
 
 type pexp
 type pval
-type _ is_mode =
-  | Pexp : pexp is_mode
-  | Pval : pval is_mode
+type _ mode =
+  | Pexp : pexp mode
+  | Pval : pval mode
 
 type (_,_) tarr
 type tint
@@ -529,6 +625,76 @@ type (_,_,_) lam =
   | Const : ('a,'b) rel * 'b -> (pval, 'env, 'a) lam
   | Var : 'a -> (pval, ('a,'t,'e) rcons, 't) lam
   | Shift : ('m,'e,'t) lam -> ('m, ('a,'q,'e) rcons, 't) lam
-  | Abs : 'a * ('m, ('a,'s,'e) rcons, 't) lam -> (pval, 'e, 's -> 't) lam
-  | App : ('m1, 'e, 's -> 't) lam * ('m2, 'e, 's) lam -> (pexp, 'e, 't) lam
+  | Lam : 'a * ('m, ('a,'s,'e) rcons, 't) lam -> (pval, 'e, ('s,'t) tarr) lam
+  | App : ('m1, 'e, ('s,'t) tarr) lam * ('m2, 'e, 's) lam -> (pexp, 'e, 't) lam
+;;
+
+let ex1 = App (Lam (X, Var X), Const (IntR, 3))
+
+let rec mode : type m e t. (m,e,t) lam -> m mode = function
+  | Lam (v, body) -> Pval
+  | Var v -> Pval
+  | Const (r, v) -> Pval
+  | Shift e -> mode e
+  | App _ -> Pexp
+;;
+
+type (_,_) sub =
+  | Id : ('r,'r) sub
+  | Bind : 't * ('m,'r2,'x) lam * ('r,'r2) sub -> (('t,'x,'r) rcons, 'r2) sub
+  | Push : ('r1,'r2) sub -> (('a,'b,'r1) rcons, ('a,'b,'r2) rcons) sub
+
+type (_,_) lam' = Ex : ('m, 's, 't) lam -> ('s,'t) lam'
+;;
+
+let rec subst : type m1 r t s. (m1,r,t) lam -> (r,s) sub -> (s,t) lam' =
+  fun t s ->
+  match t, s with
+  | _, Id -> Ex t
+  | Const(r,c), sub -> Ex (Const (r,c))
+  | Var v, Bind (x, e, r) -> Ex e
+  | Var v, Push sub -> Ex (Var v)
+  | Shift e, Bind (_, _, r) -> subst e r
+  | Shift e, Push sub ->
+      (match subst e sub with Ex a -> Ex (Shift a))
+  | App(f,x), sub ->
+      (match subst f sub, subst x sub with Ex g, Ex y -> Ex (App (g,y)))
+  | Lam(v,x), sub ->
+      (match subst x (Push sub) with Ex body -> Ex (Lam (v, body)))
+;;
+
+type closed = rnil
+
+type 'a rlam = ((pexp,closed,'a) lam, (pval,closed,'a) lam) sum ;;
+
+let rec rule : type a b.
+  (pval, closed, (a,b) tarr) lam -> (pval, closed, a) lam -> b rlam =
+  fun v1 v2 ->
+  match v1, v2 with
+  | Lam(x,body), v ->
+      begin
+        match subst body (Bind (x, v, Id)) with Ex term ->
+        match mode term with
+        | Pexp -> Inl term
+        | Pval -> Inr term
+      end
+  | Const (IntTo b, f), Const (IntR, x) ->
+      Inr (Const (b, f x))
+;;
+let rec onestep : type m t. (m,closed,t) lam -> t rlam = function
+  | Lam (v, body) -> Inr (Lam (v, body))
+  | Const (r, v)  -> Inr (Const (r, v))
+  | App (e1, e2) ->
+      match mode e1, mode e2 with
+      | Pexp, _->
+          begin match onestep e1 with
+          | Inl e -> Inl(App(e,e2))
+          | Inr v -> Inl(App(v,e2))
+          end
+      | Pval, Pexp ->
+          begin match onestep e2 with
+          | Inl e -> Inl(App(e1,e))
+          | Inr v -> Inl(App(e1,v))
+          end
+      | Pval, Pval -> rule e1 e2
 ;;
