@@ -1,22 +1,20 @@
 
-# * * * * *                   type ('a, 'b) sum = Inl of 'a | Inr of 'b
+# * * * * *                       type ('a, 'b) sum = Inl of 'a | Inr of 'b
 type zero = Zero
 type 'a succ
 type 'a nat = NZ : zero nat | NS : 'b nat -> 'b succ nat
-#                   type 'a rep =
-    Rint : int rep
-  | Rchar : char rep
-  | Runit : unit rep
-  | Rpair : 'b rep * 'c rep -> ('b * 'c) rep
-  | Rsum : 'd rep * 'e rep -> ('d, 'e) sum rep
-val t1 : (int * char, unit * int) sum rep =
-  Rsum (Rpair (Rint, Rchar), Rpair (Runit, Rint))
-#               val sumR : 'a rep -> 'a -> int = <fun>
-#                   val sum2 : 'a rep -> 'a -> int = <fun>
-#       type ('a, 'b) seq =
+#             type ('a, 'b) seq =
     Snil : ('c, zero) seq
   | Scons : 'd * ('d, 'e) seq -> ('d, 'e succ) seq
-#               type tp
+#   val l1 : (int, zero succ succ) seq = Scons (3, Scons (5, Snil))
+#       *         type ('a, 'b, 'c) plus =
+    PlusZ : 'd nat -> (zero, 'd, 'd) plus
+  | PlusS : ('e, 'f, 'g) plus -> ('e succ, 'f, 'g succ) plus
+#         val length : ('a, 'b) seq -> 'b nat = <fun>
+#   *                     type ('a, 'b, 'c) app =
+    App : ('d, 'g) seq * ('e, 'f, 'g) plus -> ('d, 'e, 'f) app
+val app : ('a, 'b) seq -> ('a, 'c) seq -> ('a, 'b, 'c) app = <fun>
+# *                           type tp
 type nd
 type ('a, 'b) fk
 type 'a shape =
@@ -26,7 +24,7 @@ type 'a shape =
 #           type tt
 type ff
 type 'a boolean = BT : tt boolean | BF : ff boolean
-#           type ('a, 'b) path =
+#                 type ('a, 'b) path =
     Pnone : 'c -> (tp, 'c) path
   | Phere : (nd, 'd) path
   | Pleft : ('e, 'g) path -> (('e, 'f) fk, 'g) path
@@ -40,10 +38,7 @@ type 'a boolean = BT : tt boolean | BF : ff boolean
 #                     val find : ('a -> 'a -> bool) -> 'a -> ('b, 'a) tree -> ('b, 'a) path list =
   <fun>
 #             val extract : ('a, 'b) path -> ('a, 'b) tree -> 'b = <fun>
-#       type ('a, 'b, 'c) plus =
-    PlusZ : 'd nat -> (zero, 'd, 'd) plus
-  | PlusS : ('e, 'f, 'g) plus -> ('e succ, 'f, 'g succ) plus
-#       type ('a, 'b) le =
+#             type ('a, 'b) le =
     LeZ : 'c nat -> (zero, 'c) le
   | LeS : ('d, 'e) le -> ('d succ, 'e succ) le
 #       type 'a even = EvenZ : zero even | EvenSS : 'b even -> 'b succ succ even
@@ -56,8 +51,14 @@ val even2 : two even = EvenSS EvenZ
 val even4 : four even = EvenSS (EvenSS EvenZ)
 #   val p1 : (two, one, three) plus = PlusS (PlusS (PlusZ (NS NZ)))
 #         val summandLessThanSum : ('a, 'b, 'c) plus -> ('a, 'c) le = <fun>
-#                           type ('a, 'b) equal = Eq : ('c, 'c) equal
+#                             type ('a, 'b) equal = Eq : ('c, 'c) equal
 val sameNat : 'a nat -> 'b nat -> ('a, 'b) equal option = <fun>
+#             val smaller : ('a succ, 'b succ) le -> ('a, 'b) le = <fun>
+#   type ('a, 'b) diff = Diff : 'e nat * ('c, 'e, 'd) plus -> ('c, 'd) diff
+#                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#             type ('a, 'b) filter = Filter : ('e, 'd) le * ('c, 'e) seq -> ('c, 'd) filter
+val leS' : ('a, 'b) le -> ('a, 'b succ) le = <fun>
+#                   val filter : ('a -> bool) -> ('a, 'b) seq -> ('a, 'b) filter = <fun>
 #                             type ('a, 'b, 'c) balance =
     Less : ('d, 'd succ, 'd succ) balance
   | Same : ('e, 'e, 'e) balance

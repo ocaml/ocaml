@@ -3,7 +3,9 @@
    Functional Programming School:
      Generic Programming in Omega, by Tim Sheard and Nathan Linger
           http://web.cecs.pdx.edu/~sheard/
-*) 
+*)
+
+(* Basic types *)
 
 type ('a,'b) sum = Inl of 'a | Inr of 'b
 
@@ -14,37 +16,48 @@ type _ nat =
   | NS : 'a nat -> 'a succ nat
 ;;
 
-type _ rep =
-  | Rint : int rep
-  | Rchar : char rep
-  | Runit : unit rep
-  | Rpair : 'a rep * 'b rep -> ('a * 'b) rep
-  | Rsum : 'a rep * 'b rep -> ('a,'b) sum rep
+(* 2: A simple example *)
 
-let t1 = Rsum (Rpair (Rint, Rchar), Rpair (Runit, Rint))
-;;
-let rec sumR : type a. a rep -> a -> int = fun r x ->
-  match r, x with
-  | Rint, n -> n
-  | Rpair(r,s), (x,y) -> sumR r x + sumR s y
-  | Rsum(r,s), Inl x -> sumR r x
-  | Rsum(r,s), Inr x -> sumR s x
-  | _ -> 0
-;;
-let rec sum2 : type a. a rep -> a -> int = fun r ->
-  match r with
-  | Rint -> (fun n -> n)
-  | Rpair(r,s) ->
-    let sumr = sum2 r and sums = sum2 s in (fun (x,y) -> sumr x + sums y)
-  | Rsum(r,s) ->
-    let sumr = sum2 r and sums = sum2 s in
-    (function Inl x -> sumr x | Inr x -> sums x)
-  | _ -> (fun _ -> 0)
-;;
 type (_,_) seq =
   | Snil  : ('a,zero) seq
   | Scons : 'a * ('a,'n) seq -> ('a, 'n succ) seq
 ;;
+
+let l1 = Scons (3, Scons (5, Snil)) ;;
+
+(* We do not have type level functions, so we need to use witnesses. *)
+(* We copy here the definitions from section 3.9 *)
+(* Note the addition of the ['a nat] argument to PlusZ, since we do not
+   have kinds *)
+type (_,_,_) plus =
+  | PlusZ : 'a nat -> (zero, 'a, 'a) plus
+  | PlusS : ('a,'b,'c) plus -> ('a succ, 'b, 'c succ) plus
+;;
+
+let rec length : type a n. (a,n) seq -> n nat = function
+  | Snil -> NZ
+  | Scons (_, s) -> NS (length s)
+;;
+
+(* app returns the catenated lists with a witness proving that
+   the size is the sum of its two inputs *)
+type (_,_,_) app = App : ('a,'p) seq * ('n,'m,'p) plus -> ('a,'n,'m) app
+
+let rec app : type a n m. (a,n) seq -> (a,m) seq -> (a,n,m) app =
+  fun xs ys ->
+  match xs with
+  | Snil -> App (ys, PlusZ (length ys))
+  | Scons (x, xs') ->
+      match app xs' ys with
+      | App (xs'', pl) -> App (Scons (x, xs''), PlusS pl)
+;;
+(* Note: it would be nice to be able to handle existentials in
+   let definitions *)
+
+(* 3.1 Feature: kinds *)
+
+(* We do not have kinds, but we can encode them as predicates *)
+
 type tp
 type nd
 type (_,_) fk
@@ -59,6 +72,9 @@ type _ boolean =
   | BT : tt boolean
   | BF : ff boolean
 ;;
+
+(* 3.3 Feature : GADTs *)
+
 type (_,_) path =
   | Pnone : 'a -> (tp,'a) path
   | Phere : (nd,'a) path
@@ -90,10 +106,9 @@ let rec extract : type sh. (sh,'a) path -> (sh,'a) tree -> 'a = fun p t ->
   | Pleft p, Tfork(l,_) -> extract p l
   | Pright p, Tfork(_,r) -> extract p r
 ;;
-type (_,_,_) plus =
-  | PlusZ : 'a nat -> (zero, 'a, 'a) plus
-  | PlusS : ('a,'b,'c) plus -> ('a succ, 'b, 'c succ) plus
-;;
+
+(* 3.4 Pattern : Witness *)
+
 type (_,_) le =
   | LeZ : 'a nat -> (zero, 'a) le
   | LeS : ('n, 'm) le -> ('n succ, 'm succ) le
@@ -119,6 +134,7 @@ let rec summandLessThanSum : type a b c. (a,b,c) plus -> (a,c) le = fun p ->
   | PlusS p' -> LeS (summandLessThanSum p')
 ;;
 
+(* 3.8 Pattern: Leibniz Equality *)
 
 type (_,_) equal = Eq : ('a,'a) equal
 
@@ -133,7 +149,42 @@ let rec sameNat : type a b. a nat -> b nat -> (a,b) equal option = fun a b ->
   | _ -> None
 ;;
 
-(* AVL trees *)
+(* 3.9 Computing Programs and Properties Simultaneously *)
+
+(* Plus and app1 are moved to section 2 *)
+
+let smaller : type a b. (a succ, b succ) le -> (a,b) le =
+  function LeS x -> x ;;
+
+type (_,_) diff = Diff : 'c nat * ('a,'c,'b) plus -> ('a,'b) diff ;;
+
+let rec diff : type a b. (a,b) le -> a nat -> b nat -> (a,b) diff =
+  fun le a b ->
+  match a, b, le with
+  | NZ, m, _ -> Diff (m, PlusZ m)
+  | NS x, NZ, _ -> assert false
+  | NS x, NS y, q ->
+      match diff (smaller q) x y with Diff (m, p) -> Diff (m, PlusS p)
+;;
+
+type (_,_) filter = Filter : ('m,'n) le * ('a,'m) seq -> ('a,'n) filter
+
+let rec leS' : type m n. (m,n) le -> (m,n succ) le = function
+  | LeZ n -> LeZ (NS n)
+  | LeS le -> LeS (leS' le)
+;;
+
+let rec filter : type a n. (a -> bool) -> (a,n) seq -> (a,n) filter =
+  fun f s ->
+  match s with
+  | Snil -> Filter (LeZ NZ, Snil)
+  | Scons (a,l) ->
+      match filter f l with Filter (le, l') ->
+        if f a then Filter (LeS le, Scons (a, l'))
+        else Filter (leS' le, l')
+;;
+
+(* 4.1 AVL trees *)
 
 type (_,_,_) balance =
   | Less : ('h, 'h succ, 'h succ) balance
@@ -286,7 +337,7 @@ let delete x (Avl t) =
 ;;
 
 
-(* Red-black trees *)
+(* Exercise 22: Red-black trees *)
 
 type red
 type black
