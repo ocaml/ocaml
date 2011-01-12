@@ -310,7 +310,7 @@ external atan : float -> float = "caml_atan_float" "atan" "float"
     Result is in radians and is between [-pi/2] and [pi/2]. *)
 
 external atan2 : float -> float -> float = "caml_atan2_float" "atan2" "float"
-(** [atan x y] returns the arc tangent of [y /. x].  The signs of [x]
+(** [atan2 y x] returns the arc tangent of [y /. x].  The signs of [x]
     and [y] are used to determine the quadrant of the result.
     Result is in radians and is between [-pi] and [pi]. *)
 
