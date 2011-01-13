@@ -858,6 +858,7 @@ and transl_exp0 e =
       raise(Error(e.exp_loc,Illegal_contracted_expr)) 
   | Texp_bad bl -> transl_blame bl
   | Texp_unr bl -> transl_blame bl
+  (* | Texp_raise exp -> Lprim (Praise, [transl_exp0 exp]) *)
 
 and transl_blame bl = 
    match bl with
@@ -884,50 +885,9 @@ and transl_contract cntr e callee caller =
           This forces evaluation of e, that is, if e diverges, RHS diverges;
           if e crashes, RHS crashes 
        *) 
-       
         let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
         let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
-       
-       (* e |>r1,r2<| {x | p} = if (try let x = e in p
-                                    with contract_exn -> raise contract_exn
-                                         _ -> false)
-                                then e else r1
-          This forces evaluation of e, that is, if e diverges, RHS diverges;
-          However, if e throws an exception, we still test p[e/x], which may 
-          allow certain exceptions. If p[e/x] throws exceptions, we treat it
-          as false, thus raise exception r1.
-        *)
-      (*
-        let iexp i ty = Texp_ident (Pident i, 
-                         {val_type = ty; val_kind = Val_reg}) in       
-	let letexp = Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], p) in
-        let cexn_path = Predef.path_contract_failure in
-        let cexn_ctag = Cstr_exception(cexn_path) in
-        (* This is to make up a pattern Contract(loc, pathop). Since contract checking 
-         is done after type checking, we leave cstr_args as []. *)
-        let cexn_cdesc = { cstr_res = Predef.type_exn;
-                           cstr_args = []; 
-                           cstr_arity = 2;
-                           cstr_tag = cexn_ctag;
-                           cstr_consts = 2;
-                           cstr_nonconsts = 0;
-                           cstr_private = Asttypes.Public } in
-        let dummy_type_expr = { desc = Tvar; level = 0; id =0 } in
-        let loc_id = Ident.create "l" in
-        let pathop_id = Ident.create "p" in 
-        let cpat = Tpat_construct(cexn_path, cexn_cdesc, 
-                   [mkpat (Tpat_var loc_id) dummy_type_expr; 
-                    mkpat (Tpat_var pathop_id) dummy_type_expr]) in
-        let raise_contract_exn = 
-             Texp_apply (Texp_ident( in
-        let trycond = Texp_try(mkexp letexp Predef.type_bool,
-	    [(mkpat cpat Predef.type_exn,
-              mkexp bad_exp Predef.type_exn);
-             (mkpat Tpat_any Predef.type_exn, 
-              mkexp (Texp_constant(Const_int 0)) Predef.type_bool)]) in
-        Texp_ifthenelse (mkexp trycond Predef.type_bool, e, Some callee) 
-      *)
      | Tctr_arrow (xop, c1, c2) -> 
       (* picky version:
          e |>r1,r2<| x:c1 -> c2 = \x. (e (x |>r2,r1<| c1)) |>r1,r2<| c2[(x |>r2,r1<| c1)/x]
