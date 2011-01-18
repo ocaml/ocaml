@@ -211,7 +211,7 @@ let default_man_generator = ref (None : doc_generator option)
 let default_dot_generator = ref (None : doc_generator option)
 
 (** The default option list *)
-let options = ref [
+let default_options = [
   "-version", Arg.Unit (fun () -> print_string M.message_version ; print_newline () ; exit 0) , M.option_version ;
   "-vnum", Arg.Unit (fun () -> print_string M.config_version ;
                                print_newline () ; exit 0) , M.option_version ;
@@ -307,7 +307,30 @@ let options = ref [
 
 ]
 
+let options = ref default_options
+
+let modified_options () =
+  !options != default_options
+
+let append_last_doc suffix =
+  match List.rev !options with
+  | (key, spec, doc) :: tl ->
+      options := List.rev ((key, spec, doc ^ suffix) :: tl)
+  | [] -> ()
+
+(** The help option list, overriding the default ones from the Arg module *)
+let help_options = ref []
+let help_action () =
+  Arg.usage (!options @ !help_options) (M.usage^M.options_are)
+let () =
+  help_options := [
+    "-help", Arg.Unit help_action, M.help ;
+    "--help", Arg.Unit help_action, M.help
+]
+
 let add_option o =
+  if not (modified_options ()) then
+    append_last_doc "\n *** custom generator options ***\n";
   let (s,_,_) = o in
   let rec iter = function
       [] -> [o]
@@ -340,7 +363,9 @@ let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_g
   default_texi_generator := Some texi_generator ;
   default_man_generator := Some man_generator ;
   default_dot_generator := Some dot_generator ;
-  let _ = Arg.parse !options
+  if modified_options () then append_last_doc "\n";
+  let options = !options @ !help_options in
+  let _ = Arg.parse options
       anonymous
       (M.usage^M.options_are)
   in

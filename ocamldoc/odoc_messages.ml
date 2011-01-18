@@ -21,8 +21,8 @@ let message_version = software^" "^config_version
 
 (** Messages for command line *)
 
-let usage = "Usage : "^(Sys.argv.(0))^" [options] <files>\n"
-let options_are = "Options are :"
+let usage = "Usage: "^(Sys.argv.(0))^" [options] <files>\n"
+let options_are = "Options are:"
 let option_version = "\tPrint version and exit"
 let latex_only = "(LaTeX only)"
 let texi_only = "(TeXinfo only)"
@@ -208,6 +208,8 @@ let merge_options =
        merge_custom ;
        merge_all ]
   )
+
+let help = "\t\tDisplay this list of options"
 
 
 (** Error and warning messages *)
