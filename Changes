@@ -16,6 +16,7 @@ Bug fixes:
 - PR#5110: invalid module name when using optional argument
 - PR#5165: ocamlbuild does not pass '-thread' option to ocamlfind
 - PR#5177: Gc.compact implies Gc.full_major
+- PR#5213: ocamlbuild should pass '-rectypes' to ocamldoc when needed
 
 Feature wishes:
 - PR#4992: added '-ml-synonym' and '-mli-synonym' options to ocamldep
