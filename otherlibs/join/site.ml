@@ -48,7 +48,9 @@ let there addr =
 let where_from ( chan : 'a async ) = (Obj.magic chan : t)
 
 let equal s1 s2 = 
-  (Join_prim.space_id_of_chan s1) = (Join_prim.space_id_of_chan s2)
+  let id1 = Join_prim.space_id_of_chan s1
+  and id2 = Join_prim.space_id_of_chan s2 in
+  id1 = id2
 
 and compare s1 s2 =
   Pervasives.compare

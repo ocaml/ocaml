@@ -30,9 +30,9 @@
 (** Simple countdowns. *)
 module Down :
   sig
-    type ('a, 'b) t = { tick : unit Join.chan; wait : unit -> unit; }
+    type t = { tick : unit Join.chan; wait : unit -> unit; }
 
-    val create : int -> ('a, 'b) t
+    val create : int -> t
     (** [create n] returns a countdown [c] for [n] events.
         That is, after [n] messages on [c.tick], the call
 	[c.wait()] will return.
