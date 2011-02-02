@@ -20,7 +20,7 @@ open Camlp4;                                             (* -*- camlp4r -*- *)
 
 
 module Id = struct
-  value name = "Camlp4ListComprenhsion";
+  value name = "Camlp4ListComprehension";
   value version = Sys.ocaml_version;
 end;
 

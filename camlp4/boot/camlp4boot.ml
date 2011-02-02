@@ -14703,7 +14703,7 @@ module L =
  *)
     module Id =
       struct
-        let name = "Camlp4ListComprenhsion"
+        let name = "Camlp4ListComprehension"
           
         let version = Sys.ocaml_version
           

@@ -14,6 +14,7 @@ Bug fixes:
 - PR#5100: ocamlbuild always rebuilds a 'cmxs' file
 - PR#5103: build and install objinfo when building with ocamlbuild
 - PR#5110: invalid module name when using optional argument
+- PR#5128: typo in 'Camlp4ListComprehension' syntax extension
 - PR#5165: ocamlbuild does not pass '-thread' option to ocamlfind
 - PR#5172: camlp4 support for 'module type of' construct
 - PR#5177: Gc.compact implies Gc.full_major
