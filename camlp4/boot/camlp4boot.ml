@@ -1406,7 +1406,16 @@ New syntax:\
                              (fun _ (sg : 'sig_items) _ (_loc : Gram.Loc.t)
                                 -> (Ast.MtSig (_loc, sg) : 'module_type)))) ]);
                       ((Some "simple"), None,
-                       [ ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
+                       [ ([ Gram.Skeyword "module"; Gram.Skeyword "type";
+                            Gram.Skeyword "of";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_expr : 'module_expr Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (me : 'module_expr) _ _ _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.MtOf (_loc, me) : 'module_type))));
+                         ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (mt : 'module_type) _ (_loc : Gram.Loc.t)
                                 -> (mt : 'module_type))));

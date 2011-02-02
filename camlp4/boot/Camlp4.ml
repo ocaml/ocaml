@@ -1124,6 +1124,8 @@ module Sig =
           MtSig of loc * sig_item
           | (* mt with wc *)
           MtWit of loc * module_type * with_constr
+          | (* module type of m *)
+          MtOf of loc * module_expr
           | MtAnt of loc * string
           and (* $s$ *)
           sig_item =
@@ -1981,6 +1983,7 @@ module Sig =
           | MtQuo of loc * string
           | MtSig of loc * sig_item
           | MtWit of loc * module_type * with_constr
+          | MtOf of loc * module_expr
           | MtAnt of loc * string
           and sig_item =
           | SgNil of loc
@@ -8999,6 +9002,15 @@ module Struct =
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.ExAnt (x0, x1)
+                          | Ast.MtOf (x0, x1) ->
+                              Ast.ExApp (_loc,
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtOf")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.MtWit (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
@@ -11285,6 +11297,15 @@ module Struct =
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.PaAnt (x0, x1)
+                          | Ast.MtOf (x0, x1) ->
+                              Ast.PaApp (_loc,
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtOf")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.MtWit (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
@@ -12406,6 +12427,9 @@ module Struct =
                       let _x_i1 = o#module_type _x_i1 in
                       let _x_i2 = o#with_constr _x_i2
                       in MtWit (_x, _x_i1, _x_i2)
+                  | MtOf (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_expr _x_i1 in MtOf (_x, _x_i1)
                   | MtAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in MtAnt (_x, _x_i1)
@@ -13305,6 +13329,8 @@ module Struct =
                       let o = o#loc _x in
                       let o = o#module_type _x_i1 in
                       let o = o#with_constr _x_i2 in o
+                  | MtOf (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_expr _x_i1 in o
                   | MtAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   
@@ -16038,7 +16064,9 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                type token_info =
+                  { prev_loc : Loc.t; cur_loc : Loc.t; prev_loc_only : bool
+                  }
                 
                 type token_stream = (Token.t * token_info) Stream.t
                 
@@ -16140,7 +16168,9 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                type token_info =
+                  { prev_loc : Loc.t; cur_loc : Loc.t; prev_loc_only : bool
+                  }
                 
                 type token_stream = (Token.t * token_info) Stream.t
                 
@@ -16333,6 +16363,8 @@ module Struct =
           
         module Tools =
           struct
+            let get_prev_loc_only = ref false
+              
             module Make (Structure : Structure.S) =
               struct
                 open Structure
@@ -16353,22 +16385,38 @@ module Struct =
                 let keep_prev_loc strm =
                   match Stream.peek strm with
                   | None -> Stream.sempty
-                  | Some ((_, init_loc)) ->
-                      let rec go prev_loc (__strm : _ Stream.t) =
-                        (match Stream.peek __strm with
-                         | Some ((tok, cur_loc)) ->
-                             (Stream.junk __strm;
-                              let strm = __strm
-                              in
-                                Stream.lcons
-                                  (fun _ ->
-                                     (tok,
-                                      {
-                                        prev_loc = prev_loc;
-                                        cur_loc = cur_loc;
-                                      }))
-                                  (Stream.slazy (fun _ -> go cur_loc strm)))
-                         | _ -> Stream.sempty)
+                  | Some ((tok0, init_loc)) ->
+                      let rec go prev_loc strm1 =
+                        if !get_prev_loc_only
+                        then
+                          Stream.lcons
+                            (fun _ ->
+                               (tok0,
+                                {
+                                  prev_loc = prev_loc;
+                                  cur_loc = prev_loc;
+                                  prev_loc_only = true;
+                                }))
+                            (Stream.slazy (fun _ -> go prev_loc strm1))
+                        else
+                          (let (__strm : _ Stream.t) = strm1
+                           in
+                             match Stream.peek __strm with
+                             | Some ((tok, cur_loc)) ->
+                                 (Stream.junk __strm;
+                                  let strm = __strm
+                                  in
+                                    Stream.lcons
+                                      (fun _ ->
+                                         (tok,
+                                          {
+                                            prev_loc = prev_loc;
+                                            cur_loc = cur_loc;
+                                            prev_loc_only = false;
+                                          }))
+                                      (Stream.slazy
+                                         (fun _ -> go cur_loc strm)))
+                             | _ -> Stream.sempty)
                       in go init_loc strm
                   
                 let drop_prev_loc strm =
@@ -16380,9 +16428,17 @@ module Struct =
                   | None -> Loc.ghost
                   
                 let get_prev_loc strm =
-                  match Stream.peek strm with
-                  | Some ((_, r)) -> r.prev_loc
-                  | None -> Loc.ghost
+                  (get_prev_loc_only := true;
+                   let result =
+                     match Stream.peek strm with
+                     | Some
+                         ((_, { prev_loc = prev_loc; prev_loc_only = true }))
+                         -> (Stream.junk strm; prev_loc)
+                     | Some
+                         ((_, { prev_loc = prev_loc; prev_loc_only = false }))
+                         -> prev_loc
+                     | None -> Loc.ghost
+                   in (get_prev_loc_only := false; result))
                   
                 let is_level_labelled n lev =
                   match lev.lname with | Some n1 -> n = n1 | None -> false

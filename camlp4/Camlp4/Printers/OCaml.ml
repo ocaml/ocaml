@@ -877,6 +877,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f mt Ast.loc_of_module_type in
     match mt with
     [ <:module_type<>> -> assert False
+    | <:module_type< module type of $me$ >> -> pp f "@[<2>module type of@ %a@]" o#module_expr me
     | <:module_type< $id:i$ >> -> o#ident f i
     | <:module_type< $anti:s$ >> -> o#anti f s
     | <:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >> ->

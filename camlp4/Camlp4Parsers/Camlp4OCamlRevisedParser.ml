@@ -520,7 +520,8 @@ New syntax:\
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.module_type_tag
         | i = module_longident_with_app -> <:module_type< $id:i$ >>
         | "'"; i = a_ident -> <:module_type< ' $i$ >>
-        | "("; mt = SELF; ")" -> <:module_type< $mt$ >> ] ]
+        | "("; mt = SELF; ")" -> <:module_type< $mt$ >>
+        | "module"; "type"; "of"; me = module_expr -> <:module_type< module type of $me$ >> ] ]
     ;
     sig_item:
       [ "top"

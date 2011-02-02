@@ -1826,6 +1826,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                 and meta_module_type _loc =
                   fun
                   [ Ast.MtAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.MtOf x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtOf")))
+                           (meta_loc _loc x0))
+                        (meta_module_expr _loc x1)
                   | Ast.MtWit x0 x1 x2 ->
                       Ast.ExApp _loc
                         (Ast.ExApp _loc
@@ -3894,6 +3902,14 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                 and meta_module_type _loc =
                   fun
                   [ Ast.MtAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.MtOf x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtOf")))
+                           (meta_loc _loc x0))
+                        (meta_module_expr _loc x1)
                   | Ast.MtWit x0 x1 x2 ->
                       Ast.PaApp _loc
                         (Ast.PaApp _loc
@@ -4903,6 +4919,9 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#module_type _x_i1 in
               let _x_i2 = o#with_constr _x_i2 in MtWit _x _x_i1 _x_i2
+          | MtOf _x _x_i1 ->
+              let _x = o#loc _x in
+              let _x_i1 = o#module_expr _x_i1 in MtOf _x _x_i1
           | MtAnt _x _x_i1 ->
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in MtAnt _x _x_i1 ];
@@ -5678,6 +5697,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | MtWit _x _x_i1 _x_i2 ->
               let o = o#loc _x in
               let o = o#module_type _x_i1 in let o = o#with_constr _x_i2 in o
+          | MtOf _x _x_i1 ->
+              let o = o#loc _x in let o = o#module_expr _x_i1 in o
           | MtAnt _x _x_i1 -> let o = o#loc _x in let o = o#string _x_i1 in o ];
         method module_expr : module_expr -> 'self_type =
           fun
