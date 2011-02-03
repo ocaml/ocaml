@@ -156,8 +156,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           do_print_comments_before loc f s
     | [: :] -> () ];
 
-  value no_semisep : sep = ""; (* used to mark where ";;" should not occur *)
-
   class printer ?curry_constr:(init_curry_constr = False) ?(comments = True) () =
   object (o)
 
@@ -171,6 +169,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method reset =      {< pipe = False; semi = False >};
 
     value semisep : sep = ";;";
+    value no_semisep : sep = ""; (* used to mark where ";;" should not occur *)
     value mode = if comments then `comments else `no_comments;
     value curry_constr = init_curry_constr;
     value var_conversion = False;
