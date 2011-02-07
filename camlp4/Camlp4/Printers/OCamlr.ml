@@ -268,7 +268,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:class_expr< virtual $lid:i$ >> ->
           pp f "@[<2>virtual@ %a@]" o#var i
     | <:class_expr< virtual $lid:i$ [ $t$ ] >> ->
-          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i o#ctyp t
+          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i o#class_params t
     | ce -> super#class_expr f ce ];
   end;
 
