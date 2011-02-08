@@ -9459,7 +9459,11 @@ module Camlp4QuotationCommon =
                          | "`flo" ->
                              Ast.ExApp (_loc,
                                (Ast.ExId (_loc,
-                                  (Ast.IdLid (_loc, "string_of_float")))),
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Camlp4_import")),
+                                        (Ast.IdAcc (_loc,
+                                           (Ast.IdUid (_loc, "Oprint")),
+                                           (Ast.IdLid (_loc, "float_repres")))))))),
                                e)
                          | "`str" ->
                              Ast.ExApp (_loc,
