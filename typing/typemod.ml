@@ -234,9 +234,6 @@ and approx_sig env ssg =
 	  let iface_cdecls = List.map Typedtree.contract_declaration_to_iface typed_cdecls in
           let sg = List.map (fun c -> Tsig_contract (Path.head c.Types.ttopctr_id, c, Trec_not)) 
 	                    iface_cdecls in
-          (* let newenv = List.fold_right (fun c -> 
-	                  Env.enter_contract c.Types.ttopctr_id c) 
-	                  iface_cdecls env in *)
 	  sg @ approx_sig env srem
       | _ ->
           approx_sig env srem
@@ -680,10 +677,10 @@ and type_structure anchor env sstr scope =
   let extract_contracts_from_sig id sg env1 = 
              Env.fetch_contracts (Env.open_signature (Pident id) sg env1) in  
   let rec extract_contracts id mty env1 = match mty with
-           | Tmty_ident(path) -> Tbl.empty
+           | Tmty_ident(path) -> Ident.empty
            | Tmty_signature(sg) -> extract_contracts_from_sig id sg env1
            | Tmty_functor(id, mty1, mty2) -> 
-              Tbl.merge (extract_contracts id mty1 env1) 
+              Ident.merge (extract_contracts id mty1 env1) 
                         (extract_contracts id mty2 env1)
   (* it is easier for programmers to declare a contract for a function 
      before function definition, but we can only typecheck the contract after

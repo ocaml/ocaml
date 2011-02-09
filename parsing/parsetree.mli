@@ -102,6 +102,7 @@ and expression_desc =
   | Pexp_while of expression * expression
   | Pexp_for of string * expression * expression * direction_flag * expression
   | Pexp_constraint of expression * core_type option * core_type option
+  | Pexp_contract of core_contract * expression 
   | Pexp_when of expression * expression
   | Pexp_send of expression * string
   | Pexp_new of Longident.t
@@ -125,9 +126,16 @@ and core_contract =
      pctr_loc:  Location.t }
 
 and core_contract_desc = 
-    Pctr_pred of string * expression
+    Pctr_pred of string * expression * ((pattern * expression) list) option
   | Pctr_arrow of string option * core_contract * core_contract
   | Pctr_tuple of (string option * core_contract) list
+  | Pctr_constr of Longident.t * (string option * core_contract) list
+  | Pctr_and of core_contract * core_contract
+  | Pctr_or of core_contract * core_contract
+  | Pctr_typconstr of Longident.t * core_contract list
+  | Pctr_var of string
+  | Pctr_poly of string list * core_contract
+
 
 (* Type declarations *)
 

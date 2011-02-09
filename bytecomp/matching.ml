@@ -2012,7 +2012,7 @@ let split_cases tag_lambda_list =
         match cstr with
           Cstr_constant n -> ((n, act) :: consts, nonconsts)
         | Cstr_block n    -> (consts, (n, act) :: nonconsts)
-        | _ -> assert false in
+        | _ -> assert false in 
   let const, nonconst = split_rec tag_lambda_list in
   sort_int_lambda_list const,
   sort_int_lambda_list nonconst

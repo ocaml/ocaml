@@ -166,7 +166,7 @@ let init_shape modl =
     | Tsig_cltype(id, ctyp, _) :: rem ->
         init_shape_struct env rem
     | Tsig_contract(id, cdecl, _) :: rem -> 
-        init_shape_struct (Env.add_contract (Pident id) cdecl env) rem
+        init_shape_struct (Env.add_contract id cdecl env) rem
   in
   try
     Some(undefined_location modl.mod_loc,
@@ -355,128 +355,6 @@ and transl_structure fields cc rootpath  = function
       transl_structure fields cc rootpath rem
 
 
-(* fetch_contract takes a function name and lookup its contract in the
-set of contract declarations. *)
-let fetch_contract_by_pattern p contract_decls = 
-   List.find (fun x -> match p.pat_desc with
-            | Tpat_var (i) -> begin
-                       match x.ttopctr_id with
-                       | Pident (j) -> j = i
-    		       | _ -> false 
-                     end       
-            | _ -> false) contract_decls
-      
-let fetch_contract_by_path p contract_decls = 
-  List.find (fun x -> match p with 
-   | Pident (i) -> begin 
-                    match x.ttopctr_id with
-                    | Pident (j) -> j = i
-                    | _ -> false
-                   end
-   | _ -> false) contract_decls
-
-let rec print_list ppf l =
-  match l with 
-   | [] -> ()
-   | (y::ys) -> Printtyp.path ppf y; 
-                print_list ppf ys
-
-(* local_fun_contracts contains x:t1 in contract x:t1 -> t2.
-   contract_decls contains contract declaration in the current module
-       contract f = {...} -> {...}
-   opened_contracts contains contracts from open ... and 
-   contracts exported from nested modules.
-*)
-let wrap_id_with_contract local_fun_contracts contract_decls opened_contracts 
-            caller_pathop expr = 
-  let contracted_exp_desc = match expr.exp_desc with
-       | Texp_ident (callee_path, value_desc) -> 
-         begin
-          try (* lookup for dependent contract first *)
-           let id = match callee_path with
-                     | Pident(i) -> i
-                     | _ -> raise Not_found
-           in
-           let c = Ident.find_same id local_fun_contracts in
-           requiresC c expr caller_pathop (Some callee_path)                
-          with Not_found -> 
-          try (* lookup for contracts in current module *)
-           let c = fetch_contract_by_path callee_path contract_decls in
-           requiresC c.ttopctr_desc expr caller_pathop (Some callee_path) 
-          with Not_found -> 
-	  try (* lookup for contracts in opened modules *)
-	   let c = Tbl.generic_find Path.cmpPath_byname callee_path opened_contracts in 
-             requiresC (core_contract_from_iface c.Types.ttopctr_desc) 
-		        expr caller_pathop (Some callee_path) 
- 	  with Not_found -> 	    
-             (* Format.fprintf Format.std_formatter "%s" (name callee_path); *)
-	      expr.exp_desc
-         end
-       | others -> others
-  in { expr with exp_desc = contracted_exp_desc }
-
-(* contract_id_in_expr wrapped all functions called in expression with its contract
-if it has any contract. E.g. f x = ..f (x - 1) ... g x
- becomes f x = ..(f <| C_f) (x - 1) ... (g <| C_g) x
-val contract_id_in_expr: core_contract list -> 
-                         (Path.t * core_contract) Ident.tbl ->  
-                         Path.t option -> 
-                         expression -> expression
-*)
-let contract_id_in_expr local_fun_contracts contract_decls opened_contracts 
-                        caller_pathop expr = 
-    map_expression (wrap_id_with_contract local_fun_contracts
-                                          contract_decls 
-		                          opened_contracts 
-		                          caller_pathop) expr    
-
-(* contract_id_in_contract wrapped all functions called in a contract with its
-contract if it has any conract. E.g. 
-contract h = {x | not (null x)} -> {y | true}
-contract f = {x | true)} -> {y | h x < y}
-
-becomes f = {x | true)} -> {y | (h <| C_h) x < y}
-This checking for contracts makes sure that we have crash-free contracts.
-It is good for dynamic contract checking and 
-essential for static contract checking for functions in a program. 
-val contract_id_in_contract: core_contract list -> 
-                         (Path.t * core_contract) Ident.tbl ->  
-                         core_contract -> core_contract
-
-*)
-let rec contract_id_in_contract local_fun_contracts contract_decls opened_contracts 
-                                caller_pathop c = 
-  let new_desc = match c.contract_desc with
-	  | Tctr_pred (id, e) -> 
-              let ce = contract_id_in_expr local_fun_contracts 
-                                           contract_decls 
-                                           opened_contracts
-                                           caller_pathop e in
-              let expanded_ce = deep_transl_contract ce in
-              Tctr_pred (id, expanded_ce)
-          | Tctr_arrow (idopt, c1, c2) -> 
-	      let new_c1 = contract_id_in_contract local_fun_contracts contract_decls 
-                                   opened_contracts caller_pathop c1 in
-              let new_local = match idopt with 
-                              | Some (id) -> Ident.add id c1 local_fun_contracts
-                              | None -> local_fun_contracts               
-              in
-	      let new_c2 = contract_id_in_contract new_local contract_decls 
-                                   opened_contracts caller_pathop c2 in
-              Tctr_arrow (idopt, new_c1, new_c2)
-          | Tctr_tuple (cs) -> 
-              let rec sub_dep xs local = begin match xs with
-                | [] -> []
-                | (vo, c)::l -> 
-                  let new_c = contract_id_in_contract local
-			       contract_decls opened_contracts caller_pathop c in
-                  let new_local = match vo with
-                       | None -> local_fun_contracts
-                       | Some (id) -> Ident.add id c local
-                  in (vo, new_c) :: sub_dep l new_local 
-                end
-             in Tctr_tuple (sub_dep cs local_fun_contracts)
-  in {c with contract_desc = new_desc}
 
 (* val transl_str_contracts : core_contract list -> 
                               (Path.t, contract_declaration) Tbl.t ->
@@ -500,7 +378,8 @@ let rec transl_str_contracts contract_decls opened_contracts strs =
        let mkexp e_desc = { expr with exp_desc = e_desc } in      
        try
          let c  = fetch_contract_by_pattern pat contract_decls in
-         let ce = ensuresC c.ttopctr_desc cexpr fpathop in
+         let bl_callee = Callee (cexpr.exp_loc, fpath) in
+         let ce = ensuresC c.ttopctr_desc cexpr bl_callee in
          // we can send (Translcore.transl_contract ce) for static contract checking
          (pat, mkexp ce)  
        with Not_found -> 
@@ -552,13 +431,13 @@ Function transl_contracts is called in driver/compile.ml *)
 and transl_contracts (str, cc) = 
   let rec extract_contracts xs = 
         match xs with
-           | [] -> ([], Tbl.empty)		 
+           | [] -> ([], Ident.empty)		 
            | (Tstr_mty_contracts(t) :: rem) ->
                let (current_contracts, mty_opened_contracts) = extract_contracts rem in 
-               (current_contracts, Tbl.merge t mty_opened_contracts)
+               (current_contracts, Ident.merge t mty_opened_contracts)
 	   | (Tstr_opened_contracts(t) :: rem) ->
 	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in
-	       (current_contracts, Tbl.merge t mty_opened_contracts) 
+	       (current_contracts, Ident.merge t mty_opened_contracts) 
            | ((Tstr_contract (ds)) :: rem) -> 
 	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in	       
 	       (ds@current_contracts, mty_opened_contracts)

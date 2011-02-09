@@ -38,7 +38,7 @@ and pattern_desc =
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * row_desc option
   | Tpat_lazy of pattern
-
+ 
 (* We use those in Types 
 type partial = Partial | Total
 type optional = Required | Optional
@@ -82,15 +82,24 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
 (* add below 3 for contract checking *)
+  | Texp_local_contract of core_contract * expression 
+(* below is e |>r1,r2<| c *)
   | Texp_contract of core_contract * expression * expression * expression
   | Texp_bad of blame 
   | Texp_unr of blame
+  | Texp_Lambda of Ident.t list * expression (* /\'a. e |><| c, 'a is a contractvar *)
+  | Texp_App of expression * expression list (* e 'a, 'a is a contractvar *)
+(* this is for re-raise contract exception in translcore.ml *)
+  | Texp_raise of expression 
 
 (* We use those in Types
 
 and blame = 
-    Blame of Location.t * Path.t option
-  | UnknownBlame
+ (*   Blame of Location.t * Path.t option *)
+  | Caller of Location.t * Path.t option * Path.t 
+  | Callee of Location.t * Path.t
+  | UnknownBlame (* this is to blame the context of the function,
+                    which is unknown at callee site *)
 
 and meth =
     Tmeth_name of string
@@ -105,9 +114,16 @@ and core_contract =
     contract_env: Env.t }
 
 and core_contract_desc = 
-    Tctr_pred of Ident.t * expression
+    Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
   | Tctr_arrow of Ident.t option * core_contract * core_contract
   | Tctr_tuple of (Ident.t option * core_contract) list
+  | Tctr_constr of Path.t * constructor_description 
+                          * (Ident.t option * core_contract) list
+  | Tctr_and of core_contract * core_contract
+  | Tctr_or of core_contract * core_contract
+  | Tctr_typconstr of Path.t * core_contract list
+  | Tctr_var of Ident.t
+  | Tctr_poly of Ident.t list * core_contract
 
 and contract_declaration =  
   { ttopctr_id: Path.t;
@@ -179,9 +195,9 @@ and structure_item =
   | Tstr_include of module_expr * Ident.t list
   | Tstr_contract of contract_declaration list
  (* contracts in module type signature are put in Tstr_mty_contracts *)
-  | Tstr_mty_contracts of (Path.t, Types.contract_declaration) Tbl.t
+  | Tstr_mty_contracts of (Path.t * Types.contract_declaration) Ident.tbl
  (* opened contracts are put in Tstr_opened_contracts *)
-  | Tstr_opened_contracts of (Path.t, Types.contract_declaration) Tbl.t
+  | Tstr_opened_contracts of (Path.t * Types.contract_declaration) Ident.tbl
 
 (* We use the module_coercion in Types 
 and module_coercion =
@@ -511,10 +527,15 @@ and expression_desc_to_iface f desc = match desc with
     | Texp_object (class_str, class_sig, string_list) -> 
         Types.Texp_object (class_structure_to_iface class_str, 
                            class_sig, string_list)
+    | Texp_local_contract (c, e) -> 
+        Types.Texp_local_contract(core_contract_to_iface c, f e)
     | Texp_contract (c, e1, e2, e3) -> 
         Types.Texp_contract(core_contract_to_iface c, f e1, f e2, f e3)
     | Texp_bad (bl) -> Types.Texp_bad (bl)
     | Texp_unr (bl) -> Types.Texp_unr (bl)
+    | Texp_Lambda (v, e) -> Types.Texp_Lambda (v, f e)
+    | Texp_App (e, es) -> Types.Texp_App (f e, List.map f es)
+    | Texp_raise (exp) -> Types.Texp_assertfalse (* this should not be reached *)
 
 and expression_to_iface expr =  
   { Types.exp_desc =  expression_desc_to_iface expression_to_iface expr.exp_desc;
@@ -523,9 +544,22 @@ and expression_to_iface expr =
 
 and core_contract_to_iface ccntr = 
   let core_contract_desc_to_iface f desc = match desc with
-      | Tctr_pred (i, e) -> Types.Tctr_pred(i, expression_to_iface e)
+      | Tctr_pred (i, e, exnop) -> Types.Tctr_pred(i, expression_to_iface e, 
+                          match exnop with
+                          | None -> None
+                          | Some pat_expr_list ->  
+                    Some (List.map (fun (p, e) -> (pattern_to_iface p, 
+                                                   expression_to_iface e)) 
+                          pat_expr_list)) 
       | Tctr_arrow (iop, c1, c2) -> Types.Tctr_arrow (iop, f c1, f c2)
       | Tctr_tuple (cs) -> Types.Tctr_tuple (List.map (fun (vo,c) -> (vo, f c)) cs)
+      | Tctr_constr (i, cdesc, cs) -> 
+            Types.Tctr_constr (i, cdesc, List.map (fun (vo, c) -> (vo, f c)) cs)
+      | Tctr_and (c1, c2) -> Types.Tctr_and (f c1, f c2)
+      | Tctr_or (c1, c2) -> Types.Tctr_or (f c1, f c2)
+      | Tctr_typconstr (i, cs) -> Types.Tctr_typconstr (i, List.map f cs)
+      | Tctr_var (v) -> Types.Tctr_var (v)
+      | Tctr_poly (vs, c) -> Types.Tctr_poly (vs, f c)
   in
   { Types.contract_desc = core_contract_desc_to_iface core_contract_to_iface 
 						      ccntr.contract_desc;
@@ -583,17 +617,22 @@ and class_field_to_iface cf = match cf with
       | Cf_init (e) -> Types.Cf_init (expression_to_iface e)
                                                      
 (* construct e |> contract (e ensures t) and e <| contract (e requires t) *)
-let ensuresC c expr path = 
+let ensuresC c expr bl = 
     Texp_contract (c, expr, 
-                   { expr with exp_desc = Texp_bad (Blame (expr.exp_loc, path))},
+                   { expr with exp_desc = Texp_bad bl},
                    { expr with exp_desc = Texp_unr UnknownBlame })
     
+let requiresC c expr bl1 bl2 = 
+    Texp_contract (c, expr, 
+               { expr with exp_desc = Texp_unr bl2 },
+               { expr with exp_desc = Texp_bad bl1 })
 
+(* 
 let requiresC c expr r1_path r2_path =
     Texp_contract (c, expr, 
-                   { expr with exp_desc = Texp_unr (Blame (expr.exp_loc, r2_path)) },
-                   { expr with exp_desc = Texp_bad (Blame (expr.exp_loc, r1_path)) })
-
+               { expr with exp_desc = Texp_unr (Blame (expr.exp_loc, r2_path)) },
+               { expr with exp_desc = Texp_bad (Blame (expr.exp_loc, r1_path)) })
+*)
 
 
 (* List the identifiers bound by a pattern or a let *)
@@ -795,10 +834,14 @@ and expression_from_iface expr =
     | Types.Texp_object (class_str, class_sig, string_list) -> 
         Texp_object (class_structure_from_iface class_str, 
                            class_sig, string_list)
+    | Types.Texp_local_contract (c, e) -> 
+        Texp_local_contract(core_contract_from_iface c, f e)
     | Types.Texp_contract (c, e1, e2, e3) -> 
         Texp_contract(core_contract_from_iface c, f e1, f e2, f e3)
     | Types.Texp_bad (bl) -> Texp_bad (bl)
     | Types.Texp_unr (bl) -> Texp_unr (bl)
+    | Types.Texp_Lambda (v,e) -> Texp_Lambda (v, f e)
+    | Types.Texp_App (e, es) -> Texp_App (f e, List.map f es)
   in 
   { exp_desc =  expression_desc_from_iface expression_from_iface expr.Types.exp_desc;
     exp_loc  = expr.Types.exp_loc;
@@ -807,9 +850,22 @@ and expression_from_iface expr =
 
 and core_contract_from_iface ccntr = 
   let core_contract_desc_from_iface f desc = match desc with
-      | Types.Tctr_pred (i, e) -> Tctr_pred(i, expression_from_iface e)
+      | Types.Tctr_pred (i, e, exnop) -> Tctr_pred(i, expression_from_iface e, 
+			match exnop with
+                          | None -> None
+                          | Some pat_expr_list ->  
+                    Some (List.map (fun (p, e) -> (pattern_from_iface p, 
+                                                   expression_from_iface e)) 
+                          pat_expr_list))
       | Types.Tctr_arrow (iop, c1, c2) -> Tctr_arrow (iop, f c1, f c2)
       | Types.Tctr_tuple (cs) -> Tctr_tuple (List.map (fun (vo, c) -> (vo, f c)) cs)
+      | Types.Tctr_constr (i, cdesc, cs) -> 
+          Tctr_constr (i, cdesc, List.map (fun (vo, c) -> (vo, f c)) cs)
+      | Types.Tctr_and (c1, c2) -> Tctr_and (f c1, f c2)
+      | Types.Tctr_or (c1, c2) -> Tctr_or (f c1, f c2)
+      | Types.Tctr_typconstr (i, cs) -> Tctr_typconstr (i, List.map f cs)
+      | Types.Tctr_var (v) -> Tctr_var (v)
+      | Types.Tctr_poly (vs, c) -> Tctr_poly (vs, f c)
   in
   { contract_desc = core_contract_desc_from_iface core_contract_from_iface 
 						      ccntr.Types.contract_desc;

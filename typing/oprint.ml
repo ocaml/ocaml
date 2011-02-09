@@ -310,22 +310,53 @@ let out_class_type = ref print_out_class_type
 
 let rec print_out_core_contract_desc ppf = 
   function
-    Tctr_pred  (x, e) -> fprintf ppf "@[{@ %s@ |@ %a@ }@]" (Ident.name x) 
+    Tctr_pred  (x, e, exnop) -> 
+    begin match exnop with 
+    | None -> fprintf ppf "@[{@ %a@ |@ %a@ }@]" 
+                         Ident.print x
                          print_out_expression e
+    | Some exns ->  fprintf ppf "@[{@ %a@ |@ %a@ }@ with@  exception@ %a @]" 
+                         Ident.print x
+                         print_out_expression e                    
+                         bindings exns
+    end
   | Tctr_arrow (xop, c1, c2) -> 
     begin
       match xop with
       | None -> fprintf ppf "@[%a@ -> @ %a@]" 
                 print_out_core_contract c1
                 print_out_core_contract c2
-      | Some x -> fprintf ppf "@[%s:(%a)@ -> @ %a@]" (Ident.name x)
+      | Some x -> fprintf ppf "@[%a:(%a)@ -> @ %a@]" 
+                Ident.print x
                 print_out_core_contract c1
                 print_out_core_contract c2
     end
-  | Tctr_tuple (cs) -> fprintf ppf "@[[%a]@]" 
+  | Tctr_tuple (cs) -> fprintf ppf "@[%a@]" 
                        (print_list_init print_out_dep_core_contract
-                                  (fun ppf -> fprintf ppf ",@ "))
+                                  (fun ppf -> fprintf ppf "*@ "))
                                    cs
+  | Tctr_constr (i, cdesc, cs) -> fprintf ppf "@[%a@ of@%a@]" 
+                       Path.print i
+                       (print_list_init print_out_dep_core_contract
+                                  (fun ppf -> fprintf ppf "*@ "))
+                                   cs
+  | Tctr_and (c1, c2) -> fprintf ppf "@[%a@ \n and \n %a@]"
+                        print_out_core_contract c1
+                        print_out_core_contract c2
+  | Tctr_or (c1, c2) -> fprintf ppf "@[%a@ \n or \n %a@]"
+                        print_out_core_contract c1
+                        print_out_core_contract c2
+  | Tctr_typconstr (i, cs) -> fprintf ppf "@[%a@ of@%a@]" 
+                       Path.print i
+                       (print_list_init print_out_core_contract
+                                  (fun ppf -> fprintf ppf "*@ "))
+                                   cs
+  | Tctr_var (v) ->  fprintf ppf "@[[%a]@]" Ident.print v
+  | Tctr_poly (vs, c) -> fprintf ppf "@[%a.%a@]" 
+                         (print_list_init Ident.print
+                                  (fun ppf -> fprintf ppf ",@ "))
+                                   vs
+                         print_out_core_contract c
 
 and print_out_core_contract ppf c = 
       print_out_core_contract_desc ppf c.contract_desc
@@ -486,12 +517,14 @@ and print_out_expression_desc ppf =
   | others -> fprintf ppf "%s" "typing/oprint.ml: not done yet"
 
 and print_blame ppf bl = match bl with
-    Blame (loc, pathopt) -> 
+    Caller (loc, pathopt, path) -> 
       begin 
          match pathopt with
            None -> fprintf ppf "%s" "Blame _"
-         | Some path -> fprintf ppf "@[%s @]" (Path.name path) 
+         | Some p -> fprintf ppf "@[Blame %s@ which fails precondition of@ %s @]" (Path.name p) (Path.name path)
       end
+  | Callee (loc, path) -> 
+       fprintf ppf "@[Blame callee@ %s @]" (Path.name path)
   | UnknownBlame -> fprintf ppf "%s" "UnknownBlame"
 
 and print_out_pattern ppf pat = print_out_pattern_desc ppf pat.pat_desc

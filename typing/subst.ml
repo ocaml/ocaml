@@ -260,11 +260,17 @@ and dep_core_contract s = function (vo, c) ->
    (vo, core_contract s c)
 
 and core_contract_desc s = function 
-    Tctr_pred (id, expr) -> Tctr_pred (id, expression s expr)
+    Tctr_pred (id, expr, exnop) -> Tctr_pred (id, expression s expr, exnop)
   | Tctr_arrow (id_opt, cc1, cc2) -> 
       Tctr_arrow (id_opt, core_contract s cc1, core_contract s cc2) 
   | Tctr_tuple (cs) -> Tctr_tuple (List.map (dep_core_contract s) cs)
-
+  | Tctr_constr(id, cdesc, cs) -> 
+      Tctr_constr (id, cdesc, List.map (dep_core_contract s) cs)
+  | Tctr_and (c1, c2) -> Tctr_and (core_contract s c1, core_contract s c2)
+  | Tctr_or (c1, c2) -> Tctr_or (core_contract s c1, core_contract s c2)
+  | Tctr_typconstr(id, cs) -> Tctr_typconstr (id, List.map (core_contract s) cs)
+  | Tctr_var (v) -> Tctr_var (v)
+  | Tctr_poly (vs, c) -> Tctr_poly (vs, core_contract s c)
 
 let contract_declaration s decl = 
   { decl with ttopctr_desc = core_contract s decl.ttopctr_desc }

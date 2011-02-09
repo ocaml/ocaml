@@ -181,11 +181,12 @@ type cltype_declaration =
     clty_variance: (bool * bool) list }
 
 (* These patterns/expressions are almost the same as those in typedtree except
-   without the field related to Env.t. They are used in contracts that are 
+   without the field related to type and Env.t. 
+   They are used in contracts that are 
    in .mli file. *)
 type pattern =
   { pat_desc: pattern_desc;
-    pat_loc: Location.t; 
+    pat_loc: Location.t;
     pat_type: type_expr}
 
 
@@ -242,13 +243,17 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
 (* add below 3 for contract checking *)
+  | Texp_local_contract of core_contract * expression 
   | Texp_contract of core_contract * expression * expression * expression
   | Texp_bad of blame 
   | Texp_unr of blame
+  | Texp_Lambda of Ident.t list * expression
+  | Texp_App of expression * expression list
 
 
 and blame = 
-    Blame of Location.t * Path.t option
+    Caller of Location.t * Path.t option * Path.t
+  | Callee of Location.t * Path.t
   | UnknownBlame
 
 and meth =
@@ -258,12 +263,19 @@ and meth =
 and core_contract = 
   { contract_desc: core_contract_desc;
     contract_loc:  Location.t;
-    contract_type: type_expr}
+    contract_type: type_expr;}
 
 and core_contract_desc = 
-    Tctr_pred of Ident.t * expression
+    Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
   | Tctr_arrow of Ident.t option * core_contract * core_contract
   | Tctr_tuple of (Ident.t option * core_contract) list
+  | Tctr_constr of Path.t * constructor_description 
+                          * (Ident.t option * core_contract) list
+  | Tctr_and of core_contract * core_contract
+  | Tctr_or of core_contract * core_contract
+  | Tctr_typconstr of Path.t * core_contract list
+  | Tctr_var of Ident.t
+  | Tctr_poly of Ident.t list * core_contract
 
 and contract_declaration =  
   { ttopctr_id: Path.t;
@@ -527,7 +539,15 @@ and eqExpression expr1 expr2 = eqExpression_desc expr1.exp_desc expr2.exp_desc
 
 let rec eqContract_desc c1 c2 = 
   match (c1, c2) with
-  | (Tctr_pred (id1, exp1), Tctr_pred (id2, exp2)) ->       
+  | (Tctr_pred (id1, exp1, exns1), Tctr_pred (id2, exp2, exns2)) ->       
+      let eq_exns = match (exns1, exns2) with
+      | (None, None) -> true
+      | (Some exn1, Some exn2) -> List.for_all2 (fun (p1,e1) (p2,e2) ->
+                                   eqPattern p1 p2 &&
+                                   eqExpression e1 e2) exn1 exn2
+      | (_, _) -> false
+      in
+      eq_exns && (* exception constructors *)
       Ident.name id1 = Ident.name id2 && 
       eqExpression_desc exp1.exp_desc exp2.exp_desc
   | (Tctr_arrow (id_opt1, cc11, cc12), Tctr_arrow (id_opt2, cc21, cc22)) ->
@@ -539,9 +559,27 @@ let rec eqContract_desc c1 c2 =
       | (_, _) -> false
       end
   | (Tctr_tuple (clist1), Tctr_tuple (clist2)) -> 
-      List.for_all (fun ((vo1,c1),(vo2,c2)) -> 
+      List.for_all (fun ((vo1,c1), (vo2,c2)) -> 
           vo1 = vo2 &&  eqContract c1 c2) 
       (List.combine clist1 clist2)
+  | (Tctr_constr (p1, cdesc1, cs1), Tctr_constr (p2, cdesc2, cs2)) ->
+      p1 = p2 && 
+      List.for_all (fun ((vo1, c1), (vo2,c2)) -> 
+          vo1 = vo2 && eqContract c1 c2)
+                   (List.combine cs1 cs2)  
+  | (Tctr_and (c1, c2), Tctr_and (c3, c4)) -> 
+      eqContract c1 c3 && eqContract c2 c4
+  | (Tctr_or (c1, c2), Tctr_and (c3, c4)) -> 
+      eqContract c1 c3 && eqContract c2 c4
+  | (Tctr_typconstr (p1, cs1), Tctr_typconstr (p2, cs2)) -> 
+      p1 = p2 && 
+      List.for_all (fun (c1, c2) -> eqContract c1 c2)
+                   (List.combine cs1 cs2)  
+  | (Tctr_var (id1), Tctr_var (id2)) -> Ident.name id1 = Ident.name id2 
+  | (Tctr_poly (ids1, c1), Tctr_poly (ids2, c2)) ->
+      List.for_all (fun (id1, id2) -> Ident.name id1 = Ident.name id2)
+                   (List.combine ids1 ids2)  &&
+      eqContract c1 c2
   | (_, _) -> false
 
 and eqContract c1 c2 = eqContract_desc c1.contract_desc c2.contract_desc

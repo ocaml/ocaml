@@ -272,6 +272,10 @@ and expression i ppf x =
       expression i ppf e;
       option i core_type ppf cto1;
       option i core_type ppf cto2;
+  | Pexp_contract (cc, e) -> 
+      line i ppf "Pexp_contract \n";
+      core_contract i ppf cc;
+      expression i ppf e;
   | Pexp_when (e1, e2) ->
       line i ppf "Pexp_when\n";
       expression i ppf e1;
@@ -348,19 +352,46 @@ and dep_core_contract i ppf = function (vo,c) ->
   option i string ppf vo;
   core_contract i ppf c;
 
+and pat_exp_list i ppf l = 
+ list i pattern_x_expression_case ppf l
+
 and core_contract_desc i ppf x = 
   match x with
-    Pctr_pred (x,e) -> 
+    Pctr_pred (x, e, exnop) -> 
       line i ppf "Pctr_pred \"%s\"\n" x;
       expression i ppf e;
+      option i pat_exp_list ppf exnop;
   | Pctr_arrow (vo, c1, c2) -> 
+      line i ppf "Pctr_arrow \n";
       option i string ppf vo;
       core_contract i ppf c1;
+      line i ppf "->\n";
       core_contract i ppf c2;
   | Pctr_tuple (cs) -> 
       line i ppf "Pctr_tuple\n";
       list i dep_core_contract ppf cs;
-
+  | Pctr_constr (li, cs) -> 
+      line i ppf "Pctr_constr %a\n" fmt_longident li;
+      list i dep_core_contract ppf cs;
+  | Pctr_and (c1, c2) -> 
+      line i ppf "Pctr_and \n";
+      core_contract i ppf c1;
+      line i ppf " and \n";
+      core_contract i ppf c2;
+  | Pctr_or (c1, c2) -> 
+      line i ppf "Pctr_or \n";
+      core_contract i ppf c1;
+      line i ppf " or \n";
+      core_contract i ppf c2;
+  | Pctr_typconstr (li, cs) -> 
+      line i ppf "Pctr_typconstr %a\n" fmt_longident li;
+      list i core_contract ppf cs;
+  | Pctr_var (v) -> 
+      line i ppf "Pctr_var '%s\n" v;
+  | Pctr_poly (vs, c) -> 
+      line i ppf "Pctr_poly%a\n"
+        (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) vs;
+      core_contract i ppf c;
 
 and exception_declaration i ppf x = list i core_type ppf x
 

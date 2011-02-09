@@ -58,4 +58,17 @@ val transl_contract: Typedtree.core_contract ->
                      Typedtree.expression -> Typedtree.expression -> 
                      Typedtree.expression 
 *)
+val contract_id_in_expr :
+           Typedtree.core_contract Ident.tbl ->
+           Typedtree.contract_declaration list ->
+           ('a * Types.contract_declaration) Ident.tbl ->
+           Path.t option -> Typedtree.expression -> Typedtree.expression
+
+val contract_id_in_contract :
+           Typedtree.core_contract Ident.tbl ->
+           Typedtree.contract_declaration list ->
+           ('a * Types.contract_declaration) Ident.tbl ->
+           Path.t option ->
+           Typedtree.core_contract -> Typedtree.core_contract
+
 val deep_transl_contract: Typedtree.expression -> Typedtree.expression 

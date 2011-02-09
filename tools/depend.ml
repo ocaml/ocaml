@@ -144,6 +144,7 @@ let rec add_expr bv exp =
       add_expr bv e1;
       add_opt add_type bv oty2;
       add_opt add_type bv oty3
+  | Pexp_contract(c, e) -> add_expr bv e
   | Pexp_when(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_send(e, m) -> add_expr bv e
   | Pexp_new l -> add bv l

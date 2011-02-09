@@ -34,7 +34,7 @@ type summary =
     Env_empty
   | Env_value of summary * Ident.t * value_description
   | Env_type of summary * Ident.t * type_declaration
-  | Env_contract of summary * Path.t * contract_declaration
+  | Env_contract of summary * Ident.t * contract_declaration
   | Env_exception of summary * Ident.t * exception_declaration
   | Env_module of summary * Ident.t * module_type
   | Env_modtype of summary * Ident.t * modtype_declaration
@@ -50,7 +50,7 @@ type t = {
   constrs: (Path.t * constructor_description) Ident.tbl; 
   labels: (Path.t * label_description) Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
-  contracts: (Path.t, contract_declaration) Tbl.t;
+  contracts: (Path.t * contract_declaration) Ident.tbl;
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
@@ -92,7 +92,7 @@ and functor_components = {
 let empty = {
   values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
   labels = Ident.empty; types = Ident.empty;
-  contracts = Tbl.empty;
+  contracts = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty;
@@ -275,8 +275,10 @@ and find_class =
   find (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and find_cltype =
   find (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
-(* and find_contract =
-  find (fun env -> env.contracts) (fun sc -> sc.comp_contracts) *)
+and find_constructor = 
+  find (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
+and find_contract =
+  find (fun env -> env.contracts) (fun sc -> sc.comp_contracts) 
 
 let fetch_contracts env = env.contracts
 
@@ -451,8 +453,8 @@ and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
-(* and lookup_contract =
-  lookup (fun env -> env.contracts) (fun sc -> sc.comp_contracts) *)
+and lookup_contract =
+  lookup (fun env -> env.contracts) (fun sc -> sc.comp_contracts) 
 
 (* Expand manifest module type names at the top of the given module type *)
 
@@ -702,10 +704,10 @@ and store_cltype id path desc env =
     cltypes = Ident.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
-and store_contract path cdecl env = 
+and store_contract id path cdecl env = 
   { env with 
-    contracts = Tbl.add path cdecl env.contracts;
-    summary = Env_contract(env.summary, path, cdecl) }
+    contracts = Ident.add id (path, cdecl) env.contracts;
+    summary = Env_contract(env.summary, id, cdecl) }
 
 (* Compute the components of a functor application in a path. *)
 
@@ -753,8 +755,8 @@ and add_class id ty env =
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
 
-and add_contract path contract_decl env =
-  store_contract path contract_decl env
+and add_contract id contract_decl env =
+  store_contract id (Pident id) contract_decl env
 
 (* Insertion of bindings by name *)
 
@@ -768,7 +770,7 @@ and enter_module = enter store_module
 and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
-and enter_contract = store_contract 
+and enter_contract = enter store_contract 
 
 (* Insertion of all components of a signature *)
 
@@ -781,7 +783,7 @@ let add_item comp env =
   | Tsig_modtype(id, decl)   -> add_modtype id decl env
   | Tsig_class(id, decl, _)  -> add_class id decl env
   | Tsig_cltype(id, decl, _) -> add_cltype id decl env
-  | Tsig_contract(id, decl, _)-> add_contract (Pident id) decl env
+  | Tsig_contract(id, decl, _)-> add_contract id decl env
 
 let rec add_signature sg env =
   match sg with
@@ -820,7 +822,8 @@ let open_signature root sg env =
             store_cltype (Ident.hide id) p
                          (Subst.cltype_declaration sub decl) env
         | Tsig_contract(id, decl, _) -> 
-            store_contract p (Subst.contract_declaration sub decl) env)
+            store_contract (Ident.hide id) p 
+                         (Subst.contract_declaration sub decl) env)
       env sg pl in
   { newenv with summary = Env_open(env.summary, root) }
   

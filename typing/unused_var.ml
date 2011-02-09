@@ -132,6 +132,7 @@ and expression ppf tbl e =
       match_pel ppf tbl pel;
   | Pexp_tuple el -> List.iter (expression ppf tbl) el;
   | Pexp_construct (_, eo, _) -> expression_option ppf tbl eo;
+  | Pexp_contract (c_decl, e) -> expression ppf tbl e;
   | Pexp_variant (_, eo) -> expression_option ppf tbl eo;
   | Pexp_record (iel, eo) ->
       List.iter (fun (_, e) -> expression ppf tbl e) iel;
@@ -174,6 +175,7 @@ and expression ppf tbl e =
   | Pexp_lazy e -> expression ppf tbl e;
   | Pexp_poly (e, _) -> expression ppf tbl e;
   | Pexp_object cs -> class_structure ppf tbl cs;
+
 
 and expression_option ppf tbl eo =
   match eo with

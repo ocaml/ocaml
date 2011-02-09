@@ -213,8 +213,7 @@ let bigarray_set arr arg newval =
 %token COMMA
 %token CONSTRAINT
 %token CONTRACT
-%token CLPAREN	/* contract: this is not used yet */
-%token CRPAREN	/* contract: this is not used yet */
+%token SAT
 %token DO
 %token DONE
 %token DOT
@@ -820,7 +819,7 @@ expr:
     simple_expr %prec below_SHARP
       { $1 }
   | simple_expr simple_labeled_expr_list
-      { mkexp(Pexp_apply($1, List.rev $2)) }
+      { mkexp(Pexp_apply($1, List.rev $2)) } 
   | LET rec_flag let_bindings IN seq_expr
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | LET MODULE UIDENT module_binding IN seq_expr
@@ -1012,6 +1011,9 @@ let_binding:
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
+  | val_ident SAT core_contract EQUAL seq_expr
+      { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, 
+          ghexp(Pexp_contract($3, $5))) }
 ;
 fun_binding:
     strict_binding
@@ -1070,6 +1072,15 @@ type_constraint:
   | COLONGREATER error                          { syntax_error() }
 ;
 
+/* Polymorphic contracts */
+
+contractvar_list:
+    QUOTE ident                                  { [$2] }
+  | contractvar_list QUOTE ident                 { $3 :: $1 }
+;
+
+/* Core contracts */
+
 core_contract:
     simple_core_contract_or_tuple
       { $1 }
@@ -1077,28 +1088,48 @@ core_contract:
       { mkctr(Pctr_arrow(Some $1, $3, $5)) } 
   | simple_core_contract_or_tuple MINUSGREATER core_contract
       { mkctr(Pctr_arrow(None, $1, $3)) } 
+  | simple_core_contract_or_tuple AND core_contract
+      { mkctr(Pctr_and($1, $3)) }
+  | simple_core_contract_or_tuple OR core_contract
+      { mkctr(Pctr_and($1, $3)) }
+  | contractvar_list DOT core_contract
+     { mkctr(Pctr_poly(List.rev $1, $3)) }
  ;
 
 simple_core_contract_or_tuple:
-    simple_core_contract                     { $1 }
-  | contract_star_list
+    simple_core_contract                        { $1 }
+  | tuple_contract
       { mkctr(Pctr_tuple(List.rev $1)) } 
+;
 
-contract_star_list:
-  | contract_star_list STAR dep_core_contract       { $3 :: $1 }
-  | dep_core_contract STAR dep_core_contract         { [$3; $1] }
+tuple_contract:
+  | tuple_contract STAR dep_core_contract       { $3 :: $1 }
+  | dep_core_contract STAR dep_core_contract    { [$3; $1] }
 ;
 
 dep_core_contract:
     val_ident COLON simple_core_contract        { (Some $1, $3) } 
-  | simple_core_contract                 { (None, $1) }  
+  | simple_core_contract                        { (None, $1) }  
 ;   
 
 simple_core_contract:
     LBRACE val_ident BAR expr RBRACE         
-      { mkctr(Pctr_pred($2, $4)) }
+      { mkctr(Pctr_pred($2, $4, None)) }
+  | TRY LBRACE val_ident BAR expr RBRACE WITH opt_bar match_cases
+      { mkctr(Pctr_pred($3, $5, Some (List.rev $9))) }
+  | QUOTE ident
+      { mkctr(Pctr_var($2)) }
+  | type_longident
+      { mkctr(Pctr_typconstr($1, [])) }
+  | simple_core_contract type_longident
+      { mkctr(Pctr_typconstr($2, [$1])) }
+  | constr_longident 
+    { mkctr(Pctr_constr($1, [])) } 
+  | constr_longident OF tuple_contract
+    { mkctr(Pctr_constr($1, List.rev $3)) } 
   | LPAREN core_contract RPAREN
       { $2 }
+;
 
 
 /* Patterns */

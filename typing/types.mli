@@ -239,13 +239,16 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
 (* add below 3 for contract checking *)
+  | Texp_local_contract of core_contract * expression
   | Texp_contract of core_contract * expression * expression * expression
   | Texp_bad of blame 
   | Texp_unr of blame
-
+  | Texp_Lambda of Ident.t list * expression
+  | Texp_App of expression * expression list
 
 and blame = 
-    Blame of Location.t * Path.t option
+    Caller of Location.t * Path.t option * Path.t
+  | Callee of Location.t * Path.t
   | UnknownBlame
 
 and meth =
@@ -258,9 +261,16 @@ and core_contract =
     contract_type: type_expr }
 
 and core_contract_desc = 
-    Tctr_pred of Ident.t * expression
+    Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
   | Tctr_arrow of Ident.t option * core_contract * core_contract
   | Tctr_tuple of (Ident.t option * core_contract) list
+  | Tctr_constr of Path.t * constructor_description 
+                          * (Ident.t option * core_contract) list
+  | Tctr_and of core_contract * core_contract
+  | Tctr_or of core_contract * core_contract
+  | Tctr_typconstr of Path.t * core_contract list
+  | Tctr_var of Ident.t
+  | Tctr_poly of Ident.t list * core_contract
 
 and contract_declaration =  
   { ttopctr_id: Path.t;

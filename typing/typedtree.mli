@@ -77,9 +77,13 @@ and expression_desc =
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
 (* add below 3 for contract checking *)
+  | Texp_local_contract of core_contract * expression 
   | Texp_contract of core_contract * expression * expression * expression
   | Texp_bad of blame 
   | Texp_unr of blame 
+  | Texp_Lambda of Ident.t list * expression (* /\'a. e |><| c, 'a is a contractvar *)
+  | Texp_App of expression * expression list (* e 'a, 'a is a contractvar *)
+  | Texp_raise of expression 
 
 and core_contract = 
   { contract_desc: core_contract_desc;
@@ -88,9 +92,16 @@ and core_contract =
     contract_env: Env.t }
 
 and core_contract_desc = 
-    Tctr_pred of Ident.t * expression
+    Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
   | Tctr_arrow of Ident.t option * core_contract * core_contract
   | Tctr_tuple of (Ident.t option * core_contract) list
+  | Tctr_constr of Path.t * constructor_description 
+                          * (Ident.t option * core_contract) list
+  | Tctr_and of core_contract * core_contract
+  | Tctr_or of core_contract * core_contract
+  | Tctr_typconstr of Path.t * core_contract list
+  | Tctr_var of Ident.t
+  | Tctr_poly of Ident.t list * core_contract
 
 and contract_declaration =  
   { ttopctr_id: Path.t;
@@ -164,8 +175,8 @@ and structure_item =
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
   | Tstr_contract of contract_declaration list
-  | Tstr_mty_contracts of (Path.t, Types.contract_declaration) Tbl.t
-  | Tstr_opened_contracts of (Path.t, Types.contract_declaration) Tbl.t
+  | Tstr_mty_contracts of (Path.t * Types.contract_declaration) Ident.tbl
+  | Tstr_opened_contracts of (Path.t * Types.contract_declaration) Ident.tbl
 
 (* Auxiliary functions over the a.s.t. *)
 
@@ -188,8 +199,8 @@ val contract_declaration_to_iface: contract_declaration -> Types.contract_declar
 
 val core_contract_from_iface: Types.core_contract -> core_contract
  
-val ensuresC : core_contract -> expression -> Path.t option -> expression_desc
+val ensuresC : core_contract -> expression -> blame -> expression_desc
 val requiresC : core_contract -> expression -> 
-                Path.t option -> Path.t option -> expression_desc
+                blame -> blame -> expression_desc
 
 

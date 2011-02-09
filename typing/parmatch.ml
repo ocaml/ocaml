@@ -681,7 +681,7 @@ let complete_tags nconsts nconstrs tags =
     (function
       | Cstr_constant i -> seen_const.(i) <- true
       | Cstr_block i -> seen_constr.(i) <- true
-      | _  -> assert false)
+      | _  -> assert false) 
     tags ;
   let r = ref [] in
   for i = 0 to nconsts-1 do

@@ -213,13 +213,10 @@ let rec raw_keys_aux stack accu = function
 
 let raw_keys tbl = raw_keys_aux [] [] tbl
 
-(*
-let rec find path = function
-    Empty ->
-      raise Not_found
-  | Node(l, k, r, _) ->
-      let c = compare path.data k.data in
-      if c = 0 then k.data
-      else
-        find path (if c < 0 then l else r)
-*)
+
+let rec map f = function
+    Empty -> Empty
+  | Node(l, k, r, i) -> Node(map f l, {ident = k.ident;
+                                       data = f k.data;
+                                       previous = k.previous}, map f r, i)
+
