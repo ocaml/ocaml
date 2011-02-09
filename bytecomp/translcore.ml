@@ -928,13 +928,13 @@ and transl_exp0 e =
        a static contract checker (followed by/or) a dynamic contract checker. For 
        static contract checking, it basically checks the reachability of Texp_bad. *)   
       raise(Error(e.exp_loc,Illegal_contracted_expr)) 
-  | Texp_bad bl -> transl_bad bl 
-  | Texp_unr bl -> lambda_unit
+  | Texp_bad bl -> transl_blame bl 
+  | Texp_unr bl -> transl_blame bl
   | Texp_Lambda (v, e) -> lambda_unit
   | Texp_App (e, es) -> lambda_unit
   | Texp_raise exp ->  Lprim (Praise, [transl_exp0 exp]) 
 
-and transl_bad bl = transl_exp0 (contract_exn bl)
+and transl_blame bl = transl_exp0 (contract_exn bl)
 
 (* We expand the wrapped expression (e |><| c) at typedtree level, then do overall
 translation to lambda.
@@ -985,13 +985,14 @@ and transl_contract cntr e callee caller =
         let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
         let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
-             
+       
      | Tctr_arrow (xop, c1, c2) -> 
       (* picky version:
          e |>r1,r2<| x:c1 -> c2 = \x. (e (x |>r2,r1<| c1)) |>r1,r2<| c2[(x |>r2,r1<| c1)/x]
          lax version: 
          e |>r1,r2<| x:c1 -> c2 = \x. (e (x |>r2,r1<| c1)) |>r1,r2<| c2
-         we are implementing the picky version. *)      
+         we are implementing the picky version. 
+      *)      
          let c1_type = c1.contract_type in
          let c2_type = c2.contract_type in
          let res = match xop with
