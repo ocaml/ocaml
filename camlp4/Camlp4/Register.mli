@@ -40,6 +40,7 @@ type parser_fun 'a =
 value register_str_item_parser : parser_fun PreCast.Ast.str_item -> unit;
 value register_sig_item_parser : parser_fun PreCast.Ast.sig_item -> unit;
 value register_parser : parser_fun PreCast.Ast.str_item -> parser_fun PreCast.Ast.sig_item -> unit;
+value current_parser : unit -> (parser_fun PreCast.Ast.str_item * parser_fun PreCast.Ast.sig_item);
 
 module Parser
   (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> (Sig.Parser Ast).S) : sig end;
@@ -58,6 +59,7 @@ type printer_fun 'a =
 value register_str_item_printer : printer_fun PreCast.Ast.str_item -> unit;
 value register_sig_item_printer : printer_fun PreCast.Ast.sig_item -> unit;
 value register_printer : printer_fun PreCast.Ast.str_item -> printer_fun PreCast.Ast.sig_item -> unit;
+value current_printer : unit -> (printer_fun PreCast.Ast.str_item * printer_fun PreCast.Ast.sig_item);
 
 module Printer
   (Id : Sig.Id)

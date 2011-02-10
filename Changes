@@ -29,6 +29,7 @@ Bug fixes:
 Feature wishes:
 - PR#4992: added '-ml-synonym' and '-mli-synonym' options to ocamldep
 - PR#5065: added '-ocamldoc' option to ocamlbuild
+- PR#5158: added access to current camlp4 parsers and printers
 - PR#5180: improved instruction selection for float operations on amd64
 
 
