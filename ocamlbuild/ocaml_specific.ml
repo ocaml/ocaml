@@ -418,6 +418,7 @@ let () =
   if !Options.use_ocamlfind then begin
     (* Ocamlfind will link the archives for us. *)
     flag ["ocaml"; "link"; "program"] & A"-linkpkg";
+    flag ["ocaml"; "link"; "toplevel"] & A"-linkpkg";
 
     let all_tags = [
       ["ocaml"; "byte"; "compile"];
