@@ -815,8 +815,11 @@ and search_pos_expr ~pos exp =
       search_pos_module_expr modexp ~pos;
       search_pos_expr exp ~pos
   | Texp_contract (c,e, _, _) -> search_pos_expr e ~pos
-  | Texp_bad (_) -> ()
-  | Texp_unr (_) -> ()
+  | Texp_bad _ 
+  | Texp_unr _ 
+  | Texp_raise _ 
+  | Texp_Lambda _
+  | Texp_App _ | Texp_local_contract _ -> ()
   | Texp_assertfalse -> ()
   | Texp_assert exp ->
       search_pos_expr exp ~pos
