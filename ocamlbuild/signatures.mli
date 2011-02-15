@@ -401,6 +401,8 @@ module type OPTIONS = sig
   val ext_lib : string ref
   val ext_dll : string ref
   val exe : string ref
+
+  val add : string * Arg.spec * string -> unit
 end
 
 module type ARCH = sig
