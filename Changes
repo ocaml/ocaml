@@ -15,6 +15,7 @@ Bug fixes:
 - PR#4972: mkcamlp4 does not include 'dynlink.cma'
 - PR#5039: ocamlbuild should use '-linkpkg' only when linking programs
 - PR#5071, PR#5129, PR#5134: inconsistencies between camlp4 and camlp4* binaries
+- PR#5080, PR#5104: regression in type constructor handling by camlp4
 - PR#5095: ocamlbuild ignores some tags when building bytecode objects
 - PR#5100: ocamlbuild always rebuilds a 'cmxs' file
 - PR#5103: build and install objinfo when building with ocamlbuild

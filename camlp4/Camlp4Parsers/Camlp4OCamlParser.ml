@@ -537,6 +537,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "{"; t = label_declaration_list; "}" ->
             <:ctyp< { $t$ } >> ] ]
     ;
+    ctyp_quot:
+      [ [ "private"; t = ctyp_quot -> <:ctyp< private $t$ >>
+        | "|"; t = constructor_declarations -> <:ctyp< [ $t$ ] >>
+        | x = more_ctyp; "="; y = ctyp_quot -> <:ctyp< $x$ == $y$ >>
+        | "{"; t = label_declaration_list; "}" -> <:ctyp< { $t$ } >>
+      ] ]
+    ;
     module_expr: LEVEL "apply"
       [ [ i = SELF; "("; j = SELF; ")" -> <:module_expr< $i$ $j$ >> ] ]
     ;
