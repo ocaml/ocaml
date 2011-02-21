@@ -626,12 +626,14 @@ if test $withsharedlibs = "yes"; then
     i[3456]86-*-darwin[89]*)      natdynlink=true;;
     powerpc64-*-linux*)           natdynlink=true;;
     sparc-*-linux*)               natdynlink=true;;
-    i[345]86-*-freebsd*)             natdynlink=true;;
-    x86_64-*-freebsd*)           natdynlink=true;;
-    i[345]86-*-openbsd*)             natdynlink=true;;
-    x86_64-*-openbsd*)           natdynlink=true;;
-    i[345]86-*-netbsd*)             natdynlink=true;;
-    x86_64-*-netbsd*)           natdynlink=true;;
+    i686-*-kfreebsd*)             natdynlink=true;;
+    x86_64-*-kfreebsd*)           natdynlink=true;;
+    i[345]86-*-freebsd*)          natdynlink=true;;
+    x86_64-*-freebsd*)            natdynlink=true;;
+    i[345]86-*-openbsd*)          natdynlink=true;;
+    x86_64-*-openbsd*)            natdynlink=true;;
+    i[345]86-*-netbsd*)           natdynlink=true;;
+    x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
   esac
 fi
