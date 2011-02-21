@@ -26,6 +26,7 @@ Bug fixes:
 - PR#5167: camlp4r loops when printing package type
 - PR#5172: camlp4 support for 'module type of' construct
 - PR#5177: Gc.compact implies Gc.full_major
+- PR#5209: natdynlink incorrectly detected on BSD systems
 - PR#5213: ocamlbuild should pass '-rectypes' to ocamldoc when needed
 - PR#5217: ocamlfind plugin should add '-linkpkg' for toplevel
 
