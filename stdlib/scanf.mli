@@ -99,39 +99,47 @@ type scanbuf = in_channel;;
     Note: a scanning action may often require to examine one character in
     advance; when this ``lookahead'' character does not belong to the token
     read, it is stored back in the scanning buffer and becomes the next
-    character read. *)
+    character yet to be read. *)
 
 val stdin : in_channel;;
-(** The standard input notion for the module [Scanf].
-    [stdin] is equivalent to [Scanning.from_channel Pervasives.stdin].
+(** The standard input notion for the [Scanf] module.
+    [Scanning.stdin] is the formatted input channel attached to [Pervasives.stdin].
 
-    Note: when input is read interactively from [stdin], the newline character
-    that triggers the evaluation is incorporated in the input; thus, scanning
-    specifications must properly skip this character (simply add a ['\n']
-    as the last character of the format string).
+    Note: in the interactive system, when input is read from [stdin], the
+    newline character that triggers the evaluation is incorporated in the
+    input; thus, the scanning specifications must properly skip this
+    additional newline character (for instance, simply add a ['\n'] as the
+    last character of the format string).
     @since 3.12.0
 *)
 
-val open_in : string -> in_channel;;
-(** Bufferized file reading in text mode. The efficient and usual
-    way to scan text mode files (in effect, [from_file] returns a
-    scanning buffer that reads characters in large chunks, rather than one
-    character at a time as buffers returned by [from_channel] below do).
-    [Scanning.from_file fname] returns a scanning buffer which reads
-    from the given file [fname] in text mode.
+type file_name = string;;
+(** A convenient alias to designate a file name.
+    @since 3.13.0
+*)
+
+val open_in : file_name -> in_channel;;
+(** [Scanning.open_in fname] returns a formatted input channel for bufferized
+    reading of text mode file [fname].
+
+    Note:
+    [open_in] returns a formatted input channel that efficiently reads
+    characters in large chunks; in contrast, [from_channel] below returns
+    formatted input channels that must read one character at a time, leading
+    to a much slower scanning rate.
     @since 3.12.0
 *)
 
-val open_in_bin : string -> in_channel;;
+val open_in_bin : file_name -> in_channel;;
 (** Bufferized file reading in binary mode. @since 3.12.0 *)
 
 val close_in : in_channel -> unit;;
-(** Close the [Pervasives.input_channel] associated with the given
-  [Scanning.in_channel].
+(** Closes the [Pervasives.input_channel] associated with the given
+  [Scanning.in_channel] formatted input channel.
   @since 3.12.0
 *)
 
-val from_file : string -> in_channel;;
+val from_file : file_name -> in_channel;;
 (** An alias for [open_in] above. *)
 val from_file_bin : string -> in_channel;;
 (** An alias for [open_in_bin] above. *)
@@ -165,7 +173,7 @@ val beginning_of_input : in_channel -> bool;;
     the given formatted input channel. *)
 
 val name_of_input : in_channel -> string;;
-(** [Scanning.file_name_of_input ic] returns the name of the character source
+(** [Scanning.name_of_input ic] returns the name of the character source
     for the formatted input channel [ic].
     @since 3.09.0
 *)
@@ -377,7 +385,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     character is encountered, the string token spreads as much as
     possible. For instance, ["%s@\t"] reads a string up to the next
     tab character or to the end of input. If a scanning
-    indication [\@c] does not follow a string conversion, it is treated
+    indication [@c] does not follow a string conversion, it is treated
     as a plain [c] character.
 
     Note:
@@ -419,7 +427,7 @@ val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     Warning: since all formatted input functions operate from a {e formatted
     input channel}, be aware that each [fscanf] invocation will operate with a
     formatted input channel reading from the given channel. This extra level
-    of bufferization can lead to strange scanning behaviour if you use low
+    of bufferization can lead to a strange scanning behaviour if you use low
     level primitives on the channel (reading characters, seeking the reading
     position, and so on).
 
@@ -439,7 +447,7 @@ val kscanf :
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
     [ef] that is called in case of error: if the scanning process or
     some conversion fails, the scanning function aborts and calls the
-    error handling function [ef] with the scanning buffer and the
+    error handling function [ef] with the formatted input channel and the
     exception that aborted the scanning process as arguments. *)
 
 (** {6 Reading format strings from input} *)
