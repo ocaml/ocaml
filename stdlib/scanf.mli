@@ -385,7 +385,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     character is encountered, the string token spreads as much as
     possible. For instance, ["%s@\t"] reads a string up to the next
     tab character or to the end of input. If a scanning
-    indication [@c] does not follow a string conversion, it is treated
+    indication [\@c] does not follow a string conversion, it is treated
     as a plain [c] character.
 
     Note:
