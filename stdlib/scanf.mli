@@ -103,7 +103,8 @@ type scanbuf = in_channel;;
 
 val stdin : in_channel;;
 (** The standard input notion for the [Scanf] module.
-    [Scanning.stdin] is the formatted input channel attached to [Pervasives.stdin].
+    [Scanning.stdin] is the formatted input channel attached to
+    [Pervasives.stdin].
 
     Note: in the interactive system, when input is read from [stdin], the
     newline character that triggers the evaluation is incorporated in the
@@ -272,11 +273,11 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-f]+] or [[0-9A-F]+]).
     - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
-      following bounding condition holds:
-      - a whitespace has been found (see {!Scanf.space}),
-      - a scanning indication (see scanning {!Scanf.indication}) has been
-        encountered,
-      - the end-of-input has been reached.
+      following bounding condition holds: {ul
+      {- a whitespace has been found (see {!Scanf.space}),}
+      {- a scanning indication (see scanning {!Scanf.indication}) has been
+         encountered,}
+      {- the end-of-input has been reached.}}
       Hence, this conversion always succeeds: it returns an empty
       string, if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
