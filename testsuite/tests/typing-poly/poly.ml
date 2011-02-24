@@ -557,6 +557,14 @@ let f5 x =
 let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
 
+(* Keep sharing the epsilons *)
+let f x = if true then (x : < m : 'a. 'a -> 'a >) else x;;
+fun x -> (f x)#m;; (* Warning 18 *)
+let f (x, y) = if true then (x : < m : 'a. 'a -> 'a >) else x;;
+fun x -> (f (x,x))#m;; (* Warning 18 *)
+let f x = if true then [| (x : < m : 'a. 'a -> 'a >) |] else [|x|];;
+fun x -> (f x).(0)#m;; (* Warning 18 *)
+
 (* Not really principal? *)
 class c = object method id : 'a. 'a -> 'a = fun x -> x end;;
 type u = c option;;

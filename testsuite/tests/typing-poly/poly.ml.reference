@@ -517,6 +517,12 @@ The second object type has no method b
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
          < m : 'a. [< `A of < p : int > ] as 'a > 
+#     val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
+# - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+# val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
+# - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+# val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
+# - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 #     class c : object method id : 'a -> 'a end
 # type u = c option
 # val just : 'a option -> 'a = <fun>

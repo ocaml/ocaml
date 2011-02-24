@@ -860,7 +860,8 @@ and class_expr cl_num val_env met_env scl =
                 | _, (l', sarg0)::more_sargs ->
                     if l <> l' && l' <> "" then
                       raise(Error(sarg0.pexp_loc, Apply_wrong_label l'))
-                    else ([], more_sargs, Some(type_argument val_env sarg0 ty))
+                    else ([], more_sargs,
+                          Some (type_argument val_env sarg0 ty ty))
                 | _ ->
                     assert false
               end else try
@@ -876,10 +877,10 @@ and class_expr cl_num val_env met_env scl =
                 in
                 sargs, more_sargs,
                 if Btype.is_optional l' || not (Btype.is_optional l) then
-                  Some (type_argument val_env sarg0 ty)
+                  Some (type_argument val_env sarg0 ty ty)
                 else
-                  let arg = type_argument val_env
-                      sarg0 (extract_option_type val_env ty) in
+                  let ty0 = extract_option_type val_env ty in
+                  let arg = type_argument val_env sarg0 ty0 ty0 in
                   Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,

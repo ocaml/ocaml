@@ -12,5 +12,12 @@ default:
 	  diff -q $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
 	done
 
+promote:
+	@for file in *.result; do \
+	  ref="`basename $$file sult`ference"; \
+	  echo cp $$file $$ref; \
+	  cp $$file $$ref; \
+	done
+
 clean: defaultclean
 	@rm -f *.result

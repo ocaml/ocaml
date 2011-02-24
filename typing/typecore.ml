@@ -1445,20 +1445,25 @@ and type_expect ?in_function env sexp ty_expected =
       re {
         exp_desc = Texp_tuple expl;
         exp_loc = loc;
-        exp_type = instance ty_expected;
+        (* Keep sharing *)
+        exp_type = newty (Ttuple (List.map (fun e -> e.exp_type) expl));
         exp_env = env }
   | Pexp_construct(lid, sarg, explicit_arity) ->
       type_construct env loc lid sarg explicit_arity ty_expected
   | Pexp_variant(l, sarg) ->
-      begin try match sarg, expand_head env ty_expected with
-      | Some sarg, {desc = Tvariant row} ->
+      (* Keep sharing *)
+      let ty_expected0 = instance ty_expected in
+      begin try match
+        sarg, expand_head env ty_expected, expand_head env ty_expected0 with
+      | Some sarg, {desc = Tvariant row}, {desc = Tvariant row0} ->
           let row = row_repr row in
-          begin match row_field_repr (List.assoc l row.row_fields) with
-            Rpresent (Some ty) ->
-              let arg = type_argument env sarg ty in
+          begin match row_field_repr (List.assoc l row.row_fields),
+          row_field_repr (List.assoc l row0.row_fields) with
+            Rpresent (Some ty), Rpresent (Some ty0) ->
+              let arg = type_argument env sarg ty ty0 in
               re { exp_desc = Texp_variant(l, Some arg);
                    exp_loc = loc;
-                   exp_type = instance ty_expected;
+                   exp_type = ty_expected0;
                    exp_env = env }
           | _ -> raise Not_found
           end
@@ -1580,6 +1585,8 @@ and type_expect ?in_function env sexp ty_expected =
       | Some sifnot ->
           let ifso = type_expect env sifso ty_expected in
           let ifnot = type_expect env sifnot ty_expected in
+          (* Keep sharing *)
+          unify_exp env ifnot ifso.exp_type;
           re {
             exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = loc;
@@ -1626,10 +1633,9 @@ and type_expect ?in_function env sexp ty_expected =
             if !Clflags.principal then begin
               end_def ();
               generalize_structure ty;
-              let ty2 = instance ty in
-              (type_argument env sarg ty, ty2)
+              (type_argument env sarg ty (instance ty), instance ty)
             end else
-              (type_argument env sarg ty, ty)
+              (type_argument env sarg ty ty, ty)
         | (None, Some sty') ->
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
@@ -1697,9 +1703,9 @@ and type_expect ?in_function env sexp ty_expected =
               end_def ();
               generalize_structure ty;
               generalize_structure ty';
-              (type_argument env sarg ty, instance ty')
+              (type_argument env sarg ty (instance ty), instance ty')
             end else
-              (type_argument env sarg ty, ty')
+              (type_argument env sarg ty ty, ty')
       in
       rue {
         exp_desc = arg.exp_desc;
@@ -2065,7 +2071,7 @@ and type_label_exp create env loc ty_expected (lid, sarg) =
                                else Private_label (lid, ty_expected)));
   let arg =
     let snap = if vars = [] then None else Some (Btype.snapshot ()) in
-    let arg = type_argument env sarg ty_arg in
+    let arg = type_argument env sarg ty_arg (instance ty_arg) in
     end_def ();
     try
       check_univars env (vars <> []) "field value" arg label.lbl_arg vars;
@@ -2085,13 +2091,13 @@ and type_label_exp create env loc ty_expected (lid, sarg) =
   in
   (label, {arg with exp_type = instance arg.exp_type})
 
-and type_argument env sarg ty_expected' =
+and type_argument env sarg ty_expected' ty_expected =
   (* ty_expected' may be generic *)
   let no_labels ty =
     let ls, tvar = list_labels env ty in
     not tvar && List.for_all ((=) "") ls
   in
-  let ty_expected = instance ty_expected' in
+  (* let ty_expected = instance ty_expected' in *)
   match expand_head env ty_expected', sarg with
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
       type_expect env sarg ty_expected'
@@ -2151,7 +2157,9 @@ and type_argument env sarg ty_expected' =
            Texp_let (Nonrecursive, [let_pat, texp], func let_var) }
       end
   | _ ->
-      type_expect env sarg ty_expected'
+      let texp = type_expect env sarg ty_expected' in
+      unify_exp env texp ty_expected;
+      texp
 
 and type_application env funct sargs =
   (* funct.exp_type may be generic *)
@@ -2227,9 +2235,10 @@ and type_application env funct sargs =
     end
   in
   let warned = ref false in
-  let rec type_args args omitted ty_fun ty_old sargs more_sargs =
-    match expand_head env ty_fun with
-      {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun'
+  let rec type_args args omitted ty_fun ty_fun0 ty_old sargs more_sargs =
+    match expand_head env ty_fun, expand_head env ty_fun0 with
+      {desc=Tarrow (l, ty, ty_fun, com); level=lv} as ty_fun',
+      {desc=Tarrow (_, ty0, ty_fun0, _)}
       when (sargs <> [] || more_sargs <> []) && commu_repr com = Cok ->
         let may_warn loc w =
           if not !warned && !Clflags.principal && lv <> generic_level
@@ -2250,7 +2259,8 @@ and type_application env funct sargs =
                 if l <> l' && l' <> "" then
                   raise(Error(sarg0.pexp_loc, Apply_wrong_label(l', ty_fun')))
                 else
-                  ([], more_sargs, Some (fun () -> type_argument env sarg0 ty))
+                  ([], more_sargs,
+                   Some (fun () -> type_argument env sarg0 ty ty0))
             | _ ->
                 assert false
           end else try
@@ -2271,12 +2281,13 @@ and type_application env funct sargs =
             in
             sargs, more_sargs,
             if optional = Required || is_optional l' then
-              Some (fun () -> type_argument env sarg0 ty)
+              Some (fun () -> type_argument env sarg0 ty ty0)
             else begin
               may_warn sarg0.pexp_loc
                 (Warnings.Not_principal "using an optional argument here");
               Some (fun () -> option_some (type_argument env sarg0
-                                             (extract_option_type env ty)))
+                                             (extract_option_type env ty)
+                                             (extract_option_type env ty0)))
             end
           with Not_found ->
             sargs, more_sargs,
@@ -2296,13 +2307,14 @@ and type_application env funct sargs =
         let omitted =
           if arg = None then (l,ty,lv) :: omitted else omitted in
         let ty_old = if sargs = [] then ty_fun else ty_old in
-        type_args ((arg,optional)::args) omitted ty_fun ty_old sargs more_sargs
+        type_args ((arg,optional)::args) omitted ty_fun ty_fun0
+          ty_old sargs more_sargs
     | _ ->
         match sargs with
           (l, sarg0) :: _ when ignore_labels ->
             raise(Error(sarg0.pexp_loc, Apply_wrong_label(l, ty_old)))
         | _ ->
-            type_unknown_args args omitted (instance ty_fun)
+            type_unknown_args args omitted ty_fun0
               (sargs @ more_sargs)
   in
   match funct.exp_desc, sargs with
@@ -2322,9 +2334,9 @@ and type_application env funct sargs =
   | _ ->
       let ty = funct.exp_type in
       if ignore_labels then
-        type_args [] [] ty ty [] sargs
+        type_args [] [] ty (instance ty) ty [] sargs
       else
-        type_args [] [] ty ty sargs []
+        type_args [] [] ty (instance ty) ty sargs []
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
   let constr = Typetexp.find_constructor env loc lid in
@@ -2354,9 +2366,15 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
     List.iter generalize_structure ty_args;
     generalize_structure ty_res;
   end;
+  let ty_args0, ty_res =
+    match instance_list (ty_res :: ty_args) with
+      t :: tl -> tl, t
+    | _ -> assert false
+  in
   let texp = {texp with exp_type = instance ty_res} in
   if not !Clflags.principal then unify_exp env texp (instance ty_expected);
-  let args = List.map2 (type_argument env) sargs ty_args in
+  let args = List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
+      (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
     raise(Error(loc, Private_type ty_res));
   { texp with exp_desc = Texp_construct(constr, args)}
