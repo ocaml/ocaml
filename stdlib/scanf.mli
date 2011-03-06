@@ -121,7 +121,7 @@ type file_name = string;;
 
 val open_in : file_name -> in_channel;;
 (** [Scanning.open_in fname] returns a formatted input channel for bufferized
-    reading of text mode file [fname].
+    reading in text mode of file [fname].
 
     Note:
     [open_in] returns a formatted input channel that efficiently reads
@@ -132,7 +132,10 @@ val open_in : file_name -> in_channel;;
 *)
 
 val open_in_bin : file_name -> in_channel;;
-(** Bufferized file reading in binary mode. @since 3.12.0 *)
+(** [Scanning.open_in_bin fname] returns a formatted input channel for bufferized
+    reading in binary mode of file [fname].
+    @since 3.12.0
+*)
 
 val close_in : in_channel -> unit;;
 (** Closes the [Pervasives.input_channel] associated with the given
@@ -152,8 +155,8 @@ val from_string : string -> in_channel;;
     The end-of-input condition is set when the end of the string is reached. *)
 
 val from_function : (unit -> char) -> in_channel;;
-(** [Scanning.from_function f] returns a scanning buffer with the given
-    function as its reading method.
+(** [Scanning.from_function f] returns a formatted input channel with the
+    given function as its reading method.
 
     When scanning needs one more character, the given function is called.
 
@@ -232,7 +235,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** The format is a character string which contains three types of
     objects:
     - plain characters, which are simply matched with the characters of the
-      input (with a special case for {!Scanf.space} and line feed),
+      input (with a special case for space and line feed, see {!Scanf.space}),
     - conversion specifications, each of which causes reading and conversion of
       one argument for the function [f] (see {!Scanf.conversion}),
     - scanning indications to specify boundaries of tokens
@@ -323,23 +326,27 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       The format string read must have the same type as the format string
       specification [fmt].
       For instance, ["%{ %i %}"] reads any format string that can read a value of
-      type [int]; hence [Scanf.sscanf "fmt:\"number is %u\"" "fmt:%{%i%}"]
-      succeeds and returns the format string ["number is %u"].
+      type [int]; hence, if [s] is the string ["fmt:\"number is %u\""], then
+      [Scanf.sscanf s "fmt: %{%i%}"] succeeds and returns the format string
+      ["number is %u"].
     - [\( fmt %\)]: scanning format substitution.
-      Reads a format string to read with it instead of [fmt].
+      Reads a format string and then goes on scanning with the format string
+      read, instead of using [fmt].
       The format string read must have the same type as the format string
-      specification [fmt] that is replaces.
+      specification [fmt] that it replaces.
       For instance, ["%( %i %)"] reads any format string that can read a value
       of type [int].
       Returns the format string read, and the value read using the format
       string read.
-      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%(%i%)"
-                (fun fmt i -> fmt, i)] evaluates to [("%4d", 1234)].
+      Hence, if [s] is the string ["\"%4d\"1234.00"], then
+      [Scanf.sscanf s "%(%i%)" (fun fmt i -> fmt, i)] evaluates to
+      [("%4d", 1234)].
       If the special flag [_] is used, the conversion discards the
       format string read and only returns the value read with the format
       string read.
-      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%_(%i%)"] is simply
-      equivalent to [Scanf.sscanf "1234.00" "%4d"].
+      Hence, if [s] is the string ["\"%4d\"1234.00"], then
+      [Scanf.sscanf s "%_(%i%)"] is simply equivalent to
+      [Scanf.sscanf "1234.00" "%4d"].
     - [l]: returns the number of lines read so far.
     - [n]: returns the number of characters read so far.
     - [N] or [L]: returns the number of tokens read so far.
@@ -350,8 +357,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     Following the [%] character that introduces a conversion, there may be
     the special flag [_]: the conversion that follows occurs as usual,
     but the resulting value is discarded.
-    For instance, if [f] is the function [fun i -> i + 1], then
-    [Scanf.sscanf "x = 1" "%_s = %i" f] returns [2].
+    For instance, if [f] is the function [fun i -> i + 1], and [s] is the
+    string ["x = 1"], then [Scanf.sscanf s "%_s = %i" f] returns [2].
 
     The field width is composed of an optional integer literal
     indicating the maximal width of the token to read.
