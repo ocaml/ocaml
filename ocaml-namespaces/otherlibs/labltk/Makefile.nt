@@ -1,0 +1,60 @@
+# Top Makefile for LablTk
+
+include ../../config/Makefile
+
+
+
+SUBDIRS=compiler support lib labltk camltk jpf frx examples_labltk examples_camltk browser
+
+all:
+	cd support ; $(MAKEREC)
+	cd compiler ; $(MAKEREC)
+	cd labltk ; $(MAKECMD) -f Makefile.gen.nt
+	cd labltk ; $(MAKEREC)
+	cd camltk ; $(MAKECMD) -f Makefile.gen.nt
+	cd camltk ; $(MAKEREC)
+	cd lib ; $(MAKEREC)
+	cd jpf ; $(MAKEREC)
+	cd frx ; $(MAKEREC)
+	cd browser ; $(MAKEREC)
+
+allopt:
+	cd support ; $(MAKEREC) opt
+	cd labltk ; $(MAKECMD) -f Makefile.gen.nt
+	cd labltk ; $(MAKEREC) opt
+	cd camltk ; $(MAKECMD) -f Makefile.gen.nt
+	cd camltk ; $(MAKEREC) opt
+	cd lib ; $(MAKEREC) opt
+	cd jpf ; $(MAKEREC) opt
+	cd frx ; $(MAKEREC) opt
+
+.PHONY: examples_labltk examples_camltk
+
+examples: examples_labltk examples_camltk
+
+examples_labltk:
+	cd examples_labltk; $(MAKE) all
+
+examples_camltk:
+	cd examples_camltk; $(MAKE) all
+
+install:
+	cd labltk ; $(MAKEREC) install
+	cd camltk ; $(MAKEREC) install
+	cd lib ; $(MAKEREC) install
+	cd support ; $(MAKEREC) install
+	cd compiler ; $(MAKEREC) install
+	cd jpf ; $(MAKEREC) install
+	cd frx ; $(MAKEREC) install
+	cd browser ; $(MAKEREC) install
+
+installopt:
+	cd support ; $(MAKEREC) installopt
+	cd labltk ; $(MAKEREC) installopt
+	cd camltk ; $(MAKEREC) installopt
+	cd lib ; $(MAKEREC) installopt
+	cd jpf ; $(MAKEREC) installopt
+	cd frx ; $(MAKEREC) installopt
+
+partialclean clean:
+	for d in $(SUBDIRS); do $(MAKEREC) -C $$d clean; done

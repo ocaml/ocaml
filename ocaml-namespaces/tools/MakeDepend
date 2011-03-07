@@ -1,0 +1,17 @@
+# MakeDepend
+
+# $Id$
+
+
+# Usage: MakeDepend file…
+
+# Generate the Make dependency rules for a set of C files.
+# The rules are printed on standard output.
+
+set echo 0
+set exit 0
+
+for i in {"parameters"}
+  mrc -c -w off -make dev:stdout "{i}" ≥ dev:null ∂
+  | streamedit -e '/∂"(≈)®0.c.o∂"/ replace // "∂""®0".c.o∂" ∂""®0".c.x∂""'
+end

@@ -1,0 +1,97 @@
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../LICENSE.   #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
+include ../../config/Makefile
+
+# Compilation options
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../win32unix
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../win32unix
+COMPFLAGS=-warn-error A -g
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+CFLAGS=-I../../byterun $(EXTRACFLAGS)
+
+CAMLOBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+CMIFILES=$(CAMLOBJS:.cmo=.cmi)
+COBJS=st_stubs_b.$(O)
+COBJS_NAT=st_stubs_n.$(O)
+
+LIBNAME=threads
+
+all: lib$(LIBNAME).$(A) $(LIBNAME).cma $(CMIFILES)
+
+allopt: lib$(LIBNAME).$(A) $(LIBNAME).cmxa $(LIBNAME).cmxs $(CMIFILES)
+
+$(LIBNAME).cma: $(CAMLOBJS)
+	$(MKLIB) -o $(LIBNAME) -ocamlc "..\\..\\boot\\ocamlrun ..\\..\\ocamlc" -linkall $(CAMLOBJS) $(LINKOPTS)
+
+lib$(LIBNAME).$(A): $(COBJS)
+	$(MKLIB) -o $(LIBNAME) $(COBJS) $(LDOPTS)
+
+st_stubs_b.$(O): st_stubs.c st_win32.h
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c st_stubs.c
+	mv st_stubs.$(O) st_stubs_b.$(O)
+
+
+
+$(LIBNAME).cmxa: $(CAMLOBJS:.cmo=.cmx)
+	$(MKLIB) -o $(LIBNAME)nat -ocamlopt "..\\..\\boot\\ocamlrun ..\\..\\ocamlopt" -linkall $(CAMLOBJS:.cmo=.cmx) $(LINKOPTS)
+	mv $(LIBNAME)nat.cmxa $(LIBNAME).cmxa
+	mv $(LIBNAME)nat.$(A) $(LIBNAME).$(A)
+
+$(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(LIBNAME)nat.$(A)
+	$(CAMLOPT) -shared -o $(LIBNAME).cmxs -I . $(LIBNAME).cmxa -linkall
+
+lib$(LIBNAME)nat.$(A): $(COBJS_NAT)
+	$(MKLIB) -o $(LIBNAME)nat $(COBJS_NAT) $(LDOPTS)
+
+st_stubs_n.$(O): st_stubs.c st_win32.h
+	$(NATIVECC) -DNATIVE_CODE -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -c st_stubs.c
+	mv st_stubs.$(O) st_stubs_n.$(O)
+
+$(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
+
+partialclean:
+	rm -f *.cm*
+
+clean: partialclean
+	rm -f *.dll *.$(A) *.$(O)
+
+install:
+	cp dllthreads.dll $(STUBLIBDIR)/dllthreads.dll
+	cp libthreads.$(A) $(LIBDIR)/libthreads.$(A)
+	mkdir -p $(LIBDIR)/threads
+	cp $(CMIFILES) threads.cma $(LIBDIR)/threads
+	rm -f $(LIBDIR)/threads/stdlib.cma
+	cp threads.h $(LIBDIR)/caml/threads.h
+
+installopt:
+	cp libthreadsnat.$(A) $(LIBDIR)/libthreadsnat.$(A)
+	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.$(A) $(LIBDIR)/threads
+	cp threads.cmxs $(LIBDIR)/threads
+
+.SUFFIXES: .ml .mli .cmo .cmi .cmx
+
+.mli.cmi:
+	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmo:
+	$(CAMLC) -c -g $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
+
+depend:
+
+include .depend

@@ -1,0 +1,289 @@
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
+### Compile-time configuration
+
+########## General configuration
+
+### Where to install the binaries
+BINDIR=/usr/local/bin
+
+### Where to install the standard library
+LIBDIR=/usr/local/lib/ocaml
+STUBLIBDIR=$(LIBDIR)/stublibs
+
+### Where to install the man pages
+# Man pages for commands go in $(MANDIR)/man$(MANEXT)
+# Man pages for the library go in $(MANDIR)/mano
+MANDIR=/usr/local/man
+MANEXT=1
+
+### Do #! scripts work on your system?
+### Beware: on some systems (e.g. SunOS 4), this will work only if
+### the string "#!$(BINDIR)/ocamlrun" is less than 32 characters long.
+### In doubt, set SHARPBANGSCRIPTS to false.
+SHARPBANGSCRIPTS=true
+#SHARPBANGSCRIPTS=false
+
+########## Configuration for the bytecode compiler
+
+### Which C compiler to use for the bytecode interpreter.
+### Performance of the bytecode interpreter is *much* improved
+### if Gnu CC version 2 is used.
+#BYTECC=gcc
+#BYTECC=cc
+
+### Additional compile-time options for $(BYTECC).
+# If using gcc on Intel 386 or Motorola 68k:
+# (the -fno-defer-pop option circumvents a bug in certain versions of gcc)
+#BYTECCCOMPOPTS=-fno-defer-pop -Wall
+# If using gcc and being superstitious:
+#BYTECCCOMPOPTS=-Wall
+# Under NextStep:
+#BYTECCCOMPOPTS=-U__GNUC__ -fno-defer-pop -Wall
+# Otherwise:
+#BYTECCCOMPOPTS=
+
+### Additional link-time options for $(BYTECC)
+### If using GCC on a Dec Alpha under OSF1:
+#BYTECCLINKOPTS=-Wl,-T,12000000 -Wl,-D,14000000
+# To support dynamic loading of shared libraries (they need to look at
+# our own symbols):
+#BYTECCLINKOPTS=-Wl,-E
+# Otherwise:
+#BYTECCLINKOPTS=
+
+### Libraries needed
+# On most platforms:
+#CCLIBS=-lcurses -ltermcap -lm
+
+### How to invoke the C preprocessor
+# This is not needed anymore.  Leave these lines commented out.
+# On most machines:
+#CPP=/lib/cpp -P
+# Under Solaris:
+#CPP=/usr/ccs/lib/cpp -P
+# Under FreeBSD:
+#CPP=cpp -P
+
+### Magic declarations for ocamlbuild -- leave unchanged
+#ml let syslib x = "-l"^x;;
+#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
+
+### How to invoke ranlib
+RANLIB=ranlib
+RANLIBCMD=ranlib
+
+# If ranlib is not needed:
+#RANLIB=ar rs
+#RANLIBCMD=
+
+### Shared library support
+# Extension for shared libraries: so if supported, a if not supported
+#SO=so
+#SO=a
+# Set to nothing if shared libraries supported, and to -custom if not supported
+#CUSTOM_IF_NOT_SHARED=
+#CUSTOM_IF_NOT_SHARED=-custom
+# Options to $(BYTECC) to produce shared objects (e.g. PIC)
+#SHAREDCCCOMPOPTS=-fPIC
+# How to build a shared library, invoked with output .so as first arg
+# and object files as remaining args
+#MKSHAREDLIB=gcc -shared -o
+# Compile-time option to $(BYTECC) to add a directory to be searched
+# at run-time for shared libraries
+#BYTECCRPATH=-Wl,-rpath
+
+############# Configuration for the native-code compiler
+
+### Name of architecture for the native-code compiler
+### Currently supported:
+###
+### alpha       Digital/Compaq Alpha machines under DUnix/Tru64 or Linux
+### i386        Intel Pentium PCs under Linux, *BSD*, NextStep
+### sparc       Sun Sparcstation under SunOS 4.1 or Solaris 2
+### mips        SGI machines under IRIX
+### hppa        HP 9000/700 under HPUX and Linux
+### power       Macintosh under Mac OS X and Linux
+### ia64        Intel Itanium/IA64 under Linux
+### arm         ARM under Linux
+###
+### Set ARCH=none if your machine is not supported
+#ARCH=alpha
+#ARCH=i386
+#ARCH=sparc
+#ARCH=mips
+#ARCH=hppa
+#ARCH=power
+#ARCH=ia64
+#ARCH=arm
+#ARCH=none
+
+### Name of architecture model for the native-code compiler.
+### Some architectures come in several slightly different flavors
+### that share a common code generator. This variable tailors the
+### behavior of the code generator to the particular flavor used.
+### Currently needed only if ARCH=power; leave MODEL=default for
+### other architectures.
+### If ARCH=power: set MODEL=ppc
+### For other architectures: leave MODEL=default
+###
+#MODEL=ppc
+#MODEL=default
+
+### Name of operating system family for the native-code compiler.
+### If ARCH=sparc: choose between
+###   SYSTEM=sunos      SunOS 4.1
+###   SYSTEM=solaris    Solaris 2
+###
+### If ARCH=i386:  choose between
+###   SYSTEM=linux_aout Linux with a.out binaries
+###   SYSTEM=linux_elf  Linux with ELF binaries
+###   SYSTEM=bsd        FreeBSD, probably works for NetBSD also
+###   SYSTEM=nextstep   NextStep
+###
+### For other architectures: set SYSTEM=unknown
+###
+#SYSTEM=sunos
+#SYSTEM=solaris
+#SYSTEM=linux
+#SYSTEM=linux_elf
+#SYSTEM=bsd
+#SYSTEM=nextstep
+#SYSTEM=unknown
+
+### Which C compiler to use for the native-code compiler.
+### cc is better than gcc on the Mips and Alpha.
+#NATIVECC=cc
+#NATIVECC=gcc
+
+### Additional compile-time options for $(NATIVECC).
+# For cc on the Alpha:
+#NATIVECCCOMPOPTS=-std1
+# For cc on the Mips:
+#NATIVECCCOMPOPTS=-std
+# For gcc if superstitious:
+#NATIVECCCOMPOPTS=-Wall
+
+### Additional link-time options for $(NATIVECC)
+#NATIVECCLINKOPTS=
+
+# Compile-time option to $(NATIVECC) to add a directory to be searched
+# at run-time for shared libraries
+#NATIVECCRPATH=-Wl,-rpath
+
+### Command and flags to use for assembling ocamlopt-generated code
+# For the Alpha or the Mips:
+#AS=as -O2
+# For the PowerPC:
+#AS=as -u -m ppc -w
+# Otherwise:
+#AS=as
+
+### Command and flags to use for assembling .S files (often with preprocessing)
+# If gcc is available:
+#ASPP=gcc -c
+# On SunOS and Solaris:
+#ASPP=as -P
+
+### Extra flags to use for assembling .S files in profiling mode
+# On Digital Unix:
+#ASPPPROFFLAGS=-pg -DPROFILING
+# Otherwise:
+#ASPPPROFFLAGS=-DPROFILING
+
+### Whether profiling with gprof is supported
+# If yes: (x86/Linux, Alpha/Digital Unix, Sparc/Solaris):
+#PROFILING=prof
+# If no: (all others)
+#PROFILING=noprof
+
+### Option to give to the C compiler for profiling
+#CC_PROFILE=-pg
+#CC_PROFILE=-xpg
+
+### How to perform a partial link
+PARTIALLD=ld -r $(NATIVECCLINKOPTS)
+
+############# Configuration for the contributed libraries
+
+### Which libraries to compile and install
+# Currently available:
+#       unix            Unix system calls
+#       str             Regular expressions and high-level string processing
+#       num             Arbitrary-precision rational arithmetic
+#       threads         Lightweight concurrent processes
+#       systhreads      Same as threads, requires POSIX threads
+#       graph           Portable drawing primitives for X11
+#       dynlink         Dynamic linking of bytecode
+#       labltk          Tcl/Tk interface
+#       bigarray        Large, multidimensional numerical arrays
+
+OTHERLIBRARIES=unix str num threads graph dynlink labltk bigarray
+
+### Name of the target architecture for the "num" library
+# Known targets:
+#	generic (portable C, works everywhere)
+#	ia32	(Intel x86)
+#	amd64	(AMD Opteron, Athlon64)
+#       alpha
+#	mips
+#	ppc	(Power PC)
+#	sparc
+# If you don't know, leave BNG_ARCH=generic, which selects a portable
+# C implementation of these routines.
+BNG_ARCH=generic
+BNG_ASM_LEVEL=1
+
+### Link-time options to ocamlc or ocamlopt for linking with POSIX threads
+# Needed for the "systhreads" package
+# Usually:
+#PTHREAD_LINK=-cclib -lpthread
+# For Solaris:
+#PTHREAD_LINK=-cclib -lpthread -cclib -lposix4
+
+### -I options for finding the X11/*.h includes
+# Needed for the "graph" and "labltk" packages
+# Usually:
+#X11_INCLUDES=-I/usr/X11R6/include
+# For SunOS with OpenLook:
+#X11_INCLUDES=/usr/openwin/include
+
+### Link-time options to ocamlc or ocamlopt for linking with X11 libraries
+# Needed for the "graph" and "labltk" packages
+# Usually:
+#X11_LINK=-lX11
+# For SunOS with OpenLook:
+#X11_LINK=-L$(X11_LIB) -lX11
+
+### -I options for finding the include file ndbm.h
+# Needed for the "dbm" package
+# Usually:
+#DBM_INCLUDES=
+# For recent Linux systems:
+#DBM_INCLUDES=-I/usr/include/gdbm
+
+### Preprocessor options for finding tcl.h and tk.h
+# Needed for the "labltk" package
+# Required only if not in the standard include path.
+# For Tcl/Tk 8.0 on FreeBSD:
+#TK_DEFS="-I/usr/local/include/tcl8.0 -I/usr/local/include/tk8.0"
+
+### Linker options for linking tcl and tk libraries
+# Needed for the "labltk" package
+# Usually (with appropriate version numbers):
+#TK_LINK="-ltk8.0 -ltcl8.0"
+# For Tcl/Tk 8.0 on FreeBSD:
+#TK_LINK="-L/usr/local/lib -ltk8.0 -ltcl8.0"

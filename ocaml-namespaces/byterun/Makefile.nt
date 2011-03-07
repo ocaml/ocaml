@@ -1,0 +1,54 @@
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
+include Makefile.common
+
+CFLAGS=-DOCAML_STDLIB_DIR='"$(LIBDIR)"' $(IFLEXDIR)
+
+DBGO=d.$(O)
+OBJS=$(COMMONOBJS:.o=.$(O)) win32.$(O) main.$(O)
+DOBJS=$(OBJS:.$(O)=.$(DBGO)) instrtrace.$(DBGO)
+
+ocamlrun$(EXE): libcamlrun.$(A) prims.$(O)
+	$(MKEXE) -o ocamlrun$(EXE) prims.$(O) $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrun.$(A)
+
+ocamlrund$(EXE): libcamlrund.$(A) prims.$(O) main.$(O)
+	$(MKEXE) -o ocamlrun$(EXE) $(BYTECCDBGCOMPOPTS) prims.$(O) $(call SYSLIB,ws2_32) $(EXTRALIBS) libcamlrund.$(A)
+
+libcamlrun.$(A): $(OBJS)
+	$(call MKLIB,libcamlrun.$(A),$(OBJS))
+
+libcamlrund.$(A): $(DOBJS)
+	$(call MKLIB,libcamlrund.$(A),$(DOBJS))
+
+.SUFFIXES: .$(O) .$(DBGO)
+
+.c.$(O):
+	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c $<
+
+.c.$(DBGO):
+	$(CC) $(CFLAGS) $(BYTECCDBGCOMPOPTS) -c $<
+	mv $*.$(O) $*.$(DBGO)
+
+.depend.nt: .depend
+	rm -f .depend.win32
+	echo "win32.o: win32.c fail.h compatibility.h misc.h config.h \\" >> .depend.win32
+	echo " ../config/m.h ../config/s.h mlvalues.h memory.h gc.h \\" >> .depend.win32
+	echo " major_gc.h freelist.h minor_gc.h osdeps.h signals.h" >> .depend.win32
+	cat .depend >> .depend.win32
+	sed -e '/\.d\.o/q' -e 's/^\(.*\)\.o:/\1.$$(O) \1.$$(DBGO):/' .depend.win32 > .depend.nt
+	rm -f .depend.win32
+
+include .depend.nt

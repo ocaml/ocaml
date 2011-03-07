@@ -1,0 +1,5 @@
+ocamlyacc
+*.c.x
+ocamlyacc.xcoff
+version.h
+.gdb_history

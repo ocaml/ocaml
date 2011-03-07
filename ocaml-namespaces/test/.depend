@@ -1,0 +1,28 @@
+KB/equations.cmi: KB/terms.cmi 
+KB/kb.cmi: KB/equations.cmi KB/terms.cmi 
+KB/orderings.cmi: KB/terms.cmi 
+KB/equations.cmo: KB/equations.cmi KB/terms.cmi 
+KB/equations.cmx: KB/equations.cmi KB/terms.cmx 
+KB/kb.cmo: KB/kb.cmi KB/equations.cmi KB/terms.cmi 
+KB/kb.cmx: KB/kb.cmi KB/equations.cmx KB/terms.cmx 
+KB/kbmain.cmo: KB/kb.cmi KB/orderings.cmi KB/equations.cmi KB/terms.cmi 
+KB/kbmain.cmx: KB/kb.cmx KB/orderings.cmx KB/equations.cmx KB/terms.cmx 
+KB/orderings.cmo: KB/orderings.cmi KB/terms.cmi 
+KB/orderings.cmx: KB/orderings.cmi KB/terms.cmx 
+KB/terms.cmo: KB/terms.cmi 
+KB/terms.cmx: KB/terms.cmi 
+Lex/grammar.cmi: Lex/syntax.cmo 
+Lex/gram_aux.cmo: Lex/syntax.cmo 
+Lex/gram_aux.cmx: Lex/syntax.cmx 
+Lex/grammar.cmo: Lex/grammar.cmi Lex/gram_aux.cmo Lex/syntax.cmo 
+Lex/grammar.cmx: Lex/grammar.cmi Lex/gram_aux.cmx Lex/syntax.cmx 
+Lex/lexgen.cmo: Lex/syntax.cmo 
+Lex/lexgen.cmx: Lex/syntax.cmx 
+Lex/main.cmo: Lex/lexgen.cmo Lex/output.cmo Lex/grammar.cmi \
+    Lex/scanner.cmo Lex/syntax.cmo Lex/scan_aux.cmo 
+Lex/main.cmx: Lex/lexgen.cmx Lex/output.cmx Lex/grammar.cmx \
+    Lex/scanner.cmx Lex/syntax.cmx Lex/scan_aux.cmx 
+Lex/output.cmo: Lex/syntax.cmo 
+Lex/output.cmx: Lex/syntax.cmx 
+Lex/scanner.cmo: Lex/syntax.cmo Lex/scan_aux.cmo Lex/grammar.cmi 
+Lex/scanner.cmx: Lex/syntax.cmx Lex/scan_aux.cmx Lex/grammar.cmx 

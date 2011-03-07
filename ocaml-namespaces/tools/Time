@@ -1,0 +1,10 @@
+# Time       # Measure execution time
+# Usage: Time command argumentsÉ
+
+set echo 0
+
+set startdate `date -n`
+{parameters}
+set enddate `date -n`
+
+echo "# Time: `evaluate {enddate} - {startdate}` s" > dev:stderr

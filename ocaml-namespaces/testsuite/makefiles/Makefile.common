@@ -1,0 +1,66 @@
+# $Id$
+
+TOPDIR=$(BASEDIR)/..
+
+include $(TOPDIR)/config/Makefile
+
+BOOTDIR=$(TOPDIR)/boot
+OCAMLRUN=$(BOOTDIR)/ocamlrun$(EXE)
+OCAML=$(OCAMLRUN) $(TOPDIR)/ocaml$(EXE)
+OCAMLC=$(OCAMLRUN) $(TOPDIR)/ocamlc$(EXE)
+OCAMLOPT=$(OCAMLRUN) $(TOPDIR)/ocamlopt$(EXE)
+OCAMLDOC=$(OCAMLRUN) $(TOPDIR)/ocamldoc/ocamldoc$(EXE)
+OCAMLLEX=$(OCAMLRUN) $(TOPDIR)/lex/ocamllex$(EXE)
+OCAMLMKLIB=$(OCAMLRUN) $(TOPDIR)/tools/ocamlmklib$(EXE)
+OCAMLYACC=$(TOPDIR)/yacc/ocamlyacc$(EXE)
+OCAMLBUILD=$(TOPDIR)/_build/ocamlbuild/ocamlbuild.native
+DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj$(EXE)
+#COMPFLAGS=
+#FORTRAN_COMPILER=
+#FORTRAN_LIBRARY=
+
+defaultclean:
+	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
+	@for dsym in *.dSYM; do \
+	  if [ -d $$dsym ]; then \
+	    rm -fr $$dsym; \
+	  fi \
+	done
+
+.SUFFIXES:
+.SUFFIXES: .mli .ml .mly .mll .cmi .cmo .cmx .cmm .cmxa .s .S .o .so
+
+.mli.cmi:
+	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.ml.cmi:
+	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.ml.cmo:
+	@if [ -f $<i ]; then $(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<i; fi
+	@$(OCAMLC) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.ml.cmx:
+	@$(OCAMLOPT) -c $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.cmx.so:
+	@$(OCAMLOPT) -o $@ -shared $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.cmxa.so:
+	@$(OCAMLOPT) -o $@ -shared -linkall $(COMPFLAGS) $(ADD_COMPFLAGS) $<
+
+.mly.ml:
+	@$(OCAMLYACC) -q $< 2> /dev/null
+
+.mll.ml:
+	@$(OCAMLLEX) -q $< > /dev/null
+
+.cmm.o:
+	@$(OCAMLRUN) ./codegen $*.cmm > $*.s
+	@$(AS) $(ASFLAGS) -o $*.o $*.s
+
+.S.o:
+	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.S
+
+.s.o:
+	@$(ASPP) $(ASPPFLAGS) -DSYS_$(SYSTEM) -o $*.o $*.s

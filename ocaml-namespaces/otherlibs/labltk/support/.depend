@@ -1,0 +1,27 @@
+camltkwrap.cmi: widget.cmi timer.cmi textvariable.cmi protocol.cmi
+protocol.cmi: widget.cmi
+textvariable.cmi: widget.cmi protocol.cmi
+tkthread.cmi: widget.cmi
+widget.cmi: rawwidget.cmi
+camltkwrap.cmo: timer.cmi textvariable.cmi rawwidget.cmi protocol.cmi \
+    fileevent.cmi camltkwrap.cmi
+camltkwrap.cmx: timer.cmx textvariable.cmx rawwidget.cmx protocol.cmx \
+    fileevent.cmx camltkwrap.cmi
+fileevent.cmo: support.cmi protocol.cmi fileevent.cmi
+fileevent.cmx: support.cmx protocol.cmx fileevent.cmi
+protocol.cmo: widget.cmi support.cmi protocol.cmi
+protocol.cmx: widget.cmx support.cmx protocol.cmi
+rawwidget.cmo: support.cmi rawwidget.cmi
+rawwidget.cmx: support.cmx rawwidget.cmi
+slave.cmo: widget.cmi
+slave.cmx: widget.cmx
+support.cmo: support.cmi
+support.cmx: support.cmi
+textvariable.cmo: widget.cmi support.cmi protocol.cmi textvariable.cmi
+textvariable.cmx: widget.cmx support.cmx protocol.cmx textvariable.cmi
+timer.cmo: support.cmi protocol.cmi timer.cmi
+timer.cmx: support.cmx protocol.cmx timer.cmi
+tkthread.cmo: widget.cmi timer.cmi protocol.cmi tkthread.cmi
+tkthread.cmx: widget.cmx timer.cmx protocol.cmx tkthread.cmi
+widget.cmo: rawwidget.cmi widget.cmi
+widget.cmx: rawwidget.cmx widget.cmi

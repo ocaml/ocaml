@@ -1,0 +1,29 @@
+## Paths are relative to subdirectories
+## Where you compiled Objective Caml
+TOPDIR=../../..
+## Path to the otherlibs subdirectory
+OTHERS=$(TOPDIR)/otherlibs
+
+LIBNAME=labltk
+
+include $(TOPDIR)/config/Makefile
+
+INSTALLDIR=$(LIBDIR)/$(LIBNAME)
+
+## Tools from the Objective Caml distribution
+
+CAMLRUN=$(TOPDIR)/boot/ocamlrun
+CAMLC=$(TOPDIR)/ocamlcomp.sh
+CAMLOPT=$(TOPDIR)/ocamlcompopt.sh
+CAMLCB=$(CAMLRUN) $(TOPDIR)/ocamlc
+CAMLOPTB=$(CAMLRUN) $(TOPDIR)/ocamlopt
+CAMLCOMP=$(CAMLC) -c -warn-error A
+CAMLYACC=$(TOPDIR)/boot/ocamlyacc -v
+CAMLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
+CAMLLIBR=$(CAMLC) -a
+CAMLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
+COMPFLAGS=-g
+LINKFLAGS=
+CAMLOPTLIBR=$(CAMLOPT) -a
+MKLIB=$(CAMLRUN) $(TOPDIR)/tools/ocamlmklib
+CAMLRUNGEN=../../boot/ocamlrun

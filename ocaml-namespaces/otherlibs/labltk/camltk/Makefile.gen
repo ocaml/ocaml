@@ -1,0 +1,52 @@
+include ../support/Makefile.common
+
+all: cTk.ml camltk.ml .depend
+
+_tkgen.ml: ../Widgets.src ../compiler/tkcompiler$(EXE)
+	cd ..; $(CAMLRUNGEN) compiler/tkcompiler$(EXE) -camltk -outdir camltk
+
+#cTk.ml camltk.ml .depend: generate
+
+cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp$(EXE) #../builtin/builtin_*.ml
+	(echo '##define CAMLTK'; \
+	 echo 'include Camltkwrap'; \
+	 echo 'open Widget'; \
+	 echo 'open Protocol'; \
+	 echo 'open Textvariable'; \
+	 echo ; \
+	 cat ../builtin/report.ml; \
+	 echo ; \
+	 cat ../builtin/builtin_*.ml; \
+	 echo ; \
+	 cat _tkgen.ml; \
+	 echo ; \
+	 echo ; \
+	 echo 'module Tkintf = struct'; \
+	 cat ../builtin/builtini_*.ml; \
+	 cat _tkigen.ml; \
+	 echo 'end (* module Tkintf *)'; \
+	 echo ; \
+	 echo ; \
+	 echo 'open Tkintf' ;\
+	 echo ; \
+	 echo ; \
+	 cat ../builtin/builtinf_*.ml; \
+	 cat _tkfgen.ml; \
+	 echo ; \
+	) > _cTk.ml
+	$(CAMLRUN) ../compiler/pp < _cTk.ml > cTk.ml
+	rm -f _cTk.ml
+	$(CAMLDEP) -slash -I ../support [a-z]*.mli [a-z]*.ml > .depend
+
+../compiler/pp$(EXE):
+	cd ../compiler; $(MAKE) pp($EXE)
+
+../compiler/tkcompiler$(EXE):
+	cd ../compiler; $(MAKE) tkcompiler($EXE)
+
+# All .{ml,mli} files are generated in this directory
+clean:
+	rm -f *.cm* *.ml *.mli *.$(O) *.$(A) .depend
+#	rm -f modules
+
+.PHONY: all generate clean

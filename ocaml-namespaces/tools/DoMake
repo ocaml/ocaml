@@ -1,0 +1,61 @@
+# DoMake
+
+# $Id$
+
+# Execute the output of "Make -f Makefile.Mac -f Makefile.Mac.depend"
+# or "Make -f Makefile -f Makefile.depend" if "Makefile.Mac" does not exist
+# or "Make -f <file>" if the "-f" option is given.
+
+# usage: domake [-quiet] [-f <file>]É <make arguments>
+
+set echo 0
+
+set domake_quiet 0
+set domake_files ""
+
+loop
+  if "{1}" == "-quiet"
+    set domake_quiet 1
+    shift
+  else if "{1}" == "-f"
+    set domake_files "{domake_files} -f `quote "{2}"`"
+    shift 2
+  else
+    break
+  end
+end
+
+set tempfile "{TempFolder}temp-domake-`Date -n`"
+if "`exists "{tempfile}"`"
+  set i 0
+  loop
+    break if ! "`exists "{tempfile}.{i}"`"
+    evaluate i += 1
+  end
+  set tempfile "{tempfile}.{i}"
+end
+
+if "{domake_files}" == ""
+  if "`exists Makefile.Mac`" != ""
+    set domake_main "Makefile.Mac"
+  else
+    set domake_main "Makefile"
+  end
+
+  if "`exists "{domake_main}".depend`" != ""
+    set domake_files "-f {domake_main} -f {domake_main}.depend"
+  else
+    set domake_files "-f {domake_main}"
+  end
+end
+
+if {domake_quiet}
+  echo >"{tempfile}"
+else
+  echo 'set echo 1' >"{tempfile}"
+end
+make {domake_files} {"Parameters"} >>"{tempfile}"
+
+"{tempfile}"
+
+Delete -i "{tempfile}"

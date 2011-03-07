@@ -1,0 +1,7 @@
+cPlace.cmx cResource.cmx cWm.cmx cImagephoto.cmx cCanvas.cmx cButton.cmx
+cText.cmx cLabel.cmx cScrollbar.cmx cImage.cmx cEncoding.cmx cPixmap.cmx
+cPalette.cmx cFont.cmx cMessage.cmx cMenu.cmx cEntry.cmx cListbox.cmx
+cFocus.cmx cMenubutton.cmx cPack.cmx cOption.cmx cToplevel.cmx cFrame.cmx
+cDialog.cmx cImagebitmap.cmx cClipboard.cmx cRadiobutton.cmx cTkwait.cmx
+cGrab.cmx cSelection.cmx cScale.cmx cOptionmenu.cmx cWinfo.cmx cGrid.cmx
+cCheckbutton.cmx cBell.cmx cTkvars.cmx

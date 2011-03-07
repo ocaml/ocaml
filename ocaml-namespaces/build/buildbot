@@ -1,0 +1,113 @@
+#!/bin/sh
+
+# If you want to help me by participating to the build/test effort:
+#   http://gallium.inria.fr/~pouillar/ocaml-testing.html
+# -- Nicolas Pouillard
+
+usage() {
+  echo "Usage: $0 (make|ocb|ocamlbuild) (win (mingw|msvc|msvc64) | <configure-arg>*)"
+  exit 1
+}
+
+logfile="buildbot.log"
+
+finish() {
+  curl -s -0 -F "log=@$logfile" \
+             -F "host=`hostname`" \
+             -F "mode=$mode-$opt_win-$opt_win2" \
+             http://buildbot.feydakins.org/dropbox || :
+}
+
+rm -f buildbot.failed
+rm -f $logfile
+
+bad() {
+  touch buildbot.failed
+}
+
+finish_if_bad() {
+  if [ -f buildbot.failed ]; then
+    finish
+    exit 2
+  fi
+}
+
+if figlet "test" > /dev/null 2> /dev/null; then
+  draw="figlet"
+else
+  draw="echo ----------- "
+fi
+
+if echo | tee -a tee.log > /dev/null 2> /dev/null; then
+  tee="tee -a $logfile"
+else
+  tee=:
+fi
+
+rm -f tee.log
+
+log() {
+  $draw $@
+  $tee
+}
+
+mode=$1
+shift 1
+
+case "$mode" in
+  make|ocb|ocamlbuild) : ;;
+  *) usage;;
+esac
+
+case "$1" in
+  win)
+    opt_win=win
+    opt_win2=$2
+    shift 2
+    Makefile=Makefile.nt;;
+  *) Makefile=Makefile;;
+esac
+
+( [ -f config/Makefile ] && make -f $Makefile clean || : ) 2>&1 | log clean
+
+( ./build/distclean.sh || : ) 2>&1 | log distclean
+
+(cvs -q up -dP -r release311 || bad) 2>&1 | log cvs up
+finish_if_bad
+
+case "$opt_win" in
+win)
+
+  # FIXME
+  sed -e 's/\(OTHERLIBRARIES=.*\) labltk/\1/' \
+    < "config/Makefile.$opt_win2" > config/Makefile || bad
+  finish_if_bad
+
+  cp config/m-nt.h config/m.h || bad
+  finish_if_bad
+  cp config/s-nt.h config/s.h || bad
+  finish_if_bad
+  ;;
+
+*)
+  (./configure --prefix `pwd`/_install $@ || bad) 2>&1 | log configure
+  finish_if_bad
+  ;;
+esac
+
+case "$mode" in
+  make)
+    (make -f $Makefile world opt opt.opt install || bad) 2>&1 | log build install
+    finish_if_bad
+    ;;
+  ocb|ocamlbuild)
+    (./build/fastworld.sh || bad) 2>&1 | log build
+    finish_if_bad
+    (./build/install.sh || bad) 2>&1 | log install
+    finish_if_bad
+    ;;
+esac
+
+(cat _build/not_installed || bad) 2>&1 | log not_installed
+
+finish

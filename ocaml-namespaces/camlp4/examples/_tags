@@ -1,0 +1,19 @@
+true: warn_A, warn_e
+<{apply_operator,type_quotation,global_handler,expression_closure{,_filter}}.ml> or <free_vars_test.*>: camlp4rf, use_camlp4
+"lambda_quot.ml": camlp4rf, use_camlp4_full
+<{fancy_,}lambda_{quot,quot_{expr,patt},parser}.ml>: camlp4of, use_camlp4_full
+"macros.ml" or <arith.*> or "gen_match_case.ml": camlp4of, use_camlp4
+"test_macros.ml": pp(camlp4of ./macros.cmo)
+"lambda_test.ml": pp(camlp4of ./lambda_quot_o.cmo)
+"fancy_lambda_quot_test.ml": use_camlp4, pp(camlp4of ./fancy_lambda_quot.cmo)
+<parse_files.*>: camlp4of, use_camlp4_full, use_dynlink
+"test_type_quotation.ml": pp(camlp4of ./type_quotation.cmo)
+"apply_operator_test.ml": pp(camlp4o ./apply_operator.cmo)
+"expression_closure_test.ml": pp(camlp4o ./expression_closure_filter.cmo)
+"gen_type_N.ml": camlp4orf, use_camlp4
+"syb_fold.ml": pp(camlp4o -filter fold), use_camlp4
+"syb_map.ml": pp(camlp4o -filter map), use_camlp4
+"ex_str.ml": camlp4of, use_camlp4, use_camlp4_full
+"ex_str_test.ml": pp(camlp4o ./ex_str.cmo)
+"poly_by_default.ml": camlp4of, use_camlp4
+"poly_by_default_test.ml": pp(camlp4of ./poly_by_default.cmo)

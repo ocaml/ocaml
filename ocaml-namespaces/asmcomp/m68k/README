@@ -1,0 +1,8 @@
+As of Feb 4th 2000, the native-code compiler for the Motorola 680x0 is
+no longer maintained and thus deprecated.
+
+The only machines on which we could test this port (Sun 3, SunOS 4)
+here at INRIA are being retired, and were so slow that the port wasn't
+kept up-to-date with the remainder of the system.
+
+- Xavier Leroy, for the Objective Caml development team.

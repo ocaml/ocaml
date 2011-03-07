@@ -1,0 +1,635 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                           Objective Caml                            *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
+(* Emission of ARM assembly code *)
+
+open Location
+open Misc
+open Cmm
+open Arch
+open Proc
+open Reg
+open Mach
+open Linearize
+open Emitaux
+
+(* Tradeoff between code size and code speed *)
+
+let fastcode_flag = ref true
+
+(* Output a label *)
+
+let emit_label lbl =
+  emit_string ".L"; emit_int lbl
+
+(* Output a symbol *)
+
+let emit_symbol s =
+  Emitaux.emit_symbol '$' s
+
+(* Output a pseudo-register *)
+
+let emit_reg r =
+  match r.loc with
+  | Reg r -> emit_string (register_name r)
+  | _ -> fatal_error "Emit_arm.emit_reg"
+
+(* Layout of the stack frame *)
+
+let stack_offset = ref 0
+
+let frame_size () =
+  let sz =
+    !stack_offset +
+    4 * num_stack_slots.(0) +
+    (if !contains_calls then 4 else 0)
+  in Misc.align sz 8
+
+let slot_offset loc cl =
+  match loc with
+    Incoming n -> frame_size() + n
+  | Local n -> !stack_offset + n * 4
+  | Outgoing n -> n
+
+(* Output a stack reference *)
+
+let emit_stack r =
+  match r.loc with
+  | Stack s ->
+      let ofs = slot_offset s (register_class r) in `[sp, #{emit_int ofs}]`
+  | _ -> fatal_error "Emit_arm.emit_stack"
+
+(* Output an addressing mode *)
+
+let emit_addressing addr r n =
+  match addr with
+    Iindexed ofs ->
+      `[{emit_reg r.(n)}, #{emit_int ofs}]`
+
+(* Record live pointers at call points *)
+
+type frame_descr =
+  { fd_lbl: int;                        (* Return address *)
+    fd_frame_size: int;                 (* Size of stack frame *)
+    fd_live_offset: int list }          (* Offsets/regs of live addresses *)
+
+let frame_descriptors = ref([] : frame_descr list)
+
+let record_frame live =
+  let lbl = new_label() in
+  let live_offset = ref [] in
+  Reg.Set.iter
+    (function
+        {typ = Addr; loc = Reg r} ->
+          live_offset := (r lsl 1) + 1 :: !live_offset
+      | {typ = Addr; loc = Stack s} as reg ->
+          live_offset := slot_offset s (register_class reg) :: !live_offset
+      | _ -> ())
+    live;
+  frame_descriptors :=
+    { fd_lbl = lbl;
+      fd_frame_size = frame_size();
+      fd_live_offset = !live_offset } :: !frame_descriptors;
+  `{emit_label lbl}:`
+
+let emit_frame fd =
+  `	.word	{emit_label fd.fd_lbl} + 4\n`;
+  `	.short	{emit_int fd.fd_frame_size}\n`;
+  `	.short	{emit_int (List.length fd.fd_live_offset)}\n`;
+  List.iter
+    (fun n ->
+      `	.short	{emit_int n}\n`)
+    fd.fd_live_offset;
+  `	.align	2\n`
+
+(* Names of various instructions *)
+
+let name_for_comparison = function
+    Isigned Ceq -> "eq" | Isigned Cne -> "ne" | Isigned Cle -> "le"
+  | Isigned Cge -> "ge" | Isigned Clt -> "lt" | Isigned Cgt -> "gt"
+  | Iunsigned Ceq -> "eq" | Iunsigned Cne -> "ne" | Iunsigned Cle -> "ls"
+  | Iunsigned Cge -> "cs" | Iunsigned Clt -> "cc" | Iunsigned Cgt -> "hi"
+
+let name_for_float_comparison cmp neg =
+  match cmp with
+    Ceq -> if neg then "ne" else "eq"
+  | Cne -> if neg then "eq" else "ne"
+  | Cle -> if neg then "hi" else "ls"
+  | Cge -> if neg then "lt" else "ge"
+  | Clt -> if neg then "pl" else "mi"
+  | Cgt -> if neg then "le" else "gt"
+
+let name_for_int_operation = function
+    Iadd -> "add"
+  | Isub -> "sub"
+  | Imul -> "mul"
+  | Iand  -> "and"
+  | Ior   -> "orr"
+  | Ixor  -> "eor"
+  | _ -> assert false
+
+let name_for_shift_operation = function
+    Ilsl -> "lsl"
+  | Ilsr -> "lsr"
+  | Iasr -> "asr"
+  | _ -> assert false
+
+let name_for_shift_int_operation = function
+    Ishiftadd -> "add"
+  | Ishiftsub -> "sub"
+  | Ishiftsubrev -> "rsb"
+
+(* Recognize immediate operands *)
+
+(* Immediate operands are 8-bit immediate values, zero-extended, and rotated
+   right by 0, 2, 4, ... 30 bits.
+   We check only with 8-bit values shifted left 0 to 24 bits. *)
+
+let rec is_immed n shift =
+  shift <= 24 &&
+  (Nativeint.logand n (Nativeint.shift_left (Nativeint.of_int 0xFF) shift) = n
+   || is_immed n (shift + 2))
+
+let is_immediate n = is_immed n 0
+
+(* General functional to decompose a non-immediate integer constant
+   into 8-bit chunks shifted left 0 ... 24 bits *)
+
+let decompose_intconst n fn =
+  let i = ref n in
+  let shift = ref 0 in
+  let ninstr = ref 0 in
+  while !i <> 0n do
+    if Nativeint.to_int (Nativeint.shift_right !i !shift) land 3 = 0 then
+      shift := !shift + 2
+    else begin
+      let mask = Nativeint.shift_left 0xFFn !shift in
+      let bits = Nativeint.logand !i mask in
+      fn bits;
+      shift := !shift + 8;
+      i := Nativeint.sub !i bits;
+      incr ninstr
+    end
+  done;
+  !ninstr
+
+(* Load an integer constant into a register *)
+
+let emit_intconst r n =
+  let nr = Nativeint.lognot n in
+  if is_immediate n then begin
+    `	mov	{emit_reg r}, #{emit_nativeint n}\n`; 1
+  end else if is_immediate nr then begin
+    `	mvn	{emit_reg r}, #{emit_nativeint nr}\n`; 1
+  end else begin
+    let first = ref true in
+    decompose_intconst n
+      (fun bits ->
+        if !first
+        then `	mov	{emit_reg r}, #{emit_nativeint bits} @ {emit_nativeint n}\n`
+        else `	add	{emit_reg r}, {emit_reg r}, #{emit_nativeint bits}\n`;
+        first := false)
+  end
+
+(* Adjust sp (up or down) by the given byte amount *)
+
+let emit_stack_adjustment instr n =
+  if n <= 0 then 0 else
+    decompose_intconst (Nativeint.of_int n)
+      (fun bits ->
+        `	{emit_string instr}	sp, sp, #{emit_nativeint bits}\n`)
+
+(* Name of current function *)
+let function_name = ref ""
+(* Entry point for tail recursive calls *)
+let tailrec_entry_point = ref 0
+(* Table of symbols referenced *)
+let symbol_constants = (Hashtbl.create 11 : (string, int) Hashtbl.t)
+(* Table of floating-point literals *)
+let float_constants = (Hashtbl.create 11 : (string, int) Hashtbl.t)
+(* Total space (in word) occupied by pending literals *)
+let num_literals = ref 0
+
+(* Label a symbol or float constant *)
+let label_constant tbl s size =
+  try
+    Hashtbl.find tbl s
+  with Not_found ->
+    let lbl = new_label() in
+    Hashtbl.add tbl s lbl;
+    num_literals := !num_literals + size;
+    lbl
+
+(* Emit all pending constants *)
+
+let emit_constants () =
+  Hashtbl.iter
+    (fun s lbl ->
+      `{emit_label lbl}:        .word   {emit_symbol s}\n`)
+    symbol_constants;
+  Hashtbl.iter
+    (fun s lbl ->
+      `{emit_label lbl}:        .double {emit_string s}\n`)
+    float_constants;
+  Hashtbl.clear symbol_constants;
+  Hashtbl.clear float_constants;
+  num_literals := 0
+
+(* Output the assembly code for an instruction *)
+
+let emit_instr i =
+    match i.desc with
+      Lend -> 0
+    | Lop(Imove | Ispill | Ireload) ->
+        let src = i.arg.(0) and dst = i.res.(0) in
+        if src.loc = dst.loc then 0 else begin
+          match (src, dst) with
+            {loc = Reg rs; typ = Int|Addr}, {loc = Reg rd; typ = Int|Addr} ->
+              `	mov	{emit_reg dst}, {emit_reg src}\n`; 1
+          | {loc = Reg rs; typ = Int|Addr}, {loc = Stack sd} ->
+              `	str	{emit_reg src}, {emit_stack dst}\n`; 1
+          | {loc = Stack ss; typ = Int|Addr}, {loc = Reg rd} ->
+              `	ldr	{emit_reg dst}, {emit_stack src}\n`; 1
+          | _ ->
+              assert false
+        end
+    | Lop(Iconst_int n) ->
+        emit_intconst i.res.(0) n
+    | Lop(Iconst_float s) ->
+        let bits = Int64.bits_of_float (float_of_string s) in
+        let high_bits = Int64.to_nativeint (Int64.shift_right_logical bits 32)
+        and low_bits = Int64.to_nativeint bits in
+        if is_immediate low_bits && is_immediate high_bits then begin
+          `	mov	{emit_reg i.res.(0)}, #{emit_nativeint low_bits} @ {emit_string s}\n`;
+          `	mov	{emit_reg i.res.(1)}, #{emit_nativeint high_bits}\n`;
+          2
+        end else begin
+          let lbl = label_constant float_constants s 2 in
+          `	ldr	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_string s}\n`;
+          `	ldr	{emit_reg i.res.(1)}, {emit_label lbl} + 4\n`;
+          2
+        end
+    | Lop(Iconst_symbol s) ->
+        let lbl = label_constant symbol_constants s 1 in
+        `	ldr	{emit_reg i.res.(0)}, {emit_label lbl} @ {emit_symbol s}\n`; 1
+    | Lop(Icall_ind) ->
+        `	mov	lr, pc\n`;
+        `{record_frame i.live}  bx	{emit_reg i.arg.(0)}\n`; 2
+    | Lop(Icall_imm s) ->
+        `{record_frame i.live}  bl      {emit_symbol s}\n`; 1
+    | Lop(Itailcall_ind) ->
+        let n = frame_size() in
+        if !contains_calls then
+          `	ldr	lr, [sp, #{emit_int (n-4)}]\n`;
+        let ninstr = emit_stack_adjustment "add" n in
+        `	bx	{emit_reg i.arg.(0)}\n`;
+        2 + ninstr
+    | Lop(Itailcall_imm s) ->
+        if s = !function_name then begin
+          `	b	{emit_label !tailrec_entry_point}\n`; 1
+        end else begin
+          let n = frame_size() in
+          if !contains_calls then
+            `	ldr	lr, [sp, #{emit_int (n-4)}]\n`;
+          let ninstr = emit_stack_adjustment "add" n in
+          `	b	{emit_symbol s}\n`;
+          2 + ninstr
+        end
+    | Lop(Iextcall(s, alloc)) ->
+        if alloc then begin
+          let lbl = label_constant symbol_constants s 1 in
+          `	ldr	r12, {emit_label lbl} @ {emit_symbol s}\n`;
+          `{record_frame i.live}	bl	caml_c_call\n`; 2
+        end else begin
+          `	bl	{emit_symbol s}\n`; 1
+        end
+    | Lop(Istackoffset n) ->
+        assert (n mod 8 = 0);
+        let ninstr =
+          if n >= 0
+          then emit_stack_adjustment "sub" n
+          else emit_stack_adjustment "add" (-n) in
+        stack_offset := !stack_offset + n;
+        ninstr
+    | Lop(Iload((Double | Double_u), addr)) ->
+        let addr' = offset_addressing addr 4 in
+        if i.res.(0).loc <> i.arg.(0).loc then begin
+          `	ldr	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`;
+          `	ldr	{emit_reg i.res.(1)}, {emit_addressing addr' i.arg 0}\n`
+        end else begin
+          `	ldr	{emit_reg i.res.(1)}, {emit_addressing addr' i.arg 0}\n`;
+          `	ldr	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
+        end;
+        2
+    | Lop(Iload(size, addr)) ->
+        let r = i.res.(0) in
+        let instr =
+          match size with
+            Byte_unsigned -> "ldrb"
+          | Byte_signed -> "ldrsb"
+          | Sixteen_unsigned -> "ldrh"
+          | Sixteen_signed -> "ldrsh"
+          | _ (* 32-bit quantities *) -> "ldr" in
+        `	{emit_string	instr}     {emit_reg r}, {emit_addressing addr i.arg 0}\n`;
+        1
+    | Lop(Istore((Double | Double_u), addr)) ->
+        let addr' = offset_addressing addr 4 in
+        `	str	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 2}\n`;
+        `	str	{emit_reg i.arg.(1)}, {emit_addressing addr' i.arg 2}\n`;
+        2
+    | Lop(Istore(size, addr)) ->
+        let r = i.arg.(0) in
+        let instr =
+          match size with
+            Byte_unsigned | Byte_signed -> "strb"
+          | Sixteen_unsigned | Sixteen_signed -> "strh"
+          | _ (* 32-bit quantities *) -> "str" in
+        `	{emit_string	instr}     {emit_reg r}, {emit_addressing addr i.arg 1}\n`;
+        1
+    | Lop(Ialloc n) ->
+        if !fastcode_flag then begin
+          let ni = emit_intconst (phys_reg 8 (*r12*)) (Nativeint.of_int n) in
+          `	sub	alloc_ptr, alloc_ptr, r12\n`;
+          `	cmp	alloc_ptr, alloc_limit\n`;
+          `{record_frame i.live}	blcc    caml_call_gc\n`;
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
+          4 + ni
+        end else if n = 8 || n = 12 || n = 16 then begin
+          `{record_frame i.live}	bl	caml_alloc{emit_int ((n-4)/4)}\n`;
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`; 2
+        end else begin
+          let ni = emit_intconst (phys_reg 8 (*r12*)) (Nativeint.of_int n) in
+          `{record_frame i.live}	bl	caml_allocN\n`;
+          `	add	{emit_reg i.res.(0)}, alloc_ptr, #4\n`;
+          2 + ni
+        end
+    | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
+        let shift = name_for_shift_operation op in
+        `	mov	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} {emit_reg i.arg.(1)}\n`; 1
+    | Lop(Iintop(Icomp cmp)) ->
+        let comp = name_for_comparison cmp in
+        `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	mov	{emit_reg i.res.(0)}, #0\n`;
+        `	mov{emit_string	comp}   {emit_reg i.res.(0)}, #1\n`; 3
+    | Lop(Iintop(Icheckbound)) ->
+        `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+        `	blls	caml_ml_array_bound_error\n`; 2
+    | Lop(Iintop op) ->
+        let instr = name_for_int_operation op in
+        `	{emit_string	instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`; 1
+    | Lop(Iintop_imm(Idiv, n)) -> (* n is a power of 2 *)
+        let l = Misc.log2 n in
+        let r = i.res.(0) in
+        `	movs	{emit_reg r}, {emit_reg i.arg.(0)}\n`;
+        if n <= 256 then
+          `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int (n-1)}\n`
+        else begin
+          `	addlt	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
+          `	sublt	{emit_reg r}, {emit_reg r}, #1\n`
+        end;
+        `	mov	{emit_reg r}, {emit_reg r}, asr #{emit_int l}\n`; 4
+    | Lop(Iintop_imm(Imod, n)) -> (* n is a power of 2 *)
+        let l = Misc.log2 n in
+        let a = i.arg.(0) in
+        let r = i.res.(0) in
+        let lbl = new_label() in
+        `	cmp	{emit_reg a}, #0\n`;
+        `	mov	{emit_reg r}, {emit_reg a}, lsl #{emit_int (32-l)}\n`;
+        `	mov	{emit_reg r}, {emit_reg r}, lsr #{emit_int (32-l)}\n`;
+        `	bpl	{emit_label lbl}\n`;
+        `	cmp	{emit_reg r}, #0\n`;
+        `	subne	{emit_reg r}, {emit_reg r}, #{emit_int n}\n`;
+        `{emit_label lbl}:\n`; 6
+    | Lop(Iintop_imm((Ilsl | Ilsr | Iasr as op), n)) ->
+        let shift = name_for_shift_operation op in
+        `	mov	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_string shift} #{emit_int n}\n`; 1
+    | Lop(Iintop_imm(Icomp cmp, n)) ->
+        let comp = name_for_comparison cmp in
+        `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+        `	mov	{emit_reg i.res.(0)}, #0\n`;
+        `	mov{emit_string	comp}   {emit_reg i.res.(0)}, #1\n`; 3
+    | Lop(Iintop_imm(Icheckbound, n)) ->
+        `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+        `	blls	caml_ml_array_bound_error\n`; 2
+    | Lop(Iintop_imm(op, n)) ->
+        let instr = name_for_int_operation op in
+        `	{emit_string	instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
+    | Lop(Inegf) -> (* argument and result in (r0, r1) *)
+        `	eor     r1, r1, #0x80000000\n`; 1
+    | Lop(Iabsf) -> (* argument and result in (r0, r1) *)
+        `	bic     r1, r1, #0x80000000\n`; 1
+    | Lop(Ifloatofint | Iintoffloat | Iaddf | Isubf | Imulf | Idivf) ->
+        assert false
+    | Lop(Ispecific(Ishiftarith(op, shift))) ->
+        let instr = name_for_shift_int_operation op in
+        `	{emit_string	instr}     {emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}`;
+        if shift >= 0
+        then `, lsl #{emit_int shift}\n`
+        else `, asr #{emit_int (-shift)}\n`;
+        1
+    | Lop(Ispecific(Ishiftcheckbound shift)) ->
+        `	cmp	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, lsr #{emit_int shift}\n`;
+        `	blcs	caml_ml_array_bound_error\n`; 2
+    | Lop(Ispecific(Irevsubimm n)) ->
+        `	rsb	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, #{emit_int n}\n`; 1
+    | Lreloadretaddr ->
+        let n = frame_size() in
+        `	ldr	lr, [sp, #{emit_int(n-4)}]\n`; 1
+    | Lreturn ->
+        let ninstr = emit_stack_adjustment "add" (frame_size()) in
+        `	bx	lr\n`;
+        ninstr + 1
+    | Llabel lbl ->
+        `{emit_label lbl}:\n`; 0
+    | Lbranch lbl ->
+        `	b	{emit_label lbl}\n`; 1
+    | Lcondbranch(tst, lbl) ->
+        begin match tst with
+          Itruetest ->
+            `	cmp	{emit_reg i.arg.(0)}, #0\n`;
+            `	bne	{emit_label lbl}\n`
+        | Ifalsetest ->
+            `	cmp	{emit_reg i.arg.(0)}, #0\n`;
+            `	beq	{emit_label lbl}\n`
+        | Iinttest cmp ->
+            `	cmp	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`;
+            let comp = name_for_comparison cmp in
+            `	b{emit_string comp}	{emit_label lbl}\n`
+        | Iinttest_imm(cmp, n) ->
+            `	cmp	{emit_reg i.arg.(0)}, #{emit_int n}\n`;
+            let comp = name_for_comparison cmp in
+            `	b{emit_string comp}	{emit_label lbl}\n`
+        | Ifloattest(cmp, neg) ->
+            assert false
+        | Ioddtest ->
+            `	tst	{emit_reg i.arg.(0)}, #1\n`;
+            `	bne	{emit_label lbl}\n`
+        | Ieventest ->
+            `	tst	{emit_reg i.arg.(0)}, #1\n`;
+            `	beq	{emit_label lbl}\n`
+        end;
+        2
+  | Lcondbranch3(lbl0, lbl1, lbl2) ->
+        `	cmp	{emit_reg i.arg.(0)}, #1\n`;
+        begin match lbl0 with
+          None -> ()
+        | Some lbl -> `	blt	{emit_label lbl}\n`
+        end;
+        begin match lbl1 with
+          None -> ()
+        | Some lbl -> `	beq	{emit_label lbl}\n`
+        end;
+        begin match lbl2 with
+          None -> ()
+        | Some lbl -> `	bgt	{emit_label lbl}\n`
+        end;
+        4
+  | Lswitch jumptbl ->
+        `	ldr	pc, [pc, {emit_reg i.arg.(0)}, lsl #2]\n`;
+        `	mov	r0, r0\n`;      (* nop *)
+        for i = 0 to Array.length jumptbl - 1 do
+          `	.word	{emit_label jumptbl.(i)}\n`
+        done;
+        2 + Array.length jumptbl
+    | Lsetuptrap lbl ->
+        `	bl	{emit_label lbl}\n`; 1
+    | Lpushtrap ->
+        stack_offset := !stack_offset + 8;
+        `	stmfd	sp!, \{trap_ptr, lr}\n`;
+        `	mov	trap_ptr, sp\n`; 2
+    | Lpoptrap ->
+        `	ldmfd	sp!, \{trap_ptr, lr}\n`;
+        stack_offset := !stack_offset - 8; 1
+    | Lraise ->
+        `	mov	sp, trap_ptr\n`;
+        `	ldmfd	sp!, \{trap_ptr, pc}\n`; 2
+
+(* Emission of an instruction sequence *)
+
+let no_fallthrough = function
+    Lop(Itailcall_ind | Itailcall_imm _) -> true
+  | Lreturn -> true
+  | Lbranch _ -> true
+  | Lswitch _ -> true
+  | Lraise -> true
+  | _ -> false
+
+let rec emit_all ninstr i =
+  if i.desc = Lend then () else begin
+    let n = emit_instr i in
+    let ninstr' = ninstr + n in
+    let limit = 511 - !num_literals in
+    if ninstr' >= limit - 64 && no_fallthrough i.desc then begin
+      emit_constants();
+      emit_all 0 i.next
+    end else
+    if ninstr' >= limit then begin
+      let lbl = new_label() in
+      `	b	{emit_label lbl}\n`;
+      emit_constants();
+      `{emit_label lbl}:\n`;
+      emit_all 0 i.next
+    end else
+      emit_all ninstr' i.next
+  end
+
+(* Emission of a function declaration *)
+
+let fundecl fundecl =
+  function_name := fundecl.fun_name;
+  fastcode_flag := fundecl.fun_fast;
+  tailrec_entry_point := new_label();
+  stack_offset := 0;
+  Hashtbl.clear symbol_constants;
+  Hashtbl.clear float_constants;
+  `	.text\n`;
+  `	.align	2\n`;
+  `	.global	{emit_symbol fundecl.fun_name}\n`;
+  `{emit_symbol fundecl.fun_name}:\n`;
+  let n = frame_size() in
+  ignore(emit_stack_adjustment "sub" n);
+  if !contains_calls then
+    `	str	lr, [sp, #{emit_int(n - 4)}]\n`;
+  `{emit_label !tailrec_entry_point}:\n`;
+  emit_all 0 fundecl.fun_body;
+  emit_constants()
+
+(* Emission of data *)
+
+let emit_item = function
+    Cglobal_symbol s ->
+      `	.global	{emit_symbol s}\n`;
+  | Cdefine_symbol s ->
+      `{emit_symbol s}:\n`
+  | Cdefine_label lbl ->
+      `{emit_label (100000 + lbl)}:\n`
+  | Cint8 n ->
+      `	.byte	{emit_int n}\n`
+  | Cint16 n ->
+      `	.short	{emit_int n}\n`
+  | Cint32 n ->
+      `	.word	{emit_nativeint	n}\n`
+  | Cint n ->
+      `	.word	{emit_nativeint n}\n`
+  | Csingle f ->
+      emit_float32_directive ".long" f
+  | Cdouble f ->
+      emit_float64_split_directive ".long" f
+  | Csymbol_address s ->
+      `	.word	{emit_symbol s}\n`
+  | Clabel_address lbl ->
+      `	.word	{emit_label (100000 + lbl)}\n`
+  | Cstring s ->
+      emit_string_directive "	.ascii  " s
+  | Cskip n ->
+      if n > 0 then `	.space	{emit_int n}\n`
+  | Calign n ->
+      `	.align	{emit_int(Misc.log2 n)}\n`
+
+let data l =
+  `	.data\n`;
+  List.iter emit_item l
+
+(* Beginning / end of an assembly file *)
+
+let begin_assembly() =
+  `trap_ptr     .req    r11\n`;
+  `alloc_ptr    .req    r8\n`;
+  `alloc_limit  .req    r10\n`;
+  let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
+  `	.data\n`;
+  `	.global	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`;
+  let lbl_begin = Compilenv.make_symbol (Some "code_begin") in
+  `	.text\n`;
+  `	.global	{emit_symbol lbl_begin}\n`;
+  `{emit_symbol lbl_begin}:\n`
+
+let end_assembly () =
+  let lbl_end = Compilenv.make_symbol (Some "code_end") in
+  `	.text\n`;
+  `	.global	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
+  let lbl_end = Compilenv.make_symbol (Some "data_end") in
+  `	.data\n`;
+  `	.global	{emit_symbol lbl_end}\n`;
+  `{emit_symbol lbl_end}:\n`;
+  `	.word	0\n`;
+  let lbl = Compilenv.make_symbol (Some "frametable") in
+  `	.data\n`;
+  `	.global	{emit_symbol lbl}\n`;
+  `{emit_symbol lbl}:\n`;
+  `	.word	{emit_int (List.length !frame_descriptors)}\n`;
+  List.iter emit_frame !frame_descriptors;
+  frame_descriptors := []

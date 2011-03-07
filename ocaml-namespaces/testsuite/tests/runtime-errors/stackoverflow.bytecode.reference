@@ -1,0 +1,5 @@
+x = 196608
+x = 131072
+x = 65536
+x = 0
+Stack overflow caught

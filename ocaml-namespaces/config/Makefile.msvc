@@ -1,0 +1,164 @@
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
+# Configuration for Windows, Visual C++ compiler
+
+######### General configuration
+
+PREFIX=C:/ocamlms
+
+### Where to install the binaries.
+BINDIR=$(PREFIX)/bin
+
+### Where to install the standard library
+LIBDIR=$(PREFIX)/lib
+
+### Where to install the stub DLLs
+STUBLIBDIR=$(LIBDIR)/stublibs
+
+### Where to install the info files
+DISTRIB=$(PREFIX)
+
+### Where to install the man pages
+MANDIR=$(PREFIX)/man
+
+########## Toolchain and OS dependencies
+
+TOOLCHAIN=msvc
+CCOMPTYPE=msvc
+O=obj
+A=lib
+S=asm
+SO=s.obj
+DO=d.obj
+EXE=.exe
+EXT_DLL=.dll
+EXT_OBJ=.$(O)
+EXT_LIB=.$(A)
+EXT_ASM=.$(S)
+MANEXT=1
+SHARPBANGSCRIPTS=false
+PTHREAD_LINK=
+X11_INCLUDES=
+X11_LINK=
+DBM_INCLUDES=
+DBM_LINK=
+BYTECCRPATH=
+SUPPORTS_SHARED_LIBRARIES=true
+SHAREDCCCOMPOPTS=
+NATIVECCPROFOPTS=
+NATIVECCRPATH=
+ASM=ml /nologo /coff /Cp /c /Fo
+ASPP=
+ASPPPROFFLAGS=
+PROFILING=noprof
+DYNLINKOPTS=
+DEBUGGER=ocamldebugger
+CC_PROFILE=
+SYSTHREAD_SUPPORT=true
+EXTRALIBS=
+CMXS=cmxs
+NATDYNLINK=true
+
+########## Configuration for the bytecode compiler
+
+### Which C compiler to use for the bytecode interpreter.
+BYTECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
+
+### Additional compile-time options for $(BYTECC).  (For static linking.)
+BYTECCCOMPOPTS=/Ox /MD
+
+### Additional link-time options for $(BYTECC).  (For static linking.)
+BYTECCLINKOPTS=
+
+### Additional compile-time options for $(BYTECC).  (For building a DLL.)
+DLLCCCOMPOPTS=/Ox /MD
+
+### Libraries needed
+BYTECCLIBS=advapi32.lib ws2_32.lib
+NATIVECCLIBS=advapi32.lib ws2_32.lib
+
+### How to invoke the C preprocessor
+CPP=cl /nologo /EP
+
+### Flexlink
+FLEXLINK=flexlink -merge-manifest
+FLEXDIR=$(shell $(FLEXLINK) -where)
+IFLEXDIR=-I"$(FLEXDIR)"
+MKDLL=$(FLEXLINK)
+MKEXE=$(FLEXLINK) -exe -link /STACK:16777216
+MKMAINDLL=$(FLEXLINK) -maindll
+
+### How to build a static library
+MKLIB=link /lib /nologo /out:$(1) $(2)
+#ml let mklib out files opts = Printf.sprintf "link /lib /nologo /out:%s %s %s" out opts files;;
+MKSHAREDLIBRPATH=
+
+### Canonicalize the name of a system library
+SYSLIB=$(1).lib
+#ml let syslib x = x ^ ".lib";;
+
+### The ranlib command
+RANLIB=echo
+RANLIBCMD=
+
+############# Configuration for the native-code compiler
+
+### Name of architecture for the native-code compiler
+ARCH=i386
+
+### Name of architecture model for the native-code compiler.
+MODEL=default
+
+### Name of operating system family for the native-code compiler.
+SYSTEM=win32
+
+### Which C compiler to use for the native-code compiler.
+NATIVECC=cl /nologo -D_CRT_SECURE_NO_DEPRECATE
+
+### Additional compile-time options for $(NATIVECC).
+NATIVECCCOMPOPTS=/Ox /MD
+
+### Additional link-time options for $(NATIVECC)
+NATIVECCLINKOPTS=
+
+### Build partially-linked object file
+PACKLD=link /lib /nologo /out:# there must be no space after this '/out:'
+
+############# Configuration for the contributed libraries
+
+OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk
+
+### Name of the target architecture for the "num" library
+BNG_ARCH=generic
+BNG_ASM_LEVEL=0
+
+### Configuration for LablTk
+# Set TK_ROOT to the directory where you installed TCL/TK 8.5
+TK_ROOT=c:/tcl
+TK_DEFS=-I$(TK_ROOT)/include
+# The following definition avoids hard-wiring $(TK_ROOT) in the libraries
+# produced by OCaml, and is therefore required for binary distribution
+# of these libraries.  However, $(TK_ROOT)/lib must be added to the LIB
+# environment variable, as described in README.win32.
+TK_LINK=tk85.lib tcl85.lib ws2_32.lib
+# An alternative definition that avoids mucking with the LIB variable,
+# but hard-wires the Tcl/Tk location in the binaries
+# TK_LINK=$(TK_ROOT)/tk85.lib $(TK_ROOT)/tcl85.lib ws2_32.lib
+
+############# Aliases for common commands
+
+MAKEREC=$(MAKE) -f Makefile.nt
+MAKECMD=$(MAKE)

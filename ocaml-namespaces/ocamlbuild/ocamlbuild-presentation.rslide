@@ -1,0 +1,350 @@
+# Works with rslide revision 8
+# http://gallium.inria.fr/~pouillar/rslide/rslide
+documentclass :beamer, :t, :compress, :red
+usepackage    :inputenc, :utf8
+
+words "**OCaml**", "**ocamlbuild**", "_Makefile_"
+
+title     "ocamlbuild"
+subtitle  "a compilation manager for OCaml projects"
+authors   "Berke Durak", "Nicolas Pouillard"
+institute do
+  > @@Berke.Durak@inria.fr@@
+  hfill
+  > @@Nicolas.Pouillard@inria.fr@@
+end
+
+usetheme      :JuanLesPins
+usefonttheme  :serif
+beamer_header '\setbeamercolor*{titlelike}{parent=structure}'
+at_begin_section do
+  slide "Outline" do
+    tableofcontents 'sectionstyle=show/shaded',
+                    'subsectionstyle=show/shaded/hide'
+  end
+end
+beamer_footline 50, 0
+
+extend do
+  def code_caml *a, &b
+    latex_only.small.code_inline(*a, &b)
+    html_only.code(*a, &b)
+  end
+  def code_tags *a, &b
+    latex_only.small.code_inline(*a, &b)
+    html_only.code(*a, &b)
+  end
+end
+
+html_only do
+  paragraph.huge1 "Warning: this presentation has a degraded style compared to the Beamer/PDF version"
+end
+
+short_version = true
+
+maketitle
+
+h1 "Introduction"
+
+slide "Why such a tool?", '<+->' do
+  * To make our OCaml life easier
+  * To stop writing poor MakefileS
+  * To have a tool that Just works™
+end
+
+slide "What does ocamlbuild handle?", '<+->' do
+
+  box "Regular OCaml projects of arbitrary size" do
+    > Trivially handled using the command line options.
+  end
+
+  box "Mostly regular OCaml projects with common exceptions" do
+    > Requires writing one tag file (__tags_) that declares those exceptions.
+  end
+
+  box "Almost any project" do
+    > Accomplished by writing an ocamlbuild plugin.
+  end
+
+end
+
+slide "What does ocamlbuild provide?" do
+  list do
+    overlay 1,2 do
+      * Automated whole-project compilation
+      * Minimal recompilation
+      * Lots of useful targets (doc, debugging, profiling...)
+      * Supports multiple build directories
+      * Automatic and safe cleaning
+      * A source directory uncluttered by object files
+      * A portable tool shipped with OCaml
+    end
+    overlay 2 do
+      * Saves time and money!
+    end
+  end
+end
+
+h1 "Regular OCaml projects"
+
+slide "What's a regular OCaml project?" do
+  box "It's a project that needs no exceptions from the standard rules:" do
+    * Has compilation units (_ml_ and _mli_ files)
+    * May have parsers and lexers (_mly_ and _mll_ files)
+    * May use packages, libraries and toplevels (_ml{pack,lib,top}_)
+    * May link with external libraries
+    * Has one main OCaml unit from which these units are reachable
+  end
+end
+
+slide "How difficult is it to build regular projects by hand?" do
+  box "OCaml has subtle compilation rules" do
+    * Interfaces (_.mli_) can be absent, yet buildable (_.mly_)
+    * Native and bytecode suffixes and settings differ
+    * Native packages are difficult to do (_-for-pack_)
+    * Linkage order must be correctly computed
+    * Include directories must be ordered
+    * _ocamldep_ gives partial information (too conservative)
+  end
+end
+
+slide "How does ocamlbuild manage all that?" do
+  > It has a lot of hand-crafted Ocaml-specific compilation logic!
+  box "A dynamic exploration approach", '<2>' do
+    * Start from the given targets
+    * Attempt to discover dependencies using _ocamldep_
+    * _ocamldep_ cannot always be trusted: backtrack if necessary
+    * Launch compilations and discover more dependencies
+  end
+end
+
+unless short_version
+slide "Demo..." do
+  box "Many projects can be compiled with a single command:" do
+    * Menhir: _ocamlbuild -lib unix back.native_
+    * Hevea: _ocamlbuild latexmain.native_
+    * Ergo: _ocamlbuild main.native_
+    * Ocamlgraph: _ocamlbuild -cflags -for-pack,Ocamlgraph demo.native_
+    * ...
+  end
+  box "To be fair..." do
+    > Some of these projects require that a _version.ml_
+      or _stdlib.ml_ file be generated beforehand.
+  end
+end
+end
+
+h1 "Dealing with exceptions to standard rules"
+
+slide "What's an exception?" do
+  box "Files that need specific flags" do
+    * Warnings to be enabled or disabled
+    * Debugging (_-g_), profiling (_-p_), type annotation,
+      recursive types, _-linkall_, _-thread_, _-custom_...
+  end
+  list do
+    * Units that need external C libraries
+    * Binaries that need external OCaml libraries
+    * Directories that must be included or excluded
+    * Dependencies that cannot be discovered
+  end
+end
+
+slide "_Make_ and exceptions" do
+  * The _make_ tool can't handle exceptions very well
+  * Needs exceptions to be encoded as specific rules
+  * This generally makes rules and exceptions tightly bound by variables
+  * This creates non-modular makefiles that don't *scale*
+end
+
+slide "The tags, our way to specify exceptions", 'fragile=singleslide' do
+  list do
+    * Tagging is made in _tags files
+    * Each line is made of a pattern and a list of signed tags
+    * A line adds or removes tags from matching files
+    * Patterns are boolean combinations of shell-like globbing expressions
+  end
+  code_tags do
+    : "funny.ml":           rectypes
+      ~<**/*.ml*>~:           warn_A, warn_error_A, debug, annot
+      "foo.ml" or "bar.ml": warn_v, warn_error_v
+      "vendor.ml":          -warn_A, -warn_error_A
+      <main.{byte,native}>: use_unix
+      "main.byte":          use_dynlink, linkall
+      "test":               not_hygienic
+      <satsolver.cm[io]>:   precious
+  end
+end
+
+slide "How tags and rules give commands", 'fragile=singleslide' do
+  box "Files are tagged using tagging rules" do
+    code_tags do
+      : "foo/bar.ml": rectypes
+    end
+  end
+  box "Rules then produce commands with *tagged holes*" do
+    code_caml do
+      : let tagged_hole =
+          tags_for(ml)++"ocaml"++"compile"++"byte" in
+        Cmd(S[A"ocamlc";A"-c";T tagged_hole;P ml;A"-o";P cmo])
+    end
+  end
+  box "These holes are filled by command fragments (such as flags)" do
+    code_caml do
+      : flag ["ocaml"; "compile"; "byte"; "rectypes"]
+             (A"-rectypes")
+    end
+  end
+end
+
+slide "Tags and dependencies", 'fragile=singleslide' do
+  box "One can define dependencies triggered by combinations of tags" do
+    code_caml do
+      : dep ["ocaml"; "link"; "byte"; "program"; "plugin:foo"]
+            ["plugin/pluginlib.cma"; "plugin/plugin_foo.cmo"]
+    end
+  end
+  box "By tagging files we make things happen" do
+    code_tags do
+      : "test.byte": plugin:foo
+    end
+  end
+end
+
+h1 "Writing an ocamlbuild plugin"
+
+slide "Not a specific language, but plain OCaml code" do
+  list do
+    * Plugins are compiled on the fly
+    * Dynamic configuration is feasible
+  end
+  box "With a plugin one can:" do
+    * Extend rules (add new ones, override old ones)
+    * Add flags and dependencies based on tags
+    * Tag files
+    * Change options
+    * Define the directory structure precisely
+    * Help _ocamldep_
+    * Specify external libraries
+  end
+end
+
+unless short_version
+slide "A plugin example" do
+  > Let's read it in live...
+end
+end
+
+# slide "ocamlbuild scales" do
+#   > Indeed ocamlbuild is used as an experimental replacement in OCaml itself.
+# end
+
+h1 "General features"
+
+slide "Parallel execution where applicable" do
+  * You select the maximum number of jobs (_-j N_)
+  * Rules know how to ask for parallel targets
+  * The system keeps things scheduled correctly
+  * Example: Separate compilation of byte code
+  * (Optimal scheduling would require a static graph)
+end
+
+unless short_version
+slide "A status bar for your visual comfort" do
+  list do
+    * Compilation tools echo commands and their output
+    * This creates a long and boring output that scrolls too fast
+    * Here you can keep an eye on what is going on!
+    * It succinctly displays time, number of targets, and tags
+    * Command outputs are correctly multiplexed
+    * A trace of the commands executed is kept in a log file
+    * This log file can be used as the basis of a shell script
+  end
+  latex_only.example do
+    invisible_join do
+      count = 0
+      mod = 1
+      File.read("manual/trace.out").each do |line|
+        count += 1
+        next if count % mod != 0
+        line.gsub!("\\", "|")
+        line.latex_encode!
+        line.gsub!(/( +)/) { "\\hspace{#{0.49 * $1.size}em}" }
+        line.chomp!
+        s = "\\only<#{count / mod}>{\\tt #{line}}%\n"
+        verbatim_text s
+      end
+    end
+  end
+end
+
+slide "Hygiene and sterilization" do
+  > ocamlbuild has a Hygiene Squad (HS) that checks your source tree for cleanliness
+  box "It has preconceived but useful cleanliness notions", '<1->' do
+    * Files dirty by default: _.cmi_, _.cmo_, _.cma_, _.cmx_...
+    * _ocamllex_/_ocamlyacc_ files: _.ml_ *if* _.mll_, _.ml_&_.mli_ *if* _.mly_...
+  end
+  box "If unsatisfied, the HS produces a sterilization script", '<2->' do
+    * Read it carefully (or work with versioning)
+    * Run at your own risks
+  end
+  box "HS can be told of exceptions", '<3->' do
+    > Files or directories tagged as __not_hygienic__ or _precious_.
+  end
+end
+end
+
+slide "Some supported tools" do
+  box "_Menhir_ as an _ocamlyacc_ replacement", '<1->' do
+    * Enabled with the __use_menhir__ global tag or the __-use-menhir__ option
+    * Handles implicit dependencies using _--infer_
+  end
+  box "_Ocamldoc_ to build your doc", '<2->' do
+    * Separated construction using (_-dump_/_-load_)
+    * Handles ??HTML??, ??LaTeX??, ??Man??, ??Dot??, ??TeXi??
+  end
+  # box "_ocamlmklib_, _ocamlmktop_" do
+  #   > Basic support using _.mllib_ and _.mltop_ files
+  # end
+  box "_Camlp4_ aware", '<3->' do
+    * Tags allow to setup any installed _Camlp4_ preprocessor
+    * Fine grained dependencies help a lot...
+  end
+end
+
+h1 "Conclusion"
+
+slide "Resume" do
+  box "ocamlbuild can be used in three ways:", '<1->' do
+    * With only command-line options for fully regular projects
+    * With the __tags_ file for intermediate projects
+    * With a plugin for the most complex projects
+  end
+  box "ocamlbuild saves your time by:", '<2->' do
+    * Building your project gently
+    * Compiling only as necessary
+    * Running commands in parallel
+    * Keeping your house clean
+    * Letting you concentrate on your code!
+  end
+end
+
+unless short_version
+slide "Acknowledgments" do
+  box "For enlightening discussions about OCaml internals:", '<1->' do
+    * Xavier Leroy
+    * Damien Doligez
+  end
+  box "For his insights about OCaml dependencies:", '<2->' do
+    * Alain Frisch
+  end
+  box "For letting this happen:", '<3->' do
+    * Michel Mauny
+  end
+end
+
+slide "Conclusion", '<+->' do
+  * ocamlbuild is not perfect but already damn useful
+  * Try it now! It's in OCaml 3.10!
+end
+end

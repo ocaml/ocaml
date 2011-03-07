@@ -1,0 +1,8 @@
+2011-03-07: first uploaded version, branch somewhere before r10976
+ * "ocamlc" and "ocamlopt" working, but yet not "ocamldep" and "ocaml".
+ * Added options -namespace, -open-namespace, -debug
+ * "-namespace -" tells the compiler to use the relative path as namespace
+ * Use "-debug ns" to debug
+ * Use "in X.Y" as the first line of your program to choose the namespace, instead
+   of -namespace
+ * Use "open X as Y" to alias modules and namespaces

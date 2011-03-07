@@ -1,0 +1,1 @@
+let stack = 42

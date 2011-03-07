@@ -1,0 +1,83 @@
+00:00:00 0    (0) STARTING                -------- |
+00:00:00 1    (0) back.ml.depends         O------- |
+00:00:00 8    (0) keyword.mli.depends     O-b---i- |
+00:00:00 16   (0) mark.cmi                O-B---I- /
+00:00:00 20   (0) stringSet.cmi           O-B---I- /
+00:00:00 24   (0) time.mli.depends        O-b---i- /
+00:00:00 32   (0) stdlib.ml.depends       O-b---i- -
+00:00:00 35   (0) stringSet.cmx           ONb---i- -
+00:00:00 37   (0) settings.cmx            ONb---i- -
+00:00:00 44   (0) lineCount.cmx           ONb---i- \
+00:00:00 45   (0) interface.ml.depends    Onb---i- \
+00:00:00 45   (0) interface.ml.depends    Onb---i- \
+00:00:01 52   (0) stringMap.ml.depends    Onb---i- |
+00:00:01 53   (0) printer.cmx             ONb---i- |
+00:00:01 53   (0) printer.cmx             ONb---i- |
+00:00:01 57   (0) time.cmx                ONb---i- /
+00:00:01 64   (0) partialGrammar.cmi      OnB---I- /
+00:00:01 67   (0) parameters.ml.depends   Onb---i- /
+00:00:01 72   (0) misc.ml.depends         Onb---i- -
+00:00:01 74   (0) keyword.ml.depends      Onb---i- -
+00:00:01 77   (0) error.cmi               OnB---I- -
+00:00:01 82   (0) parameters.cmx          ONb---i- \
+00:00:01 84   (0) action.cmx              ONb---i- \
+00:00:01 87   (0) parser.mli.depends      Onb---i- \
+00:00:02 96   (0) parserAux.cmx           ONb---i- |
+00:00:02 103  (0) tarjan.ml.depends       Onb---i- |
+00:00:02 106  (0) unionFind.cmx           ONb---i- |
+00:00:02 108  (0) lexer.mll               Onb---i- /
+00:00:02 108  (0) lexer.mll               Onb---i- /
+00:00:02 110  (0) lexer.cmo               OnB---i- -
+00:00:02 111  (0) parser.cmx              ONb---i- -
+00:00:02 112  (0) partialGrammar.cmx      ONb---i- -
+00:00:02 114  (0) lexer.cmx               ONb---i- \
+00:00:02 116  (0) codeBits.mli.depends    Onb---i- \
+00:00:03 118  (0) preFront.cmx            ONb---i- |
+00:00:03 120  (0) tokenType.cmx           ONb---i- |
+00:00:03 123  (0) inliner.cmi             OnB---I- |
+00:00:03 126  (0) traverse.cmx            ONb---i- /
+00:00:03 126  (0) traverse.cmx            ONb---i- /
+00:00:03 129  (0) code.cmi                OnB---I- /
+00:00:03 131  (0) lr1.mli.depends         Onb---i- /
+00:00:03 134  (0) lookahead.mli.depends   Onb---i- -
+00:00:03 137  (0) gMap.ml.depends         Onb---i- -
+00:00:03 144  (0) lr1.cmi                 OnB---I- -
+00:00:03 146  (0) item.ml.depends         Onb---i- -
+00:00:03 149  (0) patricia.cmi            OnB---I- \
+00:00:03 151  (0) patricia.cmx            ONb---i- \
+00:00:03 151  (0) patricia.cmx            ONb---i- \
+00:00:04 154  (0) front.cmi               OnB---I- |
+00:00:04 164  (0) listMonad.ml.depends    Onb---i- |
+00:00:04 167  (0) listMonad.cmx           ONb---i- |
+00:00:04 170  (0) infer.cmi               OnB---I- /
+00:00:04 171  (0) lexmli.mll              Onb---i- /
+00:00:04 172  (0) lexmli.ml.depends       Onb---i- /
+00:00:04 174  (0) lexdep.mll              Onb---i- -
+00:00:04 177  (0) interface.cmx           ONb---i- -
+00:00:04 178  (0) IO.ml.depends           Onb---i- \
+00:00:04 181  (0) lexmli.cmx              ONb---i- \
+00:00:04 183  (0) IO.cmx                  ONb---i- \
+00:00:05 187  (0) infer.cmx               ONb---i- |
+00:00:05 190  (0) dot.cmi                 OnB---I- |
+00:00:05 193  (0) compressedBitSet.cmi    OnB---I- /
+00:00:05 195  (0) dot.cmx                 ONb---i- /
+00:00:05 197  (0) grammar.cmx             ONb---i- /
+00:00:05 197  (0) grammar.cmx             ONb---i- /
+00:00:05 197  (0) grammar.cmx             ONb---i- -
+00:00:05 200  (0) infiniteArray.cmi       OnB---I- -
+00:00:05 201  (0) item.cmx                ONb---i- -
+00:00:05 204  (0) breadth.mli.depends     Onb---i- \
+00:00:05 208  (0) invariant.ml.depends    Onb---i- \
+00:00:06 212  (0) invariant.cmx           ONb---i- |
+00:00:06 213  (0) inliner.cmx             ONb---i- |
+00:00:06 214  (0) code.cmx                ONb---i- /
+00:00:06 216  (0) back.native             ONbP--iL -
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.
+Finished, 216 targets (0 cached) in 00:00:06.

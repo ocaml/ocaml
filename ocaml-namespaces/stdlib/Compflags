@@ -1,0 +1,27 @@
+#!/bin/sh
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
+#                                                                       #
+#   Copyright 2004 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../LICENSE.      #
+#                                                                       #
+#########################################################################
+
+# $Id$
+
+case $1 in
+  pervasives.cm[iox]|pervasives.p.cmx) echo ' -nopervasives';;
+  camlinternalOO.cmi) echo ' -nopervasives';;
+  camlinternalOO.cmx|camlinternalOO.p.cmx) echo ' -inline 0';;
+  scanf.cmx|scanf.p.cmx) echo ' -inline 9';;
+  arrayLabels.cm[ox]|arrayLabels.p.cmx) echo ' -nolabels';;
+  listLabels.cm[ox]|listLabels.p.cmx) echo ' -nolabels';;
+  stringLabels.cm[ox]|stringLabels.p.cmx) echo ' -nolabels';;
+  moreLabels.cm[ox]|moreLabels.p.cmx) echo ' -nolabels';;
+  *) echo ' ';;
+esac

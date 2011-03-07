@@ -1,0 +1,56 @@
+- Compatibilité entre biblithèque avec et sans namespace.
+   -> non utilisés, les namespaces doivent aussi permettre de linker des modules
+    de noms identiques.
+
+Questions:
+- Comment mixer modules qui ont été compilés avec des namespaces et ceux
+qui ne l'ont pas été ?
+
+Plusieurs cas à gérer:
+
+- Utilisation d'un module avec namespace depuis un module sans
+  namespace (en spécifiant son chemin avec un -I)
+
+---> La présence d'un module A.X remplace alors celle d'un module X.
+
+- Utilisation d'un module sans namespace depuis un module avec
+  namespace (en utilisant les namespaces pour remplacer un -I)
+
+---> La présence d'un module X remplace alors celle d'un module A.X ?
+
+======> On cherche à résoudre d'abord les noms les mieux qualifiés,
+  puis les noms les moins bien qualifiés, probablement en affichant des
+  warnings.
+
+- Verifier tous les endroits ou le nom du module doit etre la version composee
+  (etait modulename dans compile.ml et optcompile.ml)
+
+- Implanter les namespaces dans:
+   - ocamldep
+   - ocaml (toplevel)
+
+- Doit-on gerer les bibliotheques ?
+
+
+../ocaml-namespaces/ocamlopt -o test2.opt a/x.cmx z.cmx
+File "_none_", line 1, characters 0-1:
+Error: No implementations provided for the following modules:
+         X referenced from z.cmx
+make: *** [opt] Error 2
+
+../ocaml-namespaces/ocamlc -o test2.byte a/x.cmo z.cmo
+File "_none_", line 1, characters 0-1:
+Error: Error while linking z.cmo:
+Reference to undefined global `X'
+
+L'option -ns X.Y signifie-t-elle qu'il faille revenir deux crans en arrière dans le chemin et rajouter le -I correspondant ? NON. Par contre, il faut etre capable de comprendre que les autres modules du namespace X.Y sont dans le répertoire courant.
+
+
+Ajouter de la laziness: le chargement de tous les modules des Nsutils est
+absurde.
+
+Gérer le cas où on compile localement des modules d'un namespace (i.e. hors de leur répertoire destination):
+
+In stdlib/:
+  ocamlc -c -ns Inria.Stdlib hashtbl.ml
+(si on ouvre Inria.Stdlib, ça fait une erreur. Avoir une option -ns-in)

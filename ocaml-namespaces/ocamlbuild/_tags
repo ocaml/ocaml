@@ -1,0 +1,10 @@
+# OCamlbuild tags file
+true: debug
+<*.ml> or <*.mli>: warn_L, warn_R, warn_Z, annot
+"discard_printf.ml": rectypes
+"ocamlbuildlib.cma" or "ocamlbuildlightlib.cma": linkall
+<*.byte> or <*.native> or <*.top>: use_unix
+"ocamlbuildlight.byte": -use_unix
+<*.cmx>: for-pack(Ocamlbuild_pack)
+<{ocamlbuild_{pack,unix_plugin,plugin,executor},ppcache}{,.p}.cmx>: -for-pack(Ocamlbuild_pack)
+"doc": not_hygienic
