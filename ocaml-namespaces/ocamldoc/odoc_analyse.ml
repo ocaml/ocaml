@@ -139,7 +139,7 @@ let process_interface_file ppf sourcefile =
   Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
-  let sg = Typemod.transl_signature (initial_env()) ast in
+  let sg = Typemod.transl_interface inputfile (initial_env()) ast in
   Warnings.check_fatal ();
   (ast, sg, inputfile)
 

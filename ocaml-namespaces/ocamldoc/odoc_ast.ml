@@ -1381,7 +1381,9 @@ module Analyser =
           in
           (0, new_env2, [ Element_module_type mt ])
 
-      | Parsetree.Pstr_open longident ->
+      | Parsetree.Pstr_open (longident,Some _) -> assert false (* TODO *)
+
+      | Parsetree.Pstr_open (longident,None) ->
           (* A VOIR : enrichir l'environnement quand open ? *)
           let ele_comments = match comment_opt with
             None -> []

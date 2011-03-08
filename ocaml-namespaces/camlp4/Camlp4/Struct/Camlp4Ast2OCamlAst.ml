@@ -775,7 +775,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
     | <:expr@loc< let open $i$ in $e$ >> ->
-        mkexp loc (Pexp_open (long_uident i) (expr e))
+        mkexp loc (Pexp_open (long_uident i) None (expr e))
     | <:expr@loc< (module $me$ : $pt$) >> ->
         mkexp loc (Pexp_constraint (mkexp loc (Pexp_pack (module_expr me)),
                     Some (mktyp loc (Ptyp_package (package_type pt))), None))
@@ -889,7 +889,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         in
         [mksig loc (Psig_modtype n si) :: l]
     | SgOpn loc id ->
-        [mksig loc (Psig_open (long_uident id)) :: l]
+        [mksig loc (Psig_open (long_uident id) None) :: l]
     | SgTyp loc tdl -> [mksig loc (Psig_type (mktype_decl tdl [])) :: l]
     | SgVal loc n t -> [mksig loc (Psig_value n (mkvalue_desc t [])) :: l]
     | <:sig_item@loc< $anti:_$ >> -> error loc "antiquotation in sig_item" ]
@@ -954,7 +954,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         [mkstr loc (Pstr_recmodule (module_str_binding mb [])) :: l]
     | StMty loc n mt -> [mkstr loc (Pstr_modtype n (module_type mt)) :: l]
     | StOpn loc id ->
-        [mkstr loc (Pstr_open (long_uident id)) :: l]
+        [mkstr loc (Pstr_open (long_uident id) None) :: l]
     | StTyp loc tdl -> [mkstr loc (Pstr_type (mktype_decl tdl [])) :: l]
     | StVal loc rf bi ->
         [mkstr loc (Pstr_value (mkrf rf) (binding bi [])) :: l]
