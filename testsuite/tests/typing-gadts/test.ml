@@ -131,21 +131,46 @@ module Polymorphic_variants =
   end    
 ;;
 
-module Propagation = 
-  struct
- type _ t = 
-     IntLit : int -> int t
-   | BoolLit : bool -> bool t
+module Propagation = struct
+  type _ t = 
+      IntLit : int -> int t
+    | BoolLit : bool -> bool t
 
-let check : type s. s t -> s = function
-  | IntLit n -> n
-  | BoolLit b -> b
+  let check : type s. s t -> s = function
+    | IntLit n -> n
+    | BoolLit b -> b
+
+  let check : type s. s t -> s = fun x ->
+    let r = match x with
+    | IntLit n -> (n : s )
+    | BoolLit b -> b
+    in r
+end
 ;;
-let check : type s. s t -> s = fun x ->
-  let r = match x with
-  | IntLit n -> (n : s )
-  | BoolLit b -> b
+
+type _ t = Int : int t ;;
+
+let ky x y = ignore (x = y); x ;;
+
+let test : type a. a t -> a = fun x ->
+  let r = match x with Int -> ky (1 : a) 1
   in r
 ;;
-end
+let test : type a. a t -> a = fun x ->
+  let r = match x with Int -> ky 1 (1 : a)
+  in r
+;;
+let test : type a. a t -> a = fun x ->
+  let r = match x with Int -> (1 : a)
+  in r (* fails too *)
+;;
+let test2 : type a. a t -> a option = fun x ->
+  let r = ref None in
+  begin match x with Int -> r := Some (1 : a) end;
+  !r (* normalized to int option *)
+;;
+let test2 : type a. a t -> a option = fun x ->
+  let r = ref (None : a option) in
+  begin match x with Int -> r := Some 1 end;
+  !r (* ok *)
 ;;

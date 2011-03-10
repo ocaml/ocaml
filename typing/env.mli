@@ -21,6 +21,7 @@ type t
 val empty: t
 val initial: t
 val diff: t -> t -> Ident.t list
+val map_newtype_level: t -> int -> int
 
 (* Lookup by paths *)
 
@@ -64,7 +65,7 @@ val add_module: Ident.t -> module_type -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> cltype_declaration -> t -> t
-val add_local_constraint: Ident.t -> type_declaration -> t -> t
+val add_local_constraint: Ident.t -> type_declaration -> int -> t -> t
 
 (* Insertion of all fields of a signature. *)
 
