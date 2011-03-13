@@ -691,17 +691,18 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
+  begin match Config.system with
+    "linux" | "gnu" ->
+      `	.type	{emit_symbol fundecl.fun_name},@function\n`;
+      `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
+    | _ -> ()
+  end;
   if !float_constants <> [] then begin
     if macosx
     then `	.literal8\n`
     else `	.section	.rodata.cst8,\"a\",@progbits\n`;
     List.iter emit_float_constant !float_constants
-  end;
-  match Config.system with
-    "linux" | "gnu" ->
-      `	.type	{emit_symbol fundecl.fun_name},@function\n`;
-      `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
-  | _ -> ()
+  end
 
 (* Emission of data *)
 

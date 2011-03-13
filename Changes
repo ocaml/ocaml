@@ -29,6 +29,7 @@ Bug fixes:
 - PR#5209: natdynlink incorrectly detected on BSD systems
 - PR#5213: ocamlbuild should pass '-rectypes' to ocamldoc when needed
 - PR#5217: ocamlfind plugin should add '-linkpkg' for toplevel
+- PR#5237: incorrect .size directives generated for x86-32 and x86-64
 
 Feature wishes:
 - PR#4992: added '-ml-synonym' and '-mli-synonym' options to ocamldep
