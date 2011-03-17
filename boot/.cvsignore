@@ -5,3 +5,5 @@ camlheader
 myocamlbuild
 myocamlbuild.native
 libcamlrun.a
+*.cm*
+*.o
