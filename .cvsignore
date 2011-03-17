@@ -17,3 +17,5 @@ _build
 _log
 myocamlbuild_config.ml
 ocamlnat
+*.cm*
+*.o
