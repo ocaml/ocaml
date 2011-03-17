@@ -1,2 +1,3 @@
 graphics.ml
 graphics.mli
+*.o

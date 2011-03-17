@@ -1,2 +1,4 @@
 ocamlbrowser
 dummy.mli
+*.cm*
+*.o
