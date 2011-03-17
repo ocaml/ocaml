@@ -5,3 +5,5 @@ caml
 *.annot
 sys.ml
 *.a
+*.cm*
+*.o
