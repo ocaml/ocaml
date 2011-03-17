@@ -307,7 +307,7 @@ case "$bytecc,$host" in
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
-    dllccompopts="-D_WIN32 -DCAML_DLL"
+    dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $withsharedlibs = yes; then
       flexlink="flexlink -chain cygwin -merge-manifest"
       flexdir=`$flexlink -where | dos2unix`
@@ -631,6 +631,12 @@ if test $withsharedlibs = "yes"; then
     sparc-*-linux*)               natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
+    i[345]86-*-freebsd*)          natdynlink=true;;
+    x86_64-*-freebsd*)            natdynlink=true;;
+    i[345]86-*-openbsd*)          natdynlink=true;;
+    x86_64-*-openbsd*)            natdynlink=true;;
+    i[345]86-*-netbsd*)           natdynlink=true;;
+    x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
   esac
 fi
