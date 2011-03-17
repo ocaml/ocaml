@@ -4,3 +4,5 @@ parser.mli
 ocamldebug
 dynlink.ml
 dynlink.mli
+*.cm*
+*.o
