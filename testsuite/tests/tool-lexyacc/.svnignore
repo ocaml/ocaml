@@ -4,3 +4,5 @@ grammar.ml
 *.byte
 *.native
 *.result
+*.cm*
+*.o

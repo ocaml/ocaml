@@ -4,3 +4,5 @@ custom
 *.a
 *.so
 *.result
+*.cm*
+*.o
