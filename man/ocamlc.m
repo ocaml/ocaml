@@ -444,6 +444,16 @@ only recursive types where the recursion goes through an object type
 are supported. Note that once you have created an interface using this
 flag, you must use it again for all dependencies.
 .TP
+.BI \-runtime\-variant \ suffix
+Add
+.I suffix
+to the name of the runtime library that will be used by the program.
+If OCaml was configured with option
+.BR \-with\-debug\-runtime ,
+then the
+.B d
+suffix is supported and gives a debug version of the runtime.
+.TP
 .B \-thread
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in

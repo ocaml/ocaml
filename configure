@@ -39,6 +39,7 @@ tk_x11=yes
 dl_defs=''
 verbose=no
 withcurses=yes
+debugruntime=noruntimed
 withsharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
@@ -109,6 +110,8 @@ while : ; do
         dllib="$2"; shift;;
     -verbose|--verbose)
         verbose=yes;;
+    -with-debug-runtime|--with-debug-runtime)
+        debugruntime=runtimed;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -1649,6 +1652,7 @@ echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
+echo "RUNTIMED=${debugruntime}" >>Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -1706,6 +1710,11 @@ if test "$debugger" = "ocamldebugger"; then
 else
   echo "Source-level replay debugger: not supported"
 fi
+
+if test "$debugruntime" = "runtimed"; then
+  echo "Debug runtime will be compiled and installed"
+fi
+
 
 echo "Additional libraries supported:"
 echo "        $otherlibraries"

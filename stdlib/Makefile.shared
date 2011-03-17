@@ -40,8 +40,16 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
-install:
-	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur $(LIBDIR)
+install: install-$(RUNTIMED)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur \
+	  $(LIBDIR)
+
+install-noruntimed:
+.PHONY: install-noruntimed
+
+install-runtimed: camlheaderd
+	cp camlheaderd $(LIBDIR)
+.PHONY: install-runtimed
 
 stdlib.cma: $(OBJS)
 	$(CAMLC) -a -o stdlib.cma $(OBJS)
@@ -56,7 +64,7 @@ clean::
 	rm -f sys.ml
 
 clean::
-	rm -f camlheader camlheader_ur
+	rm -f camlheader camlheader_ur camlheaderd
 
 .SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 

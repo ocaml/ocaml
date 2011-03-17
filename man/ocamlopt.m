@@ -397,6 +397,16 @@ types are derived in a principal way. All programs accepted in
 mode are also accepted in default mode with equivalent
 types, but different binary signatures.
 .TP
+.BI \-runtime\-variant \ suffix
+Add
+.I suffix
+to the name of the runtime library that will be used by the program.
+If OCaml was configured with option
+.BR \-with\-debug\-runtime ,
+then the
+.B d
+suffix is supported and gives a debug version of the runtime.
+.TP
 .B \-rectypes
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type

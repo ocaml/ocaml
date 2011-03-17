@@ -26,7 +26,7 @@
 #pragma comment(lib , "kernel32")
 #endif
 
-char * default_runtime_name = "ocamlrun";
+char * default_runtime_name = RUNTIME_NAME;
 
 static
 #if _MSC_VER >= 1200

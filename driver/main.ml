@@ -119,6 +119,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _pp s = preprocessor := Some s
   let _principal = set principal
   let _rectypes = set recursive_types
+  let _runtime_variant s = runtime_variant := s
   let _strict_sequence = set strict_sequence
   let _thread = set use_threads
   let _vmthread = set use_vmthreads

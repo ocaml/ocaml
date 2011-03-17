@@ -276,7 +276,7 @@ let link_bytecode tolink exec_name standalone =
       try
         let header =
           if String.length !Clflags.use_runtime > 0
-          then "camlheader_ur" else "camlheader" in
+          then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant in
         let inchan = open_in_bin (find_in_path !load_path header) in
         copy_file inchan outchan;
         close_in inchan
@@ -466,8 +466,9 @@ void caml_startup(char ** argv)\n\
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
+  let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
   Ccomp.call_linker Ccomp.Exe exec_name
-    ([prim_name] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+    ([prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
     (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
@@ -546,8 +547,9 @@ let link objfiles output_name =
         if not (Filename.check_suffix output_name Config.ext_obj) then begin
           temps := obj_file :: !temps;
           if not (
+            let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
             Ccomp.call_linker Ccomp.MainDll output_name
-              ([obj_file] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+              ([obj_file] @ List.rev !Clflags.ccobjs @ [runtime_lib])
               Config.bytecomp_c_libraries
            ) then raise (Error Custom_runtime);
         end

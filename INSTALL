@@ -119,6 +119,10 @@ The "configure" script accepts the following options:
         run-time system manually written in assembly language.
         This assembler must preprocess its input with the C preprocessor.
 
+-with-debug-runtime
+        Compile and install the debug version of the runtimes, useful
+        for debugging C stubs and other low-level code.
+
 -verbose
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.
