@@ -1486,14 +1486,14 @@ if test $has_tk = true; then
   if test -n "$tcl_version" && test "x$tcl_version" != "xnone"; then
     echo "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
     case $tcl_version in
-    7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
-    7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
-    8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
-    8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
-    8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
-    8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
-    8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
     8.5) tclmaj=8 tclmin=5 tkmaj=8 tkmin=5 ;;
+    8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
+    8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
+    8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
+    8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
+    8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
+    7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
+    7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
@@ -1720,7 +1720,6 @@ fi
 if test "$debugruntime" = "runtimed"; then
   echo "Debug runtime will be compiled and installed"
 fi
-
 
 echo "Additional libraries supported:"
 echo "        $otherlibraries"
