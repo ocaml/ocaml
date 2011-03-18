@@ -52,7 +52,7 @@ install::
 
 clean::
 	rm -f libcamlrun_shared.so
-
+	rm -f *.pic.c
 
 .SUFFIXES: .d.o .pic.o
 
