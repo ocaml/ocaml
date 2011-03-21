@@ -41,7 +41,8 @@ let keyword_table =
     "begin", BEGIN;
     "class", CLASS;
     "constraint", CONSTRAINT;
-    "contract", CONTRACT;            
+    "contract", CONTRACT;
+    "sat", SAT;            
     "do", DO;
     "done", DONE;
     "downto", DOWNTO;
