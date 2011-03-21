@@ -698,7 +698,7 @@ and type_structure anchor env sstr scope =
          | ({pstr_desc = Pstr_contract (ds)}, _) -> y :: re_order (x :: rem)
          | (_, _) -> x :: re_order (y :: rem)
          end
-  in
+  in 
   let rec type_struct env sstr =
     Ctype.init_def(Ident.current_time());
     match sstr with
@@ -889,18 +889,6 @@ and type_structure anchor env sstr scope =
 	            ds@extract_typed_contracts rem 
            | (_::rem) -> extract_typed_contracts rem
   in 
-  (* OLD code: filter out all contracts from both sstr and finalenv; 
-     type-check contracts with finalenv. The lookup_value fetches wrong type 
-     due to shadowing if we have Pstr_open after Pstr_conract 
-  let rec extract_contracts xs = 
-           match xs with
-           | [] -> []
-           | ({pstr_desc = Pstr_contract(ds)} :: rem) -> ds@extract_contracts rem 
-           | (_::rem) -> extract_contracts rem
-  in 
-  let pstr_contracts = extract_contracts sstr in
-  let contract_decls = Typedecl.transl_contract_decls finalenv pstr_contracts in 
-  let newstr = (Tstr_contract contract_decls) :: str in *)
   let contract_decls = extract_typed_contracts str in 
   (* In newstr2, we put opened contracts as Tstr_opened_contracts *)
   let opened_contracts = Env.fetch_contracts finalenv in

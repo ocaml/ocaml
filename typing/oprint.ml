@@ -457,7 +457,7 @@ and print_out_expression_desc ppf =
 	                 print_out_expression else_exp
      end
   | Texp_try (e, pat_exp_list) -> 
-      fprintf ppf "@[<2>(try@ %a@;<1 -1>with %a@)@]"
+      fprintf ppf "@[<2>(try@ %a@ <1 -1>with %a@ )@]"
 	print_out_expression e bindings pat_exp_list
   | Texp_sequence(e1, e2) ->
       fprintf ppf "@[<2>(%a@ ; %a)@]" 
@@ -536,7 +536,7 @@ and print_out_pattern_desc ppf =
     Tpat_any -> fprintf ppf "%s" "_"
   | Tpat_var (id) -> fprintf ppf "%s" (Ident.name id)
   | Tpat_alias (pat, id) -> 
-      fprintf ppf "%a, @%s" print_out_pattern pat (Ident.name id)
+      fprintf ppf "%a ,@ %s" print_out_pattern pat (Ident.name id)
   | Tpat_constant (c) -> fprintf ppf "%a" fmt_constant c
   | Tpat_tuple (pat_list) -> 
       fprintf ppf "@[ %a @]"
@@ -560,7 +560,7 @@ and print_out_pattern_desc ppf =
         (print_list_init print_out_pattern
 	   (fun ppf -> fprintf ppf ","))
 	pat_list
-  | Tpat_or (pat1, pat2, rdescop) -> fprintf ppf "%a, @%a" 
+  | Tpat_or (pat1, pat2, rdescop) -> fprintf ppf "%a ,@ %a" 
 	                      print_out_pattern pat1
 	                      print_out_pattern pat2
   | Tpat_lazy (pat) -> fprintf ppf "%a" print_out_pattern pat

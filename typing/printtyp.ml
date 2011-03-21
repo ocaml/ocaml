@@ -857,8 +857,14 @@ let structure_item ppf x = match x with
       let iface_e = Typedtree.expression_desc_to_iface 
 	              Typedtree.expression_to_iface edesc in 
       fprintf ppf "@[<1>Tstr_value(%a)@]" !Oprint.out_expression_desc iface_e;  
-  | _ -> fprintf std_formatter "typing/printtyp: ONLY eval, value are printed!\n"
+  | Typedtree.Tstr_contract(cdecls) ->
+      let iface_cdecls = List.map (fun cdecl -> 
+	Typedtree.contract_declaration_to_iface cdecl) cdecls in
+      fprintf ppf "@[<1>Tstr_contract(%a)@]"
+      (raw_list !Oprint.out_contract_declaration) iface_cdecls  
+  | _ -> fprintf ppf "typing/printtyp: ONLY eval, value, contract are printed!\n"
 
+let print_structure ppf x = raw_list structure_item ppf x
 let implementation ppf (x,_) = raw_list structure_item ppf x
 
 (* Print an unification error *)
