@@ -196,7 +196,7 @@ val expression_desc_to_iface: (expression -> Types.expression) ->
                               expression_desc -> Types.expression_desc
 val core_contract_to_iface: core_contract -> Types.core_contract
 val contract_declaration_to_iface: contract_declaration -> Types.contract_declaration
-
+val contract_declaration_from_iface: Types.contract_declaration -> contract_declaration
 val core_contract_from_iface: Types.core_contract -> core_contract
  
 val ensuresC : core_contract -> expression -> blame -> expression_desc

@@ -65,3 +65,8 @@ val get_known_new_name: t -> t list -> t
 val merge: 'a tbl -> 'a tbl -> 'a tbl
 val raw_keys: t tbl -> t list
 (* val find: Path.t -> 'a tbl -> 'a *)
+
+
+val print_tbl: (Format.formatter -> t -> unit) -> (Format.formatter -> 'a -> unit) ->
+           Format.formatter -> 'a tbl -> unit
+

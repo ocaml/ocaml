@@ -357,7 +357,7 @@ and transl_structure fields cc rootpath  = function
 
 
 (* val transl_str_contracts : core_contract list -> 
-                              (Path.t, contract_declaration) Tbl.t ->
+                              (Path.t, contract_declaration) Ident.tbl ->
                               Typedtree.structure -> 
                               Typedtree.structure       *)
 
@@ -422,14 +422,12 @@ let rec transl_str_contracts contract_decls opened_contracts strs =
  | (other_str :: rem) -> other_str :: (transl_str_contracts contract_decls 
 					                    opened_contracts rem)
 	 
-(* Function trasl_contracts does a typedtree-to-typedtree transformation that 
-transforms contract declarations away i.e. embed it into the definitions. 
-Tstr_contract(ds) contains contracts declared in the current module while
-Tstr_opened_contracts(t) contains imported contracts.
-Function transl_contracts is called in driver/compile.ml *)
 
-and transl_contracts (str, cc) = 
-  let rec extract_contracts xs = 
+(* transl_toplevel_contracts is called in toplevel/toploop.ml 
+   it is for ocaml interactive tool *)
+
+let transl_toplevel_contracts env str = 
+ let rec extract_contracts xs = 
         match xs with
            | [] -> ([], Ident.empty)		 
            | (Tstr_mty_contracts(t) :: rem) ->
@@ -444,6 +442,43 @@ and transl_contracts (str, cc) =
            | (_::rem) -> extract_contracts rem
   in
   let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
+  (* Format.fprintf Format.std_formatter "I am translmod 1: %a\n" 
+   (Tbl.print Printtyp.path fmt_contract_declaration) mty_opened_contracts; *)
+  let checked_tstr_contracts = List.map (fun c -> 
+                 let new_c_desc = contract_id_in_contract 
+                                    Ident.empty
+                                    tstr_contracts 
+				    mty_opened_contracts 
+                                    (Some c.ttopctr_id)
+                                    c.ttopctr_desc in
+                 {c with ttopctr_desc = new_c_desc}) tstr_contracts in
+  transl_str_contracts checked_tstr_contracts mty_opened_contracts str 
+
+(* Function trasl_contracts does a typedtree-to-typedtree transformation that 
+transforms contract declarations away i.e. embed it into the definitions. 
+Tstr_contract(ds) contains contracts declared in the current module while
+Tstr_opened_contracts(t) contains imported contracts.
+Function transl_contracts is called in driver/compile.ml *)
+
+
+let transl_contracts (str, cc) = 
+ let rec extract_contracts xs = 
+        match xs with
+           | [] -> ([], Ident.empty)		 
+           | (Tstr_mty_contracts(t) :: rem) ->
+               let (current_contracts, mty_opened_contracts) = extract_contracts rem in 
+               (current_contracts, Ident.merge t mty_opened_contracts)
+	   | (Tstr_opened_contracts(t) :: rem) ->
+	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in
+	       (current_contracts, Ident.merge t mty_opened_contracts) 
+           | ((Tstr_contract (ds)) :: rem) -> 
+	       let (current_contracts, mty_opened_contracts) = extract_contracts rem in	       
+	       (ds@current_contracts, mty_opened_contracts)
+           | (_::rem) -> extract_contracts rem
+  in
+  let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
+  (* Format.fprintf Format.std_formatter "I am translmod 2: %a\n" 
+  (Tbl.print Printtyp.path fmt_contract_declaration) mty_opened_contracts; *)
   let checked_tstr_contracts = List.map (fun c -> 
                  let new_c_desc = contract_id_in_contract 
                                     Ident.empty
@@ -454,8 +489,7 @@ and transl_contracts (str, cc) =
                  {c with ttopctr_desc = new_c_desc}) tstr_contracts in
   (transl_str_contracts checked_tstr_contracts mty_opened_contracts str, cc)
 
-
-
+ 
 (* Update forward declaration in Translcore *)
 let _ =
   Translcore.transl_module := transl_module
@@ -789,6 +823,8 @@ let transl_toplevel_item_and_close itm =
 let transl_toplevel_definition str =
   reset_labels ();
   make_sequence transl_toplevel_item_and_close str
+
+
 
 (* Compile the initialization code for a packed library *)
 

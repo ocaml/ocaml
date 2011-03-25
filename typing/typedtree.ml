@@ -96,7 +96,8 @@ and expression_desc =
 
 and blame = 
  (*   Blame of Location.t * Path.t option *)
-  | Caller of Location.t * Path.t option * Path.t 
+  | Caller of Location.t * Path.t option (* caller *)
+                         * Path.t (* callee *)
   | Callee of Location.t * Path.t
   | UnknownBlame (* this is to blame the context of the function,
                     which is unknown at callee site *)

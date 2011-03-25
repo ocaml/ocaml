@@ -50,7 +50,7 @@ type t = {
   constrs: (Path.t * constructor_description) Ident.tbl; 
   labels: (Path.t * label_description) Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
-  contracts: (Path.t * contract_declaration) Ident.tbl;
+  contracts: (Path.t * contract_declaration) Ident.tbl; 
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
@@ -278,7 +278,7 @@ and find_cltype =
 and find_constructor = 
   find (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and find_contract =
-  find (fun env -> env.contracts) (fun sc -> sc.comp_contracts) 
+  find (fun env -> env.contracts) (fun sc -> sc.comp_contracts)
 
 let fetch_contracts env = env.contracts
 

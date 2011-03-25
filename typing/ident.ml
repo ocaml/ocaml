@@ -220,3 +220,15 @@ let rec map f = function
                                        data = f k.data;
                                        previous = k.previous}, map f r, i)
 
+
+let rec iter f = function
+    Empty -> ()
+  | Node(l, k, r, _) ->
+      iter f l; f k; iter f r
+
+let print_tbl print_key print_data ppf tbl =
+  let print_tbl ppf tbl =
+    iter (fun d -> fprintf ppf "@[<2>%a ->@ %a;@]@ " print_key d.ident print_data d.data)
+      tbl in
+  fprintf ppf "@[<hv 2>[[%a]]@]" print_tbl tbl
+
