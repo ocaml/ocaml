@@ -219,10 +219,10 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       let _ = Unused_var.warn ppf sstr in
       Typecore.reset_delayed_checks ();
-      let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
-      in
+      let (str1, sg, newenv) = Typemod.type_structure oldenv sstr Location.none in
       Typecore.force_delayed_checks ();
-      let lam = Translmod.transl_toplevel_definition str in
+      let str = Translmod.transl_toplevel_contracts newenv str1 in       
+      let lam = Translmod.transl_toplevel_definition str in 
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;

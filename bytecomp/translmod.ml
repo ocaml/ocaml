@@ -32,6 +32,9 @@ open Translclass
 let fmt_contract_declaration ppf (cdecl:Types.contract_declaration) = 
   !Oprint.out_contract_declaration ppf cdecl 
 
+let path_contract_declaration ppf (_, (cdecl:Types.contract_declaration)) = 
+  !Oprint.out_contract_declaration ppf cdecl 
+
 (* naxu's temp function ends. *)
 
 type module_coercion = Types.module_coercion
@@ -357,7 +360,7 @@ and transl_structure fields cc rootpath  = function
 
 
 (* val transl_str_contracts : core_contract list -> 
-                              (Path.t, contract_declaration) Ident.tbl ->
+                              (Path.t * contract_declaration) Ident.tbl ->
                               Typedtree.structure -> 
                               Typedtree.structure       *)
 
@@ -443,7 +446,7 @@ let transl_toplevel_contracts env str =
   in
   let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
   (* Format.fprintf Format.std_formatter "I am translmod 1: %a\n" 
-   (Tbl.print Printtyp.path fmt_contract_declaration) mty_opened_contracts; *)
+   (Tbl.print Printtyp.path path_contract_declaration) mty_opened_contracts; *)
   let checked_tstr_contracts = List.map (fun c -> 
                  let new_c_desc = contract_id_in_contract 
                                     Ident.empty
@@ -477,8 +480,6 @@ let transl_contracts (str, cc) =
            | (_::rem) -> extract_contracts rem
   in
   let (tstr_contracts, mty_opened_contracts) = extract_contracts str in
-  (* Format.fprintf Format.std_formatter "I am translmod 2: %a\n" 
-  (Tbl.print Printtyp.path fmt_contract_declaration) mty_opened_contracts; *)
   let checked_tstr_contracts = List.map (fun c -> 
                  let new_c_desc = contract_id_in_contract 
                                     Ident.empty

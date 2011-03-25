@@ -844,6 +844,10 @@ let signature ppf sg =
 let contract_declaration id ppf decl = 
   fprintf ppf "@[<v>%a@]" !Oprint.out_contract_declaration decl
 
+let print_path_contract_declaration ppf (_, (cdecl:Types.contract_declaration)) = 
+  !Oprint.out_contract_declaration ppf cdecl 
+
+
 (* -dtypedtree prints the outcometree *)
 
 let structure_item ppf x = match x with

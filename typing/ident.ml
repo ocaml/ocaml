@@ -99,6 +99,8 @@ and 'a data =
     previous: 'a data option }
 
 let empty = Empty
+let tbl_data (k: 'a data) = k.data
+let tbl_ident (k: 'a data) = k.ident
 
 (* Inline expansion of height for better speed
  * let height = function
@@ -202,6 +204,7 @@ let rec merge t1 t2 =
   | (Node(l1, d1, r1, h1), Node(l2, d2, r2, h2)) ->
       balance l1  d1 (balance (merge r1 l2) d2 r2)
 
+
 let rec raw_keys_aux stack accu = function
     Empty ->
       begin match stack with
@@ -228,7 +231,7 @@ let rec iter f = function
 
 let print_tbl print_key print_data ppf tbl =
   let print_tbl ppf tbl =
-    iter (fun d -> fprintf ppf "@[<2>%a ->@ %a;@]@ " print_key d.ident print_data d.data)
+    iter (fun d -> fprintf ppf "@[<2>%a ->@ %a;@]@ " print_key d.ident print_data d.data) 
       tbl in
   fprintf ppf "@[<hv 2>[[%a]]@]" print_tbl tbl
 

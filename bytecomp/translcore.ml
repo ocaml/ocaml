@@ -1175,6 +1175,17 @@ and fetch_contract_by_path p contract_decls =
                    end
    | _ -> false) contract_decls
 
+and find_in_ident_tbl path = 
+ function
+    Ident.Empty ->
+      raise Not_found
+  | Ident.Node(l, k, r, _) ->
+      let (p, cdecl) = (Ident.tbl_data) k in
+      let c = compare (Path.name path) (Path.name p) in
+      if c = 0 then
+        (Ident.tbl_data) k
+      else
+        find_in_ident_tbl path (if c < 0 then l else r)
 
 (* local_fun_contracts contains x:t1 in contract x:t1 -> t2.
    contract_decls contains contract declaration in the current module
@@ -1184,7 +1195,7 @@ and fetch_contract_by_path p contract_decls =
 *)
 and wrap_id_with_contract local_fun_contracts contract_decls opened_contracts 
             caller_pathop expr = 
-  let contracted_exp_desc = match expr.exp_desc with
+    let contracted_exp_desc = match expr.exp_desc with
        | Texp_ident (callee_path, value_desc) -> 
          let bl_caller = Caller (expr.exp_loc, caller_pathop, callee_path) in 
          let bl_callee = Callee (expr.exp_loc, callee_path) in     
@@ -1202,11 +1213,13 @@ and wrap_id_with_contract local_fun_contracts contract_decls opened_contracts
            requiresC c.ttopctr_desc expr bl_caller bl_callee
           with Not_found -> 
 	  try (* lookup for contracts in opened modules *)
-	   let (p, c) = Ident.find_name (Path.name callee_path) opened_contracts in 
+ (* Format.fprintf Format.std_formatter "I am translcore: %a\n" 
+  (Ident.print_tbl Ident.print Printtyp.print_path_contract_declaration) opened_contracts; *)
+	   let (p, c) = find_in_ident_tbl callee_path opened_contracts in 
              requiresC (core_contract_from_iface c.Types.ttopctr_desc) 
 		        expr bl_caller bl_callee 
  	  with Not_found -> 	    
-             (* Format.fprintf Format.std_formatter "%s" (name callee_path); *)
+            (*  Format.fprintf Format.std_formatter "Not_found: %s" (Path.name callee_path); *)
 	      expr.exp_desc
          end
        | others -> others
