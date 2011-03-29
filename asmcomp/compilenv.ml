@@ -29,6 +29,8 @@ exception Error of error
 let global_infos_table =
   (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 
+let structured_constants = ref ([] : (string * bool * Lambda.structured_constant) list)
+
 let current_unit =
   { ui_name = "";
     ui_symbol = "";
@@ -55,6 +57,7 @@ let symbolname_for_pack pack name =
       Buffer.add_string b name;
       Buffer.contents b
 
+
 let reset ?packname name =
   Hashtbl.clear global_infos_table;
   let symbol = symbolname_for_pack packname name in
@@ -66,7 +69,8 @@ let reset ?packname name =
   current_unit.ui_curry_fun <- [];
   current_unit.ui_apply_fun <- [];
   current_unit.ui_send_fun <- [];
-  current_unit.ui_force_link <- false
+  current_unit.ui_force_link <- false;
+  structured_constants := []
 
 let current_unit_infos () =
   current_unit
@@ -199,6 +203,25 @@ let write_unit_info info filename =
 let save_unit_info filename =
   current_unit.ui_imports_cmi <- Env.imported_units();
   write_unit_info current_unit filename
+
+
+
+let const_label = ref 0
+
+let new_const_label () =
+  incr const_label;
+  !const_label
+
+let new_const_symbol () =
+  incr const_label;
+  make_symbol (Some (string_of_int !const_label))
+
+let new_structured_constant cst global =
+  let lbl = new_const_symbol() in
+  structured_constants := (lbl, global, cst) :: !structured_constants;
+  lbl
+
+let structured_constants () = !structured_constants
 
 (* Error report *)
 
