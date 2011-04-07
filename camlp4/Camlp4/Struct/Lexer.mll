@@ -186,11 +186,11 @@ module Make (Token : Sig.Camlp4Token)
     let cvt_int_literal s =
       - int_of_string ("-" ^ s)
     let cvt_int32_literal s =
-      Int32.neg (Int32.of_string ("-" ^ String.sub s 0 (String.length s - 1)))
+      Int32.neg (Int32.of_string ("-" ^ s))
     let cvt_int64_literal s =
-      Int64.neg (Int64.of_string ("-" ^ String.sub s 0 (String.length s - 1)))
+      Int64.neg (Int64.of_string ("-" ^ s))
     let cvt_nativeint_literal s =
-      Nativeint.neg (Nativeint.of_string ("-" ^ String.sub s 0 (String.length s - 1)))
+      Nativeint.neg (Nativeint.of_string ("-" ^ s))
 
 
   let err error loc =
