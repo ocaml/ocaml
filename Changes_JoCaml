@@ -1,3 +1,7 @@
+- JoinPool bug: nagain was decremented twice!
+
+JoCaml 3.12.0
+
 - Corrected bug in typing : arguments of join-patterns must
   get unified, channel per channel, before compiling algebraic
   patterns in join-patterns. Reason: the compilation assumes

@@ -76,6 +76,7 @@ let rec get_vars ((vacc, asacc) as acc) p =
   | Ppat_lazy p -> get_vars acc p
   | Ppat_constraint (pp, _) -> get_vars acc pp
   | Ppat_type _ -> acc
+  | Ppat_unpack _ -> acc
 
 and get_vars_option acc po =
   match po with
@@ -214,7 +215,7 @@ and expression ppf tbl e =
   | Pexp_spawn e -> expression ppf tbl e
 (*<JOCAML*)
   | Pexp_newtype (_, e) -> expression ppf tbl e
-  | Pexp_pack (me, _) -> module_expr ppf tbl me
+  | Pexp_pack me -> module_expr ppf tbl me
   | Pexp_open (_, e) -> expression ppf tbl e
 
 and expression_option ppf tbl eo =
@@ -288,7 +289,7 @@ and module_expr ppf tbl me =
       module_expr ppf tbl me1;
       module_expr ppf tbl me2;
   | Pmod_constraint (me, _) -> module_expr ppf tbl me
-  | Pmod_unpack (e, _) -> expression ppf tbl e
+  | Pmod_unpack (e) -> expression ppf tbl e
 
 and class_declaration ppf tbl cd = class_expr ppf tbl cd.pci_expr
 

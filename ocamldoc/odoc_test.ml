@@ -22,6 +22,8 @@ type test_kind =
 
 let p = Format.fprintf
 
+module Generator =
+struct
 class string_gen =
   object(self)
     inherit Odoc_info.Scan.scanner
@@ -88,7 +90,7 @@ class string_gen =
       true
 
     method generate (module_list: Odoc_info.Module.t_module list) =
-      let oc = open_out !Odoc_info.Args.out_file in
+      let oc = open_out !Odoc_info.Global.out_file in
       fmt <- Format.formatter_of_out_channel oc;
       (
        try
@@ -106,7 +108,11 @@ class string_gen =
       close_out oc
   end
 
+  class generator =
+    let g = new string_gen in
+    object
+      method generate = g#generate
+    end
+end;;
 
-let my_generator = new string_gen
-let _ = Odoc_info.Args.set_doc_generator
-    (Some (my_generator :> Odoc_info.Args.doc_generator))
+let _ = Odoc_args.set_generator (Odoc_gen.Other (module Generator : Odoc_gen.Base))

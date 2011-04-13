@@ -1,3 +1,9 @@
+Objective Caml 3.13.0:
+----------------------
+
+- Warning 28 is now enabled by default.
+
+
 Objective Caml 3.12.0:
 ----------------------
 
@@ -44,6 +50,12 @@ Language features:
   inside the signature, removing their respective fields. Among other
   uses, this allows to merge two signatures containing identically
   named fields.
+* While fixing PR#4824, also corrected a gaping hole in the type checker,
+  which allowed instantiating separately object parameters and instance
+  variables in an interface. This hole was here since the beginning of
+  ocaml, and as a result many programs using object inheritance in a non
+  trivial way will need to be corrected. You can look at lablgtk2 for an
+  example.
 
 Compilers and toplevel:
 - Warnings are now numbered and can be switched on and off individually.
@@ -105,8 +117,12 @@ All tools:
 Bug Fixes:
 - PR#4012: Map.map and Map.mapi do not conform to specification
 - PR#4478: better error messages for type definition mismatches
+- PR#4683: labltk script uses fixed path on windows
 - PR#4742: finalisation function raising an exception blocks other finalisations
 - PR#4775: compiler crash on crazy types (temporary fix)
+- PR#4824: narrowing the type of class parameters with a module specification
+- PR#4862: relaxed value restriction and records
+- PR#4884: optional arguments do not work when Some is redefined
 - PR#4964: parenthesized names for infix functions in annot files
 - PR#4970: better error message for instance variables
 - PR#4975: spelling mistakes
@@ -117,6 +133,7 @@ Bug Fixes:
 - PR#5057: fatal typing error with local module + functor + polymorphic variant
 - Wrong type for Obj.add_offset.
 - Small problem with the representation of Int32, Int64, and Nativeint constants.
+- Use RTLD_LOCAL for native dynlink in private mode.
 
 Objective Caml 3.11.2:
 ----------------------

@@ -126,15 +126,20 @@ let increase_global_level () =
 let restore_global_level gl =
   global_level := gl
 
-(* Abbreviations without parameters *)
+(**** Whether a path points to an object type (with hidden row variable) ****)
+let is_object_type path =
+  let name =
+    match path with Path.Pident id -> Ident.name id
+    | Path.Pdot(_, s,_) -> s
+    | Path.Papply _ -> assert false
+  in name.[0] = '#'
+
+(**** Abbreviations without parameters ****)
 (* Shall reset after generalizing *)
 let simple_abbrevs = ref Mnil
 let proper_abbrevs path tl abbrev =
-  if !Clflags.principal || tl <> [] then abbrev else
-  let name = match path with Path.Pident id -> Ident.name id
-                           | Path.Pdot(_, s,_) -> s
-                           | Path.Papply _ -> assert false in
-  if name.[0] <> '#' then simple_abbrevs else abbrev
+  if !Clflags.principal || tl <> [] || is_object_type path then abbrev
+  else simple_abbrevs
 
 (**** Some type creators ****)
 
@@ -1935,9 +1940,9 @@ let rec filter_arrow env t l =
   let t = expand_head_unif env t in
   match t.desc with
     Tvar ->
-      let t1 = newvar () and t2 = newvar () in
-      let t' = newty (Tarrow (l, t1, t2, Cok)) in
-      update_level env t.level t';
+      let lv = t.level in
+      let t1 = newvar2 lv and t2 = newvar2 lv in
+      let t' = newty2 lv (Tarrow (l, t1, t2, Cok)) in
       link_type t t';
       (t1, t2)
   | Tarrow(l', t1, t2, _)
@@ -2335,6 +2340,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
           normalize_subst subst;
           if List.assq t1 !subst != t2 then raise (Unify [])
         with Not_found ->
+          if List.exists (fun (_, t) -> t == t2) !subst then raise (Unify []);
           subst := (t1, t2) :: !subst
         end
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
@@ -2355,6 +2361,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
                 normalize_subst subst;
                 if List.assq t1' !subst != t2' then raise (Unify [])
               with Not_found ->
+                if List.exists (fun (_, t) -> t == t2') !subst then raise (Unify []);
                 subst := (t1', t2') :: !subst
               end
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
@@ -2529,10 +2536,10 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
   | _ ->
       raise (Failure [])
   with
-    Failure error when trace ->
+    Failure error when trace || error = [] ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
-let match_class_types env pat_sch subj_sch =
+let match_class_types ?(trace=true) env pat_sch subj_sch =
   let type_pairs = TypePairs.create 53 in
   let old_level = !current_level in
   current_level := generic_level - 1;
@@ -2616,7 +2623,7 @@ let match_class_types env pat_sch subj_sch =
     match error with
       [] ->
         begin try
-          moregen_clty true type_pairs env patt subj;
+          moregen_clty trace type_pairs env patt subj;
           []
         with
           Failure r -> r
@@ -2658,7 +2665,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
         Vars.iter
           (fun lab (_, _, ty) ->
              let (_, _, ty') = Vars.find lab sign1.cty_vars in
-             try eqtype true type_pairs subst env ty ty' with Unify trace ->
+             try eqtype true type_pairs subst env ty' ty with Unify trace ->
                raise (Failure [CM_Val_type_mismatch
                                   (lab, expand_trace env trace)]))
           sign2.cty_vars
@@ -2670,8 +2677,6 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
     Failure error when trace ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
-(* XXX On pourrait autoriser l'instantiation du type des parametres... *)
-(* XXX Correct ? (variables de type dans parametres et corps de classe *)
 let match_class_declarations env patt_params patt_type subj_params subj_type =
   let type_pairs = TypePairs.create 53 in
   let subst = ref [] in
@@ -2758,8 +2763,14 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
             raise (Failure [CM_Type_parameter_mismatch
                                (expand_trace env trace)]))
           patt_params subj_params;
-        equal_clty false type_pairs subst env patt_type subj_type;
-        []
+        (* old code: equal_clty false type_pairs subst env patt_type subj_type; *)
+        equal_clty false type_pairs subst env
+          (Tcty_signature sign1) (Tcty_signature sign2);
+        (* Use moregeneral for class parameters, need to recheck everything to
+           keeps relationships (PR#4824) *)
+        let clty_params = List.fold_right (fun ty cty -> Tcty_fun ("*",ty,cty)) in
+        match_class_types ~trace:false env
+          (clty_params patt_params patt_type) (clty_params subj_params subj_type)
       with
         Failure r -> r
       end
@@ -2796,16 +2807,16 @@ let rec filter_visited = function
 let memq_warn t visited =
   if List.memq t visited then (warn := true; true) else false
 
-let rec lid_of_path sharp = function
+let rec lid_of_path ?(sharp="") = function
     Path.Pident id ->
       Longident.Lident (sharp ^ Ident.name id)
   | Path.Pdot (p1, s, _) ->
-      Longident.Ldot (lid_of_path "" p1, sharp ^ s)
+      Longident.Ldot (lid_of_path p1, sharp ^ s)
   | Path.Papply (p1, p2) ->
-      Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
+      Longident.Lapply (lid_of_path ~sharp p1, lid_of_path p2)
 
 let find_cltype_for_path env p =
-  let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
+  let path, cl_abbr = Env.lookup_type (lid_of_path ~sharp:"#" p) env in
   match cl_abbr.type_manifest with
     Some ty ->
       begin match (repr ty).desc with
@@ -3011,6 +3022,23 @@ let private_abbrev env path =
     decl.type_private = Private && decl.type_manifest <> None
   with Not_found -> false
 
+(* check list inclusion, assuming lists are ordered *)
+let rec included nl1 nl2 =
+  match nl1, nl2 with
+    (a::nl1', b::nl2') ->
+      if a = b then included nl1' nl2' else
+      a > b && included nl1 nl2'
+  | ([], _) -> true
+  | (_, []) -> false
+
+let rec extract_assoc nl1 nl2 tl2 =
+  match (nl1, nl2, tl2) with
+    (a::nl1', b::nl2, t::tl2) ->
+      if a = b then t :: extract_assoc nl1' nl2 tl2
+      else extract_assoc nl1 nl2 tl2
+  | ([], _, _) -> []
+  | _ -> assert false
+
 let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
@@ -3081,6 +3109,11 @@ let rec subtype_rec env trace t1 t2 cstrs =
         with Unify _ ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
+    | (Tpackage (p1, nl1, tl1), Tpackage (p2, nl2, tl2))
+      when Path.same p1 p2 && included nl2 nl1 ->
+        List.map2 (fun t1 t2 -> (trace, t1, t2, !univar_pairs))
+          (extract_assoc nl2 nl1 tl1) tl2
+        @ cstrs
     | (_, _) ->
         (trace, t1, t2, !univar_pairs)::cstrs
   end
@@ -3206,15 +3239,6 @@ let unalias ty =
       newty2 ty.level (Tobject (unalias_object ty, nm))
   | _ ->
       newty2 ty.level ty.desc
-
-let unroll_abbrev id tl ty =
-  let ty = repr ty in
-  if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl) then
-    ty
-  else
-    let ty' = newty2 ty.level ty.desc in
-    link_type ty (newty2 ty.level (Tconstr (Path.Pident id, tl, ref Mnil)));
-    ty'
 
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
@@ -3387,6 +3411,16 @@ let nondep_type env id ty =
   with Not_found ->
     clear_hash ();
     raise Not_found
+
+let unroll_abbrev id tl ty =
+  let ty = repr ty and path = Path.Pident id in
+  if (ty.desc = Tvar) || (List.exists (deep_occur ty) tl)
+  || is_object_type path then
+    ty
+  else
+    let ty' = newty2 ty.level ty.desc in
+    link_type ty (newty2 ty.level (Tconstr (path, tl, ref Mnil)));
+    ty'
 
 (* Preserve sharing inside type declarations. *)
 let nondep_type_decl env mid id is_covariant decl =

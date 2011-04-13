@@ -64,7 +64,7 @@ let rec pattern_vars pat =
       pattern_vars pat1 @ pattern_vars pat2
   | Ppat_lazy pat -> pattern_vars pat
   | Ppat_any | Ppat_constant _ | Ppat_construct _ | Ppat_variant _
-  | Ppat_type _ ->
+  | Ppat_type _ | Ppat_unpack _ ->
       []
 
 let pattern_name pat =

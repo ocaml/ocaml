@@ -93,14 +93,19 @@ let mkuminus name arg =
       mkexp(Pexp_constant(Const_int64(Int64.neg n)))
   | "-", Pexp_constant(Const_nativeint n) ->
       mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
-  | _, Pexp_constant(Const_float f) ->
+  | ("-" | "-."), Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
 let mkuplus name arg =
-  match name, arg.pexp_desc with
-  | "+", desc -> mkexp desc
+  let desc = arg.pexp_desc in
+  match name, desc with
+  | "+", Pexp_constant(Const_int _)
+  | "+", Pexp_constant(Const_int32 _)
+  | "+", Pexp_constant(Const_int64 _)
+  | "+", Pexp_constant(Const_nativeint _)
+  | ("+" | "+."), Pexp_constant(Const_float _) -> mkexp desc
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
 
@@ -455,10 +460,24 @@ module_expr:
       { $2 }
   | LPAREN module_expr error
       { unclosed "(" 1 ")" 3 }
+  | LPAREN VAL expr RPAREN
+      { mkmod(Pmod_unpack $3) }
   | LPAREN VAL expr COLON package_type RPAREN
-      { mkmod(Pmod_unpack($3, $5)) }
+      { mkmod(Pmod_unpack(
+              ghexp(Pexp_constraint($3, Some(ghtyp(Ptyp_package $5)), None)))) }
+  | LPAREN VAL expr COLON package_type COLONGREATER package_type RPAREN
+      { mkmod(Pmod_unpack(
+              ghexp(Pexp_constraint($3, Some(ghtyp(Ptyp_package $5)),
+                                    Some(ghtyp(Ptyp_package $7)))))) }
+  | LPAREN VAL expr COLONGREATER package_type RPAREN
+      { mkmod(Pmod_unpack(
+              ghexp(Pexp_constraint($3, None, Some(ghtyp(Ptyp_package $5)))))) }
   | LPAREN VAL expr COLON error
       { unclosed "(" 1 ")" 5 }
+  | LPAREN VAL expr COLONGREATER error
+      { unclosed "(" 1 ")" 5 }
+  | LPAREN VAL expr error
+      { unclosed "(" 1 ")" 4 }
 ;
 structure:
     structure_tail                              { $1 }
@@ -1036,8 +1055,11 @@ simple_expr:
       { mkexp(Pexp_override []) }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+  | LPAREN MODULE module_expr RPAREN
+      { mkexp (Pexp_pack $3) }
   | LPAREN MODULE module_expr COLON package_type RPAREN
-      { mkexp (Pexp_pack ($3, $5)) }
+      { mkexp (Pexp_constraint (ghexp (Pexp_pack $3),
+                                Some (ghtyp (Ptyp_package $5)), None)) }
   | LPAREN MODULE module_expr COLON error
       { unclosed "(" 1 ")" 5 }
 ;
@@ -1206,6 +1228,12 @@ simple_pattern:
       { mkpat(Ppat_constraint($2, $4)) }
   | LPAREN pattern COLON core_type error
       { unclosed "(" 1 ")" 5 }
+  | LPAREN MODULE UIDENT RPAREN
+      { mkpat(Ppat_unpack $3) }
+  | LPAREN MODULE UIDENT COLON package_type RPAREN
+      { mkpat(Ppat_constraint(mkpat(Ppat_unpack $3),ghtyp(Ptyp_package $5))) }
+  | LPAREN MODULE UIDENT COLON package_type error
+      { unclosed "(" 1 ")" 6 }
 ;
 
 pattern_comma_list:

@@ -1,5 +1,6 @@
 ocamldep
 ocamldep.opt
+ocamldep.bak
 ocamlprof
 opnames.ml
 dumpobj
@@ -22,3 +23,5 @@ scrapelabels
 addlabels
 myocamlbuild_config.ml
 objinfo_helper
+*.cm*
+*.o

@@ -269,6 +269,10 @@ opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 otherlibrariesopt \
 	 ocamllex.opt ocamltoolsopt.opt camlp4opt ocamldoc.opt
 
+base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
+	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
+	 otherlibrariesopt
+
 
 # Installation
 install:
@@ -705,6 +709,7 @@ ocamldebugger:
 
 camlp4out camlp4opt camlp4optopt:
 camlp4opt:
+
 
 # Check that the stack limit is reasonable.
 

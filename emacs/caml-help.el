@@ -199,7 +199,7 @@
               (insert-file-contents file))
           (message "Module %s not found" module))
         (while (re-search-forward
-                "\\([ \t]*val\\|let\\|external\\|  [|]\\) \\([a-zA-Z_0-9'][a-zA-Z_0-9']*\\)\\|^  *[{]* \\([a-z_][A-Za-z_0-9]*\\) : [^;\n][^;\n]*;"
+                "\\([ \t]*val\\|let\\|exception\\|external\\|  [|]\\) \\([a-zA-Z_0-9'][a-zA-Z_0-9']*\\)\\|^  *[{]* \\([a-z_][A-Za-z_0-9]*\\) : [^;\n][^;\n]*;"
                 (point-max) 'move)
           (pop-to-buffer (current-buffer))
           (setq alist (cons (or (match-string 2) (match-string 3)) alist)))
@@ -606,14 +606,18 @@ current buffer using \\[ocaml-qualified-identifier]."
       )
     (if (stringp entry)
         (let ((here (point))
+              (regex (regexp-quote entry))
               (case-fold-search nil))
           (goto-char (point-min))
           (if (or (re-search-forward
                    (concat "\\(val\\|exception\\|type\\|external\\|[|{;]\\) +"
-                           (regexp-quote entry))
+                           regex)
+                   ;; (concat "\\(val\\|exception\\|external\\) +\\("
+                   ;;         regex "\\|( *" regex " *)\\)")
                    (point-max) t)
                   (re-search-forward
-                   (concat "type [^{]*{[^}]*" (regexp-quote entry) " :")
+                   (concat "type [^{]*{[^}]*" regex " :")
+                   ;; (concat "\\(type\\|[|{;]\\) +" regex)
                    (point-max) t)
                   (progn
                     (if (window-live-p window) (select-window window))
@@ -621,7 +625,7 @@ current buffer using \\[ocaml-qualified-identifier]."
                            entry module))
                   ;; (search-forward entry (point-max) t)
                   )
-              (recenter 1)
+              (ocaml-help-show -1)
             (progn
               (message "Help for entry %s not found in module %s"
                        entry module)
@@ -656,6 +660,7 @@ Prefix arg 4 prompts for Module and identifier instead of guessing values
 from the possition of point in the current buffer.
 "
   (interactive "p")
+  (delete-overlay ocaml-help-ovl)
   (let ((module) (entry) (module-entry))
     (cond
      ((= arg 4)
@@ -669,7 +674,8 @@ from the possition of point in the current buffer.
              (mapcar 'list
                      (ocaml-module-symbols
                       (assoc module (ocaml-module-alist))))))
-        (setq entry (completing-read "Value: " symbols nil t)))
+        (setq entry
+              (completing-read (format "Value: %s." module) symbols nil t)))
       (if (string-equal entry "") (setq entry nil))
       )
      (t
@@ -740,6 +746,22 @@ buffer positions."
 (defvar ocaml-link-map (make-sparse-keymap))
 (define-key ocaml-link-map [mouse-2] 'ocaml-link-goto)
 
+(defvar ocaml-help-ovl (make-overlay 1 1))
+(make-face 'ocaml-help-face)
+(set-face-doc-string 'ocaml-help-face
+                     "face for hilighting expressions and types")
+(if (not (face-differs-from-default-p 'ocaml-help-face))
+    (set-face-background 'ocaml-help-face "#88FF44"))
+(overlay-put ocaml-help-ovl 'face 'ocaml-help-face)
+
+(defun ocaml-help-show (arg)
+  (let ((right (point))
+        (left (progn (forward-word arg) (point))))
+    (goto-char right)
+    (move-overlay ocaml-help-ovl left right (current-buffer))
+    (recenter 1)
+    ))
+
 (defun ocaml-link-goto (click)
   (interactive "e")
   (let* ((pos (caml-event-point-start click))
@@ -761,7 +783,7 @@ buffer positions."
       (if (setq link (assoc link (cdr ocaml-links)))
           (progn
             (goto-char (cadr link))
-            (recenter 1)))
+            (ocaml-help-show 1)))
       (if (window-live-p window) (select-window window))
       )))
 

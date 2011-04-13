@@ -934,7 +934,9 @@ rule main = parse
         ERROR 
 =======
         let s = Lexing.lexeme lexbuf in
-        let tag = Odoc_misc.no_blanks s in
+        let len = String.length s in
+        (* remove this starting '{' *)
+        let tag = Odoc_misc.no_blanks (String.sub s 1 (len - 1)) in
         CUSTOM tag
 >>>>>>> .fusion-droit.r10497
     }

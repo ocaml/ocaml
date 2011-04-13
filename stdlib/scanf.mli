@@ -99,39 +99,51 @@ type scanbuf = in_channel;;
     Note: a scanning action may often require to examine one character in
     advance; when this ``lookahead'' character does not belong to the token
     read, it is stored back in the scanning buffer and becomes the next
-    character read. *)
+    character yet to be read. *)
 
 val stdin : in_channel;;
-(** The standard input notion for the module [Scanf].
-    [stdin] is equivalent to [Scanning.from_channel Pervasives.stdin].
+(** The standard input notion for the [Scanf] module.
+    [Scanning.stdin] is the formatted input channel attached to
+    [Pervasives.stdin].
 
-    Note: when input is read interactively from [stdin], the newline character
-    that triggers the evaluation is incorporated in the input; thus, scanning
-    specifications must properly skip this character (simply add a ['\n']
-    as the last character of the format string).
+    Note: in the interactive system, when input is read from [stdin], the
+    newline character that triggers the evaluation is incorporated in the
+    input; thus, the scanning specifications must properly skip this
+    additional newline character (for instance, simply add a ['\n'] as the
+    last character of the format string).
     @since 3.12.0
 *)
 
-val open_in : string -> in_channel;;
-(** Bufferized file reading in text mode. The efficient and usual
-    way to scan text mode files (in effect, [from_file] returns a
-    scanning buffer that reads characters in large chunks, rather than one
-    character at a time as buffers returned by [from_channel] below do).
-    [Scanning.from_file fname] returns a scanning buffer which reads
-    from the given file [fname] in text mode.
+type file_name = string;;
+(** A convenient alias to designate a file name.
+    @since 3.13.0
+*)
+
+val open_in : file_name -> in_channel;;
+(** [Scanning.open_in fname] returns a formatted input channel for bufferized
+    reading in text mode of file [fname].
+
+    Note:
+    [open_in] returns a formatted input channel that efficiently reads
+    characters in large chunks; in contrast, [from_channel] below returns
+    formatted input channels that must read one character at a time, leading
+    to a much slower scanning rate.
     @since 3.12.0
 *)
 
-val open_in_bin : string -> in_channel;;
-(** Bufferized file reading in binary mode. @since 3.12.0 *)
+val open_in_bin : file_name -> in_channel;;
+(** [Scanning.open_in_bin fname] returns a formatted input channel for bufferized
+    reading in binary mode of file [fname].
+    @since 3.12.0
+*)
 
 val close_in : in_channel -> unit;;
-(** Close the [Pervasives.input_channel] associated with the given
-  [Scanning.in_channel].
+(** Closes the [Pervasives.input_channel] associated with the given
+  [Scanning.in_channel] formatted input channel.
   @since 3.12.0
 *)
 
-val from_file : string -> in_channel;;
+val from_file : file_name -> in_channel;;
 (** An alias for [open_in] above. *)
 val from_file_bin : string -> in_channel;;
 (** An alias for [open_in_bin] above. *)
@@ -143,8 +155,8 @@ val from_string : string -> in_channel;;
     The end-of-input condition is set when the end of the string is reached. *)
 
 val from_function : (unit -> char) -> in_channel;;
-(** [Scanning.from_function f] returns a scanning buffer with the given
-    function as its reading method.
+(** [Scanning.from_function f] returns a formatted input channel with the
+    given function as its reading method.
 
     When scanning needs one more character, the given function is called.
 
@@ -165,7 +177,7 @@ val beginning_of_input : in_channel -> bool;;
     the given formatted input channel. *)
 
 val name_of_input : in_channel -> string;;
-(** [Scanning.file_name_of_input ic] returns the name of the character source
+(** [Scanning.name_of_input ic] returns the name of the character source
     for the formatted input channel [ic].
     @since 3.09.0
 *)
@@ -223,7 +235,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** The format is a character string which contains three types of
     objects:
     - plain characters, which are simply matched with the characters of the
-      input (with a special case for {!Scanf.space} and line feed),
+      input (with a special case for space and line feed, see {!Scanf.space}),
     - conversion specifications, each of which causes reading and conversion of
       one argument for the function [f] (see {!Scanf.conversion}),
     - scanning indications to specify boundaries of tokens
@@ -264,11 +276,11 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [x] or [X]: reads an unsigned hexadecimal integer ([[0-9a-f]+] or [[0-9A-F]+]).
     - [o]: reads an unsigned octal integer ([[0-7]+]).
     - [s]: reads a string argument that spreads as much as possible, until the
-      following bounding condition holds:
-      - a whitespace has been found (see {!Scanf.space}),
-      - a scanning indication (see scanning {!Scanf.indication}) has been
-        encountered,
-      - the end-of-input has been reached.
+      following bounding condition holds: {ul
+      {- a whitespace has been found (see {!Scanf.space}),}
+      {- a scanning indication (see scanning {!Scanf.indication}) has been
+         encountered,}
+      {- the end-of-input has been reached.}}
       Hence, this conversion always succeeds: it returns an empty
       string, if the bounding condition holds when the scan begins.
     - [S]: reads a delimited string argument (delimiters and special
@@ -314,23 +326,27 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       The format string read must have the same type as the format string
       specification [fmt].
       For instance, ["%{ %i %}"] reads any format string that can read a value of
-      type [int]; hence [Scanf.sscanf "fmt:\"number is %u\"" "fmt:%{%i%}"]
-      succeeds and returns the format string ["number is %u"].
+      type [int]; hence, if [s] is the string ["fmt:\"number is %u\""], then
+      [Scanf.sscanf s "fmt: %{%i%}"] succeeds and returns the format string
+      ["number is %u"].
     - [\( fmt %\)]: scanning format substitution.
-      Reads a format string to read with it instead of [fmt].
+      Reads a format string and then goes on scanning with the format string
+      read, instead of using [fmt].
       The format string read must have the same type as the format string
-      specification [fmt] that is replaces.
+      specification [fmt] that it replaces.
       For instance, ["%( %i %)"] reads any format string that can read a value
       of type [int].
       Returns the format string read, and the value read using the format
       string read.
-      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%(%i%)"
-                (fun fmt i -> fmt, i)] evaluates to [("%4d", 1234)].
+      Hence, if [s] is the string ["\"%4d\"1234.00"], then
+      [Scanf.sscanf s "%(%i%)" (fun fmt i -> fmt, i)] evaluates to
+      [("%4d", 1234)].
       If the special flag [_] is used, the conversion discards the
       format string read and only returns the value read with the format
       string read.
-      Hence, [Scanf.sscanf "\"%4d\"1234.00" "%_(%i%)"] is simply
-      equivalent to [Scanf.sscanf "1234.00" "%4d"].
+      Hence, if [s] is the string ["\"%4d\"1234.00"], then
+      [Scanf.sscanf s "%_(%i%)"] is simply equivalent to
+      [Scanf.sscanf "1234.00" "%4d"].
     - [l]: returns the number of lines read so far.
     - [n]: returns the number of characters read so far.
     - [N] or [L]: returns the number of tokens read so far.
@@ -341,8 +357,8 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     Following the [%] character that introduces a conversion, there may be
     the special flag [_]: the conversion that follows occurs as usual,
     but the resulting value is discarded.
-    For instance, if [f] is the function [fun i -> i + 1], then
-    [Scanf.sscanf "x = 1" "%_s = %i" f] returns [2].
+    For instance, if [f] is the function [fun i -> i + 1], and [s] is the
+    string ["x = 1"], then [Scanf.sscanf s "%_s = %i" f] returns [2].
 
     The field width is composed of an optional integer literal
     indicating the maximal width of the token to read.
@@ -419,7 +435,7 @@ val fscanf : Pervasives.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     Warning: since all formatted input functions operate from a {e formatted
     input channel}, be aware that each [fscanf] invocation will operate with a
     formatted input channel reading from the given channel. This extra level
-    of bufferization can lead to strange scanning behaviour if you use low
+    of bufferization can lead to a strange scanning behaviour if you use low
     level primitives on the channel (reading characters, seeking the reading
     position, and so on).
 
@@ -439,7 +455,7 @@ val kscanf :
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
     [ef] that is called in case of error: if the scanning process or
     some conversion fails, the scanning function aborts and calls the
-    error handling function [ef] with the scanning buffer and the
+    error handling function [ef] with the formatted input channel and the
     exception that aborted the scanning process as arguments. *)
 
 (** {6 Reading format strings from input} *)

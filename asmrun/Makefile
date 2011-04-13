@@ -34,12 +34,18 @@ OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
 POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
-all: libasmrun.a all-$(PROFILING)
+all: libasmrun.a all-$(RUNTIMED) all-$(PROFILING)
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
 	ar rc libasmrun.a $(OBJS)
 	$(RANLIB) libasmrun.a
+
+all-noruntimed:
+.PHONY: all-noruntimed
+
+all-runtimed: libasmrund.a
+.PHONY: all-runtimed
 
 libasmrund.a: $(DOBJS)
 	rm -f libasmrund.a
@@ -55,11 +61,19 @@ libasmrunp.a: $(POBJS)
 	ar rc libasmrunp.a $(POBJS)
 	$(RANLIB) libasmrunp.a
 
-install: install-default install-$(PROFILING)
+install: install-default install-$(RUNTIMED) install-$(PROFILING)
 
 install-default:
 	cp libasmrun.a $(LIBDIR)/libasmrun.a
 	cd $(LIBDIR); $(RANLIB) libasmrun.a
+
+install-noruntimed:
+.PHONY: install-noruntimed
+
+install-runtimed:
+	cp libasmrund.a $(LIBDIR)/libasmrund.a
+	cd $(LIBDIR); $(RANLIB) libasmrund.a
+.PHONY: install-runtimed
 
 install-noprof:
 	rm -f $(LIBDIR)/libasmrunp.a; ln -s libasmrun.a $(LIBDIR)/libasmrunp.a
@@ -164,16 +178,12 @@ clean::
 	$(ASPP) -DSYS_$(SYSTEM) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
 .c.d.o:
-	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
-	$(CC) -c $(DFLAGS) $<
-	mv $*.o $*.d.o
-	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+	ln -s -f $*.c $*.d.c
+	$(CC) -c $(DFLAGS) $*.d.c
 
 .c.p.o:
-	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
-	$(CC) -c $(PFLAGS) $<
-	mv $*.o $*.p.o
-	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+	ln -s -f $*.c $*.p.c
+	$(CC) -c $(PFLAGS) $*.p.c
 
 .s.o:
 	$(ASPP) -DSYS_$(SYSTEM) -o $*.o $*.s

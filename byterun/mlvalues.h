@@ -250,6 +250,9 @@ CAMLextern void caml_Store_double_val (value,double);
   double caml__temp_d = (d); \
   Store_double_val((value)((double *) (v) + caml__temp_i), caml__temp_d); \
 }while(0)
+CAMLextern mlsize_t caml_array_length (value);   /* size in items */
+CAMLextern int caml_is_double_array (value);   /* 0 is false, 1 is true */
+
 
 /* Custom blocks.  They contain a pointer to a "method suite"
    of functions (for finalization, comparison, hashing, etc)

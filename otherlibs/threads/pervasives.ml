@@ -55,6 +55,7 @@ external (||) : bool -> bool -> bool = "%sequor"
 (* Integer operations *)
 
 external (~-) : int -> int = "%negint"
+external (~+) : int -> int = "%identity"
 external succ : int -> int = "%succint"
 external pred : int -> int = "%predint"
 external (+) : int -> int -> int = "%addint"
@@ -81,6 +82,7 @@ let max_int = min_int - 1
 (* Floating-point operations *)
 
 external (~-.) : float -> float = "%negfloat"
+external (~+.) : float -> float = "%identity"
 external (+.) : float -> float -> float = "%addfloat"
 external (-.) : float -> float -> float = "%subfloat"
 external ( *. ) : float -> float -> float = "%mulfloat"
@@ -512,7 +514,8 @@ let (( ^^ ) :
       ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
       ('a, 'b, 'c, 'd, 'g, 'h) format6) =
   fun fmt1 fmt2 ->
-    string_to_format (format_to_string fmt1 ^ format_to_string fmt2);;
+    string_to_format (format_to_string fmt1 ^ "%," ^ format_to_string fmt2)
+;;
 
 let string_of_format fmt =
   let s = format_to_string fmt in
@@ -520,7 +523,6 @@ let string_of_format fmt =
   let r = string_create l in
   string_blit s 0 r 0 l;
   r
-
 
 (* Miscellaneous *)
 

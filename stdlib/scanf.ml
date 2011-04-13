@@ -22,6 +22,8 @@ module type SCANNING = sig
 
   type scanbuf = in_channel;;
 
+  type file_name = string;;
+
   val stdin : in_channel;;
   (* The scanning buffer reading from [Pervasives.stdin].
       [stdib] is equivalent to [Scanning.from_channel Pervasives.stdin]. *)
@@ -104,15 +106,15 @@ module type SCANNING = sig
   (* [Scanning.name_of_input ib] returns the name of the character
       source for input buffer [ib]. *)
 
-  val open_in : string -> scanbuf;;
-  val open_in_bin : string -> scanbuf;;
-  val from_file : string -> scanbuf;;
-  val from_file_bin : string -> scanbuf;;
-  val from_string : string -> scanbuf;;
-  val from_function : (unit -> char) -> scanbuf;;
-  val from_channel : Pervasives.in_channel -> scanbuf;;
+  val open_in : file_name -> in_channel;;
+  val open_in_bin : file_name -> in_channel;;
+  val from_file : file_name -> in_channel;;
+  val from_file_bin : file_name -> in_channel;;
+  val from_string : string -> in_channel;;
+  val from_function : (unit -> char) -> in_channel;;
+  val from_channel : Pervasives.in_channel -> in_channel;;
 
-  val close_in : scanbuf -> unit;;
+  val close_in : in_channel -> unit;;
 
 end
 ;;
@@ -141,6 +143,8 @@ module Scanning : SCANNING = struct
   ;;
 
   type scanbuf = in_channel;;
+
+  type file_name = string;;
 
   let null_char = '\000';;
 

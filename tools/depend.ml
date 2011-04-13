@@ -118,6 +118,7 @@ let rec add_pattern bv pat =
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type (li) -> add bv li
   | Ppat_lazy p -> add_pattern bv p
+  | Ppat_unpack _ -> ()
 
 let rec add_expr bv exp =
   match exp.pexp_desc with
@@ -169,7 +170,7 @@ let rec add_expr bv exp =
   | Pexp_def (d, e) ->
       List.iter (add_joinautomaton bv) d ; add_expr bv e
   | Pexp_newtype (_, e) -> add_expr bv e
-  | Pexp_pack (m, pt) -> add_package_type bv pt; add_module bv m
+  | Pexp_pack m -> add_module bv m
   | Pexp_open (m, e) -> addmodule bv m; add_expr bv e
 
 and add_joinautomaton bv jauto =
@@ -244,8 +245,7 @@ and add_module bv modl =
       add_module bv mod1; add_module bv mod2
   | Pmod_constraint(modl, mty) ->
       add_module bv modl; add_modtype bv mty
-  | Pmod_unpack(e, pt) ->
-      add_package_type bv pt;
+  | Pmod_unpack(e) ->
       add_expr bv e
 
 and add_structure bv item_list =

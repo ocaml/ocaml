@@ -98,7 +98,7 @@ FLEXLINK=flexlink -merge-manifest
 FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe
+MKEXE=$(FLEXLINK) -exe -link /STACK:16777216
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### How to build a static library

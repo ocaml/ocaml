@@ -79,6 +79,7 @@ and pattern_desc =
   | Ppat_constraint of pattern * core_type
   | Ppat_type of Longident.t
   | Ppat_lazy of pattern
+  | Ppat_unpack of string
 
 type expression =
   { pexp_desc: expression_desc;
@@ -116,7 +117,7 @@ and expression_desc =
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
   | Pexp_newtype of string * expression
-  | Pexp_pack of module_expr * package_type
+  | Pexp_pack of module_expr
   | Pexp_open of Longident.t * expression
 (*> JOCAML *)
   | Pexp_spawn of expression
@@ -272,7 +273,7 @@ and module_expr_desc =
   | Pmod_functor of string * module_type * module_expr
   | Pmod_apply of module_expr * module_expr
   | Pmod_constraint of module_expr * module_type
-  | Pmod_unpack of expression * package_type
+  | Pmod_unpack of expression
 
 and structure = structure_item list
 

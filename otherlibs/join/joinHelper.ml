@@ -12,6 +12,16 @@
 
 (* $Id$ *)
 
+open Printf
+
+(* Error *)
+type error =
+  | Magic     (** Magic number mismatch *)
+  | Connect   (** Connection cannot be established *)
+
+exception Error of (error * string)
+
+let error e = raise (Error e)
 
 (* Fork utilities *)
 
@@ -174,25 +184,30 @@ let exit_at_fail_with_code c =
 
 let exit_at_fail = exit_at_fail_with_code 0
 
-exception Invalid_magic of string * string
-
 let rec get_site n addr =
   try Join.Site.there addr with
-  | Join.Exit -> raise Join.Exit
-  | Failure _ as e ->
+  | Join.Exit ->
+      error (Connect,"remote site is dead")
+  | Failure _ ->
       if n > 1 then begin
 	Thread.delay 0.5 ; get_site (n-1) addr
-      end else raise e
+      end else
+      error (Connect,"remote site is absent")
+        
 
 let check_magic ns cfg =
   let lookup_magic = lookup_times ~-1 1.0 in
   let magic : string = lookup_magic ns cfg.magic_id in
   if magic <> cfg.magic_value then
-    raise (Invalid_magic (cfg.magic_value, magic))
+    error (Magic,sprintf "%s <> %s" cfg.magic_value magic)
   
+let get_inet_addr host =
+  try (Unix.gethostbyname host).Unix.h_addr_list.(0)
+  with Not_found ->
+    error (Connect, sprintf "unknown host: %s" host)
 
 let connect cfg =
-  let inet_addr = (Unix.gethostbyname cfg.host).Unix.h_addr_list.(0) in
+  let inet_addr = get_inet_addr cfg.host in
   let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
   let server_site = get_site 128 server_addr in
   let ns = Join.Ns.of_site server_site in
@@ -215,10 +230,11 @@ let init_client_with_lookup ?(at_fail=do_nothing_at_fail) ?(lookup=(lookup_times
 (* Server-related functions *)
 
 let listen cfg =
-  let inet_addr = (Unix.gethostbyname cfg.host).Unix.h_addr_list.(0) in
+  let inet_addr = get_inet_addr cfg.host in
   let server_addr = Unix.ADDR_INET (inet_addr, cfg.port) in
   Join.Ns.register Join.Ns.here cfg.magic_id (cfg.magic_value : string) ;
-  Join.Site.listen server_addr;
+  begin try Join.Site.listen server_addr;
+  with Failure msg -> error (Connect,msg) end ;
   ()
 
 let init_server cfg =

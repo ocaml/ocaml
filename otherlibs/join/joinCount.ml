@@ -11,7 +11,7 @@ module Collector = struct
 end
 
 module Down = struct
-  type ('a,'b) t =
+  type t =
       { tick : unit Join.chan ;
       wait : unit -> unit ; }
 

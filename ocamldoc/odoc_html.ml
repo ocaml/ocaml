@@ -23,6 +23,12 @@ open Exception
 open Class
 open Module
 
+let with_parameter_list = ref false
+let css_style = ref None
+let index_only = ref false
+let colorize_code = ref false
+let html_short_functors = ref false
+
 
 (** The functions used for naming files and html marks.*)
 module Naming =
@@ -266,7 +272,7 @@ class virtual text =
     method html_of_Raw b s = bs b (self#escape s)
 
     method html_of_Code b s =
-      if !Args.colorize_code then
+      if !colorize_code then
         self#html_of_code b ~with_pre: false s
       else
 	(
@@ -304,7 +310,7 @@ class virtual text =
 	      | Some last -> String.sub s first ((last-first)+1)
 	in
 	fun b s ->
-      if !Args.colorize_code then
+      if !colorize_code then
 	(
          bs b "<pre></pre>";
 	 self#html_of_code b (remove_useless_newlines s);
@@ -455,23 +461,23 @@ class virtual text =
       bs b "<br>\n<table class=\"indextable\">\n";
       List.iter
         (fun name ->
-	  bs b "<tr><td>";
-	  (
-	   try
-	     let m =
-	       List.find (fun m -> m.m_name = name) self#list_modules
-	     in
-	     let (html, _) = Naming.html_files m.m_name in
-	     bp b "<a href=\"%s\">%s</a></td>" html m.m_name;
-	     bs b "<td>";
-	     self#html_of_info_first_sentence b m.m_info;
-	   with
-	     Not_found ->
-	       Odoc_messages.pwarning (Odoc_messages.cross_module_not_found name);
-	       bp b "%s</td><td>" name
-	  );
-	  bs b "</td></tr>\n"
-	)
+          bs b "<tr><td>";
+          (
+           try
+             let m =
+               List.find (fun m -> m.m_name = name) self#list_modules
+             in
+             let (html, _) = Naming.html_files m.m_name in
+             bp b "<a href=\"%s\">%s</a></td>" html m.m_name;
+             bs b "<td>";
+             self#html_of_info_first_sentence b m.m_info;
+           with
+             Not_found ->
+               Odoc_global.pwarning (Odoc_messages.cross_module_not_found name);
+               bp b "%s</td><td>" name
+          );
+          bs b "</td></tr>\n"
+        )
         l;
       bs b "</table>\n</body>\n</html>";
 
@@ -714,6 +720,8 @@ let newline_to_indented_br s =
   done;
   Buffer.contents b
 
+module Generator =
+  struct
 (** This class is used to create objects which can generate a simple html documentation. *)
 class html =
   object (self)
@@ -814,6 +822,12 @@ class html =
        when printing a module type. *)
     val mutable known_modules_names = StringSet.empty
 
+    method index_prefix =
+      if !Odoc_global.out_file = Odoc_messages.default_out_file then
+        "index"
+      else
+        Filename.basename !Odoc_global.out_file
+
     (** The main file. *)
     method index = "index.html"
     (** The file for the index of values. *)
@@ -869,22 +883,22 @@ class html =
 
     (** Init the style. *)
     method init_style =
-      (match !Args.css_style with
+      (match !css_style with
         None ->
           let default_style = String.concat "\n" default_style_options in
           (
            try
-	     let file = Filename.concat !Args.target_dir style_file in
-	     if Sys.file_exists file then
-	       Odoc_info.verbose (Odoc_messages.file_exists_dont_generate file)
-	     else
-	       (
-		let chanout = open_out file in
-		output_string chanout default_style ;
-		flush chanout ;
-		close_out chanout;
-		Odoc_info.verbose (Odoc_messages.file_generated file)
-	       )
+             let file = Filename.concat !Global.target_dir style_file in
+             if Sys.file_exists file then
+               Odoc_info.verbose (Odoc_messages.file_exists_dont_generate file)
+             else
+               (
+                let chanout = open_out file in
+                output_string chanout default_style ;
+                flush chanout ;
+                close_out chanout;
+                Odoc_info.verbose (Odoc_messages.file_generated file)
+               )
            with
              Sys_error s ->
                prerr_endline s ;
@@ -896,7 +910,7 @@ class html =
       style <- "<link rel=\"stylesheet\" href=\""^style_file^"\" type=\"text/css\">\n"
 
     (** Get the title given by the user *)
-    method title = match !Args.title with None -> "" | Some t -> self#escape t
+    method title = match !Global.title with None -> "" | Some t -> self#escape t
 
     (** Get the title given by the user completed with the given subtitle. *)
     method inner_title s =
@@ -1185,10 +1199,21 @@ class html =
 	  bs b (self#create_fully_qualified_module_idents_links father a.ma_name);
 	  bs b "</code>"
       | Module_functor (p, k) ->
-	  bs b "<div class=\"sig_block\">";
-	  self#html_of_module_parameter b father p;
-	  self#html_of_module_kind b father ?modu k;
-	  bs b "</div>"
+          if !html_short_functors then
+            bs b " "
+          else
+            bs b "<div class=\"sig_block\">";
+          self#html_of_module_parameter b father p;
+          (
+           match k with
+             Module_functor _ -> ()
+           | _ when !html_short_functors ->
+               bs b ": "
+           | _ -> ()
+          );
+          self#html_of_module_kind b father ?modu k;
+          if not !html_short_functors then
+            bs b "</div>"
       | Module_apply (k1, k2) ->
 	  (* TODO: l'application n'est pas correcte dans un .mli.
 	     Que faire ? -> afficher le module_type du typedtree  *)
@@ -1223,6 +1248,12 @@ class html =
 
 
     method html_of_module_parameter b father p =
+      let (s_functor,s_arrow) =
+        if !html_short_functors then
+          "", ""
+        else
+          "functor ", "-> "
+      in
       self#html_of_text b
 	[
 	  Code "functor (";
@@ -1319,7 +1350,7 @@ class html =
          None -> bs b (Name.simple v.val_name)
        | Some c ->
            let file = Naming.file_code_value_complete_target v in
-           self#output_code v.val_name (Filename.concat !Args.target_dir file) c;
+           self#output_code v.val_name (Filename.concat !Global.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple v.val_name)
       );
       bs b "</span>";
@@ -1328,7 +1359,7 @@ class html =
       bs b "</pre>";
       self#html_of_info b v.val_info;
       (
-       if !Args.with_parameter_list then
+       if !with_parameter_list then
          self#html_of_parameter_list b (Name.father v.val_name) v.val_parameters
        else
          self#html_of_described_parameter_list b (Name.father v.val_name) v.val_parameters
@@ -1515,7 +1546,7 @@ class html =
          None -> bs b (Name.simple a.att_value.val_name)
        | Some c ->
            let file = Naming.file_code_attribute_complete_target a in
-           self#output_code a.att_value.val_name (Filename.concat !Args.target_dir file) c;
+           self#output_code a.att_value.val_name (Filename.concat !Global.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple a.att_value.val_name);
       );
       bs b "</span>";
@@ -1538,7 +1569,7 @@ class html =
          None -> bs b  (Name.simple m.met_value.val_name)
        | Some c ->
            let file = Naming.file_code_method_complete_target m in
-           self#output_code m.met_value.val_name (Filename.concat !Args.target_dir file) c;
+           self#output_code m.met_value.val_name (Filename.concat !Global.target_dir file) c;
            bp b "<a href=\"%s\">%s</a>" file (Name.simple m.met_value.val_name);
       );
       bs b "</span>";
@@ -1547,7 +1578,7 @@ class html =
       bs b "</pre>";
       self#html_of_info b m.met_value.val_info;
       (
-       if !Args.with_parameter_list then
+       if !with_parameter_list then
          self#html_of_parameter_list b
 	   module_name m.met_value.val_parameters
        else
@@ -1679,7 +1710,12 @@ class html =
        else
          bs b (Name.simple m.m_name)
       );
-      bs b ": ";
+      (
+       match m.m_kind with
+         Module_functor _ when !html_short_functors  ->
+           ()
+       | _ -> bs b ": "
+      );
       self#html_of_module_kind b father ~modu: m m.m_kind;
       bs b "</pre>";
       if info then
@@ -2022,7 +2058,7 @@ class html =
               ('a -> string) -> string -> string -> unit =
     fun elements name info target title simple_file ->
       try
-        let chanout = open_out (Filename.concat !Args.target_dir simple_file) in
+        let chanout = open_out (Filename.concat !Global.target_dir simple_file) in
 	let b = new_buf () in
 	bs b "<html>\n";
         self#print_header b (self#inner_title title);
@@ -2088,7 +2124,7 @@ class html =
       let (html_file, _) = Naming.html_files cl.cl_name in
       let type_file = Naming.file_type_class_complete_target cl.cl_name in
       try
-        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Global.target_dir html_file) in
 	let b = new_buf () in
         let pre_name = opt (fun c -> c.cl_name) pre in
         let post_name = opt (fun c -> c.cl_name) post in
@@ -2122,7 +2158,7 @@ class html =
         (* generate the file with the complete class type *)
         self#output_class_type
           cl.cl_name
-          (Filename.concat !Args.target_dir type_file)
+          (Filename.concat !Global.target_dir type_file)
           cl.cl_type
       with
         Sys_error s ->
@@ -2134,7 +2170,7 @@ class html =
       let (html_file, _) = Naming.html_files clt.clt_name in
       let type_file = Naming.file_type_class_complete_target clt.clt_name in
       try
-        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Global.target_dir html_file) in
 	let b = new_buf () in
         let pre_name = opt (fun ct -> ct.clt_name) pre in
         let post_name = opt (fun ct -> ct.clt_name) post in
@@ -2167,7 +2203,7 @@ class html =
         (* generate the file with the complete class type *)
         self#output_class_type
           clt.clt_name
-          (Filename.concat !Args.target_dir type_file)
+          (Filename.concat !Global.target_dir type_file)
           clt.clt_type
       with
         Sys_error s ->
@@ -2179,7 +2215,7 @@ class html =
       try
         let (html_file, _) = Naming.html_files mt.mt_name in
         let type_file = Naming.file_type_module_complete_target mt.mt_name in
-        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Global.target_dir html_file) in
 	let b = new_buf () in
         let pre_name = opt (fun mt -> mt.mt_name) pre in
         let post_name = opt (fun mt -> mt.mt_name) post in
@@ -2231,7 +2267,7 @@ class html =
          | Some mty ->
 	     self#output_module_type
                mt.mt_name
-               (Filename.concat !Args.target_dir type_file)
+               (Filename.concat !Global.target_dir type_file)
                mty
         )
       with
@@ -2246,7 +2282,7 @@ class html =
         let (html_file, _) = Naming.html_files modu.m_name in
         let type_file = Naming.file_type_module_complete_target modu.m_name in
         let code_file = Naming.file_code_module_complete_target modu.m_name in
-        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Global.target_dir html_file) in
 	let b = new_buf () in
         let pre_name = opt (fun m -> m.m_name) pre in
         let post_name = opt (fun m -> m.m_name) post in
@@ -2304,16 +2340,16 @@ class html =
         (* generate the file with the complete module type *)
         self#output_module_type
           modu.m_name
-          (Filename.concat !Args.target_dir type_file)
+          (Filename.concat !Global.target_dir type_file)
           modu.m_type;
 
-	match modu.m_code with
-	  None -> ()
-	| Some code ->
-	    self#output_code
-	      modu.m_name
-	      (Filename.concat !Args.target_dir code_file)
-	      code
+        match modu.m_code with
+          None -> ()
+        | Some code ->
+            self#output_code
+              modu.m_name
+              (Filename.concat !Global.target_dir code_file)
+              code
       with
         Sys_error s ->
           raise (Failure s)
@@ -2322,9 +2358,9 @@ class html =
        @raise Failure if an error occurs.*)
     method generate_index module_list =
       try
-        let chanout = open_out (Filename.concat !Args.target_dir self#index) in
+        let chanout = open_out (Filename.concat !Global.target_dir self#index) in
 	let b = new_buf () in
-        let title = match !Args.title with None -> "" | Some t -> self#escape t in
+        let title = match !Global.title with None -> "" | Some t -> self#escape t in
 	bs b "<html>\n";
         self#print_header b self#title;
         bs b "<body>\n";
@@ -2350,7 +2386,7 @@ class html =
         bs b "</h1></center>\n" ;
         let info = Odoc_info.apply_opt
             (Odoc_info.info_of_comment_file module_list)
-            !Odoc_info.Args.intro_file
+            !Odoc_info.Global.intro_file
         in
         (
          match info with
@@ -2511,7 +2547,7 @@ class html =
 	  known_modules_names
 	  module_types ;
       (* generate html for each module *)
-      if not !Args.index_only then
+      if not !index_only then
         self#generate_elements self#generate_for_module module_list ;
 
       try
@@ -2538,5 +2574,6 @@ class html =
 	  Buffer.contents b
 	)
   end
+end
 
-(* eof $Id$ *)
+module type Html_generator = module type of Generator

@@ -1,3 +1,6 @@
 libnums.x
 *.c.x
 so_locations
+*.so
+*.a
+*.cm*

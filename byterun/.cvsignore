@@ -1,3 +1,4 @@
+// svn propset -F .cvsignore svn:ignore .
 jumptbl.h
 primitives
 prims.c
@@ -18,3 +19,5 @@ interp.a.lst
 *.so
 *.a
 .depend.nt
+*.d.c
+*.pic.c

@@ -14,6 +14,13 @@
 
 (** Helper functions for client and server initialization. *)
 
+(** {6 Error report} *)
+type error =
+  | Magic     (** Magic number mismatch *)
+  | Connect   (** Connection cannot be established *)
+
+exception Error of (error * string) (** error, message *)
+
 
 (** {6 Fork utilities} *)
 
@@ -115,20 +122,18 @@ val exit_at_fail_with_code : int -> at_fail_chan
 val exit_at_fail : at_fail_chan
 (** Bare alias for [exit_at_fail_with_code 0]. *)
 
-exception Invalid_magic of string * string
-(** Raised when a client tries to connect to a server with a different magic number.
-    The first component is the waited magic value while the second component is the 
-    magic value retrieved from the server. *)
-
 val check_magic : Join.Ns.t -> configuration -> unit
 (**  Ensures that client and server have the same magic number,
-    raising [Invalid_magic] if not. *)
+    raising [Error (Magic,...)] if not. *)
 
 val connect : configuration -> Join.Site.t * Join.Ns.t
 (** [connect cfg] 
     connect as a client  to the server referenced by [cfg].
-    Also ensures that client and server have the same magic number,
-    raising [Invalid_magic] if not. *)
+    Also ensures that client and server have the same magic number.
+    Raises [Error (Connect,...)] or  [Error (Magic,...)]
+    when connection cannot be established or in case of magic number
+    mismatch. *)
+
 
 
 val init_client : ?at_fail:at_fail_chan -> configuration ->
@@ -137,8 +142,10 @@ val init_client : ?at_fail:at_fail_chan -> configuration ->
     the server referenced by [cfg], forking clients, and registering the
     [at_fail] channel to act as a guard on server failure
     ({i cf.} {!Join.Site.at_fail}) with a default of [do_nothing_at_fail].
-    Also ensures that client and server have the same magic number,
-    raising [Invalid_magic] if not.
+    Raises [Error (Connect,...)] or  [Error (Magic,...)]
+    when connection cannot be established or in case of magic number
+    mismatch.
+
 
     Returns the name service of the server, and the list of the client pids. *)
 

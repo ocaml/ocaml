@@ -4,3 +4,5 @@ proc.ml
 selection.ml
 reload.ml
 scheduling.ml
+*.cm*
+*.o

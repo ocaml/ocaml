@@ -25,3 +25,4 @@ strofaddr.c
 time.c
 unlink.c
 utimes.c
+*.o

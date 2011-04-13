@@ -925,144 +925,40 @@ module Dep :
     val deps_of_types : ?kernel: bool -> Type.t_type list -> (Type.t_type * (Name.t list)) list
   end
 
-(** {2 Command line arguments} *)
+(** {2 Some global variables} *)
 
-(**  You can use this module to create custom generators.*)
-module Args :
-    sig
-      (** The kind of source file in arguments. *)
-      type source_file =
-	  Impl_file of string
-	| Intf_file of string
+module Global :
+  sig
+    val errors : int ref
+    val warn_error : bool ref
 
-      (** The class type of documentation generators. *)
-      class type doc_generator =
-	object method generate : Module.t_module list -> unit end
+    (** The file used by the generators outputting only one file. *)
+    val out_file : string ref
 
-      (** The file used by the generators outputting only one file. *)
-      val out_file : string ref
+    (** Verbose mode or not. *)
+    val verbose : bool ref
 
-      (** Verbose mode or not. *)
-      val verbose : bool ref
+    (** The directory where files have to be generated. *)
+    val target_dir : string ref
 
-      (** The optional title to use in the generated documentation. *)
-      val title : string option ref
+    (** The optional title to use in the generated documentation. *)
+    val title : string option ref
 
-      (** To inverse [.ml] and [.mli] files while merging comments. *)
-      val inverse_merge_ml_mli : bool ref
+    (** The optional file whose content can be used as intro text. *)
+    val intro_file : string option ref
 
-      (** To filter module elements according to module type constraints. *)
-      val filter_with_module_constraints : bool ref
+    (** The flag which indicates if we must generate a table of contents. *)
+    val with_toc : bool ref
 
-      (** To keep the code while merging, when we have both .ml and .mli files for a module. *)
-      val keep_code : bool ref
+    (** The flag which indicates if we must generate an index. *)
+    val with_index : bool ref
 
-      (** The optional file whose content can be used as intro text. *)
-      val intro_file : string option ref
+    (** The flag which indicates if we must generate a header.*)
+    val with_header : bool ref
 
-      (** Flag to indicate whether we must display the complete list of parameters
-	 for functions and methods. *)
-      val with_parameter_list : bool ref
-
-      (** The list of module names to hide. *)
-      val hidden_modules : string list ref
-
-      (** The directory where files have to be generated. *)
-      val target_dir : string ref
-
-      (** An optional file to use where a CSS style is defined (for HTML). *)
-      val css_style : string option ref
-
-      (** Generate only index files. (for HTML). *)
-      val index_only : bool ref
-
-      (** To colorize code in HTML generated documentation pages, not code pages. *)
-      val colorize_code : bool ref
-
-      (** The flag which indicates if we must generate a header (for LaTeX). *)
-      val with_header : bool ref
-
-      (** The flag which indicates if we must generate a trailer (for LaTeX). *)
-      val with_trailer : bool ref
-
-      (** The flag to indicate if we must generate one file per module (for LaTeX). *)
-      val separate_files : bool ref
-
-      (** The list of pairs (title level, sectionning style). *)
-      val latex_titles : (int * string) list ref
-
-      (** The prefix to use for value labels in LaTeX. *)
-      val latex_value_prefix : string ref
-
-      (** The prefix to use for type labels in LaTeX. *)
-      val latex_type_prefix : string ref
-
-      (** The prefix to use for exception labels in LaTeX. *)
-      val latex_exception_prefix : string ref
-
-      (** The prefix to use for module labels in LaTeX. *)
-      val latex_module_prefix : string ref
-
-      (** The prefix to use for module type labels in LaTeX. *)
-      val latex_module_type_prefix : string ref
-
-      (** The prefix to use for class labels in LaTeX. *)
-      val latex_class_prefix : string ref
-
-      (** The prefix to use for class type labels in LaTeX. *)
-      val latex_class_type_prefix : string ref
-
-      (** The prefix to use for attribute labels in LaTeX. *)
-      val latex_attribute_prefix : string ref
-
-      (** The prefix to use for method labels in LaTeX. *)
-      val latex_method_prefix : string ref
-
-      (** The flag which indicates if we must generate a table of contents (for LaTeX). *)
-      val with_toc : bool ref
-
-      (** The flag which indicates if we must generate an index (for TeXinfo). *)
-      val with_index : bool ref
-
-      (** The flag which indicates if we must escape accentuated characters (for TeXinfo).*)
-      val esc_8bits : bool ref
-
-      (** The Info directory section *)
-      val info_section : string ref
-
-      (** The Info directory entries to insert *)
-      val info_entry : string list ref
-
-      (** Include all modules or only the ones on the command line, for the dot ouput. *)
-      val dot_include_all : bool ref
-
-      (** Generate dependency graph for types. *)
-      val dot_types : bool ref
-
-      (** Perform transitive reduction before dot output. *)
-      val dot_reduce : bool ref
-
-      (** The colors used in the dot output. *)
-      val dot_colors : string list ref
-
-      (** The suffix for man pages. *)
-      val man_suffix : string ref
-
-      (** The section for man pages. *)
-      val man_section : string ref
-
-      (** The flag to generate all man pages or only for modules and classes.*)
-      val man_mini : bool ref
-
-      (** The files to be analysed. *)
-      val files : source_file list ref
-
-      (** To set the documentation generator. *)
-      val set_doc_generator : doc_generator option -> unit
-
-      (** Add an option specification. *)
-      val add_option : string * Arg.spec * string -> unit
-    end
+    (** The flag which indicates if we must generate a trailer.*)
+    val with_trailer : bool ref
+end
 
 (** Analysis of the given source files.
    @param init is the list of modules already known from a previous analysis.
@@ -1074,7 +970,7 @@ val analyse_files :
           ?sort_modules:bool ->
             ?no_stop:bool ->
               ?init: Odoc_module.t_module list ->
-                Args.source_file list ->
+                Odoc_global.source_file list ->
                   Module.t_module list
 
 (** Dump of a list of modules into a file.

@@ -301,9 +301,12 @@ let tail_send_async chan a = match chan with
 
 let space_id_of_chan chan =
   let stub = match chan with Async(stub,_)|Alone(stub,_) -> stub in
-  match stub.stub_tag with
-  | Local -> Join_space.here
-  | Remote -> (Obj.magic stub.stub_val : space_id)
+  let id =
+    match stub.stub_tag with
+    | Local -> Join_space.here
+    | Remote -> (Obj.magic stub.stub_val : space_id) in
+(*DEBUG*)debug0 "SPACE_ID" "%s-%i-%f" id.host (fst id.uniq) (snd id.uniq);
+  id
 
 (*********************)
 (* Synchronous sends *)

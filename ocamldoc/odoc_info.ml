@@ -103,11 +103,11 @@ let analyse_files
     ?(no_stop=false)
     ?(init=[])
     files =
-  Odoc_args.merge_options := merge_options;
-  Odoc_args.include_dirs := include_dirs;
-  Odoc_args.classic := not labels;
-  Odoc_args.sort_modules := sort_modules;
-  Odoc_args.no_stop := no_stop;
+  Odoc_global.merge_options := merge_options;
+  Odoc_global.include_dirs := include_dirs;
+  Odoc_global.classic := not labels;
+  Odoc_global.sort_modules := sort_modules;
+  Odoc_global.no_stop := no_stop;
   Odoc_analyse.analyse_files ~init: init files
 
 let dump_modules = Odoc_analyse.dump_modules
@@ -167,15 +167,15 @@ let is_optional = Odoc_misc.is_optional
 let label_name = Odoc_misc.label_name
 
 let use_hidden_modules n =
-  Odoc_name.hide_given_modules !Odoc_args.hidden_modules n
+  Odoc_name.hide_given_modules !Odoc_global.hidden_modules n
 
 let verbose s =
-  if !Odoc_args.verbose then
+  if !Odoc_global.verbose then
     (print_string s ; print_newline ())
   else
     ()
 
-let warning s = Odoc_messages.pwarning s
+let warning s = Odoc_global.pwarning s
 
 let errors = Odoc_global.errors
 
@@ -344,4 +344,4 @@ module Dep =
     let deps_of_types = Odoc_dep.deps_of_types
   end
 
-module Args = Odoc_args
+module Global = Odoc_global

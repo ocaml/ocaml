@@ -12,13 +12,13 @@ default:
 	@echo "  clean         deletes generated files"
 	@echo "  report        prints the report for the last execution, if any"
 
-all:
+all: lib
 	@for dir in tests/*; do \
 	  $(MAKE) $(NO_PRINT) exec-one DIR=$$dir; \
 	done 2>&1 | tee _log
 	@$(MAKE) report
 
-list:
+list: lib
 	@if [ -z $(FILE) ]; then echo "No value set for variable 'FILE'."; exit 1; fi
 	@if [ ! -f $(FILE) ]; then echo "File '$(FILE)' does not exist."; exit 1; fi
 	@while read LINE; do \
@@ -33,7 +33,7 @@ one: lib
 
 exec-one:
 	@echo "Running tests from '$$DIR' ..."
-	@(cd $(DIR) && $(MAKE) BASEDIR=$(BASEDIR) && cd ../..)
+	@(cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) && cd ../..)
 
 lib: FORCE
 	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR) && cd ..)

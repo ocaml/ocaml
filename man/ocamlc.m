@@ -277,6 +277,16 @@ only recursive types where the recursion goes through an object type
 are supported. Note that once you have created an interface using this
 flag, you must use it again for all dependencies.
 .TP
+.BI \-runtime\-variant \ suffix
+Add
+.I suffix
+to the name of the runtime library that will be used by the program.
+If OCaml was configured with option
+.BR \-with\-debug\-runtime ,
+then the
+.B d
+suffix is supported and gives a debug version of the runtime.
+.TP
 .B \-thread
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in
@@ -536,7 +546,7 @@ mentioned here corresponds to the empty set.
 
 .IP
 The default setting is
-.BR \-w\ +a\-4\-6\-9\-27\-28\-29 .
+.BR \-w\ +a\-4\-6\-9\-27\-29 .
 Note that warnings
 .BR 5 \ and \ 10
 are not always triggered, depending on the internals of the type checker.

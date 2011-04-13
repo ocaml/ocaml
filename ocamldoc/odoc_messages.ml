@@ -206,9 +206,6 @@ let merge_options =
 (** Error and warning messages *)
 
 let warning = "Warning"
-let pwarning s =
-  prerr_endline (warning^": "^s);
-  if !Odoc_global.warn_error then incr Odoc_global.errors
 
 let bad_magic_number =
   "Bad magic number for this ocamldoc dump!\n"^

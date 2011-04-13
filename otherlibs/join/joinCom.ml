@@ -95,7 +95,7 @@ module P = struct
       let x =
         try  read_line chan
         with Sys_error msg ->
-          Join.debug "PROD" "Sys_error in read_line: \"%s\"" msg ;
+          debug "PROD" "Sys_error in read_line: \"%s\"" msg ;
           None in
       begin match x with None -> safe_close_in chan | Some _ -> () end ;
       k(x)

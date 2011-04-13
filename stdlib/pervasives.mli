@@ -52,24 +52,24 @@ external ( = ) : 'a -> 'a -> bool = "%equal"
    Equality between cyclic data structures may not terminate. *)
 
 external ( <> ) : 'a -> 'a -> bool = "%notequal"
-(** Negation of {!Pervasives.(=)}. *)
+(** Negation of {!Pervasives.( = )}. *)
 
 external ( < ) : 'a -> 'a -> bool = "%lessthan"
-(** See {!Pervasives.(>=)}. *)
+(** See {!Pervasives.( >= )}. *)
 
 external ( > ) : 'a -> 'a -> bool = "%greaterthan"
-(** See {!Pervasives.(>=)}. *)
+(** See {!Pervasives.( >= )}. *)
 
 external ( <= ) : 'a -> 'a -> bool = "%lessequal"
-(** See {!Pervasives.(>=)}. *)
+(** See {!Pervasives.( >= )}. *)
 
 external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
 (** Structural ordering functions. These functions coincide with
    the usual orderings over integers, characters, strings
    and floating-point numbers, and extend them to a
    total ordering over all types.
-   The ordering is compatible with [(=)]. As in the case
-   of [(=)], mutable structures are compared by contents.
+   The ordering is compatible with [( = )]. As in the case
+   of [( = )], mutable structures are compared by contents.
    Comparison between functional values raises [Invalid_argument].
    Comparison between cyclic structures may not terminate. *)
 
@@ -108,12 +108,12 @@ external ( == ) : 'a -> 'a -> bool = "%eq"
    mutable fields and objects with mutable instance variables,
    [e1 == e2] is true if and only if physical modification of [e1]
    also affects [e2].
-   On non-mutable types, the behavior of [(==)] is
+   On non-mutable types, the behavior of [( == )] is
    implementation-dependent; however, it is guaranteed that
    [e1 == e2] implies [compare e1 e2 = 0]. *)
 
 external ( != ) : 'a -> 'a -> bool = "%noteq"
-(** Negation of {!Pervasives.(==)}. *)
+(** Negation of {!Pervasives.( == )}. *)
 
 
 (** {6 Boolean operations} *)
@@ -127,7 +127,7 @@ external ( && ) : bool -> bool -> bool = "%sequand"
    [e2] is not evaluated at all. *)
 
 external ( & ) : bool -> bool -> bool = "%sequand"
-(** @deprecated {!Pervasives.(&&)} should be used instead. *)
+(** @deprecated {!Pervasives.( && )} should be used instead. *)
 
 external ( || ) : bool -> bool -> bool = "%sequor"
 (** The boolean ``or''. Evaluation is sequential, left-to-right:
@@ -135,7 +135,7 @@ external ( || ) : bool -> bool -> bool = "%sequor"
    [e2] is not evaluated at all. *)
 
 external ( or ) : bool -> bool -> bool = "%sequor"
-(** @deprecated {!Pervasives.(||)} should be used instead.*)
+(** @deprecated {!Pervasives.( || )} should be used instead.*)
 
 
 (** {6 Integer arithmetic} *)
@@ -145,13 +145,18 @@ external ( or ) : bool -> bool -> bool = "%sequor"
    They do not fail on overflow. *)
 
 external ( ~- ) : int -> int = "%negint"
-(** Unary negation. You can also write [-e] instead of [~-e]. *)
+(** Unary negation. You can also write [- e] instead of [~- e]. *)
+
+external ( ~+ ) : int -> int = "%identity"
+(** Unary addition. You can also write [+ e] instead of [~+ e].
+    @since 3.12.0
+*)
 
 external succ : int -> int = "%succint"
-(** [succ x] is [x+1]. *)
+(** [succ x] is [x + 1]. *)
 
 external pred : int -> int = "%predint"
-(** [pred x] is [x-1]. *)
+(** [pred x] is [x - 1]. *)
 
 external ( + ) : int -> int -> int = "%addint"
 (** Integer addition. *)
@@ -168,13 +173,13 @@ external ( / ) : int -> int -> int = "%divint"
    Integer division rounds the real quotient of its arguments towards zero.
    More precisely, if [x >= 0] and [y > 0], [x / y] is the greatest integer
    less than or equal to the real quotient of [x] by [y].  Moreover,
-   [(-x) / y = x / (-y) = -(x / y)].  *)
+   [(- x) / y = x / (- y) = - (x / y)].  *)
 
 external ( mod ) : int -> int -> int = "%modint"
 (** Integer remainder.  If [y] is not zero, the result
    of [x mod y] satisfies the following properties:
    [x = (x / y) * y + x mod y] and
-   [abs(x mod y) <= abs(y)-1].
+   [abs(x mod y) <= abs(y) - 1].
    If [y = 0], [x mod y] raises [Division_by_zero].
    Note that [x mod y] is negative only if [x < 0].
    Raise [Division_by_zero] if [y] is zero. *)
@@ -237,7 +242,12 @@ external ( asr ) : int -> int -> int = "%asrint"
 *)
 
 external ( ~-. ) : float -> float = "%negfloat"
-(** Unary negation. You can also write [-.e] instead of [~-.e]. *)
+(** Unary negation. You can also write [-. e] instead of [~-. e]. *)
+
+external ( ~+. ) : float -> float = "%identity"
+(** Unary addition. You can also write [+. e] instead of [~+. e].
+    @since 3.12.0
+*)
 
 external ( +. ) : float -> float -> float = "%addfloat"
 (** Floating-point addition *)

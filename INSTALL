@@ -15,21 +15,8 @@ CONTEXT
 * plus: the POSIX threads library 'phreads' is required.
 
 
-<<<<<<< .courant
-=======
-* Under HP/UX, the GNU C compiler gcc, the GNU assembler gas, and GNU make
-  are all *required*.  The vendor-provided compiler, assembler and make
-  have major problems.
-
-* GNU make is needed to build ocamlbuild and camlp4.  If your system's
-  default make is not GNU make, you need to define the GNUMAKE environment
-  variable to the name of GNU make, typically with this command:
-
-    export GNUMAKE=gnumake
-
 INSTALLATION INSTRUCTIONS
 
->>>>>>> .fusion-droit.r10497
 1- Configure the system. From the top directory, do:
 
         ./configure
@@ -66,103 +53,6 @@ Added options.
         Do not use the curses library.
 
 -host <hosttype>                (default: determined automatically)
-        The type of the host machine, in GNU's "configuration name"
-        format (CPU-COMPANY-SYSTEM). This info is generally determined
-        automatically by the "configure" script, and rarely ever
-        needs to be provided by hand. The installation instructions
-        for gcc or emacs contain a complete list of configuration names.
-
--x11include <include_dir>       (default: determined automatically)
--x11lib     <lib_dir>           (default: determined automatically)
-        Location of the X11 include directory (e.g. /usr/X11R6/include)
-        and the X11 library directory (e.g. /usr/X11R6/lib).
-
--tkdefs <cpp flags>             (default: none)
--tklibs <flags and libraries>   (default: determined automatically)
-        These options specify where to find the Tcl/Tk libraries for
-        LablTk. "-tkdefs" helps to find the headers, and "-tklibs"
-        the C libraries. "-tklibs" may contain either only -L/path and
-        -Wl,... flags, in which case the library names are determined
-        automatically, or the actual libraries, which are used as given.
-        Example: for a Japanese tcl/tk whose headers are in specific
-        directories and libraries in /usr/local/lib, you can use
-        ./configure -tklibs "-L/usr/local/lib -ltk8.0jp -ltcl8.0jp"
-          -tkdefs "-I/usr/local/include/tcl8.0jp -I/usr/local/include/tk8.0jp"
-
--tk-no-x11
-        Build LablTk without using X11. This option is needed on Cygwin.
-
--no-tk
-        Do not attempt to build LablTk.
-
--no-pthread
-        Do not attempt to use POSIX threads.
-
--with-pthread
-        Attempt to use POSIX threads (this is the default).
-
--no-shared-libs
-        Do not configure support for shared libraries
-
--dldefs <cpp flags>
--dllibs <flags and libraries>
-        These options specify where to find the libraries for dynamic
-        linking (i.e. use of shared libraries).  "-dldefs" specifies
-        options for finding the header files, and "-dllibs" for finding
-        the C libraries.
-
--as <assembler and options>     (default: determined automatically)
-        The assembler to use for assembling ocamlopt-generated code.
-
--aspp <assembler and options>   (default: determined automatically)
-        The assembler to use for assembling the parts of the
-        run-time system manually written in assembly language.
-        This assembler must preprocess its input with the C preprocessor.
-
--verbose
-        Verbose output of the configuration tests. Use it if the outcome
-        of configure is not what you were expecting.
-
-Examples:
-
-  Standard installation in /usr/{bin,lib,man} instead of /usr/local:
-    ./configure -prefix /usr
-
-  Installation in /usr, man pages in section "l":
-    ./configure -bindir /usr/bin -libdir /usr/lib/ocaml -mandir /usr/man/manl
-
-  On a MacOSX 10.5/Intel Core 2 or MacOSX 10.5/PowerPC host,
-  to build a 64-bit version of OCaml:
-    ./configure -cc "gcc -m64"
-
-  On a MacOSX 10.6/Intel Core 2, to build a 32-bit version of OCaml:
-    ./configure -cc "gcc -m32" -as "as -arch i386" -aspp "gcc -m32 -c"
-
-  On a Linux x86/64 bits host, to build a 32-bit version of OCaml:
-    ./configure -cc "gcc -m32" -as "as --32" -aspp "gcc -m32 -c"
-
-  On a Linux x86/64 bits host, to build the run-time system in PIC mode
-  (enables putting the runtime in a shared library, 
-   at a small performance cost):
-    ./configure -cc "gcc -fPIC" -aspp "gcc -c -fPIC"
-
-  For Sun Solaris with the "acc" compiler:
-    ./configure -cc "acc -fast" -libs "-lucb"
-
-  For AIX 4.3 with the IBM compiler xlc:
-    ./configure -cc "xlc_r -D_AIX43 -Wl,-bexpall,-brtl -qmaxmem=8192"
-
-
-If something goes wrong during the automatic configuration, or if the
-generated files cause errors later on, then look at the template files
-
-        config/Makefile-templ
-        config/m-templ.h
-        config/s-templ.h
-
-for guidance on how to edit the generated files by hand.
-
->>>>>>> .fusion-droit.r10497
 2- From the top directory, do:
 
         make world
@@ -189,10 +79,10 @@ From the top directory, become superuser and do:
         umask 022       # make sure to give read & execute permission to all
         make install
 
-
 The JoCaml commands are Ocaml commands prefixed by 'j'.
 That is jocamlc, jocamlopt, jocamlrun, jocamlyacc, jocamllex, jocaml,
 jocamlmktop, jocamlmklib, jocamldep.
+Plus some of those suffixed by .opt, if you performed step 5.
 
 
 Some of OCaml commands have no JoCaml equivalent: ocamldebug,

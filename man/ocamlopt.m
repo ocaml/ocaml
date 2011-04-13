@@ -207,6 +207,68 @@ the
 option is given, specify the name of the library produced.
 
 .TP
+.B \-pack
+Build an object file (.cmx and .o files) and its associated compiled
+interface (.cmi) that combines the .cmx object
+files given on the command line, making them appear as sub-modules of
+the output .cmx file.  The name of the output .cmx file must be
+given with the
+.B \-o
+option.  For instance,
+.B ocamlopt\ -pack\ -o\ P.cmx\ A.cmx\ B.cmx\ C.cmx
+generates compiled files P.cmx, P.o and P.cmi describing a
+compilation unit having three sub-modules A, B and C,
+corresponding to the contents of the object files A.cmx, B.cmx and
+C.cmx.  These contents can be referenced as P.A, P.B and P.C
+in the remainder of the program.
+
+The .cmx object files being combined must have been compiled with
+the appropriate
+.B \-for\-pack
+option.  In the example above,
+A.cmx, B.cmx and C.cmx must have been compiled with
+.BR ocamlopt\ \-for\-pack\ P .
+
+Multiple levels of packing can be achieved by combining
+.B \-pack
+with
+.BR \-for\-pack .
+See
+.IR "The Objective Caml user's manual" ,
+chapter "Native-code compilation" for more details.
+.TP
+.BI \-pp \ command
+Cause the compiler to call the given
+.I command
+as a preprocessor for each source file. The output of
+.I command
+is redirected to
+an intermediate file, which is compiled. If there are no compilation
+errors, the intermediate file is deleted afterwards.
+.TP
+.B \-principal
+Check information path during type-checking, to make sure that all
+types are derived in a principal way. All programs accepted in
+.B \-principal
+mode are also accepted in default mode with equivalent
+types, but different binary signatures.
+.TP
+.BI \-runtime\-variant \ suffix
+Add
+.I suffix
+to the name of the runtime library that will be used by the program.
+If OCaml was configured with option
+.BR \-with\-debug\-runtime ,
+then the
+.B d
+suffix is supported and gives a debug version of the runtime.
+.TP
+.B \-rectypes
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported. Note that once you have created an interface using this
+flag, you must use it again for all dependencies.
+.TP
 .B \-S
 Keep the assembly code produced during the compilation. The assembly
 code for the source file 

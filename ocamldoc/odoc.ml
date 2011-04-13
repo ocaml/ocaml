@@ -11,7 +11,8 @@
 
 (* $Id$ *)
 
-(** Main module for bytecode. *)
+(** Main module for bytecode.
+@todo coucou le todo*)
 
 open Config
 open Clflags
@@ -25,21 +26,20 @@ let print_DEBUG s = print_string s ; print_newline ()
 
 (* we check if we must load a module given on the command line *)
 let arg_list = Array.to_list Sys.argv
-let (cm_opt, paths) =
-  let rec iter (f_opt, inc) = function
-      [] | _ :: [] -> (f_opt, inc)
+let (plugins, paths) =
+  let rec iter (files, incs) = function
+      [] | _ :: [] -> (List.rev files, List.rev incs)
     | "-g" :: file :: q when
-        ((Filename.check_suffix file "cmo") ||
-         (Filename.check_suffix file "cma") ||
-           (Filename.check_suffix file "cmxs")) &&
-        (f_opt = None) ->
-      iter (Some file, inc) q
+        ((Filename.check_suffix file "cmo") or
+         (Filename.check_suffix file "cma") or
+           (Filename.check_suffix file "cmxs")) ->
+      iter (file :: files, incs) q
   | "-i" :: dir :: q ->
-      iter (f_opt, inc @ [dir]) q
+      iter (files, dir :: incs) q
   | _ :: q ->
-        iter (f_opt, inc) q
+        iter (files, incs) q
   in
-  iter (None, []) arg_list
+  iter ([], []) arg_list
 
 let _ = print_DEBUG "Fin analyse des arguments pour le dynamic load"
 
@@ -63,41 +63,29 @@ let get_real_filename name =
           failwith (M.file_not_found_in_paths paths name)
      )
 
-let _ =
-  match cm_opt with
-    None ->
-      ()
-  | Some file ->
-      let file = Dynlink.adapt_filename file in
-      Dynlink.allow_unsafe_modules true;
-      try
-        let real_file = get_real_filename file in
-        ignore(Dynlink.loadfile real_file)
-      with
-        Dynlink.Error e -> 
-          prerr_endline (Odoc_messages.load_file_error file (Dynlink.error_message e)) ;
-          exit 1
-      | Not_found ->
-          prerr_endline (Odoc_messages.load_file_error file "Not_found");
-          exit 1  
-      | Sys_error s
-      | Failure s ->
-          prerr_endline (Odoc_messages.load_file_error file s);
-          exit 1  
+let load_plugin file =
+  let file = Dynlink.adapt_filename file in
+  Dynlink.allow_unsafe_modules true;
+  try
+    let real_file = get_real_filename file in
+    ignore(Dynlink.loadfile real_file)
+  with
+    Dynlink.Error e ->
+      prerr_endline (Odoc_messages.load_file_error file (Dynlink.error_message e)) ;
+      exit 1
+  | Not_found ->
+      prerr_endline (Odoc_messages.load_file_error file "Not_found");
+      exit 1
+  | Sys_error s
+  | Failure s ->
+      prerr_endline (Odoc_messages.load_file_error file s);
+      exit 1
+;;
+List.iter load_plugin plugins;;
 
-let _ = print_DEBUG "Fin du chargement dynamique eventuel"
+let () = print_DEBUG "Fin du chargement dynamique eventuel"
 
-let default_html_generator = new Odoc_html.html
-let default_latex_generator = new Odoc_latex.latex
-let default_texi_generator = new Odoc_texi.texi
-let default_man_generator = new Odoc_man.man
-let default_dot_generator = new Odoc_dot.dot
-let _ = Odoc_args.parse
-    (default_html_generator :> Odoc_args.doc_generator)
-    (default_latex_generator :> Odoc_args.doc_generator)
-    (default_texi_generator :> Odoc_args.doc_generator)
-    (default_man_generator :> Odoc_args.doc_generator)
-    (default_dot_generator :> Odoc_args.doc_generator)
+let () = Odoc_args.parse ()
 
 
 let loaded_modules =
@@ -114,13 +102,13 @@ let loaded_modules =
            incr Odoc_global.errors ;
            []
        )
-       !Odoc_args.load
+       !Odoc_global.load
     )
 
-let modules = Odoc_analyse.analyse_files ~init: loaded_modules !Odoc_args.files
+let modules = Odoc_analyse.analyse_files ~init: loaded_modules !Odoc_global.files
 
 let _ =
-  match !Odoc_args.dump with
+  match !Odoc_global.dump with
     None -> ()
   | Some f ->
       try Odoc_analyse.dump_modules f modules
@@ -128,13 +116,15 @@ let _ =
         prerr_endline s ;
         incr Odoc_global.errors
 
-let _ = 
-  match !Odoc_args.doc_generator with
+
+let _ =
+  match !Odoc_args.current_generator with
     None ->
       ()
   | Some gen -> 
+      let generator = Odoc_gen.get_minimal_generator gen in
       Odoc_info.verbose Odoc_messages.generating_doc;
-      gen#generate modules;
+      generator#generate modules;
       Odoc_info.verbose Odoc_messages.ok
 
 let _ = 

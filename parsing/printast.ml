@@ -225,6 +225,8 @@ and pattern i ppf x =
   | Ppat_type li ->
       line i ppf "Ppat_type";
       longident i ppf li
+  | Ppat_unpack s ->
+      line i ppf "Ppat_unpack \"%s\"\n" s;
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;
@@ -337,9 +339,8 @@ and expression i ppf x =
   | Pexp_newtype (s, e) ->
       line i ppf "Pexp_newtype \"%s\"\n" s;
       expression i ppf e
-  | Pexp_pack (me, (p,l)) ->
-      line i ppf "Pexp_pack %a" fmt_longident p;
-      list i package_with ppf l;
+  | Pexp_pack me ->
+      line i ppf "Pexp_pack";
       module_expr i ppf me
   | Pexp_open (m, e) ->
       line i ppf "Pexp_open \"%a\"\n" fmt_longident m;
@@ -647,9 +648,8 @@ and module_expr i ppf x =
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;
       module_type i ppf mt;
-  | Pmod_unpack (e, (p, l)) ->
-      line i ppf "Pmod_unpack %a\n" fmt_longident p;
-      list i package_with ppf l;
+  | Pmod_unpack (e) ->
+      line i ppf "Pmod_unpack\n";
       expression i ppf e;
 
 and structure i ppf x = list i structure_item ppf x

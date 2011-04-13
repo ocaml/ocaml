@@ -60,6 +60,9 @@ let blit s1 ofs1 s2 ofs2 len =
 let iter f a =
   for i = 0 to length a - 1 do f(unsafe_get a i) done
 
+let iteri f a =
+  for i = 0 to length a - 1 do f i (unsafe_get a i) done
+
 let concat sep l =
   match l with
     [] -> ""

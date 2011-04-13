@@ -2,16 +2,11 @@
   make clean
   ./build/distclean.sh
   ./configure -prefix `pwd`/_install
-  ./build/world.sh byte
+  ./build/fastworld.sh
   # Go to "Bootstrap camlp4"
 
 === Install the bootstrapping camlp4 processor ===
   ./build/install.sh
-  # Either extend your PATH with _install
-    export PATH=`pwd`/_install:$PATH
-  # Or copy just the needed files (for better understanding)
-    cp _build/camlp4/camlp4boot.byte <somewhereinPATH>/bin/camlp4boot
-    cp _build/camlp4/camlp4o.byte <somewhereinPATH>/bin/camlp4o
 
 === Build camlp4 ===
   # This step is not needed right after a "./build/world.sh byte"
@@ -20,12 +15,20 @@
 === Bootstrap camlp4 ===
   # First "Build camlp4"
   # Then "Install the bootstrapping camlp4 processor"
+  # Indeed the following bootstrapping script
+  # does use the installed version!
   ./build/camlp4-bootstrap.sh
   # If the fixpoint not is reached yet
     # Go to "Bootstrap camlp4"
   # Otherwise
     # Have a look at the changes in
     # camlp4/boot it may be a good idea to commit them
+
+=== Generate Camlp4Ast.ml ===
+  # First "Install the bootstrapping camlp4 processor"
+  # Indeed the following bootstrapping script
+  # does use the installed version!
+  ./build/camlp4-mkCamlp4Ast.sh
 
 === Case study "let open M in e" ===
 
@@ -89,7 +92,7 @@
    (* let open i in e *)
  | ExOpI of loc and ident and expr
 
- Then build. Bootstrap once and build again.
+ Then "Generate Camlp4Ast.ml" and build.
 
  We get a single warning in Camlp4/Struct/Camlp4Ast2OCamlAst.ml but
  don't fix it now.
@@ -135,7 +138,7 @@ Add new parsing rules for := but keep the old actions for now.
     (* module i := i *)
     | WcMoS of loc and ident and ident
 
-3/ Build and bootstrap once.
+3/ "Generate Camlp4Ast.ml" and build.
 
 4/ Change the generated camlp4/boot/camlp4boot.ml:
    Look for ":=" and change occurences of

@@ -208,6 +208,11 @@ let mk_rectypes f =
   "-rectypes", Arg.Unit f, " Allow arbitrary recursive types"
 ;;
 
+let mk_runtime_variant f =
+  "-runtime-variant", Arg.String f,
+  "<str>  Use the <str> variant of the run-time system"
+;;
+
 let mk_S f =
   "-S", Arg.Unit f, " Keep intermediate assembly file"
 ;;
@@ -407,6 +412,7 @@ module type Bytecomp_options = sig
   val _pp : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
+  val _runtime_variant : string -> unit
   val _strict_sequence : unit -> unit
   val _thread : unit -> unit
   val _vmthread : unit -> unit
@@ -491,6 +497,7 @@ module type Optcomp_options = sig
   val _pp : string -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
+  val _runtime_variant : string -> unit
   val _strict_sequence : unit -> unit
   val _shared : unit -> unit
   val _S : unit -> unit
@@ -611,6 +618,7 @@ struct
     mk_pp F._pp;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_runtime_variant F._runtime_variant;
     mk_strict_sequence F._strict_sequence;
     mk_thread F._thread;
     mk_unsafe F._unsafe;
@@ -702,6 +710,7 @@ struct
     mk_pp F._pp;
     mk_principal F._principal;
     mk_rectypes F._rectypes;
+    mk_runtime_variant F._runtime_variant;
     mk_S F._S;
     mk_strict_sequence F._strict_sequence;
     mk_shared F._shared;
@@ -719,6 +728,7 @@ struct
     mk_nopervasives F._nopervasives;
     mk_dparsetree F._dparsetree;
     mk_drawlambda F._drawlambda;
+    mk_dlambda F._dlambda;
     mk_dcmm F._dcmm;
     mk_dsel F._dsel;
     mk_dcombine F._dcombine;

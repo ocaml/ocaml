@@ -1,2 +1,4 @@
 runtimedef.ml
 opcodes.ml
+*.cm*
+*.o

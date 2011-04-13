@@ -706,6 +706,7 @@ let rec assoc_comments_text_elements module_list t_ele =
 	   Ref (name, Some kind)
 =======
        let rec iter_parent ?parent_name name =
+         let name = Odoc_name.normalize_name name in
          let res =
            match get_known_elements name with
              [] ->
@@ -743,7 +744,7 @@ let rec assoc_comments_text_elements module_list t_ele =
          | (_, None) ->
              match parent_name with
                None ->
-                 Odoc_messages.pwarning (Odoc_messages.cross_element_not_found initial_name);
+                 Odoc_global.pwarning (Odoc_messages.cross_element_not_found initial_name);
                  Ref (initial_name, None, text_option)
              | Some p ->
                  let parent_name =
@@ -854,7 +855,7 @@ let rec assoc_comments_text_elements module_list t_ele =
            | (_, None) ->
                match parent_name with
                  None ->
-                   Odoc_messages.pwarning (not_found_of_kind kind initial_name);
+                   Odoc_global.pwarning (not_found_of_kind kind initial_name);
                    Ref (initial_name, None, text_option)
                | Some p ->
                    let parent_name =
@@ -1073,7 +1074,7 @@ let associate module_list =
    | l ->
        List.iter 
          (fun nf ->
-           Odoc_messages.pwarning
+           Odoc_global.pwarning
              (
               match nf with
                 NF_m n -> Odoc_messages.cross_module_not_found n

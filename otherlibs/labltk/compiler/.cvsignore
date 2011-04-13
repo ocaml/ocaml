@@ -9,3 +9,5 @@ pplex.ml
 ppyac.ml
 ppyac.output
 ppyac.mli
+*.cm*
+*.o

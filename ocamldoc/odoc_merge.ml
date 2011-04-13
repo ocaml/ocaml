@@ -243,7 +243,7 @@ let merge_types merge_options mli ml =
           cons.vc_text <- new_desc
         with
           Not_found ->
-            if !Odoc_args.inverse_merge_ml_mli then
+            if !Odoc_global.inverse_merge_ml_mli then
               ()
             else
               raise (Failure (Odoc_messages.different_types mli.ty_name))
@@ -271,7 +271,7 @@ let merge_types merge_options mli ml =
           record.rf_text <- new_desc
         with
           Not_found ->
-            if !Odoc_args.inverse_merge_ml_mli then
+            if !Odoc_global.inverse_merge_ml_mli then
               ()
             else
               raise (Failure (Odoc_messages.different_types mli.ty_name))
@@ -279,7 +279,7 @@ let merge_types merge_options mli ml =
       List.iter f l1
 
   | _ ->
-      if !Odoc_args.inverse_merge_ml_mli then
+      if !Odoc_global.inverse_merge_ml_mli then
         ()
       else
         raise (Failure (Odoc_messages.different_types mli.ty_name))
@@ -347,7 +347,7 @@ let merge_classes merge_options mli ml =
                      a.att_value.val_info <- merge_info_opt merge_options 
                          a.att_value.val_info a2.att_value.val_info;
                      a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
-                     if !Odoc_args.keep_code then 
+                     if !Odoc_global.keep_code then
                        a.att_value.val_code <- a2.att_value.val_code;
                      true
                     )
@@ -386,7 +386,7 @@ let merge_classes merge_options mli ml =
                         parameters because the associated comment of a parameter may have been changed by the merge.*)
                      Odoc_value.update_value_parameters_text m.met_value;
 
-                     if !Odoc_args.keep_code then 
+                     if !Odoc_global.keep_code then
                        m.met_value.val_code <- m2.met_value.val_code;
 
                      true
@@ -424,7 +424,7 @@ let merge_class_types merge_options mli ml =
                      a.att_value.val_info <- merge_info_opt merge_options 
                          a.att_value.val_info a2.att_value.val_info;
                      a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
-                     if !Odoc_args.keep_code then 
+                     if !Odoc_global.keep_code then
                        a.att_value.val_code <- a2.att_value.val_code;
 
                      true
@@ -462,8 +462,8 @@ let merge_class_types merge_options mli ml =
                      (* we must reassociate comments in @param to the the corresponding
                         parameters because the associated comment of a parameter may have been changed y the merge.*)
                      Odoc_value.update_value_parameters_text m.met_value;
-                     
-                     if !Odoc_args.keep_code then 
+
+                     if !Odoc_global.keep_code then
                        m.met_value.val_code <- m2.met_value.val_code;
 
                      true
@@ -627,7 +627,7 @@ let rec merge_module_types merge_options mli ml =
                         parameters because the associated comment of a parameter may have been changed y the merge.*)
                      Odoc_value.update_value_parameters_text v;
 
-                     if !Odoc_args.keep_code then 
+                     if !Odoc_global.keep_code then
                        v.val_code <- v2.val_code;
 
                      true
@@ -712,7 +712,7 @@ and merge_modules merge_options mli ml =
   mli.m_top_deps <- ml.m_top_deps ;
   
   let code = 
-    if !Odoc_args.keep_code then
+    if !Odoc_global.keep_code then
       match mli.m_code, ml.m_code with
 	Some s, _ -> Some s
       |	_, Some s -> Some s
@@ -721,7 +721,7 @@ and merge_modules merge_options mli ml =
       None
   in
   let code_intf = 
-    if !Odoc_args.keep_code then
+    if !Odoc_global.keep_code then
       match mli.m_code_intf, ml.m_code_intf with
 	Some s, _ -> Some s
       |	_, Some s -> Some s
@@ -867,8 +867,8 @@ and merge_modules merge_options mli ml =
                  (* we must reassociate comments in @param to the the corresponding
                     parameters because the associated comment of a parameter may have been changed y the merge.*)
                  Odoc_value.update_value_parameters_text v;
-                 
-                 if !Odoc_args.keep_code then 
+
+                 if !Odoc_global.keep_code then
                    v.val_code <- v2.val_code;
                  true
                 )
@@ -960,19 +960,19 @@ let merge merge_options modules_list =
             (
              (* we can merge m with m2 if there is an implementation 
                 and an interface.*)
-             let f b = if !Odoc_args.inverse_merge_ml_mli then not b else b in
+             let f b = if !Odoc_global.inverse_merge_ml_mli then not b else b in
              match f m.m_is_interface, f m2.m_is_interface with
                true, false -> (merge_modules merge_options m m2) :: (iter l_others)
              | false, true -> (merge_modules merge_options m2 m) :: (iter l_others)
              | false, false ->                 
-                 if !Odoc_args.inverse_merge_ml_mli then
+                 if !Odoc_global.inverse_merge_ml_mli then
                    (* two Module.ts for the .mli ! *)
                    raise (Failure (Odoc_messages.two_interfaces m.m_name))
                  else
                    (* two Module.t for the .ml ! *)
                    raise (Failure (Odoc_messages.two_implementations m.m_name))
              | true, true ->
-                 if !Odoc_args.inverse_merge_ml_mli then
+                 if !Odoc_global.inverse_merge_ml_mli then
                    (* two Module.t for the .ml ! *)
                    raise (Failure (Odoc_messages.two_implementations m.m_name))
                  else

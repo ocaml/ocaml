@@ -21,6 +21,7 @@ let open_proc cmd args input output err toclose =
   let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork () with
   | 0 ->
+      (* Safer to use close on exec, (ocaml bug PR#2715) *)
       if not cloexec then List.iter close toclose;
       if input <> stdin then begin
 	dup2 input stdin; close input

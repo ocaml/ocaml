@@ -39,6 +39,7 @@ tk_x11=yes
 dl_defs=''
 verbose=no
 withcurses=yes
+debugruntime=noruntimed
 withsharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
@@ -100,6 +101,8 @@ while : ; do
         dllib="$2"; shift;;
     -verbose|--verbose)
         verbose=yes;;
+    -with-debug-runtime|--with-debug-runtime)
+        debugruntime=runtimed;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -336,7 +339,7 @@ case "$bytecc,$host" in
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
-    dllccompopts="-D_WIN32 -DCAML_DLL"
+    dllccompopts="-U_WIN32 -DCAML_DLL"
     if test $withsharedlibs = yes; then
       flexlink="flexlink -chain cygwin -merge-manifest"
       flexdir=`$flexlink -where | dos2unix`
@@ -465,10 +468,11 @@ esac
 # Determine alignment constraints
 
 case "$host" in
-  sparc*-*-*|hppa*-*-*)
+  sparc*-*-*|hppa*-*-*|arm*-*-*)
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
+    # PR#5088 suggests same problem on ARM.
     # But there's a knack (PR#2572):
     # if we're in 64-bit mode (sizeof(long) == 8),
     # we must not doubleword-align floats...
@@ -496,7 +500,8 @@ esac
 
 if $int64_native; then
   case "$host" in
-    sparc*-*-*|hppa*-*-*)
+    # PR#5088: autodetection is unreliable on ARM
+    sparc*-*-*|hppa*-*-*|arm*-*-*)
       if test $2 = 8; then
         echo "64-bit integers can be word-aligned."
         echo "#undef ARCH_ALIGN_INT64" >> m.h
@@ -606,14 +611,11 @@ if test $withsharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     i[3456]86-*-darwin10.*)
-      if test $arch64 == true; then
-          mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
-          bytecccompopts="$dl_defs $bytecccompopts"
-          dl_needs_underscore=false
-          shared_libraries_supported=true
-      else
-          shared_libraries_supported=false
-      fi;;
+       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress"
+       bytecccompopts="$dl_defs $bytecccompopts"
+       dl_needs_underscore=false
+       shared_libraries_supported=true
+       ;;
     i[3456]86-*-darwin*)
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -read_only_relocs suppress"
       bytecccompopts="$dl_defs $bytecccompopts"
@@ -661,6 +663,12 @@ if test $withsharedlibs = "yes"; then
     sparc-*-linux*)               natdynlink=true;;
     i686-*-kfreebsd*)             natdynlink=true;;
     x86_64-*-kfreebsd*)           natdynlink=true;;
+    i[345]86-*-freebsd*)          natdynlink=true;;
+    x86_64-*-freebsd*)            natdynlink=true;;
+    i[345]86-*-openbsd*)          natdynlink=true;;
+    x86_64-*-openbsd*)            natdynlink=true;;
+    i[345]86-*-netbsd*)           natdynlink=true;;
+    x86_64-*-netbsd*)             natdynlink=true;;
     i386-*-gnu0.3)                natdynlink=true;;
   esac
 fi
@@ -1512,14 +1520,14 @@ if test $has_tk = true; then
   if test -n "$tcl_version" && test "x$tcl_version" != "xnone"; then
     echo "tcl.h and tk.h version $tcl_version found with \"$tk_defs\"."
     case $tcl_version in
-    7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
-    7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
-    8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
-    8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
-    8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
-    8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
-    8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
     8.5) tclmaj=8 tclmin=5 tkmaj=8 tkmin=5 ;;
+    8.4) tclmaj=8 tclmin=4 tkmaj=8 tkmin=4 ;;
+    8.3) tclmaj=8 tclmin=3 tkmaj=8 tkmin=3 ;;
+    8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
+    8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
+    8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
+    7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
+    7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
@@ -1605,10 +1613,11 @@ fi
 
 # Look for BFD library
 
-if ./hasgot -i bfd.h -lbfd -ldl; then
+if ./hasgot -i bfd.h && \
+   ./hasgot -lbfd -ldl -liberty -lz bfd_openr; then
   echo "BFD library found."
   echo "#define HAS_LIBBFD" >> s.h
-  echo "LIBBFD_LINK=-lbfd -ldl" >> Makefile
+  echo "LIBBFD_LINK=-lbfd -ldl -liberty -lz" >> Makefile
 else
   echo "BFD library not found, 'objinfo' will be unable to display info on .cmxs files"
   echo "LIBBFD_LINK=" >> Makefile
@@ -1683,6 +1692,7 @@ echo "CMXS=$cmxs" >> Makefile
 echo "MKEXE=$mkexe" >> Makefile
 echo "MKDLL=$mksharedlib" >> Makefile
 echo "MKMAINDLL=$mkmaindll" >> Makefile
+echo "RUNTIMED=${debugruntime}" >>Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
@@ -1747,6 +1757,10 @@ fi
 #else
 #  echo "Source-level replay debugger: not supported"
 #fi
+
+if test "$debugruntime" = "runtimed"; then
+  echo "Debug runtime will be compiled and installed"
+fi
 
 echo "Additional libraries supported:"
 echo "        $otherlibraries"

@@ -36,6 +36,12 @@ let class_declarations env cty1 cty2 =
 open Format
 open Ctype
 
+(*
+let rec hide_params = function
+    Tcty_fun ("*", _, cty) -> hide_params cty
+  | cty -> cty
+*)
+
 let include_err ppf =
   function
   | CM_Virtual_class ->

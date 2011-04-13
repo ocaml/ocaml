@@ -74,6 +74,7 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
   let _nojoin () = option "-nojoin" ()
+  let _runtime_variant s = option_with_arg "-runtime-variant" s
   let _strict_sequence = option "-strict-sequence"
   let _thread () = option "-thread" ()
   let _vmthread () = option "-vmthread" ()

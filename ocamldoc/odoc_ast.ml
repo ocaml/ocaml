@@ -1088,12 +1088,12 @@ module Analyser =
                     | Some t -> Some (Odoc_env.subst_type new_env t));
                     ty_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
                     ty_code =
-		      (
-		       if !Odoc_args.keep_code then
-			 Some (get_string_of_file loc_start new_end)
-		       else
-			 None
-		      ) ;
+                      (
+                       if !Odoc_global.keep_code then
+                         Some (get_string_of_file loc_start new_end)
+                       else
+                         None
+                      ) ;
                   }
                 in
                 let (maybe_more2, info_after_opt) =
@@ -1129,7 +1129,7 @@ module Analyser =
               ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
 	      ex_code =
                 (
-		 if !Odoc_args.keep_code then
+                 if !Odoc_global.keep_code then
                    Some (get_string_of_file loc_start loc_end)
                  else
                    None
@@ -1174,18 +1174,18 @@ module Analyser =
                  module_expr
                  tt_module_expr
              in
-	     let code =
-	       if !Odoc_args.keep_code then
-		 let loc = module_expr.Parsetree.pmod_loc in
-		 let st = loc.Location.loc_start.Lexing.pos_cnum in
-		 let en = loc.Location.loc_end.Lexing.pos_cnum in
-		 Some (get_string_of_file st en)
-	       else
-		 None
-	     in
-	     let new_module =
-	       { new_module_pre with m_code = code }
-	     in
+             let code =
+               if !Odoc_global.keep_code then
+                 let loc = module_expr.Parsetree.pmod_loc in
+                 let st = loc.Location.loc_start.Lexing.pos_cnum in
+                 let en = loc.Location.loc_end.Lexing.pos_cnum in
+                 Some (get_string_of_file st en)
+               else
+                 None
+             in
+             let new_module =
+               { new_module_pre with m_code = code }
+             in
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 =
                match new_module.m_type with
@@ -1544,7 +1544,7 @@ module Analyser =
               p_modtype tt_modtype
           in
           let tt_modtype = Odoc_env.subst_module_type env tt_modtype in
-          if !Odoc_args.filter_with_module_constraints then
+          if !Odoc_global.filter_with_module_constraints then
             filter_module_with_module_type_constraint m_base2 tt_modtype;
           {
             m_base with
@@ -1574,7 +1574,7 @@ module Analyser =
 	    m_kind = Module_struct elements2 ;
 	  }
 
-      | (Parsetree.Pmod_unpack (p_exp, pkg_type),
+      | (Parsetree.Pmod_unpack (p_exp),
          Typedtree.Tmod_unpack (t_exp, tt_modtype)) ->
           print_DEBUG ("Odoc_ast: case Parsetree.Pmod_unpack + Typedtree.Tmod_unpack "^module_name);
           let code =
@@ -1585,7 +1585,13 @@ module Analyser =
             let s = get_string_of_file exp_loc_end loc_end in
             Printf.sprintf "(val ...%s" s
           in
-          let name = Odoc_env.full_module_type_name env (Name.from_longident (fst pkg_type)) in
+          (* let name = Odoc_env.full_module_type_name env (Name.from_path (fst pkg_type)) in *)
+          let name =
+            match tt_modtype with
+            | Tmty_ident p ->
+                Odoc_env.full_module_type_name env (Name.from_path p)
+            | _ -> ""
+          in
           let alias = { mta_name = name ; mta_module = None } in
           { m_base with
             m_type = Odoc_env.subst_module_type env tt_modtype ;
@@ -1671,8 +1677,9 @@ module Analyser =
          m_kind = kind ;
          m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
          m_top_deps = [] ;
-	 m_code = (if !Odoc_args.keep_code then Some !file else None) ;
-	 m_code_intf = None ;
+         m_code = (if !Odoc_global.keep_code then Some !file else None) ;
+         m_code_intf = None ;
+         m_text_only = false ;
        }
   end
 

@@ -93,9 +93,10 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 
 
 val length : ('a, 'b) t -> int
-(** [Hashtbl.length tbl] returns the number of bindings in [tbl].
-   Multiple bindings are counted multiply, so [Hashtbl.length]
-   gives the number of times [Hashtbl.iter] calls its first argument. *)
+(** [Hashtbl.length tbl] returns the number of bindings in [tbl] in
+   constant time. Multiple bindings are counted multiply, so
+   [Hashtbl.length] gives the number of times [Hashtbl.iter] calls its
+   first argument. *)
 
 
 (** {6 Functorial interface} *)

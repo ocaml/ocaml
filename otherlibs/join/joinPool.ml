@@ -309,13 +309,14 @@ def st(next_id) & fresh_nounce() =
         | [] ->
             agent(worker) &
 	    if n <> 0 then begin
+              if C.debug then Join.debug "POOL" "N=%i" n ;
 	      let again = m.get_active () in
 	      match again with
               | [] ->
                   pool(E,low)
               | _  ->
                   let n = if n = min_int then min_int else n-1 in
-                  pool(E,put (again,n-1,m) low)
+                  pool(E,put (again,n,m) low)
             end else begin
               pool(E,low)
             end

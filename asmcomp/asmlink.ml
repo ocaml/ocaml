@@ -101,7 +101,7 @@ let runtime_lib () =
   let libname =
     if !Clflags.gprofile
     then "libasmrunp" ^ ext_lib
-    else "libasmrun" ^ ext_lib in
+    else "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
   try
     if !Clflags.nopervasives then []
     else [ find_in_path !load_path libname ]

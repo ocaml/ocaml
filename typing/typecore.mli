@@ -64,6 +64,7 @@ val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
 val extract_option_type: Env.t -> type_expr -> type_expr
 val iter_pattern: (Typedtree.pattern -> unit) -> Typedtree.pattern -> unit
+val generalizable: int -> type_expr -> bool
 val reset_delayed_checks: unit -> unit
 val force_delayed_checks: unit -> unit
 
@@ -103,6 +104,9 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Modules_not_allowed
+  | Cannot_infer_signature
+  | Not_a_packed_module of type_expr
 (*> JOCAML *)
   | Expr_as_proc
   | Proc_as_expr
@@ -128,5 +132,8 @@ val type_open: (Env.t -> Location.t -> Longident.t -> Env.t) ref
 val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * class_signature * string list) ref
+val type_package:
+  (Env.t -> Parsetree.module_expr -> Path.t -> string list -> type_expr list ->
+   Typedtree.module_expr * type_expr list) ref
 
 val create_package_type: Location.t -> Env.t -> Parsetree.package_type -> type_expr

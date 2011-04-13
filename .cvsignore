@@ -16,4 +16,5 @@ _boot_log2
 _build
 _log
 myocamlbuild_config.ml
+ocamlbuild-mixed-boot
 ocamlnat
