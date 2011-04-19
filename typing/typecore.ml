@@ -2506,9 +2506,11 @@ and type_let env rec_flag spat_sexp_list scope allow =
     List.map
       (fun (spat, sexp) ->
         match spat.ppat_desc, sexp.pexp_desc with
-          Ppat_constraint _, _ -> spat
+          (Ppat_any | Ppat_constraint _), _ -> spat
         | _, Pexp_constraint (_, _, Some sty)
-        | _, Pexp_constraint (_, Some sty, None) ->
+        | _, Pexp_constraint (_, Some sty, None) when !Clflags.principal ->
+            (* propagate type annotation to pattern,
+               to allow it to be generalized in -principal mode *)
             {ppat_desc = Ppat_constraint
                (spat, {ptyp_desc=Ptyp_poly([],sty);
                        ptyp_loc={sty.ptyp_loc with Location.loc_ghost=true}});
