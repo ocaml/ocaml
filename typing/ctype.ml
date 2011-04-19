@@ -690,14 +690,10 @@ let get_level env p =
       (* no newtypes in predef *)
       Path.binding_time p
 
-let is_newtype env p =
-  try (Env.find_type p env).type_newtype_level <> None
-  with Not_found -> false
-
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
-    begin match ty.desc with
+    match ty.desc with
       Tconstr(p, tl, abbrev)
       when level < Env.map_newtype_level env (get_level env p) ->
         (* Try first to replace an abbreviation by its expansion. *)
@@ -733,7 +729,6 @@ let rec update_level env level ty =
         set_level ty level;
         (* XXX what about abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level) ty
-    end
   end
 
 (* Generalize and lower levels of contravariant branches simultaneously *)
@@ -905,12 +900,15 @@ let rec copy ?partial ty =
     (* We only forget types that are non generic and do not contain
        free univars *)
     let forget =
-      ty.level <> generic_level &&
+      if ty.level = generic_level then generic_level else
       match partial with
         None -> assert false
-      | Some free_univars -> TypeSet.is_empty (free_univars ty)
+      | Some (free_univars, keep) ->
+          if TypeSet.is_empty (free_univars ty) then
+            if keep then ty.level else !current_level
+          else generic_level
     in
-    if forget then newvar () else
+    if forget <> generic_level then newty2 forget Tvar else
     let desc = ty.desc in
     save_desc ty desc;
     let t = newvar() in          (* Stub *)
@@ -980,9 +978,12 @@ let rec copy ?partial ty =
 
 (**** Variants of instantiations ****)
 
-let instance ?(partial=false) sch =
+let instance ?partial sch =
   let partial =
-    if partial then Some (compute_univars sch) else None in
+    match partial with
+      None -> None
+    | Some keep -> Some (compute_univars sch, keep)
+  in
   let ty = copy ?partial sch in
   cleanup_types ();
   ty
@@ -1285,7 +1286,15 @@ let safe_abbrev env ty =
 let try_expand_once env ty =
   let ty = repr ty in
   match ty.desc with
-    Tconstr _ -> repr (expand_abbrev env ty)
+    Tconstr (p, _, _) ->
+      let ty' = repr (expand_abbrev env ty) in
+      if !Clflags.principal then begin
+        match (Env.find_type p env).type_newtype_level with
+          Some lv when ty.level < Env.map_newtype_level env lv  ->
+            link_type ty ty'
+        | _ -> ()
+      end;
+      ty'
   | _ -> raise Cannot_expand
 
 let _ = forward_try_expand_once := try_expand_once

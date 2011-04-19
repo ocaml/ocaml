@@ -107,6 +107,9 @@ val limited_generalize: type_expr -> type_expr -> unit
 
 val instance: ?partial:bool -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
+        (* partial=None  -> normal
+           partial=false -> newvar() for non generic subterms
+           partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:

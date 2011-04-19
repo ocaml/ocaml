@@ -85,10 +85,23 @@ Error: This expression has type int but an expression was expected of type a
     in r (* fails too *)
        ^
 Error: This expression has type int but an expression was expected of type a
+#       val test : 'a t -> 'a = <fun>
 #         Characters 122-124:
     !r (* normalized to int option *)
     ^^
 Error: This expression has type int option
        but an expression was expected of type a option
 #         val test2 : 'a t -> 'a option = <fun>
+#           val test2 : 'a t -> 'a option = <fun>
+#           Characters 162-164:
+    !u
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#           val test2 : 'a t -> 'a option = <fun>
+#               Characters 186-187:
+    in a
+       ^
+Error: This expression has type int option
+       but an expression was expected of type a option
 # 

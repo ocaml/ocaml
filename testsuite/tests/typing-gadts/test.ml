@@ -164,13 +164,43 @@ let test : type a. a t -> a = fun x ->
   let r = match x with Int -> (1 : a)
   in r (* fails too *)
 ;;
+let test : type a. a t -> a = fun x ->
+  let r : a = match x with Int -> 1
+  in r (* ok *)
+;;
 let test2 : type a. a t -> a option = fun x ->
   let r = ref None in
   begin match x with Int -> r := Some (1 : a) end;
   !r (* normalized to int option *)
 ;;
 let test2 : type a. a t -> a option = fun x ->
-  let r = ref (None : a option) in
+  let r : a option ref = ref None in
   begin match x with Int -> r := Some 1 end;
   !r (* ok *)
 ;;
+let test2 : type a. a t -> a option = fun x ->
+  let r : a option ref = ref None in
+  let u = ref None in
+  begin match x with Int -> r := Some 1; u := !r end;
+  !u
+;; (* fail *)
+let test2 : type a. a t -> a option = fun x ->
+  let r : a option ref = ref None in
+  let u = ref None in
+  begin match x with Int -> u := Some 1; r := !u end;
+  !u
+;; (* fail *)
+let test2 : type a. a t -> a option = fun x ->
+  let u = ref None in
+  let r : a option ref = ref None in
+  begin match x with Int -> r := Some 1; u := !r end;
+  !u
+;; (* fail *)
+let test2 : type a. a t -> a option = fun x ->
+  let u = ref None in
+  let a =
+    let r : a option ref = ref None in
+    begin match x with Int -> r := Some 1; u := !r end;
+    !u
+  in a
+;; (* fail *)

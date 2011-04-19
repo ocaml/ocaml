@@ -55,8 +55,7 @@ Error: This expression has type &x7 t but an expression was expected of type
 #                       Characters 157-158:
   	  C ->
      ^
-Error: This pattern matches values of type (s, s) t
-       but a pattern was expected which matches values of type (s, s * s) t
+Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
 #                         Characters 174-182:
   	| (IntLit _ | BoolLit _) -> ()
       ^^^^^^^^
@@ -70,12 +69,20 @@ Error: This pattern matches values of type ([? `A ] as 'a) * bool t
 #                                 Characters 300-301:
       | BoolLit b -> b
                      ^
-Error: This expression has type bool but an expression was expected of type s
+Error: This expression has type bool but an expression was expected of type
+         int
 #   type 'a t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
-#         val test : 'a t -> 'a = <fun>
+#         Characters 88-89:
+    in r
+       ^
+Error: This expression has type int but an expression was expected of type a
 #       Characters 87-88:
     in r
+       ^
+Error: This expression has type int but an expression was expected of type a
+#       Characters 82-83:
+    in r (* fails too *)
        ^
 Error: This expression has type int but an expression was expected of type a
 #       val test : 'a t -> 'a = <fun>
@@ -85,4 +92,24 @@ Error: This expression has type int but an expression was expected of type a
 Error: This expression has type int option
        but an expression was expected of type a option
 #         val test2 : 'a t -> 'a option = <fun>
+#           Characters 162-164:
+    !u
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#           Characters 162-164:
+    !u
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#           Characters 162-164:
+    !u
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#               Characters 186-187:
+    in a
+       ^
+Error: This expression has type int option
+       but an expression was expected of type a option
 # 

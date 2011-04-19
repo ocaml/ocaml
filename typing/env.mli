@@ -21,7 +21,6 @@ type t
 val empty: t
 val initial: t
 val diff: t -> t -> Ident.t list
-val map_newtype_level: t -> int -> int
 
 (* Lookup by paths *)
 
@@ -40,6 +39,7 @@ val find_type_expansion_opt: Path.t -> t -> type_expr list * type_expr
 val find_modtype_expansion: Path.t -> t -> Types.module_type
 
 val has_local_constraints: t -> bool
+val map_newtype_level: t -> int -> int
 
 (* Lookup by long identifiers *)
 

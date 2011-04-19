@@ -2426,9 +2426,10 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
         if !Clflags.principal then begin_def (); (* propagation of pattern *)
         let scope = Some (Annot.Idef loc) in
         let (pat, ext_env, force, unpacks) = 
+          let partial =
+            if !Clflags.principal then Some false else None in
           let ty_arg =
-            if dont_propagate then newvar () else
-            instance ~partial:!Clflags.principal ty_arg
+            if dont_propagate then newvar () else instance ?partial ty_arg
           in type_pattern ~lev env spat scope ty_arg 
         in      
         pattern_force := force @ !pattern_force;
@@ -2501,7 +2502,19 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
 and type_let env rec_flag spat_sexp_list scope allow =
   begin_def();
   if !Clflags.principal then begin_def ();
-  let spatl = List.map (fun (spat, sexp) -> spat) spat_sexp_list in
+  let spatl =
+    List.map
+      (fun (spat, sexp) ->
+        match spat.ppat_desc, sexp.pexp_desc with
+          Ppat_constraint _, _ -> spat
+        | _, Pexp_constraint (_, _, Some sty)
+        | _, Pexp_constraint (_, Some sty, None) ->
+            {ppat_desc = Ppat_constraint
+               (spat, {ptyp_desc=Ptyp_poly([],sty);
+                       ptyp_loc={sty.ptyp_loc with Location.loc_ghost=true}});
+             ppat_loc = {spat.ppat_loc with Location.loc_ghost=true}}
+        | _ -> spat)
+      spat_sexp_list in
   let nvs = List.map (fun _ -> newvar ()) spatl in
   let (pat_list, new_env, force, unpacks) = 
     type_pattern_list env spatl scope nvs allow in
@@ -2544,7 +2557,12 @@ and type_let env rec_flag spat_sexp_list scope allow =
         match pat.pat_type.desc with
         | Tpoly (ty, tl) ->
             begin_def ();
+            if !Clflags.principal then begin_def ();
             let vars, ty' = instance_poly true tl ty in
+            if !Clflags.principal then begin
+              end_def ();
+              generalize_structure ty'
+            end;
             let exp = type_expect exp_env sexp ty' in
             end_def ();
             check_univars env true "definition" exp pat.pat_type vars;
