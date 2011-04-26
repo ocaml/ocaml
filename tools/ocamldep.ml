@@ -289,22 +289,22 @@ let _ =
   add_to_load_path Filename.current_dir_name;
   Arg.parse [
      "-I", Arg.String add_to_load_path,
-       "<dir>  Add <dir> to the list of include directories";
+        "<dir>  Add <dir> to the list of include directories";
      "-impl", Arg.String (file_dependencies_as ML),
-       "<f> Process <f> as a .ml file";
+           "<f> Process <f> as a .ml file";
      "-intf", Arg.String (file_dependencies_as MLI),
-       "<f> Process <f> as a .mli file";
+           "<f> Process <f> as a .mli file";
      "-modules", Arg.Set raw_dependencies,
-       " Print module dependencies in raw form (not suitable for make)";
+              " Print module dependencies in raw form (not suitable for make)";
      "-native", Arg.Set native_only,
-       "  Generate dependencies for a pure native-code project (no .cmo files)";
+             "  Generate dependencies for a pure native-code project (no .cmo files)";
      "-pp", Arg.String(fun s -> preprocessor := Some s),
-       "<cmd> Pipe sources through preprocessor <cmd>";
+         "<cmd> Pipe sources through preprocessor <cmd>";
      "-slash", Arg.Set force_slash,
-       "   (Windows) Use forward slash / instead of backslash \\ in file paths";
+            "   (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-version", Arg.Unit print_version,
-      " Print version and exit";
+              " Print version and exit";
      "-vnum", Arg.Unit print_version_num,
-      " Print version number and exit";
+           "    Print version number and exit";
     ] file_dependencies usage;
   exit (if !error_occurred then 2 else 0)

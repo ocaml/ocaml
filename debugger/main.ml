@@ -158,7 +158,7 @@ let set_checkpoints n =
 let set_directory dir =
   Sys.chdir dir
 let print_version () =
-  printf "The Objective Caml debugger, version %s@." Sys.ocaml_version;
+  printf "The OCaml debugger, version %s@." Sys.ocaml_version;
   exit 0;
 ;;
 let print_version_num () =
@@ -206,7 +206,7 @@ let main () =
         arguments := !arguments ^ " " ^ (Filename.quote Sys.argv.(j))
       done
     end;
-    printf "\tObjective Caml Debugger version %s@.@." Config.version;
+    printf "\tOCaml Debugger version %s@.@." Config.version;
     Config.load_path := !default_load_path;
     Clflags.recursive_types := true;    (* Allow recursive types. *)
     toplevel_loop ();                   (* Toplevel. *)

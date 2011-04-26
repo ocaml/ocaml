@@ -3,7 +3,7 @@
 .TH OCAMLCP 1
 
 .SH NAME
-ocamlcp \- The Objective Caml profiling compiler
+ocamlcp \- The OCaml profiling compiler
 
 .SH SYNOPSIS
 .B ocamlcp
@@ -95,5 +95,5 @@ streams, we recommend using
 .BR ocamlc (1),
 .BR ocamlprof (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Profiling".

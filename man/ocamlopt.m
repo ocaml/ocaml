@@ -4,7 +4,7 @@
 
 .SH NAME
 
-ocamlopt \- The Objective Caml native-code compiler
+ocamlopt \- The OCaml native-code compiler
 
 .SH SYNOPSIS
 
@@ -19,7 +19,7 @@ ocamlopt \- The Objective Caml native-code compiler
 
 .SH DESCRIPTION
 
-The Objective Caml high-performance
+The OCaml high-performance
 native-code compiler
 .BR ocamlopt (1)
 compiles Caml source files to native code object files and link these
@@ -120,7 +120,7 @@ Thus, it behaves exactly like
 .BR ocamlopt ,
 but compiles faster.
 .B ocamlopt.opt
-is not available in all installations of Objective Caml.
+is not available in all installations of OCaml.
 
 .SH OPTIONS
 
@@ -378,7 +378,7 @@ Multiple levels of packing can be achieved by combining
 with
 .BR \-for\-pack .
 See
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Native-code compilation" for more details.
 .TP
 .BI \-pp \ command
@@ -441,7 +441,7 @@ Linux AMD 64, they must contain only position-independent code).
 .B \-thread
 Compile or link multithreaded programs, in combination with the
 system threads library described in
-.IR "The Objective Caml user's manual" .
+.IR "The OCaml user's manual" .
 .TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
@@ -569,5 +569,5 @@ SPARC processors.
 .SH SEE ALSO
 .BR ocamlc (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Native-code compilation".

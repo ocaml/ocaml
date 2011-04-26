@@ -209,14 +209,14 @@ case "$host,$cc" in
 
 WARNING: you are using gcc version 2.7.2.1 on an Intel x86 processor.
 This version of gcc is known to generate incorrect code for the
-Objective Caml runtime system on some Intel x86 machines. (The symptom
+OCaml runtime system on some Intel x86 machines. (The symptom
 is a crash of boot/ocamlc when compiling stdlib/pervasives.mli.)
 In particular, the version of gcc 2.7.2.1 that comes with
 Linux RedHat 4.x / Intel is affected by this problem.
 Other Linux distributions might also be affected.
 If you are using one of these configurations, you are strongly advised
 to use another version of gcc, such as 2.95, which are
-known to work well with Objective Caml.
+known to work well with OCaml.
 
 Press <enter> to proceed or <interrupt> to stop.
 EOF
@@ -225,7 +225,7 @@ EOF
 
 WARNING: you are using gcc version 2.96 on an Intel x86 processor.
 Certain patched versions of gcc 2.96 are known to generate incorrect
-code for the Objective Caml runtime system.  (The symptom is a segmentation
+code for the OCaml runtime system.  (The symptom is a segmentation
 violation on boot/ocamlc.)  Those incorrectly patched versions can be found
 in RedHat 7.2 and Mandrake 8.0 and 8.1; other Linux distributions
 might also be affected.  (See bug #57760 on bugzilla.redhat.com)
@@ -343,7 +343,7 @@ sh ./runtest ansi.c
 case $? in
   0) echo "The C compiler is ANSI-compliant.";;
   1) echo "The C compiler $cc is not ANSI-compliant."
-     echo "You need an ANSI C compiler to build Objective Caml."
+     echo "You need an ANSI C compiler to build OCaml."
      exit 2;;
   *) echo "Unable to compile the test program."
      echo "Make sure the C compiler $cc is properly installed."
@@ -362,7 +362,7 @@ case "$2,$3" in
        echo "#define ARCH_SIXTYFOUR" >> m.h
        arch64=true;;
   *,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
-       echo "Objective Caml won't run on this architecture."
+       echo "OCaml won't run on this architecture."
        exit 2;;
     *) echo "Unable to compile the test program."
        echo "Make sure the C compiler $cc is properly installed."
@@ -371,7 +371,7 @@ esac
 if test $1 != 4 && test $2 != 4 && test $4 != 4; then
   echo "Sorry, we can't find a 32-bit integer type"
   echo "(sizeof(short) = $4, sizeof(int) = $1, sizeof(long) = $2)"
-  echo "Objective Caml won't run on this architecture."
+  echo "OCaml won't run on this architecture."
   exit 2
 fi
 
@@ -413,7 +413,7 @@ fi
 
 if test $3 = 8 && test $int64_native = false; then
   echo "This architecture has 64-bit pointers but no 64-bit integer type."
-  echo "Objective Caml won't run on this architecture."
+  echo "OCaml won't run on this architecture."
   exit 2
 fi
 
@@ -426,7 +426,7 @@ case $? in
   1) echo "This is a little-endian architecture."
      echo "#undef ARCH_BIG_ENDIAN" >> m.h;;
   2) echo "This architecture seems to be neither big endian nor little endian."
-     echo "Objective Caml won't run on this architecture."
+     echo "OCaml won't run on this architecture."
      exit 2;;
   *) echo "Something went wrong during endianness determination."
      echo "You'll have to figure out endianness yourself"
@@ -460,7 +460,7 @@ case "$host" in
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
       *) echo "Something went wrong during alignment determination for doubles."
          echo "I'm going to assume this architecture has alignment constraints over doubles."
-         echo "That's a safe bet: Objective Caml will work even if"
+         echo "That's a safe bet: OCaml will work even if"
          echo "this architecture has actually no alignment constraints."
          echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
     esac;;
@@ -486,7 +486,7 @@ if $int64_native; then
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
         *) echo "Something went wrong during alignment determination for 64-bit integers."
            echo "I'm going to assume this architecture has alignment constraints."
-           echo "That's a safe bet: Objective Caml will work even if"
+           echo "That's a safe bet: OCaml will work even if"
            echo "this architecture has actually no alignment constraints."
            echo "#define ARCH_ALIGN_INT64" >> m.h;;
       esac
@@ -1669,7 +1669,7 @@ mv m.h s.h Makefile ..
 echo
 echo "** Configuration summary **"
 echo
-echo "Directories where Objective Caml will be installed:"
+echo "Directories where OCaml will be installed:"
 echo "        binaries.................. $bindir"
 echo "        standard library.......... $libdir"
 echo "        manual pages.............. $mandir (with extension .$manext)"
@@ -1743,5 +1743,5 @@ echo "The \"labltk\" library: not supported"
 fi
 
 echo
-echo "** Objective Caml configuration completed successfully **"
+echo "** OCaml configuration completed successfully **"
 echo

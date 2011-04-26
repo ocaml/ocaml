@@ -49,7 +49,7 @@ let file_argument name =
     end
 
 let print_version () =
-  Printf.printf "The Objective Caml toplevel, version %s\n" Sys.ocaml_version;
+  Printf.printf "The OCaml toplevel, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
 

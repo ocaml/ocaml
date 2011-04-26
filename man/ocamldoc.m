@@ -12,7 +12,7 @@
 \" ..
 
 .SH NAME
-ocamldoc \- The Objective Caml documentation generator
+ocamldoc \- The OCaml documentation generator
 
 
 .SH SYNOPSIS
@@ -24,13 +24,13 @@ ocamldoc \- The Objective Caml documentation generator
 
 .SH DESCRIPTION
 
-The Objective Caml documentation generator
+The OCaml documentation generator
 .BR ocamldoc (1)
 generates documentation from special comments embedded in source files. The
 comments used by OCamldoc are of the form
 .I (** ... *)
 and follow the format described in the
-.IR "The Objective Caml user's manual" .
+.IR "The OCaml user's manual" .
 
 OCamldoc can produce documentation in various formats: HTML, LaTeX, TeXinfo,
 Unix man pages, and
@@ -258,7 +258,7 @@ Do not print OCamldoc warnings.
 Display a short usage summary and exit.
 .SS "Type-checking options"
 .BR ocamldoc (1)
-calls the Objective Caml type-checker to obtain type information. The
+calls the OCaml type-checker to obtain type information. The
 following options impact the type-checking phase. They have the same meaning
 as for the
 .BR ocamlc (1)\ and \ ocamlopt (1)
@@ -430,5 +430,5 @@ Set the section number used for generated man filenames. Default is 3.
 .BR ocamlc (1),
 .BR ocamlopt (1).
 .br
-.IR "The Objective Caml user's manual",
+.IR "The OCaml user's manual",
 chapter "The documentation generator".

@@ -3,7 +3,7 @@
 .TH OCAMLDEP 1
 
 .SH NAME
-ocamldep \- Dependency generator for Objective Caml
+ocamldep \- Dependency generator for OCaml
 
 .SH SYNOPSIS
 .B ocamldep
@@ -16,7 +16,7 @@ ocamldep \- Dependency generator for Objective Caml
 
 The
 .BR ocamldep (1)
-command scans a set of Objective Caml source files
+command scans a set of OCaml source files
 (.ml and .mli files) for references to external compilation units,
 and outputs dependency lines in a format suitable for the
 .BR make (1)
@@ -111,5 +111,5 @@ Display a short usage summary and exit.
 .BR ocamlc (1),
 .BR ocamlopt (1).
 .br
-.IR The\ Objective\ Caml\ user's\ manual ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "Dependency generator".

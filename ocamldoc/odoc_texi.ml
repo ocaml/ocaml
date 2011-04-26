@@ -22,7 +22,7 @@ open Module
 
 let esc_8bits = ref false
 
-let info_section = ref "Objective Caml"
+let info_section = ref "OCaml"
 
 let info_entry = ref []
 

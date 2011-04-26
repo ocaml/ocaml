@@ -124,7 +124,7 @@ let _ =
     print_endline "Usage: ocaml299to3 <source file> ...";
     print_endline "Description:";
     print_endline
-      "Convert Objective Caml 2.99 O'Labl-style labels in implementation files to";
+      "Convert OCaml 2.99 O'Labl-style labels in implementation files to";
     print_endline
       "a syntax compatible with version 3. Also `fun:' labels are replaced by `f:'.";
     print_endline "Other syntactic changes are not handled.";

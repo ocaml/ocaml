@@ -2,7 +2,7 @@
 .TH OCAMLLEX 1
 
 .SH NAME
-ocamllex \- The Objective Caml lexer generator
+ocamllex \- The OCaml lexer generator
 
 .SH SYNOPSIS
 .B ocamllex
@@ -18,7 +18,7 @@ ocamllex \- The Objective Caml lexer generator
 
 The
 .BR ocamllex (1)
-command generates Objective Caml lexers from a set of regular
+command generates OCaml lexers from a set of regular
 expressions with associated semantic actions, in the style of
 .BR lex (1).
 
@@ -83,5 +83,5 @@ Display a short usage summary and exit.
 .SH SEE ALSO
 .BR ocamlyacc (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Lexer and parser generators".

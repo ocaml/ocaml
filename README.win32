@@ -1,7 +1,7 @@
-       Release notes on the MS Windows ports of Objective Caml
-       -------------------------------------------------------
+       Release notes on the MS Windows ports of OCaml
+       ----------------------------------------------
 
-There are no less than four ports of Objective Caml for MS Windows available:
+There are no less than four ports of OCaml for MS Windows available:
   - a native Win32 port, built with the Microsoft development tools;
   - a native Win32 port, built with the Cygwin/MinGW development tools;
   - a port consisting of the Unix sources compiled under the Cygwin
@@ -171,9 +171,9 @@ Unix/GCC or Cygwin or Mingw on similar hardware.
 
 CREDITS:
 
-The initial port of Caml Special Light (the ancestor of Objective Caml)
-to Windows NT was done by Kevin Gallo at Microsoft Research, who
-kindly contributed his changes to the Caml project.
+The initial port of Caml Special Light (the ancestor of OCaml) to
+Windows NT was done by Kevin Gallo at Microsoft Research, who kindly
+contributed his changes to the Caml project.
 
 The graphical user interface for the toplevel was initially developed
 by Jacob Navia, then significantly improved by Christopher A. Watford.
@@ -271,8 +271,8 @@ NOTES:
 
 ------------------------------------------------------------------------------
 
-                  The Cygwin port of Objective Caml
-                  ---------------------------------
+                  The Cygwin port of OCaml
+                  ------------------------
 
 REQUIREMENTS:
 

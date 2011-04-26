@@ -3,7 +3,7 @@
 .TH OCAML 1
 
 .SH NAME
-ocaml \- The Objective Caml interactive toplevel
+ocaml \- The OCaml interactive toplevel
 
 .SH SYNOPSIS
 .B ocaml
@@ -20,8 +20,8 @@ ocaml \- The Objective Caml interactive toplevel
 
 The
 .BR ocaml (1)
-command is the toplevel system for Objective Caml,
-that permits interactive use of the Objective Caml system through a
+command is the toplevel system for OCaml,
+that permits interactive use of the OCaml system through a
 read-eval-print loop. In this mode, the system repeatedly reads Caml
 phrases from the input, then typechecks, compiles and evaluates
 them, then prints the inferred type and result value, if any. The
@@ -178,5 +178,5 @@ and look up its capabilities in the terminal database.
 .SH SEE ALSO
 .BR ocamlc (1), \ ocamlopt (1), \ ocamlrun (1).
 .br
-.IR The\ Objective\ Caml\ user's\ manual ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "The toplevel system".

@@ -2,7 +2,7 @@
 .TH OCAMLYACC 1
 
 .SH NAME
-ocamlyacc \- The Objective Caml parser generator
+ocamlyacc \- The OCaml parser generator
 
 .SH SYNOPSIS
 .B ocamlyacc
@@ -91,5 +91,5 @@ command line.
 .SH SEE ALSO
 .BR ocamllex (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Lexer and parser generators".

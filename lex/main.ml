@@ -24,7 +24,7 @@ let output_name = ref None
 let usage = "usage: ocamlex [options] sourcefile"
 
 let print_version_string () =
-  print_string "The Objective Caml lexer generator, version ";
+  print_string "The OCaml lexer generator, version ";
   print_string Sys.ocaml_version ; print_newline();
   exit 0
 

@@ -1,6 +1,7 @@
-Objective Caml 3.13.0:
-----------------------
+OCaml 3.13.0:
+-------------
 
+- The official name of the language is now OCaml.
 - Warning 28 is now enabled by default.
 
 

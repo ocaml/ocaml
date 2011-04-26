@@ -3,7 +3,7 @@
 .TH OCAMLC 1
 
 .SH NAME
-ocamlc \- The Objective Caml bytecode compiler
+ocamlc \- The OCaml bytecode compiler
 
 .SH SYNOPSIS
 .B ocamlc
@@ -20,7 +20,7 @@ ocamlc \- The Objective Caml bytecode compiler
 
 .SH DESCRIPTION
 
-The Objective Caml bytecode compiler
+The OCaml bytecode compiler
 .BR ocamlc (1)
 compiles Caml source files to bytecode object files and links
 these object files to produce standalone bytecode executable files.
@@ -124,7 +124,7 @@ The run-time system
 then loads them dynamically at program start-up time.
 
 The output of the linking phase is a file containing compiled bytecode
-that can be executed by the Objective Caml bytecode interpreter:
+that can be executed by the OCaml bytecode interpreter:
 the command
 .BR ocamlrun (1).
 If
@@ -158,7 +158,7 @@ Thus, it behaves exactly like
 .BR ocamlc ,
 but compiles faster.
 .B ocamlc.opt
-may not be available in all installations of Objective Caml.
+may not be available in all installations of O\Caml.
 
 .SH OPTIONS
 
@@ -457,7 +457,7 @@ suffix is supported and gives a debug version of the runtime.
 .B \-thread
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in
-.IR The\ Objective\ Caml\ user's\ manual .
+.IR The\ OCaml\ user's\ manual .
 .TP
 .B \-unsafe
 Turn bound checking off for array and string accesses (the
@@ -493,7 +493,7 @@ then exit.
 .B \-vmthread
 Compile or link multithreaded programs, in combination with the
 VM-level threads library described in
-.IR The\ Objective\ Caml\ user's\ manual .
+.IR The\ OCaml\ user's\ manual .
 .TP
 .BI \-w \ warning\-list
 Enable, disable, or mark as errors the warnings specified by the argument
@@ -751,5 +751,5 @@ Display a short usage summary and exit.
 .SH SEE ALSO
 .BR ocamlopt (1), \ ocamlrun (1), \ ocaml (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Batch compilation".
