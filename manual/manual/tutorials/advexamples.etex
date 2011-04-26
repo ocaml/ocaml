@@ -413,7 +413,7 @@ s#fold (+) 0;;
 s;;
 \end{caml_example}
 A better solution is to use polymorphic methods, which were
-introduced in Objective Caml version 3.05.  Polymorphic methods makes
+introduced in OCaml version 3.05.  Polymorphic methods makes
 it possible to treat the type variable "'b" in the type of "fold" as
 universally quantified, giving "fold" the polymorphic type
 "Forall 'b. ('b -> 'a -> 'b) -> 'b -> 'b".

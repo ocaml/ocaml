@@ -1,7 +1,7 @@
 \chapter{The toplevel system (ocaml)} \label{c:camllight}
 \pdfchapter{The toplevel system (ocaml)}
 
-This chapter describes the toplevel system for Objective Caml, that permits interactive use of the Objective Caml system
+This chapter describes the toplevel system for OCaml, that permits interactive use of the Objective Caml system
 through a read-eval-print loop. In this mode, the system repeatedly
 reads Caml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
@@ -66,7 +66,7 @@ in section~\ref{s:toplevel-directives}).
 
 On start-up (before the first phrase is read), if the file
 ".ocamlinit" exists in the current directory,
-its contents are read as a sequence of Objective Caml phrases
+its contents are read as a sequence of OCaml phrases
 and executed as per the "#use" directive
 described in section~\ref{s:toplevel-directives}.
 The evaluation outcode for each phrase are not displayed.
@@ -94,11 +94,11 @@ then immediately returns to the "#" prompt.
 
 If \var{scriptfile} is given on the command-line to "ocaml", the toplevel
 system enters script mode: the contents of the file are read as a
-sequence of Objective Caml phrases and executed, as per the "#use"
+sequence of OCaml phrases and executed, as per the "#use"
 directive (section~\ref{s:toplevel-directives}). The outcome of the
 evaluation is not printed.  On reaching the end of file, the "ocaml"
 command exits immediately.  No commands are read from standard input.
-"Sys.argv" is transformed, ignoring all Objective Caml parameters, and
+"Sys.argv" is transformed, ignoring all OCaml parameters, and
 starting with the script file name in "Sys.argv.(0)".
 
 In script mode, the first line of the script is ignored if it starts
@@ -106,7 +106,7 @@ with "#!".  Thus, it should be possible to make the script
 itself executable and put as first line "#!/usr/local/bin/ocaml",
 thus calling the toplevel system automatically when the script is
 run.  However, "ocaml" itself is a "#!" script on most installations
-of Objective Caml, and Unix kernels usually do not handle nested "#!"
+of OCaml, and Unix kernels usually do not handle nested "#!"
 scripts.  A better solution is to put the following as the first line
 of the script:
 \begin{verbatim}
@@ -371,15 +371,17 @@ with "#load". See section~\ref{s:toplevel-modules} above.
 
 \section{Building custom toplevel systems: "ocamlmktop"}
 
-The "ocamlmktop" command builds Objective Caml toplevels that
+The "ocamlmktop" command builds OCaml toplevels that
 contain user code preloaded at start-up. 
 
 The "ocamlmktop" command takes as argument a set of ".cmo" and ".cma"
-files, and links them with the object files that implement the Objective Caml toplevel. The typical use is:
+files, and links them with the object files that implement the OCaml toplevel.
+The typical use is:
 \begin{verbatim}
         ocamlmktop -o mytoplevel foo.cmo bar.cmo gee.cmo
 \end{verbatim}
-This creates the bytecode file "mytoplevel", containing the Objective Caml toplevel system, plus the code from the three ".cmo"
+This creates the bytecode file "mytoplevel", containing the OCaml toplevel
+system, plus the code from the three ".cmo"
 files. This toplevel is directly executable and is started by:
 \begin{verbatim}
         ./mytoplevel

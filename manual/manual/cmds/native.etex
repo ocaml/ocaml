@@ -1,7 +1,7 @@
 \chapter{Native-code compilation (ocamlopt)} \label{c:nativecomp}
 \pdfchapter{Native-code compilation (ocamlopt)}
 
-This chapter describes the Objective Caml high-performance
+This chapter describes the OCaml high-performance
 native-code compiler "ocamlopt", which compiles Caml source files to
 native code object files and link these object files to produce
 standalone executables. 

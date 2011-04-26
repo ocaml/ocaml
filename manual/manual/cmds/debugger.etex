@@ -1,7 +1,7 @@
 \chapter{The debugger (ocamldebug)} \label{c:debugger}
 \pdfchapter{The debugger (ocamldebug)}
 
-This chapter describes the Objective Caml source-level replay debugger
+This chapter describes the OCaml source-level replay debugger
 "ocamldebug".
 
 \begin{unix} The debugger is available on Unix systems that provide
@@ -9,7 +9,7 @@ BSD sockets.
 \end{unix}
 
 \begin{windows} The debugger is available under the Cygwin port of
-Objective Caml, but not under the native Win32 ports.
+OCaml, but not under the native Win32 ports.
 \end{windows}
 
 \section{Compiling for debugging}
@@ -28,7 +28,7 @@ exactly the same speed as if they had been compiled without "-g".
 
 \subsection{Starting the debugger}
 
-The Objective Caml debugger is invoked by running the program
+The OCaml debugger is invoked by running the program
 "ocamldebug" with the name of the bytecode executable file as first
 argument:
 \begin{alltt}
@@ -103,7 +103,7 @@ If the previous command has been successful, a blank line (typing just
 
 \subsection{Getting help}
 
-The Objective Caml debugger has a simple on-line help system, which gives
+The OCaml debugger has a simple on-line help system, which gives
 a brief description of each command and variable.
 
 \begin{options}
@@ -363,7 +363,7 @@ The debugger can print the current value of simple expressions. The
 expressions can involve program variables: all the identifiers that
 are in scope at the selected program point can be accessed.
 
-Expressions that can be printed are a subset of Objective Caml
+Expressions that can be printed are a subset of OCaml
 expressions, as described by the following grammar:
 \begin{syntax}
 simple-expr:
@@ -439,7 +439,7 @@ The "loadingmode" variable controls how the program is executed.
 \item["set loadingmode direct"]
 The program is run directly by the debugger. This is the default mode.
 \item["set loadingmode runtime"]
-The debugger execute the Objective Caml runtime "ocamlrun" on the program.
+The debugger execute the OCaml runtime "ocamlrun" on the program.
 Rarely useful; moreover it prevents the debugging of programs compiled
 in ``custom runtime'' mode.
 \item["set loadingmode manual"]
@@ -573,7 +573,7 @@ functions must therefore be loaded explicitly in the debugger.
 \begin{options}
 \item["load_printer \""\var{file-name}"\""]
 Load in the debugger the indicated ".cmo" or ".cma" object file.  The
-file is loaded in an environment consisting only of the Objective Caml
+file is loaded in an environment consisting only of the OCaml
 standard library plus the definitions provided by object files
 previously loaded using "load_printer".  If this file depends on other
 object files not yet loaded, the debugger automatically loads them if

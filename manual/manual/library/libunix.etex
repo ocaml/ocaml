@@ -3,7 +3,7 @@
 
 The "unix" library makes many Unix
 system calls and system-related library functions available to
-Objective Caml programs. This chapter describes briefly the functions
+OCaml programs. This chapter describes briefly the functions
 provided.  Refer to sections 2~and~3 of the Unix manual for more
 details on the behavior of these functions.
 
@@ -25,7 +25,7 @@ start "ocaml" and type "#load \"unix.cma\";;".
 
 \begin{windows}
 A fairly complete emulation of the Unix system calls is provided in
-the Windows version of Objective Caml. The end of this chapter gives
+the Windows version of OCaml. The end of this chapter gives
 more information on the functions that are not supported under Windows.
 \end{windows}
 
@@ -49,7 +49,7 @@ at "unixLabels.mli", or by using the "ocamlbrowser" tool.
 
 \newpage
 \begin{windows}
-The Cygwin port of Objective Caml fully implements all functions from
+The Cygwin port of OCaml fully implements all functions from
 the Unix module.  The native Win32 ports implement a subset of them.
 Below is a list of the functions that are not implemented, or only
 partially implemented, by the Win32 ports. Functions not mentioned are

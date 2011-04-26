@@ -6,7 +6,7 @@
 \bigskip
 
 \noindent This chapter gives an overview of the new features in
-Objective Caml 3: labels, and polymorphic variants.
+OCaml 3: labels, and polymorphic variants.
 
 \section{Labels}
 \pdfsection{Labels}
@@ -45,7 +45,7 @@ cannot use a reserved keyword (like "in" or "to") as label.
 
 Formal parameters and arguments are matched according to their
 respective labels\footnote{This correspond to the commuting label mode
-of Objective Caml 3.00 through 3.02, with some additional flexibility
+of OCaml 3.00 through 3.02, with some additional flexibility
 on total applications. The so-called classic mode ("-nolabels"
 options) is now deprecated for normal use.}, the absence of label
 being interpreted as the empty label.
@@ -237,7 +237,7 @@ good labeling is a labeling which
 \item when possible, allows useful partial applications.
 \end{itemize}
 
-We explain here the rules we applied when labeling Objective Caml
+We explain here the rules we applied when labeling OCaml
 libraries.
 
 To speak in an ``object-oriented'' way, one can consider that each

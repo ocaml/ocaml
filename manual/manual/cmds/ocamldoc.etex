@@ -199,7 +199,7 @@ Display a short usage summary and exit.
 
 \subsubsection*{Type-checking options}
 
-OCamldoc calls the Objective Caml type-checker to obtain type
+OCamldoc calls the OCaml type-checker to obtain type
 information.  The following options impact the type-checking phase.
 They have the same meaning as for the "ocamlc" and "ocamlopt" commands.
 

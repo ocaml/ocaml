@@ -153,7 +153,7 @@ regexp:
 \begin{options}
 
 \item[@"'" regular-char || escape-sequence "'"@]
-A character constant, with the same syntax as Objective Caml character
+A character constant, with the same syntax as OCaml character
 constants. Match the denoted character.
 
 \item["_"]
@@ -167,7 +167,7 @@ correctly handle regular expressions that contain "eof" followed by
 something else.
 
 \item[@'"' { string-character } '"'@]
-A string constant, with the same syntax as Objective Caml string
+A string constant, with the same syntax as OCaml string
 constants. Match the corresponding sequence of characters.
 
 \item[@'[' character-set ']'@]
@@ -396,7 +396,7 @@ the \verb|%type| directive below.
 Specify the type of the semantic attributes for the given symbols.
 This is mandatory for start symbols only. Other nonterminal symbols
 need not be given types by hand: these types will be inferred when
-running the output files through the Objective Caml compiler (unless the
+running the output files through the OCaml compiler (unless the
 \verb"-s" option is in effect). The @typexpr@ part is an arbitrary Caml
 type expression, except that all type constructor names must be
 fully qualified, as explained above for "%token".

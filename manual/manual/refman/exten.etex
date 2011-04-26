@@ -2,8 +2,8 @@
 \pdfchapter{Language extensions}
 
 This chapter describes language extensions and convenience features
-that are implemented in Objective Caml, but not described in the
-Objective Caml reference manual.
+that are implemented in OCaml, but not described in the
+OCaml reference manual.
 
 \section{Integer literals for types "int32", "int64" and "nativeint"}
 
@@ -32,11 +32,11 @@ provide operations on these integer types.
 (Removed in OCaml 3.03)
 
 The syntax for streams and stream parsers is no longer part of the
-Objective Caml language, but available through a Camlp4 syntax
+OCaml language, but available through a Camlp4 syntax
 extension.  See the Camlp4 reference manual for more information.
 Support for basic operations on streams is still available through the
 "Stream"[\moduleref{Stream}] module of the standard library.
-Objective Caml programs
+OCaml programs
 that use the stream parser syntax should be compiled with the
 "-pp camlp4o" option to "ocamlc" and "ocamlopt".  For interactive use,
 run "ocaml" and issue the \verb'#load "camlp4o.cma";;' command.
@@ -114,7 +114,7 @@ An expression @@e@@ is said to be {\em immediately linked to} the variable
 
 (Introduced in OCaml 1.00)
 
-In patterns, Objective Caml recognizes the form
+In patterns, OCaml recognizes the form
 @"'" @c@ "'" ".." "'" @d@ "'"@
 (two character literals separated by~"..") as shorthand for the pattern
 \begin{center}
@@ -130,7 +130,7 @@ instance, the pattern "'0'..'9'" matches all characters that are digits.
 
 (Introduced in OCaml 1.06)
 
-Objective Caml supports the "assert" construct to check debugging assertions.
+OCaml supports the "assert" construct to check debugging assertions.
 The expression @"assert" expr@ evaluates the expression @expr@ and
 returns "()" if @expr@ evaluates to "true".  Otherwise, the exception
 "Assert_failure" is raised with the source file name and the
@@ -245,7 +245,7 @@ It can be given the following specification:
         and ASet : Set.S with type elt = A.t
 \end{verbatim}
 
-This is an experimental extension of Objective Caml: the class of
+This is an experimental extension of OCaml: the class of
 recursive definitions accepted, as well as its dynamic semantics are
 not final and subject to change in future releases.
 
@@ -925,5 +925,5 @@ If no such overriding occurs, an error is signaled.
 
 As a side-effect, these 3 keywords avoid the warnings
 ``method override'' and `` instance variable override''.
-As of Objective Caml 3.12, the warning ``method override'' has to be
+As of OCaml 3.12, the warning ``method override'' has to be
 enabled manually for backwards compatibility reasons.

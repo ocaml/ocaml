@@ -85,11 +85,11 @@ The following environment variables are also consulted:
 \item["CAML_LD_LIBRARY_PATH"]  Additional directories to search for
   dynamically-loaded libraries (see section~\ref{s-ocamlrun-dllpath}).
 
-\item["OCAMLLIB"] The directory containing the Objective Caml standard
+\item["OCAMLLIB"] The directory containing the OCaml standard
   library.  (If "OCAMLLIB" is not set, "CAMLLIB" will be used instead.)
   Used to locate the "ld.conf" configuration file for
   dynamic loading (see section~\ref{s-ocamlrun-dllpath}).  If not set,
-  default to the library directory specified when compiling Objective Caml.
+  default to the library directory specified when compiling OCaml.
 
 \item["OCAMLRUNPARAM"] Set the runtime system options 
   and garbage collection parameters.
@@ -175,9 +175,9 @@ variable.
 "ocamlc".  (These directories are recorded in the bytecode executable
 file.)
 \item Directories specified in the file "ld.conf".  This file resides
-in the Objective Caml standard library directory, and lists directory
+in the OCaml standard library directory, and lists directory
 names (one per line) to be searched.  Typically, it contains only one
-line naming the "stublibs" subdirectory of the Objective Caml standard
+line naming the "stublibs" subdirectory of the OCaml standard
 library directory.  Users can add there the names of other directories
 containing frequently-used shared libraries; however, for consistency
 of installation, we recommend that shared libraries are installed
@@ -202,12 +202,12 @@ error messages.
 If {\it filename} is the name of a self-executable bytecode file, this
 means that either that file does not exist, or that it failed to run
 the "ocamlrun" bytecode interpreter on itself. The second possibility
-indicates that Objective Caml has not been properly installed on your
+indicates that OCaml has not been properly installed on your
 system.
 
 \item["Cannot exec ocamlrun"]
 (When launching a self-executable bytecode file.) The "ocamlrun"
- could not be found in the executable path. Check that Objective Caml
+ could not be found in the executable path. Check that OCaml
  has been properly installed on your system.
 
 \item["Cannot find the bytecode file"]

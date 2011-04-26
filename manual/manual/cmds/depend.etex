@@ -1,7 +1,7 @@
 \chapter{Dependency generator (ocamldep)} \label{c:camldep}
 \pdfchapter{Dependency generator (ocamldep)}
 
-The "ocamldep" command scans a set of Objective Caml source files
+The "ocamldep" command scans a set of OCaml source files
 (".ml" and ".mli" files) for references to external compilation units,
 and outputs dependency lines in a format suitable for the "make"
 utility. This ensures that "make" will compile the source files in the
@@ -85,7 +85,7 @@ Display a short usage summary and exit.
 
 \section{A typical Makefile}
 
-Here is a template "Makefile" for a Objective Caml program.
+Here is a template "Makefile" for a OCaml program.
 
 \begin{verbatim}
 OCAMLC=ocamlc

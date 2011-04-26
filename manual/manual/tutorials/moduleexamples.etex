@@ -1,7 +1,7 @@
 \chapter{The module system} \label{c:moduleexamples}
 \pdfchapterfold{-5}{Tutorial: The module system}
 
-This chapter introduces the module system of Objective Caml.
+This chapter introduces the module system of OCaml.
 
 \section{Structures}
 \pdfsection{Structures}
@@ -201,7 +201,7 @@ operations of "WrongStringSet" cannot be applied to strings.
 As demonstrated above, it is important that the type "element" in the
 signature "SET" be declared equal to "Elt.t"; unfortunately, this is
 impossible above since "SET" is defined in a context where "Elt" does
-not exist. To overcome this difficulty, Objective Caml provides a
+not exist. To overcome this difficulty, OCaml provides a
 "with type" construct over signatures that allows to enrich a signature
 with extra type equalities:
 \begin{caml_example}
@@ -253,7 +253,7 @@ necessity to split the source into several files, called compilation
 units, that can be compiled separately, thus minimizing recompilation
 after changes.
 
-In Objective Caml, compilation units are special cases of structures
+In OCaml, compilation units are special cases of structures
 and signatures, and the relationship between the units can be
 explained easily in terms of the module system. A compilation unit \var{A}
 comprises two files:

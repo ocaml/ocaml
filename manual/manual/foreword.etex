@@ -1,16 +1,16 @@
 \chapter*{Foreword}
 \markboth{Foreword}{}
 
-This manual documents the release \ocamlversion\ of the Objective Caml
+This manual documents the release \ocamlversion\ of the OCaml
 system. It is organized as follows.
 \begin{itemize}
-\item Part~\ref{p:tutorials}, ``An introduction to Objective Caml'',
+\item Part~\ref{p:tutorials}, ``An introduction to OCaml'',
 gives an overview of the language.
-\item Part~\ref{p:refman}, ``The Objective Caml language'', is the
+\item Part~\ref{p:refman}, ``The OCaml language'', is the
 reference description of the language.
-\item Part~\ref{p:commands}, ``The Objective Caml tools'', documents
+\item Part~\ref{p:commands}, ``The OCaml tools'', documents
 the compilers, toplevel system, and programming utilities.
-\item Part~\ref{p:library}, ``The Objective Caml library'', describes the
+\item Part~\ref{p:library}, ``The OCaml library'', describes the
 modules provided in the standard library.
 \begin{latexonly}
 \item Part~\ref{p:appendix}, ``Appendix'', contains an
@@ -21,7 +21,7 @@ index of keywords.
 
 \section*{Conventions}
 
-Objective Caml runs on several operating systems. The parts of
+OCaml runs on several operating systems. The parts of
 this manual that are specific to one operating system are presented as
 shown below:
 
@@ -35,28 +35,27 @@ systems, including Linux and \hbox{MacOS~X}.
 
 \section*{License}
 
-The Objective Caml system is copyright \copyright\ 1996, 1997, 1998,
-1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008
+The OCaml system is copyright \copyright\ 1996--2011
 Institut National de Recherche en Informatique et en
 Automatique (INRIA).
-INRIA holds all ownership rights to the Objective Caml system. 
+INRIA holds all ownership rights to the OCaml system. 
 
-The Objective Caml system is open source and can be freely
+The OCaml system is open source and can be freely
 redistributed.  See the file "LICENSE" in the distribution for
 licensing information.
 
 The present documentation is copyright \copyright\ \number\year\ 
 Institut National de Recherche en Informatique et en
-Automatique (INRIA).  The Objective Caml documentation and user's
+Automatique (INRIA).  The OCaml documentation and user's
 manual may be reproduced and distributed in whole or
 in part, subject to the following conditions: 
 \begin{itemize}
 \item The copyright notice above and this permission notice must be
 preserved complete on all complete or partial copies.
-\item Any translation or derivative work of the Objective Caml
+\item Any translation or derivative work of the OCaml
 documentation and user's manual must be approved by the authors in
 writing before distribution. 
-\item If you distribute the Objective Caml
+\item If you distribute the OCaml
 documentation and user's manual in part, instructions for obtaining
 the complete version of this manual must be included, and a
 means for obtaining a complete version provided.
@@ -68,14 +67,14 @@ citation is given.
 \section*{Availability}
 
 \begin{latexonly}
-The complete Objective Caml distribution can be accessed via the Web
+The complete OCaml distribution can be accessed via the Web
 site "http://caml.inria.fr/".  This Web site contains a lot of
-additional information on Objective Caml.
+additional information on OCaml.
 \end{latexonly}
 
 \begin{htmlonly}
-The complete Objective Caml distribution can be accessed via the 
+The complete OCaml distribution can be accessed via the 
 \url{http://caml.inria.fr/}{Caml Web site}.
 The \url{http://caml.inria.fr/}{Caml Web site}
-contains a lot of additional information on Objective Caml.
+contains a lot of additional information on OCaml.
 \end{htmlonly}

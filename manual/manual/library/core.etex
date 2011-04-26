@@ -1,7 +1,7 @@
 \chapter{The core library} \label{c:corelib}
 \pdfchapterfold{-1}{The core library}
 
-This chapter describes the Objective Caml core library, which is
+This chapter describes the OCaml core library, which is
  composed of declarations for built-in types and exceptions, plus
 the module "Pervasives" that provides basic operations on these
  built-in types.  The "Pervasives" module is special in two

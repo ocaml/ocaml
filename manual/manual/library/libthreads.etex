@@ -2,7 +2,7 @@
 \label{c:threads}
 \pdfchapterfold{-5}{The threads library}
 
-The "threads" library allows concurrent programming in Objective Caml.
+The "threads" library allows concurrent programming in OCaml.
 It provides multiple threads of control (also called lightweight
 processes) that execute concurrently in the same memory space. Threads
 communicate by in-place modification of shared data structures, or by

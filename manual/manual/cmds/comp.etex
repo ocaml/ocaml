@@ -1,7 +1,7 @@
 \chapter{Batch compilation (ocamlc)} \label{c:camlc}
 \pdfchapter{Batch compilation (ocamlc)}
 
-This chapter describes the Objective Caml batch compiler "ocamlc",
+This chapter describes the OCaml batch compiler "ocamlc",
 which compiles Caml source files to bytecode object files and links
 these object files to produce standalone bytecode executable files.
 These executable files are then run by the bytecode interpreter
@@ -41,7 +41,7 @@ the implementation \var{x}".ml".
 \item
 Arguments ending in ".cmo" are taken to be compiled object bytecode.  These
 files are linked together, along with the object files obtained
-by compiling ".ml" arguments (if any), and the Objective Caml standard
+by compiling ".ml" arguments (if any), and the OCaml standard
 library, to produce a standalone executable program. The order in
 which ".cmo" and ".ml" arguments are presented on the command line is
 relevant: compilation units are initialized in that order at
@@ -82,7 +82,7 @@ start-up time.
 \end{itemize}
 
 The output of the linking phase is a file containing compiled bytecode
-that can be executed by the Objective Caml bytecode interpreter:
+that can be executed by the OCaml bytecode interpreter:
 the command named "ocamlrun". If "caml.out" is the name of the file
 produced by the linking phase, the command
 \begin{alltt}
@@ -320,6 +320,14 @@ Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
 are supported. Note that once you have created an interface using this
 flag, you must use it again for all dependencies.
+
+\item["-runtime-variant" \var{suffix}]
+Add the \var{suffix} string to the name of the runtime library used by
+the program.  Currently, only one such suffix is supported: "d", and
+only if the OCaml compiler was configured with option
+"-with-debug-runtime".  This suffix gives the debug version of the
+runtime, which is useful for debugging pointer problems in low-level
+code such as C stubs.
 
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the

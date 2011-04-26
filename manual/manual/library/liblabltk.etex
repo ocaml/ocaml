@@ -1,8 +1,8 @@
 \chapter{The LablTk library: Tcl/Tk GUI interface}
 \pdfchapterfold{-1}{The LablTk library: Tcl/Tk GUI interface}
 
-The "labltk" library provides access to the Tcl/Tk GUI from Objective
-Caml programs. This interface is generated in an automated way, and
+The "labltk" library provides access to the Tcl/Tk GUI from
+OCaml programs. This interface is generated in an automated way, and
 you should refer to Tcl/Tk books and man pages for detailed
 information on the behavior of the numerous functions. We also suggest
 to use "ocamlbrowser" to see the types of the various functions, that

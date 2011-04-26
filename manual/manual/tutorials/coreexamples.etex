@@ -1,8 +1,8 @@
 \chapter{The core language} \label{c:core-xamples}
 \pdfchapterfold{-9}{Tutorial: The core language}
 
-This part of the manual is a tutorial introduction to the Objective
-Caml language. A good familiarity with programming in a conventional
+This part of the manual is a tutorial introduction to the
+OCaml language. A good familiarity with programming in a conventional
 languages (say, Pascal or C) is assumed, but no prior exposure to
 functional languages is required. The present chapter introduces the
 core language. Chapter~\ref{c:objectexamples} deals with the

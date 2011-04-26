@@ -7,8 +7,8 @@
 \bigskip
 
 \noindent This chapter gives an overview of the object-oriented features of
-Objective Caml. Note that the relation between object, class and type
-in Objective Caml is very different from that in main stream
+OCaml. Note that the relation between object, class and type
+in OCaml is very different from that in main stream
 object-oriented languages like Java or C++, so that you should not
 assume that similar keywords mean the same thing.
 
@@ -353,7 +353,7 @@ p#bump;;
 Note that this is not the same thing as private and protected methods
 in Java or C++, which can be called from other objects of the same
 class. This is a direct consequence of the independence between types
-and classes in Objective Caml: two unrelated classes may produce
+and classes in OCaml: two unrelated classes may produce
 objects of the same type, and there is no way at the type level to
 ensure that an object comes from a specific class. However a possible
 encoding of friend methods is given in section \ref{ss:friends}.
@@ -771,7 +771,7 @@ seen as a colored point.
 Indeed, narrowing coercions without runtime checks would be unsafe.
 Runtime type checks might raise exceptions, and they would require
 the presence of type information at runtime, which is not the case in
-the Objective Caml system.
+the OCaml system.
 For these reasons, there is no such operation available in the language. 
 
 Be aware that subtyping and inheritance are not related.  Inheritance is a
@@ -1123,7 +1123,7 @@ We then define a subclass "money" of "comparable". The class money
 simply wraps floats as comparable objects. We will extend it below with
 more operations. There is a type constraint on the class parameter "x"
 as the primitive "<=" is a polymorphic comparison function in
-Objective Caml.  The "inherit" clause ensures that the type of objects
+OCaml.  The "inherit" clause ensures that the type of objects
 of this class is an instance of "#comparable".
 \begin{caml_example}
 class money (x : float) =

@@ -1,5 +1,5 @@
-\chapter{Interfacing\label{c:intf-c} C with Objective Caml}
-\pdfchapterfold{-9}{Interfacing C with Objective Caml}
+\chapter{Interfacing\label{c:intf-c} C with OCaml}
+\pdfchapterfold{-9}{Interfacing C with OCaml}
 
 This chapter describes how user-defined primitives, written in C, can
 be linked with Caml code and called from Caml functions.
@@ -150,7 +150,7 @@ long getblock(struct channel * channel, char * p, long n)
 }
 \end{verbatim}
 
-To write C code that operates on Objective Caml values, the following
+To write C code that operates on OCaml values, the following
 include files are provided:
 \begin{tableau}{|l|p{12cm}|}{Include file}{Provides}
 \entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion macros}
@@ -170,13 +170,13 @@ serialization and deserialization functions for custom blocks
 \entree{"caml/threads.h"}{operations for interfacing in the presence
   of multiple threads (see section~\ref{s:C-multithreading}).}
 \end{tableau}
-These files reside in the "caml/" subdirectory of the Objective Caml
+These files reside in the "caml/" subdirectory of the OCaml
 standard library directory (usually "/usr/local/lib/ocaml").
 
 \subsection{Statically linking C code with Caml code}
 \label{staticlink-c-code}
 
-The Objective Caml runtime system comprises three main parts: the bytecode
+The OCaml runtime system comprises three main parts: the bytecode
 interpreter, the memory manager, and a set of C functions that
 implement the primitive operations. Some bytecode instructions are
 provided to call these C functions, designated by their offset in a
@@ -1079,7 +1079,7 @@ has taken place since "r" was allocated.
 \pdfsection{A complete example}
 
 This section outlines how the functions from the Unix "curses" library
-can be made available to Objective Caml programs. First of all, here is
+can be made available to OCaml programs. First of all, here is
 the interface "curses.mli" that declares the "curses" primitives and
 data types:
 \begin{verbatim}
@@ -1275,7 +1275,7 @@ recovered using "Extract_exception("\var{v}")".
 
 The main difficulty with the "callback" functions described above is
 obtaining a closure to the Caml function to be called. For this
-purpose, Objective Caml provides a simple registration mechanism, by
+purpose, OCaml provides a simple registration mechanism, by
 which Caml code can register Caml functions under some global name,
 and then C code can retrieve the corresponding closure by this global
 name.
@@ -1422,7 +1422,7 @@ as well as the Caml startup code. Initialization is performed by
 calling "caml_startup" as in the case of the bytecode compiler.
 
 For the final linking phase, in addition to the object file produced
-by "-output-obj", you will have to provide the Objective Caml runtime
+by "-output-obj", you will have to provide the OCaml runtime
 library ("libcamlrun.a" for bytecode, "libasmrun.a" for native-code),
 as well as all C libraries that are required by the Caml libraries
 used.  For instance, assume the Caml part of your program uses the
@@ -1440,14 +1440,14 @@ With "ocamlopt", you should do:
 \end{alltt}
 
 The shared libraries produced by "ocamlc -output-obj" or by "ocamlopt
--output-obj" already contains the Objective Caml runtime library as
+-output-obj" already contains the OCaml runtime library as
 well as all the needed C libraries.
 
 \paragraph{Warning:} On some ports, special options are required on the final
 linking phase that links together the object file produced by the
 "-output-obj" option and the remainder of the program.  Those options
 are shown in the configuration file "config/Makefile" generated during
-compilation of Objective Caml, as the variables "BYTECCLINKOPTS"
+compilation of OCaml, as the variables "BYTECCLINKOPTS"
 (for object files produced by "ocamlc -output-obj") and
 "NATIVECCLINKOPTS" (for object files produced by "ocamlopt
 -output-obj").  Currently, the only ports that require special
@@ -1457,7 +1457,7 @@ attention are:
 object files produced by "ocamlc -output-obj" must be linked with the
 "gcc" options "-Wl,-T,12000000 -Wl,-D,14000000".
 This is not necessary for object files produced by "ocamlopt -output-obj".
-\item Windows NT: the object file produced by Objective Caml have been
+\item Windows NT: the object file produced by OCaml have been
 compiled with the "/MD" flag, and therefore all other object files
 linked with it should also be compiled with "/MD".
 \end{itemize}
@@ -1773,7 +1773,7 @@ be changed later, yet backward-compatible deserialisation functions
 can be provided.
 
 Identifiers starting with "_" (an underscore character) are reserved
-for the Objective Caml runtime system; do not use them for your custom
+for the OCaml runtime system; do not use them for your custom
 data.  We recommend to use a URL
 ("http://mymachine.mydomain.com/mylibrary/version-number")
 or a Java-style package name
@@ -1783,7 +1783,7 @@ as identifiers, to minimize the risk of identifier collision.
 \subsection{Finalized blocks}
 
 Custom blocks generalize the finalized blocks that were present in
-Objective Caml prior to version 3.00.  For backward compatibility, the
+OCaml prior to version 3.00.  For backward compatibility, the
 format of custom blocks is compatible with that of finalized blocks,
 and the "alloc_final" function is still available to allocate a custom
 block with a given finalization function, but default comparison,

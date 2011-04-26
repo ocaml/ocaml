@@ -8,7 +8,7 @@
 \thispagestyle{empty}
 \begin{center}
 ~\vfill
-\Huge           The Objective Caml system \\
+\Huge           The OCaml system \\
                 release \ocamlversion \\[1cm]
 \Large          Documentation and user's manual \\[1cm]
 \large          Xavier Leroy, \\
@@ -43,7 +43,7 @@ and as a
 
 \input{foreword.tex}
 
-\part{An introduction to Objective Caml}
+\part{An introduction to OCaml}
 \label{p:tutorials}
 \input{coreexamples.tex}
 \input{moduleexamples.tex}
@@ -51,12 +51,12 @@ and as a
 \input{lablexamples.tex}
 \input{advexamples.tex}
 
-\part{The Objective Caml language}
+\part{The OCaml language}
 \label{p:refman}
 \input{refman.tex}
 \input{exten.tex}
 
-\part{The Objective Caml tools}
+\part{The OCaml tools}
 \label{p:commands}
  
 \input{comp.tex}
@@ -72,7 +72,7 @@ and as a
 % \input emacs.tex
 \input{intf-c.tex}
 
-\part{The Objective Caml library}
+\part{The OCaml library}
 \label{p:library}
 \input{core.tex}
 \input{stdlib.tex}

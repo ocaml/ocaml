@@ -7,9 +7,9 @@ programmer.
 
 Its functions are:
 \begin{itemize}
-\item navigation through Objective Caml's modules (using compiled interfaces).
+\item navigation through OCaml's modules (using compiled interfaces).
 \item source editing, type-checking, and browsing.
-\item integrated Objective Caml shell, running as a subprocess.
+\item integrated OCaml shell, running as a subprocess.
 \end{itemize}
 
 \section{Invocation} \label{s:browser-options}
@@ -66,7 +66,7 @@ At the top a row of menus.
 \item {\bf File - Open} and {\bf File - Editor} give access to the
   editor.
 
-\item {\bf File - Shell} creates an Objective Caml subprocess in a shell.
+\item {\bf File - Shell} creates an OCaml subprocess in a shell.
 
 \item {\bf View - Show all defs} displays the signature of the currently
   selected module.
