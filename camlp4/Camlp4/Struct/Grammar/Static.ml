@@ -22,8 +22,7 @@ value flip f x y = f y x;
 
 module Make (Lexer : Sig.Lexer)
 : Sig.Grammar.Static with module Loc = Lexer.Loc
-                      and module Token = Lexer.Token
-                      and type   token_info = (Structure.MakeTokenInfo Lexer.Loc).t
+                        and module Token = Lexer.Token
 = struct
   module Structure = Structure.Make Lexer;
   module Delete = Delete.Make Structure;

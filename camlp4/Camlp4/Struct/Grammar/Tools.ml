@@ -20,10 +20,8 @@
 (* PR#5090: don't do lookahead on get_prev_loc. *)
 value get_prev_loc_only = ref False;
 
-open Structure;
-
-module Make (GramStruct : Structure.S) = struct
-  open GramStruct;
+module Make (Structure : Structure.S) = struct
+  open Structure;
 
   value empty_entry ename _ =
     raise (Stream.Error ("entry [" ^ ename ^ "] is empty"));

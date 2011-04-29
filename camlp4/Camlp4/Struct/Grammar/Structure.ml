@@ -19,16 +19,6 @@
 
 open Sig.Grammar;
 
-type token_abs_info 'loc =
-  { prev_loc : 'loc
-  ; cur_loc : 'loc
-  ; prev_loc_only : bool
-  };
-
-module MakeTokenInfo (Loc : Sig.Type) = struct
-  type t = token_abs_info Loc.t;
-end;
-
 module type S = sig
   module Loc          : Sig.Loc;
   module Token        : Sig.Token with module Loc = Loc;
@@ -44,7 +34,10 @@ module type S = sig
       warning_verbose : ref bool;
       error_verbose   : ref bool };
 
-  type token_info = (MakeTokenInfo Loc).t;
+  type token_info = { prev_loc : Loc.t
+                    ; cur_loc : Loc.t
+                    ; prev_loc_only : bool
+                    };
 
   type token_stream = Stream.t (Token.t * token_info);
 
@@ -132,7 +125,10 @@ module Make (Lexer  : Sig.Lexer) = struct
       warning_verbose : ref bool;
       error_verbose   : ref bool };
 
-  type token_info = (MakeTokenInfo Loc).t;
+  type token_info = { prev_loc : Loc.t
+                    ; cur_loc : Loc.t
+                    ; prev_loc_only : bool
+                    };
 
   type token_stream = Stream.t (Token.t * token_info);
 

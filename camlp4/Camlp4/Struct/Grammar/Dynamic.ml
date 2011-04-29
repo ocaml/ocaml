@@ -18,8 +18,7 @@
  *)
 module Make (Lexer : Sig.Lexer)
 : Sig.Grammar.Dynamic with module Loc = Lexer.Loc
-                       and module Token = Lexer.Token
-                       and type   token_info = (Structure.MakeTokenInfo Lexer.Loc).t
+                         and module Token = Lexer.Token
 = struct
   module Structure = Structure.Make Lexer;
   module Delete    = Delete.Make    Structure;
