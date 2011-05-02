@@ -127,6 +127,8 @@ let colorize_code = ref false
 
 let html_short_functors = ref false
 
+let charset = ref "iso-8859-1"
+
 let with_header = ref true
 
 let with_trailer = ref true
@@ -264,7 +266,8 @@ let default_options = [
   "-css-style", Arg.String (fun s -> css_style := Some s), M.css_style ;
   "-index-only", Arg.Set index_only, M.index_only ;
   "-colorize-code", Arg.Set colorize_code, M.colorize_code ;
-  "-short-functors", Arg.Set html_short_functors, M.html_short_functors ^
+  "-short-functors", Arg.Set html_short_functors, M.html_short_functors ;
+  "-charset", Arg.Set_string charset, (M.charset !charset)^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)

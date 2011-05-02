@@ -53,6 +53,9 @@ let css_style = "<file>\n\t\tUse content of <file> as CSS style definition "^htm
 let index_only = "\tGenerate index files only "^html_only
 let colorize_code = "\n\t\tColorize code even in documentation pages "^html_only
 let html_short_functors = "\n\t\tUse short form to display functor types "^html_only
+let charset c = Printf.sprintf
+  "<s>\n\t\tAdd information about character encoding being s\n\t\t(default is %s)"
+  c
 let generate_html = "\tGenerate HTML documentation"
 let generate_latex = "\tGenerate LaTeX documentation"
 let generate_texinfo = "\tGenerate TeXinfo documentation"
