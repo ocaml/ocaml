@@ -532,28 +532,34 @@ class virtual info =
       match l with
         [] -> ()
       | _ ->
-          bp b "<b>%s:</b> %s<br>\n"
-            Odoc_messages.authors
-            (String.concat ", " l)
+          bp b "<b>%s:</b> " Odoc_messages.authors;
+          self#html_of_text b [Raw (String.concat ", " l)];
+          bs b "<br>\n"
 
     (** Print html code for the given optional version information.*)
     method html_of_version_opt b v_opt =
       match v_opt with
         None -> ()
       | Some v ->
-           bp b "<b>%s:</b> %s<br>\n" Odoc_messages.version v
+           bp b "<b>%s:</b> " Odoc_messages.version;
+           self#html_of_text b [Raw v];
+           bs b "<br>\n"
 
     (** Print html code for the given optional since information.*)
     method html_of_since_opt b s_opt =
       match s_opt with
         None -> ()
       | Some s ->
-          bp b "<b>%s</b> %s<br>\n" Odoc_messages.since s
+          bp b "<b>%s</b> " Odoc_messages.since;
+          self#html_of_text b [Raw s];
+          bs b "<br>\n"
 
     (** Print html code for the given "before" information.*)
     method html_of_before b l =
       let f (v, text) =
-        bp b "<b>%s %s </b> " Odoc_messages.before v;
+        bp b "<b>%s " Odoc_messages.before;
+        self#html_of_text b [Raw v];
+        bs b " </b> ";
         self#html_of_text b text;
         bs b "<br>\n"
       in
