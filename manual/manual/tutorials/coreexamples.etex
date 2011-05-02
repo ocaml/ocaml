@@ -487,9 +487,10 @@ recursive-descent parsers for LL(1) languages. An example using
 chapter~\ref{c:ocamlyacc}. Here, we will use stream parsers.
 The syntactic support for stream parsers is provided by the Camlp4
 preprocessor, which can be loaded into the interactive toplevel via
-the "#load" directive below.
+the "#load" directives below.
 
 \begin{caml_example}
+#load "dynlink.cma";;
 #load "camlp4o.cma";;
 open Genlex;;
 let lexer = make_lexer ["("; ")"; "+"; "-"; "*"; "/"];;
