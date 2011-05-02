@@ -990,6 +990,9 @@ module Args :
          in HTML generated documentation. *)
       val html_short_functors : bool ref
 
+      (** Character encoding used in HTML pages header. *)
+      val charset : string ref
+
       (** The flag which indicates if we must generate a header (for LaTeX). *)
       val with_header : bool ref
 
