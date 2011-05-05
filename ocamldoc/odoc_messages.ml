@@ -66,7 +66,7 @@ let option_not_in_native_code op = "Option "^op^" not available in native code v
 
 let default_out_file = "ocamldoc.out"
 let out_file =
-  "<file>\tSet the ouput file name, used by texi, latex and dot generators\n"^
+  "<file>\tSet the output file name, used by texi, latex and dot generators\n"^
   "\t\t(default is "^default_out_file^")\n"^
   "\t\tor the prefix of index files for the HTML generator\n"^
   "\t\t(default is index)"

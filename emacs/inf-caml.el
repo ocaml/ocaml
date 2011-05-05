@@ -330,7 +330,7 @@ should lies."
                (beep) (if wait (read-event) (caml-sit-for 60)))
            (delete-overlay caml-error-overlay)))))
 
-;; wait some amount for ouput, that is, until inferior-caml-output is set
+;; wait some amount for output, that is, until inferior-caml-output is set
 ;; to true. Hence, interleaves sitting for shorts delays and checking the
 ;; flag. Give up after some time. Typing into the source buffer will cancel
 ;; waiting, i.e. may report 'No result yet'

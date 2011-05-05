@@ -1047,7 +1047,7 @@ module Args :
       (** The Info directory entries to insert *)
       val info_entry : string list ref
 
-      (** Include all modules or only the ones on the command line, for the dot ouput. *)
+      (** Include all modules or only the ones on the command line, for the dot output. *)
       val dot_include_all : bool ref
 
       (** Generate dependency graph for types. *)

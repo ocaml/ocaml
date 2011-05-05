@@ -505,7 +505,7 @@ val stdout : out_channel
 (** The standard output for the process. *)
 
 val stderr : out_channel
-(** The standard error ouput for the process. *)
+(** The standard error output for the process. *)
 
 
 (** {7 Output functions on standard output} *)
