@@ -120,6 +120,10 @@ val usage : (key * spec * doc) list -> usage_msg -> unit
     {!Arg.parse} prints in case of error.
     [speclist] and [usage_msg] are the same as for [Arg.parse]. *)
 
+val usage_string : (key * spec * doc) list -> usage_msg -> string
+(** Returns the message that would have been printed by {!Arg.usage},
+    if provided with the same parameters. *)
+
 val align: (key * spec * doc) list -> (key * spec * doc) list;;
 (** Align the documentation strings by inserting spaces at the first
     space, according to the length of the keyword.  Use a
