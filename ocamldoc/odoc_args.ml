@@ -324,7 +324,11 @@ let append_last_doc suffix =
 (** The help option list, overriding the default ones from the Arg module *)
 let help_options = ref []
 let help_action () =
-  Arg.usage (!options @ !help_options) (M.usage^M.options_are)
+  let msg =
+    Arg.usage_string
+      (!options @ !help_options)
+      (M.usage ^ M.options_are) in 
+  print_string msg
 let () =
   help_options := [
     "-help", Arg.Unit help_action, M.help ;
