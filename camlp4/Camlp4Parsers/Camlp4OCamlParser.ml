@@ -591,6 +591,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:patt< ~ $i$ : ($lid:i$ : $t$) >>
         | i = a_OPTLABEL; j = a_LIDENT -> (* ?a:b <> ?a : b *)
             <:patt< ? $i$ : ($lid:j$) >>
+        | i = a_OPTLABEL; "_" ->
+            <:patt< ? $i$ : (_) >>
         | i = a_OPTLABEL; "("; p = patt; ")" ->
             <:patt< ? $i$ : ($p$) >>
         | i = a_OPTLABEL; "("; p = patt; "="; e = expr; ")" ->
