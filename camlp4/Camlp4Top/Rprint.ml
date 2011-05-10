@@ -360,12 +360,24 @@ value rec print_out_module_type ppf =
       fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
         print_out_module_type mty_arg print_out_module_type mty_res
   | Omty_abstract -> () ]
+and needs_semi =
+  fun
+  [ Osig_class _ _ _ _ rs
+  | Osig_class_type _ _ _ _ rs
+  | Osig_module _ _ rs
+  | Osig_type _ rs -> rs <> Orec_next
+  | Osig_exception _ _
+  | Osig_modtype _ _
+  | Osig_value _ _ _ -> True ]
 and print_out_signature ppf =
   fun
   [ [] -> ()
   | [item] -> fprintf ppf "%a;" Toploop.print_out_sig_item.val item
   | [item :: items] ->
-      fprintf ppf "%a;@ %a" Toploop.print_out_sig_item.val item
+      let sep = match items with
+      [ [hd :: _] -> if needs_semi hd then ";" else ""
+      | [] -> ";" ] in
+      fprintf ppf "%a%s@ %a" Toploop.print_out_sig_item.val item sep
         print_out_signature items ]
 and print_out_sig_item ppf =
   fun
