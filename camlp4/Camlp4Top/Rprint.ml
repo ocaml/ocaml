@@ -293,7 +293,7 @@ and print_typargs ppf =
   | tyl ->
       fprintf ppf "@[<1>(%a)@]@ " (print_typlist print_out_type ",") tyl ]
 and print_ty_label ppf lab =
-  if lab <> "" then fprintf ppf "~%s:" lab else ()
+  if lab <> "" then fprintf ppf "%s%s:" (if lab.[0] = '?' then "" else "~") lab else ()
 ;
 
 value type_parameter ppf (ty, (co, cn)) =
