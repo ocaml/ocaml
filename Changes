@@ -14,6 +14,7 @@ Bug fixes:
 - PR#4967: ocamlbuild passes wrong switches to ocamldep through menhir
 - PR#4972: mkcamlp4 does not include 'dynlink.cma'
 - PR#5039: ocamlbuild should use '-linkpkg' only when linking programs
+- PR#5069: fcntl() in caml_sys_open may block, do it within blocking section
 - PR#5071, PR#5129, PR#5134: inconsistencies between camlp4 and camlp4* binaries
 - PR#5080, PR#5104: regression in type constructor handling by camlp4
 - PR#5095: ocamlbuild ignores some tags when building bytecode objects
