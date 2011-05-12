@@ -529,8 +529,13 @@ static int caml_ba_compare(value v1, value v2)
   struct caml_ba_array * b1 = Caml_ba_array_val(v1);
   struct caml_ba_array * b2 = Caml_ba_array_val(v2);
   uintnat n, num_elts;
+  intnat flags1, flags2;
   int i;
 
+  /* Compare kind & layout in case the arguments are of different types */
+  flags1 = b1->flags & (CAML_BA_KIND_MASK | CAML_BA_LAYOUT_MASK);
+  flags2 = b2->flags & (CAML_BA_KIND_MASK | CAML_BA_LAYOUT_MASK);
+  if (flags1 != flags2) return flags2 - flags1;
   /* Compare number of dimensions */
   if (b1->num_dims != b2->num_dims) return b2->num_dims - b1->num_dims;
   /* Same number of dimensions: compare dimensions lexicographically */

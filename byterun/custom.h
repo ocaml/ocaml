@@ -31,6 +31,7 @@ struct custom_operations {
                     /*out*/ uintnat * wsize_32 /*size in bytes*/,
                     /*out*/ uintnat * wsize_64 /*size in bytes*/);
   uintnat (*deserialize)(void * dst);
+  int (*compare_ext)(value v1, value v2);
 };
 
 #define custom_finalize_default NULL
@@ -38,6 +39,7 @@ struct custom_operations {
 #define custom_hash_default NULL
 #define custom_serialize_default NULL
 #define custom_deserialize_default NULL
+#define custom_compare_ext_default NULL
 
 #define Custom_ops_val(v) (*((struct custom_operations **) (v)))
 

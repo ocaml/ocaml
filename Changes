@@ -1,8 +1,6 @@
 Objective Caml 3.12.1:
 ----------------------
 
-- Changed default minor heap size from 32k to 256k words.
-
 Bug fixes:
 - PR#4345, PR#4767: problems with camlp4 printing of float values
 - PR#4380: ocamlbuild should not use tput on windows
@@ -33,6 +31,10 @@ Bug fixes:
 - PR#5213: ocamlbuild should pass '-rectypes' to ocamldoc when needed
 - PR#5217: ocamlfind plugin should add '-linkpkg' for toplevel
 - PR#5237: incorrect .size directives generated for x86-32 and x86-64
+- Hardened generic comparison in the case where two custom blocks
+  are compared and have different sets of custom operations.
+- Hardened comparison between bigarrays in the case where the two
+  bigarrays have different kinds.
 
 Feature wishes:
 - PR#4992: added '-ml-synonym' and '-mli-synonym' options to ocamldep
@@ -41,6 +43,10 @@ Feature wishes:
 - PR#5158: added access to current camlp4 parsers and printers
 - PR#5180: improved instruction selection for float operations on amd64
 
+Other changes:
+- Changed default minor heap size from 32k to 256k words.
+- Added new operation 'compare_ext' to custom blocks, called when
+  comparing a custom block value with an unboxed integer.
 
 Objective Caml 3.12.0:
 ----------------------
