@@ -36,6 +36,7 @@ Bug fixes:
   are compared and have different sets of custom operations.
 - Hardened comparison between bigarrays in the case where the two
   bigarrays have different kinds.
+- Fixed wrong autodetection of expm1() and log1p().
 
 Feature wishes:
 - PR#4992: added '-ml-synonym' and '-mli-synonym' options to ocamldep
