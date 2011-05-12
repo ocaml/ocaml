@@ -23,6 +23,7 @@ Bug fixes:
 - PR#5103: build and install objinfo when building with ocamlbuild
 - PR#5110: invalid module name when using optional argument
 - PR#5118: Camlp4o and integer literals
+- PR#5122: camlp4 rejects lowercase identifiers for module types
 - PR#5128: typo in 'Camlp4ListComprehension' syntax extension
 - PR#5165: ocamlbuild does not pass '-thread' option to ocamlfind
 - PR#5167: camlp4r loops when printing package type

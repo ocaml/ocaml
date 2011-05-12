@@ -462,7 +462,7 @@ New syntax:\
             <:str_item< module $i$ = $mb$ >>
         | "module"; "rec"; mb = module_binding ->
             <:str_item< module rec $mb$ >>
-        | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
+        | "module"; "type"; i = a_ident; "="; mt = module_type ->
             <:str_item< module type $i$ = $mt$ >>
         | "open"; i = module_longident -> <:str_item< open $i$ >>
         | "type"; td = type_declaration ->
@@ -537,9 +537,9 @@ New syntax:\
             <:sig_item< module $i$ : $mt$ >>
         | "module"; "rec"; mb = module_rec_declaration ->
             <:sig_item< module rec $mb$ >>
-        | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
+        | "module"; "type"; i = a_ident; "="; mt = module_type ->
             <:sig_item< module type $i$ = $mt$ >>
-        | "module"; "type"; i = a_UIDENT ->
+        | "module"; "type"; i = a_ident ->
             <:sig_item< module type $i$ >>
         | "open"; i = module_longident -> <:sig_item< open $i$ >>
         | "type"; t = type_declaration ->
