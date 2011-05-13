@@ -96,8 +96,8 @@ val iter : (char -> unit) -> string -> unit
 
 val iteri : (int -> char -> unit) -> string -> unit
 (** Same as {!String.iter}, but the
-   function is applied to the index of the element as first argument (counting from 0),
-   and the character itself as second argument.
+   function is applied to the index of the element as first argument
+   (counting from 0), and the character itself as second argument.
    @since 3.13.0
 *)
 
