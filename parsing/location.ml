@@ -61,7 +61,7 @@ let rhs_loc n = {
   loc_ghost = false;
 };;
 
-let input_name = ref ""
+let input_name = ref "_none_"
 let input_lexbuf = ref (None : lexbuf option)
 
 (* Terminal info *)
