@@ -1,0 +1,9 @@
+#!/bin/sh
+
+svn propset svn:ignore -F - . <<EOF
+
+globroots.result
+program.byte
+program.native
+
+EOF
