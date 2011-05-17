@@ -858,9 +858,14 @@ external decr : int ref -> unit = "%decr"
     included for backward compatibility with earlier releases of Objective
     Caml.
     ['a] is the type of the parameters of the format,
-    ['c] is the result type for the "printf"-style function,
-    and ['b] is the type of the first argument given to
-    [%a] and [%t] printing functions. *)
+    ['b] is the type of the first argument given to
+         [%a] and [%t] printing functions,
+    ['c] is the type of the argument transmitted to the first argument of
+         "kprintf"-style functions,
+    ['d] is the result type for the "scanf"-style functions,
+    ['e] is the type of the receiver function for the "scanf"-style functions,
+    ['f] is the result type for the "printf"-style function.
+ *)
 type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
