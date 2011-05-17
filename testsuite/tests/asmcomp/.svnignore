@@ -6,8 +6,12 @@ svn propset svn:ignore -F - . <<EOF
 *.byte
 *.native
 program
-scanner.ml
-grammar.mli
-grammar.ml
+*.s
+*.out
+*.dSYM
+parsecmm.mli
+parsecmm.ml
+lexcmm.ml
+codegen
 
 EOF

@@ -6,8 +6,9 @@ svn propset svn:ignore -F - . <<EOF
 *.byte
 *.native
 program
-scanner.ml
-grammar.mli
-grammar.ml
+ocamldoc.sty
+ocamldoc.out
+style.css
+*.html
 
 EOF
