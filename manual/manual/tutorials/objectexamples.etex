@@ -809,11 +809,13 @@ correct:
 \begin{caml_example}
 fun (x:c0) -> (x : c0 :> c1);;
 \end{caml_example}
-However, the domain of the coercion cannot be omitted here: 
-\begin{caml_example}
-fun (x:c0) -> (x :> c1);;
-\end{caml_example}
-The solution is to use the explicit form. 
+%%% FIXME come up with a better example.
+% However, the domain of the coercion cannot be omitted here: 
+% \begin{caml_example}
+% fun (x:c0) -> (x :> c1);;
+% \end{caml_example}
+However, the domain of the coercion cannot always be omitted.
+In that case, the solution is to use the explicit form. 
 %
 Sometimes, a change in the class-type definition can also solve the problem
 \begin{caml_example}

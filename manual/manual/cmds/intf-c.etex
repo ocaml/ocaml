@@ -902,8 +902,10 @@ with the garbage collector using the "caml_register_global_root" function.
 \end{gcrule}
 
 Registration of a global variable "v" is achieved by calling
-"caml_register_global_root(&v)" just before a valid value is stored in "v"
-for the first time. 
+"caml_register_global_root(&v)" just before or just after a valid
+value is stored in "v" for the first time. You must not call any
+of the OCaml runtime functions or macros between registering and
+storing the value.
 
 A registered global variable "v" can be un-registered by calling
 "caml_remove_global_root(&v)".

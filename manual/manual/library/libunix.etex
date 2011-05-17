@@ -61,7 +61,6 @@ fully implemented and behave as described previously in this chapter.
 \entree{"waitpid"}{can only wait for a given PID, not any child process}
 \entree{"getppid"}{not implemented (meaningless under Windows)}
 \entree{"nice"}{not implemented}
-\entree{"out_channel_of_descr"}{ditto}
 \entree{"truncate", "ftruncate"}{not implemented}
 \entree{"link", "symlink", "readlink"}{not implemented (no links under
 Windows)}
