@@ -15040,7 +15040,7 @@ module Struct =
                      with
                      | Failure _ ->
                          error loc
-                           "Integer literal exceeds the range of representable integers of type int64")
+                           "Integer literal exceeds the range of representable integers of type int64.1")
                   in mkexp loc (Pexp_constant (Const_int64 i64))
               | ExNativeInt (loc, s) ->
                   let nati =
