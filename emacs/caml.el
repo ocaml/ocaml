@@ -1161,7 +1161,7 @@ Used to distinguish it from toplevel let construct.")
 
 (defconst caml-matching-kw-regexp
   (concat
-   "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in\\|t\\(hen\\|o\\)"
+   "\\<\\(and\\|do\\(ne\\|wnto\\)?\\|e\\(lse\\|nd\\)\\|in\\|t\\(hen\\|o\\)"
    "\\|with\\)\\>\\|[^[|]|")
   "Regexp used in caml mode for skipping back over nested blocks.")
 
@@ -1176,6 +1176,7 @@ Used to distinguish it from toplevel let construct.")
     ("else" . caml-find-else-match)
     ("then" . caml-find-then-match)
     ("to" . caml-find-done-match)
+    ("downto" . caml-find-done-match)
     ("do" . caml-find-done-match)
     ("and" . caml-find-and-match))
 
@@ -1582,7 +1583,7 @@ Does not preserve point."
 
 (defconst caml-leading-kwops-regexp
   (concat
-   "\\<\\(and\\|do\\(ne\\)?\\|e\\(lse\\|nd\\)\\|in"
+   "\\<\\(and\\|do\\(ne\\|wnto\\)?\\|e\\(lse\\|nd\\)\\|in"
    "\\|t\\(hen\\|o\\)\\|with\\)\\>\\|[]|})]")
 
   "Regexp matching caml keywords which need special indentation.")
@@ -1596,6 +1597,7 @@ Does not preserve point."
     ("in" caml-in-extra-indent 2)
     ("then" caml-then-extra-indent 3)
     ("to" caml-to-extra-indent 0)
+    ("downto" caml-to-extra-indent 0)
     ("with" caml-with-extra-indent 2)
     ("|" caml-|-extra-indent 2)
     ("]" caml-rb-extra-indent 0)
