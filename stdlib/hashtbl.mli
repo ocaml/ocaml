@@ -93,11 +93,29 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 
 
 val length : ('a, 'b) t -> int
-(** [Hashtbl.length tbl] returns the number of bindings in [tbl] in
-   constant time. Multiple bindings are counted multiply, so
+(** [Hashtbl.length tbl] returns the number of bindings in [tbl].
+   It takes constant time.  Multiple bindings are counted once each, so
    [Hashtbl.length] gives the number of times [Hashtbl.iter] calls its
    first argument. *)
 
+type statistics = {
+  num_bindings: int;
+    (** Number of bindings present in the table.
+        Same value as returned by {!Hashtbl.length}. *)
+  num_buckets: int;
+    (** Number of buckets in the table. *)
+  max_bucket_length: int;
+    (** Maximal number of bindings per bucket. *)
+  bucket_histogram: int array
+    (** Histogram of bucket sizes.  This array [histo] has
+        length [hash_max_bucket_length + 1].  The value of
+        [histo.(i)] is the number of buckets whose size is [i]. *)
+}
+
+val stats : ('a, 'b) t -> statistics
+(** [Hashtbl.stats tbl] returns statistics about the table [tbl]:
+   number of buckets, size of the biggest bucket, distribution of
+   buckets by size. *)
 
 (** {6 Functorial interface} *)
 
@@ -114,12 +132,13 @@ module type HashedType =
           as computed by [hash].
           Examples: suitable ([equal], [hash]) pairs for arbitrary key
           types include
-          ([(=)], {!Hashtbl.hash}) for comparing objects by structure,
-          ([(fun x y -> compare x y = 0)], {!Hashtbl.hash})
-          for comparing objects by structure and handling {!Pervasives.nan}
-          correctly, and
-          ([(==)], {!Hashtbl.hash}) for comparing objects by addresses
-          (e.g. for cyclic keys). *)
+-         ([(=)], {!Hashtbl.hash}) for comparing objects by structure
+              (provided objects do not contain floats)
+-         ([(fun x y -> compare x y = 0)], {!Hashtbl.hash})
+              for comparing objects by structure
+              and handling {!Pervasives.nan} correctly
+-         ([(==)], {!Hashtbl.hash}) for comparing objects by physical
+              equality (e.g. for mutable or cyclic objects). *)
    end
 (** The input signature of the functor {!Hashtbl.Make}. *)
 
@@ -139,6 +158,7 @@ module type S =
     val iter : (key -> 'a -> unit) -> 'a t -> unit
     val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val length : 'a t -> int
+    val stats: 'a t -> statistics
   end
 (** The output signature of the functor {!Hashtbl.Make}. *)
 
@@ -153,26 +173,97 @@ module Make (H : HashedType) : S with type key = H.t
     equality and hashing. *)
 
 
-(** {6 The polymorphic hash primitive} *)
+(** {6 Seeding} *)
+
+
+(** Every hash function exhibits collisions: different keys that hash
+  to the same hash value.  If many collisions occur, the performance
+  of a hash table degrade to that of a singly-linked list.  If the
+  hash function is fixed and publically known, a malicious user
+  can insert a sequence of keys specially crafted to cause collisions
+  and slow down hash table operations.  This technique has been used
+  in the past for denial-of-service attacks on Web services.
+
+  The countermeasure against this risk is called seeding.  The seed
+  is an extra integer parameter to the hash function.  Different values
+  of the seed give rise (with high probability) to different hash
+  functions with different sets of collisions.  The seed is chosen
+  pseudo-randomly when a new hash table is created.  This way, potential
+  attackers do not known the exact hash function used and cannot engineer
+  a collision sequence.  
+
+  The generic interface and the functorial interface presented above
+  do not use seeding, for compatibility with OCaml 3.12 and earlier.
+  Here is a richer functorial interface that supports seeding. *)
+
+module type SeededHashedType =
+  sig
+    type t
+      (** The type of the hashtable keys. *)
+    val equal: t -> t -> bool
+      (** The equality predicate used to compare keys. *)
+    val hash: int -> t -> int
+      (** A seeded hashing function on keys.  The first argument is
+          the seed.  It must be the case that if [equal x y] is true,
+          then [hash seed x = hash seed y] for any value of [seed].
+          A suitable choice for [hash] is the function {!Hashtbl.seeded_hash}
+          below. *)
+  end
+(** The input signature of the functor {!Hashtbl.MakeSeeded}.
+    @since 3.13.0 *)
+
+module MakeSeeded (H : SeededHashedType) : S with type key = H.t
+(** Functor building an implementation of the hashtable structure.
+    The functor [Hashtbl.MakeSeeded] returns a structure containing
+    a type [key] of keys and a type ['a t] of hash tables
+    associating data of type ['a] to keys of type [key].
+    The operations perform similarly to those of the generic
+    interface, but use the seeded hashing and equality functions
+    specified in the functor argument [H] instead of generic
+    equality and hashing.  A random seed is computed each time
+    the [create] function is called, associated with the
+    returned hash table, and used for all operations over this
+    table.
+    @since 3.13.0 *)
+
+
+(** {6 The polymorphic hash functions} *)
 
 
 val hash : 'a -> int
-(** [Hashtbl.hash x] associates a positive integer to any value of
+(** [Hashtbl.hash x] associates a nonnegative integer to any value of
    any type. It is guaranteed that
    if [x = y] or [Pervasives.compare x y = 0], then [hash x = hash y].
-   Moreover, [hash] always terminates, even on cyclic
-   structures. *)
+   Moreover, [hash] always terminates, even on cyclic structures. *)
 
-external hash_param : int -> int -> 'a -> int = "caml_hash_univ_param" "noalloc"
-(** [Hashtbl.hash_param n m x] computes a hash value for [x], with the
-   same properties as for [hash]. The two extra parameters [n] and
-   [m] give more precise control over hashing. Hashing performs a
-   depth-first, right-to-left traversal of the structure [x], stopping
-   after [n] meaningful nodes were encountered, or [m] nodes,
-   meaningful or not, were encountered. Meaningful nodes are: integers;
-   floating-point numbers; strings; characters; booleans; and constant
-   constructors. Larger values of [m] and [n] means that more
-   nodes are taken into account to compute the final hash
-   value, and therefore collisions are less likely to happen.
-   However, hashing takes longer. The parameters [m] and [n]
-   govern the tradeoff between accuracy and speed. *)
+val seeded_hash : int -> 'a -> int
+(** A variant of {!Hashtbl.hash} that is further parameterized by
+   an integer seed.
+   @since 3.13.0 *)
+
+val hash_param : int -> int -> 'a -> int
+(** [Hashtbl.hash_param meaningful total x] computes a hash value for [x],
+   with the same properties as for [hash]. The two extra integer
+   parameters [meaningful] and [total] give more precise control over
+   hashing. Hashing performs a breadth-first, left-to-right traversal
+   of the structure [x], stopping after [meaningful] meaningful nodes
+   were encountered, or [total] nodes (meaningful or not) were
+   encountered. Meaningful nodes are: integers; floating-point
+   numbers; strings; characters; booleans; and constant
+   constructors. Larger values of [meaningful] and [total] means that
+   more nodes are taken into account to compute the final hash value,
+   and therefore collisions are less likely to happen.  However,
+   hashing takes longer. The parameters [meaningful] and [total]
+   govern the tradeoff between accuracy and speed.  As default
+   choices, {!Hashtbl.hash} and {!Hashtbl.seeded_hash} take
+   [meaningful = 10] and [total = 100]. *)
+
+val seeded_hash_param : int -> int -> int -> 'a -> int
+(** A variant of {!Hashtbl.hash_param} that is further parameterized by
+   an integer seed.  Usage: 
+   [Hashtbl.seeded_hash_param meaningful total seed x].
+   @since 3.13.0 *)
+
+
+
+

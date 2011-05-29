@@ -21,6 +21,7 @@
 #define CAML_INT64_NATIVE_H
 
 #define I64_literal(hi,lo) ((int64)(hi) << 32 | (lo))
+#define I64_split(x,hi,lo) (hi = (uint32)((x)>>32), lo = (uint32)(x))
 #define I64_compare(x,y) (((x) > (y)) - ((x) < (y)))
 #define I64_ult(x,y) ((uint64)(x) < (uint64)(y))
 #define I64_neg(x) (-(x))

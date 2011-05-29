@@ -27,6 +27,8 @@
 #define I64_literal(hi,lo) { lo, hi }
 #endif
 
+#define I64_split(x,hi,lo) (hi = (x).h, lo = (x).l)
+
 /* Unsigned comparison */
 static int I64_ucompare(uint64 x, uint64 y)
 {

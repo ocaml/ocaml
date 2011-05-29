@@ -381,7 +381,11 @@ static int int64_cmp(value v1, value v2)
 
 static intnat int64_hash(value v)
 {
-  return I64_to_intnat(Int64_val(v));
+  int64 x = Int64_val(v);
+  uint32 lo, hi;
+
+  I64_split(x, hi, lo);
+  return hi ^ lo;
 }
 
 static void int64_serialize(value v, uintnat * wsize_32,
@@ -606,7 +610,14 @@ static int nativeint_cmp(value v1, value v2)
 
 static intnat nativeint_hash(value v)
 {
-  return Nativeint_val(v);
+  intnat n = Nativeint_val(v);
+#ifdef ARCH_SIXTYFOUR
+  /* 32/64 bits compatibility trick.  See explanations in file "hash.c",
+     function caml_hash_mix_intnat. */
+  return (n >> 32) ^ (n >> 63) ^ n;
+#else
+  return n;
+#endif
 }
 
 static void nativeint_serialize(value v, uintnat * wsize_32,

@@ -21,6 +21,7 @@
 #include "custom.h"
 #include "fail.h"
 #include "intext.h"
+#include "hash.h"
 #include "memory.h"
 #include "mlvalues.h"
 
@@ -616,69 +617,85 @@ static int caml_ba_compare(value v1, value v2)
 static intnat caml_ba_hash(value v)
 {
   struct caml_ba_array * b = Caml_ba_array_val(v);
-  intnat num_elts, n, h;
+  intnat num_elts, n;
+  uint32 h, w;
   int i;
 
   num_elts = 1;
   for (i = 0; i < b->num_dims; i++) num_elts = num_elts * b->dim[i];
-  if (num_elts >= 50) num_elts = 50;
   h = 0;
-
-#define COMBINE(h,v) ((h << 4) + h + (v))
 
   switch (b->flags & CAML_BA_KIND_MASK) {
   case CAML_BA_SINT8:
   case CAML_BA_UINT8: {
     uint8 * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
+    if (num_elts > 256) num_elts = 256;
+    for (n = 0; n + 4 <= num_elts; n += 4, p += 4) {
+      w = p[0] | (p[1] << 8) | (p[2] << 16) | (p[3] << 24);
+      h = caml_hash_mix_uint32(h, w);
+    }
+    w = 0;
+    switch (num_elts & 3) {
+    case 3: w  = p[2] << 16;    /* fallthrough */
+    case 2: w |= p[1] << 8;     /* fallthrough */
+    case 1: w |= p[0];
+            h = caml_hash_mix_uint32(h, w);
+    }
     break;
   }
   case CAML_BA_SINT16:
   case CAML_BA_UINT16: {
     uint16 * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
-    break;
-  }
-  case CAML_BA_FLOAT32:
-  case CAML_BA_COMPLEX32:
-  case CAML_BA_INT32:
-#ifndef ARCH_SIXTYFOUR
-  case CAML_BA_CAML_INT:
-  case CAML_BA_NATIVE_INT:
-#endif
-  {
-    uint32 * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
-    break;
-  }
-  case CAML_BA_FLOAT64:
-  case CAML_BA_COMPLEX64:
-  case CAML_BA_INT64:
-#ifdef ARCH_SIXTYFOUR
-  case CAML_BA_CAML_INT:
-  case CAML_BA_NATIVE_INT:
-#endif
-#ifdef ARCH_SIXTYFOUR
-  {
-    uintnat * p = b->data;
-    for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
-    break;
-  }
-#else
-  {
-    uint32 * p = b->data;
-    for (n = 0; n < num_elts; n++) {
-#ifdef ARCH_BIG_ENDIAN
-      h = COMBINE(h, p[1]); h = COMBINE(h, p[0]); p += 2;
-#else
-      h = COMBINE(h, p[0]); h = COMBINE(h, p[1]); p += 2;
-#endif
+    if (num_elts > 128) num_elts = 128;
+    for (n = 0; n + 2 <= num_elts; n += 2, p += 2) {
+      w = p[0] | (p[1] << 16);
+      h = caml_hash_mix_uint32(h, w);
     }
+    if ((num_elts & 1) != 0)
+      h = caml_hash_mix_uint32(h, p[0]);
     break;
   }
-#endif
+  case CAML_BA_INT32:
+  {
+    uint32 * p = b->data;
+    if (num_elts > 64) num_elts = 64;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_uint32(h, *p);
+    break;
   }
-#undef COMBINE
+  case CAML_BA_CAML_INT:
+  case CAML_BA_NATIVE_INT:
+  {
+    intnat * p = b->data;
+    if (num_elts > 64) num_elts = 64;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_intnat(h, *p);
+    break;
+  }
+  case CAML_BA_INT64:
+  {
+    int64 * p = b->data;
+    if (num_elts > 32) num_elts = 32;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_int64(h, *p);
+    break;
+  }
+  case CAML_BA_COMPLEX32:
+    num_elts *= 2;              /* fallthrough */
+  case CAML_BA_FLOAT32:
+  {
+    float * p = b->data;
+    if (num_elts > 64) num_elts = 64;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_float(h, *p);
+    break;
+  }
+  case CAML_BA_COMPLEX64:
+    num_elts *= 2;              /* fallthrough */
+  case CAML_BA_FLOAT64:
+  {
+    double * p = b->data;
+    if (num_elts > 32) num_elts = 32;
+    for (n = 0; n < num_elts; n++, p++) h = caml_hash_mix_double(h, *p);
+    break;
+  }
+  }
   return h;
 }
 

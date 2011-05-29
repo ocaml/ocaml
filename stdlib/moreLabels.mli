@@ -39,7 +39,10 @@ module Hashtbl : sig
       f:(key:'a -> data:'b -> 'c -> 'c) ->
         ('a, 'b) t -> init:'c -> 'c
   val length : ('a, 'b) t -> int
+  type statistics = Hashtbl.statistics
+  val stats : ('a, 'b) t -> statistics
   module type HashedType = Hashtbl.HashedType
+  module type SeededHashedType = Hashtbl.SeededHashedType
   module type S =
     sig
       type key
@@ -58,11 +61,14 @@ module Hashtbl : sig
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
       val length : 'a t -> int
+      val stats: 'a t -> statistics
     end
   module Make : functor (H : HashedType) -> S with type key = H.t
+  module MakeSeeded (H : SeededHashedType) : S with type key = H.t
   val hash : 'a -> int
-  external hash_param : int -> int -> 'a -> int
-      = "caml_hash_univ_param" "noalloc"
+  val seeded_hash : int -> 'a -> int
+  val hash_param : int -> int -> 'a -> int
+  val seeded_hash_param : int -> int -> int -> 'a -> int
 end
 
 module Map : sig
