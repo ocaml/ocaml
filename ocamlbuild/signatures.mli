@@ -35,7 +35,7 @@ module type LIST = sig
   val union : 'a list -> 'a list -> 'a list
 
   (* Original functions *)
-  include Std_signatures.LIST
+  include module type of List
 end
 
 module type STRING = sig
@@ -89,7 +89,7 @@ module type STRING = sig
   val explode : string -> char list
 
   (** The following are original functions from the [String] module. *)
-  include Std_signatures.STRING
+  include module type of String
 end
 
 module type TAGS = sig
