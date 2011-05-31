@@ -652,7 +652,7 @@ constraints.
 The module expression @("val" expr ":" package-type)@ cannot be used in the
 body of a functor, because this can cause unsoundness in conjunction
 with applicative functors.  It can be used anywhere in the context of a local
-module binding @'let' M = ("val" expr_1 ":" package-type) "in" expr_2@,
+module binding @'let'~M = ("val" expr_1 ":" package-type) "in" expr_2@,
 however.
 
 \paragraph{Basic example} A typical use of first-class modules is to

@@ -152,7 +152,7 @@ be either a value name or an access path to a value component of a module.
 \ikwd{end\@\texttt{end}}
 
 The expressions @'(' expr ')'@ and @'begin' expr 'end'@ have the same
-value as @expr@. Both constructs are semantically equivalent, but it
+value as @expr@. The two constructs are semantically equivalent, but it
 is good style to use @'begin' \ldots 'end'@ inside control structures:
 \begin{alltt}
         if \ldots then begin \ldots ; \ldots end else begin \ldots ; \ldots end
