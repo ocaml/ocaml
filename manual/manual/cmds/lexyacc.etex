@@ -243,13 +243,14 @@ character in the matched string. The first character corresponds to $n = 0$.
 
 \item["Lexing.lexeme_start lexbuf"]
 Return the absolute position in the input text of the beginning of the
-matched string. The first character read from the input text has
-position 0.
+matched string (i.e. the offset of the first character of the matched
+string). The first character read from the input text has offset 0.
 
 \item["Lexing.lexeme_end lexbuf"]
 Return the absolute position in the input text of the end of the
-matched string. The first character read from the input text has
-position 0.
+matched string (i.e. the offset of the first character after the
+matched string). The first character read from the input text has
+offset 0.
 
 \newcommand{\sub}[1]{$_{#1}$}%
 \item[\var{entrypoint} {[\var{exp\sub{1}}\ldots{} \var{exp\sub{n}}]} "lexbuf"]
