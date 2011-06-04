@@ -4,6 +4,15 @@ OCaml 3.13.0:
 - The official name of the language is now OCaml.
 - Warning 28 is now enabled by default.
 
+Standard library:
+- Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
+- Hashtbl:
+    . Statistically-better generic hash function based on Murmur 3 (PR#5225)
+    . Fixed behavior of generic hash function w.r.t. -0.0 and NaN (PR#5222)
+    . Added optional "seed" parameter to Hashtbl.create for diversification
+    . Added new functorial interface "MakeSeeded" to support diversification
+      with user-provided hash functions.
+
 
 Objective Caml 3.12.0:
 ----------------------

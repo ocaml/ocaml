@@ -869,9 +869,9 @@ fi
 
 # For the Pervasives module
 
-if sh ./trycompile expm1.c $mathlib; then
-  echo "expm1() and log1p() found."
-  echo "#define HAS_EXPM1_LOG1P" >> s.h
+if sh ./hasgot2 -i math.h $mathlib expm1 log1p hypot copysign; then
+  echo "expm1(), log1p(), hypot(), copysign() found."
+  echo "#define HAS_C99_FLOAT_OPS" >> s.h
 fi
 
 # For the Sys module
