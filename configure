@@ -433,11 +433,12 @@ esac
 # Determine alignment constraints
 
 case "$host" in
-  sparc*-*-*|hppa*-*-*|arm*-*-*)
+  sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
     # PR#5088 suggests same problem on ARM.
+    # PR#5280 reports same problem on MIPS.
     # But there's a knack (PR#2572):
     # if we're in 64-bit mode (sizeof(long) == 8),
     # we must not doubleword-align floats...
@@ -465,8 +466,8 @@ esac
 
 if $int64_native; then
   case "$host" in
-    # PR#5088: autodetection is unreliable on ARM
-    sparc*-*-*|hppa*-*-*|arm*-*-*)
+    # PR#5088: autodetection is unreliable on ARM.  PR#5280: also on MIPS.
+    sparc*-*-*|hppa*-*-*|arm*-*-*|mips*-*-*)
       if test $2 = 8; then
         echo "64-bit integers can be word-aligned."
         echo "#undef ARCH_ALIGN_INT64" >> m.h
