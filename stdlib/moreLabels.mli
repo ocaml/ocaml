@@ -25,7 +25,7 @@
 
 module Hashtbl : sig
   type ('a, 'b) t = ('a, 'b) Hashtbl.t
-  val create : int -> ('a, 'b) t
+  val create : ?seed:int -> int -> ('a, 'b) t
   val clear : ('a, 'b) t -> unit
   val add : ('a, 'b) t -> key:'a -> data:'b -> unit
   val copy : ('a, 'b) t -> ('a, 'b) t
@@ -47,7 +47,7 @@ module Hashtbl : sig
     sig
       type key
       and 'a t
-      val create : int -> 'a t
+      val create : ?seed:int -> int -> 'a t
       val clear : 'a t -> unit
       val copy : 'a t -> 'a t
       val add : 'a t -> key:key -> data:'a -> unit

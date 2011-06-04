@@ -39,9 +39,9 @@ let rec power_2_above x n =
   else if x * 2 > Sys.max_array_length then x
   else power_2_above (x * 2) n
 
-let create initial_size =
+let create ?(seed = 0) initial_size =
   let s = power_2_above 16 initial_size in
-  { size = 0; seed = 0; data = Array.make s Empty }
+  { size = 0; seed = seed; data = Array.make s Empty }
 
 let clear h =
   for i = 0 to Array.length h.data - 1 do
@@ -74,7 +74,7 @@ let resize indexfun h =
 let key_index h key =
   (* compatibility with old hash tables *)
   if Obj.size (Obj.repr h) = 3
-  then (seeded_hash_param 10 100 0 key) land (Array.length h.data - 1)
+  then (seeded_hash_param 10 100 h.seed key) land (Array.length h.data - 1)
   else (old_hash_param 10 100 key) mod (Array.length h.data)
 
 let add h key info =
@@ -220,7 +220,7 @@ module type S =
   sig
     type key
     type 'a t
-    val create: int -> 'a t
+    val create: ?seed:int -> int -> 'a t
     val clear: 'a t -> unit
     val copy: 'a t -> 'a t
     val add: 'a t -> key -> 'a -> unit
@@ -240,11 +240,7 @@ module MakeSeeded(H: SeededHashedType): (S with type key = H.t) =
     type key = H.t
     type 'a hashtbl = (key, 'a) t
     type 'a t = 'a hashtbl
-    let prng = Random.State.make_self_init()
-    let create initial_size =
-      let h = create initial_size in
-      h.seed <- Random.State.bits prng;
-      h
+    let create = create
     let clear = clear
     let copy = copy
 

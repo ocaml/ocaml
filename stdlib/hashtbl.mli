@@ -25,12 +25,21 @@
 type ('a, 'b) t
 (** The type of hash tables from type ['a] to type ['b]. *)
 
-val create : int -> ('a, 'b) t
+val create : ?seed:int -> int -> ('a, 'b) t
 (** [Hashtbl.create n] creates a new, empty hash table, with
    initial size [n].  For best results, [n] should be on the
    order of the expected number of elements that will be in
    the table.  The table grows as needed, so [n] is just an
-   initial guess. *)
+   initial guess.
+
+   The optional [seed] parameter (an integer) can be given to
+   diversify the hash function used to access the returned table.
+   With high probability, hash tables created with different seeds
+   have different collision patterns.  In Web-facing applications 
+   for instance, it is recommended to create hash tables with a
+   randomly-chosen seed.  This prevents a denial-of-service attack
+   whereas a malicious user sends input crafted to create many
+   collisions in the table and therefore slow the application down. *)
 
 val clear : ('a, 'b) t -> unit
 (** Empty a hash table. *)
@@ -146,7 +155,7 @@ module type S =
   sig
     type key
     type 'a t
-    val create : int -> 'a t
+    val create : ?seed:int -> int -> 'a t
     val clear : 'a t -> unit
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
@@ -170,31 +179,8 @@ module Make (H : HashedType) : S with type key = H.t
     The operations perform similarly to those of the generic
     interface, but use the hashing and equality functions
     specified in the functor argument [H] instead of generic
-    equality and hashing. *)
-
-
-(** {6 Seeding} *)
-
-
-(** Every hash function exhibits collisions: different keys that hash
-  to the same hash value.  If many collisions occur, the performance
-  of a hash table degrade to that of a singly-linked list.  If the
-  hash function is fixed and publically known, a malicious user
-  can insert a sequence of keys specially crafted to cause collisions
-  and slow down hash table operations.  This technique has been used
-  in the past for denial-of-service attacks on Web services.
-
-  The countermeasure against this risk is called seeding.  The seed
-  is an extra integer parameter to the hash function.  Different values
-  of the seed give rise (with high probability) to different hash
-  functions with different sets of collisions.  The seed is chosen
-  pseudo-randomly when a new hash table is created.  This way, potential
-  attackers do not known the exact hash function used and cannot engineer
-  a collision sequence.  
-
-  The generic interface and the functorial interface presented above
-  do not use seeding, for compatibility with OCaml 3.12 and earlier.
-  Here is a richer functorial interface that supports seeding. *)
+    equality and hashing.  The optional [seed] argument to the
+    [create] function is ignored. *)
 
 module type SeededHashedType =
   sig
@@ -220,10 +206,8 @@ module MakeSeeded (H : SeededHashedType) : S with type key = H.t
     The operations perform similarly to those of the generic
     interface, but use the seeded hashing and equality functions
     specified in the functor argument [H] instead of generic
-    equality and hashing.  A random seed is computed each time
-    the [create] function is called, associated with the
-    returned hash table, and used for all operations over this
-    table.
+    equality and hashing.  The optional [seed] argument to the [create]
+    function is honored.
     @since 3.13.0 *)
 
 
