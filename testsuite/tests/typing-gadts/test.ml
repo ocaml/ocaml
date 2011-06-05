@@ -204,3 +204,29 @@ let test2 : type a. a t -> a option = fun x ->
     !u
   in a
 ;; (* fail *)
+
+(* Effect of external consraints *)
+
+let f (type a) (x : a t) y =
+  ignore (y : a);
+  let r = match x with Int -> (y : a) in (* fails *)
+  r
+;;
+let f (type a) (x : a t) y =
+  let r = match x with Int -> (y : a) in
+  ignore (y : a); (* fails *)
+  r
+;;
+let f (type a) (x : a t) y =
+  ignore (y : a);
+  let r = match x with Int -> y in
+  r
+;;
+let f (type a) (x : a t) y =
+  let r = match x with Int -> y in
+  ignore (y : a);
+  r
+;;
+let f (type a) (x : a t) (y : a) =
+  match x with Int -> y
+;;

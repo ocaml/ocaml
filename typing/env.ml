@@ -280,9 +280,15 @@ and find_cltype =
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
    - the type should have an associated manifest type. *)
-let find_type_expansion ?(use_local=true) path env =
+let find_type_expansion ?(use_local=true) ?level path env =
   let decl = find_type path env in
   if not use_local && not (decl.type_newtype_level = None) then raise Not_found;
+  (* the level is changed when updating newtype definitions *)
+  if !Clflags.principal then begin
+    match level, decl.type_newtype_level with
+      Some level, Some def_level when level < def_level -> raise Not_found
+    | _ -> ()
+  end;
   match decl.type_manifest with
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
@@ -770,7 +776,8 @@ and add_cltype id ty env =
 let add_local_constraint id info mlv env =
   match info with
     {type_manifest = Some ty; type_newtype_level = Some lv} ->
-      let env = add_type id info env in
+      (* use the newtype level for this definition, lv is the old one *)
+      let env = add_type id {info with type_newtype_level = Some mlv} env in
       let level_map =
         if lv < mlv then add_level lv mlv env.level_map else env.level_map in
       { env with local_constraints = true; level_map = level_map }

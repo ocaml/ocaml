@@ -1253,7 +1253,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           ty
       | None ->
           let (params, body) =
-            try find_type_expansion path env with Not_found ->
+            try find_type_expansion level path env with Not_found ->
               raise Cannot_expand
           in
           (* prerr_endline
@@ -1274,7 +1274,8 @@ let expand_abbrev_gen kind find_type_expansion env ty =
    use local constraints *)
 let expand_abbrev ty =
   let use_local = use_local () in
-  expand_abbrev_gen Public (Env.find_type_expansion ~use_local) ty
+  expand_abbrev_gen Public
+    (fun level -> Env.find_type_expansion ~use_local ~level) ty
 
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
@@ -1332,7 +1333,8 @@ let expand_head env ty =
    normally hidden to the type-checker out of the implementation module of
    the private abbreviation. *)
 
-let expand_abbrev_opt = expand_abbrev_gen Private Env.find_type_expansion_opt
+let expand_abbrev_opt =
+  expand_abbrev_gen Private (fun level -> Env.find_type_expansion_opt)
 
 let try_expand_once_opt env ty =
   let ty = repr ty in

@@ -143,7 +143,7 @@ let rec sameNat : type a b. a nat -> b nat -> (a,b) equal option = fun a b ->
   | NZ, NZ -> Some Eq
   | NS a', NS b' ->
       begin match sameNat a' b' with
-      | Some Eq -> Some (Eq : (a, b) equal)
+      | Some Eq -> Some Eq
       | None -> None
       end
   | _ -> None
