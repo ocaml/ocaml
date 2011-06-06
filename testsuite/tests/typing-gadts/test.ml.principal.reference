@@ -112,4 +112,15 @@ Error: This expression has type int option
        ^
 Error: This expression has type int option
        but an expression was expected of type a option
+#               Characters 116-117:
+    let r = match x with Int -> (y : a) in (* fails *)
+                                 ^
+Error: This expression has type a but an expression was expected of type int
+#         Characters 80-81:
+    ignore (y : a); (* fails *)
+            ^
+Error: This expression has type int but an expression was expected of type a
+#         val f : 'a t -> 'a -> 'a = <fun>
+#         val f : 'a t -> 'a -> 'a = <fun>
+#     val f : 'a t -> 'a -> int = <fun>
 # 

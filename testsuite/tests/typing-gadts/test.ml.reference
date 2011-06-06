@@ -104,4 +104,12 @@ Error: This expression has type int option
        ^
 Error: This expression has type int option
        but an expression was expected of type a option
+#               val f : 'a t -> 'a -> int = <fun>
+#         Characters 80-81:
+    ignore (y : a); (* fails *)
+            ^
+Error: This expression has type int but an expression was expected of type a
+#         val f : 'a t -> 'a -> 'a = <fun>
+#         val f : 'a t -> 'a -> 'a = <fun>
+#     val f : 'a t -> 'a -> 'a = <fun>
 # 
