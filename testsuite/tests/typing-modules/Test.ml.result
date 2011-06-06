@@ -1,6 +1,0 @@
-
-# module type S = sig type t and s = t end
-# module type S' = sig type s = int end
-#   module type S = sig module rec M : sig  end and N : sig  end end
-# module type S' = sig module rec N : sig  end end
-# 
