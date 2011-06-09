@@ -254,7 +254,7 @@ static int st_event_create(st_event * res)
   rc = pthread_mutex_init(&e->lock, NULL);
   if (rc != 0) { free(e); return rc; }
   rc = pthread_cond_init(&e->triggered, NULL);
-  if (rc != 0) { free(e); return rc; }
+  if (rc != 0) { pthread_mutex_destroy(&e->lock); free(e); return rc; }
   e->status = 0;
   *res = e;
   return 0;
@@ -320,9 +320,6 @@ static void * caml_thread_tick(void * arg)
 {
   struct timeval timeout;
   sigset_t mask;
-#ifdef __linux__
-  int tickcount = 0;
-#endif
 
   /* Block all signals so that we don't try to execute a Caml signal handler */
   sigfillset(&mask);
@@ -339,18 +336,6 @@ static void * caml_thread_tick(void * arg)
      go through caml_handle_signal(), just record signal delivery via
      caml_record_signal(). */
     caml_record_signal(SIGPREEMPTION);
-#ifdef __linux__
-    /* Hack around LinuxThreads' non-standard signal handling:
-       if program is killed on a signal, e.g. SIGINT, the current
-       thread will not die on this signal (because of the signal blocking
-       above).  Hence, periodically check that the thread manager (our
-       parent process) still exists. */
-    tickcount++;
-    if (tickcount >= 2000 / Thread_timeout) { /* every 2 secs approx */
-      tickcount = 0;
-      if (getppid() == 1) pthread_exit(NULL);
-    }
-#endif
   }
   return NULL;                  /* prevents compiler warning */
 }
