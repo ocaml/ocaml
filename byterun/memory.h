@@ -102,7 +102,7 @@ int caml_page_table_initialize(mlsize_t bytesize);
                                           CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Bhsize_wosize (wosize);                                 \
-  if (caml_young_ptr < caml_young_limit){                                   \
+  if (caml_young_ptr < caml_young_start){                                   \
     caml_young_ptr += Bhsize_wosize (wosize);                               \
     Setup_for_gc;                                                           \
     caml_minor_collection ();                                               \
