@@ -63,6 +63,7 @@ Bug fixes:
 - PR#5258: win32unix: unix fd leak under windows
 - PR#5269: (tentative fix) Wrong ext_ref entries in .annot files
 - PR#5272: caml.el doesn't recognize downto as a keyword
+- PR#5276: issue with ocamlc -pack and recursively-packed modules
 - PR#5280: alignment constraints incorrectly autodetected on MIPS 32
 - PR#5281: typo in error message
 - camlp4 revised syntax printing bug in the toplevel (reported on caml-list)
