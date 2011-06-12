@@ -1896,18 +1896,25 @@ let tuplify_function arity =
 
 (* Generate currying functions:
       (defun caml_curryN (arg clos)
-         (alloc HDR caml_curryN_1 arg clos))
+         (alloc HDR caml_curryN_1 <arity (N-1)> caml_curry_N_1_app arg clos))
       (defun caml_curryN_1 (arg clos)
-         (alloc HDR caml_curryN_2 arg clos))
+         (alloc HDR caml_curryN_2 <arity (N-2)> caml_curry_N_2_app arg clos))
       ...
       (defun caml_curryN_N-1 (arg clos)
-         (let (closN-2 clos.cdr
-               closN-3 closN-2.cdr
+         (let (closN-2 clos.vars[1]
+               closN-3 closN-2.vars[1]
                ...
-               clos1 clos2.cdr
-               clos clos1.cdr)
+               clos1 clos2.vars[1]
+               clos clos1.vars[1])
            (app clos.direct
-                clos1.car clos2.car ... closN-2.car clos.car arg clos))) *)
+                clos1.vars[0] ... closN-2.vars[0] clos.vars[0] arg clos)))
+    Special "shortcut" functions are also generated to handle the
+    case where a partially applied function is applied to all remaining
+    arguments in one go.  For instance:
+      (defun caml_curry_N_1_app (arg2 ... argN clos)
+        (let clos' clos.vars[1]
+           (app clos'.direct clos.vars[0] arg2 ... argN clos')))
+*)
 
 let final_curry_function arity =
   let last_arg = Ident.create "arg" in
@@ -1917,11 +1924,19 @@ let final_curry_function arity =
       Cop(Capply(typ_addr, Debuginfo.none),
           get_field (Cvar clos) 2 ::
           args @ [Cvar last_arg; Cvar clos])
-    else begin
+    else
+      if n = arity - 1 then
+	begin
       let newclos = Ident.create "clos" in
       Clet(newclos,
            get_field (Cvar clos) 3,
            curry_fun (get_field (Cvar clos) 2 :: args) newclos (n-1))
+	end else
+	begin
+	  let newclos = Ident.create "clos" in
+	  Clet(newclos,
+               get_field (Cvar clos) 4,
+               curry_fun (get_field (Cvar clos) 3 :: args) newclos (n-1))
     end in
   Cfunction
    {fun_name = "caml_curry" ^ string_of_int arity ^
@@ -1940,12 +1955,50 @@ let rec intermediate_curry_functions arity num =
     Cfunction
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];
-      fun_body = Cop(Calloc,
+      fun_body =
+	 if arity - num > 2 then
+	   Cop(Calloc,
+               [alloc_closure_header 5;
+                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                int_const (arity - num - 1);
+                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
+		Cvar arg; Cvar clos])
+	 else
+	   Cop(Calloc,
                      [alloc_closure_header 4;
                       Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                       int_const 1; Cvar arg; Cvar clos]);
       fun_fast = true}
-    :: intermediate_curry_functions arity (num+1)
+    ::
+      (if arity - num > 2 then
+	  let rec iter i =
+	    if i <= arity then
+	      let arg = Ident.create (Printf.sprintf "arg%d" i) in
+	      (arg, typ_addr) :: iter (i+1)
+	    else []
+	  in
+	  let direct_args = iter (num+2) in
+	  let rec iter i args clos =
+	    if i = 0 then
+	      Cop(Capply(typ_addr, Debuginfo.none),
+		  (get_field (Cvar clos) 2) :: args @ [Cvar clos])
+	    else
+	      let newclos = Ident.create "clos" in
+	      Clet(newclos,
+		   get_field (Cvar clos) 4,
+		   iter (i-1) (get_field (Cvar clos) 3 :: args) newclos)
+	  in
+	  let cf =
+	    Cfunction
+	      {fun_name = name1 ^ "_" ^ string_of_int (num+1) ^ "_app";
+	       fun_args = direct_args @ [clos, typ_addr];
+	       fun_body = iter (num+1)
+		  (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
+	       fun_fast = true}
+	  in
+	  cf :: intermediate_curry_functions arity (num+1)
+       else
+	  intermediate_curry_functions arity (num+1))
   end
 
 let curry_function arity =
