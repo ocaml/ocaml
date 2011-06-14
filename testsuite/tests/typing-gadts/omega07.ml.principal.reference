@@ -55,7 +55,17 @@ val even4 : four even = EvenSS (EvenSS EvenZ)
 val sameNat : 'a nat -> 'b nat -> ('a, 'b) equal option = <fun>
 #             val smaller : ('a succ, 'b succ) le -> ('a, 'b) le = <fun>
 #   type ('a, 'b) diff = Diff : 'e nat * ('c, 'e, 'd) plus -> ('c, 'd) diff
-#                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#   * * * * * * * * *                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#               Characters 87-243:
+  ..match a, b,le with (* warning *)
+    | NZ, m, LeZ _ -> Diff (m, PlusZ m)
+    | NS x, NS y, LeS q ->
+        match diff q x y with Diff (m, p) -> Diff (m, PlusS p)
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(NS _, NZ, _)
+val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#               val diff : ('a, 'b) le -> 'b nat -> ('a, 'b) diff = <fun>
 #             type ('a, 'b) filter = Filter : ('e, 'd) le * ('c, 'e) seq -> ('c, 'd) filter
 val leS' : ('a, 'b) le -> ('a, 'b succ) le = <fun>
 #                   val filter : ('a -> bool) -> ('a, 'b) seq -> ('a, 'b) filter = <fun>

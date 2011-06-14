@@ -158,6 +158,7 @@ let smaller : type a b. (a succ, b succ) le -> (a,b) le =
 
 type (_,_) diff = Diff : 'c nat * ('a,'c,'b) plus -> ('a,'b) diff ;;
 
+(*
 let rec diff : type a b. (a,b) le -> a nat -> b nat -> (a,b) diff =
   fun le a b ->
   match a, b, le with
@@ -165,6 +166,31 @@ let rec diff : type a b. (a,b) le -> a nat -> b nat -> (a,b) diff =
   | NS x, NZ, _ -> assert false
   | NS x, NS y, q ->
       match diff (smaller q) x y with Diff (m, p) -> Diff (m, PlusS p)
+;;
+*)
+
+let rec diff : type a b. (a,b) le -> a nat -> b nat -> (a,b) diff =
+  fun le a b ->
+  match le, a, b with
+  | LeZ _, _, m -> Diff (m, PlusZ m)
+  | LeS q, NS x, NS y ->
+      match diff q x y with Diff (m, p) -> Diff (m, PlusS p)
+;;
+
+let rec diff : type a b. (a,b) le -> a nat -> b nat -> (a,b) diff =
+  fun le a b ->
+  match a, b,le with (* warning *)
+  | NZ, m, LeZ _ -> Diff (m, PlusZ m)
+  | NS x, NS y, LeS q ->
+      match diff q x y with Diff (m, p) -> Diff (m, PlusS p)
+;;
+
+let rec diff : type a b. (a,b) le -> b nat -> (a,b) diff =
+  fun le b ->
+  match b,le with
+  | m, LeZ _ -> Diff (m, PlusZ m)
+  | NS y, LeS q ->
+      match diff q y with Diff (m, p) -> Diff (m, PlusS p)
 ;;
 
 type (_,_) filter = Filter : ('m,'n) le * ('a,'m) seq -> ('a,'n) filter

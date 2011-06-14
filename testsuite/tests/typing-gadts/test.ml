@@ -148,6 +148,13 @@ module Propagation = struct
 end
 ;;
 
+module Normal_constrs = struct
+  type a = A
+  type b = B
+
+  let f = function A -> 1 | B -> 2
+end;;
+
 type _ t = Int : int t ;;
 
 let ky x y = ignore (x = y); x ;;

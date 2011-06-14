@@ -1941,17 +1941,17 @@ and mcomp_row type_pairs subst env row1 row2 =
 
 and mcomp_type_decl type_pairs subst env p1 p2 = 
   if Path.same p1 p2 then () else
-  let both_current_module = 
-    match p1, p2 with
-      Path.Pident _, Path.Pident _ -> true
+  let is_current_module = function
+      Path.Pident _ -> true
     | _ -> false
   in
 
   let decl = Env.find_type p1 env in
   let decl' = Env.find_type p2 env in
-  let both_oldtypes = decl.type_newtype_level = None && decl'.type_newtype_level = None in
+  let both_oldtypes =
+    decl.type_newtype_level = None && decl'.type_newtype_level = None in
   if 
-    (both_current_module && both_oldtypes) ||
+    (is_current_module p1 && is_current_module p2 && both_oldtypes) ||
     (in_pervasives p1 && in_pervasives p2)
   then 
     raise (Unify [])

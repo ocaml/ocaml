@@ -574,10 +574,10 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
       let (ty_args, ty_res) = 
         instance_constructor ~in_pattern:(env, get_newtype_level ()) constr  
       in
-      begin match mode with
-      | Inside_or -> unify_pat_types loc !env ty_res expected_ty
-      | Normal -> unify_pat_types_gadt loc env ty_res expected_ty
-      end;
+      if constr.cstr_generalized && mode = Normal then
+        unify_pat_types_gadt loc env ty_res expected_ty
+      else
+        unify_pat_types loc !env ty_res expected_ty;
       let args = List.map2 (fun p t -> type_pat p t) sargs ty_args in
       rp {
         pat_desc = Tpat_construct(constr, args);

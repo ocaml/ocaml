@@ -71,6 +71,11 @@ Error: This pattern matches values of type ([? `A ] as 'a) * bool t
                      ^
 Error: This expression has type bool but an expression was expected of type
          int
+#             Characters 87-88:
+    let f = function A -> 1 | B -> 2
+                              ^
+Error: This pattern matches values of type b
+       but a pattern was expected which matches values of type a
 #   type 'a t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
 #         Characters 88-89:
