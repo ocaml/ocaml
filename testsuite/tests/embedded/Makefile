@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default: compile run
 
 compile:
@@ -15,4 +17,4 @@ run:
 clean: defaultclean
 	@rm -f *.result ./program
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

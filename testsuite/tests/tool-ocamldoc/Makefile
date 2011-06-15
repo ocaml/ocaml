@@ -1,3 +1,4 @@
+BASEDIR=../..
 CUSTOM_MODULE=odoc_test
 ADD_COMPFLAGS=-I +ocamldoc
 
@@ -14,4 +15,4 @@ run: $(CUSTOM_MODULE).cmo
 clean: defaultclean
 	@rm -f *.result *.html *.tex *.log *.out *.sty *.toc *.css *.aux
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

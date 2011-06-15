@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default:
 	@$(OCAMLC) -o program.byte signals.ml
 	@./program.byte
@@ -7,4 +9,4 @@ default:
 clean: defaultclean
 	@rm -fr program.*
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

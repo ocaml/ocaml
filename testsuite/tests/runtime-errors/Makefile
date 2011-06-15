@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default: compile run
 
 compile:
@@ -22,4 +24,4 @@ run:
 clean: defaultclean
 	@rm -f *.bytecode *.native *.result
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

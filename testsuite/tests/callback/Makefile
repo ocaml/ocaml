@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 CC=$(NATIVECC) -I $(TOPDIR)/byterun
 
 default: run-byte run-opt
@@ -24,4 +26,4 @@ run-opt: common
 clean: defaultclean
 	@rm -f *.result ./program
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

@@ -1,3 +1,4 @@
+BASEDIR=../..
 CC=$(NATIVECC)
 CFLAGS=$(NATIVECCCOMPOPTS) -g
 
@@ -139,6 +140,6 @@ power.o: power-$(SYSTEM).o
 	@cp power-$(SYSTEM).o power.o
 
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common
 
 arch: $(ARCH).o

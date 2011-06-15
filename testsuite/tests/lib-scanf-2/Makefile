@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default: compile run
 
 compile: tscanf2_io.cmo tscanf2_io.cmx
@@ -18,4 +20,4 @@ run:
 clean: defaultclean
 	@rm -f master.* slave.* result.*
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

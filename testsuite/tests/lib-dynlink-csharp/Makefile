@@ -1,3 +1,4 @@
+BASEDIR=../..
 CSC=csc
 
 default: prepare bytecode bytecode-dll native native-dll
@@ -55,4 +56,4 @@ native-dll:
 clean: defaultclean
 	@rm -f *.result *.exe *.dll
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

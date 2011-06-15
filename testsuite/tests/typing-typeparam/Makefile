@@ -1,6 +1,7 @@
 #MODULES=
-MAIN_MODULE=newtype
+MAIN_MOBASEDIR=../..
+DULE=newtype
 ADD_COMPFLAGS=-w a
 
-include ../../makefiles/Makefile.one
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common
