@@ -30,7 +30,7 @@ Assuming the input file is
 .IR grammar \&.mly,
 running
 .B ocamlyacc
-produces Caml code for a parser in the file
+produces OCaml code for a parser in the file
 .IR grammar \&.ml,
 and its interface in file
 .IR grammar \&.mli.

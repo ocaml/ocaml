@@ -22,7 +22,7 @@ The
 .BR ocaml (1)
 command is the toplevel system for OCaml,
 that permits interactive use of the OCaml system through a
-read-eval-print loop. In this mode, the system repeatedly reads Caml
+read-eval-print loop. In this mode, the system repeatedly reads OCaml
 phrases from the input, then typechecks, compiles and evaluates
 them, then prints the inferred type and result value, if any. The
 system prints a # (sharp) prompt before reading each phrase.

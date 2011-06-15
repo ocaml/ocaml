@@ -26,7 +26,7 @@ Running
 .BR ocamllex (1)
 on the input file
 .IR lexer \&.mll
-produces Caml code for a lexical analyzer in file
+produces OCaml code for a lexical analyzer in file
 .IR lexer \&.ml.
 
 This file defines one lexing function per entry point in the lexer
@@ -53,7 +53,7 @@ command recognizes the following options:
 .TP
 .B \-ml
 Output code that does not use OCaml's built-in automata
-interpreter. Instead, the automaton is encoded by Caml functions.
+interpreter. Instead, the automaton is encoded by OCaml functions.
 This option is mainly useful for debugging
 .BR ocamllex (1),
 using it for production lexers is not recommended.
