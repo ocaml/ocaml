@@ -237,3 +237,74 @@ let f (type a) (x : a t) y =
 let f (type a) (x : a t) (y : a) =
   match x with Int -> y
 ;;
+
+(* Pattern matching *)
+
+type 'a t =
+    A of int | B of bool | C of float | D of 'a
+
+type _ ty =
+  | TE : 'a ty -> 'a array ty
+  | TA : int ty
+  | TB : bool ty
+  | TC : float ty
+  | TD : string -> bool ty
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match x, y with
+  | _, A z -> z
+  | _, B z -> if z then 1 else 2
+  | _, C z -> truncate z
+  | TE TC, D [|1.0|] -> 14
+  | TA, D 0 -> -1
+  | TA, D z -> z
+  | TD "bye", D false -> 13
+  | TD "hello", D true -> 12
+ (* | TB, D z -> if z then 1 else 2 *)
+  | TC, D z -> truncate z
+  | _, D _ -> 0
+;;
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match x, y with
+  | _, A z -> z
+  | _, B z -> if z then 1 else 2
+  | _, C z -> truncate z
+  | TE TC, D [|1.0|] -> 14
+  | TA, D 0 -> -1
+  | TA, D z -> z
+;; (* warn *)
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match y, x with
+  | A z, _ -> z
+  | B z, _ -> if z then 1 else 2
+  | C z, _ -> truncate z
+  | D [|1.0|], TE TC -> 14
+  | D 0, TA -> -1
+  | D z, TA -> z
+;; (* fail *)
+
+type ('a,'b) pair = {right:'a; left:'b}
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match {left=x; right=y} with
+  | {left=_; right=A z} -> z
+  | {left=_; right=B z} -> if z then 1 else 2
+  | {left=_; right=C z} -> truncate z
+  | {left=TE TC; right=D [|1.0|]} -> 14
+  | {left=TA; right=D 0} -> -1
+  | {left=TA; right=D z} -> z
+;; (* fail *)
+
+type ('a,'b) pair = {left:'a; right:'b}
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match {left=x; right=y} with
+  | {left=_; right=A z} -> z
+  | {left=_; right=B z} -> if z then 1 else 2
+  | {left=_; right=C z} -> truncate z
+  | {left=TE TC; right=D [|1.0|]} -> 14
+  | {left=TA; right=D 0} -> -1
+  | {left=TA; right=D z} -> z
+;; (* warn *)

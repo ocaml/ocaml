@@ -51,16 +51,19 @@ let is_absent_pat p = match p.pat_desc with
 | Tpat_variant (tag, _, row) -> is_absent tag row
 | _ -> false
 
+(*
 let sort_fields args =
   Sort.list
     (fun (lbl1,_) (lbl2,_) -> lbl1.lbl_pos <= lbl2.lbl_pos)
     args
+*)
 
 let records_args l1 l2 =
-  let l1 = sort_fields l1
-  and l2 = sort_fields l2 in
+  (* let l1 = sort_fields l1
+  and l2 = sort_fields l2 in *)
+  (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
   let rec combine r1 r2 l1 l2 = match l1,l2 with
-  | [],[] -> r1,r2
+  | [],[] -> List.rev r1, List.rev r2
   | [],(_,p2)::rem2 -> combine (omega::r1) (p2::r2) [] rem2
   | (_,p1)::rem1,[] -> combine (p1::r1) (omega::r2) rem1 []
   | (lbl1,p1)::rem1, (lbl2,p2)::rem2 ->
@@ -311,12 +314,14 @@ let extract_fields omegas arg =
 
 
 
+(*
 let sort_record p = match p.pat_desc with
 | Tpat_record args ->
     make_pat
       (Tpat_record (sort_fields args))
       p.pat_type p.pat_env
 | _ -> p
+*)
 
 let all_record_args lbls = match lbls with
 | ({lbl_all=lbl_all},_)::_ ->
@@ -411,7 +416,7 @@ let discr_pat q pss =
 
   match normalize_pat q with
   | {pat_desc= (Tpat_any | Tpat_record _)} as q ->
-      sort_record (acc_pat q pss)
+      (*sort_record*) (acc_pat q pss)
   | q -> q
 
 (*
@@ -1565,7 +1570,7 @@ with
 | Empty -> lub p2 q
 
 and record_lubs l1 l2 =
-  let l1 = sort_fields l1 and l2 = sort_fields l2 in
+  (* let l1 = sort_fields l1 and l2 = sort_fields l2 in *)
   let rec lub_rec l1 l2 = match l1,l2 with
   | [],_ -> l2
   | _,[] -> l1
@@ -1957,7 +1962,7 @@ let check_unused tdefs casel =
                         p.pat_loc Warnings.Unused_pat)
                     ps
               | Used -> ()
-            with e -> assert false
+            with Empty | Not_an_adt | Not_found | NoGuard -> assert false
             end ;
 
           if has_guard act then

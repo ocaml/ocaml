@@ -117,4 +117,47 @@ Error: This expression has type int but an expression was expected of type a
 #         val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #     val f : 'a t -> 'a -> 'a = <fun>
+#                                                     type 'a t = A of int | B of bool | C of float | D of 'a
+type 'a ty =
+    TE : 'b ty -> 'b array ty
+  | TA : int ty
+  | TB : bool ty
+  | TC : float ty
+  | TD : string -> bool ty
+val f : 'a ty -> 'a t -> int = <fun>
+#                   Characters 51-202:
+  ..match x, y with
+    | _, A z -> z
+    | _, B z -> if z then 1 else 2
+    | _, C z -> truncate z
+    | TE TC, D [|1.0|] -> 14
+    | TA, D 0 -> -1
+    | TA, D z -> z
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(TE TC, D [|  |])
+val f : 'a ty -> 'a t -> int = <fun>
+#                   Characters 147-154:
+    | D [|1.0|], TE TC -> 14
+        ^^^^^^^
+Error: This pattern matches values of type 'a array
+       but a pattern was expected which matches values of type a
+#                       Characters 259-266:
+    | {left=TE TC; right=D [|1.0|]} -> 14
+                           ^^^^^^^
+Error: This pattern matches values of type 'a array
+       but a pattern was expected which matches values of type a
+#                       Characters 92-334:
+  ..match {left=x; right=y} with
+    | {left=_; right=A z} -> z
+    | {left=_; right=B z} -> if z then 1 else 2
+    | {left=_; right=C z} -> truncate z
+    | {left=TE TC; right=D [|1.0|]} -> 14
+    | {left=TA; right=D 0} -> -1
+    | {left=TA; right=D z} -> z
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+{left=TE (TE _); right=D [| _ |]}
+type ('a, 'b) pair = { left : 'a; right : 'b; }
+val f : 'a ty -> 'a t -> int = <fun>
 # 

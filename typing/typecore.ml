@@ -405,21 +405,39 @@ let build_or_pat env loc lid =
           pat pats in
       (rp { r with pat_loc = loc },ty)
 
+(* Records *)
+
 let rec find_record_qual = function
   | [] -> None
   | (Longident.Ldot (modname, _), _) :: _ -> Some modname
   | _ :: rest -> find_record_qual rest
 
-let type_label_a_list type_lid_a lid_a_list =
-  match find_record_qual lid_a_list with
-  | None -> List.map type_lid_a lid_a_list
-  | Some modname ->
-      List.map
-        (function
-         | (Longident.Lident id), sarg ->
-              type_lid_a (Longident.Ldot (modname, id), sarg)
-         | lid_a -> type_lid_a lid_a)
-        lid_a_list
+let type_label_a_list ?labels env loc type_lbl_a lid_a_list =
+  let record_qual = find_record_qual lid_a_list in
+  let lbl_a_list =
+    List.map
+      (fun (lid, a) ->
+        match lid, labels, record_qual with
+          Longident.Lident s, Some labels, _ when Hashtbl.mem labels s ->
+            Hashtbl.find labels s, a
+        | Longident.Lident s, _, Some modname ->
+            Typetexp.find_label env loc (Longident.Ldot (modname, s)), a
+        | _ ->
+            Typetexp.find_label env loc lid, a)
+      lid_a_list in
+  (* Invariant: records are sorted in the typed tree *)
+  let lbl_a_list =
+    List.sort
+      (fun (lbl1,_) (lbl2,_) -> compare lbl1.lbl_pos lbl2.lbl_pos)
+      lbl_a_list
+  in
+  List.map type_lbl_a lbl_a_list
+
+let lid_of_label label =
+  match repr label.lbl_res with
+  | {desc = Tconstr(Path.Pdot(mpath,_,_),_,_)} ->
+      Longident.Ldot(lid_of_path mpath, label.lbl_name)
+  | _ -> Longident.Lident label.lbl_name
 
 (* Checks over the labels mentioned in a record pattern:
    no duplicate definitions (error); properly closed (warning) *)
@@ -600,21 +618,15 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_loc = loc;
         pat_type =  expected_ty;
         pat_env = !env }
-  | Ppat_record(lid_sp_list, closed) -> 
-      let type_label_pat (lid, sarg) =
-        let label = 
-          match lid, labels with
-            Longident.Lident s, Some labels when Hashtbl.mem labels s ->
-              Hashtbl.find labels s
-          | _ -> Typetexp.find_label !env loc lid
-        in
+  | Ppat_record(lid_sp_list, closed) ->
+      let type_label_pat (label, sarg) =
         begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
         if vars = [] then end_def ();
         begin try
           unify_pat_types loc !env ty_res expected_ty
         with Unify trace ->
-          raise(Error(loc, Label_mismatch(lid, trace)))
+          raise(Error(loc, Label_mismatch(lid_of_label label, trace)))
         end;
         let arg = type_pat sarg ty_arg in
         if vars <> [] then begin
@@ -625,11 +637,12 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
             let tv = expand_head !env tv in
             tv.desc <> Tvar || tv.level <> generic_level in
           if List.exists instantiated vars then
-            raise (Error(loc, Polymorphic_label lid))
+            raise (Error(loc, Polymorphic_label (lid_of_label label)))
         end;
         (label, arg)
       in
-      let lbl_pat_list = type_label_a_list type_label_pat lid_sp_list in
+      let lbl_pat_list =
+        type_label_a_list ?labels !env loc type_label_pat lid_sp_list in
       check_recordpat_labels loc lbl_pat_list closed;
       rp {
         pat_desc = Tpat_record lbl_pat_list;
@@ -1484,7 +1497,7 @@ and type_expect ?in_function env sexp ty_expected =
       end
   | Pexp_record(lid_sexp_list, opt_sexp) ->
       let lbl_exp_list =
-        type_label_a_list (type_label_exp true env loc ty_expected)
+        type_label_a_list env loc (type_label_exp true env loc ty_expected)
           lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
@@ -1553,8 +1566,9 @@ and type_expect ?in_function env sexp ty_expected =
         exp_env = env }
   | Pexp_setfield(srecord, lid, snewval) ->
       let record = type_exp env srecord in
+      let label = Typetexp.find_label env loc lid in
       let (label, newval) =
-        type_label_exp false env loc record.exp_type (lid, snewval) in
+        type_label_exp false env loc record.exp_type (label, snewval) in
       if label.lbl_mut = Immutable then
         raise(Error(loc, Label_not_mutable lid));
       rue {
@@ -2042,9 +2056,8 @@ and type_expect ?in_function env sexp ty_expected =
   | Pexp_open (lid, e) ->
       type_expect (!type_open env sexp.pexp_loc lid) e ty_expected
 
-and type_label_exp create env loc ty_expected (lid, sarg) =
+and type_label_exp create env loc ty_expected (label, sarg) =
   (* Here also ty_expected may be at generic_level *)
-  let label = Typetexp.find_label env sarg.pexp_loc lid in
   begin_def ();
   if !Clflags.principal then (begin_def (); begin_def ()) ;
   let (vars, ty_arg, ty_res) = instance_label true label in
@@ -2057,7 +2070,7 @@ and type_label_exp create env loc ty_expected (lid, sarg) =
   begin try
     unify env (instance ty_res) (instance ty_expected)
   with Unify trace ->
-    raise(Error(loc , Label_mismatch(lid, trace)))
+    raise(Error(loc , Label_mismatch(lid_of_label label, trace)))
   end;
   (* Instantiate so that we can generalize internal nodes *)
   let ty_arg = instance ty_arg in
@@ -2068,7 +2081,7 @@ and type_label_exp create env loc ty_expected (lid, sarg) =
   end;
   if label.lbl_private = Private then
     raise(Error(loc, if create then Private_type ty_expected
-                               else Private_label (lid, ty_expected)));
+                     else Private_label (lid_of_label label, ty_expected)));
   let arg =
     let snap = if vars = [] then None else Some (Btype.snapshot ()) in
     let arg = type_argument env sarg ty_arg (instance ty_arg) in
