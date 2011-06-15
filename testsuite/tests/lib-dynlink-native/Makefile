@@ -65,6 +65,9 @@ mylib.cmxa: plugin.cmx plugin2.cmx
 factorial.$(O): factorial.c
 	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" factorial.c
 
+promote:
+	@cp result reference
+
 clean: defaultclean
 	@rm -f result *.so *.o *.cm* main main_ext *.exe *.s *.asm *.obj
 	@rm -f *.a *.lib

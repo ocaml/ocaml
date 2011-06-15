@@ -11,6 +11,8 @@ run-all:
 	  done; \
 	done
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f *.result $(EXECNAME)
 

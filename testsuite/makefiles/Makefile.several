@@ -49,5 +49,7 @@ run-file:
 	  diff -q `basename $(FILE) ml`reference `basename $(FILE) ml`result > /dev/null || (echo " => failed" && exit 1); \
 	fi
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f *.result ./program

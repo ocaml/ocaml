@@ -11,6 +11,8 @@ compile: lib.cmo
 	  fi; \
 	done
 
+promote:
+
 clean: defaultclean
 	@rm -f ./a.out
 

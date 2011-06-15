@@ -13,6 +13,8 @@ run:
 	@./program > program.result
 	@diff -q program.reference program.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
+	
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result ./program

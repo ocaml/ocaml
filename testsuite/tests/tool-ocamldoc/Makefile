@@ -11,6 +11,7 @@ run: $(CUSTOM_MODULE).cmo
 	@$(OCAMLDOC) -html t*.ml 2>&1 | grep -v test_types_display || true
 	@$(OCAMLDOC) -latex t*.ml 2>&1 | grep -v test_types_display || true
 
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result *.html *.tex *.log *.out *.sty *.toc *.css *.aux

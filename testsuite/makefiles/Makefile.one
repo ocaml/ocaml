@@ -36,5 +36,7 @@ run:
 	@diff -q $(MAIN_MODULE).reference $(MAIN_MODULE).result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f *.result ./program.* $(GENERATED_SOURCES) $(O_FILES)

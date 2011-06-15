@@ -12,5 +12,7 @@ default:
 	  diff -q $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
 	done
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f *.result

@@ -139,6 +139,7 @@ clean: defaultclean
 power.o: power-$(SYSTEM).o
 	@cp power-$(SYSTEM).o power.o
 
+promote:
 
 include $(BASEDIR)/makefiles/Makefile.common
 

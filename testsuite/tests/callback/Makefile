@@ -22,6 +22,8 @@ run-opt: common
 	@./program > native.result
 	@diff -q reference native.result || (echo " => failed" && exit 1) 
 	@echo " => passed"
+	
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result ./program

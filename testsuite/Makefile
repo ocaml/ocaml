@@ -5,12 +5,13 @@ NO_PRINT=`($(MAKE) empty --no-print-directory > /dev/null 2>&1) && echo '--no-pr
 
 default:
 	@echo "Available targets:"
-	@echo "  all           launches all tests"
-	@echo "  list FILE=f   launches the tests referenced in file f (one path per line)"
-	@echo "  one DIR=p     launches the tests located in path p"
-	@echo "  lib           builds library modules"
-	@echo "  clean         deletes generated files"
-	@echo "  report        prints the report for the last execution, if any"
+	@echo "  all             launches all tests"
+	@echo "  list FILE=f     launches the tests referenced in file f (one path per line)"
+	@echo "  one DIR=p       launches the tests located in path p"
+	@echo "  promote DIR=p   promotes the reference files for the tests located in path p"
+	@echo "  lib             builds library modules"
+	@echo "  clean           deletes generated files"
+	@echo "  report          prints the report for the last execution, if any"
 
 all: lib
 	@for dir in tests/*; do \
@@ -42,6 +43,11 @@ exec-one:
 	  echo "Running tests from '$$DIR' ..."; \
 	  (cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR)); \
 	fi
+
+promote: FORCE
+	@if [ -z $(DIR) ]; then echo "No value set for variable 'DIR'."; exit 1; fi
+	@if [ ! -d $(DIR) ]; then echo "Directory '$(DIR)' does not exist."; exit 1; fi
+	@(cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote)
 
 lib: FORCE
 	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR))

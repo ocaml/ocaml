@@ -53,6 +53,8 @@ native-dll:
 	  diff -q native.reference native.result > /dev/null && echo " => passed" || echo " => failed"; \
 	fi
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f *.result *.exe *.dll
 
