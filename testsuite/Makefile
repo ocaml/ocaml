@@ -32,23 +32,24 @@ one: lib
 	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
 
 exec-one:
-	@echo "Running tests from '$$DIR' ..."
-	@(cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) && cd ../..)
+	@if [ ! -f $(DIR)/Makefile ]; then \
+	  for dir in $(DIR)/*; do \
+	    if [ -d $$dir ]; then \
+	      $(MAKE) exec-one DIR=$$dir; \
+	    fi; \
+	  done; \
+        else \
+	  echo "Running tests from '$$DIR' ..."; \
+	  (cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR)); \
+	fi
 
 lib: FORCE
-	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR) && cd ..)
+	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR))
 
 clean: FORCE
-	@(cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ..)
-	@for file in tests/*; do \
-	  if [ -d $$file ]; then \
-	    (cd $$file && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ../..); \
-	  fi \
-	done
-	@for file in interactive/*; do \
-	  if [ -d $$file ]; then \
-	    (cd $$file && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ../..); \
-	  fi \
+	@(cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean)
+	@for file in `find interactive tests -name Makefile`; do \
+	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
 
 report: FORCE
