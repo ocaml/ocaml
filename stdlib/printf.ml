@@ -228,7 +228,7 @@ let iter_on_format_args fmt add_conv add_char =
         match Sformat.get fmt j with
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
           add_char (add_conv skip i conv) 'i'
-        | c -> add_conv skip i 'i' end
+        | _ -> add_conv skip i 'i' end
     | '{' as conv ->
       (* Just get a regular argument, skipping the specification. *)
       let i = add_conv skip i conv in
@@ -299,7 +299,7 @@ let ac_of_format fmt =
     (* Just finishing a meta format: no additional argument to record. *)
     if c <> ')' && c <> '}' then incr_ac skip c;
     succ i
-  and add_char i c = succ i in
+  and add_char i _ = succ i in
 
   iter_on_format_args fmt add_conv add_char;
   ac
@@ -391,7 +391,7 @@ type positional_specification =
    case. Put it another way: this means type dependency, which is completely
    out of scope of the Caml type algebra. *)
 
-let scan_positional_spec fmt got_spec n i =
+let scan_positional_spec fmt got_spec i =
   match Sformat.unsafe_get fmt i with
   | '0'..'9' as d ->
     let rec get_int_literal accu j =
@@ -488,7 +488,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
 
   let rec scan_positional n widths i =
     let got_spec spec i = scan_flags spec n widths i in
-    scan_positional_spec fmt got_spec n i
+    scan_positional_spec fmt got_spec i
 
   and scan_flags spec n widths i =
     match Sformat.unsafe_get fmt i with
@@ -496,7 +496,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let got_spec wspec i =
         let (width : int) = get_arg wspec n in
         scan_flags spec (next_index wspec n) (width :: widths) i in
-      scan_positional_spec fmt got_spec n (succ i)
+      scan_positional_spec fmt got_spec (succ i)
     | '0'..'9'
     | '.' | '#' | '-' | ' ' | '+' -> scan_flags spec n widths (succ i)
     | _ -> scan_conv spec n widths i
@@ -635,7 +635,7 @@ let mkprintf to_s get_out outc outs flush k fmt =
 let kfprintf k oc =
   mkprintf false (fun _ -> oc) output_char output_string flush k
 ;;
-let ifprintf oc = kapr (fun _ -> Obj.magic ignore);;
+let ifprintf _ = kapr (fun _ -> Obj.magic ignore);;
 
 let fprintf oc = kfprintf ignore oc;;
 let printf fmt = fprintf stdout fmt;;

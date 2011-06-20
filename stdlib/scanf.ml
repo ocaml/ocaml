@@ -675,7 +675,7 @@ let scan_sign max ib =
   match c with
   | '+' -> Scanning.store_char max ib c
   | '-' -> Scanning.store_char max ib c
-  | c -> max
+  | _ -> max
 ;;
 
 let scan_optionally_signed_decimal_int max ib =
@@ -698,8 +698,8 @@ let scan_unsigned_int max ib =
     | 'x' | 'X' -> scan_hexadecimal_int (Scanning.store_char max ib c) ib
     | 'o' -> scan_octal_int (Scanning.store_char max ib c) ib
     | 'b' -> scan_binary_int (Scanning.store_char max ib c) ib
-    | c -> scan_decimal_digits max ib end
-  | c -> scan_unsigned_decimal_int max ib
+    | _ -> scan_decimal_digits max ib end
+  | _ -> scan_unsigned_decimal_int max ib
 ;;
 
 let scan_optionally_signed_int max ib =
@@ -715,7 +715,7 @@ let scan_int_conv conv max _min ib =
   | 'o' -> scan_octal_int max ib
   | 'u' -> scan_unsigned_decimal_int max ib
   | 'x' | 'X' -> scan_hexadecimal_int max ib
-  | c -> assert false
+  | _ -> assert false
 ;;
 
 (* Scanning floating point numbers. *)
@@ -790,7 +790,7 @@ let scan_float max max_frac_part ib =
     let max_precision = min max max_frac_part in
     let max = max - (max_precision - scan_frac_part max_precision ib) in
     scan_exp_part max ib, max_frac_part
-  | c ->
+  | _ ->
     scan_exp_part max ib, max_frac_part
 ;;
 
@@ -808,7 +808,7 @@ let scan_Float max max_frac_part ib =
     scan_exp_part max ib
   | 'e' | 'E' ->
     scan_exp_part max ib
-  | c -> bad_float ()
+  | _ -> bad_float ()
 ;;
 
 (* Scan a regular string:
@@ -967,7 +967,7 @@ let scan_String max ib =
     match check_next_char_for_string max ib with
     | '\r' -> skip_newline (Scanning.ignore_char max ib)
     | '\n' -> skip_spaces (Scanning.ignore_char max ib)
-    | c -> find_stop (scan_backslash_char max ib)
+    | _ -> find_stop (scan_backslash_char max ib)
 
   and skip_newline max =
     match check_next_char_for_string max ib with
@@ -1010,13 +1010,13 @@ let read_char_set fmt i =
     if j > lim then incomplete_format fmt else
     match Sformat.get fmt j with
     | ']' -> j
-    | c -> find_in_set (succ j)
+    | _ -> find_in_set (succ j)
 
   and find_set i =
     if i > lim then incomplete_format fmt else
     match Sformat.get fmt i with
     | ']' -> find_in_set (succ i)
-    | c -> find_in_set i in
+    | _ -> find_in_set i in
 
   if i > lim then incomplete_format fmt else
   match Sformat.get fmt i with
@@ -1086,7 +1086,7 @@ let make_char_bit_vect bit set =
       for j = int_of_char c1 to int_of_char c2 do
         set_bit_of_range r j bit done;
       loop bit false (succ i)
-    | c ->
+    | _ ->
       set_bit_of_range r (int_of_char set.[i]) bit;
       loop bit true (succ i) in
   loop bit false 0;
@@ -1105,7 +1105,7 @@ let make_setp stp char_set =
   match char_set with
   | Pos_set set ->
     begin match String.length set with
-    | 0 -> (fun c -> 0)
+    | 0 -> (fun _ -> 0)
     | 1 ->
       let p = set.[0] in
       (fun c -> if c == p then 1 else 0)
@@ -1116,11 +1116,11 @@ let make_setp stp char_set =
       let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
       if p2 = '-' then make_pred 1 set stp else
       (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
-    | n -> make_pred 1 set stp
+    | _ -> make_pred 1 set stp
     end
   | Neg_set set ->
     begin match String.length set with
-    | 0 -> (fun c -> 1)
+    | 0 -> (fun _ -> 1)
     | 1 ->
       let p = set.[0] in
       (fun c -> if c != p then 1 else 0)
@@ -1131,7 +1131,7 @@ let make_setp stp char_set =
       let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
       if p2 = '-' then make_pred 0 set stp else
       (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
-    | n -> make_pred 0 set stp
+    | _ -> make_pred 0 set stp
     end
 ;;
 
@@ -1210,18 +1210,18 @@ let scan_chars_in_char_set stp char_set max ib =
     match char_set with
     | Pos_set set ->
       begin match String.length set with
-      | 0 -> loop (fun c -> 0) max
+      | 0 -> loop (fun _ -> 0) max
       | 1 -> loop_pos1 set.[0] max
       | 2 -> loop_pos2 set.[0] set.[1] max
       | 3 when set.[1] != '-' -> loop_pos3 set.[0] set.[1] set.[2] max
-      | n -> loop (find_setp stp char_set) max end
+      | _ -> loop (find_setp stp char_set) max end
     | Neg_set set ->
       begin match String.length set with
-      | 0 -> loop (fun c -> 1) max
+      | 0 -> loop (fun _ -> 1) max
       | 1 -> loop_neg1 set.[0] max
       | 2 -> loop_neg2 set.[0] set.[1] max
       | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] max
-      | n -> loop (find_setp stp char_set) max end in
+      | _ -> loop (find_setp stp char_set) max end in
   ignore_stoppers stp ib;
   max
 ;;
@@ -1309,7 +1309,7 @@ let scan_format ib ef fmt rv f =
   let return v = Obj.magic v () in
   let delay f x () = f x in
   let stack f = delay (return f) in
-  let no_stack f x = f in
+  let no_stack f _x = f in
 
   let rec scan fmt =
 
