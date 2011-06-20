@@ -454,6 +454,9 @@ then the
 .B d
 suffix is supported and gives a debug version of the runtime.
 .TP
+.B \-strict\-sequence
+The left-hand part of a sequence must have type unit.
+.TP
 .B \-thread
 Compile or link multithreaded programs, in combination with the
 system "threads" library described in
@@ -486,7 +489,7 @@ invocations of the C compiler and linker in
 .B \-custom
 mode.  Useful to debug C library problems.
 .TP
-.BR \-vnum or \-version
+.BR \-vnum\ or \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP

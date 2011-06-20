@@ -397,6 +397,12 @@ types are derived in a principal way. All programs accepted in
 mode are also accepted in default mode with equivalent
 types, but different binary signatures.
 .TP
+.B \-rectypes
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported. Note that once you have created an interface using this
+flag, you must use it again for all dependencies.
+.TP
 .BI \-runtime\-variant \ suffix
 Add
 .I suffix
@@ -406,12 +412,6 @@ If OCaml was configured with option
 then the
 .B d
 suffix is supported and gives a debug version of the runtime.
-.TP
-.B \-rectypes
-Allow arbitrary recursive types during type-checking.  By default,
-only recursive types where the recursion goes through an object type
-are supported. Note that once you have created an interface using this
-flag, you must use it again for all dependencies.
 .TP
 .B \-S
 Keep the assembly code produced during the compilation. The assembly
@@ -437,6 +437,9 @@ been compiled without the
 flag. Some constraints might also
 apply to the way the extra native objects have been compiled (under
 Linux AMD 64, they must contain only position-independent code).
+.TP
+.B \-strict\-sequence
+The left-hand part of a sequence must have type unit.
 .TP
 .B \-thread
 Compile or link multithreaded programs, in combination with the
