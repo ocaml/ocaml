@@ -363,6 +363,14 @@ let simplify_lets lam =
   let subst = Hashtbl.create 83 in
   let optimize = !Clflags.native_code || not !Clflags.debug in
 
+(* This (small)  optimisation is always legal, it may uncover some
+   tail call later on. *)
+
+  let mklet (kind,v,e1,e2) = match e2 with
+  | Lvar w when optimize && Ident.same v w -> e1
+  | _ -> Llet (kind,v,e1,e2) in
+
+
   let rec simplif = function
     Lvar v as l ->
       begin try
@@ -381,9 +389,9 @@ let simplify_lets lam =
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
-        Llet(Variable, v, slinit, eliminate_ref v slbody)
+       mklet (Variable, v, slinit, eliminate_ref v slbody)
       with Real_reference ->
-        Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
+        mklet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
       end
   | Llet(Alias, v, l1, l2) ->
       begin match count_var v with
@@ -394,9 +402,9 @@ let simplify_lets lam =
   | Llet(StrictOpt, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
-      | n -> Llet(Alias, v, simplif l1, simplif l2)
+      | n -> mklet(Alias, v, simplif l1, simplif l2)
       end
-  | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
+  | Llet(kind, v, l1, l2) -> mklet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
