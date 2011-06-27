@@ -19,6 +19,9 @@ Standard library:
     . Added new functorial interface "MakeSeeded" to support diversification
       with user-provided hash functions.
 
+Bug Fixes:
+- PR#5301: camlp4r and of exception equal to another one with parameters
+
 
 Objective Caml 3.12.0:
 ----------------------
