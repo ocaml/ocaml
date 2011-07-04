@@ -66,6 +66,7 @@ Bug fixes:
 - PR#5276: issue with ocamlc -pack and recursively-packed modules
 - PR#5280: alignment constraints incorrectly autodetected on MIPS 32
 - PR#5281: typo in error message
+- PR#5308: unused variables not detected in "include (struct .. end)"
 - camlp4 revised syntax printing bug in the toplevel (reported on caml-list)
 - configure: do not define _WIN32 under cygwin
 - Hardened generic comparison in the case where two custom blocks
