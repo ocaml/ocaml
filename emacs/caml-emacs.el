@@ -39,5 +39,8 @@
          (or (member 'drag modifiers)
              (member 'click modifiers)))))
 
+(if (fboundp 'string-to-number)
+   (defalias 'caml-string-to-int 'string-to-number)
+ (defalias 'caml-string-to-int 'string-to-int))
 
 (provide 'caml-emacs)

@@ -6,8 +6,9 @@ INRIA" in the following directories and their sub-directories:
 and "the Compiler" refers to all files marked "Copyright INRIA" in the
 following directories and their sub-directories:
 
-  asmcomp, boot, bytecomp, debugger, driver, lex, ocamldoc, parsing,
-  tools, toplevel, typing, utils, yacc
+  asmcomp, boot, build, bytecomp, debugger, driver, lex, man,
+  ocamlbuild, ocamldoc, parsing, testsuite, tools, toplevel, typing,
+  utils, yacc
 
 The Compiler is distributed under the terms of the Q Public License
 version 1.0 with a change to choice of law (included below).

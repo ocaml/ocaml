@@ -896,4 +896,4 @@ let report_error ppf = function
   | Need_recursive_types(import, export) ->
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
-        import export "The compilation flag -rectypes is required"
+        export import "The compilation flag -rectypes is required"

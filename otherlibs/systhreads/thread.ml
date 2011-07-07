@@ -18,6 +18,7 @@
 type t
 
 external thread_initialize : unit -> unit = "caml_thread_initialize"
+external thread_cleanup : unit -> unit = "caml_thread_cleanup"
 external thread_new : (unit -> unit) -> t = "caml_thread_new"
 external thread_uncaught_exception : exn -> unit =
             "caml_thread_uncaught_exception"
@@ -57,8 +58,17 @@ let preempt_signal =
   | _       -> Sys.sigvtalrm
 
 let _ =
-  ignore(Sys.signal preempt_signal (Sys.Signal_handle preempt));
-  thread_initialize()
+  Sys.set_signal preempt_signal (Sys.Signal_handle preempt);
+  thread_initialize();
+  at_exit
+    (fun () ->
+        thread_cleanup();
+        (* In case of DLL-embedded Ocaml the preempt_signal handler
+           will point to nowhere after DLL unloading and an accidental
+           preempt_signal will crash the main program. So restore the
+           default handler. *)
+        Sys.set_signal preempt_signal Sys.Signal_default
+    )
 
 (* Wait functions *)
 

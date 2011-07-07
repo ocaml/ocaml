@@ -497,7 +497,7 @@ let rec builtin_meths self env env2 body =
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e]) when Ident.same e env ->
         "env", [Lvar env2; Lconst(Const_pointer n)]
-    | Lsend(Self, met, Lvar s, []) when List.mem s self ->
+    | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
   in
@@ -512,15 +512,15 @@ let rec builtin_meths self env env2 body =
   | Lapply(f, [p; arg], _) when const_path f && const_path p ->
       let s, args = conv arg in
       ("app_const_"^s, f :: p :: args)
-  | Lsend(Self, Lvar n, Lvar s, [arg]) when List.mem s self ->
+  | Lsend(Self, Lvar n, Lvar s, [arg], _) when List.mem s self ->
       let s, args = conv arg in
       ("meth_app_"^s, Lvar n :: args)
-  | Lsend(Self, met, Lvar s, []) when List.mem s self ->
+  | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
       ("get_meth", [met])
-  | Lsend(Public, met, arg, []) ->
+  | Lsend(Public, met, arg, [], _) ->
       let s, args = conv arg in
       ("send_"^s, met :: args)
-  | Lsend(Cached, met, arg, [_;_]) ->
+  | Lsend(Cached, met, arg, [_;_], _) ->
       let s, args = conv arg in
       ("send_"^s, met :: args)
   | Lfunction (Curried, [x], body) ->

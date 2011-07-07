@@ -288,7 +288,7 @@ static int parse_command_line(char **argv)
 static void scanmult (char *opt, uintnat *var)
 {
   char mult = ' ';
-  int val;
+  unsigned int val;
   sscanf (opt, "=%u%c", &val, &mult);
   sscanf (opt, "=0x%x%c", &val, &mult);
   switch (mult) {

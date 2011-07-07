@@ -451,6 +451,11 @@ CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 
 static void caml_thread_stop(void)
 {
+#ifndef NATIVE_CODE
+  /* PR#5188: update curr_thread->stack_low because the stack may have
+     been reallocated since the last time we entered a blocking section */
+  curr_thread->stack_low = stack_low;
+#endif
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(curr_thread->descr));
   /* Remove th from the doubly-linked list of threads and free its info block */

@@ -30,7 +30,8 @@ OCAMLBUILD_BYTE="ocamlbuild/ocamlbuildlib.cma \
                  ocamlbuild/ocamlbuild.byte$EXE \
                  ocamlbuild/ocamlbuildlight.byte$EXE"
 TOPLEVEL=ocaml$EXE
-TOOLS_BYTE="tools/ocamldep.byte$EXE tools/profiling.cmo \
+TOOLS_BYTE="tools/objinfo.byte$EXE \
+            tools/ocamldep.byte$EXE tools/profiling.cmo \
             tools/ocamlprof.byte$EXE tools/ocamlcp.byte$EXE \
             tools/ocamlmktop.byte$EXE tools/ocamlmklib$EXE \
             tools/scrapelabels.byte tools/addlabels.byte \

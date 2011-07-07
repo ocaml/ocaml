@@ -43,14 +43,17 @@ module Async = struct
       { out : producer ;
         err : producer ;
         waitpid : Unix.process_status Join.chan Join.chan ;
-        kill : int -> unit;  }
+        kill : int -> unit;
+        gkill : int -> unit; }
 
 
   let et =
     let ep = JoinCom.P.empty() in
     { out=ep; err=ep;
       waitpid=(def k(_) = 0 in k);
-      kill=(fun _ -> ()); }
+      kill=(fun _ -> ());
+      gkill=(fun _ -> ());
+    }
 
       
   def producer_to_chan (prod,chan) = JoinCom.P.to_text_close (prod,chan)
@@ -68,6 +71,7 @@ module Async = struct
     spawn waited(safe_wait pid) ;
     { r with
       kill=async_kill pid prods chans;
+      gkill=async_kill (-pid) prods chans;
       waitpid=waitpid; }      
 
   let of_text chan = JoinCom.P.of_text chan
@@ -124,7 +128,8 @@ module Sync = struct
     
   type t =
       { wait : unit  -> result;
-        kill : int -> unit; }
+        kill : int -> unit;
+        gkill : int -> unit; }
 
 
   module P = JoinCom.P
@@ -148,7 +153,7 @@ module Sync = struct
     def wait_ter() & waitpid(st) =
       reply { er with st=st; } to wait_ter in
     let () = spawn ext.Async.waitpid(waitpid) in
-    { wait=wait_ter; kill=ext.Async.kill; }
+    { wait=wait_ter; kill=ext.Async.kill; gkill=ext.Async.gkill; }
 
   let open_in cmd argv =
     let ext = Async.open_in cmd argv in
@@ -158,7 +163,7 @@ module Sync = struct
       consume(ext.Async.out,verb "OUT" out) &
       ext.Async.waitpid(waitpid)
     end in
-    { wait=wait_ter; kill=ext.Async.kill; }
+    { wait=wait_ter; kill=ext.Async.kill; gkill=ext.Async.gkill; }
 
 
   let open_in_out cmd argv =
@@ -169,7 +174,8 @@ module Sync = struct
         reply { er with st=st; out=os; } to wait_ter in
       consume(ext.Async.out,verb "OUT" out) &
       ext.Async.waitpid(waitpid) &
-      reply { wait=wait_ter; kill=ext.Async.kill; } to fork in
+      reply { wait=wait_ter; kill=ext.Async.kill; gkill=ext.Async.gkill;}
+       to fork in
     fork
 
 
@@ -182,6 +188,7 @@ module Sync = struct
       consume(ext.Async.out,verb "OUT" out) &
       consume(ext.Async.err,verb "ERR" err) &
       ext.Async.waitpid(waitpid) &
-      reply { wait=wait_ter; kill=ext.Async.kill; } to fork in
+      reply { wait=wait_ter; kill=ext.Async.kill; gkill=ext.Async.gkill; }
+      to fork in
     fork
 end

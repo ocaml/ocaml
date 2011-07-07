@@ -1,18 +1,20 @@
+\" $Id$
+
 .TH OCAMLDEP 1
 
 .SH NAME
 ocamldep \- Dependency generator for Objective Caml
 
 .SH SYNOPSIS
-.B ocamldep 
+.B ocamldep
 [
-.BI \-I \ lib-dir
+.I options
 ]
 .I filename ...
 
 .SH DESCRIPTION
 
-The 
+The
 .BR ocamldep (1)
 command scans a set of Objective Caml source files
 (.ml and .mli files) for references to external compilation units,
@@ -24,7 +26,7 @@ file is modified.
 
 The typical usage is:
 .P
-ocamldep 
+ocamldep
 .I options
 *.mli *.ml > .depend
 .P
@@ -32,30 +34,51 @@ where .depend is the file that should contain the
 dependencies.
 
 Dependencies are generated both for compiling with the bytecode
-compiler 
+compiler
 .BR ocamlc (1)
-and with the native-code compiler 
+and with the native-code compiler
 .BR ocamlopt (1).
 
 .SH OPTIONS
 
-The following command-line option is recognized by 
+The following command-line options are recognized by
 .BR ocamldep (1).
-
 .TP
 .BI \-I \ directory
 Add the given directory to the list of directories searched for
 source files. If a source file foo.ml mentions an external
 compilation unit Bar, a dependency on that unit's interface
 bar.cmi is generated only if the source for bar is found in the
-current directory or in one of the directories specified with 
-.BR -I .
-Otherwise, Bar is assumed to be a module form the standard library,
+current directory or in one of the directories specified with
+.BR \-I .
+Otherwise, Bar is assumed to be a module from the standard library,
 and no dependencies are generated. For programs that span multiple
-directories, it is recommended to pass 
+directories, it is recommended to pass
 .BR ocamldep (1)
-the same -I options that are passed to the compiler.
-
+the same
+.B \-I
+options that are passed to the compiler.
+.TP
+.BI \-ml\-synonym \ .ext
+Consider the given extension (with leading dot) to be a synonym for .ml.
+.TP
+.BI \-mli\-synonym \ .ext
+Consider the given extension (with leading dot) to be a synonym for .mli.
+.TP
+.B \-modules
+Output raw dependencies of the form
+.IR filename : \ Module1\ Module2 \ ... \ ModuleN
+where
+.IR Module1 ,\ ..., \ ModuleN
+are the names of the compilation
+units referenced within the file
+.IR filename ,
+but these names are not
+resolved to source file names.  Such raw dependencies cannot be used
+by
+.BR make (1),
+but can be post-processed by other tools such as
+.BR Omake (1).
 .TP
 .BI \-native
 Generate dependencies for a pure native-code program (no bytecode
@@ -66,12 +89,10 @@ generates dependencies on the
 bytecode compiled file (.cmo file) to reflect interface changes.
 This can cause unnecessary bytecode recompilations for programs that
 are compiled to native-code only.  The flag
-.BR -native
+.B \-native
 causes dependencies on native compiled files (.cmx) to be generated instead
 of on .cmo files.  (This flag makes no difference if all source files
 have explicit .mli interface files.)
-<<<<<<< .courant
-=======
 .TP
 .BI \-pp \ command
 Cause
@@ -91,11 +112,10 @@ Print short version number and exit.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
->>>>>>> .fusion-droit.r10497
 
 .SH SEE ALSO
 .BR ocamlc (1),
 .BR ocamlopt (1).
 .br
-.I The Objective Caml user's manual,
+.IR The\ Objective\ Caml\ user's\ manual ,
 chapter "Dependency generator".

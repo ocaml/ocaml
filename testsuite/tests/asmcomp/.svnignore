@@ -1,0 +1,17 @@
+#!/bin/sh
+
+svn propset svn:ignore -F - . <<EOF
+
+*.result
+*.byte
+*.native
+program
+*.s
+*.out
+*.dSYM
+parsecmm.mli
+parsecmm.ml
+lexcmm.ml
+codegen
+
+EOF

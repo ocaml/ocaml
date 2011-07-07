@@ -21,7 +21,7 @@ native-code compiler currently runs on the following platforms:
 
 Tier 1 (actively used and maintained by the core Caml team):
 
-    AMD64 (Opteron)    Linux
+    AMD64 (Opteron)    Linux, MacOS X, MS Windows
     IA32 (Pentium)     Linux, FreeBSD, MacOS X, MS Windows
     PowerPC            MacOS X
 
@@ -84,7 +84,7 @@ All files marked "Copyright INRIA" in this distribution are copyright
 
 INSTALLATION:
 
-See the file INSTALL for installation instructions on Unix, Linux and 
+See the file INSTALL for installation instructions on Unix, Linux and
 MacOS X machines.  For MS Windows, see README.win32.
 
 DOCUMENTATION:
