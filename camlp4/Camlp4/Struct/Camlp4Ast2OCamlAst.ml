@@ -945,8 +945,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
                       (List.map ctyp (list_of_ctyp t []))) :: l ]
     | <:str_item@loc< exception $uid:s$ = $i$ >> ->
         [mkstr loc (Pstr_exn_rebind (conv_con s) (ident i)) :: l ]
-    | <:str_item@loc< exception $uid:s$ of $_$ = $i$ >> ->
-        [mkstr loc (Pstr_exn_rebind (conv_con s) (ident i)) :: l ]
+    | <:str_item@loc< exception $uid:_$ of $_$ = $_$ >> ->
+        error loc "type in exception alias"
     | StExc _ _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
     | StExt loc n t sl -> [mkstr loc (Pstr_primitive n (mkvalue_desc t (list_of_meta_list sl))) :: l]

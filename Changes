@@ -20,7 +20,6 @@ Standard library:
       with user-provided hash functions.
 
 Bug Fixes:
-- PR#5301: camlp4r and exception equal to another one with parameters
 
 
 Objective Caml 3.12.0:
