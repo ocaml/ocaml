@@ -3,6 +3,7 @@ Objective Caml 3.12.2:
 
 Bug fixes:
 - problem with printing of string literals in camlp4 (reported on caml-list)
+- PR#5301: camlp4r and exception equal to another one with parameters
 
 Objective Caml 3.12.1:
 ----------------------
