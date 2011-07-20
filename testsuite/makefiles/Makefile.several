@@ -37,7 +37,7 @@ run-all:
 
 run-file:
 	@printf " $(DESC)"
-	$(COMP) $(COMPFLAGS) $(FILE) -o program
+	@$(COMP) $(COMPFLAGS) $(FILE) -o program
 	@if [ -f `basename $(FILE) ml`runner ]; then \
 	  sh `basename $(FILE) ml`runner; \
 	else \
