@@ -92,7 +92,7 @@ module ObjTools = struct
       | x when x = Obj.string_tag ->
               "\"" ^ String.escaped (Obj.magic r : string) ^ "\""
       | x when x = Obj.double_tag ->
-              string_of_float (Obj.magic r : float)
+              Camlp4_import.Oprint.float_repres (Obj.magic r : float)
       | x when x = Obj.abstract_tag ->
               opaque "abstract"
       | x when x = Obj.custom_tag ->
