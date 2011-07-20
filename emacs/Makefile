@@ -72,5 +72,9 @@ ocamltags:	ocamltags.in
 install-ocamltags: ocamltags
 	cp ocamltags $(SCRIPTDIR)/ocamltags
 
+# This is for testing purposes
+compile-only:
+	$(EMACS) --batch --eval '$(COMPILECMD)'
+
 clean:
-	rm -f ocamltags *~ #*#
+	rm -f ocamltags *~ #*# *.elc

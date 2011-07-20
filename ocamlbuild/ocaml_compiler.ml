@@ -130,7 +130,7 @@ let byte_compile_ocaml_interf mli cmi env build =
 let byte_compile_ocaml_implem ?tag ml cmo env build =
   let ml = env ml and cmo = env cmo in
   prepare_compile build ml;
-  ocamlc_c (tags_of_pathname ml++"implem"+++tag) ml cmo
+  ocamlc_c (Tags.union (tags_of_pathname ml) (tags_of_pathname cmo)++"implem"+++tag) ml cmo
 
 let cache_prepare_link = Hashtbl.create 107
 let rec prepare_link tag cmx extensions build =

@@ -317,13 +317,13 @@ bytecomp/translobj.cmi: bytecomp/lambda.cmi typing/ident.cmi typing/env.cmi
 bytecomp/typeopt.cmi: typing/typedtree.cmi typing/path.cmi \
     bytecomp/lambda.cmi
 bytecomp/bytegen.cmo: typing/types.cmi bytecomp/switch.cmi typing/subst.cmi \
-    typing/stypes.cmi typing/primitive.cmi utils/misc.cmi bytecomp/lambda.cmi \
+    typing/primitive.cmi utils/misc.cmi bytecomp/lambda.cmi \
     bytecomp/instruct.cmi typing/ident.cmi utils/config.cmi \
-    parsing/asttypes.cmi typing/annot.cmi bytecomp/bytegen.cmi
+    parsing/asttypes.cmi bytecomp/bytegen.cmi
 bytecomp/bytegen.cmx: typing/types.cmx bytecomp/switch.cmx typing/subst.cmx \
-    typing/stypes.cmx typing/primitive.cmx utils/misc.cmx bytecomp/lambda.cmx \
+    typing/primitive.cmx utils/misc.cmx bytecomp/lambda.cmx \
     bytecomp/instruct.cmx typing/ident.cmx utils/config.cmx \
-    parsing/asttypes.cmi typing/annot.cmi bytecomp/bytegen.cmi
+    parsing/asttypes.cmi bytecomp/bytegen.cmi
 bytecomp/bytelibrarian.cmo: utils/misc.cmi utils/config.cmi \
     bytecomp/cmo_format.cmi utils/clflags.cmi bytecomp/bytelink.cmi \
     bytecomp/bytelibrarian.cmi
@@ -406,10 +406,12 @@ bytecomp/printlambda.cmx: typing/types.cmx typing/primitive.cmx \
     parsing/asttypes.cmi bytecomp/printlambda.cmi
 bytecomp/runtimedef.cmo: bytecomp/runtimedef.cmi
 bytecomp/runtimedef.cmx: bytecomp/runtimedef.cmi
-bytecomp/simplif.cmo: bytecomp/lambda.cmi typing/ident.cmi utils/clflags.cmi \
-    parsing/asttypes.cmi bytecomp/simplif.cmi
-bytecomp/simplif.cmx: bytecomp/lambda.cmx typing/ident.cmx utils/clflags.cmx \
-    parsing/asttypes.cmi bytecomp/simplif.cmi
+bytecomp/simplif.cmo: typing/stypes.cmi bytecomp/lambda.cmi typing/ident.cmi \
+    utils/clflags.cmi parsing/asttypes.cmi typing/annot.cmi \
+    bytecomp/simplif.cmi
+bytecomp/simplif.cmx: typing/stypes.cmx bytecomp/lambda.cmx typing/ident.cmx \
+    utils/clflags.cmx parsing/asttypes.cmi typing/annot.cmi \
+    bytecomp/simplif.cmi
 bytecomp/switch.cmo: bytecomp/switch.cmi
 bytecomp/switch.cmx: bytecomp/switch.cmi
 bytecomp/symtable.cmo: utils/tbl.cmi bytecomp/runtimedef.cmi \
@@ -601,9 +603,9 @@ asmcomp/codegen.cmx: asmcomp/split.cmx asmcomp/spill.cmx asmcomp/reload.cmx \
 asmcomp/coloring.cmo: asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/coloring.cmi
 asmcomp/coloring.cmx: asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/coloring.cmi
 asmcomp/comballoc.cmo: asmcomp/reg.cmi asmcomp/mach.cmi utils/config.cmi \
-    asmcomp/comballoc.cmi
+    asmcomp/arch.cmo asmcomp/comballoc.cmi
 asmcomp/comballoc.cmx: asmcomp/reg.cmx asmcomp/mach.cmx utils/config.cmx \
-    asmcomp/comballoc.cmi
+    asmcomp/arch.cmx asmcomp/comballoc.cmi
 asmcomp/compilenv.cmo: utils/misc.cmi typing/ident.cmi typing/env.cmi \
     utils/config.cmi asmcomp/cmx_format.cmi asmcomp/clambda.cmi \
     asmcomp/compilenv.cmi
@@ -684,12 +686,14 @@ asmcomp/schedgen.cmx: asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
     asmcomp/schedgen.cmi
 asmcomp/scheduling.cmo: asmcomp/schedgen.cmi asmcomp/scheduling.cmi
 asmcomp/scheduling.cmx: asmcomp/schedgen.cmx asmcomp/scheduling.cmi
-asmcomp/selectgen.cmo: utils/tbl.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
-    utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi asmcomp/debuginfo.cmi \
-    asmcomp/cmm.cmi asmcomp/arch.cmo asmcomp/selectgen.cmi
-asmcomp/selectgen.cmx: utils/tbl.cmx asmcomp/reg.cmx asmcomp/proc.cmx \
-    utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx asmcomp/debuginfo.cmx \
-    asmcomp/cmm.cmx asmcomp/arch.cmx asmcomp/selectgen.cmi
+asmcomp/selectgen.cmo: utils/tbl.cmi bytecomp/simplif.cmi asmcomp/reg.cmi \
+    asmcomp/proc.cmi utils/misc.cmi asmcomp/mach.cmi typing/ident.cmi \
+    asmcomp/debuginfo.cmi asmcomp/cmm.cmi asmcomp/arch.cmo \
+    asmcomp/selectgen.cmi
+asmcomp/selectgen.cmx: utils/tbl.cmx bytecomp/simplif.cmx asmcomp/reg.cmx \
+    asmcomp/proc.cmx utils/misc.cmx asmcomp/mach.cmx typing/ident.cmx \
+    asmcomp/debuginfo.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
+    asmcomp/selectgen.cmi
 asmcomp/selection.cmo: asmcomp/selectgen.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     utils/misc.cmi asmcomp/mach.cmi asmcomp/debuginfo.cmi asmcomp/cmm.cmi \
     utils/clflags.cmi asmcomp/arch.cmo asmcomp/selection.cmi

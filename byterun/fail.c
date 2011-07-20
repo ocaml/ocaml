@@ -15,6 +15,8 @@
 
 /* Raising exceptions from C. */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "alloc.h"
 #include "fail.h"
 #include "io.h"
@@ -85,13 +87,24 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
   CAMLnoreturn;
 }
 
+/* PR#5115: Failure and Invalid_argument can be triggered by
+   input_value while reading the initial value of [caml_global_data]. */
+
 CAMLexport void caml_failwith (char const *msg)
 {
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception Failure(\"%s\")\n", msg);
+    exit(2);
+  }
   caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
 }
 
 CAMLexport void caml_invalid_argument (char const *msg)
 {
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception Invalid_argument(\"%s\")\n", msg);
+    exit(2);
+  }
   caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
 }
 

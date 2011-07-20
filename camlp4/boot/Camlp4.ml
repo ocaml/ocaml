@@ -671,145 +671,83 @@ module Sig =
         class map :
           object ('self_type)
             method string : string -> string
-              
             method list :
               'a 'b. ('self_type -> 'a -> 'b) -> 'a list -> 'b list
-              
             method meta_bool : meta_bool -> meta_bool
-              
             method meta_option :
               'a 'b.
                 ('self_type -> 'a -> 'b) -> 'a meta_option -> 'b meta_option
-              
             method meta_list :
               'a 'b. ('self_type -> 'a -> 'b) -> 'a meta_list -> 'b meta_list
-              
             method loc : loc -> loc
-              
             method expr : expr -> expr
-              
             method patt : patt -> patt
-              
             method ctyp : ctyp -> ctyp
-              
             method str_item : str_item -> str_item
-              
             method sig_item : sig_item -> sig_item
-              
             method module_expr : module_expr -> module_expr
-              
             method module_type : module_type -> module_type
-              
             method class_expr : class_expr -> class_expr
-              
             method class_type : class_type -> class_type
-              
             method class_sig_item : class_sig_item -> class_sig_item
-              
             method class_str_item : class_str_item -> class_str_item
-              
             method with_constr : with_constr -> with_constr
-              
             method binding : binding -> binding
-              
             method rec_binding : rec_binding -> rec_binding
-              
             method module_binding : module_binding -> module_binding
-              
             method match_case : match_case -> match_case
-              
             method ident : ident -> ident
-              
             method override_flag : override_flag -> override_flag
-              
             method mutable_flag : mutable_flag -> mutable_flag
-              
             method private_flag : private_flag -> private_flag
-              
             method virtual_flag : virtual_flag -> virtual_flag
-              
             method direction_flag : direction_flag -> direction_flag
-              
             method rec_flag : rec_flag -> rec_flag
-              
             method row_var_flag : row_var_flag -> row_var_flag
-              
             method unknown : 'a. 'a -> 'a
-              
           end
           
         (** Fold style traversal *)
         class fold :
           object ('self_type)
             method string : string -> 'self_type
-              
             method list :
               'a. ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type
-              
             method meta_bool : meta_bool -> 'self_type
-              
             method meta_option :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_option -> 'self_type
-              
             method meta_list :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_list -> 'self_type
-              
             method loc : loc -> 'self_type
-              
             method expr : expr -> 'self_type
-              
             method patt : patt -> 'self_type
-              
             method ctyp : ctyp -> 'self_type
-              
             method str_item : str_item -> 'self_type
-              
             method sig_item : sig_item -> 'self_type
-              
             method module_expr : module_expr -> 'self_type
-              
             method module_type : module_type -> 'self_type
-              
             method class_expr : class_expr -> 'self_type
-              
             method class_type : class_type -> 'self_type
-              
             method class_sig_item : class_sig_item -> 'self_type
-              
             method class_str_item : class_str_item -> 'self_type
-              
             method with_constr : with_constr -> 'self_type
-              
             method binding : binding -> 'self_type
-              
             method rec_binding : rec_binding -> 'self_type
-              
             method module_binding : module_binding -> 'self_type
-              
             method match_case : match_case -> 'self_type
-              
             method ident : ident -> 'self_type
-              
             method rec_flag : rec_flag -> 'self_type
-              
             method direction_flag : direction_flag -> 'self_type
-              
             method mutable_flag : mutable_flag -> 'self_type
-              
             method private_flag : private_flag -> 'self_type
-              
             method virtual_flag : virtual_flag -> 'self_type
-              
             method row_var_flag : row_var_flag -> 'self_type
-              
             method override_flag : override_flag -> 'self_type
-              
             method unknown : 'a. 'a -> 'self_type
-              
           end
           
       end
@@ -1126,6 +1064,8 @@ module Sig =
           MtSig of loc * sig_item
           | (* mt with wc *)
           MtWit of loc * module_type * with_constr
+          | (* module type of m *)
+          MtOf of loc * module_expr
           | MtAnt of loc * string
           and (* $s$ *)
           sig_item =
@@ -1537,144 +1477,82 @@ module Sig =
         class map :
           object ('self_type)
             method string : string -> string
-              
             method list :
               'a 'b. ('self_type -> 'a -> 'b) -> 'a list -> 'b list
-              
             method meta_bool : meta_bool -> meta_bool
-              
             method meta_option :
               'a 'b.
                 ('self_type -> 'a -> 'b) -> 'a meta_option -> 'b meta_option
-              
             method meta_list :
               'a 'b. ('self_type -> 'a -> 'b) -> 'a meta_list -> 'b meta_list
-              
             method loc : loc -> loc
-              
             method expr : expr -> expr
-              
             method patt : patt -> patt
-              
             method ctyp : ctyp -> ctyp
-              
             method str_item : str_item -> str_item
-              
             method sig_item : sig_item -> sig_item
-              
             method module_expr : module_expr -> module_expr
-              
             method module_type : module_type -> module_type
-              
             method class_expr : class_expr -> class_expr
-              
             method class_type : class_type -> class_type
-              
             method class_sig_item : class_sig_item -> class_sig_item
-              
             method class_str_item : class_str_item -> class_str_item
-              
             method with_constr : with_constr -> with_constr
-              
             method binding : binding -> binding
-              
             method rec_binding : rec_binding -> rec_binding
-              
             method module_binding : module_binding -> module_binding
-              
             method match_case : match_case -> match_case
-              
             method ident : ident -> ident
-              
             method mutable_flag : mutable_flag -> mutable_flag
-              
             method private_flag : private_flag -> private_flag
-              
             method virtual_flag : virtual_flag -> virtual_flag
-              
             method direction_flag : direction_flag -> direction_flag
-              
             method rec_flag : rec_flag -> rec_flag
-              
             method row_var_flag : row_var_flag -> row_var_flag
-              
             method override_flag : override_flag -> override_flag
-              
             method unknown : 'a. 'a -> 'a
-              
           end
           
         class fold :
           object ('self_type)
             method string : string -> 'self_type
-              
             method list :
               'a. ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type
-              
             method meta_bool : meta_bool -> 'self_type
-              
             method meta_option :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_option -> 'self_type
-              
             method meta_list :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_list -> 'self_type
-              
             method loc : loc -> 'self_type
-              
             method expr : expr -> 'self_type
-              
             method patt : patt -> 'self_type
-              
             method ctyp : ctyp -> 'self_type
-              
             method str_item : str_item -> 'self_type
-              
             method sig_item : sig_item -> 'self_type
-              
             method module_expr : module_expr -> 'self_type
-              
             method module_type : module_type -> 'self_type
-              
             method class_expr : class_expr -> 'self_type
-              
             method class_type : class_type -> 'self_type
-              
             method class_sig_item : class_sig_item -> 'self_type
-              
             method class_str_item : class_str_item -> 'self_type
-              
             method with_constr : with_constr -> 'self_type
-              
             method binding : binding -> 'self_type
-              
             method rec_binding : rec_binding -> 'self_type
-              
             method module_binding : module_binding -> 'self_type
-              
             method match_case : match_case -> 'self_type
-              
             method ident : ident -> 'self_type
-              
             method rec_flag : rec_flag -> 'self_type
-              
             method direction_flag : direction_flag -> 'self_type
-              
             method mutable_flag : mutable_flag -> 'self_type
-              
             method private_flag : private_flag -> 'self_type
-              
             method virtual_flag : virtual_flag -> 'self_type
-              
             method row_var_flag : row_var_flag -> 'self_type
-              
             method override_flag : override_flag -> 'self_type
-              
             method unknown : 'a. 'a -> 'self_type
-              
           end
           
         val map_expr : (expr -> expr) -> map
@@ -1984,6 +1862,7 @@ module Sig =
           | MtQuo of loc * string
           | MtSig of loc * sig_item
           | MtWit of loc * module_type * with_constr
+          | MtOf of loc * module_expr
           | MtAnt of loc * string
           and sig_item =
           | SgNil of loc
@@ -3879,6 +3758,15 @@ module Struct =
                     pos_lnum = if absolute then line else pos.pos_lnum + line;
                     pos_bol = pos.pos_cnum - chars;
                   }
+              
+            let cvt_int_literal s = - (int_of_string ("-" ^ s))
+              
+            let cvt_int32_literal s = Int32.neg (Int32.of_string ("-" ^ s))
+              
+            let cvt_int64_literal s = Int64.neg (Int64.of_string ("-" ^ s))
+              
+            let cvt_nativeint_literal s =
+              Nativeint.neg (Nativeint.of_string ("-" ^ s))
               
             let err error loc =
               raise (Loc.Exc_located (loc, (Error.E error)))
@@ -6473,7 +6361,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       lexbuf.Lexing.lex_curr_pos
                   in
-                    (try INT ((int_of_string i), i)
+                    (try INT ((cvt_int_literal i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "int") (Loc.of_lexbuf lexbuf))
@@ -6492,7 +6380,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    (try INT32 ((Int32.of_string i), i)
+                    (try INT32 ((cvt_int32_literal i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "int32")
@@ -6502,7 +6390,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    (try INT64 ((Int64.of_string i), i)
+                    (try INT64 ((cvt_int64_literal i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "int64")
@@ -6512,7 +6400,7 @@ module Struct =
                     Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos
                       (lexbuf.Lexing.lex_curr_pos + (-1))
                   in
-                    (try NATIVEINT ((Nativeint.of_string i), i)
+                    (try NATIVEINT ((cvt_nativeint_literal i), i)
                      with
                      | Failure _ ->
                          err (Literal_overflow "nativeint")
@@ -9003,6 +8891,15 @@ module Struct =
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.ExAnt (x0, x1)
+                          | Ast.MtOf (x0, x1) ->
+                              Ast.ExApp (_loc,
+                                (Ast.ExApp (_loc,
+                                   (Ast.ExId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtOf")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.MtWit (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 (Ast.ExApp (_loc,
@@ -11298,6 +11195,15 @@ module Struct =
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.PaAnt (x0, x1)
+                          | Ast.MtOf (x0, x1) ->
+                              Ast.PaApp (_loc,
+                                (Ast.PaApp (_loc,
+                                   (Ast.PaId (_loc,
+                                      (Ast.IdAcc (_loc,
+                                         (Ast.IdUid (_loc, "Ast")),
+                                         (Ast.IdUid (_loc, "MtOf")))))),
+                                   (meta_loc _loc x0))),
+                                (meta_module_expr _loc x1))
                           | Ast.MtWit (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 (Ast.PaApp (_loc,
@@ -12097,7 +12003,6 @@ module Struct =
             class map =
               object ((o : 'self_type))
                 method string : string -> string = o#unknown
-                  
                 method list :
                   'a 'a_out.
                     ('self_type -> 'a -> 'a_out) -> 'a list -> 'a_out list =
@@ -12107,7 +12012,6 @@ module Struct =
                     | _x :: _x_i1 ->
                         let _x = _f_a o _x in
                         let _x_i1 = o#list _f_a _x_i1 in _x :: _x_i1
-                  
                 method with_constr : with_constr -> with_constr =
                   function
                   | WcNil _x -> let _x = o#loc _x in WcNil _x
@@ -12135,13 +12039,11 @@ module Struct =
                   | WcAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in WcAnt (_x, _x_i1)
-                  
                 method virtual_flag : virtual_flag -> virtual_flag =
                   function
                   | ViVirtual -> ViVirtual
                   | ViNil -> ViNil
                   | ViAnt _x -> let _x = o#string _x in ViAnt _x
-                  
                 method str_item : str_item -> str_item =
                   function
                   | StNil _x -> let _x = o#loc _x in StNil _x
@@ -12204,7 +12106,6 @@ module Struct =
                   | StAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in StAnt (_x, _x_i1)
-                  
                 method sig_item : sig_item -> sig_item =
                   function
                   | SgNil _x -> let _x = o#loc _x in SgNil _x
@@ -12262,19 +12163,16 @@ module Struct =
                   | SgAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in SgAnt (_x, _x_i1)
-                  
                 method row_var_flag : row_var_flag -> row_var_flag =
                   function
                   | RvRowVar -> RvRowVar
                   | RvNil -> RvNil
                   | RvAnt _x -> let _x = o#string _x in RvAnt _x
-                  
                 method rec_flag : rec_flag -> rec_flag =
                   function
                   | ReRecursive -> ReRecursive
                   | ReNil -> ReNil
                   | ReAnt _x -> let _x = o#string _x in ReAnt _x
-                  
                 method rec_binding : rec_binding -> rec_binding =
                   function
                   | RbNil _x -> let _x = o#loc _x in RbNil _x
@@ -12290,13 +12188,11 @@ module Struct =
                   | RbAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in RbAnt (_x, _x_i1)
-                  
                 method private_flag : private_flag -> private_flag =
                   function
                   | PrPrivate -> PrPrivate
                   | PrNil -> PrNil
                   | PrAnt _x -> let _x = o#string _x in PrAnt _x
-                  
                 method patt : patt -> patt =
                   function
                   | PaNil _x -> let _x = o#loc _x in PaNil _x
@@ -12395,19 +12291,16 @@ module Struct =
                   | PaMod (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in PaMod (_x, _x_i1)
-                  
                 method override_flag : override_flag -> override_flag =
                   function
                   | OvOverride -> OvOverride
                   | OvNil -> OvNil
                   | OvAnt _x -> let _x = o#string _x in OvAnt _x
-                  
                 method mutable_flag : mutable_flag -> mutable_flag =
                   function
                   | MuMutable -> MuMutable
                   | MuNil -> MuNil
                   | MuAnt _x -> let _x = o#string _x in MuAnt _x
-                  
                 method module_type : module_type -> module_type =
                   function
                   | MtNil _x -> let _x = o#loc _x in MtNil _x
@@ -12431,10 +12324,12 @@ module Struct =
                       let _x_i1 = o#module_type _x_i1 in
                       let _x_i2 = o#with_constr _x_i2
                       in MtWit (_x, _x_i1, _x_i2)
+                  | MtOf (_x, _x_i1) ->
+                      let _x = o#loc _x in
+                      let _x_i1 = o#module_expr _x_i1 in MtOf (_x, _x_i1)
                   | MtAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in MtAnt (_x, _x_i1)
-                  
                 method module_expr : module_expr -> module_expr =
                   function
                   | MeNil _x -> let _x = o#loc _x in MeNil _x
@@ -12466,7 +12361,6 @@ module Struct =
                   | MeAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in MeAnt (_x, _x_i1)
-                  
                 method module_binding : module_binding -> module_binding =
                   function
                   | MbNil _x -> let _x = o#loc _x in MbNil _x
@@ -12489,7 +12383,6 @@ module Struct =
                   | MbAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in MbAnt (_x, _x_i1)
-                  
                 method meta_option :
                   'a 'a_out.
                     ('self_type -> 'a -> 'a_out) ->
@@ -12499,7 +12392,6 @@ module Struct =
                     | ONone -> ONone
                     | OSome _x -> let _x = _f_a o _x in OSome _x
                     | OAnt _x -> let _x = o#string _x in OAnt _x
-                  
                 method meta_list :
                   'a 'a_out.
                     ('self_type -> 'a -> 'a_out) ->
@@ -12512,13 +12404,11 @@ module Struct =
                         let _x_i1 = o#meta_list _f_a _x_i1
                         in LCons (_x, _x_i1)
                     | LAnt _x -> let _x = o#string _x in LAnt _x
-                  
                 method meta_bool : meta_bool -> meta_bool =
                   function
                   | BTrue -> BTrue
                   | BFalse -> BFalse
                   | BAnt _x -> let _x = o#string _x in BAnt _x
-                  
                 method match_case : match_case -> match_case =
                   function
                   | McNil _x -> let _x = o#loc _x in McNil _x
@@ -12536,9 +12426,7 @@ module Struct =
                   | McAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in McAnt (_x, _x_i1)
-                  
                 method loc : loc -> loc = o#unknown
-                  
                 method ident : ident -> ident =
                   function
                   | IdAcc (_x, _x_i1, _x_i2) ->
@@ -12558,7 +12446,6 @@ module Struct =
                   | IdAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in IdAnt (_x, _x_i1)
-                  
                 method expr : expr -> expr =
                   function
                   | ExNil _x -> let _x = o#loc _x in ExNil _x
@@ -12727,13 +12614,11 @@ module Struct =
                   | ExPkg (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#module_expr _x_i1 in ExPkg (_x, _x_i1)
-                  
                 method direction_flag : direction_flag -> direction_flag =
                   function
                   | DiTo -> DiTo
                   | DiDownto -> DiDownto
                   | DiAnt _x -> let _x = o#string _x in DiAnt _x
-                  
                 method ctyp : ctyp -> ctyp =
                   function
                   | TyNil _x -> let _x = o#loc _x in TyNil _x
@@ -12872,7 +12757,6 @@ module Struct =
                   | TyAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in TyAnt (_x, _x_i1)
-                  
                 method class_type : class_type -> class_type =
                   function
                   | CtNil _x -> let _x = o#loc _x in CtNil _x
@@ -12910,7 +12794,6 @@ module Struct =
                   | CtAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in CtAnt (_x, _x_i1)
-                  
                 method class_str_item : class_str_item -> class_str_item =
                   function
                   | CrNil _x -> let _x = o#loc _x in CrNil _x
@@ -12962,7 +12845,6 @@ module Struct =
                   | CrAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in CrAnt (_x, _x_i1)
-                  
                 method class_sig_item : class_sig_item -> class_sig_item =
                   function
                   | CgNil _x -> let _x = o#loc _x in CgNil _x
@@ -13000,7 +12882,6 @@ module Struct =
                   | CgAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in CgAnt (_x, _x_i1)
-                  
                 method class_expr : class_expr -> class_expr =
                   function
                   | CeNil _x -> let _x = o#loc _x in CeNil _x
@@ -13048,7 +12929,6 @@ module Struct =
                   | CeAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in CeAnt (_x, _x_i1)
-                  
                 method binding : binding -> binding =
                   function
                   | BiNil _x -> let _x = o#loc _x in BiNil _x
@@ -13063,15 +12943,12 @@ module Struct =
                   | BiAnt (_x, _x_i1) ->
                       let _x = o#loc _x in
                       let _x_i1 = o#string _x_i1 in BiAnt (_x, _x_i1)
-                  
                 method unknown : 'a. 'a -> 'a = fun x -> x
-                  
               end
               
             class fold =
               object ((o : 'self_type))
                 method string : string -> 'self_type = o#unknown
-                  
                 method list :
                   'a.
                     ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type =
@@ -13080,7 +12957,6 @@ module Struct =
                     | [] -> o
                     | _x :: _x_i1 ->
                         let o = _f_a o _x in let o = o#list _f_a _x_i1 in o
-                  
                 method with_constr : with_constr -> 'self_type =
                   function
                   | WcNil _x -> let o = o#loc _x in o
@@ -13102,13 +12978,11 @@ module Struct =
                       let o = o#with_constr _x_i2 in o
                   | WcAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method virtual_flag : virtual_flag -> 'self_type =
                   function
                   | ViVirtual -> o
                   | ViNil -> o
                   | ViAnt _x -> let o = o#string _x in o
-                  
                 method str_item : str_item -> 'self_type =
                   function
                   | StNil _x -> let o = o#loc _x in o
@@ -13156,7 +13030,6 @@ module Struct =
                       let o = o#binding _x_i2 in o
                   | StAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method sig_item : sig_item -> 'self_type =
                   function
                   | SgNil _x -> let o = o#loc _x in o
@@ -13199,19 +13072,16 @@ module Struct =
                       let o = o#string _x_i1 in let o = o#ctyp _x_i2 in o
                   | SgAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method row_var_flag : row_var_flag -> 'self_type =
                   function
                   | RvRowVar -> o
                   | RvNil -> o
                   | RvAnt _x -> let o = o#string _x in o
-                  
                 method rec_flag : rec_flag -> 'self_type =
                   function
                   | ReRecursive -> o
                   | ReNil -> o
                   | ReAnt _x -> let o = o#string _x in o
-                  
                 method rec_binding : rec_binding -> 'self_type =
                   function
                   | RbNil _x -> let o = o#loc _x in o
@@ -13224,13 +13094,11 @@ module Struct =
                       let o = o#ident _x_i1 in let o = o#expr _x_i2 in o
                   | RbAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method private_flag : private_flag -> 'self_type =
                   function
                   | PrPrivate -> o
                   | PrNil -> o
                   | PrAnt _x -> let o = o#string _x in o
-                  
                 method patt : patt -> 'self_type =
                   function
                   | PaNil _x -> let o = o#loc _x in o
@@ -13301,19 +13169,16 @@ module Struct =
                       let o = o#loc _x in let o = o#patt _x_i1 in o
                   | PaMod (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method override_flag : override_flag -> 'self_type =
                   function
                   | OvOverride -> o
                   | OvNil -> o
                   | OvAnt _x -> let o = o#string _x in o
-                  
                 method mutable_flag : mutable_flag -> 'self_type =
                   function
                   | MuMutable -> o
                   | MuNil -> o
                   | MuAnt _x -> let o = o#string _x in o
-                  
                 method module_type : module_type -> 'self_type =
                   function
                   | MtNil _x -> let o = o#loc _x in o
@@ -13332,9 +13197,10 @@ module Struct =
                       let o = o#loc _x in
                       let o = o#module_type _x_i1 in
                       let o = o#with_constr _x_i2 in o
+                  | MtOf (_x, _x_i1) ->
+                      let o = o#loc _x in let o = o#module_expr _x_i1 in o
                   | MtAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method module_expr : module_expr -> 'self_type =
                   function
                   | MeNil _x -> let o = o#loc _x in o
@@ -13359,7 +13225,6 @@ module Struct =
                       let o = o#loc _x in let o = o#expr _x_i1 in o
                   | MeAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method module_binding : module_binding -> 'self_type =
                   function
                   | MbNil _x -> let o = o#loc _x in o
@@ -13378,7 +13243,6 @@ module Struct =
                       let o = o#module_type _x_i2 in o
                   | MbAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method meta_option :
                   'a.
                     ('self_type -> 'a -> 'self_type) ->
@@ -13388,7 +13252,6 @@ module Struct =
                     | ONone -> o
                     | OSome _x -> let o = _f_a o _x in o
                     | OAnt _x -> let o = o#string _x in o
-                  
                 method meta_list :
                   'a.
                     ('self_type -> 'a -> 'self_type) ->
@@ -13400,13 +13263,11 @@ module Struct =
                         let o = _f_a o _x in
                         let o = o#meta_list _f_a _x_i1 in o
                     | LAnt _x -> let o = o#string _x in o
-                  
                 method meta_bool : meta_bool -> 'self_type =
                   function
                   | BTrue -> o
                   | BFalse -> o
                   | BAnt _x -> let o = o#string _x in o
-                  
                 method match_case : match_case -> 'self_type =
                   function
                   | McNil _x -> let o = o#loc _x in o
@@ -13420,9 +13281,7 @@ module Struct =
                       let o = o#expr _x_i2 in let o = o#expr _x_i3 in o
                   | McAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method loc : loc -> 'self_type = o#unknown
-                  
                 method ident : ident -> 'self_type =
                   function
                   | IdAcc (_x, _x_i1, _x_i2) ->
@@ -13437,7 +13296,6 @@ module Struct =
                       let o = o#loc _x in let o = o#string _x_i1 in o
                   | IdAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method expr : expr -> 'self_type =
                   function
                   | ExNil _x -> let o = o#loc _x in o
@@ -13560,13 +13418,11 @@ module Struct =
                       let o = o#string _x_i1 in let o = o#expr _x_i2 in o
                   | ExPkg (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#module_expr _x_i1 in o
-                  
                 method direction_flag : direction_flag -> 'self_type =
                   function
                   | DiTo -> o
                   | DiDownto -> o
                   | DiAnt _x -> let o = o#string _x in o
-                  
                 method ctyp : ctyp -> 'self_type =
                   function
                   | TyNil _x -> let o = o#loc _x in o
@@ -13669,7 +13525,6 @@ module Struct =
                       let o = o#loc _x in let o = o#module_type _x_i1 in o
                   | TyAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method class_type : class_type -> 'self_type =
                   function
                   | CtNil _x -> let o = o#loc _x in o
@@ -13698,7 +13553,6 @@ module Struct =
                       let o = o#class_type _x_i2 in o
                   | CtAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method class_str_item : class_str_item -> 'self_type =
                   function
                   | CrNil _x -> let o = o#loc _x in o
@@ -13740,7 +13594,6 @@ module Struct =
                       let o = o#ctyp _x_i3 in o
                   | CrAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method class_sig_item : class_sig_item -> 'self_type =
                   function
                   | CgNil _x -> let o = o#loc _x in o
@@ -13771,7 +13624,6 @@ module Struct =
                       let o = o#ctyp _x_i3 in o
                   | CgAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method class_expr : class_expr -> 'self_type =
                   function
                   | CeNil _x -> let o = o#loc _x in o
@@ -13808,7 +13660,6 @@ module Struct =
                       let o = o#class_expr _x_i2 in o
                   | CeAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method binding : binding -> 'self_type =
                   function
                   | BiNil _x -> let o = o#loc _x in o
@@ -13820,57 +13671,43 @@ module Struct =
                       let o = o#patt _x_i1 in let o = o#expr _x_i2 in o
                   | BiAnt (_x, _x_i1) ->
                       let o = o#loc _x in let o = o#string _x_i1 in o
-                  
                 method unknown : 'a. 'a -> 'self_type = fun _ -> o
-                  
               end
               
             let map_expr f =
               object
                 inherit map as super
-                  
                 method expr = fun x -> f (super#expr x)
-                  
               end
               
             let map_patt f =
               object
                 inherit map as super
-                  
                 method patt = fun x -> f (super#patt x)
-                  
               end
               
             let map_ctyp f =
               object
                 inherit map as super
-                  
                 method ctyp = fun x -> f (super#ctyp x)
-                  
               end
               
             let map_str_item f =
               object
                 inherit map as super
-                  
                 method str_item = fun x -> f (super#str_item x)
-                  
               end
               
             let map_sig_item f =
               object
                 inherit map as super
-                  
                 method sig_item = fun x -> f (super#sig_item x)
-                  
               end
               
             let map_loc f =
               object
                 inherit map as super
-                  
                 method loc = fun x -> f (super#loc x)
-                  
               end
               
           end
@@ -15216,6 +15053,8 @@ module Struct =
                   mkmty loc (Pmty_signature (sig_item sl []))
               | Ast.MtWit (loc, mt, wc) ->
                   mkmty loc (Pmty_with ((module_type mt), (mkwithc wc [])))
+              | Ast.MtOf (loc, me) ->
+                  mkmty loc (Pmty_typeof (module_expr me))
               | Ast.MtAnt (_, _) -> assert false
             and sig_item s l =
               match s with
@@ -15338,6 +15177,9 @@ module Struct =
                   (Ast.OSome i)) ->
                   (mkstr loc (Pstr_exn_rebind ((conv_con s), (ident i)))) ::
                     l
+              | Ast.StExc (loc,
+                  (Ast.TyOf (_, (Ast.TyId (_, (Ast.IdUid (_, _)))), _)),
+                  (Ast.OSome _)) -> error loc "type in exception alias"
               | StExc (_, _, _) -> assert false
               | StExp (loc, e) -> (mkstr loc (Pstr_eval (expr e))) :: l
               | StExt (loc, n, t, sl) ->
@@ -15562,14 +15404,12 @@ module Struct =
           struct
             class clean_ast =
               object inherit Ast.map as super
-                       
                 method with_constr =
                   fun wc ->
                     match super#with_constr wc with
                     | Ast.WcAnd (_, (Ast.WcNil _), wc) |
                         Ast.WcAnd (_, wc, (Ast.WcNil _)) -> wc
                     | wc -> wc
-                  
                 method expr =
                   fun e ->
                     match super#expr e with
@@ -15580,7 +15420,6 @@ module Struct =
                         Ast.ExSem (_, (Ast.ExNil _), e) |
                         Ast.ExSem (_, e, (Ast.ExNil _)) -> e
                     | e -> e
-                  
                 method patt =
                   fun p ->
                     match super#patt p with
@@ -15592,35 +15431,30 @@ module Struct =
                         Ast.PaSem (_, (Ast.PaNil _), p) |
                         Ast.PaSem (_, p, (Ast.PaNil _)) -> p
                     | p -> p
-                  
                 method match_case =
                   fun mc ->
                     match super#match_case mc with
                     | Ast.McOr (_, (Ast.McNil _), mc) |
                         Ast.McOr (_, mc, (Ast.McNil _)) -> mc
                     | mc -> mc
-                  
                 method binding =
                   fun bi ->
                     match super#binding bi with
                     | Ast.BiAnd (_, (Ast.BiNil _), bi) |
                         Ast.BiAnd (_, bi, (Ast.BiNil _)) -> bi
                     | bi -> bi
-                  
                 method rec_binding =
                   fun rb ->
                     match super#rec_binding rb with
                     | Ast.RbSem (_, (Ast.RbNil _), bi) |
                         Ast.RbSem (_, bi, (Ast.RbNil _)) -> bi
                     | bi -> bi
-                  
                 method module_binding =
                   fun mb ->
                     match super#module_binding mb with
                     | Ast.MbAnd (_, (Ast.MbNil _), mb) |
                         Ast.MbAnd (_, mb, (Ast.MbNil _)) -> mb
                     | mb -> mb
-                  
                 method ctyp =
                   fun t ->
                     match super#ctyp t with
@@ -15643,7 +15477,6 @@ module Struct =
                         Ast.TySta (_, (Ast.TyNil _), t) |
                         Ast.TySta (_, t, (Ast.TyNil _)) -> t
                     | t -> t
-                  
                 method sig_item =
                   fun sg ->
                     match super#sig_item sg with
@@ -15651,7 +15484,6 @@ module Struct =
                         Ast.SgSem (_, sg, (Ast.SgNil _)) -> sg
                     | Ast.SgTyp (loc, (Ast.TyNil _)) -> Ast.SgNil loc
                     | sg -> sg
-                  
                 method str_item =
                   fun st ->
                     match super#str_item st with
@@ -15660,41 +15492,35 @@ module Struct =
                     | Ast.StTyp (loc, (Ast.TyNil _)) -> Ast.StNil loc
                     | Ast.StVal (loc, _, (Ast.BiNil _)) -> Ast.StNil loc
                     | st -> st
-                  
                 method module_type =
                   fun mt ->
                     match super#module_type mt with
                     | Ast.MtWit (_, mt, (Ast.WcNil _)) -> mt
                     | mt -> mt
-                  
                 method class_expr =
                   fun ce ->
                     match super#class_expr ce with
                     | Ast.CeAnd (_, (Ast.CeNil _), ce) |
                         Ast.CeAnd (_, ce, (Ast.CeNil _)) -> ce
                     | ce -> ce
-                  
                 method class_type =
                   fun ct ->
                     match super#class_type ct with
                     | Ast.CtAnd (_, (Ast.CtNil _), ct) |
                         Ast.CtAnd (_, ct, (Ast.CtNil _)) -> ct
                     | ct -> ct
-                  
                 method class_sig_item =
                   fun csg ->
                     match super#class_sig_item csg with
                     | Ast.CgSem (_, (Ast.CgNil _), csg) |
                         Ast.CgSem (_, csg, (Ast.CgNil _)) -> csg
                     | csg -> csg
-                  
                 method class_str_item =
                   fun cst ->
                     match super#class_str_item cst with
                     | Ast.CrSem (_, (Ast.CrNil _), cst) |
                         Ast.CrSem (_, cst, (Ast.CrNil _)) -> cst
                     | cst -> cst
-                  
               end
               
           end
@@ -15889,10 +15715,7 @@ module Struct =
             class ['accu] c_fold_pattern_vars :
               (string -> 'accu -> 'accu) ->
                 'accu ->
-                  object inherit Ast.fold
-                            val acc : 'accu
-                               method acc : 'accu
-                                 
+                  object inherit Ast.fold val acc : 'accu method acc : 'accu
                   end
               
             val fold_pattern_vars :
@@ -15904,21 +15727,13 @@ module Struct =
                   'accu ->
                     object ('self_type)
                       inherit Ast.fold
-                        
                       val free : 'accu
-                        
                       val env : S.t
-                        
                       method free : 'accu
-                        
                       method set_env : S.t -> 'self_type
-                        
                       method add_atom : string -> 'self_type
-                        
                       method add_patt : Ast.patt -> 'self_type
-                        
                       method add_binding : Ast.binding -> 'self_type
-                        
                     end
               
             val free_vars : S.t -> Ast.expr -> S.t
@@ -15933,18 +15748,14 @@ module Struct =
               
             class ['accu] c_fold_pattern_vars f init =
               object inherit Ast.fold as super
-                       
                 val acc = init
-                  
                 method acc : 'accu = acc
-                  
                 method patt =
                   function
                   | Ast.PaId (_, (Ast.IdLid (_, s))) |
                       Ast.PaLab (_, s, (Ast.PaNil _)) |
                       Ast.PaOlb (_, s, (Ast.PaNil _)) -> {< acc = f s acc; >}
                   | p -> super#patt p
-                  
               end
               
             let fold_pattern_vars f p init =
@@ -15962,23 +15773,15 @@ module Struct =
                     ?(env_init = S.empty) free_init =
               object (o)
                 inherit Ast.fold as super
-                  
                 val free = (free_init : 'accu)
-                  
                 val env = (env_init : S.t)
-                  
                 method free = free
-                  
                 method set_env = fun env -> {< env = env; >}
-                  
                 method add_atom = fun s -> {< env = S.add s env; >}
-                  
                 method add_patt =
                   fun p -> {< env = fold_pattern_vars S.add p env; >}
-                  
                 method add_binding =
                   fun bi -> {< env = fold_binding_vars S.add bi env; >}
-                  
                 method expr =
                   function
                   | Ast.ExId (_, (Ast.IdLid (_, s))) |
@@ -15996,13 +15799,11 @@ module Struct =
                   | Ast.ExObj (_, p, cst) ->
                       ((o#add_patt p)#class_str_item cst)#set_env env
                   | e -> super#expr e
-                  
                 method match_case =
                   function
                   | Ast.McArr (_, p, e1, e2) ->
                       (((o#add_patt p)#expr e1)#expr e2)#set_env env
                   | m -> super#match_case m
-                  
                 method str_item =
                   function
                   | Ast.StExt (_, s, t, _) -> (o#ctyp t)#add_atom s
@@ -16011,7 +15812,6 @@ module Struct =
                   | Ast.StVal (_, Ast.ReRecursive, bi) ->
                       (o#add_binding bi)#binding bi
                   | st -> super#str_item st
-                  
                 method class_expr =
                   function
                   | Ast.CeFun (_, p, ce) ->
@@ -16025,7 +15825,6 @@ module Struct =
                   | Ast.CeStr (_, p, cst) ->
                       ((o#add_patt p)#class_str_item cst)#set_env env
                   | ce -> super#class_expr ce
-                  
                 method class_str_item =
                   function
                   | (Ast.CrInh (_, _, _, "") as cst) ->
@@ -16034,12 +15833,10 @@ module Struct =
                   | Ast.CrVal (_, s, _, _, e) -> (o#expr e)#add_atom s
                   | Ast.CrVvr (_, s, _, t) -> (o#ctyp t)#add_atom s
                   | cst -> super#class_str_item cst
-                  
                 method module_expr =
                   function
                   | Ast.MeStr (_, st) -> (o#str_item st)#set_env env
                   | me -> super#module_expr me
-                  
               end
               
             let free_vars env_init e =
@@ -16075,7 +15872,9 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                type token_info =
+                  { prev_loc : Loc.t; cur_loc : Loc.t; prev_loc_only : bool
+                  }
                 
                 type token_stream = (Token.t * token_info) Stream.t
                 
@@ -16177,7 +15976,9 @@ module Struct =
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
                 
-                type token_info = { prev_loc : Loc.t; cur_loc : Loc.t }
+                type token_info =
+                  { prev_loc : Loc.t; cur_loc : Loc.t; prev_loc_only : bool
+                  }
                 
                 type token_stream = (Token.t * token_info) Stream.t
                 
@@ -16370,11 +16171,7 @@ module Struct =
           
         module Tools =
           struct
-            type prev_locs =
-              { mutable pl_strm : Obj.t; mutable pl_locs : (int * Obj.t) list
-              }
-            
-            let prev_locs = ref ([] : prev_locs list)
+            let get_prev_loc_only = ref false
               
             module Make (Structure : Structure.S) =
               struct
@@ -16396,43 +16193,42 @@ module Struct =
                 let keep_prev_loc strm =
                   match Stream.peek strm with
                   | None -> Stream.sempty
-                  | Some ((_, init_loc)) ->
-                      let myrecord =
-                        {
-                          pl_strm = Obj.repr Stream.sempty;
-                          pl_locs = [ (0, (Obj.repr init_loc)) ];
-                        } in
-                      let rec go prev_loc (__strm : _ Stream.t) =
-                        (match Stream.peek __strm with
-                         | Some ((tok, cur_loc)) ->
-                             (Stream.junk __strm;
-                              let strm = __strm
-                              in
-                                (myrecord.pl_locs <-
-                                   myrecord.pl_locs @
-                                     [ ((Stream.count strm),
-                                        (Obj.repr cur_loc)) ];
-                                 Stream.lcons
-                                   (fun _ ->
-                                      (tok,
-                                       {
-                                         prev_loc = prev_loc;
-                                         cur_loc = cur_loc;
-                                       }))
-                                   (Stream.slazy (fun _ -> go cur_loc strm))))
-                         | _ ->
-                             (prev_locs :=
-                                List.filter (( != ) myrecord) !prev_locs;
-                              Stream.
-                              sempty)) in
-                      let result = go init_loc strm
-                      in
-                        (prev_locs := myrecord :: !prev_locs;
-                         myrecord.pl_strm <- Obj.repr result;
-                         result)
+                  | Some ((tok0, init_loc)) ->
+                      let rec go prev_loc strm1 =
+                        if !get_prev_loc_only
+                        then
+                          Stream.lcons
+                            (fun _ ->
+                               (tok0,
+                                {
+                                  prev_loc = prev_loc;
+                                  cur_loc = prev_loc;
+                                  prev_loc_only = true;
+                                }))
+                            (Stream.slazy (fun _ -> go prev_loc strm1))
+                        else
+                          (let (__strm : _ Stream.t) = strm1
+                           in
+                             match Stream.peek __strm with
+                             | Some ((tok, cur_loc)) ->
+                                 (Stream.junk __strm;
+                                  let strm = __strm
+                                  in
+                                    Stream.lcons
+                                      (fun _ ->
+                                         (tok,
+                                          {
+                                            prev_loc = prev_loc;
+                                            cur_loc = cur_loc;
+                                            prev_loc_only = false;
+                                          }))
+                                      (Stream.slazy
+                                         (fun _ -> go cur_loc strm)))
+                             | _ -> Stream.sempty)
+                      in go init_loc strm
                   
                 let drop_prev_loc strm =
-                  stream_map (fun (tok, r) -> (tok, r)) strm
+                  stream_map (fun (tok, r) -> (tok, (r.cur_loc))) strm
                   
                 let get_cur_loc strm =
                   match Stream.peek strm with
@@ -16440,29 +16236,17 @@ module Struct =
                   | None -> Loc.ghost
                   
                 let get_prev_loc strm =
-                  let c = Stream.count strm in
-                  let rec drop l =
-                    match l with
-                    | [] -> []
-                    | (i, _) :: ll -> if i < c then drop ll else l in
-                  let rec find l =
-                    match l with
-                    | [] -> None
-                    | h :: t ->
-                        if h.pl_strm == (Obj.repr strm)
-                        then Some h
-                        else find t
-                  in
-                    match find !prev_locs with
-                    | None -> Loc.ghost
-                    | Some r ->
-                        (r.pl_locs <- drop r.pl_locs;
-                         (match r.pl_locs with
-                          | [] -> Loc.ghost
-                          | (i, loc) :: _ ->
-                              if i = c
-                              then (Obj.obj loc : Loc.t)
-                              else Loc.ghost))
+                  (get_prev_loc_only := true;
+                   let result =
+                     match Stream.peek strm with
+                     | Some
+                         ((_, { prev_loc = prev_loc; prev_loc_only = true }))
+                         -> (Stream.junk strm; prev_loc)
+                     | Some
+                         ((_, { prev_loc = prev_loc; prev_loc_only = false }))
+                         -> prev_loc
+                     | None -> Loc.ghost
+                   in (get_prev_loc_only := false; result))
                   
                 let is_level_labelled n lev =
                   match lev.lname with | Some n1 -> n = n1 | None -> false
@@ -18657,191 +18441,113 @@ module Printers =
                   unit ->
                     object ('a)
                       method interf : formatter -> Ast.sig_item -> unit
-                        
                       method implem : formatter -> Ast.str_item -> unit
-                        
                       method sig_item : formatter -> Ast.sig_item -> unit
-                        
                       method str_item : formatter -> Ast.str_item -> unit
-                        
                       val pipe : bool
-                        
                       val semi : bool
-                        
                       val semisep : sep
-                        
+                      val no_semisep : sep
                       method value_val : string
-                        
                       method value_let : string
-                        
                       method andsep : sep
-                        
                       method anti : formatter -> string -> unit
-                        
                       method class_declaration :
                         formatter -> Ast.class_expr -> unit
-                        
                       method class_expr : formatter -> Ast.class_expr -> unit
-                        
                       method class_sig_item :
                         formatter -> Ast.class_sig_item -> unit
-                        
                       method class_str_item :
                         formatter -> Ast.class_str_item -> unit
-                        
                       method class_type : formatter -> Ast.class_type -> unit
-                        
                       method constrain :
                         formatter -> (Ast.ctyp * Ast.ctyp) -> unit
-                        
                       method ctyp : formatter -> Ast.ctyp -> unit
-                        
                       method ctyp1 : formatter -> Ast.ctyp -> unit
-                        
                       method constructor_type : formatter -> Ast.ctyp -> unit
-                        
                       method dot_expr : formatter -> Ast.expr -> unit
-                        
                       method apply_expr : formatter -> Ast.expr -> unit
-                        
                       method expr : formatter -> Ast.expr -> unit
-                        
                       method expr_list : formatter -> Ast.expr list -> unit
-                        
                       method expr_list_cons :
                         bool -> formatter -> Ast.expr -> unit
-                        
                       method fun_binding : formatter -> fun_binding -> unit
-                        
                       method functor_arg :
                         formatter -> (string * Ast.module_type) -> unit
-                        
                       method functor_args :
                         formatter -> (string * Ast.module_type) list -> unit
-                        
                       method ident : formatter -> Ast.ident -> unit
-                        
                       method numeric : formatter -> string -> string -> unit
-                        
                       method binding : formatter -> Ast.binding -> unit
-                        
                       method record_binding :
                         formatter -> Ast.rec_binding -> unit
-                        
                       method match_case : formatter -> Ast.match_case -> unit
-                        
                       method match_case_aux :
                         formatter -> Ast.match_case -> unit
-                        
                       method mk_expr_list :
                         Ast.expr -> ((Ast.expr list) * (Ast.expr option))
-                        
                       method mk_patt_list :
                         Ast.patt -> ((Ast.patt list) * (Ast.patt option))
-                        
                       method simple_module_expr :
                         formatter -> Ast.module_expr -> unit
-                        
                       method module_expr :
                         formatter -> Ast.module_expr -> unit
-                        
                       method module_expr_get_functor_args :
                         (string * Ast.module_type) list ->
                           Ast.module_expr ->
                             (((string * Ast.module_type) list) * Ast.
                              module_expr * (Ast.module_type option))
-                        
                       method module_rec_binding :
                         formatter -> Ast.module_binding -> unit
-                        
                       method module_type :
                         formatter -> Ast.module_type -> unit
-                        
                       method override_flag :
                         formatter -> Ast.override_flag -> unit
-                        
                       method mutable_flag :
                         formatter -> Ast.mutable_flag -> unit
-                        
                       method direction_flag :
                         formatter -> Ast.direction_flag -> unit
-                        
                       method rec_flag : formatter -> Ast.rec_flag -> unit
-                        
                       method node : formatter -> 'b -> ('b -> Loc.t) -> unit
-                        
                       method patt : formatter -> Ast.patt -> unit
-                        
                       method patt1 : formatter -> Ast.patt -> unit
-                        
                       method patt2 : formatter -> Ast.patt -> unit
-                        
                       method patt3 : formatter -> Ast.patt -> unit
-                        
                       method patt4 : formatter -> Ast.patt -> unit
-                        
                       method patt5 : formatter -> Ast.patt -> unit
-                        
                       method patt_tycon : formatter -> Ast.patt -> unit
-                        
                       method patt_expr_fun_args :
                         formatter -> (fun_binding * Ast.expr) -> unit
-                        
                       method patt_class_expr_fun_args :
                         formatter -> (Ast.patt * Ast.class_expr) -> unit
-                        
                       method print_comments_before :
                         Loc.t -> formatter -> unit
-                        
                       method private_flag :
                         formatter -> Ast.private_flag -> unit
-                        
                       method virtual_flag :
                         formatter -> Ast.virtual_flag -> unit
-                        
                       method quoted_string : formatter -> string -> unit
-                        
                       method raise_match_failure : formatter -> Loc.t -> unit
-                        
                       method reset : 'a
-                        
                       method reset_semi : 'a
-                        
                       method semisep : sep
-                        
                       method set_comments : bool -> 'a
-                        
                       method set_curry_constr : bool -> 'a
-                        
                       method set_loc_and_comments : 'a
-                        
                       method set_semisep : sep -> 'a
-                        
                       method simple_ctyp : formatter -> Ast.ctyp -> unit
-                        
                       method simple_expr : formatter -> Ast.expr -> unit
-                        
                       method simple_patt : formatter -> Ast.patt -> unit
-                        
                       method seq : formatter -> Ast.expr -> unit
-                        
                       method string : formatter -> string -> unit
-                        
                       method sum_type : formatter -> Ast.ctyp -> unit
-                        
                       method type_params : formatter -> Ast.ctyp list -> unit
-                        
                       method class_params : formatter -> Ast.ctyp -> unit
-                        
                       method under_pipe : 'a
-                        
                       method under_semi : 'a
-                        
                       method var : formatter -> string -> unit
-                        
                       method with_constraint :
                         formatter -> Ast.with_constr -> unit
-                        
                     end
               
             val with_outfile :
@@ -19032,43 +18738,26 @@ module Printers =
                     ?(comments = true) () =
               object (o)
                 val pipe = false
-                  
                 val semi = false
-                  
                 method under_pipe = {< pipe = true; >}
-                  
                 method under_semi = {< semi = true; >}
-                  
                 method reset_semi = {< semi = false; >}
-                  
                 method reset = {< pipe = false; semi = false; >}
-                  
                 val semisep = (";;" : sep)
-                  
+                val no_semisep = ("" : sep)
                 val mode = if comments then `comments else `no_comments
-                  
                 val curry_constr = init_curry_constr
-                  
                 val var_conversion = false
-                  
                 method andsep : sep = "@]@ @[<2>and@ "
-                  
                 method value_val = "val"
-                  
                 method value_let = "let"
-                  
                 method semisep = semisep
-                  
                 method set_semisep = fun s -> {< semisep = s; >}
-                  
                 method set_comments =
                   fun b ->
                     {< mode = if b then `comments else `no_comments; >}
-                  
                 method set_loc_and_comments = {< mode = `loc_and_comments; >}
-                  
                 method set_curry_constr = fun b -> {< curry_constr = b; >}
-                  
                 method print_comments_before =
                   fun loc f ->
                     match mode with
@@ -19083,7 +18772,6 @@ module Printers =
                             (fun s -> pp f "%s(*comm_loc: %a*)@ " s Loc.dump)
                             (CommentFilter.take_stream comment_filter)
                     | _ -> ()
-                  
                 method var =
                   fun f ->
                     function
@@ -19111,14 +18799,12 @@ module Printers =
                                     (sprintf
                                        "Bad token used as an identifier: %s"
                                        (Token.to_string tok))))
-                  
                 method type_params =
                   fun f ->
                     function
                     | [] -> ()
                     | [ x ] -> pp f "%a@ " o#ctyp x
                     | l -> pp f "@[<1>(%a)@]@ " (list o#ctyp ",@ ") l
-                  
                 method class_params =
                   fun f ->
                     function
@@ -19126,44 +18812,37 @@ module Printers =
                         pp f "@[<1>%a,@ %a@]" o#class_params t1
                           o#class_params t2
                     | x -> o#ctyp f x
-                  
                 method override_flag =
                   fun f ->
                     function
                     | Ast.OvOverride -> pp f "!"
                     | Ast.OvNil -> ()
                     | Ast.OvAnt s -> o#anti f s
-                  
                 method mutable_flag =
                   fun f ->
                     function
                     | Ast.MuMutable -> pp f "mutable@ "
                     | Ast.MuNil -> ()
                     | Ast.MuAnt s -> o#anti f s
-                  
                 method rec_flag =
                   fun f ->
                     function
                     | Ast.ReRecursive -> pp f "rec@ "
                     | Ast.ReNil -> ()
                     | Ast.ReAnt s -> o#anti f s
-                  
                 method virtual_flag =
                   fun f ->
                     function
                     | Ast.ViVirtual -> pp f "virtual@ "
                     | Ast.ViNil -> ()
                     | Ast.ViAnt s -> o#anti f s
-                  
                 method private_flag =
                   fun f ->
                     function
                     | Ast.PrPrivate -> pp f "private@ "
                     | Ast.PrNil -> ()
                     | Ast.PrAnt s -> o#anti f s
-                  
                 method anti = fun f s -> pp f "$%s$" s
-                  
                 method seq =
                   fun f ->
                     function
@@ -19171,14 +18850,12 @@ module Printers =
                         pp f "%a;@ %a" o#under_semi#seq e1 o#seq e2
                     | Ast.ExSeq (_, e) -> o#seq f e
                     | e -> o#expr f e
-                  
                 method match_case =
                   fun f ->
                     function
                     | Ast.McNil _loc ->
                         pp f "@[<2>@ _ ->@ %a@]" o#raise_match_failure _loc
                     | a -> o#match_case_aux f a
-                  
                 method match_case_aux =
                   fun f ->
                     function
@@ -19192,13 +18869,11 @@ module Printers =
                     | Ast.McArr (_, p, w, e) ->
                         pp f "@ | @[<2>%a@ when@ %a@ ->@ %a@]" o#patt p
                           o#under_pipe#expr w o#under_pipe#expr e
-                  
                 method fun_binding =
                   fun f ->
                     function
                     | `patt p -> o#simple_patt f p
                     | `newtype i -> pp f "(type %s)" i
-                  
                 method binding =
                   fun f bi ->
                     let () = o#node f bi Ast.loc_of_binding
@@ -19223,7 +18898,6 @@ module Printers =
                                  pp f "%a @[<0>%a=@]@ %a" o#simple_patt p
                                    (list' o#fun_binding "" "@ ") pl o#expr e)
                       | Ast.BiAnt (_, s) -> o#anti f s
-                  
                 method record_binding =
                   fun f bi ->
                     let () = o#node f bi Ast.loc_of_rec_binding
@@ -19236,7 +18910,6 @@ module Printers =
                           (o#under_semi#record_binding f b1;
                            o#under_semi#record_binding f b2)
                       | Ast.RbAnt (_, s) -> o#anti f s
-                  
                 method mk_patt_list =
                   function
                   | Ast.PaApp (_,
@@ -19246,7 +18919,6 @@ module Printers =
                       let (pl, c) = o#mk_patt_list p2 in ((p1 :: pl), c)
                   | Ast.PaId (_, (Ast.IdUid (_, "[]"))) -> ([], None)
                   | p -> ([], (Some p))
-                  
                 method mk_expr_list =
                   function
                   | Ast.ExApp (_,
@@ -19256,7 +18928,6 @@ module Printers =
                       let (el, c) = o#mk_expr_list e2 in ((e1 :: el), c)
                   | Ast.ExId (_, (Ast.IdUid (_, "[]"))) -> ([], None)
                   | e -> ([], (Some e))
-                  
                 method expr_list =
                   fun f ->
                     function
@@ -19265,7 +18936,6 @@ module Printers =
                     | el ->
                         pp f "@[<2>[ %a@] ]" (list o#under_semi#expr ";@ ")
                           el
-                  
                 method expr_list_cons =
                   fun simple f e ->
                     let (el, c) = o#mk_expr_list e
@@ -19277,41 +18947,33 @@ module Printers =
                            then pp f "@[<2>(%a)@]"
                            else pp f "@[<2>%a@]")
                             (list o#under_semi#dot_expr " ::@ ") (el @ [ x ])
-                  
                 method patt_expr_fun_args =
                   fun f (p, e) ->
                     let (pl, e) = expr_fun_args e
                     in
                       pp f "%a@ ->@ %a" (list o#fun_binding "@ ") (p :: pl)
                         o#expr e
-                  
                 method patt_class_expr_fun_args =
                   fun f (p, ce) ->
                     let (pl, ce) = class_expr_fun_args ce
                     in
                       pp f "%a =@]@ %a" (list o#simple_patt "@ ") (p :: pl)
                         o#class_expr ce
-                  
                 method constrain =
                   fun f (t1, t2) ->
                     pp f "@[<2>constraint@ %a =@ %a@]" o#ctyp t1 o#ctyp t2
-                  
                 method sum_type =
                   fun f t ->
                     match Ast.list_of_ctyp t [] with
                     | [] -> ()
                     | ts -> pp f "@[<hv0>| %a@]" (list o#ctyp "@ | ") ts
-                  
                 method string = fun f -> pp f "%s"
-                  
                 method quoted_string = fun f -> pp f "%S"
-                  
                 method numeric =
                   fun f num suff ->
                     if num.[0] = '-'
                     then pp f "(%s%s)" num suff
                     else pp f "%s%s" num suff
-                  
                 method module_expr_get_functor_args =
                   fun accu ->
                     function
@@ -19320,13 +18982,10 @@ module Printers =
                     | Ast.MeTyc (_, me, mt) ->
                         ((List.rev accu), me, (Some mt))
                     | me -> ((List.rev accu), me, None)
-                  
                 method functor_args = fun f -> list o#functor_arg "@ " f
-                  
                 method functor_arg =
                   fun f (s, mt) ->
                     pp f "@[<2>(%a :@ %a)@]" o#var s o#module_type mt
-                  
                 method module_rec_binding =
                   fun f ->
                     function
@@ -19341,14 +19000,12 @@ module Printers =
                          pp f o#andsep;
                          o#module_rec_binding f mb2)
                     | Ast.MbAnt (_, s) -> o#anti f s
-                  
                 method class_declaration =
                   fun f ->
                     function
                     | Ast.CeTyc (_, ce, ct) ->
                         pp f "%a :@ %a" o#class_expr ce o#class_type ct
                     | ce -> o#class_expr f ce
-                  
                 method raise_match_failure =
                   fun f _loc ->
                     let n = Loc.file_name _loc in
@@ -19367,11 +19024,9 @@ module Printers =
                                        (Ast.safe_string_escaped n))))),
                                  (Ast.ExInt (_loc, (string_of_int l))))),
                               (Ast.ExInt (_loc, (string_of_int c)))))))
-                  
                 method node : 'a. formatter -> 'a -> ('a -> Loc.t) -> unit =
                   fun f node loc_of_node ->
                     o#print_comments_before (loc_of_node node) f
-                  
                 method ident =
                   fun f i ->
                     let () = o#node f i Ast.loc_of_ident
@@ -19383,9 +19038,7 @@ module Printers =
                           pp f "%a@,(%a)" o#ident i1 o#ident i2
                       | Ast.IdAnt (_, s) -> o#anti f s
                       | Ast.IdLid (_, s) | Ast.IdUid (_, s) -> o#var f s
-                  
                 method private var_ident = {< var_conversion = true; >}#ident
-                  
                 method expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -19495,7 +19148,6 @@ module Printers =
                             "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
                             o#patt p o#class_str_item cst
                       | e -> o#apply_expr f e
-                  
                 method apply_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -19503,7 +19155,6 @@ module Printers =
                       match e with
                       | Ast.ExNew (_, i) -> pp f "@[<2>new@ %a@]" o#ident i
                       | e -> o#dot_expr f e
-                  
                 method dot_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -19521,7 +19172,6 @@ module Printers =
                       | Ast.ExSnd (_, e, s) ->
                           pp f "@[<2>%a#@,%s@]" o#dot_expr e s
                       | e -> o#simple_expr f e
-                  
                 method simple_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -19595,14 +19245,12 @@ module Printers =
                           Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _) |
                           Ast.ExNew (_, _) | Ast.ExObj (_, _, _) ->
                           pp f "(%a)" o#reset#expr e
-                  
                 method direction_flag =
                   fun f b ->
                     match b with
                     | Ast.DiTo -> pp_print_string f "to"
                     | Ast.DiDownto -> pp_print_string f "downto"
                     | Ast.DiAnt s -> o#anti f s
-                  
                 method patt =
                   fun f p ->
                     let () = o#node f p Ast.loc_of_patt
@@ -19615,16 +19263,13 @@ module Printers =
                       | Ast.PaSem (_, p1, p2) ->
                           pp f "%a;@ %a" o#patt p1 o#patt p2
                       | p -> o#patt1 f p
-                  
                 method patt1 =
                   fun f ->
                     function
                     | Ast.PaOrp (_, p1, p2) ->
                         pp f "@[<2>%a@ |@ %a@]" o#patt1 p1 o#patt2 p2
                     | p -> o#patt2 f p
-                  
                 method patt2 = fun f p -> o#patt3 f p
-                  
                 method patt3 =
                   fun f ->
                     function
@@ -19633,7 +19278,6 @@ module Printers =
                     | Ast.PaCom (_, p1, p2) ->
                         pp f "%a,@ %a" o#patt3 p1 o#patt3 p2
                     | p -> o#patt4 f p
-                  
                 method patt4 =
                   fun f ->
                     function
@@ -19651,7 +19295,6 @@ module Printers =
                                pp f "@[<2>%a@]" (list o#patt5 " ::@ ")
                                  (pl @ [ x ]))
                     | p -> o#patt5 f p
-                  
                 method patt5 =
                   fun f ->
                     function
@@ -19686,7 +19329,6 @@ module Printers =
                                    pp f "@[<2>%a@ (%a)@]" o#patt5 a
                                      (list o#simple_patt ",@ ") al)
                     | p -> o#simple_patt f p
-                  
                 method simple_patt =
                   fun f p ->
                     let () = o#node f p Ast.loc_of_patt
@@ -19729,14 +19371,12 @@ module Printers =
                            Ast.PaCom (_, _, _) | Ast.PaSem (_, _, _) |
                            Ast.PaEq (_, _, _) | Ast.PaLaz (_, _)
                          as p) -> pp f "@[<1>(%a)@]" o#patt p
-                  
                 method patt_tycon =
                   fun f ->
                     function
                     | Ast.PaTyc (_, p, t) ->
                         pp f "%a :@ %a" o#patt p o#ctyp t
                     | p -> o#patt f p
-                  
                 method simple_ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -19779,7 +19419,6 @@ module Printers =
                           pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
                       | Ast.TyNil _ -> assert false
                       | t -> pp f "@[<1>(%a)@]" o#ctyp t
-                  
                 method ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -19824,7 +19463,6 @@ module Printers =
                            then pp f "@ %a" (list o#constrain "@ ") cl
                            else ())
                       | t -> o#ctyp1 f t
-                  
                 method ctyp1 =
                   fun f ->
                     function
@@ -19844,7 +19482,6 @@ module Printers =
                     | Ast.TyPrv (_, t) ->
                         pp f "@[private@ %a@]" o#simple_ctyp t
                     | t -> o#simple_ctyp f t
-                  
                 method constructor_type =
                   fun f t ->
                     match t with
@@ -19855,7 +19492,6 @@ module Printers =
                             o#constructor_type t2
                     | Ast.TyArr (_, _, _) -> pp f "(%a)" o#ctyp t
                     | t -> o#ctyp f t
-                  
                 method sig_item =
                   fun f sg ->
                     let () = o#node f sg Ast.loc_of_sig_item
@@ -19912,7 +19548,6 @@ module Printers =
                             o#module_rec_binding mb semisep
                       | Ast.SgDir (_, _, _) -> ()
                       | Ast.SgAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
-                  
                 method str_item =
                   fun f st ->
                     let () = o#node f st Ast.loc_of_str_item
@@ -19979,13 +19614,14 @@ module Printers =
                       | Ast.StDir (_, _, _) -> ()
                       | Ast.StAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
                       | Ast.StExc (_, _, (Ast.OAnt _)) -> assert false
-                  
                 method module_type =
                   fun f mt ->
                     let () = o#node f mt Ast.loc_of_module_type
                     in
                       match mt with
                       | Ast.MtNil _ -> assert false
+                      | Ast.MtOf (_, me) ->
+                          pp f "@[<2>module type of@ %a@]" o#module_expr me
                       | Ast.MtId (_, i) -> o#ident f i
                       | Ast.MtAnt (_, s) -> o#anti f s
                       | Ast.MtFun (_, s, mt1, mt2) ->
@@ -19997,7 +19633,6 @@ module Printers =
                       | Ast.MtWit (_, mt, wc) ->
                           pp f "@[<2>%a@ with@ %a@]" o#module_type mt
                             o#with_constraint wc
-                  
                 method with_constraint =
                   fun f wc ->
                     let () = o#node f wc Ast.loc_of_with_constr
@@ -20019,7 +19654,6 @@ module Printers =
                            pp f o#andsep;
                            o#with_constraint f wc2)
                       | Ast.WcAnt (_, s) -> o#anti f s
-                  
                 method module_expr =
                   fun f me ->
                     let () = o#node f me Ast.loc_of_module_expr
@@ -20032,7 +19666,6 @@ module Printers =
                             "@[<2>@[<hv2>struct@ %a@]@ end :@ @[<hv2>sig@ %a@]@ end@]"
                             o#str_item st o#sig_item sg
                       | _ -> o#simple_module_expr f me
-                  
                 method simple_module_expr =
                   fun f me ->
                     let () = o#node f me Ast.loc_of_module_expr
@@ -20059,7 +19692,6 @@ module Printers =
                             o#module_type mt
                       | Ast.MePkg (_, e) ->
                           pp f "@[<1>(%s %a)@]" o#value_val o#expr e
-                  
                 method class_expr =
                   fun f ce ->
                     let () = o#node f ce Ast.loc_of_class_expr
@@ -20107,7 +19739,6 @@ module Printers =
                           pp f "@[<2>%a =@]@ %a" o#class_expr ce1
                             o#class_expr ce2
                       | _ -> assert false
-                  
                 method class_type =
                   fun f ct ->
                     let () = o#node f ct Ast.loc_of_class_type
@@ -20144,7 +19775,6 @@ module Printers =
                       | Ast.CtEq (_, ct1, ct2) ->
                           pp f "%a =@ %a" o#class_type ct1 o#class_type ct2
                       | _ -> assert false
-                  
                 method class_sig_item =
                   fun f csg ->
                     let () = o#node f csg Ast.loc_of_class_sig_item
@@ -20160,22 +19790,21 @@ module Printers =
                            o#class_sig_item f csg2)
                       | Ast.CgCtr (_, t1, t2) ->
                           pp f "@[<2>constraint@ %a =@ %a%(%)@]" o#ctyp t1
-                            o#ctyp t2 semisep
+                            o#ctyp t2 no_semisep
                       | Ast.CgInh (_, ct) ->
                           pp f "@[<2>inherit@ %a%(%)@]" o#class_type ct
-                            semisep
+                            no_semisep
                       | Ast.CgMth (_, s, pr, t) ->
                           pp f "@[<2>method %a%a :@ %a%(%)@]" o#private_flag
-                            pr o#var s o#ctyp t semisep
+                            pr o#var s o#ctyp t no_semisep
                       | Ast.CgVir (_, s, pr, t) ->
                           pp f "@[<2>method virtual %a%a :@ %a%(%)@]"
-                            o#private_flag pr o#var s o#ctyp t semisep
+                            o#private_flag pr o#var s o#ctyp t no_semisep
                       | Ast.CgVal (_, s, mu, vi, t) ->
                           pp f "@[<2>%s %a%a%a :@ %a%(%)@]" o#value_val
                             o#mutable_flag mu o#virtual_flag vi o#var s
-                            o#ctyp t semisep
-                      | Ast.CgAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
-                  
+                            o#ctyp t no_semisep
+                      | Ast.CgAnt (_, s) -> pp f "%a%(%)" o#anti s no_semisep
                 method class_str_item =
                   fun f cst ->
                     let () = o#node f cst Ast.loc_of_class_str_item
@@ -20191,45 +19820,43 @@ module Printers =
                            o#class_str_item f cst2)
                       | Ast.CrCtr (_, t1, t2) ->
                           pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1
-                            o#ctyp t2 semisep
+                            o#ctyp t2 no_semisep
                       | Ast.CrInh (_, ov, ce, "") ->
                           pp f "@[<2>inherit%a@ %a%(%)@]" o#override_flag ov
-                            o#class_expr ce semisep
+                            o#class_expr ce no_semisep
                       | Ast.CrInh (_, ov, ce, s) ->
                           pp f "@[<2>inherit%a@ %a as@ %a%(%)@]"
                             o#override_flag ov o#class_expr ce o#var s
-                            semisep
+                            no_semisep
                       | Ast.CrIni (_, e) ->
-                          pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
+                          pp f "@[<2>initializer@ %a%(%)@]" o#expr e
+                            no_semisep
                       | Ast.CrMth (_, s, ov, pr, e, (Ast.TyNil _)) ->
                           pp f "@[<2>method%a %a%a =@ %a%(%)@]"
                             o#override_flag ov o#private_flag pr o#var s
-                            o#expr e semisep
+                            o#expr e no_semisep
                       | Ast.CrMth (_, s, ov, pr, e, t) ->
                           pp f "@[<2>method%a %a%a :@ %a =@ %a%(%)@]"
                             o#override_flag ov o#private_flag pr o#var s
-                            o#ctyp t o#expr e semisep
+                            o#ctyp t o#expr e no_semisep
                       | Ast.CrVir (_, s, pr, t) ->
                           pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
-                            o#private_flag pr o#var s o#ctyp t semisep
+                            o#private_flag pr o#var s o#ctyp t no_semisep
                       | Ast.CrVvr (_, s, mu, t) ->
                           pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" o#value_val
-                            o#mutable_flag mu o#var s o#ctyp t semisep
+                            o#mutable_flag mu o#var s o#ctyp t no_semisep
                       | Ast.CrVal (_, s, ov, mu, e) ->
                           pp f "@[<2>%s%a %a%a =@ %a%(%)@]" o#value_val
                             o#override_flag ov o#mutable_flag mu o#var s
-                            o#expr e semisep
-                      | Ast.CrAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
-                  
+                            o#expr e no_semisep
+                      | Ast.CrAnt (_, s) -> pp f "%a%(%)" o#anti s no_semisep
                 method implem =
                   fun f st ->
                     match st with
                     | Ast.StExp (_, e) ->
                         pp f "@[<0>%a%(%)@]@." o#expr e semisep
                     | st -> pp f "@[<v0>%a@]@." o#str_item st
-                  
                 method interf = fun f sg -> pp f "@[<v0>%a@]@." o#sig_item sg
-                  
               end
               
             let with_outfile output_file fct arg =
@@ -20341,8 +19968,7 @@ module Printers =
             class printer :
               ?curry_constr: bool ->
                 ?comments: bool ->
-                  unit -> object ('a) inherit OCaml.Make(Syntax).printer
-                                         end
+                  unit -> object ('a) inherit OCaml.Make(Syntax).printer end
               
             val with_outfile :
               string option -> (formatter -> 'a -> unit) -> 'a -> unit
@@ -20394,35 +20020,22 @@ module Printers =
                 inherit
                   PP_o.printer ~curry_constr: init_curry_constr ~comments () as
                   super
-                  
                 val! semisep = (";" : sep)
-                  
+                val! no_semisep = (";" : sep)
                 val mode = if comments then `comments else `no_comments
-                  
                 val curry_constr = init_curry_constr
-                  
                 val first_match_case = true
-                  
                 method andsep : sep = "@]@ @[<2>and@ "
-                  
                 method value_val = "value"
-                  
                 method value_let = "value"
-                  
                 method under_pipe = o
-                  
                 method under_semi = o
-                  
                 method reset_semi = o
-                  
                 method reset = o
-                  
                 method private unset_first_match_case =
                   {< first_match_case = false; >}
-                  
                 method private set_first_match_case =
                   {< first_match_case = true; >}
-                  
                 method seq =
                   fun f e ->
                     let rec self right f e =
@@ -20446,7 +20059,6 @@ module Printers =
                               | _ -> go_right f e2))
                         | e -> o#expr f e
                     in self true f e
-                  
                 method var =
                   fun f ->
                     function
@@ -20466,14 +20078,12 @@ module Printers =
                              failwith
                                (sprintf "Bad token used as an identifier: %s"
                                   (Token.to_string tok)))
-                  
                 method type_params =
                   fun f ->
                     function
                     | [] -> ()
                     | [ x ] -> pp f "@ %a" o#ctyp x
                     | l -> pp f "@ @[<1>%a@]" (list o#ctyp "@ ") l
-                  
                 method match_case =
                   fun f ->
                     function
@@ -20481,7 +20091,6 @@ module Printers =
                     | m ->
                         pp f "@ [ %a ]" o#set_first_match_case#match_case_aux
                           m
-                  
                 method match_case_aux =
                   fun f ->
                     function
@@ -20500,13 +20109,11 @@ module Printers =
                         in
                           pp f "@[<2>%a@ when@ %a@ ->@ %a@]" o#patt p
                             o#under_pipe#expr w o#under_pipe#expr e
-                  
                 method sum_type =
                   fun f ->
                     function
                     | Ast.TyNil _ -> pp f "[]"
                     | t -> pp f "@[<hv0>[ %a ]@]" o#ctyp t
-                  
                 method ident =
                   fun f i ->
                     let () = o#node f i Ast.loc_of_ident
@@ -20515,7 +20122,6 @@ module Printers =
                       | Ast.IdApp (_, i1, i2) ->
                           pp f "%a@ %a" o#dot_ident i1 o#dot_ident i2
                       | i -> o#dot_ident f i
-                  
                 method private dot_ident =
                   fun f i ->
                     let () = o#node f i Ast.loc_of_ident
@@ -20526,7 +20132,6 @@ module Printers =
                       | Ast.IdAnt (_, s) -> o#anti f s
                       | Ast.IdLid (_, s) | Ast.IdUid (_, s) -> o#var f s
                       | i -> pp f "(%a)" o#ident i
-                  
                 method patt4 =
                   fun f ->
                     function
@@ -20544,7 +20149,6 @@ module Printers =
                                pp f "@[<2>[ %a ::@ %a ]@]"
                                  (list o#patt ";@ ") pl o#patt x)
                     | p -> super#patt4 f p
-                  
                 method expr_list_cons =
                   fun _ f e ->
                     let (el, c) = o#mk_expr_list e
@@ -20554,7 +20158,6 @@ module Printers =
                       | Some x ->
                           pp f "@[<2>[ %a ::@ %a ]@]" (list o#expr ";@ ") el
                             o#expr x
-                  
                 method expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -20573,7 +20176,6 @@ module Printers =
                           pp f "@[<hv0>fun%a@]" o#match_case a
                       | Ast.ExAsf _ -> pp f "@[<2>assert@ False@]"
                       | e -> super#expr f e
-                  
                 method dot_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -20583,7 +20185,6 @@ module Printers =
                           (Ast.ExId (_, (Ast.IdLid (_, "val"))))) ->
                           pp f "@[<2>%a.@,val@]" o#simple_expr e
                       | e -> super#dot_expr f e
-                  
                 method ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -20600,7 +20201,6 @@ module Printers =
                       | Ast.TyCol (_, t1, (Ast.TyMut (_, t2))) ->
                           pp f "@[%a :@ mutable %a@]" o#ctyp t1 o#ctyp t2
                       | t -> super#ctyp f t
-                  
                 method simple_ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -20620,7 +20220,6 @@ module Printers =
                       | Ast.TyLab (_, s, t) ->
                           pp f "@[<2>~%s:@ %a@]" s o#simple_ctyp t
                       | t -> super#simple_ctyp f t
-                  
                 method ctyp1 =
                   fun f ->
                     function
@@ -20638,7 +20237,6 @@ module Printers =
                           pp f "@[<2>! %a.@ %a@]" (list o#ctyp "@ ")
                             (a :: al) o#ctyp t2
                     | t -> super#ctyp1 f t
-                  
                 method constructor_type =
                   fun f t ->
                     match t with
@@ -20648,14 +20246,12 @@ module Printers =
                           pp f "%a@ and %a" o#constructor_type t1
                             o#constructor_type t2
                     | t -> o#ctyp f t
-                  
                 method str_item =
                   fun f st ->
                     match st with
                     | Ast.StExp (_, e) ->
                         pp f "@[<2>%a%(%)@]" o#expr e semisep
                     | st -> super#str_item f st
-                  
                 method module_expr =
                   fun f me ->
                     let () = o#node f me Ast.loc_of_module_expr
@@ -20665,7 +20261,6 @@ module Printers =
                           pp f "@[<2>%a@ %a@]" o#module_expr me1
                             o#simple_module_expr me2
                       | me -> super#module_expr f me
-                  
                 method simple_module_expr =
                   fun f me ->
                     let () = o#node f me Ast.loc_of_module_expr
@@ -20673,9 +20268,7 @@ module Printers =
                       match me with
                       | Ast.MeApp (_, _, _) -> pp f "(%a)" o#module_expr me
                       | _ -> super#simple_module_expr f me
-                  
                 method implem = fun f st -> pp f "@[<v0>%a@]@." o#str_item st
-                  
                 method class_type =
                   fun f ct ->
                     let () = o#node f ct Ast.loc_of_class_type
@@ -20696,7 +20289,6 @@ module Printers =
                           pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#var i
                             o#class_params t
                       | ct -> super#class_type f ct
-                  
                 method class_expr =
                   fun f ce ->
                     let () = o#node f ce Ast.loc_of_class_expr
@@ -20712,9 +20304,8 @@ module Printers =
                       | Ast.CeCon (_, Ast.ViVirtual, (Ast.IdLid (_, i)), t)
                           ->
                           pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i
-                            o#ctyp t
+                            o#class_params t
                       | ce -> super#class_expr f ce
-                  
               end
               
             let with_outfile = with_outfile
@@ -21443,6 +21034,11 @@ module Register :
       PreCast.Ast.str_item parser_fun ->
         PreCast.Ast.sig_item parser_fun -> unit
       
+    val current_parser :
+      unit ->
+        ((PreCast.Ast.str_item parser_fun) *
+         (PreCast.Ast.sig_item parser_fun))
+      
     module Parser
       (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> Sig.Parser(Ast).S) :
       sig  end
@@ -21465,6 +21061,11 @@ module Register :
     val register_printer :
       PreCast.Ast.str_item printer_fun ->
         PreCast.Ast.sig_item printer_fun -> unit
+      
+    val current_printer :
+      unit ->
+        ((PreCast.Ast.str_item printer_fun) *
+         (PreCast.Ast.sig_item printer_fun))
       
     module Printer
       (Id : Sig.Id)
@@ -21551,11 +21152,15 @@ module Register :
       
     let register_parser f g = (str_item_parser := f; sig_item_parser := g)
       
+    let current_parser () = ((!str_item_parser), (!sig_item_parser))
+      
     let register_str_item_printer f = str_item_printer := f
       
     let register_sig_item_printer f = sig_item_printer := f
       
     let register_printer f g = (str_item_printer := f; sig_item_printer := g)
+      
+    let current_printer () = ((!str_item_printer), (!sig_item_printer))
       
     module Plugin
       (Id : Sig.Id) (Maker : functor (Unit : sig  end) -> sig  end) =

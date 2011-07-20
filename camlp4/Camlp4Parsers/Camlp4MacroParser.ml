@@ -405,6 +405,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     uident:
       [ [ i = UIDENT -> i ] ]
     ;
+    (* dirty hack to allow polymorphic variants using the introduced keywords. *)
+    expr: BEFORE "simple"
+      [ [ "`"; kwd = [ "IFDEF" | "IFNDEF" | "THEN" | "ELSE" | "END" | "ENDIF"
+                     | "DEFINE" | "IN" ] -> <:expr< `$uid:kwd$ >>
+        | "`"; s = a_ident -> <:expr< ` $s$ >> ] ]
+    ;
+    (* idem *)
+    patt: BEFORE "simple"
+      [ [ "`"; kwd = [ "IFDEF" | "IFNDEF" | "THEN" | "ELSE" | "END" | "ENDIF" ] ->
+            <:patt< `$uid:kwd$ >>
+        | "`"; s = a_ident -> <:patt< ` $s$ >> ] ]
+    ;
   END;
 
   Options.add "-D" (Arg.String parse_def)

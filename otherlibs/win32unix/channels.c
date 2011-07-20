@@ -30,6 +30,7 @@ int win_CRT_fd_of_filedescr(value handle)
   } else {
     int fd = _open_osfhandle((long) Handle_val(handle), O_BINARY);
     if (fd == -1) uerror("channel_of_descr", Nothing);
+    CRT_fd_val(handle) = fd;
     return fd;
   }
 }

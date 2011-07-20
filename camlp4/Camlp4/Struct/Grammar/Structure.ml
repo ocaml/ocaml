@@ -36,6 +36,7 @@ module type S = sig
 
   type token_info = { prev_loc : Loc.t
                     ; cur_loc : Loc.t
+                    ; prev_loc_only : bool
                     };
 
   type token_stream = Stream.t (Token.t * token_info);
@@ -126,6 +127,7 @@ module Make (Lexer  : Sig.Lexer) = struct
 
   type token_info = { prev_loc : Loc.t
                     ; cur_loc : Loc.t
+                    ; prev_loc_only : bool
                     };
 
   type token_stream = Stream.t (Token.t * token_info);

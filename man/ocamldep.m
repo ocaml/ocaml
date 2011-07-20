@@ -59,6 +59,12 @@ the same
 .B \-I
 options that are passed to the compiler.
 .TP
+.BI \-ml\-synonym \ .ext
+Consider the given extension (with leading dot) to be a synonym for .ml.
+.TP
+.BI \-mli\-synonym \ .ext
+Consider the given extension (with leading dot) to be a synonym for .mli.
+.TP
 .B \-modules
 Output raw dependencies of the form
 .IR filename : \ Module1\ Module2 \ ... \ ModuleN

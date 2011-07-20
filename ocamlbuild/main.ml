@@ -109,7 +109,8 @@ let proceed () =
         if name = "_tags" then
           ignore (Configuration.parse_file ?dir path_name);
 
-        (String.length name > 0 && name.[0] <> '_' && name <> !Options.build_dir && not (List.mem name !Options.exclude_dirs))
+        (List.mem name ["_oasis"] || (String.length name > 0 && name.[0] <> '_'))
+        && (name <> !Options.build_dir && not (List.mem name !Options.exclude_dirs))
         && begin
           if path_name <> Filename.current_dir_name && Pathname.is_directory path_name then
             let tags = tags_of_pathname path_name in

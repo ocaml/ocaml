@@ -77,11 +77,6 @@ install::
 clean::
 	rm -f ocamlprof ocamlcp
 
-install::
-	cp ocamlmktop $(BINDIR)/ocamlmktop$(EXE)
-
-clean::
-	rm -f ocamlmktop
 
 # To help building mixed-mode libraries (Caml + C)
 
@@ -122,7 +117,7 @@ clean::
 # To make custom toplevels (see Makefile/Makefile.nt)
 
 install::
-	cp ocamlmktop $(BINDIR)/ocamlmktop$(EXE)
+	cp ocamlmktop $(BINDIR)/   # no $(EXE) here, ocamlmktop is a script
 
 clean::
 	rm -f ocamlmktop

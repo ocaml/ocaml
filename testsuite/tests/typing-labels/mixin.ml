@@ -1,4 +1,4 @@
-(* $Id: mixin.ml 5929 2003-11-19 02:36:58Z garrigue $ *)
+(* $Id$ *)
 
 open StdLabels
 open MoreLabels

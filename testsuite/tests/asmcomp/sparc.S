@@ -10,7 +10,7 @@
 /*                                                                     */
 /***********************************************************************/
 
-/* $Id: sparc.S 2553 1999-11-17 18:59:06Z xleroy $ */
+/* $Id$ */
 
 #ifndef SYS_solaris
 #define Call_gen_code _call_gen_code

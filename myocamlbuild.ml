@@ -683,6 +683,7 @@ let camlp4_import_list =
      "parsing/asttypes.mli";
      "parsing/parsetree.mli";
      "typing/outcometree.mli";
+     "typing/oprint.ml";
      "myocamlbuild_config.ml";
      "utils/config.mlbuild"]
 ;;

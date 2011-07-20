@@ -116,6 +116,7 @@ val instance_parameterized_type:
 val instance_parameterized_type_2:
         type_expr list -> type_expr list -> type_expr ->
         type_expr list * type_expr list * type_expr
+val instance_declaration: type_declaration -> type_declaration
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 val instance_poly:

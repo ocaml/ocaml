@@ -7,14 +7,19 @@ module type Comparable = sig
   val compare : t -> t -> int
 end
 module type PrintableComparable = sig
+  include Printable
+  include Comparable with type t = t
+end
+module type PrintableComparable = sig
   type t
   include Printable with type t := t
   include Comparable with type t := t
 end
-module type PrintableComparable2 = sig
+module type PrintableComparable = sig
   include Printable
   include Comparable with type t := t
 end
+module type ComparableInt = Comparable with type t := int
 
 module type S = sig type t val f : t -> t end
 module type S' = S with type t := int

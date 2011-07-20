@@ -68,6 +68,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     value pipe : bool;
     value semi : bool;
     value semisep : sep;
+    value no_semisep : sep;
     method value_val : string;
     method value_let : string;
     method andsep : sep;

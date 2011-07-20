@@ -1,3 +1,11 @@
+#!/bin/sh
+
+svn propset svn:ignore -F - . <<EOF
+
+*.result
+*.byte
+*.native
+program
 mypack.pack.s
 result
 main
@@ -5,3 +13,5 @@ main
 *.a
 *.cm*
 *.o
+
+EOF

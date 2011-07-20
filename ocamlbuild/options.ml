@@ -127,7 +127,7 @@ let add_to' rxs x =
     ()
 let set_cmd rcmd = String (fun s -> rcmd := Sh s)
 let set_build_dir s = make_links := false; build_dir := s
-let spec =
+let spec = ref (
   Arg.align
   [
    "-version", Unit (fun () -> print_endline version; raise Exit_OK), " Display the version";
@@ -177,6 +177,7 @@ let spec =
    "-dont-catch-errors", Clear catch_errors, " Don't catch and display exceptions (useful to display the call stack)";
    "-just-plugin", Set just_plugin, " Just build myocamlbuild.ml";
    "-byte-plugin", Clear native_plugin, " Don't use a native plugin but bytecode";
+   "-plugin-option", String ignore, " Use the option only when plugin is run";
    "-sanitization-script", Set_string sanitization_script, " Change the file name for the generated sanitization script";
    "-no-sanitize", Clear sanitize, " Do not generate sanitization script";
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
@@ -195,6 +196,7 @@ let spec =
    "-ocamlc", set_cmd ocamlc, "<command> Set the OCaml bytecode compiler";
    "-ocamlopt", set_cmd ocamlopt, "<command> Set the OCaml native compiler";
    "-ocamldep", set_cmd ocamldep, "<command> Set the OCaml dependency tool";
+   "-ocamldoc", set_cmd ocamldoc, "<command> Set the OCaml documentation generator";
    "-ocamlyacc", set_cmd ocamlyacc, "<command> Set the ocamlyacc tool";
    "-menhir", set_cmd ocamlyacc, "<command> Set the menhir tool (use it after -use-menhir)";
    "-ocamllex", set_cmd ocamllex, "<command> Set the ocamllex tool";
@@ -205,7 +207,10 @@ let spec =
 
    "--", Rest (fun x -> program_to_execute := true; add_to' program_args_internal x),
    " Stop argument processing, remaining arguments are given to the user program";
-  ]
+  ])
+
+let add x =
+  spec := !spec @ [x]
 
 let targets = ref []
 let ocaml_libs = ref []
@@ -226,7 +231,7 @@ let init () =
   let anon_fun = add_to' targets_internal in
   let usage_msg = sprintf "Usage %s [options] <target>" Sys.argv.(0) in
   let argv' = Array.concat [Sys.argv; [|dummy|]] in
-  parse_argv argv' spec anon_fun usage_msg;
+  parse_argv argv' !spec anon_fun usage_msg;
   Shell.mkdir_p !build_dir;
 
   let () =

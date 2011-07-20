@@ -229,8 +229,20 @@ and print_simple_out_type ppf =
       fprintf ppf "@[<hv 2>{ %a }@]"
         (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
   | Otyp_abstract -> fprintf ppf "<abstract>"
+  | Otyp_module (p, n, tyl) ->
+      do {
+          fprintf ppf "@[<1>(module %s" p;
+          let first = ref True in
+          List.iter2
+            (fun s t ->
+              let sep = if first.val then do { first.val := False; "with" } else "and" in
+              fprintf ppf " %s type %s = %a" sep s print_out_type t
+            )
+            n tyl;
+          fprintf ppf ")@]"
+      }
   | Otyp_alias _ _ | Otyp_poly _ _
-  | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] | Otyp_module _ as ty ->
+  | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
   in
   print_tkind ppf
@@ -281,7 +293,7 @@ and print_typargs ppf =
   | tyl ->
       fprintf ppf "@[<1>(%a)@]@ " (print_typlist print_out_type ",") tyl ]
 and print_ty_label ppf lab =
-  if lab <> "" then fprintf ppf "~%s:" lab else ()
+  if lab <> "" then fprintf ppf "%s%s:" (if lab.[0] = '?' then "" else "~") lab else ()
 ;
 
 value type_parameter ppf (ty, (co, cn)) =
@@ -348,12 +360,24 @@ value rec print_out_module_type ppf =
       fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
         print_out_module_type mty_arg print_out_module_type mty_res
   | Omty_abstract -> () ]
+and needs_semi =
+  fun
+  [ Osig_class _ _ _ _ rs
+  | Osig_class_type _ _ _ _ rs
+  | Osig_module _ _ rs
+  | Osig_type _ rs -> rs <> Orec_next
+  | Osig_exception _ _
+  | Osig_modtype _ _
+  | Osig_value _ _ _ -> True ]
 and print_out_signature ppf =
   fun
   [ [] -> ()
   | [item] -> fprintf ppf "%a;" Toploop.print_out_sig_item.val item
   | [item :: items] ->
-      fprintf ppf "%a;@ %a" Toploop.print_out_sig_item.val item
+      let sep = match items with
+      [ [hd :: _] -> if needs_semi hd then ";" else ""
+      | [] -> ";" ] in
+      fprintf ppf "%a%s@ %a" Toploop.print_out_sig_item.val item sep
         print_out_signature items ]
 and print_out_sig_item ppf =
   fun

@@ -106,7 +106,7 @@ and structure_item ppf tbl s =
   | Pstr_open _ -> ()
   | Pstr_class cdl -> List.iter (class_declaration ppf tbl) cdl;
   | Pstr_class_type _ -> ()
-  | Pstr_include _ -> ()
+  | Pstr_include me -> module_expr ppf tbl me;
 
 and expression ppf tbl e =
   match e.pexp_desc with

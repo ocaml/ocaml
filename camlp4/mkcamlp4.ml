@@ -63,7 +63,7 @@ try do {
     close_out cout
   };
 
-  run (["ocamlc"; "-I"; camlp4_standard_library; "camlp4lib.cma"; crc_ml]
+  run (["ocamlc"; "-I"; camlp4_standard_library; "dynlink.cma"; "camlp4lib.cma"; crc_ml]
        @ includes @ options @ ["Camlp4Bin.cmo"; "-linkall"]);
   clean();
 }

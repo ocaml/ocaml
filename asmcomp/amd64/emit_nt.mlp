@@ -332,10 +332,13 @@ let emit_instr fallthrough i =
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
-          if src.typ = Float then
-            `	movsd	{emit_reg dst}, {emit_reg src}\n`
-          else
-            `	mov	{emit_reg dst}, {emit_reg src}\n`
+          match src.typ, src.loc, dst.loc with
+            Float, Reg _, Reg _ ->
+              `	movapd	{emit_reg dst}, {emit_reg src}\n`
+          | Float, _, _ ->
+              `	movsd	{emit_reg dst}, {emit_reg src}\n`
+          | _ ->
+              `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
     | Lop(Iconst_int n) ->
         if n = 0n then begin
@@ -357,7 +360,7 @@ let emit_instr fallthrough i =
         | _ ->
           let lbl = new_label() in
           float_constants := (lbl, s) :: !float_constants;
-          `	movlpd	{emit_reg i.res.(0)}, {emit_label lbl}\n`
+          `	movsd	{emit_reg i.res.(0)}, {emit_label lbl}\n`
         end
     | Lop(Iconst_symbol s) ->
         add_used_symbol s;
@@ -418,7 +421,7 @@ let emit_instr fallthrough i =
           | Single ->
             `	cvtss2sd {emit_reg dest}, REAL4 PTR {emit_addressing addr i.arg 0}\n`
           | Double | Double_u ->
-            `	movlpd	{emit_reg dest}, REAL8 PTR {emit_addressing addr i.arg 0}\n`
+            `	movsd	{emit_reg dest}, REAL8 PTR {emit_addressing addr i.arg 0}\n`
         end
     | Lop(Istore(chunk, addr)) ->
         begin match chunk with
@@ -434,7 +437,7 @@ let emit_instr fallthrough i =
             `	cvtsd2ss xmm15, {emit_reg i.arg.(0)}\n`;
             `	movss	REAL4 PTR {emit_addressing addr i.arg 1}, xmm15\n`
           | Double | Double_u ->
-            `	movlpd	REAL8 PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
+            `	movsd	REAL8 PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin

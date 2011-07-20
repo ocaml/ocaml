@@ -858,6 +858,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkmty loc (Pmty_signature (sig_item sl []))
     | <:module_type@loc< $mt$ with $wc$ >> ->
         mkmty loc (Pmty_with (module_type mt) (mkwithc wc []))
+    | <:module_type@loc< module type of $me$ >> ->
+        mkmty loc (Pmty_typeof (module_expr me))
     | <:module_type< $anti:_$ >> -> assert False ]
   and sig_item s l =
     match s with

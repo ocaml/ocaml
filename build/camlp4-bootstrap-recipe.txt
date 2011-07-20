@@ -95,7 +95,8 @@
  Then "Generate Camlp4Ast.ml" and build.
 
  We get a single warning in Camlp4/Struct/Camlp4Ast2OCamlAst.ml but
- don't fix it now.
+ don't fix it now. Notice that you may need to disable '-warn-error'
+ in order to be able to successfully compile, despite of the warning.
 
  Then I hacked the camlp4/boot/camlp4boot.ml to generate:
    Ast.ExOpI(_loc, i, e)
