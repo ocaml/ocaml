@@ -1,0 +1,27 @@
+#!/bin/sh
+
+(
+  cat <<EOF
+*.o
+*.a
+*.so
+*.obj
+
+*.cm[ioxa]
+*.cmx[as]
+*.annot
+
+*.result
+*.byte
+*.native
+program
+
+.depend
+.depend.nt
+.DS_Store
+
+EOF
+
+  if [ -f .ignore ]; then cat .ignore; fi
+
+) | svn propset svn:ignore -F - .

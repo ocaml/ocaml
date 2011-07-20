@@ -1576,6 +1576,7 @@ let extendable_path path =
   not
     (Path.same path Predef.path_bool ||
     Path.same path Predef.path_list ||
+    Path.same path Predef.path_unit ||
     Path.same path Predef.path_option)
 
 let rec collect_paths_from_pat r p = match p.pat_desc with

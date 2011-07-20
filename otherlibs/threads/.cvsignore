@@ -1,7 +1,0 @@
-marshal.mli
-pervasives.mli
-unix.mli
-*.so
-*.a
-*.cm*
-*.o
