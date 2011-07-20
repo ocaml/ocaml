@@ -492,9 +492,9 @@ module type Optcomp_options = sig
   val _principal : unit -> unit
   val _rectypes : unit -> unit
   val _runtime_variant : string -> unit
+  val _S : unit -> unit
   val _strict_sequence : unit -> unit
   val _shared : unit -> unit
-  val _S : unit -> unit
   val _thread : unit -> unit
   val _unsafe : unit -> unit
   val _v : unit -> unit
@@ -540,8 +540,8 @@ module type Opttop_options = sig
   val _nostdlib : unit -> unit
   val _principal : unit -> unit
   val _rectypes : unit -> unit
-  val _strict_sequence : unit -> unit
   val _S : unit -> unit
+  val _strict_sequence : unit -> unit
   val _unsafe : unit -> unit
   val _version : unit -> unit
   val _vnum : unit -> unit
