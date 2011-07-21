@@ -66,6 +66,7 @@ report: FORCE
 	@echo '  ' `grep 'failed$$' _log | wc -l` 'test(s) failed'
 	@echo '  ' `grep '^Error' _log | wc -l` 'compilation error(s)'
 	@echo '  ' `grep '^Warning' _log | wc -l` 'compilation warning(s)'
+	@echo '  ' `grep '^make\[2\]: ' _log | wc -l` 'makefile error(s)'
 
 empty: FORCE
 
