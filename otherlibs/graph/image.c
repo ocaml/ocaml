@@ -30,7 +30,8 @@ static struct custom_operations image_ops = {
   custom_compare_default,
   custom_hash_default,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default
 };
 
 #define Max_image_mem 2000000

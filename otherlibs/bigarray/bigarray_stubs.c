@@ -76,7 +76,8 @@ static struct custom_operations caml_ba_ops = {
   caml_ba_compare,
   caml_ba_hash,
   caml_ba_serialize,
-  caml_ba_deserialize
+  caml_ba_deserialize,
+  custom_compare_ext_default
 };
 
 /* Multiplication of unsigned longs with overflow detection */

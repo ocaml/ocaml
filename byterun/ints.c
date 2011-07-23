@@ -227,7 +227,8 @@ CAMLexport struct custom_operations caml_int32_ops = {
   int32_cmp,
   int32_hash,
   int32_serialize,
-  int32_deserialize
+  int32_deserialize,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_copy_int32(int32 i)
@@ -414,7 +415,8 @@ CAMLexport struct custom_operations caml_int64_ops = {
   int64_cmp,
   int64_hash,
   int64_serialize,
-  int64_deserialize
+  int64_deserialize,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_copy_int64(int64 i)
@@ -665,7 +667,8 @@ CAMLexport struct custom_operations caml_nativeint_ops = {
   nativeint_cmp,
   nativeint_hash,
   nativeint_serialize,
-  nativeint_deserialize
+  nativeint_deserialize,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_copy_nativeint(intnat i)

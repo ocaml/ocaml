@@ -18,6 +18,7 @@
 #include "custom.h"
 #include "intext.h"
 #include "fail.h"
+#include "hash.h"
 #include "memory.h"
 #include "mlvalues.h"
 
@@ -26,6 +27,7 @@
 
 /* Stub code for the Nat module. */
 
+static intnat hash_nat(value);
 static void serialize_nat(value, uintnat *, uintnat *);
 static uintnat deserialize_nat(void * dst);
 
@@ -33,9 +35,10 @@ static struct custom_operations nat_operations = {
   "_nat",
   custom_finalize_default,
   custom_compare_default,
-  custom_hash_default,
+  hash_nat,
   serialize_nat,
-  deserialize_nat
+  deserialize_nat,
+  custom_compare_ext_default
 };
 
 CAMLprim value initialize_nat(value unit)
@@ -389,3 +392,15 @@ static uintnat deserialize_nat(void * dst)
 #endif
   return len * 4;
 }
+
+static intnat hash_nat(value v)
+{
+  mlsize_t len = Wosize_val(v) - 1;
+  mlsize_t i;
+  uint32 h = len;
+  for (i = 0; i < len; i++) {
+    h = caml_hash_mix_intnat(h, Digit_val(v, i));
+  }
+  return h;
+}
+
