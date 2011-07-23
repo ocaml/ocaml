@@ -1,7 +1,3 @@
-Index: boot/ocamlc
-===================================================================
-Cannot display: file marked as a binary type.
-svn:mime-type = application/octet-stream
 Index: typing/typemod.ml
 ===================================================================
 --- typing/typemod.ml	(revision 11143)
@@ -492,16 +488,9 @@ Index: typing/ctype.ml
 ===================================================================
 --- typing/ctype.ml	(revision 11143)
 +++ typing/ctype.ml	(working copy)
-@@ -145,17 +145,17 @@
- 
- (* Re-export generic type creators *)
- 
--let newty2             = Btype.newty2
--let newty desc         = newty2 !current_level desc
--let new_global_ty desc = newty2 !global_level desc
-+let newty2                  = Btype.newty2
-+let newty desc              = newty2 !current_level desc
-+let new_global_ty desc      = newty2 !global_level desc
+@@ -149,9 +149,9 @@
+ let newty desc         = newty2 !current_level desc
+ let new_global_ty desc = newty2 !global_level desc
  
 -let newvar ()          = newty2 !current_level Tvar
 -let newvar2 level      = newty2 level Tvar
@@ -510,13 +499,7 @@ Index: typing/ctype.ml
 +let newvar2 ?name level     = newty2 level (Tvar name)
 +let new_global_var ?name () = newty2 !global_level (Tvar name)
  
--let newobj fields      = newty (Tobject (fields, ref None))
-+let newobj fields           = newty (Tobject (fields, ref None))
- 
--let newconstr path tyl = newty (Tconstr (path, tyl, ref Mnil))
-+let newconstr path tyl      = newty (Tconstr (path, tyl, ref Mnil))
- 
- let none = newty (Ttuple [])                (* Clearly ill-formed type *)
+ let newobj fields      = newty (Tobject (fields, ref None))
  
 @@ -236,10 +236,8 @@
  
@@ -650,60 +633,7 @@ Index: typing/ctype.ml
            if TypeSet.mem t family then raise Occur
        | Tconstr (_, [], _) -> ()
        | Tconstr (p, tl, _) ->
-@@ -1530,29 +1528,30 @@
-   with Occur ->
-     unmark_type ty; true
- 
-+
- (*
--   1. When unifying two non-abbreviated types, one type is made a link
--      to the other. When unifying an abbreviated type with a
--      non-abbreviated type, the non-abbreviated type is made a link to
--      the other one. When unifying to abbreviated types, these two
--      types are kept distincts, but they are made to (temporally)
--      expand to the same type.
--   2. Abbreviations with at least one parameter are systematically
--      expanded. The overhead does not seem to high, and that way
--      abbreviations where some parameters does not appear in the
--      expansion, such as ['a t = int], are correctly handled. In
--      particular, for this example, unifying ['a t] with ['b t] keeps
--      ['a] and ['b] distincts. (Is it really important ?)
--   3. Unifying an abbreviation ['a t = 'a] with ['a] should not yield
--      ['a t as 'a]. Indeed, the type variable would otherwise be lost.
--      This problem occurs for abbreviations expanding to a type
--      variable, but also to many other constrained abbreviations (for
--      instance, [(< x : 'a > -> unit) t = <x : 'a>]). The solution is
--      that, if an abbreviation is unified with some subpart of its
--      parameters, then the parameter actually does not get
--      abbreviated.  It would be possible to check whether some
--      information is indeed lost, but it probably does not worth it.
--*)
-+  1. When unifying two non-abbreviated types, one type is made a link
-+  to the other. When unifying an abbreviated type with a
-+  non-abbreviated type, the non-abbreviated type is made a link to
-+  the other one. When unifying to abbreviated types, these two
-+  types are kept distincts, but they are made to (temporally)
-+  expand to the same type.
-+  2. Abbreviations with at least one parameter are systematically
-+  expanded. The overhead does not seem to high, and that way
-+  abbreviations where some parameters does not appear in the
-+  expansion, such as ['a t = int], are correctly handled. In
-+  particular, for this example, unifying ['a t] with ['b t] keeps
-+  ['a] and ['b] distincts. (Is it really important ?)
-+  3. Unifying an abbreviation ['a t = 'a] with ['a] should not yield
-+  ['a t as 'a]. Indeed, the type variable would otherwise be lost.
-+  This problem occurs for abbreviations expanding to a type
-+  variable, but also to many other constrained abbreviations (for
-+  instance, [(< x : 'a > -> unit) t = <x : 'a>]). The solution is
-+  that, if an abbreviation is unified with some subpart of its
-+  parameters, then the parameter actually does not get
-+  abbreviated.  It would be possible to check whether some
-+  information is indeed lost, but it probably does not worth it.
-+ *)
- let rec unify env t1 t2 =
-   (* First step: special cases (optimizations) *)
-   if t1 == t2 then () else
-@@ -1563,19 +1562,19 @@
+@@ -1563,19 +1561,19 @@
    try
      type_changed := true;
      match (t1.desc, t2.desc) with
@@ -728,7 +658,7 @@ Index: typing/ctype.ml
          unify_univar t1 t2 !univar_pairs;
          update_level env t1.level t2;
          link_type t1 t2
-@@ -1624,9 +1623,9 @@
+@@ -1624,9 +1622,9 @@
  
    try
      begin match (d1, d2) with
@@ -740,7 +670,7 @@ Index: typing/ctype.ml
          let td1 = newgenty d1 in
          occur env t2' td1;
          occur_univar env td1;
-@@ -1659,7 +1658,8 @@
+@@ -1659,7 +1657,8 @@
          (* XXX One should do some kind of unification... *)
          begin match (repr t2').desc with
            Tobject (_, {contents = Some (_, va::_)})
@@ -750,7 +680,7 @@ Index: typing/ctype.ml
              ()
          | Tobject (_, nm2) ->
              set_name nm2 !nm1
-@@ -1732,16 +1732,32 @@
+@@ -1732,16 +1731,32 @@
      raise (Unify []);
    List.iter2 (unify env) tl1 tl2
  
@@ -788,7 +718,7 @@ Index: typing/ctype.ml
    let d1 = rest1.desc and d2 = rest2.desc in
    try
      unify env (build_fields l1 miss1 va) rest2;
-@@ -1785,11 +1801,9 @@
+@@ -1785,11 +1800,9 @@
          with Not_found -> ())
        r2
    end;
@@ -803,7 +733,7 @@ Index: typing/ctype.ml
    let fixed = row1.row_fixed || row2.row_fixed
    and closed = row1.row_closed || row2.row_closed in
    let keep switch =
-@@ -1832,7 +1846,7 @@
+@@ -1832,7 +1845,7 @@
      let rm = row_more row in
      if row.row_fixed then
        if row0.row_more == rm then () else
@@ -812,7 +742,7 @@ Index: typing/ctype.ml
        unify env rm row0.row_more
      else
        let ty = newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
-@@ -1912,7 +1926,7 @@
+@@ -1912,7 +1925,7 @@
    let t1 = repr t1 and t2 = repr t2 in
    if t1 == t2 then () else
    match t1.desc with
@@ -821,7 +751,7 @@ Index: typing/ctype.ml
        begin try
          occur env t1 t2;
          update_level env t1.level t2;
-@@ -1945,7 +1959,7 @@
+@@ -1945,7 +1958,7 @@
  let rec filter_arrow env t l =
    let t = expand_head_unif env t in
    match t.desc with
@@ -830,7 +760,7 @@ Index: typing/ctype.ml
        let lv = t.level in
        let t1 = newvar2 lv and t2 = newvar2 lv in
        let t' = newty2 lv (Tarrow (l, t1, t2, Cok)) in
-@@ -1961,7 +1975,7 @@
+@@ -1961,7 +1974,7 @@
  let rec filter_method_field env name priv ty =
    let ty = repr ty in
    match ty.desc with
@@ -839,7 +769,7 @@ Index: typing/ctype.ml
        let level = ty.level in
        let ty1 = newvar2 level and ty2 = newvar2 level in
        let ty' = newty2 level (Tfield (name,
-@@ -1988,7 +2002,7 @@
+@@ -1988,7 +2001,7 @@
  let rec filter_method env name priv ty =
    let ty = expand_head_unif env ty in
    match ty.desc with
@@ -848,7 +778,7 @@ Index: typing/ctype.ml
        let ty1 = newvar () in
        let ty' = newobj ty1 in
        update_level env ty.level ty';
-@@ -2024,7 +2038,7 @@
+@@ -2024,7 +2037,7 @@
    let rec occur ty =
      let ty = repr ty in
      if ty.level > level then begin
@@ -857,7 +787,7 @@ Index: typing/ctype.ml
        ty.level <- pivot_level - ty.level;
        match ty.desc with
          Tvariant row when static_row row ->
-@@ -2054,9 +2068,9 @@
+@@ -2054,9 +2067,9 @@
  
    try
      match (t1.desc, t2.desc) with
@@ -869,7 +799,7 @@ Index: typing/ctype.ml
          moregen_occur env t1.level t2;
          occur env t1 t2;
          link_type t1 t2
-@@ -2073,7 +2087,7 @@
+@@ -2073,7 +2086,7 @@
          with Not_found ->
            TypePairs.add type_pairs (t1', t2') ();
            match (t1'.desc, t2'.desc) with
@@ -878,7 +808,7 @@ Index: typing/ctype.ml
                moregen_occur env t1'.level t2;
                link_type t1' t2
            | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
-@@ -2139,7 +2153,7 @@
+@@ -2139,7 +2152,7 @@
    let row1 = row_repr row1 and row2 = row_repr row2 in
    let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
    if rm1 == rm2 then () else
@@ -887,7 +817,7 @@ Index: typing/ctype.ml
    let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
    let r1, r2 =
      if row2.row_closed then
-@@ -2149,9 +2163,9 @@
+@@ -2149,9 +2162,9 @@
    if r1 <> [] || row1.row_closed && (not row2.row_closed || r2 <> [])
    then raise (Unify []);
    begin match rm1.desc, rm2.desc with
@@ -899,7 +829,7 @@ Index: typing/ctype.ml
        raise (Unify [])
    | _ when static_row row1 -> ()
    | _ when may_inst ->
-@@ -2242,13 +2256,13 @@
+@@ -2242,13 +2255,13 @@
    if ty.level >= lowest_level then begin
      ty.level <- pivot_level - ty.level;
      match ty.desc with
@@ -916,7 +846,7 @@ Index: typing/ctype.ml
            let row' = {row with row_fixed=true; row_fields=[]; row_more=more'}
            in link_type more (newty2 ty.level (Tvariant row'))
          end;
-@@ -2271,7 +2285,7 @@
+@@ -2271,7 +2284,7 @@
      (fun ty ->
        let ty = expand_head env ty in
        if List.memq ty !tyl then false else
@@ -925,7 +855,7 @@ Index: typing/ctype.ml
      vars
  
  let matches env ty ty' =
-@@ -2310,7 +2324,7 @@
+@@ -2310,7 +2323,7 @@
  
    try
      match (t1.desc, t2.desc) with
@@ -934,7 +864,7 @@ Index: typing/ctype.ml
          begin try
            normalize_subst subst;
            if List.assq t1 !subst != t2 then raise (Unify [])
-@@ -2331,7 +2345,7 @@
+@@ -2331,7 +2344,7 @@
          with Not_found ->
            TypePairs.add type_pairs (t1', t2') ();
            match (t1'.desc, t2'.desc) with
@@ -943,7 +873,7 @@ Index: typing/ctype.ml
                begin try
                  normalize_subst subst;
                  if List.assq t1' !subst != t2' then raise (Unify [])
-@@ -2363,7 +2377,7 @@
+@@ -2363,7 +2376,7 @@
            | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
                enter_poly env univar_pairs t1 tl1 t2 tl2
                  (eqtype rename type_pairs subst env)
@@ -952,7 +882,7 @@ Index: typing/ctype.ml
                unify_univar t1' t2' !univar_pairs
            | (_, _) ->
                raise (Unify [])
-@@ -2806,7 +2820,7 @@
+@@ -2806,7 +2819,7 @@
  let rec build_subtype env visited loops posi level t =
    let t = repr t in
    match t.desc with
@@ -961,7 +891,7 @@ Index: typing/ctype.ml
        if posi then
          try
            let t' = List.assq t loops in
-@@ -2855,13 +2869,13 @@
+@@ -2855,13 +2868,13 @@
               as this occurence might break the occur check.
               XXX not clear whether this correct anyway... *)
            if List.exists (deep_occur ty) tl1 then raise Not_found;
@@ -977,7 +907,7 @@ Index: typing/ctype.ml
            let nm =
              if c > Equiv || deep_occur ty ty1' then None else Some(p,tl1) in
            t''.desc <- Tobject (ty1', ref nm);
-@@ -2960,7 +2974,7 @@
+@@ -2960,7 +2973,7 @@
        let (t1', c) = build_subtype env visited loops posi level t1 in
        if c > Unchanged then (newty (Tpoly(t1', tl)), c)
        else (t, Unchanged)
@@ -986,7 +916,7 @@ Index: typing/ctype.ml
        (t, Unchanged)
  
  let enlarge_type env ty =
-@@ -3024,7 +3038,7 @@
+@@ -3024,7 +3037,7 @@
    with Not_found ->
      TypePairs.add subtypes (t1, t2) ();
      match (t1.desc, t2.desc) with
@@ -995,7 +925,7 @@ Index: typing/ctype.ml
          (trace, t1, t2, !univar_pairs)::cstrs
      | (Tarrow(l1, t1, u1, _), Tarrow(l2, t2, u2, _)) when l1 = l2
        || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
-@@ -3060,7 +3074,7 @@
+@@ -3060,7 +3073,7 @@
      | (Tconstr(p1, tl1, _), _) when private_abbrev env p1 ->
          subtype_rec env trace (expand_abbrev_opt env t1) t2 cstrs
      | (Tobject (f1, _), Tobject (f2, _))
@@ -1004,7 +934,7 @@ Index: typing/ctype.ml
          (* Same row variable implies same object. *)
          (trace, t1, t2, !univar_pairs)::cstrs
      | (Tobject (f1, _), Tobject (f2, _)) ->
-@@ -3132,7 +3146,7 @@
+@@ -3132,7 +3145,7 @@
    match more1.desc, more2.desc with
      Tconstr(p1,_,_), Tconstr(p2,_,_) when Path.same p1 p2 ->
        subtype_rec env ((more1,more2)::trace) more1 more2 cstrs
@@ -1013,7 +943,7 @@ Index: typing/ctype.ml
      when row1.row_closed && r1 = [] ->
        List.fold_left
          (fun cstrs (_,f1,f2) ->
-@@ -3146,7 +3160,7 @@
+@@ -3146,7 +3159,7 @@
            | Rabsent, _ -> cstrs
            | _ -> raise Exit)
          cstrs pairs
@@ -1022,7 +952,7 @@ Index: typing/ctype.ml
      when row1.row_closed = row2.row_closed && r1 = [] && r2 = [] ->
        let cstrs =
          subtype_rec env ((more1,more2)::trace) more1 more2 cstrs in
-@@ -3190,19 +3204,19 @@
+@@ -3190,19 +3203,19 @@
    match ty.desc with
      Tfield (s, k, t1, t2) ->
        newty2 ty.level (Tfield (s, k, t1, unalias_object t2))
@@ -1046,7 +976,7 @@ Index: typing/ctype.ml
        ty
    | Tvariant row ->
        let row = row_repr row in
-@@ -3276,7 +3290,7 @@
+@@ -3276,7 +3289,7 @@
                set_name nm None
              else let v' = repr v in
              begin match v'.desc with
@@ -1055,7 +985,7 @@ Index: typing/ctype.ml
                  if v' != v then set_name nm (Some (n, v' :: l))
              | Tnil ->
                  log_type ty; ty.desc <- Tconstr (n, l, ref Mnil)
-@@ -3318,7 +3332,7 @@
+@@ -3318,7 +3331,7 @@
  
  let rec nondep_type_rec env id ty =
    match ty.desc with
@@ -1064,7 +994,7 @@ Index: typing/ctype.ml
    | Tlink ty -> nondep_type_rec env id ty
    | _ -> try TypeHash.find nondep_hash ty
    with Not_found ->
-@@ -3388,7 +3402,7 @@
+@@ -3388,7 +3401,7 @@
  
  let unroll_abbrev id tl ty =
    let ty = repr ty and path = Path.Pident id in
@@ -1478,63 +1408,6 @@ Index: typing/types.ml
    | Tpoly of type_expr * type_expr list
    | Tpackage of Path.t * string list * type_expr list
  
-Index: ocamldoc/odoc_str.ml
-===================================================================
---- ocamldoc/odoc_str.ml	(revision 11143)
-+++ ocamldoc/odoc_str.ml	(working copy)
-@@ -31,7 +31,7 @@
-   | Types.Tlink t2 | Types.Tsubst t2 -> is_arrow_type t2
-   | Types.Ttuple _
-   | Types.Tconstr _
--  | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
-+  | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
-   | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
- 
- let raw_string_of_type_list sep type_list =
-@@ -43,7 +43,7 @@
-     | Types.Tlink t2 | Types.Tsubst t2 -> need_parent t2
-     | Types.Tconstr _ ->
-         false
--    | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
-+    | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
-     | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
-   in
-   let print_one_type variance t =
-Index: ocamldoc/odoc_value.ml
-===================================================================
---- ocamldoc/odoc_value.ml	(revision 11143)
-+++ ocamldoc/odoc_value.ml	(working copy)
-@@ -77,13 +77,13 @@
-     | Types.Tsubst texp ->
-         iter texp
-     | Types.Tpoly (texp, _) -> iter texp
--    | Types.Tvar
-+    | Types.Tvar _
-     | Types.Ttuple _
-     | Types.Tconstr _
-     | Types.Tobject _
-     | Types.Tfield _
-     | Types.Tnil
--    | Types.Tunivar
-+    | Types.Tunivar _
-     | Types.Tpackage _
-     | Types.Tvariant _ ->
-         []
-Index: ocamldoc/odoc_misc.ml
-===================================================================
---- ocamldoc/odoc_misc.ml	(revision 11143)
-+++ ocamldoc/odoc_misc.ml	(working copy)
-@@ -478,8 +478,8 @@
-     match t with
-     | Types.Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty.Types.desc
-     | Types.Tconstr _
--    | Types.Tvar
--    | Types.Tunivar
-+    | Types.Tvar _
-+    | Types.Tunivar _
-     | Types.Tpoly _
-     | Types.Tarrow _
-     | Types.Ttuple _
 Index: bytecomp/typeopt.ml
 ===================================================================
 --- bytecomp/typeopt.ml	(revision 11143)
@@ -1612,3 +1485,60 @@ Index: otherlibs/labltk/browser/searchid.ml
    | Tvariant row1, Tvariant row2 ->
        let row1 = row_repr row1 and row2 = row_repr row2 in
        let fields1 = filter_row_fields false row1.row_fields
+Index: ocamldoc/odoc_str.ml
+===================================================================
+--- ocamldoc/odoc_str.ml	(revision 11143)
++++ ocamldoc/odoc_str.ml	(working copy)
+@@ -31,7 +31,7 @@
+   | Types.Tlink t2 | Types.Tsubst t2 -> is_arrow_type t2
+   | Types.Ttuple _
+   | Types.Tconstr _
+-  | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
++  | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
+   | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
+ 
+ let raw_string_of_type_list sep type_list =
+@@ -43,7 +43,7 @@
+     | Types.Tlink t2 | Types.Tsubst t2 -> need_parent t2
+     | Types.Tconstr _ ->
+         false
+-    | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
++    | Types.Tvar _ | Types.Tunivar _ | Types.Tobject _ | Types.Tpoly _
+     | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
+   in
+   let print_one_type variance t =
+Index: ocamldoc/odoc_value.ml
+===================================================================
+--- ocamldoc/odoc_value.ml	(revision 11143)
++++ ocamldoc/odoc_value.ml	(working copy)
+@@ -77,13 +77,13 @@
+     | Types.Tsubst texp ->
+         iter texp
+     | Types.Tpoly (texp, _) -> iter texp
+-    | Types.Tvar
++    | Types.Tvar _
+     | Types.Ttuple _
+     | Types.Tconstr _
+     | Types.Tobject _
+     | Types.Tfield _
+     | Types.Tnil
+-    | Types.Tunivar
++    | Types.Tunivar _
+     | Types.Tpackage _
+     | Types.Tvariant _ ->
+         []
+Index: ocamldoc/odoc_misc.ml
+===================================================================
+--- ocamldoc/odoc_misc.ml	(revision 11143)
++++ ocamldoc/odoc_misc.ml	(working copy)
+@@ -478,8 +478,8 @@
+     match t with
+     | Types.Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty.Types.desc
+     | Types.Tconstr _
+-    | Types.Tvar
+-    | Types.Tunivar
++    | Types.Tvar _
++    | Types.Tunivar _
+     | Types.Tpoly _
+     | Types.Tarrow _
+     | Types.Ttuple _
