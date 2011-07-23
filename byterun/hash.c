@@ -210,7 +210,7 @@ CAMLprim value caml_hash(value count, value limit, value seed, value obj)
       num--;
     }
     else if (Is_in_value_area(v)) {
-      switch (Tag_val(obj)) {
+      switch (Tag_val(v)) {
       case String_tag:
         h = caml_hash_mix_string(h, v);
         num--;

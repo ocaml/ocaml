@@ -922,3 +922,23 @@ test 5 eq_big_int
 test 6 eq_big_int
   (extract_big_int (big_int_of_int (-1)) 2048 254,
    zero_big_int);;
+
+testing_function "hashing of big integers";;
+
+test 1 eq_int (Hashtbl.hash zero_big_int,
+               955772237);;
+test 2 eq_int (Hashtbl.hash unit_big_int,
+               992063522);;
+test 3 eq_int (Hashtbl.hash (minus_big_int unit_big_int),
+               161678167);;
+test 4 eq_int (Hashtbl.hash (big_int_of_string "123456789123456789"),
+               755417385);;
+test 5 eq_int (Hashtbl.hash (sub_big_int 
+                               (big_int_of_string "123456789123456789")
+                               (big_int_of_string "123456789123456789")),
+               955772237);;
+test 6 eq_int (Hashtbl.hash (sub_big_int 
+                               (big_int_of_string "123456789123456789")
+                               (big_int_of_string "123456789123456788")),
+              992063522);;
+
