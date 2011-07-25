@@ -39,7 +39,20 @@ module R =
           
         let help_sequences () =
           (Printf.eprintf
-             "\\\nNew syntax:\\\n\\n    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\\\n\\n    while e do e1; e2; ... ; en done\\\n\\n    for v = v1 to/downto v2 do e1; e2; ... ; en done\\\n\\nOld syntax (still supported):\\\n\\n    do {e1; e2; ... ; en}\\\n\\n    while e do {e1; e2; ... ; en}\\\n\\n    for v = v1 to/downto v2 do {e1; e2; ... ; en}\\\n\\nVery old (no more supported) syntax:\\\n\\n    do e1; e2; ... ; en-1; return en\\\n\\n    while e do e1; e2; ... ; en; done\\\n\\n    for v = v1 to/downto v2 do e1; e2; ... ; en; done\\\n\\n";
+             "\
+New syntax:\
+\n    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\
+\n    while e do e1; e2; ... ; en done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en done\
+\nOld syntax (still supported):\
+\n    do {e1; e2; ... ; en}\
+\n    while e do {e1; e2; ... ; en}\
+\n    for v = v1 to/downto v2 do {e1; e2; ... ; en}\
+\nVery old (no more supported) syntax:\
+\n    do e1; e2; ... ; en-1; return en\
+\n    while e do e1; e2; ... ; en; done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en; done\
+\n";
            flush stderr;
            exit 1)
           
@@ -389,7 +402,7 @@ module R =
           
         let append_eLem el e = el @ [ e ]
           
-        let mk_anti ?(c = "") n s = "\\\\$" ^ (n ^ (c ^ (":" ^ s)))
+        let mk_anti ?(c = "") n s = "\\$" ^ (n ^ (c ^ (":" ^ s)))
           
         let mksequence _loc =
           function
@@ -1032,7 +1045,7 @@ module R =
                                  | ANTIQUOT (("" | "mexp" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"mexp\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"mexp\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -1071,7 +1084,7 @@ module R =
                                  | ANTIQUOT (("" | "stri" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"stri\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"stri\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -1135,13 +1148,13 @@ module R =
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (a_ident : 'a_ident Gram.Entry.t));
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (module_type : 'module_type Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (mt : 'module_type) _ (i : 'a_ident) _ _
+                             (fun (mt : 'module_type) _ (i : 'a_UIDENT) _ _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.StMty (_loc, i, mt) : 'str_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "rec";
@@ -1288,7 +1301,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)"));
+                                "ANTIQUOT (\"\", _)"));
                             Gram.Skeyword ":";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -1311,7 +1324,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)")) ],
+                                "ANTIQUOT (\"\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -1327,7 +1340,7 @@ module R =
                                      (("module_binding" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"module_binding\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"module_binding\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -1438,7 +1451,7 @@ module R =
                                  | ANTIQUOT (("" | "mtyp" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"mtyp\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"mtyp\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -1507,21 +1520,21 @@ module R =
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (a_ident : 'a_ident Gram.Entry.t)) ],
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (i : 'a_ident) _ _ (_loc : Gram.Loc.t) ->
+                             (fun (i : 'a_UIDENT) _ _ (_loc : Gram.Loc.t) ->
                                 (Ast.SgMty (_loc, i, (Ast.MtNil _loc)) :
                                   'sig_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (a_ident : 'a_ident Gram.Entry.t));
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (module_type : 'module_type Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (mt : 'module_type) _ (i : 'a_ident) _ _
+                             (fun (mt : 'module_type) _ (i : 'a_UIDENT) _ _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.SgMty (_loc, i, mt) : 'sig_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "rec";
@@ -1593,7 +1606,7 @@ module R =
                                  | ANTIQUOT (("" | "sigi" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"sigi\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"sigi\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -1671,7 +1684,7 @@ module R =
                                          "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"module_binding\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"module_binding\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -1732,7 +1745,7 @@ module R =
                                  | ANTIQUOT (("" | "typ" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\" | \\\"anti\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\"), _)"));
                             Gram.Skeyword ":=";
                             Gram.Snterm
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
@@ -1783,7 +1796,7 @@ module R =
                                  | ANTIQUOT (("" | "typ" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\" | \\\"anti\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\"), _)"));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
@@ -1817,7 +1830,7 @@ module R =
                                      (("" | "with_constr" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"with_constr\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"with_constr\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2560,7 +2573,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("seq", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"seq\\\", _)")) ],
+                                "ANTIQUOT (\"seq\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2575,7 +2588,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("tup", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"tup\\\", _)")) ],
+                                "ANTIQUOT (\"tup\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2590,7 +2603,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("`bool", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"`bool\\\", _)")) ],
+                                "ANTIQUOT (\"`bool\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2605,7 +2618,7 @@ module R =
                                  | ANTIQUOT (("exp" | "" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"exp\\\" | \\\"\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"exp\" | \"\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2777,7 +2790,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2838,7 +2851,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2944,7 +2957,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -2958,7 +2971,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"anti\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"anti\"), _)"));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
@@ -2977,7 +2990,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("binding" | "list"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"binding\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"binding\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3091,7 +3104,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"anti\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"anti\"), _)"));
                             Gram.Skeyword "when";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
@@ -3114,7 +3127,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"anti\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"anti\"), _)"));
                             Gram.Skeyword "->";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
@@ -3133,7 +3146,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3148,7 +3161,7 @@ module R =
                                  | ANTIQUOT (("match_case" | "list"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"match_case\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"match_case\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3251,7 +3264,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3265,7 +3278,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"anti\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"anti\"), _)"));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
@@ -3284,7 +3297,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3298,7 +3311,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("rec_binding", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"rec_binding\\\", _)")) ],
+                                "ANTIQUOT (\"rec_binding\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3491,7 +3504,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"lid\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
@@ -3518,7 +3531,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"lid\"), _)"));
                             Gram.Skeyword ":"; Gram.Skeyword "(";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -3570,7 +3583,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"lid\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
@@ -3585,7 +3598,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"lid\"), _)"));
                             Gram.Skeyword ":"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p : 'patt) _ (__camlp4_0 : Gram.Token.t) _
@@ -3802,7 +3815,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("`bool", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"`bool\\\", _)")) ],
+                                "ANTIQUOT (\"`bool\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3816,7 +3829,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("tup", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"tup\\\", _)")) ],
+                                "ANTIQUOT (\"tup\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3832,7 +3845,7 @@ module R =
                                  | ANTIQUOT (("" | "pat" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"pat\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"pat\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3857,7 +3870,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -3892,7 +3905,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4030,7 +4043,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4057,7 +4070,7 @@ module R =
                                  | ANTIQUOT (("" | "pat" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"pat\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"pat\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4133,7 +4146,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("tup", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"tup\\\", _)")) ],
+                                "ANTIQUOT (\"tup\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4149,7 +4162,7 @@ module R =
                                  | ANTIQUOT (("" | "pat" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"pat\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"pat\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4194,7 +4207,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4268,7 +4281,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4283,7 +4296,7 @@ module R =
                                  | ANTIQUOT (("" | "pat" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"pat\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"pat\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4339,7 +4352,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4354,7 +4367,7 @@ module R =
                                  | ANTIQUOT (("" | "typ" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4516,7 +4529,7 @@ module R =
                                  | ANTIQUOT (("" | "typ" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4788,7 +4801,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("id", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"id\\\", _)")) ],
+                                "ANTIQUOT (\"id\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4803,7 +4816,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("tup", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"tup\\\", _)")) ],
+                                "ANTIQUOT (\"tup\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4819,7 +4832,7 @@ module R =
                                  | ANTIQUOT (("" | "typ" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4860,7 +4873,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4874,7 +4887,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4936,7 +4949,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -4950,7 +4963,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5005,7 +5018,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5037,7 +5050,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5132,7 +5145,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5146,7 +5159,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5192,7 +5205,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)"));
                             Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (i : 'ident) _ (__camlp4_0 : Gram.Token.t)
@@ -5224,7 +5237,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5261,7 +5274,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5313,7 +5326,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5354,7 +5367,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)"));
                             Gram.Skeyword "."; Gram.Skeyword "(" ],
                           (Gram.Action.mk
                              (fun _ _ (__camlp4_0 : Gram.Token.t)
@@ -5405,7 +5418,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5442,7 +5455,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5526,7 +5539,7 @@ module R =
                                  | ANTIQUOT (("" | "cdcl" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"cdcl\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"cdcl\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5666,7 +5679,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5714,7 +5727,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5842,7 +5855,7 @@ module R =
                                  | ANTIQUOT (("" | "cexp" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"cexp\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"cexp\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -5911,7 +5924,7 @@ module R =
                                  | ANTIQUOT (("" | "cst" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"cst\\\" | \\\"anti\\\" | \\\"list\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"cst\" | \"anti\" | \"list\"), _)"));
                             Gram.Snterm
                               (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
                             Gram.Sself ],
@@ -5934,7 +5947,7 @@ module R =
                                  | ANTIQUOT (("" | "cst" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"cst\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"cst\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6178,7 +6191,7 @@ module R =
                                  | ANTIQUOT (("" | "cst" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"cst\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"cst\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6206,7 +6219,7 @@ module R =
                                  | ANTIQUOT (("!" | "override" | "anti"), _)
                                      -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"!\\\" | \\\"override\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"!\" | \"override\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
@@ -6242,7 +6255,7 @@ module R =
                                  | ANTIQUOT (("!" | "override" | "anti"), _)
                                      -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"!\\\" | \\\"override\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"!\" | \"override\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
@@ -6401,7 +6414,7 @@ module R =
                                  | ANTIQUOT (("" | "ctyp" | "anti"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"ctyp\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"ctyp\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6506,7 +6519,7 @@ module R =
                                  | ANTIQUOT (("" | "csg" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"csg\\\" | \\\"anti\\\" | \\\"list\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"csg\" | \"anti\" | \"list\"), _)"));
                             Gram.Snterm
                               (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
                             Gram.Sself ],
@@ -6529,7 +6542,7 @@ module R =
                                  | ANTIQUOT (("" | "csg" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"csg\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"csg\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6650,7 +6663,7 @@ module R =
                                  | ANTIQUOT (("" | "csg" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"csg\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"csg\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6713,7 +6726,7 @@ module R =
                                  | ANTIQUOT (("" | "typ" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6770,7 +6783,7 @@ module R =
                                  | ANTIQUOT (("" | "typ" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6823,9 +6836,8 @@ module R =
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj (label : 'label Gram.Entry.t));
                             Gram.Skeyword "=";
-                            Gram.Snterml
-                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
-                              "top") ],
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (l : 'label)
                                 (_loc : Gram.Loc.t) ->
@@ -6835,7 +6847,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6849,7 +6861,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "bi" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"bi\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"bi\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6927,7 +6939,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -6941,7 +6953,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7018,7 +7030,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7085,7 +7097,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7099,7 +7111,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7123,7 +7135,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"list\\\", _)")) ],
+                                "ANTIQUOT (\"list\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7159,7 +7171,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"typ\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7235,7 +7247,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"lid\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
@@ -7262,7 +7274,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"lid\"), _)"));
                             Gram.Skeyword ":"; Gram.Skeyword "(";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -7314,7 +7326,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"lid\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (_loc : Gram.Loc.t) ->
@@ -7329,7 +7341,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"lid\"), _)"));
                             Gram.Skeyword ":"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p : 'ipatt) _ (__camlp4_0 : Gram.Token.t)
@@ -7378,7 +7390,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("to" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"to\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"to\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7408,7 +7420,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("private" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"private\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"private\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7434,7 +7446,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("mutable" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"mutable\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"mutable\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7460,7 +7472,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("virtual" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"virtual\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"virtual\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7486,7 +7498,7 @@ module R =
                               (((function
                                  | ANTIQUOT ((".." | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"..\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"..\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7511,7 +7523,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("rec" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"rec\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"rec\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7537,7 +7549,7 @@ module R =
                                  | ANTIQUOT (("!" | "override" | "anti"), _)
                                      -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"!\\\" | \\\"override\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"!\" | \"override\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7628,7 +7640,7 @@ module R =
                                  | ANTIQUOT (("" | "sigi" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"sigi\\\" | \\\"anti\\\" | \\\"list\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"sigi\" | \"anti\" | \"list\"), _)"));
                             Gram.Snterm
                               (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
                             Gram.Sself ],
@@ -7651,7 +7663,7 @@ module R =
                                  | ANTIQUOT (("" | "sigi" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"sigi\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"sigi\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7726,7 +7738,7 @@ module R =
                                  | ANTIQUOT (("" | "stri" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"stri\\\" | \\\"anti\\\" | \\\"list\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"stri\" | \"anti\" | \"list\"), _)"));
                             Gram.Snterm
                               (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
                             Gram.Sself ],
@@ -7749,7 +7761,7 @@ module R =
                                  | ANTIQUOT (("" | "stri" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"stri\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"stri\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7861,7 +7873,7 @@ module R =
                                  | ANTIQUOT (("" | "int" | "`int"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"int\\\" | \\\"`int\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"int\" | \"`int\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7888,7 +7900,7 @@ module R =
                                  | ANTIQUOT (("" | "int32" | "`int32"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"int32\\\" | \\\"`int32\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"int32\" | \"`int32\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7915,7 +7927,7 @@ module R =
                                  | ANTIQUOT (("" | "int64" | "`int64"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"int64\\\" | \\\"`int64\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"int64\" | \"`int64\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7945,7 +7957,7 @@ module R =
                                      (("" | "nativeint" | "`nativeint"), _)
                                      -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"nativeint\\\" | \\\"`nativeint\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"nativeint\" | \"`nativeint\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -7973,7 +7985,7 @@ module R =
                                  | ANTIQUOT (("" | "flo" | "`flo"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"flo\\\" | \\\"`flo\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"flo\" | \"`flo\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8000,7 +8012,7 @@ module R =
                                  | ANTIQUOT (("" | "chr" | "`chr"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"chr\\\" | \\\"`chr\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"chr\" | \"`chr\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8026,7 +8038,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "uid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"uid\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"uid\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8052,7 +8064,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "lid"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"lid\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"lid\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8079,7 +8091,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)"));
+                                "ANTIQUOT (\"\", _)"));
                             Gram.Skeyword ":" ],
                           (Gram.Action.mk
                              (fun _ (__camlp4_0 : Gram.Token.t) _
@@ -8107,7 +8119,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)"));
+                                "ANTIQUOT (\"\", _)"));
                             Gram.Skeyword ":" ],
                           (Gram.Action.mk
                              (fun _ (__camlp4_0 : Gram.Token.t) _
@@ -8137,7 +8149,7 @@ module R =
                                  | ANTIQUOT (("" | "str" | "`str"), _) ->
                                      true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"str\\\" | \\\"`str\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"str\" | \"`str\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8180,7 +8192,7 @@ module R =
                               (((function
                                  | ANTIQUOT (("" | "str_list"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"str_list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"str_list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8480,9 +8492,10 @@ module R =
                              (fun (x : 'type_parameter) (_loc : Gram.Loc.t)
                                 -> (x : 'more_ctyp))));
                          ([ Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
+                              (Gram.Entry.obj
+                                 (type_kind : 'type_kind Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (x : 'ctyp) (_loc : Gram.Loc.t) ->
+                             (fun (x : 'type_kind) (_loc : Gram.Loc.t) ->
                                 (x : 'more_ctyp))));
                          ([ Gram.Skeyword "`";
                             Gram.Snterm
@@ -8688,7 +8701,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)"));
+                                "ANTIQUOT (\"\", _)"));
                             Gram.Skeyword ":";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -8711,7 +8724,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)"));
+                                "ANTIQUOT (\"\", _)"));
                             Gram.Skeyword ":";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -8729,7 +8742,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)")) ],
+                                "ANTIQUOT (\"\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8744,7 +8757,7 @@ module R =
                                  | ANTIQUOT (("module_binding" | "anti"), _)
                                      -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"module_binding\\\" | \\\"anti\\\"), _)")) ],
+                                "ANTIQUOT ((\"module_binding\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8789,7 +8802,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)"));
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)"));
                             Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (i : 'ident_quot) _
@@ -8822,7 +8835,7 @@ module R =
                                  | ANTIQUOT (("" | "id" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\\\"\\\" | \\\"id\\\" | \\\"anti\\\" | \\\"list\\\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"id\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -8853,7 +8866,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("virtual", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"virtual\\\", _)"));
+                                "ANTIQUOT (\"virtual\", _)"));
                             Gram.Snterm
                               (Gram.Entry.obj (ident : 'ident Gram.Entry.t));
                             Gram.Snterm
@@ -8917,7 +8930,7 @@ module R =
                               (((function
                                  | ANTIQUOT ("virtual", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"virtual\\\", _)"));
+                                "ANTIQUOT (\"virtual\", _)"));
                             Gram.Snterm
                               (Gram.Entry.obj (ident : 'ident Gram.Entry.t));
                             Gram.Snterm
@@ -9242,6 +9255,7 @@ module Camlp4QuotationCommon =
         let antiquot_expander =
           object
             inherit Ast.map as super
+              
             method patt =
               function
               | (Ast.PaAnt (_loc, s) | Ast.PaStr (_loc, s) as p) ->
@@ -9406,6 +9420,7 @@ module Camlp4QuotationCommon =
                                p)
                          | _ -> p)
               | p -> super#patt p
+              
             method expr =
               function
               | (Ast.ExAnt (_loc, s) | Ast.ExStr (_loc, s) as e) ->
@@ -9446,9 +9461,9 @@ module Camlp4QuotationCommon =
                                (Ast.ExId (_loc,
                                   (Ast.IdAcc (_loc,
                                      (Ast.IdUid (_loc, "Camlp4_import")),
-                                     (Ast.IdAcc (_loc,
-                                        (Ast.IdUid (_loc, "Oprint")),
-                                        (Ast.IdLid (_loc, "float_repres")))))))),
+                                        (Ast.IdAcc (_loc,
+                                           (Ast.IdUid (_loc, "Oprint")),
+                                           (Ast.IdLid (_loc, "float_repres")))))))),
                                e)
                          | "`str" ->
                              Ast.ExApp (_loc,
@@ -9805,6 +9820,7 @@ module Camlp4QuotationCommon =
                                e)
                          | _ -> e)
               | e -> super#expr e
+              
           end
           
         let add_quotation name entry mexpr mpatt =
@@ -11103,7 +11119,7 @@ module G =
                   if !r = Unused
                   then
                     print_warning e.name.loc
-                      ("Unused local entry \\\"" ^ (s ^ "\\\""))
+                      ("Unused local entry \"" ^ (s ^ "\""))
                   else ())
                ht)
           
@@ -11797,10 +11813,12 @@ module G =
           
         class subst gmod =
           object inherit Ast.map as super
+                   
             method ident =
               function
               | Ast.IdUid (_, x) when x = gm -> gmod
               | x -> super#ident x
+              
           end
           
         let subst_gmod ast gmod = (new subst gmod)#expr ast
@@ -11854,11 +11872,13 @@ module G =
         let wildcarder =
           object (self)
             inherit Ast.map as super
+              
             method patt =
               function
               | Ast.PaId (_loc, (Ast.IdLid (_, _))) -> Ast.PaAny _loc
               | Ast.PaAli (_, p, _) -> self#patt p
               | p -> super#patt p
+              
           end
           
         let mk_tok _loc p t =
@@ -12066,7 +12086,7 @@ module G =
                                      (((function
                                         | UIDENT "GLOBAL" -> true
                                         | _ -> false),
-                                       "UIDENT \\\"GLOBAL\\\"")) ],
+                                       "UIDENT \"GLOBAL\"")) ],
                                  (Gram.Action.mk
                                     (fun (__camlp4_0 : Gram.Token.t)
                                        (_loc : Gram.Loc.t) ->
@@ -12120,7 +12140,7 @@ module G =
                                      (((function
                                         | UIDENT "GLOBAL" -> true
                                         | _ -> false),
-                                       "UIDENT \\\"GLOBAL\\\"")) ],
+                                       "UIDENT \"GLOBAL\"")) ],
                                  (Gram.Action.mk
                                     (fun (__camlp4_0 : Gram.Token.t)
                                        (_loc : Gram.Loc.t) ->
@@ -12223,7 +12243,7 @@ module G =
                             Gram.Skeyword ".";
                             Gram.Stoken
                               (((function | LIDENT "t" -> true | _ -> false),
-                                "LIDENT \\\"t\\\"")) ],
+                                "LIDENT \"t\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) _
                                 (x : Gram.Token.t) (_loc : Gram.Loc.t) ->
@@ -12253,7 +12273,7 @@ module G =
                               (((function
                                  | UIDENT "GLOBAL" -> true
                                  | _ -> false),
-                                "UIDENT \\\"GLOBAL\\\""));
+                                "UIDENT \"GLOBAL\""));
                             Gram.Skeyword ":";
                             Gram.Slist1
                               (Gram.Snterm
@@ -12297,7 +12317,7 @@ module G =
                               (((function
                                  | UIDENT "LEVEL" -> true
                                  | _ -> false),
-                                "UIDENT \\\"LEVEL\\\""));
+                                "UIDENT \"LEVEL\""));
                             Gram.Snterm
                               (Gram.Entry.obj (string : 'string Gram.Entry.t)) ],
                           (Gram.Action.mk
@@ -12322,7 +12342,7 @@ module G =
                               (((function
                                  | UIDENT "AFTER" -> true
                                  | _ -> false),
-                                "UIDENT \\\"AFTER\\\""));
+                                "UIDENT \"AFTER\""));
                             Gram.Snterm
                               (Gram.Entry.obj (string : 'string Gram.Entry.t)) ],
                           (Gram.Action.mk
@@ -12347,7 +12367,7 @@ module G =
                               (((function
                                  | UIDENT "BEFORE" -> true
                                  | _ -> false),
-                                "UIDENT \\\"BEFORE\\\""));
+                                "UIDENT \"BEFORE\""));
                             Gram.Snterm
                               (Gram.Entry.obj (string : 'string Gram.Entry.t)) ],
                           (Gram.Action.mk
@@ -12373,7 +12393,7 @@ module G =
                               (((function
                                  | UIDENT "LAST" -> true
                                  | _ -> false),
-                                "UIDENT \\\"LAST\\\"")) ],
+                                "UIDENT \"LAST\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -12393,7 +12413,7 @@ module G =
                               (((function
                                  | UIDENT "FIRST" -> true
                                  | _ -> false),
-                                "UIDENT \\\"FIRST\\\"")) ],
+                                "UIDENT \"FIRST\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -12463,7 +12483,7 @@ module G =
                               (((function
                                  | UIDENT "NONA" -> true
                                  | _ -> false),
-                                "UIDENT \\\"NONA\\\"")) ],
+                                "UIDENT \"NONA\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -12483,7 +12503,7 @@ module G =
                               (((function
                                  | UIDENT "RIGHTA" -> true
                                  | _ -> false),
-                                "UIDENT \\\"RIGHTA\\\"")) ],
+                                "UIDENT \"RIGHTA\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -12503,7 +12523,7 @@ module G =
                               (((function
                                  | UIDENT "LEFTA" -> true
                                  | _ -> false),
-                                "UIDENT \\\"LEFTA\\\"")) ],
+                                "UIDENT \"LEFTA\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -12610,7 +12630,7 @@ module G =
                                         (((function
                                            | UIDENT "LEVEL" -> true
                                            | _ -> false),
-                                          "UIDENT \\\"LEVEL\\\""));
+                                          "UIDENT \"LEVEL\""));
                                       Gram.Stoken
                                         (((function
                                            | STRING ((_)) -> true
@@ -12704,7 +12724,7 @@ module G =
                     [ ((Some "top"), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Stoken
                               (((function | UIDENT "TRY" -> true | _ -> false),
-                                "UIDENT \\\"TRY\\\""));
+                                "UIDENT \"TRY\""));
                             Gram.Sself ],
                           (Gram.Action.mk
                              (fun (s : 'symbol) (__camlp4_0 : Gram.Token.t)
@@ -12723,7 +12743,7 @@ module G =
                                 | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function | UIDENT "OPT" -> true | _ -> false),
-                                "UIDENT \\\"OPT\\\""));
+                                "UIDENT \"OPT\""));
                             Gram.Sself ],
                           (Gram.Action.mk
                              (fun (s : 'symbol) (__camlp4_0 : Gram.Token.t)
@@ -12748,7 +12768,7 @@ module G =
                               (((function
                                  | UIDENT "LIST1" -> true
                                  | _ -> false),
-                                "UIDENT \\\"LIST1\\\""));
+                                "UIDENT \"LIST1\""));
                             Gram.Sself;
                             Gram.Sopt
                               (Gram.srules symbol
@@ -12756,7 +12776,7 @@ module G =
                                         (((function
                                            | UIDENT "SEP" -> true
                                            | _ -> false),
-                                          "UIDENT \\\"SEP\\\""));
+                                          "UIDENT \"SEP\""));
                                       Gram.Snterm
                                         (Gram.Entry.obj
                                            (symbol : 'symbol Gram.Entry.t)) ],
@@ -12795,7 +12815,7 @@ module G =
                               (((function
                                  | UIDENT "LIST0" -> true
                                  | _ -> false),
-                                "UIDENT \\\"LIST0\\\""));
+                                "UIDENT \"LIST0\""));
                             Gram.Sself;
                             Gram.Sopt
                               (Gram.srules symbol
@@ -12803,7 +12823,7 @@ module G =
                                         (((function
                                            | UIDENT "SEP" -> true
                                            | _ -> false),
-                                          "UIDENT \\\"SEP\\\""));
+                                          "UIDENT \"SEP\""));
                                       Gram.Snterm
                                         (Gram.Entry.obj
                                            (symbol : 'symbol Gram.Entry.t)) ],
@@ -12851,7 +12871,7 @@ module G =
                                         (((function
                                            | UIDENT "LEVEL" -> true
                                            | _ -> false),
-                                          "UIDENT \\\"LEVEL\\\""));
+                                          "UIDENT \"LEVEL\""));
                                       Gram.Stoken
                                         (((function
                                            | STRING ((_)) -> true
@@ -12888,7 +12908,7 @@ module G =
                                         (((function
                                            | UIDENT "LEVEL" -> true
                                            | _ -> false),
-                                          "UIDENT \\\"LEVEL\\\""));
+                                          "UIDENT \"LEVEL\""));
                                       Gram.Stoken
                                         (((function
                                            | STRING ((_)) -> true
@@ -12941,7 +12961,7 @@ module G =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)")) ],
+                                "ANTIQUOT (\"\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (x : Gram.Token.t) (_loc : Gram.Loc.t) ->
@@ -13057,7 +13077,7 @@ module G =
                               (((function
                                  | UIDENT "NEXT" -> true
                                  | _ -> false),
-                                "UIDENT \\\"NEXT\\\"")) ],
+                                "UIDENT \"NEXT\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -13074,7 +13094,7 @@ module G =
                               (((function
                                  | UIDENT "SELF" -> true
                                  | _ -> false),
-                                "UIDENT \\\"SELF\\\"")) ],
+                                "UIDENT \"SELF\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -13153,7 +13173,7 @@ module G =
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
-                                "ANTIQUOT (\\\"\\\", _)")) ],
+                                "ANTIQUOT (\"\", _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -13263,7 +13283,7 @@ module G =
                               (((function
                                  | UIDENT "FOLD1" -> true
                                  | _ -> false),
-                                "UIDENT \\\"FOLD1\\\""));
+                                "UIDENT \"FOLD1\""));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (simple_expr : 'simple_expr Gram.Entry.t));
@@ -13273,7 +13293,7 @@ module G =
                             Gram.Sself;
                             Gram.Stoken
                               (((function | UIDENT "SEP" -> true | _ -> false),
-                                "UIDENT \\\"SEP\\\""));
+                                "UIDENT \"SEP\""));
                             Gram.Sself ],
                           (Gram.Action.mk
                              (fun (sep : 'symbol) (__camlp4_1 : Gram.Token.t)
@@ -13291,7 +13311,7 @@ module G =
                               (((function
                                  | UIDENT "FOLD0" -> true
                                  | _ -> false),
-                                "UIDENT \\\"FOLD0\\\""));
+                                "UIDENT \"FOLD0\""));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (simple_expr : 'simple_expr Gram.Entry.t));
@@ -13301,7 +13321,7 @@ module G =
                             Gram.Sself;
                             Gram.Stoken
                               (((function | UIDENT "SEP" -> true | _ -> false),
-                                "UIDENT \\\"SEP\\\""));
+                                "UIDENT \"SEP\""));
                             Gram.Sself ],
                           (Gram.Action.mk
                              (fun (sep : 'symbol) (__camlp4_1 : Gram.Token.t)
@@ -13319,7 +13339,7 @@ module G =
                               (((function
                                  | UIDENT "FOLD1" -> true
                                  | _ -> false),
-                                "UIDENT \\\"FOLD1\\\""));
+                                "UIDENT \"FOLD1\""));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (simple_expr : 'simple_expr Gram.Entry.t));
@@ -13341,7 +13361,7 @@ module G =
                               (((function
                                  | UIDENT "FOLD0" -> true
                                  | _ -> false),
-                                "UIDENT \\\"FOLD0\\\""));
+                                "UIDENT \"FOLD0\""));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (simple_expr : 'simple_expr Gram.Entry.t));
@@ -13546,11 +13566,14 @@ Added statements:
           in loop
           
         class reloc _loc =
-          object inherit Ast.map as super method loc = fun _ -> _loc end
+          object inherit Ast.map as super
+                    method loc = fun _ -> _loc
+                       end
           
         (* method _Loc_t _ = _loc; *)
         class subst _loc env =
           object inherit reloc _loc as super
+                   
             method expr =
               function
               | (Ast.ExId (_, (Ast.IdLid (_, x))) |
@@ -13558,6 +13581,7 @@ Added statements:
                  as e) ->
                   (try List.assoc x env with | Not_found -> super#expr e)
               | e -> super#expr e
+              
             method patt =
               function
               | (Ast.PaId (_, (Ast.IdLid (_, x))) |
@@ -13566,6 +13590,7 @@ Added statements:
                   (try substp _loc [] (List.assoc x env)
                    with | Not_found -> super#patt p)
               | p -> super#patt p
+              
           end
           
         let incorrect_number loc l1 l2 =
@@ -14312,7 +14337,7 @@ Added statements:
                               (((function
                                  | LIDENT "__LOCATION__" -> true
                                  | _ -> false),
-                                "LIDENT \\\"__LOCATION__\\\"")) ],
+                                "LIDENT \"__LOCATION__\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -14373,7 +14398,7 @@ Added statements:
                               (((function
                                  | LIDENT "__FILE__" -> true
                                  | _ -> false),
-                                "LIDENT \\\"__FILE__\\\"")) ],
+                                "LIDENT \"__FILE__\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -14423,112 +14448,6 @@ Added statements:
                              (fun (i : Gram.Token.t) (_loc : Gram.Loc.t) ->
                                 (let i = Gram.Token.extract_string i in i :
                                   'uident)))) ]) ]))
-                  ());
-             Gram.extend
-               (* dirty hack to allow polymorphic variants using the introduced keywords. *)
-               (expr : 'expr Gram.Entry.t)
-               ((fun () ->
-                   ((Some (Camlp4.Sig.Grammar.Before "simple")),
-                    [ (None, None,
-                       [ ([ Gram.Skeyword "`";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (a_ident : 'a_ident Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (s : 'a_ident) _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExVrn (_loc, s) : 'expr))));
-                         ([ Gram.Skeyword "`";
-                            Gram.srules expr
-                              [ ([ Gram.Skeyword "IN" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30))));
-                                ([ Gram.Skeyword "DEFINE" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30))));
-                                ([ Gram.Skeyword "ENDIF" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30))));
-                                ([ Gram.Skeyword "END" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30))));
-                                ([ Gram.Skeyword "ELSE" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30))));
-                                ([ Gram.Skeyword "THEN" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30))));
-                                ([ Gram.Skeyword "IFNDEF" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30))));
-                                ([ Gram.Skeyword "IFDEF" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__30)))) ] ],
-                          (Gram.Action.mk
-                             (fun (kwd : 'e__30) _ (_loc : Gram.Loc.t) ->
-                                (Ast.ExVrn (_loc, kwd) : 'expr)))) ]) ]))
-                  ());
-             Gram.extend (* idem *) (patt : 'patt Gram.Entry.t)
-               ((fun () ->
-                   ((Some (Camlp4.Sig.Grammar.Before "simple")),
-                    [ (None, None,
-                       [ ([ Gram.Skeyword "`";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (a_ident : 'a_ident Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (s : 'a_ident) _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaVrn (_loc, s) : 'patt))));
-                         ([ Gram.Skeyword "`";
-                            Gram.srules patt
-                              [ ([ Gram.Skeyword "ENDIF" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__31))));
-                                ([ Gram.Skeyword "END" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__31))));
-                                ([ Gram.Skeyword "ELSE" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__31))));
-                                ([ Gram.Skeyword "THEN" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__31))));
-                                ([ Gram.Skeyword "IFNDEF" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__31))));
-                                ([ Gram.Skeyword "IFDEF" ],
-                                 (Gram.Action.mk
-                                    (fun (x : Gram.Token.t)
-                                       (_loc : Gram.Loc.t) ->
-                                       (Gram.Token.extract_string x : 'e__31)))) ] ],
-                          (Gram.Action.mk
-                             (fun (kwd : 'e__31) _ (_loc : Gram.Loc.t) ->
-                                (Ast.PaVrn (_loc, kwd) : 'patt)))) ]) ]))
                   ()))
           
         let _ =
@@ -14737,7 +14656,7 @@ module D =
                               (((function
                                  | LIDENT "camlp4_debug" -> true
                                  | _ -> false),
-                                "LIDENT \\\"camlp4_debug\\\"")) ],
+                                "LIDENT \"camlp4_debug\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -14749,7 +14668,7 @@ module D =
                               (((function
                                  | LIDENT "debug" -> true
                                  | _ -> false),
-                                "LIDENT \\\"debug\\\"")) ],
+                                "LIDENT \"debug\"")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t)
                                 (_loc : Gram.Loc.t) ->
@@ -15070,12 +14989,12 @@ module L =
                                       Gram.Skeyword "<-" ],
                                     (Gram.Action.mk
                                        (fun _ (p : 'patt) (_loc : Gram.Loc.t)
-                                          -> (p : 'e__32)))) ]);
+                                          -> (p : 'e__30)))) ]);
                             Gram.Snterml
                               ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top") ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) (p : 'e__32)
+                             (fun (e : 'expr) (p : 'e__30)
                                 (_loc : Gram.Loc.t) ->
                                 (`gen ((p, e)) : 'item)))) ]) ]))
                   ()))
@@ -15265,7 +15184,7 @@ module B =
           | (("Parsers" | ""),
              ("pa_rp.cmo" | "rp" | "rparser" |
                 "camlp4ocamlrevisedparserparser.cmo"))
-              -> load [ pa_r; pa_rp ]
+              -> load [ pa_r; pa_o; pa_rp ]
           | (("Parsers" | ""),
              ("pa_op.cmo" | "op" | "parser" | "camlp4ocamlparserparser.cmo"))
               -> load [ pa_r; pa_o; pa_rp; pa_op ]
@@ -15289,7 +15208,7 @@ module B =
               load [ pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_l; pa_m ]
           | (("Parsers" | ""), "of") ->
               load
-                [ pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_q; pa_g; pa_l; pa_m ]
+                [ pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_l; pa_m ]
           | (("Parsers" | ""), ("comp" | "camlp4listcomprehension.cmo")) ->
               load [ pa_l ]
           | (("Filters" | ""), ("lift" | "camlp4astlifter.cmo")) ->
@@ -15327,7 +15246,7 @@ module B =
               in real_load (try find_in_path y with | Not_found -> x));
          !rcall_callback ())
       
-    let print_warning = eprintf "%a:\\n%s@." Loc.print
+    let print_warning = eprintf "%a:\n%s@." Loc.print
       
     let rec parse_file dyn_loader name pa getdir =
       let directive_handler =
@@ -15394,7 +15313,12 @@ module B =
       
     let usage ini_sl ext_sl =
       (eprintf
-         "\\\nUsage: camlp4 [load-options] [--] [other-options]\\n\\\nOptions:\\n\\\n<file>.ml        Parse this implementation file\\n\\\n<file>.mli       Parse this interface file\\n\\\n<file>.%s Load this module inside the Camlp4 core@."
+         "\
+Usage: camlp4 [load-options] [--] [other-options]\n\
+Options:\n\
+<file>.ml        Parse this implementation file\n\
+<file>.mli       Parse this interface file\n\
+<file>.%s Load this module inside the Camlp4 core@."
          (if DynLoader.is_native then "cmxs     " else "(cmo|cma)");
        Options.print_usage_list ini_sl;
        (* loop (ini_sl @ ext_sl) where rec loop =
@@ -15410,7 +15334,9 @@ module B =
       
     let warn_noassert () =
       eprintf
-        "\\\ncamlp4 warning: option -noassert is obsolete\\n\\\nYou should give the -noassert option to the ocaml compiler instead.@."
+        "\
+camlp4 warning: option -noassert is obsolete\n\
+You should give the -noassert option to the ocaml compiler instead.@."
       
     type file_kind =
       | Intf of string
@@ -15484,7 +15410,7 @@ module B =
         ("-vnum", (Arg.Unit just_print_the_version),
          "Print Camlp4 version number and exit.");
         ("-no_quot", (Arg.Clear Camlp4_config.quotations),
-         "Don't parse quotations, allowing to use, e.g. \\\"<:>\\\" as token.");
+         "Don't parse quotations, allowing to use, e.g. \"<:>\" as token.");
         ("-loaded-modules", (Arg.Set print_loaded_modules),
          "Print the list of loaded modules.");
         ("-parser", (Arg.String (rewrite_and_load "Parsers")),
@@ -15534,7 +15460,7 @@ module B =
                  | [] -> ()
                  | ("-help" | "--help" | "-h" | "-?") :: _ -> usage ()
                  | s :: _ ->
-                     (eprintf "%s: unknown or misused option\\n" s;
+                     (eprintf "%s: unknown or misused option\n" s;
                       eprintf "Use option -help for usage@.";
                       exit 2));
                 do_task usage;
@@ -15544,7 +15470,7 @@ module B =
                 else ()))
         with
         | Arg.Bad s ->
-            (eprintf "Error: %s\\n" s;
+            (eprintf "Error: %s\n" s;
              eprintf "Use option -help for usage@.";
              exit 2)
         | Arg.Help _ -> usage ()
