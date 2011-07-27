@@ -5,4 +5,3 @@ mltk
 .depend
 *.ml
 *.mli
-modules
