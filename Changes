@@ -20,7 +20,8 @@ Standard library:
       with user-provided hash functions.
 
 Bug Fixes:
-
+- type abbreviations expanding to a universal type variable were not working
+  correctly during unification
 
 Objective Caml 3.12.1:
 ----------------------

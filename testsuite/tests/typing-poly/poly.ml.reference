@@ -579,4 +579,11 @@ val l : t = {f = <lazy>}
      ^^^^^^^^^^^^^
 Error: This field value has type unit -> unit which is less general than
          'a. 'a -> unit
+#               module Polux :
+  sig
+    type 'a t = 'a
+    val ident : 'a -> 'a
+    class alias : object method alias : 'a t -> 'a end
+    val f : < m : 'a. 'a > -> < m : 'a. 'a >
+  end
 # 

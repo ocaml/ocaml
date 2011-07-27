@@ -622,3 +622,11 @@ let l : t = { f = lazy (raise Not_found)};;
 type t = {f: 'a. 'a -> unit};;
 {f=fun ?x y -> ()};;
 {f=fun ?x y -> y};; (* fail *)
+
+(* Polux Moon caml-list 2011-07-26 *)
+module Polux = struct
+  type 'par t = 'par
+  let ident v = v
+  class alias = object method alias : 'a . 'a t -> 'a = ident end
+  let f (x : <m : 'a. 'a t>) = (x : <m : 'a. 'a>)
+end;;
