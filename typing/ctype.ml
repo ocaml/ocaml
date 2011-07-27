@@ -1616,6 +1616,12 @@ and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
+  match (d1, d2) with (* handle univars specially *)
+    (Tunivar, Tunivar) ->
+      unify_univar t1' t2' !univar_pairs;
+      update_level env t1'.level t2';
+      link_type t1' t2'
+  | _ ->    
 
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
   occur env t1' t2;
