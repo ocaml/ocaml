@@ -514,7 +514,7 @@ Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int > 
 #     val f2 :
   < m : 'a. (< p : < a : int >; .. > as 'a) -> int > ->
-  < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int > = <fun>
+  < m : 'b. (< p : < a : int; b : int >; .. > as 'b) -> int > = <fun>
 #     Characters 13-107:
   ..(x : <m:'a. (<p:<a:int;b:int>;..> as 'a) -> int>
       :> <m:'b. (<p:<a:int>;..> as 'b) -> int>)..
@@ -528,7 +528,7 @@ Error: Type < p : < a : int; b : int >; .. > is not a subtype of
 The second object type has no method b
 #   val f5 :
   < m : 'a. [< `A of < p : int > ] as 'a > ->
-  < m : 'a. [< `A of <  > ] as 'a > = <fun>
+  < m : 'b. [< `A of <  > ] as 'b > = <fun>
 #   Characters 13-83:
     (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -538,7 +538,11 @@ Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
 # type u = c option
 # val just : 'a option -> 'a = <fun>
 # val f : c -> 'a -> 'a = <fun>
-#     val g : c -> 'a -> 'a = <fun>
+#     Characters 106-117:
+    let x = List.hd [Some x; none] in (just x)#id;;
+                                      ^^^^^^^^^^^
+Warning 18: this use of a polymorphic method is not principal.
+val g : c -> 'a -> 'a = <fun>
 #     val h : < id : 'a; .. > -> 'a = <fun>
 #       val f : 'a -> int = <fun>
 val g : 'a -> int = <fun>
