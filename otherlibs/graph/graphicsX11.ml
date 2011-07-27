@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*    Pierre Weis and Jun Furuse, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)

@@ -23,7 +23,7 @@ Bug Fixes:
 - type abbreviations expanding to a universal type variable were not working
   correctly during unification
 
-Objective Caml 3.12.1:
+OCaml 3.12.1:
 ----------------------
 
 Bug fixes:

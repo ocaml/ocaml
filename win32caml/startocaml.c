@@ -1,8 +1,9 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*  Developed by Jacob Navia.                                          */
+/*                                                                     */
 /*  Copyright 2001 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with    */
@@ -37,28 +38,28 @@ Errors:
 ------------------------------------------------------------------------*/
 void ShowDbgMsg(char *str)
 {
-	HWND hWnd;
-	char p[20], message[255];
-	hWnd = hwndMain;
-	if (IsIconic(hWnd)){
-		ShowWindow(hWnd,SW_RESTORE);
-	}
-	strncpy(message, str, 254);
-	message[254] = 0;
-	strcpy(p, "Error");
-	MessageBox(hWnd, message, p, MB_OK | MB_ICONHAND|MB_TASKMODAL|MB_SETFOREGROUND);
+    HWND hWnd;
+    char p[20], message[255];
+    hWnd = hwndMain;
+    if (IsIconic(hWnd)){
+        ShowWindow(hWnd,SW_RESTORE);
+    }
+    strncpy(message, str, 254);
+    message[254] = 0;
+    strcpy(p, "Error");
+    MessageBox(hWnd, message, p, MB_OK | MB_ICONHAND|MB_TASKMODAL|MB_SETFOREGROUND);
 }
 
 int AskYesOrNo(char *msg)
 {
-	HWND hwnd;
-	int r;
+    HWND hwnd;
+    int r;
 
-	hwnd = hwndMain;
-	r = MessageBox(hwnd, msg, "Ocaml", MB_YESNO | MB_SETFOREGROUND);
-	if (r == IDYES)
-		return (TRUE);
-	return (FALSE);
+    hwnd = hwndMain;
+    r = MessageBox(hwnd, msg, "Ocaml", MB_YESNO | MB_SETFOREGROUND);
+    if (r == IDYES)
+        return (TRUE);
+    return (FALSE);
 }
 
 
@@ -66,60 +67,60 @@ static DWORD OcamlStatus;
 
 static int RegistryError(void)
 {
-	char buf[512];
+    char buf[512];
 
-	wsprintf(buf,"Error %d writing to the registry",GetLastError());
-	ShowDbgMsg(buf);
-	return 0;
+    wsprintf(buf,"Error %d writing to the registry",GetLastError());
+    ShowDbgMsg(buf);
+    return 0;
 }
 
 static int ReadRegistry(HKEY hroot,
-						char * p1, char * p2, char * p3,
-						char dest[1024])
+                        char * p1, char * p2, char * p3,
+                        char dest[1024])
 {
-	HKEY h1, h2;
-	DWORD dwType;
-	unsigned long size;
-	LONG ret;
+    HKEY h1, h2;
+    DWORD dwType;
+    unsigned long size;
+    LONG ret;
 
-	if (RegOpenKeyExA(hroot, p1, 0, KEY_QUERY_VALUE, &h1) != ERROR_SUCCESS)
-		return 0;
-	if (RegOpenKeyExA(h1, p2, 0, KEY_QUERY_VALUE, &h2) != ERROR_SUCCESS) {
-		RegCloseKey(h1);
-		return 0;
-	}
-	dwType = REG_SZ;
-	size = 1024;
-	ret = RegQueryValueExA(h2, p3, 0, &dwType, dest, &size);
-	RegCloseKey(h2);
-	RegCloseKey(h1);
-	return ret == ERROR_SUCCESS;
+    if (RegOpenKeyExA(hroot, p1, 0, KEY_QUERY_VALUE, &h1) != ERROR_SUCCESS)
+        return 0;
+    if (RegOpenKeyExA(h1, p2, 0, KEY_QUERY_VALUE, &h2) != ERROR_SUCCESS) {
+        RegCloseKey(h1);
+        return 0;
+    }
+    dwType = REG_SZ;
+    size = 1024;
+    ret = RegQueryValueExA(h2, p3, 0, &dwType, dest, &size);
+    RegCloseKey(h2);
+    RegCloseKey(h1);
+    return ret == ERROR_SUCCESS;
 }
 
 static int WriteRegistry(HKEY hroot,
-						 char * p1, char * p2, char * p3,
-						 char data[1024])
+                         char * p1, char * p2, char * p3,
+                         char data[1024])
 {
-	HKEY h1, h2;
-	DWORD disp;
-	LONG ret;
+    HKEY h1, h2;
+    DWORD disp;
+    LONG ret;
 
-	if (RegOpenKeyExA(hroot, p1, 0, KEY_QUERY_VALUE, &h1) != ERROR_SUCCESS)
-		return 0;
-	if (RegCreateKeyExA(h1, p2, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &h2, &disp)
-		!= ERROR_SUCCESS) {
-			RegCloseKey(h1);
-			return 0;
-		}
-		ret = RegSetValueEx(h2, p3, 0, REG_SZ, data, strlen(data) + 1);
-		RegCloseKey(h2);
-		RegCloseKey(h1);
-		return ret == ERROR_SUCCESS;
+    if (RegOpenKeyExA(hroot, p1, 0, KEY_QUERY_VALUE, &h1) != ERROR_SUCCESS)
+        return 0;
+    if (RegCreateKeyExA(h1, p2, 0, NULL, 0, KEY_ALL_ACCESS, NULL, &h2, &disp)
+        != ERROR_SUCCESS) {
+            RegCloseKey(h1);
+            return 0;
+        }
+        ret = RegSetValueEx(h2, p3, 0, REG_SZ, data, strlen(data) + 1);
+        RegCloseKey(h2);
+        RegCloseKey(h1);
+        return ret == ERROR_SUCCESS;
 }
 
 /*------------------------------------------------------------------------
 Procedure:     GetOcamlPath ID:1
-Purpose:       Read the registry key 
+Purpose:       Read the registry key
 HKEY_LOCAL_MACHINE\Software\Objective Caml
 or
 HKEY_CURRENT_USER\Software\Objective Caml,
@@ -141,13 +142,13 @@ int GetOcamlPath(void)
   char path[1024], *p;
 
   while (( !ReadRegistry(HKEY_CURRENT_USER,
-			 "Software", "Objective Caml",
-			 "InterpreterPath", path)
-	   &&
-	   !ReadRegistry(HKEY_LOCAL_MACHINE,
-			 "Software", "Objective Caml",
-			 "InterpreterPath", path))
-	 || _access(path, 0) != 0) {
+             "Software", "Objective Caml",
+             "InterpreterPath", path)
+       &&
+       !ReadRegistry(HKEY_LOCAL_MACHINE,
+             "Software", "Objective Caml",
+             "InterpreterPath", path))
+     || _access(path, 0) != 0) {
     /* Registry key doesn't exist or contains invalid path */
     /* Ask user */
     if (!BrowseForFile("Ocaml interpreter|ocaml.exe", path)) {
@@ -155,8 +156,8 @@ int GetOcamlPath(void)
       exit(0);
     }
     WriteRegistry(HKEY_CURRENT_USER,
-		  "Software", "Objective Caml",
-		  "InterpreterPath", path);
+          "Software", "Objective Caml",
+          "InterpreterPath", path);
     /* Iterate to validate again */
   }
   strcpy(OcamlPath, path);
@@ -185,11 +186,11 @@ Errors:
 ------------------------------------------------------------------------*/
 int IsWindowsNT(void)
 {
-	OSVERSIONINFO osv;
+    OSVERSIONINFO osv;
 
-	osv.dwOSVersionInfoSize = sizeof(osv);
-	GetVersionEx(&osv);
-	return(osv.dwPlatformId == VER_PLATFORM_WIN32_NT);
+    osv.dwOSVersionInfoSize = sizeof(osv);
+    GetVersionEx(&osv);
+    return(osv.dwPlatformId == VER_PLATFORM_WIN32_NT);
 }
 
 /*------------------------------------------------------------------------
@@ -215,56 +216,56 @@ thread will exit. No error message is shown.
 DWORD WINAPI DoStartOcaml(LPVOID param)
 {
         HWND hwndParent = (HWND) param;
-	char *cmdline;
-	int processStarted;
-	LPSECURITY_ATTRIBUTES lpsa=NULL;
-	SECURITY_ATTRIBUTES sa;
-	SECURITY_DESCRIPTOR sd;
+    char *cmdline;
+    int processStarted;
+    LPSECURITY_ATTRIBUTES lpsa=NULL;
+    SECURITY_ATTRIBUTES sa;
+    SECURITY_DESCRIPTOR sd;
 
-	sa.nLength = sizeof(SECURITY_ATTRIBUTES);
-	// Under windows NT/2000/Whistler we have to initialize the security descriptors
-	// This is not necessary under windows 98/95.
-	if (IsWindowsNT()) {
-		InitializeSecurityDescriptor(&sd,SECURITY_DESCRIPTOR_REVISION);
-		SetSecurityDescriptorDacl(&sd,TRUE,NULL,FALSE);
-		sa.bInheritHandle = TRUE;
-		sa.lpSecurityDescriptor = &sd;
-		lpsa = &sa;
-	}
-	memset(&startInfo,0,sizeof(STARTUPINFO));
-	startInfo.cb = sizeof(STARTUPINFO);
-	// Create a pipe for the child process's STDOUT.
-	if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &sa, 0))
-		return 0;
-	// Create a pipe for the child process's STDIN.
-	if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &sa, 0))
-		return 0;
-	// Setup the start info structure
-	startInfo.dwFlags = STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
-	startInfo.wShowWindow = SW_HIDE;
-	startInfo.hStdOutput = hChildStdoutWr;
-	startInfo.hStdError = hChildStdoutWr;
-	startInfo.hStdInput = hChildStdinRd;
-	cmdline = OcamlPath;
-	// Set the OCAMLLIB environment variable
-	SetEnvironmentVariable("OCAMLLIB", LibDir);
-	// Let's go: start the ocaml interpreter
-	processStarted = CreateProcess(NULL,cmdline,lpsa,lpsa,1,
-		CREATE_NEW_PROCESS_GROUP|NORMAL_PRIORITY_CLASS,
-		NULL,ProgramParams.CurrentWorkingDir,&startInfo,&pi);
-	if (processStarted) {
-		WaitForSingleObject(pi.hProcess,INFINITE);
-		GetExitCodeProcess(pi.hProcess,(unsigned long *)&OcamlStatus);
-		CloseHandle(pi.hProcess);
-		PostMessage(hwndMain,WM_QUITOCAML,0,0);
-	}
-	else {
-		char *msg = malloc(1024);
-		wsprintf(msg,"Impossible to start ocaml.exe in:\n%s",cmdline);
-		ShowDbgMsg(msg);
-		free(msg);
-	}
-	return 0;
+    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    // Under windows NT/2000/Whistler we have to initialize the security descriptors
+    // This is not necessary under windows 98/95.
+    if (IsWindowsNT()) {
+        InitializeSecurityDescriptor(&sd,SECURITY_DESCRIPTOR_REVISION);
+        SetSecurityDescriptorDacl(&sd,TRUE,NULL,FALSE);
+        sa.bInheritHandle = TRUE;
+        sa.lpSecurityDescriptor = &sd;
+        lpsa = &sa;
+    }
+    memset(&startInfo,0,sizeof(STARTUPINFO));
+    startInfo.cb = sizeof(STARTUPINFO);
+    // Create a pipe for the child process's STDOUT.
+    if (! CreatePipe(&hChildStdoutRd, &hChildStdoutWr, &sa, 0))
+        return 0;
+    // Create a pipe for the child process's STDIN.
+    if (! CreatePipe(&hChildStdinRd, &hChildStdinWr, &sa, 0))
+        return 0;
+    // Setup the start info structure
+    startInfo.dwFlags = STARTF_USESTDHANDLES|STARTF_USESHOWWINDOW;
+    startInfo.wShowWindow = SW_HIDE;
+    startInfo.hStdOutput = hChildStdoutWr;
+    startInfo.hStdError = hChildStdoutWr;
+    startInfo.hStdInput = hChildStdinRd;
+    cmdline = OcamlPath;
+    // Set the OCAMLLIB environment variable
+    SetEnvironmentVariable("OCAMLLIB", LibDir);
+    // Let's go: start the ocaml interpreter
+    processStarted = CreateProcess(NULL,cmdline,lpsa,lpsa,1,
+        CREATE_NEW_PROCESS_GROUP|NORMAL_PRIORITY_CLASS,
+        NULL,ProgramParams.CurrentWorkingDir,&startInfo,&pi);
+    if (processStarted) {
+        WaitForSingleObject(pi.hProcess,INFINITE);
+        GetExitCodeProcess(pi.hProcess,(unsigned long *)&OcamlStatus);
+        CloseHandle(pi.hProcess);
+        PostMessage(hwndMain,WM_QUITOCAML,0,0);
+    }
+    else {
+        char *msg = malloc(1024);
+        wsprintf(msg,"Impossible to start ocaml.exe in:\n%s",cmdline);
+        ShowDbgMsg(msg);
+        free(msg);
+    }
+    return 0;
 }
 
 /*------------------------------------------------------------------------
@@ -278,12 +279,12 @@ Errors:        None
 ------------------------------------------------------------------------*/
 int WriteToPipe(char *data)
 {
-	DWORD dwWritten;
+    DWORD dwWritten;
 
-	if (! WriteFile(hChildStdinWr, data, strlen(data), &dwWritten, NULL))
-		return 0;
+    if (! WriteFile(hChildStdinWr, data, strlen(data), &dwWritten, NULL))
+        return 0;
 
-	return dwWritten;
+    return dwWritten;
 
 }
 
@@ -300,17 +301,17 @@ Errors:        None explicit
 ------------------------------------------------------------------------*/
 int ReadFromPipe(char *data,int len)
 {
-	DWORD dwRead;
+    DWORD dwRead;
 
-	PeekNamedPipe(hChildStdoutRd,data,len,NULL,&dwRead,NULL);
-	if (dwRead == 0)
-		return 0;
+    PeekNamedPipe(hChildStdoutRd,data,len,NULL,&dwRead,NULL);
+    if (dwRead == 0)
+        return 0;
 
-	// Read output from the child process, and write to parent's STDOUT.
-	if( !ReadFile( hChildStdoutRd, data, len, &dwRead, NULL) || dwRead == 0)
-		return 0;
+    // Read output from the child process, and write to parent's STDOUT.
+    if( !ReadFile( hChildStdoutRd, data, len, &dwRead, NULL) || dwRead == 0)
+        return 0;
 
-	return dwRead;
+    return dwRead;
 }
 
 static DWORD tid;
@@ -324,39 +325,39 @@ Errors:
 ------------------------------------------------------------------------*/
 int StartOcaml(void)
 {
-	getcwd(ProgramParams.CurrentWorkingDir,sizeof(ProgramParams.CurrentWorkingDir));
-	CreateThread(NULL,0,DoStartOcaml,hwndMain,0,&tid);
-	return 1;
+    getcwd(ProgramParams.CurrentWorkingDir,sizeof(ProgramParams.CurrentWorkingDir));
+    CreateThread(NULL,0,DoStartOcaml,hwndMain,0,&tid);
+    return 1;
 }
 
 
 void *SafeMalloc(int size)
 {
-	void *result;
+    void *result;
 
-	if (size < 0) {
-		char message[1024];
+    if (size < 0) {
+        char message[1024];
 
 error:
-		sprintf(message,"Can't allocate %d bytes",size);
-		MessageBox(NULL, message, "Ocaml", MB_OK);
-		exit(-1);
-	}
-	result = malloc(size);
+        sprintf(message,"Can't allocate %d bytes",size);
+        MessageBox(NULL, message, "Ocaml", MB_OK);
+        exit(-1);
+    }
+    result = malloc(size);
 
-	if (result == NULL)
-		goto error;
+    if (result == NULL)
+        goto error;
 
-	return result;
+    return result;
 }
 
 
 void InterruptOcaml(void)
 {
-	if (!GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pi.dwProcessId)) {
-		char message[1024];
-		sprintf(message, "GenerateConsole failed: %lu\n", GetLastError());
-		MessageBox(NULL, message, "Ocaml", MB_OK);
-	}
-	WriteToPipe(" ");
+    if (!GenerateConsoleCtrlEvent(CTRL_BREAK_EVENT, pi.dwProcessId)) {
+        char message[1024];
+        sprintf(message, "GenerateConsole failed: %lu\n", GetLastError());
+        MessageBox(NULL, message, "Ocaml", MB_OK);
+    }
+    WriteToPipe(" ");
 }

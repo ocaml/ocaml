@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -104,7 +104,7 @@ val iteri : (int -> char -> unit) -> string -> unit
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
    represented by escape sequences, following the lexical
-   conventions of Objective Caml.  If there is no special
+   conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
    not a copy. *)
 

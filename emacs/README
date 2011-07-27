@@ -1,7 +1,7 @@
         O'Caml emacs mode, snapshot of $Date$
 
 The files in this archive define a caml-mode for emacs, for editing
-Objective Caml and Objective Label programs, as well as an
+OCaml and Objective Label programs, as well as an
 inferior-caml-mode, to run a toplevel.
 
 Caml-mode supports indentation, compilation and error retrieving,
@@ -21,7 +21,7 @@ three lines in your .emacs.
     (autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
 
 I added camldebug.el from the original distribution, since there will
-soon be a debugger for Objective Caml, but I do not know enough about
+soon be a debugger for OCaml, but I do not know enough about
 it.
 
 To install the mode itself, edit the Makefile and do

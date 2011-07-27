@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*          Damien Doligez, projet Moscova, INRIA Rocquencourt         *)
 (*                                                                     *)

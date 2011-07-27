@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Luc Maranget projet Moscova INRIA Rocquencourt           *)
 (*                                                                     *)

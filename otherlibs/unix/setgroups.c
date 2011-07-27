@@ -1,6 +1,8 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
+/*                                                                     */
+/* Contributed by Stephane Glondu <steph@glondu.net>                   */
 /*                                                                     */
 /*  Copyright 2009 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
@@ -8,8 +10,6 @@
 /*  the special exception on linking described in file ../../LICENSE.  */
 /*                                                                     */
 /***********************************************************************/
-
-/* Contributed by Stephane Glondu <steph@glondu.net> */
 
 /* $Id$ */
 

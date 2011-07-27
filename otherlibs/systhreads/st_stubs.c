@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                             Objective Caml                          */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */

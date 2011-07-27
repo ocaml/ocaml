@@ -1,3 +1,17 @@
+(****************************************************************************)
+(*                                                                          *)
+(*                                   OCaml                                  *)
+(*                                                                          *)
+(*                            INRIA Rocquencourt                            *)
+(*                                                                          *)
+(*  Copyright  2007   Institut National de Recherche  en  Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed under   *)
+(*  the terms of the GNU Library General Public License, with the special   *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
+(*                                                                          *)
+(****************************************************************************)
+
 module R = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4OCamlRevisedParser.ml"; end;
 module Camlp4QuotationCommon = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4QuotationCommon.ml"; end;
 module Q = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4QuotationExpander.ml"; end;

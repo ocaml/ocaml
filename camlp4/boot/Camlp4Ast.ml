@@ -1,14 +1,14 @@
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 (* Authors:
@@ -4990,7 +4990,20 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
               let _x = o#loc _x in
               let _x_i1 = o#string _x_i1 in MbAnt _x _x_i1 ];
         method meta_option :
-          ! 'a 'a_out.
+          ! (****************************************************************************)
+            (*                                                                          *)
+            (*                                   OCaml                                  *)
+            (*                                                                          *)
+            (*                            INRIA Rocquencourt                            *)
+            (*                                                                          *)
+            (*  Copyright  2007   Institut National de Recherche  en  Informatique et   *)
+            (*  en Automatique.  All rights reserved.  This file is distributed under   *)
+            (*  the terms of the GNU Library General Public License, with the special   *)
+            (*  exception on linking described in LICENSE at the top of the OCaml       *)
+            (*  source tree.                                                            *)
+            (*                                                                          *)
+            (****************************************************************************)
+            'a 'a_out.
             ('self_type -> 'a -> 'a_out) ->
               meta_option 'a -> meta_option 'a_out =
           fun _f_a ->

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -20,7 +20,7 @@
    sent over a pipe or network connection.  The bytes can then
    be read back later, possibly in another process, and decoded back
    into a data structure. The format for the byte sequences
-   is compatible across all machines for a given version of Objective Caml.
+   is compatible across all machines for a given version of OCaml.
 
    Warning: marshaling is currently not type-safe. The type
    of marshaled data is not transmitted along the value of the data,

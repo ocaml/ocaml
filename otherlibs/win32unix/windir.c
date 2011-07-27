@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*   Pascal Cuoq and Xavier Leroy, projet Cristal, INRIA Rocquencourt  */
 /*                                                                     */

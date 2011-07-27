@@ -1,3 +1,17 @@
+(****************************************************************************)
+(*                                                                          *)
+(*                                   OCaml                                  *)
+(*                                                                          *)
+(*                            INRIA Rocquencourt                            *)
+(*                                                                          *)
+(*  Copyright  2008  Institut  National  de  Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed under   *)
+(*  the terms of the GNU Library General Public License, with the special   *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
+(*                                                                          *)
+(****************************************************************************)
+
 open Fancy_lambda_quot.LambdaSyntax;;
 let _loc = Camlp4.PreCast.Loc.ghost;;
 let rec propagate = function

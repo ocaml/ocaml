@@ -1,6 +1,6 @@
 ;(***********************************************************************)
 ;(*                                                                     *)
-;(*                           Objective Caml                            *)
+;(*                                OCaml                                *)
 ;(*                                                                     *)
 ;(*            Didier Remy, projet Cristal, INRIA Rocquencourt          *)
 ;(*                                                                     *)

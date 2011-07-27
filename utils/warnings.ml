@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Pierre Weis && Damien Doligez, INRIA Rocquencourt        *)
 (*                                                                     *)

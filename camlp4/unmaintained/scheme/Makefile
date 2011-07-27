@@ -1,12 +1,13 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #                                Camlp4                                 #
 #                                                                       #
 #   Copyright 2004 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the Q Public License version 1.0.                #
+#   under the terms of the GNU Library General Public License, with     #
+#   the special exception on linking described in file ../../../LICENSE.#
 #                                                                       #
 #########################################################################
 #
@@ -77,7 +78,7 @@ pr_schemep.cmo: pr_schp_main.cmo
 
 
 .ml.cmo:
-	$(OCAMLC) $(OCAMLCFLAGS) -pp "$(CAMLP4) $(P4INCLUDES) `awk 'NR == 1 { ORS=" "; for (i=2; i < NF; i++) print $$i; } ' $<` -loc loc" -c $< 
+	$(OCAMLC) $(OCAMLCFLAGS) -pp "$(CAMLP4) $(P4INCLUDES) `awk 'NR == 1 { ORS=" "; for (i=2; i < NF; i++) print $$i; } ' $<` -loc loc" -c $<
 
 .ml.cmx:
 	$(OCAMLOPT) $(OCAMLCFLAGS) -pp "$(CAMLP4) $(P4INCLUDES)  `awk 'NR == 1 { ORS=" "; for (i=2; i < NF; i++) print $$i; } ' $<` -loc loc" -c $<

@@ -2,7 +2,7 @@
 
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #          Damien Doligez, projet Moscova, INRIA Rocquencourt           #
 #                                                                       #
@@ -30,9 +30,9 @@ cat >Description.plist <<EOF
           <key>IFPkgDescriptionDeleteWarning</key>
           <string></string>
           <key>IFPkgDescriptionDescription</key>
-          <string>The Objective Caml compiler and tools</string>
+          <string>The OCaml compiler and tools</string>
           <key>IFPkgDescriptionTitle</key>
-          <string>Objective Caml</string>
+          <string>OCaml</string>
           <key>IFPkgDescriptionVersion</key>
           <string>${VERSION}</string>
   </dict>
@@ -46,11 +46,11 @@ cat >Info.plist <<EOF
 <plist version="1.0">
 <dict>
         <key>CFBundleGetInfoString</key>
-        <string>Objective Caml ${VERSION}</string>
+        <string>OCaml ${VERSION}</string>
         <key>CFBundleIdentifier</key>
         <string>fr.inria.ocaml</string>
         <key>CFBundleName</key>
-        <string>Objective Caml</string>
+        <string>OCaml</string>
         <key>CFBundleShortVersionString</key>
         <string>${VERSION}</string>
         <key>IFMajorVersion</key>
@@ -85,7 +85,7 @@ mkdir -p resources
 
 #                                         stop here -> |
 cat >resources/ReadMe.txt <<EOF
-This package installs Objective Caml version ${VERSION}.
+This package installs OCaml version ${VERSION}.
 You need Mac OS X 10.5.x (Leopard), with the
 XCode tools installed (v3.1.1 or later), and
 optionally X11.
@@ -109,7 +109,7 @@ size=`expr $size + 8192`
 
 hdiutil create -sectors $size ocaml-rw.dmg
 name=`hdid -nomount ocaml-rw.dmg | grep Apple_HFS | cut -d ' ' -f 1`
-volname="Objective Caml ${VERSION}"
+volname="OCaml ${VERSION}"
 newfs_hfs -v "$volname" $name
 hdiutil detach $name
 

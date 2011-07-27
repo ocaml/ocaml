@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                 MLTk, Tcl/Tk interface of Objective Caml            *)
+(*                 MLTk, Tcl/Tk interface of OCaml                     *)
 (*                                                                     *)
 (*    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    *)
 (*               projet Cristal, INRIA Rocquencourt                    *)

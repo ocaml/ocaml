@@ -1,5 +1,5 @@
 #(***********************************************************************)
-#(*                            OCamldoc                                 *)
+#(*                             OCamldoc                                *)
 #(*                                                                     *)
 #(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
 #(*                                                                     *)
@@ -355,6 +355,7 @@ clean:: dummy
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	@rm -rf stdlib_man
+	@rm -f generators/*.cm[aiox] generators/*.[ao] generators/*.cmx[as]
 
 depend::
 	$(OCAMLYACC) odoc_text_parser.mly

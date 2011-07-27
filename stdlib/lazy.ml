@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Damien Doligez, projet Para, INRIA Rocquencourt          *)
 (*                                                                     *)
@@ -18,7 +18,7 @@
 
 (*
    WARNING: some purple magic is going on here.  Do not take this file
-   as an example of how to program in Objective Caml.
+   as an example of how to program in OCaml.
 *)
 
 

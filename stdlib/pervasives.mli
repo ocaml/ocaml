@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -655,7 +655,7 @@ val output_binary_int : out_channel -> int -> unit
    The given integer is taken modulo 2{^32}.
    The only reliable way to read it back is through the
    {!Pervasives.input_binary_int} function. The format is compatible across
-   all machines for a given version of Objective Caml. *)
+   all machines for a given version of OCaml. *)
 
 val output_value : out_channel -> 'a -> unit
 (** Write the representation of a structured value of any type
@@ -868,8 +868,7 @@ external decr : int ref -> unit = "%decr"
 (** Format strings have a general and highly polymorphic type
     [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
     The two simplified types, [format] and [format4] below are
-    included for backward compatibility with earlier releases of Objective
-    Caml.
+    included for backward compatibility with earlier releases of OCaml.
     ['a] is the type of the parameters of the format,
     ['b] is the type of the first argument given to
          [%a] and [%t] printing functions,

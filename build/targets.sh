@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #       Nicolas Pouillard, projet Gallium, INRIA Rocquencourt           #
 #                                                                       #

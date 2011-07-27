@@ -1,3 +1,17 @@
+(****************************************************************************)
+(*                                                                          *)
+(*                                   OCaml                                  *)
+(*                                                                          *)
+(*                            INRIA Rocquencourt                            *)
+(*                                                                          *)
+(*  Copyright  2007   Institut National de Recherche  en  Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed under   *)
+(*  the terms of the GNU Library General Public License, with the special   *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
+(*                                                                          *)
+(****************************************************************************)
+
 module Debug : sig INCLUDE "camlp4/Camlp4/Debug.mli"; end = struct INCLUDE "camlp4/Camlp4/Debug.ml"; end;
 module Options : sig INCLUDE "camlp4/Camlp4/Options.mli"; end = struct INCLUDE "camlp4/Camlp4/Options.ml"; end;
 module Sig = struct INCLUDE "camlp4/Camlp4/Sig.ml"; end;

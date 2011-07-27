@@ -1,5 +1,17 @@
-\" $Id$
-
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLRUN 1
 
 .SH NAME
@@ -60,6 +72,7 @@ flag in the OCAMLRUNPARAM environment variable (see below).
 Search the directory
 .I dir
 for dynamically-loaded libraries, in addition to the standard search path.
+.TP
 .B \-p
 Print the names of the primitives known to this version of
 .BR ocamlrun (1)

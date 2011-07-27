@@ -1,9 +1,9 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          Objective Caml port by John Malecki and Xavier Leroy       *)
+(*          OCaml port by John Malecki and Xavier Leroy                *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -56,7 +56,7 @@ let shell =
     "Win32" -> "cmd"
   | _ -> "/bin/sh"
 
-(* Name of the Objective Caml runtime. *)
+(* Name of the OCaml runtime. *)
 let runtime_program = "ocamlrun"
 
 (* Time history size (for `last') *)

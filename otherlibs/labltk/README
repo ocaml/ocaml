@@ -1,6 +1,6 @@
 INTRODUCTION
 ============
-mlTk is a library for interfacing Objective Caml with the scripting
+mlTk is a library for interfacing OCaml with the scripting
 language Tcl/Tk (all versions since 8.0.3, but no betas).
 
 In addition to the basic interface with Tcl/Tk, this package contains
@@ -31,7 +31,7 @@ just with little fixes.
 REQUIREMENTS
 ============
 You must have already installed
- * Objective Caml source, version 3.04+8 or later
+ * OCaml source, version 3.04+8 or later
 
  * Tcl/Tk 8.0.3 or later
     http://www.scriptics.com/ or various mirrors

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*  Contributed by Tracy Camp, PolyServe Inc., <campt@polyserve.com>   */
 /*  Further improvements by Reed Wilson                                */

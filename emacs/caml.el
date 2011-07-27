@@ -1,6 +1,6 @@
 ;(***********************************************************************)
 ;(*                                                                     *)
-;(*                           Objective Caml                            *)
+;(*                                OCaml                                *)
 ;(*                                                                     *)
 ;(*                Jacques Garrigue and Ian T Zimmerman                 *)
 ;(*                                                                     *)
@@ -19,12 +19,12 @@
 ;;indentation code is Copyright (C) 1996 by Ian T Zimmerman <itz@rahul.net>
 ;;copying: covered by the current FSF General Public License.
 
-;; indentation code adapted for Objective Caml by Jacques Garrigue,
+;; indentation code adapted for OCaml by Jacques Garrigue,
 ;; july 1997. <garrigue@kurims.kyoto-u.ac.jp>
 
 ;;user customizable variables
 (defvar caml-quote-char "'"
-  "*Quote for character constants. \"'\" for Objective Caml, \"`\" for Caml-Light.")
+  "*Quote for character constants. \"'\" for OCaml, \"`\" for Caml-Light.")
 
 (defvar caml-imenu-enable nil
   "*Enable Imenu support.")

@@ -106,7 +106,7 @@ EXSTYLE WS_EX_TOOLWINDOW | WS_EX_CLIENTEDGE
 CAPTION "About OCamlWinPlus"
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    LTEXT           "Objective Caml for Windows",101,75,7,90,12
+    LTEXT           "OCaml for Windows",101,75,7,90,12
     LTEXT           "New Windows Interface 1.9RC4",102,68,15,104,12
     CTEXT           "Copyright 1996-2001\nUpdated 2003",103,88,25,66,23
     CTEXT           "Institut National de Recherche en Informatique et Automatique",

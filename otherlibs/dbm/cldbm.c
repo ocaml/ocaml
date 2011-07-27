@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Francois Rouaix, projet Cristal, INRIA Rocquencourt      */
 /*                                                                     */

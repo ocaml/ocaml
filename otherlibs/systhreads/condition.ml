@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                         Caml Special Light                          *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*  Xavier Leroy and Pascal Cuoq, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)

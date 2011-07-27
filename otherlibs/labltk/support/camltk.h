@@ -1,6 +1,6 @@
 /*************************************************************************/
 /*                                                                       */
-/*                Objective Caml LablTk library                          */
+/*                         OCaml LablTk library                          */
 /*                                                                       */
 /*         Francois Rouaix, Francois Pessaux and Jun Furuse              */
 /*               projet Cristal, INRIA Rocquencourt                      */

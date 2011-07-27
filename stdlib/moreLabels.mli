@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*               Jacques Garrigue, Kyoto University RIMS               *)
 (*                                                                     *)
@@ -19,7 +19,7 @@
    {!Map} and {!Set} modules.
 
    They only differ by their labels. They are provided to help
-   porting from previous versions of Objective Caml.
+   porting from previous versions of OCaml.
    The contents of this module are subject to change.
 *)
 
