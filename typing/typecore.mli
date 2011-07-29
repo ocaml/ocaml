@@ -51,7 +51,8 @@ val type_exp:
 val type_approx:
         Env.t -> Parsetree.expression -> type_expr
 val type_argument:
-        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+        Env.t -> Parsetree.expression ->
+        type_expr -> type_expr -> Typedtree.expression
 
 val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
@@ -100,6 +101,8 @@ type error =
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
+  | Recursive_local_constraint of (type_expr * type_expr) list
+  | Unexpected_existential
 
 exception Error of Location.t * error
 

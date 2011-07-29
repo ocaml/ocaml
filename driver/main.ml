@@ -166,16 +166,18 @@ let main () =
         fatal "Option -i is incompatible with -pack, -a, -output-obj"
       else
         fatal "Please specify at most one of -pack, -a, -c, -output-obj";
-
     if !make_archive then begin
       Compile.init_path();
+
       Bytelibrarian.create_archive (List.rev !objfiles)
                                    (extract_output !output_name)
     end
     else if !make_package then begin
       Compile.init_path();
-      Bytepackager.package_files (List.rev !objfiles)
-                                 (extract_output !output_name)
+      let exctracted_output = extract_output !output_name in 
+      let revd = List.rev !objfiles in 
+      Bytepackager.package_files (revd)
+        (exctracted_output)
     end
     else if not !compile_only && !objfiles <> [] then begin
       let target =

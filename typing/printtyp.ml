@@ -433,7 +433,7 @@ and tree_of_typobject sch fi nm =
                | _ -> l)
             fields [] in
         let sorted_fields =
-          Sort.list (fun (n, _) (n', _) -> n <= n') present_fields in
+          List.sort (fun (n, _) (n', _) -> compare n n') present_fields in
         tree_of_typfields sch rest sorted_fields in
       let (fields, rest) = pr_fields fi in
       Otyp_object (fields, rest)
@@ -535,9 +535,12 @@ let rec tree_of_type_decl id decl =
   in
   begin match decl.type_kind with
   | Type_abstract -> ()
-  | Type_variant [] -> ()
   | Type_variant cstrs ->
-      List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
+      List.iter 
+	(fun (_, args,ret_type_opt) -> 
+	  List.iter mark_loops args;
+	  may mark_loops ret_type_opt)
+	cstrs
   | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;
@@ -552,8 +555,11 @@ let rec tree_of_type_decl id decl =
       match decl.type_kind with
         Type_abstract ->
           decl.type_manifest = None || decl.type_private = Private
-      | Type_variant _ | Type_record _ ->
+      | Type_record _ ->
           decl.type_private = Private
+      | Type_variant tll ->
+          decl.type_private = Private ||
+          List.exists (fun (_,_,ret) -> ret <> None) tll
     in
     let vari =
       List.map2
@@ -589,8 +595,13 @@ let rec tree_of_type_decl id decl =
   in
   (name, args, ty, priv, constraints)
 
-and tree_of_constructor (name, args) =
-  (name, tree_of_typlist false args)
+and tree_of_constructor (name, args,ret_type_opt) =
+  (name, tree_of_typlist false args,tree_of_constructor_ret ret_type_opt)
+
+and tree_of_constructor_ret =
+  function
+    | None -> None
+    | Some ret_type -> Some (tree_of_typexp false ret_type)
 
 and tree_of_label (name, mut, arg) =
   (name, mut = Mutable, tree_of_typexp false arg)
@@ -922,13 +933,13 @@ let explanation unif t3 t4 ppf =
   match t3.desc, t4.desc with
   | Tfield _, Tvar | Tvar, Tfield _ ->
       fprintf ppf "@,Self type cannot escape its class"
-  | Tconstr (p, _, _), Tvar
-    when unif && t4.level < Path.binding_time p ->
+  | Tconstr (p, tl, _), Tvar
+    when unif && (tl = [] || t4.level < Path.binding_time p) ->
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p
-  | Tvar, Tconstr (p, _, _)
-    when unif && t3.level < Path.binding_time p ->
+  | Tvar, Tconstr (p, tl, _)
+    when unif && (tl = [] || t3.level < Path.binding_time p) ->
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p

@@ -281,7 +281,7 @@ type t = [ `A of t a ]
   type ('a,'b) t constraint 'a = 'b and ('a,'b) u = ('a,'b) t;;
                                                     ^^^^^^^^^
 Error: Constraints are not satisfied in this type.
-Type ('a, 'b) t should be an instance of ('c, 'c) t
+       Type ('a, 'b) t should be an instance of ('c, 'c) t
 #     type 'a t = 'a
 and u = int t
 #     type 'a t constraint 'a = int
@@ -289,7 +289,7 @@ and u = int t
   type 'a u = 'a and 'a v = 'a u t;;
                             ^^^^^^
 Error: Constraints are not satisfied in this type.
-Type 'a u t should be an instance of int t
+       Type 'a u t should be an instance of int t
 # type 'a u = 'a constraint 'a = int
 and 'a v = 'a u t constraint 'a = int
 #     type g = int
@@ -298,7 +298,7 @@ and 'a v = 'a u t constraint 'a = int
   type 'a u = 'a and 'a v = 'a u t;;
                             ^^^^^^
 Error: Constraints are not satisfied in this type.
-Type 'a u t should be an instance of g t
+       Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
 and 'a v = 'a u t constraint 'a = int
 #     Characters 38-58:
@@ -350,10 +350,10 @@ Warning 11: this match case is unused.
   type ('a, 'b) a = 'a -> unit constraint 'a = [> `B of ('a, 'b) b as 'b] 
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Constraints are not satisfied in this type.
-Type
-([> `B of 'a ], 'a) b as 'a
-should be an instance of
-(('b, [> `A of ('d, 'c) a as 'd ] as 'c) a as 'b, 'c) b
+       Type
+       ([> `B of 'a ], 'a) b as 'a
+       should be an instance of
+       (('b, [> `A of ('d, 'c) a as 'd ] as 'c) a as 'b, 'c) b
 #     *                           class type ['a, 'b] a =
   object
     constraint 'a = < as_a : ('a, 'b) a as 'c; b : 'b; .. >
@@ -534,6 +534,24 @@ The second object type has no method b
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
          < m : 'a. [< `A of < p : int > ] as 'a > 
+#     val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
+# Characters 9-16:
+  fun x -> (f x)#m;; (* Warning 18 *)
+           ^^^^^^^
+Warning 18: this use of a polymorphic method is not principal.
+- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+# val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
+# Characters 9-20:
+  fun x -> (f (x,x))#m;; (* Warning 18 *)
+           ^^^^^^^^^^^
+Warning 18: this use of a polymorphic method is not principal.
+- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
+# val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > array = <fun>
+# Characters 9-20:
+  fun x -> (f x).(0)#m;; (* Warning 18 *)
+           ^^^^^^^^^^^
+Warning 18: this use of a polymorphic method is not principal.
+- : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 #     class c : object method id : 'a -> 'a end
 # type u = c option
 # val just : 'a option -> 'a = <fun>

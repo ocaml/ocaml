@@ -319,7 +319,11 @@ let unmark_type_decl decl =
   begin match decl.type_kind with
     Type_abstract -> ()
   | Type_variant cstrs ->
-      List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
+      List.iter 
+	(fun (c, tl, ret_type_opt) -> 
+	  List.iter unmark_type tl;
+	  Misc.may unmark_type ret_type_opt)
+	cstrs
   | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;
@@ -515,3 +519,9 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
+
+(**** Sets, maps and hashtables of types ****)
+
+module TypeSet = Set.Make(TypeOps)
+module TypeMap = Map.Make (TypeOps)
+module TypeHash = Hashtbl.Make(TypeOps)

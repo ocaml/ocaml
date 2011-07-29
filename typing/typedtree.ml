@@ -24,7 +24,7 @@ type pattern =
   { pat_desc: pattern_desc;
     pat_loc: Location.t;
     pat_type: type_expr;
-    pat_env: Env.t }
+    mutable pat_env: Env.t }
 
 and pattern_desc =
     Tpat_any

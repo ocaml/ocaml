@@ -121,7 +121,8 @@ let merge_constraint initial_env loc sg lid constr =
             type_manifest = None;
             type_variance =
               List.map (fun (c,n) -> (not n, not c, not c))
-              sdecl.ptype_variance }
+              sdecl.ptype_variance;
+	    type_newtype_level = None}
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl = Typedecl.transl_with_constraint
@@ -180,7 +181,8 @@ let merge_constraint initial_env loc sg lid constr =
                 List.map
                   (function {ptyp_desc=Ptyp_var s} -> s | _ -> raise Exit)
                   stl in
-              if params <> sdecl.ptype_params then raise Exit;
+              if List.map (fun x -> Some x) params <> sdecl.ptype_params
+	      then raise Exit;
               lid
           | _ -> raise Exit
           with Exit -> raise (Error (sdecl.ptype_loc, With_need_typeconstr))

@@ -553,7 +553,7 @@ let rec class_field cl_num self_type meths vars
       let field =
         lazy begin
           let meth_type =
-            Ctype.newty (Tarrow("", self_type, Ctype.instance ty, Cok)) in
+            Btype.newgenty (Tarrow("", self_type, ty, Cok)) in
           Ctype.raise_nongen_level ();
           vars := vars_local;
           let texp = type_expect met_env meth_expr meth_type in
@@ -816,7 +816,8 @@ and class_expr cl_num val_env met_env scl =
            {exp_desc = Texp_constant (Asttypes.Const_int 1);
             exp_loc = Location.none;
             exp_type = Ctype.none;
-            exp_env = Env.empty }] in
+            exp_env = Env.empty }] 
+      in
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env' met_env scl' in
       Ctype.end_def ();
@@ -861,7 +862,8 @@ and class_expr cl_num val_env met_env scl =
                 | _, (l', sarg0)::more_sargs ->
                     if l <> l' && l' <> "" then
                       raise(Error(sarg0.pexp_loc, Apply_wrong_label l'))
-                    else ([], more_sargs, Some(type_argument val_env sarg0 ty))
+                    else ([], more_sargs,
+                          Some (type_argument val_env sarg0 ty ty))
                 | _ ->
                     assert false
               end else try
@@ -877,10 +879,10 @@ and class_expr cl_num val_env met_env scl =
                 in
                 sargs, more_sargs,
                 if Btype.is_optional l' || not (Btype.is_optional l) then
-                  Some (type_argument val_env sarg0 ty)
+                  Some (type_argument val_env sarg0 ty ty)
                 else
-                  let arg = type_argument val_env
-                      sarg0 (extract_option_type val_env ty) in
+                  let ty0 = extract_option_type val_env ty in
+                  let arg = type_argument val_env sarg0 ty0 ty0 in
                   Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,
@@ -1017,7 +1019,9 @@ let temp_abbrev env id arity =
        type_kind = Type_abstract;
        type_private = Public;
        type_manifest = Some ty;
-       type_variance = List.map (fun _ -> true, true, true) !params}
+       type_variance = List.map (fun _ -> true, true, true) !params;
+       type_newtype_level = None;
+     }
       env
   in
   (!params, ty, env)
@@ -1103,6 +1107,7 @@ let class_infos define_class kind
   Ctype.end_def ();
 
   let sty = Ctype.self_type typ in
+  ignore (Ctype.object_fields sty);
 
   (* Generalize the row variable *)
   let rv = Ctype.row_variable sty in
@@ -1228,7 +1233,9 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some obj_ty;
-     type_variance = List.map (fun _ -> true, true, true) obj_params}
+     type_variance = List.map (fun _ -> true, true, true) obj_params;
+     type_newtype_level = None;
+   }
   in
   let (cl_params, cl_ty) =
     Ctype.instance_parameterized_type params (Ctype.self_type typ)
@@ -1241,7 +1248,9 @@ let class_infos define_class kind
      type_kind = Type_abstract;
      type_private = Public;
      type_manifest = Some cl_ty;
-     type_variance = List.map (fun _ -> true, true, true) cl_params}
+     type_variance = List.map (fun _ -> true, true, true) cl_params;
+     type_newtype_level = None
+   }
   in
   ((cl, id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
     arity, pub_meths, List.rev !coercion_locs, expr) :: res,
@@ -1603,3 +1612,4 @@ let report_error ppf = function
         "instance variable"
   | No_overriding (kind, name) ->
       fprintf ppf "@[The %s `%s'@ has no previous definition@]" kind name
+	

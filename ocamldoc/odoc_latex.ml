@@ -541,12 +541,22 @@ class latex =
                     let s_cons =
                       p fmt2 "@[<h 6>  | %s" constr.vc_name;
                       (
-                       match constr.vc_args with
-                         [] -> ()
-                       | l ->
+                       match constr.vc_args, constr.vc_ret with
+                         [], None -> ()
+                       | l, None ->
                            p fmt2 " %s@ %s"
                              "of"
                              (self#normal_type_list ~par: false mod_name " * " l)
+                       | [], Some r ->
+                           p fmt2 " %s@ %s"
+                             ":"
+                             (self#normal_type mod_name r)
+                       | l, Some r ->
+                           p fmt2 " %s@ %s@ %s@ %s"
+                             ":"
+                             (self#normal_type_list ~par: false mod_name " * " l)
+			     "->"
+                             (self#normal_type mod_name r)			     
                       );
                       flush2 ()
                     in

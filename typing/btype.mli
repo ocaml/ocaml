@@ -154,6 +154,11 @@ val set_commu: commutable ref -> commutable -> unit
 val log_type: type_expr -> unit
         (* Log the old value of a type, before modifying it by hand *)
 
+(**** Sets, maps and hashtables of types ****)
+
+module TypeSet  : Set.S with type elt = type_expr
+module TypeMap  : Map.S with type key = type_expr
+module TypeHash : Hashtbl.S with type key = type_expr
+
 (**** Forward declarations ****)
 val print_raw: (Format.formatter -> type_expr -> unit) ref
-

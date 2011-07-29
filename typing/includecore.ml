@@ -163,19 +163,27 @@ let report_type_mismatch first second decl ppf =
 let rec compare_variants env decl1 decl2 n cstrs1 cstrs2 =
   match cstrs1, cstrs2 with
     [], []           -> []
-  | [], (cstr2,_)::_ -> [Field_missing (true, cstr2)]
-  | (cstr1,_)::_, [] -> [Field_missing (false, cstr1)]
-  | (cstr1, arg1)::rem1, (cstr2, arg2)::rem2 ->
+  | [], (cstr2,_,_)::_ -> [Field_missing (true, cstr2)]
+  | (cstr1,_,_)::_, [] -> [Field_missing (false, cstr1)]
+  | (cstr1, arg1, ret1)::rem1, (cstr2, arg2,ret2)::rem2 ->
       if cstr1 <> cstr2 then [Field_names (n, cstr1, cstr2)] else
       if List.length arg1 <> List.length arg2 then [Field_arity cstr1] else
-      if Misc.for_all2
-          (fun ty1 ty2 ->
-            Ctype.equal env true (ty1::decl1.type_params)
-                                 (ty2::decl2.type_params))
-          arg1 arg2
-      then compare_variants env decl1 decl2 (n+1) rem1 rem2
-      else [Field_type cstr1]
-
+      match ret1, ret2 with
+      | Some r1, Some r2 when not (Ctype.equal env true [r1] [r2]) -> 
+	  [Field_type cstr1]
+      | Some _, None | None, Some _ ->
+	  [Field_type cstr1]
+      | _ ->      
+	  if Misc.for_all2
+	      (fun ty1 ty2 ->
+		Ctype.equal env true (ty1::decl1.type_params)
+		  (ty2::decl2.type_params))
+	      (arg1) (arg2) 
+	  then 
+	    compare_variants env decl1 decl2 (n+1) rem1 rem2
+	  else [Field_type cstr1]
+	      
+	    
 let rec compare_records env decl1 decl2 n labels1 labels2 =
   match labels1, labels2 with
     [], []           -> []

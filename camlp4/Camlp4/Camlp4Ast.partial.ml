@@ -75,9 +75,12 @@
     | TyObj of loc and ctyp and row_var_flag
     | TyOlb of loc and string and ctyp (* ?s:t *)
     | TyPol of loc and ctyp and ctyp (* ! t . t *) (* ! 'a . list 'a -> 'a *)
+    | TyTypePol of loc and ctyp and ctyp (* type t . t *) (* type a . list a -> a *)
     | TyQuo of loc and string (* 's *)
     | TyQuP of loc and string (* +'s *)
     | TyQuM of loc and string (* -'s *)
+    | TyAnP of loc (* +_ *)
+    | TyAnM of loc (* -_ *)
     | TyVrn of loc and string (* `s *)
     | TyRec of loc and ctyp (* { t } *) (* { foo : int ; bar : mutable string } *)
     | TyCol of loc and ctyp and ctyp (* t : t *)

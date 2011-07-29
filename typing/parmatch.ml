@@ -51,16 +51,10 @@ let is_absent_pat p = match p.pat_desc with
 | Tpat_variant (tag, _, row) -> is_absent tag row
 | _ -> false
 
-let sort_fields args =
-  Sort.list
-    (fun (lbl1,_) (lbl2,_) -> lbl1.lbl_pos <= lbl2.lbl_pos)
-    args
-
 let records_args l1 l2 =
-  let l1 = sort_fields l1
-  and l2 = sort_fields l2 in
+  (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
   let rec combine r1 r2 l1 l2 = match l1,l2 with
-  | [],[] -> r1,r2
+  | [],[] -> List.rev r1, List.rev r2
   | [],(_,p2)::rem2 -> combine (omega::r1) (p2::r2) [] rem2
   | (_,p1)::rem1,[] -> combine (p1::r1) (omega::r2) rem1 []
   | (lbl1,p1)::rem1, (lbl2,p2)::rem2 ->
@@ -162,7 +156,7 @@ let get_constr_name tag ty tenv  = match tag with
 | Cstr_exception path -> Path.name path
 | _ ->
   try
-    let name,_ = get_constr tag ty tenv in name
+    let name,_,_ = get_constr tag ty tenv in name
   with
   | Datarepr.Constr_not_found -> "*Unknown constructor*"
 
@@ -294,12 +288,9 @@ let record_arg p = match p.pat_desc with
 
 
 (* Raise Not_found when pos is not present in arg *)
-
-
 let get_field pos arg =
   let _,p = List.find (fun (lbl,_) -> pos = lbl.lbl_pos) arg in
   p
-
 
 let extract_fields omegas arg =
   List.map
@@ -308,15 +299,6 @@ let extract_fields omegas arg =
         get_field lbl.lbl_pos arg
       with Not_found -> omega)
     omegas
-
-
-
-let sort_record p = match p.pat_desc with
-| Tpat_record args ->
-    make_pat
-      (Tpat_record (sort_fields args))
-      p.pat_type p.pat_env
-| _ -> p
 
 let all_record_args lbls = match lbls with
 | ({lbl_all=lbl_all},_)::_ ->
@@ -410,8 +392,7 @@ let discr_pat q pss =
   | _ -> acc in
 
   match normalize_pat q with
-  | {pat_desc= (Tpat_any | Tpat_record _)} as q ->
-      sort_record (acc_pat q pss)
+  | {pat_desc= (Tpat_any | Tpat_record _)} as q -> acc_pat q pss
   | q -> q
 
 (*
@@ -615,11 +596,32 @@ let row_of_pat pat =
   not.
 *)
 
-let full_match closing env =  match env with
+let generalized_constructor x = 
+  match x with 
+    ({pat_desc = Tpat_construct(c,_);pat_env=env},_) ->
+      c.cstr_generalized
+  | _ -> assert false
+
+let clean_env env = 
+  let rec loop = 
+    function
+      | [] -> []
+      | x :: xs ->
+	  if generalized_constructor x then loop xs else x :: loop xs
+  in
+  loop env
+
+let full_match ignore_generalized closing env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ ->
     false
-| ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
-    List.length env = c.cstr_consts + c.cstr_nonconsts
+| ({pat_desc = Tpat_construct(c,_);pat_type=typ},_) :: _ -> 
+    if ignore_generalized then
+      (* remove generalized constructors; those cases will be handled separately *)
+      let env = clean_env env in 
+      List.length env = c.cstr_normal
+    else
+      List.length env = c.cstr_consts + c.cstr_nonconsts
+
 | ({pat_desc = Tpat_variant _} as p,_) :: _ ->
     let fields =
       List.map
@@ -652,6 +654,11 @@ let full_match closing env =  match env with
 | ({pat_desc = Tpat_array(_)},_) :: _ -> false
 | ({pat_desc = Tpat_lazy(_)},_) :: _ -> true
 | _ -> fatal_error "Parmatch.full_match"
+
+let full_match_gadt env = match env with
+  | ({pat_desc = Tpat_construct(c,_);pat_type=typ},_) :: _ -> 
+    List.length env = c.cstr_consts + c.cstr_nonconsts
+  | _ -> true
 
 let extendable_match env = match env with
 | ({pat_desc = Tpat_construct({cstr_tag=(Cstr_constant _|Cstr_block _)},_)} as p,_) :: _ ->
@@ -708,24 +715,44 @@ let rec pat_of_constrs ex_pat = function
         (pat_of_constr ex_pat cstr,
          pat_of_constrs ex_pat rem, None)}
 
+exception Not_an_adt
+
+let rec adt_path env ty =
+  match get_type_descr ty env with
+  | {type_kind=Type_variant constr_list} ->
+      begin match (Ctype.repr ty).desc with
+      | Tconstr (path,_,_) ->
+	  path
+      | _ -> assert false end
+  | {type_manifest = Some _} ->
+      adt_path env (Ctype.expand_head_once env (clean_copy ty))
+  | _ -> raise Not_an_adt
+;;
+
+let rec map_filter f  = 
+  function
+      [] -> []
+    | x :: xs ->
+	match f x with
+	| None -> map_filter f xs
+	| Some y -> y :: map_filter f xs
+
 (* Sends back a pattern that complements constructor tags all_tag *)
-let complete_constrs p all_tags = match p.pat_desc with
-| Tpat_construct (c,_) ->
-    begin try
-      let not_tags = complete_tags  c.cstr_consts c.cstr_nonconsts all_tags in
-      List.map
-        (fun tag ->
-          let _,targs = get_constr tag p.pat_type p.pat_env in
-          {c with
-      cstr_tag = tag ;
-      cstr_args = targs ;
-      cstr_arity = List.length targs})
-        not_tags
-with
-| Datarepr.Constr_not_found ->
-    fatal_error "Parmatch.complete_constr: constr_not_found"
-    end
-| _ -> fatal_error "Parmatch.complete_constr"
+let complete_constrs p all_tags = 
+  match p.pat_desc with
+  | Tpat_construct (c,_) ->
+      begin try
+	let not_tags = complete_tags c.cstr_consts c.cstr_nonconsts all_tags in
+	let constrs = Env.find_constructors (adt_path p.pat_env p.pat_type) p.pat_env in
+	map_filter
+          (fun cnstr ->
+	    if List.mem cnstr.cstr_tag not_tags then Some cnstr else None)
+	  constrs
+      with
+      | Datarepr.Constr_not_found ->
+	  fatal_error "Parmatch.complete_constr: constr_not_found"
+      end
+  | _ -> fatal_error "Parmatch.complete_constr"
 
 
 (* Auxiliary for build_other *)
@@ -872,6 +899,17 @@ let build_other ext env =  match env with
 | [] -> omega
 | _ -> omega
 
+let build_other_gadt ext env = 
+  match env with
+    | ({pat_desc = Tpat_construct (_,_)} as p,_) :: _ ->
+        let get_tag = function
+          | {pat_desc = Tpat_construct (c,_)} -> c.cstr_tag
+          | _ -> fatal_error "Parmatch.get_tag" in
+        let all_tags =  List.map (fun (p,_) -> get_tag p) env in
+	let cnstrs  = complete_constrs p all_tags in
+	List.map (pat_of_constr p) cnstrs
+    | _ -> assert false
+	  
 (*
   Core function :
   Is the last row of pattern matrix pss + qs satisfiable ?
@@ -909,7 +947,7 @@ let rec satisfiable pss qs = match pss with
           (* first column of pss is made of variables only *)
         | [] -> satisfiable (filter_extra pss) qs
         | constrs  ->
-            if full_match false constrs then
+            if full_match false false constrs then
               List.exists
                 (fun (p,pss) ->
                   not (is_absent_pat p) &&
@@ -934,13 +972,36 @@ type 'a result =
   | Rnone           (* No matching value *)
   | Rsome of 'a     (* This matching value *)
 
-let rec try_many f = function
+let rec orify_many =
+  let rec orify x y = 
+    make_pat (Tpat_or (x, y, None)) x.pat_type x.pat_env	
+  in
+  function
+    | [] -> assert false
+    | [x] -> x
+    | x :: xs -> orify x (orify_many xs)
+  
+let rec try_many  f = function
   | [] -> Rnone
-  | x::rest ->
-      begin match f x with
-      | Rnone -> try_many f rest
+  | (p,pss)::rest ->
+      match f (p,pss) with
+      | Rnone -> try_many  f rest
       | r -> r
-      end
+
+
+let rec try_many_gadt  f = function
+  | [] -> Rnone
+  | (p,pss)::rest ->
+      match f (p,pss) with
+      | Rnone -> try_many f rest
+      | Rsome sofar -> 
+	  let others = try_many f rest in 
+	  match others with
+	    Rnone -> Rsome sofar
+	  | Rsome sofar' ->
+	      Rsome (sofar @ sofar')
+		  
+
 
 let rec exhaust ext pss n = match pss with
 | []    ->  Rsome (omegas n)
@@ -966,7 +1027,7 @@ let rec exhaust ext pss n = match pss with
             | Rsome r -> Rsome (set_args p r)
             | r       -> r in
         if
-          full_match false constrs && not (should_extend ext constrs)
+          full_match true false constrs && not (should_extend ext constrs)
         then
           try_many try_non_omega constrs
         else
@@ -988,6 +1049,99 @@ let rec exhaust ext pss n = match pss with
       (* cannot occur, since constructors don't make a full signature *)
               | Empty -> fatal_error "Parmatch.exhaust"
     end
+
+let combinations f lst lst' = 
+  let rec iter2 x = 
+    function
+	[] -> []
+      | y :: ys ->
+	  f x y :: iter2 x ys
+  in
+  let rec iter =
+    function
+	[] -> []
+      | x :: xs -> iter2 x lst'
+  in
+  iter lst
+    
+(* strictly more powerful than exhaust; however, exhaust
+   was kept for backwards compatibility *)
+let rec exhaust_gadt ext pss n = match pss with
+| []    ->  Rsome [omegas n]
+| []::_ ->  Rnone
+| pss   ->
+    let q0 = discr_pat omega pss in
+    begin match filter_all q0 pss with
+          (* first column of pss is made of variables only *)
+    | [] ->
+        begin match exhaust_gadt ext (filter_extra pss) (n-1) with
+        | Rsome r -> Rsome (List.map (fun row -> q0::row) r)
+        | r -> r
+      end
+    | constrs ->
+        let try_non_omega (p,pss) =
+          if is_absent_pat p then
+            Rnone
+          else
+            match
+              exhaust_gadt
+                ext pss (List.length (simple_match_args p omega) + n - 1)
+            with
+            | Rsome r -> Rsome (List.map (fun row ->  (set_args p row)) r)
+            | r       -> r in
+	let before = try_many_gadt try_non_omega constrs in
+        if
+	  full_match_gadt constrs && not (should_extend ext constrs)
+        then
+	  before
+        else
+          (*
+            D = filter_extra pss is the default matrix
+            as it is included in pss, one can avoid
+            recursive calls on specialized matrices,
+            Essentially :
+           * D exhaustive => pss exhaustive
+           * D non-exhaustive => we have a non-filtered value
+           *)
+          let r =  exhaust_gadt ext (filter_extra pss) (n-1) in
+          match r with
+          | Rnone -> before
+          | Rsome r ->
+              try
+		let missing_trailing = build_other_gadt ext constrs in
+		let before = 
+		  match before with 
+		    Rnone -> [] 
+		  | Rsome lst -> lst 
+		in
+		let dug = 
+		  combinations
+		    (fun head tail ->
+		      head :: tail)
+		    missing_trailing
+		    r
+		in
+                Rsome (dug @ before) 
+              with
+      (* cannot occur, since constructors don't make a full signature *)
+              | Empty -> fatal_error "Parmatch.exhaust"
+    end
+
+let exhaust_gadt ext pss n = 
+  let ret = exhaust_gadt ext pss n in 
+  match ret with
+    Rnone -> Rnone
+  | Rsome lst ->
+      (* The following line is needed to compile stdlib/printf.ml *)
+      if lst = [] then Rsome (omegas n) else
+      let singletons = 
+	List.map 
+	  (function 
+	      [x] -> x
+	    | _ -> assert false)
+	  lst
+      in
+      Rsome [orify_many singletons]
 
 (*
    Another exhaustiveness check, enforcing variant typing.
@@ -1015,12 +1169,12 @@ let rec pressure_variants tdefs = function
                 try_non_omega rem && ok
             | [] -> true
           in
-          if full_match (tdefs=None) constrs then
+          if full_match true (tdefs=None) constrs then
             try_non_omega constrs
           else if tdefs = None then
             pressure_variants None (filter_extra pss)
           else
-            let full = full_match true constrs in
+            let full = full_match true true constrs in
             let ok =
               if full then try_non_omega constrs
               else try_non_omega (filter_all q0 (mark_partial pss))
@@ -1394,7 +1548,6 @@ with
 | Empty -> lub p2 q
 
 and record_lubs l1 l2 =
-  let l1 = sort_fields l1 and l2 = sort_fields l2 in
   let rec lub_rec l1 l2 = match l1,l2 with
   | [],_ -> l2
   | _,[] -> l1
@@ -1516,7 +1669,121 @@ let check_partial_all v casel =
 (* Exhaustiveness check *)
 (************************)
 
-let do_check_partial loc casel pss = match pss with
+
+  let rec get_first f = 
+    function
+      | [] -> None
+      | x :: xs -> 
+	  match f x with 
+	  | None -> get_first f xs
+	  | x -> x
+
+
+(* conversion from Typedtree.pattern to Parsetree.pattern list *)
+module Conv = 
+struct
+  open Parsetree
+  let mkpat desc = 
+    {ppat_desc = desc;
+     ppat_loc = Location.none}
+;;
+
+  let rec select : 'a list list -> 'a list list = 
+    function
+      | xs :: [] -> List.map (fun y -> [y]) xs
+      | (x::xs)::ys ->
+	  List.map
+	    (fun lst -> x :: lst)
+	    (select ys)
+	    @
+	      select (xs::ys)
+      | _ -> []
+;;
+
+let name_counter = ref 0 
+let fresh () = 
+  let current = !name_counter in 
+  name_counter := !name_counter + 1;
+  "#$%^@*@" ^ string_of_int current
+
+  let conv (typed: Typedtree.pattern) : 
+      Parsetree.pattern list * 
+	 (string,Types.constructor_description) Hashtbl.t * 
+	 (string,Types.label_description) Hashtbl.t
+      = 
+    let constrs = Hashtbl.create 0 in 
+    let labels = Hashtbl.create 0 in 
+    let rec loop pat = 
+      match pat.pat_desc with
+	Tpat_or (a,b,_) ->
+	  loop a @ loop b
+      | Tpat_any | Tpat_constant _ | Tpat_var _ ->
+	  [mkpat Ppat_any]
+      | Tpat_alias (p,_) -> loop p
+      | Tpat_tuple lst ->
+	  let results = select (List.map loop lst) in 
+	  List.map
+	    (fun lst -> mkpat (Ppat_tuple lst))
+	    results
+      | Tpat_construct (cstr,lst) ->
+	  let id = fresh () in 
+	  Hashtbl.add constrs id cstr;
+	  let results = select (List.map loop lst) in
+	  begin match lst with
+	    [] ->
+	      [mkpat (Ppat_construct(Longident.Lident id, None, false))]
+          | _ ->
+	      List.map 
+		(fun lst ->
+		  let arg = 
+		    match lst with
+		      [] -> assert false
+		    | [x] -> Some x
+		    | _ -> Some (mkpat (Ppat_tuple lst))
+		  in
+		  mkpat (Ppat_construct(Longident.Lident id, arg, false)))
+		results end
+      | Tpat_variant(label,p_opt,row_desc) ->
+	  begin match p_opt with
+	  | None ->
+	      [mkpat (Ppat_variant(label, None))]
+	  | Some p ->
+	      let results = loop p in 
+	      List.map
+		(fun p ->
+		  mkpat (Ppat_variant(label, Some p)))
+		results end
+      | Tpat_record subpatterns ->
+	  let pats = 
+	    select
+	      (List.map (fun (_,x) -> (loop x)) subpatterns)
+	  in
+	  let label_idents = 
+	    List.map 
+	      (fun (lbl,_) -> 
+		let id = fresh () in 
+		Hashtbl.add labels id lbl;
+		Longident.Lident id)  
+	      subpatterns
+	  in 
+	  List.map
+	    (fun lst ->
+	      let lst = List.combine label_idents lst in
+	      mkpat (Ppat_record (lst, Open)))
+	    pats
+      | Tpat_array lst ->
+	  let results = select (List.map loop lst) in 
+	  List.map (fun lst -> mkpat (Ppat_array lst)) results
+      | Tpat_lazy p ->
+	  let results = loop p in 
+	  List.map (fun p -> mkpat (Ppat_lazy p)) results
+    in
+    let ps = loop typed in 
+    (ps, constrs, labels)
+end
+
+
+let do_check_partial ?pred exhaust loc casel pss = match pss with
 | [] ->
         (*
           This can occur
@@ -1534,30 +1801,47 @@ let do_check_partial loc casel pss = match pss with
 | ps::_  ->
     begin match exhaust None pss (List.length ps) with
     | Rnone -> Total
-    | Rsome [v] ->
-        let errmsg =
-          try
-            let buf = Buffer.create 16 in
-            let fmt = formatter_of_buffer buf in
-            top_pretty fmt v;
-            begin match check_partial_all v casel with
-            | None -> ()
-            | Some _ ->
-                  (* This is 'Some loc', where loc is the location of
-                     a possibly matching clause.
-                     Forget about loc, because printing two locations
-                     is a pain in the top-level *)
-                Buffer.add_string buf
-                  "\n(However, some guarded clause may match this value.)"
-            end ;
-            Buffer.contents buf
-          with _ ->
-            "" in
-        Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
-        Partial
+    | Rsome [u] ->
+	let v = 
+	  match pred with 
+	  | Some pred ->
+	      let (patterns,constrs,labels) = Conv.conv u in 
+	      get_first (pred constrs labels) patterns
+	  | None -> Some u
+	in
+	begin match v with
+	  None -> Total
+	| Some v ->
+            let errmsg =
+              try
+		let buf = Buffer.create 16 in
+		let fmt = formatter_of_buffer buf in
+		top_pretty fmt v;
+		begin match check_partial_all v casel with
+		| None -> ()
+		| Some _ ->
+                    (* This is 'Some loc', where loc is the location of
+                       a possibly matching clause.
+                       Forget about loc, because printing two locations
+                       is a pain in the top-level *)
+                    Buffer.add_string buf
+                      "\n(However, some guarded clause may match this value.)"
+		end ;
+		Buffer.contents buf
+              with _ ->
+		"" in
+            Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
+            Partial end
     | _ ->
         fatal_error "Parmatch.check_partial"
     end
+
+let do_check_partial_normal loc casel pss = 
+  do_check_partial exhaust loc casel pss
+
+let do_check_partial_gadt pred loc casel pss = 
+  do_check_partial ~pred exhaust_gadt loc casel pss
+
 
 
 (*****************)
@@ -1608,7 +1892,7 @@ let rec collect_paths_from_pat r p = match p.pat_desc with
       the type is extended.
 *)
 
-let do_check_fragile loc casel pss =
+let do_check_fragile_param exhaust loc casel pss =
   let exts =
     List.fold_left
       (fun r (p,_) -> collect_paths_from_pat r p)
@@ -1628,30 +1912,8 @@ let do_check_fragile loc casel pss =
             | Rsome _ -> ())
           exts
 
-
-(********************************)
-(* Exported exhustiveness check *)
-(********************************)
-
-(*
-   Fragile check is performed when required and
-   on exhaustive matches only.
-*)
-
-let check_partial loc casel =
-  if Warnings.is_active (Warnings.Partial_match "") then begin
-    let pss = initial_matrix casel in
-    let pss = get_mins le_pats pss in
-    let total = do_check_partial loc casel pss in
-    if
-      total = Total && Warnings.is_active (Warnings.Fragile_match "")
-    then begin
-      do_check_fragile loc casel pss
-    end ;
-    total
-  end else
-    Partial
-
+let do_check_fragile_normal = do_check_fragile_param exhaust
+let do_check_fragile_gadt = do_check_fragile_param exhaust_gadt
 
 (********************************)
 (* Exported unused clause check *)
@@ -1678,7 +1940,7 @@ let check_unused tdefs casel =
                         p.pat_loc Warnings.Unused_pat)
                     ps
               | Used -> ()
-            with e -> assert false
+            with Empty | Not_an_adt | Not_found | NoGuard -> assert false
             end ;
 
           if has_guard act then
@@ -1716,3 +1978,46 @@ let rec inactive pat = match pat with
 (* A `fluid' pattern is both irrefutable and inactive *)
 
 let fluid pat = irrefutable pat && inactive pat.pat_desc
+
+
+
+
+
+
+	    
+(********************************)
+(* Exported exhustiveness check *)
+(********************************)
+
+(*
+   Fragile check is performed when required and
+   on exhaustive matches only.
+*)
+
+let check_partial_param do_check_partial do_check_fragile loc casel = 
+    if Warnings.is_active (Warnings.Partial_match "") then begin
+      let pss = initial_matrix casel in
+      let pss = get_mins le_pats pss in
+      let total = do_check_partial loc casel pss in
+      if
+	total = Total && Warnings.is_active (Warnings.Fragile_match "")
+      then begin
+	do_check_fragile loc casel pss
+      end ;
+      total
+    end else
+      Partial  
+
+let check_partial = 
+    check_partial_param 
+      do_check_partial_normal 
+      do_check_fragile_normal
+
+let check_partial_gadt pred loc casel =
+  (*ignores GADT constructors *)
+  let first_check = check_partial loc casel in
+  match first_check with
+  | Partial -> Partial
+  | Total -> 
+      (* checks for missing GADT constructors *)
+      check_partial_param (do_check_partial_gadt pred) do_check_fragile_gadt loc casel

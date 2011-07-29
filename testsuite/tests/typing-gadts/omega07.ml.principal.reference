@@ -1,0 +1,306 @@
+
+# * * * * *                       type ('a, 'b) sum = Inl of 'a | Inr of 'b
+type zero = Zero
+type 'a succ
+type 'a nat = NZ : zero nat | NS : 'b nat -> 'b succ nat
+#             type ('a, 'b) seq =
+    Snil : ('c, zero) seq
+  | Scons : 'd * ('d, 'e) seq -> ('d, 'e succ) seq
+#   val l1 : (int, zero succ succ) seq = Scons (3, Scons (5, Snil))
+#       *         type ('a, 'b, 'c) plus =
+    PlusZ : 'd nat -> (zero, 'd, 'd) plus
+  | PlusS : ('e, 'f, 'g) plus -> ('e succ, 'f, 'g succ) plus
+#         val length : ('a, 'b) seq -> 'b nat = <fun>
+#   *                     type ('a, 'b, 'c) app =
+    App : ('d, 'g) seq * ('e, 'f, 'g) plus -> ('d, 'e, 'f) app
+val app : ('a, 'b) seq -> ('a, 'c) seq -> ('a, 'b, 'c) app = <fun>
+# *                           type tp
+type nd
+type ('a, 'b) fk
+type 'a shape =
+    Tp : tp shape
+  | Nd : nd shape
+  | Fk : 'b shape * 'c shape -> ('b, 'c) fk shape
+#           type tt
+type ff
+type 'a boolean = BT : tt boolean | BF : ff boolean
+#                 type ('a, 'b) path =
+    Pnone : 'c -> (tp, 'c) path
+  | Phere : (nd, 'd) path
+  | Pleft : ('e, 'g) path -> (('e, 'f) fk, 'g) path
+  | Pright : ('i, 'j) path -> (('h, 'i) fk, 'j) path
+#         type ('a, 'b) tree =
+    Ttip : (tp, 'c) tree
+  | Tnode : 'd -> (nd, 'd) tree
+  | Tfork : ('e, 'g) tree * ('f, 'g) tree -> (('e, 'f) fk, 'g) tree
+#   val tree1 : (((tp, nd) fk, (nd, nd) fk) fk, int) tree =
+  Tfork (Tfork (Ttip, Tnode 4), Tfork (Tnode 4, Tnode 3))
+#                     val find : ('a -> 'a -> bool) -> 'a -> ('b, 'a) tree -> ('b, 'a) path list =
+  <fun>
+#             val extract : ('a, 'b) path -> ('a, 'b) tree -> 'b = <fun>
+#             type ('a, 'b) le =
+    LeZ : 'c nat -> (zero, 'c) le
+  | LeS : ('d, 'e) le -> ('d succ, 'e succ) le
+#       type 'a even = EvenZ : zero even | EvenSS : 'b even -> 'b succ succ even
+#         type one = zero succ
+type two = one succ
+type three = two succ
+type four = three succ
+#       val even0 : zero even = EvenZ
+val even2 : two even = EvenSS EvenZ
+val even4 : four even = EvenSS (EvenSS EvenZ)
+#   val p1 : (two, one, three) plus = PlusS (PlusS (PlusZ (NS NZ)))
+#         val summandLessThanSum : ('a, 'b, 'c) plus -> ('a, 'c) le = <fun>
+#                             type ('a, 'b) equal = Eq : ('c, 'c) equal
+val sameNat : 'a nat -> 'b nat -> ('a, 'b) equal option = <fun>
+#             val smaller : ('a succ, 'b succ) le -> ('a, 'b) le = <fun>
+#   type ('a, 'b) diff = Diff : 'e nat * ('c, 'e, 'd) plus -> ('c, 'd) diff
+#   * * * * * * * * *                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#               Characters 87-243:
+  ..match a, b,le with (* warning *)
+    | NZ, m, LeZ _ -> Diff (m, PlusZ m)
+    | NS x, NS y, LeS q ->
+        match diff q x y with Diff (m, p) -> Diff (m, PlusS p)
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(NS _, NZ, _)
+val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#               val diff : ('a, 'b) le -> 'b nat -> ('a, 'b) diff = <fun>
+#             type ('a, 'b) filter = Filter : ('e, 'd) le * ('c, 'e) seq -> ('c, 'd) filter
+val leS' : ('a, 'b) le -> ('a, 'b succ) le = <fun>
+#                   val filter : ('a -> bool) -> ('a, 'b) seq -> ('a, 'b) filter = <fun>
+#                             type ('a, 'b, 'c) balance =
+    Less : ('d, 'd succ, 'd succ) balance
+  | Same : ('e, 'e, 'e) balance
+  | More : ('f succ, 'f, 'f succ) balance
+type 'a avl =
+    Leaf : zero avl
+  | Node : ('c, 'd, 'b) balance * 'c avl * int * 'd avl -> 'b succ avl
+type avl' = Avl : 'a avl -> avl'
+#                 val empty : avl' = Avl Leaf
+val elem : int -> 'a avl -> bool = <fun>
+#                           val rotr :
+  'a succ succ avl ->
+  int -> 'a avl -> ('a succ succ avl, 'a succ succ succ avl) sum = <fun>
+#                         val rotl :
+  'a avl ->
+  int -> 'a succ succ avl -> ('a succ succ avl, 'a succ succ succ avl) sum =
+  <fun>
+#                                               val ins : int -> 'a avl -> ('a avl, 'a succ avl) sum = <fun>
+#           val insert : int -> avl' -> avl' = <fun>
+#                                                                                                                                 val del_min : 'a succ avl -> int * ('a avl, 'a succ avl) sum = <fun>
+type 'a avl_del =
+    Dsame : 'b avl -> 'b avl_del
+  | Ddecr : ('d succ, 'c) equal * 'd avl -> 'c avl_del
+val del : int -> 'a avl -> 'a avl_del = <fun>
+#           val delete : int -> avl' -> avl' = <fun>
+#                             type red
+type black
+type ('a, 'b) sub_tree =
+    Bleaf : (black, zero) sub_tree
+  | Rnode : (black, 'c) sub_tree * int *
+      (black, 'c) sub_tree -> (red, 'c) sub_tree
+  | Bnode : ('e, 'd) sub_tree * int *
+      ('f, 'd) sub_tree -> (black, 'd succ) sub_tree
+type rb_tree = Root : (black, 'a) sub_tree -> rb_tree
+#               type dir = LeftD | RightD
+type ('a, 'b) ctxt =
+    CNil : (black, 'c) ctxt
+  | CRed : int * dir * (black, 'd) sub_tree *
+      (red, 'd) ctxt -> (black, 'd) ctxt
+  | CBlk : int * dir * ('g, 'f) sub_tree *
+      (black, 'f succ) ctxt -> ('e, 'f) ctxt
+#                         val blacken : (red, 'a) sub_tree -> (black, 'a succ) sub_tree = <fun>
+type 'a crep = Red : red crep | Black : black crep
+val color : ('a, 'b) sub_tree -> 'a crep = <fun>
+#                   val fill : ('a, 'b) ctxt -> ('a, 'b) sub_tree -> rb_tree = <fun>
+#             val recolor :
+  dir ->
+  int ->
+  ('a, 'b) sub_tree ->
+  dir ->
+  int ->
+  (black, 'b succ) sub_tree -> ('c, 'b) sub_tree -> (red, 'b succ) sub_tree =
+  <fun>
+#             val rotate :
+  dir ->
+  int ->
+  (black, 'a) sub_tree ->
+  dir ->
+  int ->
+  (black, 'a) sub_tree -> (red, 'a) sub_tree -> (black, 'a succ) sub_tree =
+  <fun>
+#                     val repair : (red, 'a) sub_tree -> ('b, 'a) ctxt -> rb_tree = <fun>
+#                     val ins : int -> ('a, 'b) sub_tree -> ('a, 'b) ctxt -> rb_tree = <fun>
+#   val insert : int -> rb_tree -> rb_tree = <fun>
+#                                                                                                 type 'a term =
+    Const : int -> int term
+  | Add : (int * int -> int) term
+  | LT : (int * int -> bool) term
+  | Ap : ('c -> 'b) term * 'c term -> 'b term
+  | Pair : 'd term * 'e term -> ('d * 'e) term
+val ex1 : int term = Ap (Add, Pair (Const 3, Const 5))
+val ex2 : (int * int) term =
+  Pair (Ap (Add, Pair (Const 3, Const 5)), Const 1)
+val eval_term : 'a term -> 'a = <fun>
+type 'a rep =
+    Rint : int rep
+  | Rbool : bool rep
+  | Rpair : 'b rep * 'c rep -> ('b * 'c) rep
+  | Rfun : 'd rep * 'e rep -> ('d -> 'e) rep
+type ('a, 'b) equal = Eq : ('c, 'c) equal
+val rep_equal : 'a rep -> 'b rep -> ('a, 'b) equal option = <fun>
+#                                                               type assoc = Assoc : string * 'a rep * 'a -> assoc
+val assoc : string -> 'a rep -> assoc list -> 'a = <fun>
+type 'a term =
+    Var : string * 'b rep -> 'b term
+  | Abs : string * 'c rep * 'd term -> ('c -> 'd) term
+  | Const : int -> int term
+  | Add : (int * int -> int) term
+  | LT : (int * int -> bool) term
+  | Ap : ('f -> 'e) term * 'f term -> 'e term
+  | Pair : 'g term * 'h term -> ('g * 'h) term
+val eval_term : assoc list -> 'a term -> 'a = <fun>
+#           val ex3 : (int -> int) term =
+  Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint))))
+val ex4 : int term =
+  Ap (Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint)))),
+   Const 3)
+val v4 : int = 6
+#                                             type rnil
+type ('a, 'b, 'c) rcons
+type 'a is_row =
+    Rnil : rnil is_row
+  | Rcons : 'd is_row -> ('b, 'c, 'd) rcons is_row
+type ('a, 'b) lam =
+    Const : int -> ('c, int) lam
+  | Var : 'd -> (('d, 'e, 'f) rcons, 'e) lam
+  | Shift : ('i, 'j) lam -> (('g, 'h, 'i) rcons, 'j) lam
+  | Abs : 'n * (('n, 'l, 'k) rcons, 'm) lam -> ('k, 'l -> 'm) lam
+  | App : ('o, 'q -> 'p) lam * ('o, 'q) lam -> ('o, 'p) lam
+type x = X
+type y = Y
+val ex1 : ((x, 'a -> 'b, (y, 'a, 'c) rcons) rcons, 'b) lam =
+  App (Var X, Shift (Var Y))
+val ex2 : ('a, ('b -> 'c) -> 'b -> 'c) lam =
+  Abs (<poly>, Abs (<poly>, App (Shift (Var <poly>), Var <poly>)))
+#                           type 'a env =
+    Enil : rnil env
+  | Econs : 'b * 'c * 'd env -> ('b, 'c, 'd) rcons env
+val eval_lam : 'a env -> ('a, 'b) lam -> 'b = <fun>
+#                               type add = Add
+type suc = Suc
+val env0 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons env = Econs (Zero, 0, Econs (Suc, <fun>, Econs (Add, <fun>, Enil)))
+val _0 : ((zero, int, 'a) rcons, int) lam = Var Zero
+val suc :
+  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam ->
+  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam = <fun>
+val _1 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam = App (Shift (Var Suc), Var Zero)
+val _2 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam = App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))
+val _3 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam =
+  App (Shift (Var Suc),
+   App (Shift (Var Suc), App (Shift (Var Suc), Var Zero)))
+val add :
+  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+   int -> int -> int)
+  lam = Shift (Shift (Var Add))
+val double :
+  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
+   int -> int)
+  lam =
+  Abs (<poly>,
+   App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>))
+val ex3 :
+  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
+   rcons, int)
+  lam =
+  App
+   (Abs (<poly>,
+     App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
+   App (Shift (Var Suc),
+    App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))))
+#     val v3 : int = 6
+#       *                                       type 'a rep = I : int rep | Ar : 'b rep * 'c rep -> ('b -> 'c) rep
+val compare : 'a rep -> 'b rep -> (string, ('a, 'b) equal) sum = <fun>
+#                     type term =
+    C of int
+  | Ab : string * 'a rep * term -> term
+  | Ap of term * term
+  | V of string
+type 'a ctx =
+    Cnil : rnil ctx
+  | Ccons : 'b * string * 'c rep * 'd ctx -> ('b, 'c, 'd) rcons ctx
+#                             type 'a checked =
+    Cerror of string
+  | Cok : ('b, 'c) lam * 'c rep -> 'b checked
+val lookup : string -> 'a ctx -> 'a checked = <fun>
+#                                                   val tc : 'a nat -> 'b ctx -> term -> 'b checked = <fun>
+#             val ctx0 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons ctx =
+  Ccons (Zero, "0", I,
+   Ccons (Suc, "S", Ar (I, I), Ccons (Add, "+", Ar (I, Ar (I, I)), Cnil)))
+val ex1 : term = Ab ("x", I, Ap (Ap (V "+", V "x"), V "x"))
+# val c1 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons checked =
+  Cok
+   (Abs (<poly>,
+     App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
+   Ar (I, I))
+# val ex2 : term = Ap (Ab ("x", I, Ap (Ap (V "+", V "x"), V "x")), C 3)
+# val c2 :
+  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
+  rcons checked =
+  Cok
+   (App
+     (Abs (<poly>,
+       App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
+     Const 3),
+   I)
+#           val eval_checked : 'a env -> 'a checked -> int = <fun>
+#   val v2 : int = 6
+#                                             type pexp
+type pval
+type 'a mode = Pexp : pexp mode | Pval : pval mode
+type ('a, 'b) tarr
+type tint
+type ('a, 'b) rel =
+    IntR : (tint, int) rel
+  | IntTo : ('c, 'd) rel -> ((tint, 'c) tarr, int -> 'd) rel
+type ('a, 'b, 'c) lam =
+    Const : ('e, 'f) rel * 'f -> (pval, 'd, 'e) lam
+  | Var : 'g -> (pval, ('g, 'h, 'i) rcons, 'h) lam
+  | Shift : ('j, 'm, 'n) lam -> ('j, ('k, 'l, 'm) rcons, 'n) lam
+  | Lam : 'r *
+      ('s, ('r, 'p, 'o) rcons, 'q) lam -> (pval, 'o, ('p, 'q) tarr) lam
+  | App : ('v, 't, ('w, 'u) tarr) lam *
+      ('x, 't, 'w) lam -> (pexp, 't, 'u) lam
+#                   val ex1 : (pexp, 'a, tint) lam =
+  App (Lam (<poly>, Var <poly>), Const (IntR, <poly>))
+val mode : ('a, 'b, 'c) lam -> 'a mode = <fun>
+#               type ('a, 'b) sub =
+    Id : ('c, 'c) sub
+  | Bind : 'd * ('h, 'g, 'e) lam *
+      ('f, 'g) sub -> (('d, 'e, 'f) rcons, 'g) sub
+  | Push : ('k, 'l) sub -> (('i, 'j, 'k) rcons, ('i, 'j, 'l) rcons) sub
+type ('a, 'b) lam' = Ex : ('e, 'c, 'd) lam -> ('c, 'd) lam'
+#                               val subst : ('a, 'b, 'c) lam -> ('b, 'd) sub -> ('d, 'c) lam' = <fun>
+#       type closed = rnil
+type 'a rlam = ((pexp, closed, 'a) lam, (pval, closed, 'a) lam) sum
+#                             val rule :
+  (pval, closed, ('a, 'b) tarr) lam -> (pval, closed, 'a) lam -> 'b rlam =
+  <fun>
+#                                 val onestep : ('a, closed, 'b) lam -> 'b rlam = <fun>
+# 

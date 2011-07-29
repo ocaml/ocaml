@@ -640,9 +640,13 @@ class texi =
           Printf.sprintf "(%s) "
             (String.concat ", " (List.map f l))
 
-    method string_of_type_args = function
-      | [] -> ""
-      | args -> " of " ^ (Odoc_info.string_of_type_list " * " args)
+    method string_of_type_args (args:Types.type_expr list) (ret:Types.type_expr option) = 
+      match args, ret with
+      | [], None -> ""
+      | args, None -> " of " ^ (Odoc_info.string_of_type_list " * " args)
+      | [], Some r -> " : " ^ (Odoc_info.string_of_type_expr r)
+      | args, Some r -> " : " ^ (Odoc_info.string_of_type_list " * " args) ^ 
+	                        " -> " ^ (Odoc_info.string_of_type_expr r)
 
     (** Return Texinfo code for a type. *)
     method texi_of_type ty =
@@ -668,11 +672,13 @@ class texi =
                   (List.map
                      (fun constr ->
                        (Raw ("  | " ^ constr.vc_name)) ::
-                       (Raw (self#string_of_type_args constr.vc_args)) ::
+                       (Raw (self#string_of_type_args
+                               constr.vc_args constr.vc_ret)) ::
                        (match constr.vc_text with
                        | None -> [ Newline ]
                        | Some t ->
-                           ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @
+                           (Raw (indent 5 "\n(* ") ::
+                            self#soft_fix_linebreaks 8 t) @
                            [ Raw " *)" ; Newline ]
                        ) ) l ) )
            | Type_record l ->
@@ -704,7 +710,7 @@ class texi =
         [ self#fixedblock
             ( [ Newline ; minus ; Raw "exception " ;
                 Raw (Name.simple e.ex_name) ;
-                Raw (self#string_of_type_args e.ex_args) ] @
+                Raw (self#string_of_type_args e.ex_args None) ] @
               (match e.ex_alias with
               | None -> []
               | Some ea -> [ Raw " = " ; Raw

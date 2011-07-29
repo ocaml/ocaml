@@ -47,13 +47,16 @@ type t = {
   annotations: (Path.t * Annot.ident) Ident.tbl;
   constrs: constructor_description Ident.tbl;
   labels: label_description Ident.tbl;
+  constrs_by_path: (Path.t * (constructor_description list)) Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
   modules: (Path.t * module_type) Ident.tbl;
   modtypes: (Path.t * modtype_declaration) Ident.tbl;
   components: (Path.t * module_components) Ident.tbl;
   classes: (Path.t * class_declaration) Ident.tbl;
   cltypes: (Path.t * cltype_declaration) Ident.tbl;
-  summary: summary
+  summary: summary;
+  local_constraints: bool;
+  level_map: (int * int) list;
 }
 
 and module_components = module_components_repr Lazy.t
@@ -67,6 +70,8 @@ and structure_components = {
   mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
+  mutable comp_constrs_by_path: 
+      (string, (constructor_description list * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
   mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
@@ -86,11 +91,12 @@ and functor_components = {
 
 let empty = {
   values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
-  labels = Ident.empty; types = Ident.empty;
+  labels = Ident.empty; types = Ident.empty; 
+  constrs_by_path = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
-  cltypes = Ident.empty;
-  summary = Env_empty }
+  cltypes = Ident.empty; 
+  summary = Env_empty; local_constraints = false; level_map = [] }
 
 let diff_keys is_local tbl1 tbl2 =
   let keys2 = Ident.keys tbl2 in
@@ -262,6 +268,8 @@ let find_value =
   find (fun env -> env.values) (fun sc -> sc.comp_values)
 and find_type =
   find (fun env -> env.types) (fun sc -> sc.comp_types)
+and find_constructors =
+  find (fun env -> env.constrs_by_path) (fun sc -> sc.comp_constrs_by_path)
 and find_modtype =
   find (fun env -> env.modtypes) (fun sc -> sc.comp_modtypes)
 and find_class =
@@ -272,8 +280,15 @@ and find_cltype =
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
    - the type should have an associated manifest type. *)
-let find_type_expansion path env =
+let find_type_expansion ?(use_local=true) ?level path env =
   let decl = find_type path env in
+  if not use_local && not (decl.type_newtype_level = None) then raise Not_found;
+  (* the level is changed when updating newtype definitions *)
+  if !Clflags.principal then begin
+    match level, decl.type_newtype_level with
+      Some level, Some def_level when level < def_level -> raise Not_found
+    | _ -> ()
+  end;
   match decl.type_manifest with
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
@@ -419,6 +434,8 @@ let lookup_simple proj1 proj2 lid env =
   | Lapply(l1, l2) ->
       raise Not_found
 
+let has_local_constraints env = env.local_constraints
+
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
 let lookup_annot id e =
@@ -436,6 +453,33 @@ and lookup_class =
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
+(* Level handling *)
+
+(* The level map is a list of pairs describing separate segments (lv,lv'),
+   lv < lv', organized in decreasing order.
+   The definition level is obtained by mapping a level in a segment to the
+   high limit of this segment.
+   The definition level of a newtype should be greater or equal to
+   the highest level of the newtypes in its manifest type.
+ *)
+
+let rec map_level lv = function
+  | [] -> lv
+  | (lv1, lv2) :: rem ->
+      if lv > lv2 then lv else
+      if lv >= lv1 then lv2 else map_level lv rem
+
+let map_newtype_level env lv = map_level lv env.level_map
+
+(* precondition: lv < lv' *)
+let rec add_level lv lv' = function
+  | [] -> [lv, lv']
+  | (lv1, lv2) :: rem as l ->
+      if lv2 < lv then (lv, lv') :: l else
+      if lv' < lv1 then (lv1, lv2) :: add_level lv lv' rem
+      else add_level (max lv lv1) (min lv' lv2) rem      
+
+
 (* Expand manifest module type names at the top of the given module type *)
 
 let rec scrape_modtype mty env =
@@ -451,11 +495,13 @@ let rec scrape_modtype mty env =
 (* Compute constructor descriptions *)
 
 let constructors_of_type ty_path decl =
+  let handle_variants cstrs = 
+    Datarepr.constructor_descrs
+      (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
+      cstrs decl.type_private
+  in
   match decl.type_kind with
-    Type_variant cstrs ->
-      Datarepr.constructor_descrs
-        (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
-        cstrs decl.type_private
+  | Type_variant cstrs -> handle_variants cstrs
   | Type_record _ | Type_abstract -> []
 
 (* Compute label descriptions *)
@@ -514,8 +560,9 @@ let rec components_of_module env sub path mty =
     Tmty_signature sg ->
       let c =
         { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
-          comp_constrs = Tbl.empty;
+          comp_constrs = Tbl.empty; 
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
+          comp_constrs_by_path = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty } in
@@ -540,14 +587,19 @@ let rec components_of_module env sub path mty =
             let decl' = Subst.type_declaration sub decl in
             c.comp_types <-
               Tbl.add (Ident.name id) (decl', nopos) c.comp_types;
+	    let constructors = constructors_of_type path decl' in
+	    c.comp_constrs_by_path <-
+	      Tbl.add (Ident.name id) 
+		(List.map snd constructors, nopos) c.comp_constrs_by_path;
             List.iter
               (fun (name, descr) ->
                 c.comp_constrs <- Tbl.add name (descr, nopos) c.comp_constrs)
-              (constructors_of_type path decl');
+              constructors;
+	    let labels = labels_of_type path decl' in
             List.iter
               (fun (name, descr) ->
                 c.comp_labels <- Tbl.add name (descr, nopos) c.comp_labels)
-              (labels_of_type path decl');
+              (labels);
             env := store_type_infos id path decl !env
         | Tsig_exception(id, decl) ->
             let decl' = Subst.exception_declaration sub decl in
@@ -594,8 +646,9 @@ let rec components_of_module env sub path mty =
   | Tmty_ident p ->
         Structure_comps {
           comp_values = Tbl.empty; comp_annotations = Tbl.empty;
-          comp_constrs = Tbl.empty;
-          comp_labels = Tbl.empty; comp_types = Tbl.empty;
+          comp_constrs = Tbl.empty; 
+          comp_labels = Tbl.empty; 
+          comp_types = Tbl.empty; comp_constrs_by_path = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
           comp_cltypes = Tbl.empty })
@@ -614,18 +667,24 @@ and store_annot id path annot env =
   else env
 
 and store_type id path info env =
+  let constructors = constructors_of_type path info in
+  let labels = labels_of_type path info in 
   { env with
     constrs =
       List.fold_right
         (fun (name, descr) constrs ->
           Ident.add (Ident.create name) descr constrs)
-        (constructors_of_type path info)
+        constructors 
         env.constrs;
+
+    constrs_by_path = 
+      Ident.add id 
+        (path,List.map snd constructors) env.constrs_by_path;
     labels =
       List.fold_right
         (fun (name, descr) labels ->
           Ident.add (Ident.create name) descr labels)
-        (labels_of_type path info)
+        labels
         env.labels;
     types = Ident.add id (path, info) env.types;
     summary = Env_type(env.summary, id, info) }
@@ -713,6 +772,16 @@ and add_class id ty env =
 
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
+
+let add_local_constraint id info mlv env =
+  match info with
+    {type_manifest = Some ty; type_newtype_level = Some lv} ->
+      (* use the newtype level for this definition, lv is the old one *)
+      let env = add_type id {info with type_newtype_level = Some mlv} env in
+      let level_map =
+        if lv < mlv then add_level lv mlv env.level_map else env.level_map in
+      { env with local_constraints = true; level_map = level_map }
+  | _ -> assert false
 
 (* Insertion of bindings by name *)
 

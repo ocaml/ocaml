@@ -52,8 +52,8 @@ TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
   typing/typedtree.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/includecore.cmo \
-  typing/includemod.cmo typing/parmatch.cmo \
-  typing/typetexp.cmo typing/stypes.cmo typing/typecore.cmo \
+  typing/includemod.cmo typing/typetexp.cmo typing/parmatch.cmo \
+  typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
   typing/typemod.cmo
 
@@ -263,9 +263,9 @@ opt:
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
-	 otherlibrariesopt \
-	 ocamllex.opt ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
+	 $(DEBUGGER) ocamldoc ocamlbuild.byte camlp4out \
+	 ocamlopt.opt otherlibrariesopt ocamllex.opt ocamltoolsopt.opt \
+	 ocamldoc.opt ocamlbuild.native camlp4opt
 
 base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \

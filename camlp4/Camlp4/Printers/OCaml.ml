@@ -696,6 +696,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ <:ctyp< $id:i$ >> -> o#ident f i
     | <:ctyp< $anti:s$ >> -> o#anti f s
     | <:ctyp< _ >> -> pp f "_"
+    | Ast.TyAnP _ -> pp f "+_"
+    | Ast.TyAnM _ -> pp f "-_"
     | <:ctyp< ~ $s$ : $t$ >> -> pp f "@[<2>%s:@ %a@]" s o#simple_ctyp t
     | <:ctyp< ? $s$ : $t$ >> -> pp f "@[<2>?%s:@ %a@]" s o#simple_ctyp t
     | <:ctyp< < > >> -> pp f "< >"
@@ -759,6 +761,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< ! $t1$ . $t2$ >> ->
         let (a, al) = get_ctyp_args t1 [] in
         pp f "@[<2>%a.@ %a@]" (list o#ctyp "@ ") [a::al] o#ctyp t2
+    | Ast.TyTypePol (_,t1,t2) ->
+        let (a, al) = get_ctyp_args t1 [] in
+        pp f "@[<2>type %a.@ %a@]" (list o#ctyp "@ ") [a::al] o#ctyp t2
     | <:ctyp< private $t$ >> -> pp f "@[private@ %a@]" o#simple_ctyp t
     | t -> o#simple_ctyp f t ];
 
@@ -879,7 +884,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f mt Ast.loc_of_module_type in
     match mt with
     [ <:module_type<>> -> assert False
-    | <:module_type< module type of $me$ >> -> pp f "@[<2>module type of@ %a@]" o#module_expr me
+    | <:module_type< module type of $me$ >> ->
+        pp f "@[<2>module type of@ %a@]" o#module_expr me
     | <:module_type< $id:i$ >> -> o#ident f i
     | <:module_type< $anti:s$ >> -> o#anti f s
     | <:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >> ->

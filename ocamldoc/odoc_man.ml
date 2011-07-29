@@ -461,19 +461,45 @@ class man =
             (fun constr ->
               bs b ("| "^constr.vc_name);
               (
-               match constr.vc_args, constr.vc_text with
-                 [], None -> bs b "\n "
-               | [], (Some t) ->
+               match constr.vc_args, constr.vc_text,constr.vc_ret with
+               | [], None, None -> bs b "\n "
+               | [], (Some t), None ->
                    bs b "  (* ";
                    self#man_of_text b t;
                    bs b " *)\n "
-               | l, None ->
+               | l, None, None ->
                    bs b "\n.B of ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
                    bs b " "
-               | l, (Some t) ->
+               | l, (Some t), None ->
                    bs b "\n.B of ";
                    self#man_of_type_expr_list ~par: false b father " * " l;
+                   bs b ".I \"  \"\n";
+                   bs b "(* ";
+                   self#man_of_text b t;
+                   bs b " *)\n "
+               | [], None, Some r -> 
+                   bs b "\n.B : ";
+                   self#man_of_type_expr b father r;
+                   bs b " "		   
+               | [], (Some t), Some r ->
+                   bs b "\n.B : ";
+                   self#man_of_type_expr b father r;
+                   bs b ".I \"  \"\n";
+                   bs b "(* ";
+                   self#man_of_text b t;
+                   bs b " *)\n "
+               | l, None, Some r ->
+                   bs b "\n.B : ";
+                   self#man_of_type_expr_list ~par: false b father " * " l;
+		   bs b ".B -> ";
+                   self#man_of_type_expr b father r;
+                   bs b " "
+               | l, (Some t), Some r ->
+                   bs b "\n.B of ";
+                   self#man_of_type_expr_list ~par: false b father " * " l;
+		   bs b ".B -> ";
+                   self#man_of_type_expr b father r;
                    bs b ".I \"  \"\n";
                    bs b "(* ";
                    self#man_of_text b t;

@@ -106,11 +106,14 @@ and value_kind =
 
 type constructor_description =
   { cstr_res: type_expr;                (* Type of the result *)
+    cstr_existentials: type_expr list;  (* list of existentials *)
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
     cstr_nonconsts: int;                (* Number of non-const constructors *)
+    cstr_normal: int;                   (* Number of non generalized constrs *)
+    cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag }        (* Read-only constructor? *)
 
 and constructor_tag =
@@ -142,14 +145,15 @@ type type_declaration =
     type_kind: type_kind;
     type_private: private_flag;
     type_manifest: type_expr option;
-    type_variance: (bool * bool * bool) list }
+    type_variance: (bool * bool * bool) list;
+    type_newtype_level: int option }
             (* covariant, contravariant, weakly contravariant *)
 
 and type_kind =
     Type_abstract
-  | Type_variant of (string * type_expr list) list
   | Type_record of
       (string * mutable_flag * type_expr) list * record_representation
+  | Type_variant of (string * type_expr list * type_expr option) list 
 
 type exception_declaration = type_expr list
 

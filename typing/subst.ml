@@ -167,22 +167,27 @@ let type_declaration s decl =
         begin match decl.type_kind with
           Type_abstract -> Type_abstract
         | Type_variant cstrs ->
-            Type_variant(
-              List.map (fun (n, args) -> (n, List.map (typexp s) args))
-                       cstrs)
+            Type_variant
+              (List.map
+                 (fun (n, args, ret_type) -> 
+		   (n, List.map (typexp s) args, may_map (typexp s) ret_type))
+                 cstrs)
         | Type_record(lbls, rep) ->
-            Type_record(
-              List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
-                       lbls,
-              rep)
+            Type_record
+              (List.map (fun (n, mut, arg) -> (n, mut, typexp s arg)) lbls,
+               rep)
         end;
+
       type_manifest =
-        begin match decl.type_manifest with
-          None -> None
-        | Some ty -> Some(typexp s ty)
+
+        begin 
+	  match decl.type_manifest with
+            None -> None
+          | Some ty -> Some(typexp s ty)
         end;
       type_private = decl.type_private;
       type_variance = decl.type_variance;
+      type_newtype_level = None;
     }
   in
   cleanup_types ();

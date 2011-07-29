@@ -24,6 +24,7 @@ exception Subtype of
 exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev
+exception Unification_recursive_abbrev of (type_expr * type_expr) list
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -104,11 +105,15 @@ val limited_generalize: type_expr -> type_expr -> unit
         (* Only generalize some part of the type
            Make the remaining of the type non-generalizable *)
 
-val instance: type_expr -> type_expr
+val instance: ?partial:bool -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
+        (* partial=None  -> normal
+           partial=false -> newvar() for non generic subterms
+           partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
+        ?in_pattern:Env.t ref * int -> 
         constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
 val instance_parameterized_type:
@@ -143,6 +148,8 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
+val unify_gadt: newtype_level:int -> Env.t ref -> type_expr -> type_expr -> unit
+        (* Unify the two types given and update the environment with the local constraints. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit
         (* Same as [unify], but allow free univars when first type
            is a variable. *)
@@ -245,3 +252,5 @@ val arity: type_expr -> int
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
+
+val get_current_level: unit -> int

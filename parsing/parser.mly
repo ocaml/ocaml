@@ -208,6 +208,108 @@ let exp_of_label lbl =
 let pat_of_label lbl =
   mkpat (Ppat_var(Longident.last lbl))
 
+let variables_of_type = 
+  let rec loop t = 
+      match t.ptyp_desc with
+      | Ptyp_any -> []
+      | Ptyp_var x ->  [x]
+      | Ptyp_arrow (label,core_type,core_type') ->
+	  loop core_type @ loop core_type'
+      | Ptyp_tuple lst -> List.concat (List.map loop lst)
+      | Ptyp_constr(longident, lst) ->
+	  List.concat (List.map loop lst) 
+      | Ptyp_object lst ->
+	  List.concat (List.map loop_core_field lst)		    
+      | Ptyp_class (longident, lst, lbl_list) ->
+	  List.concat (List.map loop lst)
+      | Ptyp_alias(core_type, str) ->
+	  str :: loop core_type 
+      | Ptyp_variant(row_field_list, flag, lbl_lst_option) -> 
+	  List.concat (List.map loop_row_field row_field_list)
+      | Ptyp_poly(string_lst, core_type) ->
+	  loop core_type
+      | Ptyp_package(longident,lst) ->
+	  List.concat (List.map (fun (n,typ) -> (loop typ)) lst)
+  and loop_core_field t = 
+      match t.pfield_desc with
+      | Pfield(n,typ) ->
+	  loop typ
+      | Pfield_var ->
+	[]
+  and loop_row_field  = 
+    function
+      | Rtag(label,flag,lst) ->
+	  List.concat (List.map loop lst) 
+      | Rinherit t ->
+	  loop t
+  in
+  loop  
+
+let varify_constructors var_names t = 
+  let counter = ref 0 in 
+  let offlimits = variables_of_type t in
+  let freshly_created = ref [] in
+  let rec fresh () = 
+    let ret = "x" ^ (string_of_int !counter) in 
+    counter := !counter + 1;
+    if List.mem ret offlimits then fresh () 
+    else
+      begin 
+        freshly_created := ret :: !freshly_created;
+        ret end
+  in
+  let sofar : (string,string) Hashtbl.t = Hashtbl.create 0 in
+  let rec loop t = 
+    let desc = 
+      match t.ptyp_desc with
+      | Ptyp_any -> Ptyp_any
+      | Ptyp_var x -> Ptyp_var x
+      | Ptyp_arrow (label,core_type,core_type') ->
+	  Ptyp_arrow(label, loop core_type, loop core_type')
+      | Ptyp_tuple lst -> Ptyp_tuple (List.map loop lst)
+      | Ptyp_constr(Lident s, []) when List.mem s var_names ->
+	begin try 
+		Ptyp_var (Hashtbl.find sofar s)
+	  with
+	    | Not_found ->
+	      let name = fresh () in 
+	      Hashtbl.add sofar s name;
+	      Ptyp_var name end
+      | Ptyp_constr(longident, lst) ->
+	  Ptyp_constr(longident, List.map loop lst) 
+      | Ptyp_object lst ->
+	  Ptyp_object (List.map loop_core_field lst)		    
+      | Ptyp_class (longident, lst, lbl_list) ->
+	  Ptyp_class (longident, List.map loop lst, lbl_list) 
+      | Ptyp_alias(core_type, string) ->
+	  Ptyp_alias(loop core_type, string) 
+      | Ptyp_variant(row_field_list, flag, lbl_lst_option) -> 
+	  Ptyp_variant(List.map loop_row_field row_field_list, flag, lbl_lst_option) 
+      | Ptyp_poly(string_lst, core_type) ->
+	  Ptyp_poly(string_lst, loop core_type) 
+      | Ptyp_package(longident,lst) ->
+	  Ptyp_package(longident,List.map (fun (n,typ) -> (n,loop typ) ) lst)
+    in
+    {t with ptyp_desc = desc}
+  and loop_core_field t = 
+    let desc = 
+      match t.pfield_desc with
+      | Pfield(n,typ) ->
+	  Pfield(n,loop typ)
+      | Pfield_var ->
+	  Pfield_var
+    in
+    { t with pfield_desc=desc}
+  and loop_row_field  = 
+    function
+      | Rtag(label,flag,lst) ->
+	  Rtag(label,flag,List.map loop lst) 
+      | Rinherit t ->
+	  Rinherit (loop t)
+  in
+  (!freshly_created,loop t)
+
+
 %}
 
 /* Tokens */
@@ -1072,6 +1174,12 @@ let_bindings:
     let_binding                                 { [$1] }
   | let_bindings AND let_binding                { $3 :: $1 }
 ;
+
+lident_list:
+    LIDENT                                 { [$1] }
+  | LIDENT lident_list                { $1 :: $2 }
+
+
 let_binding:
     val_ident fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
@@ -1079,6 +1187,25 @@ let_binding:
       { (ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
                                ghtyp(Ptyp_poly($3,$5)))),
          $7) }
+  | val_ident COLON TYPE lident_list DOT core_type EQUAL seq_expr
+      { 
+	let newtypes = $4 in
+	let core_type = $6 in
+	let exp = mkexp(Pexp_constraint($8,Some core_type,None)) in
+	let rec mk_newtypes = 
+	  function
+	    |[newtype] -> mkexp(Pexp_newtype(newtype,exp))
+	    | newtype :: newtypes ->
+		mkexp(Pexp_newtype(newtype,mk_newtypes newtypes))
+	    | [] -> assert false
+	in
+	let exp = mk_newtypes newtypes in
+	let polyvars, core_type = varify_constructors newtypes core_type in
+	
+	(ghpat(Ppat_constraint({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1},
+                               ghtyp(Ptyp_poly(polyvars,core_type)))),
+         exp)
+      }
   | pattern EQUAL seq_expr
       { ($1, $3) }
 ;
@@ -1250,7 +1377,7 @@ type_declarations:
 ;
 
 type_declaration:
-    type_parameters LIDENT type_kind constraints
+    optional_type_parameters LIDENT type_kind constraints
       { let (params, variance) = List.split $1 in
         let (kind, private_flag, manifest) = $3 in
         ($2, {ptype_params = params;
@@ -1285,6 +1412,22 @@ type_kind:
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $6), $4, Some $2) }
 ;
+optional_type_parameters:
+    /*empty*/                                   { [] }
+  | optional_type_parameter                              { [$1] }
+  | LPAREN optional_type_parameter_list RPAREN  { List.rev $2 }
+;
+optional_type_parameter:
+    type_variance QUOTE ident                   { Some $3, $1 }
+  | type_variance UNDERSCORE                    { None, $1 }
+;
+optional_type_parameter_list:
+    optional_type_parameter                              { [$1] }
+  | optional_type_parameter_list COMMA optional_type_parameter    { $3 :: $1 }
+;
+
+
+
 type_parameters:
     /*empty*/                                   { [] }
   | type_parameter                              { [$1] }
@@ -1307,12 +1450,27 @@ constructor_declarations:
   | constructor_declarations BAR constructor_declaration { $3 :: $1 }
 ;
 constructor_declaration:
-    constr_ident constructor_arguments          { ($1, $2, symbol_rloc()) }
+
+  | constr_ident generalized_constructor_arguments          
+      { let arg_types,ret_type = $2 in 
+	($1, arg_types,ret_type, symbol_rloc()) }
 ;
+
 constructor_arguments:
     /*empty*/                                   { [] }
   | OF core_type_list                           { List.rev $2 }
 ;
+
+generalized_constructor_arguments:
+    /*empty*/                                   { ([],None) }
+  | OF core_type_list                           { (List.rev $2,None) }
+  | COLON core_type_list MINUSGREATER simple_core_type    { (List.rev $2,Some $4) }
+  | COLON simple_core_type                       
+                                                { ([],Some $2) } 
+;
+
+
+
 label_declarations:
     label_declaration                           { [$1] }
   | label_declarations SEMI label_declaration   { $3 :: $1 }
@@ -1330,7 +1488,7 @@ with_constraints:
 with_constraint:
     TYPE type_parameters label_longident with_type_binder core_type constraints
       { let params, variance = List.split $2 in
-        ($3, Pwith_type {ptype_params = params;
+        ($3, Pwith_type {ptype_params = List.map (fun x -> Some x) params;
                          ptype_cstrs = List.rev $6;
                          ptype_kind = Ptype_abstract;
                          ptype_manifest = Some $5;
@@ -1341,7 +1499,7 @@ with_constraint:
        functor applications in type path */
   | TYPE type_parameters label_longident COLONEQUAL core_type
       { let params, variance = List.split $2 in
-        ($3, Pwith_typesubst {ptype_params = params;
+        ($3, Pwith_typesubst {ptype_params = List.map (fun x -> Some x) params;
                               ptype_cstrs = [];
                               ptype_kind = Ptype_abstract;
                               ptype_manifest = Some $5;
