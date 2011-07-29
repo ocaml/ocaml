@@ -2060,9 +2060,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
 
   try
     match (t1.desc, t2.desc) with
-      (Tunivar, Tunivar) ->
-        unify_univar t1 t2 !univar_pairs
-    | (Tvar, _) when may_instantiate inst_nongen t1 ->
+      (Tvar, _) when may_instantiate inst_nongen t1 ->
         moregen_occur env t1.level t2;
         occur env t1 t2;
         link_type t1 t2
@@ -2091,7 +2089,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _))
                 when Path.same p1 p2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
-          | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2) when Path.same p1 p2 && n1 = n2 ->
+          | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2))
+            when Path.same p1 p2 && n1 = n2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
               moregen_row inst_nongen type_pairs env row1 row2
@@ -2106,6 +2105,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
           | (Tpoly (t1, tl1), Tpoly (t2, tl2)) ->
               enter_poly env univar_pairs t1 tl1 t2 tl2
                 (moregen inst_nongen type_pairs env)
+          | (Tunivar, Tunivar) ->
+              unify_univar t1' t2' !univar_pairs
           | (_, _) ->
               raise (Unify [])
         end
