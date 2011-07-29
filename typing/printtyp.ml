@@ -183,6 +183,8 @@ let raw_type_expr ppf t =
   raw_type ppf t;
   visited := []
 
+let () = Btype.print_raw := raw_type_expr
+
 (* Print a type expression *)
 
 let names = ref ([] : (type_expr * string) list)

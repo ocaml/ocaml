@@ -16,6 +16,11 @@
 
 open Types
 
+(**** Forward declarations ****)
+
+let print_raw =
+  ref (fun _ -> assert false : Format.formatter -> type_expr -> unit)
+
 (**** Type level management ****)
 
 let generic_level = 100000000

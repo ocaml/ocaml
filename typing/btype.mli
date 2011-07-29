@@ -153,3 +153,7 @@ val set_commu: commutable ref -> commutable -> unit
         (* Set references, logging the old value *)
 val log_type: type_expr -> unit
         (* Log the old value of a type, before modifying it by hand *)
+
+(**** Forward declarations ****)
+val print_raw: (Format.formatter -> type_expr -> unit) ref
+
