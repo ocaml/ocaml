@@ -1,3 +1,4 @@
 *.html
 *.sty
 *.css
+ocamldoc.out

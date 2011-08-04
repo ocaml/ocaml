@@ -16,8 +16,6 @@ open Lexing
 
 type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
-let none = { loc_start = dummy_pos; loc_end = dummy_pos; loc_ghost = true };;
-
 let in_file name =
   let loc = {
     pos_fname = name;
@@ -27,6 +25,8 @@ let in_file name =
   } in
   { loc_start = loc; loc_end = loc; loc_ghost = true }
 ;;
+
+let none = in_file "_none_";;
 
 let curr lexbuf = {
   loc_start = lexbuf.lex_start_p;
@@ -204,31 +204,21 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, msg_head) =
 
 (* return file, line, char from the given position *)
 let get_pos_info pos =
-  let (filename, linenum, linebeg) =
-    if pos.pos_fname = "" && !input_name = "" then
-      ("", -1, 0)
-    else if pos.pos_fname = "" then
-      Linenum.for_position !input_name pos.pos_cnum
-    else
-      (pos.pos_fname, pos.pos_lnum, pos.pos_bol)
-  in
-  (filename, linenum, pos.pos_cnum - linebeg)
+  (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol)
 ;;
 
 let print ppf loc =
   let (file, line, startchar) = get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
-  let (startchar, endchar) =
-    if startchar < 0 then (0, 1) else (startchar, endchar)
-  in
-  if file = "" then begin
+  if file = "//toplevel//" then begin
     if highlight_locations ppf loc none then () else
       fprintf ppf "Characters %i-%i:@."
               loc.loc_start.pos_cnum loc.loc_end.pos_cnum
   end else begin
     fprintf ppf "%s%s%s%i" msg_file file msg_line line;
-    fprintf ppf "%s%i" msg_chars startchar;
-    fprintf ppf "%s%i%s@.%s" msg_to endchar msg_colon msg_head;
+    if startchar >= 0 then
+      fprintf ppf "%s%i%s%i" msg_chars startchar msg_to endchar;
+    fprintf ppf "%s@.%s" msg_colon msg_head;
   end
 ;;
 

@@ -106,6 +106,8 @@ FNR == 1 {
   add_exception("./ocamldoc/Changes.txt");
   add_exception("./ocamldoc/ocamldoc.sty");             # public domain
   add_exception("./otherlibs/labltk/browser/help.txt");
+  add_exception("./otherlibs/labltk/camltk/modules");   # generated
+  add_exception("./otherlibs/labltk/labltk/modules");   # generated
   add_exception("./tools/objinfo_helper.c");            # non-INRIA
   add_exception("./tools/magic");                       # public domain ?
   add_exception("./Upgrading");

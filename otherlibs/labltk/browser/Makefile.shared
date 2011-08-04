@@ -23,7 +23,7 @@ OBJ =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
 	help.cmo	\
 	viewer.cmo	typecheck.cmo	editor.cmo	main.cmo
 
-JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
+JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	jg_completion.cmo \
 	jg_box.cmo \
 	jg_button.cmo	jg_toplevel.cmo	jg_text.cmo	jg_message.cmo \
 	jg_menu.cmo	jg_entry.cmo	jg_multibox.cmo	jg_memo.cmo
@@ -68,7 +68,7 @@ install:
 clean:
 	rm -f *.cm? ocamlbrowser$(EXE) dummy.mli *~ *.orig *.$(O) help.ml
 
-depend:
+depend: help.ml
 	$(CAMLDEP) *.ml *.mli > .depend
 
 shell.cmo: dummy.cmi
