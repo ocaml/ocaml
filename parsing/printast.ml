@@ -19,9 +19,7 @@ open Location;;
 open Parsetree;;
 
 let fmt_position f l =
-  if l.pos_fname = "" && l.pos_lnum = 1
-  then fprintf f "%d" l.pos_cnum
-  else if l.pos_lnum = -1
+  if l.pos_lnum = -1
   then fprintf f "%s[%d]" l.pos_fname l.pos_cnum
   else fprintf f "%s[%d,%d+%d]" l.pos_fname l.pos_lnum l.pos_bol
                (l.pos_cnum - l.pos_bol)

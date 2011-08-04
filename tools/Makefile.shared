@@ -35,7 +35,7 @@ opt.opt: ocamldep.opt
 
 CAMLDEP_OBJ=depend.cmo ocamldep.cmo
 CAMLDEP_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  linenum.cmo warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamldep: depend.cmi $(CAMLDEP_OBJ)
@@ -60,7 +60,7 @@ install::
 
 CSLPROF=ocamlprof.cmo
 CSLPROF_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  linenum.cmo warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
 ocamlprof: $(CSLPROF) profiling.cmo
@@ -126,7 +126,7 @@ clean::
 # Converter olabl/ocaml 2.99 to ocaml 3
 
 OCAML299TO3= lexer299.cmo ocaml299to3.cmo
-LIBRARY3= misc.cmo warnings.cmo linenum.cmo location.cmo
+LIBRARY3= misc.cmo warnings.cmo location.cmo
 
 ocaml299to3: $(OCAML299TO3)
 	$(CAMLC) $(LINKFLAGS) -o ocaml299to3 $(LIBRARY3) $(OCAML299TO3)
@@ -159,7 +159,7 @@ clean::
 # Insert labels following an interface file (upgrade 3.02 to 3.03)
 
 ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
-  linenum.cmo warnings.cmo location.cmo longident.cmo \
+  warnings.cmo location.cmo longident.cmo \
   syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
 addlabels: addlabels.cmo

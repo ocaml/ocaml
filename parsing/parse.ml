@@ -46,14 +46,14 @@ let wrap parsing_fun lexbuf =
   | Lexer.Error(Lexer.Unterminated_string, _) as err -> raise err
   | Lexer.Error(Lexer.Unterminated_string_in_comment, _) as err -> raise err
   | Lexer.Error(Lexer.Illegal_character _, _) as err ->
-      if !Location.input_name = "" then skip_phrase lexbuf;
+      if !Location.input_name = "//toplevel//" then skip_phrase lexbuf;
       raise err
   | Syntaxerr.Error _ as err ->
-      if !Location.input_name = "" then maybe_skip_phrase lexbuf;
+      if !Location.input_name = "//toplevel//" then maybe_skip_phrase lexbuf;
       raise err
   | Parsing.Parse_error | Syntaxerr.Escape_error ->
       let loc = Location.curr lexbuf in
-      if !Location.input_name = ""
+      if !Location.input_name = "//toplevel//"
       then maybe_skip_phrase lexbuf;
       raise(Syntaxerr.Error(Syntaxerr.Other loc))
 ;;
