@@ -93,6 +93,7 @@ let infer_interface ml mli env build =
   let tags = tags_of_pathname ml++"ocaml" in
   Ocaml_compiler.prepare_compile build ml;
   Cmd(S[!Options.ocamlc; ocaml_ppflags tags; ocaml_include_flags ml; A"-i";
+        (if Tags.mem "thread" tags then A"-thread" else N);
         T(tags++"infer_interface"); P ml; Sh">"; Px mli])
 
 let menhir mly env build =
