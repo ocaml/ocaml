@@ -235,7 +235,7 @@ let f (type a) (x : a t) y =
   r
 ;;
 let f (type a) (x : a t) (y : a) =
-  match x with Int -> y
+  match x with Int -> y (* should return an int! *)
 ;;
 
 (* Pattern matching *)

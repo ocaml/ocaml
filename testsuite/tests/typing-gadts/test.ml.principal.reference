@@ -158,6 +158,17 @@ Error: This pattern matches values of type 'a array
                            ^^^^^^^
 Error: This pattern matches values of type 'a array
        but a pattern was expected which matches values of type a
-#                       type ('a, 'b) pair = { left : 'a; right : 'b; }
+#                       Characters 92-334:
+  ..match {left=x; right=y} with
+    | {left=_; right=A z} -> z
+    | {left=_; right=B z} -> if z then 1 else 2
+    | {left=_; right=C z} -> truncate z
+    | {left=TE TC; right=D [|1.0|]} -> 14
+    | {left=TA; right=D 0} -> -1
+    | {left=TA; right=D z} -> z
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+{left=TE TA; right=D [| _ |]}
+type ('a, 'b) pair = { left : 'a; right : 'b; }
 val f : 'a ty -> 'a t -> int = <fun>
 # 

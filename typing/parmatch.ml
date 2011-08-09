@@ -907,7 +907,10 @@ let build_other_gadt ext env =
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
 	let cnstrs  = complete_constrs p all_tags in
-	List.map (pat_of_constr p) cnstrs
+	let pats = List.map (pat_of_constr p) cnstrs in
+        (* List.iter (Format.eprintf "%a@." top_pretty) pats;
+           Format.eprintf "@.@."; *)
+        pats
     | _ -> assert false
 	  
 (*
@@ -1060,7 +1063,7 @@ let combinations f lst lst' =
   let rec iter =
     function
 	[] -> []
-      | x :: xs -> iter2 x lst'
+      | x :: xs -> iter2 x lst' @ iter xs
   in
   iter lst
     
@@ -1680,13 +1683,11 @@ let check_partial_all v casel =
 
 
 (* conversion from Typedtree.pattern to Parsetree.pattern list *)
-module Conv = 
-struct
+module Conv = struct
   open Parsetree
   let mkpat desc = 
     {ppat_desc = desc;
      ppat_loc = Location.none}
-;;
 
   let rec select : 'a list list -> 'a list list = 
     function
@@ -1695,27 +1696,26 @@ struct
 	  List.map
 	    (fun lst -> x :: lst)
 	    (select ys)
-	    @
-	      select (xs::ys)
+	  @
+	    select (xs::ys)
       | _ -> []
-;;
 
-let name_counter = ref 0 
-let fresh () = 
-  let current = !name_counter in 
-  name_counter := !name_counter + 1;
-  "#$%^@*@" ^ string_of_int current
+  let name_counter = ref 0 
+  let fresh () = 
+    let current = !name_counter in 
+    name_counter := !name_counter + 1;
+    "#$%^@*@" ^ string_of_int current
 
   let conv (typed: Typedtree.pattern) : 
       Parsetree.pattern list * 
-	 (string,Types.constructor_description) Hashtbl.t * 
-	 (string,Types.label_description) Hashtbl.t
+      (string,Types.constructor_description) Hashtbl.t * 
+      (string,Types.label_description) Hashtbl.t
       = 
     let constrs = Hashtbl.create 0 in 
     let labels = Hashtbl.create 0 in 
     let rec loop pat = 
       match pat.pat_desc with
-	Tpat_or (a,b,_) ->
+        Tpat_or (a,b,_) ->
 	  loop a @ loop b
       | Tpat_any | Tpat_constant _ | Tpat_var _ ->
 	  [mkpat Ppat_any]
@@ -1734,7 +1734,7 @@ let fresh () =
 	      [mkpat (Ppat_construct(Longident.Lident id, None, false))]
           | _ ->
 	      List.map 
-		(fun lst ->
+	        (fun lst ->
 		  let arg = 
 		    match lst with
 		      [] -> assert false
@@ -1742,7 +1742,8 @@ let fresh () =
 		    | _ -> Some (mkpat (Ppat_tuple lst))
 		  in
 		  mkpat (Ppat_construct(Longident.Lident id, arg, false)))
-		results end
+	        results
+          end
       | Tpat_variant(label,p_opt,row_desc) ->
 	  begin match p_opt with
 	  | None ->
@@ -1750,9 +1751,10 @@ let fresh () =
 	  | Some p ->
 	      let results = loop p in 
 	      List.map
-		(fun p ->
+	        (fun p ->
 		  mkpat (Ppat_variant(label, Some p)))
-		results end
+	        results
+          end
       | Tpat_record subpatterns ->
 	  let pats = 
 	    select
@@ -1761,9 +1763,9 @@ let fresh () =
 	  let label_idents = 
 	    List.map 
 	      (fun (lbl,_) -> 
-		let id = fresh () in 
-		Hashtbl.add labels id lbl;
-		Longident.Lident id)  
+	        let id = fresh () in 
+	        Hashtbl.add labels id lbl;
+	        Longident.Lident id)  
 	      subpatterns
 	  in 
 	  List.map
