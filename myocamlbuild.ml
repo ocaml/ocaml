@@ -676,7 +676,6 @@ let special_modules =
 let camlp4_import_list =
     ["utils/misc.ml";
      "utils/terminfo.ml";
-     "parsing/linenum.ml";
      "utils/warnings.ml";
      "parsing/location.ml";
      "parsing/longident.ml";
