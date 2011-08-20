@@ -41,6 +41,7 @@ type error =
   | With_need_typeconstr
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
+  | Scoping_pack of string * type_expr
 
 exception Error of Location.t * error
 
@@ -1023,16 +1024,33 @@ let rec get_manifest_types = function
   | _ :: rem -> get_manifest_types rem
 
 let type_package env m p nl tl =
+  (* Same as Pexp_letmodule *)
+  (* remember original level *)
+  let lv = Ctype.get_current_level () in
+  Ctype.begin_def ();
+  Ident.set_current_time lv;
+  let context = Typetexp.narrow () in
   let modl = type_module env m in
-  if nl = [] then (wrap_constraint env modl (Tmty_ident p), []) else
-  let msig = extract_sig env modl.mod_loc modl.mod_type in
-  let mtypes = get_manifest_types msig in
-  let tl' =
-    List.map2
-      (fun name ty -> try List.assoc name mtypes with Not_found -> ty)
-      nl tl
+  Ctype.init_def(Ident.current_time());
+  Typetexp.widen context;
+  let (mp, env) =
+    match modl.mod_desc with
+      Tmod_ident mp -> (mp, env)
+    | _ ->
+      let (id, new_env) = Env.enter_module "%M" modl.mod_type env in
+      (Pident id, new_env)
   in
+  let tl' =
+    List.map (fun name -> Ctype.newconstr (Pdot(mp, name, nopos)) []) nl in
+  (* go back to original level *)
+  Ctype.end_def ();
+  if nl = [] then (wrap_constraint env modl (Tmty_ident p), []) else
   let mty = modtype_of_package env modl.mod_loc p nl tl' in
+  List.iter2
+    (fun n ty ->
+      try Ctype.unify env ty (Ctype.newvar ())
+      with Ctype.Unify _ -> raise (Error(m.pmod_loc, Scoping_pack (n,ty))))
+    nl tl';
   (wrap_constraint env modl mty, tl')
 
 (* Fill in the forward declarations *)
@@ -1197,3 +1215,8 @@ let report_error ppf = function
       fprintf ppf
         "The type of this packed module contains variables:@ %a"
         type_expr ty
+  | Scoping_pack (id, ty) ->
+      fprintf ppf
+        "The type %s in this module cannot be exported.@ " id;
+      fprintf ppf
+        "Its type contains local dependencies:@ %a" type_expr ty

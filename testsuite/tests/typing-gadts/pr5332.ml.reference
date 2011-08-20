@@ -15,5 +15,5 @@ Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (Tbool, Tvar _)
 val f : ('a, 'b) typ -> ('a, 'b) typ -> int = <fun>
-#   Exception: Match_failure ("", 9, 1).
+#   Exception: Match_failure ("//toplevel//", 9, 1).
 # 

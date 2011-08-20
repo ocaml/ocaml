@@ -2043,9 +2043,7 @@ and type_expect ?in_function env sexp ty_expected =
         | _ ->
             raise (Error (loc, Not_a_packed_module ty_expected))
       in
-      let context = Typetexp.narrow () in
       let (modl, tl') = !type_package env m p nl tl in
-      Typetexp.widen context;
       rue {
         exp_desc = Texp_pack modl;
         exp_loc = loc;

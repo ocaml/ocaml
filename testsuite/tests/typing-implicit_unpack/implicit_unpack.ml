@@ -114,3 +114,52 @@ let rec to_string: 'a. 'a Typ.typ -> 'a -> string =
     | Pair (module P) ->
         let (x1, x2) = TypEq.apply P.eq x in
         Printf.sprintf "(%s,%s)" (to_string P.t1 x1) (to_string P.t2 x2)
+
+(* Wrapping maps *)
+module type MapT = sig
+  include Map.S
+  type data
+  type map
+  val of_t : data t -> map
+  val to_t : map -> data t
+end
+
+type ('k,'d,'m) map =
+    (module MapT with type key = 'k and type data = 'd and type map = 'm)
+
+let add (type k) (type d) (type m) (m:(k,d,m) map) x y s =
+   let module M =
+     (val m:MapT with type key = k and type data = d and type map = m) in
+   M.of_t (M.add x y (M.to_t s))
+
+module SSMap = struct
+  include Map.Make(String)
+  type data = string
+  type map = data t
+  let of_t x = x
+  let to_t x = x
+end
+
+let ssmap =
+  (module SSMap:
+   MapT with type key = string and type data = string and type map = SSMap.map)
+;;
+
+let ssmap =
+  (module struct include SSMap end :
+   MapT with type key = string and type data = string and type map = SSMap.map)
+;;
+
+let ssmap =
+  (let module S = struct include SSMap end in (module S) :
+  (module 
+   MapT with type key = string and type data = string and type map = SSMap.map))
+;;
+
+let ssmap =
+  (module SSMap: MapT with type key = _ and type data = _ and type map = _)
+;;
+
+let ssmap : (_,_,_) map = (module SSMap);;
+
+add ssmap;;
