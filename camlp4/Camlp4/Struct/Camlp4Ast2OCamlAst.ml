@@ -536,7 +536,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:patt@loc< ($tup:_$) >> -> error loc "singleton tuple pattern"
     | PaTyc loc p t -> mkpat loc (Ppat_constraint (patt p) (ctyp t))
     | PaTyp loc i -> mkpat loc (Ppat_type (long_type_ident i))
-    | PaVrn loc s -> mkpat loc (Ppat_variant s None)
+    | PaVrn loc s -> mkpat loc (Ppat_variant (conv_con s) None)
     | PaLaz loc p -> mkpat loc (Ppat_lazy (patt p))
     | PaEq _ _ _ | PaSem _ _ _ | PaCom _ _ _ | PaNil _ as p ->
         error (loc_of_patt p) "invalid pattern" ]
@@ -769,7 +769,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:expr@loc< $uid:s$ >> ->
         (* let ca = constructors_arity () in *)
         mkexp loc (Pexp_construct (lident (conv_con s)) None True)
-    | ExVrn loc s -> mkexp loc (Pexp_variant s None)
+    | ExVrn loc s -> mkexp loc (Pexp_variant (conv_con s) None)
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))

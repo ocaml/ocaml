@@ -3,6 +3,7 @@ Objective Caml 3.12.2:
 
 Bug fixes:
 - problem with printing of string literals in camlp4 (reported on caml-list)
+- PR#4705: camlp4 does not allow to define types with `True or `False
 - PR#5024: camlp4r now handles underscores in irrefutable patern matching of records
 - PR#5238, PR#5277: Sys_error when getting error location
 - PR#5301: camlp4r and exception equal to another one with parameters
