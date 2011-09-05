@@ -3,6 +3,7 @@ Objective Caml 3.12.2:
 
 Bug fixes:
 - problem with printing of string literals in camlp4 (reported on caml-list)
+- PR#5024: camlp4r now handles underscores in irrefutable patern matching of records
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
