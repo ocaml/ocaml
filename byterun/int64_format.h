@@ -52,7 +52,7 @@ static void I64_format(char * buffer, char * fmt, int64 x)
     case '1': case '2': case '3': case '4': case '5':
     case '6': case '7': case '8': case '9':
       width = atoi(p);
-      while (*p >= '0' && *p <= '9') p++;
+      while (p[1] >= '0' && p[1] <= '9') p++;
       break;
     case 'd': case 'i':
       signedconv = 1; /* fallthrough */
