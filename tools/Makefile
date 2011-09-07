@@ -19,3 +19,9 @@ include Makefile.shared
 ocamlmktop: ocamlmktop.tpl ../config/Makefile
 	sed -e 's|%%BINDIR%%|$(BINDIR)|' ocamlmktop.tpl > ocamlmktop
 	chmod +x ocamlmktop
+
+install::
+	cp ocamlmktop $(BINDIR)
+
+clean::
+	rm -f ocamlmktop

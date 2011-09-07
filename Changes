@@ -10,6 +10,7 @@ Bug fixes:
 - PR#5316: objinfo now shows ccopts/ccobjs/force_link when applicable
 - PR#5322: type abbreviations expanding to a universal type variable
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
+- PR#5331: ocamlmktop is not always a shell script
 - PR#5335: Unix.environment segfaults after a call to clearenv
 
 Objective Caml 3.12.1:

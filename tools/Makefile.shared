@@ -114,14 +114,6 @@ beforedepend:: ocamlmklib.ml
 clean::
 	rm -f ocamlmklib.ml
 
-# To make custom toplevels (see Makefile/Makefile.nt)
-
-install::
-	cp ocamlmktop $(BINDIR)/   # no $(EXE) here, ocamlmktop is a script
-
-clean::
-	rm -f ocamlmktop
-
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
