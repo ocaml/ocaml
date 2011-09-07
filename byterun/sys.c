@@ -51,12 +51,6 @@
 #include "stacks.h"
 #include "sys.h"
 
-#if 0
-#ifndef _WIN32
-extern int errno;
-#endif
-#endif
-
 static char * error_message(void)
 {
   return strerror(errno);
