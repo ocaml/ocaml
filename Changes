@@ -12,6 +12,7 @@ Bug fixes:
 - PR#5330: thread tag with '.top' and '.inferred.mli' targets
 - PR#5331: ocamlmktop is not always a shell script
 - PR#5335: Unix.environment segfaults after a call to clearenv
+- PR#5344: some predifined exceptions need special printing
 
 Objective Caml 3.12.1:
 ----------------------
