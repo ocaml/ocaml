@@ -324,9 +324,14 @@ CAMLprim value caml_sys_get_config(value unit)
   CAMLlocal2 (result, ostype);
 
   ostype = caml_copy_string(OCAML_OS_TYPE);
-  result = caml_alloc_small (2, 0);
+  result = caml_alloc_small (3, 0);
   Field(result, 0) = ostype;
   Field(result, 1) = Val_long (8 * sizeof(value));
+#ifdef ARCH_BIG_ENDIAN
+  Field(result, 2) = Val_true;
+#else
+  Field(result, 2) = Val_false;
+#endif
   CAMLreturn (result);
 }
 

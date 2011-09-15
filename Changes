@@ -23,6 +23,7 @@ Bug fixes:
 
 Feature wishes:
 - PR#4444: new String.trim function, removing leading and trailing whistespace
+- PR#4898: new Sys.big_endian boolean for machine endianness
 
 Objective Caml 3.12.1:
 ----------------------
