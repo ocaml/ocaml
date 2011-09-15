@@ -7,6 +7,8 @@ Bug fixes:
 - PR#4705: camlp4 does not allow to define types with `True or `False
 - PR#4937: camlp4 incorrectly handles optional arguments if 'option' is redefined
 - PR#5024: camlp4r now handles underscores in irrefutable patern matching of records
+- PR#5211: updated Genlex documentation to state that camlp4 is mandatory for 'parser'
+           keyword and associated notation
 - PR#5238, PR#5277: Sys_error when getting error location
 - PR#5301: camlp4r and exception equal to another one with parameters
 - PR#5316: objinfo now shows ccopts/ccobjs/force_link when applicable
