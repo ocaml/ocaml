@@ -3,6 +3,8 @@ Objective Caml 3.12.2:
 
 Bug fixes:
 - problem with printing of string literals in camlp4 (reported on caml-list)
+- PR#1643: functions of the Lazy module whose named started with 'lazy_' have
+           been deprecated, and new ones without the prefix added
 - PR#4697: Unix.putenv leaks memory on failure
 - PR#4705: camlp4 does not allow to define types with `True or `False
 - PR#4937: camlp4 incorrectly handles optional arguments if 'option' is redefined

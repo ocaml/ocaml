@@ -57,13 +57,13 @@ external force : 'a t -> 'a = "%lazy_force";;
 
 let force_val = CamlinternalLazy.force_val;;
 
-let lazy_from_fun (f : unit -> 'arg) =
+let from_fun (f : unit -> 'arg) =
   let x = Obj.new_block Obj.lazy_tag 1 in
   Obj.set_field x 0 (Obj.repr f);
   (Obj.obj x : 'arg t)
 ;;
 
-let lazy_from_val (v : 'arg) =
+let from_val (v : 'arg) =
   let t = Obj.tag (Obj.repr v) in
   if t = Obj.forward_tag || t = Obj.lazy_tag || t = Obj.double_tag then begin
     make_forward v
@@ -72,4 +72,10 @@ let lazy_from_val (v : 'arg) =
   end
 ;;
 
-let lazy_is_val (l : 'arg t) = Obj.tag (Obj.repr l) <> Obj.lazy_tag;;
+let is_val (l : 'arg t) = Obj.tag (Obj.repr l) <> Obj.lazy_tag;;
+
+let lazy_from_fun = from_fun;;
+
+let lazy_from_val = from_val;;
+
+let lazy_is_val = is_val;;
