@@ -131,7 +131,7 @@ let replace h key info =
         raise Not_found
     | Cons(k, i, next) ->
         if compare k key = 0
-        then Cons(k, info, next)
+        then Cons(key, info, next)
         else Cons(k, i, replace_bucket next) in
   let i = key_index h key in
   let l = h.data.(i) in
@@ -320,7 +320,7 @@ module MakeSeeded(H: SeededHashedType): (SeededS with type key = H.t) =
             raise Not_found
         | Cons(k, i, next) ->
             if H.equal k key
-            then Cons(k, info, next)
+            then Cons(key, info, next)
             else Cons(k, i, replace_bucket next) in
       let i = key_index h key in
       let l = h.data.(i) in
