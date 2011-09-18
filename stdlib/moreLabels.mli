@@ -47,6 +47,26 @@ module Hashtbl : sig
     sig
       type key
       and 'a t
+      val create : int -> 'a t
+      val clear : 'a t -> unit
+      val copy : 'a t -> 'a t
+      val add : 'a t -> key:key -> data:'a -> unit
+      val remove : 'a t -> key -> unit
+      val find : 'a t -> key -> 'a
+      val find_all : 'a t -> key -> 'a list
+      val replace : 'a t -> key:key -> data:'a -> unit
+      val mem : 'a t -> key -> bool
+      val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
+      val fold :
+          f:(key:key -> data:'a -> 'b -> 'b) ->
+          'a t -> init:'b -> 'b
+      val length : 'a t -> int
+      val stats: 'a t -> statistics
+    end
+  module type SeededS =
+    sig
+      type key
+      and 'a t
       val create : ?seed:int -> int -> 'a t
       val clear : 'a t -> unit
       val copy : 'a t -> 'a t
@@ -64,7 +84,7 @@ module Hashtbl : sig
       val stats: 'a t -> statistics
     end
   module Make : functor (H : HashedType) -> S with type key = H.t
-  module MakeSeeded (H : SeededHashedType) : S with type key = H.t
+  module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
   val hash : 'a -> int
   val seeded_hash : int -> 'a -> int
   val hash_param : int -> int -> 'a -> int

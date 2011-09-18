@@ -155,7 +155,7 @@ module type S =
   sig
     type key
     type 'a t
-    val create : ?seed:int -> int -> 'a t
+    val create : int -> 'a t
     val clear : 'a t -> unit
     val copy : 'a t -> 'a t
     val add : 'a t -> key -> 'a -> unit
@@ -179,8 +179,7 @@ module Make (H : HashedType) : S with type key = H.t
     The operations perform similarly to those of the generic
     interface, but use the hashing and equality functions
     specified in the functor argument [H] instead of generic
-    equality and hashing.  The optional [seed] argument to the
-    [create] function is ignored. *)
+    equality and hashing.  *)
 
 module type SeededHashedType =
   sig
@@ -198,7 +197,28 @@ module type SeededHashedType =
 (** The input signature of the functor {!Hashtbl.MakeSeeded}.
     @since 3.13.0 *)
 
-module MakeSeeded (H : SeededHashedType) : S with type key = H.t
+module type SeededS =
+  sig
+    type key
+    type 'a t
+    val create : ?seed:int -> int -> 'a t
+    val clear : 'a t -> unit
+    val copy : 'a t -> 'a t
+    val add : 'a t -> key -> 'a -> unit
+    val remove : 'a t -> key -> unit
+    val find : 'a t -> key -> 'a
+    val find_all : 'a t -> key -> 'a list
+    val replace : 'a t -> key -> 'a -> unit
+    val mem : 'a t -> key -> bool
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
+    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+    val length : 'a t -> int
+    val stats: 'a t -> statistics
+  end
+(** The output signature of the functor {!Hashtbl.MakeSeeded}.
+    @since 3.13.0 *)
+
+module MakeSeeded (H : SeededHashedType) : SeededS with type key = H.t
 (** Functor building an implementation of the hashtable structure.
     The functor [Hashtbl.MakeSeeded] returns a structure containing
     a type [key] of keys and a type ['a t] of hash tables
@@ -206,8 +226,7 @@ module MakeSeeded (H : SeededHashedType) : S with type key = H.t
     The operations perform similarly to those of the generic
     interface, but use the seeded hashing and equality functions
     specified in the functor argument [H] instead of generic
-    equality and hashing.  The optional [seed] argument to the [create]
-    function is honored.
+    equality and hashing. 
     @since 3.13.0 *)
 
 
