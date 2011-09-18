@@ -24,6 +24,7 @@ alloc_limit     .req    r10
 /* Allocation functions and GC interface */
 
         .globl caml_call_gc
+        .type caml_call_gc, %function
 caml_call_gc:
     /* Record return address and desired size */
     /* Can use alloc_limit as a temporary since it will be reloaded by
@@ -41,6 +42,7 @@ caml_call_gc:
         bx      lr
 
         .globl caml_alloc1
+        .type caml_alloc1, %function
 caml_alloc1:
         sub     alloc_ptr, alloc_ptr, #8
         cmp     alloc_ptr, alloc_limit
@@ -54,6 +56,7 @@ caml_alloc1:
         b       caml_alloc1
 
         .globl caml_alloc2
+        .type caml_alloc2, %function
 caml_alloc2:
         sub     alloc_ptr, alloc_ptr, #12
         cmp     alloc_ptr, alloc_limit
@@ -67,6 +70,7 @@ caml_alloc2:
         b       caml_alloc2
 
         .globl caml_alloc3
+        .type caml_alloc3, %function
 caml_alloc3:
         sub     alloc_ptr, alloc_ptr, #16
         cmp     alloc_ptr, alloc_limit
@@ -80,6 +84,7 @@ caml_alloc3:
         b       caml_alloc3
 
         .globl caml_allocN
+        .type caml_allocN, %function
 caml_allocN:
         sub     alloc_ptr, alloc_ptr, r12
         cmp     alloc_ptr, alloc_limit
@@ -134,6 +139,7 @@ caml_allocN:
 /* Function to call is in r12 */
 
         .globl caml_c_call
+        .type caml_c_call, %function
 caml_c_call:
     /* Preserve return address in callee-save register r4 */
         mov     r4, lr
@@ -160,6 +166,7 @@ caml_c_call:
 /* Start the Caml program */
 
         .globl caml_start_program
+        .type caml_start_program, %function
 caml_start_program:
         ldr     r12, .Lcaml_program
 
@@ -235,6 +242,7 @@ caml_start_program:
 /* Raise an exception from C */
 
         .globl caml_raise_exception
+        .type caml_raise_exception, %function
 caml_raise_exception:
     /* Reload Caml allocation pointers */
         ldr     r12, .Lcaml_young_ptr
@@ -250,6 +258,7 @@ caml_raise_exception:
 /* Callback from C to Caml */
 
         .globl caml_callback_exn
+        .type caml_callback_exn, %function
 caml_callback_exn:
     /* Initial shuffling of arguments (r0 = closure, r1 = first arg) */
         mov     r12, r0
@@ -259,6 +268,7 @@ caml_callback_exn:
         b       .Ljump_to_caml
 
         .globl caml_callback2_exn
+        .type caml_callback2_exn, %function
 caml_callback2_exn:
     /* Initial shuffling of arguments (r0 = closure, r1 = arg1, r2 = arg2) */
         mov     r12, r0
@@ -269,6 +279,7 @@ caml_callback2_exn:
         b       .Ljump_to_caml
 
         .globl caml_callback3_exn
+        .type caml_callback3_exn, %function
 caml_callback3_exn:
     /* Initial shuffling of arguments */
     /* (r0 = closure, r1 = arg1, r2 = arg2, r3 = arg3) */
@@ -281,6 +292,7 @@ caml_callback3_exn:
         b       .Ljump_to_caml
 
         .globl caml_ml_array_bound_error
+        .type caml_ml_array_bound_error, %function
 caml_ml_array_bound_error:
     /* Load address of [caml_array_bound_error] in r12 */
         ldr     r12, .Lcaml_array_bound_error
