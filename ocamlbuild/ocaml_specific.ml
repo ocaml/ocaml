@@ -434,7 +434,7 @@ let () =
     (* tags package(X), predicate(X) and syntax(X) *)
     List.iter begin fun tags ->
       pflag tags "package" (fun pkg -> S [A "-package"; A pkg]);
-      pflag tags "predicate" (fun pkg -> S [A "-predicate"; A pkg]);
+      pflag tags "predicate" (fun pkg -> S [A "-predicates"; A pkg]);
       pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
     end all_tags
   end else begin
