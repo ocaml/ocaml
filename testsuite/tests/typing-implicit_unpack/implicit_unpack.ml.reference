@@ -108,8 +108,8 @@ module type MapT =
     val of_t : data t -> map
     val to_t : map -> data t
   end
-type ('a, 'b, 'c) map =
-    (module MapT with type data = 'b and type key = 'a and type map = 'c)
+type ('k, 'd, 'm) map =
+    (module MapT with type data = 'd and type key = 'k and type map = 'm)
 val add : ('a, 'b, 'c) map -> 'a -> 'b -> 'c -> 'c = <fun>
 module SSMap :
   sig

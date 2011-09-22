@@ -50,7 +50,7 @@ let maybe_pointer exp =
 
 let array_element_kind env ty =
   match scrape env ty with
-  | Tvar | Tunivar ->
+  | Tvar _ | Tunivar _ ->
       Pgenarray
   | Tconstr(p, args, abbrev) ->
       if Path.same p Predef.path_int || Path.same p Predef.path_char then

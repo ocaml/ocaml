@@ -764,7 +764,7 @@ let rec type_module sttn funct_body anchor env smod =
               Location.prerr_warning smod.pmod_loc
                 (Warnings.Not_principal "this module unpacking");
             modtype_of_package env smod.pmod_loc p nl tl
-        | {desc = Tvar} ->
+        | {desc = Tvar _} ->
             raise (Typecore.Error
                      (smod.pmod_loc, Typecore.Cannot_infer_signature))
         | _ ->

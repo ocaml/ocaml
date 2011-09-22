@@ -58,7 +58,9 @@ type variable_context = int * (string, type_expr) Tbl.t
 let rec narrow_unbound_lid_error env loc lid make_error =
   let check_module mlid =
     try ignore (Env.lookup_module mlid env)
-    with Not_found -> narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid); assert false
+    with Not_found ->
+      narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid);
+      assert false
   in
   begin match lid with
   | Longident.Lident _ -> ()
@@ -73,28 +75,30 @@ let rec narrow_unbound_lid_error env loc lid make_error =
 let find_component lookup make_error env loc lid =
   try
     match lid with
-    | Longident.Ldot (Longident.Lident "*predef*", s) -> lookup (Longident.Lident s) Env.initial
+    | Longident.Ldot (Longident.Lident "*predef*", s) ->
+        lookup (Longident.Lident s) Env.initial
     | _ -> lookup lid env
   with Not_found ->
     (narrow_unbound_lid_error env loc lid make_error
      : unit (* to avoid a warning *));
     assert false
 
-let find_type = find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
-
-let find_constructor = find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
-
-let find_label = find_component Env.lookup_label (fun lid -> Unbound_label lid)
-
-let find_class = find_component Env.lookup_class (fun lid -> Unbound_class lid)
-
-let find_value = find_component Env.lookup_value (fun lid -> Unbound_value lid)
-
-let find_module = find_component Env.lookup_module (fun lid -> Unbound_module lid)
-
-let find_modtype = find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
-
-let find_cltype = find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
+let find_type =
+  find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
+let find_constructor =
+  find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
+let find_label =
+  find_component Env.lookup_label (fun lid -> Unbound_label lid)
+let find_class =
+  find_component Env.lookup_class (fun lid -> Unbound_class lid)
+let find_value =
+  find_component Env.lookup_value (fun lid -> Unbound_value lid)
+let find_module =
+  find_component Env.lookup_module (fun lid -> Unbound_module lid)
+let find_modtype =
+  find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
+let find_cltype =
+  find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
 
 (* Support for first-class modules. *)
 
@@ -119,7 +123,8 @@ let create_package_mty fake loc env (p, l) =
                ptype_manifest = if fake then None else Some t;
                ptype_variance = [];
                ptype_loc = loc} in
-      {pmty_desc=Pmty_with (mty, [ Longident.Lident s, Pwith_type d ]); pmty_loc=loc}
+      {pmty_desc=Pmty_with (mty, [ Longident.Lident s, Pwith_type d ]);
+       pmty_loc=loc}
     )
     {pmty_desc=Pmty_ident p; pmty_loc=loc}
     l
@@ -142,6 +147,18 @@ let widen (gl, tv) =
   restore_global_level gl;
   type_variables := tv
 
+let strict_lowercase c = (c = '_' || c >= 'a' && c <= 'z')
+
+let validate_name = function
+    None -> None
+  | Some name as s ->
+      if name <> "" && strict_lowercase name.[0] then s else None
+
+let new_global_var ?name () =
+  new_global_var ?name:(validate_name name) ()
+let newvar ?name () =
+  newvar ?name:(validate_name name) ()
+
 let enter_type_variable strict loc name =
   try
     if name <> "" && name.[0] = '_' then
@@ -150,7 +167,7 @@ let enter_type_variable strict loc name =
     if strict then raise Already_bound;
     v
   with Not_found ->
-    let v = new_global_var() in
+    let v = new_global_var ~name () in
     type_variables := Tbl.add name v !type_variables;
     v
 
@@ -165,8 +182,8 @@ let wrap_method ty =
     Tpoly _ -> ty
   | _ -> Ctype.newty (Tpoly (ty, []))
 
-let new_pre_univar () =
-  let v = newvar () in pre_univars := v :: !pre_univars; v
+let new_pre_univar ?name () =
+  let v = newvar ?name () in pre_univars := v :: !pre_univars; v
 
 let rec swap_list = function
     x :: y :: l -> y :: x :: swap_list l
@@ -190,7 +207,8 @@ let rec transl_type env policy styp =
         instance (fst(Tbl.find name !used_variables))
       with Not_found ->
         let v =
-          if policy = Univars then new_pre_univar () else newvar () in
+          if policy = Univars then new_pre_univar ~name () else newvar ~name ()
+        in
         used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
         v
       end
@@ -333,7 +351,14 @@ let rec transl_type env policy styp =
             end_def ();
             generalize_structure t;
           end;
-          instance t
+          let t = instance t in
+          let px = Btype.proxy t in
+          begin match px.desc with
+          | Tvar None -> Btype.log_type px; px.desc <- Tvar (Some alias)
+          | Tunivar None -> Btype.log_type px; px.desc <- Tunivar (Some alias)
+          | _ -> ()
+          end;
+          t
       end
   | Ptyp_variant(fields, closed, present) ->
       let name = ref None in
@@ -388,7 +413,7 @@ let rec transl_type env policy styp =
               {desc=Tvariant row}, _ when Btype.static_row row ->
                 let row = Btype.row_repr row in
                 row.row_fields
-            | {desc=Tvar}, Some(p, _) ->
+            | {desc=Tvar _}, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p))
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
@@ -431,7 +456,7 @@ let rec transl_type env policy styp =
       newty (Tvariant row)
   | Ptyp_poly(vars, st) ->
       begin_def();
-      let new_univars = List.map (fun name -> name, newvar()) vars in
+      let new_univars = List.map (fun name -> name, newvar ~name ()) vars in
       let old_univars = !univars in
       univars := new_univars @ !univars;
       let ty = transl_type env policy st in
@@ -443,10 +468,12 @@ let rec transl_type env policy styp =
           (fun tyl (name, ty1) ->
             let v = Btype.proxy ty1 in
             if deep_occur v ty then begin
-              if v.level <> Btype.generic_level || v.desc <> Tvar then
-                raise (Error (styp.ptyp_loc, Cannot_quantify (name, v)));
-              v.desc <- Tunivar;
-              v :: tyl
+              match v.desc with
+                Tvar name when v.level = Btype.generic_level ->
+                  v.desc <- Tunivar name;
+                  v :: tyl
+              | _ ->
+                raise (Error (styp.ptyp_loc, Cannot_quantify (name, v)))
             end else tyl)
           [] new_univars
       in
@@ -483,7 +510,7 @@ let rec make_fixed_univars ty =
     match ty.desc with
     | Tvariant row ->
         let row = Btype.row_repr row in
-        if (Btype.row_more row).desc = Tunivar then
+        if Btype.is_Tunivar (Btype.row_more row) then
           ty.desc <- Tvariant
               {row with row_fixed=true;
                row_fields = List.map
@@ -512,7 +539,7 @@ let globalize_used_variables env fixed =
       then try
         r := (loc, v,  Tbl.find name !type_variables) :: !r
       with Not_found ->
-        if fixed && (repr ty).desc = Tvar then
+        if fixed && Btype.is_Tvar (repr ty) then
           raise(Error(loc, Unbound_type_variable ("'"^name)));
         let v2 = new_global_var () in
         r := (loc, v, v2) :: !r;
@@ -552,8 +579,10 @@ let transl_simple_type_univars env styp =
     List.fold_left
       (fun acc v ->
         let v = repr v in
-        if v.level <> Btype.generic_level || v.desc <> Tvar then acc
-        else (v.desc <- Tunivar ; v :: acc))
+        match v.desc with
+          Tvar name when v.level = Btype.generic_level ->
+            v.desc <- Tunivar name; v :: acc
+        | _ -> acc)
       [] !pre_univars
   in
   make_fixed_univars typ;
@@ -635,8 +664,8 @@ let report_error ppf = function
       fprintf ppf "The type variable name %s is not allowed in programs" name
   | Cannot_quantify (name, v) ->
       fprintf ppf "This type scheme cannot quantify '%s :@ %s." name
-        (if v.desc = Tvar then "it escapes this scope" else
-         if v.desc = Tunivar then "it is aliased to another variable"
+        (if Btype.is_Tvar v then "it escapes this scope" else
+         if Btype.is_Tunivar v then "it is aliased to another variable"
          else "it is not a variable")
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %s" s

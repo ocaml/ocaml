@@ -532,7 +532,7 @@ let rec class_field cl_num self_type meths vars
                 (Typetexp.transl_simple_type val_env false sty) ty
           end;
           begin match (Ctype.repr ty).desc with
-            Tvar ->
+            Tvar _ ->
               let ty' = Ctype.newvar () in
               Ctype.unify val_env (Ctype.newty (Tpoly (ty', []))) ty;
               Ctype.unify val_env (type_approx val_env sbody) ty'

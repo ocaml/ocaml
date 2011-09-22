@@ -24,7 +24,7 @@ type type_expr =
     mutable id: int }
 
 and type_desc =
-    Tvar
+    Tvar of string option
   | Tarrow of label * type_expr * type_expr * commutable
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
@@ -34,7 +34,7 @@ and type_desc =
   | Tlink of type_expr
   | Tsubst of type_expr         (* for copying *)
   | Tvariant of row_desc
-  | Tunivar
+  | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of Path.t * string list * type_expr list
 

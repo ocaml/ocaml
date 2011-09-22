@@ -111,7 +111,7 @@ let set_fixed_row env loc p decl =
     | _ ->
         raise (Error (loc, Bad_fixed_type "is not an object or variant"))
   in
-  if rv.desc <> Tvar then
+  if not (Btype.is_Tvar rv) then
     raise (Error (loc, Bad_fixed_type "has no row variable"));
   rv.desc <- Tconstr (p, decl.type_params, ref Mnil)
 
@@ -503,7 +503,7 @@ let compute_variance env tvl nega posi cntr ty =
           compute_same row.row_more
       | Tpoly (ty, _) ->
           compute_same ty
-      | Tvar | Tnil | Tlink _ | Tunivar -> ()
+      | Tvar _ | Tnil | Tlink _ | Tunivar _ -> ()
       | Tpackage (_, _, tyl) ->
           List.iter (compute_variance_rec true true true) tyl
     end
@@ -546,7 +546,7 @@ let compute_variance_type env check (required, loc) decl tyl =
   in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
-      if ty.desc <> Tvar then begin
+      if not (Btype.is_Tvar ty) then begin
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
       end)
@@ -571,7 +571,7 @@ let add_false = List.map (fun ty -> false, ty)
 
 let rec anonymous env ty =
   match (Ctype.expand_head env ty).desc with
-  | Tvar -> false
+  | Tvar _ -> false
   | Tobject (fi, _) ->
       let _, rv = Ctype.flatten_fields fi in anonymous env rv
   | Tvariant row ->

@@ -23,7 +23,7 @@ val newty2: int -> type_desc -> type_expr
         (* Create a type *)
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
-val newgenvar: unit -> type_expr
+val newgenvar: ?name:string -> unit -> type_expr
         (* Return a fresh generic variable *)
 
 (* Use Tsubst instead
@@ -32,6 +32,9 @@ val newmarkedvar: int -> type_expr
 val newmarkedgenvar: unit -> type_expr
         (* Return a fresh marked generic variable *)
 *)
+
+val is_Tvar: type_expr -> bool
+val is_Tunivar: type_expr -> bool
 
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)

@@ -71,16 +71,19 @@ let new_id = ref (-1)
 let reset_for_saving () = new_id := -1
 
 let newpersty desc =
-  decr new_id; { desc = desc; level = generic_level; id = !new_id }
+  decr new_id;
+  { desc = desc; level = generic_level; id = !new_id }
 
 (* Similar to [Ctype.nondep_type_rec]. *)
 let rec typexp s ty =
   let ty = repr ty in
   match ty.desc with
-    Tvar | Tunivar ->
+    Tvar _ | Tunivar _ ->
       if s.for_saving || ty.id < 0 then
+        let desc = match ty.desc with (* Tvar _ -> Tvar None *) | d -> d in
         let ty' =
-          if s.for_saving then newpersty ty.desc else newty2 ty.level ty.desc
+          if s.for_saving then newpersty desc
+          else newty2 ty.level desc
         in
         save_desc ty ty.desc; ty.desc <- Tsubst ty'; ty'
       else ty
@@ -94,7 +97,7 @@ let rec typexp s ty =
     let desc = ty.desc in
     save_desc ty desc;
     (* Make a stub *)
-    let ty' = if s.for_saving then newpersty Tvar else newgenvar () in
+    let ty' = if s.for_saving then newpersty (Tvar None) else newgenvar () in
     ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
@@ -127,10 +130,10 @@ let rec typexp s ty =
                 match more.desc with
                   Tsubst ty -> ty
                 | Tconstr _ -> typexp s more
-                | Tunivar | Tvar ->
+                | Tunivar _ | Tvar _ ->
                     save_desc more more.desc;
                     if s.for_saving then newpersty more.desc else
-                    if dup && more.desc <> Tunivar then newgenvar () else more
+                    if dup && is_Tvar more then newgenty more.desc else more
                 | _ -> assert false
               in
               (* Register new type first for recursion *)

@@ -61,7 +61,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
       let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
-      (match row1.row_more with {desc=Tvar|Tconstr _} -> true | _ -> false) &&
+      (match row1.row_more with {desc=Tvar _|Tconstr _} -> true | _ -> false) &&
       let r1, r2, pairs =
         Ctype.merge_row_fields row1.row_fields row2.row_fields in
       (not row2.row_closed ||
@@ -91,7 +91,7 @@ let type_manifest env ty1 params1 ty2 params2 priv2 =
       let (fields2,rest2) = Ctype.flatten_fields fi2 in
       Ctype.equal env true (ty1::params1) (rest2::params2) &&
       let (fields1,rest1) = Ctype.flatten_fields fi1 in
-      (match rest1 with {desc=Tnil|Tvar|Tconstr _} -> true | _ -> false) &&
+      (match rest1 with {desc=Tnil|Tvar _|Tconstr _} -> true | _ -> false) &&
       let pairs, miss1, miss2 = Ctype.associate_fields fields1 fields2 in
       miss2 = [] &&
       let tl1, tl2 =
@@ -251,7 +251,7 @@ let exception_declarations env ed1 ed2 =
 let encode_val (mut, ty) rem =
   begin match mut with
     Asttypes.Mutable   -> Predef.type_unit
-  | Asttypes.Immutable -> Btype.newgenty Tvar
+  | Asttypes.Immutable -> Btype.newgenvar ()
   end
   ::ty::rem
 

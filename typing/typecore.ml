@@ -633,7 +633,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
           List.iter generalize vars;
           let instantiated tv  = 
             let tv = expand_head !env tv in
-            tv.desc <> Tvar || tv.level <> generic_level in
+            not (is_Tvar tv) || tv.level <> generic_level in
           if List.exists instantiated vars then
             raise (Error(loc, Polymorphic_label (lid_of_label label)))
         end;
@@ -1126,7 +1126,7 @@ let rec list_labels_aux env visited ls ty_fun =
     Tarrow (l, _, ty_res, _) ->
       list_labels_aux env (ty::visited) (l::ls) ty_res
   | _ ->
-      List.rev ls, ty.desc = Tvar
+      List.rev ls, is_Tvar ty
 
 let list_labels env ty = list_labels_aux env [] [] ty
 
@@ -1142,9 +1142,10 @@ let check_univars env expans kind exp ty_expected vars =
       (fun t ->
         let t = repr t in
         generalize t;
-        if t.desc = Tvar && t.level = generic_level then
-          (log_type t; t.desc <- Tunivar; true)
-        else false)
+        match t.desc with
+          Tvar name when t.level = generic_level ->
+            log_type t; t.desc <- Tunivar name; true
+        | _ -> false)
       vars in
   if List.length vars = List.length vars' then () else
   let ty = newgenty (Tpoly(repr exp.exp_type, vars'))
@@ -1158,7 +1159,7 @@ let check_application_result env statement exp =
   match (expand_head env exp.exp_type).desc with
   | Tarrow _ ->
       Location.prerr_warning exp.exp_loc Warnings.Partial_application
-  | Tvar -> ()
+  | Tvar _ -> ()
   | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
   | _ ->
       if statement then
@@ -1742,7 +1743,7 @@ and type_expect ?in_function env sexp ty_expected =
               let (id, typ) =
                 filter_self_method env met Private meths privty
               in
-              if (repr typ).desc = Tvar then
+              if is_Tvar (repr typ) then
                 Location.prerr_warning loc
                   (Warnings.Undeclared_virtual_method met);
               (Texp_send(obj, Tmeth_val id), typ)
@@ -1797,7 +1798,7 @@ and type_expect ?in_function env sexp ty_expected =
                 Location.prerr_warning loc
                   (Warnings.Not_principal "this use of a polymorphic method");
               snd (instance_poly false tl ty)
-          | {desc = Tvar} as ty ->
+          | {desc = Tvar _} as ty ->
               let ty' = newvar () in
               unify env (instance ty) (newty(Tpoly(ty',[])));
               (* if not !Clflags.nolabels then
@@ -1979,7 +1980,7 @@ and type_expect ?in_function env sexp ty_expected =
             end_def ();
             check_univars env false "method" exp ty_expected vars;
             re { exp with exp_type = instance ty }
-        | Tvar ->
+        | Tvar _ ->
             let exp = type_exp env sbody in
             let exp = {exp with exp_type = newty (Tpoly (exp.exp_type, []))} in
             unify_exp env exp ty;
@@ -2038,7 +2039,7 @@ and type_expect ?in_function env sexp ty_expected =
               Location.prerr_warning loc
                 (Warnings.Not_principal "this module packing");
             (p, nl, tl)
-        | {desc = Tvar} ->
+        | {desc = Tvar _} ->
             raise (Error (loc, Cannot_infer_signature))
         | _ ->
             raise (Error (loc, Not_a_packed_module ty_expected))
@@ -2128,7 +2129,7 @@ and type_argument env sarg ty_expected' ty_expected =
               ty_fun
         | Tarrow (l,_,ty_res',_) when l = "" || !Clflags.classic ->
             args, ty_fun, no_labels ty_res'
-        | Tvar ->  args, ty_fun, false
+        | Tvar _ ->  args, ty_fun, false
         |  _ -> [], texp.exp_type, false
       in
       let args, ty_fun', simple_res = make_args [] texp.exp_type in
@@ -2192,7 +2193,7 @@ and type_application env funct sargs =
         let (ty1, ty2) =
           let ty_fun = expand_head env ty_fun in
           match ty_fun.desc with
-            Tvar ->
+            Tvar _ ->
               let t1 = newvar () and t2 = newvar () in
               let not_identity = function
                   Texp_ident(_,{val_kind=Val_prim
@@ -2335,7 +2336,7 @@ and type_application env funct sargs =
       begin match (expand_head env exp.exp_type).desc with
       | Tarrow _ ->
           Location.prerr_warning exp.exp_loc Warnings.Partial_application
-      | Tvar ->
+      | Tvar _ ->
           add_delayed_check (fun () -> check_application_result env false exp)
       | _ -> ()
       end;
@@ -2404,9 +2405,9 @@ and type_statement env sexp =
   | Tarrow _ ->
       Location.prerr_warning loc Warnings.Partial_application
   | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
-  | Tvar when ty.level > tv.level ->
+  | Tvar _ when ty.level > tv.level ->
       Location.prerr_warning loc Warnings.Nonreturning_statement
-  | Tvar ->
+  | Tvar _ ->
       add_delayed_check (fun () -> check_application_result env true exp)
   | _ ->
       Location.prerr_warning loc Warnings.Statement_type

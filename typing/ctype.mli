@@ -41,9 +41,10 @@ val restore_global_level: int -> unit
         (* This pair of functions is only used in Typetexp *)
 
 val newty: type_desc -> type_expr
-val newvar: unit -> type_expr
+val newvar: ?name:string -> unit -> type_expr
+val newvar2: ?name:string -> int -> type_expr
         (* Return a fresh variable *)
-val new_global_var: unit -> type_expr
+val new_global_var: ?name:string -> unit -> type_expr
         (* Return a fresh variable, bound at toplevel
            (as type variables ['a] in type constraints). *)
 val newobj: type_expr -> type_expr

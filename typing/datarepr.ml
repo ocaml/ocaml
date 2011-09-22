@@ -28,7 +28,7 @@ let rec free_vars ty =
     if ty.level >= lowest_level then begin
       ty.level <- pivot_level - ty.level;
       match ty.desc with
-      | Tvar ->
+      | Tvar _ ->
           ret := TypeSet.add ty !ret
       | Tvariant row ->
           let row = row_repr row in

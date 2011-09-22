@@ -3,17 +3,17 @@
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
 # val f : 'a list -> 'a fold = <fun>
 # - : int = 6
-#               class ['a] ilist :
-  'a list ->
-  object ('b)
-    val l : 'a list
-    method add : 'a -> 'b
-    method fold : f:('c -> 'a -> 'c) -> init:'c -> 'c
+#               class ['b] ilist :
+  'b list ->
+  object ('c)
+    val l : 'b list
+    method add : 'b -> 'c
+    method fold : f:('a -> 'b -> 'a) -> init:'a -> 'a
   end
 #         class virtual ['a] vlist :
-  object ('b)
-    method virtual add : 'a -> 'b
-    method virtual fold : f:('c -> 'a -> 'c) -> init:'c -> 'c
+  object ('c)
+    method virtual add : 'a -> 'c
+    method virtual fold : f:('b -> 'a -> 'b) -> init:'b -> 'b
   end
 #             class ilist2 :
   int list ->
@@ -25,45 +25,45 @@
 #             val ilist2 : 'a list -> 'a vlist = <fun>
 #             class ['a] ilist3 :
   'a list ->
-  object ('b)
+  object ('c)
     val l : 'a list
-    method add : 'a -> 'b
-    method fold : f:('c -> 'a -> 'c) -> init:'c -> 'c
+    method add : 'a -> 'c
+    method fold : f:('b -> 'a -> 'b) -> init:'b -> 'b
   end
 #               class ['a] ilist4 :
   'a list ->
-  object ('b)
+  object ('c)
     val l : 'a list
-    method add : 'a -> 'b
-    method fold : f:('c -> 'a -> 'c) -> init:'c -> 'c
+    method add : 'a -> 'c
+    method fold : f:('b -> 'a -> 'b) -> init:'b -> 'b
   end
 #                 class ['a] ilist5 :
   'a list ->
-  object ('b)
+  object ('c)
     val l : 'a list
-    method add : 'a -> 'b
-    method fold : f:('c -> 'a -> 'c) -> init:'c -> 'c
-    method fold2 : f:('d -> 'a -> 'd) -> init:'d -> 'd
+    method add : 'a -> 'c
+    method fold : f:('b -> 'a -> 'b) -> init:'b -> 'b
+    method fold2 : f:('b -> 'a -> 'b) -> init:'b -> 'b
   end
 #                 class ['a] ilist6 :
   'a list ->
-  object ('b)
+  object ('c)
     val l : 'a list
-    method add : 'a -> 'b
-    method fold : f:('c -> 'a -> 'c) -> init:'c -> 'c
-    method fold2 : f:('d -> 'a -> 'd) -> init:'d -> 'd
+    method add : 'a -> 'c
+    method fold : f:('b -> 'a -> 'b) -> init:'b -> 'b
+    method fold2 : f:('b -> 'a -> 'b) -> init:'b -> 'b
   end
 #       class virtual ['a] olist :
-  object method virtual fold : f:('a -> 'b -> 'b) -> init:'b -> 'b end
+  object method virtual fold : f:('a -> 'c -> 'c) -> init:'c -> 'c end
 #         class ['a] onil :
-  object method fold : f:('a -> 'b -> 'b) -> init:'b -> 'b end
+  object method fold : f:('a -> 'c -> 'c) -> init:'c -> 'c end
 #             class ['a] ocons :
   hd:'a ->
   tl:'a olist ->
   object
     val hd : 'a
     val tl : 'a olist
-    method fold : f:('a -> 'b -> 'b) -> init:'b -> 'b
+    method fold : f:('a -> 'c -> 'c) -> init:'c -> 'c
   end
 #               class ['a] ostream :
   hd:'a ->
@@ -72,7 +72,7 @@
     val hd : 'a
     val tl : 'a ostream
     method empty : bool
-    method fold : f:('a -> 'b -> 'b) -> init:'b -> 'b
+    method fold : f:('a -> 'c -> 'c) -> init:'c -> 'c
   end
 #                   class ['a] ostream1 :
   hd:'a ->
@@ -119,13 +119,13 @@ val p1 : point = <obj>
 val cp : color_point = <obj>
 val c : circle = <obj>
 val d : float = 11.4536240470737098
-#   val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
+#   val f : < m : 'b. 'b -> 'b > -> < m : 'b. 'b -> 'b > = <fun>
 #   Characters 41-42:
   let f (x : < m : 'a. 'a -> 'a list >) = (x : < m : 'b. 'b -> 'c >)
                                            ^
-Error: This expression has type < m : 'a. 'a -> 'a list >
-       but an expression was expected of type < m : 'a. 'a -> 'b >
-       The universal variable 'a would escape its scope
+Error: This expression has type < m : 'b. 'b -> 'b list >
+       but an expression was expected of type < m : 'b. 'b -> 'c >
+       The universal variable 'b would escape its scope
 #           class id : object method id : 'a -> 'a end
 #         class type id_spec = object method id : 'a -> 'a end
 #       class id_impl : object method id : 'a -> 'a end
@@ -142,13 +142,13 @@ Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'a
 #           Characters 80-85:
     method id _ = x
               ^^^^^
-Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'b
+Error: This method has type 'b -> 'b which is less general than 'a. 'a -> 'a
 #                 Characters 92-159:
   ............x =
       match r with
         None -> r <- Some x; x
       | Some y -> y
-Error: This method has type 'a -> 'a which is less general than 'b. 'b -> 'b
+Error: This method has type 'b -> 'b which is less general than 'a. 'a -> 'a
 #         class c : object method m : 'a -> 'b -> 'a end
 #     val f1 : id -> int * bool = <fun>
 #   val f2 : id -> int * bool = <fun>
@@ -167,16 +167,16 @@ Error: This expression has type bool but an expression was expected of type
 Error: The type abbreviation foo is cyclic
 #     class ['a] bar : 'a -> object  end
 #   type 'a foo = 'a foo bar
-#   - : (< m : 'b. 'b * 'a > as 'a) -> 'c * 'a = <fun>
-# - : (< m : 'b. 'a * 'b list > as 'a) -> 'a * 'c list = <fun>
+#   - : (< m : 'a. 'a * 'b > as 'b) -> 'c * 'b = <fun>
+# - : (< m : 'a. 'b * 'a list > as 'b) -> 'b * 'c list = <fun>
 # val f :
   (< m : 'b. 'a * (< n : 'b; .. > as 'b) > as 'a) ->
   'a * (< n : 'c; .. > as 'c) = <fun>
 # - : (< p : 'b. < m : 'b; n : 'a; .. > as 'b > as 'a) ->
     (< m : 'c; n : 'a; .. > as 'c)
 = <fun>
-# - : (< m : 'b. 'b * < p : 'd. 'd * 'c * 'a > as 'c > as 'a) ->
-    ('f * < p : 'g. 'g * 'e * 'a > as 'e)
+# - : (< m : 'a. 'a * < p : 'b. 'b * 'd * 'c > as 'd > as 'c) ->
+    ('f * < p : 'b. 'b * 'e * 'c > as 'e)
 = <fun>
 #   - : < m : 'a. < p : 'a; .. > as 'b > -> 'b = <fun>
 #   type sum = T of < id : 'a. 'a -> 'a >
@@ -184,14 +184,14 @@ Error: The type abbreviation foo is cyclic
 #   type record = { r : < id : 'a. 'a -> 'a >; }
 # - : record -> 'a -> 'a = <fun>
 # - : record -> 'a -> 'a = <fun>
-#       class myself : object ('a) method self : 'b -> 'a end
+#       class myself : object ('b) method self : 'a -> 'b end
 #                       class number :
-  object ('a)
+  object ('b)
     val num : int
     method num : int
-    method prev : 'a
-    method succ : 'a
-    method switch : zero:(unit -> 'b) -> prev:('a -> 'b) -> 'b
+    method prev : 'b
+    method succ : 'b
+    method switch : zero:(unit -> 'a) -> prev:('b -> 'a) -> 'a
   end
 #     val id : 'a -> 'a = <fun>
 #       class c : object method id : 'a -> 'a end
@@ -201,14 +201,14 @@ Error: The type abbreviation foo is cyclic
     val mutable count : int
     method count : int
     method id : 'a -> 'a
-    method old : 'b -> 'b
+    method old : 'a -> 'a
   end
 #             class ['a] olist :
   'a list ->
-  object ('b)
+  object ('c)
     val l : 'a list
-    method cons : 'a -> 'b
-    method fold : f:('a -> 'c -> 'c) -> init:'c -> 'c
+    method cons : 'a -> 'c
+    method fold : f:('a -> 'b -> 'b) -> init:'b -> 'b
   end
 #   val sum : int #olist -> int = <fun>
 #   val count : 'a #olist -> int = <fun>
@@ -229,16 +229,16 @@ class next : #numeral -> object method fold : ('a -> 'a) -> 'a -> 'a end
 # Characters 17-25:
   let bad = {bad = ref None};;
                    ^^^^^^^^
-Error: This field value has type 'a option ref which is less general than
-         'b. 'b option ref
+Error: This field value has type 'b option ref which is less general than
+         'a. 'a option ref
 # type bad2 = { mutable bad2 : 'a. 'a option ref option; }
 # val bad2 : bad2 = {bad2 = None}
 # Characters 13-28:
   bad2.bad2 <- Some (ref None);;
                ^^^^^^^^^^^^^^^
-Error: This field value has type 'a option ref option
-       which is less general than 'b. 'b option ref option
-#       val f : < m : 'a. < p : 'a * 'b > as 'b > -> 'c -> unit = <fun>
+Error: This field value has type 'b option ref option
+       which is less general than 'a. 'a option ref option
+#       val f : < m : 'a. < p : 'a * 'c > as 'c > -> 'b -> unit = <fun>
 # val f : < m : 'a. 'a * (< p : int * 'b > as 'b) > -> 'b -> unit = <fun>
 #       type 'a t = [ `A of 'a ]
 #       class c : object method m : ([> 'a t ] as 'a) -> unit end
@@ -251,7 +251,7 @@ Error: This field value has type 'a option ref option
 Error: This type scheme cannot quantify 'a :
 it escapes this scope.
 #                 type ('a, 'b) list_visitor = < caseCons : 'b -> 'b list -> 'a; caseNil : 'a >
-type 'a alist = < visit : 'b. ('b, 'a) list_visitor -> 'b >
+type 'b alist = < visit : 'a. ('a, 'b) list_visitor -> 'a >
 class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
 type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
 #     Characters 20-25:
@@ -395,9 +395,9 @@ Error: This object is expected to have type < x : int; .. >
 #         Characters 76-77:
     (x : <m : 'a. 'a * (<m:'b. 'a * <m:'c. 'c * 'bar> > as 'bar) >);;
      ^
-Error: This expression has type < m : 'b. 'b * < m : 'b * 'a > > as 'a
+Error: This expression has type < m : 'a. 'a * < m : 'a * 'b > > as 'b
        but an expression was expected of type
-         < m : 'b. 'b * (< m : 'b * < m : 'd. 'd * 'c > > as 'c) >
+         < m : 'a. 'a * (< m : 'a * < m : 'c. 'c * 'd > > as 'd) >
        Types for method m are incompatible
 #         Characters 176-177:
   let f (x : foo') = (x : bar');;
@@ -405,70 +405,70 @@ Error: This expression has type < m : 'b. 'b * < m : 'b * 'a > > as 'a
 Error: This expression has type foo' = < m : 'a. 'a * 'a foo >
        but an expression was expected of type bar' = < m : 'a. 'a * 'a bar >
        Type 'a foo = < m : 'a * 'a foo > is not compatible with type
-         'a bar = < m : 'a * < m : 'b. 'b * 'a bar > > 
+         'a bar = < m : 'a * < m : 'c. 'c * 'a bar > > 
        Type 'a foo = < m : 'a * 'a foo > is not compatible with type
-         < m : 'b. 'b * 'a bar > 
+         < m : 'c. 'c * 'a bar > 
        Types for method m are incompatible
 #     Characters 67-68:
     (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('c * 'bar)>)> as 'bar);;
      ^
 Error: This expression has type
-         < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
+         < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        but an expression was expected of type
-         < m : 'a. 'a * ('a * < m : 'c. 'c * ('c * 'd) >) > as 'd
+         < m : 'b. 'b * ('b * < m : 'c. 'c * ('c * 'd) >) > as 'd
        Types for method m are incompatible
 #   Characters 66-67:
     (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('b * 'bar)>)> as 'bar);;
      ^
 Error: This expression has type
-         < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
+         < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
        but an expression was expected of type
-         < m : 'a. 'a * ('a * < m : 'c. 'c * ('a * 'd) >) > as 'd
+         < m : 'b. 'b * ('b * < m : 'c. 'c * ('b * 'd) >) > as 'd
        Types for method m are incompatible
 #   Characters 51-52:
     (x : <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>);;
      ^
 Error: This expression has type < m : 'b. 'b * ('b * 'a) > as 'a
        but an expression was expected of type
-         < m : 'b. 'b * ('b * < m : 'd. 'd * 'c > as 'c) >
+         < m : 'b. 'b * ('b * < m : 'c. 'c * 'd > as 'd) >
        Types for method m are incompatible
 #     Characters 14-115:
   ....(x : <m : 'a. 'a -> ('a * <m:'c. 'c -> 'bar> as 'bar)>
          :> <m : 'a. 'a -> ('a * 'foo)> as 'foo)..
-Error: Type < m : 'a. 'a -> ('a * (< m : 'd. 'd -> 'b as 'e > as 'c) as 'b) >
+Error: Type < m : 'a. 'a -> ('a * (< m : 'c. 'c -> 'b as 'e > as 'd) as 'b) >
        is not a subtype of < m : 'a. 'a -> ('a * 'f as 'h) as 'g > as 'f 
 #       Characters 88-150:
   = struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         sig val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit end
+         sig val f : (< m : 'a. 'a * ('a * 'b) > as 'b) -> unit end
        is not included in
          sig
-           val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit
+           val f : < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) > -> unit
          end
        Values do not match:
-         val f : (< m : 'b. 'b * ('b * 'a) > as 'a) -> unit
+         val f : (< m : 'a. 'a * ('a * 'b) > as 'b) -> unit
        is not included in
-         val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit
+         val f : < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) > -> unit
 #     Characters 78-132:
   = struct type t = <m : 'a. 'a * ('a * 'foo)> as 'foo end;;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Signature mismatch:
        Modules do not match:
-         sig type t = < m : 'b. 'b * ('b * 'a) > as 'a end
+         sig type t = < m : 'a. 'a * ('a * 'b) > as 'b end
        is not included in
-         sig type t = < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > end
+         sig type t = < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) > end
        Type declarations do not match:
-         type t = < m : 'b. 'b * ('b * 'a) > as 'a
+         type t = < m : 'a. 'a * ('a * 'b) > as 'b
        is not included in
-         type t = < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) >
+         type t = < m : 'b. 'b * ('b * < m : 'c. 'c * 'a > as 'a) >
 #     module M : sig type 'a t type u = < m : 'a. 'a t > end
 #   module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
 #     module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
 #         val f :
-  (< m : 'b. 'b -> (< m : 'b. 'b -> 'c * <  > > as 'c) * < .. >; .. > as 'a) ->
-  'a -> bool = <fun>
+  (< m : 'a. 'a -> (< m : 'a. 'a -> 'c * <  > > as 'c) * < .. >; .. > as 'b) ->
+  'b -> bool = <fun>
 #         type t = [ `A | `B ]
 # type v = private [> t ]
 # - : t -> v = <fun>
@@ -497,12 +497,12 @@ Error: Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of
          < m : 'b. (< p : int; q : int; .. > as 'b) -> int > 
 #     val f2 :
   < m : 'a. (< p : < a : int >; .. > as 'a) -> int > ->
-  < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int > = <fun>
+  < m : 'b. (< p : < a : int; b : int >; .. > as 'b) -> int > = <fun>
 #     Characters 13-107:
   ..(x : <m:'a. (<p:<a:int;b:int>;..> as 'a) -> int>
       :> <m:'b. (<p:<a:int>;..> as 'b) -> int>)..
 Error: Type < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int >
-       is not a subtype of < m : 'a. (< p : < a : int >; .. > as 'a) -> int > 
+       is not a subtype of < m : 'b. (< p : < a : int >; .. > as 'b) -> int > 
 # Characters 11-55:
   let f4 x = (x : <p:<a:int;b:int>;..> :> <p:<a:int>;..>);;
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -511,12 +511,12 @@ Error: Type < p : < a : int; b : int >; .. > is not a subtype of
 The second object type has no method b
 #   val f5 :
   < m : 'a. [< `A of < p : int > ] as 'a > ->
-  < m : 'a. [< `A of <  > ] as 'a > = <fun>
+  < m : 'b. [< `A of <  > ] as 'b > = <fun>
 #   Characters 13-83:
     (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of
-         < m : 'a. [< `A of < p : int > ] as 'a > 
+         < m : 'b. [< `A of < p : int > ] as 'b > 
 #     val f : < m : 'a. 'a -> 'a > -> < m : 'a. 'a -> 'a > = <fun>
 # - : < m : 'a. 'a -> 'a > -> 'b -> 'b = <fun>
 # val f : < m : 'a. 'a -> 'a > * 'b -> < m : 'a. 'a -> 'a > = <fun>
@@ -536,8 +536,8 @@ val g : 'a -> int = <fun>
 #     Characters 34-74:
     function Leaf _ -> 1 | Node x -> 1 + d x
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type 'a t -> int which is less general than
-         'b. 'b t -> int
+Error: This definition has type 'b t -> int which is less general than
+         'a. 'a t -> int
 #   Characters 34-78:
     function Leaf x -> x | Node x -> 1 + depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -546,13 +546,13 @@ Error: This definition has type int t -> int which is less general than
 #   Characters 34-74:
     function Leaf x -> x | Node x -> depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type 'a t -> 'a which is less general than
-         'b. 'b t -> 'a
+Error: This definition has type 'b t -> 'b which is less general than
+         'a. 'a t -> 'b
 #   Characters 38-78:
     function Leaf x -> x | Node x -> depth x;; (* fails *)
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Error: This definition has type 'a. 'a t -> 'a which is less general than
-         'b 'c. 'c t -> 'b
+Error: This definition has type 'c. 'c t -> 'c which is less general than
+         'b 'a. 'a t -> 'b
 #   val r : 'a list * '_b list ref = ([], {contents = []})
 val q : unit -> 'a list * '_b list ref = <fun>
 # val f : 'a -> 'a = <fun>
@@ -587,7 +587,7 @@ Error: This field value has type unit -> unit which is less general than
          'a. 'a -> unit
 #               module Polux :
   sig
-    type 'a t = 'a
+    type 'par t = 'par
     val ident : 'a -> 'a
     class alias : object method alias : 'a t -> 'a end
     val f : < m : 'a. 'a > -> < m : 'a. 'a >

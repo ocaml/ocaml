@@ -780,12 +780,13 @@ and transl_exp0 e =
           begin match e.exp_type.desc with
           (* the following may represent a float/forward/lazy: need a
              forward_tag *)
-          | Tvar | Tlink _ | Tsubst _ | Tunivar
+          | Tvar _ | Tlink _ | Tsubst _ | Tunivar _
           | Tpoly(_,_) | Tfield(_,_,_,_) ->
               Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
-          | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil | Tvariant _
+          | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil
+          | Tvariant _
               -> transl_exp e
           (* optimize predefined types (excepted float) *)
           | Tconstr(_,_,_) ->
