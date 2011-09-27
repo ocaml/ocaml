@@ -1,11 +1,11 @@
 
-#       type ('a, 'b) var =
-    Zero : ('c * 'd, 'c) var
-  | Succ : ('f, 'g) var -> ('e * 'f, 'g) var
-#         type ('a, 'b) typ =
-    Tint : ('c, int) typ
-  | Tbool : ('d, bool) typ
-  | Tvar : ('e, 'f) var -> ('e, 'f) typ
+#       type ('env, 'a) var =
+    Zero : ('a * 'env, 'a) var
+  | Succ : ('env, 'a) var -> ('b * 'env, 'a) var
+#         type ('env, 'a) typ =
+    Tint : ('env, int) typ
+  | Tbool : ('env, bool) typ
+  | Tvar : ('env, 'a) var -> ('env, 'a) typ
 #           Characters 72-156:
   .match ta, tb with
      | Tint, Tint -> 0

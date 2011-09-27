@@ -642,8 +642,15 @@ let rec tree_of_type_decl id decl =
   in
   (name, args, ty, priv, constraints)
 
-and tree_of_constructor (name, args,ret_type_opt) =
-  (name, tree_of_typlist false args,tree_of_constructor_ret ret_type_opt)
+and tree_of_constructor (name, args, ret_type_opt) =
+  if ret_type_opt = None then (name, tree_of_typlist false args, None) else
+  let nm = !names in
+  names := [];
+  let ret = may_map (tree_of_typexp false) ret_type_opt in
+  let args = tree_of_typlist false args in
+  names := nm;
+  (name, args, ret)
+    
 
 and tree_of_constructor_ret =
   function

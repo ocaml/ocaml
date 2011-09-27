@@ -4,15 +4,15 @@
     type 'a t =
         IntLit : int -> int t
       | BoolLit : bool -> bool t
-      | Pair : 'b t * 'c t -> ('b * 'c) t
-      | App : ('e -> 'd) t * 'e t -> 'd t
-      | Abs : ('f -> 'g) -> ('f -> 'g) t
+      | Pair : 'a t * 'b t -> ('a * 'b) t
+      | App : ('a -> 'b) t * 'a t -> 'b t
+      | Abs : ('a -> 'b) -> ('a -> 'b) t
     val eval : 'a t -> 'a
   end
 #                                     module List :
   sig
     type zero
-    type 'a t = Nil : zero t | Cons : 'b * 'c t -> ('b * 'c) t
+    type 'a t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
     val head : ('a * 'b) t -> 'a
     val tail : ('a * 'b) t -> 'b t
     val length : 'a t -> int
@@ -119,7 +119,7 @@ Error: This expression has type int but an expression was expected of type a
 #     val f : 'a t -> 'a -> 'a = <fun>
 #                                                     type 'a t = A of int | B of bool | C of float | D of 'a
 type 'a ty =
-    TE : 'b ty -> 'b array ty
+    TE : 'a ty -> 'a array ty
   | TA : int ty
   | TB : bool ty
   | TC : float ty
