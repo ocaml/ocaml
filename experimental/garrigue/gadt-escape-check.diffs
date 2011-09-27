@@ -46,7 +46,7 @@ Index: typing/env.ml
    | _ -> raise Not_found
  
  let find_modtype_expansion path env =
-@@ -453,33 +454,35 @@
+@@ -453,33 +454,39 @@
  and lookup_cltype =
    lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
  
@@ -60,6 +60,15 @@ Index: typing/env.ml
 -   The definition level of a newtype should be greater or equal to
 -   the highest level of the newtypes in its manifest type.
 - *)
++let add_gadt_instance_level lv env =
++  {env with
++   gadt_instances = (lv, ref Btype.TypeSet.empty) :: env.gadt_instances}
+ 
+-let rec map_level lv = function
+-  | [] -> lv
+-  | (lv1, lv2) :: rem ->
+-      if lv > lv2 then lv else
+-      if lv >= lv1 then lv2 else map_level lv rem
 +let gadt_instance_level env t =
 +  let rec find_instance = function
 +      [] -> None
@@ -67,17 +76,19 @@ Index: typing/env.ml
 +        if Btype.TypeSet.mem t !r then Some lv else find_instance rem
 +  in find_instance env.gadt_instances
  
--let rec map_level lv = function
--  | [] -> lv
--  | (lv1, lv2) :: rem ->
--      if lv > lv2 then lv else
--      if lv >= lv1 then lv2 else map_level lv rem
+-let map_newtype_level env lv = map_level lv env.level_map
 +let add_gadt_instances env lv tl =
 +  let r =
 +    try List.assoc lv env.gadt_instances with Not_found -> assert false in
 +  r := List.fold_right Btype.TypeSet.add tl !r
  
--let map_newtype_level env lv = map_level lv env.level_map
+-(* precondition: lv < lv' *)
+-let rec add_level lv lv' = function
+-  | [] -> [lv, lv']
+-  | (lv1, lv2) :: rem as l ->
+-      if lv2 < lv then (lv, lv') :: l else
+-      if lv' < lv1 then (lv1, lv2) :: add_level lv lv' rem
+-      else add_level (max lv lv1) (min lv' lv2) rem      
 +(* Only use this after expand_head! *)
 +let add_gadt_instance_chain env lv t =
 +  let r =
@@ -93,19 +104,11 @@ Index: typing/env.ml
 +    end
 +  in add_instance t
  
--(* precondition: lv < lv' *)
--let rec add_level lv lv' = function
--  | [] -> [lv, lv']
--  | (lv1, lv2) :: rem as l ->
--      if lv2 < lv then (lv, lv') :: l else
--      if lv' < lv1 then (lv1, lv2) :: add_level lv lv' rem
--      else add_level (max lv lv1) (min lv' lv2) rem      
--
 -
  (* Expand manifest module type names at the top of the given module type *)
  
  let rec scrape_modtype mty env =
-@@ -773,14 +776,13 @@
+@@ -773,14 +780,13 @@
  and add_cltype id ty env =
    store_cltype id (Pident id) ty env
  
@@ -147,6 +150,14 @@ Index: typing/typecore.ml
        }
        in
        let ty = newvar () in
+@@ -2421,6 +2422,7 @@
+   begin_def ();
+   Ident.set_current_time (get_current_level ()); 
+   let lev = Ident.current_time () in
++  let env = Env.add_gadt_instance_level lev env in
+   Ctype.init_def (lev+1000);
+   if !Clflags.principal then begin_def (); (* propagation of the argument *)
+   let ty_arg' = newvar () in
 Index: typing/typedecl.ml
 ===================================================================
 --- typing/typedecl.ml	(revision 11210)
@@ -325,7 +336,7 @@ Index: typing/env.mli
 ===================================================================
 --- typing/env.mli	(revision 11210)
 +++ typing/env.mli	(working copy)
-@@ -33,14 +33,18 @@
+@@ -33,14 +33,19 @@
  val find_cltype: Path.t -> t -> cltype_declaration
  
  val find_type_expansion:
@@ -341,6 +352,7 @@ Index: typing/env.mli
  
  val has_local_constraints: t -> bool
 -val map_newtype_level: t -> int -> int
++val add_gadt_instance_level: int -> t -> t
 +val gadt_instance_level: t -> type_expr -> int option
 +val add_gadt_instances: t -> int -> type_expr list -> unit
 +val add_gadt_instance_chain: t -> int -> type_expr -> unit
@@ -361,3 +373,99 @@ Index: typing/types.ml
  
  and type_kind =
      Type_abstract
+Index: testsuite/tests/typing-gadts/test.ml
+===================================================================
+--- testsuite/tests/typing-gadts/test.ml	(revision 11210)
++++ testsuite/tests/typing-gadts/test.ml	(working copy)
+@@ -159,17 +159,21 @@
+ 
+ let ky x y = ignore (x = y); x ;;
+ 
++let test : type a. a t -> a =
++  function Int -> ky (1 : a) 1
++;;
++
+ let test : type a. a t -> a = fun x ->
+-  let r = match x with Int -> ky (1 : a) 1
++  let r = match x with Int -> ky (1 : a) 1  (* fails *)
+   in r
+ ;;
+ let test : type a. a t -> a = fun x ->
+-  let r = match x with Int -> ky 1 (1 : a)
++  let r = match x with Int -> ky 1 (1 : a)  (* fails *)
+   in r
+ ;;
+ let test : type a. a t -> a = fun x ->
+-  let r = match x with Int -> (1 : a)
+-  in r (* fails too *)
++  let r = match x with Int -> (1 : a)       (* ok! *)
++  in r
+ ;;
+ let test : type a. a t -> a = fun x ->
+   let r : a = match x with Int -> 1
+@@ -178,7 +182,7 @@
+ let test2 : type a. a t -> a option = fun x ->
+   let r = ref None in
+   begin match x with Int -> r := Some (1 : a) end;
+-  !r (* normalized to int option *)
++  !r (* ok *)
+ ;;
+ let test2 : type a. a t -> a option = fun x ->
+   let r : a option ref = ref None in
+@@ -190,7 +194,7 @@
+   let u = ref None in
+   begin match x with Int -> r := Some 1; u := !r end;
+   !u
+-;; (* fail *)
++;; (* should fail *)
+ let test2 : type a. a t -> a option = fun x ->
+   let r : a option ref = ref None in
+   let u = ref None in
+@@ -202,7 +206,7 @@
+   let r : a option ref = ref None in
+   begin match x with Int -> r := Some 1; u := !r end;
+   !u
+-;; (* fail *)
++;; (* should fail *)
+ let test2 : type a. a t -> a option = fun x ->
+   let u = ref None in
+   let a =
+@@ -210,32 +214,32 @@
+     begin match x with Int -> r := Some 1; u := !r end;
+     !u
+   in a
+-;; (* fail *)
++;; (* should fail *)
+ 
+ (* Effect of external consraints *)
+ 
+ let f (type a) (x : a t) y =
+   ignore (y : a);
+-  let r = match x with Int -> (y : a) in (* fails *)
++  let r = match x with Int -> (y : a) in (* should be ok... *)
+   r
+ ;;
+ let f (type a) (x : a t) y =
+   let r = match x with Int -> (y : a) in
+-  ignore (y : a); (* fails *)
++  ignore (y : a); (* should be ok too *)
+   r
+ ;;
+ let f (type a) (x : a t) y =
+   ignore (y : a);
+-  let r = match x with Int -> y in
++  let r = match x with Int -> y in (* ok *)
+   r
+ ;;
+ let f (type a) (x : a t) y =
+   let r = match x with Int -> y in
+-  ignore (y : a);
++  ignore (y : a); (* ok *)
+   r
+ ;;
+ let f (type a) (x : a t) (y : a) =
+-  match x with Int -> y (* should return an int! *)
++  match x with Int -> y (* returns 'a *)
+ ;;
+ 
+ (* Pattern matching *)
