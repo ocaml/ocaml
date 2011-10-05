@@ -12,8 +12,6 @@
 
 (* $Id$ *)
 
-open Format
-open Location
 open Longident
 open Parsetree
 
@@ -46,14 +44,14 @@ let add_to_load_path dir =
     let contents = Sys.readdir dir in
     load_path := !load_path @ [dir, contents]
   with Sys_error msg ->
-    fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
+    Format.fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
     error_occurred := true
 
 let add_to_synonym_list synonyms suffix =
   if (String.length suffix) > 1 && suffix.[0] = '.' then
     synonyms := suffix :: !synonyms
   else begin
-    fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
+    Format.fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
     error_occurred := true
   end
 
@@ -197,6 +195,7 @@ let parse_use_file ic =
   else begin
     seek_in ic 0;
     let lb = Lexing.from_channel ic in
+    Location.init lb !Location.input_name;
     Parse.use_file lb
   end
 
@@ -207,6 +206,7 @@ let parse_interface ic =
   else begin
     seek_in ic 0;
     let lb = Lexing.from_channel ic in
+    Location.init lb !Location.input_name;
     Parse.interface lb
   end
 
@@ -270,15 +270,15 @@ let file_dependencies_as kind source_file =
   with x ->
     let report_err = function
     | Lexer.Error(err, range) ->
-        fprintf Format.err_formatter "@[%a%a@]@."
+        Format.fprintf Format.err_formatter "@[%a%a@]@."
         Location.print_error range  Lexer.report_error err
     | Syntaxerr.Error err ->
-        fprintf Format.err_formatter "@[%a@]@."
+        Format.fprintf Format.err_formatter "@[%a@]@."
         Syntaxerr.report_error err
     | Sys_error msg ->
-        fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
+        Format.fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
     | Preprocessing_error ->
-        fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
+        Format.fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
             source_file
     | x -> raise x in
     error_occurred := true;
@@ -296,12 +296,12 @@ let file_dependencies source_file =
 let usage = "Usage: ocamldep [options] <source files>\nOptions are:"
 
 let print_version () =
-  printf "ocamldep, version %s@." Sys.ocaml_version;
+  Format.printf "ocamldep, version %s@." Sys.ocaml_version;
   exit 0;
 ;;
 
 let print_version_num () =
-  printf "%s@." Sys.ocaml_version;
+  Format.printf "%s@." Sys.ocaml_version;
   exit 0;
 ;;
 

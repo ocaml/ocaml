@@ -21,6 +21,7 @@ Bug fixes:
 - PR#5344: some predifined exceptions need special printing
 - PR#5356: ocamlbuild handling of 'predicates' for ocamlfind
 - PR#5364: wrong compilation of "((val m : SIG1) : SIG2)"
+- PR#5370: ocamldep omits filename in syntax error message
 
 Feature wishes:
 - PR#4444: new String.trim function, removing leading and trailing whistespace
