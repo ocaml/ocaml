@@ -37,7 +37,12 @@ type 'a boolean = BT : tt boolean | BF : ff boolean
   Tfork (Tfork (Ttip, Tnode 4), Tfork (Tnode 4, Tnode 3))
 #                     val find : ('a -> 'a -> bool) -> 'a -> ('b, 'a) tree -> ('b, 'a) path list =
   <fun>
-#             val extract : ('b, 'a) path -> ('b, 'a) tree -> 'a = <fun>
+#             Characters 179-180:
+    | Pleft p, Tfork(l,_) -> extract p l
+                                       ^
+Error: This expression has type (&x5, 'a) tree
+       but an expression was expected of type (&x5, 'a) tree
+       The type constructor &x5 would escape its scope
 #             type ('a, 'b) le =
     LeZ : 'a nat -> (zero, 'a) le
   | LeS : ('n, 'm) le -> ('n succ, 'm succ) le
@@ -55,7 +60,12 @@ val even4 : four even = EvenSS (EvenSS EvenZ)
 val sameNat : 'a nat -> 'b nat -> ('a, 'b) equal option = <fun>
 #             val smaller : ('a succ, 'b succ) le -> ('a, 'b) le = <fun>
 #   type ('a, 'b) diff = Diff : 'c nat * ('a, 'c, 'b) plus -> ('a, 'b) diff
-#   * * * * * * * * *                 val diff : ('a, 'b) le -> 'a nat -> 'b nat -> ('a, 'b) diff = <fun>
+#   * * * * * * * * *                 Characters 462-463:
+        match diff q x y with Diff (m, p) -> Diff (m, PlusS p)
+                     ^
+Error: This expression has type &x13 nat
+       but an expression was expected of type &x13 nat
+       The type constructor &x13 would escape its scope
 #               Characters 87-243:
   ..match a, b,le with (* warning *)
     | NZ, m, LeZ _ -> Diff (m, PlusZ m)
@@ -87,14 +97,25 @@ val elem : int -> 'a avl -> bool = <fun>
   'a avl ->
   int -> 'a succ succ avl -> ('a succ succ avl, 'a succ succ succ avl) sum =
   <fun>
-#                                               val ins : int -> 'a avl -> ('a avl, 'a succ avl) sum = <fun>
-#           val insert : int -> avl' -> avl' = <fun>
-#                                                                                                                                 val del_min : 'a succ avl -> int * ('a avl, 'a succ avl) sum = <fun>
-type 'a avl_del =
-    Dsame : 'n avl -> 'n avl_del
-  | Ddecr : ('m succ, 'n) equal * 'm avl -> 'n avl_del
-val del : int -> 'a avl -> 'a avl_del = <fun>
-#           val delete : int -> avl' -> avl' = <fun>
+#                                               Characters 550-553:
+          | Inl b -> Inl (Node (bal, a, y, b) : n avl)
+                                ^^^
+Error: This expression has type (&x74, &x75, &x76) balance
+       but an expression was expected of type (&x74, &x75, &x76) balance
+       The type constructor &x76 would escape its scope
+#           Characters 32-35:
+    match ins x t with
+          ^^^
+Error: Unbound value ins
+#                                                                                                                                 Characters 382-383:
+Error: This expression has type &x84 avl
+       but an expression was expected of type &x87 succ avl
+       Type &x84 = &x87 succ is not compatible with type &x87 succ 
+       The type constructor &x87 would escape its scope
+#           Characters 32-35:
+    match del x t with
+          ^^^
+Error: Unbound value del
 #                             type red
 type black
 type ('a, 'b) sub_tree =
@@ -151,23 +172,16 @@ type 'a rep =
   | Rfun : 'a rep * 'b rep -> ('a -> 'b) rep
 type ('a, 'b) equal = Eq : ('a, 'a) equal
 val rep_equal : 'a rep -> 'b rep -> ('a, 'b) equal option = <fun>
-#                                                               type assoc = Assoc : string * 'a rep * 'a -> assoc
-val assoc : string -> 'a rep -> assoc list -> 'a = <fun>
-type 'a term =
-    Var : string * 'a rep -> 'a term
-  | Abs : string * 'a rep * 'b term -> ('a -> 'b) term
-  | Const : int -> int term
-  | Add : (int * int -> int) term
-  | LT : (int * int -> bool) term
-  | Ap : ('a -> 'b) term * 'a term -> 'b term
-  | Pair : 'a term * 'b term -> ('a * 'b) term
-val eval_term : assoc list -> 'a term -> 'a = <fun>
-#           val ex3 : (int -> int) term =
-  Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint))))
-val ex4 : int term =
-  Ap (Abs ("x", Rint, Ap (Add, Pair (Var ("x", Rint), Var ("x", Rint)))),
-   Const 3)
-val v4 : int = 6
+#                                                               Characters 822-823:
+    | Abs (x, r, e) -> fun v -> eval_term (Assoc (x, r, v) :: env) e
+                                                        ^
+Error: This expression has type &x117 but an expression was expected of type
+         &x117
+       The type constructor &x117 would escape its scope
+#           Characters 11-73:
+  let ex3 = Abs ("x", Rint, Ap (Add, Pair (Var("x",Rint), Var("x",Rint))))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Unbound constructor Abs
 #                                             type rnil
 type ('a, 'b, 'c) rcons
 type 'a is_row =
@@ -185,53 +199,20 @@ val ex1 : ((x, 'a -> 'b, (y, 'a, 'c) rcons) rcons, 'b) lam =
   App (Var X, Shift (Var Y))
 val ex2 : ('a, ('b -> 'c) -> 'b -> 'c) lam =
   Abs (<poly>, Abs (<poly>, App (Shift (Var <poly>), Var <poly>)))
-#                           type 'a env =
-    Enil : rnil env
-  | Econs : 'a * 't * 'e env -> ('a, 't, 'e) rcons env
-val eval_lam : 'a env -> ('a, 'b) lam -> 'b = <fun>
-#                               type add = Add
-type suc = Suc
-val env0 :
-  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
-  rcons env = Econs (Zero, 0, Econs (Suc, <fun>, Econs (Add, <fun>, Enil)))
-val _0 : ((zero, int, 'a) rcons, int) lam = Var Zero
-val suc :
-  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam ->
-  (('a, 'b, (suc, int -> int, 'c) rcons) rcons, int) lam = <fun>
-val _1 :
-  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
-   rcons, int)
-  lam = App (Shift (Var Suc), Var Zero)
-val _2 :
-  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
-   rcons, int)
-  lam = App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))
-val _3 :
-  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
-   rcons, int)
-  lam =
-  App (Shift (Var Suc),
-   App (Shift (Var Suc), App (Shift (Var Suc), Var Zero)))
-val add :
-  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
-   int -> int -> int)
-  lam = Shift (Shift (Var Add))
-val double :
-  (('a, 'b, ('c, 'd, (add, int -> int -> int, 'e) rcons) rcons) rcons,
-   int -> int)
-  lam =
-  Abs (<poly>,
-   App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>))
-val ex3 :
-  ((zero, int, (suc, int -> int, (add, int -> int -> int, '_a) rcons) rcons)
-   rcons, int)
-  lam =
-  App
-   (Abs (<poly>,
-     App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
-   App (Shift (Var Suc),
-    App (Shift (Var Suc), App (Shift (Var Suc), Var Zero))))
-#     val v3 : int = 6
+#                           Characters 276-277:
+    | Econs (_, _, r), Shift e -> eval_lam r e
+                                             ^
+Error: This expression has type (&x127, t) lam
+       but an expression was expected of type (&x127, 'a) lam
+       The type constructor &x127 would escape its scope
+#                               Characters 43-101:
+  let env0 = Econs (Zero, 0, Econs (Suc, succ, Econs (Add, (+), Enil)))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: Unbound constructor Econs
+#     Characters 10-18:
+  let v3 = eval_lam env0 ex3
+           ^^^^^^^^
+Error: Unbound value eval_lam
 #       *                                       type 'a rep = I : int rep | Ar : 'a rep * 'b rep -> ('a -> 'b) rep
 val compare : 'a rep -> 'b rep -> (string, ('a, 'b) equal) sum = <fun>
 #                     type term =
@@ -247,31 +228,32 @@ type 'a ctx =
   | Cok : ('e, 't) lam * 't rep -> 'e checked
 val lookup : string -> 'a ctx -> 'a checked = <fun>
 #                                                   val tc : 'a nat -> 'b ctx -> term -> 'b checked = <fun>
-#             val ctx0 :
-  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
-  rcons ctx =
-  Ccons (Zero, "0", I,
-   Ccons (Suc, "S", Ar (I, I), Ccons (Add, "+", Ar (I, Ar (I, I)), Cnil)))
-val ex1 : term = Ab ("x", I, Ap (Ap (V "+", V "x"), V "x"))
-# val c1 :
-  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
-  rcons checked =
-  Cok
-   (Abs (<poly>,
-     App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
-   Ar (I, I))
-# val ex2 : term = Ap (Ab ("x", I, Ap (Ap (V "+", V "x"), V "x")), C 3)
-# val c2 :
-  (zero, int, (suc, int -> int, (add, int -> int -> int, rnil) rcons) rcons)
-  rcons checked =
-  Cok
-   (App
-     (Abs (<poly>,
-       App (App (Shift (Shift (Shift (Var Add))), Var <poly>), Var <poly>)),
-     Const 3),
-   I)
-#           val eval_checked : 'a env -> 'a checked -> int = <fun>
-#   val v2 : int = 6
+#             Characters 51-54:
+           Ccons (Suc, "S", Ar(I,I),
+                  ^^^
+Error: Unbound constructor Suc
+# Characters 15-19:
+  let c1 = tc NZ ctx0 ex1;;
+                 ^^^^
+Error: Unbound value ctx0
+# Characters 14-17:
+  let ex2 = Ap (ex1, C 3);;
+                ^^^
+Error: This expression has type
+         ((x, 'a -> 'b, (y, 'a, 'c) rcons) rcons, 'b) lam
+       but an expression was expected of type term
+# Characters 15-19:
+  let c2 = tc NZ ctx0 ex2;;
+                 ^^^^
+Error: Unbound value ctx0
+#           Characters 79-87:
+    | Cok (e, I) -> (eval_lam env e : int)
+                     ^^^^^^^^
+Error: Unbound value eval_lam
+#   Characters 10-22:
+  let v2 = eval_checked env0 c2 ;;
+           ^^^^^^^^^^^^
+Error: Unbound value eval_checked
 #                                             type pexp
 type pval
 type 'a mode = Pexp : pexp mode | Pval : pval mode
@@ -297,11 +279,20 @@ val mode : ('a, 'b, 'c) lam -> 'a mode = <fun>
       ('r, 'r2) sub -> (('t, 'x, 'r) rcons, 'r2) sub
   | Push : ('r1, 'r2) sub -> (('a, 'b, 'r1) rcons, ('a, 'b, 'r2) rcons) sub
 type ('a, 'b) lam' = Ex : ('m, 's, 't) lam -> ('s, 't) lam'
-#                               val subst : ('a, 'b, 'c) lam -> ('b, 'd) sub -> ('d, 'c) lam' = <fun>
+#                               Characters 270-271:
+    | Shift e, Bind (_, _, r) -> subst e r
+                                         ^
+Error: This expression has type (&x177, s) sub
+       but an expression was expected of type (&x177, 'a) sub
+       The type constructor &x177 would escape its scope
 #       type closed = rnil
 type 'a rlam = ((pexp, closed, 'a) lam, (pval, closed, 'a) lam) sum
-#                             val rule :
-  (pval, closed, ('a, 'b) tarr) lam -> (pval, closed, 'a) lam -> 'b rlam =
-  <fun>
-#                                 val onestep : ('a, closed, 'b) lam -> 'b rlam = <fun>
+#                             Characters 179-184:
+          match subst body (Bind (x, v, Id)) with Ex term ->
+                ^^^^^
+Error: Unbound value subst
+#                                 Characters 511-515:
+        | Pval, Pval -> rule e1 e2
+                        ^^^^
+Error: Unbound value rule
 # 

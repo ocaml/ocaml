@@ -69,8 +69,7 @@ Error: This pattern matches values of type ([? `A ] as 'a) * bool t
 #                                 Characters 300-301:
       | BoolLit b -> b
                      ^
-Error: This expression has type bool but an expression was expected of type
-         int
+Error: This expression has type bool but an expression was expected of type s
 #             Characters 87-88:
     let f = function A -> 1 | B -> 2
                               ^
@@ -78,56 +77,35 @@ Error: This pattern matches values of type b
        but a pattern was expected which matches values of type a
 #   type 'a t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
-#         Characters 88-89:
-    in r
-       ^
-Error: This expression has type int but an expression was expected of type a
-#       Characters 87-88:
-    in r
-       ^
-Error: This expression has type int but an expression was expected of type a
-#       Characters 82-83:
-    in r (* fails too *)
-       ^
-Error: This expression has type int but an expression was expected of type a
 #       val test : 'a t -> 'a = <fun>
-#         Characters 122-124:
-    !r (* normalized to int option *)
-    ^^
-Error: This expression has type int option
-       but an expression was expected of type a option
+#         Characters 70-82:
+    let r = match x with Int -> ky (1 : a) 1  (* fails *)
+                                ^^^^^^^^^^^^
+Error: This expression has type a = int
+       but an expression was expected of type a = int
+       Type a = int is not compatible with type 'a 
+#       Characters 69-81:
+    let r = match x with Int -> ky 1 (1 : a)  (* fails *)
+                                ^^^^^^^^^^^^
+Error: This expression has type int but an expression was expected of type
+         int
+#       val test : 'a t -> 'a = <fun>
+#       val test : 'a t -> 'a = <fun>
 #         val test2 : 'a t -> 'a option = <fun>
-#           Characters 162-164:
-    !u
-    ^^
+#         val test2 : 'a t -> 'a option = <fun>
+#           val test2 : 'a t -> 'a option = <fun>
+#           Characters 152-154:
+    begin match x with Int -> u := Some 1; r := !u end;
+                                                ^^
 Error: This expression has type int option
        but an expression was expected of type a option
-#           Characters 162-164:
-    !u
-    ^^
-Error: This expression has type int option
-       but an expression was expected of type a option
-#           Characters 162-164:
-    !u
-    ^^
-Error: This expression has type int option
-       but an expression was expected of type a option
-#               Characters 186-187:
-    in a
-       ^
-Error: This expression has type int option
-       but an expression was expected of type a option
-#               Characters 116-117:
-    let r = match x with Int -> (y : a) in (* fails *)
-                                 ^
-Error: This expression has type a but an expression was expected of type int
-#         Characters 80-81:
-    ignore (y : a); (* fails *)
-            ^
-Error: This expression has type int but an expression was expected of type a
+#           val test2 : 'a t -> 'a option = <fun>
+#               val test2 : 'a t -> 'a option = <fun>
+#               val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
-#     val f : 'a t -> 'a -> int = <fun>
+#         val f : 'a t -> 'a -> 'a = <fun>
+#     val f : 'a t -> 'a -> 'a = <fun>
 #                                                     type 'a t = A of int | B of bool | C of float | D of 'a
 type 'a ty =
     TE : 'a ty -> 'a array ty
@@ -158,17 +136,6 @@ Error: This pattern matches values of type 'a array
                            ^^^^^^^
 Error: This pattern matches values of type 'a array
        but a pattern was expected which matches values of type a
-#                       Characters 92-334:
-  ..match {left=x; right=y} with
-    | {left=_; right=A z} -> z
-    | {left=_; right=B z} -> if z then 1 else 2
-    | {left=_; right=C z} -> truncate z
-    | {left=TE TC; right=D [|1.0|]} -> 14
-    | {left=TA; right=D 0} -> -1
-    | {left=TA; right=D z} -> z
-Warning 8: this pattern-matching is not exhaustive.
-Here is an example of a value that is not matched:
-{left=TE TA; right=D [| _ |]}
-type ('a, 'b) pair = { left : 'a; right : 'b; }
+#                       type ('a, 'b) pair = { left : 'a; right : 'b; }
 val f : 'a ty -> 'a t -> int = <fun>
 # 

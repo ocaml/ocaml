@@ -1989,6 +1989,7 @@ and type_expect ?in_function env sexp ty_expected =
       end
   | Pexp_newtype(name, sbody) ->
       (* Create a fake abstract type declaration for name. *)
+      let level = get_current_level () in
       let decl = {
         type_params = [];
         type_arity = 0;
@@ -1996,7 +1997,7 @@ and type_expect ?in_function env sexp ty_expected =
         type_private = Public;
         type_manifest = None;
         type_variance = [];
-        type_newtype_level = Some (get_current_level ());
+        type_newtype_level = Some (level, level);
       }
       in
       let ty = newvar () in
@@ -2421,6 +2422,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
   begin_def ();
   Ident.set_current_time (get_current_level ()); 
   let lev = Ident.current_time () in
+  let env = Env.add_gadt_instance_level lev env in
   Ctype.init_def (lev+1000);
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in

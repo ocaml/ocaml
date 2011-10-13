@@ -144,8 +144,8 @@ type type_declaration =
     type_manifest: type_expr option;
     type_variance: (bool * bool * bool) list;
     (* covariant, contravariant, weakly contravariant *)
-    type_newtype_level: int option }
-
+    type_newtype_level: (int * int) option }
+    (* definition level * expansion level *)
 
 and type_kind =
     Type_abstract

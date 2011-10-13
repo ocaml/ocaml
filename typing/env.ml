@@ -20,6 +20,7 @@ open Asttypes
 open Longident
 open Path
 open Types
+open Btype
 
 
 type error =
@@ -56,7 +57,7 @@ type t = {
   cltypes: (Path.t * cltype_declaration) Ident.tbl;
   summary: summary;
   local_constraints: bool;
-  level_map: (int * int) list;
+  gadt_instances: (int * TypeSet.t ref) list;
 }
 
 and module_components = module_components_repr Lazy.t
@@ -96,7 +97,7 @@ let empty = {
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty; 
-  summary = Env_empty; local_constraints = false; level_map = [] }
+  summary = Env_empty; local_constraints = false; gadt_instances = [] }
 
 let diff_keys is_local tbl1 tbl2 =
   let keys2 = Ident.keys tbl2 in
@@ -286,13 +287,14 @@ let find_type_expansion ?(use_local=true) ?level path env =
   (* the level is changed when updating newtype definitions *)
   if !Clflags.principal then begin
     match level, decl.type_newtype_level with
-      Some level, Some def_level when level < def_level -> raise Not_found
+      Some level, Some (_, exp_level) when level < exp_level -> raise Not_found
     | _ -> ()
   end;
   match decl.type_manifest with
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
-              || Btype.has_constr_row body -> (decl.type_params, body)
+              || Btype.has_constr_row body ->
+                  (decl.type_params, body, may_map snd decl.type_newtype_level)
   (* The manifest type of Private abstract data types without
      private row are still considered unknown to the type system.
      Hence, this case is caught by the following clause that also handles
@@ -308,7 +310,7 @@ let find_type_expansion_opt path env =
   match decl.type_manifest with
   (* The manifest type of Private abstract data types can still get
      an approximation using their manifest type. *)
-  | Some body -> (decl.type_params, body)
+  | Some body -> (decl.type_params, body, may_map snd decl.type_newtype_level)
   | _ -> raise Not_found
 
 let find_modtype_expansion path env =
@@ -453,32 +455,42 @@ and lookup_class =
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
 
-(* Level handling *)
+(* GADT instance tracking *)
 
-(* The level map is a list of pairs describing separate segments (lv,lv'),
-   lv < lv', organized in decreasing order.
-   The definition level is obtained by mapping a level in a segment to the
-   high limit of this segment.
-   The definition level of a newtype should be greater or equal to
-   the highest level of the newtypes in its manifest type.
- *)
+let add_gadt_instance_level lv env =
+  {env with
+   gadt_instances = (lv, ref TypeSet.empty) :: env.gadt_instances}
 
-let rec map_level lv = function
-  | [] -> lv
-  | (lv1, lv2) :: rem ->
-      if lv > lv2 then lv else
-      if lv >= lv1 then lv2 else map_level lv rem
+let is_Tlink = function {desc = Tlink _} -> true | _ -> false
 
-let map_newtype_level env lv = map_level lv env.level_map
+let gadt_instance_level env t =
+  let rec find_instance = function
+      [] -> None
+    | (lv, r) :: rem ->
+        if TypeSet.exists is_Tlink !r then
+          r := TypeSet.fold (fun ty -> TypeSet.add (repr ty)) !r TypeSet.empty;
+        if TypeSet.mem t !r then Some lv else find_instance rem
+  in find_instance env.gadt_instances
 
-(* precondition: lv < lv' *)
-let rec add_level lv lv' = function
-  | [] -> [lv, lv']
-  | (lv1, lv2) :: rem as l ->
-      if lv2 < lv then (lv, lv') :: l else
-      if lv' < lv1 then (lv1, lv2) :: add_level lv lv' rem
-      else add_level (max lv lv1) (min lv' lv2) rem      
+let add_gadt_instances env lv tl =
+  let r =
+    try List.assoc lv env.gadt_instances with Not_found -> assert false in
+  r := List.fold_right TypeSet.add tl !r
 
+(* Only use this after expand_head! *)
+let add_gadt_instance_chain env lv t =
+  let r =
+    try List.assoc lv env.gadt_instances with Not_found -> assert false in
+  let rec add_instance t =
+    let t = repr t in
+    if not (TypeSet.mem t !r) then begin
+      r := TypeSet.add t !r;
+      match t.desc with
+        Tconstr (p, _, memo) ->
+          may add_instance (find_expans Private p !memo)
+      | _ -> ()
+    end
+  in add_instance t
 
 (* Expand manifest module type names at the top of the given module type *)
 
@@ -497,7 +509,7 @@ let rec scrape_modtype mty env =
 let constructors_of_type ty_path decl =
   let handle_variants cstrs = 
     Datarepr.constructor_descrs
-      (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
+      (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
       cstrs decl.type_private
   in
   match decl.type_kind with
@@ -510,7 +522,7 @@ let labels_of_type ty_path decl =
   match decl.type_kind with
     Type_record(labels, rep) ->
       Datarepr.label_descrs
-        (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
+        (newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep decl.type_private
   | Type_variant _ | Type_abstract -> []
 
@@ -773,14 +785,13 @@ and add_class id ty env =
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
 
-let add_local_constraint id info mlv env =
+let add_local_constraint id info elv env =
   match info with
-    {type_manifest = Some ty; type_newtype_level = Some lv} ->
-      (* use the newtype level for this definition, lv is the old one *)
-      let env = add_type id {info with type_newtype_level = Some mlv} env in
-      let level_map =
-        if lv < mlv then add_level lv mlv env.level_map else env.level_map in
-      { env with local_constraints = true; level_map = level_map }
+    {type_manifest = Some ty; type_newtype_level = Some (lv, _)} ->
+      (* elv is the expansion level, lv is the definition level *)
+      let env =
+        add_type id {info with type_newtype_level = Some (lv, elv)} env in
+      { env with local_constraints = true }
   | _ -> assert false
 
 (* Insertion of bindings by name *)

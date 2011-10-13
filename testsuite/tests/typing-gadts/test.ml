@@ -159,17 +159,21 @@ type _ t = Int : int t ;;
 
 let ky x y = ignore (x = y); x ;;
 
+let test : type a. a t -> a =
+  function Int -> ky (1 : a) 1
+;;
+
 let test : type a. a t -> a = fun x ->
-  let r = match x with Int -> ky (1 : a) 1
+  let r = match x with Int -> ky (1 : a) 1  (* fails *)
   in r
 ;;
 let test : type a. a t -> a = fun x ->
-  let r = match x with Int -> ky 1 (1 : a)
+  let r = match x with Int -> ky 1 (1 : a)  (* fails *)
   in r
 ;;
 let test : type a. a t -> a = fun x ->
-  let r = match x with Int -> (1 : a)
-  in r (* fails too *)
+  let r = match x with Int -> (1 : a)       (* ok! *)
+  in r
 ;;
 let test : type a. a t -> a = fun x ->
   let r : a = match x with Int -> 1
@@ -178,7 +182,7 @@ let test : type a. a t -> a = fun x ->
 let test2 : type a. a t -> a option = fun x ->
   let r = ref None in
   begin match x with Int -> r := Some (1 : a) end;
-  !r (* normalized to int option *)
+  !r (* ok *)
 ;;
 let test2 : type a. a t -> a option = fun x ->
   let r : a option ref = ref None in
@@ -190,19 +194,19 @@ let test2 : type a. a t -> a option = fun x ->
   let u = ref None in
   begin match x with Int -> r := Some 1; u := !r end;
   !u
-;; (* fail *)
+;; (* ok (u non-ambiguous) *)
 let test2 : type a. a t -> a option = fun x ->
   let r : a option ref = ref None in
   let u = ref None in
   begin match x with Int -> u := Some 1; r := !u end;
   !u
-;; (* fail *)
+;; (* fails because u : (int | a) option ref *)
 let test2 : type a. a t -> a option = fun x ->
   let u = ref None in
   let r : a option ref = ref None in
   begin match x with Int -> r := Some 1; u := !r end;
   !u
-;; (* fail *)
+;; (* ok *)
 let test2 : type a. a t -> a option = fun x ->
   let u = ref None in
   let a =
@@ -210,32 +214,32 @@ let test2 : type a. a t -> a option = fun x ->
     begin match x with Int -> r := Some 1; u := !r end;
     !u
   in a
-;; (* fail *)
+;; (* ok *)
 
 (* Effect of external consraints *)
 
 let f (type a) (x : a t) y =
   ignore (y : a);
-  let r = match x with Int -> (y : a) in (* fails *)
+  let r = match x with Int -> (y : a) in (* ok *)
   r
 ;;
 let f (type a) (x : a t) y =
   let r = match x with Int -> (y : a) in
-  ignore (y : a); (* fails *)
+  ignore (y : a); (* ok *)
   r
 ;;
 let f (type a) (x : a t) y =
   ignore (y : a);
-  let r = match x with Int -> y in
+  let r = match x with Int -> y in (* ok *)
   r
 ;;
 let f (type a) (x : a t) y =
   let r = match x with Int -> y in
-  ignore (y : a);
+  ignore (y : a); (* ok *)
   r
 ;;
 let f (type a) (x : a t) (y : a) =
-  match x with Int -> y (* should return an int! *)
+  match x with Int -> y (* returns 'a *)
 ;;
 
 (* Pattern matching *)
@@ -307,4 +311,4 @@ let f : type a. a ty -> a t -> int = fun x y ->
   | {left=TE TC; right=D [|1.0|]} -> 14
   | {left=TA; right=D 0} -> -1
   | {left=TA; right=D z} -> z
-;; (* warn *)
+;; (* ok *)

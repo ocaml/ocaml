@@ -470,7 +470,7 @@ let rec free_vars_rec real ty =
         free_variables := (ty, real) :: !free_variables
     | Tconstr (path, tl, _), Some env ->
         begin try
-          let (_, body) = Env.find_type_expansion path env in
+          let (_, body, _) = Env.find_type_expansion path env in
           if (repr body).level <> generic_level then
             free_variables := (ty, real) :: !free_variables
         with Not_found -> ()
@@ -687,7 +687,7 @@ let get_level env p =
   try
     match (Env.find_type p env).type_newtype_level with
       | None -> Path.binding_time p
-      | Some x -> x
+      | Some (x, _) -> x
   with 
     | _ -> 
       (* no newtypes in predef *)
@@ -696,9 +696,13 @@ let get_level env p =
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
+    if !Clflags.principal && Env.has_local_constraints env then begin
+      match Env.gadt_instance_level env ty with
+        Some lv -> if level < lv then raise (Unify [(ty, newvar2 level)])
+      | None -> ()
+    end;
     match ty.desc with
-      Tconstr(p, tl, abbrev)
-      when level < Env.map_newtype_level env (get_level env p) ->
+      Tconstr(p, tl, abbrev) when level < get_level env p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
           (* if is_newtype env p then raise Cannot_expand; *)
@@ -1025,7 +1029,7 @@ let instance_constructor ?in_pattern cstr =
   | Some (env, newtype_lev) ->
       let existentials = List.map copy cstr.cstr_existentials in
       let process existential = 
-        let decl = new_declaration (Some newtype_lev) None in
+        let decl = new_declaration (Some (newtype_lev, newtype_lev)) None in
         let (id, new_env) =
           Env.enter_type (get_new_abstract_name ()) decl !env in
         env := new_env;
@@ -1271,7 +1275,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             end;
           ty
       | None ->
-          let (params, body) =
+          let (params, body, lv) =
             try find_type_expansion level path env with Not_found ->
               raise Cannot_expand
           in
@@ -1283,6 +1287,15 @@ let expand_abbrev_gen kind find_type_expansion env ty =
             {desc=Tvariant row} as ty when static_row row ->
               ty.desc <- Tvariant { row with row_name = Some (path, args) }
           | _ -> ()
+          end;
+          (* For gadts, remember type as non exportable *)
+          if !Clflags.principal then begin
+            match lv with
+              Some lv -> Env.add_gadt_instances env lv [ty; ty']
+            | None ->
+                match Env.gadt_instance_level env ty with
+                  Some lv -> Env.add_gadt_instances env lv [ty']
+                | None -> ()
           end;
           ty'
       end
@@ -1306,15 +1319,7 @@ let safe_abbrev env ty =
 let try_expand_once env ty =
   let ty = repr ty in
   match ty.desc with
-    Tconstr (p, _, _) ->
-      let ty' = repr (expand_abbrev env ty) in
-      if !Clflags.principal then begin
-        match (Env.find_type p env).type_newtype_level with
-          Some lv when ty.level < Env.map_newtype_level env lv  ->
-            link_type ty ty'
-        | _ -> ()
-      end;
-      ty'
+    Tconstr (p, _, _) -> repr (expand_abbrev env ty)
   | _ -> raise Cannot_expand
 
 let _ = forward_try_expand_once := try_expand_once
@@ -1324,11 +1329,16 @@ let _ = forward_try_expand_once := try_expand_once
    May raise Unify, if a recursion was hidden in the type. *)
 let rec try_expand_head env ty =
   let ty' = try_expand_once env ty in
-  begin try
-    try_expand_head env ty'
-  with Cannot_expand ->
-    ty'
-  end
+  let ty'' =
+    try try_expand_head env ty'
+    with Cannot_expand -> ty'
+  in
+  if !Clflags.principal then begin
+    match Env.gadt_instance_level env ty'' with
+      None    -> ()
+    | Some lv -> Env.add_gadt_instance_chain env lv ty
+  end;
+  ty''
 
 (* Expand once the head of a type *)
 let expand_head_once env ty =
@@ -1405,7 +1415,7 @@ let rec full_expand env ty =
 *)
 let generic_abbrev env path =
   try
-    let (_, body) = Env.find_type_expansion path env in
+    let (_, body, _) = Env.find_type_expansion path env in
     (repr body).level = generic_level
   with
     Not_found ->
@@ -1742,7 +1752,7 @@ let get_newtype_level () =
 let reify env t =
   let newtype_level = get_newtype_level () in
   let create_fresh_constr lev row = 
-      let decl = new_declaration (Some (newtype_level)) None in
+      let decl = new_declaration (Some (newtype_level, newtype_level)) None in
       let name = 
         let name = get_new_abstract_name () in 
         if row then name ^ "#row" else name
@@ -2065,7 +2075,7 @@ let rec unify (env:Env.t ref) t1 t2 =
         update_level !env t1.level t2;
         link_type t1 t2
     | (Tconstr (p1, [], a1), Tconstr (p2, [], a2))
-          when Path.same p1 p2 && actual_mode !env = Old
+          when Path.same p1 p2 (* && actual_mode !env = Old *)
             (* This optimization assumes that t1 does not expand to t2
                (and conversely), so we fall back to the general case
                when any of the types has a cached expansion. *)
@@ -2091,6 +2101,15 @@ and unify2 env t1 t2 =
   if unify_eq !env t1' t2' then () else
 
   let t1 = repr t1 and t2 = repr t2 in
+  if !Clflags.principal then begin
+    match Env.gadt_instance_level !env t1',Env.gadt_instance_level !env t2' with
+      Some lv1, Some lv2 ->
+        if lv1 > lv2 then Env.add_gadt_instance_chain !env lv1 t2 else
+        if lv2 > lv2 then Env.add_gadt_instance_chain !env lv2 t1
+    | Some lv1, None -> Env.add_gadt_instance_chain !env lv1 t2
+    | None, Some lv2 -> Env.add_gadt_instance_chain !env lv2 t1
+    | None, None     -> ()
+  end;
   if unify_eq !env t1 t1' || not (unify_eq !env t2 t2') then
     unify3 env t1 t1' t2 t2'
   else

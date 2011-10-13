@@ -146,8 +146,8 @@ type type_declaration =
     type_private: private_flag;
     type_manifest: type_expr option;
     type_variance: (bool * bool * bool) list;
-    type_newtype_level: int option }
             (* covariant, contravariant, weakly contravariant *)
+    type_newtype_level: (int * int) option }
 
 and type_kind =
     Type_abstract

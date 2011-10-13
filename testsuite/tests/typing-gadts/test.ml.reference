@@ -66,11 +66,11 @@ Error: This pattern matches values of type int t
      ^^^^^^^^^^^^^
 Error: This pattern matches values of type ([? `A ] as 'a) * bool t
        but a pattern was expected which matches values of type 'a * int t
-#                                 Characters 300-301:
-      | BoolLit b -> b
-                     ^
-Error: This expression has type bool but an expression was expected of type
-         int
+#                                 module Propagation :
+  sig
+    type 'a t = IntLit : int -> int t | BoolLit : bool -> bool t
+    val check : 'a t -> 'a
+  end
 #             Characters 87-88:
     let f = function A -> 1 | B -> 2
                               ^
@@ -78,24 +78,15 @@ Error: This pattern matches values of type b
        but a pattern was expected which matches values of type a
 #   type 'a t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
-#         Characters 88-89:
+#       val test : 'a t -> 'a = <fun>
+#         val test : 'a t -> 'a = <fun>
+#       Characters 100-101:
     in r
-       ^
-Error: This expression has type int but an expression was expected of type a
-#       Characters 87-88:
-    in r
-       ^
-Error: This expression has type int but an expression was expected of type a
-#       Characters 82-83:
-    in r (* fails too *)
        ^
 Error: This expression has type int but an expression was expected of type a
 #       val test : 'a t -> 'a = <fun>
-#         Characters 122-124:
-    !r (* normalized to int option *)
-    ^^
-Error: This expression has type int option
-       but an expression was expected of type a option
+#       val test : 'a t -> 'a = <fun>
+#         val test2 : 'a t -> 'a option = <fun>
 #         val test2 : 'a t -> 'a option = <fun>
 #           val test2 : 'a t -> 'a option = <fun>
 #           Characters 162-164:
@@ -104,16 +95,9 @@ Error: This expression has type int option
 Error: This expression has type int option
        but an expression was expected of type a option
 #           val test2 : 'a t -> 'a option = <fun>
-#               Characters 186-187:
-    in a
-       ^
-Error: This expression has type int option
-       but an expression was expected of type a option
-#               val f : 'a t -> 'a -> int = <fun>
-#         Characters 80-81:
-    ignore (y : a); (* fails *)
-            ^
-Error: This expression has type int but an expression was expected of type a
+#               val test2 : 'a t -> 'a option = <fun>
+#               val f : 'a t -> 'a -> 'a = <fun>
+#         val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #     val f : 'a t -> 'a -> 'a = <fun>
