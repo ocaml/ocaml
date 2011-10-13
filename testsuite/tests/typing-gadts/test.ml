@@ -19,8 +19,23 @@ module Exp =
 	    (eval f) (eval a)
 	| Abs f -> f 
 
+    let discern : type a. a t -> _ = function
+        IntLit _ -> 1
+      | BoolLit _ -> 2
+      | Pair _ -> 3
+      | App _ -> 4
+      | Abs _ -> 5
+
+    let map : type a. <m : 'a. 'a t -> 'a t> -> a t -> a t =
+      fun o x -> x
+          
+
   end
 ;;
+
+type ('a,'b,'c ) tag = L : ('a,'b,'a) tag | R : ('a,'b,'b) tag 
+type ('a,'b) sum = Prod : ('a,'b,'c) tag * 'c -> ('a,'b) sum
+
 
 module List = 
   struct
@@ -171,8 +186,16 @@ let test : type a. a t -> a = fun x ->
   let r = match x with Int -> ky 1 (1 : a)  (* fails *)
   in r
 ;;
+let test (type a) x =
+  let r = match (x : a t) with Int -> ky 1 1
+  in r
+;;
 let test : type a. a t -> a = fun x ->
   let r = match x with Int -> (1 : a)       (* ok! *)
+  in r
+;;
+let test : type a. a t -> _ = fun x ->
+  let r = match x with Int -> 1       (* ok! *)
   in r
 ;;
 let test : type a. a t -> a = fun x ->
@@ -215,6 +238,10 @@ let test2 : type a. a t -> a option = fun x ->
     !u
   in a
 ;; (* ok *)
+let either = ky
+let we_y1x (type a) (x : a) (v : a t) =
+  match v with Int -> let y = either 1 x in y
+;; (* fail *)
 
 (* Effect of external consraints *)
 
@@ -241,6 +268,20 @@ let f (type a) (x : a t) y =
 let f (type a) (x : a t) (y : a) =
   match x with Int -> y (* returns 'a *)
 ;;
+
+(* Combination with local modules *)
+
+let f (type a) (x : a t) y =
+  match x with Int ->
+    let module M = struct type b = a let z = (y : b) end
+    in M.z
+;; (* fails because of aliasing... *)
+
+let f (type a) (x : a t) y =
+  match x with Int ->
+    let module M = struct type b = int let z = (y : b) end
+    in M.z
+;; (* ok *)
 
 (* Pattern matching *)
 

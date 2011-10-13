@@ -468,6 +468,7 @@ let gadt_instance_level env t =
       [] -> None
     | (lv, r) :: rem ->
         if TypeSet.exists is_Tlink !r then
+          (* Should we use set_typeset ? *)
           r := TypeSet.fold (fun ty -> TypeSet.add (repr ty)) !r TypeSet.empty;
         if TypeSet.mem t !r then Some lv else find_instance rem
   in find_instance env.gadt_instances
@@ -475,7 +476,7 @@ let gadt_instance_level env t =
 let add_gadt_instances env lv tl =
   let r =
     try List.assoc lv env.gadt_instances with Not_found -> assert false in
-  r := List.fold_right TypeSet.add tl !r
+  set_typeset r (List.fold_right TypeSet.add tl !r)
 
 (* Only use this after expand_head! *)
 let add_gadt_instance_chain env lv t =
@@ -484,7 +485,7 @@ let add_gadt_instance_chain env lv t =
   let rec add_instance t =
     let t = repr t in
     if not (TypeSet.mem t !r) then begin
-      r := TypeSet.add t !r;
+      set_typeset r (TypeSet.add t !r);
       match t.desc with
         Tconstr (p, _, memo) ->
           may add_instance (find_expans Private p !memo)

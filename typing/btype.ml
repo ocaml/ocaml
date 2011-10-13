@@ -16,6 +16,12 @@
 
 open Types
 
+(**** Sets, maps and hashtables of types ****)
+
+module TypeSet = Set.Make(TypeOps)
+module TypeMap = Map.Make (TypeOps)
+module TypeHash = Hashtbl.Make(TypeOps)
+
 (**** Forward declarations ****)
 
 let print_raw =
@@ -450,6 +456,7 @@ type change =
   | Ckind of field_kind option ref * field_kind option
   | Ccommu of commutable ref * commutable
   | Cuniv of type_expr option ref * type_expr option
+  | Ctypeset of TypeSet.t ref * TypeSet.t
 
 let undo_change = function
     Ctype  (ty, desc) -> ty.desc <- desc
@@ -459,6 +466,7 @@ let undo_change = function
   | Ckind  (r, v) -> r := v
   | Ccommu (r, v) -> r := v
   | Cuniv  (r, v) -> r := v
+  | Ctypeset (r, v) -> r := v
 
 type changes =
     Change of change * changes ref
@@ -510,6 +518,8 @@ let set_kind rk k =
   log_change (Ckind (rk, !rk)); rk := Some k
 let set_commu rc c =
   log_change (Ccommu (rc, !rc)); rc := c
+let set_typeset rs s =
+  log_change (Ctypeset (rs, !rs)); rs := s
 
 let snapshot () =
   let old = !last_snapshot in
@@ -539,9 +549,3 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
-
-(**** Sets, maps and hashtables of types ****)
-
-module TypeSet = Set.Make(TypeOps)
-module TypeMap = Map.Make (TypeOps)
-module TypeHash = Hashtbl.Make(TypeOps)

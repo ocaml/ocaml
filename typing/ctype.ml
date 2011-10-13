@@ -897,8 +897,8 @@ let abbreviations = ref (ref Mnil)
 
 (* partial: we may not wish to copy the non generic types
    before we call type_pat *)
-let rec copy ?partial ty =
-  let copy = copy ?partial in
+let rec copy ?env ?partial ty =
+  let copy = copy ?env ?partial in
   let ty = repr ty in
   match ty.desc with
     Tsubst ty -> ty
@@ -919,6 +919,14 @@ let rec copy ?partial ty =
     let desc = ty.desc in
     save_desc ty desc;
     let t = newvar() in          (* Stub *)
+    begin match env with
+    | Some env ->
+        begin match Env.gadt_instance_level env ty with
+          Some lv -> Env.add_gadt_instances env lv [t]
+        | None -> ()
+        end
+    | None -> ()
+    end;
     ty.desc <- Tsubst t;
     t.desc <-
       begin match desc with
@@ -985,18 +993,30 @@ let rec copy ?partial ty =
 
 (**** Variants of instantiations ****)
 
-let instance ?partial sch =
+let gadt_env env =
+  if !Clflags.principal && Env.has_local_constraints env
+  then Some env
+  else None
+
+let instance ?partial env sch =
+  let env = gadt_env env in
   let partial =
     match partial with
       None -> None
     | Some keep -> Some (compute_univars sch, keep)
   in
-  let ty = copy ?partial sch in
+  let ty = copy ?env ?partial sch in
   cleanup_types ();
   ty
 
-let instance_list schl =
-  let tyl = List.map copy schl in
+let instance_def sch =
+  let ty = copy sch in
+  cleanup_types ();
+  ty  
+
+let instance_list env schl =
+  let env = gadt_env env in
+  let tyl = List.map (copy ?env) schl in
   cleanup_types ();
   tyl
 
@@ -1887,8 +1907,8 @@ let rec mcomp type_pairs subst env t1 t2 =
               match (t1'.desc, t2'.desc) with
                   (Tvar _, Tvar _) ->
                     fatal_error "types should not include variables"
-                | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
-                  || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
+                | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
+                  when l1 = l2 || not (is_optional l1 || is_optional l2) ->
                   mcomp type_pairs subst env t1 t2;
                   mcomp type_pairs subst env u1 u2;
                 | (Ttuple tl1, Ttuple tl2) ->
@@ -2841,10 +2861,10 @@ let moregeneral env inst_nongen pat_sch subj_sch =
      then copied with [duplicate_type].  That way, its levels won't be
      changed.
   *)
-  let subj = duplicate_type (instance subj_sch) in
+  let subj = duplicate_type (instance env subj_sch) in
   current_level := generic_level;
   (* Duplicate generic variables *)
-  let patt = instance pat_sch in
+  let patt = instance env pat_sch in
   let res =
     try moregen inst_nongen (TypePairs.create 13) env patt subj; true with
       Unify _ -> false

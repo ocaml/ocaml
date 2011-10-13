@@ -202,11 +202,12 @@ let enter_met_env lab kind ty val_env met_env par_env =
 
 (* Enter an instance variable in the environment *)
 let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
+  let instance = Ctype.instance val_env in
   let (id, virt) =
     try
       let (id, mut', virt', ty') = Vars.find lab !vars in
       if mut' <> mut then raise (Error(loc, Mutability_mismatch(lab, mut)));
-      Ctype.unify val_env (Ctype.instance ty) (Ctype.instance ty');
+      Ctype.unify val_env (instance ty) (instance ty');
       (if not inh then Some id else None),
       (if virt' = Concrete then virt' else virt)
     with
@@ -605,7 +606,8 @@ let rec class_field cl_num self_type meths vars
           Ctype.raise_nongen_level ();
           let meth_type =
             Ctype.newty
-              (Tarrow ("", self_type, Ctype.instance Predef.type_unit, Cok)) in
+              (Tarrow ("", self_type,
+                       Ctype.instance_def Predef.type_unit, Cok)) in
           vars := vars_local;
           let texp = type_expect met_env expr meth_type in
           Ctype.end_def ();
@@ -826,7 +828,8 @@ and class_expr cl_num val_env met_env scl =
           Warnings.Unerasable_optional_argument;
       rc {cl_desc = Tclass_fun (pat, pv, cl, partial);
           cl_loc = scl.pcl_loc;
-          cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type);
+          cl_type = Tcty_fun
+            (l, Ctype.instance_def pat.pat_type, cl.cl_type);
           cl_env = val_env}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
@@ -986,7 +989,7 @@ let rec approx_declaration cl =
   match cl.pcl_desc with
     Pcl_fun (l, _, _, cl) ->
       let arg =
-        if Btype.is_optional l then Ctype.instance var_option
+        if Btype.is_optional l then Ctype.instance_def var_option
         else Ctype.newvar () in
       Ctype.newty (Tarrow (l, arg, approx_declaration cl, Cok))
   | Pcl_let (_, _, cl) ->
@@ -999,7 +1002,7 @@ let rec approx_description ct =
   match ct.pcty_desc with
     Pcty_fun (l, _, ct) ->
       let arg =
-        if Btype.is_optional l then Ctype.instance var_option
+        if Btype.is_optional l then Ctype.instance_def var_option
         else Ctype.newvar () in
       Ctype.newty (Tarrow (l, arg, approx_description ct, Cok))
   | _ -> Ctype.newvar ()
@@ -1165,7 +1168,7 @@ let class_infos define_class kind
   begin try
     Ctype.unify env
       (constructor_type constr obj_type)
-      (Ctype.instance constr_type)
+      (Ctype.instance env constr_type)
   with Ctype.Unify trace ->
     raise(Error(cl.pci_loc,
                 Constructor_type_mismatch (cl.pci_name, trace)))
@@ -1225,7 +1228,7 @@ let class_infos define_class kind
      cty_new =
        match cl.pci_virt with
          Virtual  -> None
-       | Concrete -> Some (Ctype.instance constr_type)}
+       | Concrete -> Some (Ctype.instance env constr_type)}
   in
   let obj_abbr =
     {type_params = obj_params;
@@ -1413,7 +1416,7 @@ let rec unify_parents env ty cl =
       begin try
         let decl = Env.find_class p env in
         let _, body = Ctype.find_cltype_for_path env decl.cty_path in
-        Ctype.unify env ty (Ctype.instance body)
+        Ctype.unify env ty (Ctype.instance env body)
       with exn -> assert (exn = Not_found)
       end
   | Tclass_structure st -> unify_parents_struct env ty st
