@@ -1,8 +1,21 @@
-\" $Id$
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLPROF 1
 
 .SH NAME
-ocamlprof \- The Objective Caml profiler
+ocamlprof \- The OCaml profiler
 
 .SH SYNOPSIS
 .B ocamlprof
@@ -15,7 +28,7 @@ ocamlprof \- The Objective Caml profiler
 The
 .B ocamlprof
 command prints execution counts gathered during the execution of a
-Objective Caml program instrumented with
+OCaml program instrumented with
 .BR ocamlcp (1).
 
 It produces a source listing of the program modules given as arguments
@@ -69,5 +82,5 @@ Display a short usage summary and exit.
 .SH SEE ALSO
 .BR ocamlcp (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Profiling".

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -25,8 +25,6 @@ exception Cannot_expand
 exception Cannot_apply
 exception Recursive_abbrev
 exception Unification_recursive_abbrev of (type_expr * type_expr) list
-exception Misplaced_existential
-exception Not_fresh of Ident.t * type_expr
 
 val init_def: int -> unit
         (* Set the initial variable level *)
@@ -43,9 +41,10 @@ val restore_global_level: int -> unit
         (* This pair of functions is only used in Typetexp *)
 
 val newty: type_desc -> type_expr
-val newvar: unit -> type_expr
+val newvar: ?name:string -> unit -> type_expr
+val newvar2: ?name:string -> int -> type_expr
         (* Return a fresh variable *)
-val new_global_var: unit -> type_expr
+val new_global_var: ?name:string -> unit -> type_expr
         (* Return a fresh variable, bound at toplevel
            (as type variables ['a] in type constraints). *)
 val newobj: type_expr -> type_expr
@@ -109,19 +108,21 @@ val limited_generalize: type_expr -> type_expr -> unit
 
 val instance: ?partial:bool -> type_expr -> type_expr
         (* Take an instance of a type scheme *)
+        (* partial=None  -> normal
+           partial=false -> newvar() for non generic subterms
+           partial=true  -> newty2 ty.level Tvar for non generic subterms *)
 val instance_list: type_expr list -> type_expr list
         (* Take an instance of a list of type schemes *)
 val instance_constructor:
-  allow_existentials:bool -> 
-  ?in_pattern:(Env.t ref * int) option -> 
-  constructor_description -> 
-  type_expr list * type_expr
+        ?in_pattern:Env.t ref * int -> 
+        constructor_description -> type_expr list * type_expr
         (* Same, for a constructor *)
 val instance_parameterized_type:
         type_expr list -> type_expr -> type_expr list * type_expr
 val instance_parameterized_type_2:
         type_expr list -> type_expr list -> type_expr ->
         type_expr list * type_expr list * type_expr
+val instance_declaration: type_declaration -> type_declaration
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 val instance_poly:
@@ -254,8 +255,3 @@ val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
 
 val get_current_level: unit -> int
-
-val new_declaration :
-  int option -> Types.type_expr option -> Types.type_declaration
-
-val enter_pattern_newtype : int -> Ident.t -> Env.t -> Env.t

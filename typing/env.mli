@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -32,13 +32,15 @@ val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> cltype_declaration
 
-val find_type_expansion: ?use_local:bool -> Path.t -> t -> type_expr list * type_expr
+val find_type_expansion:
+    ?use_local:bool -> ?level:int -> Path.t -> t -> type_expr list * type_expr
 val find_type_expansion_opt: Path.t -> t -> type_expr list * type_expr
 (* Find the manifest type information associated to a type for the sake
    of the compiler's type-based optimisations. *)
 val find_modtype_expansion: Path.t -> t -> Types.module_type
 
 val has_local_constraints: t -> bool
+val map_newtype_level: t -> int -> int
 
 (* Lookup by long identifiers *)
 
@@ -54,8 +56,6 @@ val lookup_cltype: Longident.t -> t -> Path.t * cltype_declaration
 
 (* Insertion by identifier *)
 
-
-
 val add_value: Ident.t -> value_description -> t -> t
 val add_annot: Ident.t -> Annot.ident -> t -> t
 val add_type: Ident.t -> type_declaration -> t -> t
@@ -64,7 +64,7 @@ val add_module: Ident.t -> module_type -> t -> t
 val add_modtype: Ident.t -> modtype_declaration -> t -> t
 val add_class: Ident.t -> class_declaration -> t -> t
 val add_cltype: Ident.t -> cltype_declaration -> t -> t
-val add_local_constraint: Ident.t -> type_declaration -> t -> t
+val add_local_constraint: Ident.t -> type_declaration -> int -> t -> t
 
 (* Insertion of all fields of a signature. *)
 

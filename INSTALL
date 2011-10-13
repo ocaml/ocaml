@@ -1,5 +1,5 @@
-            Installing Objective Caml on a Unix machine
-            -------------------------------------------
+            Installing OCaml on a Unix machine
+            ----------------------------------
 
 PREREQUISITES
 
@@ -119,6 +119,10 @@ The "configure" script accepts the following options:
         run-time system manually written in assembly language.
         This assembler must preprocess its input with the C preprocessor.
 
+-with-debug-runtime
+        Compile and install the debug version of the runtimes, useful
+        for debugging C stubs and other low-level code.
+
 -verbose
         Verbose output of the configuration tests. Use it if the outcome
         of configure is not what you were expecting.
@@ -166,15 +170,15 @@ for guidance on how to edit the generated files by hand.
 
         make world
 
-This builds the Objective Caml bytecode compiler for the first time.
-This phase is fairly verbose; consider redirecting the output to a file:
+This builds the OCaml bytecode compiler for the first time.  This
+phase is fairly verbose; consider redirecting the output to a file:
 
         make world > log.world 2>&1     # in sh
         make world >& log.world         # in csh
 
 3- (Optional) To be sure everything works well, you can try to
-bootstrap the system --- that is, to recompile all Objective Caml
-sources with the newly created compiler. From the top directory, do:
+bootstrap the system --- that is, to recompile all OCaml sources with
+the newly created compiler. From the top directory, do:
 
         make bootstrap
 
@@ -201,9 +205,9 @@ or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-5- Compile fast versions of the Objective Caml compilers, by
-compiling them with the native-code compiler (you have only compiled
-them to bytecode so far).  Just do:
+5- Compile fast versions of the OCaml compilers, by compiling them
+with the native-code compiler (you have only compiled them to bytecode
+so far).  Just do:
 
         make opt.opt
 
@@ -222,7 +226,7 @@ An alternative, and faster approach to steps 2 to 5 is
 The result is equivalent to "make world opt opt.opt", but this may
 fail if anything goes wrong in native-code generation.
 
-6- You can now install the Objective Caml system. This will create the
+6- You can now install the OCaml system. This will create the
 following commands (in the binary directory selected during
 autoconfiguration):
 
@@ -251,16 +255,12 @@ From the top directory, become superuser and do:
         umask 022       # make sure to give read & execute permission to all
         make install
 
-      In the ocamlbuild setting instead of make install do:
-
-        ./build/install.sh
-
 7- Installation is complete. Time to clean up. From the toplevel
 directory, do "make clean".
 
 8- (Optional) The emacs/ subdirectory contains Emacs-Lisp files for an
-Objective Caml editing mode and an interface for the debugger.  To
-install these files, change to the emacs/ subdirectory and do
+OCaml editing mode and an interface for the debugger.  To install
+these files, change to the emacs/ subdirectory and do
 
         make EMACSDIR=<directory where to install the files> install
 or

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*                  Projet Cristal, INRIA Rocquencourt                 *)
 (*                                                                     *)
@@ -32,7 +32,7 @@ let parenthesized_ident name =
   (List.mem name ["or"; "mod"; "land"; "lor"; "lxor"; "lsl"; "lsr"; "asr"])
   ||
   (match name.[0] with
-      'a'..'z' | '\223'..'\246' | '\248'..'\255' | '_' ->
+      'a'..'z' | 'A'..'Z' | '\223'..'\246' | '\248'..'\255' | '_' ->
         false
     | _ -> true)
 
@@ -432,16 +432,21 @@ and print_out_constr ppf (name, tyl,ret_type_opt) =
   match ret_type_opt with
   | None ->
       begin match tyl with
-      | [] -> fprintf ppf "%s" name
+      | [] ->
+          fprintf ppf "%s" name
       | _ ->
-	  fprintf ppf "@[<2>%s of@ %a@]" name
-            (print_typlist print_simple_out_type " *") tyl end
+          fprintf ppf "@[<2>%s of@ %a@]" name
+            (print_typlist print_simple_out_type " *") tyl
+      end
   | Some ret_type ->
       begin match tyl with
-      | [] -> fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type
+      | [] ->
+          fprintf ppf "@[<2>%s :@ %a@]" name print_simple_out_type  ret_type
       | _ ->
-	  fprintf ppf "@[<2>%s :@ %a -> %a@]" name
-            (print_typlist print_simple_out_type " *") tyl print_simple_out_type ret_type end      
+          fprintf ppf "@[<2>%s :@ %a -> %a@]" name
+            (print_typlist print_simple_out_type " *")
+            tyl print_simple_out_type ret_type
+      end
 
 
 and print_out_label ppf (name, mut, arg) =

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
 (*                                                                     *)
@@ -60,7 +60,8 @@ and block_type =
                when it leads to a new indentation of the current line *)
 | Pp_fits   (* Internal usage: when a block fits on a single line *)
 
-and tblock = Pp_tbox of int list ref  (* Tabulation box *)
+and tblock =
+  | Pp_tbox of int list ref  (* Tabulation box *)
 ;;
 
 (* The Queue:
@@ -182,28 +183,30 @@ let clear_queue q = q.insert <- Nil; q.body <- Nil;;
 let add_queue x q =
   let c = Cons { head = x; tail = Nil; } in
   match q with
-  | { insert = Cons cell } ->
+  | { insert = Cons cell; body = _; } ->
     q.insert <- c; cell.tail <- c
   (* Invariant: when insert is Nil body should be Nil. *)
-  | _ -> q.insert <- c; q.body <- c;;
+  | { insert = Nil; body = _; } ->
+    q.insert <- c; q.body <- c
+;;
 
 exception Empty_queue;;
 
 let peek_queue = function
-  | { body = Cons { head = x; }; } -> x
-  | _ -> raise Empty_queue
+  | { body = Cons { head = x; tail = _; }; _ } -> x
+  | { body = Nil; insert = _; } -> raise Empty_queue
 ;;
 
 let take_queue = function
-  | { body = Cons { head = x; tail = tl; }; } as q ->
+  | { body = Cons { head = x; tail = tl; }; _ } as q ->
     q.body <- tl;
     if tl = Nil then q.insert <- Nil; (* Maintain the invariant. *)
     x
-  | _ -> raise Empty_queue
+  | { body = Nil; insert = _; } -> raise Empty_queue
 ;;
 
 (* Enter a token in the pretty-printer queue. *)
-let pp_enqueue state ({length = len} as token) =
+let pp_enqueue state ({ length = len; _} as token) =
   state.pp_right_total <- state.pp_right_total + len;
   add_queue token state.pp_queue
 ;;
@@ -272,15 +275,16 @@ let pp_force_break_line state =
     if width > state.pp_space_left then
       (match bl_ty with
        | Pp_fits -> () | Pp_hbox -> ()
-       | _ -> break_line state width)
-  | _ -> pp_output_newline state
+       | Pp_vbox | Pp_hvbox | Pp_hovbox | Pp_box ->
+         break_line state width)
+  | [] -> pp_output_newline state
 ;;
 
 (* To skip a token, if the previous line has been broken. *)
 let pp_skip_token state =
   (* When calling pp_skip_token the queue cannot be empty. *)
   match take_queue state.pp_queue with
-  | { elem_size = size; length = len; } ->
+  | { elem_size = size; length = len; token = _; } ->
     state.pp_left_total <- state.pp_left_total - len;
     state.pp_space_left <- state.pp_space_left + int_of_size size
 ;;
@@ -308,15 +312,16 @@ let format_pp_token state size = function
     let bl_type =
       begin match ty with
       | Pp_vbox -> Pp_vbox
-      | _ -> if size > state.pp_space_left then ty else Pp_fits
+      | Pp_hbox | Pp_hvbox | Pp_hovbox | Pp_box | Pp_fits ->
+        if size > state.pp_space_left then ty else Pp_fits
       end in
     state.pp_format_stack <-
       Format_elem (bl_type, offset) :: state.pp_format_stack
 
   | Pp_end ->
     begin match state.pp_format_stack with
-    | x :: (y :: l as ls) -> state.pp_format_stack <- ls
-    | _ -> () (* No more block to close. *)
+    | _ :: ls -> state.pp_format_stack <- ls
+    | [] -> () (* No more block to close. *)
     end
 
   | Pp_tbegin (Pp_tbox _ as tbox) ->
@@ -324,8 +329,8 @@ let format_pp_token state size = function
 
   | Pp_tend ->
     begin match state.pp_tbox_stack with
-    | x :: ls -> state.pp_tbox_stack <- ls
-    | _ -> () (* No more tabulation block to close. *)
+    | _ :: ls -> state.pp_tbox_stack <- ls
+    | [] -> () (* No more tabulation block to close. *)
     end
 
   | Pp_stab ->
@@ -335,7 +340,7 @@ let format_pp_token state size = function
         | [] -> [n]
         | x :: l as ls -> if n < x then n :: ls else x :: add_tab n l in
       tabs := add_tab (state.pp_margin - state.pp_space_left) !tabs
-    | _ -> () (* No opened tabulation block. *)
+    | [] -> () (* No opened tabulation block. *)
     end
 
   | Pp_tbreak (n, off) ->
@@ -347,7 +352,7 @@ let format_pp_token state size = function
         | [] -> raise Not_found in
       let tab =
         match !tabs with
-        | x :: l ->
+        | x :: _ ->
           begin
             try find insertion_point !tabs with
             | Not_found -> x
@@ -357,13 +362,13 @@ let format_pp_token state size = function
       if offset >= 0
       then break_same_line state (offset + n)
       else break_new_line state (tab + off) state.pp_margin
-    | _ -> () (* No opened tabulation block. *)
+    | [] -> () (* No opened tabulation block. *)
     end
 
   | Pp_newline ->
     begin match state.pp_format_stack with
     | Format_elem (_, width) :: _ -> break_line state width
-    | _ -> pp_output_newline state
+    | [] -> pp_output_newline state (* No opened block. *)
     end
 
   | Pp_if_newline ->
@@ -392,7 +397,7 @@ let format_pp_token state size = function
       | Pp_vbox -> break_new_line state off width
       | Pp_hbox -> break_same_line state n
       end
-    | _ -> () (* No opened block. *)
+    | [] -> () (* No opened block. *)
     end
 
    | Pp_open_tag tag_name ->
@@ -406,7 +411,7 @@ let format_pp_token state size = function
        let marker = state.pp_mark_close_tag tag_name in
        pp_output_string state marker;
        state.pp_mark_stack <- tags
-     | _ -> () (* No more tag to close. *)
+     | [] -> () (* No more tag to close. *)
      end
 ;;
 
@@ -474,7 +479,7 @@ let set_size state ty =
   match state.pp_scan_stack with
   | Scan_elem
       (left_tot,
-       ({elem_size = size; token = tok} as queue_elem)) :: t ->
+       ({ elem_size = size; token = tok; length = _; } as queue_elem)) :: t ->
     let size = int_of_size size in
     (* test if scan stack contains any data that is not obsolete. *)
     if left_tot < state.pp_left_total then clear_scan_stack state else
@@ -491,9 +496,12 @@ let set_size state ty =
           queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
           state.pp_scan_stack <- t
         end
-      | _ -> () (* scan_push is only used for breaks and boxes. *)
+      | Pp_text _ | Pp_stab | Pp_tbegin _ | Pp_tend | Pp_end
+      | Pp_newline | Pp_if_newline
+      | Pp_open_tag _ | Pp_close_tag ->
+        () (* scan_push is only used for breaks and boxes. *)
       end
-  | _ -> () (* scan_stack is never empty. *)
+  | [] -> () (* scan_stack is never empty. *)
 ;;
 
 (* Push a token on scan stack. If b is true set_size is called. *)
@@ -847,7 +855,7 @@ let pp_set_formatter_out_channel state os =
 let default_pp_mark_open_tag s = "<" ^ s ^ ">";;
 let default_pp_mark_close_tag s = "</" ^ s ^ ">";;
 
-let default_pp_print_open_tag s = ();;
+let default_pp_print_open_tag _ = ();;
 let default_pp_print_close_tag = default_pp_print_open_tag;;
 
 let pp_make_formatter f g h i =
@@ -1011,11 +1019,12 @@ module Tformat = Printf.CamlinternalPr.Tformat;;
 
 (* Trailer: giving up at character number ... *)
 let giving_up mess fmt i =
-  "fprintf: " ^ mess ^ " ``" ^ Sformat.to_string fmt ^ "'', \
-   giving up at character number " ^ string_of_int i ^
-  (if i < Sformat.length fmt
-   then " (" ^ String.make 1 (Sformat.get fmt i) ^ ")."
-   else String.make 1 '.')
+  Printf.sprintf
+    "Format.fprintf: %s ``%s'', giving up at character number %d%s"
+    mess (Sformat.to_string fmt) i
+    (if i < Sformat.length fmt
+     then Printf.sprintf " (%c)." (Sformat.get fmt i)
+     else Printf.sprintf "%c" '.')
 ;;
 
 (* When an invalid format deserves a special error explanation. *)
@@ -1028,11 +1037,11 @@ let invalid_format fmt i = format_invalid_arg "bad format" fmt i;;
 let invalid_integer fmt i =
   invalid_arg (giving_up "bad integer specification" fmt i);;
 
-(* Finding an integer out of a sub-string of the format. *)
+(* Finding an integer size out of a sub-string of the format. *)
 let format_int_of_string fmt i s =
   let sz =
     try int_of_string s with
-    | Failure s -> invalid_integer fmt i in
+    | Failure _ -> invalid_integer fmt i in
   size_of_int sz
 ;;
 
@@ -1110,7 +1119,7 @@ let mkprintf to_s get_out =
           | '[' ->
             do_pp_open_box ppf n (succ i)
           | ']' ->
-             pp_close_box ppf ();
+            pp_close_box ppf ();
             doprn n (succ i)
           | '{' ->
             do_pp_open_tag ppf n (succ i)
@@ -1142,7 +1151,7 @@ let mkprintf to_s get_out =
           | '@' as c ->
             pp_print_as_char c;
             doprn n (succ i)
-          | c -> invalid_format fmt i
+          | _ -> invalid_format fmt i
           end
         | c ->
           pp_print_as_char c;
@@ -1173,10 +1182,10 @@ let mkprintf to_s get_out =
         | ' ' -> get_int n (succ i) c
         | '%' ->
           let cont_s n s i = c (format_int_of_string fmt i s) n i
-          and cont_a n printer arg i = invalid_integer fmt i
-          and cont_t n printer i = invalid_integer fmt i
-          and cont_f n i = invalid_integer fmt i
-          and cont_m n sfmt i = invalid_integer fmt i in
+          and cont_a _n _printer _arg i = invalid_integer fmt i
+          and cont_t _n _printer i = invalid_integer fmt i
+          and cont_f _n i = invalid_integer fmt i
+          and cont_m _n _sfmt i = invalid_integer fmt i in
           Tformat.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
         | _ ->
           let rec get j =
@@ -1185,7 +1194,7 @@ let mkprintf to_s get_out =
             | '0' .. '9' | '-' -> get (succ j)
             | _ ->
               let size =
-              if j = i then size_of_int 0 else
+                if j = i then size_of_int 0 else
                 let s = Sformat.sub fmt (Sformat.index_of_int i) (j - i) in
                 format_int_of_string fmt j s in
               c size n j in
@@ -1215,7 +1224,7 @@ let mkprintf to_s get_out =
                  ("bad box name ho" ^ String.make 1 c) fmt i
              end
            | 'v' -> Pp_hvbox, succ i
-           | c -> Pp_hbox, i
+           | _ -> Pp_hbox, i
            end
         | 'b' -> Pp_box, succ i
         | 'v' -> Pp_vbox, succ i
@@ -1249,12 +1258,12 @@ let mkprintf to_s get_out =
                 then (Obj.magic printer : unit -> string) ()
                 else exstring (fun ppf () -> printer ppf) () in
               get (s :: s0 :: accu) n i i
-            and cont_f n i =
+            and cont_f _n i =
               format_invalid_arg "bad tag name specification" fmt i
-            and cont_m n sfmt i =
+            and cont_m _n _sfmt i =
               format_invalid_arg "bad tag name specification" fmt i in
             Tformat.scan_format fmt v n j cont_s cont_a cont_t cont_f cont_m
-          | c -> get accu n i (succ j) in
+          | _ -> get accu n i (succ j) in
         get [] n i i
 
       and do_pp_break ppf n i =
@@ -1267,7 +1276,7 @@ let mkprintf to_s get_out =
             pp_print_break ppf (int_of_size nspaces) (int_of_size offset);
             doprn n (skip_gt i) in
           get_int n (succ i) got_nspaces
-        | c -> pp_print_space ppf (); doprn n i
+        | _c -> pp_print_space ppf (); doprn n i
 
       and do_pp_open_box ppf n i =
         if i >= len then begin pp_open_box_gen ppf 0 Pp_box; doprn n i end else
@@ -1278,7 +1287,7 @@ let mkprintf to_s get_out =
             pp_open_box_gen ppf (int_of_size size) kind;
             doprn n (skip_gt i) in
           get_int n i got_size
-        | c -> pp_open_box_gen ppf 0 Pp_box; doprn n i
+        | _c -> pp_open_box_gen ppf 0 Pp_box; doprn n i
 
       and do_pp_open_tag ppf n i =
         if i >= len then begin pp_open_tag ppf ""; doprn n i end else
@@ -1288,7 +1297,7 @@ let mkprintf to_s get_out =
             pp_open_tag ppf tag_name;
             doprn n (skip_gt i) in
           get_tag_name n (succ i) got_name
-        | c -> pp_open_tag ppf ""; doprn n i in
+        | _c -> pp_open_tag ppf ""; doprn n i in
 
       doprn (Sformat.index_of_int 0) 0 in
 

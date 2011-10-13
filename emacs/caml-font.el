@@ -1,3 +1,15 @@
+;(***********************************************************************)
+;(*                                                                     *)
+;(*                                OCaml                                *)
+;(*                                                                     *)
+;(*                Jacques Garrigue and Ian T Zimmerman                 *)
+;(*                                                                     *)
+;(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
+;(*  en Automatique.  All rights reserved.  This file is distributed    *)
+;(*  under the terms of the GNU General Public License.                 *)
+;(*                                                                     *)
+;(***********************************************************************)
+
 ;; caml-font: font-lock support for OCaml files
 ;;
 ;; rewrite and clean-up.
@@ -59,7 +71,7 @@
     . font-lock-builtin-face)
 ;control
    (,(concat "[|#&]\\|->\\|"
-             (regexp-opt '("do" "done" "dowto" "else" "for" "if" "ignore"
+             (regexp-opt '("do" "done" "downto" "else" "for" "if" "ignore"
                            "lazy" "match" "new" "or" "then" "to" "try"
                            "when" "while" "with")
                          'words))

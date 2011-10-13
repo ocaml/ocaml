@@ -131,21 +131,180 @@ module Polymorphic_variants =
   end    
 ;;
 
-module Propagation = 
-  struct
- type _ t = 
-     IntLit : int -> int t
-   | BoolLit : bool -> bool t
+module Propagation = struct
+  type _ t = 
+      IntLit : int -> int t
+    | BoolLit : bool -> bool t
 
-let check : type s. s t -> s = function
-  | IntLit n -> n
-  | BoolLit b -> b
-;;
-let check : type s. s t -> s = fun x ->
-  let r = match x with
-  | IntLit n -> (n : s )
-  | BoolLit b -> b
-  in r
-;;
+  let check : type s. s t -> s = function
+    | IntLit n -> n
+    | BoolLit b -> b
+
+  let check : type s. s t -> s = fun x ->
+    let r = match x with
+    | IntLit n -> (n : s )
+    | BoolLit b -> b
+    in r
 end
 ;;
+
+module Normal_constrs = struct
+  type a = A
+  type b = B
+
+  let f = function A -> 1 | B -> 2
+end;;
+
+type _ t = Int : int t ;;
+
+let ky x y = ignore (x = y); x ;;
+
+let test : type a. a t -> a = fun x ->
+  let r = match x with Int -> ky (1 : a) 1
+  in r
+;;
+let test : type a. a t -> a = fun x ->
+  let r = match x with Int -> ky 1 (1 : a)
+  in r
+;;
+let test : type a. a t -> a = fun x ->
+  let r = match x with Int -> (1 : a)
+  in r (* fails too *)
+;;
+let test : type a. a t -> a = fun x ->
+  let r : a = match x with Int -> 1
+  in r (* ok *)
+;;
+let test2 : type a. a t -> a option = fun x ->
+  let r = ref None in
+  begin match x with Int -> r := Some (1 : a) end;
+  !r (* normalized to int option *)
+;;
+let test2 : type a. a t -> a option = fun x ->
+  let r : a option ref = ref None in
+  begin match x with Int -> r := Some 1 end;
+  !r (* ok *)
+;;
+let test2 : type a. a t -> a option = fun x ->
+  let r : a option ref = ref None in
+  let u = ref None in
+  begin match x with Int -> r := Some 1; u := !r end;
+  !u
+;; (* fail *)
+let test2 : type a. a t -> a option = fun x ->
+  let r : a option ref = ref None in
+  let u = ref None in
+  begin match x with Int -> u := Some 1; r := !u end;
+  !u
+;; (* fail *)
+let test2 : type a. a t -> a option = fun x ->
+  let u = ref None in
+  let r : a option ref = ref None in
+  begin match x with Int -> r := Some 1; u := !r end;
+  !u
+;; (* fail *)
+let test2 : type a. a t -> a option = fun x ->
+  let u = ref None in
+  let a =
+    let r : a option ref = ref None in
+    begin match x with Int -> r := Some 1; u := !r end;
+    !u
+  in a
+;; (* fail *)
+
+(* Effect of external consraints *)
+
+let f (type a) (x : a t) y =
+  ignore (y : a);
+  let r = match x with Int -> (y : a) in (* fails *)
+  r
+;;
+let f (type a) (x : a t) y =
+  let r = match x with Int -> (y : a) in
+  ignore (y : a); (* fails *)
+  r
+;;
+let f (type a) (x : a t) y =
+  ignore (y : a);
+  let r = match x with Int -> y in
+  r
+;;
+let f (type a) (x : a t) y =
+  let r = match x with Int -> y in
+  ignore (y : a);
+  r
+;;
+let f (type a) (x : a t) (y : a) =
+  match x with Int -> y (* should return an int! *)
+;;
+
+(* Pattern matching *)
+
+type 'a t =
+    A of int | B of bool | C of float | D of 'a
+
+type _ ty =
+  | TE : 'a ty -> 'a array ty
+  | TA : int ty
+  | TB : bool ty
+  | TC : float ty
+  | TD : string -> bool ty
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match x, y with
+  | _, A z -> z
+  | _, B z -> if z then 1 else 2
+  | _, C z -> truncate z
+  | TE TC, D [|1.0|] -> 14
+  | TA, D 0 -> -1
+  | TA, D z -> z
+  | TD "bye", D false -> 13
+  | TD "hello", D true -> 12
+ (* | TB, D z -> if z then 1 else 2 *)
+  | TC, D z -> truncate z
+  | _, D _ -> 0
+;;
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match x, y with
+  | _, A z -> z
+  | _, B z -> if z then 1 else 2
+  | _, C z -> truncate z
+  | TE TC, D [|1.0|] -> 14
+  | TA, D 0 -> -1
+  | TA, D z -> z
+;; (* warn *)
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match y, x with
+  | A z, _ -> z
+  | B z, _ -> if z then 1 else 2
+  | C z, _ -> truncate z
+  | D [|1.0|], TE TC -> 14
+  | D 0, TA -> -1
+  | D z, TA -> z
+;; (* fail *)
+
+type ('a,'b) pair = {right:'a; left:'b}
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match {left=x; right=y} with
+  | {left=_; right=A z} -> z
+  | {left=_; right=B z} -> if z then 1 else 2
+  | {left=_; right=C z} -> truncate z
+  | {left=TE TC; right=D [|1.0|]} -> 14
+  | {left=TA; right=D 0} -> -1
+  | {left=TA; right=D z} -> z
+;; (* fail *)
+
+type ('a,'b) pair = {left:'a; right:'b}
+
+let f : type a. a ty -> a t -> int = fun x y ->
+  match {left=x; right=y} with
+  | {left=_; right=A z} -> z
+  | {left=_; right=B z} -> if z then 1 else 2
+  | {left=_; right=C z} -> truncate z
+  | {left=TE TC; right=D [|1.0|]} -> 14
+  | {left=TA; right=D 0} -> -1
+  | {left=TA; right=D z} -> z
+;; (* warn *)

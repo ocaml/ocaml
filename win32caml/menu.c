@@ -1,8 +1,9 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*  Developed by Jacob Navia.                                          */
+/*                                                                     */
 /*  Copyright 2001 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with    */
@@ -396,25 +397,25 @@ void AddLineToControl(char *buf)
 
 /*------------------------------------------------------------------------
  Procedure:     AddStringToControl ID:1
- Author:		Chris Watford watford@uiuc.edu
+ Author:        Chris Watford watford@uiuc.edu
  Purpose:       It will ad the given text at the end of the edit
                 control. This simulates user input. The history will not
-				be modified by this procedure.
+                be modified by this procedure.
  Input:         The text to be added
  Output:        None
  Errors:        If the line is empty, nothing will be done
 --------------------------------------------------------------------------
 Edit History:
-	16 Sept 2003 - Chris Watford watford@uiuc.edu
-		- Basically this is AddLineToControl, but without appending a
-		  newline
+    16 Sept 2003 - Chris Watford watford@uiuc.edu
+        - Basically this is AddLineToControl, but without appending a
+          newline
 ------------------------------------------------------------------------*/
 void AddStringToControl(char* buf)
 {
         HWND hEditCtrl;
 
-		if(buf == NULL)
-			return;
+        if(buf == NULL)
+            return;
 
         if((*buf) == 0)
             return;
@@ -451,10 +452,10 @@ static BOOL CALLBACK AboutDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
  Errors:
 --------------------------------------------------------------------------
 Edit History:
-	15 Sept 2003 - Chris Watford watford@uiuc.edu
-		- Added support for my StatementHistory structure
-		- Added the ability to export it as its exact entry, rather than
-		  just a 1 liner
+    15 Sept 2003 - Chris Watford watford@uiuc.edu
+        - Added support for my StatementHistory structure
+        - Added the ability to export it as its exact entry, rather than
+          just a 1 liner
 ------------------------------------------------------------------------*/
 static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -468,7 +469,7 @@ static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
                         histentry = History; // get our statement history object
                         idx = 0;
 
-						// loop through each history entry adding it to the dialog
+                        // loop through each history entry adding it to the dialog
                         while (histentry != NULL) {
                                 SendDlgItemMessage(hDlg,IDLIST,LB_INSERTSTRING,0,(LPARAM)editbuffer_getasline(histentry->Statement));
                                 SendDlgItemMessage(hDlg,IDLIST,LB_SETITEMDATA,0,(LPARAM)idx);
@@ -515,8 +516,8 @@ static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
                 error box
 --------------------------------------------------------------------------
  Edit History:
-	06 Oct  2003 - Chris Watford watford@uiuc.edu
-		- Corrected wsprintf error
+    06 Oct  2003 - Chris Watford watford@uiuc.edu
+        - Corrected wsprintf error
 ------------------------------------------------------------------------*/
 static void SaveText(char *fname)
 {
@@ -528,8 +529,8 @@ static void SaveText(char *fname)
 
         f = fopen(fname,"wb");
         if (f == NULL)
-		{
-			// corrected error using wsprintf
+        {
+            // corrected error using wsprintf
             wsprintf(buf, "Impossible to open %s for writing", fname);
 
             ShowDbgMsg(buf);
@@ -537,11 +538,11 @@ static void SaveText(char *fname)
         }
 
         for (i = 0; i < linesCount; i++)
-		{
+        {
                 *(unsigned short *)buf = 8100;
                 len = SendMessage(hEdit, EM_GETLINE, i, (LPARAM)buf);
                 buf[len] = '\0';
-				fprintf(f, "%s\r\n", buf+1);
+                fprintf(f, "%s\r\n", buf+1);
                 //fwrite(buf,1,len+2,f);
         }
 
@@ -551,9 +552,9 @@ static void SaveText(char *fname)
 
 /*------------------------------------------------------------------------
  Procedure:     SaveML ID:1
- Author:		Chris Watford watford@uiuc.edu
+ Author:        Chris Watford watford@uiuc.edu
  Purpose:       Saves the ML source to a file, commenting out functions
-				that contained errors
+                that contained errors
  Input:         The name of the file where the session will be saved
  Output:        The session is saved
  Errors:        If it can't open the file for writing it will show an
@@ -567,47 +568,47 @@ static void SaveML(char *fname)
         f = fopen(fname, "wb");
 
         if(f == NULL)
-		{
+        {
                 wsprintf(buf, "Impossible to open %s for writing", fname);
                 ShowDbgMsg(buf);
                 return;
         }
 
-		fprintf(f, "(* %s *)\r\n\r\n", fname);
+        fprintf(f, "(* %s *)\r\n\r\n", fname);
 
-		if(History != NULL)
-		{
-			StatementHistory *h = NULL;
-			EditBuffer *stmt = NULL;
+        if(History != NULL)
+        {
+            StatementHistory *h = NULL;
+            EditBuffer *stmt = NULL;
 
-			// get to the end
-			for(h = History; h->Next != NULL; h = h->Next);
+            // get to the end
+            for(h = History; h->Next != NULL; h = h->Next);
 
-			// go back :(
-			// this is NOT the fastest method, BUT this is the easiest
-			// on the subsystem
-			for(; h != NULL; h = h->Prev)
-			{
-				stmt = h->Statement;
+            // go back :(
+            // this is NOT the fastest method, BUT this is the easiest
+            // on the subsystem
+            for(; h != NULL; h = h->Prev)
+            {
+                stmt = h->Statement;
 
-				if(stmt != NULL)
-				{
-					// comment out incorrect lines
-					if(stmt->isCorrect)
-					{
-						char *buff = editbuffer_getasbuffer(stmt);
-						fprintf(f, "%s\r\n", buff);
-						free(buff);
-					} else {
-						char *buff = editbuffer_getasbuffer(stmt);
-						fprintf(f, "(* Syntax Error or Unbound Value\r\n%s\r\n *)\r\n", buff);
-						free(buff);
-					}
-				}
+                if(stmt != NULL)
+                {
+                    // comment out incorrect lines
+                    if(stmt->isCorrect)
+                    {
+                        char *buff = editbuffer_getasbuffer(stmt);
+                        fprintf(f, "%s\r\n", buff);
+                        free(buff);
+                    } else {
+                        char *buff = editbuffer_getasbuffer(stmt);
+                        fprintf(f, "(* Syntax Error or Unbound Value\r\n%s\r\n *)\r\n", buff);
+                        free(buff);
+                    }
+                }
 
-				fprintf(f, "\r\n");
-			}
-		}
+                fprintf(f, "\r\n");
+            }
+        }
 
         fclose(f);
         free(buf);
@@ -615,15 +616,15 @@ static void SaveML(char *fname)
 
 /*------------------------------------------------------------------------
  Procedure:     Add_Clipboard_To_Queue ID:1
- Author:		Chris Watford watford@uiuc.edu
+ Author:        Chris Watford watford@uiuc.edu
  Purpose:       Adds the clipboard text to the control
  Input:
  Output:
  Errors:
 --------------------------------------------------------------------------
  Edit History:
-	16 Sept 2003 - Chris Watford watford@uiuc.edu
-		- Added method to update edit buffer with paste contents
+    16 Sept 2003 - Chris Watford watford@uiuc.edu
+        - Added method to update edit buffer with paste contents
 ------------------------------------------------------------------------*/
 static void Add_Clipboard_To_Queue(void)
 {
@@ -636,7 +637,7 @@ static void Add_Clipboard_To_Queue(void)
             char *str = GlobalLock(hClipData);
 
             if (str != NULL)
-			{
+            {
                 while ((*str) != 0)
                 {
                     if (*str != '\r')
@@ -645,9 +646,9 @@ static void Add_Clipboard_To_Queue(void)
                     str++;
                 }
 
-				// added to fix odd errors
-				RefreshCurrentEditBuffer();
-			}
+                // added to fix odd errors
+                RefreshCurrentEditBuffer();
+            }
 
             GlobalUnlock(hClipData);
         }
@@ -659,7 +660,7 @@ static void Add_Clipboard_To_Queue(void)
 /*------------------------------------------------------------------------
  Procedure:     CopyToClipboard ID:1
  Purpose:       Copies text to the clipboard
- Input:			Window with the edit control
+ Input:         Window with the edit control
  Output:
  Errors:
 ------------------------------------------------------------------------*/
@@ -673,7 +674,7 @@ static void CopyToClipboard(HWND hwnd)
  Procedure:     ResetText ID:1
  Purpose:       Resets the text? I'm not really sure
  Input:
- Output:		Always returns 0
+ Output:        Always returns 0
  Errors:
 ------------------------------------------------------------------------*/
 int ResetText(void)
@@ -706,10 +707,10 @@ int ResetText(void)
  Errors:
 --------------------------------------------------------------------------
  Edit History:
-	06 Oct  2003 - Chris Watford watford@uiuc.edu
-		- Removed entries that crashed OCaml
-		- Removed useless entries
-		- Added Save ML and Save Transcript
+    06 Oct  2003 - Chris Watford watford@uiuc.edu
+        - Removed entries that crashed OCaml
+        - Removed useless entries
+        - Added Save ML and Save Transcript
 ------------------------------------------------------------------------*/
 void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
 {
@@ -747,7 +748,7 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                         CopyToClipboard(hwnd);
                         break;
 
-				// updated to save a transcript
+                // updated to save a transcript
                 case IDM_SAVEAS:
                         fname = SafeMalloc(512);
                         if (GetSaveName(fname,512)) {
@@ -756,29 +757,29 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                         free(fname);
                         break;
 
-				// updated to save an ML file
-				case IDM_SAVE:
+                // updated to save an ML file
+                case IDM_SAVE:
                         fname = SafeMalloc(512);
                         if (GetSaveMLName(fname,512))
-						{
+                        {
                                 SaveML(fname);
                         }
                         free(fname);
                         break;
 
-				// updated to work with new history system
+                // updated to work with new history system
                 case IDM_HISTORY:
                         r = CallDlgProc(HistoryDlgProc,IDD_HISTORY);
 
                         if (r)
-						{
+                        {
                                 AddLineToControl(GetHistoryLine(r-1));
                         }
                         break;
 
                 case IDM_PRINTSU:
-						// Removed by Chris Watford
-						// seems to die
+                        // Removed by Chris Watford
+                        // seems to die
                         // CallPrintSetup();
                         break;
 
@@ -799,7 +800,7 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                         Undo(hwnd);
                         break;
 
-				/* Removed, really not very useful in this IDE
+                /* Removed, really not very useful in this IDE
                 case IDM_WINDOWTILE:
                         SendMessage(hwndMDIClient,WM_MDITILE,0,0);
                         break;
@@ -809,7 +810,7 @@ void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
                 case IDM_WINDOWICONS:
                         SendMessage(hwndMDIClient,WM_MDIICONARRANGE,0,0);
                         break;
-				*/
+                */
 
                 case IDM_EXIT:
                         PostMessage(hwnd,WM_CLOSE,0,0);

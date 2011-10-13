@@ -78,8 +78,8 @@ gc.cmo: sys.cmi printf.cmi gc.cmi
 gc.cmx: sys.cmx printf.cmx gc.cmi
 genlex.cmo: string.cmi stream.cmi list.cmi hashtbl.cmi char.cmi genlex.cmi
 genlex.cmx: string.cmx stream.cmx list.cmx hashtbl.cmx char.cmx genlex.cmi
-hashtbl.cmo: sys.cmi array.cmi hashtbl.cmi
-hashtbl.cmx: sys.cmx array.cmx hashtbl.cmi
+hashtbl.cmo: sys.cmi random.cmi obj.cmi array.cmi hashtbl.cmi
+hashtbl.cmx: sys.cmx random.cmx obj.cmx array.cmx hashtbl.cmi
 int32.cmo: pervasives.cmi int32.cmi
 int32.cmx: pervasives.cmx int32.cmi
 int64.cmo: pervasives.cmi int64.cmi
@@ -180,8 +180,8 @@ gc.cmo: sys.cmi printf.cmi gc.cmi
 gc.p.cmx: sys.p.cmx printf.p.cmx gc.cmi
 genlex.cmo: string.cmi stream.cmi list.cmi hashtbl.cmi char.cmi genlex.cmi
 genlex.p.cmx: string.p.cmx stream.p.cmx list.p.cmx hashtbl.p.cmx char.p.cmx genlex.cmi
-hashtbl.cmo: sys.cmi array.cmi hashtbl.cmi
-hashtbl.p.cmx: sys.p.cmx array.p.cmx hashtbl.cmi
+hashtbl.cmo: sys.cmi random.cmi obj.cmi array.cmi hashtbl.cmi
+hashtbl.p.cmx: sys.p.cmx random.p.cmx obj.p.cmx array.p.cmx hashtbl.cmi
 int32.cmo: pervasives.cmi int32.cmi
 int32.p.cmx: pervasives.p.cmx int32.cmi
 int64.cmo: pervasives.cmi int64.cmi

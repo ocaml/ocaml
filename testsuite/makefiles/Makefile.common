@@ -19,6 +19,11 @@ DUMPOBJ=$(OCAMLRUN) $(TOPDIR)/tool/dumpobj$(EXE)
 #FORTRAN_COMPILER=
 #FORTRAN_LIBRARY=
 
+defaultpromote:
+	@for file in *.reference; do \
+	  cp `basename $$file reference`result $$file; \
+	done
+
 defaultclean:
 	@rm -f *.cmo *.cmi *.cmx *.cma *.cmxa *.cmxs *.$(O) *.$(SO) *.$(A)
 	@for dsym in *.dSYM; do \

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*   Pierre Weis and Xavier Leroy, projet Cristal, INRIA Rocquencourt  *)
 (*                                                                     *)

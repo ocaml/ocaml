@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -431,13 +431,19 @@ static int compare_channel(value vchan1, value vchan2)
   return (chan1 == chan2) ? 0 : (chan1 < chan2) ? -1 : 1;
 }
 
+static intnat hash_channel(value vchan)
+{
+  return (intnat) (Channel(vchan));
+}
+
 static struct custom_operations channel_operations = {
   "_chan",
   caml_finalize_channel,
   compare_channel,
-  custom_hash_default,
+  hash_channel,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default
 };
 
 CAMLexport value caml_alloc_channel(struct channel *chan)

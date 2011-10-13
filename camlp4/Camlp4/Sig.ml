@@ -1,15 +1,15 @@
 (* camlp4r *)
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -843,7 +843,7 @@ module type Token = sig
   module Error : Error;
 end;
 
-(** This signature describes tokens for the Objective Caml and the Revised
+(** This signature describes tokens for the OCaml and the Revised
     syntax lexing rules. For some tokens the data constructor holds two
     representations with the evaluated one and the source one. For example
     the INT data constructor holds an integer and a string, this string can

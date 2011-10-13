@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -38,7 +38,7 @@ let rec combine i allocstate =
             combine i.next (Pending_alloc(i.res.(0), sz)) in
           (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext, 0)
       | Pending_alloc(reg, ofs) ->
-          if ofs + sz < Config.max_young_wosize then begin
+          if ofs + sz < Config.max_young_wosize * Arch.size_addr then begin
             let (newnext, newsz) =
               combine i.next (Pending_alloc(reg, ofs + sz)) in
             (instr_cons (Iop(Iintop_imm(Iadd, ofs))) [| reg |] i.res newnext,

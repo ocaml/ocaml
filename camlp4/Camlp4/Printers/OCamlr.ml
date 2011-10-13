@@ -1,14 +1,14 @@
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -44,6 +44,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     inherit PP_o.printer ~curry_constr:init_curry_constr ~comments () as super;
 
     value! semisep : sep = ";";
+    value! no_semisep : sep = ";";
     value mode = if comments then `comments else `no_comments;
     value curry_constr = init_curry_constr;
     value first_match_case = True;
@@ -267,7 +268,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:class_expr< virtual $lid:i$ >> ->
           pp f "@[<2>virtual@ %a@]" o#var i
     | <:class_expr< virtual $lid:i$ [ $t$ ] >> ->
-          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i o#ctyp t
+          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i o#class_params t
     | ce -> super#class_expr f ce ];
   end;
 

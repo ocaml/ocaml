@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
@@ -135,7 +135,7 @@ typedef struct { uint32 l, h; } uint64, int64;
 #define Minor_heap_max (1 << 28)
 
 /* Default size of the minor zone. (words)  */
-#define Minor_heap_def 32768
+#define Minor_heap_def 262144
 
 
 /* Minimum size increment when growing the heap (words).

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                             Objective Caml                          */
+/*                                OCaml                                */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
@@ -451,6 +451,11 @@ CAMLprim value caml_thread_cleanup(value unit)   /* ML */
 
 static void caml_thread_stop(void)
 {
+#ifndef NATIVE_CODE
+  /* PR#5188: update curr_thread->stack_low because the stack may have
+     been reallocated since the last time we entered a blocking section */
+  curr_thread->stack_low = stack_low;
+#endif
   /* Signal that the thread has terminated */
   caml_threadstatus_terminate(Terminated(curr_thread->descr));
   /* Remove th from the doubly-linked list of threads and free its info block */
@@ -680,18 +685,23 @@ static void caml_mutex_finalize(value wrapper)
   st_mutex_destroy(Mutex_val(wrapper));
 }
 
-static int caml_mutex_condition_compare(value wrapper1, value wrapper2)
+static int caml_mutex_compare(value wrapper1, value wrapper2)
 {
   st_mutex mut1 = Mutex_val(wrapper1);
   st_mutex mut2 = Mutex_val(wrapper2);
   return mut1 == mut2 ? 0 : mut1 < mut2 ? -1 : 1;
 }
 
+static intnat caml_mutex_hash(value wrapper)
+{
+  return (intnat) (Mutex_val(wrapper));
+}
+
 static struct custom_operations caml_mutex_ops = {
   "_mutex",
   caml_mutex_finalize,
-  caml_mutex_condition_compare,
-  custom_hash_default,
+  caml_mutex_compare,
+  caml_mutex_hash,
   custom_serialize_default,
   custom_deserialize_default
 };
@@ -754,13 +764,26 @@ static void caml_condition_finalize(value wrapper)
   st_condvar_destroy(Condition_val(wrapper));
 }
 
+static int caml_condition_compare(value wrapper1, value wrapper2)
+{
+  st_condvar cond1 = Condition_val(wrapper1);
+  st_condvar cond2 = Condition_val(wrapper2);
+  return cond1 == cond2 ? 0 : cond1 < cond2 ? -1 : 1;
+}
+
+static intnat caml_condition_hash(value wrapper)
+{
+  return (intnat) (Condition_val(wrapper));
+}
+
 static struct custom_operations caml_condition_ops = {
   "_condition",
   caml_condition_finalize,
-  caml_mutex_condition_compare,
-  custom_hash_default,
+  caml_condition_compare,
+  caml_condition_hash,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default
 };
 
 CAMLprim value caml_condition_new(value unit)        /* ML */
@@ -819,7 +842,8 @@ static struct custom_operations caml_threadstatus_ops = {
   custom_compare_default,
   custom_hash_default,
   custom_serialize_default,
-  custom_deserialize_default
+  custom_deserialize_default,
+  custom_compare_ext_default
 };
 
 static value caml_threadstatus_new (void)

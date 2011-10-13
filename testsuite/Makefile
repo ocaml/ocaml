@@ -5,12 +5,13 @@ NO_PRINT=`($(MAKE) empty --no-print-directory > /dev/null 2>&1) && echo '--no-pr
 
 default:
 	@echo "Available targets:"
-	@echo "  all           launches all tests"
-	@echo "  list FILE=f   launches the tests referenced in file f (one path per line)"
-	@echo "  one DIR=p     launches the tests located in path p"
-	@echo "  lib           builds library modules"
-	@echo "  clean         deletes generated files"
-	@echo "  report        prints the report for the last execution, if any"
+	@echo "  all             launches all tests"
+	@echo "  list FILE=f     launches the tests referenced in file f (one path per line)"
+	@echo "  one DIR=p       launches the tests located in path p"
+	@echo "  promote DIR=p   promotes the reference files for the tests located in path p"
+	@echo "  lib             builds library modules"
+	@echo "  clean           deletes generated files"
+	@echo "  report          prints the report for the last execution, if any"
 
 all: lib
 	@for dir in tests/*; do \
@@ -32,23 +33,29 @@ one: lib
 	@$(MAKE) $(NO_PRINT) exec-one DIR=$(DIR)
 
 exec-one:
-	@echo "Running tests from '$$DIR' ..."
-	@(cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) && cd ../..)
+	@if [ ! -f $(DIR)/Makefile ]; then \
+	  for dir in $(DIR)/*; do \
+	    if [ -d $$dir ]; then \
+	      $(MAKE) exec-one DIR=$$dir; \
+	    fi; \
+	  done; \
+        else \
+	  echo "Running tests from '$$DIR' ..."; \
+	  (cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR)); \
+	fi
+
+promote: FORCE
+	@if [ -z $(DIR) ]; then echo "No value set for variable 'DIR'."; exit 1; fi
+	@if [ ! -d $(DIR) ]; then echo "Directory '$(DIR)' does not exist."; exit 1; fi
+	@(cd $(DIR) && $(MAKE) TERM=dumb BASEDIR=$(BASEDIR) promote)
 
 lib: FORCE
-	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR) && cd ..)
+	@(cd lib && $(MAKE) -s BASEDIR=$(BASEDIR))
 
 clean: FORCE
-	@(cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ..)
-	@for file in tests/*; do \
-	  if [ -d $$file ]; then \
-	    (cd $$file && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ../..); \
-	  fi \
-	done
-	@for file in interactive/*; do \
-	  if [ -d $$file ]; then \
-	    (cd $$file && $(MAKE) BASEDIR=$(BASEDIR) clean && cd ../..); \
-	  fi \
+	@(cd lib && $(MAKE) BASEDIR=$(BASEDIR) clean)
+	@for file in `find interactive tests -name Makefile`; do \
+	  (cd `dirname $$file` && $(MAKE) BASEDIR=$(BASEDIR) clean); \
 	done
 
 report: FORCE
@@ -59,6 +66,7 @@ report: FORCE
 	@echo '  ' `grep 'failed$$' _log | wc -l` 'test(s) failed'
 	@echo '  ' `grep '^Error' _log | wc -l` 'compilation error(s)'
 	@echo '  ' `grep '^Warning' _log | wc -l` 'compilation warning(s)'
+	@echo '  ' `grep '^make\[2\]: ' _log | wc -l` 'makefile error(s)'
 
 empty: FORCE
 

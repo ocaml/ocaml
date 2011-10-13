@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*      Damien Doligez and Francois Rouaix, INRIA Rocquencourt         *)
 (*          Ported to Caml Special Light by John Malecki               *)
@@ -152,14 +152,11 @@ let final_rewrite add_function =
   *)
 ;;
 
-
-
 let rec rewrite_patexp_list iflag l =
   rewrite_exp_list iflag (List.map snd l)
 
 and rewrite_patlexp_list iflag l =
-  let thr (a,b,c) = c in
-  rewrite_exp_list iflag (List.map thr l)
+  rewrite_exp_list iflag (List.map snd l)
 
 and rewrite_labelexp_list iflag l =
   rewrite_exp_list iflag (List.map snd l)
@@ -311,12 +308,11 @@ and rewrite_annotate_exp_list l =
     l
 
 and rewrite_function iflag = function
-  | [_,spat, ({pexp_desc = Pexp_function _} as sexp)] -> rewrite_exp iflag sexp
+  | [spat, ({pexp_desc = Pexp_function _} as sexp)] -> rewrite_exp iflag sexp
   | l -> rewrite_funmatching l
 
 and rewrite_funmatching l =
-  let thr (a,b,c) = c in 
-  rewrite_annotate_exp_list (List.map thr l)
+  rewrite_annotate_exp_list (List.map snd l)
 
 and rewrite_trymatching l =
   rewrite_annotate_exp_list (List.map snd l)

@@ -1,6 +1,6 @@
 (*************************************************************************)
 (*                                                                       *)
-(*                Objective Caml LablTk library                          *)
+(*                         OCaml LablTk library                          *)
 (*                                                                       *)
 (*            Jacques Garrigue, Kyoto University RIMS                    *)
 (*                                                                       *)
@@ -254,7 +254,7 @@ let may_exec =
 
 let path_sep = if is_win32 then ";" else ":"
 
-let warnings = ref "Al"
+let warnings = ref Warnings.defaults_w
 
 let program_not_found prog =
   Jg_message.info ~title:"Error"

@@ -5,15 +5,15 @@ module R =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -40,19 +40,19 @@ module R =
         let help_sequences () =
           (Printf.eprintf
              "\
-New syntax:\n\
-    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\n\
-    while e do e1; e2; ... ; en done\n\
-    for v = v1 to/downto v2 do e1; e2; ... ; en done\n\
-Old syntax (still supported):\n\
-    do {e1; e2; ... ; en}\n\
-    while e do {e1; e2; ... ; en}\n\
-    for v = v1 to/downto v2 do {e1; e2; ... ; en}\n\
-Very old (no more supported) syntax:\n\
-    do e1; e2; ... ; en-1; return en\n\
-    while e do e1; e2; ... ; en; done\n\
-    for v = v1 to/downto v2 do e1; e2; ... ; en; done\n\
-  ";
+New syntax:\
+\n    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\
+\n    while e do e1; e2; ... ; en done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en done\
+\nOld syntax (still supported):\
+\n    do {e1; e2; ... ; en}\
+\n    while e do {e1; e2; ... ; en}\
+\n    for v = v1 to/downto v2 do {e1; e2; ... ; en}\
+\nVery old (no more supported) syntax:\
+\n    do e1; e2; ... ; en-1; return en\
+\n    while e do e1; e2; ... ; en; done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en; done\
+\n";
            flush stderr;
            exit 1)
           
@@ -1153,13 +1153,13 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                                 (a_ident : 'a_ident Gram.Entry.t));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (module_type : 'module_type Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (mt : 'module_type) _ (i : 'a_UIDENT) _ _
+                             (fun (mt : 'module_type) _ (i : 'a_ident) _ _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.StMty (_loc, i, mt) : 'str_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "rec";
@@ -1411,7 +1411,16 @@ Very old (no more supported) syntax:\n\
                              (fun _ (sg : 'sig_items) _ (_loc : Gram.Loc.t)
                                 -> (Ast.MtSig (_loc, sg) : 'module_type)))) ]);
                       ((Some "simple"), None,
-                       [ ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
+                       [ ([ Gram.Skeyword "module"; Gram.Skeyword "type";
+                            Gram.Skeyword "of";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (module_expr : 'module_expr Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (me : 'module_expr) _ _ _
+                                (_loc : Gram.Loc.t) ->
+                                (Ast.MtOf (_loc, me) : 'module_type))));
+                         ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (mt : 'module_type) _ (_loc : Gram.Loc.t)
                                 -> (mt : 'module_type))));
@@ -1516,21 +1525,21 @@ Very old (no more supported) syntax:\n\
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
+                                 (a_ident : 'a_ident Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (i : 'a_UIDENT) _ _ (_loc : Gram.Loc.t) ->
+                             (fun (i : 'a_ident) _ _ (_loc : Gram.Loc.t) ->
                                 (Ast.SgMty (_loc, i, (Ast.MtNil _loc)) :
                                   'sig_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                                 (a_ident : 'a_ident Gram.Entry.t));
                             Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (module_type : 'module_type Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (mt : 'module_type) _ (i : 'a_UIDENT) _ _
+                             (fun (mt : 'module_type) _ (i : 'a_ident) _ _
                                 (_loc : Gram.Loc.t) ->
                                 (Ast.SgMty (_loc, i, mt) : 'sig_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "rec";
@@ -7005,8 +7014,9 @@ Very old (no more supported) syntax:\n\
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj (label : 'label Gram.Entry.t));
                             Gram.Skeyword "=";
-                            Gram.Snterm
-                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                            Gram.Snterml
+                              ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
+                              "top") ],
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (l : 'label)
                                 (_loc : Gram.Loc.t) ->
@@ -8707,10 +8717,9 @@ Very old (no more supported) syntax:\n\
                              (fun (x : 'type_parameter) (_loc : Gram.Loc.t)
                                 -> (x : 'more_ctyp))));
                          ([ Gram.Snterm
-                              (Gram.Entry.obj
-                                 (type_kind : 'type_kind Gram.Entry.t)) ],
+                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (x : 'type_kind) (_loc : Gram.Loc.t) ->
+                             (fun (x : 'ctyp) (_loc : Gram.Loc.t) ->
                                 (x : 'more_ctyp))));
                          ([ Gram.Skeyword "`";
                             Gram.Snterm
@@ -9398,15 +9407,15 @@ module Camlp4QuotationCommon =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -9470,7 +9479,6 @@ module Camlp4QuotationCommon =
         let antiquot_expander =
           object
             inherit Ast.map as super
-              
             method patt =
               function
               | (Ast.PaAnt (_loc, s) | Ast.PaStr (_loc, s) as p) ->
@@ -9635,7 +9643,6 @@ module Camlp4QuotationCommon =
                                p)
                          | _ -> p)
               | p -> super#patt p
-              
             method expr =
               function
               | (Ast.ExAnt (_loc, s) | Ast.ExStr (_loc, s) as e) ->
@@ -9674,7 +9681,11 @@ module Camlp4QuotationCommon =
                          | "`flo" ->
                              Ast.ExApp (_loc,
                                (Ast.ExId (_loc,
-                                  (Ast.IdLid (_loc, "string_of_float")))),
+                                  (Ast.IdAcc (_loc,
+                                     (Ast.IdUid (_loc, "Camlp4_import")),
+                                     (Ast.IdAcc (_loc,
+                                        (Ast.IdUid (_loc, "Oprint")),
+                                        (Ast.IdLid (_loc, "float_repres")))))))),
                                e)
                          | "`str" ->
                              Ast.ExApp (_loc,
@@ -10031,7 +10042,6 @@ module Camlp4QuotationCommon =
                                e)
                          | _ -> e)
               | e -> super#expr e
-              
           end
           
         let add_quotation name entry mexpr mpatt =
@@ -10192,15 +10202,15 @@ module Q =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -10234,15 +10244,15 @@ module Rp =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright 1998-2006 Institut National de Recherche en Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -11177,15 +11187,15 @@ module G =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -12024,12 +12034,10 @@ module G =
           
         class subst gmod =
           object inherit Ast.map as super
-                   
             method ident =
               function
               | Ast.IdUid (_, x) when x = gm -> gmod
               | x -> super#ident x
-              
           end
           
         let subst_gmod ast gmod = (new subst gmod)#expr ast
@@ -12083,13 +12091,11 @@ module G =
         let wildcarder =
           object (self)
             inherit Ast.map as super
-              
             method patt =
               function
               | Ast.PaId (_loc, (Ast.IdLid (_, _))) -> Ast.PaAny _loc
               | Ast.PaAli (_, p, _) -> self#patt p
               | p -> super#patt p
-              
           end
           
         let mk_tok _loc p t =
@@ -13636,15 +13642,15 @@ module M =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -13777,14 +13783,11 @@ Added statements:
           in loop
           
         class reloc _loc =
-          object inherit Ast.map as super
-                    method loc = fun _ -> _loc
-                       end
+          object inherit Ast.map as super method loc = fun _ -> _loc end
           
         (* method _Loc_t _ = _loc; *)
         class subst _loc env =
           object inherit reloc _loc as super
-                   
             method expr =
               function
               | (Ast.ExId (_, (Ast.IdLid (_, x))) |
@@ -13792,7 +13795,6 @@ Added statements:
                  as e) ->
                   (try List.assoc x env with | Not_found -> super#expr e)
               | e -> super#expr e
-              
             method patt =
               function
               | (Ast.PaId (_, (Ast.IdLid (_, x))) |
@@ -13801,7 +13803,6 @@ Added statements:
                   (try substp _loc [] (List.assoc x env)
                    with | Not_found -> super#patt p)
               | p -> super#patt p
-              
           end
           
         let incorrect_number loc l1 l2 =
@@ -14659,6 +14660,112 @@ Added statements:
                              (fun (i : Gram.Token.t) (_loc : Gram.Loc.t) ->
                                 (let i = Gram.Token.extract_string i in i :
                                   'uident)))) ]) ]))
+                  ());
+             Gram.extend
+               (* dirty hack to allow polymorphic variants using the introduced keywords. *)
+               (expr : 'expr Gram.Entry.t)
+               ((fun () ->
+                   ((Some (Camlp4.Sig.Grammar.Before "simple")),
+                    [ (None, None,
+                       [ ([ Gram.Skeyword "`";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_ident : 'a_ident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (s : 'a_ident) _ (_loc : Gram.Loc.t) ->
+                                (Ast.ExVrn (_loc, s) : 'expr))));
+                         ([ Gram.Skeyword "`";
+                            Gram.srules expr
+                              [ ([ Gram.Skeyword "IN" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30))));
+                                ([ Gram.Skeyword "DEFINE" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30))));
+                                ([ Gram.Skeyword "ENDIF" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30))));
+                                ([ Gram.Skeyword "END" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30))));
+                                ([ Gram.Skeyword "ELSE" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30))));
+                                ([ Gram.Skeyword "THEN" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30))));
+                                ([ Gram.Skeyword "IFNDEF" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30))));
+                                ([ Gram.Skeyword "IFDEF" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__30)))) ] ],
+                          (Gram.Action.mk
+                             (fun (kwd : 'e__30) _ (_loc : Gram.Loc.t) ->
+                                (Ast.ExVrn (_loc, kwd) : 'expr)))) ]) ]))
+                  ());
+             Gram.extend (* idem *) (patt : 'patt Gram.Entry.t)
+               ((fun () ->
+                   ((Some (Camlp4.Sig.Grammar.Before "simple")),
+                    [ (None, None,
+                       [ ([ Gram.Skeyword "`";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_ident : 'a_ident Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (s : 'a_ident) _ (_loc : Gram.Loc.t) ->
+                                (Ast.PaVrn (_loc, s) : 'patt))));
+                         ([ Gram.Skeyword "`";
+                            Gram.srules patt
+                              [ ([ Gram.Skeyword "ENDIF" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__31))));
+                                ([ Gram.Skeyword "END" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__31))));
+                                ([ Gram.Skeyword "ELSE" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__31))));
+                                ([ Gram.Skeyword "THEN" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__31))));
+                                ([ Gram.Skeyword "IFNDEF" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__31))));
+                                ([ Gram.Skeyword "IFDEF" ],
+                                 (Gram.Action.mk
+                                    (fun (x : Gram.Token.t)
+                                       (_loc : Gram.Loc.t) ->
+                                       (Gram.Token.extract_string x : 'e__31)))) ] ],
+                          (Gram.Action.mk
+                             (fun (kwd : 'e__31) _ (_loc : Gram.Loc.t) ->
+                                (Ast.PaVrn (_loc, kwd) : 'patt)))) ]) ]))
                   ()))
           
         let _ =
@@ -14708,15 +14815,15 @@ module D =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -14901,15 +15008,15 @@ module L =
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright  2007  Institut  National  de  Recherche en Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -14918,7 +15025,7 @@ module L =
  *)
     module Id =
       struct
-        let name = "Camlp4ListComprenhsion"
+        let name = "Camlp4ListComprehension"
           
         let version = Sys.ocaml_version
           
@@ -15200,12 +15307,12 @@ module L =
                                       Gram.Skeyword "<-" ],
                                     (Gram.Action.mk
                                        (fun _ (p : 'patt) (_loc : Gram.Loc.t)
-                                          -> (p : 'e__30)))) ]);
+                                          -> (p : 'e__32)))) ]);
                             Gram.Snterml
                               ((Gram.Entry.obj (expr : 'expr Gram.Entry.t)),
                               "top") ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) (p : 'e__30)
+                             (fun (e : 'expr) (p : 'e__32)
                                 (_loc : Gram.Loc.t) ->
                                 (`gen ((p, e)) : 'item)))) ]) ]))
                   ()))
@@ -15275,15 +15382,15 @@ module P =
   struct
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -15298,15 +15405,15 @@ module B =
     (* camlp4r *)
     (****************************************************************************)
     (*                                                                          *)
-    (*                              Objective Caml                              *)
+    (*                                   OCaml                                  *)
     (*                                                                          *)
     (*                            INRIA Rocquencourt                            *)
     (*                                                                          *)
     (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
     (*  en Automatique.  All rights reserved.  This file is distributed under   *)
     (*  the terms of the GNU Library General Public License, with the special   *)
-    (*  exception on linking described in LICENSE at the top of the Objective   *)
-    (*  Caml source tree.                                                       *)
+    (*  exception on linking described in LICENSE at the top of the OCaml       *)
+    (*  source tree.                                                            *)
     (*                                                                          *)
     (****************************************************************************)
     (* Authors:
@@ -15395,7 +15502,7 @@ module B =
           | (("Parsers" | ""),
              ("pa_rp.cmo" | "rp" | "rparser" |
                 "camlp4ocamlrevisedparserparser.cmo"))
-              -> load [ pa_r; pa_o; pa_rp ]
+              -> load [ pa_r; pa_rp ]
           | (("Parsers" | ""),
              ("pa_op.cmo" | "op" | "parser" | "camlp4ocamlparserparser.cmo"))
               -> load [ pa_r; pa_o; pa_rp; pa_op ]
@@ -15419,7 +15526,7 @@ module B =
               load [ pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_l; pa_m ]
           | (("Parsers" | ""), "of") ->
               load
-                [ pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_l; pa_m ]
+                [ pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_q; pa_g; pa_l; pa_m ]
           | (("Parsers" | ""), ("comp" | "camlp4listcomprehension.cmo")) ->
               load [ pa_l ]
           | (("Filters" | ""), ("lift" | "camlp4astlifter.cmo")) ->
@@ -15428,7 +15535,8 @@ module B =
               load [ "Camlp4ExceptionTracer" ]
           | (("Filters" | ""), ("prof" | "camlp4profiler.cmo")) ->
               load [ "Camlp4Profiler" ]
-          | (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
+          | (* map is now an alias of fold since fold handles map too *)
+              (("Filters" | ""), ("map" | "camlp4mapgenerator.cmo")) ->
               load [ "Camlp4FoldGenerator" ]
           | (("Filters" | ""), ("fold" | "camlp4foldgenerator.cmo")) ->
               load [ "Camlp4FoldGenerator" ]
@@ -15456,7 +15564,6 @@ module B =
               in real_load (try find_in_path y with | Not_found -> x));
          !rcall_callback ())
       
-    (* map is now an alias of fold since fold handles map too *)
     let print_warning = eprintf "%a:\n%s@." Loc.print
       
     let rec parse_file dyn_loader name pa getdir =
@@ -15532,17 +15639,17 @@ Options:\n\
 <file>.%s Load this module inside the Camlp4 core@."
          (if DynLoader.is_native then "cmxs     " else "(cmo|cma)");
        Options.print_usage_list ini_sl;
+       (* loop (ini_sl @ ext_sl) where rec loop =
+      fun
+      [ [(y, _, _) :: _] when y = "-help" -> ()
+      | [_ :: sl] -> loop sl
+      | [] -> eprintf "  -help         Display this list of options.@." ];    *)
        if ext_sl <> []
        then
          (eprintf "Options added by loaded object files:@.";
           Options.print_usage_list ext_sl)
        else ())
       
-    (* loop (ini_sl @ ext_sl) where rec loop =
-      fun
-      [ [(y, _, _) :: _] when y = "-help" -> ()
-      | [_ :: sl] -> loop sl
-      | [] -> eprintf "  -help         Display this list of options.@." ];    *)
     let warn_noassert () =
       eprintf
         "\

@@ -255,7 +255,8 @@ lockf.o: lockf.c ../../byterun/fail.h ../../byterun/compatibility.h \
 lseek.o: lseek.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
-  ../../byterun/mlvalues.h ../../byterun/io.h unixsupport.h
+  ../../byterun/mlvalues.h ../../byterun/io.h ../../byterun/signals.h \
+  unixsupport.h
 mkdir.o: mkdir.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
   ../../byterun/../config/s.h ../../byterun/misc.h unixsupport.h

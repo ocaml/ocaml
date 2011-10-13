@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -326,12 +326,32 @@ CAMLprim value caml_ceil_float(value f)
   return caml_copy_double(ceil(Double_val(f)));
 }
 
+CAMLexport double caml_hypot(double x, double y)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return hypot(x, y);
+#else
+  double tmp, ratio;
+  if (x != x) return x;  /* NaN */
+  if (y != y) return y;  /* NaN */
+  x = fabs(x); y = fabs(y);
+  if (x < y) { tmp = x; x = y; y = tmp; }
+  if (x == 0.0) return 0.0;
+  ratio = y / x;
+  return x * sqrt(1.0 + ratio * ratio);
+#endif
+}
+
+CAMLprim value caml_hypot_float(value f, value g)
+{
+  return caml_copy_double(caml_hypot(Double_val(f), Double_val(g)));
+}
+
 /* These emulations of expm1() and log1p() are due to William Kahan.
    See http://www.plunk.org/~hatch/rightway.php */
-
 CAMLexport double caml_expm1(double x)
 {
-#ifdef HAS_EXPM1_LOG1P
+#ifdef HAS_C99_FLOAT_OPS
   return expm1(x);
 #else
   double u = exp(x);
@@ -345,7 +365,7 @@ CAMLexport double caml_expm1(double x)
 
 CAMLexport double caml_log1p(double x)
 {
-#ifdef HAS_EXPM1_LOG1P
+#ifdef HAS_C99_FLOAT_OPS
   return log1p(x);
 #else
   double u = 1. + x;
@@ -364,6 +384,34 @@ CAMLprim value caml_expm1_float(value f)
 CAMLprim value caml_log1p_float(value f)
 {
   return caml_copy_double(caml_log1p(Double_val(f)));
+}
+
+union double_as_two_int32 {
+    double d;
+#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
+    struct { uint32 h; uint32 l; } i;
+#else
+    struct { uint32 l; uint32 h; } i;
+#endif
+};
+
+CAMLexport double caml_copysign(double x, double y)
+{
+#ifdef HAS_C99_FLOAT_OPS
+  return copysign(x, y);
+#else
+  union double_as_two_int32 ux, uy;
+  ux.d = x;
+  uy.d = y;
+  ux.i.h &= 0x7FFFFFFFU;
+  ux.i.h |= (uy.i.h & 0x80000000U);
+  return ux.d;
+#endif
+}
+
+CAMLprim value caml_copysign_float(value f, value g)
+{
+  return caml_copy_double(caml_copysign(Double_val(f), Double_val(g)));
 }
 
 CAMLprim value caml_eq_float(value f, value g)
@@ -429,14 +477,7 @@ CAMLprim value caml_classify_float(value vd)
     return Val_int(FP_normal);
   }
 #else
-  union {
-    double d;
-#if defined(ARCH_BIG_ENDIAN) || (defined(__arm__) && !defined(__ARM_EABI__))
-    struct { uint32 h; uint32 l; } i;
-#else
-    struct { uint32 l; uint32 h; } i;
-#endif
-  } u;
+  union double_as_two_int32 u;
   uint32 h, l;
 
   u.d = Double_val(vd);

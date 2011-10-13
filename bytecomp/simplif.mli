@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -12,8 +12,15 @@
 
 (* $Id$ *)
 
-(* Elimination of useless Llet(Alias) bindings *)
+(* Elimination of useless Llet(Alias) bindings.
+   Transformation of let-bound references into variables.
+   Simplification over staticraise/staticcatch constructs.
+   Generation of tail-call annotations if -annot is set. *)
 
 open Lambda
 
 val simplify_lambda: lambda -> lambda
+
+(* To be filled by asmcomp/selectgen.ml *)
+val is_tail_native_heuristic: (int -> bool) ref
+                          (* # arguments -> can tailcall *)

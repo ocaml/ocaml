@@ -39,6 +39,7 @@ let analyse_merge_options s =
     (M.merge_version, [Odoc_types.Merge_version]) ;
     (M.merge_see, [Odoc_types.Merge_see]) ;
     (M.merge_since, [Odoc_types.Merge_since]) ;
+    (M.merge_before, [Odoc_types.Merge_before]) ;
     (M.merge_deprecated, [Odoc_types.Merge_deprecated]) ;
     (M.merge_param, [Odoc_types.Merge_param]) ;
     (M.merge_raised_exception, [Odoc_types.Merge_raised_exception]) ;
@@ -83,7 +84,7 @@ let add_hidden_modules s =
 let set_generator (g : Odoc_gen.generator) = current_generator := Some g
 
 (** The default option list *)
-let options = ref [
+let default_options = [
   "-version", Arg.Unit (fun () -> print_string M.message_version ; print_newline () ; exit 0) , M.option_version ;
   "-vnum", Arg.Unit (fun () -> print_string M.config_version ;
                                print_newline () ; exit 0) , M.option_version ;
@@ -155,7 +156,8 @@ let options = ref [
   "-css-style", Arg.String (fun s -> Odoc_html.css_style := Some s), M.css_style ;
   "-index-only", Arg.Set Odoc_html.index_only, M.index_only ;
   "-colorize-code", Arg.Set Odoc_html.colorize_code, M.colorize_code ;
-  "-short-functors", Arg.Set Odoc_html.html_short_functors, M.html_short_functors ^
+  "-short-functors", Arg.Set Odoc_html.html_short_functors, M.html_short_functors ;
+  "-charset", Arg.Set_string Odoc_html.charset, (M.charset !Odoc_html.charset)^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)
@@ -206,7 +208,34 @@ let options = ref [
 
 ]
 
+let options = ref default_options
+
+let modified_options () =
+  !options != default_options
+
+let append_last_doc suffix =
+  match List.rev !options with
+  | (key, spec, doc) :: tl ->
+      options := List.rev ((key, spec, doc ^ suffix) :: tl)
+  | [] -> ()
+
+(** The help option list, overriding the default ones from the Arg module *)
+let help_options = ref []
+let help_action () =
+  let msg =
+    Arg.usage_string
+      (!options @ !help_options)
+      (M.usage ^ M.options_are) in 
+  print_string msg
+let () =
+  help_options := [
+    "-help", Arg.Unit help_action, M.help ;
+    "--help", Arg.Unit help_action, M.help
+]
+
 let add_option o =
+  if not (modified_options ()) then
+    append_last_doc "\n *** custom generator options ***\n";
   let (s,_,_) = o in
   let rec iter = function
       [] -> [o]
@@ -234,7 +263,9 @@ let parse () =
     in
     Odoc_global.files := !Odoc_global.files @ [sf]
   in
-  let _ = Arg.parse !options
+  if modified_options () then append_last_doc "\n";
+  let options = !options @ !help_options in
+  let _ = Arg.parse options
       anonymous
       (M.usage^M.options_are)
   in

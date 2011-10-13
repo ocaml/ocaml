@@ -1,14 +1,14 @@
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -92,7 +92,7 @@ module ObjTools = struct
       | x when x = Obj.string_tag ->
               "\"" ^ String.escaped (Obj.magic r : string) ^ "\""
       | x when x = Obj.double_tag ->
-              string_of_float (Obj.magic r : float)
+              Camlp4_import.Oprint.float_repres (Obj.magic r : float)
       | x when x = Obj.abstract_tag ->
               opaque "abstract"
       | x when x = Obj.custom_tag ->

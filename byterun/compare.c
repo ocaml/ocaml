@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -104,18 +104,44 @@ static intnat compare_val(value v1, value v2, int total)
       if (Is_long(v2))
         return Long_val(v1) - Long_val(v2);
       /* Subtraction above cannot overflow and cannot result in UNORDERED */
-      if (Is_in_value_area(v2) &&
-          Tag_val(v2) == Forward_tag) {
-        v2 = Forward_val(v2);
-        continue;
+      if (Is_in_value_area(v2)) {
+        switch (Tag_val(v2)) {
+        case Forward_tag: 
+          v2 = Forward_val(v2);
+          continue;
+        case Custom_tag: {
+          int res;
+          int (*compare)(value v1, value v2) = Custom_ops_val(v2)->compare_ext;
+          if (compare == NULL) break;  /* for backward compatibility */
+          caml_compare_unordered = 0;
+          res = compare(v1, v2);
+          if (caml_compare_unordered && !total) return UNORDERED;
+          if (res != 0) return res;
+          goto next_item;
+        }
+        default: /*fallthrough*/;
+        }
       }
       return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
-      if (Is_in_value_area(v1) &&
-          Tag_val(v1) == Forward_tag) {
-        v1 = Forward_val(v1);
-        continue;
+      if (Is_in_value_area(v1)) {
+        switch (Tag_val(v1)) {
+        case Forward_tag:
+          v1 = Forward_val(v1);
+          continue;
+        case Custom_tag: {
+          int res;
+          int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare_ext;
+          if (compare == NULL) break;  /* for backward compatibility */
+          caml_compare_unordered = 0;
+          res = compare(v1, v2);
+          if (caml_compare_unordered && !total) return UNORDERED;
+          if (res != 0) return res;
+          goto next_item;
+        }
+        default: /*fallthrough*/;
+        }
       }
       return GREATER;            /* v1 block > v2 long */
     }
@@ -134,17 +160,14 @@ static intnat compare_val(value v1, value v2, int total)
     if (t1 != t2) return (intnat)t1 - (intnat)t2;
     switch(t1) {
     case String_tag: {
-      mlsize_t len1, len2, len;
-      unsigned char * p1, * p2;
+      mlsize_t len1, len2;
+      int res;
       if (v1 == v2) break;
       len1 = caml_string_length(v1);
       len2 = caml_string_length(v2);
-      for (len = (len1 <= len2 ? len1 : len2),
-             p1 = (unsigned char *) String_val(v1),
-             p2 = (unsigned char *) String_val(v2);
-           len > 0;
-           len--, p1++, p2++)
-        if (*p1 != *p2) return (intnat)*p1 - (intnat)*p2;
+      res = memcmp(String_val(v1), String_val(v2), len1 <= len2 ? len1 : len2);
+      if (res < 0) return LESS;
+      if (res > 0) return GREATER;
       if (len1 != len2) return len1 - len2;
       break;
     }
@@ -198,12 +221,18 @@ static intnat compare_val(value v1, value v2, int total)
     case Custom_tag: {
       int res;
       int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
+      /* Hardening against comparisons between different types */
+      if (compare != Custom_ops_val(v2)->compare) {
+        return strcmp(Custom_ops_val(v1)->identifier,
+                      Custom_ops_val(v2)->identifier) < 0
+               ? LESS : GREATER;
+      }
       if (compare == NULL) {
         compare_free_stack();
         caml_invalid_argument("equal: abstract value");
       }
       caml_compare_unordered = 0;
-      res = Custom_ops_val(v1)->compare(v1, v2);
+      res = compare(v1, v2);
       if (caml_compare_unordered && !total) return UNORDERED;
       if (res != 0) return res;
       break;

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -420,6 +420,7 @@ let transl_comparison = function
 
 (* Translate structured constants *)
 
+(* Fabrice: moved to compilenv.ml ----
 let const_label = ref 0
 
 let new_const_label () =
@@ -431,6 +432,7 @@ let new_const_symbol () =
   Compilenv.make_symbol (Some (string_of_int !const_label))
 
 let structured_constants = ref ([] : (string * structured_constant) list)
+*)
 
 let transl_constant = function
     Const_base(Const_int n) ->
@@ -443,9 +445,7 @@ let transl_constant = function
       else Cconst_natpointer
               (Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n)
   | cst ->
-      let lbl = new_const_symbol() in
-      structured_constants := (lbl, cst) :: !structured_constants;
-      Cconst_symbol lbl
+      Cconst_symbol (Compilenv.new_structured_constant cst false)
 
 (* Translate constant closures *)
 
@@ -580,32 +580,34 @@ let bigarray_word_kind = function
   | Pbigarray_complex64 -> Double
 
 let bigarray_get unsafe elt_kind layout b args dbg =
-  match elt_kind with
-    Pbigarray_complex32 | Pbigarray_complex64 ->
-      let kind = bigarray_word_kind elt_kind in
-      let sz = bigarray_elt_size elt_kind / 2 in
-      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
-        box_complex
-          (Cop(Cload kind, [addr]))
-          (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
-  | _ ->
-      Cop(Cload (bigarray_word_kind elt_kind),
-          [bigarray_indexing unsafe elt_kind layout b args dbg])
+  bind "ba" b (fun b ->
+    match elt_kind with
+      Pbigarray_complex32 | Pbigarray_complex64 ->
+        let kind = bigarray_word_kind elt_kind in
+        let sz = bigarray_elt_size elt_kind / 2 in
+        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+          box_complex
+            (Cop(Cload kind, [addr]))
+            (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
+    | _ ->
+        Cop(Cload (bigarray_word_kind elt_kind),
+            [bigarray_indexing unsafe elt_kind layout b args dbg]))
 
 let bigarray_set unsafe elt_kind layout b args newval dbg =
-  match elt_kind with
-    Pbigarray_complex32 | Pbigarray_complex64 ->
-      let kind = bigarray_word_kind elt_kind in
-      let sz = bigarray_elt_size elt_kind / 2 in
-      bind "newval" newval (fun newv ->
-      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
-        Csequence(
-          Cop(Cstore kind, [addr; complex_re newv]),
-          Cop(Cstore kind,
-              [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
-  | _ ->
-      Cop(Cstore (bigarray_word_kind elt_kind),
-          [bigarray_indexing unsafe elt_kind layout b args dbg; newval])
+  bind "ba" b (fun b ->
+    match elt_kind with
+      Pbigarray_complex32 | Pbigarray_complex64 ->
+        let kind = bigarray_word_kind elt_kind in
+        let sz = bigarray_elt_size elt_kind / 2 in
+        bind "newval" newval (fun newv ->
+        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+          Csequence(
+            Cop(Cstore kind, [addr; complex_re newv]),
+            Cop(Cstore kind,
+                [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
+    | _ ->
+        Cop(Cstore (bigarray_word_kind elt_kind),
+            [bigarray_indexing unsafe elt_kind layout b args dbg; newval]))
 
 (* Simplification of some primitives into C calls *)
 
@@ -724,7 +726,7 @@ type unboxed_number_kind =
   | Boxed_integer of boxed_integer
 
 let is_unboxed_number = function
-    Uconst(Const_base(Const_float f)) ->
+    Uconst(Const_base(Const_float f), _) ->
       Boxed_float
   | Uprim(p, _, _) ->
       begin match simplif_primitive p with
@@ -800,10 +802,12 @@ let functions = (Queue.create() : (string * Ident.t list * ulambda) Queue.t)
 let rec transl = function
     Uvar id ->
       Cvar id
-  | Uconst sc ->
+  | Uconst (sc, Some const_label) ->
+      Cconst_symbol const_label
+  | Uconst (sc, None) ->
       transl_constant sc
   | Uclosure(fundecls, []) ->
-      let lbl = new_const_symbol() in
+      let lbl = Compilenv.new_const_symbol() in
       constant_closures := (lbl, fundecls) :: !constant_closures;
       List.iter
         (fun (label, arity, params, body) ->
@@ -1068,7 +1072,7 @@ and transl_prim_1 p arg dbg =
       if no_overflow_lsl n then
         add_const (transl arg) (n lsl 1)
       else
-        transl_prim_2 Paddint arg (Uconst (Const_base(Const_int n))) Debuginfo.none
+        transl_prim_2 Paddint arg (Uconst (Const_base(Const_int n), None)) Debuginfo.none
   | Poffsetref n ->
       return_unit
         (bind "ref" (transl arg) (fun arg ->
@@ -1366,17 +1370,17 @@ and transl_prim_3 p arg1 arg2 arg3 dbg =
     fatal_error "Cmmgen.transl_prim_3"
 
 and transl_unbox_float = function
-    Uconst(Const_base(Const_float f)) -> Cconst_float f
+    Uconst(Const_base(Const_float f), _) -> Cconst_float f
   | exp -> unbox_float(transl exp)
 
 and transl_unbox_int bi = function
-    Uconst(Const_base(Const_int32 n)) ->
+    Uconst(Const_base(Const_int32 n), _) ->
       Cconst_natint (Nativeint.of_int32 n)
-  | Uconst(Const_base(Const_nativeint n)) ->
+  | Uconst(Const_base(Const_nativeint n), _) ->
       Cconst_natint n
-  | Uconst(Const_base(Const_int64 n)) ->
+  | Uconst(Const_base(Const_int64 n), _) ->
       assert (size_int = 8); Cconst_natint (Int64.to_nativeint n)
-  | Uprim(Pbintofint bi', [Uconst(Const_base(Const_int i))], _) when bi = bi' ->
+  | Uprim(Pbintofint bi', [Uconst(Const_base(Const_int i),_)], _) when bi = bi' ->
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
@@ -1409,8 +1413,8 @@ and make_catch2 mk_body handler = match handler with
 
 and exit_if_true cond nfail otherwise =
   match cond with
-  | Uconst (Const_pointer 0) -> otherwise
-  | Uconst (Const_pointer 1) -> Cexit (nfail,[])
+  | Uconst (Const_pointer 0, _) -> otherwise
+  | Uconst (Const_pointer 1, _) -> Cexit (nfail,[])
   | Uprim(Psequor, [arg1; arg2], _) ->
       exit_if_true arg1 nfail (exit_if_true arg2 nfail otherwise)
   | Uprim(Psequand, _, _) ->
@@ -1439,8 +1443,8 @@ and exit_if_true cond nfail otherwise =
 
 and exit_if_false cond otherwise nfail =
   match cond with
-  | Uconst (Const_pointer 0) -> Cexit (nfail,[])
-  | Uconst (Const_pointer 1) -> otherwise
+  | Uconst (Const_pointer 0, _) -> Cexit (nfail,[])
+  | Uconst (Const_pointer 1, _) -> otherwise
   | Uprim(Psequand, [arg1; arg2], _) ->
       exit_if_false arg1 (exit_if_false arg2 otherwise nfail) nfail
   | Uprim(Psequor, _, _) ->
@@ -1599,11 +1603,11 @@ and emit_constant_field field cont =
   | Const_base(Const_char c) ->
       (Cint(Nativeint.of_int(((Char.code c) lsl 1) + 1)), cont)
   | Const_base(Const_float s) ->
-      let lbl = new_const_label() in
+      let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(float_header) :: Cdefine_label lbl :: Cdouble s :: cont)
   | Const_base(Const_string s) ->
-      let lbl = new_const_label() in
+      let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(string_header (String.length s)) :: Cdefine_label lbl ::
        emit_string_constant s cont)
@@ -1611,24 +1615,24 @@ and emit_constant_field field cont =
       begin try
         (Clabel_address (Hashtbl.find immstrings s), cont)
       with Not_found ->
-        let lbl = new_const_label() in
+        let lbl = Compilenv.new_const_label() in
         Hashtbl.add immstrings s lbl;
         (Clabel_address lbl,
          Cint(string_header (String.length s)) :: Cdefine_label lbl ::
          emit_string_constant s cont)
       end
   | Const_base(Const_int32 n) ->
-      let lbl = new_const_label() in
+      let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(boxedint32_header) :: Cdefine_label lbl ::
        emit_boxed_int32_constant n cont)
   | Const_base(Const_int64 n) ->
-      let lbl = new_const_label() in
+      let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(boxedint64_header) :: Cdefine_label lbl ::
        emit_boxed_int64_constant n cont)
   | Const_base(Const_nativeint n) ->
-      let lbl = new_const_label() in
+      let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(boxedintnat_header) :: Cdefine_label lbl ::
        emit_boxed_nativeint_constant n cont)
@@ -1636,13 +1640,13 @@ and emit_constant_field field cont =
       (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n),
        cont)
   | Const_block(tag, fields) ->
-      let lbl = new_const_label() in
+      let lbl = Compilenv.new_const_label() in
       let (emit_fields, cont1) = emit_constant_fields fields cont in
       (Clabel_address lbl,
        Cint(block_header tag (List.length fields)) :: Cdefine_label lbl ::
        emit_fields @ cont1)
   | Const_float_array(fields) ->
-      let lbl = new_const_label() in
+      let lbl = Compilenv.new_const_label() in
       (Clabel_address lbl,
        Cint(floatarray_header (List.length fields)) :: Cdefine_label lbl ::
        Misc.map_end (fun f -> Cdouble f) fields cont)
@@ -1710,9 +1714,14 @@ let emit_constant_closure symb fundecls cont =
 let emit_all_constants cont =
   let c = ref cont in
   List.iter
-    (fun (lbl, cst) -> c := Cdata(emit_constant lbl cst []) :: !c)
-    !structured_constants;
-  structured_constants := [];
+    (fun (lbl, global, cst) -> 
+       let cst = emit_constant lbl cst [] in
+       let cst = if global then 
+	 Cglobal_symbol lbl :: cst
+       else cst in
+	 c:= Cdata(cst):: !c)
+    (Compilenv.structured_constants());
+(*  structured_constants := []; done in Compilenv.reset() *)
   Hashtbl.clear immstrings;   (* PR#3979 *)
   List.iter
     (fun (symb, fundecls) ->
@@ -1889,18 +1898,25 @@ let tuplify_function arity =
 
 (* Generate currying functions:
       (defun caml_curryN (arg clos)
-         (alloc HDR caml_curryN_1 arg clos))
+         (alloc HDR caml_curryN_1 <arity (N-1)> caml_curry_N_1_app arg clos))
       (defun caml_curryN_1 (arg clos)
-         (alloc HDR caml_curryN_2 arg clos))
+         (alloc HDR caml_curryN_2 <arity (N-2)> caml_curry_N_2_app arg clos))
       ...
       (defun caml_curryN_N-1 (arg clos)
-         (let (closN-2 clos.cdr
-               closN-3 closN-2.cdr
+         (let (closN-2 clos.vars[1]
+               closN-3 closN-2.vars[1]
                ...
-               clos1 clos2.cdr
-               clos clos1.cdr)
+               clos1 clos2.vars[1]
+               clos clos1.vars[1])
            (app clos.direct
-                clos1.car clos2.car ... closN-2.car clos.car arg clos))) *)
+                clos1.vars[0] ... closN-2.vars[0] clos.vars[0] arg clos)))
+    Special "shortcut" functions are also generated to handle the
+    case where a partially applied function is applied to all remaining
+    arguments in one go.  For instance:
+      (defun caml_curry_N_1_app (arg2 ... argN clos)
+        (let clos' clos.vars[1]
+           (app clos'.direct clos.vars[0] arg2 ... argN clos')))
+*)
 
 let final_curry_function arity =
   let last_arg = Ident.create "arg" in
@@ -1910,11 +1926,19 @@ let final_curry_function arity =
       Cop(Capply(typ_addr, Debuginfo.none),
           get_field (Cvar clos) 2 ::
           args @ [Cvar last_arg; Cvar clos])
-    else begin
+    else
+      if n = arity - 1 then
+	begin
       let newclos = Ident.create "clos" in
       Clet(newclos,
            get_field (Cvar clos) 3,
            curry_fun (get_field (Cvar clos) 2 :: args) newclos (n-1))
+	end else
+	begin
+	  let newclos = Ident.create "clos" in
+	  Clet(newclos,
+               get_field (Cvar clos) 4,
+               curry_fun (get_field (Cvar clos) 3 :: args) newclos (n-1))
     end in
   Cfunction
    {fun_name = "caml_curry" ^ string_of_int arity ^
@@ -1933,12 +1957,50 @@ let rec intermediate_curry_functions arity num =
     Cfunction
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];
-      fun_body = Cop(Calloc,
+      fun_body =
+	 if arity - num > 2 then
+	   Cop(Calloc,
+               [alloc_closure_header 5;
+                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
+                int_const (arity - num - 1);
+                Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1) ^ "_app");
+		Cvar arg; Cvar clos])
+	 else
+	   Cop(Calloc,
                      [alloc_closure_header 4;
                       Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                       int_const 1; Cvar arg; Cvar clos]);
       fun_fast = true}
-    :: intermediate_curry_functions arity (num+1)
+    ::
+      (if arity - num > 2 then
+	  let rec iter i =
+	    if i <= arity then
+	      let arg = Ident.create (Printf.sprintf "arg%d" i) in
+	      (arg, typ_addr) :: iter (i+1)
+	    else []
+	  in
+	  let direct_args = iter (num+2) in
+	  let rec iter i args clos =
+	    if i = 0 then
+	      Cop(Capply(typ_addr, Debuginfo.none),
+		  (get_field (Cvar clos) 2) :: args @ [Cvar clos])
+	    else
+	      let newclos = Ident.create "clos" in
+	      Clet(newclos,
+		   get_field (Cvar clos) 4,
+		   iter (i-1) (get_field (Cvar clos) 3 :: args) newclos)
+	  in
+	  let cf =
+	    Cfunction
+	      {fun_name = name1 ^ "_" ^ string_of_int (num+1) ^ "_app";
+	       fun_args = direct_args @ [clos, typ_addr];
+	       fun_body = iter (num+1)
+		  (List.map (fun (arg,_) -> Cvar arg) direct_args) clos;
+	       fun_fast = true}
+	  in
+	  cf :: intermediate_curry_functions arity (num+1)
+       else
+	  intermediate_curry_functions arity (num+1))
   end
 
 let curry_function arity =

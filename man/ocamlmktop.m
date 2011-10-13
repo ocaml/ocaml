@@ -1,4 +1,17 @@
-\" $Id$
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1999 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLMKTOP 1
 
 .SH NAME
@@ -29,7 +42,7 @@ ocamlmktop \- Building custom toplevel systems
 
 The
 .BR ocamlmktop (1)
-command builds Objective Caml toplevels that
+command builds OCaml toplevels that
 contain user code preloaded at start-up.
 The
 .BR ocamlmktop (1)
@@ -37,8 +50,8 @@ command takes as argument a set of
 .IR x .cmo
 and
 .IR x .cma
-files, and links them with the object files that implement the Objective
-Caml toplevel.  If the
+files, and links them with the object files that implement the
+OCaml toplevel.  If the
 .B \-custom
 flag is given, C object files and libraries (.o and .a files) can also
 be given on the command line and are linked in the resulting toplevel.

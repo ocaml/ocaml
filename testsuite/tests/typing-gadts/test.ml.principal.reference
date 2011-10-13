@@ -4,15 +4,15 @@
     type 'a t =
         IntLit : int -> int t
       | BoolLit : bool -> bool t
-      | Pair : 'b t * 'c t -> ('b * 'c) t
-      | App : ('e -> 'd) t * 'e t -> 'd t
-      | Abs : ('f -> 'g) -> ('f -> 'g) t
+      | Pair : 'a t * 'b t -> ('a * 'b) t
+      | App : ('a -> 'b) t * 'a t -> 'b t
+      | Abs : ('a -> 'b) -> ('a -> 'b) t
     val eval : 'a t -> 'a
   end
 #                                     module List :
   sig
     type zero
-    type 'a t = Nil : zero t | Cons : 'b * 'c t -> ('b * 'c) t
+    type 'a t = Nil : zero t | Cons : 'a * 'b t -> ('a * 'b) t
     val head : ('a * 'b) t -> 'a
     val tail : ('a * 'b) t -> 'b t
     val length : 'a t -> int
@@ -55,8 +55,7 @@ Error: This expression has type &x7 t but an expression was expected of type
 #                       Characters 157-158:
   	  C ->
      ^
-Error: This pattern matches values of type (s, s) t
-       but a pattern was expected which matches values of type (s, s * s) t
+Error: Recursive local constraint when unifying (s, s) t with (s, s * s) t
 #                         Characters 174-182:
   	| (IntLit _ | BoolLit _) -> ()
       ^^^^^^^^
@@ -67,8 +66,109 @@ Error: This pattern matches values of type int t
      ^^^^^^^^^^^^^
 Error: This pattern matches values of type ([? `A ] as 'a) * bool t
        but a pattern was expected which matches values of type 'a * int t
-#                                     Characters 288-289:
-    | BoolLit b -> b
-                   ^
-Error: This expression has type bool but an expression was expected of type s
+#                                 Characters 300-301:
+      | BoolLit b -> b
+                     ^
+Error: This expression has type bool but an expression was expected of type
+         int
+#             Characters 87-88:
+    let f = function A -> 1 | B -> 2
+                              ^
+Error: This pattern matches values of type b
+       but a pattern was expected which matches values of type a
+#   type 'a t = Int : int t
+#   val ky : 'a -> 'a -> 'a = <fun>
+#         Characters 88-89:
+    in r
+       ^
+Error: This expression has type int but an expression was expected of type a
+#       Characters 87-88:
+    in r
+       ^
+Error: This expression has type int but an expression was expected of type a
+#       Characters 82-83:
+    in r (* fails too *)
+       ^
+Error: This expression has type int but an expression was expected of type a
+#       val test : 'a t -> 'a = <fun>
+#         Characters 122-124:
+    !r (* normalized to int option *)
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#         val test2 : 'a t -> 'a option = <fun>
+#           Characters 162-164:
+    !u
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#           Characters 162-164:
+    !u
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#           Characters 162-164:
+    !u
+    ^^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#               Characters 186-187:
+    in a
+       ^
+Error: This expression has type int option
+       but an expression was expected of type a option
+#               Characters 116-117:
+    let r = match x with Int -> (y : a) in (* fails *)
+                                 ^
+Error: This expression has type a but an expression was expected of type int
+#         Characters 80-81:
+    ignore (y : a); (* fails *)
+            ^
+Error: This expression has type int but an expression was expected of type a
+#         val f : 'a t -> 'a -> 'a = <fun>
+#         val f : 'a t -> 'a -> 'a = <fun>
+#     val f : 'a t -> 'a -> int = <fun>
+#                                                     type 'a t = A of int | B of bool | C of float | D of 'a
+type 'a ty =
+    TE : 'a ty -> 'a array ty
+  | TA : int ty
+  | TB : bool ty
+  | TC : float ty
+  | TD : string -> bool ty
+val f : 'a ty -> 'a t -> int = <fun>
+#                   Characters 51-202:
+  ..match x, y with
+    | _, A z -> z
+    | _, B z -> if z then 1 else 2
+    | _, C z -> truncate z
+    | TE TC, D [|1.0|] -> 14
+    | TA, D 0 -> -1
+    | TA, D z -> z
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+(TE TC, D [|  |])
+val f : 'a ty -> 'a t -> int = <fun>
+#                   Characters 147-154:
+    | D [|1.0|], TE TC -> 14
+        ^^^^^^^
+Error: This pattern matches values of type 'a array
+       but a pattern was expected which matches values of type a
+#                       Characters 259-266:
+    | {left=TE TC; right=D [|1.0|]} -> 14
+                           ^^^^^^^
+Error: This pattern matches values of type 'a array
+       but a pattern was expected which matches values of type a
+#                       Characters 92-334:
+  ..match {left=x; right=y} with
+    | {left=_; right=A z} -> z
+    | {left=_; right=B z} -> if z then 1 else 2
+    | {left=_; right=C z} -> truncate z
+    | {left=TE TC; right=D [|1.0|]} -> 14
+    | {left=TA; right=D 0} -> -1
+    | {left=TA; right=D z} -> z
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+{left=TE TA; right=D [| _ |]}
+type ('a, 'b) pair = { left : 'a; right : 'b; }
+val f : 'a ty -> 'a t -> int = <fun>
 # 

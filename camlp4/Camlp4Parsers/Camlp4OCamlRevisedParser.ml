@@ -1,15 +1,15 @@
 open Camlp4;                                        (* -*- camlp4r -*- *)
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -33,19 +33,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value help_sequences () =
     do {
       Printf.eprintf "\
-New syntax:\n\
-    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\n\
-    while e do e1; e2; ... ; en done\n\
-    for v = v1 to/downto v2 do e1; e2; ... ; en done\n\
-Old syntax (still supported):\n\
-    do {e1; e2; ... ; en}\n\
-    while e do {e1; e2; ... ; en}\n\
-    for v = v1 to/downto v2 do {e1; e2; ... ; en}\n\
-Very old (no more supported) syntax:\n\
-    do e1; e2; ... ; en-1; return en\n\
-    while e do e1; e2; ... ; en; done\n\
-    for v = v1 to/downto v2 do e1; e2; ... ; en; done\n\
-  ";
+New syntax:\
+\n    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\
+\n    while e do e1; e2; ... ; en done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en done\
+\nOld syntax (still supported):\
+\n    do {e1; e2; ... ; en}\
+\n    while e do {e1; e2; ... ; en}\
+\n    for v = v1 to/downto v2 do {e1; e2; ... ; en}\
+\nVery old (no more supported) syntax:\
+\n    do e1; e2; ... ; en-1; return en\
+\n    while e do e1; e2; ... ; en; done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en; done\
+\n";
       flush stderr;
       exit 1
     }
@@ -462,7 +462,7 @@ Very old (no more supported) syntax:\n\
             <:str_item< module $i$ = $mb$ >>
         | "module"; "rec"; mb = module_binding ->
             <:str_item< module rec $mb$ >>
-        | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
+        | "module"; "type"; i = a_ident; "="; mt = module_type ->
             <:str_item< module type $i$ = $mt$ >>
         | "open"; i = module_longident -> <:str_item< open $i$ >>
         | "type"; td = type_declaration ->
@@ -520,7 +520,9 @@ Very old (no more supported) syntax:\n\
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.module_type_tag
         | i = module_longident_with_app -> <:module_type< $id:i$ >>
         | "'"; i = a_ident -> <:module_type< ' $i$ >>
-        | "("; mt = SELF; ")" -> <:module_type< $mt$ >> ] ]
+        | "("; mt = SELF; ")" -> <:module_type< $mt$ >>
+        | "module"; "type"; "of"; me = module_expr ->
+            <:module_type< module type of $me$ >> ] ]
     ;
     sig_item:
       [ "top"
@@ -536,9 +538,9 @@ Very old (no more supported) syntax:\n\
             <:sig_item< module $i$ : $mt$ >>
         | "module"; "rec"; mb = module_rec_declaration ->
             <:sig_item< module rec $mb$ >>
-        | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
+        | "module"; "type"; i = a_ident; "="; mt = module_type ->
             <:sig_item< module type $i$ = $mt$ >>
-        | "module"; "type"; i = a_UIDENT ->
+        | "module"; "type"; i = a_ident ->
             <:sig_item< module type $i$ >>
         | "open"; i = module_longident -> <:sig_item< open $i$ >>
         | "type"; t = type_declaration ->
@@ -1479,7 +1481,7 @@ Very old (no more supported) syntax:\n\
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
-        | l = label; "="; e = expr -> <:rec_binding< $lid:l$ = $e$ >> ] ]
+        | l = label; "="; e = expr LEVEL "top" -> <:rec_binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
       [ [ m = meth_decl; ";"; (ml, v) = SELF  -> (<:ctyp< $m$; $ml$ >>, v)
@@ -1774,7 +1776,7 @@ Very old (no more supported) syntax:\n\
     more_ctyp:
       [ [ "mutable"; x = SELF -> <:ctyp< mutable $x$ >>
         | "`"; x = a_ident -> <:ctyp< `$x$ >>
-        | x = type_kind -> x
+        | x = ctyp -> x
         | x = type_parameter -> x
       ] ]
     ;

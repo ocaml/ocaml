@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*           Damien Doligez, projet Cristal, INRIA Rocquencourt        *)
 (*                                                                     *)
@@ -106,7 +106,7 @@ and structure_item ppf tbl s =
   | Pstr_open _ -> ()
   | Pstr_class cdl -> List.iter (class_declaration ppf tbl) cdl;
   | Pstr_class_type _ -> ()
-  | Pstr_include _ -> ()
+  | Pstr_include me -> module_expr ppf tbl me;
 
 and expression ppf tbl e =
   match e.pexp_desc with
@@ -120,13 +120,13 @@ and expression ppf tbl e =
       let_pel ppf tbl recflag pel (Some (fun ppf tbl -> expression ppf tbl e));
   | Pexp_function (_, eo, pel) ->
       expression_option ppf tbl eo;
-      newtype_match_pel ppf tbl pel;
+      match_pel ppf tbl pel;
   | Pexp_apply (e, lel) ->
       expression ppf tbl e;
       List.iter (fun (_, e) -> expression ppf tbl e) lel;
   | Pexp_match (e, pel) ->
       expression ppf tbl e;
-      newtype_match_pel ppf tbl pel;
+      match_pel ppf tbl pel;
   | Pexp_try (e, pel) ->
       expression ppf tbl e;
       match_pel ppf tbl pel;
@@ -210,17 +210,11 @@ and let_pel ppf tbl recflag pel body =
 and match_pel ppf tbl pel =
   List.iter (match_pe ppf tbl) pel
 
-and newtype_match_pel ppf tbl pel =
-  List.iter (newtype_match_pe ppf tbl) pel
-
 and match_pe ppf tbl (p, e) =
  let defined = get_vars ([], []) p in
   add_vars tbl defined;
   expression ppf tbl e;
   check_rm_vars ppf tbl defined;
-
-and newtype_match_pe ppf tbl (_,p, e) =
-  match_pe ppf tbl (p,e)
 
 and module_expr ppf tbl me =
   match me.pmod_desc with

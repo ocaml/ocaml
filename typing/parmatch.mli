@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -53,13 +53,10 @@ val complete_constrs :
 val pressure_variants: Env.t -> pattern list -> unit
 val check_partial: Location.t -> (pattern * expression) list -> partial
 val check_partial_gadt: 
-    ((string,Types.constructor_description) Hashtbl.t -> 
-      (string,Types.label_description) Hashtbl.t -> 
-	Parsetree.pattern -> 
-	  Typedtree.pattern option) -> 
-    Location.t -> 
-    (pattern * expression) list -> 
-    partial
+    ((string,constructor_description) Hashtbl.t -> 
+     (string,label_description) Hashtbl.t ->
+     Parsetree.pattern -> pattern option) -> 
+    Location.t -> (pattern * expression) list -> partial
 val check_unused: Env.t -> (pattern * expression) list -> unit
 
 (* Irrefutability tests *)

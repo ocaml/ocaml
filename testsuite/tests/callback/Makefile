@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 CC=$(NATIVECC) -I $(TOPDIR)/byterun
 
 default: run-byte run-opt
@@ -20,8 +22,10 @@ run-opt: common
 	@./program > native.result
 	@diff -q reference native.result || (echo " => failed" && exit 1) 
 	@echo " => passed"
+	
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result ./program
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

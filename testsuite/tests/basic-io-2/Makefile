@@ -1,6 +1,7 @@
+BASEDIR=../..
 #MODULES=
 MAIN_MODULE=io
 EXEC_ARGS=io.ml
 
-include ../../makefiles/Makefile.one
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -50,10 +50,6 @@
 #include "signals.h"
 #include "stacks.h"
 #include "sys.h"
-
-#ifndef _WIN32
-extern int errno;
-#endif
 
 static char * error_message(void)
 {
@@ -138,12 +134,14 @@ CAMLprim value caml_sys_open(value path, value vflags, value vperm)
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
   fd = open(p, flags, perm);
+  /* fcntl on a fd can block (PR#5069)*/
+#if defined(F_SETFD) && defined(FD_CLOEXEC)
+  if (fd != -1)
+    fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (fd == -1) caml_sys_error(path);
-#if defined(F_SETFD) && defined(FD_CLOEXEC)
-  fcntl(fd, F_SETFD, FD_CLOEXEC);
-#endif
   CAMLreturn(Val_long(fd));
 }
 

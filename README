@@ -1,17 +1,17 @@
 OVERVIEW:
 
-Objective Caml is an implementation of the ML language, based on
-the Caml Light dialect extended with a complete class-based object system
-and a powerful module system in the style of Standard ML.
+OCaml is an implementation of the ML language, based on the Caml Light
+dialect extended with a complete class-based object system and a
+powerful module system in the style of Standard ML.
 
-Objective Caml comprises two compilers. One generates bytecode
-which is then interpreted by a C program. This compiler runs quickly,
-generates compact code with moderate memory requirements, and is
-portable to essentially any 32 or 64 bit Unix platform. Performance of
-generated programs is quite good for a bytecoded implementation.
-This compiler can be used either as a standalone, batch-oriented
-compiler that produces standalone programs, or as an interactive,
-toplevel-based system.
+OCaml comprises two compilers. One generates bytecode which is then
+interpreted by a C program. This compiler runs quickly, generates
+compact code with moderate memory requirements, and is portable to
+essentially any 32 or 64 bit Unix platform. Performance of generated
+programs is quite good for a bytecoded implementation.  This compiler
+can be used either as a standalone, batch-oriented compiler that
+produces standalone programs, or as an interactive, toplevel-based
+system.
 
 The other compiler generates high-performance native code for a number
 of processors. Compilation takes longer and generates bigger code, but
@@ -21,7 +21,7 @@ native-code compiler currently runs on the following platforms:
 
 Tier 1 (actively used and maintained by the core Caml team):
 
-    AMD64 (Opteron)    Linux
+    AMD64 (Opteron)    Linux, MacOS X, MS Windows
     IA32 (Pentium)     Linux, FreeBSD, MacOS X, MS Windows
     PowerPC            MacOS X
 
@@ -40,10 +40,10 @@ Tier 2 (maintained when possible, with help from users):
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
 
-Before the introduction of objects, Objective Caml was known as Caml
-Special Light. Objective Caml is almost upwards compatible with Caml
-Special Light, except for a few additional reserved keywords that have
-forced some renaming of standard library functions.
+Before the introduction of objects, OCaml was known as Caml Special
+Light. OCaml is almost upwards compatible with Caml Special Light,
+except for a few additional reserved keywords that have forced some
+renaming of standard library functions.
 
 CONTENTS:
 
@@ -89,14 +89,14 @@ MacOS X machines.  For MS Windows, see README.win32.
 
 DOCUMENTATION:
 
-The Objective Caml manual is distributed in HTML, PDF, Postscript,
-DVI, and Emacs Info files.  It is available on the World Wide Web, at
+The OCaml manual is distributed in HTML, PDF, Postscript, DVI, and
+Emacs Info files.  It is available on the World Wide Web, at
 
         http://caml.inria.fr/
 
 AVAILABILITY:
 
-The complete Objective Caml distribution can be accessed at
+The complete OCaml distribution can be accessed at
 
         http://caml.inria.fr/
 

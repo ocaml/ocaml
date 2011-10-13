@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -42,13 +42,15 @@ COMPILECMD=(progn \
 install:
 	@if test "$(EMACSDIR)" = ""; then \
 	  set xxx `($(EMACS) --batch --eval "(mapcar 'print load-path)") \
-	           2>/dev/null | \
-	           sed -n -e '/\/site-lisp/s/"//gp'`; \
-	  if test "$$2" = ""; then \
-	    echo "Cannot determine Emacs site-lisp directory"; \
-	    exit 2; \
-	  fi; \
+				2>/dev/null | \
+	           sed -n -e 's/^"\(.*\/site-lisp\).*/\1/gp' | \
+		   sort -u`; \
+	  if test "$$2" = "" -o "$$3" != ""; then \
+	    echo "Cannot determine Emacs site-lisp directory:"; \
+            shift; while test "$$1" != ""; do echo "\t$$1"; shift; done; \
+	  else \
 	  $(MAKE) EMACSDIR="$$2" simple-install; \
+	  fi; \
 	else \
 	  $(MAKE) simple-install; \
 	fi
@@ -72,5 +74,9 @@ ocamltags:	ocamltags.in
 install-ocamltags: ocamltags
 	cp ocamltags $(SCRIPTDIR)/ocamltags
 
+# This is for testing purposes
+compile-only:
+	$(EMACS) --batch --eval '$(COMPILECMD)'
+
 clean:
-	rm -f ocamltags *~ #*#
+	rm -f ocamltags *~ #*# *.elc

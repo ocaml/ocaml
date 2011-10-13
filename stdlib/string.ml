@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -183,4 +183,4 @@ let rcontains_from s i c =
 
 type t = string
 
-let compare = Pervasives.compare
+let compare (x: t) (y: t) = Pervasives.compare x y

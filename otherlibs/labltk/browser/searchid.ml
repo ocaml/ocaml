@@ -1,6 +1,6 @@
 (*************************************************************************)
 (*                                                                       *)
-(*                Objective Caml LablTk library                          *)
+(*                         OCaml LablTk library                          *)
 (*                                                                       *)
 (*            Jacques Garrigue, Kyoto University RIMS                    *)
 (*                                                                       *)
@@ -101,7 +101,7 @@ let rec all_args ty =
 
 let rec equal ~prefix t1 t2 =
   match (repr t1).desc, (repr t2).desc with
-    Tvar, Tvar -> true
+    Tvar _, Tvar _ -> true
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       let fields1 = filter_row_fields false row1.row_fields
@@ -144,7 +144,7 @@ let get_options = List.filter ~f:is_opt
 
 let rec included ~prefix t1 t2 =
   match (repr t1).desc, (repr t2).desc with
-    Tvar, _ -> true
+    Tvar _, _ -> true
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       let fields1 = filter_row_fields false row1.row_fields

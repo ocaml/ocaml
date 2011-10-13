@@ -1,3 +1,4 @@
+BASEDIR=../..
 SHOULD_FAIL=t060-raise.ml
 
 compile: lib.cmo
@@ -10,7 +11,9 @@ compile: lib.cmo
 	  fi; \
 	done
 
+promote:
+
 clean: defaultclean
 	@rm -f ./a.out
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

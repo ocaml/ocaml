@@ -1,8 +1,21 @@
-\" $Id$
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLYACC 1
 
 .SH NAME
-ocamlyacc \- The Objective Caml parser generator
+ocamlyacc \- The OCaml parser generator
 
 .SH SYNOPSIS
 .B ocamlyacc
@@ -30,7 +43,7 @@ Assuming the input file is
 .IR grammar \&.mly,
 running
 .B ocamlyacc
-produces Caml code for a parser in the file
+produces OCaml code for a parser in the file
 .IR grammar \&.ml,
 and its interface in file
 .IR grammar \&.mli.
@@ -91,5 +104,5 @@ command line.
 .SH SEE ALSO
 .BR ocamllex (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Lexer and parser generators".

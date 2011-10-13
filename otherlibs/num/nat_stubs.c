@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -18,6 +18,7 @@
 #include "custom.h"
 #include "intext.h"
 #include "fail.h"
+#include "hash.h"
 #include "memory.h"
 #include "mlvalues.h"
 
@@ -26,6 +27,7 @@
 
 /* Stub code for the Nat module. */
 
+static intnat hash_nat(value);
 static void serialize_nat(value, uintnat *, uintnat *);
 static uintnat deserialize_nat(void * dst);
 
@@ -33,9 +35,10 @@ static struct custom_operations nat_operations = {
   "_nat",
   custom_finalize_default,
   custom_compare_default,
-  custom_hash_default,
+  hash_nat,
   serialize_nat,
-  deserialize_nat
+  deserialize_nat,
+  custom_compare_ext_default
 };
 
 CAMLprim value initialize_nat(value unit)
@@ -389,3 +392,28 @@ static uintnat deserialize_nat(void * dst)
 #endif
   return len * 4;
 }
+
+static intnat hash_nat(value v)
+{
+  bngsize len, i;
+  uint32 h;
+
+  len = bng_num_digits(&Digit_val(v,0), Wosize_val(v) - 1);
+  h = 0;
+  for (i = 0; i < len; i++) {
+    bngdigit d = Digit_val(v, i);
+#ifdef ARCH_SIXTYFOUR
+    /* Mix the two 32-bit halves as if we were on a 32-bit platform,
+       namely low 32 bits first, then high 32 bits.
+       Also, ignore final 32 bits if they are zero. */
+    h = caml_hash_mix_uint32(h, (uint32) d);
+    d = d >> 32;
+    if (d == 0 && i + 1 == len) break;
+    h = caml_hash_mix_uint32(h, (uint32) d);
+#else
+    h = caml_hash_mix_uint32(h, d);
+#endif
+  }
+  return h;
+}
+

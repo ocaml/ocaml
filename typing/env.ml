@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -56,6 +56,7 @@ type t = {
   cltypes: (Path.t * cltype_declaration) Ident.tbl;
   summary: summary;
   local_constraints: bool;
+  level_map: (int * int) list;
 }
 
 and module_components = module_components_repr Lazy.t
@@ -95,7 +96,7 @@ let empty = {
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty; 
-  summary = Env_empty; local_constraints = false; }
+  summary = Env_empty; local_constraints = false; level_map = [] }
 
 let diff_keys is_local tbl1 tbl2 =
   let keys2 = Ident.keys tbl2 in
@@ -279,9 +280,15 @@ and find_cltype =
 (* Find the manifest type associated to a type when appropriate:
    - the type should be public or should have a private row,
    - the type should have an associated manifest type. *)
-let find_type_expansion ?(use_local=true) path env =
+let find_type_expansion ?(use_local=true) ?level path env =
   let decl = find_type path env in
   if not use_local && not (decl.type_newtype_level = None) then raise Not_found;
+  (* the level is changed when updating newtype definitions *)
+  if !Clflags.principal then begin
+    match level, decl.type_newtype_level with
+      Some level, Some def_level when level < def_level -> raise Not_found
+    | _ -> ()
+  end;
   match decl.type_manifest with
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract
@@ -445,6 +452,33 @@ and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
+
+(* Level handling *)
+
+(* The level map is a list of pairs describing separate segments (lv,lv'),
+   lv < lv', organized in decreasing order.
+   The definition level is obtained by mapping a level in a segment to the
+   high limit of this segment.
+   The definition level of a newtype should be greater or equal to
+   the highest level of the newtypes in its manifest type.
+ *)
+
+let rec map_level lv = function
+  | [] -> lv
+  | (lv1, lv2) :: rem ->
+      if lv > lv2 then lv else
+      if lv >= lv1 then lv2 else map_level lv rem
+
+let map_newtype_level env lv = map_level lv env.level_map
+
+(* precondition: lv < lv' *)
+let rec add_level lv lv' = function
+  | [] -> [lv, lv']
+  | (lv1, lv2) :: rem as l ->
+      if lv2 < lv then (lv, lv') :: l else
+      if lv' < lv1 then (lv1, lv2) :: add_level lv lv' rem
+      else add_level (max lv lv1) (min lv' lv2) rem      
+
 
 (* Expand manifest module type names at the top of the given module type *)
 
@@ -739,9 +773,15 @@ and add_class id ty env =
 and add_cltype id ty env =
   store_cltype id (Pident id) ty env
 
-let add_local_constraint id info env =
-  let env = add_type id info env in 
-  { env with local_constraints = true }
+let add_local_constraint id info mlv env =
+  match info with
+    {type_manifest = Some ty; type_newtype_level = Some lv} ->
+      (* use the newtype level for this definition, lv is the old one *)
+      let env = add_type id {info with type_newtype_level = Some mlv} env in
+      let level_map =
+        if lv < mlv then add_level lv mlv env.level_map else env.level_map in
+      { env with local_constraints = true; level_map = level_map }
+  | _ -> assert false
 
 (* Insertion of bindings by name *)
 
@@ -898,4 +938,4 @@ let report_error ppf = function
   | Need_recursive_types(import, export) ->
       fprintf ppf
         "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
-        import export "The compilation flag -rectypes is required"
+        export import "The compilation flag -rectypes is required"

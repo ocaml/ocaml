@@ -1,11 +1,12 @@
 (***********************************************************************)
-(*                           OCamldoc                                  *)
+(*                             OCamldoc                                *)
 (*                                                                     *)
 (*      Olivier Andrieu, base sur du code de Maxence Guesdon           *)
 (*                                                                     *)
 (*  Copyright 2001 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
 (***********************************************************************)
 
 (* $Id$ *)
@@ -22,7 +23,7 @@ open Module
 
 let esc_8bits = ref false
 
-let info_section = ref "Objective Caml"
+let info_section = ref "OCaml"
 
 let info_entry = ref []
 
@@ -671,11 +672,13 @@ class texi =
                   (List.map
                      (fun constr ->
                        (Raw ("  | " ^ constr.vc_name)) ::
-                       (Raw (self#string_of_type_args constr.vc_args constr.vc_ret)) ::
+                       (Raw (self#string_of_type_args
+                               constr.vc_args constr.vc_ret)) ::
                        (match constr.vc_text with
                        | None -> [ Newline ]
                        | Some t ->
-                           ((Raw (indent 5 "\n(* ")) :: (self#soft_fix_linebreaks 8 t)) @
+                           (Raw (indent 5 "\n(* ") ::
+                            self#soft_fix_linebreaks 8 t) @
                            [ Raw " *)" ; Newline ]
                        ) ) l ) )
            | Type_record l ->

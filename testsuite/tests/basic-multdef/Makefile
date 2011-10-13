@@ -1,5 +1,6 @@
+BASEDIR=../..
 MODULES=multdef
 MAIN_MODULE=usemultdef
 
-include ../../makefiles/Makefile.one
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.one
+include $(BASEDIR)/makefiles/Makefile.common

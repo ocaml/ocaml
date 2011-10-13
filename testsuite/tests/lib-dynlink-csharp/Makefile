@@ -1,3 +1,4 @@
+BASEDIR=../..
 CSC=csc
 
 default: prepare bytecode bytecode-dll native native-dll
@@ -52,7 +53,9 @@ native-dll:
 	  diff -q native.reference native.result > /dev/null && echo " => passed" || echo " => failed"; \
 	fi
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f *.result *.exe *.dll
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -973,13 +973,13 @@ expr:
       { mkexp(Pexp_letmodule($3, $4, $6)) }
   | LET OPEN mod_longident IN seq_expr
       { mkexp(Pexp_open($3, $5)) }
-  | FUNCTION opt_bar newtype_match_cases
+  | FUNCTION opt_bar match_cases
       { mkexp(Pexp_function("", None, List.rev $3)) }
   | FUN labeled_simple_pattern fun_def
-      { let (l,o,p) = $2 in mkexp(Pexp_function(l, o, [[],p, $3])) }
+      { let (l,o,p) = $2 in mkexp(Pexp_function(l, o, [p, $3])) }
   | FUN LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp(Pexp_newtype($4, $6)) }
-  | MATCH seq_expr WITH opt_bar newtype_match_cases
+  | MATCH seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_match($2, List.rev $5)) }
   | TRY seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_try($2, List.rev $5)) }
@@ -1219,7 +1219,7 @@ strict_binding:
     EQUAL seq_expr
       { $2 }
   | labeled_simple_pattern fun_binding
-      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [[],p, $2])) }
+      { let (l, o, p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
   | LPAREN TYPE LIDENT RPAREN fun_binding
       { mkexp(Pexp_newtype($3, $5)) }
 ;
@@ -1227,21 +1227,10 @@ match_cases:
     pattern match_action                        { [$1, $2] }
   | match_cases BAR pattern match_action        { ($3, $4) :: $1 }
 ;
-newtype_match_cases:
-    TYPE lident_list DOT pattern match_action    { [$2,$4, $5] }
-  | newtype_match_cases BAR TYPE lident_list DOT pattern match_action 
-                                                 { ($4,$6, $7) :: $1 }
-  | pattern match_action                         { [[],$1, $2] }
-  | newtype_match_cases BAR pattern match_action { ([],$3, $4) :: $1 }
-
-;
-
-
-
 fun_def:
     match_action                                { $1 }
   | labeled_simple_pattern fun_def
-      { let (l,o,p) = $1 in ghexp(Pexp_function(l, o, [[],p, $2])) }
+      { let (l,o,p) = $1 in ghexp(Pexp_function(l, o, [p, $2])) }
   | LPAREN TYPE LIDENT RPAREN fun_def
       { mkexp(Pexp_newtype($3, $5)) }
 ;
@@ -1616,7 +1605,7 @@ simple_core_type2:
 package_type:
     mty_longident { ($1, []) }
   | mty_longident WITH package_type_cstrs { ($1, $3) }
-
+;
 package_type_cstr:
     TYPE LIDENT EQUAL core_type { ($2, $4) }
 ;

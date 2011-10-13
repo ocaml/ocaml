@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -10,7 +10,7 @@
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: sets.ml 5183 2002-10-16 09:06:39Z weis $ *)
+(* $Id$ *)
 
 module IntMap = Map.Make(struct type t = int let compare x y = x-y end)
 

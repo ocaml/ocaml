@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*      Damien Doligez and Francois Rouaix, INRIA Rocquencourt         *)
 (*   Ported to Caml Special Light by John Malecki and Xavier Leroy     *)

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Jacob Navia, after Xavier Leroy                          */
 /*                                                                     */
@@ -23,13 +23,13 @@
 
 // Simple linked list for holding the history lines
 typedef struct tagStatementHistory {
-        struct tagStatementHistory	*Next;
-		struct tagStatementHistory	*Prev;
-        EditBuffer					*Statement;
+        struct tagStatementHistory  *Next;
+        struct tagStatementHistory  *Prev;
+        EditBuffer                  *Statement;
 } StatementHistory;
 
-void	AddToHistory	(EditBuffer *edBuf);
-char	*GetHistoryLine	(int n);
+void    AddToHistory    (EditBuffer *edBuf);
+char    *GetHistoryLine (int n);
 static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam);
 
 #endif

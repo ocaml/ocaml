@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -911,7 +911,7 @@ type socket_domain =
   | PF_INET                     (** Internet domain (IPv4) *)
   | PF_INET6                    (** Internet domain (IPv6) *)
 (** The type of socket domains.  Not all platforms support
-    IPv6 sockets (type [PF_INET6]).  *)
+    IPv6 sockets (type [PF_INET6]). *)
 
 type socket_type =
     SOCK_STREAM                 (** Stream socket *)
@@ -921,7 +921,9 @@ type socket_type =
 (** The type of socket kinds, specifying the semantics of
    communications. *)
 
-type sockaddr = ADDR_UNIX of string | ADDR_INET of inet_addr * int
+type sockaddr =
+    ADDR_UNIX of string
+  | ADDR_INET of inet_addr * int
 (** The type of socket addresses. [ADDR_UNIX name] is a socket
    address in the Unix domain; [name] is a file name in the file
    system. [ADDR_INET(addr,port)] is a socket address in the Internet
@@ -1270,7 +1272,7 @@ val tcgetattr : file_descr -> terminal_io
    file descriptor. *)
 
 type setattr_when =
-  TCSANOW
+    TCSANOW
   | TCSADRAIN
   | TCSAFLUSH
 

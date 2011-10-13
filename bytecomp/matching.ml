@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -2542,13 +2542,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
 
 let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
-  let fname = match loc.Location.loc_start.Lexing.pos_fname with
-              | "" -> !Location.input_name
-              | x -> x
-  in
-  let pos = loc.Location.loc_start in
-  let line = pos.Lexing.pos_lnum in
-  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
+  let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_match_failure;
            Lconst(Const_block(0,

@@ -1,15 +1,15 @@
 (* camlp4r *)
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -751,24 +751,18 @@ value varify_constructors var_names =
         let e3 = ExSeq loc el in
         mkexp loc (Pexp_for i (expr e1) (expr e2) (mkdirection df) (expr e3))
     | <:expr@loc< fun [ $PaLab _ lab po$ when $w$ -> $e$ ] >> ->
-      (* GAH: change the following: *)
         mkexp loc
           (Pexp_function lab None
-            [([],patt_of_lab loc lab po, when_expr e w)])
+            [(patt_of_lab loc lab po, when_expr e w)])
     | <:expr@loc< fun [ $PaOlbi _ lab p e1$ when $w$ -> $e2$ ] >> ->
-      (* GAH: check here *)
         let lab = paolab lab p in
         mkexp loc
-          (Pexp_function ("?" ^ lab) (Some (expr e1)) [([],patt p, when_expr e2 w)])
+          (Pexp_function ("?" ^ lab) (Some (expr e1)) [(patt p, when_expr e2 w)])
     | <:expr@loc< fun [ $PaOlb _ lab p$ when $w$ -> $e$ ] >> ->
-      (* GAH: check here *)
         let lab = paolab lab p in
         mkexp loc
-          (Pexp_function ("?" ^ lab) None [([],patt_of_lab loc lab p, when_expr e w)])
-    | ExFun loc a -> 
-      (* GAH: check here *)
-      let mc = List.map (fun (a,b) -> ([],a,b)) (match_case a []) in
-      mkexp loc (Pexp_function "" None mc)
+          (Pexp_function ("?" ^ lab) None [(patt_of_lab loc lab p, when_expr e w)])
+    | ExFun loc a -> mkexp loc (Pexp_function "" None (match_case a []))
     | ExIfe loc e1 e2 e3 ->
         mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
     | ExInt loc s ->
@@ -792,10 +786,7 @@ value varify_constructors var_names =
     | ExLet loc rf bi e ->
         mkexp loc (Pexp_let (mkrf rf) (binding bi []) (expr e))
     | ExLmd loc i me e -> mkexp loc (Pexp_letmodule i (module_expr me) (expr e))
-    | ExMat loc e a -> 
-      (* GAH : check here *)
-      let mc = List.map (fun (a,b) -> ([],a,b)) (match_case a []) in
-      mkexp loc (Pexp_match (expr e) mc)
+    | ExMat loc e a -> mkexp loc (Pexp_match (expr e) (match_case a []))
     | ExNew loc id -> mkexp loc (Pexp_new (long_type_ident id))
     | ExObj loc po cfl ->
         let p =
@@ -966,6 +957,8 @@ value varify_constructors var_names =
         mkmty loc (Pmty_signature (sig_item sl []))
     | <:module_type@loc< $mt$ with $wc$ >> ->
         mkmty loc (Pmty_with (module_type mt) (mkwithc wc []))
+    | <:module_type@loc< module type of $me$ >> ->
+        mkmty loc (Pmty_typeof (module_expr me))
     | <:module_type< $anti:_$ >> -> assert False ]
   and sig_item s l =
     match s with
@@ -1053,6 +1046,8 @@ value varify_constructors var_names =
                       (List.map ctyp (list_of_ctyp t []))) :: l ]
     | <:str_item@loc< exception $uid:s$ = $i$ >> ->
         [mkstr loc (Pstr_exn_rebind (conv_con s) (ident i)) :: l ]
+    | <:str_item@loc< exception $uid:_$ of $_$ = $_$ >> ->
+        error loc "type in exception alias"
     | StExc _ _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
     | StExt loc n t sl -> [mkstr loc (Pstr_primitive n (mkvalue_desc t (list_of_meta_list sl))) :: l]

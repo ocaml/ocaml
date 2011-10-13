@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default: compile run
 
 compile:
@@ -11,8 +13,10 @@ run:
 	@./program > program.result
 	@diff -q program.reference program.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
+	
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result ./program
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -309,7 +309,7 @@ let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
 let make_method cl_num expr =
   { pexp_desc =
       Pexp_function ("", None,
-                     [[],mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
+                     [mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
                                          "self-" ^ cl_num)),
                       expr]);
     pexp_loc = expr.pexp_loc }
@@ -360,7 +360,7 @@ let rec class_type_field env self_type meths (val_sig, concr_meths, inher) =
 
 and class_signature env sty sign =
   let meths = ref Meths.empty in
-  let self_type = transl_simple_type env false sty in
+  let self_type = Ctype.expand_head env (transl_simple_type env false sty) in
 
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
@@ -532,7 +532,7 @@ let rec class_field cl_num self_type meths vars
                 (Typetexp.transl_simple_type val_env false sty) ty
           end;
           begin match (Ctype.repr ty).desc with
-            Tvar ->
+            Tvar _ ->
               let ty' = Ctype.newvar () in
               Ctype.unify val_env (Ctype.newty (Tpoly (ty', []))) ty;
               Ctype.unify val_env (type_approx val_env sbody) ty'
@@ -719,7 +719,9 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   let added = List.filter (fun x -> List.mem x l1) l2 in
   if added <> [] then
     Location.prerr_warning loc (Warnings.Implicit_public_methods added);
-  {cl_field = fields; cl_meths = meths}, sign
+  {cl_field = fields; cl_meths = meths},
+  if final then sign else
+  {sign with cty_self = Ctype.expand_head val_env public_self}
 
 and class_expr cl_num val_env met_env scl =
   match scl.pcl_desc with
@@ -765,13 +767,11 @@ and class_expr cl_num val_env met_env scl =
   | Pcl_fun (l, Some default, spat, sbody) ->
       let loc = default.pexp_loc in
       let scases =
-        [[],
-         {ppat_loc = loc; ppat_desc =
+        [{ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.(Ldot (Lident"*predef*", "Some")),
                          Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
                          false)},
          {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
-         [],
          {ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.(Ldot (Lident"*predef*", "None")),
                          None, false)},
@@ -862,7 +862,8 @@ and class_expr cl_num val_env met_env scl =
                 | _, (l', sarg0)::more_sargs ->
                     if l <> l' && l' <> "" then
                       raise(Error(sarg0.pexp_loc, Apply_wrong_label l'))
-                    else ([], more_sargs, Some(type_argument val_env sarg0 ty))
+                    else ([], more_sargs,
+                          Some (type_argument val_env sarg0 ty ty))
                 | _ ->
                     assert false
               end else try
@@ -878,10 +879,10 @@ and class_expr cl_num val_env met_env scl =
                 in
                 sargs, more_sargs,
                 if Btype.is_optional l' || not (Btype.is_optional l) then
-                  Some (type_argument val_env sarg0 ty)
+                  Some (type_argument val_env sarg0 ty ty)
                 else
-                  let arg = type_argument val_env
-                      sarg0 (extract_option_type val_env ty) in
+                  let ty0 = extract_option_type val_env ty in
+                  let arg = type_argument val_env sarg0 ty0 ty0 in
                   Some (option_some arg)
               with Not_found ->
                 sargs, more_sargs,
@@ -1106,6 +1107,7 @@ let class_infos define_class kind
   Ctype.end_def ();
 
   let sty = Ctype.self_type typ in
+  ignore (Ctype.object_fields sty);
 
   (* Generalize the row variable *)
   let rv = Ctype.row_variable sty in

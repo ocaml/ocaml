@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -186,11 +186,11 @@ RANLIBCMD=ranlib
 
 ### Command and flags to use for assembling ocamlopt-generated code
 # For the Alpha or the Mips:
-#AS=as -O2
+#ASM=as -O2
 # For the PowerPC:
-#AS=as -u -m ppc -w
+#ASM=as -u -m ppc -w
 # Otherwise:
-#AS=as
+#ASM=as
 
 ### Command and flags to use for assembling .S files (often with preprocessing)
 # If gcc is available:

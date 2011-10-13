@@ -1,6 +1,6 @@
 (*
  * ALMABENCH 1.0.1
- * Objective Caml version
+ *      OCaml     version
  *
  *     A number-crunching benchmark designed for cross-language and vendor
  *     comparisons.

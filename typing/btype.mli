@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -23,7 +23,7 @@ val newty2: int -> type_desc -> type_expr
         (* Create a type *)
 val newgenty: type_desc -> type_expr
         (* Create a generic type *)
-val newgenvar: unit -> type_expr
+val newgenvar: ?name:string -> unit -> type_expr
         (* Return a fresh generic variable *)
 
 (* Use Tsubst instead
@@ -32,6 +32,9 @@ val newmarkedvar: int -> type_expr
 val newmarkedgenvar: unit -> type_expr
         (* Return a fresh marked generic variable *)
 *)
+
+val is_Tvar: type_expr -> bool
+val is_Tunivar: type_expr -> bool
 
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
@@ -153,10 +156,12 @@ val set_commu: commutable ref -> commutable -> unit
         (* Set references, logging the old value *)
 val log_type: type_expr -> unit
         (* Log the old value of a type, before modifying it by hand *)
-    
 
 (**** Sets, maps and hashtables of types ****)
 
 module TypeSet  : Set.S with type elt = type_expr
 module TypeMap  : Map.S with type key = type_expr
 module TypeHash : Hashtbl.S with type key = type_expr
+
+(**** Forward declarations ****)
+val print_raw: (Format.formatter -> type_expr -> unit) ref

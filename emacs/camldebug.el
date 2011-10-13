@@ -1,6 +1,6 @@
 ;(***********************************************************************)
 ;(*                                                                     *)
-;(*                           Objective Caml                            *)
+;(*                                OCaml                                *)
 ;(*                                                                     *)
 ;(*                Jacques Garrigue and Ian T Zimmerman                 *)
 ;(*                                                                     *)
@@ -302,8 +302,8 @@ buffer, then try to obtain the time from context around point."
                    ((save-excursion
                       (beginning-of-line 1)
                       (looking-at "^Time : \\([0-9]+\\) - pc : [0-9]+ "))
-                    (string-to-int (match-string 1)))
-                   ((string-to-int (camldebug-format-command "%e"))))))
+                    (caml-string-to-int (match-string 1)))
+                   ((caml-string-to-int (camldebug-format-command "%e"))))))
         (camldebug-call "goto" nil time)))
    (t
     (let ((module (camldebug-module-name (buffer-file-name)))
@@ -325,7 +325,7 @@ buffer, then try to obtain the time from context around point."
                                    " - module "
                                    module "$") nil t)
                           (match-string 1)))))
-      (if address (camldebug-call "goto" nil (string-to-int address))
+      (if address (camldebug-call "goto" nil (caml-string-to-int address))
         (error "No time at %s at %s" module camldebug-goto-position))))))
 
 
@@ -383,12 +383,12 @@ around point."
            (arg (cond
                  ((eobp)
                   (save-excursion (re-search-backward bpline nil t))
-                  (string-to-int (match-string 1)))
+                  (caml-string-to-int (match-string 1)))
                  ((save-excursion
                     (beginning-of-line 1)
                     (looking-at bpline))
-                  (string-to-int (match-string 1)))
-                 ((string-to-int (camldebug-format-command "%e"))))))
+                  (caml-string-to-int (match-string 1)))
+                 ((caml-string-to-int (camldebug-format-command "%e"))))))
       (camldebug-call "delete" nil arg)))
    (t
     (let ((camldebug-delete-file
@@ -409,7 +409,7 @@ around point."
                      camldebug-delete-file
                      camldebug-delete-position)
             (camldebug-call "delete" nil
-                            (string-to-int camldebug-delete-output)))))))))
+                            (caml-string-to-int camldebug-delete-output)))))))))
 
 (defun camldebug-complete-filter (string)
   (setq camldebug-filter-accumulator
@@ -529,9 +529,9 @@ the camldebug commands `cd DIR' and `directory'."
               (let ((isbefore
                      (string= "before"
                               (match-string 5 camldebug-filter-accumulator)))
-                    (startpos (string-to-int
+                    (startpos (caml-string-to-int
                                (match-string 3 camldebug-filter-accumulator)))
-                    (endpos (string-to-int
+                    (endpos (caml-string-to-int
                              (match-string 4 camldebug-filter-accumulator))))
                 (list (match-string 2 camldebug-filter-accumulator)
                       (if isbefore startpos endpos)
@@ -704,7 +704,7 @@ Obeying it means displaying in another window the specified file and line."
         (move-overlay camldebug-overlay-under spos (- epos 1) buffer))
     (save-excursion
       (set-buffer buffer)
-      (goto-char pos)
+      (goto-char spos)
       (beginning-of-line)
       (move-marker camldebug-event-marker (point))
       (setq overlay-arrow-position camldebug-event-marker))))

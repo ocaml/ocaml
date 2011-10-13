@@ -1,4 +1,4 @@
-(* $Id: mixin2.ml 5929 2003-11-19 02:36:58Z garrigue $ *)
+(* $Id$ *)
 
 (* Full fledge version, using objects to structure code *)
 

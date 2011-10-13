@@ -1,5 +1,0 @@
-*.x
-thread.ml
-so_locations
-*.so
-*.a

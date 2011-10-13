@@ -1,3 +1,6 @@
+BASEDIR=../..
+
+
 default: compile run
 
 PLUGINS=plugin.so plugin2.so sub/plugin.so sub/plugin3.so plugin4.so mypack.so packed1.so packed1_client.so pack_client.so plugin_ref.so plugin_high_arity.so plugin_ext.so plugin_simple.so bug.so plugin_thread.so plugin4_unix.so a.so b.so c.so
@@ -62,9 +65,12 @@ mylib.cmxa: plugin.cmx plugin2.cmx
 factorial.$(O): factorial.c
 	@$(OCAMLOPT) -c -ccopt "$(SHAREDCCCOMPOPTS)" factorial.c
 
+promote:
+	@cp result reference
+
 clean: defaultclean
 	@rm -f result *.so *.o *.cm* main main_ext *.exe *.s *.asm *.obj
 	@rm -f *.a *.lib
 	@rm -f sub/*.so sub/*.o sub/*.cm* sub/*.s sub/*.asm sub/*.obj
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

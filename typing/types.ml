@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -25,7 +25,7 @@ type type_expr =
     mutable id: int }
 
 and type_desc =
-    Tvar
+    Tvar of string option
   | Tarrow of label * type_expr * type_expr * commutable
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
@@ -35,7 +35,7 @@ and type_desc =
   | Tlink of type_expr
   | Tsubst of type_expr         (* for copying *)
   | Tvariant of row_desc
-  | Tunivar
+  | Tunivar of string option
   | Tpoly of type_expr * type_expr list
   | Tpackage of Path.t * string list * type_expr list
 
@@ -112,8 +112,8 @@ type constructor_description =
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
     cstr_consts: int;                   (* Number of constant constructors *)
     cstr_nonconsts: int;                (* Number of non-const constructors *)
-    cstr_normal: int;                   (* Number of non generalized constructors *)
-    cstr_generalized: bool;             (* Does it have any constraints on its return type? *)
+    cstr_normal: int;                   (* Number of non generalized constrs *)
+    cstr_generalized: bool;             (* Constrained return type? *)
     cstr_private: private_flag }        (* Read-only constructor? *)
 
 and constructor_tag =

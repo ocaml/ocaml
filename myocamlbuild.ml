@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*       Nicolas Pouillard, projet Gallium, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -676,13 +676,13 @@ let special_modules =
 let camlp4_import_list =
     ["utils/misc.ml";
      "utils/terminfo.ml";
-     "parsing/linenum.ml";
      "utils/warnings.ml";
      "parsing/location.ml";
      "parsing/longident.ml";
      "parsing/asttypes.mli";
      "parsing/parsetree.mli";
      "typing/outcometree.mli";
+     "typing/oprint.ml";
      "myocamlbuild_config.ml";
      "utils/config.mlbuild"]
 ;;

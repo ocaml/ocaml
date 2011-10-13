@@ -2,14 +2,13 @@
 
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #         Nicolas Pouillard, projet Gallium, INRIA Rocquencourt         #
 #                                                                       #
 #   Copyright 2008 Institut National de Recherche en Informatique et    #
 #   en Automatique.  All rights reserved.  This file is distributed     #
-#   under the terms of the GNU Library General Public License, with     #
-#   the special exception on linking described in file LICENSE.         #
+#   under the terms of the Q Public License version 1.0.                #
 #                                                                       #
 #########################################################################
 
@@ -45,3 +44,7 @@ cp _build/myocamlbuild boot/myocamlbuild.native
   $OCAMLC_NATIVE $TOPLEVEL $OTHERLIBS_BYTE $OTHERLIBS_NATIVE $OCAMLLEX_BYTE \
   $OCAMLLEX_NATIVE $TOOLS_BYTE $TOOLS_NATIVE $DEBUGGER  \
   $OCAMLDOC_BYTE $OCAMLDOC_NATIVE $OCAMLBUILD_BYTE $CAMLP4_BYTE $CAMLP4_NATIVE
+
+cd tools
+make objinfo_helper
+cd ..

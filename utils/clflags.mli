@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -76,3 +76,4 @@ val std_include_flag : string -> string
 val std_include_dir : unit -> string list
 val shared : bool ref
 val dlcode : bool ref
+val runtime_variant : string ref

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*     Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt        *)
 (*                                                                     *)

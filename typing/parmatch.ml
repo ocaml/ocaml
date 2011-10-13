@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -51,16 +51,10 @@ let is_absent_pat p = match p.pat_desc with
 | Tpat_variant (tag, _, row) -> is_absent tag row
 | _ -> false
 
-let sort_fields args =
-  Sort.list
-    (fun (lbl1,_) (lbl2,_) -> lbl1.lbl_pos <= lbl2.lbl_pos)
-    args
-
 let records_args l1 l2 =
-  let l1 = sort_fields l1
-  and l2 = sort_fields l2 in
+  (* Invariant: fields are already sorted by Typecore.type_label_a_list *)
   let rec combine r1 r2 l1 l2 = match l1,l2 with
-  | [],[] -> r1,r2
+  | [],[] -> List.rev r1, List.rev r2
   | [],(_,p2)::rem2 -> combine (omega::r1) (p2::r2) [] rem2
   | (_,p1)::rem1,[] -> combine (p1::r1) (omega::r2) rem1 []
   | (lbl1,p1)::rem1, (lbl2,p2)::rem2 ->
@@ -294,12 +288,9 @@ let record_arg p = match p.pat_desc with
 
 
 (* Raise Not_found when pos is not present in arg *)
-
-
 let get_field pos arg =
   let _,p = List.find (fun (lbl,_) -> pos = lbl.lbl_pos) arg in
   p
-
 
 let extract_fields omegas arg =
   List.map
@@ -308,15 +299,6 @@ let extract_fields omegas arg =
         get_field lbl.lbl_pos arg
       with Not_found -> omega)
     omegas
-
-
-
-let sort_record p = match p.pat_desc with
-| Tpat_record args ->
-    make_pat
-      (Tpat_record (sort_fields args))
-      p.pat_type p.pat_env
-| _ -> p
 
 let all_record_args lbls = match lbls with
 | ({lbl_all=lbl_all},_)::_ ->
@@ -410,8 +392,7 @@ let discr_pat q pss =
   | _ -> acc in
 
   match normalize_pat q with
-  | {pat_desc= (Tpat_any | Tpat_record _)} as q ->
-      sort_record (acc_pat q pss)
+  | {pat_desc= (Tpat_any | Tpat_record _)} as q -> acc_pat q pss
   | q -> q
 
 (*
@@ -808,7 +789,7 @@ let build_other ext env =  match env with
           | {pat_desc = Tpat_construct (c,_)} -> c.cstr_tag
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-	 pat_of_constrs p (complete_constrs p all_tags)
+        pat_of_constrs p (complete_constrs p all_tags)
     end
 | ({pat_desc = Tpat_variant (_,_,r)} as p,_) :: _ ->
     let tags =
@@ -926,7 +907,10 @@ let build_other_gadt ext env =
           | _ -> fatal_error "Parmatch.get_tag" in
         let all_tags =  List.map (fun (p,_) -> get_tag p) env in
 	let cnstrs  = complete_constrs p all_tags in
-	List.map (pat_of_constr p) cnstrs
+	let pats = List.map (pat_of_constr p) cnstrs in
+        (* List.iter (Format.eprintf "%a@." top_pretty) pats;
+           Format.eprintf "@.@."; *)
+        pats
     | _ -> assert false
 	  
 (*
@@ -1079,7 +1063,7 @@ let combinations f lst lst' =
   let rec iter =
     function
 	[] -> []
-      | x :: xs -> iter2 x lst'
+      | x :: xs -> iter2 x lst' @ iter xs
   in
   iter lst
     
@@ -1151,6 +1135,8 @@ let exhaust_gadt ext pss n =
   match ret with
     Rnone -> Rnone
   | Rsome lst ->
+      (* The following line is needed to compile stdlib/printf.ml *)
+      if lst = [] then Rsome (omegas n) else
       let singletons = 
 	List.map 
 	  (function 
@@ -1565,7 +1551,6 @@ with
 | Empty -> lub p2 q
 
 and record_lubs l1 l2 =
-  let l1 = sort_fields l1 and l2 = sort_fields l2 in
   let rec lub_rec l1 l2 = match l1,l2 with
   | [],_ -> l2
   | _,[] -> l1
@@ -1698,13 +1683,11 @@ let check_partial_all v casel =
 
 
 (* conversion from Typedtree.pattern to Parsetree.pattern list *)
-module Conv = 
-struct
+module Conv = struct
   open Parsetree
   let mkpat desc = 
     {ppat_desc = desc;
      ppat_loc = Location.none}
-;;
 
   let rec select : 'a list list -> 'a list list = 
     function
@@ -1713,29 +1696,28 @@ struct
 	  List.map
 	    (fun lst -> x :: lst)
 	    (select ys)
-	    @
-	      select (xs::ys)
+	  @
+	    select (xs::ys)
       | _ -> []
-;;
 
-let name_counter = ref 0 
-let fresh () = 
-  let current = !name_counter in 
-  name_counter := !name_counter + 1;
-  "#$%^@*@" ^ string_of_int current
+  let name_counter = ref 0 
+  let fresh () = 
+    let current = !name_counter in 
+    name_counter := !name_counter + 1;
+    "#$%^@*@" ^ string_of_int current
 
   let conv (typed: Typedtree.pattern) : 
       Parsetree.pattern list * 
-	 (string,Types.constructor_description) Hashtbl.t * 
-	 (string,Types.label_description) Hashtbl.t
+      (string,Types.constructor_description) Hashtbl.t * 
+      (string,Types.label_description) Hashtbl.t
       = 
     let constrs = Hashtbl.create 0 in 
     let labels = Hashtbl.create 0 in 
     let rec loop pat = 
       match pat.pat_desc with
-	Tpat_or (a,b,_) ->
+        Tpat_or (a,b,_) ->
 	  loop a @ loop b
-      | Tpat_any _ | Tpat_constant _ | Tpat_var _ ->
+      | Tpat_any | Tpat_constant _ | Tpat_var _ ->
 	  [mkpat Ppat_any]
       | Tpat_alias (p,_) -> loop p
       | Tpat_tuple lst ->
@@ -1752,7 +1734,7 @@ let fresh () =
 	      [mkpat (Ppat_construct(Longident.Lident id, None, false))]
           | _ ->
 	      List.map 
-		(fun lst ->
+	        (fun lst ->
 		  let arg = 
 		    match lst with
 		      [] -> assert false
@@ -1760,7 +1742,8 @@ let fresh () =
 		    | _ -> Some (mkpat (Ppat_tuple lst))
 		  in
 		  mkpat (Ppat_construct(Longident.Lident id, arg, false)))
-		results end
+	        results
+          end
       | Tpat_variant(label,p_opt,row_desc) ->
 	  begin match p_opt with
 	  | None ->
@@ -1768,9 +1751,10 @@ let fresh () =
 	  | Some p ->
 	      let results = loop p in 
 	      List.map
-		(fun p ->
+	        (fun p ->
 		  mkpat (Ppat_variant(label, Some p)))
-		results end
+	        results
+          end
       | Tpat_record subpatterns ->
 	  let pats = 
 	    select
@@ -1779,9 +1763,9 @@ let fresh () =
 	  let label_idents = 
 	    List.map 
 	      (fun (lbl,_) -> 
-		let id = fresh () in 
-		Hashtbl.add labels id lbl;
-		Longident.Lident id)  
+	        let id = fresh () in 
+	        Hashtbl.add labels id lbl;
+	        Longident.Lident id)  
 	      subpatterns
 	  in 
 	  List.map
@@ -1878,6 +1862,7 @@ let extendable_path path =
   not
     (Path.same path Predef.path_bool ||
     Path.same path Predef.path_list ||
+    Path.same path Predef.path_unit ||
     Path.same path Predef.path_option)
 
 let rec collect_paths_from_pat r p = match p.pat_desc with
@@ -1957,7 +1942,7 @@ let check_unused tdefs casel =
                         p.pat_loc Warnings.Unused_pat)
                     ps
               | Used -> ()
-            with e -> assert false
+            with Empty | Not_an_adt | Not_found | NoGuard -> assert false
             end ;
 
           if has_guard act then

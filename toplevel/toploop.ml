@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -400,10 +400,11 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
-  fprintf ppf "        Objective Caml version %s@.@." Config.version;
+  fprintf ppf "        OCaml version %s@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
-  Location.input_name := "";
+  Location.init lb "//toplevel//";
+  Location.input_name := "//toplevel//";
   Location.input_lexbuf := Some lb;
   Sys.catch_break true;
   load_ocamlinit ppf;

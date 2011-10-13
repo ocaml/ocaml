@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -82,6 +82,7 @@ val temp_file : ?temp_dir: string -> string -> string -> string
    (readable and writable only by the file owner).  The file is
    guaranteed to be different from any other file that existed when
    [temp_file] was called.
+   Raise [Sys_error] if the file could not be created.
    @before 3.11.2 no ?temp_dir optional argument
 *)
 
@@ -95,6 +96,7 @@ val open_temp_file :
    [mode] is a list of additional flags to control the opening of the file.
    It can contain one or several of [Open_append], [Open_binary],
    and [Open_text].  The default is [[Open_text]] (open in text mode).
+   Raise [Sys_error] if the file could not be opened.
    @before 3.11.2 no ?temp_dir optional argument
 *)
 

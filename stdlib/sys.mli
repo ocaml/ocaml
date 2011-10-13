@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -31,7 +31,7 @@ external is_directory : string -> bool = "caml_sys_is_directory"
 (** Returns [true] if the given name refers to a directory,
     [false] if it refers to another kind of file.
     Raise [Sys_error] if no file exists with the given name.
-    @since 3.12.0
+    @since 3.10.0
 *)
 
 external remove : string -> unit = "caml_sys_remove"
@@ -199,7 +199,7 @@ val catch_break : bool -> unit
 
 
 val ocaml_version : string;;
-(** [ocaml_version] is the version of Objective Caml.
+(** [ocaml_version] is the version of OCaml.
     It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
     where [major], [minor], and [patchlevel] are integers, and
     [additional-info] is an arbitrary string. The [[.patchlevel]] and

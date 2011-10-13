@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -151,6 +151,7 @@ let yyparse tables start lexer lexbuf =
   and init_stackbase = env.stackbase
   and init_state = env.state
   and init_curr_char = env.curr_char
+  and init_lval = env.lval
   and init_errflag = env.errflag in
   env.stackbase <- env.sp + 1;
   env.curr_char <- start;
@@ -164,6 +165,7 @@ let yyparse tables start lexer lexbuf =
     env.stackbase <- init_stackbase;
     env.state <- init_state;
     env.curr_char <- init_curr_char;
+    env.lval <- init_lval;
     env.errflag <- init_errflag;
     match exn with
       YYexit v ->

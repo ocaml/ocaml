@@ -1,5 +1,17 @@
-\" $Id$
-
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *
+.\"*                                                                     *
+.\"*  Copyright 2004 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLDOC 1
 
 \" .de Sh \" Subsection heading
@@ -12,7 +24,7 @@
 \" ..
 
 .SH NAME
-ocamldoc \- The Objective Caml documentation generator
+ocamldoc \- The OCaml documentation generator
 
 
 .SH SYNOPSIS
@@ -24,15 +36,18 @@ ocamldoc \- The Objective Caml documentation generator
 
 .SH DESCRIPTION
 
-The Objective Caml documentation generator
+The OCaml documentation generator
 .BR ocamldoc (1)
 generates documentation from special comments embedded in source files. The
-comments used by OCamldoc are of the form
+comments used by
+.B ocamldoc
+are of the form
 .I (** ... *)
 and follow the format described in the
-.IR "The Objective Caml user's manual" .
+.IR "The OCaml user's manual" .
 
-OCamldoc can produce documentation in various formats: HTML, LaTeX, TeXinfo,
+.B ocamldoc
+can produce documentation in various formats: HTML, LaTeX, TeXinfo,
 Unix man pages, and
 .BR dot (1)
 dependency graphs. Moreover, users can add their own
@@ -112,7 +127,9 @@ to display it.
 Dynamically load the given file (which extension usually is .cmo or .cma),
 which defines a custom documentation generator.
 If the given file is a simple one and does not exist in
-the current directory, then ocamldoc looks for it in the custom
+the current directory, then
+.B ocamldoc
+looks for it in the custom
 generators default directory, and in the directories specified with the
 .B \-i
 option.
@@ -236,7 +253,9 @@ as the title for the generated documentation.
 .BI \-intro \ file
 Use content of
 .I file
-as ocamldoc text to use as introduction (HTML, LaTeX and TeXinfo only).
+as 
+.B ocamldoc
+text to use as introduction (HTML, LaTeX and TeXinfo only).
 For HTML, the file is used to create the whole "index.html" file.
 .TP
 .B \-v
@@ -249,16 +268,20 @@ Print version string and exit.
 Print short version number and exit.
 .TP
 .B \-warn\-error
-Treat Ocamldoc warnings as errors.
+Treat
+.B ocamldoc
+warnings as errors.
 .TP
 .B \-hide\-warnings
-Do not print OCamldoc warnings.
+Do not print
+.B ocamldoc
+warnings.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.
 .SS "Type-checking options"
 .BR ocamldoc (1)
-calls the Objective Caml type-checker to obtain type information. The
+calls the OCaml type-checker to obtain type information. The
 following options impact the type-checking phase. They have the same meaning
 as for the
 .BR ocamlc (1)\ and \ ocamlopt (1)
@@ -430,5 +453,5 @@ Set the section number used for generated man filenames. Default is 3.
 .BR ocamlc (1),
 .BR ocamlopt (1).
 .br
-.IR "The Objective Caml user's manual",
+.IR "The OCaml user's manual",
 chapter "The documentation generator".

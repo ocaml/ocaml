@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default: compile run
 
 compile:
@@ -29,8 +31,10 @@ run:
 	@export LD_LIBRARY_PATH=`pwd` && ./custom > custom.result
 	@diff -q custom.reference custom.result > /dev/null || (echo " => failed" && exit 1)
 	@echo " => passed"
+	
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f ./main ./static ./custom *.result
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

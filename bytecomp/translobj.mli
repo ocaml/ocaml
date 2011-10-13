@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*         Jerome Vouillon, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)

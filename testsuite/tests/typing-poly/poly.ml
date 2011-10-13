@@ -1,4 +1,4 @@
-(* $Id: poly.ml 9396 2009-10-26 07:11:36Z garrigue $ *)
+(* $Id$ *)
 (*
    Polymorphic methods are now available in the main branch.
    Enjoy.
@@ -557,6 +557,14 @@ let f5 x =
 let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
 
+(* Keep sharing the epsilons *)
+let f x = if true then (x : < m : 'a. 'a -> 'a >) else x;;
+fun x -> (f x)#m;; (* Warning 18 *)
+let f (x, y) = if true then (x : < m : 'a. 'a -> 'a >) else x;;
+fun x -> (f (x,x))#m;; (* Warning 18 *)
+let f x = if true then [| (x : < m : 'a. 'a -> 'a >) |] else [|x|];;
+fun x -> (f x).(0)#m;; (* Warning 18 *)
+
 (* Not really principal? *)
 class c = object method id : 'a. 'a -> 'a = fun x -> x end;;
 type u = c option;;
@@ -622,3 +630,11 @@ let l : t = { f = lazy (raise Not_found)};;
 type t = {f: 'a. 'a -> unit};;
 {f=fun ?x y -> ()};;
 {f=fun ?x y -> y};; (* fail *)
+
+(* Polux Moon caml-list 2011-07-26 *)
+module Polux = struct
+  type 'par t = 'par
+  let ident v = v
+  class alias = object method alias : 'a . 'a t -> 'a = ident end
+  let f (x : <m : 'a. 'a t>) = (x : <m : 'a. 'a>)
+end;;

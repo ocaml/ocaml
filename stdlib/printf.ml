@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*  Xavier Leroy and Pierre Weis, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)
@@ -106,6 +106,7 @@ let pad_string pad_char p neg s i len =
   then String.blit s i res 0 len
   else String.blit s i res (p - len) len;
   res
+;;
 
 (* Format a string given a %s format, e.g. %40s or %-20s.
    To do ?: ignore other flags (#, +, etc). *)
@@ -196,7 +197,8 @@ let sub_format incomplete_format bad_conversion_format conv fmt i =
 ;;
 
 let sub_format_for_printf conv =
-  sub_format incomplete_format bad_conversion_format conv;;
+  sub_format incomplete_format bad_conversion_format conv
+;;
 
 let iter_on_format_args fmt add_conv add_char =
 
@@ -228,7 +230,7 @@ let iter_on_format_args fmt add_conv add_char =
         match Sformat.get fmt j with
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
           add_char (add_conv skip i conv) 'i'
-        | c -> add_conv skip i 'i' end
+        | _ -> add_conv skip i 'i' end
     | '{' as conv ->
       (* Just get a regular argument, skipping the specification. *)
       let i = add_conv skip i conv in
@@ -299,7 +301,7 @@ let ac_of_format fmt =
     (* Just finishing a meta format: no additional argument to record. *)
     if c <> ')' && c <> '}' then incr_ac skip c;
     succ i
-  and add_char i c = succ i in
+  and add_char i _ = succ i in
 
   iter_on_format_args fmt add_conv add_char;
   ac
@@ -307,7 +309,7 @@ let ac_of_format fmt =
 
 let count_arguments_of_format fmt =
   let ac = ac_of_format fmt in
-  (* For printing only regular arguments have to be counted. *)
+  (* For printing, only the regular arguments have to be counted. *)
   ac.ac_rglr
 ;;
 
@@ -376,7 +378,7 @@ type positional_specification =
    Note that this is optimized for the regular case, i.e. no positional
    parameter, since in this case we juste ``return'' the constant
    [Spec_none]; in case we have a positional parameter, we ``return'' a
-   [Spec_index] [positional_specification] which a bit more costly.
+   [Spec_index] [positional_specification] which is a bit more costly.
 
    Note also that we do not support [*$] specifications, since this would
    lead to type checking problems: a [*$] positional specification means
@@ -391,7 +393,7 @@ type positional_specification =
    case. Put it another way: this means type dependency, which is completely
    out of scope of the Caml type algebra. *)
 
-let scan_positional_spec fmt got_spec n i =
+let scan_positional_spec fmt got_spec i =
   match Sformat.unsafe_get fmt i with
   | '0'..'9' as d ->
     let rec get_int_literal accu j =
@@ -488,7 +490,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
 
   let rec scan_positional n widths i =
     let got_spec spec i = scan_flags spec n widths i in
-    scan_positional_spec fmt got_spec n i
+    scan_positional_spec fmt got_spec i
 
   and scan_flags spec n widths i =
     match Sformat.unsafe_get fmt i with
@@ -496,7 +498,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let got_spec wspec i =
         let (width : int) = get_arg wspec n in
         scan_flags spec (next_index wspec n) (width :: widths) i in
-      scan_positional_spec fmt got_spec n (succ i)
+      scan_positional_spec fmt got_spec (succ i)
     | '0'..'9'
     | '.' | '#' | '-' | ' ' | '+' -> scan_flags spec n widths (succ i)
     | _ -> scan_conv spec n widths i
@@ -635,7 +637,7 @@ let mkprintf to_s get_out outc outs flush k fmt =
 let kfprintf k oc =
   mkprintf false (fun _ -> oc) output_char output_string flush k
 ;;
-let ifprintf oc = kapr (fun _ -> Obj.magic ignore);;
+let ifprintf _ = kapr (fun _ -> Obj.magic ignore);;
 
 let fprintf oc = kfprintf ignore oc;;
 let printf fmt = fprintf stdout fmt;;
@@ -663,9 +665,13 @@ let ksprintf k =
   mkprintf true get_buff Buffer.add_char Buffer.add_string ignore (get_cont k)
 ;;
 
+let sprintf fmt = ksprintf (fun s -> s) fmt;;
+
+(* Obsolete and deprecated. *)
 let kprintf = ksprintf;;
 
-let sprintf fmt = ksprintf (fun s -> s) fmt;;
+(* For Caml system internal use only: needed to implement modules [Format]
+  and [Scanf]. *)
 
 module CamlinternalPr = struct
 

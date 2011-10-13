@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #   Nicolas Pouillard, Berke Durak, projet Gallium, INRIA Rocquencourt  #
 #                                                                       #

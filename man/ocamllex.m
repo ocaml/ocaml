@@ -1,8 +1,21 @@
-\" $Id$
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLLEX 1
 
 .SH NAME
-ocamllex \- The Objective Caml lexer generator
+ocamllex \- The OCaml lexer generator
 
 .SH SYNOPSIS
 .B ocamllex
@@ -18,7 +31,7 @@ ocamllex \- The Objective Caml lexer generator
 
 The
 .BR ocamllex (1)
-command generates Objective Caml lexers from a set of regular
+command generates OCaml lexers from a set of regular
 expressions with associated semantic actions, in the style of
 .BR lex (1).
 
@@ -26,7 +39,7 @@ Running
 .BR ocamllex (1)
 on the input file
 .IR lexer \&.mll
-produces Caml code for a lexical analyzer in file
+produces OCaml code for a lexical analyzer in file
 .IR lexer \&.ml.
 
 This file defines one lexing function per entry point in the lexer
@@ -53,7 +66,7 @@ command recognizes the following options:
 .TP
 .B \-ml
 Output code that does not use OCaml's built-in automata
-interpreter. Instead, the automaton is encoded by Caml functions.
+interpreter. Instead, the automaton is encoded by OCaml functions.
 This option is mainly useful for debugging
 .BR ocamllex (1),
 using it for production lexers is not recommended.
@@ -83,5 +96,5 @@ Display a short usage summary and exit.
 .SH SEE ALSO
 .BR ocamlyacc (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Lexer and parser generators".

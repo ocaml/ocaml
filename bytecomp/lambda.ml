@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -140,7 +140,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of meth_kind * lambda * lambda * lambda list
+  | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -201,7 +201,7 @@ let rec same l1 l2 =
       same b1 b2 && df1 = df2 && same c1 c2
   | Lassign(id1, a1), Lassign(id2, a2) ->
       Ident.same id1 id2 && same a1 a2
-  | Lsend(k1, a1, b1, cl1), Lsend(k2, a2, b2, cl2) ->
+  | Lsend(k1, a1, b1, cl1, _), Lsend(k2, a2, b2, cl2, _) ->
       k1 = k2 && same a1 a2 && same b1 b2 && samelist same cl1 cl2
   | Levent(a1, ev1), Levent(a2, ev2) ->
       same a1 a2 && ev1.lev_loc = ev2.lev_loc
@@ -277,7 +277,7 @@ let rec iter f = function
       f e1; f e2; f e3
   | Lassign(id, e) ->
       f e
-  | Lsend (k, met, obj, args) ->
+  | Lsend (k, met, obj, args, _) ->
       List.iter f (met::obj::args)
   | Levent (lam, evt) ->
       f lam
@@ -320,7 +320,7 @@ let free_variables l =
   free_ids (function Lvar id -> [id] | _ -> []) l
 
 let free_methods l =
-  free_ids (function Lsend(Self, Lvar meth, obj, _) -> [meth] | _ -> []) l
+  free_ids (function Lsend(Self, Lvar meth, obj, _, _) -> [meth] | _ -> []) l
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
@@ -398,8 +398,8 @@ let subst_lambda s lam =
   | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
   | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3)
   | Lassign(id, e) -> Lassign(id, subst e)
-  | Lsend (k, met, obj, args) ->
-      Lsend (k, subst met, subst obj, List.map subst args)
+  | Lsend (k, met, obj, args, loc) ->
+      Lsend (k, subst met, subst obj, List.map subst args, loc)
   | Levent (lam, evt) -> Levent (subst lam, evt)
   | Lifused (v, e) -> Lifused (v, subst e)
   and subst_decl (id, exp) = (id, subst exp)

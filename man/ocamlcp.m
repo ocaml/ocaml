@@ -1,9 +1,21 @@
-\" $Id$
-
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLCP 1
 
 .SH NAME
-ocamlcp \- The Objective Caml profiling compiler
+ocamlcp \- The OCaml profiling compiler
 
 .SH SYNOPSIS
 .B ocamlcp
@@ -95,5 +107,5 @@ streams, we recommend using
 .BR ocamlc (1),
 .BR ocamlprof (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Profiling".

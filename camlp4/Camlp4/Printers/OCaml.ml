@@ -1,14 +1,14 @@
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -169,6 +169,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method reset =      {< pipe = False; semi = False >};
 
     value semisep : sep = ";;";
+    value no_semisep : sep = ""; (* used to mark where ";;" should not occur *)
     value mode = if comments then `comments else `no_comments;
     value curry_constr = init_curry_constr;
     value var_conversion = False;
@@ -883,6 +884,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let () = o#node f mt Ast.loc_of_module_type in
     match mt with
     [ <:module_type<>> -> assert False
+    | <:module_type< module type of $me$ >> ->
+        pp f "@[<2>module type of@ %a@]" o#module_expr me
     | <:module_type< $id:i$ >> -> o#ident f i
     | <:module_type< $anti:s$ >> -> o#anti f s
     | <:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >> ->
@@ -1011,21 +1014,21 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:class_sig_item< $csg1$; $csg2$ >> ->
             do { o#class_sig_item f csg1; cut f; o#class_sig_item f csg2 }
       | <:class_sig_item< constraint $t1$ = $t2$ >> ->
-            pp f "@[<2>constraint@ %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
+            pp f "@[<2>constraint@ %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 no_semisep
       | <:class_sig_item< inherit $ct$ >> ->
-            pp f "@[<2>inherit@ %a%(%)@]" o#class_type ct semisep
+            pp f "@[<2>inherit@ %a%(%)@]" o#class_type ct no_semisep
       | <:class_sig_item< method $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method %a%a :@ %a%(%)@]" o#private_flag pr o#var s
-              o#ctyp t semisep
+              o#ctyp t no_semisep
       | <:class_sig_item< method virtual $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method virtual %a%a :@ %a%(%)@]"
-              o#private_flag pr o#var s o#ctyp t semisep
+              o#private_flag pr o#var s o#ctyp t no_semisep
       | <:class_sig_item< value $mutable:mu$ $virtual:vi$ $s$ : $t$ >> ->
             pp f "@[<2>%s %a%a%a :@ %a%(%)@]"
               o#value_val o#mutable_flag mu o#virtual_flag vi o#var s o#ctyp t
-              semisep
+              no_semisep
       | <:class_sig_item< $anti:s$ >> ->
-            pp f "%a%(%)" o#anti s semisep ];
+            pp f "%a%(%)" o#anti s no_semisep ];
 
     method class_str_item f cst =
       let () = o#node f cst Ast.loc_of_class_str_item in
@@ -1037,30 +1040,30 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:class_str_item< $cst1$; $cst2$ >> ->
             do { o#class_str_item f cst1; cut f; o#class_str_item f cst2 }
       | <:class_str_item< constraint $t1$ = $t2$ >> ->
-            pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
+            pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 no_semisep
       | <:class_str_item< inherit $override:ov$ $ce$ >> ->
-            pp f "@[<2>inherit%a@ %a%(%)@]" o#override_flag ov o#class_expr ce semisep
+            pp f "@[<2>inherit%a@ %a%(%)@]" o#override_flag ov o#class_expr ce no_semisep
       | <:class_str_item< inherit $override:ov$ $ce$ as $lid:s$ >> ->
-            pp f "@[<2>inherit%a@ %a as@ %a%(%)@]" o#override_flag ov o#class_expr ce o#var s semisep
+            pp f "@[<2>inherit%a@ %a as@ %a%(%)@]" o#override_flag ov o#class_expr ce o#var s no_semisep
       | <:class_str_item< initializer $e$ >> ->
-            pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
+            pp f "@[<2>initializer@ %a%(%)@]" o#expr e no_semisep
       | <:class_str_item< method $override:ov$ $private:pr$ $s$ = $e$ >> ->
             pp f "@[<2>method%a %a%a =@ %a%(%)@]"
-              o#override_flag ov o#private_flag pr o#var s o#expr e semisep
+              o#override_flag ov o#private_flag pr o#var s o#expr e no_semisep
       | <:class_str_item< method $override:ov$ $private:pr$ $s$ : $t$ = $e$ >> ->
             pp f "@[<2>method%a %a%a :@ %a =@ %a%(%)@]"
-              o#override_flag ov o#private_flag pr o#var s o#ctyp t o#expr e semisep
+              o#override_flag ov o#private_flag pr o#var s o#ctyp t o#expr e no_semisep
       | <:class_str_item< method virtual $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
-              o#private_flag pr o#var s o#ctyp t semisep
+              o#private_flag pr o#var s o#ctyp t no_semisep
       | <:class_str_item< value virtual $mutable:mu$ $s$ : $t$ >> ->
             pp f "@[<2>%s virtual %a%a :@ %a%(%)@]"
-              o#value_val o#mutable_flag mu o#var s o#ctyp t semisep
+              o#value_val o#mutable_flag mu o#var s o#ctyp t no_semisep
       | <:class_str_item< value $override:ov$ $mutable:mu$ $s$ = $e$ >> ->
             pp f "@[<2>%s%a %a%a =@ %a%(%)@]"
-              o#value_val o#override_flag ov o#mutable_flag mu o#var s o#expr e semisep
+              o#value_val o#override_flag ov o#mutable_flag mu o#var s o#expr e no_semisep
       | <:class_str_item< $anti:s$ >> ->
-            pp f "%a%(%)" o#anti s semisep ];
+            pp f "%a%(%)" o#anti s no_semisep ];
 
     method implem f st =
       match st with

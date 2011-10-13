@@ -1,14 +1,14 @@
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -51,11 +51,13 @@ value register_str_item_parser f = str_item_parser.val := f;
 value register_sig_item_parser f = sig_item_parser.val := f;
 value register_parser f g =
   do { str_item_parser.val := f; sig_item_parser.val := g };
+value current_parser () = (str_item_parser.val, sig_item_parser.val);
 
 value register_str_item_printer f = str_item_printer.val := f;
 value register_sig_item_printer f = sig_item_printer.val := f;
 value register_printer f g =
   do { str_item_printer.val := f; sig_item_printer.val := g };
+value current_printer () = (str_item_printer.val, sig_item_printer.val);
 
 module Plugin (Id : Sig.Id) (Maker : functor (Unit : sig end) -> sig end) = struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker (struct end) in ());

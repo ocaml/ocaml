@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*          Manuel Serrano et Xavier Leroy, INRIA Rocquencourt         *)
 (*                                                                     *)

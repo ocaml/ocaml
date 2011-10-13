@@ -1,3 +1,4 @@
+BASEDIR=../..
 EXECNAME=./program
 
 run-all:
@@ -10,7 +11,9 @@ run-all:
 	  done; \
 	done
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f *.result $(EXECNAME)
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

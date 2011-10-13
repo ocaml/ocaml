@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -276,7 +276,7 @@ let link_bytecode tolink exec_name standalone =
       try
         let header =
           if String.length !Clflags.use_runtime > 0
-          then "camlheader_ur" else "camlheader" in
+          then "camlheader_ur" else "camlheader" ^ !Clflags.runtime_variant in
         let inchan = open_in_bin (find_in_path !load_path header) in
         copy_file inchan outchan;
         close_in inchan
@@ -407,15 +407,15 @@ let link_bytecode_as_c tolink outfile =
   begin try
     (* The bytecode *)
     output_string outchan "\
-#ifdef __cplusplus\n\
-extern \"C\" {\n\
-#endif\n\
-#include <caml/mlvalues.h>\n\
-CAMLextern void caml_startup_code(\n\
-           code_t code, asize_t code_size,\n\
-           char *data, asize_t data_size,\n\
-           char *section_table, asize_t section_table_size,\n\
-           char **argv);\n";
+#ifdef __cplusplus\
+\nextern \"C\" {\
+\n#endif\
+\n#include <caml/mlvalues.h>\
+\nCAMLextern void caml_startup_code(\
+\n           code_t code, asize_t code_size,\
+\n           char *data, asize_t data_size,\
+\n           char *section_table, asize_t section_table_size,\
+\n           char **argv);\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     Consistbl.clear crc_interfaces;
@@ -444,17 +444,17 @@ CAMLextern void caml_startup_code(\n\
     (* The table of primitives *)
     Symtable.output_primitive_table outchan;
     (* The entry point *)
-    output_string outchan "\n\
-void caml_startup(char ** argv)\n\
-{\n\
-  caml_startup_code(caml_code, sizeof(caml_code),\n\
-                    caml_data, sizeof(caml_data),\n\
-                    caml_sections, sizeof(caml_sections),\n\
-                    argv);\n\
-}\n\
-#ifdef __cplusplus\n\
-}\n\
-#endif\n";
+    output_string outchan "\
+\nvoid caml_startup(char ** argv)\
+\n{\
+\n  caml_startup_code(caml_code, sizeof(caml_code),\
+\n                    caml_data, sizeof(caml_data),\
+\n                    caml_sections, sizeof(caml_sections),\
+\n                    argv);\
+\n}\
+\n#ifdef __cplusplus\
+\n}\
+\n#endif\n";
     close_out outchan
   with x ->
     close_out outchan;
@@ -466,8 +466,9 @@ void caml_startup(char ** argv)\n\
 (* Build a custom runtime *)
 
 let build_custom_runtime prim_name exec_name =
+  let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
   Ccomp.call_linker Ccomp.Exe exec_name
-    ([prim_name] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+    ([prim_name] @ List.rev !Clflags.ccobjs @ [runtime_lib])
     (Clflags.std_include_flag "-I" ^ " " ^ Config.bytecomp_c_libraries)
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =
@@ -546,8 +547,9 @@ let link objfiles output_name =
         if not (Filename.check_suffix output_name Config.ext_obj) then begin
           temps := obj_file :: !temps;
           if not (
+            let runtime_lib = "-lcamlrun" ^ !Clflags.runtime_variant in
             Ccomp.call_linker Ccomp.MainDll output_name
-              ([obj_file] @ List.rev !Clflags.ccobjs @ ["-lcamlrun"])
+              ([obj_file] @ List.rev !Clflags.ccobjs @ [runtime_lib])
               Config.bytecomp_c_libraries
            ) then raise (Error Custom_runtime);
         end

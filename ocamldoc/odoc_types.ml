@@ -103,6 +103,7 @@ type merge_option =
   | Merge_version
   | Merge_see
   | Merge_since
+  | Merge_before
   | Merge_deprecated
   | Merge_param
   | Merge_raised_exception
@@ -115,6 +116,7 @@ let all_merge_options = [
   Merge_version ;
   Merge_see ;
   Merge_since ;
+  Merge_before ;
   Merge_deprecated ;
   Merge_param ;
   Merge_raised_exception ;

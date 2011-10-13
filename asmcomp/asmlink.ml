@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -101,7 +101,7 @@ let runtime_lib () =
   let libname =
     if !Clflags.gprofile
     then "libasmrunp" ^ ext_lib
-    else "libasmrun" ^ ext_lib in
+    else "libasmrun" ^ !Clflags.runtime_variant ^ ext_lib in
   try
     if !Clflags.nopervasives then []
     else [ find_in_path !load_path libname ]
@@ -262,7 +262,7 @@ let link_shared ppf objfiles output_name =
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts;
   let objfiles = List.rev (List.map object_file_name objfiles) @
-    !Clflags.ccobjs in
+    (List.rev !Clflags.ccobjs) in
 
   let startup =
     if !Clflags.keep_startup_file

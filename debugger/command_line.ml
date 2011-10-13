@@ -1,9 +1,9 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          Objective Caml port by John Malecki and Xavier Leroy       *)
+(*          OCaml port by John Malecki and Xavier Leroy                *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -1008,10 +1008,10 @@ Argument N means do this N times (or till program stops for another reason)." };
      (* Breakpoints *)
      { instr_name = "break"; instr_prio = false;
        instr_action = instr_break; instr_repeat = false; instr_help =
-"Set breakpoint at specified line or function.\n\
-Syntax: break function-name\n\
-        break @ [module] linenum\n\
-        break @ [module] # characternum" };
+"Set breakpoint at specified line or function.\
+\nSyntax: break function-name\
+\n        break @ [module] linenum\
+\n        break @ [module] # characternum" };
      { instr_name = "delete"; instr_prio = false;
        instr_action = instr_delete; instr_repeat = false; instr_help =
 "delete some breakpoints.\n\

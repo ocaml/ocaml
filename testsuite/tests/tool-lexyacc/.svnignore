@@ -1,6 +1,0 @@
-scanner.ml
-grammar.mli
-grammar.ml
-*.byte
-*.native
-*.result

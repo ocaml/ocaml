@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -141,7 +141,7 @@ type control =
 (** The GC parameters are given as a [control] record.  Note that
     these parameters can also be initialised by setting the
     OCAMLRUNPARAM environment variable.  See the documentation of
-    ocamlrun. *)
+    [ocamlrun]. *)
 
 external stat : unit -> stat = "caml_gc_stat"
 (** Return the current values of the memory management counters in a

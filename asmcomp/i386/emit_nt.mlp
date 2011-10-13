@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -813,7 +813,7 @@ let emit_item = function
       add_def_symbol s ;
       `{emit_symbol s} LABEL DWORD\n`
   | Cdefine_label lbl ->
-      `{emit_label (100000 + lbl)} `
+      `{emit_label (100000 + lbl)}	LABEL DWORD\n`
   | Cint8 n ->
       `	BYTE	{emit_int n}\n`
   | Cint16 n ->

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -15,6 +15,8 @@
 
 /* Raising exceptions from C. */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "alloc.h"
 #include "fail.h"
 #include "io.h"
@@ -85,13 +87,24 @@ CAMLexport void caml_raise_with_string(value tag, char const *msg)
   CAMLnoreturn;
 }
 
+/* PR#5115: Failure and Invalid_argument can be triggered by
+   input_value while reading the initial value of [caml_global_data]. */
+
 CAMLexport void caml_failwith (char const *msg)
 {
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception Failure(\"%s\")\n", msg);
+    exit(2);
+  }
   caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
 }
 
 CAMLexport void caml_invalid_argument (char const *msg)
 {
+  if (caml_global_data == 0) {
+    fprintf(stderr, "Fatal error: exception Invalid_argument(\"%s\")\n", msg);
+    exit(2);
+  }
   caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
 }
 
@@ -154,4 +167,10 @@ void caml_init_exceptions(void)
   out_of_memory_bucket.hdr = Make_header(1, 0, Caml_white);
   out_of_memory_bucket.exn = Field(caml_global_data, OUT_OF_MEMORY_EXN);
   caml_register_global_root(&out_of_memory_bucket.exn);
+}
+
+int caml_is_special_exception(value exn) {
+  return exn == Field(caml_global_data, MATCH_FAILURE_EXN)
+    || exn == Field(caml_global_data, ASSERT_FAILURE_EXN)
+    || exn == Field(caml_global_data, UNDEFINED_RECURSIVE_MODULE_EXN);
 }

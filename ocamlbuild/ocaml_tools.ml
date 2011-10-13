@@ -27,7 +27,7 @@ let ocamldep_command' tags =
 let menhir_ocamldep_command' tags ~menhir_spec out =
   let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
   Cmd(S[menhir; T tags; A"--raw-depend";
-        A"--ocamldep"; Quote (ocamldep_command' tags);
+        A"--ocamldep"; Quote (ocamldep_command' Tags.empty);
         menhir_spec ; Sh ">"; Px out])
 
 let menhir_ocamldep_command arg out env _build =
@@ -93,6 +93,7 @@ let infer_interface ml mli env build =
   let tags = tags_of_pathname ml++"ocaml" in
   Ocaml_compiler.prepare_compile build ml;
   Cmd(S[!Options.ocamlc; ocaml_ppflags tags; ocaml_include_flags ml; A"-i";
+        (if Tags.mem "thread" tags then A"-thread" else N);
         T(tags++"infer_interface"); P ml; Sh">"; Px mli])
 
 let menhir mly env build =

@@ -1,14 +1,14 @@
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -17,16 +17,8 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-(* BEGIN ugly hack.  See 15 lines down.  FIXME *)
-
-type prev_locs = {
-  pl_strm : mutable Obj.t;
-  pl_locs : mutable list (int * Obj.t)
-};
-
-value prev_locs = ref ([] : list prev_locs);
-
-(* END ugly hack FIXME *)
+(* PR#5090: don't do lookahead on get_prev_loc. *)
+value get_prev_loc_only = ref False;
 
 module Make (Structure : Structure.S) = struct
   open Structure;
@@ -38,71 +30,20 @@ module Make (Structure : Structure.S) = struct
     [ [: ` x; strm :] -> [: ` (f x); stream_map f strm :]
     | [: :] -> [: :] ];
 
-(* ******************************************************************* *)
-(* Ugly hack to prevent PR#5090.  See how to do this properly after
-   the 3.12.0 release.  FIXME.
-*)
-
-value keep_prev_loc strm =
-  match Stream.peek strm with
-  [ None -> [: :]
-  | Some (_, init_loc) ->
-     let myrecord = { pl_strm = Obj.repr [: :];
-                      pl_locs = [(0, Obj.repr init_loc)] }
-     in
-     let rec go prev_loc = parser
-       [ [: `(tok, cur_loc); strm :] -> do {
-           myrecord.pl_locs := myrecord.pl_locs
-                               @ [ (Stream.count strm, Obj.repr cur_loc) ];
-           [: `(tok, {prev_loc; cur_loc}); go cur_loc strm :] }
-       | [: :] -> do {
-           prev_locs.val := List.filter ((!=) myrecord) prev_locs.val;
-           [: :] } ]
-     in
-     let result = go init_loc strm in
-     do {
-     prev_locs.val := [myrecord :: prev_locs.val];
-     myrecord.pl_strm := Obj.repr result;
-     result } ];
-
-value drop_prev_loc strm = stream_map (fun (tok,r) -> (tok,r)) strm;
-
-value get_cur_loc strm =
-  match Stream.peek strm with
-  [ Some (_,r) -> r.cur_loc
-  | None -> Loc.ghost ];
-
-value get_prev_loc strm =
-  let c = Stream.count strm in
-  let rec drop l =
-    match l with
-    [ [] -> []
-    | [(i, _) :: ll] -> if i < c then drop ll else l ]
-  in
-  let rec find l =
-    match l with
-    [ [] -> None
-    | [h::t] -> if h.pl_strm == Obj.repr strm then Some h else find t ]
-  in
-  match find prev_locs.val with
-  [ None -> Loc.ghost
-  | Some r -> do {
-      r.pl_locs := drop r.pl_locs;
-      match r.pl_locs with
-      [ [] -> Loc.ghost
-      | [(i, loc) :: _] ->
- if i = c then (Obj.obj loc : Loc.t) else Loc.ghost ] } ];
-
-(* ******************************************************************* *)
-(* END of ugly hack.  This is the previous code.
-
   value keep_prev_loc strm =
     match Stream.peek strm with
     [ None -> [: :]
-    | Some (_,init_loc) ->
-      let rec go prev_loc = parser
-        [ [: `(tok,cur_loc); strm :] -> [: `(tok,{prev_loc;cur_loc}); go cur_loc strm :]
-        | [: :] -> [: :] ]
+    | Some (tok0,init_loc) ->
+      let rec go prev_loc strm1 =
+        if get_prev_loc_only.val then
+          [: `(tok0, {prev_loc; cur_loc = prev_loc; prev_loc_only = True});
+             go prev_loc strm1 :]
+        else
+          match strm1 with parser
+          [ [: `(tok,cur_loc); strm :] ->
+              [: `(tok, {prev_loc; cur_loc; prev_loc_only = False});
+                 go cur_loc strm :]
+          | [: :] -> [: :] ]
       in go init_loc strm ];
 
   value drop_prev_loc strm = stream_map (fun (tok,r) -> (tok,r.cur_loc)) strm;
@@ -113,11 +54,16 @@ value get_prev_loc strm =
     | None -> Loc.ghost ];
 
   value get_prev_loc strm =
-    match Stream.peek strm with
-    [ Some (_,r) -> r.prev_loc
-    | None -> Loc.ghost ];
-*)
-
+    begin
+      get_prev_loc_only.val := True;
+      let result = match Stream.peek strm with
+        [ Some (_, {prev_loc; prev_loc_only = True}) ->
+            begin Stream.junk strm; prev_loc end
+        | Some (_, {prev_loc; prev_loc_only = False}) -> prev_loc
+        | None -> Loc.ghost ];
+      get_prev_loc_only.val := False;
+      result
+    end;
 
   value is_level_labelled n lev =
     match lev.lname with

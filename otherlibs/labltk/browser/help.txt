@@ -159,7 +159,7 @@ TODO
 
 * Add support for the debugger.
 
-* Make this a real programming environment, both for beginners an
+* Make this a real programming environment, both for beginners and
   experimented users.
 
 

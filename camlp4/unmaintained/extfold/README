@@ -7,8 +7,8 @@ accessible from the Camlp4 hump. If you are interested in developing
 this package further and/or actively maintain it, please let us know
 (caml@inria.fr)
 
-This package is distributed under the same license as the Objective
-Caml Library (that is, LGPL with a special exception allowing both
+This package is distributed under the same license as the OCaml
+Library (that is, LGPL with a special exception allowing both
 static and dynamic link).
 
 -- Michel Mauny

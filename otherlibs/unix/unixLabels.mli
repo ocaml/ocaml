@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -146,7 +146,9 @@ type process_status = Unix.process_status =
   | WSTOPPED of int
         (** The process was stopped by a signal; the argument is the
            signal number. *)
-(** The termination status of a process. *)
+(** The termination status of a process.  See module {!Sys} for the
+    definitions of the standard signal numbers.  Note that they are
+    not the numbers used by the OS. *)
 
 
 type wait_flag = Unix.wait_flag =
@@ -167,11 +169,11 @@ val execve : prog:string -> args:string array -> env:string array -> 'a
    environment to the program executed. *)
 
 val execvp : prog:string -> args:string array -> 'a
-(** Same as {!UnixLabels.execv} respectively, except that
+(** Same as {!UnixLabels.execv}, except that
    the program is searched in the path. *)
 
 val execvpe : prog:string -> args:string array -> env:string array -> 'a
-(** Same as {!UnixLabels.execvp} respectively, except that
+(** Same as {!UnixLabels.execve}, except that
    the program is searched in the path. *)
 
 val fork : unit -> int
@@ -183,7 +185,7 @@ val wait : unit -> int * process_status
    and termination status. *)
 
 val waitpid : mode:wait_flag list -> int -> int * process_status
-(** Same as {!UnixLabels.wait}, but waits for the process whose pid is given.
+(** Same as {!UnixLabels.wait}, but waits for the child process whose pid is given.
    A pid of [-1] means wait for any child.
    A pid of [0] means wait for any child in the same process group
    as the current process.
@@ -472,7 +474,6 @@ val clear_close_on_exec : file_descr -> unit
    See {!UnixLabels.set_close_on_exec}.*)
 
 
-
 (** {6 Directories} *)
 
 
@@ -670,7 +671,6 @@ val lockf : file_descr -> mode:lock_command -> len:int -> unit
    the functions {!Sys.signal} and {!Sys.set_signal}.
 *)
 
-
 val kill : pid:int -> signal:int -> unit
 (** [kill pid sig] sends signal number [sig] to the process
    with id [pid]. *)
@@ -764,7 +764,8 @@ val times : unit -> process_times
 val utimes : string -> access:float -> modif:float -> unit
 (** Set the last access time (second arg) and last modification time
    (third arg) for a file. Times are expressed in seconds from
-   00:00:00 GMT, Jan. 1, 1970. *)
+   00:00:00 GMT, Jan. 1, 1970.  A time of [0.0] is interpreted as the
+   current time. *)
 
 type interval_timer = Unix.interval_timer =
     ITIMER_REAL
@@ -822,6 +823,16 @@ val setgid : int -> unit
 val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
    belongs. *)
+
+val setgroups : int array -> unit
+  (** [setgroups groups] sets the supplementary group IDs for the
+      calling process. Appropriate privileges are required. *)
+
+val initgroups : string -> int -> unit
+  (** [initgroups user group] initializes the group access list by
+      reading the group database /etc/group and using all groups of
+      which [user] is a member. The additional group [group] is also
+      added to the list. *)
 
 type passwd_entry = Unix.passwd_entry =
   { pw_name : string;
@@ -903,7 +914,8 @@ type socket_domain = Unix.socket_domain =
     PF_UNIX                     (** Unix domain *)
   | PF_INET                     (** Internet domain (IPv4) *)
   | PF_INET6                    (** Internet domain (IPv6) *)
-(** The type of socket domains. *)
+(** The type of socket domains.  Not all platforms support
+    IPv6 sockets (type [PF_INET6]). *)
 
 type socket_type = Unix.socket_type =
     SOCK_STREAM                 (** Stream socket *)

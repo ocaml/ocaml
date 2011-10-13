@@ -1,8 +1,9 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*  Developed by Jacob Navia.                                          */
+/*                                                                     */
 /*  Copyright 2001 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License, with    */
@@ -112,12 +113,12 @@ void RewriteCurrentEditBuffer(void);
 void RefreshCurrentEditBuffer(void);
 
 // **************** User defined window messages *************
-#define WM_NEWLINE		(WM_USER+6000)
-#define WM_TIMERTICK	(WM_USER+6001)
-#define WM_QUITOCAML	(WM_USER+6002)
-#define WM_SYNTAXERROR	(WM_USER+6003)
-#define WM_UNBOUNDVAL	(WM_USER+6004)
-#define WM_ILLEGALCHAR	(WM_USER+6005)
+#define WM_NEWLINE      (WM_USER+6000)
+#define WM_TIMERTICK    (WM_USER+6001)
+#define WM_QUITOCAML    (WM_USER+6002)
+#define WM_SYNTAXERROR  (WM_USER+6003)
+#define WM_UNBOUNDVAL   (WM_USER+6004)
+#define WM_ILLEGALCHAR  (WM_USER+6005)
 
 // ********************** Structures ***********************
 typedef struct tagPosition {

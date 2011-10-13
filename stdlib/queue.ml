@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*        François Pottier, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)

@@ -1,15 +1,15 @@
 open Camlp4;                                             (* -*- camlp4r -*- *)
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -90,7 +90,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "`int32" -> <:expr< Int32.to_string $e$ >>
             | "`int64" -> <:expr< Int64.to_string $e$ >>
             | "`nativeint" -> <:expr< Nativeint.to_string $e$ >>
-            | "`flo" -> <:expr< string_of_float $e$ >>
+            | "`flo" -> <:expr< Camlp4_import.Oprint.float_repres $e$ >>
             | "`str" -> <:expr< Ast.safe_string_escaped $e$ >>
             | "`chr" -> <:expr< Char.escaped $e$ >>
             | "`bool" -> <:expr< Ast.IdUid $mloc _loc$ (if $e$ then "True" else "False") >>

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -77,5 +77,10 @@ val register_printer: (exn -> string option) -> unit
     in the reverse order of their registrations, until a printer returns
     a [Some s] value (if no such printer exists, the runtime will use a
     generic printer).
+
+    When using this mechanism, one should be aware that an exception backtrace
+    is attached to the thread that saw it raised, rather than to the exception
+    itself. Practically, it means that the code related to [fn] should not use
+    the backtrace if it has itself raised an exception before.
     @since 3.11.2
 *)

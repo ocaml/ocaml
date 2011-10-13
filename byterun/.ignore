@@ -1,0 +1,14 @@
+jumptbl.h
+primitives
+prims.c
+opnames.h
+version.h
+ocamlrun
+ocamlrund
+ld.conf
+interp.a.lst
+*.[sd]obj
+*.lib
+.gdb_history
+*.d.c
+*.pic.c

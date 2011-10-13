@@ -1,3 +1,5 @@
+BASEDIR=../..
+
 default: compile run
 
 compile:
@@ -18,8 +20,10 @@ run:
 	  (./`basename $$f bytecode`native > `basename $$f bytecode`native.result 2>&1; true); \
 	  diff -q `basename $$f bytecode`native.reference `basename $$f bytecode`native.result > /dev/null || (echo " => failed" && exit 1) && echo " => passed"; \
 	done
+	
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.bytecode *.native *.result
 
-include ../../makefiles/Makefile.common
+include $(BASEDIR)/makefiles/Makefile.common

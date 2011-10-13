@@ -15,5 +15,7 @@ compile:
 	  fi; \
 	done
 
+promote: defaultpromote
+
 clean: defaultclean
 	@rm -f ./a.out *.cm* *.result

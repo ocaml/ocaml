@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -19,9 +19,7 @@ open Location;;
 open Parsetree;;
 
 let fmt_position f l =
-  if l.pos_fname = "" && l.pos_lnum = 1
-  then fprintf f "%d" l.pos_cnum
-  else if l.pos_lnum = -1
+  if l.pos_lnum = -1
   then fprintf f "%s[%d]" l.pos_fname l.pos_cnum
   else fprintf f "%s[%d,%d+%d]" l.pos_fname l.pos_lnum l.pos_bol
                (l.pos_cnum - l.pos_bol)
@@ -116,13 +114,6 @@ let longident i ppf li = line i ppf "%a\n" fmt_longident li;;
 let string i ppf s = line i ppf "\"%s\"\n" s;;
 let bool i ppf x = line i ppf "%s\n" (string_of_bool x);;
 let label i ppf x = line i ppf "label=\"%s\"\n" x;;
-
-let lident_list f lst = 
-  match lst with
-    | [] -> ()
-    | x :: xs ->
-      fprintf f "%s" x;
-      List.iter (fprintf f " %s") lst
 
 let rec core_type i ppf x =
   line i ppf "core_type %a\n" fmt_location x.ptyp_loc;
@@ -232,7 +223,7 @@ and expression i ppf x =
   | Pexp_function (p, eo, l) ->
       line i ppf "Pexp_function \"%s\"\n" p;
       option i expression ppf eo;
-      list i newtype_x_pattern_x_expression_case ppf l;
+      list i pattern_x_expression_case ppf l;
   | Pexp_apply (e, l) ->
       line i ppf "Pexp_apply\n";
       expression i ppf e;
@@ -240,7 +231,7 @@ and expression i ppf x =
   | Pexp_match (e, l) ->
       line i ppf "Pexp_match\n";
       expression i ppf e;
-      list i newtype_x_pattern_x_expression_case ppf l;
+      list i pattern_x_expression_case ppf l;
   | Pexp_try (e, l) ->
       line i ppf "Pexp_try\n";
       expression i ppf e;
@@ -697,16 +688,6 @@ and longident_x_pattern i ppf (li, p) =
 and pattern_x_expression_case i ppf (p, e) =
   line i ppf "<case>\n";
   pattern (i+1) ppf  p;
-  expression (i+1) ppf e;
-
-and pattern_newtypes ppf lst = 
-  fprintf ppf "<type> %a ." 
-    lident_list lst
-
-and newtype_x_pattern_x_expression_case i ppf (vars,p, e) =
-  line i ppf "<case>\n";
-  pattern_newtypes ppf vars;
-  pattern (i+1) ppf p;
   expression (i+1) ppf e;
 
 and pattern_x_expression_def i ppf (p, e) =

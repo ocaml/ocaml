@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
 (*                                                                     *)
@@ -180,7 +180,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           find_printer env ty obj
         with Not_found ->
           match (Ctype.repr ty).desc with
-          | Tvar ->
+          | Tvar _ | Tunivar _ ->
               Oval_stuff "<poly>"
           | Tarrow(_, ty1, ty2, _) ->
               Oval_stuff "<fun>"
@@ -327,8 +327,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               fatal_error "Printval.outval_of_value"
           | Tpoly (ty, _) ->
               tree_of_val (depth - 1) obj ty
-          | Tunivar ->
-              Oval_stuff "<poly>"
           | Tpackage _ ->
               Oval_stuff "<module>"
         end

@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -46,7 +46,7 @@ and principal = ref false               (* -principal *)
 and recursive_types = ref false         (* -rectypes *)
 and strict_sequence = ref false         (* -strict-sequence *)
 and applicative_functors = ref true     (* -no-app-funct *)
-and make_runtime = ref false            (* -make_runtime *)
+and make_runtime = ref false            (* -make-runtime *)
 and gprofile = ref false                (* -p *)
 and c_compiler = ref (None: string option) (* -cc *)
 and no_auto_link = ref false            (* -noautolink *)
@@ -92,3 +92,5 @@ let std_include_dir () =
 
 let shared = ref false (* -shared *)
 let dlcode = ref true (* not -nodynlink *)
+
+let runtime_variant = ref "";;     (* -runtime-variant *)

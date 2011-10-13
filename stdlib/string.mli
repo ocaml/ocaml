@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -96,15 +96,15 @@ val iter : (char -> unit) -> string -> unit
 
 val iteri : (int -> char -> unit) -> string -> unit
 (** Same as {!String.iter}, but the
-   function is applied to the index of the element as first argument (counting from 0),
-   and the character itself as second argument.
+   function is applied to the index of the element as first argument
+   (counting from 0), and the character itself as second argument.
    @since 3.13.0
 *)
 
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
    represented by escape sequences, following the lexical
-   conventions of Objective Caml.  If there is no special
+   conventions of OCaml.  If there is no special
    character in the argument, return the original string itself,
    not a copy. *)
 

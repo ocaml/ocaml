@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -21,11 +21,18 @@ installopt:
 	cp stdlib.cmxa stdlib.$(A) std_exit.$(O) *.cmx $(LIBDIR)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
-	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun headernt.c
+	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
+	          -DRUNTIME_NAME='"ocamlrun"' headernt.c
 	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
 	cp camlheader camlheader_ur
+
+camlheaderd: headernt.c ../config/Makefile
+	$(BYTECC) $(BYTECCCOMPOPTS) -c -I../byterun \
+	          -DRUNTIME_NAME='"ocamlrund"' headernt.c
+	$(MKEXE) -o tmpheader.exe headernt.$(O) $(EXTRALIBS)
+	mv tmpheader.exe camlheaderd
 
 # TODO: do not call flexlink to build tmpheader.exe (we don't need
 # the export table)

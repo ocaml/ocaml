@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -60,7 +60,8 @@ CAMLexport char * caml_format_exception(value exn)
     /* Check for exceptions in the style of Match_failure and Assert_failure */
     if (Wosize_val(exn) == 2 &&
         Is_block(Field(exn, 1)) &&
-        Tag_val(Field(exn, 1)) == 0) {
+        Tag_val(Field(exn, 1)) == 0 &&
+        caml_is_special_exception(Field(exn, 0))) {
       bucket = Field(exn, 1);
       start = 0;
     } else {

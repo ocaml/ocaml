@@ -1,3 +1,19 @@
+#######################################################################
+#                                                                     #
+#                 MLTk, Tcl/Tk interface of OCaml                     #
+#                                                                     #
+#    Francois Rouaix, Francois Pessaux, Jun Furuse and Pierre Weis    #
+#               projet Cristal, INRIA Rocquencourt                    #
+#            Jacques Garrigue, Kyoto University RIMS                  #
+#                                                                     #
+#  Copyright 1999 Institut National de Recherche en Informatique et   #
+#  en Automatique and Kyoto University.  All rights reserved.         #
+#  This file is distributed under the terms of the GNU Library        #
+#  General Public License, with the special exception on linking      #
+#  described in file LICENSE found in the OCaml source tree.          #
+#                                                                     #
+#######################################################################
+
 include Makefile.common
 
 all: support.cmo rawwidget.cmo widget.cmo protocol.cmo \
@@ -16,9 +32,10 @@ CCFLAGS=-I../../../byterun $(TK_DEFS) $(SHAREDCCCOMPOPTS)
 
 COMPFLAGS=-I $(OTHERS)/win32unix -I $(OTHERS)/unix
 THFLAGS=-I $(OTHERS)/systhreads -I $(OTHERS)/threads
+TKLDOPTS=$(TK_LINK:%=-ldopt "%")
 
 lib$(LIBNAME).$(A): $(COBJS)
-	$(MKLIB) -o $(LIBNAME) $(COBJS) -ldopt "$(TK_LINK)"
+	$(MKLIB) -o $(LIBNAME) $(COBJS) $(TKLDOPTS)
 
 PUBMLI=fileevent.mli protocol.mli textvariable.mli timer.mli \
     rawwidget.mli widget.mli

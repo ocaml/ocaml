@@ -1,5 +1,5 @@
 #(***********************************************************************)
-#(*                            OCamldoc                                 *)
+#(*                             OCamldoc                                *)
 #(*                                                                     *)
 #(*            Maxence Guesdon, projet Cristal, INRIA Rocquencourt      *)
 #(*                                                                     *)
@@ -31,7 +31,7 @@ OCAMLPP=-pp './remove_DEBUG'
 MKDIR=mkdir -p
 CP=cp -f
 OCAMLDOC=ocamldoc
-OCAMLDOC_RUN=./ocamldoc.opt #sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
+OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
@@ -146,7 +146,6 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/utils/warnings.cmo \
 	$(OCAMLSRCDIR)/utils/ccomp.cmo \
 	$(OCAMLSRCDIR)/utils/consistbl.cmo \
-	$(OCAMLSRCDIR)/parsing/linenum.cmo\
 	$(OCAMLSRCDIR)/parsing/location.cmo\
 	$(OCAMLSRCDIR)/parsing/longident.cmo \
 	$(OCAMLSRCDIR)/parsing/syntaxerr.cmo \
@@ -194,14 +193,13 @@ STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/bigarray/bigarray.mli \
 	../otherlibs/num/num.mli
 
-all: exe lib generators
+all: exe lib generators manpages
 
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 generators: $(GENERATORS_CMOS)
 
 opt.opt: exeopt libopt generatorsopt
-	$(MAKE) manpages
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 generatorsopt: $(GENERATORS_CMXS)
@@ -356,6 +354,7 @@ clean:: dummy
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 	@rm -rf stdlib_man
+	@rm -f generators/*.cm[aiox] generators/*.[ao] generators/*.cmx[as]
 
 depend::
 	$(OCAMLYACC) odoc_text_parser.mly

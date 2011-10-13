@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*  Xavier Leroy and Pierre Weis, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)
@@ -75,7 +75,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [( fmt %)]: format string substitution. Takes a format string
      argument and substitutes it to the internal format string [fmt]
      to print following arguments. The argument must have the same
-     type as [fmt].
+     type as the internal format string [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
    - [,]: the no-op delimiter for conversion specifications.
@@ -146,12 +146,14 @@ val kbprintf : (Buffer.t -> 'a) -> Buffer.t ->
    @since 3.10.0
 *)
 
+(** Deprecated *)
+
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** A deprecated synonym for [ksprintf]. *)
 
 (**/**)
 
-(* For system use only.  Don't call directly. *)
+(* For Caml system internal use only. Don't call directly. *)
 
 module CamlinternalPr : sig
 

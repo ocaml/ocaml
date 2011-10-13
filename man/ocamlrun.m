@@ -1,9 +1,21 @@
-\" $Id$
-
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLRUN 1
 
 .SH NAME
-ocamlrun \- The Objective Caml bytecode interpreter
+ocamlrun \- The OCaml bytecode interpreter
 
 .SH SYNOPSIS
 .B ocamlrun
@@ -23,7 +35,7 @@ command.
 The first non-option argument is taken to be the name of the file
 containing the executable bytecode. (That file is searched in the
 executable path as well as in the current directory.) The remaining
-arguments are passed to the Objective Caml program, in the string array
+arguments are passed to the OCaml program, in the string array
 .BR Sys.argv .
 Element 0 of this array is the name of the
 bytecode executable file; elements 1 to
@@ -60,6 +72,7 @@ flag in the OCAMLRUNPARAM environment variable (see below).
 Search the directory
 .I dir
 for dynamically-loaded libraries, in addition to the standard search path.
+.TP
 .B \-p
 Print the names of the primitives known to this version of
 .BR ocamlrun (1)
@@ -85,14 +98,14 @@ The following environment variable are also consulted:
 Additional directories to search for dynamically-loaded libraries.
 .TP
 .B OCAMLLIB
-The directory containing the Objective Caml standard
+The directory containing the OCaml standard
 library.  (If
 .B OCAMLLIB
 is not set,
 .B CAMLLIB
 will be used instead.) Used to locate the ld.conf configuration file for
 dynamic loading.  If not set,
-default to the library directory specified when compiling Objective Caml.
+default to the library directory specified when compiling OCaml.
 .TP
 .B OCAMLRUNPARAM
 Set the runtime system options and garbage collection parameters.
@@ -105,7 +118,7 @@ and an optional multiplier.  There are nine options, six of which
 correspond to the fields of the
 .B control
 record documented in
-.IR "The Objective Caml user's manual",
+.IR "The OCaml user's manual",
 chapter "Standard Library", section "Gc".
 .TP
 .B b
@@ -199,5 +212,5 @@ List of directories searched to find the bytecode executable file.
 .SH SEE ALSO
 .BR ocamlc (1).
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "Runtime system".

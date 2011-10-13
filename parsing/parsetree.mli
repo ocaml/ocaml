@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -73,8 +73,7 @@ and pattern_desc =
   | Ppat_tuple of pattern list
   | Ppat_construct of Longident.t * pattern option * bool
   | Ppat_variant of label * pattern option
-  | Ppat_record of
-      (Longident.t * pattern) list * closed_flag
+  | Ppat_record of (Longident.t * pattern) list * closed_flag
   | Ppat_array of pattern list
   | Ppat_or of pattern * pattern
   | Ppat_constraint of pattern * core_type
@@ -90,9 +89,9 @@ and expression_desc =
     Pexp_ident of Longident.t
   | Pexp_constant of constant
   | Pexp_let of rec_flag * (pattern * expression) list * expression
-  | Pexp_function of label * expression option * (string list * pattern * expression) list
+  | Pexp_function of label * expression option * (pattern * expression) list
   | Pexp_apply of expression * (label * expression) list
-  | Pexp_match of expression * (string list * pattern * expression) list
+  | Pexp_match of expression * (pattern * expression) list
   | Pexp_try of expression * (pattern * expression) list
   | Pexp_tuple of expression list
   | Pexp_construct of Longident.t * expression option * bool

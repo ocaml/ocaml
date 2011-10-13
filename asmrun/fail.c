@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -41,7 +41,9 @@ extern caml_generated_constant
   caml_exn_Not_found,
   caml_exn_Match_failure,
   caml_exn_Sys_blocked_io,
-  caml_exn_Stack_overflow;
+  caml_exn_Stack_overflow,
+  caml_exn_Assert_failure,
+  caml_exn_Undefined_recursive_module;
 extern caml_generated_constant
   caml_bucket_Out_of_memory,
   caml_bucket_Stack_overflow;
@@ -204,4 +206,10 @@ void caml_array_bound_error(void)
     array_bound_error_bucket_inited = 1;
   }
   caml_raise((value) &array_bound_error_bucket.exn);
+}
+
+int caml_is_special_exception(value exn) {
+  return exn == caml_exn_Match_failure
+    || exn == caml_exn_Assert_failure
+    || exn == caml_exn_Undefined_recursive_module;
 }

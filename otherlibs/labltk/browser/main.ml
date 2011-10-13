@@ -1,6 +1,6 @@
 (*************************************************************************)
 (*                                                                       *)
-(*                Objective Caml LablTk library                          *)
+(*                         OCaml LablTk library                          *)
 (*                                                                       *)
 (*            Jacques Garrigue, Kyoto University RIMS                    *)
 (*                                                                       *)
@@ -49,7 +49,7 @@ let check ~spec argv =
 open Printf
 
 let print_version () =
-  printf "The Objective Caml browser, version %s\n" Sys.ocaml_version;
+  printf "The OCaml browser, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
 
@@ -106,7 +106,7 @@ let _ =
         (Printf.sprintf "%s\nPlease check that %s %s\nCurrent value is `%s'"
            "Couldn't initialize environment."
            (if is_win32 then "%OCAMLLIB%" else "$OCAMLLIB")
-           "points to the Objective Caml library."
+           "points to the OCaml library."
            Config.standard_library)
   end;
 

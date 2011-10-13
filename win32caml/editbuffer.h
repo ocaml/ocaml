@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Jacob Navia, after Xavier Leroy                          */
 /*                                                                     */
@@ -22,26 +22,26 @@
 // All the below was added by Chris Watford watford@uiuc.edu
 
 typedef struct tagLineList {
-        struct tagLineList	*Next;
-		struct tagLineList	*Prev;
-        char				*Text;
+        struct tagLineList  *Next;
+        struct tagLineList  *Prev;
+        char                *Text;
 } LineList;
 
 typedef struct tagEditBuffer {
-	int					LineCount;
-	struct tagLineList	*Lines;
-	BOOL				isCorrect;
+    int                 LineCount;
+    struct tagLineList  *Lines;
+    BOOL                isCorrect;
 } EditBuffer;
 
-BOOL		editbuffer_addline			(EditBuffer* edBuf, char* line);
-BOOL		editbuffer_updateline		(EditBuffer* edBuf, int idx, char* line);
-BOOL		editbuffer_updateoraddline	(EditBuffer* edBuf, int idx, char* line);
-BOOL		editbuffer_removeline		(EditBuffer* edBuf, int idx);
-char*		editbuffer_getasline		(EditBuffer* edBuf);
-char*		editbuffer_getasbuffer		(EditBuffer* edBuf);
-char*		editbuffer_lastline			(EditBuffer* edBuf);
-EditBuffer*	editbuffer_copy				(EditBuffer* edBuf);
-void		editbuffer_destroy			(EditBuffer* edBuf);
-EditBuffer*	editbuffer_new				(void);
+BOOL        editbuffer_addline          (EditBuffer* edBuf, char* line);
+BOOL        editbuffer_updateline       (EditBuffer* edBuf, int idx, char* line);
+BOOL        editbuffer_updateoraddline  (EditBuffer* edBuf, int idx, char* line);
+BOOL        editbuffer_removeline       (EditBuffer* edBuf, int idx);
+char*       editbuffer_getasline        (EditBuffer* edBuf);
+char*       editbuffer_getasbuffer      (EditBuffer* edBuf);
+char*       editbuffer_lastline         (EditBuffer* edBuf);
+EditBuffer* editbuffer_copy             (EditBuffer* edBuf);
+void        editbuffer_destroy          (EditBuffer* edBuf);
+EditBuffer* editbuffer_new              (void);
 
 #endif

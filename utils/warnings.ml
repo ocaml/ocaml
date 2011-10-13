@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Pierre Weis && Damien Doligez, INRIA Rocquencourt        *)
 (*                                                                     *)
@@ -186,7 +186,7 @@ let parse_opt flags s =
 let parse_options errflag s = parse_opt (if errflag then error else active) s;;
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27..29";;
+let defaults_w = "+a-4-6-7-9-27-29";;
 let defaults_warn_error = "-a";;
 
 let () = parse_options false defaults_w;;
@@ -293,7 +293,6 @@ let check_fatal () =
   end;
 ;;
 
-
 let descriptions =
   [
     1, "Suspicious-looking start-of-comment mark.";
@@ -336,7 +335,9 @@ let descriptions =
    30, "Two labels or constructors of the same name are defined in two\n\
    \    mutually recursive types.";
   ]
+;;
 
 let help_warnings () =
   List.iter (fun (i, s) -> Printf.printf "%3i %s\n" i s) descriptions;
   exit 0
+;;

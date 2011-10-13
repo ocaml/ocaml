@@ -1,9 +1,9 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          Objective Caml port by John Malecki and Xavier Leroy       *)
+(*          OCaml port by John Malecki and Xavier Leroy                *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -39,20 +39,7 @@ let source_of_module pos mdle =
       Debugger_config.load_path_for
       !Config.load_path in
   let fname = pos.Lexing.pos_fname in
-  if fname = "" then
-    let innermost_module =
-      try
-        let dot_index = String.rindex mdle '.' in
-        String.sub mdle (succ dot_index) (pred ((String.length mdle) - dot_index))
-      with Not_found -> mdle in
-    let rec loop =
-      function
-      | [] -> raise Not_found
-      | ext :: exts ->
-          try find_in_path_uncap path (innermost_module ^ ext)
-          with Not_found -> loop exts
-    in loop source_extensions
-  else if Filename.is_implicit fname then
+  if Filename.is_implicit fname then
     find_in_path path fname
   else
     fname

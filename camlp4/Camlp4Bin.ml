@@ -1,15 +1,15 @@
 (* camlp4r *)
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -71,7 +71,7 @@ value rewrite_and_load n x =
     [ ("Parsers"|"", "pa_r.cmo"      | "r"  | "ocamlr" | "ocamlrevised" | "camlp4ocamlrevisedparser.cmo") -> load [pa_r]
     | ("Parsers"|"", "rr" | "reloaded" | "ocamlreloaded" | "camlp4ocamlreloadedparser.cmo") -> load [pa_rr]
     | ("Parsers"|"", "pa_o.cmo"      | "o"  | "ocaml" | "camlp4ocamlparser.cmo") -> load [pa_r; pa_o]
-    | ("Parsers"|"", "pa_rp.cmo"     | "rp" | "rparser" | "camlp4ocamlrevisedparserparser.cmo") -> load [pa_r; pa_o; pa_rp]
+    | ("Parsers"|"", "pa_rp.cmo"     | "rp" | "rparser" | "camlp4ocamlrevisedparserparser.cmo") -> load [pa_r; pa_rp]
     | ("Parsers"|"", "pa_op.cmo"     | "op" | "parser" | "camlp4ocamlparserparser.cmo") -> load [pa_r; pa_o; pa_rp; pa_op]
     | ("Parsers"|"", "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "grammar" | "camlp4grammarparser.cmo") -> load [pa_g]
     | ("Parsers"|"", "pa_macro.cmo"  | "m"  | "macro" | "camlp4macroparser.cmo") -> load [pa_m]
@@ -79,7 +79,7 @@ value rewrite_and_load n x =
     | ("Parsers"|"", "q_mlast.cmo" | "rq" | "camlp4ocamlrevisedquotationexpander.cmo") -> load [pa_qb; pa_rq]
     | ("Parsers"|"", "oq" | "camlp4ocamloriginalquotationexpander.cmo") -> load [pa_r; pa_o; pa_qb; pa_oq]
     | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_l; pa_m]
-    | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_l; pa_m]
+    | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_q; pa_g; pa_l; pa_m]
     | ("Parsers"|"", "comp" | "camlp4listcomprehension.cmo") -> load [pa_l]
     | ("Filters"|"", "lift" | "camlp4astlifter.cmo") -> load ["Camlp4AstLifter"]
     | ("Filters"|"", "exn" | "camlp4exceptiontracer.cmo") -> load ["Camlp4ExceptionTracer"]

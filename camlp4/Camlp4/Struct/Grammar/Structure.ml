@@ -1,14 +1,14 @@
 (****************************************************************************)
 (*                                                                          *)
-(*                              Objective Caml                              *)
+(*                                   OCaml                                  *)
 (*                                                                          *)
 (*                            INRIA Rocquencourt                            *)
 (*                                                                          *)
 (*  Copyright  2006   Institut National de Recherche  en  Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed under   *)
 (*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Objective   *)
-(*  Caml source tree.                                                       *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
 (*                                                                          *)
 (****************************************************************************)
 
@@ -36,6 +36,7 @@ module type S = sig
 
   type token_info = { prev_loc : Loc.t
                     ; cur_loc : Loc.t
+                    ; prev_loc_only : bool
                     };
 
   type token_stream = Stream.t (Token.t * token_info);
@@ -126,6 +127,7 @@ module Make (Lexer  : Sig.Lexer) = struct
 
   type token_info = { prev_loc : Loc.t
                     ; cur_loc : Loc.t
+                    ; prev_loc_only : bool
                     };
 
   type token_stream = Stream.t (Token.t * token_info);

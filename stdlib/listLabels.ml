@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*               Jacques Garrigue, Kyoto University RIMS               *)
 (*                                                                     *)

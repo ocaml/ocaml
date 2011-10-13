@@ -1,6 +1,6 @@
 #########################################################################
 #                                                                       #
-#                            Objective Caml                             #
+#                                 OCaml                                 #
 #                                                                       #
 #            Xavier Leroy, projet Cristal, INRIA Rocquencourt           #
 #                                                                       #
@@ -40,7 +40,7 @@ UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 
 OPTUTILS=$(UTILS)
 
-PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
+PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo
 
@@ -263,9 +263,9 @@ opt:
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
-	 otherlibrariesopt \
-	 ocamllex.opt ocamltoolsopt.opt ocamlbuild.native ocamldoc.opt
+	 $(DEBUGGER) ocamldoc ocamlbuild.byte camlp4out \
+	 ocamlopt.opt otherlibrariesopt ocamllex.opt ocamltoolsopt.opt \
+	 ocamldoc.opt ocamlbuild.native camlp4opt
 
 base.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt \
@@ -422,16 +422,6 @@ partialclean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
-
-# The auxiliary lexer for counting line numbers
-
-parsing/linenum.ml: parsing/linenum.mll
-	$(CAMLLEX) parsing/linenum.mll
-
-partialclean::
-	rm -f parsing/linenum.ml
-
-beforedepend:: parsing/linenum.ml
 
 # The bytecode compiler compiled with the native-code compiler
 

@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -18,6 +18,7 @@
 #include <mlvalues.h>
 #include <alloc.h>
 #include <io.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #ifdef HAS_UNISTD

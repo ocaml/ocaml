@@ -2,15 +2,17 @@
 
 default:
 	@for file in *.ml; do \
-	  $(OCAML) < $$file 2>&1 | grep -v '^        Objective Caml version' > $$file.result; \
+	  $(OCAML) < $$file 2>&1 | grep -v '^        OCaml version' > $$file.result; \
 	  if [ -f $$file.principal.reference ]; then \
-	    $(OCAML) -principal < $$file 2>&1 | grep -v '^        Objective Caml version' > $$file.principal.result; \
+	    $(OCAML) -principal < $$file 2>&1 | grep -v '^        OCaml version' > $$file.principal.result; \
 	  fi; \
 	done
 	@for file in *.reference; do \
 	  printf " ... testing '$$file':"; \
 	  diff -q $$file `basename $$file reference`result || (echo " => failed" && exit 1) && echo " => passed"; \
 	done
+
+promote: defaultpromote
 
 clean: defaultclean
 	@rm -f *.result

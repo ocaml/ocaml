@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -20,6 +20,17 @@
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
+
+CAMLexport mlsize_t caml_array_length(value array){
+  tag_t tag = Tag_val(array);
+  if (tag == Double_array_tag)
+    return Wosize_val(array) / Double_wosize;
+  else return Wosize_val(array);
+}
+
+CAMLexport int caml_is_double_array(value array){
+  return (Tag_val(array) == Double_array_tag);
+}
 
 CAMLprim value caml_array_get_addr(value array, value index)
 {

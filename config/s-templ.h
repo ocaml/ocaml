@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */
@@ -52,10 +52,10 @@
 /* Define SUPPORT_DYNAMIC_LINKING if dynamic loading of C stub code
    via dlopen() is available. */
 
-#define HAS_EXPM1_LOG1P
+#define HAS_C99_FLOAT_OPS
 
-/* Define HAS_EXPM1_LOG1P if the math functions expm1() and log1p()
-   are available.  (Standard C99 but not C89.) */
+/* Define HAS_C99_FLOAT_OPS if <math.h> conforms to ISO C99.
+   In particular, it should provide expm1(), log1p(), hypot(), copysign(). */
 
 /* 2. For the Unix library. */
 

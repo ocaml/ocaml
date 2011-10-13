@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*              Jun Furuse, projet Cristal, INRIA Rocquencourt         */
 /*                                                                     */

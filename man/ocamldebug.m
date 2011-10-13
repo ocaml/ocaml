@@ -1,15 +1,27 @@
-\" $Id$
-
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 2001 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAMLDEBUG 1
 
 .SH NAME
-ocamldebug \- the Objective Caml source-level replay debugger.
+ocamldebug \- the OCaml source-level replay debugger.
 .SH SYNOPSIS
 .B ocamldebug
 .RI [\  options \ ]\  program \ [\  arguments \ ]
 .SH DESCRIPTION
 .B ocamldebug
-is the Objective Caml source-level replay debugger.
+is the OCaml source-level replay debugger.
 
 Before the debugger can be used, the program must be compiled and
 linked with the
@@ -46,7 +58,7 @@ command.)
 .TP
 .B \-emacs
 Tell the debugger it is executed under Emacs.  (See
-.I "The Objective Caml user's manual"
+.I "The OCaml user's manual"
 for information on how to run the debugger under Emacs.)
 .TP
 .BI \-I \ directory
@@ -64,7 +76,7 @@ for communicating with the debugged program. See the description
 of the command
 .B set\ socket
 in
-.I "The Objective Caml user's manual"
+.I "The OCaml user's manual"
 for the format of
 .IR socket .
 .TP
@@ -79,7 +91,7 @@ Display a short usage summary and exit.
 .SH SEE ALSO
 .BR ocamlc (1)
 .br
-.IR "The Objective Caml user's manual" ,
+.IR "The OCaml user's manual" ,
 chapter "The debugger".
 .SH AUTHOR
 This manual page was written by Sven LUTHER <luther@debian.org>,

@@ -1,6 +1,6 @@
 ;(***********************************************************************)
 ;(*                                                                     *)
-;(*                           Objective Caml                            *)
+;(*                                OCaml                                *)
 ;(*                                                                     *)
 ;(*            Didier Remy, projet Cristal, INRIA Rocquencourt          *)
 ;(*                                                                     *)
@@ -49,5 +49,9 @@
 (defun caml-release-event-p (original event)
   (and (button-release-event-p event)
        (equal (event-button original) (event-button event))))
+
+(if (fboundp 'string-to-number)
+   (defalias 'caml-string-to-int 'string-to-number)
+ (defalias 'caml-string-to-int 'string-to-int))
 
 (provide 'caml-xemacs)

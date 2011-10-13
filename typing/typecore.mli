@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -51,7 +51,8 @@ val type_exp:
 val type_approx:
         Env.t -> Parsetree.expression -> type_expr
 val type_argument:
-        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+        Env.t -> Parsetree.expression ->
+        type_expr -> type_expr -> Typedtree.expression
 
 val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
@@ -97,13 +98,12 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
-  | Recursive_local_constraint of (type_expr * type_expr) list
   | Modules_not_allowed
   | Cannot_infer_signature
   | Not_a_packed_module of type_expr
+  | Recursive_local_constraint of (type_expr * type_expr) list
   | Unexpected_existential
-  | Not_fresh of Ident.t * type_expr
-  | Duplicate_binders of string
+
 exception Error of Location.t * error
 
 val report_error: formatter -> error -> unit

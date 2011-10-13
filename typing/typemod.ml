@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -41,6 +41,7 @@ type error =
   | With_need_typeconstr
   | Not_a_packed_module of type_expr
   | Incomplete_packed_module of type_expr
+  | Scoping_pack of string * type_expr
 
 exception Error of Location.t * error
 
@@ -93,6 +94,16 @@ let rec make_params n = function
 
 let wrap_param s = {ptyp_desc=Ptyp_var s; ptyp_loc=Location.none}
 
+let make_next_first rs rem =
+  if rs = Trec_first then
+    match rem with
+      Tsig_type (id, decl, Trec_next) :: rem ->
+        Tsig_type (id, decl, Trec_first) :: rem
+    | Tsig_module (id, mty, Trec_next) :: rem ->
+        Tsig_module (id, mty, Trec_first) :: rem
+    | _ -> rem
+  else rem
+
 let merge_constraint initial_env loc sg lid constr =
   let real_id = ref None in
   let rec merge env sg namelist row_id =
@@ -116,7 +127,7 @@ let merge_constraint initial_env loc sg lid constr =
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl = Typedecl.transl_with_constraint
-                        initial_env id (Some(Pident id_row)) sdecl in
+                        initial_env id (Some(Pident id_row)) decl sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
@@ -124,7 +135,7 @@ let merge_constraint initial_env loc sg lid constr =
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
         let newdecl =
-          Typedecl.transl_with_constraint initial_env id None sdecl in
+          Typedecl.transl_with_constraint initial_env id None decl sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], (Pwith_type _ | Pwith_typesubst _))
@@ -134,10 +145,10 @@ let merge_constraint initial_env loc sg lid constr =
       when Ident.name id = s ->
         (* Check as for a normal with constraint, but discard definition *)
         let newdecl =
-          Typedecl.transl_with_constraint initial_env id None sdecl in
+          Typedecl.transl_with_constraint initial_env id None decl sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         real_id := Some id;
-        rem
+        make_next_first rs rem
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = Typetexp.find_module initial_env loc lid in
@@ -150,7 +161,7 @@ let merge_constraint initial_env loc sg lid constr =
         let newmty = Mtype.strengthen env mty' path in
         ignore(Includemod.modtypes env newmty mty);
         real_id := Some id;
-        rem
+        make_next_first rs rem
     | (Tsig_module(id, mty, rs) :: rem, s :: namelist, _)
       when Ident.name id = s ->
         let newsg = merge env (extract_sig env loc mty) namelist None in
@@ -320,7 +331,8 @@ let check_sig_item type_names module_names modtype_names loc = function
 
 let rec remove_values ids = function
     [] -> []
-  | Tsig_value (id, _) :: rem when List.exists (Ident.equal id) ids -> rem
+  | Tsig_value (id, _) :: rem
+    when List.exists (Ident.equal id) ids -> remove_values ids rem
   | f :: rem -> f :: remove_values ids rem
 
 let rec get_values = function
@@ -752,7 +764,7 @@ let rec type_module sttn funct_body anchor env smod =
               Location.prerr_warning smod.pmod_loc
                 (Warnings.Not_principal "this module unpacking");
             modtype_of_package env smod.pmod_loc p nl tl
-        | {desc = Tvar} ->
+        | {desc = Tvar _} ->
             raise (Typecore.Error
                      (smod.pmod_loc, Typecore.Cannot_infer_signature))
         | _ ->
@@ -1012,16 +1024,33 @@ let rec get_manifest_types = function
   | _ :: rem -> get_manifest_types rem
 
 let type_package env m p nl tl =
+  (* Same as Pexp_letmodule *)
+  (* remember original level *)
+  let lv = Ctype.get_current_level () in
+  Ctype.begin_def ();
+  Ident.set_current_time lv;
+  let context = Typetexp.narrow () in
   let modl = type_module env m in
-  if nl = [] then (wrap_constraint env modl (Tmty_ident p), []) else
-  let msig = extract_sig env modl.mod_loc modl.mod_type in
-  let mtypes = get_manifest_types msig in
-  let tl' =
-    List.map2
-      (fun name ty -> try List.assoc name mtypes with Not_found -> ty)
-      nl tl
+  Ctype.init_def(Ident.current_time());
+  Typetexp.widen context;
+  let (mp, env) =
+    match modl.mod_desc with
+      Tmod_ident mp -> (mp, env)
+    | _ ->
+      let (id, new_env) = Env.enter_module "%M" modl.mod_type env in
+      (Pident id, new_env)
   in
+  let tl' =
+    List.map (fun name -> Ctype.newconstr (Pdot(mp, name, nopos)) []) nl in
+  (* go back to original level *)
+  Ctype.end_def ();
+  if nl = [] then (wrap_constraint env modl (Tmty_ident p), []) else
   let mty = modtype_of_package env modl.mod_loc p nl tl' in
+  List.iter2
+    (fun n ty ->
+      try Ctype.unify env ty (Ctype.newvar ())
+      with Ctype.Unify _ -> raise (Error(m.pmod_loc, Scoping_pack (n,ty))))
+    nl tl';
   (wrap_constraint env modl mty, tl')
 
 (* Fill in the forward declarations *)
@@ -1186,3 +1215,8 @@ let report_error ppf = function
       fprintf ppf
         "The type of this packed module contains variables:@ %a"
         type_expr ty
+  | Scoping_pack (id, ty) ->
+      fprintf ppf
+        "The type %s in this module cannot be exported.@ " id;
+      fprintf ppf
+        "Its type contains local dependencies:@ %a" type_expr ty

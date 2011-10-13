@@ -1,9 +1,21 @@
-\" $Id$
-
+.\"***********************************************************************
+.\"*                                                                     *
+.\"*                                OCaml                                *
+.\"*                                                                     *
+.\"*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *
+.\"*                                                                     *
+.\"*  Copyright 1996 Institut National de Recherche en Informatique et   *
+.\"*  en Automatique.  All rights reserved.  This file is distributed    *
+.\"*  under the terms of the Q Public License version 1.0.               *
+.\"*                                                                     *
+.\"***********************************************************************
+.\"
+.\" $Id$
+.\"
 .TH OCAML 1
 
 .SH NAME
-ocaml \- The Objective Caml interactive toplevel
+ocaml \- The OCaml interactive toplevel
 
 .SH SYNOPSIS
 .B ocaml
@@ -20,9 +32,9 @@ ocaml \- The Objective Caml interactive toplevel
 
 The
 .BR ocaml (1)
-command is the toplevel system for Objective Caml,
-that permits interactive use of the Objective Caml system through a
-read-eval-print loop. In this mode, the system repeatedly reads Caml
+command is the toplevel system for OCaml,
+that permits interactive use of the OCaml system through a
+read-eval-print loop. In this mode, the system repeatedly reads OCaml
 phrases from the input, then typechecks, compiles and evaluates
 them, then prints the inferred type and result value, if any. The
 system prints a # (sharp) prompt before reading each phrase.
@@ -178,5 +190,5 @@ and look up its capabilities in the terminal database.
 .SH SEE ALSO
 .BR ocamlc (1), \ ocamlopt (1), \ ocamlrun (1).
 .br
-.IR The\ Objective\ Caml\ user's\ manual ,
+.IR The\ OCaml\ user's\ manual ,
 chapter "The toplevel system".

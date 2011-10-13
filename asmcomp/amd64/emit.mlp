@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -338,9 +338,12 @@ let emit_instr fallthrough i =
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
         if src.loc <> dst.loc then begin
-          if src.typ = Float then
-            `	movsd	{emit_reg src}, {emit_reg dst}\n`
-          else
+          match src.typ, src.loc, dst.loc with
+            Float, Reg _, Reg _ ->
+              `	movapd	{emit_reg src}, {emit_reg dst}\n`
+          | Float, _, _ ->
+              `	movsd	{emit_reg src}, {emit_reg dst}\n`
+          | _ ->
               `	movq	{emit_reg src}, {emit_reg dst}\n`
         end
     | Lop(Iconst_int n) ->
@@ -359,7 +362,7 @@ let emit_instr fallthrough i =
         | _ ->
           let lbl = new_label() in
           float_constants := (lbl, s) :: !float_constants;
-          `	movlpd	{emit_label lbl}(%rip), {emit_reg i.res.(0)}\n`
+          `	movsd	{emit_label lbl}(%rip), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_symbol s) ->
         `	{load_symbol_addr s}, {emit_reg i.res.(0)}\n`
@@ -412,7 +415,7 @@ let emit_instr fallthrough i =
           | Single ->
             `	cvtss2sd {emit_addressing addr i.arg 0}, {emit_reg dest}\n`
           | Double | Double_u ->
-            `	movlpd	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
+            `	movsd	{emit_addressing addr i.arg 0}, {emit_reg dest}\n`
         end
     | Lop(Istore(chunk, addr)) ->
         begin match chunk with
@@ -428,7 +431,7 @@ let emit_instr fallthrough i =
             `	cvtsd2ss {emit_reg i.arg.(0)}, %xmm15\n`;
             `	movss	%xmm15, {emit_addressing addr i.arg 1}\n`
           | Double | Double_u ->
-            `	movlpd	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
+            `	movsd	{emit_reg i.arg.(0)}, {emit_addressing addr i.arg 1}\n`
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -688,17 +691,18 @@ let fundecl fundecl =
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
   emit_call_bound_errors ();
+  begin match Config.system with
+    "linux" | "gnu" ->
+      `	.type	{emit_symbol fundecl.fun_name},@function\n`;
+      `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
+    | _ -> ()
+  end;
   if !float_constants <> [] then begin
     if macosx
     then `	.literal8\n`
     else `	.section	.rodata.cst8,\"a\",@progbits\n`;
     List.iter emit_float_constant !float_constants
-  end;
-  match Config.system with
-    "linux" | "gnu" ->
-      `	.type	{emit_symbol fundecl.fun_name},@function\n`;
-      `	.size	{emit_symbol fundecl.fun_name},.-{emit_symbol fundecl.fun_name}\n`
-  | _ -> ()
+  end
 
 (* Emission of data *)
 

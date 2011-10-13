@@ -1,3 +1,17 @@
+(****************************************************************************)
+(*                                                                          *)
+(*                                   OCaml                                  *)
+(*                                                                          *)
+(*                            INRIA Rocquencourt                            *)
+(*                                                                          *)
+(*  Copyright  2007   Institut National de Recherche  en  Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed under   *)
+(*  the terms of the GNU Library General Public License, with the special   *)
+(*  exception on linking described in LICENSE at the top of the OCaml       *)
+(*  source tree.                                                            *)
+(*                                                                          *)
+(****************************************************************************)
+
   type loc = Loc.t
    and meta_bool =
     [ BTrue
@@ -201,6 +215,8 @@
     | MtSig of loc and sig_item
       (* mt with wc *)
     | MtWit of loc and module_type and with_constr
+      (* module type of m *)
+    | MtOf of loc and module_expr
     | MtAnt of loc and string (* $s$ *) ]
   and sig_item =
     [ SgNil of loc

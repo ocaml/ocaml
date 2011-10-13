@@ -1,11 +1,11 @@
 /***********************************************************************/
 /*                                                                     */
-/*                           Objective Caml                            */
+/*                                OCaml                                */
 /*                                                                     */
 /*        Mehdi Dogguy, PPS laboratory, University Paris Diderot       */
 /*                                                                     */
 /*  Copyright 2010 Mehdi Dogguy.  Used and distributed as part of      */
-/*  Objective Caml by permission from the author.   This file is       */
+/*  OCaml by permission from the author.   This file is                */
 /*  distributed under the terms of the Q Public License version 1.0.   */
 /***********************************************************************/
 

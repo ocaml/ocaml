@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                           Objective Caml                            *)
+(*                                OCaml                                *)
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
@@ -22,7 +22,7 @@ type function_label = string
 
 type ulambda =
     Uvar of Ident.t
-  | Uconst of structured_constant
+  | Uconst of structured_constant * string option
   | Udirect_apply of function_label * ulambda list * Debuginfo.t
   | Ugeneric_apply of ulambda * ulambda list * Debuginfo.t
   | Uclosure of (function_label * int * Ident.t list * ulambda) list

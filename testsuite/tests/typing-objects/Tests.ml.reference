@@ -134,8 +134,8 @@ Error: The type abbreviation t is cyclic
 # # - : bool = true
 #     module M : sig class ['a] c : unit -> object method f : 'a -> unit end end
 #   module M' : sig class ['a] c : unit -> object method f : 'a -> unit end end
-# - : ('b #M.c as 'a) -> 'a = <fun>
-# - : ('b #M'.c as 'a) -> 'a = <fun>
+# - : ('a #M.c as 'b) -> 'b = <fun>
+# - : ('a #M'.c as 'b) -> 'b = <fun>
 # class ['a] c : 'a #c -> object  end
 # class ['a] c : 'a #c -> object  end
 #     class c : unit -> object method f : int end

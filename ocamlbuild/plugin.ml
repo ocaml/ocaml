@@ -103,8 +103,9 @@ module Make(U:sig end) =
           Shell.chdir Pathname.pwd;
           if not !Options.just_plugin then
             let runner = if !Options.native_plugin then N else !Options.ocamlrun in
+            let argv = List.tl (Array.to_list Sys.argv) in
             let spec = S[runner; P(!Options.build_dir/plugin^(!Options.exe));
-                         A"-no-plugin"; atomize (List.tl (Array.to_list Sys.argv))] in
+                         A"-no-plugin"; atomize (List.filter (fun s -> s <> "-plugin-option") argv)] in
             let () = Log.finish () in
             raise (Exit_silently_with_code (sys_command (Command.string_of_command_spec spec)))
         end
