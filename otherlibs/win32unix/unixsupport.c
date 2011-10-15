@@ -54,7 +54,7 @@ value win_alloc_handle(HANDLE h)
   Handle_val(res) = h;
   Descr_kind_val(res) = KIND_HANDLE;
   CRT_fd_val(res) = NO_CRT_FD;
-  Flags_fd_val(res) = 0;
+  Flags_fd_val(res) = FLAGS_FD_IS_BLOCKING;
   return res;
 }
 
@@ -64,7 +64,7 @@ value win_alloc_socket(SOCKET s)
   Socket_val(res) = s;
   Descr_kind_val(res) = KIND_SOCKET;
   CRT_fd_val(res) = NO_CRT_FD;
-  Flags_fd_val(res) = 0;
+  Flags_fd_val(res) = FLAGS_FD_IS_BLOCKING;
   return res;
 }
 
