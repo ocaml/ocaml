@@ -19,7 +19,6 @@ Compilers:
 
 Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)
-- AMD64/MacOSX code generator: make local asm labels really local.
 
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)

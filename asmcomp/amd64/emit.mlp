@@ -82,13 +82,8 @@ let load_symbol_addr s =
 
 (* Output a label *)
 
-let label_prefix =
-  match Config.system with
-  | "macosx" -> "L"
-  | _ -> ".L"
-
 let emit_label lbl =
-  emit_string label_prefix; emit_int lbl
+  emit_string ".L"; emit_int lbl
 
 (* Output a .align directive. *)
 
