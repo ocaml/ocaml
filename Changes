@@ -5,8 +5,9 @@ OCaml 3.13.0:
 - Warning 28 is now enabled by default.
 
 Language features:
-- Added GADTs to the language. See testsuite/tests/typing-gadts for
-  the syntax and some examples of use. Please use -principal for testing.
+- Added Generalized Abstract Data Types (GADTs) to the language. See
+  testsuite/tests/typing-gadts for the syntax and some examples of
+  use. Please use -principal for testing.
 - It is now possible to omit type annotations when packing and unpacking
   first-class modules. The type-checker attempts to infer it from the context.
   Using the -principal option guarantees forward compatibility.
@@ -18,6 +19,7 @@ Compilers:
 
 Native-code compiler:
 - Optimized handling of partially-applied functions (PR#5287)
+- AMD64/MacOSX code generator: make local asm labels really local.
 
 Standard library:
 - Added float functions "hypot" and "copysign" (PR#3806, PR#4752, PR#5246)
