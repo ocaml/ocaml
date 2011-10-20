@@ -50,6 +50,7 @@ val no_auto_link : bool ref
 val dllpaths : string list ref
 val make_package : bool ref
 val for_package : string option ref
+val error_size : int ref
 val dump_parsetree : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
