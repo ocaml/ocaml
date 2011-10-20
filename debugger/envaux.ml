@@ -46,8 +46,6 @@ let rec env_from_summary sum subst =
           Env.add_value id (Subst.value_description subst desc) (env_from_summary s subst)
       | Env_type(s, id, desc) ->
           Env.add_type id (Subst.type_declaration subst desc) (env_from_summary s subst)
-      | Env_contract(s, path, cdecl) ->
-          Env.add_contract path cdecl (env_from_summary s subst)
       | Env_exception(s, id, desc) ->
           Env.add_exception id (Subst.exception_declaration subst desc) (env_from_summary s subst)
       | Env_module(s, id, desc) ->
@@ -62,7 +60,7 @@ let rec env_from_summary sum subst =
           let env = env_from_summary s subst in
           let path' = Subst.module_path subst path in
           let mty =
-            try 
+            try
               Env.find_module path' env
             with Not_found ->
               raise (Error (Module_not_found path'))

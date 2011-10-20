@@ -1,5 +1,19 @@
 #!/bin/sh
+
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#         Nicolas Pouillard, projet Gallium, INRIA Rocquencourt         #
+#                                                                       #
+#   Copyright 2008 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
 # $Id$
+
 OTHERLIBS_BYTE=""
 OTHERLIBS_NATIVE=""
 OTHERLIBS_UNIX_NATIVE=""
@@ -86,8 +100,6 @@ for lib in $OTHERLIBRARIES; do
     add_byte      lib/labltktop$EXE lib/labltk$EXE
     add_ocaml_lib jpf/jpflib
     add_ocaml_lib frx/frxlib
-    add_ocaml_lib tkanim/tkanim
-    add_file      tkanim/libtkanim.$A
     add_byte      browser/ocamlbrowser$EXE
     ;;
   dbm)

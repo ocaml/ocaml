@@ -37,11 +37,9 @@ value rec name_of_symbol entry =
 
 value rec name_of_symbol_failed entry =
   fun
-  [ Slist0 s -> name_of_symbol_failed entry s
-  | Slist0sep s _ -> name_of_symbol_failed entry s
-  | Slist1 s -> name_of_symbol_failed entry s
-  | Slist1sep s _ -> name_of_symbol_failed entry s
-  | Sopt s -> name_of_symbol_failed entry s
+  [ Slist0 s | Slist0sep s _ |
+    Slist1 s | Slist1sep s _ |
+    Sopt s | Stry s -> name_of_symbol_failed entry s
   | Stree t -> name_of_tree_failed entry t
   | s -> name_of_symbol entry s ]
 and name_of_tree_failed entry =
@@ -104,7 +102,7 @@ value tree_failed entry prev_symb_result prev_symb tree =
         | _ ->
             let txt1 = name_of_symbol_failed entry sep in
             txt1 ^ " or " ^ txt ^ " expected" ]
-    | Sopt _ | Stree _ -> txt ^ " expected"
+    | Stry _(*NP: not sure about this*) | Sopt _ | Stree _ -> txt ^ " expected"
     | _ -> txt ^ " expected after " ^ name_of_symbol entry prev_symb ]
   in
   do {

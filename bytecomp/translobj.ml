@@ -112,8 +112,8 @@ let transl_store_label_init glob size f arg =
     (size+1,
      Lsequence(
      Lprim(Psetfield(size, false),
-	   [Lprim(Pgetglobal glob, []);
-	    Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
+           [Lprim(Pgetglobal glob, []);
+            Lprim (Pccall prim_makearray, [int !method_count; int 0])]),
      expr))
   in
   (size, transl_label_init expr)
@@ -157,4 +157,3 @@ let oo_wrap env req f x =
     wrapping := false;
     top_env := Env.empty;
     raise exn
-    

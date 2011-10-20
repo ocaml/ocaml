@@ -259,8 +259,8 @@ method select_operation op args =
   | (Cnegf, _) -> (Inegf, args)
   | (Cabsf, _) -> (Iabsf, args)
   | (Caddf, _) -> (Iaddf, args)
-  | (Csubf, _) -> (Isubf, args)  
-  | (Cmulf, _) -> (Imulf, args)  
+  | (Csubf, _) -> (Isubf, args)
+  | (Cmulf, _) -> (Imulf, args)
   | (Cdivf, _) -> (Idivf, args)
   | (Cfloatofint, _) -> (Ifloatofint, args)
   | (Cintoffloat, _) -> (Iintoffloat, args)
@@ -335,6 +335,13 @@ method select_condition = function
   | arg ->
       (Itruetest, arg)
 
+(* Return an array of fresh registers of the given type.
+   Normally implemented as Reg.createv, but some
+   ports (e.g. Arm) can override this definition to store float values
+   in pairs of integer registers. *)
+
+method regs_for tys = Reg.createv tys
+
 (* Buffering of instruction sequences *)
 
 val mutable instr_seq = dummy_instr
@@ -373,8 +380,8 @@ method insert_move_results loc res stacksize =
   if stacksize <> 0 then self#insert(Iop(Istackoffset(-stacksize))) [||] [||];
   self#insert_moves loc res
 
-(* Add an Iop opcode. Can be overriden by processor description
-   to insert moves before and after the operation, i.e. for two-address 
+(* Add an Iop opcode. Can be overridden by processor description
+   to insert moves before and after the operation, i.e. for two-address
    instructions, or instructions using dedicated registers. *)
 
 method insert_op_debug op dbg rs rd =
@@ -391,22 +398,22 @@ method insert_op op rs rd =
 method emit_expr env exp =
   match exp with
     Cconst_int n ->
-      let r = Reg.createv typ_int in
+      let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
   | Cconst_natint n ->
-      let r = Reg.createv typ_int in
+      let r = self#regs_for typ_int in
       Some(self#insert_op (Iconst_int n) [||] r)
   | Cconst_float n ->
-      let r = Reg.createv typ_float in
+      let r = self#regs_for typ_float in
       Some(self#insert_op (Iconst_float n) [||] r)
   | Cconst_symbol n ->
-      let r = Reg.createv typ_addr in
+      let r = self#regs_for typ_addr in
       Some(self#insert_op (Iconst_symbol n) [||] r)
   | Cconst_pointer n ->
-      let r = Reg.createv typ_addr in
+      let r = self#regs_for typ_addr in
       Some(self#insert_op (Iconst_int(Nativeint.of_int n)) [||] r)
   | Cconst_natpointer n ->
-      let r = Reg.createv typ_addr in
+      let r = self#regs_for typ_addr in
       Some(self#insert_op (Iconst_int n) [||] r)
   | Cvar v ->
       begin try
@@ -460,7 +467,7 @@ method emit_expr env exp =
               Proc.contains_calls := true;
               let r1 = self#emit_tuple env new_args in
               let rarg = Array.sub r1 1 (Array.length r1 - 1) in
-              let rd = Reg.createv ty in
+              let rd = self#regs_for ty in
               let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
               let loc_res = Proc.loc_results rd in
               self#insert_move_args rarg loc_arg stack_ofs;
@@ -471,7 +478,7 @@ method emit_expr env exp =
           | Icall_imm lbl ->
               Proc.contains_calls := true;
               let r1 = self#emit_tuple env new_args in
-              let rd = Reg.createv ty in
+              let rd = self#regs_for ty in
               let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
               let loc_res = Proc.loc_results rd in
               self#insert_move_args r1 loc_arg stack_ofs;
@@ -482,7 +489,7 @@ method emit_expr env exp =
               Proc.contains_calls := true;
               let (loc_arg, stack_ofs) =
                 self#emit_extcall_args env new_args in
-              let rd = Reg.createv ty in
+              let rd = self#regs_for ty in
               let loc_res = Proc.loc_external_results rd in
               self#insert_debug (Iop(Iextcall(lbl, alloc))) dbg
                              loc_arg loc_res;
@@ -490,16 +497,16 @@ method emit_expr env exp =
               Some rd
           | Ialloc _ ->
               Proc.contains_calls := true;
-              let rd = Reg.createv typ_addr in
+              let rd = self#regs_for typ_addr in
               let size = size_expr env (Ctuple new_args) in
               self#insert (Iop(Ialloc size)) [||] rd;
               self#emit_stores env new_args rd;
               Some rd
           | op ->
               let r1 = self#emit_tuple env new_args in
-              let rd = Reg.createv ty in
+              let rd = self#regs_for ty in
               Some (self#insert_op_debug op dbg r1 rd)
-      end        
+      end
   | Csequence(e1, e2) ->
       begin match self#emit_expr env e1 with
         None -> None
@@ -536,9 +543,9 @@ method emit_expr env exp =
       let rs =
         List.map
           (fun id ->
-            let r = Reg.createv typ_addr in name_regs id r; r)
+            let r = self#regs_for typ_addr in name_regs id r; r)
           ids in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ; 
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
       let (r1, s1) = self#emit_sequence env e1 in
       catch_regs := List.tl !catch_regs ;
       let new_env =
@@ -566,7 +573,7 @@ method emit_expr env exp =
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
       let (r1, s1) = self#emit_sequence env e1 in
-      let rv = Reg.createv typ_addr in
+      let rv = self#regs_for typ_addr in
       let (r2, s2) = self#emit_sequence (Tbl.add v rv env) e2 in
       let r = join r1 s1 r2 s2 in
       self#insert
@@ -586,10 +593,7 @@ method private bind_let env v r1 =
     name_regs v r1;
     Tbl.add v r1 env
   end else begin
-    let rv = Array.create (Array.length r1) Reg.dummy in
-    for i = 0 to Array.length r1 - 1 do
-      rv.(i) <- Reg.create r1.(i).typ
-    done;
+    let rv = Reg.createv_like r1 in
     name_regs v rv;
     self#insert_moves r1 rv;
     Tbl.add v rv env
@@ -602,25 +606,21 @@ method private emit_parts env exp =
     match self#emit_expr env exp with
       None -> None
     | Some r ->
-        match Array.length r with
-          0 ->
-            Some (Ctuple [], env)
-        | 1 ->
-            (* The normal case *)
-            let id = Ident.create "bind" in
-            let r0 = r.(0) in
-            if String.length r0.name = 0 then
-              (* r0 is an anonymous, unshared register; use it directly *)
-              Some (Cvar id, Tbl.add id r env)
-            else begin
-              (* Introduce a fresh temp reg to hold the result *)
-              let v0 = Reg.create r0.typ in
-              self#insert_move r0 v0;
-              Some (Cvar id, Tbl.add id [|v0|] env)
-            end
-        | _ ->
-            (* Must not happen, we no longer support nested tuples *)
-            assert false
+        if Array.length r = 0 then
+          Some (Ctuple [], env)
+        else begin
+          (* The normal case *)
+          let id = Ident.create "bind" in
+          if all_regs_anonymous r then
+            (* r is an anonymous, unshared register; use it directly *)
+            Some (Cvar id, Tbl.add id r env)
+          else begin
+            (* Introduce a fresh temp to hold the result *)
+            let tmp = Reg.createv_like r in
+            self#insert_moves r tmp;
+            Some (Cvar id, Tbl.add id tmp env)
+          end
+        end
   end
 
 method private emit_parts_list env exp_list =
@@ -709,7 +709,7 @@ method emit_tail env exp =
                             (Array.append [|r1.(0)|] loc_arg) [||]
               end else begin
                 Proc.contains_calls := true;
-                let rd = Reg.createv ty in
+                let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 self#insert_move_args rarg loc_arg stack_ofs;
                 self#insert_debug (Iop Icall_ind) dbg
@@ -729,7 +729,7 @@ method emit_tail env exp =
                 self#insert (Iop(Itailcall_imm lbl)) loc_arg' [||]
               end else begin
                 Proc.contains_calls := true;
-                let rd = Reg.createv ty in
+                let rd = self#regs_for ty in
                 let loc_res = Proc.loc_results rd in
                 self#insert_move_args r1 loc_arg stack_ofs;
                 self#insert_debug (Iop(Icall_imm lbl)) dbg loc_arg loc_res;
@@ -764,11 +764,11 @@ method emit_tail env exp =
        let rs =
         List.map
           (fun id ->
-            let r = Reg.createv typ_addr in
+            let r = self#regs_for typ_addr in
             name_regs id r  ;
             r)
           ids in
-      catch_regs := (nfail, Array.concat rs) :: !catch_regs ; 
+      catch_regs := (nfail, Array.concat rs) :: !catch_regs ;
       let s1 = self#emit_tail_sequence env e1 in
       catch_regs := List.tl !catch_regs ;
       let new_env =
@@ -780,7 +780,7 @@ method emit_tail env exp =
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
       let (opt_r1, s1) = self#emit_sequence env e1 in
-      let rv = Reg.createv typ_addr in
+      let rv = self#regs_for typ_addr in
       let s2 = self#emit_tail_sequence (Tbl.add v rv env) e2 in
       self#insert
         (Itrywith(s1#extract,
@@ -808,7 +808,7 @@ method emit_fundecl f =
   current_function_name := f.Cmm.fun_name;
   let rargs =
     List.map
-      (fun (id, ty) -> let r = Reg.createv ty in name_regs id r; r)
+      (fun (id, ty) -> let r = self#regs_for ty in name_regs id r; r)
       f.Cmm.fun_args in
   let rarg = Array.concat rargs in
   let loc_arg = Proc.loc_parameters rarg in
@@ -824,3 +824,17 @@ method emit_fundecl f =
     fun_fast = f.Cmm.fun_fast }
 
 end
+
+(* Tail call criterion (estimated).  Assumes:
+- all arguments are of type "int" (always the case for Caml function calls)
+- one extra argument representing the closure environment (conservative).
+*)
+
+let is_tail_call nargs =
+  assert (Reg.dummy.typ = Int);
+  let args = Array.make (nargs + 1) Reg.dummy in
+  let (loc_arg, stack_ofs) = Proc.loc_arguments args in
+  stack_ofs = 0
+
+let _ =
+  Simplif.is_tail_native_heuristic := is_tail_call

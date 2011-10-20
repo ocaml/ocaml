@@ -12,7 +12,6 @@
 
 (* Original author: Nicolas Pouillard *)
 open My_std
-open Format
 
 type file_kind =
 | FK_dir
@@ -60,7 +59,7 @@ let stat f =
 
 let run_and_open s kont =
   with_temp_file "ocamlbuild" "out" begin fun tmp ->
-    let s = sprintf "%s > '%s'" s tmp in
+    let s = Printf.sprintf "%s > '%s'" s tmp in
     let st = sys_command s in
     if st <> 0 then failwith (Printf.sprintf "Error while running: %s" s);
     with_input_file tmp kont
@@ -94,7 +93,7 @@ and is_link x =
 
 and lstat x =
   if is_link x then { stat_key = x; stat_file_kind = FK_link } else stat x
-        
+
 let implem =
   {
     is_degraded = true;
@@ -135,7 +134,6 @@ let run_and_read cmd =
       if len > 0 then begin
         Buffer.add_substring totalbuf buf 0 len;
         loop (pos + len)
-      end 
+      end
     in loop 0; Buffer.contents totalbuf
   end
-

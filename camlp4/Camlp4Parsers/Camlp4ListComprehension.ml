@@ -20,7 +20,7 @@ open Camlp4;                                             (* -*- camlp4r -*- *)
 
 
 module Id = struct
-  value name = "Camlp4ListComprenhsion";
+  value name = "Camlp4ListComprehension";
   value version = Sys.ocaml_version;
 end;
 
@@ -45,21 +45,21 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           [ Some (KEYWORD "<-") -> n
           | Some (KEYWORD ("[" | "[<")) ->
               skip_patt (ignore_upto "]" (n + 1) + 1)
-          | Some (KEYWORD "(") -> 
+          | Some (KEYWORD "(") ->
               skip_patt (ignore_upto ")" (n + 1) + 1)
-          | Some (KEYWORD "{") -> 
+          | Some (KEYWORD "{") ->
               skip_patt (ignore_upto "}" (n + 1) + 1)
           | Some (KEYWORD ("as" | "::" | "," | "_"))
           | Some (LIDENT _ | UIDENT _) -> skip_patt (n + 1)
           | Some _ | None -> raise Stream.Failure ]
         and ignore_upto end_kwd n =
           match stream_peek_nth n strm with
-          [ Some (KEYWORD prm) when prm = end_kwd -> n 
+          [ Some (KEYWORD prm) when prm = end_kwd -> n
           | Some (KEYWORD ("[" | "[<")) ->
               ignore_upto end_kwd (ignore_upto "]" (n + 1) + 1)
           | Some (KEYWORD "(") ->
               ignore_upto end_kwd (ignore_upto ")" (n + 1) + 1)
-          | Some (KEYWORD "{") -> 
+          | Some (KEYWORD "{") ->
               ignore_upto end_kwd (ignore_upto "}" (n + 1) + 1)
           | Some _ -> ignore_upto end_kwd (n + 1)
           | None -> raise Stream.Failure ]
@@ -69,7 +69,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value map _loc p e l =
     match (p, e) with
     [ (<:patt< $lid:x$ >>, <:expr< $lid:y$ >>) when x = y -> l
-    | _ -> 
+    | _ ->
         if Ast.is_irrefut_patt p then
           <:expr< List.map (fun $p$ -> $e$) $l$ >>
         else
@@ -92,8 +92,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ [`gen (p, l)] -> map _loc p e l
     | [`gen (p, l); `cond b :: items] ->
         compr _loc e [`gen (p, filter _loc p b l) :: items]
-    | [`gen (p, l) :: ([ `gen (_, _) :: _ ] as is )] -> 
-        concat _loc (map _loc p (compr _loc e is) l) 
+    | [`gen (p, l) :: ([ `gen (_, _) :: _ ] as is )] ->
+        concat _loc (map _loc p (compr _loc e is) l)
     | _ -> raise Stream.Failure ];
 
   DELETE_RULE Gram expr: "["; sem_expr_for_list; "]" END;
@@ -122,9 +122,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | e = expr LEVEL "top" -> <:expr< [$e$] >> ] ]
     ;
 
-    item: 
-      [ [ test_patt_lessminus; 
-          p = patt; "<-" ; e = expr LEVEL "top" -> `gen (p, e)
+    item:
+      (* NP: These rules rely on being on this particular order. Which should
+             be improved. *)
+      [ [ p = TRY [p = patt; "<-" -> p] ; e = expr LEVEL "top" -> `gen (p, e)
         | e = expr LEVEL "top" -> `cond e ] ]
     ;
 

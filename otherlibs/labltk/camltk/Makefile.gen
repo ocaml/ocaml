@@ -9,9 +9,9 @@ _tkgen.ml: ../Widgets.src ../compiler/tkcompiler$(EXE)
 
 cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp$(EXE) #../builtin/builtin_*.ml
 	(echo '##define CAMLTK'; \
-         echo 'include Camltkwrap'; \
+	 echo 'include Camltkwrap'; \
 	 echo 'open Widget'; \
-         echo 'open Protocol'; \
+	 echo 'open Protocol'; \
 	 echo 'open Textvariable'; \
 	 echo ; \
 	 cat ../builtin/report.ml; \

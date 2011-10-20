@@ -11,6 +11,10 @@ TODO:
  - xml generator
 
 =====
+Release > 3.11.0:
+- option -g also for native code version (loading custom generators)
+
+=====
 Release 3.09.3:
 - mod: PR#4017 new option -short-functors to use a short form to display
   functors in html generator

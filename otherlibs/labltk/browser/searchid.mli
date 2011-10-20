@@ -27,7 +27,6 @@ type pkind =
   | Pmodtype
   | Pclass
   | Pcltype
-  | Pcontract
 
 val string_of_kind :  pkind -> string
 

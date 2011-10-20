@@ -23,6 +23,8 @@ let sees = ref ([] : string list)
 
 let since = ref (None : string option)
 
+let before = ref []
+
 let deprecated = ref (None : string option)
 
 let params = ref ([] : (string * string) list)
@@ -39,10 +41,11 @@ let init () =
   version := None;
   sees := [];
   since := None;
+  before := [];
   deprecated := None;
   params := [];
   raised_exceptions := [];
   return_value := None ;
-  customs := [] 
+  customs := []
 
 (* eof $Id$ *)

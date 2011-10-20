@@ -36,4 +36,3 @@ let unlock m =
   m.waiting <- [];                      (* atomic *)
   m.locked <- false;                    (* atomic *)
   List.iter Thread.wakeup w
-

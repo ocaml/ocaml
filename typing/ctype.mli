@@ -51,8 +51,7 @@ val none: type_expr
         (* A dummy type expression *)
 
 val repr: type_expr -> type_expr
-        (* Return the canonical representative of a type. 
-           It replaces Tlink by its real type. *)
+        (* Return the canonical representative of a type. *)
 
 val dummy_method: label
 val object_fields: type_expr -> type_expr
@@ -116,6 +115,7 @@ val instance_parameterized_type:
 val instance_parameterized_type_2:
         type_expr list -> type_expr list -> type_expr ->
         type_expr list * type_expr list * type_expr
+val instance_declaration: type_declaration -> type_declaration
 val instance_class:
         type_expr list -> class_type -> type_expr list * class_type
 val instance_poly:
@@ -184,7 +184,7 @@ type class_match_failure =
   | CM_Private_method of string
   | CM_Virtual_method of string
 val match_class_types:
-        Env.t -> class_type -> class_type -> class_match_failure list
+        ?trace:bool -> Env.t -> class_type -> class_type -> class_match_failure list
         (* Check if the first class type is more general than the second. *)
 val equal: Env.t -> bool -> type_expr list -> type_expr list -> bool
         (* [equal env [x1...xn] tau [y1...yn] sigma]

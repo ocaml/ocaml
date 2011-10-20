@@ -21,8 +21,8 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-extern int caml_debugger_in_use;
-extern int running;
+CAMLextern int caml_debugger_in_use;
+CAMLextern int caml_debugger_fork_mode; /* non-zero for parent */
 extern uintnat caml_event_count;
 
 enum event_kind {
@@ -32,6 +32,7 @@ enum event_kind {
 
 void caml_debugger_init (void);
 void caml_debugger (enum event_kind event);
+void caml_debugger_cleanup_fork (void);
 
 /* Communication protocol */
 
@@ -46,7 +47,7 @@ enum debugger_request {
   REQ_RESET_INSTR = 'i',        /* uint32 pos */
   /* Clear an event or breapoint at position pos, restores initial instr. */
   REQ_CHECKPOINT = 'c',         /* no args */
-  /* Checkpoint the runtime system by forking a child process. 
+  /* Checkpoint the runtime system by forking a child process.
      Reply is pid of child process or -1 if checkpoint failed. */
   REQ_GO = 'g',                 /* uint32 n */
   /* Run the program for n events.
@@ -84,9 +85,11 @@ enum debugger_request {
   REQ_MARSHAL_OBJ = 'M',        /* mlvalue v */
   /* Send a copy of the data structure rooted at v, using the same
      format as [caml_output_value]. */
-  REQ_GET_CLOSURE_CODE = 'C'    /* mlvalue v */
+  REQ_GET_CLOSURE_CODE = 'C',   /* mlvalue v */
   /* Send the code address of the given closure.
      Reply is one uint32. */
+  REQ_SET_FORK_MODE = 'K'       /* uint32 m */
+  /* Set whether to follow the child (m=0) or the parent on fork. */
 };
 
 /* Replies to a REQ_GO request. All replies are followed by three uint32:

@@ -17,11 +17,12 @@
 
 LIBNAME=str
 COBJS=strstubs.$(O)
+CLIBNAME=camlstr
 CAMLOBJS=str.cmo
 
 include ../Makefile.nt
 
 depend:
 
-str.cmo: str.cmi 
-str.cmx: str.cmi 
+str.cmo: str.cmi
+str.cmx: str.cmi

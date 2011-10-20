@@ -21,8 +21,8 @@ let message_version = software^" "^config_version
 
 (** Messages for command line *)
 
-let usage = "Usage : "^(Sys.argv.(0))^" [options] <files>\n"
-let options_are = "Options are :"
+let usage = "Usage: "^(Sys.argv.(0))^" [options] <files>\n"
+let options_are = "Options are:"
 let option_version = "\tPrint version and exit"
 let latex_only = "(LaTeX only)"
 let texi_only = "(TeXinfo only)"
@@ -53,6 +53,9 @@ let css_style = "<file>\n\t\tUse content of <file> as CSS style definition "^htm
 let index_only = "\tGenerate index files only "^html_only
 let colorize_code = "\n\t\tColorize code even in documentation pages "^html_only
 let html_short_functors = "\n\t\tUse short form to display functor types "^html_only
+let charset c = Printf.sprintf
+  "<s>\n\t\tAdd information about character encoding being s\n\t\t(default is %s)"
+  c
 let generate_html = "\tGenerate HTML documentation"
 let generate_latex = "\tGenerate LaTeX documentation"
 let generate_texinfo = "\tGenerate TeXinfo documentation"
@@ -63,7 +66,7 @@ let option_not_in_native_code op = "Option "^op^" not available in native code v
 
 let default_out_file = "ocamldoc.out"
 let out_file =
-  "<file>\tSet the ouput file name, used by texi, latex and dot generators\n"^
+  "<file>\tSet the output file name, used by texi, latex and dot generators\n"^
   "\t\t(default is "^default_out_file^")\n"^
   "\t\tor the prefix of index files for the HTML generator\n"^
   "\t\t(default is index)"
@@ -172,6 +175,7 @@ let merge_author = ('a', "merge @author")
 let merge_version = ('v', "merge @version")
 let merge_see = ('l', "merge @see")
 let merge_since = ('s', "merge @since")
+let merge_before = ('b', "merge @before")
 let merge_deprecated = ('o', "merge @deprecated")
 let merge_param = ('p', "merge @param")
 let merge_raised_exception = ('e', "merge @raise")
@@ -199,6 +203,7 @@ let merge_options =
        merge_version ;
        merge_see ;
        merge_since ;
+       merge_before ;
        merge_deprecated ;
        merge_param ;
        merge_raised_exception ;
@@ -206,6 +211,8 @@ let merge_options =
        merge_custom ;
        merge_all ]
   )
+
+let help = "\t\tDisplay this list of options"
 
 
 (** Error and warning messages *)
@@ -328,6 +335,7 @@ let methods = "Methods"
 let authors = "Author(s)"
 let version = "Version"
 let since = "Since"
+let before = "Before"
 let deprecated = "Deprecated."
 let raises = "Raises"
 let returns = "Returns"

@@ -28,7 +28,6 @@ type error =
   | Type_arity_mismatch of Longident.t * int * int
   | Bound_type_variable of string
   | Recursive_type
-  | Unbound_class of Longident.t
   | Unbound_row_variable of Longident.t
   | Type_mismatch of (type_expr * type_expr) list
   | Alias_type_mismatch of (type_expr * type_expr) list
@@ -39,11 +38,91 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
+  | Multiple_constraints_on_type of string
   | Repeated_method_label of string
+  | Unbound_value of Longident.t
+  | Unbound_constructor of Longident.t
+  | Unbound_label of Longident.t
+  | Unbound_module of Longident.t
+  | Unbound_class of Longident.t
+  | Unbound_modtype of Longident.t
+  | Unbound_cltype of Longident.t
+  | Ill_typed_functor_application of Longident.t
 
 exception Error of Location.t * error
 
 type variable_context = int * (string, type_expr) Tbl.t
+
+(* Narrowing unbound identifier errors. *)
+
+let rec narrow_unbound_lid_error env loc lid make_error =
+  let check_module mlid =
+    try ignore (Env.lookup_module mlid env)
+    with Not_found -> narrow_unbound_lid_error env loc mlid (fun lid -> Unbound_module lid); assert false
+  in
+  begin match lid with
+  | Longident.Lident _ -> ()
+  | Longident.Ldot (mlid, _) -> check_module mlid
+  | Longident.Lapply (flid, mlid) ->
+      check_module flid;
+      check_module mlid;
+      raise (Error (loc, Ill_typed_functor_application lid))
+  end;
+  raise (Error (loc, make_error lid))
+
+let find_component lookup make_error env loc lid =
+  try
+    match lid with
+    | Longident.Ldot (Longident.Lident "*predef*", s) -> lookup (Longident.Lident s) Env.initial
+    | _ -> lookup lid env
+  with Not_found ->
+    (narrow_unbound_lid_error env loc lid make_error
+     : unit (* to avoid a warning *));
+    assert false
+
+let find_type = find_component Env.lookup_type (fun lid -> Unbound_type_constructor lid)
+
+let find_constructor = find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
+
+let find_label = find_component Env.lookup_label (fun lid -> Unbound_label lid)
+
+let find_class = find_component Env.lookup_class (fun lid -> Unbound_class lid)
+
+let find_value = find_component Env.lookup_value (fun lid -> Unbound_value lid)
+
+let find_module = find_component Env.lookup_module (fun lid -> Unbound_module lid)
+
+let find_modtype = find_component Env.lookup_modtype (fun lid -> Unbound_modtype lid)
+
+let find_cltype = find_component Env.lookup_cltype (fun lid -> Unbound_cltype lid)
+
+(* Support for first-class modules. *)
+
+let transl_modtype_longident = ref (fun _ -> assert false)
+let transl_modtype = ref (fun _ -> assert false)
+
+let create_package_mty fake loc env (p, l) =
+  let l =
+    List.sort
+      (fun (s1, t1) (s2, t2) ->
+         if s1 = s2 then raise (Error (loc, Multiple_constraints_on_type s1));
+         compare s1 s2)
+      l
+  in
+  l,
+  List.fold_left
+    (fun mty (s, t) ->
+      let d = {ptype_params = [];
+               ptype_cstrs = [];
+               ptype_kind = Ptype_abstract;
+               ptype_private = Asttypes.Public;
+               ptype_manifest = if fake then None else Some t;
+               ptype_variance = [];
+               ptype_loc = loc} in
+      {pmty_desc=Pmty_with (mty, [ Longident.Lident s, Pwith_type d ]); pmty_loc=loc}
+    )
+    {pmty_desc=Pmty_ident p; pmty_loc=loc}
+    l
 
 (* Translation of type expressions *)
 
@@ -122,17 +201,7 @@ let rec transl_type env policy styp =
   | Ptyp_tuple stl ->
       newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl) ->
-      let (path, decl) =
-	let lid, env =
-	  match lid with
-	  | Longident.Ldot (Longident.Lident "*predef*", lid) -> 
-	      Longident.Lident lid, Env.initial
-	  | _ -> lid, env
-	in
-        try
-          Env.lookup_type lid env
-        with Not_found ->
-          raise(Error(styp.ptyp_loc, Unbound_type_constructor lid)) in
+      let (path, decl) = find_type env styp.ptyp_loc lid in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
@@ -320,7 +389,7 @@ let rec transl_type env policy styp =
                 let row = Btype.row_repr row in
                 row.row_fields
             | {desc=Tvar}, Some(p, _) ->
-                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
+                raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p))
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
@@ -384,6 +453,14 @@ let rec transl_type env policy styp =
       let ty' = Btype.newgenty (Tpoly(ty, List.rev ty_list)) in
       unify_var env (newvar()) ty';
       ty'
+  | Ptyp_package (p, l) ->
+      let l, mty = create_package_mty true styp.ptyp_loc env (p, l) in
+      let z = narrow () in
+      ignore (!transl_modtype env mty);
+      widen z;
+      newty (Tpackage (!transl_modtype_longident styp.ptyp_loc env p,
+                       List.map fst l,
+                       List.map (transl_type env policy) (List.map snd l)))
 
 and transl_fields env policy seen =
   function
@@ -422,6 +499,8 @@ let rec make_fixed_univars ty =
 let make_fixed_univars ty =
   make_fixed_univars ty;
   Btype.unmark_type ty
+
+let create_package_mty = create_package_mty false
 
 let globalize_used_variables env fixed =
   let r = ref [] in
@@ -483,6 +562,7 @@ let transl_simple_type_univars env styp =
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;
   let typ = transl_type env Extensible styp in
+  make_fixed_univars typ;
   (typ, globalize_used_variables env false)
 
 let transl_type_scheme env styp =
@@ -492,6 +572,7 @@ let transl_type_scheme env styp =
   end_def();
   generalize typ;
   typ
+
 
 (* Error report *)
 
@@ -515,8 +596,6 @@ let report_error ppf = function
       fprintf ppf "Already bound type parameter '%s" name
   | Recursive_type ->
       fprintf ppf "This type is recursive"
-  | Unbound_class lid ->
-      fprintf ppf "Unbound class %a" longident lid
   | Unbound_row_variable lid ->
       fprintf ppf "Unbound row variable in #%a" longident lid
   | Type_mismatch trace ->
@@ -559,6 +638,24 @@ let report_error ppf = function
         (if v.desc = Tvar then "it escapes this scope" else
          if v.desc = Tunivar then "it is aliased to another variable"
          else "it is not a variable")
+  | Multiple_constraints_on_type s ->
+      fprintf ppf "Multiple constraints for type %s" s
   | Repeated_method_label s ->
       fprintf ppf "@[This is the second method `%s' of this object type.@ %s@]"
         s "Multiple occurences are not allowed."
+  | Unbound_value lid ->
+      fprintf ppf "Unbound value %a" longident lid
+  | Unbound_module lid ->
+      fprintf ppf "Unbound module %a" longident lid
+  | Unbound_constructor lid ->
+      fprintf ppf "Unbound constructor %a" longident lid
+  | Unbound_label lid ->
+      fprintf ppf "Unbound record field label %a" longident lid
+  | Unbound_class lid ->
+      fprintf ppf "Unbound class %a" longident lid
+  | Unbound_modtype lid ->
+      fprintf ppf "Unbound module type %a" longident lid
+  | Unbound_cltype lid ->
+      fprintf ppf "Unbound class type %a" longident lid
+  | Ill_typed_functor_application lid ->
+      fprintf ppf "Ill-typed functor application %a" longident lid

@@ -8,12 +8,12 @@ let cTKtoCAMLimage s =
   | _ -> raise (TkError ("unknown image type \"" ^ res ^ "\""))
 ;;
 
-let names () = 
+let names () =
   let res = tkEval [|TkToken "image"; TkToken "names"|] in
   let names = splitlist res in
   List.map cTKtoCAMLimage names
 ;;
-  
+
 ##else
 
 let cTKtoCAMLimage s =
@@ -24,10 +24,10 @@ let cTKtoCAMLimage s =
   | _ -> raise (TkError ("unknown image type \"" ^ res ^ "\""))
 ;;
 
-let names () = 
+let names () =
   let res = tkEval [|TkToken "image"; TkToken "names"|] in
   let names = splitlist res in
   List.map cTKtoCAMLimage names
 ;;
-  
+
 ##endif

@@ -17,7 +17,6 @@
 type t
 
 val create: string -> t
-val create_idents: string -> int -> t list
 val create_persistent: string -> t
 val create_predef_exn: string -> t
 val rename: t -> t
@@ -26,7 +25,7 @@ val unique_name: t -> string
 val unique_toplevel_name: t -> string
 val persistent: t -> bool
 val equal: t -> t -> bool
-        (* Compare identifiers by name. *)      
+        (* Compare identifiers by name. *)
 val same: t -> t -> bool
         (* Compare identifiers by binding location.
            Two identifiers are the same either if they are both
@@ -50,34 +49,11 @@ val reinit: unit -> unit
 
 val print: Format.formatter -> t -> unit
 
-type 'a tbl =
-  Empty                   (* naxu added *)
-  | Node of 'a tbl * 'a data * 'a tbl * int
-
+type 'a tbl
         (* Association tables from identifiers to type 'a. *)
-and 'a data =
-  { ident: t;
-    data: 'a;
-    previous: 'a data option } (* end of naxu's stuff *)
 
 val empty: 'a tbl
-val tbl_data: 'a data -> 'a
-val tbl_ident: 'a data -> t
-
 val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
 val find_name: string -> 'a tbl -> 'a
 val keys: 'a tbl -> t list
-val map : ('a -> 'a) -> 'a tbl -> 'a tbl
-
-val get_known_new_name: t -> t list -> t
-
-val merge: 'a tbl -> 'a tbl -> 'a tbl
-val raw_keys: t tbl -> t list
-(* val find: string -> 'a tbl -> 'a *)
-
-
-val print_tbl: (Format.formatter -> t -> unit) ->
-            (Format.formatter -> 'a -> unit) -> 
-           Format.formatter -> 'a tbl -> unit
-

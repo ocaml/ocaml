@@ -1,4 +1,5 @@
 \" $Id$
+
 .TH OCAMLOPT 1
 
 .SH NAME
@@ -456,90 +457,43 @@ standard library directory, then exit.
 Print all external commands before they are executed, in particular
 invocations of the assembler, C compiler, and linker.
 .TP
-.B \-version
+.BR \-vnum or \-version
 Print the version number of the compiler in short form (e.g. "3.11.0"),
 then exit.
 .TP
 .BI \-w \ warning\-list
-Enable or disable warnings according to the argument
+Enable, disable, or mark as errors the warnings specified by the argument
 .IR warning\-list .
-The argument is a set of letters.  If a letter is
-uppercase, it enables the corresponding warnings; lowercase disables
-the warnings.  The correspondence is the following:
-
-.B A
-\ \ all warnings
-
-.B C
-\ \ start of comments that look like mistakes
-
-.B D
-\ \ use of deprecated features
-
-.B E
-\ \ fragile pattern matchings (matchings that will remain
-complete even if additional constructors are added to one of the
-variant types matched)
-
-.B F
-\ \ partially applied functions (expressions whose result has
-function type and is ignored)
-
-.B L
-\ \ omission of labels in applications
-
-.B M
-\ \ overriding of methods
-
-.B P
-\ \ missing cases in pattern matchings (i.e. partial matchings)
-
-.B S
-\ \ expressions in the left-hand side of a sequence that don't
-have type
-.B unit
-(and that are not functions, see
-.B F
-above)
-
-.B U
-\ \ redundant cases in pattern matching (unused cases)
-
-.B V
-\ \ overriding of instance variables
-
-.B Y
-\ \ unused variables that are bound with
-.BR let \ or \ as ,
-and don't start with an underscore (_) character
-
-.B Z
-\ \ all other cases of unused variables that don't start with an
-underscore (_) character
-
-.B X
-\ \ warnings that don't fit in the above categories (except
-.BR A )
-.IP
-The default setting is
-.BR \-w\ Aelz ,
-enabling all warnings except fragile
-pattern matchings, omitted labels, and innocuous unused variables.
-Note that warnings
-.BR F \ and \ S
-are not always triggered, depending on the internals of the type checker.
+See
+.BR ocamlc (1)
+for the syntax of
+.IR warning-list .
 .TP
 .BI \-warn\-error \ warning\-list
-Turn the warnings indicated in the argument
-.I warning\-list
-into errors.  The compiler will stop with an error when one of these
+Mark as errors the warnings specified in the argument
+.IR warning\-list .
+The compiler will stop with an error when one of these
 warnings is emitted.  The
 .I warning\-list
 has the same meaning as for
-the "\-w" option: an uppercase character turns the corresponding
-warning into an error, a lowercase character leaves it as a warning.
+the
+.B \-w
+option: a
+.B +
+sign (or an uppercase letter) turns the corresponding warnings into errors, a
+.B \-
+sign (or a lowercase letter) turns them back into warnings, and a
+.B @
+sign both enables and marks the corresponding warnings.
+
+Note: it is not recommended to use warning sets (i.e. letters) as
+arguments to
+.B \-warn\-error
+in production code, because this can break your build when future versions
+of OCaml add some new warnings.
+
 The default setting is
-.B \-warn\-error\ a
+.B \-warn\-error\ +a
 (none of the warnings is treated as an error).
 .TP
 .B \-where

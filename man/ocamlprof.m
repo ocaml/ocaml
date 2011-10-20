@@ -7,10 +7,7 @@ ocamlprof \- The Objective Caml profiler
 .SH SYNOPSIS
 .B ocamlprof
 [
-.BI \-f \ dump-file
-]
-[
-.BI \-F \ text
+.I options
 ]
 .I filename ...
 
@@ -61,7 +58,10 @@ Compile the file
 as an interface file, even if its extension is not .mli.
 .TP
 .B \-version
-Print the version number of ocamlprof and exit.
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.

@@ -40,7 +40,7 @@ method select_addressing = function
   | arg ->
       (Iindexed 0, arg)
 
-method select_operation op args =
+method! select_operation op args =
   match (op, args) with
     (* Recognize shift-add operations *)
     ((Caddi|Cadda),

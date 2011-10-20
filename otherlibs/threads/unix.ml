@@ -203,7 +203,7 @@ external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
 external unsafe_write : file_descr -> string -> int -> int -> int
     = "unix_write"
-external unsafe_single_write : file_descr -> string -> int -> int -> int 
+external unsafe_single_write : file_descr -> string -> int -> int -> int
     = "unix_single_write"
 
 let rec read fd buf ofs len =
@@ -411,13 +411,13 @@ external fork : unit -> int = "unix_fork"
 external _waitpid : wait_flag list -> int -> int * process_status
                   = "unix_waitpid"
 
-let wait_pid pid = 
+let wait_pid pid =
   match wait_pid_aux pid with
     Resumed_wait(pid, status) -> (pid, status)
   | _ -> invalid_arg "Thread.wait_pid"
 
 let wait () = wait_pid (-1)
-  
+
 let waitpid flags pid =
   if List.mem WNOHANG flags
   then _waitpid flags pid
@@ -473,6 +473,8 @@ external getgid : unit -> int = "unix_getgid"
 external getegid : unit -> int = "unix_getegid"
 external setgid : int -> unit = "unix_setgid"
 external getgroups : unit -> int array = "unix_getgroups"
+external setgroups : int array -> unit = "unix_setgroups"
+external initgroups : string -> int -> unit = "unix_initgroups"
 
 type passwd_entry =
   { pw_name : string;
@@ -569,7 +571,7 @@ let rec accept req =
 
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external listen : file_descr -> int -> unit = "unix_listen"
-external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
+external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown"
 external getsockname : file_descr -> sockaddr = "unix_getsockname"
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
 
@@ -621,7 +623,7 @@ let rec send fd buf ofs len flags =
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
     wait_write fd;
     send fd buf ofs len flags
-  
+
 let rec sendto fd buf ofs len flags addr =
   try
     if ofs < 0 || len < 0 || ofs > String.length buf - len
@@ -675,7 +677,7 @@ end = struct
   let optint = 2
   let float = 3
   let error = 4
-  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v 
+  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v
               = "unix_getsockopt"
   external set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
               = "unix_setsockopt"
@@ -761,7 +763,7 @@ let getaddrinfo_emulation node service opts =
       with Failure _ ->
       try
         [ty, (getservbyname service kind).s_port]
-      with Not_found -> [] 
+      with Not_found -> []
   in
   let ports =
     match !opt_socktype with
@@ -792,7 +794,7 @@ let getaddrinfo_emulation node service opts =
         [] in
   (* Cross-product of addresses and ports *)
   List.flatten
-    (List.map 
+    (List.map
       (fun (ty, port) ->
         List.map
           (fun (addr, name) ->
@@ -1046,7 +1048,7 @@ let find_proc_id fun_name proc =
     raise(Unix_error(EBADF, fun_name, ""))
 
 let rec waitpid_non_intr pid =
-  try waitpid [] pid 
+  try waitpid [] pid
   with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
 
 let close_process_in inchan =
@@ -1110,4 +1112,3 @@ let establish_server server_fun sockaddr =
             exit 0
     | id -> close s; ignore(waitpid [] id) (* Reclaim the son *)
   done
-

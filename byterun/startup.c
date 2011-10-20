@@ -176,7 +176,7 @@ int32 caml_seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 int32 caml_seek_section(int fd, struct exec_trailer *trail, char *name)
 {
   int32 len = caml_seek_optional_section(fd, trail, name);
-  if (len == -1) 
+  if (len == -1)
     caml_fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
   return len;
 }
@@ -249,6 +249,9 @@ static int parse_command_line(char **argv)
       if (!strcmp (argv[i], "-version")){
         printf ("The Objective Caml runtime, version " OCAML_VERSION "\n");
         exit (0);
+      }else if (!strcmp (argv[i], "-vnum")){
+        printf (OCAML_VERSION "\n");
+        exit (0);
       }else{
         caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
       }
@@ -285,7 +288,7 @@ static int parse_command_line(char **argv)
 static void scanmult (char *opt, uintnat *var)
 {
   char mult = ' ';
-  int val;
+  unsigned int val;
   sscanf (opt, "=%u%c", &val, &mult);
   sscanf (opt, "=0x%x%c", &val, &mult);
   switch (mult) {

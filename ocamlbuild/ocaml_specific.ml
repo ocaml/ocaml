@@ -55,6 +55,7 @@ let x_a = "%"-.-ext_lib;;
 let x_dll = "%"-.-ext_dll;;
 let x_p_o = "%.p"-.-ext_obj;;
 let x_p_a = "%.p"-.-ext_lib;;
+let x_p_dll = "%.p"-.-ext_dll;;
 
 rule "target files"
   ~dep:"%.itarget"
@@ -62,9 +63,14 @@ rule "target files"
   begin fun env build ->
     let itarget = env "%.itarget" in
     let dir = Pathname.dirname itarget in
-    List.iter ignore_good
-      (build (List.map (fun x -> [dir/x]) (string_list_of_file itarget)));
-    Nop
+    let targets = string_list_of_file itarget in
+    List.iter ignore_good (build (List.map (fun x -> [dir/x]) targets));
+    if !Options.make_links then
+      let link x =
+        Cmd (S [A"ln"; A"-sf"; P (!Options.build_dir/x); A Pathname.parent_dir_name]) in
+      Seq (List.map (fun x -> link (dir/x)) targets)
+    else
+      Nop
   end;;
 
 rule "ocaml: mli -> cmi"
@@ -207,17 +213,59 @@ rule "ocaml: mllib & cmx* & o* -> cmxa & a"
   ~dep:"%.mllib"
   (Ocaml_compiler.native_library_link_mllib "%.mllib" "%.cmxa");;
 
-rule "ocaml: p.cmx* & p.o* -> p.cmxa & p.a"
+rule "ocaml: p.cmx & p.o -> p.cmxa & p.a"
   ~tags:["ocaml"; "native"; "profile"; "library"]
   ~prods:["%.p.cmxa"; x_p_a]
   ~deps:["%.p.cmx"; x_p_o]
   (Ocaml_compiler.native_profile_library_link "%.p.cmx" "%.p.cmxa");;
 
-rule "ocaml: cmx* & o* -> cmxa & a"
+rule "ocaml: cmx & o -> cmxa & a"
   ~tags:["ocaml"; "native"; "library"]
   ~prods:["%.cmxa"; x_a]
   ~deps:["%.cmx"; x_o]
   (Ocaml_compiler.native_library_link "%.cmx" "%.cmxa");;
+
+rule "ocaml: mldylib & p.cmx* & p.o* -> p.cmxs & p.so"
+  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
+  ~prods:["%.p.cmxs"; x_p_dll]
+  ~dep:"%.mldylib"
+  (Ocaml_compiler.native_profile_shared_library_link_mldylib "%.mldylib" "%.p.cmxs");;
+
+rule "ocaml: mldylib & cmx* & o* -> cmxs & so"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"; x_dll]
+  ~dep:"%.mldylib"
+  (Ocaml_compiler.native_shared_library_link_mldylib "%.mldylib" "%.cmxs");;
+
+rule "ocaml: p.cmx & p.o -> p.cmxs & p.so"
+  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
+  ~prods:["%.p.cmxs"; x_p_dll]
+  ~deps:["%.p.cmx"; x_p_o]
+  (Ocaml_compiler.native_shared_library_link ~tags:["profile"] "%.p.cmx" "%.p.cmxs");;
+
+rule "ocaml: p.cmxa & p.a -> p.cmxs & p.so"
+  ~tags:["ocaml"; "native"; "profile"; "shared"; "library"]
+  ~prods:["%.p.cmxs"; x_p_dll]
+  ~deps:["%.p.cmxa"; x_p_a]
+  (Ocaml_compiler.native_shared_library_link ~tags:["profile";"linkall"] "%.p.cmxa" "%.p.cmxs");;
+
+rule "ocaml: cmx & o -> cmxs"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"]
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_shared_library_link "%.cmx" "%.cmxs");;
+
+rule "ocaml: cmx & o -> cmxs & so"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"; x_dll]
+  ~deps:["%.cmx"; x_o]
+  (Ocaml_compiler.native_shared_library_link "%.cmx" "%.cmxs");;
+
+rule "ocaml: cmxa & a -> cmxs & so"
+  ~tags:["ocaml"; "native"; "shared"; "library"]
+  ~prods:["%.cmxs"; x_dll]
+  ~deps:["%.cmxa"; x_a]
+  (Ocaml_compiler.native_shared_library_link ~tags:["linkall"] "%.cmxa" "%.cmxs");;
 
 rule "ocaml dependencies ml"
   ~prod:"%.ml.depends"
@@ -357,6 +405,65 @@ flag ["ocaml"; "native"; "link"] begin
   S (List.map (fun x -> A (x^".cmxa")) !Options.ocaml_libs)
 end;;
 
+flag ["ocaml"; "byte"; "link"] begin
+  S (List.map (fun x -> A (x^".cmo")) !Options.ocaml_mods)
+end;;
+
+flag ["ocaml"; "native"; "link"] begin
+  S (List.map (fun x -> A (x^".cmx")) !Options.ocaml_mods)
+end;;
+
+(* findlib *)
+let () =
+  if !Options.use_ocamlfind then begin
+    (* Ocamlfind will link the archives for us. *)
+    flag ["ocaml"; "link"; "program"] & A"-linkpkg";
+    flag ["ocaml"; "link"; "toplevel"] & A"-linkpkg";
+
+    let all_tags = [
+      ["ocaml"; "byte"; "compile"];
+      ["ocaml"; "native"; "compile"];
+      ["ocaml"; "byte"; "link"];
+      ["ocaml"; "native"; "link"];
+      ["ocaml"; "ocamldep"];
+      ["ocaml"; "doc"];
+      ["ocaml"; "mktop"];
+      ["ocaml"; "infer_interface"];
+    ] in
+
+    (* tags package(X), predicate(X) and syntax(X) *)
+    List.iter begin fun tags ->
+      pflag tags "package" (fun pkg -> S [A "-package"; A pkg]);
+      pflag tags "predicate" (fun pkg -> S [A "-predicate"; A pkg]);
+      pflag tags "syntax" (fun pkg -> S [A "-syntax"; A pkg])
+    end all_tags
+  end else begin
+    try
+      (* Note: if there is no -pkg option, ocamlfind won't be called *)
+      let pkgs = List.map Findlib.query !Options.ocaml_pkgs in
+      flag ["ocaml"; "byte"; "compile"] (Findlib.compile_flags_byte pkgs);
+      flag ["ocaml"; "native"; "compile"] (Findlib.compile_flags_native pkgs);
+      flag ["ocaml"; "byte"; "link"] (Findlib.link_flags_byte pkgs);
+      flag ["ocaml"; "native"; "link"] (Findlib.link_flags_native pkgs)
+    with Findlib.Findlib_error e ->
+      Findlib.report_error e
+  end
+
+(* parameterized tags *)
+let () =
+  pflag ["ocaml"; "native"; "compile"] "for-pack"
+    (fun param -> S [A "-for-pack"; A param]);
+  pflag ["ocaml"; "native"; "compile"] "inline"
+    (fun param -> S [A "-inline"; A param]);
+  pflag ["ocaml"; "compile"] "pp"
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml"; "ocamldep"] "pp"
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml"; "doc"] "pp"
+    (fun param -> S [A "-pp"; A param]);
+  pflag ["ocaml"; "infer_interface"] "pp"
+    (fun param -> S [A "-pp"; A param])
+
 let camlp4_flags camlp4s =
   List.iter begin fun camlp4 ->
     flag ["ocaml"; "pp"; camlp4] (A camlp4)
@@ -408,17 +515,23 @@ flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "annot"; "compile"] (A "-annot");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
+flag ["ocaml"; "rectypes"; "doc"] (A "-rectypes");;
 flag ["ocaml"; "linkall"; "link"] (A "-linkall");;
 flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "link"; "library"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
+
+(* threads, with or without findlib *)
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
-flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);;
-flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);;
-flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"]);;
-flag ["ocaml"; "link"; "thread"; "native"; "toplevel"] (S[A "threads.cmxa"; A "-thread"]);;
-flag ["ocaml"; "link"; "thread"; "byte"; "toplevel"] (S[A "threads.cma"; A "-thread"]);;
+if not !Options.use_ocamlfind then begin
+  flag ["ocaml"; "doc"; "thread"] (S[A"-I"; A"+threads"]);
+  flag ["ocaml"; "link"; "thread"; "native"; "program"] (S[A "threads.cmxa"; A "-thread"]);
+  flag ["ocaml"; "link"; "thread"; "byte"; "program"] (S[A "threads.cma"; A "-thread"])
+end else begin
+  flag ["ocaml"; "link"; "thread"; "program"] (A "-thread")
+end;;
+
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
 flag ["ocaml"; "compile"; "nolabels"] (A"-nolabels");;
 
@@ -435,7 +548,7 @@ let ocaml_warn_flag c =
   flag ["ocaml"; "compile"; sprintf "warn_error_%c" (Char.lowercase c)]
        (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
 
-List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'L'; 'M'; 'P'; 'S'; 'U'; 'V'; 'Y'; 'Z'; 'X'];;
+List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'L'; 'M'; 'P'; 'R'; 'S'; 'U'; 'V'; 'Y'; 'Z'; 'X'];;
 
 flag ["ocaml"; "doc"; "docdir"; "extension:html"] (A"-html");;
 flag ["ocaml"; "doc"; "docdir"; "manpage"] (A"-man");;

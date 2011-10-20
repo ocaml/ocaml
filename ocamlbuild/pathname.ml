@@ -156,4 +156,3 @@ let define_context dir context =
   Hashtbl.replace context_table dir& List.union context& include_dirs_of dir
 
 let same_contents x y = Digest.file x = Digest.file y
-

@@ -36,13 +36,19 @@ let class_declarations env cty1 cty2 =
 open Format
 open Ctype
 
+(*
+let rec hide_params = function
+    Tcty_fun ("*", _, cty) -> hide_params cty
+  | cty -> cty
+*)
+
 let include_err ppf =
   function
   | CM_Virtual_class ->
       fprintf ppf "A class cannot be changed from virtual to concrete"
   | CM_Parameter_arity_mismatch (ls, lp) ->
       fprintf ppf
-        "The classes do not have the same number of type parameters"     
+        "The classes do not have the same number of type parameters"
   | CM_Type_parameter_mismatch trace ->
       fprintf ppf "@[%a@]"
       (Printtyp.unification_error false trace
@@ -102,6 +108,3 @@ let report_error ppf = function
       let print_errs ppf errs =
          List.iter (fun err -> fprintf ppf "@ %a" include_err err) errs in
       fprintf ppf "@[<v>%a%a@]" include_err err print_errs errs
-
-
-

@@ -55,7 +55,7 @@ val regexp_case_fold : string -> regexp
 (** Same as [regexp], but the compiled expression will match text
     in a case-insensitive way: uppercase and lowercase letters will
     be considered equivalent. *)
-        
+
 val quote : string -> string
 (** [Str.quote s] returns a regexp string that matches exactly
    [s] and nothing else. *)
@@ -65,10 +65,10 @@ val regexp_string : string -> regexp
    that matches exactly [s] and nothing else.*)
 
 val regexp_string_case_fold : string -> regexp
-(** [Str.regexp_string_case_fold] is similar to {!Str.regexp_string}, 
+(** [Str.regexp_string_case_fold] is similar to {!Str.regexp_string},
    but the regexp matches in a case-insensitive way. *)
 
-   
+
 (** {6 String matching and searching} *)
 
 
@@ -99,25 +99,25 @@ val string_partial_match : regexp -> string -> int -> bool
 
 val matched_string : string -> string
 (** [matched_string s] returns the substring of [s] that was matched
-   by the latest {!Str.string_match}, {!Str.search_forward} or 
+   by the latest {!Str.string_match}, {!Str.search_forward} or
    {!Str.search_backward}.
    The user must make sure that the parameter [s] is the same string
    that was passed to the matching or searching function. *)
-        
+
 val match_beginning : unit -> int
 (** [match_beginning()] returns the position of the first character
    of the substring that was matched by {!Str.string_match},
    {!Str.search_forward} or {!Str.search_backward}. *)
 
 val match_end : unit -> int
-(** [match_end()] returns the position of the character following the 
+(** [match_end()] returns the position of the character following the
    last character of the substring that was matched by [string_match],
    [search_forward] or [search_backward]. *)
-        
+
 val matched_group : int -> string -> string
 (** [matched_group n s] returns the substring of [s] that was matched
    by the [n]th group [\(...\)] of the regular expression during
-   the latest {!Str.string_match}, {!Str.search_forward} or 
+   the latest {!Str.string_match}, {!Str.search_forward} or
    {!Str.search_backward}.
    The user must make sure that the parameter [s] is the same string
    that was passed to the matching or searching function.
@@ -131,7 +131,7 @@ val matched_group : int -> string -> string
 val group_beginning : int -> int
 (** [group_beginning n] returns the position of the first character
    of the substring that was matched by the [n]th group of
-   the regular expression. 
+   the regular expression.
    @raise Not_found if the [n]th group of the regular expression
    was not matched.
    @raise Invalid_argument if there are fewer than [n] groups in
@@ -140,7 +140,7 @@ val group_beginning : int -> int
 val group_end : int -> int
 (** [group_end n] returns
    the position of the character following the last character of
-   substring that was matched by the [n]th group of the regular expression. 
+   substring that was matched by the [n]th group of the regular expression.
    @raise Not_found if the [n]th group of the regular expression
    was not matched.
    @raise Invalid_argument if there are fewer than [n] groups in
@@ -168,7 +168,7 @@ val global_substitute : regexp -> (string -> string) -> string -> string
    have been replaced by the result of function [subst]. The
    function [subst] is called once for each matching substring,
    and receives [s] (the whole text) as argument. *)
-        
+
 val substitute_first : regexp -> (string -> string) -> string -> string
 (** Same as {!Str.global_substitute}, except that only the first substring
    matching the regular expression is replaced. *)
@@ -178,8 +178,8 @@ val replace_matched : string -> string -> string
    in which [\1], [\2], etc. have been replaced by the text
    matched by the corresponding groups in the most recent matching
    operation.  [s] must be the same string that was matched during
-   this matching operation. *)     
-        
+   this matching operation. *)
+
 
 (** {6 Splitting} *)
 
@@ -190,7 +190,7 @@ val split : regexp -> string -> string list
    For instance, [split (regexp "[ \t]+") s] splits [s] into
    blank-separated words.  An occurrence of the delimiter at the
    beginning and at the end of the string is ignored. *)
-        
+
 val bounded_split : regexp -> string -> int -> string list
 (** Same as {!Str.split}, but splits into at most [n] substrings,
    where [n] is the extra integer parameter. *)
@@ -208,7 +208,7 @@ val bounded_split_delim : regexp -> string -> int -> string list
    delimiter at the beginning and at the end of the string are
    recognized and returned as empty strings in the result. *)
 
-type split_result = 
+type split_result =
     Text of string
   | Delim of string
 
@@ -234,7 +234,7 @@ val string_before : string -> int -> string
 (** [string_before s n] returns the substring of all characters of [s]
    that precede position [n] (excluding the character at
    position [n]). *)
-        
+
 val string_after : string -> int -> string
 (** [string_after s n] returns the substring of all characters of [s]
    that follow position [n] (including the character at
@@ -243,7 +243,6 @@ val string_after : string -> int -> string
 val first_chars : string -> int -> string
 (** [first_chars s n] returns the first [n] characters of [s].
    This is the same function as {!Str.string_before}. *)
-        
+
 val last_chars : string -> int -> string
 (** [last_chars s n] returns the last [n] characters of [s]. *)
-

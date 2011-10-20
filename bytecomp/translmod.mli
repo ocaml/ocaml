@@ -18,16 +18,12 @@
 open Typedtree
 open Lambda
 
-type module_coercion = Types.module_coercion
-
-val transl_toplevel_contracts : Env.t -> structure -> structure
-val transl_contracts: structure * module_coercion -> structure * module_coercion
 val transl_implementation: string -> structure * module_coercion -> lambda
 val transl_store_phrases: string -> structure -> int * lambda
 val transl_store_implementation:
       string -> structure * module_coercion -> int * lambda
 val transl_toplevel_definition: structure -> lambda
-val transl_package: 
+val transl_package:
       Ident.t option list -> Ident.t -> module_coercion -> lambda
 val transl_store_package:
       Ident.t option list -> Ident.t -> module_coercion -> int * lambda

@@ -10,7 +10,7 @@ type bindAction =
 
 (*
 FUNCTION
- val bind: 
+ val bind:
     widget -> (modifier list * xEvent) list -> bindAction -> unit
 /FUNCTION
 *)
@@ -21,16 +21,16 @@ let bind widget eventsequence action =
                begin match action with
                  BindRemove -> TkToken ""
                | BindSet (what, f) ->
-                   let cbId = register_callback widget (wrapeventInfo f what) 
+                   let cbId = register_callback widget (wrapeventInfo f what)
                    in
                    TkToken ("camlcb " ^ cbId ^ (writeeventField what))
                | BindSetBreakable (what, f) ->
-                   let cbId = register_callback widget (wrapeventInfo f what) 
+                   let cbId = register_callback widget (wrapeventInfo f what)
                    in
                    TkToken ("camlcb " ^ cbId ^ (writeeventField what) ^
                             " ; if { $BreakBindingsSequence == 1 } then { break ;} ; set BreakBindingsSequence 0")
                |  BindExtend (what, f) ->
-                   let cbId = register_callback widget (wrapeventInfo f what) 
+                   let cbId = register_callback widget (wrapeventInfo f what)
                    in
                    TkToken ("+camlcb " ^ cbId ^ (writeeventField what))
                end |]
@@ -39,7 +39,7 @@ let bind widget eventsequence action =
 (* FUNCTION
 (* unsafe *)
  val bind_class :
-    string -> (modifier list * xEvent) list -> bindAction -> unit 
+    string -> (modifier list * xEvent) list -> bindAction -> unit
 (* /unsafe *)
 /FUNCTION class arg is not constrained *)
 
@@ -50,16 +50,16 @@ let bind_class clas eventsequence action =
                begin match action with
                  BindRemove -> TkToken ""
                | BindSet (what, f) ->
-                   let cbId = register_callback Widget.dummy 
+                   let cbId = register_callback Widget.dummy
                        (wrapeventInfo f what) in
                    TkToken ("camlcb " ^ cbId ^ (writeeventField what))
                | BindSetBreakable (what, f) ->
-                   let cbId = register_callback Widget.dummy 
+                   let cbId = register_callback Widget.dummy
                        (wrapeventInfo f what) in
                    TkToken ("camlcb " ^ cbId ^ (writeeventField what)^
                             " ; if { $BreakBindingsSequence == 1 } then { break ;} ; set BreakBindingsSequence 0" )
                | BindExtend (what, f) ->
-                   let cbId = register_callback Widget.dummy 
+                   let cbId = register_callback Widget.dummy
                        (wrapeventInfo f what) in
                    TkToken ("+camlcb " ^ cbId ^ (writeeventField what))
                end |]
@@ -67,8 +67,8 @@ let bind_class clas eventsequence action =
 
 (* FUNCTION
 (* unsafe *)
-  val bind_tag : 
-     string -> (modifier list * xEvent) list -> bindAction -> unit 
+  val bind_tag :
+     string -> (modifier list * xEvent) list -> bindAction -> unit
 (* /unsafe *)
 /FUNCTION *)
 
@@ -87,7 +87,7 @@ let break = function () ->
 (* Legacy functions *)
 let tag_bind = bind_tag;;
 let class_bind = bind_class;;
- 
+
 ##else
 
 let bind_class ~events ?(extend = false) ?(breakable = false) ?(fields = [])
@@ -104,7 +104,7 @@ let bind_class ~events ?(extend = false) ?(breakable = false) ?(fields = [])
            let cb = if extend then "+camlcb " else "camlcb " in
            let cb = cb ^ cbId ^ writeeventField fields in
            let cb =
-             if breakable then 
+             if breakable then
                cb ^ " ; if { $BreakBindingsSequence == 1 } then { break ;}"
                ^ " ; set BreakBindingsSequence 0"
              else cb in

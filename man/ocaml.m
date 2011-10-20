@@ -135,19 +135,29 @@ accesses an array or string outside of its bounds.
 .B \-version
 Print version string and exit.
 .TP
+.B \-vnum
+Print short version number and exit.
+.TP
 .BI \-w \ warning-list
 Enable or disable warnings according to the argument
 .IR warning-list .
 See
 .BR ocamlc (1)
-for the syntax of the argument.
+for the syntax of the
+.I warning\-list
+argument.
 .TP
 .BI \-warn-error \ warning-list
-Treat as errors the warnings enabled by the argument
-.IR warning-list .
-See
+Treat as errors the warnings described by the argument
+.IR warning\-list .
+Note that a warning is not triggered (and not treated as error) if
+it is disabled by the
+.B \-w
+option.  See
 .BR ocamlc (1)
-for the syntax of the argument.
+for the syntax of the
+.I warning\-list
+argument.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.

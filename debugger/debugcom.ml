@@ -22,8 +22,25 @@ open Primitives
 
 let conn = ref Primitives.std_io
 
+(* Set which process the debugger follows on fork. *)
+
+type follow_fork_mode =
+    Fork_child
+  | Fork_parent
+
+let fork_mode = ref Fork_parent
+
+let update_follow_fork_mode () =
+  let a = match !fork_mode with Fork_child -> 0 | Fork_parent -> 1 in
+  output_char !conn.io_out 'K';
+  output_binary_int !conn.io_out a
+
+(* Set the current connection, and update the fork mode in case it has
+ * changed. *)
+
 let set_current_connection io_chan =
-  conn := io_chan
+  conn := io_chan;
+  update_follow_fork_mode ()
 
 (* Modify the program code *)
 
@@ -183,7 +200,7 @@ exception Marshalling_error
 module Remote_value =
   struct
     type t = Remote of string | Local of Obj.t
-    
+
     let obj = function
     | Local obj -> Obj.obj obj
     | Remote v ->

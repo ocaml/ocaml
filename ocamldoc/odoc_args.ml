@@ -70,6 +70,7 @@ let analyse_merge_options s =
     (M.merge_version, [Odoc_types.Merge_version]) ;
     (M.merge_see, [Odoc_types.Merge_see]) ;
     (M.merge_since, [Odoc_types.Merge_since]) ;
+    (M.merge_before, [Odoc_types.Merge_before]) ;
     (M.merge_deprecated, [Odoc_types.Merge_deprecated]) ;
     (M.merge_param, [Odoc_types.Merge_param]) ;
     (M.merge_raised_exception, [Odoc_types.Merge_raised_exception]) ;
@@ -125,6 +126,8 @@ let index_only = ref false
 let colorize_code = ref false
 
 let html_short_functors = ref false
+
+let charset = ref "iso-8859-1"
 
 let with_header = ref true
 
@@ -210,8 +213,10 @@ let default_man_generator = ref (None : doc_generator option)
 let default_dot_generator = ref (None : doc_generator option)
 
 (** The default option list *)
-let options = ref [
+let default_options = [
   "-version", Arg.Unit (fun () -> print_string M.message_version ; print_newline () ; exit 0) , M.option_version ;
+  "-vnum", Arg.Unit (fun () -> print_string M.config_version ;
+                               print_newline () ; exit 0) , M.option_version ;
   "-v", Arg.Unit (fun () -> verbose := true), M.verbose_mode ;
   "-I", Arg.String (fun s -> include_dirs := (Misc.expand_directory Config.standard_library s) :: !include_dirs), M.include_dirs ;
   "-pp", Arg.String (fun s -> preprocessor := Some s), M.preprocess ;
@@ -261,7 +266,8 @@ let options = ref [
   "-css-style", Arg.String (fun s -> css_style := Some s), M.css_style ;
   "-index-only", Arg.Set index_only, M.index_only ;
   "-colorize-code", Arg.Set colorize_code, M.colorize_code ;
-  "-short-functors", Arg.Set html_short_functors, M.html_short_functors ^
+  "-short-functors", Arg.Set html_short_functors, M.html_short_functors ;
+  "-charset", Arg.Set_string charset, (M.charset !charset)^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)
@@ -304,7 +310,34 @@ let options = ref [
 
 ]
 
+let options = ref default_options
+
+let modified_options () =
+  !options != default_options
+
+let append_last_doc suffix =
+  match List.rev !options with
+  | (key, spec, doc) :: tl ->
+      options := List.rev ((key, spec, doc ^ suffix) :: tl)
+  | [] -> ()
+
+(** The help option list, overriding the default ones from the Arg module *)
+let help_options = ref []
+let help_action () =
+  let msg =
+    Arg.usage_string
+      (!options @ !help_options)
+      (M.usage ^ M.options_are) in 
+  print_string msg
+let () =
+  help_options := [
+    "-help", Arg.Unit help_action, M.help ;
+    "--help", Arg.Unit help_action, M.help
+]
+
 let add_option o =
+  if not (modified_options ()) then
+    append_last_doc "\n *** custom generator options ***\n";
   let (s,_,_) = o in
   let rec iter = function
       [] -> [o]
@@ -337,7 +370,9 @@ let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_g
   default_texi_generator := Some texi_generator ;
   default_man_generator := Some man_generator ;
   default_dot_generator := Some dot_generator ;
-  let _ = Arg.parse !options
+  if modified_options () then append_last_doc "\n";
+  let options = !options @ !help_options in
+  let _ = Arg.parse options
       anonymous
       (M.usage^M.options_are)
   in

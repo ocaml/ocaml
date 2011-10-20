@@ -17,7 +17,7 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g -warn-error A -nostdlib
+COMPFLAGS=-strict-sequence -g -warn-error A -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
 OPTCOMPFLAGS=-warn-error A -nostdlib -g
@@ -50,7 +50,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 sys.ml: sys.mlp ../VERSION
-	sed -e "s|%%VERSION%%|`head -1 ../VERSION`|" sys.mlp >sys.ml
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys.mlp >sys.ml
 
 clean::
 	rm -f sys.ml
@@ -94,3 +94,4 @@ include .depend
 
 depend:
 	$(CAMLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) *.ml | sed -e 's/\.cmx/.p.cmx/g' >>.depend

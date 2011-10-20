@@ -161,6 +161,10 @@ let print_version () =
   printf "The Objective Caml debugger, version %s@." Sys.ocaml_version;
   exit 0;
 ;;
+let print_version_num () =
+  printf "%s@." Sys.ocaml_version;
+  exit 0;
+;;
 
 let speclist = [
    "-c", Arg.Int set_checkpoints,
@@ -175,13 +179,15 @@ let speclist = [
       "<filename>  Set the name of the communication socket";
    "-version", Arg.Unit print_version,
       " Print version and exit";
+   "-vnum", Arg.Unit print_version_num,
+      " Print version number and exit";
    ]
 
 let main () =
   try
-    socket_name := 
+    socket_name :=
       (match Sys.os_type with
-        "Win32" -> 
+        "Win32" ->
           (Unix.string_of_inet_addr Unix.inet_addr_loopback)^
           ":"^
           (string_of_int (10000 + ((Unix.getpid ()) mod 10000)))

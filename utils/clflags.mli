@@ -34,7 +34,6 @@ val annotations : bool ref
 val use_threads : bool ref
 val use_vmthreads : bool ref
 val noassert : bool ref
-val nocontract : bool ref
 val verbose : bool ref
 val noprompt : bool ref
 val init_file : string option ref
@@ -42,6 +41,8 @@ val use_prims : string ref
 val use_runtime : string ref
 val principal : bool ref
 val recursive_types : bool ref
+val strict_sequence : bool ref
+val applicative_functors : bool ref
 val make_runtime : bool ref
 val gprofile : bool ref
 val c_compiler : string option ref
@@ -50,7 +51,6 @@ val dllpaths : string list ref
 val make_package : bool ref
 val for_package : string option ref
 val dump_parsetree : bool ref
-val dump_typedtree : bool ref
 val dump_rawlambda : bool ref
 val dump_lambda : bool ref
 val dump_instr : bool ref

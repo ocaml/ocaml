@@ -28,7 +28,7 @@ CAMLexport value * caml_stack_threshold;
 CAMLexport value * caml_extern_sp;
 CAMLexport value * caml_trapsp;
 CAMLexport value * caml_trap_barrier;
-value caml_global_data;
+value caml_global_data = 0;
 
 uintnat caml_max_stack_size;            /* also used in gc_ctrl.c */
 
@@ -101,4 +101,15 @@ void caml_change_max_stack_size (uintnat new_max_size)
                      new_max_size * sizeof (value) / 1024);
   }
   caml_max_stack_size = new_max_size;
+}
+
+CAMLexport uintnat (*caml_stack_usage_hook)(void) = NULL;
+
+uintnat caml_stack_usage(void)
+{
+  uintnat sz;
+  sz = caml_stack_high - caml_extern_sp;
+  if (caml_stack_usage_hook != NULL)
+    sz += (*caml_stack_usage_hook)();
+  return sz;
 }

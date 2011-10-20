@@ -63,7 +63,7 @@ CAMLprim value unix_getprotobynumber(value proto)
 
 CAMLprim value unix_getprotobynumber(value proto)
 { invalid_argument("getprotobynumber not implemented"); }
-  
+
 CAMLprim value unix_getprotobyname(value name)
 { invalid_argument("getprotobyname not implemented"); }
 

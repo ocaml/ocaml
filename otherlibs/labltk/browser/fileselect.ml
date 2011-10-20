@@ -35,7 +35,7 @@ let caml_dir path =
     global_replace ~!"\\\\" "/" path
   else path
 
-let parse_filter s = 
+let parse_filter s =
   let s = caml_dir s in
   (* replace // by / *)
   let s = global_replace ~!"/+" "/" s in
@@ -49,7 +49,7 @@ let parse_filter s =
           ~!"\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\.$" "" s in
   (* replace ^/hoge/../ by / *)
   let s = global_replace ~!"^\\(/\\.\\.\\)+/" "/" s in
-  if string_match ~!"^\\([^\\*?[]*[/:]\\)\\(.*\\)" s 0 then 
+  if string_match ~!"^\\([^\\*?[]*[/:]\\)\\(.*\\)" s 0 then
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
@@ -93,7 +93,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
 
   let may_prefix name =
     if Filename.is_relative name then concat !current_dir name else name in
-  
+
   let tl = Jg_toplevel.titled title in
   Focus.set tl;
 
@@ -124,7 +124,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       current_pattern := pattern;
     let filter =
         if !load_in_path && usepath then pattern else dir ^ pattern in
-    let directories = get_directories_in_files ~path:dir 
+    let directories = get_directories_in_files ~path:dir
           (get_files_in_directory dir) in
     let matched_files = (* get matched file by subshell call. *)
       if !load_in_path && usepath then
@@ -140,7 +140,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
           ~f:(fun acc dir -> List2.exclude dir acc)
     in
       Textvariable.set filter_var filter;
-      Textvariable.set selection_var (dir ^ deffile); 
+      Textvariable.set selection_var (dir ^ deffile);
       Listbox.delete filter_listbox ~first:(`Num 0) ~last:`End;
       Listbox.insert filter_listbox ~index:`End ~texts:matched_files;
       Jg_box.recenter filter_listbox ~index:(`Num 0);
@@ -154,7 +154,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
         Jg_box.recenter directory_listbox ~index:(`Num 0)
       end
   in
-  
+
   let selected_files = ref [] in (* used for synchronous mode *)
   let activate l =
     Grab.release tl;
@@ -170,14 +170,14 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       else
         List.map l ~f:may_prefix
     in
-    if sync then 
+    if sync then
       begin
         selected_files := l;
         Textvariable.set sync_var "1"
       end
-    else proc l 
+    else proc l
   in
-  
+
   (* entries *)
   let fl = Label.create frm ~text:"Filter" in
   let sl = Label.create frm ~text:"Selection" in
@@ -205,14 +205,14 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
       configure ~filter:(Textvariable.get filter_var)
     end
   and okb = Button.create cfrm ~text:"Ok" ~command:
-    begin fun () -> 
-      let files = 
+    begin fun () ->
+      let files =
         List.map (Listbox.curselection filter_listbox) ~f:
         begin fun x ->
           !current_dir ^ Listbox.get filter_listbox ~index:x
         end
       in
-      let files = if files = [] then [Textvariable.get selection_var] 
+      let files = if files = [] then [Textvariable.get selection_var]
                                 else files in
       activate files
     end
@@ -261,7 +261,7 @@ let f ~title ~action:proc ?(dir = Unix.getcwd ())
     pack [dfr] ~side:`Right ~fill:`Both ~expand:true;
     pack [dfrl] ~side:`Top ~anchor:`W;
     pack [dfrf] ~side:`Top ~fill:`Both ~expand:true;
-    pack [filter_scrollbar] ~side:`Right ~fill:`Y; 
+    pack [filter_scrollbar] ~side:`Right ~fill:`Y;
     pack [filter_listbox] ~side:`Left ~fill:`Both ~expand:true;
 
     (* selection *)

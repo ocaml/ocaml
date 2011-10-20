@@ -308,4 +308,3 @@ CAMLexport void caml_MD5Transform(uint32 *buf, uint32 *in)
     buf[2] += c;
     buf[3] += d;
 }
-

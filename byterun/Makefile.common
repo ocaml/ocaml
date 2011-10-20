@@ -84,7 +84,7 @@ jumptbl.h : instruct.h
 	       -e '/^}/q' instruct.h > jumptbl.h
 
 version.h : ../VERSION
-	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" > version.h
+	echo "#define OCAML_VERSION \"`sed -e 1q ../VERSION`\"" > version.h
 
 clean ::
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.$(O) *.$(A) *.$(SO)

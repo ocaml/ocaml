@@ -16,7 +16,7 @@
 
 open Tk
 
-let enter_focus w = 
+let enter_focus w =
   bind w ~events:[`Enter] ~action:(fun _ -> Focus.set w)
 
 let escape_destroy ?destroy:tl w =

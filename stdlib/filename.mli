@@ -23,7 +23,7 @@ val parent_dir_name : string
    (e.g. [..] in Unix). *)
 
 val dir_sep : string
-(** The directory separator (e.g. [/] in Unix). *)
+(** The directory separator (e.g. [/] in Unix). @since 3.11.2 *)
 
 val concat : string -> string -> string
 (** [concat dir file] returns a file name that designates file
@@ -82,6 +82,8 @@ val temp_file : ?temp_dir: string -> string -> string -> string
    (readable and writable only by the file owner).  The file is
    guaranteed to be different from any other file that existed when
    [temp_file] was called.
+   Raise [Sys_error] if the file could not be created.
+   @before 3.11.2 no ?temp_dir optional argument
 *)
 
 val open_temp_file :
@@ -93,7 +95,10 @@ val open_temp_file :
    by a symbolic link) before the program opens it.  The optional argument
    [mode] is a list of additional flags to control the opening of the file.
    It can contain one or several of [Open_append], [Open_binary],
-   and [Open_text].  The default is [[Open_text]] (open in text mode). *)
+   and [Open_text].  The default is [[Open_text]] (open in text mode).
+   Raise [Sys_error] if the file could not be opened.
+   @before 3.11.2 no ?temp_dir optional argument
+*)
 
 val temp_dir_name : string
 (** The name of the temporary directory:
@@ -101,6 +106,7 @@ val temp_dir_name : string
     if the variable is not set.
     Under Windows, the value of the [TEMP] environment variable, or "."
     if the variable is not set.
+    @since 3.09.1
 *)
 
 val quote : string -> string

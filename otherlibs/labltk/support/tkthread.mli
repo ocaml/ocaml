@@ -17,7 +17,7 @@
 (* Helper functions for using LablTk with threads.
    To use, add tkthread.cmo or tkthread.cmx to your command line *)
 
-(** Start the main loop in a new GUI thread. Do not use recursively. *) 
+(** Start the main loop in a new GUI thread. Do not use recursively. *)
 val start : unit -> Thread.t
 (** The actual function executed in the GUI thread *)
 val thread_main : unit -> unit

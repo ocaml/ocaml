@@ -24,7 +24,7 @@ let wordsize = (* officially approved *)
   if 1 lsl 31 = 0 then 4 else 8
 
 
-let init () = 
+let init () =
   let top = Toplevel.create Widget.default_toplevel [Class "CamlGC"] in
   let name = Camltk.appname_get () in
     Wm.title_set top (name ^ " Memory Gauge");

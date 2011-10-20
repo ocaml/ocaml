@@ -45,7 +45,6 @@ val view_type_id : Longident.t -> env:Env.t -> unit
 val view_class_id : Longident.t -> env:Env.t -> unit
 val view_cltype_id : Longident.t -> env:Env.t -> unit
 val view_modtype_id : Longident.t -> env:Env.t -> unit
-val view_contract_id : Longident.t -> env:Env.t -> unit
 val view_type_decl : Path.t -> env:Env.t -> unit
 
 type skind = [`Type|`Class|`Module|`Modtype]
@@ -76,4 +75,3 @@ val parent_path : Path.t -> Path.t option
 val string_of_path : Path.t -> string
 val string_of_longident : Longident.t -> string
 val lines_to_chars : int -> text:string -> int
-

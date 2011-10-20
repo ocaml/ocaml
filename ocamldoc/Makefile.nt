@@ -14,8 +14,8 @@
 include ../config/Makefile
 
 CAMLRUN =../boot/ocamlrun
-OCAMLC   =$(CAMLRUN) ../ocamlc -warn-error A
-OCAMLOPT =$(CAMLRUN) ../ocamlopt
+OCAMLC   = ../ocamlcomp.sh
+OCAMLOPT = ../ocamlcompopt.sh
 OCAMLLEX =$(CAMLRUN) ../boot/ocamllex
 OCAMLYACC=../boot/ocamlyacc
 
@@ -31,15 +31,15 @@ CP=cp
 OCAMLDOC=ocamldoc
 OCAMLDOC_RUN=$(CAMLRUN) $(OCAMLDOC)
 OCAMLDOC_OPT=$(OCAMLDOC).opt
-OCAMLDOC_LIBCMA=odoc_info.cma 
+OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
-OCAMLDOC_LIBCMXA=odoc_info.cmxa 
+OCAMLDOC_LIBCMXA=odoc_info.cmxa
 OCAMLDOC_LIBA=odoc_info.$(A)
 INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
 INSTALL_CUSTOMDIR=$(INSTALL_LIBDIR)/custom
 INSTALL_BINDIR=$(OCAMLBIN)
 
-INSTALL_MLIS=odoc_info.mli 
+INSTALL_MLIS=odoc_info.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 
 # Compilation
@@ -257,7 +257,7 @@ clean:: dummy
 	@rm -f $(OCAMLDOC) $(OCAMLDOC_OPT) *.cma *.cmxa *.cmo *.cmi *.cmx *.$(A) *.$(O)
 	@rm -f odoc_parser.output odoc_text_parser.output
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
-	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli 
+	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli
 
 depend::
 	rm -f .depend

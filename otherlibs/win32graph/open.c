@@ -72,7 +72,7 @@ void ResetForClose(HWND hwnd)
         gr_initialized = 0;
 }
 
-        
+
 
 static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
@@ -154,7 +154,7 @@ static value gr_reset(void)
         grwindow.CurrentBrush = SelectObject(grwindow.gc,GetStockObject(WHITE_BRUSH));
         SelectObject(grwindow.gc,grwindow.CurrentBrush);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
-	caml_gr_set_color(Val_long(0));
+        caml_gr_set_color(Val_long(0));
         SelectObject(grwindow.gc,grwindow.CurrentFont);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentFont);
         grdisplay_mode = grremember_mode = 1;
@@ -229,11 +229,11 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
   }
   gr_reset();
   ShowWindow(grwindow.hwnd,SW_SHOWNORMAL);
-  
+
   /* Position the current point at origin */
   grwindow.grx = 0;
   grwindow.gry = 0;
-  
+
   caml_gr_init_event_queue();
 
   /* The global data structures are now correctly initialized.
@@ -256,7 +256,7 @@ CAMLprim value caml_gr_open_graph(value arg)
   long tid;
   if (gr_initialized) return Val_unit;
   open_graph_event = CreateEvent(NULL, FALSE, FALSE, NULL);
-  threadHandle = 
+  threadHandle =
     CreateThread(NULL,0,
                  (LPTHREAD_START_ROUTINE)gr_open_graph_internal,(void **)arg,
                  0,
@@ -270,7 +270,7 @@ CAMLprim value caml_gr_open_graph(value arg)
 CAMLprim value caml_gr_close_graph(void)
 {
         if (gr_initialized) {
-	        PostMessage(grwindow.hwnd, WM_CLOSE, 0, 0);
+                PostMessage(grwindow.hwnd, WM_CLOSE, 0, 0);
                 WaitForSingleObject(threadHandle, INFINITE);
         }
         return Val_unit;

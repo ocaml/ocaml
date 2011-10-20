@@ -54,11 +54,11 @@ let as_cset = function
 %token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet Tas Tsharp
 
 %right Tas
-%left Tsharp
 %left Tor
 %nonassoc CONCAT
 %nonassoc Tmaybe Tstar Tplus
-          Tident Tchar Tstring Tunderscore Teof Tlbracket Tlparen
+%left Tsharp
+%nonassoc Tident Tchar Tstring Tunderscore Teof Tlbracket Tlparen
 
 %start lexer_definition
 %type <Syntax.lexer_definition> lexer_definition

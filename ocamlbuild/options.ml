@@ -37,6 +37,7 @@ let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
 let catch_errors = ref true
+let use_ocamlfind = ref false
 
 let mk_virtual_solvers =
   let dir = Ocamlbuild_where.bindir in
@@ -62,7 +63,7 @@ let mk_virtual_solvers =
 let () =
   mk_virtual_solvers
     ["ocamlc"; "ocamlopt"; "ocamldep"; "ocamldoc";
-    "ocamlyacc"; "menhir"; "ocamllex"; "ocamlmklib"; "ocamlmktop"]
+    "ocamlyacc"; "menhir"; "ocamllex"; "ocamlmklib"; "ocamlmktop"; "ocamlfind"]
 let ocamlc = ref (V"OCAMLC")
 let ocamlopt = ref (V"OCAMLOPT")
 let ocamldep = ref (V"OCAMLDEP")
@@ -72,6 +73,7 @@ let ocamllex = ref (V"OCAMLLEX")
 let ocamlmklib = ref (V"OCAMLMKLIB")
 let ocamlmktop = ref (V"OCAMLMKTOP")
 let ocamlrun = ref N
+let ocamlfind x = S[V"OCAMLFIND"; x]
 let program_to_execute = ref false
 let must_clean = ref false
 let show_documentation = ref false
@@ -83,6 +85,8 @@ let exe = ref Ocamlbuild_Myocamlbuild_config.exe
 
 let targets_internal = ref []
 let ocaml_libs_internal = ref []
+let ocaml_mods_internal = ref []
+let ocaml_pkgs_internal = ref []
 let ocaml_lflags_internal = ref []
 let ocaml_cflags_internal = ref []
 let ocaml_ppflags_internal = ref []
@@ -123,17 +127,19 @@ let add_to' rxs x =
     ()
 let set_cmd rcmd = String (fun s -> rcmd := Sh s)
 let set_build_dir s = make_links := false; build_dir := s
-let spec =
+let spec = ref (
   Arg.align
   [
    "-version", Unit (fun () -> print_endline version; raise Exit_OK), " Display the version";
+   "-vnum", Unit (fun () -> print_endline Sys.ocaml_version; raise Exit_OK),
+            " Display the version number";
    "-quiet", Unit (fun () -> Log.level := 0), " Make as quiet as possible";
    "-verbose", Int (fun i -> Log.level := i + 2), "<level> Set the verbosity level";
    "-documentation", Set show_documentation, " Show rules and flags";
    "-log", Set_string log_file_internal, "<file> Set log file";
    "-no-log", Unit (fun () -> log_file_internal := ""), " No log file";
-   "-clean", Set must_clean, " Remove build directory and other files, then exit"; 
-   "-r", Set recursive, " Traverse directories by default (true: traverse)"; 
+   "-clean", Set must_clean, " Remove build directory and other files, then exit";
+   "-r", Set recursive, " Traverse directories by default (true: traverse)";
 
    "-I", String (add_to' my_include_dirs), "<path> Add to include directories";
    "-Is", String (add_to my_include_dirs), "<path,...> (same as above, but accepts a (comma or blank)-separated list)";
@@ -142,6 +148,11 @@ let spec =
 
    "-lib", String (add_to' ocaml_libs_internal), "<flag> Link to this ocaml library";
    "-libs", String (add_to ocaml_libs_internal), "<flag,...> (idem)";
+   "-mod", String (add_to' ocaml_mods_internal), "<module> Link to this ocaml module";
+   "-mods", String (add_to ocaml_mods_internal), "<module,...> (idem)";
+   "-pkg", String (add_to' ocaml_pkgs_internal), "<package> Link to this ocaml findlib package";
+   "-pkgs", String (add_to ocaml_pkgs_internal), "<package,...> (idem)";
+   "-package", String (add_to' ocaml_pkgs_internal), "<package> (idem)";
    "-lflag", String (add_to' ocaml_lflags_internal), "<flag> Add to ocamlc link flags";
    "-lflags", String (add_to ocaml_lflags_internal), "<flag,...> (idem)";
    "-cflag", String (add_to' ocaml_cflags_internal), "<flag> Add to ocamlc compile flags";
@@ -166,12 +177,14 @@ let spec =
    "-dont-catch-errors", Clear catch_errors, " Don't catch and display exceptions (useful to display the call stack)";
    "-just-plugin", Set just_plugin, " Just build myocamlbuild.ml";
    "-byte-plugin", Clear native_plugin, " Don't use a native plugin but bytecode";
+   "-plugin-option", String ignore, " Use the option only when plugin is run";
    "-sanitization-script", Set_string sanitization_script, " Change the file name for the generated sanitization script";
    "-no-sanitize", Clear sanitize, " Do not generate sanitization script";
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
    "-use-jocaml", Unit use_jocaml, " Use jocaml compilers instead of ocaml ones";
+   "-use-ocamlfind", Set use_ocamlfind, " Use ocamlfind to call ocaml compilers";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
@@ -183,6 +196,7 @@ let spec =
    "-ocamlc", set_cmd ocamlc, "<command> Set the OCaml bytecode compiler";
    "-ocamlopt", set_cmd ocamlopt, "<command> Set the OCaml native compiler";
    "-ocamldep", set_cmd ocamldep, "<command> Set the OCaml dependency tool";
+   "-ocamldoc", set_cmd ocamldoc, "<command> Set the OCaml documentation generator";
    "-ocamlyacc", set_cmd ocamlyacc, "<command> Set the ocamlyacc tool";
    "-menhir", set_cmd ocamlyacc, "<command> Set the menhir tool (use it after -use-menhir)";
    "-ocamllex", set_cmd ocamllex, "<command> Set the ocamllex tool";
@@ -193,10 +207,15 @@ let spec =
 
    "--", Rest (fun x -> program_to_execute := true; add_to' program_args_internal x),
    " Stop argument processing, remaining arguments are given to the user program";
-  ]
+  ])
+
+let add x =
+  spec := !spec @ [x]
 
 let targets = ref []
 let ocaml_libs = ref []
+let ocaml_mods = ref []
+let ocaml_pkgs = ref []
 let ocaml_lflags = ref []
 let ocaml_cflags = ref []
 let ocaml_ppflags = ref []
@@ -212,7 +231,7 @@ let init () =
   let anon_fun = add_to' targets_internal in
   let usage_msg = sprintf "Usage %s [options] <target>" Sys.argv.(0) in
   let argv' = Array.concat [Sys.argv; [|dummy|]] in
-  parse_argv argv' spec anon_fun usage_msg;
+  parse_argv argv' !spec anon_fun usage_msg;
   Shell.mkdir_p !build_dir;
 
   let () =
@@ -229,9 +248,22 @@ let init () =
       Log.init log
   in
 
+  if !use_ocamlfind then begin
+    (* TODO: warning message when using an option such as -ocamlc *)
+    (* Note that plugins can still modify these variables After_options.
+       This design decision can easily be changed. *)
+    ocamlc := ocamlfind & A"ocamlc";
+    ocamlopt := ocamlfind & A"ocamlopt";
+    ocamldep := ocamlfind & A"ocamldep";
+    ocamldoc := ocamlfind & A"ocamldoc";
+    ocamlmktop := ocamlfind & A"ocamlmktop";
+  end;
+
   let reorder x y = x := !x @ (List.concat (List.rev !y)) in
   reorder targets targets_internal;
   reorder ocaml_libs ocaml_libs_internal;
+  reorder ocaml_mods ocaml_mods_internal;
+  reorder ocaml_pkgs ocaml_pkgs_internal;
   reorder ocaml_cflags ocaml_cflags_internal;
   reorder ocaml_lflags ocaml_lflags_internal;
   reorder ocaml_ppflags ocaml_ppflags_internal;

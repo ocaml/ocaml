@@ -14,19 +14,18 @@
 (** Analysis of source files. *)
 
 (** This function builds the top modules from the analysis of the
-   given list of source files. 
+   given list of source files.
    @param init is the list of modules already known from a previous analysis.
 *)
-val analyse_files : 
-    ?init: Odoc_module.t_module list -> 
-      Odoc_args.source_file list -> 
+val analyse_files :
+    ?init: Odoc_module.t_module list ->
+      Odoc_args.source_file list ->
         Odoc_module.t_module list
 
-(** Dump of a list of modules into a file. 
+(** Dump of a list of modules into a file.
    @raise Failure if an error occurs.*)
 val dump_modules : string -> Odoc_module.t_module list -> unit
-    
-(** Load of a list of modules from a file. 
+
+(** Load of a list of modules from a file.
    @raise Failure if an error occurs.*)
 val load_modules : string -> Odoc_module.t_module list
-    

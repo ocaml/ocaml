@@ -14,9 +14,9 @@
 val of_tags : Tags.t -> Command.spec
 val of_tag_list : Tags.elt list -> Command.spec
 val flag : Tags.elt list -> Command.spec -> unit
+val pflag : Tags.elt list -> string -> (string -> Command.spec) -> unit
 val add : 'a -> 'a list -> 'a list
 val remove : 'a -> 'a list -> 'a list
-val to_spec : (string * string) list -> Command.spec
 
 (** For system use only *)
 

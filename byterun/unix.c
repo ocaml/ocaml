@@ -91,7 +91,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   strcpy(fullname, name);
   return fullname;
 }
-  
+
 #ifdef __CYGWIN32__
 
 /* Cygwin needs special treatment because of the implicit ".exe" at the
@@ -135,7 +135,7 @@ static char * cygwin_search_exe_in_path(struct ext_table * path, char * name)
   strcpy(fullname, name);
   return fullname;
 }
-  
+
 #endif
 
 char * caml_search_exe_in_path(char * name)
@@ -204,13 +204,16 @@ char * caml_dlerror(void)
 #ifndef RTLD_GLOBAL
 #define RTLD_GLOBAL 0
 #endif
+#ifndef RTLD_LOCAL
+#define RTLD_LOCAL 0
+#endif
 #ifndef RTLD_NODELETE
 #define RTLD_NODELETE 0
 #endif
 
 void * caml_dlopen(char * libname, int for_execution, int global)
 {
-  return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : 0) | RTLD_NODELETE);
+  return dlopen(libname, RTLD_NOW | (global ? RTLD_GLOBAL : RTLD_LOCAL) | RTLD_NODELETE);
   /* Could use RTLD_LAZY if for_execution == 0, but needs testing */
 }
 

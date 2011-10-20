@@ -30,6 +30,7 @@ int win_CRT_fd_of_filedescr(value handle)
   } else {
     int fd = _open_osfhandle((long) Handle_val(handle), O_BINARY);
     if (fd == -1) uerror("channel_of_descr", Nothing);
+    CRT_fd_val(handle) = fd;
     return fd;
   }
 }
@@ -44,7 +45,7 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);
-  CAMLreturn(vchan); 
+  CAMLreturn(vchan);
 }
 
 CAMLprim value win_outchannel_of_filedescr(value handle)
@@ -58,7 +59,7 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);
-  CAMLreturn(vchan); 
+  CAMLreturn(vchan);
 }
 
 CAMLprim value win_filedescr_of_channel(value vchan)

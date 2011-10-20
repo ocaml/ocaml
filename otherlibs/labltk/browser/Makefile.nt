@@ -1,3 +1,5 @@
+# $Id$
+
 OTHERSLIB=-I $(OTHERS)/win32unix -I $(OTHERS)/str -I $(OTHERS)/systhreads
 
 CCFLAGS=-I../../../byterun $(TK_DEFS)

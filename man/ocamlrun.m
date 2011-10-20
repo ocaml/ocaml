@@ -1,4 +1,5 @@
 \" $Id$
+
 .TH OCAMLRUN 1
 
 .SH NAME
@@ -71,7 +72,10 @@ This is equivalent to setting
 in the OCAMLRUNPARAM environment variable (see below).
 .TP
 .B \-version
-Print version and exit.
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
 
 .SH ENVIRONMENT VARIABLES
 

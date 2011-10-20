@@ -31,13 +31,15 @@ and pattern_desc =
   | Tpat_alias of pattern * Ident.t
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
-  | Tpat_construct of Path.t * constructor_description * pattern list
+  | Tpat_construct of constructor_description * pattern list
   | Tpat_variant of label * pattern option * row_desc ref
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * row_desc option
   | Tpat_lazy of pattern
 
+type partial = Partial | Total
+type optional = Required | Optional
 
 type expression =
   { exp_desc: expression_desc;
@@ -54,7 +56,7 @@ and expression_desc =
   | Texp_match of expression * (pattern * expression) list * partial
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
-  | Texp_construct of Path.t * constructor_description * expression list
+  | Texp_construct of constructor_description * expression list
   | Texp_variant of label * expression option
   | Texp_record of (label_description * expression) list * expression option
   | Texp_field of expression * label_description
@@ -76,39 +78,11 @@ and expression_desc =
   | Texp_assertfalse
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
-(* add below 3 for contract checking *)
-  | Texp_local_contract of core_contract * expression 
-  | Texp_contract of core_contract * expression * expression * expression
-  | Texp_bad of blame 
-  | Texp_unr of blame 
-  | Texp_Lambda of Ident.t list * expression (* /\'a. e |><| c, 'a is a contractvar *)
-  | Texp_App of expression * expression list (* e 'a, 'a is a contractvar *)
-  | Texp_raise of expression 
+  | Texp_pack of module_expr
 
-and core_contract = 
-  { contract_desc: core_contract_desc;
-    contract_loc:  Location.t;
-    contract_type: type_expr;
-    contract_env: Env.t }
-
-and core_contract_desc = 
-    Tctr_pred of Ident.t * expression * ((pattern * expression) list) option
-  | Tctr_arrow of Ident.t option * core_contract * core_contract
-  | Tctr_tuple of (Ident.t option * core_contract) list
-  | Tctr_constr of Path.t * constructor_description 
-                          * (Ident.t option * core_contract) list
-  | Tctr_and of core_contract * core_contract
-  | Tctr_or of core_contract * core_contract
-  | Tctr_typconstr of Path.t * core_contract list
-  | Tctr_var of Ident.t
-  | Tctr_poly of Ident.t list * core_contract
-
-and contract_declaration =  
-  { ttopctr_id: Path.t;
-    ttopctr_desc: core_contract;
-    ttopctr_type: type_expr;
-    ttopctr_loc: Location.t }
-
+and meth =
+    Tmeth_name of string
+  | Tmeth_val of Ident.t
 
 (* Value expressions for the class language *)
 
@@ -156,6 +130,7 @@ and module_expr_desc =
   | Tmod_functor of Ident.t * module_type * module_expr
   | Tmod_apply of module_expr * module_expr * module_coercion
   | Tmod_constraint of module_expr * module_type * module_coercion
+  | Tmod_unpack of expression * module_type
 
 and structure = structure_item list
 
@@ -174,9 +149,12 @@ and structure_item =
       (Ident.t * int * string list * class_expr * virtual_flag) list
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
-  | Tstr_contract of contract_declaration list
-  | Tstr_mty_contracts of (Path.t * Types.contract_declaration) Ident.tbl
-  | Tstr_opened_contracts of (Path.t * Types.contract_declaration) Ident.tbl
+
+and module_coercion =
+    Tcoerce_none
+  | Tcoerce_structure of (int * module_coercion) list
+  | Tcoerce_functor of module_coercion * module_coercion
+  | Tcoerce_primitive of Primitive.description
 
 (* Auxiliary functions over the a.s.t. *)
 
@@ -188,19 +166,3 @@ val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
 
 (* Alpha conversion of patterns *)
 val alpha_pat : (Ident.t * Ident.t) list -> pattern -> pattern
-
-(* for embed contract to each function call in an expression *)
-val map_expression: (expression -> expression) ->  expression -> expression
-val expression_to_iface: expression -> Types.expression
-val expression_desc_to_iface: (expression -> Types.expression) -> 
-                              expression_desc -> Types.expression_desc
-val core_contract_to_iface: core_contract -> Types.core_contract
-val contract_declaration_to_iface: contract_declaration -> Types.contract_declaration
-val contract_declaration_from_iface: Types.contract_declaration -> contract_declaration
-val core_contract_from_iface: Types.core_contract -> core_contract
- 
-val ensuresC : core_contract -> expression -> blame -> expression_desc
-val requiresC : core_contract -> expression -> 
-                blame -> blame -> expression_desc
-
-

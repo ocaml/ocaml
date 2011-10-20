@@ -94,7 +94,7 @@ static char * parse_ld_conf(void)
                          ldconfname);
   config = caml_stat_alloc(st.st_size + 1);
   nread = read(ldconf, config, st.st_size);
-  if (nread == -1) 
+  if (nread == -1)
     caml_fatal_error_arg
       ("Fatal error: error while reading loader config file %s\n",
        ldconfname);

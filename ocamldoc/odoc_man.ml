@@ -58,6 +58,22 @@ class virtual info =
           bs b v;
           bs b "\n.sp\n"
 
+    (** Printf groff string for the \@before information. *)
+    method man_of_before b = function
+      [] -> ()
+    | l ->
+        List.iter
+          (fun (v, text) ->
+             bp b ".B \"%s" Odoc_messages.before;
+             bs b v;
+             bs b "\"\n";
+             self#man_of_text b text;
+             bs b "\n";
+             bs b "\n.sp\n"
+          )
+          l
+
+
     (** Print groff string for the given optional since information.*)
     method man_of_since_opt b s_opt =
       match s_opt with
@@ -178,6 +194,7 @@ class virtual info =
           );
           self#man_of_author_list b info.M.i_authors;
           self#man_of_version_opt b info.M.i_version;
+          self#man_of_before b info.M.i_before;
           self#man_of_since_opt b info.M.i_since;
           self#man_of_raised_exceptions b info.M.i_raised_exceptions;
           self#man_of_return_opt b info.M.i_return_value;
@@ -273,7 +290,7 @@ class man =
           ()
       | Odoc_info.Link (s, t) ->
           self#man_of_text2 b t
-      | Odoc_info.Ref (name, _) ->
+      | Odoc_info.Ref (name, _, _) ->
           self#man_of_text_element b
             (Odoc_info.Code (Odoc_info.use_hidden_modules name))
       | Odoc_info.Superscript t ->
@@ -285,8 +302,12 @@ class man =
       | Odoc_info.Index_list ->
           ()
       | Odoc_info.Custom (s,t) -> self#man_of_custom_text b s t
+      | Odoc_info.Target (target, code) -> self#man_of_Target b ~target ~code
 
     method man_of_custom_text b s t = ()
+
+    method man_of_Target b ~target ~code =
+      if String.lowercase target = "man" then bs b code else ()
 
     (** Print groff string to display code. *)
     method man_of_code b s = self#man_of_text b [ Code s ]

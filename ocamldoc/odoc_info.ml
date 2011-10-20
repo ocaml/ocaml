@@ -43,12 +43,13 @@ and text_element = Odoc_types.text_element =
   | Title of int * string option * text
   | Latex of string
   | Link of string * text
-  | Ref of string * ref_kind option
+  | Ref of string * ref_kind option * text option
   | Superscript of text
   | Subscript of text
   | Module_list of string list
   | Index_list
   | Custom of string * text
+  | Target of string * string
 
 and text = text_element list
 
@@ -71,6 +72,7 @@ type info = Odoc_types.info = {
     i_version : string option;
     i_sees : see list;
     i_since : string option;
+    i_before : (string * text) list ;
     i_deprecated : text option;
     i_params : param list;
     i_raised_exceptions : raised_exception list;

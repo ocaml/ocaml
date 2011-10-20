@@ -30,7 +30,7 @@ extern Colormap caml_gr_colormap;     /* The color map */
 extern struct canvas caml_gr_window;  /* The graphics window */
 extern struct canvas caml_gr_bstore;  /* The pixmap used for backing store */
 extern int caml_gr_white, caml_gr_black;    /* Black and white pixels for X */
-extern int caml_gr_background;        /* Background color for X 
+extern int caml_gr_background;        /* Background color for X
                                      (used for CAML color -1) */
 extern Bool caml_gr_display_modeflag;     /* Display-mode flag */
 extern Bool caml_gr_remember_modeflag;    /* Remember-mode flag */

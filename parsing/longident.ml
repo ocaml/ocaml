@@ -24,6 +24,11 @@ let rec flat accu = function
 
 let flatten lid = flat [] lid
 
+let last = function
+    Lident s -> s
+  | Ldot(lid, s) -> s
+  | Lapply(l1, l2) -> Misc.fatal_error "Longident.last"
+
 let rec split_at_dots s pos =
   try
     let dot = String.index_from s pos '.' in

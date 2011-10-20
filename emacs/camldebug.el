@@ -302,8 +302,8 @@ buffer, then try to obtain the time from context around point."
                    ((save-excursion
                       (beginning-of-line 1)
                       (looking-at "^Time : \\([0-9]+\\) - pc : [0-9]+ "))
-                    (string-to-int (match-string 1)))
-                   ((string-to-int (camldebug-format-command "%e"))))))
+                    (caml-string-to-int (match-string 1)))
+                   ((caml-string-to-int (camldebug-format-command "%e"))))))
         (camldebug-call "goto" nil time)))
    (t
     (let ((module (camldebug-module-name (buffer-file-name)))
@@ -325,7 +325,7 @@ buffer, then try to obtain the time from context around point."
                                    " - module "
                                    module "$") nil t)
                           (match-string 1)))))
-      (if address (camldebug-call "goto" nil (string-to-int address))
+      (if address (camldebug-call "goto" nil (caml-string-to-int address))
         (error "No time at %s at %s" module camldebug-goto-position))))))
 
 
@@ -383,12 +383,12 @@ around point."
            (arg (cond
                  ((eobp)
                   (save-excursion (re-search-backward bpline nil t))
-                  (string-to-int (match-string 1)))
+                  (caml-string-to-int (match-string 1)))
                  ((save-excursion
                     (beginning-of-line 1)
                     (looking-at bpline))
-                  (string-to-int (match-string 1)))
-                 ((string-to-int (camldebug-format-command "%e"))))))
+                  (caml-string-to-int (match-string 1)))
+                 ((caml-string-to-int (camldebug-format-command "%e"))))))
       (camldebug-call "delete" nil arg)))
    (t
     (let ((camldebug-delete-file
@@ -409,7 +409,7 @@ around point."
                      camldebug-delete-file
                      camldebug-delete-position)
             (camldebug-call "delete" nil
-                            (string-to-int camldebug-delete-output)))))))))
+                            (caml-string-to-int camldebug-delete-output)))))))))
 
 (defun camldebug-complete-filter (string)
   (setq camldebug-filter-accumulator
@@ -529,9 +529,9 @@ the camldebug commands `cd DIR' and `directory'."
               (let ((isbefore
                      (string= "before"
                               (match-string 5 camldebug-filter-accumulator)))
-                    (startpos (string-to-int
+                    (startpos (caml-string-to-int
                                (match-string 3 camldebug-filter-accumulator)))
-                    (endpos (string-to-int
+                    (endpos (caml-string-to-int
                              (match-string 4 camldebug-filter-accumulator))))
                 (list (match-string 2 camldebug-filter-accumulator)
                       (if isbefore startpos endpos)
@@ -573,7 +573,11 @@ the camldebug commands `cd DIR' and `directory'."
   (let ((output))
     (if (buffer-name (process-buffer proc))
         (let ((process-window))
-          (save-excursion
+          ;; it does not seem necessary to save excursion here,
+          ;; since set-buffer as a temporary effect.
+          ;; comint-output-filter explicitly avoids it. 
+          ;; in version 23, it prevents the marker to stay at end of buffer
+          ;; (save-excursion
             (set-buffer (process-buffer proc))
             ;; If we have been so requested, delete the debugger prompt.
             (if (marker-buffer camldebug-delete-prompt-marker)
@@ -590,7 +594,12 @@ the camldebug commands `cd DIR' and `directory'."
                                       (>= (point) (process-mark proc))
                                       (get-buffer-window (current-buffer))))
             ;; Insert the text, moving the process-marker.
-            (comint-output-filter proc output))
+            (comint-output-filter proc output)
+          ;; ) 
+          ;; this was the end of save-excursion. 
+          ;; if save-excursion is used (comint-next-prompt 1) would be needed
+          ;; to move the mark past then next prompt, but this is not as good
+          ;; as solution.
           (if process-window
               (save-selected-window
                 (select-window process-window)
@@ -695,7 +704,7 @@ Obeying it means displaying in another window the specified file and line."
         (move-overlay camldebug-overlay-under spos (- epos 1) buffer))
     (save-excursion
       (set-buffer buffer)
-      (goto-char pos)
+      (goto-char spos)
       (beginning-of-line)
       (move-marker camldebug-event-marker (point))
       (setq overlay-arrow-position camldebug-event-marker))))

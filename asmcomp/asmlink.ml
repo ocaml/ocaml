@@ -17,6 +17,7 @@
 open Sys
 open Misc
 open Config
+open Cmx_format
 open Compilenv
 
 type error =
@@ -144,8 +145,8 @@ let extract_missing_globals () =
   !mg
 
 type file =
-  | Unit of string * Compilenv.unit_infos * Digest.t
-  | Library of string * Compilenv.library_infos
+  | Unit of string * unit_infos * Digest.t
+  | Library of string * library_infos
 
 let read_file obj_name =
   let file_name =
@@ -156,12 +157,12 @@ let read_file obj_name =
   if Filename.check_suffix file_name ".cmx" then begin
     (* This is a .cmx file. It must be linked in any case.
        Read the infos to see which modules it requires. *)
-    let (info, crc) = Compilenv.read_unit_info file_name in
+    let (info, crc) = read_unit_info file_name in
     Unit (file_name,info,crc)
   end
   else if Filename.check_suffix file_name ".cmxa" then begin
     let infos =
-      try Compilenv.read_library_info file_name
+      try read_library_info file_name
       with Compilenv.Error(Not_a_unit_info _) ->
         raise(Error(Not_an_object_file file_name))
     in
@@ -241,7 +242,7 @@ let make_shared_startup_file ppf units filename =
   compile_phrase (Cmmgen.plugin_header units);
   compile_phrase
     (Cmmgen.global_table
-       (List.map (fun (ui,_) -> ui.Compilenv.ui_symbol) units));
+       (List.map (fun (ui,_) -> ui.ui_symbol) units));
   (* this is to force a reference to all units, otherwise the linker
      might drop some of them (in case of libraries) *)
 
@@ -261,7 +262,7 @@ let link_shared ppf objfiles output_name =
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs;
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts;
   let objfiles = List.rev (List.map object_file_name objfiles) @
-    !Clflags.ccobjs in
+    (List.rev !Clflags.ccobjs) in
 
   let startup =
     if !Clflags.keep_startup_file

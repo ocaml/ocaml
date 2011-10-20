@@ -20,22 +20,20 @@ open Ocaml_utils
 
 let add_suffix s = List.map (fun x -> x -.- s) ;;
 
-let ocamldep_command' tags spec =
+let ocamldep_command' tags =
   let tags' = tags++"ocaml"++"ocamldep" in
-    S [!Options.ocamldep; T tags'; ocaml_ppflags (tags++"pp:dep");
-       spec; A "-modules"]
+    S [!Options.ocamldep; T tags'; ocaml_ppflags (tags++"pp:dep"); A "-modules"]
 
-let menhir_ocamldep_command' tags ~menhir_spec ~ocamldep_spec out =
+let menhir_ocamldep_command' tags ~menhir_spec out =
   let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
   Cmd(S[menhir; T tags; A"--raw-depend";
-	A"--ocamldep"; Quote (ocamldep_command' tags ocamldep_spec);
-	menhir_spec ; Sh ">"; Px out])
+        A"--ocamldep"; Quote (ocamldep_command' Tags.empty);
+        menhir_spec ; Sh ">"; Px out])
 
 let menhir_ocamldep_command arg out env _build =
   let arg = env arg and out = env out in
   let tags = tags_of_pathname arg++"ocaml"++"menhir_ocamldep" in
-  let ocamldep_spec = flags_of_pathname arg in
-  menhir_ocamldep_command' tags ~menhir_spec:(P arg) ~ocamldep_spec out
+  menhir_ocamldep_command' tags ~menhir_spec:(P arg) out
 
 let import_mlypack build mlypack =
   let tags1 = tags_of_pathname mlypack in
@@ -60,8 +58,7 @@ let menhir_modular_ocamldep_command mlypack out env build =
   let tags = tags++"ocaml"++"menhir_ocamldep" in
   let menhir_base = Pathname.remove_extensions mlypack in
   let menhir_spec = S[A "--base" ; P menhir_base ; atomize_paths files] in
-  let ocamldep_spec = N in
-  menhir_ocamldep_command' tags ~menhir_spec ~ocamldep_spec out
+  menhir_ocamldep_command' tags ~menhir_spec out
 
 let menhir_modular menhir_base mlypack mlypack_depends env build =
   let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
@@ -75,25 +72,21 @@ let menhir_modular menhir_base mlypack mlypack_depends env build =
   let tags = tags++"ocaml"++"parser"++"menhir" in
   Cmd(S[menhir ;
         A "--ocamlc"; Quote(S[!Options.ocamlc; T ocamlc_tags; ocaml_include_flags mlypack]);
-        T tags ; A "--infer" ; flags_of_pathname mlypack ;
-        A "--base" ; Px menhir_base ; atomize_paths files])
+        T tags ; A "--infer" ; A "--base" ; Px menhir_base ; atomize_paths files])
 
 let ocamldep_command arg out env _build =
   let arg = env arg and out = env out in
-  let spec = flags_of_pathname arg in
   let tags = tags_of_pathname arg in
-  Cmd(S[ocamldep_command' tags spec; P arg; Sh ">"; Px out])
+  Cmd(S[ocamldep_command' tags; P arg; Sh ">"; Px out])
 
 let ocamlyacc mly env _build =
   let mly = env mly in
   let ocamlyacc = if !Options.ocamlyacc = N then V"OCAMLYACC" else !Options.ocamlyacc in
-  Cmd(S[ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"ocamlyacc");
-        flags_of_pathname mly; Px mly])
+  Cmd(S[ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"ocamlyacc"); Px mly])
 
 let ocamllex mll env _build =
   let mll = env mll in
-  Cmd(S[!Options.ocamllex; T(tags_of_pathname mll++"ocaml"++"lexer"++"ocamllex");
-        flags_of_pathname mll; Px mll])
+  Cmd(S[!Options.ocamllex; T(tags_of_pathname mll++"ocaml"++"lexer"++"ocamllex"); Px mll])
 
 let infer_interface ml mli env build =
   let ml = env ml and mli = env mli in
@@ -109,12 +102,12 @@ let menhir mly env build =
   Cmd(S[menhir;
         A"--ocamlc"; Quote(S[!Options.ocamlc; ocaml_include_flags mly]);
         T(tags_of_pathname mly++"ocaml"++"parser"++"menhir");
-        A"--infer"; flags_of_pathname mly; Px mly])
+        A"--infer"; Px mly])
 
 let ocamldoc_c tags arg odoc =
   let tags = tags++"ocaml" in
   Cmd (S [!Options.ocamldoc; A"-dump"; Px odoc; T(tags++"doc");
-          ocaml_ppflags (tags++"pp:doc"); flags_of_pathname arg;
+          ocaml_ppflags (tags++"pp:doc");
           ocaml_include_flags arg; P arg])
 
 let ocamldoc_l_dir tags deps _docout docdir =

@@ -243,7 +243,10 @@ For HTML, the file is used to create the whole "index.html" file.
 Verbose mode. Display progress information.
 .TP
 .B \-version
-Print the version string and exit.
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
 .TP
 .B \-warn\-error
 Treat Ocamldoc warnings as errors.
@@ -255,7 +258,7 @@ Do not print OCamldoc warnings.
 Display a short usage summary and exit.
 .SS "Type-checking options"
 .BR ocamldoc (1)
-calls the Objective Caml type-checker to obtain type informations. The
+calls the Objective Caml type-checker to obtain type information. The
 following options impact the type-checking phase. They have the same meaning
 as for the
 .BR ocamlc (1)\ and \ ocamlopt (1)

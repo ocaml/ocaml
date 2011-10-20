@@ -52,6 +52,11 @@ let print_version () =
   exit 0;
 ;;
 
+let print_version_num () =
+  printf "%s\n" Sys.ocaml_version;
+  exit 0;
+;;
+
 let parse_arguments argv =
   let i = ref 1 in
   let next_arg () =
@@ -116,6 +121,8 @@ let parse_arguments argv =
       verbose := true
     else if s = "-version" then
       print_version ()
+    else if s = "-vnum" then
+      print_version_num ()
     else if starts_with s "-F" then
       c_opts := s :: !c_opts
     else if s = "-framework" then
@@ -134,36 +141,37 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|.dll files>
-Options are:
-  -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only
-  -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only
-  -custom        disable dynamic loading
-  -dllpath <dir> Add <dir> to the run-time search path for DLLs
-  -F<dir>        Specify a framework directory (MacOSX)
-  -framework <name>    Use framework <name> (MacOSX)
-  -help          Print this help message and exit
-  --help         Same as -help
-  -h             Same as -help
-  -I <dir>       Add <dir> to the path searched for Caml object files
-  -failsafe      fall back to static linking if DLL construction failed
-  -ldopt <opt>   C option passed to the shared linker only
-  -linkall       Build Caml archive with link-all behavior
-  -l<lib>        Specify a dependent C library
-  -L<dir>        Add <dir> to the path searched for C libraries
-  -ocamlc <cmd>  Use <cmd> in place of \"ocamlc\"
-  -ocamlopt <cmd> Use <cmd> in place of \"ocamlopt\"
-  -o <name>      Generated Caml library is named <name>.cma or <name>.cmxa
-  -oc <name>     Generated C library is named dll<name>.so or lib<name>.a
-  -rpath <dir>   Same as -dllpath <dir>
-  -R<dir>        Same as -rpath
-  -verbose       Print commands before executing them
-  -v             same as -verbose
-  -version       Print version and exit
-  -Wl,-rpath,<dir>     Same as -dllpath <dir>
-  -Wl,-rpath -Wl,<dir> Same as -dllpath <dir>
-  -Wl,-R<dir>          Same as -dllpath <dir>
-"
+Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib|.dll files>\
+\nOptions are:\
+\n  -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only\
+\n  -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only\
+\n  -custom        disable dynamic loading\
+\n  -dllpath <dir> Add <dir> to the run-time search path for DLLs\
+\n  -F<dir>        Specify a framework directory (MacOSX)\
+\n  -framework <name>    Use framework <name> (MacOSX)\
+\n  -help          Print this help message and exit\
+\n  --help         Same as -help\
+\n  -h             Same as -help\
+\n  -I <dir>       Add <dir> to the path searched for Caml object files\
+\n  -failsafe      fall back to static linking if DLL construction failed\
+\n  -ldopt <opt>   C option passed to the shared linker only\
+\n  -linkall       Build Caml archive with link-all behavior\
+\n  -l<lib>        Specify a dependent C library\
+\n  -L<dir>        Add <dir> to the path searched for C libraries\
+\n  -ocamlc <cmd>  Use <cmd> in place of \"ocamlc\"\
+\n  -ocamlopt <cmd> Use <cmd> in place of \"ocamlopt\"\
+\n  -o <name>      Generated Caml library is named <name>.cma or <name>.cmxa\
+\n  -oc <name>     Generated C library is named dll<name>.so or lib<name>.a\
+\n  -rpath <dir>   Same as -dllpath <dir>\
+\n  -R<dir>        Same as -rpath\
+\n  -verbose       Print commands before executing them\
+\n  -v             same as -verbose\
+\n  -version       Print version and exit\
+\n  -vnum          Print version number and exit\
+\n  -Wl,-rpath,<dir>     Same as -dllpath <dir>\
+\n  -Wl,-rpath -Wl,<dir> Same as -dllpath <dir>\
+\n  -Wl,-R<dir>          Same as -dllpath <dir>\
+\n"
 
 let command cmd =
   if !verbose then (print_string "+ "; print_string cmd; print_newline());

@@ -59,20 +59,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                     (Ast.loc_of_expr e2) in
         <:expr< do { $e1$; $e2$ } >> ];
 
-  value test_constr_decl =
-    Gram.Entry.of_parser "test_constr_decl"
-      (fun strm ->
-        match Stream.npeek 1 strm with
-        [ [(UIDENT _, _)] ->
-            match Stream.npeek 2 strm with
-            [ [_; (KEYWORD ".", _)] -> raise Stream.Failure
-            | [_; (KEYWORD "(", _)] -> raise Stream.Failure
-            | [_ :: _] -> ()
-            | _ -> raise Stream.Failure ]
-        | [(KEYWORD "|", _)] -> ()
-        | _ -> raise Stream.Failure ])
-  ;
-
   value stream_peek_nth n strm =
     loop n (Stream.npeek n strm) where rec loop n =
       fun
@@ -80,6 +66,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | [(x, _)] -> if n == 1 then Some x else None
       | [_ :: l] -> loop (n - 1) l ]
   ;
+
+  value test_not_dot_nor_lparen =
+    Gram.Entry.of_parser "test_not_dot_nor_lparen" (fun strm ->
+      match Stream.peek strm with
+      [ Some (KEYWORD ("."|"("),_) -> raise Stream.Failure
+      | _ -> () ]);
 
   (* horrible hacks to be able to parse class_types *)
 
@@ -115,39 +107,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | _ -> 1 ])
   ;
 
-  value test_label_eq =
-    Gram.Entry.of_parser "test_label_eq"
-      (test 1 where rec test lev strm =
-        match stream_peek_nth lev strm with
-        [ Some (UIDENT _ | LIDENT _ | KEYWORD ".") ->
-            test (lev + 1) strm
-        | Some (KEYWORD "=") -> ()
-        | _ -> raise Stream.Failure ])
-  ;
-
-  value test_typevar_list_dot =
-    Gram.Entry.of_parser "test_typevar_list_dot"
-      (let rec test lev strm =
-        match stream_peek_nth lev strm with
-        [ Some (KEYWORD "'") -> test2 (lev + 1) strm
-        | Some (KEYWORD ".") -> ()
-        | _ -> raise Stream.Failure ]
-      and test2 lev strm =
-        match stream_peek_nth lev strm with
-        [ Some (UIDENT _ | LIDENT _) -> test (lev + 1) strm
-        | _ -> raise Stream.Failure ]
-      in
-      test 1)
-  ;
-
-  value lident_colon =
-    Gram.Entry.of_parser "lident_colon"
-      (fun strm ->
-        match Stream.npeek 2 strm with
-        [ [(LIDENT i, _); (KEYWORD ":", _)] ->
-            do { Stream.junk strm; Stream.junk strm; i }
-        | _ -> raise Stream.Failure ])
-  ;
+  value lident_colon =	 
+     Gram.Entry.of_parser "lident_colon"	 
+       (fun strm ->	 
+         match Stream.npeek 2 strm with	 
+         [ [(LIDENT i, _); (KEYWORD ":", _)] ->	 
+             do { Stream.junk strm; Stream.junk strm; i }	 
+         | _ -> raise Stream.Failure ])	 
+   ;
 
   value rec is_ident_constr_call =
     fun
@@ -178,6 +145,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   DELETE_RULE Gram meth_list: meth_decl; opt_dot_dot END;
   DELETE_RULE Gram expr: "let"; opt_rec; binding; "in"; SELF END;
   DELETE_RULE Gram expr: "let"; "module"; a_UIDENT; module_binding0; "in"; SELF END;
+  DELETE_RULE Gram expr: "let"; "open"; module_longident; "in"; SELF END;
   DELETE_RULE Gram expr: "fun"; "["; LIST0 match_case0 SEP "|"; "]" END;
   DELETE_RULE Gram expr: "if"; SELF; "then"; SELF; "else"; SELF END;
   DELETE_RULE Gram expr: "do"; do_sequence END;
@@ -218,6 +186,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear star_ctyp;
   clear match_case;
   clear with_constr;
+  clear package_type;
   clear top_phrase;
 
   EXTEND Gram
@@ -254,7 +223,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence
+      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence package_type
     ;
     sem_expr:
       [ [ e1 = expr LEVEL "top"; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>
@@ -284,6 +253,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
               | _ -> <:str_item< value $rec:r$ $bi$ >> ]
           | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = expr ->
               <:str_item< let module $m$ = $mb$ in $e$ >>
+          | "let"; "open"; i = module_longident; "in"; e = expr ->
+              <:str_item< let open $id:i$ in $e$ >>
       ] ]
     ;
     seq_expr:
@@ -300,6 +271,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in";
           e = expr LEVEL ";" ->
             <:expr< let module $m$ = $mb$ in $e$ >>
+        | "let"; "open"; i = module_longident; "in"; e = expr LEVEL ";" ->
+            <:expr< let open $id:i$ in $e$ >>
         | "function"; a = match_case ->
             <:expr< fun [ $a$ ] >>
         | "if"; e1 = SELF; "then"; e2 = expr LEVEL "top";
@@ -335,9 +308,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     expr: LEVEL "simple" (* LEFTA *)
       [ [ "false" -> <:expr< False >>
         | "true" -> <:expr< True >>
-        | "{"; test_label_eq; lel = label_expr_list; "}" ->
+        | "{"; lel = TRY [lel = label_expr_list; "}" -> lel] ->
             <:expr< { $lel$ } >>
-        | "{"; e = expr LEVEL "."; "with"; lel = label_expr_list; "}" ->
+        | "{"; e = TRY [e = expr LEVEL "."; "with" -> e]; lel = label_expr_list; "}" ->
             <:expr< { ($e$) with $lel$ } >>
         | "new"; i = class_longident -> <:expr< new $i$ >>
       ] ]
@@ -439,7 +412,30 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "type"; t1 = type_longident_and_parameters; "="; t2 = opt_private_ctyp ->
             <:with_constr< type $t1$ = $t2$ >>
         | "module"; i1 = module_longident; "="; i2 = module_longident_with_app ->
-            <:with_constr< module $i1$ = $i2$ >> ] ]
+            <:with_constr< module $i1$ = $i2$ >>
+        | "type"; `ANTIQUOT (""|"typ"|"anti" as n) s; ":="; t = opt_private_ctyp ->
+            <:with_constr< type $anti:mk_anti ~c:"ctyp" n s$ := $t$ >>
+        | "type"; t1 = type_longident_and_parameters; ":="; t2 = opt_private_ctyp ->
+            <:with_constr< type $t1$ := $t2$ >>
+        | "module"; i1 = module_longident; ":="; i2 = module_longident_with_app ->
+            <:with_constr< module $i1$ := $i2$ >> ] ]
+    ;
+    package_type:
+      [ [ i = module_longident_with_app -> <:module_type< $id:i$ >>
+        | i = module_longident_with_app; "with"; cs = package_type_cstrs ->
+            <:module_type< $id:i$ with $cs$ >>
+      ] ]
+    ;
+    package_type_cstr:
+      [ [ "type"; i = a_LIDENT; "="; ty = ctyp ->
+            <:with_constr< type $lid:i$ = $ty$ >>
+      ] ]
+    ;
+    package_type_cstrs:
+      [ [ c = package_type_cstr -> c
+        | c = package_type_cstr; "and"; cs = package_type_cstrs ->
+            <:with_constr< $c$ and $cs$ >>
+      ] ]
     ;
     opt_private_ctyp:
       [ [ "private"; t = ctyp -> <:ctyp< private $t$ >>
@@ -449,7 +445,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ [ i = lident_colon; t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
         | "?"; i = a_LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
-            <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
+            <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
         | i = OPTLABEL (* FIXME inline a_OPTLABEL *); t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
         | test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->
@@ -476,7 +472,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ [ t1 = SELF; "as"; "'"; i = a_ident -> <:ctyp< $t1$ as '$i$ >> ]
       | "arrow" RIGHTA
         [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >>
-        | i = lident_colon; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+        | i = TRY [i = a_LIDENT; ":" -> i]; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
             <:ctyp< ( ~ $i$ : $t1$ ) -> $t2$ >>
         | i = a_OPTLABEL; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
             <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >>
@@ -522,10 +518,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:ctyp< [ < $rfl$ ] >>
         | "[<"; OPT "|"; rfl = row_field; ">"; ntl = name_tags; "]" ->
             <:ctyp< [ < $rfl$ > $ntl$ ] >>
+        | "("; "module"; p = package_type; ")" -> <:ctyp< (module $p$) >>
         ] ]
     ;
     meth_list:
-      [ [ m = meth_decl -> (m, Ast.BFalse) ] ];
+      [ [ m = meth_decl -> (m, <:row_var_flag<>>) ] ];
     comma_ctyp_app:
       [ [ t1 = ctyp; ","; t2 = SELF -> fun acc -> t2 <:ctyp< $acc$ $t1$ >>
         | t = ctyp -> fun acc -> <:ctyp< $acc$ $t$ >>
@@ -570,17 +567,25 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     type_kind:
       [ [ "private"; tk = type_kind -> <:ctyp< private $tk$ >>
-        | test_constr_decl; OPT "|";
-          t = constructor_declarations -> <:ctyp< [ $t$ ] >>
-        | t = ctyp -> <:ctyp< $t$ >>
-        | t = ctyp; "="; "private"; tk = type_kind ->
+        | t = TRY [OPT "|"; t = constructor_declarations;
+                   test_not_dot_nor_lparen -> t] ->
+            <:ctyp< [ $t$ ] >>
+        | t = TRY ctyp -> <:ctyp< $t$ >>
+        | t = TRY ctyp; "="; "private"; tk = type_kind ->
             <:ctyp< $t$ == private $tk$ >>
-        | t1 = ctyp; "="; "{"; t2 = label_declaration_list; "}" ->
+        | t1 = TRY ctyp; "="; "{"; t2 = label_declaration_list; "}" ->
             <:ctyp< $t1$ == { $t2$ } >>
-        | t1 = ctyp; "="; OPT "|"; t2 = constructor_declarations ->
+        | t1 = TRY ctyp; "="; OPT "|"; t2 = constructor_declarations ->
             <:ctyp< $t1$ == [ $t2$ ] >>
         | "{"; t = label_declaration_list; "}" ->
             <:ctyp< { $t$ } >> ] ]
+    ;
+    ctyp_quot:
+      [ [ "private"; t = ctyp_quot -> <:ctyp< private $t$ >>
+        | "|"; t = constructor_declarations -> <:ctyp< [ $t$ ] >>
+        | x = more_ctyp; "="; y = ctyp_quot -> <:ctyp< $x$ == $y$ >>
+        | "{"; t = label_declaration_list; "}" -> <:ctyp< { $t$ } >>
+      ] ]
     ;
     module_expr: LEVEL "apply"
       [ [ i = SELF; "("; j = SELF; ")" -> <:module_expr< $i$ $j$ >> ] ]
@@ -615,9 +620,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ]
     ;
     poly_type:
-      [ [ test_typevar_list_dot; t1 = typevars; "."; t2 = ctyp ->
+      [ [ t1 = TRY [t = typevars; "." -> t]; t2 = ctyp ->
             <:ctyp< ! $t1$ . $t2$ >>
-        | t = ctyp -> t ] ]
+        | t = TRY ctyp -> t ] ]
     ;
     labeled_ipatt:
       [ [ i = a_LABEL; p = patt LEVEL "simple" ->
@@ -629,6 +634,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:patt< ~ $i$ : ($lid:i$ : $t$) >>
         | i = a_OPTLABEL; j = a_LIDENT -> (* ?a:b <> ?a : b *)
             <:patt< ? $i$ : ($lid:j$) >>
+        | i = a_OPTLABEL; "_" ->
+            <:patt< ? $i$ : (_) >>
         | i = a_OPTLABEL; "("; p = patt; ")" ->
             <:patt< ? $i$ : ($p$) >>
         | i = a_OPTLABEL; "("; p = patt; "="; e = expr; ")" ->

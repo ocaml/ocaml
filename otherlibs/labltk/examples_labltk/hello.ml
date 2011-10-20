@@ -22,7 +22,7 @@
 open Tk
 
 (* initialization of Tk --- the result is a toplevel widget *)
-let top = openTk () 
+let top = openTk ()
 
 (* create a button on top *)
 (* Button.create : use of create function defined in button.ml *)
@@ -30,7 +30,7 @@ let top = openTk ()
 let b = Button.create ~text: "Hello, LablTk!" top
 
 (* Lack of toplevel expressions in lsl, you must use dummy let exp. *)
-let _ = pack [coe b] 
+let _ = pack [coe b]
 
 (* Last, you must call mainLoop *)
 (* You can write just let _ = mainLoop () *)

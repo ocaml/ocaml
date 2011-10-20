@@ -31,6 +31,8 @@ value (interfaces, options, includes) =
     | ["-I"; dir :: args] -> self (interf, opts, [dir; "-I" :: incl]) args
     | ["-version" :: _] ->
         do { printf "mkcamlp4, version %s@." version; exit 0 }
+    | ["-vnum" :: _] ->
+        do { printf "%s@." version; exit 0 }
     | [ arg :: args ] when check_suffix arg ".cmi" ->
         let basename = String.capitalize (Filename.chop_suffix
                          (Filename.basename arg) ".cmi") in
@@ -61,7 +63,7 @@ try do {
     close_out cout
   };
 
-  run (["ocamlc"; "-I"; camlp4_standard_library; "camlp4lib.cma"; crc_ml]
+  run (["ocamlc"; "-I"; camlp4_standard_library; "dynlink.cma"; "camlp4lib.cma"; crc_ml]
        @ includes @ options @ ["Camlp4Bin.cmo"; "-linkall"]);
   clean();
 }

@@ -84,7 +84,7 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   strcpy(fullname, name);
   return fullname;
 }
-  
+
 CAMLexport char * caml_search_exe_in_path(char * name)
 {
   char * fullname, * filepart;
@@ -95,14 +95,14 @@ CAMLexport char * caml_search_exe_in_path(char * name)
   while (1) {
     fullname = stat_alloc(pathlen);
     retcode = SearchPath(NULL,              /* use system search path */
-			 name,
-			 ".exe",            /* add .exe extension if needed */
-			 pathlen,
-			 fullname,
-			 &filepart);
+                         name,
+                         ".exe",            /* add .exe extension if needed */
+                         pathlen,
+                         fullname,
+                         &filepart);
     if (retcode == 0) {
       caml_gc_message(0x100, "%s not found in search path\n",
-		      (uintnat) name);
+                      (uintnat) name);
       strcpy(fullname, name);
       break;
     }
@@ -406,7 +406,7 @@ void caml_signal_thread(void * lpParam)
 
 #if defined(NATIVE_CODE) && !defined(_WIN64)
 
-/* Handling of system stack overflow.  
+/* Handling of system stack overflow.
  * Based on code provided by Olivier Andrieu.
 
  * An EXCEPTION_STACK_OVERFLOW is signaled when the guard page at the
@@ -470,11 +470,11 @@ static void caml_reset_stack (void *faulting_address)
   /* restore the PAGE_GUARD protection on this page */
   switch (osi.dwPlatformId) {
   case VER_PLATFORM_WIN32_NT:
-    VirtualProtect (mbi.BaseAddress, page_size, 
+    VirtualProtect (mbi.BaseAddress, page_size,
                     mbi.Protect | PAGE_GUARD, &oldprot);
     break;
   case VER_PLATFORM_WIN32_WINDOWS:
-    VirtualProtect (mbi.BaseAddress, page_size, 
+    VirtualProtect (mbi.BaseAddress, page_size,
                     PAGE_NOACCESS, &oldprot);
     break;
   }

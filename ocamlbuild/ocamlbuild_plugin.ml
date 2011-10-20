@@ -22,6 +22,7 @@ include Pathname.Operators
 include Tags.Operators
 module Rule = Ocamlbuild_pack.Rule
 module Options = Ocamlbuild_pack.Options
+module Findlib = Ocamlbuild_pack.Findlib
 type command = Command.t = Seq of command list | Cmd of spec | Echo of string list * string | Nop
 and spec = Command.spec =
   | N | S of spec list | A of string | P of string | Px of string
@@ -33,10 +34,13 @@ type action = env -> builder -> Command.t
 let rule = Rule.rule
 let clear_rules = Rule.clear_rules
 let dep = Command.dep
+let pdep = Command.pdep
 let copy_rule = Rule.copy_rule
 let ocaml_lib = Ocamlbuild_pack.Ocaml_utils.ocaml_lib
 let flag = Ocamlbuild_pack.Flags.flag
+let pflag = Ocamlbuild_pack.Flags.pflag
 let flag_and_dep = Ocamlbuild_pack.Ocaml_utils.flag_and_dep
+let pflag_and_dep = Ocamlbuild_pack.Ocaml_utils.pflag_and_dep
 let non_dependency = Ocamlbuild_pack.Ocaml_utils.non_dependency
 let use_lib = Ocamlbuild_pack.Ocaml_utils.use_lib
 let module_name_of_pathname = Ocamlbuild_pack.Ocaml_utils.module_name_of_pathname

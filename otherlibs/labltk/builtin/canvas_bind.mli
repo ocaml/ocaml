@@ -1,7 +1,7 @@
 ##ifdef CAMLTK
 
-val bind : widget -> tagOrId -> 
-                    (modifier list * xEvent) list -> bindAction -> unit 
+val bind : widget -> tagOrId ->
+                    (modifier list * xEvent) list -> bindAction -> unit
 
 ##else
 
@@ -11,6 +11,6 @@ val bind :
   ?breakable: bool ->
   ?fields: eventField list ->
   ?action: (eventInfo -> unit) ->
-  canvas widget -> tagOrId -> unit 
+  canvas widget -> tagOrId -> unit
 
 ##endif

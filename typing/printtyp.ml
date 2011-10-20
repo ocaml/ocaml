@@ -33,7 +33,17 @@ let rec longident ppf = function
 
 (* Print an identifier *)
 
-let ident ppf id = Ident.print ppf id (* fprintf ppf "%s" (Ident.name id) *)
+let unique_names = ref Ident.empty
+
+let ident_name id =
+  try Ident.find_same id !unique_names with Not_found -> Ident.name id
+
+let add_unique id =
+  try ignore (Ident.find_same id !unique_names)
+  with Not_found ->
+    unique_names := Ident.add id (Ident.unique_toplevel_name id) !unique_names
+
+let ident ppf id = fprintf ppf "%s" (ident_name id)
 
 (* Print a path *)
 
@@ -41,7 +51,7 @@ let ident_pervasive = Ident.create_persistent "Pervasives"
 
 let rec tree_of_path = function
   | Pident id ->
-      Oide_ident (Ident.name id)
+      Oide_ident (ident_name id)
   | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
       Oide_ident s
   | Pdot(p, s, pos) ->
@@ -153,6 +163,9 @@ and raw_type_desc ppf = function
           match row.row_name with None -> fprintf ppf "None"
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
+  | Tpackage (p, _, tl) ->
+      fprintf ppf "@[<hov1>Tpackage(@,%a@,%a)@]" path p
+        raw_type_list tl
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -234,7 +247,7 @@ let rec mark_loops_rec visited ty =
     | Tarrow(_, ty1, ty2, _) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl -> List.iter (mark_loops_rec visited) tyl
-    | Tconstr(_, tyl, _) ->
+    | Tconstr(_, tyl, _) | Tpackage (_, _, tyl) ->
         List.iter (mark_loops_rec visited) tyl
     | Tvariant row ->
         if List.memq px !visited_objects then add_alias px else
@@ -285,7 +298,7 @@ let reset_loop_marks () =
   visited_objects := []; aliased := []; delayed := []
 
 let reset () =
-  reset_names (); reset_loop_marks ()
+  unique_names := Ident.empty; reset_names (); reset_loop_marks ()
 
 let reset_and_mark_loops ty =
   reset (); mark_loops ty
@@ -383,6 +396,8 @@ let rec tree_of_typexp sch ty =
         end
     | Tunivar ->
         Otyp_var (false, name_of_type ty)
+    | Tpackage (p, n, tyl) ->
+        Otyp_module (Path.name p, n, tree_of_typlist sch tyl)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && aliasable ty then begin
@@ -534,11 +549,8 @@ let rec tree_of_type_decl id decl =
     let abstr =
       match decl.type_kind with
         Type_abstract ->
-          begin match decl.type_manifest with
-            None -> true
-          | Some ty -> has_constr_row ty
-          end
-      | Type_variant _ | Type_record(_,_) ->
+          decl.type_manifest = None || decl.type_private = Private
+      | Type_variant _ | Type_record _ ->
           decl.type_private = Private
     in
     let vari =
@@ -730,7 +742,7 @@ let tree_of_class_declaration id cl rs =
   reset ();
   List.iter add_alias params;
   prepare_class_type params cl.cty_type;
-  let sty = self_type cl.cty_type in
+  let sty = Ctype.self_type cl.cty_type in
   List.iter mark_loops params;
 
   List.iter check_name_of_type (List.map proxy params);
@@ -752,7 +764,7 @@ let tree_of_cltype_declaration id cl rs =
   reset ();
   List.iter add_alias params;
   prepare_class_type params cl.clty_type;
-  let sty = self_type cl.clty_type in
+  let sty = Ctype.self_type cl.clty_type in
   List.iter mark_loops params;
 
   List.iter check_name_of_type (List.map proxy params);
@@ -810,9 +822,6 @@ and tree_of_signature = function
       tree_of_class_declaration id decl rs :: tree_of_signature rem
   | Tsig_cltype(id, decl, rs) :: tydecl1 :: tydecl2 :: rem ->
       tree_of_cltype_declaration id decl rs :: tree_of_signature rem
-  | Tsig_contract(id, decl, rs) :: rem -> 
-      Osig_contract (Ident.name id, decl, tree_of_rec rs) :: 
-      tree_of_signature rem
   | _ ->
       assert false
 
@@ -838,38 +847,6 @@ let print_signature ppf tree =
 
 let signature ppf sg =
   fprintf ppf "%a" print_signature (tree_of_signature sg)
-
-(* Print a contract declaration *)
-
-let contract_declaration id ppf decl = 
-  fprintf ppf "@[<v>%a@]" !Oprint.out_contract_declaration decl
-
-let print_path_contract_declaration ppf (_, (cdecl:Types.contract_declaration)) = 
-  !Oprint.out_contract_declaration ppf cdecl 
-
-
-(* -dtypedtree prints the outcometree *)
-
-let structure_item ppf x = match x with
-  | Typedtree.Tstr_eval (e) -> 
-      let iface_e = Typedtree.expression_to_iface e in
-      fprintf ppf "@[<1>Tstr_eval(%a)@]" !Oprint.out_expression iface_e;
-  | Typedtree.Tstr_value (rec_flag, pat_expr_list) ->
-      let (p, e) = List.hd pat_expr_list in
-      let dummy_e = {e with Typedtree.exp_desc = Typedtree.Texp_assertfalse } in 
-      let edesc = Typedtree.Texp_let (Default, pat_expr_list, dummy_e) in
-      let iface_e = Typedtree.expression_desc_to_iface 
-	              Typedtree.expression_to_iface edesc in 
-      fprintf ppf "@[<1>Tstr_value(%a)@]" !Oprint.out_expression_desc iface_e;  
-  | Typedtree.Tstr_contract(cdecls) ->
-      let iface_cdecls = List.map (fun cdecl -> 
-	Typedtree.contract_declaration_to_iface cdecl) cdecls in
-      fprintf ppf "@[<1>Tstr_contract(%a)@]"
-      (raw_list !Oprint.out_contract_declaration) iface_cdecls  
-  | _ -> fprintf ppf "typing/printtyp: ONLY eval, value, contract are printed!\n"
-
-let print_structure ppf x = raw_list structure_item ppf x
-let implementation ppf (x,_) = raw_list structure_item ppf x
 
 (* Print an unification error *)
 
@@ -993,8 +970,32 @@ let explanation unif mis ppf =
     None -> ()
   | Some (t3, t4) -> explanation unif t3 t4 ppf
 
+let ident_same_name id1 id2 =
+  if Ident.equal id1 id2 && not (Ident.same id1 id2) then begin
+    add_unique id1; add_unique id2
+  end
+
+let rec path_same_name p1 p2 =
+  match p1, p2 with
+    Pident id1, Pident id2 -> ident_same_name id1 id2
+  | Pdot (p1, s1, _), Pdot (p2, s2, _) when s1 = s2 -> path_same_name p1 p2
+  | Papply (p1, p1'), Papply (p2, p2') ->
+      path_same_name p1 p2; path_same_name p1' p2'
+  | _ -> ()
+
+let type_same_name t1 t2 =
+  match (repr t1).desc, (repr t2).desc with
+    Tconstr (p1, _, _), Tconstr (p2, _, _) -> path_same_name p1 p2
+  | _ -> ()
+
+let rec trace_same_names = function
+    (t1, t1') :: (t2, t2') :: rem ->
+      type_same_name t1 t2; type_same_name t1' t2'; trace_same_names rem
+  | _ -> ()
+
 let unification_error unif tr txt1 ppf txt2 =
   reset ();
+  trace_same_names tr;
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
   let mis = mismatch unif tr in
   match tr with
@@ -1026,6 +1027,7 @@ let report_unification_error ppf tr txt1 txt2 =
 
 let trace fst txt ppf tr =
   print_labels := not !Clflags.classic;
+  trace_same_names tr;
   try match tr with
     t1 :: t2 :: tr' ->
       if fst then trace fst txt ppf (t1 :: t2 :: filter_trace tr')

@@ -21,6 +21,8 @@ open Parsetree
 (* Print the dependencies *)
 
 let load_path = ref ([] : (string * string array) list)
+let ml_synonyms = ref [".ml"]
+let mli_synonyms = ref [".mli"]
 let native_only = ref false
 let force_slash = ref false
 let error_occurred = ref false
@@ -47,6 +49,14 @@ let add_to_load_path dir =
     fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
     error_occurred := true
 
+let add_to_synonym_list synonyms suffix =
+  if (String.length suffix) > 1 && suffix.[0] = '.' then
+    synonyms := suffix :: !synonyms
+  else begin
+    fprintf Format.err_formatter "@[Bad suffix: '%s'@]@." suffix;
+    error_occurred := true
+  end
+
 let find_file name =
   let uname = String.uncapitalize name in
   let rec find_in_array a pos =
@@ -63,26 +73,32 @@ let find_file name =
       | None -> find_in_path rem in
   find_in_path !load_path
 
+let rec find_file_in_list = function
+  [] -> raise Not_found
+| x :: rem -> try find_file x with Not_found -> find_file_in_list rem
+
 let find_dependency modname (byt_deps, opt_deps) =
   try
-    let filename = find_file (modname ^ ".mli") in
-    let basename = Filename.chop_suffix filename ".mli" in
+    let candidates = List.map ((^) modname) !mli_synonyms in
+    let filename = find_file_in_list candidates in
+    let basename = Filename.chop_extension filename in
     let optname =
-      if Sys.file_exists (basename ^ ".ml")
+      if List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !ml_synonyms
       then basename ^ ".cmx"
       else basename ^ ".cmi" in
     ((basename ^ ".cmi") :: byt_deps, optname :: opt_deps)
   with Not_found ->
   try
-    let filename = find_file (modname ^ ".ml") in
-    let basename = Filename.chop_suffix filename ".ml" in
+    let candidates = List.map ((^) modname) !ml_synonyms in
+    let filename = find_file_in_list candidates in
+    let basename = Filename.chop_extension filename in
     let bytename =
       basename ^ (if !native_only then ".cmx" else ".cmo") in
     (bytename :: byt_deps, (basename ^ ".cmx") :: opt_deps)
   with Not_found ->
     (byt_deps, opt_deps)
 
-let (depends_on, escaped_eol) = (": ", "\\\n    ")
+let (depends_on, escaped_eol) = (":", " \\\n    ")
 
 let print_filename s =
   let s = if !force_slash then fix_slash s else s in
@@ -117,19 +133,24 @@ let print_dependencies target_file deps =
   let rec print_items pos = function
     [] -> print_string "\n"
   | dep :: rem ->
-      if pos + String.length dep <= 77 then begin
-        print_filename dep; print_string " ";
+      if pos + 1 + String.length dep <= 77 then begin
+        print_string " "; print_filename dep;
         print_items (pos + String.length dep + 1) rem
       end else begin
-        print_string escaped_eol; print_filename dep; print_string " ";
-        print_items (String.length dep + 5) rem
+        print_string escaped_eol; print_filename dep;
+        print_items (String.length dep + 4) rem
       end in
-  print_items (String.length target_file + 2) deps
+  print_items (String.length target_file + 1) deps
 
 let print_raw_dependencies source_file deps =
   print_filename source_file; print_string ":";
   Depend.StringSet.iter
-    (fun dep -> print_char ' '; print_string dep)
+    (fun dep ->
+      if (String.length dep > 0)
+          && (match dep.[0] with 'A'..'Z' -> true | _ -> false) then begin
+            print_char ' ';
+            print_string dep
+          end)
     deps;
   print_char '\n'
 
@@ -143,7 +164,7 @@ let preprocess sourcefile =
   match !preprocessor with
     None -> sourcefile
   | Some pp ->
-      flush stdout;
+      flush Pervasives.stdout;
       let tmpfile = Filename.temp_file "camlpp" "" in
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Sys.command comm <> 0 then begin
@@ -203,7 +224,7 @@ let ml_file_dependencies source_file =
     end else begin
       let basename = Filename.chop_extension source_file in
       let init_deps =
-        if Sys.file_exists (basename ^ ".mli")
+        if List.exists (fun ext -> Sys.file_exists (basename ^ ext)) !mli_synonyms
         then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
         else ([], []) in
       let (byt_deps, opt_deps) =
@@ -264,9 +285,9 @@ let file_dependencies_as kind source_file =
     report_err x
 
 let file_dependencies source_file =
-  if Filename.check_suffix source_file ".ml" then
+  if List.exists (Filename.check_suffix source_file) !ml_synonyms then
     file_dependencies_as ML source_file
-  else if Filename.check_suffix source_file ".mli" then
+  else if List.exists (Filename.check_suffix source_file) !mli_synonyms then
     file_dependencies_as MLI source_file
   else ()
 
@@ -276,6 +297,11 @@ let usage = "Usage: ocamldep [options] <source files>\nOptions are:"
 
 let print_version () =
   printf "ocamldep, version %s@." Sys.ocaml_version;
+  exit 0;
+;;
+
+let print_version_num () =
+  printf "%s@." Sys.ocaml_version;
   exit 0;
 ;;
 
@@ -289,6 +315,10 @@ let _ =
        "<f> Process <f> as a .ml file";
      "-intf", Arg.String (file_dependencies_as MLI),
        "<f> Process <f> as a .mli file";
+     "-ml-synonym", Arg.String(add_to_synonym_list ml_synonyms),
+       "<e> Consider <e> as a synonym of the .ml extension";
+     "-mli-synonym", Arg.String(add_to_synonym_list mli_synonyms),
+       "<e> Consider <e> as a synonym of the .mli extension";
      "-modules", Arg.Set raw_dependencies,
        " Print module dependencies in raw form (not suitable for make)";
      "-native", Arg.Set native_only,
@@ -299,5 +329,7 @@ let _ =
        "   (Windows) Use forward slash / instead of backslash \\ in file paths";
      "-version", Arg.Unit print_version,
       " Print version and exit";
+     "-vnum", Arg.Unit print_version_num,
+      " Print version number and exit";
     ] file_dependencies usage;
   exit (if !error_occurred then 2 else 0)

@@ -69,7 +69,7 @@ let rec get_vars ((vacc, asacc) as acc) p =
   | Ppat_tuple pl -> List.fold_left get_vars acc pl
   | Ppat_construct (_, po, _) -> get_vars_option acc po
   | Ppat_variant (_, po) -> get_vars_option acc po
-  | Ppat_record ipl ->
+  | Ppat_record (ipl, cls) ->
       List.fold_left (fun a (_, p) -> get_vars a p) acc ipl
   | Ppat_array pl -> List.fold_left get_vars acc pl
   | Ppat_or (p1, _p2) -> get_vars acc p1
@@ -96,7 +96,6 @@ and structure_item ppf tbl s =
   | Pstr_value (recflag, pel) -> let_pel ppf tbl recflag pel None;
   | Pstr_primitive _ -> ()
   | Pstr_type _ -> ()
-  | Pstr_contract _ -> ()
   | Pstr_exception _ -> ()
   | Pstr_exn_rebind _ -> ()
   | Pstr_module (_, me) -> module_expr ppf tbl me;
@@ -106,7 +105,7 @@ and structure_item ppf tbl s =
   | Pstr_open _ -> ()
   | Pstr_class cdl -> List.iter (class_declaration ppf tbl) cdl;
   | Pstr_class_type _ -> ()
-  | Pstr_include _ -> ()
+  | Pstr_include me -> module_expr ppf tbl me;
 
 and expression ppf tbl e =
   match e.pexp_desc with
@@ -132,7 +131,6 @@ and expression ppf tbl e =
       match_pel ppf tbl pel;
   | Pexp_tuple el -> List.iter (expression ppf tbl) el;
   | Pexp_construct (_, eo, _) -> expression_option ppf tbl eo;
-  | Pexp_contract (c_decl, e) -> expression ppf tbl e;
   | Pexp_variant (_, eo) -> expression_option ppf tbl eo;
   | Pexp_record (iel, eo) ->
       List.iter (fun (_, e) -> expression ppf tbl e) iel;
@@ -175,7 +173,9 @@ and expression ppf tbl e =
   | Pexp_lazy e -> expression ppf tbl e;
   | Pexp_poly (e, _) -> expression ppf tbl e;
   | Pexp_object cs -> class_structure ppf tbl cs;
-
+  | Pexp_newtype (_, e) -> expression ppf tbl e
+  | Pexp_pack (me, _) -> module_expr ppf tbl me
+  | Pexp_open (_, e) -> expression ppf tbl e
 
 and expression_option ppf tbl eo =
   match eo with
@@ -224,6 +224,7 @@ and module_expr ppf tbl me =
       module_expr ppf tbl me1;
       module_expr ppf tbl me2;
   | Pmod_constraint (me, _) -> module_expr ppf tbl me
+  | Pmod_unpack (e, _) -> expression ppf tbl e
 
 and class_declaration ppf tbl cd = class_expr ppf tbl cd.pci_expr
 
@@ -247,10 +248,10 @@ and class_structure ppf tbl (p, cfl) =
 
 and class_field ppf tbl cf =
   match cf with
-  | Pcf_inher (ce, _) -> class_expr ppf tbl ce;
-  | Pcf_val (_, _, e, _) -> expression ppf tbl e;
+  | Pcf_inher (_, ce, _) -> class_expr ppf tbl ce;
+  | Pcf_val (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_virt _ | Pcf_valvirt _ -> ()
-  | Pcf_meth (_, _, e, _) -> expression ppf tbl e;
+  | Pcf_meth (_, _, _, e, _) -> expression ppf tbl e;
   | Pcf_cstr _ -> ()
   | Pcf_let (recflag, pel, _) -> let_pel ppf tbl recflag pel None;
   | Pcf_init e -> expression ppf tbl e;

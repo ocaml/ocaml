@@ -67,6 +67,10 @@ module Info_retriever =
                  i_version = !Odoc_comments_global.version;
                  i_sees = (List.map create_see !Odoc_comments_global.sees) ;
                  i_since = !Odoc_comments_global.since;
+                 i_before = Odoc_merge.merge_before_tags
+                     (List.map (fun (n, s) ->
+                         (n, MyTexter.text_of_string s)) !Odoc_comments_global.before)
+                   ;
                  i_deprecated =
                  (match !Odoc_comments_global.deprecated with
                    None -> None | Some s -> Some (MyTexter.text_of_string s));
@@ -320,6 +324,7 @@ let info_of_string s =
       i_version = None ;
       i_sees = [] ;
       i_since = None ;
+      i_before = [] ;
       i_deprecated = None ;
       i_params = [] ;
       i_raised_exceptions = [] ;

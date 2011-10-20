@@ -75,7 +75,7 @@ let parameter_list_from_arrows typ =
         (l, t1) :: (iter t2)
     | Types.Tlink texp
     | Types.Tsubst texp ->
-	iter texp
+        iter texp
     | Types.Tpoly (texp, _) -> iter texp
     | Types.Tvar
     | Types.Ttuple _
@@ -84,6 +84,7 @@ let parameter_list_from_arrows typ =
     | Types.Tfield _
     | Types.Tnil
     | Types.Tunivar
+    | Types.Tpackage _
     | Types.Tvariant _ ->
         []
   in
@@ -141,5 +142,3 @@ let is_function v =
             false
       in
   f v.val_type
-
-

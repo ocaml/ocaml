@@ -256,9 +256,6 @@ and rw_exp iflag sexp =
   | Pexp_constraint(sarg, _, _) ->
     rewrite_exp iflag sarg
 
-  | Pexp_contract(c, e) -> 
-     rewrite_exp iflag e
-
   | Pexp_when(scond, sbody) ->
     rewrite_exp iflag scond;
     rewrite_exp iflag sbody
@@ -287,6 +284,10 @@ and rw_exp iflag sexp =
 
   | Pexp_object (_, fieldl) ->
       List.iter (rewrite_class_field iflag) fieldl
+
+  | Pexp_newtype (_, sexp) -> rewrite_exp iflag sexp
+  | Pexp_open (_, e) -> rewrite_exp iflag e
+  | Pexp_pack (smod, _) -> rewrite_mod iflag smod
 
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
@@ -320,11 +321,11 @@ and rewrite_trymatching l =
 
 and rewrite_class_field iflag =
   function
-    Pcf_inher (cexpr, _)     -> rewrite_class_expr iflag cexpr
-  | Pcf_val (_, _, sexp, _)  -> rewrite_exp iflag sexp
-  | Pcf_meth (_, _, ({pexp_desc = Pexp_function _} as sexp), _) ->
+    Pcf_inher (_, cexpr, _)     -> rewrite_class_expr iflag cexpr
+  | Pcf_val (_, _, _, sexp, _)  -> rewrite_exp iflag sexp
+  | Pcf_meth (_, _, _, ({pexp_desc = Pexp_function _} as sexp), _) ->
       rewrite_exp iflag sexp
-  | Pcf_meth (_, _, sexp, loc) ->
+  | Pcf_meth (_, _, _, sexp, loc) ->
       if !instr_fun && not loc.loc_ghost then insert_profile rw_exp sexp
       else rewrite_exp iflag sexp
   | Pcf_let(_, spat_sexp_list, _) ->
@@ -361,6 +362,7 @@ and rewrite_mod iflag smod =
   | Pmod_functor(param, smty, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
   | Pmod_constraint(smod, smty) -> rewrite_mod iflag smod
+  | Pmod_unpack(sexp, _) -> rewrite_exp iflag sexp
 
 and rewrite_str_item iflag item =
   match item.pstr_desc with
@@ -457,6 +459,11 @@ let print_version () =
   exit 0;
 ;;
 
+let print_version_num () =
+  printf "%s@." Sys.ocaml_version;
+  exit 0;
+;;
+
 let main () =
   try
     Warnings.parse_options false "a";
@@ -473,6 +480,8 @@ let main () =
        "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)";
        "-version", Arg.Unit print_version,
                    "     Print version and exit";
+       "-vnum", Arg.Unit print_version_num,
+                "        Print version number and exit";
       ] process_anon_file usage;
     exit 0
   with x ->

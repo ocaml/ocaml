@@ -316,9 +316,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       [ [ "DEFINE"; i = uident; def = opt_macro_value -> SdDef i def
         | "UNDEF";  i = uident -> SdUnd i
         | "IFDEF";  uident_eval_ifdef;  "THEN"; st1 = smlist_then; st2 = else_macro_def ->
-	    make_SdITE_result st1 st2
+            make_SdITE_result st1 st2
         | "IFNDEF"; uident_eval_ifndef; "THEN"; st1 = smlist_then; st2 = else_macro_def ->
-	    make_SdITE_result st1 st2
+            make_SdITE_result st1 st2
         | "INCLUDE"; fname = STRING ->
             SdLazy (lazy (parse_include_file str_items fname)) ] ]
     ;
@@ -352,23 +352,23 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     smlist_then:
       [ [ sml = LIST1 [ d = macro_def; semi ->
-			  execute_macro_if_active_branch _loc <:str_item<>> (fun a b -> <:str_item< $a$; $b$ >>) Then d
-		      | si = str_item; semi -> SdStr si ] -> sml ] ]
+                          execute_macro_if_active_branch _loc <:str_item<>> (fun a b -> <:str_item< $a$; $b$ >>) Then d
+                      | si = str_item; semi -> SdStr si ] -> sml ] ]
     ;
     smlist_else:
       [ [ sml = LIST1 [ d = macro_def; semi ->
-			  execute_macro_if_active_branch _loc <:str_item<>> (fun a b -> <:str_item< $a$; $b$ >>) Else d
-		      | si = str_item; semi -> SdStr si ] -> sml ] ]
+                          execute_macro_if_active_branch _loc <:str_item<>> (fun a b -> <:str_item< $a$; $b$ >>) Else d
+                      | si = str_item; semi -> SdStr si ] -> sml ] ]
     ;
     sglist_then:
       [ [ sgl = LIST1 [ d = macro_def_sig; semi ->
-			  execute_macro_if_active_branch _loc <:sig_item<>> (fun a b -> <:sig_item< $a$; $b$ >>) Then d
-	              | si = sig_item; semi -> SdStr si ] -> sgl ] ]
+                          execute_macro_if_active_branch _loc <:sig_item<>> (fun a b -> <:sig_item< $a$; $b$ >>) Then d
+                      | si = sig_item; semi -> SdStr si ] -> sgl ] ]
     ;
     sglist_else:
       [ [ sgl = LIST1 [ d = macro_def_sig; semi ->
-			  execute_macro_if_active_branch _loc <:sig_item<>> (fun a b -> <:sig_item< $a$; $b$ >>) Else d
-	              | si = sig_item; semi -> SdStr si ] -> sgl ] ]
+                          execute_macro_if_active_branch _loc <:sig_item<>> (fun a b -> <:sig_item< $a$; $b$ >>) Else d
+                      | si = sig_item; semi -> SdStr si ] -> sgl ] ]
     ;
     endif:
       [ [ "END" -> ()
@@ -404,6 +404,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     uident:
       [ [ i = UIDENT -> i ] ]
+    ;
+    (* dirty hack to allow polymorphic variants using the introduced keywords. *)
+    expr: BEFORE "simple"
+      [ [ "`"; kwd = [ "IFDEF" | "IFNDEF" | "THEN" | "ELSE" | "END" | "ENDIF"
+                     | "DEFINE" | "IN" ] -> <:expr< `$uid:kwd$ >>
+        | "`"; s = a_ident -> <:expr< ` $s$ >> ] ]
+    ;
+    (* idem *)
+    patt: BEFORE "simple"
+      [ [ "`"; kwd = [ "IFDEF" | "IFNDEF" | "THEN" | "ELSE" | "END" | "ENDIF" ] ->
+            <:patt< `$uid:kwd$ >>
+        | "`"; s = a_ident -> <:patt< ` $s$ >> ] ]
     ;
   END;
 

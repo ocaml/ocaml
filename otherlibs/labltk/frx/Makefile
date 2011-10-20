@@ -45,7 +45,7 @@ $(OBJSX): ../lib/$(LIBNAME).cmxa
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 
-depend: 
+depend:
 	$(CAMLDEP) *.mli *.ml > .depend
 
 include .depend

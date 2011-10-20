@@ -22,7 +22,7 @@ type core_type =
   { ptyp_desc: core_type_desc;
     ptyp_loc: Location.t }
 
-and core_type_desc = 
+and core_type_desc =
     Ptyp_any
   | Ptyp_var of string
   | Ptyp_arrow of label * core_type * core_type
@@ -33,6 +33,9 @@ and core_type_desc =
   | Ptyp_alias of core_type * string
   | Ptyp_variant of row_field list * bool * label list option
   | Ptyp_poly of string list * core_type
+  | Ptyp_package of package_type
+
+and package_type = Longident.t * (string * core_type) list
 
 and core_field_type =
   { pfield_desc: core_field_desc;
@@ -46,7 +49,7 @@ and row_field =
     Rtag of label * bool * core_type list
   | Rinherit of core_type
 
-(* XXX Type expressions for the class language *)
+(* Type expressions for the class language *)
 
 type 'a class_infos =
   { pci_virt: virtual_flag;
@@ -70,13 +73,12 @@ and pattern_desc =
   | Ppat_tuple of pattern list
   | Ppat_construct of Longident.t * pattern option * bool
   | Ppat_variant of label * pattern option
-  | Ppat_record of (Longident.t * pattern) list
+  | Ppat_record of (Longident.t * pattern) list * closed_flag
   | Ppat_array of pattern list
   | Ppat_or of pattern * pattern
   | Ppat_constraint of pattern * core_type
   | Ppat_type of Longident.t
   | Ppat_lazy of pattern
-
 
 type expression =
   { pexp_desc: expression_desc;
@@ -102,7 +104,6 @@ and expression_desc =
   | Pexp_while of expression * expression
   | Pexp_for of string * expression * expression * direction_flag * expression
   | Pexp_constraint of expression * core_type option * core_type option
-  | Pexp_contract of core_contract * expression 
   | Pexp_when of expression * expression
   | Pexp_send of expression * string
   | Pexp_new of Longident.t
@@ -114,28 +115,15 @@ and expression_desc =
   | Pexp_lazy of expression
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
+  | Pexp_newtype of string * expression
+  | Pexp_pack of module_expr * package_type
+  | Pexp_open of Longident.t * expression
 
 (* Value descriptions *)
 
 and value_description =
   { pval_type: core_type;
     pval_prim: string list }
-
-and core_contract =
-   { pctr_desc: core_contract_desc;
-     pctr_loc:  Location.t }
-
-and core_contract_desc = 
-    Pctr_pred of string * expression * ((pattern * expression) list) option
-  | Pctr_arrow of string option * core_contract * core_contract
-  | Pctr_tuple of (string option * core_contract) list
-  | Pctr_constr of Longident.t * (string option * core_contract) list
-  | Pctr_and of core_contract * core_contract
-  | Pctr_or of core_contract * core_contract
-  | Pctr_typconstr of Longident.t * core_contract list
-  | Pctr_var of string
-  | Pctr_poly of string list * core_contract
-
 
 (* Type declarations *)
 
@@ -197,11 +185,11 @@ and class_expr_desc =
 and class_structure = pattern * class_field list
 
 and class_field =
-    Pcf_inher of class_expr * string option
+    Pcf_inher of override_flag * class_expr * string option
   | Pcf_valvirt of (string * mutable_flag * core_type * Location.t)
-  | Pcf_val   of (string * mutable_flag * expression * Location.t)
+  | Pcf_val of (string * mutable_flag * override_flag * expression * Location.t)
   | Pcf_virt  of (string * private_flag * core_type * Location.t)
-  | Pcf_meth  of (string * private_flag * expression * Location.t)
+  | Pcf_meth of (string * private_flag *override_flag * expression * Location.t)
   | Pcf_cstr  of (core_type * core_type * Location.t)
   | Pcf_let   of rec_flag * (pattern * expression) list * Location.t
   | Pcf_init  of expression
@@ -219,6 +207,7 @@ and module_type_desc =
   | Pmty_signature of signature
   | Pmty_functor of string * module_type * module_type
   | Pmty_with of module_type * (Longident.t * with_constraint) list
+  | Pmty_typeof of module_expr
 
 and signature = signature_item list
 
@@ -237,7 +226,6 @@ and signature_item_desc =
   | Psig_include of module_type
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
-  | Psig_contract of contract_declaration list
 
 and modtype_declaration =
     Pmodtype_abstract
@@ -246,8 +234,10 @@ and modtype_declaration =
 and with_constraint =
     Pwith_type of type_declaration
   | Pwith_module of Longident.t
+  | Pwith_typesubst of type_declaration
+  | Pwith_modsubst of Longident.t
 
-(* Value expressions for the module language *)
+(* value expressions for the module language *)
 
 and module_expr =
   { pmod_desc: module_expr_desc;
@@ -259,17 +249,7 @@ and module_expr_desc =
   | Pmod_functor of string * module_type * module_expr
   | Pmod_apply of module_expr * module_expr
   | Pmod_constraint of module_expr * module_type
-
-(* Toplevel contract declaration  
-   Example:
-   contract f = k:({x | x > 0} -> {y | y > x}) -> {z | z > k 0} 
-   let f x y = x + y
-*)
-
-and contract_declaration =  
-  { ptopctr_id:  string;
-    ptopctr_desc: core_contract;
-    ptopctr_loc: Location.t }
+  | Pmod_unpack of expression * package_type
 
 and structure = structure_item list
 
@@ -282,7 +262,6 @@ and structure_item_desc =
   | Pstr_value of rec_flag * (pattern * expression) list
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list
-  | Pstr_contract of contract_declaration list
   | Pstr_exception of string * exception_declaration
   | Pstr_exn_rebind of string * Longident.t
   | Pstr_module of string * module_expr
@@ -305,6 +284,3 @@ and directive_argument =
   | Pdir_int of int
   | Pdir_ident of Longident.t
   | Pdir_bool of bool
-
-
-

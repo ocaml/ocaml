@@ -71,15 +71,15 @@ let proceed () =
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
   Configuration.parse_string
-    "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml
-     <**/*.byte>: ocaml, byte, program
-     <**/*.odoc>: ocaml, doc
-     <**/*.native>: ocaml, native, program
-     <**/*.cma>: ocaml, byte, library
-     <**/*.cmxa>: ocaml, native, library
-     <**/*.cmo>: ocaml, byte
-     <**/*.cmi>: ocaml, byte, native
-     <**/*.cmx>: ocaml, native
+    "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml\n\
+     <**/*.byte>: ocaml, byte, program\n\
+     <**/*.odoc>: ocaml, doc\n\
+     <**/*.native>: ocaml, native, program\n\
+     <**/*.cma>: ocaml, byte, library\n\
+     <**/*.cmxa>: ocaml, native, library\n\
+     <**/*.cmo>: ocaml, byte\n\
+     <**/*.cmi>: ocaml, byte, native\n\
+     <**/*.cmx>: ocaml, native\n\
     ";
 
   Configuration.tag_any !Options.tags;
@@ -87,6 +87,11 @@ let proceed () =
   || Sys.file_exists (* authorized since we're not in build *) "_tags"
   || Sys.file_exists (* authorized since we're not in build *) "myocamlbuild.ml"
   then Configuration.tag_any ["traverse"];
+
+  (* options related to findlib *)
+  List.iter
+    (fun pkg -> Configuration.tag_any [Param_tags.make "package" pkg])
+    !Options.ocaml_pkgs;
 
   let newpwd = Sys.getcwd () in
   Sys.chdir Pathname.pwd;
@@ -104,7 +109,8 @@ let proceed () =
         if name = "_tags" then
           ignore (Configuration.parse_file ?dir path_name);
 
-        (String.length name > 0 && name.[0] <> '_' && name <> !Options.build_dir && not (List.mem name !Options.exclude_dirs))
+        (List.mem name ["_oasis"] || (String.length name > 0 && name.[0] <> '_'))
+        && (name <> !Options.build_dir && not (List.mem name !Options.exclude_dirs))
         && begin
           if path_name <> Filename.current_dir_name && Pathname.is_directory path_name then
             let tags = tags_of_pathname path_name in
@@ -141,6 +147,8 @@ let proceed () =
   Hooks.call_hook Hooks.Before_rules;
   Ocaml_specific.init ();
   Hooks.call_hook Hooks.After_rules;
+
+  Param_tags.init ();
 
   Sys.chdir newpwd;
   (*let () = dprintf 0 "source_dir_path_set:@ %a" StringSet.print source_dir_path_set*)
@@ -279,7 +287,7 @@ let main () =
       | e ->
           try
             Log.eprintf "%a" My_unix.report_error e;
-            exit 100 
+            exit 100
           with
           | e ->
             Log.eprintf "Exception@ %s." (Printexc.to_string e);

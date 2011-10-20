@@ -39,7 +39,7 @@ let recenter lb ~index =
 class timed ?wait ?nocase get_texts = object
   val get_texts = get_texts
   inherit Jg_completion.timed [] ?wait ?nocase as super
-  method reset =
+  method! reset =
     texts <- get_texts ();
     super#reset
 end
@@ -52,14 +52,14 @@ let add_completion ?action ?wait ?nocase ?(double=true) lb =
   Jg_bind.enter_focus lb;
 
   bind lb ~events:[`KeyPress] ~fields:[`Char] ~action:
-    begin fun ev -> 
+    begin fun ev ->
       (* consider only keys producing characters. The callback is called
          even if you press Shift. *)
       if ev.ev_Char <> "" then
         recenter lb ~index:(`Num (comp#add ev.ev_Char))
     end;
 
-  begin match action with 
+  begin match action with
     Some action ->
       bind lb ~events:[`KeyPressDetail "Return"]
         ~action:(fun _ -> action `Active);

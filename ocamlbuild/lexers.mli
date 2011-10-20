@@ -15,9 +15,7 @@ exception Error of string
 
 type conf_values =
   { plus_tags   : string list;
-    minus_tags  : string list;
-    plus_flags  : (string * string) list;
-    minus_flags : (string * string) list }
+    minus_tags  : string list }
 
 type conf = (Glob.globber * conf_values) list
 
@@ -26,14 +24,22 @@ val space_sep_strings : Lexing.lexbuf -> string list
 val blank_sep_strings : Lexing.lexbuf -> string list
 val comma_sep_strings : Lexing.lexbuf -> string list
 val comma_or_blank_sep_strings : Lexing.lexbuf -> string list
+val trim_blanks : Lexing.lexbuf -> string
 
-(* Parse a colon separated string.
-   Note: successive colons are ignored.
-   Example: "aaa:bbb:::ccc" -> ["aaa"; "bbb"; "ccc"] *)
-val colon_sep_strings : Lexing.lexbuf -> string list
+(* Parse an environment path (i.e. $PATH).
+   This is a colon separated string.
+   Note: successive colons means an empty string.
+   Example:
+      ":aaa:bbb:::ccc:" -> [""; "aaa"; "bbb"; ""; ""; "ccc"; ""] *)
+val parse_environment_path : Lexing.lexbuf -> string list
 
 val conf_lines : string option -> int -> string -> Lexing.lexbuf -> conf
 val path_scheme : bool -> Lexing.lexbuf ->
   [ `Word of string
   | `Var of (string * Glob.globber)
   ] list
+
+val ocamlfind_query : Lexing.lexbuf ->
+  string * string * string * string * string * string
+
+val tag_gen : Lexing.lexbuf -> string * string option

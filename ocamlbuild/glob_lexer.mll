@@ -60,7 +60,7 @@ rule token = parse
 
 and parse_pattern eof_chars p = parse
 | (pattern_chars+ as u) { parse_pattern eof_chars (concat_patterns p (Word u)) lexbuf }
-| '{'                   
+| '{'
   {
     let rec loop pl =
       let (p',c) = parse_pattern ['}';','] Epsilon lexbuf in
@@ -77,7 +77,7 @@ and parse_pattern eof_chars p = parse
     let cl = Not(Or(parse_class [] lexbuf)) in
     parse_pattern eof_chars (concat_patterns p (Class cl)) lexbuf
   }
-| '['                   
+| '['
   {
     let cl = Or(parse_class [] lexbuf) in
     parse_pattern eof_chars (concat_patterns p (Class cl)) lexbuf
@@ -97,7 +97,7 @@ and parse_pattern eof_chars p = parse
 | '/' { parse_pattern eof_chars (concat_patterns p slash) lexbuf }
 | '?' { parse_pattern eof_chars (concat_patterns p not_slash) lexbuf }
 | _ as c
-  { if List.mem c eof_chars then 
+  { if List.mem c eof_chars then
       (p,c)
     else
       raise (Parse_error(sf "Unexpected character %C in glob pattern" c))

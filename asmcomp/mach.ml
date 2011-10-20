@@ -82,23 +82,23 @@ type fundecl =
     fun_fast: bool }
 
 let rec dummy_instr =
-  { desc = Iend; 
+  { desc = Iend;
     next = dummy_instr;
-    arg = [||]; 
+    arg = [||];
     res = [||];
     dbg = Debuginfo.none;
     live = Reg.Set.empty }
 
 let end_instr () =
-  { desc = Iend; 
+  { desc = Iend;
     next = dummy_instr;
-    arg = [||]; 
+    arg = [||];
     res = [||];
     dbg = Debuginfo.none;
     live = Reg.Set.empty }
 
 let instr_cons d a r n =
-  { desc = d; next = n; arg = a; res = r; 
+  { desc = d; next = n; arg = a; res = r;
     dbg = Debuginfo.none; live = Reg.Set.empty }
 
 let instr_cons_debug d a r dbg n =
@@ -128,5 +128,4 @@ let rec instr_iter f i =
           instr_iter f body; instr_iter f handler; instr_iter f i.next
       | Iraise -> ()
       | _ ->
-          instr_iter f i.next      
-
+          instr_iter f i.next

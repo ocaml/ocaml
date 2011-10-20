@@ -1,7 +1,6 @@
 Log
 My_unix
 My_std
-Std_signatures
 Signatures
 Shell
 Display
@@ -38,3 +37,5 @@ Ocaml_compiler
 Ocaml_dependencies
 Exit_codes
 Digest_cache
+Findlib
+Param_tags

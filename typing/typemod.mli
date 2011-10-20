@@ -24,7 +24,7 @@ val type_structure:
           Typedtree.structure * signature * Env.t
 val type_implementation:
         string -> string -> string -> Env.t -> Parsetree.structure ->
-                               Typedtree.structure * Types.module_coercion
+                               Typedtree.structure * Typedtree.module_coercion
 val transl_signature:
         Env.t -> Parsetree.signature -> signature
 val check_nongen_schemes:
@@ -33,12 +33,10 @@ val check_nongen_schemes:
 val simplify_signature: signature -> signature
 
 val package_units:
-        string list -> string -> string -> Types.module_coercion
+        string list -> string -> string -> Typedtree.module_coercion
 
 type error =
-    Unbound_module of Longident.t
-  | Unbound_modtype of Longident.t
-  | Cannot_apply of module_type
+    Cannot_apply of module_type
   | Not_included of Includemod.error list
   | Cannot_eliminate_dependency of module_type
   | Signature_expected
@@ -51,6 +49,8 @@ type error =
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
+  | Not_allowed_in_functor_body
+  | With_need_typeconstr
 
 exception Error of Location.t * error
 

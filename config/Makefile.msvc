@@ -70,6 +70,7 @@ CC_PROFILE=
 SYSTHREAD_SUPPORT=true
 EXTRALIBS=
 CMXS=cmxs
+NATDYNLINK=true
 
 ########## Configuration for the bytecode compiler
 
@@ -97,7 +98,7 @@ FLEXLINK=flexlink -merge-manifest
 FLEXDIR=$(shell $(FLEXLINK) -where)
 IFLEXDIR=-I"$(FLEXDIR)"
 MKDLL=$(FLEXLINK)
-MKEXE=$(FLEXLINK) -exe
+MKEXE=$(FLEXLINK) -exe -link /STACK:16777216
 MKMAINDLL=$(FLEXLINK) -maindll
 
 ### How to build a static library
@@ -159,5 +160,5 @@ TK_LINK=tk85.lib tcl85.lib ws2_32.lib
 
 ############# Aliases for common commands
 
-MAKEREC=$(MAKE) -f Makefile.nt 
+MAKEREC=$(MAKE) -f Makefile.nt
 MAKECMD=$(MAKE)

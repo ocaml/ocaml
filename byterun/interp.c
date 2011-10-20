@@ -159,7 +159,7 @@ sp is a local copy of the global variable caml_extern_sp. */
 #endif
 /* PR#4953: these specific registers not available in Thumb mode */
 #if defined (__arm__) && !defined(__thumb__)
-#define PC_REG asm("r9")
+#define PC_REG asm("r6")
 #define SP_REG asm("r8")
 #define ACCU_REG asm("r7")
 #endif
@@ -1024,14 +1024,14 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(ISINT):
       accu = Val_long(accu & 1);
       Next;
-    
+
 /* Object-oriented operations */
 
 #define Lookup(obj, lab) Field (Field (obj, 0), Int_val(lab))
 
       /* please don't forget to keep below code in sync with the
-	 functions caml_cache_public_method and
-	 caml_cache_public_method2 in obj.c */
+         functions caml_cache_public_method and
+         caml_cache_public_method2 in obj.c */
 
     Instruct(GETMETHOD):
       accu = Lookup(sp[0], accu);
@@ -1137,7 +1137,7 @@ void caml_prepare_bytecode(code_t prog, asize_t prog_size) {
   Assert(prog);
   Assert(prog_size>0);
   /* actually, the threading of the bytecode might be done here */
-} 
+}
 
 void caml_release_bytecode(code_t prog, asize_t prog_size) {
   /* other implementations of the interpreter (such as an hypothetical

@@ -35,7 +35,7 @@ module type LIST = sig
   val union : 'a list -> 'a list -> 'a list
 
   (* Original functions *)
-  include Std_signatures.LIST
+  include module type of List
 end
 
 module type STRING = sig
@@ -89,7 +89,7 @@ module type STRING = sig
   val explode : string -> char list
 
   (** The following are original functions from the [String] module. *)
-  include Std_signatures.STRING
+  include module type of String
 end
 
 module type TAGS = sig
@@ -166,7 +166,7 @@ module type COMMAND = sig
     | Echo of string list * pathname (** Write the given strings (w/ any formatting) to the given file *)
     | Nop                            (** The command that does nothing *)
 
-  (** The type for command specifications. *)
+  (** The type for command specifications. That is pieces of command. *)
   and spec =
     | N                       (** No operation. *)
     | S of spec list          (** A sequence.  This gets flattened in the last stages *)
@@ -251,7 +251,7 @@ module type GLOB = sig
       A basic expression can be a constant string enclosed in double quotes, in which
       double quotes must be preceded by backslashes, or a glob pattern enclosed between a [<] and a [>],
       - ["]{i string}["] matches the literal string {i string},
-      - [<]{i glob}[>] matches the glob pattern {i glob}. 
+      - [<]{i glob}[>] matches the glob pattern {i glob}.
 
       A glob pattern is an anchored regular expression in a shell-like syntax.  Most characters stand for themselves.
       Character ranges are given in usual shell syntax between brackets.  The star [*] stands for any sequence of
@@ -380,9 +380,12 @@ module type OPTIONS = sig
   val use_menhir : bool ref
   val show_documentation : bool ref
   val recursive : bool ref
+  val use_ocamlfind : bool ref
 
   val targets : string list ref
   val ocaml_libs : string list ref
+  val ocaml_mods : string list ref
+  val ocaml_pkgs : string list ref
   val ocaml_cflags : string list ref
   val ocaml_lflags : string list ref
   val ocaml_ppflags : string list ref
@@ -398,6 +401,8 @@ module type OPTIONS = sig
   val ext_lib : string ref
   val ext_dll : string ref
   val exe : string ref
+
+  val add : string * Arg.spec * string -> unit
 end
 
 module type ARCH = sig
@@ -433,6 +438,69 @@ module type ARCH = sig
     (Format.formatter -> 'a -> unit) -> Format.formatter -> (string, 'a) Hashtbl.t -> unit
 end
 
+module type FINDLIB = sig
+  (** Findlib / Ocamlfind tools. *)
+
+  type command_spec
+
+  type error =
+    | Cannot_run_ocamlfind
+    | Dependency_not_found of string * string (* package, dependency *)
+    | Package_not_found of string
+    | Cannot_parse_query of string * string (* package, explaination *)
+
+  exception Findlib_error of error
+
+  val string_of_error: error -> string
+    (** Return a string message describing an error. *)
+
+  val report_error: error -> 'a
+    (** Report an error on the standard error and exit with code 2. *)
+
+  type package = {
+    name: string;
+    description: string;
+    version: string;
+    archives_byte: string;
+      (** Archive names, with the .cma extension, but without the directory. *)
+    archives_native: string;
+      (** Archive names, with the .cmxa extension, but without the directory. *)
+    link_options: string;
+    location: string;
+    dependencies: package list;
+      (** Transitive closure, as returned by [ocamlfind query -r]. *)
+  }
+    (** Package information. *)
+
+  val query: string -> package
+    (** Query information about a package, given its name. May raise
+[Not_found]. *)
+
+  val list: unit -> string list
+    (** Return the names of all known packages. *)
+
+  val topological_closure: package list -> package list
+    (** Computes the transitive closure of a list of
+packages and sort them in topological order.
+Given any list of package [l], [topological_closure l] returns a list of
+packages including [l] and their dependencies, in an order where any element
+may only depend on the previous ones. *)
+
+  val compile_flags_byte: package list -> command_spec
+    (** Return the flags to add when compiling in byte mode (include
+directories). *)
+
+  val compile_flags_native: package list -> command_spec
+    (** Same as [link_flags_byte] but for native mode. *)
+
+  val link_flags_byte: package list -> command_spec
+    (** Return the flags to add when linking in byte mode. It includes:
+include directories, libraries and special link options. *)
+
+  val link_flags_native: package list -> command_spec
+    (** Same as [link_flags_byte] but for native mode. *)
+end
+
 (** This module contains the functions and values that can be used by plugins. *)
 module type PLUGIN = sig
   module Pathname  : PATHNAME
@@ -444,6 +512,7 @@ module type PLUGIN = sig
   module StringSet : Set.S with type elt = String.t
   module Options   : OPTIONS with type command_spec = Command.spec
   module Arch      : ARCH
+  module Findlib   : FINDLIB with type command_spec = Command.spec
   include MISC
 
   (** See [COMMAND] for the description of these types. *)
@@ -527,9 +596,28 @@ module type PLUGIN = sig
   (** [dep tags deps] Will build [deps] when all [tags] will be activated. *)
   val dep : Tags.elt list -> Pathname.t list -> unit
 
+  (** [pdep tags ptag deps] is equivalent to [dep tags deps], with an additional
+      parameterized tag [ptag]. [deps] is now a function which takes the
+      parameter of the tag [ptag] as an argument.
+
+      Example:
+        [pdep ["ocaml"; "compile"] "autodep" (fun param -> param)]
+      says that the tag [autodep(file)] can now be used to automatically
+      add [file] as a dependency when compiling an OCaml program. *)
+  val pdep : Tags.elt list -> Tags.elt -> (string -> Pathname.t list) -> unit
+
   (** [flag tags command_spec] Will inject the given piece of command
       ([command_spec]) when all [tags] will be activated. *)
   val flag : Tags.elt list -> Command.spec -> unit
+
+  (** Allows to use [flag] with a parameterized tag (as [pdep] for [dep]).
+
+      Example:
+        [pflag ["ocaml"; "compile"] "inline"
+           (fun count -> S [A "-inline"; A count])]
+      says that command line option ["-inline 42"] should be added
+      when compiling files tagged with tag ["inline(42)"]. *)
+  val pflag : Tags.elt list -> Tags.elt -> (string -> Command.spec) -> unit
 
   (** [flag_and_dep tags command_spec]
       Combines [flag] and [dep] function.
@@ -539,8 +627,13 @@ module type PLUGIN = sig
       pathname argument of builtins like [Echo]. *)
   val flag_and_dep : Tags.elt list -> Command.spec -> unit
 
+  (** Allows to use [flag_and_dep] with a parameterized tag
+      (as [pdep] for [dep]). *)
+  val pflag_and_dep : Tags.elt list -> Tags.elt ->
+    (string -> Command.spec) -> unit
+
   (** [non_dependency module_path module_name]
-       Example: 
+       Example:
          [non_dependency "foo/bar/baz" "Goo"]
        Says that the module [Baz] in the file [foo/bar/baz.*] does not depend on [Goo]. *)
   val non_dependency : Pathname.t -> string -> unit
@@ -556,7 +649,7 @@ module type PLUGIN = sig
         At link time it will include:
           foo/bar.cma or foo/bar.cmxa
         If you supply the ~dir:"boo" option -I boo
-          will be added at link and compile time. 
+          will be added at link and compile time.
         Use ~extern:true for non-ocamlbuild handled libraries.
         Use ~byte:false or ~native:false to disable byte or native mode.
         Use ~tag_name:"usebar" to override the default tag name. *)
@@ -627,7 +720,7 @@ module type PLUGIN = sig
   (** Here is the list of hooks that the dispatch function have to handle.
       Generally one respond to one or two hooks (like After_rules) and do
       nothing in the default case. *)
-  type hook = 
+  type hook =
     | Before_hygiene
     | After_hygiene
     | Before_options

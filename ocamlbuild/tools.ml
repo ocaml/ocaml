@@ -25,8 +25,7 @@ let pp_l = List.print String.print
 let tags_of_pathname p =
   Configuration.tags_of_filename (Pathname.to_string p)
   ++("file:"^p)
-  ++("extension:"^Pathname.get_extension p)  
-let flags_of_pathname p = Configuration.flags_of_filename (Pathname.to_string p)
+  ++("extension:"^Pathname.get_extension p)
 
 let opt_print elt ppf =
   function
@@ -44,4 +43,3 @@ let path_and_context_of_string s =
       let include_dirs = Pathname.include_dirs_of d in
       List.map (fun include_dir -> include_dir/b) include_dirs
   else [s]
-

@@ -149,7 +149,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of meth_kind * lambda * lambda * lambda list
+  | Lsend of meth_kind * lambda * lambda * lambda list * Location.t
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -175,8 +175,6 @@ val const_unit: structured_constant
 val lambda_unit: lambda
 val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
-val is_guarded: lambda -> bool
-val patch_guarded : lambda -> lambda -> lambda
 
 val iter: (lambda -> unit) -> lambda -> unit
 module IdentSet: Set.S with type elt = Ident.t
@@ -205,4 +203,3 @@ val staticfail : lambda (* Anticipated static failure *)
 (* Check anticipated failure, substitute its final value *)
 val is_guarded: lambda -> bool
 val patch_guarded : lambda -> lambda -> lambda
-

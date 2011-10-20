@@ -58,7 +58,8 @@ let run_and_open s kont =
   in close (); res
 
 let stdout_isatty () =
-  Unix.isatty Unix.stdout
+  Unix.isatty Unix.stdout &&
+    try Unix.getenv "TERM" <> "dumb" with Not_found -> true
 
 let execute_many =
   let exit i = raise (My_std.Exit_with_code i) in
@@ -81,4 +82,4 @@ let setup () =
   implem.at_exit_once <- at_exit_once;
   implem.is_link <- is_link;
   implem.stat <- mkstat Unix.stat;
-  implem.lstat <- mkstat Unix.lstat;
+  implem.lstat <- mkstat Unix.lstat;;

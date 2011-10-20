@@ -32,7 +32,7 @@ let rec is_arrow_type t =
   | Types.Ttuple _
   | Types.Tconstr _
   | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
-  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
+  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
 
 let raw_string_of_type_list sep type_list =
   let buf = Buffer.create 256 in
@@ -44,7 +44,7 @@ let raw_string_of_type_list sep type_list =
     | Types.Tconstr _ ->
         false
     | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
-    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
+    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Tpackage _ -> false
   in
   let print_one_type variance t =
     Printtyp.mark_loops t;
@@ -68,9 +68,9 @@ let raw_string_of_type_list sep type_list =
       print_one_type variance ty;
       List.iter
         (fun (variance, t) ->
-	  Format.fprintf fmt "@,%s" sep;
-	  print_one_type variance t
-	)
+          Format.fprintf fmt "@,%s" sep;
+          print_one_type variance t
+        )
         tyl;
       Format.fprintf fmt "@]"
   end;
@@ -82,9 +82,9 @@ let string_of_type_list ?par sep type_list =
     match par with
     | Some b -> b
     | None ->
-	match type_list with
-	  [] | [_] -> false
-	| _ -> true
+        match type_list with
+          [] | [_] -> false
+        | _ -> true
   in
   Printf.sprintf "%s%s%s"
     (if par then "(" else "")
@@ -101,8 +101,8 @@ let string_of_type_param_list t =
     (if par then "(" else "")
     (raw_string_of_type_list ", "
        (List.map
-	  (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
-	  t.Odoc_type.ty_parameters
+          (fun (typ, co, cn) -> (string_of_variance t (co, cn), typ))
+          t.Odoc_type.ty_parameters
        )
     )
     (if par then ")" else "")
@@ -117,8 +117,8 @@ let string_of_class_type_param_list l =
     (if par then "[" else "")
     (raw_string_of_type_list ", "
        (List.map
-	  (fun typ -> ("", typ))
-	  l
+          (fun typ -> ("", typ))
+          l
        )
     )
     (if par then "]" else "")
@@ -127,23 +127,23 @@ let string_of_class_params c =
   let b = Buffer.create 256 in
   let rec iter = function
       Types.Tcty_fun (label, t, ctype) ->
-	let parent = is_arrow_type t in
-	Printf.bprintf b "%s%s%s%s -> "
-	  (
-	   match label with
-	     "" -> ""
-	   | s -> s^":"
-	  )
-	  (if parent then "(" else "")
-	  (Odoc_print.string_of_type_expr
-	     (if Odoc_misc.is_optional label then
-	       Odoc_misc.remove_option t
-	     else
-	       t
-	     )
-	  )
-	  (if parent then ")" else "");
-	iter ctype
+        let parent = is_arrow_type t in
+        Printf.bprintf b "%s%s%s%s -> "
+          (
+           match label with
+             "" -> ""
+           | s -> s^":"
+          )
+          (if parent then "(" else "")
+          (Odoc_print.string_of_type_expr
+             (if Odoc_misc.is_optional label then
+               Odoc_misc.remove_option t
+             else
+               t
+             )
+          )
+          (if parent then ")" else "");
+        iter ctype
     | Types.Tcty_signature _
     | Types.Tcty_constr _ -> ()
   in
@@ -160,9 +160,9 @@ let string_of_type t =
   (String.concat ""
      (List.map
         (fun (p, co, cn) ->
-	  (string_of_variance t (co, cn))^
-	  (Odoc_print.string_of_type_expr p)^" "
-	)
+          (string_of_variance t (co, cn))^
+          (Odoc_print.string_of_type_expr p)^" "
+        )
         t.M.ty_parameters
      )
   )^

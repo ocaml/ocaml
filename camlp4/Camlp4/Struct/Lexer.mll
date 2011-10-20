@@ -180,6 +180,18 @@ module Make (Token : Sig.Camlp4Token)
       pos_lnum = if absolute then line else pos.pos_lnum + line;
       pos_bol = pos.pos_cnum - chars;
     }
+	
+    (* To convert integer literals, copied from "../parsing/lexer.mll" *)
+	
+    let cvt_int_literal s =
+      - int_of_string ("-" ^ s)
+    let cvt_int32_literal s =
+      Int32.neg (Int32.of_string ("-" ^ s))
+    let cvt_int64_literal s =
+      Int64.neg (Int64.of_string ("-" ^ s))
+    let cvt_nativeint_literal s =
+      Nativeint.neg (Nativeint.of_string ("-" ^ s))
+
 
   let err error loc =
     raise(Loc.Exc_located(loc, Error.E error))
@@ -263,19 +275,19 @@ module Make (Token : Sig.Camlp4Token)
     | lowercase identchar * as x                                     { LIDENT x }
     | uppercase identchar * as x                                     { UIDENT x }
     | int_literal as i
-        { try  INT(int_of_string i, i)
+        { try  INT(cvt_int_literal i, i)
           with Failure _ -> err (Literal_overflow "int") (Loc.of_lexbuf lexbuf) }
     | float_literal as f
         { try  FLOAT(float_of_string f, f)
           with Failure _ -> err (Literal_overflow "float") (Loc.of_lexbuf lexbuf) }
     | (int_literal as i) "l"
-        { try  INT32(Int32.of_string i, i)
+        { try INT32(cvt_int32_literal i, i)
           with Failure _ -> err (Literal_overflow "int32") (Loc.of_lexbuf lexbuf) }
     | (int_literal as i) "L"
-        { try  INT64(Int64.of_string i, i)
+        { try  INT64(cvt_int64_literal i, i)
           with Failure _ -> err (Literal_overflow "int64") (Loc.of_lexbuf lexbuf) }
     | (int_literal as i) "n"
-        { try NATIVEINT(Nativeint.of_string i, i)
+        { try NATIVEINT(cvt_nativeint_literal i, i)
           with Failure _ -> err (Literal_overflow "nativeint") (Loc.of_lexbuf lexbuf) }
     | '"'
         { with_curr_loc string c;
@@ -396,7 +408,7 @@ module Make (Token : Sig.Camlp4Token)
                                                         SYMBOL(beginning ^ tok) }
 
   and maybe_quotation_at c = parse
-    | (ident as loc) '<'      
+    | (ident as loc) '<'
       { mk_quotation quotation c "" loc (1 + String.length loc)                 }
     | symbolchar* as tok                                   { SYMBOL("<@" ^ tok) }
 
@@ -420,7 +432,7 @@ module Make (Token : Sig.Camlp4Token)
 
   and dollar c = parse
     | '$'                                     { set_start_p c; ANTIQUOT("", "") }
-    | ('`'? (identchar*|'.'+) as name) ':'
+    | ('`'? (identchar*|['.' '!']+) as name) ':'
       { with_curr_loc (antiquot name) (shift (1 + String.length name) c)        }
     | _                                           { store_parse (antiquot "") c }
 
@@ -434,7 +446,7 @@ module Make (Token : Sig.Camlp4Token)
     | _                                         { store_parse (antiquot name) c }
 
   {
-    
+
   let lexing_store s buff max =
     let rec self n s =
       if n >= max then n

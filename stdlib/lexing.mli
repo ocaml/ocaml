@@ -133,7 +133,9 @@ val lexeme_end_p : lexbuf -> position
 val new_line : lexbuf -> unit
 (** Update the [lex_curr_p] field of the lexbuf to reflect the start
     of a new line.  You can call this function in the semantic action
-    of the rule that matches the end-of-line character. *)
+    of the rule that matches the end-of-line character.
+    @since 3.11.0
+*)
 
 (** {6 Miscellaneous functions} *)
 

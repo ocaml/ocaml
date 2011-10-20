@@ -16,7 +16,7 @@
 (* find font information *)
 
 let debug = ref false
-let log s = 
+let log s =
   if !debug then try prerr_endline s with _ -> ()
 
 type ('s, 'i) xlfd = {
@@ -35,7 +35,7 @@ type ('s, 'i) xlfd = {
     mutable averageWidth: 'i;
     mutable registry: 's;
     mutable encoding: 's
-  } 
+  }
 
 let copy xlfd = {xlfd with foundry= xlfd.foundry}
 
@@ -78,8 +78,8 @@ let parse_xlfd xlfd_string =
     let len = String.length str in
     let rec split beg cur =
       if cur >= len then [String.sub str beg (len - beg)]
-      else if char_sep (String.get str cur) 
-      then 
+      else if char_sep (String.get str cur)
+      then
         let nextw = succ cur in
         (String.sub str beg (cur - beg))
         ::(split nextw nextw)
@@ -104,7 +104,7 @@ let parse_xlfd xlfd_string =
          averageWidth= int_of_string averageWidth;
          registry= registry;
          encoding= encoding;
-       } 
+       }
    | _ -> raise (Parse_Xlfd_Failure xlfd_string)
 
 type valid_xlfd = (string, int) xlfd
@@ -128,7 +128,7 @@ let empty_pattern =
     averageWidth= None;
     registry= None;
     encoding= None;
-  } 
+  }
 
 let string_of_pattern =
   let pat f = function
@@ -148,10 +148,10 @@ let list_fonts dispname pattern =
     None -> ""
   | Some x -> "-display " ^ x
   in
-  let result = List.map parse_xlfd 
-      (Shell.subshell ("xlsfonts "^dispopt^" -fn "^string_of_pattern pattern)) 
+  let result = List.map parse_xlfd
+      (Shell.subshell ("xlsfonts "^dispopt^" -fn "^string_of_pattern pattern))
   in
-  if result = [] then raise Not_found 
+  if result = [] then raise Not_found
   else result
 
 let available_pixel_size_aux dispname pattern =
@@ -162,15 +162,15 @@ let available_pixel_size_aux dispname pattern =
   pattern.pixelSize <- None;
   let xlfds = list_fonts dispname pattern in
   let pxszs = Hashtbl.create 107 in
-  List.iter (fun xlfd -> 
+  List.iter (fun xlfd ->
     Hashtbl.add pxszs xlfd.pixelSize xlfd) xlfds;
   pxszs
 
 let extract_size_font_hash tbl =
   let keys = ref [] in
-  Hashtbl.iter (fun k _ -> 
+  Hashtbl.iter (fun k _ ->
     if not (List.mem k !keys) then keys := k :: !keys) tbl;
-  Sort.list (fun (k1,_) (k2,_) -> k1 < k2) 
+  Sort.list (fun (k1,_) (k2,_) -> k1 < k2)
     (List.map (fun k -> k, Hashtbl.find_all tbl k) !keys)
 
 let available_pixel_size dispname pattern =
@@ -179,8 +179,8 @@ let available_pixel_size dispname pattern =
 
 let nearest_pixel_size dispname vector_ok pattern =
   (* find the font with the nearest pixel size *)
-  log ("\n*** "^string_of_pattern pattern);  
-  let pxlsz = 
+  log ("\n*** "^string_of_pattern pattern);
+  let pxlsz =
     match pattern.pixelSize with
       None -> raise (Failure "invalid pixelSize pattern")
     | Some x -> x
@@ -198,16 +198,16 @@ let nearest_pixel_size dispname vector_ok pattern =
       end else Hashtbl.add newtbl s xlfd
     else if not (is_vector_font xlfd) && s <> 0 then
       Hashtbl.add newtbl s xlfd) tbl;
-  
+
   let size_font_table = extract_size_font_hash newtbl in
 
   let diff = ref 10000 in
   let min = ref None in
   List.iter (fun (s,xlfds) ->
     let d = abs(s - pxlsz) in
-    if d < !diff then begin 
-      min := Some (s,xlfds); 
-      diff := d 
+    if d < !diff then begin
+      min := Some (s,xlfds);
+      diff := d
     end) size_font_table;
   (* if it contains more than one font, just return the first *)
   match !min with

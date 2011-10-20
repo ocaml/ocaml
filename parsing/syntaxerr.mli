@@ -18,6 +18,7 @@ open Format
 
 type error =
     Unclosed of Location.t * string * Location.t * string
+  | Applicative_path of Location.t
   | Other of Location.t
 
 exception Error of error

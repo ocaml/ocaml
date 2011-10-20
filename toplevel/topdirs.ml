@@ -164,7 +164,7 @@ let find_printer_type ppf lid =
       with Ctype.Unify _ ->
         (match_printer_type ppf desc "printer_type_old", true) in
     (ty_arg, path, is_old_style)
-  with 
+  with
   | Not_found ->
       fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
       raise Exit
@@ -172,7 +172,7 @@ let find_printer_type ppf lid =
       fprintf ppf "%a has a wrong type for a printing function.@."
       Printtyp.longident lid;
       raise Exit
-    
+
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
@@ -230,7 +230,7 @@ let dir_trace ppf lid =
         | None ->
             (* Instrument the old closure *)
             traced_functions :=
-              { path = path; 
+              { path = path;
                 closure = clos;
                 actual_code = get_code_pointer clos;
                 instrumented_fun =

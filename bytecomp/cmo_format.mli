@@ -58,4 +58,3 @@ type library =
      ...
      object code for last library member
      library descriptor *)
-

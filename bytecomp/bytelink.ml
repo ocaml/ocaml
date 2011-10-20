@@ -58,7 +58,7 @@ let add_ccobjs l =
   end
 
 (* A note on ccobj ordering:
-   - Clflags.ccobjs is in reverse order w.r.t. what was given on the 
+   - Clflags.ccobjs is in reverse order w.r.t. what was given on the
         ocamlc command line;
    - l.lib_ccobjs is also in reverse order w.r.t. what was given on the
         ocamlc -a command line when the library was created;
@@ -407,15 +407,15 @@ let link_bytecode_as_c tolink outfile =
   begin try
     (* The bytecode *)
     output_string outchan "\
-#ifdef __cplusplus\n\
-extern \"C\" {\n\
-#endif\n\
-#include <caml/mlvalues.h>\n\
-CAMLextern void caml_startup_code(\n\
-           code_t code, asize_t code_size,\n\
-           char *data, asize_t data_size,\n\
-           char *section_table, asize_t section_table_size,\n\
-           char **argv);\n";
+#ifdef __cplusplus\
+\nextern \"C\" {\
+\n#endif\
+\n#include <caml/mlvalues.h>\
+\nCAMLextern void caml_startup_code(\
+\n           code_t code, asize_t code_size,\
+\n           char *data, asize_t data_size,\
+\n           char *section_table, asize_t section_table_size,\
+\n           char **argv);\n";
     output_string outchan "static int caml_code[] = {\n";
     Symtable.init();
     Consistbl.clear crc_interfaces;
@@ -444,17 +444,17 @@ CAMLextern void caml_startup_code(\n\
     (* The table of primitives *)
     Symtable.output_primitive_table outchan;
     (* The entry point *)
-    output_string outchan "\n\
-void caml_startup(char ** argv)\n\
-{\n\
-  caml_startup_code(caml_code, sizeof(caml_code),\n\
-                    caml_data, sizeof(caml_data),\n\
-                    caml_sections, sizeof(caml_sections),\n\
-                    argv);\n\
-}\n\
-#ifdef __cplusplus\n\
-}\n\
-#endif\n";
+    output_string outchan "\
+\nvoid caml_startup(char ** argv)\
+\n{\
+\n  caml_startup_code(caml_code, sizeof(caml_code),\
+\n                    caml_data, sizeof(caml_data),\
+\n                    caml_sections, sizeof(caml_sections),\
+\n                    argv);\
+\n}\
+\n#ifdef __cplusplus\
+\n}\
+\n#endif\n";
     close_out outchan
   with x ->
     close_out outchan;

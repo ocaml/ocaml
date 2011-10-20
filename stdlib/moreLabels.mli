@@ -73,18 +73,30 @@ module Map : sig
       and (+'a) t
       val empty : 'a t
       val is_empty: 'a t -> bool
-      val add : key:key -> data:'a -> 'a t -> 'a t
-      val find : key -> 'a t -> 'a
-      val remove : key -> 'a t -> 'a t
       val mem : key -> 'a t -> bool
+      val add : key:key -> data:'a -> 'a t -> 'a t
+      val singleton: key -> 'a -> 'a t
+      val remove : key -> 'a t -> 'a t
+      val merge: f:(key -> 'a option -> 'b option -> 'c option) -> 'a t -> 'b t -> 'c t
+      val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
+      val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
       val iter : f:(key:key -> data:'a -> unit) -> 'a t -> unit
-      val map : f:('a -> 'b) -> 'a t -> 'b t
-      val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
-      val compare: cmp:('a -> 'a -> int) -> 'a t -> 'a t -> int
-      val equal: cmp:('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+      val for_all: f:(key -> 'a -> bool) -> 'a t -> bool
+      val exists: f:(key -> 'a -> bool) -> 'a t -> bool
+      val filter: f:(key -> 'a -> bool) -> 'a t -> 'a t
+      val partition: f:(key -> 'a -> bool) -> 'a t -> 'a t * 'a t
+      val cardinal: 'a t -> int
+      val bindings: 'a t -> (key * 'a) list
+      val min_binding: 'a t -> (key * 'a)
+      val max_binding: 'a t -> (key * 'a)
+      val choose: 'a t -> (key * 'a)
+      val split: key -> 'a t -> 'a t * 'a option * 'a t
+      val find : key -> 'a t -> 'a
+      val map : f:('a -> 'b) -> 'a t -> 'b t
+      val mapi : f:(key -> 'a -> 'b) -> 'a t -> 'b t
   end
   module Make : functor (Ord : OrderedType) -> S with type key = Ord.t
 end

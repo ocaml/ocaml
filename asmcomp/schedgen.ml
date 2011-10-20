@@ -91,7 +91,7 @@ let rec longest_path critical_outputs node =
           then node.delay
           else 0
     | sons ->
-        node.length <- 
+        node.length <-
           List.fold_left
             (fun len (son, delay) ->
               max len (longest_path critical_outputs son + delay))
@@ -115,7 +115,7 @@ let some_load = (Iload(Cmm.Word, Arch.identity_addressing))
 class virtual scheduler_generic = object (self)
 
 (* Determine whether an operation ends a basic block or not.
-   Can be overriden for some processors to signal specific instructions
+   Can be overridden for some processors to signal specific instructions
    that terminate a basic block. *)
 
 method oper_in_basic_block = function
@@ -137,7 +137,7 @@ method private instr_in_basic_block instr =
   | _ -> false
 
 (* Determine whether an operation is a memory store or a memory load.
-   Can be overriden for some processors to signal specific
+   Can be overridden for some processors to signal specific
    load or store instructions (e.g. on the I386). *)
 
 method is_store = function
@@ -287,7 +287,7 @@ method private ready_instruction date queue =
         then instr else best in
       extract new_best rem in
   extract dummy_node queue
-  
+
 (* Schedule a basic block, adding its instructions in front of the given
    instruction sequence *)
 

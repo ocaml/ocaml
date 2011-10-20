@@ -23,10 +23,8 @@ exception Exit_silently_with_code of int
 
 module Outcome : Signatures.OUTCOME
 
-open Format
-
-val ksbprintf : (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
-val sbprintf : ('a, formatter, unit, string) format4 -> 'a
+val ksbprintf : (string -> 'a) -> ('b, Format.formatter, unit, 'a) format4 -> 'b
+val sbprintf : ('a, Format.formatter, unit, string) format4 -> 'a
 
 module Set : sig
   module type OrderedTypePrintable = Signatures.OrderedTypePrintable
@@ -60,6 +58,6 @@ val sys_file_exists : string -> bool
 val sys_command : string -> int
 val filename_concat : string -> string -> string
 
-val invalid_arg' : ('a, formatter, unit, 'b) format4 -> 'a
+val invalid_arg' : ('a, Format.formatter, unit, 'b) format4 -> 'a
 
 include Signatures.MISC

@@ -49,7 +49,7 @@ open Mach
    Conditional branches:
      Iinttest                           S       R
                                     or  R       S
-     Ifloattest                         R       S
+     Ifloattest                         R       S    (or  S R if swapped test)
      other tests                        S
 *)
 
@@ -62,9 +62,9 @@ class reload = object (self)
 
 inherit Reloadgen.reload_generic as super
 
-method reload_operation op arg res =
+method! reload_operation op arg res =
   match op with
-    Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
+  | Iintop(Iadd|Isub|Iand|Ior|Ixor|Icomp _|Icheckbound) ->
       (* One of the two arguments can reside in the stack, but not both *)
       if stackp arg.(0) && stackp arg.(1)
       then ([|arg.(0); self#makereg arg.(1)|], res)
@@ -99,14 +99,20 @@ method reload_operation op arg res =
   | _ -> (* Other operations: all args and results in registers *)
       super#reload_operation op arg res
 
-method reload_test tst arg =
+method! reload_test tst arg =
   match tst with
     Iinttest cmp ->
       (* One of the two arguments can reside on stack *)
       if stackp arg.(0) && stackp arg.(1)
       then [| self#makereg arg.(0); arg.(1) |]
       else arg
-  | Ifloattest(_, _) ->
+  | Ifloattest((Clt|Cle), _) ->
+      (* Cf. emit.mlp: we swap arguments in this case *)
+      (* First argument can be on stack, second must be in register *)
+      if stackp arg.(1)
+      then [| arg.(0); self#makereg arg.(1) |]
+      else arg
+  | Ifloattest((Ceq|Cne|Cgt|Cge), _) ->
       (* Second argument can be on stack, first must be in register *)
       if stackp arg.(0)
       then [| self#makereg arg.(0); arg.(1) |]

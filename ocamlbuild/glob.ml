@@ -149,7 +149,7 @@ module NFA =
                 else
                   q' :: future'
               end
-              graph.(q) 
+              graph.(q)
               future
           in
           transitive past' future'

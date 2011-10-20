@@ -23,13 +23,13 @@
 #include <callback.h>
 #include "camltk.h"
 
-/* The following are replacements for 
+/* The following are replacements for
     tkwait visibility
     tkwait window
    in the case where we use threads (tkwait internally calls an event loop,
    and thus prevents thread scheduling from taking place).
 
-   Instead, one should set up a callback, wait for a signal, and signal 
+   Instead, one should set up a callback, wait for a signal, and signal
    from inside the callback
 */
 
@@ -45,7 +45,7 @@ struct WinCBData {
 };
 
 static void WaitVisibilityProc(clientData, eventPtr)
-    ClientData clientData;      
+    ClientData clientData;
     XEvent *eventPtr;           /* Information about event (not used). */
 {
   struct WinCBData *vis = clientData;
@@ -66,7 +66,7 @@ CAMLprim value camltk_wait_vis(value win, value cbid)
   vis->win = Tk_NameToWindow(cltclinterp, String_val(win), cltk_mainWindow);
   if (vis -> win == NULL) {
     stat_free((char *)vis);
-    tk_error(cltclinterp->result);
+    tk_error(Tcl_GetStringResult(cltclinterp));
   };
   vis->cbid = Int_val(cbid);
   Tk_CreateEventHandler(vis->win, VisibilityChangeMask,
@@ -93,7 +93,7 @@ CAMLprim value camltk_wait_des(value win, value cbid)
   vis->win = Tk_NameToWindow(cltclinterp, String_val(win), cltk_mainWindow);
   if (vis -> win == NULL) {
     stat_free((char *)vis);
-    tk_error(cltclinterp->result);
+    tk_error(Tcl_GetStringResult(cltclinterp));
   };
   vis->cbid = Int_val(cbid);
   Tk_CreateEventHandler(vis->win, StructureNotifyMask,

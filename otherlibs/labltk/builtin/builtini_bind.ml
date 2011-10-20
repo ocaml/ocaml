@@ -26,7 +26,7 @@ let cCAMLtoTKxEvent = function
   | Property -> "Property"
   | Reparent -> "Reparent"
   | Unmap -> "Unmap"
-  | Visibility -> "Visibility" 
+  | Visibility -> "Visibility"
   | Virtual s -> "<"^s^">"
 ;;
 
@@ -55,14 +55,14 @@ exception IllegalVirtualEvent
 (* type event = modifier list * xEvent *)
 let cCAMLtoTKevent (ml, xe) =
   match xe with
-  | Virtual s -> 
+  | Virtual s ->
       if ml = [] then "<<"^s^">>"
       else raise IllegalVirtualEvent
   | _ ->
-      "<" ^ (String.concat " " (List.map cCAMLtoTKmodifier ml))  
+      "<" ^ (String.concat " " (List.map cCAMLtoTKmodifier ml))
       ^ (cCAMLtoTKxEvent xe) ^ ">"
 ;;
-  
+
 (* type eventSequence == (modifier list * xEvent) list *)
 let cCAMLtoTKeventSequence l =
   TkToken(List.fold_left (^) "" (List.map cCAMLtoTKevent l))
@@ -120,7 +120,7 @@ let cCAMLtoTKevent (ev : event) =
     | `Reparent -> "Reparent"
     | `Unmap -> "Unmap"
     | `Visibility -> "Visibility"
-    | `Virtual s -> 
+    | `Virtual s ->
         if !modified then raise IllegalVirtualEvent else "<"^s^">"
     | `Modified(ml, ev) ->
         modified := true;
@@ -129,7 +129,7 @@ let cCAMLtoTKevent (ev : event) =
   in "<" ^ convert ev ^ ">"
 ;;
 
-let cCAMLtoTKeventSequence (l : event list) = 
+let cCAMLtoTKeventSequence (l : event list) =
   TkToken(String.concat ~sep:"" (List.map ~f:cCAMLtoTKevent l))
 ;;
 

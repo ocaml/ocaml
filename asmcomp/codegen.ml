@@ -39,7 +39,7 @@ let rec regalloc fd =
   let (newfd, redo_regalloc) = Reload.fundecl fd in
   if !dump_reload then
     Printmach.phase "After insertion of reloading code" newfd;
-  if redo_regalloc 
+  if redo_regalloc
   then begin Reg.reinit(); Liveness.fundecl newfd; regalloc newfd end
   else newfd
 
@@ -95,7 +95,3 @@ let file filename =
         close_in ic; Parsecmmaux.report_error msg
     | x ->
         close_in ic; raise x
-
-        
-
-        

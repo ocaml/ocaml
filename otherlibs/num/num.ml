@@ -438,8 +438,3 @@ and approx_num_exp n num = approx_ratio_exp n (ratio_of_num num)
 
 let incr_num r = r := succ_num !r
 and decr_num r = r := pred_num !r
-
-
-
-
-

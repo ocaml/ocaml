@@ -75,7 +75,7 @@ let default_toplevel =
 
 (* Dummy widget to which global callbacks are associated *)
 (* also passed around by camltotkoption when no widget in context *)
-let dummy = 
+let dummy =
   Untyped "dummy"
 
 let remove w =
@@ -126,16 +126,16 @@ and widget_text_table = [ "text" ]
 and widget_toplevel_table = [ "toplevel" ]
 
 let new_suffix clas n =
-  try 
+  try
     (List.assoc clas naming_scheme) ^ (string_of_int n)
   with
     Not_found -> "w" ^ (string_of_int n)
-  
+
 (* The function called by generic creation *)
 let counter = ref 0
 let new_atom ~parent ?name:nom clas =
   let parentpath = name parent in
-    let path = 
+    let path =
       match nom with
         None ->
           incr counter;

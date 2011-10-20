@@ -1,7 +1,7 @@
 ##ifdef CAMLTK
 
 let bind widget tag eventsequence action =
-  tkCommand [| 
+  tkCommand [|
     cCAMLtoTKwidget widget_canvas_table widget;
     TkToken "bind";
     cCAMLtoTKtagOrId tag;
@@ -19,7 +19,7 @@ let bind widget tag eventsequence action =
     | BindExtend (what, f) ->
         let cbId = register_callback widget (wrapeventInfo f what) in
         TkToken ("+camlcb " ^ cbId ^ (writeeventField what))
-    end 
+    end
  |]
 ;;
 
@@ -40,7 +40,7 @@ let bind ~events
            let cb = if extend then "+camlcb " else "camlcb " in
            let cb = cb ^ cbId ^ writeeventField fields in
            let cb =
-             if breakable then 
+             if breakable then
                cb ^ " ; if { $BreakBindingsSequence == 1 } then { break ;}"
                ^ " ; set BreakBindingsSequence 0"
              else cb in

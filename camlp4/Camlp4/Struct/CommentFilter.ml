@@ -35,7 +35,7 @@ module Make (Token : Sig.Camlp4Token) = struct
             do { Queue.add (x, loc) q;
                  debug comments "add: %S at %a@\n" x Loc.dump loc in
                  self xs }
-      | [: ` x; xs :] -> 
+      | [: ` x; xs :] ->
           (* debug comments "Found %a at %a@." Token.print x Loc.dump loc in *)
           [: ` x; self xs :]
       | [: :] -> [: :] ]

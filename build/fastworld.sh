@@ -1,5 +1,19 @@
 #!/bin/sh
+
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#         Nicolas Pouillard, projet Gallium, INRIA Rocquencourt         #
+#                                                                       #
+#   Copyright 2008 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
 # $Id$
+
 cd `dirname $0`
 set -e
 if [ -e ocamlbuild_mixed_mode ]; then
@@ -9,12 +23,7 @@ if [ -e ocamlbuild_mixed_mode ]; then
 fi
 ./mkconfig.sh
 ./mkmyocamlbuild_config.sh
-. ../config/config.sh
-if [ "x$EXE" = "x.exe" -a "x$SYSTEM" != "xcygwin" ]; then
-  ./boot-c-parts-windows.sh
-else
-  ./boot-c-parts.sh
-fi
+./boot-c-parts.sh
 ./boot.sh $@
 
 cd ..
@@ -35,3 +44,7 @@ cp _build/myocamlbuild boot/myocamlbuild.native
   $OCAMLC_NATIVE $TOPLEVEL $OTHERLIBS_BYTE $OTHERLIBS_NATIVE $OCAMLLEX_BYTE \
   $OCAMLLEX_NATIVE $TOOLS_BYTE $TOOLS_NATIVE $DEBUGGER  \
   $OCAMLDOC_BYTE $OCAMLDOC_NATIVE $OCAMLBUILD_BYTE $CAMLP4_BYTE $CAMLP4_NATIVE
+
+cd tools
+make objinfo_helper
+cd ..

@@ -42,25 +42,25 @@ let fields x =
   | n -> sprintf "(%s%s)" (field x 1) (other_fields x 2)
 ;;
 
-let to_string = function
-  | Out_of_memory -> "Out of memory"
-  | Stack_overflow -> "Stack overflow"
-  | Match_failure(file, line, char) ->
-      sprintf locfmt file line char (char+5) "Pattern matching failed"
-  | Assert_failure(file, line, char) ->
-      sprintf locfmt file line char (char+6) "Assertion failed"
-  | x ->
-      let rec conv = function
-        | hd :: tl ->
-            (match try hd x with _ -> None with
-            | Some s -> s
-            | None -> conv tl)
-        | [] ->
+let to_string x =
+  let rec conv = function
+    | hd :: tl ->
+        (match try hd x with _ -> None with
+        | Some s -> s
+        | None -> conv tl)
+    | [] ->
+        match x with
+        | Out_of_memory -> "Out of memory"
+        | Stack_overflow -> "Stack overflow"
+        | Match_failure(file, line, char) ->
+            sprintf locfmt file line char (char+5) "Pattern matching failed"
+        | Assert_failure(file, line, char) ->
+            sprintf locfmt file line char (char+6) "Assertion failed"
+        | _ ->
             let x = Obj.repr x in
             let constructor = (Obj.magic(Obj.field (Obj.field x 0) 0) : string) in
             constructor ^ (fields x) in
-      conv !printers
-;;
+  conv !printers
 
 let print fct arg =
   try
@@ -86,7 +86,7 @@ type loc_info =
                     * int    (* end char *)
   | Unknown_location of bool (*is_raise*)
 
-external get_exception_backtrace: 
+external get_exception_backtrace:
   unit -> loc_info array option = "caml_get_exception_backtrace"
 
 let format_loc_info pos li =

@@ -169,7 +169,7 @@ type lex_tables =
     tbl_backtrk_code : int array;        (* nothing / code when Remember *)
 (* moves to execute before transitions (compacted) *)
     tbl_default_code : int array;
-    tbl_trans_code : int array;  
+    tbl_trans_code : int array;
     tbl_check_code : int array;
 (* byte code itself *)
     tbl_code: int array;}
@@ -200,7 +200,7 @@ let compact_tables state_v =
         base_code.(i) <- b_moves; default_code.(i) <- d_moves ;
   done;
   let code = Table.trim code in
-  let tables = 
+  let tables =
     if Array.length code > 1 then
       { tbl_base = base;
         tbl_backtrk = backtrk;
@@ -229,6 +229,3 @@ let compact_tables state_v =
   reset_compact trans ;
   reset_compact moves ;
   tables
-  
-
-

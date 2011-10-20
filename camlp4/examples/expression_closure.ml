@@ -21,4 +21,3 @@ value f e =
 value print_expr = (new PP.printer ())#expr;
 
 printf "%a@." print_expr (f <<let z = x + 2 in x + 2 * y * x * z>>);
-

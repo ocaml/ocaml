@@ -33,19 +33,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value help_sequences () =
     do {
       Printf.eprintf "\
-New syntax:
-    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end
-    while e do e1; e2; ... ; en done
-    for v = v1 to/downto v2 do e1; e2; ... ; en done
-Old syntax (still supported):
-    do {e1; e2; ... ; en}
-    while e do {e1; e2; ... ; en}
-    for v = v1 to/downto v2 do {e1; e2; ... ; en}
-Very old (no more supported) syntax:
-    do e1; e2; ... ; en-1; return en
-    while e do e1; e2; ... ; en; done
-    for v = v1 to/downto v2 do e1; e2; ... ; en; done
-  ";
+New syntax:\
+\n    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end\
+\n    while e do e1; e2; ... ; en done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en done\
+\nOld syntax (still supported):\
+\n    do {e1; e2; ... ; en}\
+\n    while e do {e1; e2; ... ; en}\
+\n    for v = v1 to/downto v2 do {e1; e2; ... ; en}\
+\nVery old (no more supported) syntax:\
+\n    do e1; e2; ... ; en-1; return en\
+\n    while e do e1; e2; ... ; en; done\
+\n    for v = v1 to/downto v2 do e1; e2; ... ; en; done\
+\n";
       flush stderr;
       exit 1
     }
@@ -255,6 +255,12 @@ Very old (no more supported) syntax:
     | e -> e ]
   ;
 
+  value rec lid_of_ident =
+    fun
+    [ <:ident< $_$ . $i$ >> -> lid_of_ident i
+    | <:ident< $lid:lid$ >> -> lid
+    | _                     -> assert False ];
+
   value module_type_app mt1 mt2 =
     match (mt1, mt2) with
     [ (<:module_type@_loc< $id:i1$ >>, <:module_type< $id:i2$ >>) ->
@@ -294,13 +300,6 @@ Very old (no more supported) syntax:
         Some <:expr< Bigarray.Genarray.set $arr$ [| $coords$ |] $newval$ >>
     | _ -> None ];
 
-  value test_not_left_brace_nor_do =
-    Gram.Entry.of_parser "test_not_left_brace_nor_do"
-      (fun strm ->
-        match Stream.peek strm with
-        [ Some(KEYWORD "{" | KEYWORD "do", _) -> raise Stream.Failure
-        | _ -> () ]);
-
   value stopped_at _loc =
     Some (Loc.move_line 1 _loc) (* FIXME be more precise *);
 
@@ -317,69 +316,46 @@ Very old (no more supported) syntax:
     loop
   ;
 
+  value setup_op_parser entry p =
+    Gram.Entry.setup_parser entry
+      (parser
+        [: `(KEYWORD x | SYMBOL x, ti) when p x :] ->
+          let _loc = Gram.token_location ti in
+          <:expr< $lid:x$ >>);
+
   let list = ['!'; '?'; '~'] in
   let excl = ["!="; "??"] in
-  Gram.Entry.setup_parser prefixop
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            not (List.mem x excl) && String.length x >= 2 &&
-            List.mem x.[0] list && symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser prefixop
+    (fun x -> not (List.mem x excl) && String.length x >= 2 &&
+              List.mem x.[0] list && symbolchar x 1);
 
-  let list_ok = ["<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$"] in 
+  let list_ok = ["<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$"] in
   let list_first_char_ok = ['='; '<'; '>'; '|'; '&'; '$'; '!'] in
   let excl = ["<-"; "||"; "&&"] in
-  Gram.Entry.setup_parser infixop0
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            (List.mem x list_ok) ||
-            (not (List.mem x excl) && String.length x >= 2 &&
-              List.mem x.[0] list_first_char_ok && symbolchar x 1) :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop0
+    (fun x -> (List.mem x list_ok) ||
+              (not (List.mem x excl) && String.length x >= 2 &&
+              List.mem x.[0] list_first_char_ok && symbolchar x 1));
 
   let list = ['@'; '^'] in
-  Gram.Entry.setup_parser infixop1
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            String.length x >= 1 && List.mem x.[0] list &&
-            symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop1
+    (fun x -> String.length x >= 1 && List.mem x.[0] list &&
+              symbolchar x 1);
 
   let list = ['+'; '-'] in
-  Gram.Entry.setup_parser infixop2
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            x <> "->" && String.length x >= 1 && List.mem x.[0] list &&
-            symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop2
+    (fun x -> x <> "->" && String.length x >= 1 && List.mem x.[0] list &&
+              symbolchar x 1);
 
   let list = ['*'; '/'; '%'; '\\'] in
-  Gram.Entry.setup_parser infixop3
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            String.length x >= 1 && List.mem x.[0] list &&
-            (x.[0] <> '*' || String.length x < 2 || x.[1] <> '*') &&
-            symbolchar x 1 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop3
+    (fun x -> String.length x >= 1 && List.mem x.[0] list &&
+              (x.[0] <> '*' || String.length x < 2 || x.[1] <> '*') &&
+              symbolchar x 1);
 
-  Gram.Entry.setup_parser infixop4
-    (parser
-      [: `(KEYWORD x | SYMBOL x, _loc)
-          when
-            String.length x >= 2 && x.[0] == '*' && x.[1] == '*' &&
-            symbolchar x 2 :] ->
-        <:expr< $lid:x$ >>)
-  ;
+  setup_op_parser infixop4
+    (fun x -> String.length x >= 2 && x.[0] == '*' && x.[1] == '*' &&
+              symbolchar x 2);
 
   value rec infix_kwds_filter =
     parser
@@ -395,17 +371,21 @@ Very old (no more supported) syntax:
   Token.Filter.define_filter (Gram.get_filter ())
     (fun f strm -> infix_kwds_filter (f strm));
 
-  (* transmit the context *)
   Gram.Entry.setup_parser sem_expr begin
     let symb1 = Gram.parse_tokens_after_filter expr in
     let symb =
       parser
-      [ [: `(ANTIQUOT ("list" as n) s, _loc) :] -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
+      [ [: `(ANTIQUOT ("list" as n) s, ti) :] ->
+        let _loc = Gram.token_location ti in
+        <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
       | [: a = symb1 :] -> a ]
     in
     let rec kont al =
       parser
-      [ [: `(KEYWORD ";", _loc); a = symb; s :] -> kont <:expr< $al$; $a$ >> s
+      [ [: `(KEYWORD ";", _); a = symb; s :] ->
+        let _loc = Loc.merge (Ast.loc_of_expr al)
+                             (Ast.loc_of_expr a) in
+        kont <:expr< $al$; $a$ >> s
       | [: :] -> al ]
     in
     parser [: a = symb; s :] -> kont a s
@@ -444,7 +424,9 @@ Very old (no more supported) syntax:
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence;
+      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence package_type
+      rec_flag_quot direction_flag_quot mutable_flag_quot private_flag_quot
+      virtual_flag_quot row_var_flag_quot override_flag_quot;
     module_expr:
       [ "top"
         [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
@@ -461,7 +443,11 @@ Very old (no more supported) syntax:
         | i = module_longident -> <:module_expr< $id:i$ >>
         | "("; me = SELF; ":"; mt = module_type; ")" ->
             <:module_expr< ( $me$ : $mt$ ) >>
-        | "("; me = SELF; ")" -> <:module_expr< $me$ >> ] ]
+        | "("; me = SELF; ")" -> <:module_expr< $me$ >>
+        | "("; value_val; e = expr; ")" ->
+            <:module_expr< (value $e$) >>
+        | "("; value_val; e = expr; ":"; p = package_type; ")" ->
+            <:module_expr< (value $e$ : $p$) >> ] ]
     ;
     str_item:
       [ "top"
@@ -476,7 +462,7 @@ Very old (no more supported) syntax:
             <:str_item< module $i$ = $mb$ >>
         | "module"; "rec"; mb = module_binding ->
             <:str_item< module rec $mb$ >>
-        | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
+        | "module"; "type"; i = a_ident; "="; mt = module_type ->
             <:str_item< module type $i$ = $mt$ >>
         | "open"; i = module_longident -> <:str_item< open $i$ >>
         | "type"; td = type_declaration ->
@@ -534,7 +520,8 @@ Very old (no more supported) syntax:
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.module_type_tag
         | i = module_longident_with_app -> <:module_type< $id:i$ >>
         | "'"; i = a_ident -> <:module_type< ' $i$ >>
-        | "("; mt = SELF; ")" -> <:module_type< $mt$ >> ] ]
+        | "("; mt = SELF; ")" -> <:module_type< $mt$ >>
+        | "module"; "type"; "of"; me = module_expr -> <:module_type< module type of $me$ >> ] ]
     ;
     sig_item:
       [ "top"
@@ -550,9 +537,9 @@ Very old (no more supported) syntax:
             <:sig_item< module $i$ : $mt$ >>
         | "module"; "rec"; mb = module_rec_declaration ->
             <:sig_item< module rec $mb$ >>
-        | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
+        | "module"; "type"; i = a_ident; "="; mt = module_type ->
             <:sig_item< module type $i$ = $mt$ >>
-        | "module"; "type"; i = a_UIDENT ->
+        | "module"; "type"; i = a_ident ->
             <:sig_item< module type $i$ >>
         | "open"; i = module_longident -> <:sig_item< open $i$ >>
         | "type"; t = type_declaration ->
@@ -590,7 +577,13 @@ Very old (no more supported) syntax:
         | "type"; t1 = type_longident_and_parameters; "="; t2 = ctyp ->
             <:with_constr< type $t1$ = $t2$ >>
         | "module"; i1 = module_longident; "="; i2 = module_longident_with_app ->
-            <:with_constr< module $i1$ = $i2$ >> ] ]
+            <:with_constr< module $i1$ = $i2$ >>
+        | "type"; `ANTIQUOT (""|"typ"|"anti" as n) s; ":="; t = ctyp ->
+            <:with_constr< type $anti:mk_anti ~c:"ctyp" n s$ := $t$ >>
+        | "type"; t1 = type_longident_and_parameters; ":="; t2 = ctyp ->
+            <:with_constr< type $t1$ := $t2$ >>
+        | "module"; i1 = module_longident; ":="; i2 = module_longident_with_app ->
+            <:with_constr< module $i1$ := $i2$ >> ] ]
     ;
     expr:
       [ "top" RIGHTA
@@ -598,6 +591,8 @@ Very old (no more supported) syntax:
             <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
+        | "let"; "open"; i = module_longident; "in"; e = SELF ->
+            <:expr< let open $id:i$ in $e$ >>
         | "fun"; "["; a = LIST0 match_case0 SEP "|"; "]" ->
             <:expr< fun [ $list:a$ ] >>
         | "fun"; e = fun_def -> e
@@ -690,7 +685,9 @@ Very old (no more supported) syntax:
         | s = a_FLOAT -> <:expr< $flo:s$ >>
         | s = a_STRING -> <:expr< $str:s$ >>
         | s = a_CHAR -> <:expr< $chr:s$ >>
-        | i = val_longident -> <:expr< $id:i$ >>
+        | i = TRY module_longident_dot_lparen; e = sequence; ")" ->
+            <:expr< let open $i$ in $e$ >>
+        | i = TRY val_longident -> <:expr< $id:i$ >>
         | "`"; s = a_ident -> <:expr< ` $s$ >>
         | "["; "]" -> <:expr< [] >>
         | "["; mk_list = sem_expr_for_list; "::"; last = expr; "]" ->
@@ -714,11 +711,18 @@ Very old (no more supported) syntax:
         | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
         | "("; e = SELF; ")" -> e
         | "begin"; seq = sequence; "end" -> mksequence _loc seq
-        | "begin"; "end" -> <:expr< () >> ] ]
+        | "begin"; "end" -> <:expr< () >>
+        | "("; "module"; me = module_expr; ")" ->
+            <:expr< (module $me$) >>
+        | "("; "module"; me = module_expr; ":"; pt = package_type; ")" ->
+            <:expr< (module $me$ : $pt$) >>
+        ] ]
     ;
     do_sequence:
-      [ [ "{"; seq = sequence; "}" -> seq
-        | test_not_left_brace_nor_do; seq = sequence; "done" -> seq
+      [ [ seq = TRY ["{"; seq = sequence; "}" -> seq] -> seq
+        | TRY ["{"; "}"] -> <:expr< () >>
+        | seq = TRY [seq = sequence; "done" -> seq] -> seq
+        | "done" -> <:expr< () >>
       ] ]
     ;
     infixop5:
@@ -729,6 +733,7 @@ Very old (no more supported) syntax:
     ;
     sem_expr_for_list:
       [ [ e = expr; ";"; el = SELF -> fun acc -> <:expr< [ $e$ :: $el acc$ ] >>
+        | e = expr; ";" -> fun acc -> <:expr< [ $e$ :: $acc$ ] >>
         | e = expr -> fun acc -> <:expr< [ $e$ :: $acc$ ] >>
       ] ]
     ;
@@ -754,6 +759,8 @@ Very old (no more supported) syntax:
             k <:expr< let module $m$ = $mb$ in $e$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; ";"; el = SELF ->
             <:expr< let module $m$ = $mb$ in $mksequence _loc el$ >>
+        | "let"; "open"; i = module_longident; "in"; e = SELF ->
+            <:expr< let open $id:i$ in $e$ >>
         | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
         | e = expr; k = sequence' -> k e ] ]
     ;
@@ -773,11 +780,12 @@ Very old (no more supported) syntax:
     ;
     fun_binding:
       [ RIGHTA
-        [ p = labeled_ipatt; e = SELF ->
+        [ TRY ["("; "type"]; i = a_LIDENT; ")"; e = SELF ->
+            <:expr< fun (type $i$) -> $e$ >>
+        | p = TRY labeled_ipatt; e = SELF ->
             <:expr< fun $p$ -> $e$ >>
-        | "="; e = expr -> <:expr< $e$ >>
-        | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> 
-        | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
+        | bi = cvalue_binding -> bi
+      ] ]
     ;
     match_case:
       [ [ "["; l = LIST0 match_case0 SEP "|"; "]" -> Ast.mcOr_of_list l
@@ -819,17 +827,34 @@ Very old (no more supported) syntax:
             <:rec_binding< $anti:mk_anti ~c:"ident" n s$ = $e$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
-        | i = label_longident; e = fun_binding -> <:rec_binding< $i$ = $e$ >> ] ]
+        | i = label_longident; e = fun_binding -> <:rec_binding< $i$ = $e$ >>
+        | i = label_longident ->
+            <:rec_binding< $i$ = $lid:lid_of_ident i$ >> ] ]
     ;
     fun_def:
-      [ [ p = labeled_ipatt; (w, e) = fun_def_cont ->
+      [ [ TRY ["("; "type"]; i = a_LIDENT; ")";
+          e = fun_def_cont_no_when ->
+            <:expr< fun (type $i$) -> $e$ >>
+        | p = TRY labeled_ipatt; (w, e) = fun_def_cont ->
             <:expr< fun [ $p$ when $w$ -> $e$ ] >> ] ]
     ;
     fun_def_cont:
       [ RIGHTA
-        [ p = labeled_ipatt; (w,e) = SELF -> (<:expr<>>, <:expr< fun [ $p$ when $w$ -> $e$ ] >>)
+        [ TRY ["("; "type"]; i = a_LIDENT; ")";
+          e = fun_def_cont_no_when ->
+            (<:expr<>>, <:expr< fun (type $i$) -> $e$ >>)
+        | p = TRY labeled_ipatt; (w,e) = SELF ->
+            (<:expr<>>, <:expr< fun [ $p$ when $w$ -> $e$ ] >>)
         | "when"; w = expr; "->"; e = expr -> (w, e)
         | "->"; e = expr -> (<:expr<>>, e) ] ]
+    ;
+    fun_def_cont_no_when:
+      [ RIGHTA
+        [ TRY ["("; "type"]; i = a_LIDENT; ")";
+          e = fun_def_cont_no_when -> <:expr< fun (type $i$) -> $e$ >>
+        | p = TRY labeled_ipatt; (w,e) = fun_def_cont ->
+            <:expr< fun [ $p$ when $w$ -> $e$ ] >>
+        | "->"; e = expr -> e ] ]
     ;
     patt:
       [ "|" LEFTA
@@ -898,17 +923,21 @@ Very old (no more supported) syntax:
     ;
     sem_patt:
       [ LEFTA
-        [ p1 = SELF; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
+        [ p1 = patt; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
         | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
+        | p = patt; ";" -> p
         | p = patt -> p ] ]
     ;
     sem_patt_for_list:
       [ [ p = patt; ";"; pl = SELF -> fun acc -> <:patt< [ $p$ :: $pl acc$ ] >>
+        | p = patt; ";" -> fun acc -> <:patt< [ $p$ :: $acc$ ] >>
         | p = patt -> fun acc -> <:patt< [ $p$ :: $acc$ ] >>
       ] ]
     ;
     label_patt_list:
       [ [ p1 = label_patt; ";"; p2 = SELF -> <:patt< $p1$ ; $p2$ >>
+        | p1 = label_patt; ";"; "_"       -> <:patt< $p1$ ; _ >>
+        | p1 = label_patt; ";"; "_"; ";"  -> <:patt< $p1$ ; _ >>
         | p1 = label_patt; ";"            -> p1
         | p1 = label_patt                 -> p1
       ] ];
@@ -919,6 +948,7 @@ Very old (no more supported) syntax:
         | `ANTIQUOT ("list" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
         | i = label_longident; "="; p = patt -> <:patt< $i$ = $p$ >>
+        | i = label_longident -> <:patt< $i$ = $lid:lid_of_ident i$ >>
       ] ]
     ;
     ipatt:
@@ -1058,6 +1088,7 @@ Very old (no more supported) syntax:
         | "{"; t = label_declaration_list; "}" -> <:ctyp< { $t$ } >>
         | "#"; i = class_longident -> <:ctyp< # $i$ >>
         | "<"; t = opt_meth_list; ">" -> t
+        | "("; "module"; p = package_type; ")" -> <:ctyp< (module $p$) >>
       ] ]
     ;
     star_ctyp:
@@ -1147,6 +1178,12 @@ Very old (no more supported) syntax:
             <:ident< $anti:mk_anti ~c:"ident" n s$ >>
         | i = a_UIDENT -> <:ident< $uid:i$ >>
         | "("; i = SELF; ")" -> i ] ]
+    ;
+    module_longident_dot_lparen:
+      [ [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s; "."; "(" ->
+            <:ident< $anti:mk_anti ~c:"ident" n s$ >>
+        | m = a_UIDENT; "."; l = SELF -> <:ident< $uid:m$.$l$ >>
+        | i = a_UIDENT; "."; "(" -> <:ident< $uid:i$ >> ] ]
     ;
     type_longident:
       [ "apply"
@@ -1274,24 +1311,47 @@ Very old (no more supported) syntax:
         [ `ANTIQUOT (""|"cst"|"anti"|"list" as n) s ->
             <:class_str_item< $anti:mk_anti ~c:"class_str_item" n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.class_str_item_tag
-        | "inherit"; ce = class_expr; pb = opt_as_lident ->
-            <:class_str_item< inherit $ce$ as $pb$ >>
-        | value_val; mf = opt_mutable; lab = label; e = cvalue_binding ->
-            <:class_str_item< value $mutable:mf$ $lab$ = $e$ >>
-        | value_val; mf = opt_mutable; "virtual"; l = label; ":"; t = poly_type ->
-            <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
-        | value_val; "virtual"; mf = opt_mutable; l = label; ":"; t = poly_type ->
-            <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
-        | "method"; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
-            <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
-        | "method"; pf = opt_private; "virtual"; l = label; ":"; t = poly_type ->
-            <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
-        | "method"; pf = opt_private; l = label; topt = opt_polyt;
-          e = fun_binding ->
-            <:class_str_item< method $private:pf$ $l$ : $topt$ = $e$ >>
+        | "inherit"; o = opt_override; ce = class_expr; pb = opt_as_lident ->
+            <:class_str_item< inherit $override:o$ $ce$ as $pb$ >>
+        | o = value_val_opt_override; mf = opt_mutable; lab = label; e = cvalue_binding ->
+            <:class_str_item< value $override:o$ $mutable:mf$ $lab$ = $e$ >>
+        | o = value_val_opt_override; mf = opt_mutable; "virtual"; l = label; ":"; t = poly_type ->
+            if o <> <:override_flag<>> then
+              raise (Stream.Error "override (!) is incompatible with virtual")
+            else
+              <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
+        | o = value_val_opt_override; "virtual"; mf = opt_mutable; l = label; ":"; t = poly_type ->
+            if o <> <:override_flag<>> then
+              raise (Stream.Error "override (!) is incompatible with virtual")
+            else
+              <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
+        | o = method_opt_override; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
+            if o <> <:override_flag<>> then
+              raise (Stream.Error "override (!) is incompatible with virtual")
+            else
+              <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
+        | o = method_opt_override; pf = opt_private; l = label; topt = opt_polyt; e = fun_binding ->
+            <:class_str_item< method $override:o$ $private:pf$ $l$ : $topt$ = $e$ >>
+        | o = method_opt_override; pf = opt_private; "virtual"; l = label; ":"; t = poly_type ->
+            if o <> <:override_flag<>> then
+              raise (Stream.Error "override (!) is incompatible with virtual")
+            else
+              <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
         | type_constraint; t1 = ctyp; "="; t2 = ctyp ->
             <:class_str_item< type $t1$ = $t2$ >>
         | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
+    ;
+    method_opt_override:
+      [ [ "method"; "!" -> <:override_flag< ! >>
+        | "method"; `ANTIQUOT (("!"|"override"|"anti") as n) s -> Ast.OvAnt (mk_anti n s)
+        | "method" -> <:override_flag<>>
+      ] ]
+    ;
+    value_val_opt_override:
+      [ [ value_val; "!" -> <:override_flag< ! >>
+        | value_val; `ANTIQUOT (("!"|"override"|"anti") as n) s -> Ast.OvAnt (mk_anti n s)
+        | value_val -> <:override_flag<>>
+      ] ]
     ;
     opt_as_lident:
       [ [ "as"; i = a_LIDENT -> i
@@ -1304,9 +1364,11 @@ Very old (no more supported) syntax:
     ;
     cvalue_binding:
       [ [ "="; e = expr -> e
-        | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >>
-        | ":"; t = ctyp; ":>"; t2 = ctyp; "="; e = expr ->
-            <:expr< ($e$ : $t$ :> $t2$) >>
+        | ":"; t = poly_type; "="; e = expr -> <:expr< ($e$ : $t$) >>
+        | ":"; t = poly_type; ":>"; t2 = ctyp; "="; e = expr ->
+            match t with
+            [ <:ctyp< ! $_$ . $_$ >> -> raise (Stream.Error "unexpected polytype here")
+            | _ -> <:expr< ($e$ : $t$ :> $t2$) >> ]
         | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
     ;
     label:
@@ -1388,7 +1450,7 @@ Very old (no more supported) syntax:
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
-        | l = label; "="; e = expr -> <:rec_binding< $lid:l$ = $e$ >> ] ]
+        | l = label; "="; e = expr LEVEL "top" -> <:rec_binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
       [ [ m = meth_decl; ";"; (ml, v) = SELF  -> (<:ctyp< $m$; $ml$ >>, v)
@@ -1409,6 +1471,9 @@ Very old (no more supported) syntax:
     ;
     poly_type:
       [ [ t = ctyp -> t ] ]
+    ;
+    package_type:
+      [ [ p = module_type -> p ] ]
     ;
     typevars:
       [ LEFTA
@@ -1476,38 +1541,44 @@ Very old (no more supported) syntax:
         | p = ipatt -> p ] ]
     ;
     direction_flag:
-      [ [ "to" -> Ast.BTrue
-        | "downto" -> Ast.BFalse
-        | `ANTIQUOT ("to" as n) s -> Ast.BAnt (mk_anti n s) ] ]
+      [ [ "to" -> <:direction_flag< to >>
+        | "downto" -> <:direction_flag< downto >>
+        | `ANTIQUOT ("to"|"anti" as n) s -> Ast.DiAnt (mk_anti n s) ] ]
     ;
     opt_private:
-      [ [ "private" -> Ast.BTrue
-        | `ANTIQUOT ("private" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "private" -> <:private_flag< private >>
+        | `ANTIQUOT ("private"|"anti" as n) s -> Ast.PrAnt (mk_anti n s)
+        | -> <:private_flag<>>
       ] ]
     ;
     opt_mutable:
-      [ [ "mutable" -> Ast.BTrue
-        | `ANTIQUOT ("mutable" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "mutable" -> <:mutable_flag< mutable >>
+        | `ANTIQUOT ("mutable"|"anti" as n) s -> Ast.MuAnt (mk_anti n s)
+        | -> <:mutable_flag<>>
       ] ]
     ;
     opt_virtual:
-      [ [ "virtual" -> Ast.BTrue
-        | `ANTIQUOT ("virtual" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "virtual" -> <:virtual_flag< virtual >>
+        | `ANTIQUOT ("virtual"|"anti" as n) s -> Ast.ViAnt (mk_anti n s)
+        | -> <:virtual_flag<>>
       ] ]
     ;
     opt_dot_dot:
-      [ [ ".." -> Ast.BTrue
-        | `ANTIQUOT (".." as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ ".." -> <:row_var_flag< .. >>
+        | `ANTIQUOT (".."|"anti" as n) s -> Ast.RvAnt (mk_anti n s)
+        | -> <:row_var_flag<>>
       ] ]
     ;
     opt_rec:
-      [ [ "rec" -> Ast.BTrue
-        | `ANTIQUOT ("rec" as n) s -> Ast.BAnt (mk_anti n s)
-        | -> Ast.BFalse
+      [ [ "rec" -> <:rec_flag< rec >>
+        | `ANTIQUOT ("rec"|"anti" as n) s -> Ast.ReAnt (mk_anti n s)
+        | -> <:rec_flag<>>
+      ] ]
+    ;
+    opt_override:
+      [ [ "!" -> <:override_flag< ! >>
+        | `ANTIQUOT (("!"|"override"|"anti") as n) s -> Ast.OvAnt (mk_anti n s)
+        | -> <:override_flag<>>
       ] ]
     ;
     opt_expr:
@@ -1664,7 +1735,7 @@ Very old (no more supported) syntax:
     more_ctyp:
       [ [ "mutable"; x = SELF -> <:ctyp< mutable $x$ >>
         | "`"; x = a_ident -> <:ctyp< `$x$ >>
-        | x = type_kind -> x
+        | x = ctyp -> x
         | x = type_parameter -> x
       ] ]
     ;
@@ -1740,7 +1811,7 @@ Very old (no more supported) syntax:
         | "virtual"; (i, ot) = class_name_and_param ->
             <:class_expr< virtual $lid:i$ [ $ot$ ] >>
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
-            let anti = Ast.BAnt (mk_anti ~c:"class_expr" n s) in
+            let anti = Ast.ViAnt (mk_anti ~c:"class_expr" n s) in
             <:class_expr< $virtual:anti$ $id:i$ [ $ot$ ] >>
         | x = class_expr -> x
         | -> <:class_expr<>>
@@ -1753,7 +1824,7 @@ Very old (no more supported) syntax:
         | "virtual"; (i, ot) = class_name_and_param ->
             <:class_type< virtual $lid:i$ [ $ot$ ] >>
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
-            let anti = Ast.BAnt (mk_anti ~c:"class_type" n s) in
+            let anti = Ast.ViAnt (mk_anti ~c:"class_type" n s) in
             <:class_type< $virtual:anti$ $id:i$ [ $ot$ ] >>
         | x = class_type_plus -> x
         | -> <:class_type<>>
@@ -1774,6 +1845,13 @@ Very old (no more supported) syntax:
       [ [ x = with_constr -> x
         | -> <:with_constr<>> ] ]
     ;
+    rec_flag_quot: [ [ x = opt_rec -> x ] ];
+    direction_flag_quot: [ [ x = direction_flag -> x ] ];
+    mutable_flag_quot: [ [ x = opt_mutable -> x ] ];
+    private_flag_quot: [ [ x = opt_private -> x ] ];
+    virtual_flag_quot: [ [ x = opt_virtual -> x ] ];
+    row_var_flag_quot: [ [ x = opt_dot_dot -> x ] ];
+    override_flag_quot: [ [ x = opt_override -> x ] ];
     patt_eoi:
       [ [ x = patt; `EOI -> x ] ]
     ;

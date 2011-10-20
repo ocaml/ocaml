@@ -33,13 +33,11 @@ let set_flags tags flags =
 
 let flag tags flags = set_flags (Tags.of_list tags) flags
 
+let pflag tags ptag flags =
+  Param_tags.declare ptag
+    (fun param -> flag (Param_tags.make ptag param :: tags) (flags param))
+
 let add x xs = x :: xs
 let remove me = List.filter (fun x -> me <> x)
-let to_spec l =
-  S begin
-    List.fold_right begin fun (x, y) acc ->
-      A ("-"^x) :: A y :: acc
-    end l []
-  end
 
 let get_flags () = !all_flags

@@ -30,28 +30,28 @@ SCRIPTDIR = $(BINDIR)
 
 # Command for byte-compiling the files
 COMPILECMD=(progn \
-              (setq load-path (cons "." load-path)) \
-              (byte-compile-file "caml-xemacs.el") \
+	      (setq load-path (cons "." load-path)) \
+	      (byte-compile-file "caml-xemacs.el") \
 	      (byte-compile-file "caml-emacs.el") \
-              (byte-compile-file "caml.el") \
-              (byte-compile-file "inf-caml.el") \
-              (byte-compile-file "caml-help.el") \
-              (byte-compile-file "caml-types.el") \
-              (byte-compile-file "camldebug.el"))
+	      (byte-compile-file "caml.el") \
+	      (byte-compile-file "inf-caml.el") \
+	      (byte-compile-file "caml-help.el") \
+	      (byte-compile-file "caml-types.el") \
+	      (byte-compile-file "camldebug.el"))
 
 install:
 	@if test "$(EMACSDIR)" = ""; then \
-          set xxx `($(EMACS) --batch --eval "(mapcar 'print load-path)") \
-                   2>/dev/null | \
-                   sed -n -e '/\/site-lisp/s/"//gp'`; \
-          if test "$$2" = ""; then \
-            echo "Cannot determine Emacs site-lisp directory"; \
-            exit 2; \
-          fi; \
-          $(MAKE) EMACSDIR="$$2" simple-install; \
-        else \
-          $(MAKE) simple-install; \
-        fi
+	  set xxx `($(EMACS) --batch --eval "(mapcar 'print load-path)") \
+	           2>/dev/null | \
+	           sed -n -e '/\/site-lisp/s/"//gp'`; \
+	  if test "$$2" = ""; then \
+	    echo "Cannot determine Emacs site-lisp directory"; \
+	    exit 2; \
+	  fi; \
+	  $(MAKE) EMACSDIR="$$2" simple-install; \
+	else \
+	  $(MAKE) simple-install; \
+	fi
 
 # install the .el files, but do not compile them.
 install-el:
@@ -72,5 +72,9 @@ ocamltags:	ocamltags.in
 install-ocamltags: ocamltags
 	cp ocamltags $(SCRIPTDIR)/ocamltags
 
+# This is for testing purposes
+compile-only:
+	$(EMACS) --batch --eval '$(COMPILECMD)'
+
 clean:
-	rm -f ocamltags *~ #*#
+	rm -f ocamltags *~ #*# *.elc

@@ -61,6 +61,17 @@ class virtual info =
                     Newline
                   ]
 
+    (** @return [text] value to represent the list of "before" information. *)
+    method text_of_before = function
+      [] -> []
+    | l ->
+        let f (v, text) =
+          (Bold [Raw (Printf.sprintf "%s %s " Odoc_messages.before v) ]) ::
+            text @
+            [Newline]
+        in
+        List.flatten (List.map f l)
+
     (** @return [text] value for the given list of raised exceptions.*)
     method text_of_raised_exceptions l =
       match l with
@@ -153,6 +164,7 @@ class virtual info =
             ) @
             (self#text_of_author_list info.i_authors) @
             (self#text_of_version_opt info.i_version) @
+            (self#text_of_before info.i_before) @
             (self#text_of_since_opt info.i_since) @
             (self#text_of_raised_exceptions info.i_raised_exceptions) @
             (self#text_of_return_opt info.i_return_value) @
@@ -229,7 +241,7 @@ class virtual to_text =
     method normal_class_params m_name c =
       let s = Odoc_info.string_of_class_params c in
       self#relative_idents m_name
-	(Odoc_info.remove_ending_newline s)
+        (Odoc_info.remove_ending_newline s)
 
     (** @return [text] value to represent a [Types.type_expr].*)
     method text_of_type_expr module_name t =
@@ -259,12 +271,12 @@ class virtual to_text =
     (** @return [text] value to represent parameters of a class (with arraows).*)
     method text_of_class_params module_name c =
       let t = Odoc_info.text_concat
-	  [Newline]
+          [Newline]
           (List.map
              (fun s -> [Code s])
-	     (Str.split (Str.regexp "\n")
+             (Str.split (Str.regexp "\n")
                 (self#normal_class_params module_name c))
-	  )
+          )
       in
       t
 
@@ -280,10 +292,10 @@ class virtual to_text =
       let name = v.val_name in
       let s_name = Name.simple name in
       let s =
-	Format.fprintf Format.str_formatter "@[<hov 2>val %s :@ %s"
+        Format.fprintf Format.str_formatter "@[<hov 2>val %s :@ %s"
           s_name
           (self#normal_type (Name.father v.val_name) v.val_type);
-	Format.flush_str_formatter ()
+        Format.flush_str_formatter ()
       in
       [ CodePre s ] @
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
@@ -294,12 +306,12 @@ class virtual to_text =
       let s_name = Name.simple a.att_value.val_name in
       let mod_name = Name.father a.att_value.val_name in
       let s =
-	Format.fprintf Format.str_formatter "@[<hov 2>val %s%s%s :@ %s"
+        Format.fprintf Format.str_formatter "@[<hov 2>val %s%s%s :@ %s"
           (if a.att_virtual then "virtual " else "")
           (if a.att_mutable then "mutable " else "")
           s_name
-	  (self#normal_type mod_name a.att_value.val_type);
-	Format.flush_str_formatter ()
+          (self#normal_type mod_name a.att_value.val_type);
+        Format.flush_str_formatter ()
       in
       (CodePre s) ::
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
@@ -310,12 +322,12 @@ class virtual to_text =
       let s_name = Name.simple m.met_value.val_name in
       let mod_name = Name.father m.met_value.val_name in
       let s =
-	Format.fprintf Format.str_formatter "@[<hov 2>method %s%s%s :@ %s"
+        Format.fprintf Format.str_formatter "@[<hov 2>method %s%s%s :@ %s"
           (if m.met_private then "private " else "")
           (if m.met_virtual then "virtual " else "")
           s_name
-	  (self#normal_type mod_name m.met_value.val_type);
-	Format.flush_str_formatter ()
+          (self#normal_type mod_name m.met_value.val_type);
+        Format.flush_str_formatter ()
       in
       (CodePre s) ::
       [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
@@ -332,7 +344,7 @@ class virtual to_text =
             Format.fprintf Format.str_formatter "@ of "
         );
       let s = self#normal_type_list
-	  ~par: false (Name.father e.ex_name) " * " e.ex_args
+          ~par: false (Name.father e.ex_name) " * " e.ex_args
       in
       let s2 =
         Format.fprintf Format.str_formatter "%s" s ;
@@ -543,6 +555,19 @@ class virtual to_text =
           [Code " -> "] @
           (self#text_of_module_kind ~with_def_syntax: false k)
 
+      | Module_typeof s ->
+          let code = Printf.sprintf "%smodule type of %s"
+            (if with_def_syntax then " : " else "")
+            s
+          in
+          [Code code]
+      | Module_unpack (code, _) ->
+          let code = Printf.sprintf "%s%s"
+            (if with_def_syntax then " : " else "")
+            code
+          in
+          [Code code]
+
     (** Return html code for a [module_type_kind].*)
     method text_of_module_type_kind ?(with_def_syntax=true) tk =
       match tk with
@@ -551,7 +576,7 @@ class virtual to_text =
 
       | Module_type_functor (p, k) ->
           let t1 =
-	    [Code ("("^p.mp_name^" : ")] @
+            [Code ("("^p.mp_name^" : ")] @
             (self#text_of_module_type_kind p.mp_kind) @
             [Code ") -> "]
           in
@@ -570,5 +595,9 @@ class virtual to_text =
                  | Some mt -> mt.mt_name))
           ]
 
-
+      | Odoc_module.Module_type_typeof s ->
+          let code = Printf.sprintf "%smodule type of %s"
+            (if with_def_syntax then " = " else "") s
+          in
+          [ Code code ]
   end

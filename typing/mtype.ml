@@ -36,7 +36,7 @@ let rec strengthen env mty p =
   match scrape env mty with
     Tmty_signature sg ->
       Tmty_signature(strengthen_sig env sg p)
-  | Tmty_functor(param, arg, res) ->
+  | Tmty_functor(param, arg, res) when !Clflags.applicative_functors ->
       Tmty_functor(param, arg, strengthen env res (Papply(p, Pident param)))
   | mty ->
       mty
@@ -80,8 +80,6 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | (Tsig_cltype(id, decl, rs) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
-  | (Tsig_contract(id, decl, rs) as sigelt) :: rem ->
-      sigelt :: strengthen_sig env rem p
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
@@ -91,23 +89,24 @@ type variance = Co | Contra | Strict
 
 let nondep_supertype env mid mty =
 
-  let rec nondep_mty va mty =
+  let rec nondep_mty env va mty =
     match mty with
       Tmty_ident p ->
         if Path.isfree mid p then
-          nondep_mty va (Env.find_modtype_expansion p env)
+          nondep_mty env va (Env.find_modtype_expansion p env)
         else mty
     | Tmty_signature sg ->
-        Tmty_signature(nondep_sig va sg)
+        Tmty_signature(nondep_sig env va sg)
     | Tmty_functor(param, arg, res) ->
         let var_inv =
           match va with Co -> Contra | Contra -> Co | Strict -> Strict in
-        Tmty_functor(param, nondep_mty var_inv arg, nondep_mty va res)
+        Tmty_functor(param, nondep_mty env var_inv arg,
+                     nondep_mty (Env.add_module param arg env) va res)
 
-  and nondep_sig va = function
+  and nondep_sig env va = function
     [] -> []
   | item :: rem ->
-      let rem' = nondep_sig va rem in
+      let rem' = nondep_sig env va rem in
       match item with
         Tsig_value(id, d) ->
           Tsig_value(id, {val_type = Ctype.nondep_type env mid d.val_type;
@@ -118,10 +117,10 @@ let nondep_supertype env mid mty =
       | Tsig_exception(id, d) ->
           Tsig_exception(id, List.map (Ctype.nondep_type env mid) d) :: rem'
       | Tsig_module(id, mty, rs) ->
-          Tsig_module(id, nondep_mty va mty, rs) :: rem'
+          Tsig_module(id, nondep_mty env va mty, rs) :: rem'
       | Tsig_modtype(id, d) ->
           begin try
-            Tsig_modtype(id, nondep_modtype_decl d) :: rem'
+            Tsig_modtype(id, nondep_modtype_decl env d) :: rem'
           with Not_found ->
             match va with
               Co -> Tsig_modtype(id, Tmodtype_abstract) :: rem'
@@ -133,16 +132,13 @@ let nondep_supertype env mid mty =
       | Tsig_cltype(id, d, rs) ->
           Tsig_cltype(id, Ctype.nondep_cltype_declaration env mid d, rs)
           :: rem'
-      | Tsig_contract(id, d, rs) -> 
-          Tsig_contract(id, d, rs)
-          :: rem'
 
-  and nondep_modtype_decl = function
+  and nondep_modtype_decl env = function
       Tmodtype_abstract -> Tmodtype_abstract
-    | Tmodtype_manifest mty -> Tmodtype_manifest(nondep_mty Strict mty)
+    | Tmodtype_manifest mty -> Tmodtype_manifest(nondep_mty env Strict mty)
 
   in
-    nondep_mty Co mty
+    nondep_mty env Co mty
 
 let enrich_typedecl env p decl =
   match decl.type_manifest with
@@ -150,7 +146,7 @@ let enrich_typedecl env p decl =
   | None ->
       try
         let orig_decl = Env.find_type p env in
-        if orig_decl.type_arity <> decl.type_arity 
+        if orig_decl.type_arity <> decl.type_arity
         then decl
         else {decl with type_manifest =
                 Some(Btype.newgenty(Tconstr(p, decl.type_params, ref Mnil)))}
@@ -196,14 +192,12 @@ and type_paths_sig env p pos sg =
       type_paths_sig env p (pos+1) rem
   | (Tsig_cltype _) :: rem ->
       type_paths_sig env p pos rem
-  | (Tsig_contract _) :: rem -> 
-      type_paths_sig env p pos rem
 
 let rec no_code_needed env mty =
   match scrape env mty with
     Tmty_ident p -> false
   | Tmty_signature sg -> no_code_needed_sig env sg
-  | Tmty_functor(_, _, _) -> false  
+  | Tmty_functor(_, _, _) -> false
 
 and no_code_needed_sig env sg =
   match sg with
@@ -218,6 +212,5 @@ and no_code_needed_sig env sg =
       no_code_needed_sig (Env.add_module id mty env) rem
   | (Tsig_type _ | Tsig_modtype _ | Tsig_cltype _) :: rem ->
       no_code_needed_sig env rem
-  | (Tsig_exception _ | Tsig_class _ | Tsig_contract _) :: rem ->
+  | (Tsig_exception _ | Tsig_class _) :: rem ->
       false
-

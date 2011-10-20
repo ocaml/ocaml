@@ -37,8 +37,6 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
-  | Illegal_tuple_expr
-  | Illegal_contracted_expr
 
 exception Error of Location.t * error
 
@@ -51,24 +49,3 @@ val transl_module :
       (module_coercion -> Path.t option -> module_expr -> lambda) ref
 val transl_object :
       (Ident.t -> string list -> class_expr -> lambda) ref
-
-(* Translate wrapped expression e |><| c to unwrapped expression 
-val transl_contract: Typedtree.core_contract -> 
-                     Typedtree.expression -> 
-                     Typedtree.expression -> Typedtree.expression -> 
-                     Typedtree.expression 
-*)
-val contract_id_in_expr :
-           Typedtree.core_contract Ident.tbl ->
-           Typedtree.contract_declaration list ->
-           (Path.t * Types.contract_declaration) Ident.tbl ->
-           Path.t option -> Typedtree.expression -> Typedtree.expression
-
-val contract_id_in_contract :
-           Typedtree.core_contract Ident.tbl ->
-           Typedtree.contract_declaration list ->
-           (Path.t * Types.contract_declaration) Ident.tbl ->
-           Path.t option ->
-           Typedtree.core_contract -> Typedtree.core_contract
-
-val deep_transl_contract: Typedtree.expression -> Typedtree.expression 

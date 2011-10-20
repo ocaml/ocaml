@@ -18,10 +18,10 @@
 open Ppyac
 exception Error of string
 let linenum = ref 1
-} 
+}
 
 let blank = [' ' '\013' '\009' '\012']
-let identchar = 
+let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
@@ -29,10 +29,10 @@ let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
 rule token = parse
   blank + { token lexbuf }
 | "##" [' ' '\t']* { directive lexbuf }
-| ("#")? [^ '#' '\n']* '\n'? { 
+| ("#")? [^ '#' '\n']* '\n'? {
        begin
          let str = Lexing.lexeme lexbuf in
-         if String.length str <> 0 && str.[String.length str - 1] = '\n' then 
+         if String.length str <> 0 && str.[String.length str - 1] = '\n' then
          begin
            incr linenum
          end;
@@ -51,6 +51,6 @@ and directive = parse
 | _ { raise (Error (Printf.sprintf "unknown directive at line %d" !linenum))}
 
 and ident = parse
-| lowercase identchar* | uppercase identchar* 
+| lowercase identchar* | uppercase identchar*
     { Lexing.lexeme lexbuf }
 | _ { raise (Error (Printf.sprintf "illegal identifier at line %d" !linenum)) }

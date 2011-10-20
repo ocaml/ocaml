@@ -20,11 +20,20 @@ rm -rf _start
 mkdir _start
 cp *.ml* _start
 cd _start
-echo "let bindir = ref \"<start>\";; let libdir = bindir;;" > ocamlbuild_where.ml
+cat >> ocamlbuild_Myocamlbuild_config.ml <<EOF
+let bindir = "<start>";;
+let libdir = bindir;;
+let a = "a";;
+let o = "o";;
+let so = "so";;
+let exe = "";;
+EOF
 ocamlc -c std_signatures.mli
 ocamlc -c signatures.mli
 ocamlc -c tags.mli
+ocamlc -c ocamlbuild_Myocamlbuild_config.ml
 ocamlc -c ocamlbuild_where.mli
+ocamlc -c ocamlbuild_where.ml
 ocamlc -c my_unix.mli
 ocamlc -c my_std.mli
 ocamlc -c display.mli
@@ -66,7 +75,13 @@ ocamlc -c plugin.mli
 ocamlc -c plugin.ml
 ocamlc -c ocaml_dependencies.ml
 ocamlc -c exit_codes.ml
+ocamllex lexers.mll
+ocamlc -c lexers.ml
+ocamlc -c param_tags.mli
+ocamlc -c param_tags.ml
 ocamlc -c main.ml
+ocamlc -c findlib.mli
+ocamlc -c findlib.ml
 ocamlc -c ocaml_specific.ml
 ocamlc -c display.ml
 ocamlc -c command.ml
@@ -82,8 +97,6 @@ ocamlc -c ocaml_utils.ml
 ocamlc -c ocaml_tools.ml
 ocamlc -c ocaml_compiler.ml
 ocamlc -c hooks.ml
-ocamllex lexers.mll
-ocamlc -c lexers.ml
 ocamllex glob_lexer.mll
 ocamlc -c glob_lexer.ml
 ocamlc -c bool.ml
@@ -100,7 +113,7 @@ ocamlc -c rule.ml
 ocamlc -c report.ml
 ocamlc -c solver.ml
 ocamlc -c ocamlbuildlight.mli
-ocamlc -pack discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo digest_cache.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo ocaml_specific.cmo exit_codes.cmo main.cmo -o ocamlbuild_pack.cmo
+ocamlc -pack ocamlbuild_Myocamlbuild_config.cmo discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo param_tags.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo digest_cache.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo findlib.cmo ocaml_specific.cmo exit_codes.cmo main.cmo -o ocamlbuild_pack.cmo
 ocamlc -c ocamlbuildlight.ml
 ocamlc ocamlbuild_pack.cmo ocamlbuildlight.cmo -o ../ocamlbuild.byte.start
 cd ..

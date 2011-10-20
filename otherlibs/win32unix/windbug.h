@@ -13,25 +13,26 @@
 
 /* $Id$ */
 
-/*#define DBUG*/
+#ifdef DEBUG
 
-#ifdef DBUG
+#include <stdio.h>
+#include <windows.h>
 
-/* Initialize and cleanup dbug variable */
-void dbug_init    (void);
-void dbug_cleanup (void);
+#define DEBUG_PRINT(fmt, ...) \
+  do \
+  { \
+    if (debug_test()) \
+    { \
+      fprintf(stderr, "DBUG (pid:%d, tid: %d): ", GetCurrentProcessId(), GetCurrentThreadId()); \
+      fprintf(stderr, fmt, __VA_ARGS__); \
+      fprintf(stderr, "\n"); \
+      fflush(stderr); \
+    }; \
+  } while(0)
 
 /* Test if we are in dbug mode */
-int  dbug_test    (void);
-
-/* Print if we are in dbug mode */
-void dbug_print (const char * fmt, ...);
-
-#define DBUG_INIT    dbug_init()
-#define DBUG_CLEANUP dbug_cleanup()
+int  debug_test    (void);
 
 #else
-#define DBUG_INIT
-#define DBUG_CLEANUP
+#define DEBUG_PRINT(fmt, ...)
 #endif
-

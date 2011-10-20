@@ -21,7 +21,7 @@ open Camltk
 
 exception Done
 
-type cell = {mutable color : int; 
+type cell = {mutable color : int;
              tag : tagOrId * tagOrId * tagOrId}
 
 type falling_block = {
@@ -50,7 +50,7 @@ let colors = [|
 
 let baseurl = "images/"
 
-let backgrounds = 
+let backgrounds =
   List.map (fun s -> baseurl ^ s)
     [ "dojoji.back.gif";
       "Lambda2back.gif";
@@ -105,7 +105,7 @@ let blocks = [
   [ [|"0000";
       "0111";
       "0100";
-      "0000" |]; 
+      "0000" |];
 
     [|"0000";
       "0110";
@@ -125,7 +125,7 @@ let blocks = [
   [ [|"0000";
       "0100";
       "0111";
-      "0000" |]; 
+      "0000" |];
 
     [|"0000";
       "0110";
@@ -215,7 +215,6 @@ let init fw =
   let scorev = Textvariable.create ()
   and linev = Textvariable.create ()
   and levv = Textvariable.create ()
-  and namev = Textvariable.create ()
   in
   let f = Frame.create fw [BorderWidth (Pixels 2)] in
   let c = Canvas.create f [Width (Pixels (block_size * 10));
@@ -223,7 +222,7 @@ let init fw =
                            BorderWidth (Pixels cell_border);
                            Relief Sunken;
                            Background Black]
-  and r = Frame.create f [] 
+  and r = Frame.create f []
   and r' = Frame.create f [] in
 
   let nl = Label.create r [Text "Next"; Font "variable"] in
@@ -231,13 +230,13 @@ let init fw =
                            Height (Pixels (block_size * 4));
                            BorderWidth (Pixels cell_border);
                            Relief Sunken;
-                           Background Black] in                    
+                           Background Black] in
   let scl = Label.create r [Text "Score"; Font "variable"] in
   let sc = Label.create r [TextVariable scorev; Font "variable"] in
   let lnl = Label.create r [Text "Lines"; Font "variable"] in
   let ln = Label.create r [TextVariable linev; Font "variable"] in
   let levl = Label.create r [Text "Level"; Font "variable"] in
-  let lev = Label.create r [TextVariable levv; Font "Variable"] in 
+  let lev = Label.create r [TextVariable levv; Font "Variable"] in
   let newg = Button.create r [Text "New Game"; Font "variable"] in
   let exitg = Button.create r [Text "Quit"; Font "variable"] in
 
@@ -248,15 +247,15 @@ let init fw =
 
   let cells_src = Array.create 20 (Array.create 10 ()) in
   let cells = Array.map (Array.map (fun () ->
-    {tag= 
+    {tag=
         (let t1, t2, t3 =
-          Canvas.create_rectangle c 
+          Canvas.create_rectangle c
              (Pixels (-block_size - 8)) (Pixels (-block_size - 8))
              (Pixels (-9))          (Pixels (-9)) [],
-          Canvas.create_rectangle c 
+          Canvas.create_rectangle c
              (Pixels (-block_size - 10)) (Pixels (-block_size - 10))
              (Pixels (-11))          (Pixels (-11)) [],
-          Canvas.create_rectangle c 
+          Canvas.create_rectangle c
              (Pixels (-block_size - 12)) (Pixels (-block_size - 12))
              (Pixels (-13))          (Pixels (-13)) []
         in
@@ -267,17 +266,17 @@ let init fw =
      color= 0})) cells_src
   in
   let nexts_src = Array.create 4 (Array.create 4 ()) in
-  let nexts = 
+  let nexts =
    Array.map (Array.map (fun () ->
-    {tag= 
+    {tag=
        (let t1, t2, t3 =
-          Canvas.create_rectangle nc 
+          Canvas.create_rectangle nc
              (Pixels (-block_size - 8)) (Pixels (-block_size - 8))
              (Pixels (-9))          (Pixels (-9)) [],
-          Canvas.create_rectangle nc 
+          Canvas.create_rectangle nc
              (Pixels (-block_size - 10)) (Pixels (-block_size - 10))
              (Pixels (-11))          (Pixels (-11)) [],
-          Canvas.create_rectangle nc 
+          Canvas.create_rectangle nc
              (Pixels (-block_size - 12)) (Pixels (-block_size - 12))
              (Pixels (-13))          (Pixels (-13)) []
         in
@@ -290,14 +289,14 @@ let init fw =
   in
     [f; c; r; nl; nc; scl; sc; levl; lev; lnl; ln], newg, exitg,
       (c, cells), (nc, nexts), scorev, linev, levv, game_over
-  
+
 let cell_get (c, cf) x y =
   (Array.get (Array.get cf y) x).color
 
 let cell_set (c, cf) x y col =
   let cur = Array.get (Array.get cf y) x in
-  let t1,t2,t3 = cur.tag in 
-    if cur.color = col then () 
+  let t1,t2,t3 = cur.tag in
+    if cur.color = col then ()
     else
     if cur.color <> 0 && col = 0 then
       begin
@@ -314,7 +313,7 @@ let cell_set (c, cf) x y col =
     else
       begin
         Canvas.configure_rectangle c t2
-              [FillColor (Array.get colors (col - 1)); 
+              [FillColor (Array.get colors (col - 1));
                Outline (Array.get colors (col - 1))];
         Canvas.configure_rectangle c t1
               [FillColor Black;
@@ -333,7 +332,7 @@ let cell_set (c, cf) x y col =
             Canvas.move c t3
               (Pixels (block_size * (x+1)+10+ cell_border*2))
               (Pixels (block_size * (y+1)+10+ cell_border*2))
-          end     
+          end
       end;
     cur.color <- col
 
@@ -344,18 +343,18 @@ let draw_block field col d x y =
     for ix = 0 to 3 do
       if xd land !base <> 0 then
         begin
-          try cell_set field (ix + x) (iy + y) col with _ -> ()  
-        end  
+          try cell_set field (ix + x) (iy + y) col with _ -> ()
+        end
       else
         begin
         (* cell_set field (ix + x) (iy + y) 0 *) ()
         end;
-      base := !base lsl 1               
+      base := !base lsl 1
     done
-  done 
+  done
 
 let timer_ref = (ref None : Timer.t option ref)
-(* I know, this should be timer ref, but I'm not sure what should be 
+(* I know, this should be timer ref, but I'm not sure what should be
    the initial value ... *)
 
 let remove_timer () =
@@ -366,13 +365,13 @@ let remove_timer () =
 let do_after milli f =
   timer_ref := Some (Timer.add milli f)
 
-let copy_block c = 
+let copy_block c =
   { pattern= !c.pattern;
     bcolor= !c.bcolor;
     x= !c.x;
     y= !c.y;
     d= !c.d;
-    alive= !c.alive } 
+    alive= !c.alive }
 
 let _ =
   let top = opentk () in
@@ -380,7 +379,7 @@ let _ =
   and fw = Frame.create top []
   in
   let set_message s = Label.configure lb [Text s] in
-  pack [lb; fw] [Side Side_Top]; 
+  pack [lb; fw] [Side Side_Top];
   let score = ref 0 in
   let line = ref 0 in
   let level = ref 0 in
@@ -388,7 +387,7 @@ let _ =
   let blocks = List.map (List.map decode_block) blocks in
   let field = Array.create 26 0 in
   let widgets, newg, exitg, cell_field, next_field,
-      scorev, linev, levv, game_over = 
+      scorev, linev, levv, game_over =
         init fw in
   let canvas = fst cell_field in
 
@@ -406,11 +405,11 @@ let _ =
       for j = 0 to 3 do
         cell_set next_field j i 0
       done
-    done 
+    done
   in
 
   let draw_falling_block fb =
-    draw_block cell_field fb.bcolor 
+    draw_block cell_field fb.bcolor
       (List.nth fb.pattern fb.d) (fb.x - 3) (fb.y - 3)
 
   and erase_falling_block fb =
@@ -430,21 +429,21 @@ let _ =
   and clear fb =
     let l = ref 0 in
     for i = 0 to 3 do
-      if i + fb.y >= 3 && i + fb.y <= 22 then 
+      if i + fb.y >= 3 && i + fb.y <= 22 then
         if field.(i + fb.y) = line_full then
           begin
             incr l;
             field.(i + fb.y) <- line_empty;
             for j = 0 to 9 do
-              cell_set cell_field j (i + fb.y - 3) 0 
+              cell_set cell_field j (i + fb.y - 3) 0
             done
-          end  
+          end
     done;
     !l
 
   and fall_lines () =
     let eye = ref 22 (* bottom *)
-    and cur = ref 22 (* bottom *) 
+    and cur = ref 22 (* bottom *)
     in
     try
       while !eye >= 3 do
@@ -457,7 +456,7 @@ let _ =
           cell_set cell_field j (!cur-3) (cell_get cell_field j (!eye-3))
         done;
         decr eye;
-        decr cur 
+        decr cur
       done
     with Done -> ();
       for i = 3 to !cur do
@@ -474,14 +473,14 @@ let _ =
   in
 
   let draw_next () =
-    draw_block next_field (!next+1) (List.hd (List.nth blocks !next)) 0 0 
+    draw_block next_field (!next+1) (List.hd (List.nth blocks !next)) 0 0
 
   and erase_next () =
-    draw_block next_field 0 (List.hd (List.nth blocks !next)) 0 0 
+    draw_block next_field 0 (List.hd (List.nth blocks !next)) 0 0
   in
 
   let set_nextblock () =
-    current := 
+    current :=
        { pattern= (List.nth blocks !next);
          bcolor= !next+1;
          x=6; y= 1; d= 0; alive= true};
@@ -494,11 +493,11 @@ let _ =
     try
       for i=0 to 3 do
         let cur = field.(i + fb.y) in
-        if cur land ((List.nth fb.pattern fb.d).(i) lsl fb.x) <> 0 
+        if cur land ((List.nth fb.pattern fb.d).(i) lsl fb.x) <> 0
         then raise Done
       done;
       false
-    with 
+    with
       Done -> true
   in
 
@@ -520,27 +519,27 @@ let _ =
           m.x <- m.x + 1;
           if sub m then ()
           else
-            begin 
+            begin
               m.x <- m.x - 2;
               ignore (sub m)
-            end  
+            end
         end
     else ()
   in
 
   let image_load =
-    let i = Canvas.create_image canvas 
-            (Pixels (block_size * 5 + block_size / 2)) 
+    let i = Canvas.create_image canvas
+            (Pixels (block_size * 5 + block_size / 2))
             (Pixels (block_size * 10 + block_size / 2))
                 [Anchor Center] in
     Canvas.lower_bot canvas i;
     let img = Imagephoto.create [] in
     fun file ->
-      try 
+      try
         Imagephoto.configure img [File file];
         Canvas.configure_image canvas i [ImagePhoto img]
       with
-        _ -> 
+        _ ->
           begin
             Printf.eprintf "%s : No such image...\n" file;
             flush stderr
@@ -551,14 +550,14 @@ let _ =
     let pline = !line in
     if l <> 0 then
       begin
-        line := !line + l; 
+        line := !line + l;
         score := !score + l * l;
         set_message (Printf.sprintf "%d pts" (1 lsl ((l - 1) * 2)))
-      end; 
+      end;
     Textvariable.set linev (string_of_int !line);
-    Textvariable.set scorev (string_of_int !score); 
+    Textvariable.set scorev (string_of_int !score);
 
-    if !line /10 <> pline /10 then 
+    if !line /10 <> pline /10 then
       (* update the background every 10 lines. *)
       begin
         let num_image = List.length backgrounds - 1 in
@@ -567,16 +566,16 @@ let _ =
         let file = List.nth backgrounds n in
         image_load file;
         (* Future work: We should gain level after an image is put... *)
-        incr level; 
-        Textvariable.set levv (string_of_int !level) 
+        incr level;
+        Textvariable.set levv (string_of_int !level)
       end
   in
 
-  let rec newblock () = 
+  let rec newblock () =
     set_message "TETRIS";
     set_nextblock ();
     draw_falling_block !current;
-    if death_check !current then 
+    if death_check !current then
       begin
         !current.alive <- false;
         set_message "GAME OVER";
@@ -617,7 +616,7 @@ let _ =
 
   let bind_game w =
     bind w [([], KeyPress)] (BindSet ([Ev_KeySymString],
-      fun e -> 
+      fun e ->
         match e.ev_KeySymString with
         | "h" ->
             let m = copy_block current in
@@ -645,7 +644,7 @@ let _ =
               begin
                 let m = copy_block current
                 and n = copy_block current in
-                while 
+                while
                   m.y <- m.y + 1;
                   if death_check m then false
                   else begin n.y <- m.y; true end
@@ -655,7 +654,7 @@ let _ =
                 current := n;
                 remove_timer ();
                 loop ()
-              end  
+              end
         | _ -> ()
       ))
   in
@@ -669,7 +668,7 @@ let _ =
     score := 0;
     line := 0;
     level := 1;
-    add_score 0; 
+    add_score 0;
     init_field ();
     next := Random.int 7;
     set_message "Welcome to TETRIS";

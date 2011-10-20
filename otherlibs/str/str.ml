@@ -29,7 +29,7 @@ module Charset =
   struct
     type t = string (* of length 32 *)
 
-    let empty = String.make 32 '\000'
+    (*let empty = String.make 32 '\000'*)
     let full = String.make 32 '\255'
 
     let make_empty () = String.make 32 '\000'
@@ -44,9 +44,9 @@ module Charset =
     let singleton c =
       let s = make_empty () in add s c; s
 
-    let range c1 c2 =
+    (*let range c1 c2 =
       let s = make_empty () in add_range s c1 c2; s
-
+    *)
     let complement s =
       let r = String.create 32 in
       for i = 0 to 31 do
@@ -367,14 +367,14 @@ let compile fold_case re =
       emit_code r;
       let lbl = !progpos in
       patch_instr pos_pushback op_PUSHBACK lbl
-  | Group(n, r) -> 
+  | Group(n, r) ->
       if n >= 32 then failwith "too many \\(...\\) groups";
       emit_instr op_BEGGROUP n;
       emit_code r;
       emit_instr op_ENDGROUP n;
       numgroups := max !numgroups (n+1)
   | Refgroup n ->
-      emit_instr op_REFGROUP n      
+      emit_instr op_REFGROUP n
   | Bol ->
       emit_instr op_BOL 0
   | Eol ->
@@ -565,9 +565,9 @@ let quote s =
   done;
   String.sub buf 0 !pos
 
-let regexp_string s = compile false (String s) 
+let regexp_string s = compile false (String s)
 
-let regexp_string_case_fold s = compile true (String s) 
+let regexp_string_case_fold s = compile true (String s)
 
 (** Matching functions **)
 
@@ -642,7 +642,7 @@ let replace_matched repl matched =
 let substitute_first expr repl_fun text =
   try
     let pos = search_forward expr text 0 in
-    String.concat "" [string_before text pos; 
+    String.concat "" [string_before text pos;
                       repl_fun text;
                       string_after text (match_end())]
   with Not_found ->
@@ -656,9 +656,9 @@ let global_substitute expr repl_fun text =
     let startpos = if last_was_empty then start + 1 else start in
     if startpos > String.length text then
       string_after text start :: accu
-    else 
+    else
       match opt_search_forward expr text startpos with
-      | None ->       
+      | None ->
           string_after text start :: accu
       | Some pos ->
           let end_pos = match_end() in
@@ -671,7 +671,7 @@ let global_substitute expr repl_fun text =
 let global_replace expr repl text =
   global_substitute expr (replace_matched repl) text
 and replace_first expr repl text =
-  substitute_first expr (replace_matched repl) text  
+  substitute_first expr (replace_matched repl) text
 
 (** Splitting *)
 
@@ -679,7 +679,7 @@ let opt_search_forward_progress expr text start =
   match opt_search_forward expr text start with
   | None -> None
   | Some pos ->
-      if match_end() > start then 
+      if match_end() > start then
         Some pos
       else if start < String.length text then
         opt_search_forward expr text (start + 1)

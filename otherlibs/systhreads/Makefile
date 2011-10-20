@@ -20,12 +20,10 @@ CAMLOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A -g
 
-BYTECODE_C_OBJS=posix_b.o
-NATIVECODE_C_OBJS=posix_n.o
+BYTECODE_C_OBJS=st_stubs_b.o
+NATIVECODE_C_OBJS=st_stubs_n.o
 
 THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
-
-GENFILES=thread.ml
 
 all: libthreads.a threads.cma
 
@@ -34,46 +32,42 @@ allopt: libthreadsnat.a threads.cmxa
 libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
 
-posix_b.o: posix.c
+st_stubs_b.o: st_stubs.c st_posix.h
 	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
-	   -c posix.c
-	mv posix.o posix_b.o
+	   -c st_stubs.c
+	mv st_stubs.o st_stubs_b.o
 
 # Dynamic linking with -lpthread is risky on many platforms, so
 # do not create a shared object for libthreadsnat.
 libthreadsnat.a: $(NATIVECODE_C_OBJS)
 	$(AR) rc libthreadsnat.a $(NATIVECODE_C_OBJS)
 
-posix_n.o: posix.c
-	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
-	mv posix.o posix_n.o
+st_stubs_n.o: st_stubs.c st_posix.h
+	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c st_stubs.c
+	mv st_stubs.o st_stubs_n.o
 
 threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
-          -cclib -lunix $(PTHREAD_LINK)
+	  -cclib -lunix $(PTHREAD_LINK)
 
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat $(PTHREAD_LINK)
+	  -cclib -lthreadsnat $(PTHREAD_LINK)
 
-# Note: I removed "-cclib -lunix" from the line above. 
-# Indeed, if we link threads.cmxa, then we must also link unix.cmxa, 
+# Note: I removed "-cclib -lunix" from the line above.
+# Indeed, if we link threads.cmxa, then we must also link unix.cmxa,
 # which itself will pass -lunix to the C linker.  It seems more
 # modular to me this way. -- Alain
 
 
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
-thread.ml: thread_posix.ml
-	ln -s thread_posix.ml thread.ml
-
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
 	rm -f *.o *.a *.so
-	rm -f $(GENFILES)
 
 install:
 	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
@@ -83,6 +77,7 @@ install:
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
+	cp threads.h $(LIBDIR)/caml/threads.h
 
 installopt:
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a

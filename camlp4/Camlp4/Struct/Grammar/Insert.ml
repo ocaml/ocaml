@@ -33,12 +33,15 @@ module Make (Structure : Structure.S) = struct
   ;
   value rec derive_eps =
     fun
-    [ Slist0 _ -> True
-    | Slist0sep _ _ -> True
-    | Sopt _ -> True
+    [ Slist0 _ | Slist0sep _ _ | Sopt _ -> True
+    | Stry s -> derive_eps s
     | Stree t -> tree_derive_eps t
-    | Smeta _ _ _ | Slist1 _ | Slist1sep _ _ | Snterm _ | Snterml _ _ | Snext |
-      Sself | Stoken _ | Skeyword _ -> False ]
+    | Slist1 _ | Slist1sep _ _ | Stoken _ | Skeyword _ ->
+        (* For sure we cannot derive epsilon from these *)
+        False
+    | Smeta _ _ _ | Snterm _ | Snterml _ _ | Snext | Sself ->
+        (* Approximation *)
+        False ]
   and tree_derive_eps =
     fun
     [ LocAct _ _ -> True
@@ -63,7 +66,7 @@ module Make (Structure : Structure.S) = struct
           do {
             if a <> lev.assoc && entry.egram.warning_verbose.val then do {
               eprintf "<W> Changing associativity of level \"%s\"\n" n;
-              flush stderr
+              flush Pervasives.stderr
             }
             else ();
             a
@@ -73,7 +76,7 @@ module Make (Structure : Structure.S) = struct
       match lname with
       [ Some n ->
           if lname <> lev.lname && entry.egram.warning_verbose.val then do {
-            eprintf "<W> Level label \"%s\" ignored\n" n; flush stderr
+            eprintf "<W> Level label \"%s\" ignored\n" n; flush Pervasives.stderr
           }
           else ()
       | None -> () ];
@@ -99,7 +102,7 @@ module Make (Structure : Structure.S) = struct
               do {
                 eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                   entry.ename;
-                flush stderr;
+                flush Pervasives.stderr;
                 failwith "Grammar.extend"
               }
           | [lev :: levs] ->
@@ -116,7 +119,7 @@ module Make (Structure : Structure.S) = struct
               do {
                 eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                   entry.ename;
-                flush stderr;
+                flush Pervasives.stderr;
                 failwith "Grammar.extend"
               }
           | [lev :: levs] ->
@@ -133,7 +136,7 @@ module Make (Structure : Structure.S) = struct
               do {
                 eprintf "No level labelled \"%s\" in entry \"%s\"\n" n
                   entry.ename;
-                flush stderr;
+                flush Pervasives.stderr;
                 failwith "Grammar.extend"
               }
           | [lev :: levs] ->
@@ -156,7 +159,7 @@ module Make (Structure : Structure.S) = struct
           eprintf "\
   Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
             entry.ename e.ename;
-          flush stderr;
+          flush Pervasives.stderr;
           failwith "Grammar.extend error"
         }
         else ()
@@ -165,16 +168,14 @@ module Make (Structure : Structure.S) = struct
           eprintf "\
   Error: entries \"%s\" and \"%s\" do not belong to the same grammar.\n"
             entry.ename e.ename;
-          flush stderr;
+          flush Pervasives.stderr;
           failwith "Grammar.extend error"
         }
         else ()
     | Smeta _ sl _ -> List.iter (check_gram entry) sl
     | Slist0sep s t -> do { check_gram entry t; check_gram entry s }
     | Slist1sep s t -> do { check_gram entry t; check_gram entry s }
-    | Slist0 s -> check_gram entry s
-    | Slist1 s -> check_gram entry s
-    | Sopt s -> check_gram entry s
+    | Slist0 s | Slist1 s | Sopt s | Stry s -> check_gram entry s
     | Stree t -> tree_check_gram entry t
     | Snext | Sself | Stoken _ | Skeyword _ -> () ]
   and tree_check_gram entry =
@@ -198,11 +199,9 @@ module Make (Structure : Structure.S) = struct
     let rec insert =
       fun
       [ Smeta _ sl _ -> List.iter insert sl
-      | Slist0 s -> insert s
-      | Slist1 s -> insert s
+      | Slist0 s | Slist1 s | Sopt s | Stry s -> insert s
       | Slist0sep s t -> do { insert s; insert t }
       | Slist1sep s t -> do { insert s; insert t }
-      | Sopt s -> insert s
       | Stree t -> tinsert t
       | Skeyword kwd -> using gram kwd
       | Snterm _ | Snterml _ _ | Snext | Sself | Stoken _ -> () ]
@@ -282,7 +281,7 @@ module Make (Structure : Structure.S) = struct
       | Dparser _ ->
           do {
             eprintf "Error: entry not extensible: \"%s\"\n" entry.ename;
-            flush stderr;
+            flush Pervasives.stderr;
             failwith "Grammar.extend"
           } ]
     in
@@ -316,13 +315,13 @@ module Make (Structure : Structure.S) = struct
       do {
         entry.edesc := Dlevels elev;
         entry.estart :=
-          fun lev c strm ->
+          fun lev strm ->
             let f = Parser.start_parser_of_entry entry in
-            do { entry.estart := f; f lev c strm };
+            do { entry.estart := f; f lev strm };
         entry.econtinue :=
-          fun lev bp a c strm ->
+          fun lev bp a strm ->
             let f = Parser.continue_parser_of_entry entry in
-            do { entry.econtinue := f; f lev bp a c strm }
+            do { entry.econtinue := f; f lev bp a strm }
       };
 
   end;

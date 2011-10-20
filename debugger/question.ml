@@ -33,4 +33,3 @@ let yes_or_no message =
           raise x
   else
     false
-

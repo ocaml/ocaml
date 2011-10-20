@@ -24,10 +24,8 @@ CFLAGS=-I../../byterun $(EXTRACFLAGS)
 
 CAMLOBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 CMIFILES=$(CAMLOBJS:.cmo=.cmi)
-COBJS=win32_b.$(O)
-COBJS_NAT=win32_n.$(O)
-
-GENFILES=thread.ml
+COBJS=st_stubs_b.$(O)
+COBJS_NAT=st_stubs_n.$(O)
 
 LIBNAME=threads
 
@@ -41,9 +39,9 @@ $(LIBNAME).cma: $(CAMLOBJS)
 lib$(LIBNAME).$(A): $(COBJS)
 	$(MKLIB) -o $(LIBNAME) $(COBJS) $(LDOPTS)
 
-win32_b.$(O): win32.c
-	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c win32.c
-	mv win32.$(O) win32_b.$(O)
+st_stubs_b.$(O): st_stubs.c st_win32.h
+	$(BYTECC) $(BYTECCCOMPOPTS) $(CFLAGS) -c st_stubs.c
+	mv st_stubs.$(O) st_stubs_b.$(O)
 
 
 
@@ -58,21 +56,17 @@ $(LIBNAME).cmxs: $(LIBNAME).cmxa lib$(LIBNAME)nat.$(A)
 lib$(LIBNAME)nat.$(A): $(COBJS_NAT)
 	$(MKLIB) -o $(LIBNAME)nat $(COBJS_NAT) $(LDOPTS)
 
-win32_n.$(O): win32.c
-	$(NATIVECC) -DNATIVE_CODE -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -c win32.c
-	mv win32.$(O) win32_n.$(O)
+st_stubs_n.$(O): st_stubs.c st_win32.h
+	$(NATIVECC) -DNATIVE_CODE -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) -c st_stubs.c
+	mv st_stubs.$(O) st_stubs_n.$(O)
 
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
-
-thread.ml: thread_win32.ml
-	cp thread_win32.ml thread.ml
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
 	rm -f *.dll *.$(A) *.$(O)
-	rm -f $(GENFILES)
 
 install:
 	cp dllthreads.dll $(STUBLIBDIR)/dllthreads.dll
@@ -80,6 +74,7 @@ install:
 	mkdir -p $(LIBDIR)/threads
 	cp $(CMIFILES) threads.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
+	cp threads.h $(LIBDIR)/caml/threads.h
 
 installopt:
 	cp libthreadsnat.$(A) $(LIBDIR)/libthreadsnat.$(A)

@@ -24,7 +24,7 @@ type code_dag_node =
     mutable emitted_ancestors: int }
 
 class virtual scheduler_generic : object
-  (* Can be overriden by processor description *)
+  (* Can be overridden by processor description *)
   method virtual oper_issue_cycles : Mach.operation -> int
       (* Number of cycles needed to issue the given operation *)
   method virtual oper_latency : Mach.operation -> int

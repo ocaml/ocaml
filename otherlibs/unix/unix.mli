@@ -338,7 +338,7 @@ type stats =
     st_mtime : float;           (** Last modification time *)
     st_ctime : float;           (** Last status change time *)
   }
-(** The informations returned by the {!Unix.stat} calls. *)
+(** The information returned by the {!Unix.stat} calls. *)
 
 val stat : string -> stats
 (** Return the information for the named file. *)
@@ -820,6 +820,16 @@ val getgroups : unit -> int array
 (** Return the list of groups to which the user executing the process
    belongs. *)
 
+val setgroups : int array -> unit
+  (** [setgroups groups] sets the supplementary group IDs for the
+      calling process. Appropriate privileges are required. *)
+
+val initgroups : string -> int -> unit
+  (** [initgroups user group] initializes the group access list by
+      reading the group database /etc/group and using all groups of
+      which [user] is a member. The additional group [group] is also
+      added to the list. *)
+
 type passwd_entry =
   { pw_name : string;
     pw_passwd : string;
@@ -901,7 +911,7 @@ type socket_domain =
   | PF_INET                     (** Internet domain (IPv4) *)
   | PF_INET6                    (** Internet domain (IPv6) *)
 (** The type of socket domains.  Not all platforms support
-    IPv6 sockets (type [PF_INET6]).  *)
+    IPv6 sockets (type [PF_INET6]). *)
 
 type socket_type =
     SOCK_STREAM                 (** Stream socket *)
@@ -911,7 +921,9 @@ type socket_type =
 (** The type of socket kinds, specifying the semantics of
    communications. *)
 
-type sockaddr = ADDR_UNIX of string | ADDR_INET of inet_addr * int
+type sockaddr =
+    ADDR_UNIX of string
+  | ADDR_INET of inet_addr * int
 (** The type of socket addresses. [ADDR_UNIX name] is a socket
    address in the Unix domain; [name] is a file name in the file
    system. [ADDR_INET(addr,port)] is a socket address in the Internet
@@ -1260,7 +1272,7 @@ val tcgetattr : file_descr -> terminal_io
    file descriptor. *)
 
 type setattr_when =
-  TCSANOW
+    TCSANOW
   | TCSADRAIN
   | TCSAFLUSH
 

@@ -120,10 +120,10 @@ let find_printer_type lid =
       with Ctype.Unify _ ->
         (match_printer_type desc "printer_type_old", true) in
     (ty_arg, path, is_old_style)
-  with 
+  with
   | Not_found -> raise(Error(Unbound_identifier lid))
   | Ctype.Unify _ -> raise(Error(Wrong_type lid))
-    
+
 let install_printer ppf lid =
   let (ty_arg, path, is_old_style) = find_printer_type lid in
   let v =
@@ -167,5 +167,3 @@ let report_error ppf = function
   | No_active_printer lid ->
       fprintf ppf "@[%a is not currently active as a printing function.@]@."
       Printtyp.longident lid
-
-      

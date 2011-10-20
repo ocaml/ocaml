@@ -43,7 +43,7 @@ let scroll_link sb lb =
   Scrollbar.configure sb ~command: (Listbox.yview lb)
 
 (* focus when enter binding *)
-let bind_enter_focus w = 
+let bind_enter_focus w =
   bind w ~events:[`Enter] ~action:(fun _ -> Focus.set w);;
 
 let myentry_create p ~variable =
@@ -52,13 +52,13 @@ let myentry_create p ~variable =
 
 (************************************************************* Subshell call *)
 
-let subshell cmd = 
+let subshell cmd =
   let r,w = pipe () in
     match fork () with
-      0 -> close r; dup2 ~src:w ~dst:stdout; 
+      0 -> close r; dup2 ~src:w ~dst:stdout;
            execv ~prog:"/bin/sh" ~args:[| "/bin/sh"; "-c"; cmd |]
-    | id -> 
-        close w; 
+    | id ->
+        close w;
         let rc = in_channel_of_descr r in
         let rec it l =
           match
@@ -66,7 +66,7 @@ let subshell cmd =
           with
             Some x -> it (x::l)
           | None -> List.rev l
-        in 
+        in
         let answer = it [] in
         close_in rc;  (* because of finalize_channel *)
         let _ = waitpid ~mode:[] id in answer
@@ -76,36 +76,36 @@ let subshell cmd =
 (* find directory name which doesn't contain "?*[" *)
 let dirget = regexp "^\\([^\\*?[]*/\\)\\(.*\\)"
 
-let parse_filter src = 
+let parse_filter src =
   (* replace // by / *)
   let s = global_replace (regexp "/+") "/" src in
   (* replace /./ by / *)
   let s = global_replace (regexp "/\\./") "/" s in
   (* replace ????/../ by "" *)
   let s = global_replace
-      (regexp "\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\./") 
+      (regexp "\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\./")
       ""
       s in
   (* replace ????/..$ by "" *)
   let s = global_replace
-      (regexp "\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\.$") 
+      (regexp "\\([^/]\\|[^\\./][^/]\\|[^/][^\\./]\\|[^/][^/]+\\)/\\.\\.$")
       ""
       s in
   (* replace ^/../../ by / *)
   let s = global_replace (regexp "^\\(/\\.\\.\\)+/") "/" s in
-  if string_match dirget s 0 then 
+  if string_match dirget s 0 then
     let dirs = matched_group 1 s
     and ptrn = matched_group 2 s
     in
       dirs, ptrn
   else "", s
- 
+
 let ls dir pattern =
   subshell ("cd " ^ dir ^ ";/bin/ls -ad " ^ pattern ^" 2>/dev/null")
 
 (*************************************************************** File System *)
 
-let get_files_in_directory dir = 
+let get_files_in_directory dir =
   let dirh = opendir dir in
   let rec get_them l =
     match
@@ -117,12 +117,12 @@ let get_files_in_directory dir =
         get_them (x::l)
   in
   List.sort ~cmp:compare (get_them [])
-      
+
 let rec get_directories_in_files path =
   List.filter
     ~f:(fun x -> try (stat (path ^ x)).st_kind = S_DIR with _ -> false)
 
-let remove_directories path = 
+let remove_directories path =
   List.filter
     ~f:(fun x -> try (stat (path ^ x)).st_kind <> S_DIR with _ -> false)
 
@@ -184,11 +184,11 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
 
   let current_pattern = ref ""
   and current_dir = ref "" in
-  
+
   (* init_completions *)
   let filter_init_completion = ref (fun _ -> ())
   and directory_init_completion = ref (fun _ -> ()) in
-  
+
   let tl = Toplevel.create default_toplevel in
   Focus.set tl;
   Wm.title_set tl title;
@@ -206,7 +206,7 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
         let dflf = Frame.create dfl in
           let directory_listbox = Listbox.create dflf ~relief: `Sunken
           and directory_scrollbar = Scrollbar.create dflf in
-            scroll_link directory_scrollbar directory_listbox; 
+            scroll_link directory_scrollbar directory_listbox;
       let dfr = Frame.create df in
         let dfrl = Label.create dfr ~text: "Files" in
         let dfrf = Frame.create dfr in
@@ -227,7 +227,7 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
 (* Printf.eprintf "CURDIR %s\n" curdir; *)
     let filter =
       if string_match (regexp "^/.*") filter 0 then filter
-      else 
+      else
         if filter = "" then !global_dir ^ "/*"
         else !global_dir ^ "/" ^ filter in
 (* Printf.eprintf "FILTER %s\n" filter; *)
@@ -241,13 +241,13 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
 (* Printf.eprintf "FILTER : %s\n\n" filter; *)
 (* flush Pervasives.stderr; *)
     try
-      let directories = get_directories_in_files dirname 
+      let directories = get_directories_in_files dirname
             (get_files_in_directory dirname) in
       (* get matched file by subshell call. *)
-      let matched_files = remove_directories dirname (ls dirname patternname) 
+      let matched_files = remove_directories dirname (ls dirname patternname)
       in
         Textvariable.set filter_var filter;
-        Textvariable.set selection_var (dirname ^ deffile); 
+        Textvariable.set selection_var (dirname ^ deffile);
         Listbox.delete directory_listbox ~first:(`Num 0) ~last:`End;
         Listbox.insert directory_listbox ~index:`End ~texts:directories;
         Listbox.delete filter_listbox ~first:(`Num 0) ~last:`End;
@@ -255,35 +255,35 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
         !directory_init_completion directory_listbox;
         !filter_init_completion filter_listbox
     with
-      Unix_error (ENOENT,_,_) -> 
+      Unix_error (ENOENT,_,_) ->
         (* Directory is not found (maybe) *)
         Bell.ring ()
   in
-  
+
   let selected_files = ref [] in (* used for synchronous mode *)
   let activate l () =
     Grab.release tl;
     destroy tl;
-    if sync then 
+    if sync then
       begin
         selected_files := l;
         Textvariable.set sync_var "1"
       end
-    else 
+    else
       begin
-        proc l; 
+        proc l;
         break ()
-      end 
+      end
   in
-  
+
   (* and buttons *)
     let okb = Button.create cfrm ~text: "OK" ~command:
-      begin fun () -> 
-        let files = 
-          List.map (Listbox.curselection filter_listbox) 
+      begin fun () ->
+        let files =
+          List.map (Listbox.curselection filter_listbox)
             ~f:(fun x -> !current_dir ^ (Listbox.get filter_listbox ~index:x))
         in
-        let files = if files = [] then [Textvariable.get selection_var] 
+        let files = if files = [] then [Textvariable.get selection_var]
                                   else files in
         activate files ()
       end
@@ -295,18 +295,18 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
 
   (* binding *)
   bind selection_entry ~events:[`KeyPressDetail "Return"] ~breakable:true
-    ~action:(fun _ -> activate [Textvariable.get selection_var] ()); 
+    ~action:(fun _ -> activate [Textvariable.get selection_var] ());
   bind filter_entry ~events:[`KeyPressDetail "Return"]
       ~action:(fun _ -> configure (Textvariable.get filter_var));
-  
-  let action _ = 
-      let files = 
+
+  let action _ =
+      let files =
         List.map (Listbox.curselection filter_listbox)
-          ~f:(fun x -> !current_dir ^ (Listbox.get filter_listbox ~index:x)) 
+          ~f:(fun x -> !current_dir ^ (Listbox.get filter_listbox ~index:x))
       in
-        activate files () 
+        activate files ()
   in
-  bind filter_listbox ~events:[`Modified([`Double], `ButtonPressDetail 1)] 
+  bind filter_listbox ~events:[`Modified([`Double], `ButtonPressDetail 1)]
     ~breakable:true ~action;
   if multi then Listbox.configure filter_listbox ~selectmode: `Multiple;
   filter_init_completion := add_completion filter_listbox action;
@@ -317,7 +317,7 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
           [x] -> Listbox.get directory_listbox ~index:x
         | _ -> (* you must choose at least one directory. *)
             Bell.ring (); raise Not_selected)
-       (Listbox.curselection directory_listbox)) ^ "/" ^ !current_pattern) 
+       (Listbox.curselection directory_listbox)) ^ "/" ^ !current_pattern)
     with _ -> () in
   bind directory_listbox ~events:[`Modified([`Double], `ButtonPressDetail 1)]
     ~breakable:true ~action;
@@ -334,13 +334,13 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
     pack [dfl] ~side: `Left;
     pack [dfll] ~side: `Top ~anchor: `W;
     pack [dflf] ~side: `Top;
-    pack [coe directory_listbox; coe directory_scrollbar] 
+    pack [coe directory_listbox; coe directory_scrollbar]
                                           ~side: `Left ~fill: `Y;
     (* files *)
     pack [dfr] ~side: `Right;
     pack [dfrl] ~side: `Top ~anchor: `W;
     pack [dfrf] ~side: `Top;
-    pack [coe filter_listbox; coe filter_scrollbar] ~side: `Left ~fill: `Y; 
+    pack [coe filter_listbox; coe filter_scrollbar] ~side: `Left ~fill: `Y;
     (* selection *)
     pack [sl] ~side: `Top ~anchor: `W;
     pack [selection_entry] ~side: `Top ~fill: `X;

@@ -56,22 +56,22 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
   value exsk s k = <:expr< $lid:xsk s k$>>;
 
   value rec apply_expr accu =
-    fun 
-    [ [] -> accu 
+    fun
+    [ [] -> accu
     | [x :: xs] ->
         let _loc = Ast.loc_of_expr x
         in apply_expr <:expr< $accu$ $x$ >> xs ];
 
   value rec apply_patt accu =
-    fun 
-    [ [] -> accu 
+    fun
+    [ [] -> accu
     | [x :: xs] ->
         let _loc = Ast.loc_of_patt x
         in apply_patt <:patt< $accu$ $x$ >> xs ];
 
   value rec apply_ctyp accu =
-    fun 
-    [ [] -> accu 
+    fun
+    [ [] -> accu
     | [x :: xs] ->
         let _loc = Ast.loc_of_ctyp x
         in apply_ctyp <:ctyp< $accu$ $x$ >> xs ];
@@ -427,10 +427,10 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         let params' = List.map string_of_type_param params in
         let funs = lambda (fun_of_ctyp id1 ctyp) params' in
         let ty = method_type_of_type_decl type_decl in
-        let priv = if priv then Ast.BTrue else Ast.BFalse in
+        let priv = if priv then <:private_flag< private >> else <:private_flag<>> in
         <:class_str_item< method $private:priv$ $lid:id1$ : $ty$ = $funs$; $acc$ >>
 
-      and ctyp_name_of_name_params name params = 
+      and ctyp_name_of_name_params name params =
         apply_ctyp <:ctyp< $id:name$ >> params
 
       and method_type_of_type_decl (_, name, params, ctyp, _) =

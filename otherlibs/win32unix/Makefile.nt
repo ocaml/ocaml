@@ -43,7 +43,7 @@ LINKOPTS=-cclib $(WSOCKLIB)
 LDOPTS=-ldopt $(WSOCKLIB)
 EXTRACAMLFLAGS=-nolabels
 EXTRACFLAGS=-I../unix
-HEADERS=unixsupport.h
+HEADERS=unixsupport.h socketaddr.h
 
 
 include ../Makefile.nt

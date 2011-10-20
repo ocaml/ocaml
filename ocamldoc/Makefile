@@ -31,7 +31,7 @@ OCAMLPP=-pp './remove_DEBUG'
 MKDIR=mkdir -p
 CP=cp -f
 OCAMLDOC=ocamldoc
-OCAMLDOC_RUN=./ocamldoc.opt #sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
+OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
 OCAMLDOC_OPT=$(OCAMLDOC).opt
 OCAMLDOC_LIBCMA=odoc_info.cma
 OCAMLDOC_LIBCMI=odoc_info.cmi
@@ -188,13 +188,12 @@ STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/bigarray/bigarray.mli \
 	../otherlibs/num/num.mli
 
-all: exe lib
+all: exe lib manpages
 
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 
 opt.opt: exeopt libopt
-	$(MAKE) manpages
 exeopt: $(OCAMLDOC_OPT)
 libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
 debug:
@@ -282,7 +281,7 @@ installopt_really:
 ###########
 test: dummy
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc test.txt test2.txt odoc*.ml odoc*.mli -v
+	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli -v
 
 test_stdlib: dummy
 	$(MKDIR) $@

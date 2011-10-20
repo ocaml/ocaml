@@ -4,7 +4,7 @@ all: $(LIBNAME).cma $(LIBNAME)top$(EXE) $(LIBNAME)
 
 opt: $(LIBNAME).cmxa
 
-clean: 
+clean:
 	rm -f $(LIBNAME)top$(EXE) $(LIBNAME) *.cm* *.$(A)
 
 superclean:
@@ -21,8 +21,8 @@ CAMLTKOBJS=cTk.cmo $(CWIDGETOBJS) labltk.cmo camltk.cmo
 
 SUPPORT=../support/support.cmo ../support/rawwidget.cmo \
 	../support/widget.cmo ../support/protocol.cmo \
-        ../support/textvariable.cmo ../support/timer.cmo \
-        ../support/fileevent.cmo ../support/camltkwrap.cmo
+	../support/textvariable.cmo ../support/timer.cmo \
+	../support/fileevent.cmo ../support/camltkwrap.cmo
 
 TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
@@ -33,16 +33,16 @@ $(LIBNAME).cma: $(SUPPORT) ../Widgets.src
 	cd ../labltk; $(MAKE)
 	cd ../camltk; $(MAKE)
 	$(MKLIB) -ocamlc '$(CAMLCB)' -o $(LIBNAME) \
-          -I ../labltk -I ../camltk $(TKOBJS) \
-          -ccopt "\"$(TK_LINK)\""
+	  -I ../labltk -I ../camltk $(TKOBJS) \
+	  -ccopt "\"$(TK_LINK)\""
 
 $(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx) ../Widgets.src
 	$(MAKE) superclean
 	cd ../labltk; $(MAKE) opt
 	cd ../camltk; $(MAKE) opt
 	$(MKLIB) -ocamlopt '$(CAMLOPTB)' -o $(LIBNAME) -oc $(LIBNAME) \
-          -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
-          -ccopt "\"$(TK_LINK)\""
+	  -I ../labltk -I ../camltk $(TKOBJS:.cmo=.cmx) \
+	  -ccopt "\"$(TK_LINK)\""
 
 $(LIBNAME)top$(EXE) : $(TOPDEPS) $(LIBNAME).cma ../support/lib$(LIBNAME).$(A)
 	$(CAMLC) -verbose -linkall -o $(LIBNAME)top$(EXE) -I ../support \
@@ -57,14 +57,23 @@ $(LIBNAME): Makefile $(TOPDIR)/config/Makefile
 	@echo "#!/bin/sh" > $@
 	@echo 'exec $(INSTALLDIR)/$(LIBNAME)top$(EXE) -I $(INSTALLDIR) $$*' >> $@
 
+install-script: $(LIBNAME)
+	cp $(LIBNAME) $(BINDIR)
+	chmod 755 $(BINDIR)/$(LIBNAME)
+
+install-batch:
+	cp labltk.bat $(BINDIR)
+
 install:
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(LIBNAME).cma $(LIBNAME)top$(EXE) $(INSTALLDIR)
 	chmod 644 $(INSTALLDIR)/$(LIBNAME).cma
 	chmod 755 $(INSTALLDIR)/$(LIBNAME)top$(EXE)
 	@if test -d $(BINDIR); then : ; else mkdir $(BINDIR); fi
-	cp $(LIBNAME) $(BINDIR)
-	chmod 755 $(BINDIR)/$(LIBNAME)
+	@case x$(TOOLCHAIN) in \
+	  xmingw|xmsvc) $(MAKE) install-batch ;; \
+	  *) 		$(MAKE) install-script ;; \
+	esac
 
 installopt:
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi

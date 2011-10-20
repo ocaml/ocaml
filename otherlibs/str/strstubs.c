@@ -65,7 +65,7 @@ enum {
   SIMPLESTAR, /* match a character class 0, 1 or several times */
   SIMPLEPLUS, /* match a character class 1 or several times */
   GOTO,       /* unconditional branch */
-  PUSHBACK,   /* record a backtrack point -- 
+  PUSHBACK,   /* record a backtrack point --
                  where to jump in case of failure */
   SETMARK,    /* remember current position in given register # */
   CHECKPROGRESS /* backtrack if no progress was made w.r.t. reg # */
@@ -109,14 +109,23 @@ static void free_backtrack_stack(struct backtrack_stack * stack)
 #define In_bitset(s,i,tmp) (tmp = (i), ((s)[tmp >> 3] >> (tmp & 7)) & 1)
 
 /* Determine if a character is a word constituent */
+/* PR#4874: word constituent = letter, digit, underscore. */
+
 static unsigned char re_word_letters[32] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 254, 255, 255, 7, 254, 255, 255, 7,
-  0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 127, 255, 255, 255, 127, 255
+  0x00, 0x00, 0x00, 0x00,       /* 0x00-0x1F: none */
+  0x00, 0x00, 0xFF, 0x03,       /* 0x20-0x3F: digits 0-9 */
+  0xFE, 0xFF, 0xFF, 0x87,       /* 0x40-0x5F: A to Z, _ */
+  0xFE, 0xFF, 0xFF, 0x07,       /* 0x60-0x7F: a to z */
+  0x00, 0x00, 0x00, 0x00,       /* 0x80-0x9F: none */
+  0x00, 0x00, 0x00, 0x00,       /* 0xA0-0xBF: none */
+  0xFF, 0xFF, 0x7F, 0xFF,       /* 0xC0-0xDF: Latin-1 accented uppercase */
+  0xFF, 0xFF, 0x7F, 0xFF        /* 0xE0-0xFF: Latin-1 accented lowercase */
 };
+
 #define Is_word_letter(c) ((re_word_letters[(c) >> 3] >> ((c) & 7)) & 1)
 
 /* The bytecode interpreter for the NFA */
-static int re_match(value re, 
+static int re_match(value re,
                     unsigned char * starttxt,
                     register unsigned char * txt,
                     register unsigned char * endtxt,
@@ -196,7 +205,7 @@ static int re_match(value re,
       /* At beginning and end of text: no
          At beginning of text: OK if current char is a letter
          At end of text: OK if previous char is a letter
-         Otherwise: 
+         Otherwise:
            OK if previous char is a letter and current char not a letter
            or previous char is not a letter and current char is a letter */
       if (txt == starttxt) {
@@ -290,7 +299,7 @@ static int re_match(value re,
   push:
     /* Push an item on the backtrack stack and continue with next instr */
     if (sp == stack->point + BACKTRACK_STACK_BLOCK_SIZE) {
-      struct backtrack_stack * newstack = 
+      struct backtrack_stack * newstack =
         stat_alloc(sizeof(struct backtrack_stack));
       newstack->previous = stack;
       stack = newstack;
@@ -521,4 +530,3 @@ CAMLprim value re_replacement_text(value repl, value groups, value orig)
   }
   CAMLreturn(res);
 }
-

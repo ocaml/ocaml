@@ -37,10 +37,10 @@ let dir_directory s =
   Config.load_path := d :: !Config.load_path
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)
-let _ = Hashtbl.add directive_table "show_dirs" 
-  (Directive_none 
+let _ = Hashtbl.add directive_table "show_dirs"
+  (Directive_none
      (fun () ->
-	List.iter print_endline !Config.load_path
+        List.iter print_endline !Config.load_path
      ))
 
 (* To change the current directory *)
@@ -52,7 +52,7 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 (* Load in-core a .cmxs file *)
 
 let load_file ppf name0 =
-  let name = 
+  let name =
     try Some (find_in_path !Config.load_path name0)
     with Not_found -> None in
   match name with
@@ -67,23 +67,23 @@ let load_file ppf name0 =
     else
       name,false in
 
-  let success = 
+  let success =
     (* The Dynlink interface does not allow us to distinguish between
        a Dynlink.Error exceptions raised in the loaded modules
        or a genuine error during dynlink... *)
     try Dynlink.loadfile fn; true
-    with 
+    with
       | Dynlink.Error err ->
-	  fprintf ppf "Error while loading %s: %s.@."
-	    name (Dynlink.error_message err);
-	  false
-      | exn -> 
-	  print_exception_outcome ppf exn; 
-	  false
+          fprintf ppf "Error while loading %s: %s.@."
+            name (Dynlink.error_message err);
+          false
+      | exn ->
+          print_exception_outcome ppf exn;
+          false
   in
   if tmp then (try Sys.remove fn with Sys_error _ -> ());
   success
-  
+
 
 let dir_load ppf name = ignore (load_file ppf name)
 
@@ -126,7 +126,7 @@ let find_printer_type ppf lid =
       with Ctype.Unify _ ->
         (match_printer_type ppf desc "printer_type_old", true) in
     (ty_arg, path, is_old_style)
-  with 
+  with
   | Not_found ->
       fprintf ppf "Unbound value %a.@." Printtyp.longident lid;
       raise Exit
@@ -134,7 +134,7 @@ let find_printer_type ppf lid =
       fprintf ppf "%a has a wrong type for a printing function.@."
       Printtyp.longident lid;
       raise Exit
-    
+
 let dir_install_printer ppf lid =
   try
     let (ty_arg, path, is_old_style) = find_printer_type ppf lid in
@@ -181,9 +181,6 @@ let _ =
 
   Hashtbl.add directive_table "principal"
              (Directive_bool(fun b -> Clflags.principal := b));
-
-  Hashtbl.add directive_table "rectypes"
-             (Directive_none(fun () -> Clflags.recursive_types := true));
 
   Hashtbl.add directive_table "warnings"
              (Directive_string (parse_warnings std_out false));

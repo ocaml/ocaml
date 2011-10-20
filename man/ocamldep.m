@@ -59,6 +59,12 @@ the same
 .B \-I
 options that are passed to the compiler.
 .TP
+.BI \-ml\-synonym \ .ext
+Consider the given extension (with leading dot) to be a synonym for .ml.
+.TP
+.BI \-mli\-synonym \ .ext
+Consider the given extension (with leading dot) to be a synonym for .mli.
+.TP
 .B \-modules
 Output raw dependencies of the form
 .IR filename : \ Module1\ Module2 \ ... \ ModuleN
@@ -99,7 +105,10 @@ as a preprocessor for each source file.
 Under Unix, this option does nothing.
 .TP
 .B \-version
-Print version and exit.
+Print version string and exit.
+.TP
+.B \-vnum
+Print short version number and exit.
 .TP
 .BR \-help \ or \ \-\-help
 Display a short usage summary and exit.

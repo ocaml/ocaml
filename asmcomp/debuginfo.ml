@@ -33,7 +33,7 @@ let none = {
 
 let to_string d =
   if d == none
-  then "" 
+  then ""
   else Printf.sprintf "{%s:%d,%d-%d}"
            d.dinfo_file d.dinfo_line d.dinfo_char_start d.dinfo_char_end
 

@@ -83,9 +83,12 @@ static intnat parse_intnat(value s, int nbits)
     caml_failwith("int_of_string");
   }
   if (base == 10) {
-    /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits - 1) */
-    if (res > (uintnat)1 << (nbits - 1))
-      caml_failwith("int_of_string");
+    /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
+    if (sign >= 0) {
+      if (res >= (uintnat)1 << (nbits - 1)) caml_failwith("int_of_string");
+    } else {
+      if (res >  (uintnat)1 << (nbits - 1)) caml_failwith("int_of_string");
+    }
   } else {
     /* Unsigned representation expected, allow 0 to 2^nbits - 1
        and tolerate -(2^nbits - 1) to 0 */
@@ -177,7 +180,7 @@ CAMLprim value caml_format_int(value fmt, value arg)
   value res;
 
   buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
-			format_string, default_format_buffer, &conv);
+                       format_string, default_format_buffer, &conv);
   switch (conv) {
   case 'u': case 'x': case 'X': case 'o':
     sprintf(buffer, format_string, Unsigned_long_val(arg));
@@ -489,7 +492,7 @@ CAMLprim value caml_int64_of_float(value v)
 { return caml_copy_int64(I64_of_double(Double_val(v))); }
 
 CAMLprim value caml_int64_to_float(value v)
-{ 
+{
   int64 i = Int64_val(v);
   return caml_copy_double(I64_to_double(i));
 }
@@ -540,7 +543,8 @@ CAMLprim value caml_int64_of_string(value s)
 {
   char * p;
   uint64 max_uint64 = I64_literal(0xFFFFFFFF, 0xFFFFFFFF);
-  uint64 max_int64  = I64_literal(0x80000000, 0x00000000);
+  uint64 max_int64_pos = I64_literal(0x7FFFFFFF, 0xFFFFFFFF);
+  uint64 max_int64_neg = I64_literal(0x80000000, 0x00000000);
   uint64 res, threshold;
   int sign, base, d;
 
@@ -563,7 +567,10 @@ CAMLprim value caml_int64_of_string(value s)
   if (p != String_val(s) + caml_string_length(s)){
     caml_failwith("int_of_string");
   }
-  if (base == 10 && I64_ult(max_int64, res)) caml_failwith("int_of_string");
+  if (base == 10) {
+    if (I64_ult((sign >= 0 ? max_int64_pos : max_int64_neg), res))
+      caml_failwith("int_of_string");
+  }
   if (sign < 0) res = I64_neg(res);
   return caml_copy_int64(res);
 }
@@ -607,7 +614,7 @@ static void nativeint_serialize(value v, uintnat * wsize_32,
 {
   intnat l = Nativeint_val(v);
 #ifdef ARCH_SIXTYFOUR
-  if (l <= 0x7FFFFFFFL && l >= -0x80000000L) {
+  if (l >= -((intnat)1 << 31) && l < ((intnat)1 << 31)) {
     caml_serialize_int_1(1);
     caml_serialize_int_4((int32) l);
   } else {

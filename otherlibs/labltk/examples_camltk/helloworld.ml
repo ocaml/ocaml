@@ -19,16 +19,16 @@ let top = opentk ();;   (* Initialisation of the interface *)
 (* top is now the toplevel widget *)
 
 (* Widget initialisation *)
-let b = Button.create top 
-          [Text "foobar"; 
-           Command (function () -> 
-                      print_string "foobar"; 
+let b = Button.create top
+          [Text "foobar";
+           Command (function () ->
+                      print_string "foobar";
                       print_newline();
                       flush stdout)];;
 (* b exists but is not yet visible *)
 
-let q = Button.create top 
-          [Text "quit"; 
+let q = Button.create top
+          [Text "quit";
            Command closeTk];;
 (* q exists but is not yet visible *)
 

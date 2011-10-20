@@ -223,7 +223,7 @@ int Caml_Init(interp)
       if (0 == access(f,R_OK))
         if (TCL_OK != Tcl_EvalFile(cltclinterp,f)) {
           stat_free(f);
-          tk_error(cltclinterp->result);
+          tk_error(Tcl_GetStringResult(cltclinterp));
         };
       stat_free(f);
     }

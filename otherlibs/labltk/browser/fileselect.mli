@@ -22,7 +22,7 @@ val f :
   ?file:string ->
   ?multi:bool -> ?sync:bool -> ?usepath:bool -> unit -> unit
 
-(* action 
+(* action
       []  means canceled
       if multi select is false, then the list is null or a singleton *)
 

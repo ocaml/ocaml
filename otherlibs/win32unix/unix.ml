@@ -145,7 +145,7 @@ external waitpid : wait_flag list -> int -> int * process_status
 external getpid : unit -> int = "unix_getpid"
 
 let fork () = invalid_arg "Unix.fork not implemented"
-let wait () = invalid_arg "Unix.wait not implemented" 
+let wait () = invalid_arg "Unix.wait not implemented"
 let getppid () = invalid_arg "Unix.getppid not implemented"
 let nice prio = invalid_arg "Unix.nice not implemented"
 
@@ -435,6 +435,8 @@ let getegid = getgid
 let setgid id = invalid_arg "Unix.setgid not implemented"
 
 let getgroups () = [|1|]
+let setgroups _ = invalid_arg "Unix.setgroups not implemented"
+let initgroups _ _ = invalid_arg "Unix.initgroups not implemented"
 
 type passwd_entry =
   { pw_name : string;
@@ -513,7 +515,7 @@ external accept : file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"
 external listen : file_descr -> int -> unit = "unix_listen"
-external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
+external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown"
 external getsockname : file_descr -> sockaddr = "unix_getsockname"
 external getpeername : file_descr -> sockaddr = "unix_getpeername"
 
@@ -590,7 +592,7 @@ end = struct
   let optint = 2
   let float = 3
   let error = 4
-  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v 
+  external get: ('opt, 'v) t -> file_descr -> 'opt -> 'v
               = "unix_getsockopt"
   external set: ('opt, 'v) t -> file_descr -> 'opt -> 'v -> unit
               = "unix_setsockopt"
@@ -676,7 +678,7 @@ let getaddrinfo node service opts =
       with Failure _ ->
       try
         [ty, (getservbyname service kind).s_port]
-      with Not_found -> [] 
+      with Not_found -> []
   in
   let ports =
     match !opt_socktype with
@@ -707,7 +709,7 @@ let getaddrinfo node service opts =
         [] in
   (* Cross-product of addresses and ports *)
   List.flatten
-    (List.map 
+    (List.map
       (fun (ty, port) ->
         List.map
           (fun (addr, name) ->
@@ -770,7 +772,7 @@ let create_process prog args fd1 fd2 fd3 =
 let create_process_env prog args env fd1 fd2 fd3 =
   win_create_process prog (make_cmdline args)
                      (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
-                     fd1 fd2 fd3 
+                     fd1 fd2 fd3
 
 external system: string -> process_status = "win_system"
 

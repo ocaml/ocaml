@@ -15,8 +15,6 @@
 
 (** Handles the "_tags" file mechanism. *)
 
-type flag_list = (string * string) list
-
 (** Incorporate a newline-separated configuration string into the current configuration.
     Will usually raising an [Invalid_arg] with an appropriately explicit message in case of error. *)
 val parse_string : string -> unit
@@ -27,9 +25,6 @@ val parse_file : ?dir:string -> string -> unit
 
 (** Return the set of tags that apply to a given filename under the current configuration. *)
 val tags_of_filename : string -> Tags.t
-
-(** Return the set of flags that apply to a given filename under the current configuration. *)
-val flags_of_filename : string -> Command.spec
 
 val has_tag : string -> bool
 

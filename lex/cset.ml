@@ -95,5 +95,3 @@ let env_to_array env = match env with
           c)
       rem ;
     res
-
-  

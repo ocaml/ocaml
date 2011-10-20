@@ -1,13 +1,13 @@
 ;*********************************************************************
-;                                                                     
-;                           Objective Caml                            
 ;
-;            Xavier Leroy, projet Cristal, INRIA Rocquencourt         
+;                           Objective Caml
 ;
-;  Copyright 1996 Institut National de Recherche en Informatique et   
-;  en Automatique.  All rights reserved.  This file is distributed    
-;  under the terms of the GNU Library General Public License, with    
-;  the special exception on linking described in file ../LICENSE.     
+;            Xavier Leroy, projet Cristal, INRIA Rocquencourt
+;
+;  Copyright 1996 Institut National de Recherche en Informatique et
+;  en Automatique.  All rights reserved.  This file is distributed
+;  under the terms of the GNU Library General Public License, with
+;  the special exception on linking described in file ../LICENSE.
 ;
 ;*********************************************************************
 
@@ -32,7 +32,7 @@
         EXTERN  _caml_backtrace_active: DWORD
         EXTERN  _caml_stash_backtrace: PROC
 
-; Allocation 
+; Allocation
 
         .CODE
         PUBLIC  _caml_alloc1
@@ -42,12 +42,12 @@
 	PUBLIC  _caml_call_gc
 
 _caml_call_gc:
-    ; Record lowest stack address and return address 
+    ; Record lowest stack address and return address
         mov	eax, [esp]
         mov     _caml_last_return_address, eax
         lea     eax, [esp+4]
         mov     _caml_bottom_of_stack, eax
-    ; Save all regs used by the code generator 
+    ; Save all regs used by the code generator
 L105:   push    ebp
         push    edi
         push    esi
@@ -56,9 +56,9 @@ L105:   push    ebp
         push    ebx
         push    eax
         mov     _caml_gc_regs, esp
-    ; Call the garbage collector 
+    ; Call the garbage collector
         call	_caml_garbage_collection
-    ; Restore all regs used by the code generator 
+    ; Restore all regs used by the code generator
 	pop     eax
         pop     ebx
         pop     ecx
@@ -66,8 +66,8 @@ L105:   push    ebp
         pop     esi
         pop     edi
         pop     ebp
-    ; Return to caller 
-        ret	
+    ; Return to caller
+        ret
 
         ALIGN  4
 _caml_alloc1:
@@ -76,7 +76,7 @@ _caml_alloc1:
         mov	_caml_young_ptr, eax
         cmp	eax, _caml_young_limit
         jb	L100
-        ret	
+        ret
 L100:   mov	eax, [esp]
         mov     _caml_last_return_address, eax
         lea     eax, [esp+4]
@@ -91,7 +91,7 @@ _caml_alloc2:
         mov	_caml_young_ptr, eax
         cmp	eax, _caml_young_limit
         jb	L101
-        ret	
+        ret
 L101:   mov	eax, [esp]
         mov     _caml_last_return_address, eax
         lea     eax, [esp+4]
@@ -106,7 +106,7 @@ _caml_alloc3:
         mov	_caml_young_ptr, eax
         cmp	eax, _caml_young_limit
         jb	L102
-        ret	
+        ret
 L102:   mov	eax, [esp]
         mov     _caml_last_return_address, eax
         lea     eax, [esp+4]
@@ -134,25 +134,25 @@ L103:   sub     eax, _caml_young_ptr         ; eax = - size
         pop     eax                     ; recover desired size
         jmp     _caml_allocN
 
-; Call a C function from Caml 
+; Call a C function from Caml
 
         PUBLIC  _caml_c_call
         ALIGN  4
 _caml_c_call:
-    ; Record lowest stack address and return address 
+    ; Record lowest stack address and return address
         mov	edx, [esp]
         mov	_caml_last_return_address, edx
         lea	edx, [esp+4]
         mov	_caml_bottom_of_stack, edx
-    ; Call the function (address in %eax) 
+    ; Call the function (address in %eax)
         jmp	eax
 
-; Start the Caml program 
+; Start the Caml program
 
         PUBLIC  _caml_start_program
         ALIGN  4
 _caml_start_program:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push	ebx
         push	esi
         push	edi
@@ -163,20 +163,20 @@ _caml_start_program:
 ; Code shared between caml_start_program and callback*
 
 L106:
-    ; Build a callback link 
+    ; Build a callback link
         push    _caml_gc_regs
         push	_caml_last_return_address
         push	_caml_bottom_of_stack
-    ; Build an exception handler 
+    ; Build an exception handler
         push	L108
         push	_caml_exception_pointer
         mov	_caml_exception_pointer, esp
-    ; Call the Caml code 
+    ; Call the Caml code
         call	esi
 L107:
-    ; Pop the exception handler 
+    ; Pop the exception handler
         pop	_caml_exception_pointer
-        pop	esi    		; dummy register 
+        pop	esi             ; dummy register
 L109:
     ; Pop the callback link, restoring the global variables
     ; used by caml_c_call
@@ -188,8 +188,8 @@ L109:
         pop	edi
         pop	esi
         pop	ebx
-    ; Return to caller. 
-        ret	
+    ; Return to caller.
+        ret
 L108:
     ; Exception handler
     ; Mark the bucket as an exception result and return it
@@ -205,7 +205,7 @@ _caml_raise_exn:
         jne     L110
         mov	esp, _caml_exception_pointer
         pop	_caml_exception_pointer
-        ret	
+        ret
 L110:
         mov     esi, eax                ; Save exception bucket in esi
         mov     edi, _caml_exception_pointer ; SP of handler
@@ -221,7 +221,7 @@ L110:
         pop     _caml_exception_pointer
         ret
 
-; Raise an exception from C 
+; Raise an exception from C
 
         PUBLIC  _caml_raise_exception
         ALIGN  4
@@ -231,7 +231,7 @@ _caml_raise_exception:
         mov	eax, [esp+4]
         mov	esp, _caml_exception_pointer
         pop	_caml_exception_pointer
-        ret	
+        ret
 L111:
         mov     esi, [esp+4]            ; Save exception bucket in esi
         push    _caml_exception_pointer ; arg 4: SP of handler
@@ -244,51 +244,51 @@ L111:
         pop     _caml_exception_pointer
         ret
 
-; Callback from C to Caml 
+; Callback from C to Caml
 
         PUBLIC  _caml_callback_exn
         ALIGN  4
 _caml_callback_exn:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push	ebx
         push	esi
         push	edi
         push	ebp
-    ; Initial loading of arguments 
-        mov	ebx, [esp+20]   ; closure 
-        mov	eax, [esp+24]   ; argument 
+    ; Initial loading of arguments
+        mov	ebx, [esp+20]   ; closure
+        mov	eax, [esp+24]   ; argument
         mov	esi, [ebx]      ; code pointer
         jmp     L106
 
         PUBLIC  _caml_callback2_exn
         ALIGN  4
 _caml_callback2_exn:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push	ebx
         push	esi
         push	edi
         push	ebp
-    ; Initial loading of arguments 
-        mov	ecx, [esp+20]   ; closure 
-        mov	eax, [esp+24]   ; first argument 
-        mov	ebx, [esp+28]   ; second argument 
-        mov	esi, offset _caml_apply2   ; code pointer 
+    ; Initial loading of arguments
+        mov	ecx, [esp+20]   ; closure
+        mov	eax, [esp+24]   ; first argument
+        mov	ebx, [esp+28]   ; second argument
+        mov	esi, offset _caml_apply2   ; code pointer
         jmp	L106
 
         PUBLIC  _caml_callback3_exn
         ALIGN	4
 _caml_callback3_exn:
-    ; Save callee-save registers 
+    ; Save callee-save registers
         push	ebx
         push	esi
         push	edi
         push	ebp
-    ; Initial loading of arguments 
-        mov	edx, [esp+20]   ; closure 
-        mov	eax, [esp+24]   ; first argument 
-        mov	ebx, [esp+28]   ; second argument 
-        mov	ecx, [esp+32]   ; third argument 
-        mov	esi, offset _caml_apply3   ; code pointer 
+    ; Initial loading of arguments
+        mov	edx, [esp+20]   ; closure
+        mov	eax, [esp+24]   ; first argument
+        mov	ebx, [esp+28]   ; second argument
+        mov	ecx, [esp+32]   ; third argument
+        mov	esi, offset _caml_apply3   ; code pointer
         jmp	L106
 
         PUBLIC  _caml_ml_array_bound_error
@@ -310,14 +310,13 @@ _caml_ml_array_bound_error:
         .DATA
         PUBLIC  _caml_system__frametable
 _caml_system__frametable LABEL DWORD
-        DWORD   1               ; one descriptor 
-        DWORD   L107            ; return address into callback 
-        WORD    -1              ; negative frame size => use callback link 
-        WORD    0               ; no roots here 
+        DWORD   1               ; one descriptor
+        DWORD   L107            ; return address into callback
+        WORD    -1              ; negative frame size => use callback link
+        WORD    0               ; no roots here
 
         PUBLIC  _caml_extra_params
 _caml_extra_params LABEL DWORD
         BYTE    64 DUP (?)
 
         END
-

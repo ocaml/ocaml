@@ -23,26 +23,26 @@ let vert wid =
   and last_last = ref 0.0 in
   let rec resize () =
     pending_resize := false;
-    if !debug then 
+    if !debug then
       (Printf.eprintf "%s Resize %d\n"
                       (Widget.name wid) !newsize; flush stderr);
     Text.configure wid [TextHeight !newsize];
     ()
-  and check () = 
-    let first, last = Text.yview_get wid in 
+  and check () =
+    let first, last = Text.yview_get wid in
       check1 first last
 
   and check1 first last =
     let curheight = int_of_string (cget wid CHeight) in
       if !debug then begin
-         Printf.eprintf "%s C %d %f %f\n" 
+         Printf.eprintf "%s C %d %f %f\n"
                         (Widget.name wid) curheight first last;
          flush stderr
          end;
       if first = 0.0 && last = 1.0 then ()
       (* Don't attempt anything if widget is not visible *)
       else if not (Winfo.viewable wid) then begin
-        if !debug then 
+        if !debug then
           (Printf.eprintf "%s C notviewable\n" (Widget.name wid);
            flush stderr);
         (* Try again later *)
@@ -51,7 +51,7 @@ let vert wid =
                check()))
         end
       else  begin
-        let delta = 
+        let delta =
           if last = 0.0 then 1
           else if last = !last_last then
             (* it didn't change since our last resize ! *)

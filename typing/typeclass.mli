@@ -55,9 +55,7 @@ type error =
   | Apply_wrong_label of label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
-  | Unbound_class of Longident.t
   | Unbound_class_2 of Longident.t
-  | Unbound_class_type of Longident.t
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Constructor_type_mismatch of string * (type_expr * type_expr) list
@@ -75,6 +73,7 @@ type error =
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
   | Mutability_mismatch of string * mutable_flag
+  | No_overriding of string * string
 
 exception Error of Location.t * error
 

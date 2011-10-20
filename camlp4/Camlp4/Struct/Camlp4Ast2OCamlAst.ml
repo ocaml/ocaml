@@ -74,13 +74,15 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> { (t) with ptyp_desc = Ptyp_poly [] t } ]
   ;
 
-  value mb2b =
-    fun
-    [ Ast.BTrue -> True
-    | Ast.BFalse -> False
-    | Ast.BAnt _ -> assert False ];
+  value mkvirtual = fun
+    [ <:virtual_flag< virtual >> -> Virtual
+    | <:virtual_flag<>> -> Concrete
+    | _ -> assert False ];
 
-  value mkvirtual m = if mb2b m then Virtual else Concrete;
+  value mkdirection = fun
+    [ <:direction_flag< to >> -> Upto
+    | <:direction_flag< downto >> -> Downto
+    | _ -> assert False ];
 
   value lident s = Lident s;
   value ldot l s = Ldot l s;
@@ -110,9 +112,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value mkrf =
     fun
-    [ Ast.BTrue -> Recursive
-    | Ast.BFalse -> Nonrecursive
-    | Ast.BAnt _ -> assert False ];
+    [ <:rec_flag< rec >> -> Recursive
+    | <:rec_flag<>> -> Nonrecursive
+    | _ -> assert False ];
 
   value mkli s = loop lident
     where rec loop f =
@@ -232,6 +234,9 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mktyp loc (Ptyp_object (meth_list fl [mkfield loc Pfield_var]))
     | TyCls loc id ->
         mktyp loc (Ptyp_class (ident id) [] [])
+    | <:ctyp@loc< (module $pt$) >> ->
+        let (i, cs) = package_type pt in
+        mktyp loc (Ptyp_package i cs)
     | TyLab loc _ _ -> error loc "labelled type not allowed here"
     | TyMan loc _ _ -> error loc "manifest type not allowed here"
     | TyOlb loc _ _ -> error loc "labelled type not allowed here"
@@ -256,7 +261,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | TyAnt loc _ -> error loc "antiquotation not allowed here"
     | TyOfAmp _ _ _ |TyAmp _ _ _ |TySta _ _ _ |
       TyCom _ _ _ |TyVrn _ _ |TyQuM _ _ |TyQuP _ _ |TyDcl _ _ _ _ _ |
-      TyObj _ _ (BAnt _) | TyNil _ | TyTup _ _ ->
+      TyObj _ _ (RvAnt _) | TyNil _ | TyTup _ _ ->
         assert False ]
   and row_field = fun
     [ <:ctyp<>> -> []
@@ -276,6 +281,22 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp@loc< $lid:lab$ : $t$ >> ->
         [mkfield loc (Pfield lab (mkpolytype (ctyp t))) :: acc]
     | _ -> assert False ]
+
+  and package_type_constraints wc acc =
+    match wc with
+    [ <:with_constr<>> -> acc
+    | <:with_constr< type $lid:id$ = $ct$ >> ->
+        [(id, ctyp ct) :: acc]
+    | <:with_constr< $wc1$ and $wc2$ >> ->
+        package_type_constraints wc1 (package_type_constraints wc2 acc)
+    | _ -> error (loc_of_with_constr wc) "unexpected `with constraint' for a package type" ]
+
+  and package_type : module_type -> package_type =
+    fun
+    [ <:module_type< $id:i$ with $wc$ >> ->
+      (long_uident i, package_type_constraints wc [])
+    | <:module_type< $id:i$ >> -> (long_uident i, [])
+    | mt -> error (loc_of_module_type mt) "unexpected package type" ]
   ;
 
   value mktype loc tl cl tk tp tm =
@@ -285,7 +306,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
      ptype_variance = variance}
   ;
   value mkprivate' m = if m then Private else Public;
-  value mkprivate m = mkprivate' (mb2b m);
+  value mkprivate = fun
+    [ <:private_flag< private >> -> Private
+    | <:private_flag<>> -> Public
+    | _ -> assert False ];
   value mktrecord =
     fun
     [ <:ctyp@loc< $lid:s$ : mutable $t$ >> ->
@@ -332,7 +356,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | Ast.LCons x xs -> [x :: list_of_meta_list xs]
     | Ast.LAnt _ -> assert False ];
 
-  value mkmutable m = if mb2b m then Mutable else Immutable;
+  value mkmutable = fun
+    [ <:mutable_flag< mutable >> -> Mutable
+    | <:mutable_flag<>> -> Immutable
+    | _ -> assert False ];
 
   value paolab lab p =
     match (lab, p) with
@@ -370,22 +397,28 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:ctyp< $id:i$ >> -> (ident i, acc)
     | _ -> assert False ];
 
+  value mkwithtyp pwith_type loc id_tpl ct =
+    let (id, tpl) = type_parameters_and_type_name id_tpl [] in
+    let (params, variance) = List.split tpl in
+    let (kind, priv, ct) = opt_private_ctyp ct in
+    (id, pwith_type
+      {ptype_params = params; ptype_cstrs = [];
+        ptype_kind = kind;
+        ptype_private = priv;
+        ptype_manifest = Some ct;
+        ptype_loc = mkloc loc; ptype_variance = variance});
+
   value rec mkwithc wc acc =
     match wc with
-    [ WcNil _ -> acc
-    | WcTyp loc id_tpl ct ->
-        let (id, tpl) = type_parameters_and_type_name id_tpl [] in
-        let (params, variance) = List.split tpl in
-        let (kind, priv, ct) = opt_private_ctyp ct in
-        [(id,
-        Pwith_type
-          {ptype_params = params; ptype_cstrs = [];
-            ptype_kind = kind;
-            ptype_private = priv;
-            ptype_manifest = Some ct;
-            ptype_loc = mkloc loc; ptype_variance = variance}) :: acc]
-    | WcMod _ i1 i2 ->
+    [ <:with_constr<>> -> acc
+    | <:with_constr@loc< type $id_tpl$ = $ct$ >> ->
+        [mkwithtyp (fun x -> Pwith_type x) loc id_tpl ct :: acc]
+    | <:with_constr< module $i1$ = $i2$ >> ->
         [(long_uident i1, Pwith_module (long_uident i2)) :: acc]
+    | <:with_constr@loc< type $id_tpl$ := $ct$ >> ->
+        [mkwithtyp (fun x -> Pwith_typesubst x) loc id_tpl ct :: acc]
+    | <:with_constr< module $i1$ := $i2$ >> (*WcMoS _ i1 i2*) ->
+        [(long_uident i1, Pwith_modsubst (long_uident i2)) :: acc]
     | <:with_constr< $wc1$ and $wc2$ >> -> mkwithc wc1 (mkwithc wc2 acc)
     | <:with_constr@loc< $anti:_$ >> ->
          error loc "bad with constraint (antiquotation)" ];
@@ -490,7 +523,11 @@ module Make (Ast : Sig.Camlp4Ast) = struct
             mkrangepat loc c1 c2
         | _ -> error loc "range pattern allowed only for characters" ]
     | PaRec loc p ->
-        mkpat loc (Ppat_record (List.map mklabpat (list_of_patt p [])))
+        let ps = list_of_patt p [] in
+        let is_wildcard = fun [ <:patt< _ >> -> True | _ -> False ] in
+        let (wildcards,ps) = List.partition is_wildcard ps in
+        let is_closed = if wildcards = [] then Closed else Open in
+        mkpat loc (Ppat_record (List.map mklabpat ps, is_closed))
     | PaStr loc s ->
         mkpat loc (Ppat_constant (Const_string (string_of_string_token loc s)))
     | <:patt@loc< ($p1$, $p2$) >> ->
@@ -540,6 +577,12 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         in sep_expr_acc l (normalize_acc i)
     | e -> [(loc_of_expr e, [], e) :: l] ]
   ;
+
+  value override_flag loc =
+    fun [ <:override_flag< ! >> -> Override
+        | <:override_flag<>> -> Fresh
+        |  _ -> error loc "antiquotation not allowed here"
+        ];
 
   value list_of_opt_ctyp ot acc =
     match ot with
@@ -639,8 +682,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float (remove_underscores s)))
     | ExFor loc i e1 e2 df el ->
         let e3 = ExSeq loc el in
-        let df = if mb2b df then Upto else Downto in
-        mkexp loc (Pexp_for i (expr e1) (expr e2) df (expr e3))
+        mkexp loc (Pexp_for i (expr e1) (expr e2) (mkdirection df) (expr e3))
     | <:expr@loc< fun [ $PaLab _ lab po$ when $w$ -> $e$ ] >> ->
         mkexp loc
           (Pexp_function lab None
@@ -731,6 +773,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | ExWhi loc e1 el ->
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
+    | <:expr@loc< let open $i$ in $e$ >> ->
+        mkexp loc (Pexp_open (long_uident i) (expr e))
+    | <:expr@loc< (module $me$ : $pt$) >> ->
+        mkexp loc (Pexp_pack (module_expr me) (package_type pt))
+    | <:expr@loc< (module $_$) >> ->
+        error loc "(module_expr : package_type) expected here"
+    | ExFUN loc i e ->
+        mkexp loc (Pexp_newtype i (expr e))
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
     | <:expr@loc< $_$;$_$ >> ->
         error loc "expr; expr: not allowed here, use do {...} or [|...|] to surround them"
@@ -752,6 +802,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     match x with
     [ <:binding< $x$ and $y$ >> ->
          binding x (binding y acc)
+    | <:binding@_loc< $p$ = ($e$ : ! $vs$ . $ty$) >> ->
+        [(patt <:patt< ($p$ : ! $vs$ . $ty$ ) >>, expr e) :: acc]
     | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
     | <:binding<>> -> acc
     | _ -> assert False ]
@@ -804,6 +856,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkmty loc (Pmty_signature (sig_item sl []))
     | <:module_type@loc< $mt$ with $wc$ >> ->
         mkmty loc (Pmty_with (module_type mt) (mkwithc wc []))
+    | <:module_type@loc< module type of $me$ >> ->
+        mkmty loc (Pmty_typeof (module_expr me))
     | <:module_type< $anti:_$ >> -> assert False ]
   and sig_item s l =
     match s with
@@ -865,6 +919,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         mkmod loc (Pmod_structure (str_item sl []))
     | <:module_expr@loc< ($me$ : $mt$) >> ->
         mkmod loc (Pmod_constraint (module_expr me) (module_type mt))
+    | <:module_expr@loc< (value $e$ : $pt$) >> ->
+        mkmod loc (Pmod_unpack (expr e) (package_type pt))
+    | <:module_expr@loc< (value $_$) >> ->
+        error loc "(value expr) not supported yet"
     | <:module_expr@loc< $anti:_$ >> -> error loc "antiquotation in module_expr" ]
   and str_item s l =
     match s with
@@ -900,7 +958,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | <:str_item@loc< $anti:_$ >> -> error loc "antiquotation in str_item" ]
   and class_type =
     fun
-    [ CtCon loc Ast.BFalse id tl ->
+    [ CtCon loc ViNil id tl ->
         mkcty loc
           (Pcty_constr (long_class_ident id) (List.map ctyp (list_of_opt_ctyp tl [])))
     | CtFun loc (TyLab _ lab t) ct ->
@@ -930,7 +988,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         [ <:ctyp<>> -> (loc, ([], []))
         | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
       in
-      {pci_virt = if mb2b vir then Virtual else Concrete;
+      {pci_virt = mkvirtual vir;
        pci_params = (params, mkloc loc_params);
        pci_name = name;
        pci_expr = class_expr ce;
@@ -946,7 +1004,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         [ <:ctyp<>> -> (loc, ([], []))
         | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
       in
-      {pci_virt = if mb2b vir then Virtual else Concrete;
+      {pci_virt = mkvirtual vir;
        pci_params = (params, mkloc loc_params);
        pci_name = name;
        pci_expr = class_type ct;
@@ -974,7 +1032,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let (ce, el) = class_expr_fa [] c in
         let el = List.map label_expr el in
         mkpcl loc (Pcl_apply (class_expr ce) el)
-    | CeCon loc Ast.BFalse id tl ->
+    | CeCon loc ViNil id tl ->
         mkpcl loc
           (Pcl_constr (long_class_ident id) (List.map ctyp (list_of_opt_ctyp tl [])))
     | CeFun loc (PaLab _ lab po) ce ->
@@ -1009,21 +1067,23 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | CrCtr loc t1 t2 -> [Pcf_cstr (ctyp t1, ctyp t2, mkloc loc) :: l]
     | <:class_str_item< $cst1$; $cst2$ >> ->
         class_str_item cst1 (class_str_item cst2 l)
-    | CrInh _ ce "" -> [Pcf_inher (class_expr ce) None :: l]
-    | CrInh _ ce pb -> [Pcf_inher (class_expr ce) (Some pb) :: l]
+    | CrInh loc ov ce pb ->
+        let opb = if pb = "" then None else Some pb in
+        [Pcf_inher (override_flag loc ov) (class_expr ce) opb :: l]
     | CrIni _ e -> [Pcf_init (expr e) :: l]
-    | CrMth loc s b e t ->
+    | CrMth loc s ov pf e t ->
         let t =
           match t with
           [ <:ctyp<>> -> None
           | t -> Some (mkpolytype (ctyp t)) ] in
         let e = mkexp loc (Pexp_poly (expr e) t) in
-        [Pcf_meth (s, mkprivate b, e, mkloc loc) :: l]
-    | CrVal loc s b e -> [Pcf_val (s, mkmutable b, expr e, mkloc loc) :: l]
-    | CrVir loc s b t ->
-        [Pcf_virt (s, mkprivate b, mkpolytype (ctyp t), mkloc loc) :: l]
-    | CrVvr loc s b t ->
-        [Pcf_valvirt (s, mkmutable b, ctyp t, mkloc loc) :: l]
+        [Pcf_meth (s, mkprivate pf, override_flag loc ov, e, mkloc loc) :: l]
+    | CrVal loc s ov mf e ->
+        [Pcf_val (s, mkmutable mf, override_flag loc ov, expr e, mkloc loc) :: l]
+    | CrVir loc s pf t ->
+        [Pcf_virt (s, mkprivate pf, mkpolytype (ctyp t), mkloc loc) :: l]
+    | CrVvr loc s mf t ->
+        [Pcf_valvirt (s, mkmutable mf, ctyp t, mkloc loc) :: l]
     | CrAnt _ _ -> assert False ];
 
   value sig_item ast = sig_item ast [];

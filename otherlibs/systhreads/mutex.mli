@@ -47,4 +47,3 @@ val try_lock : t -> bool
 val unlock : t -> unit
 (** Unlock the given mutex. Other threads suspended trying to lock
    the mutex will restart. *)
-

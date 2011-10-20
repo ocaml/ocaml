@@ -83,7 +83,7 @@ module Make(U:sig end) =
         let ocamlbuildlib = ocamlbuildlib-.-cma in
         let ocamlbuild = ocamlbuild-.-cmo in
         let dir = !Ocamlbuild_where.libdir in
-        if not (sys_file_exists (dir/ocamlbuildlib)) then 
+        if not (sys_file_exists (dir/ocamlbuildlib)) then
           failwith (sprintf "Cannot find %S in ocamlbuild -where directory" ocamlbuildlib);
         let dir = if Pathname.is_implicit dir then Pathname.pwd/dir else dir in
         let cmd =
@@ -103,8 +103,9 @@ module Make(U:sig end) =
           Shell.chdir Pathname.pwd;
           if not !Options.just_plugin then
             let runner = if !Options.native_plugin then N else !Options.ocamlrun in
+            let argv = List.tl (Array.to_list Sys.argv) in
             let spec = S[runner; P(!Options.build_dir/plugin^(!Options.exe));
-                         A"-no-plugin"; atomize (List.tl (Array.to_list Sys.argv))] in
+                         A"-no-plugin"; atomize (List.filter (fun s -> s <> "-plugin-option") argv)] in
             let () = Log.finish () in
             raise (Exit_silently_with_code (sys_command (Command.string_of_command_spec spec)))
         end

@@ -21,4 +21,3 @@ let version = "$Id$"
 let resizeable t =
   update_idletasks(); (* wait until layout is computed *)
   Wm.minsize_set t (Winfo.width t) (Winfo.height t)
-

@@ -30,7 +30,9 @@ external file_exists : string -> bool = "caml_sys_file_exists"
 external is_directory : string -> bool = "caml_sys_is_directory"
 (** Returns [true] if the given name refers to a directory,
     [false] if it refers to another kind of file.
-    Raise [Sys_error] if no file exists with the given name. *)
+    Raise [Sys_error] if no file exists with the given name.
+    @since 3.10.0
+*)
 
 external remove : string -> unit = "caml_sys_remove"
 (** Remove the given file name from the file system. *)

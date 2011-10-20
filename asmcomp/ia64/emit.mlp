@@ -347,7 +347,7 @@ let insimm opc arg imm res =
   for i = 0 to Array.length arg - 1 do
     Hashtbl.add code_uses arg.(i) node
   done;
-  (* Insert in appropriate queue *)  
+  (* Insert in appropriate queue *)
   if node.instr.kind = KB
   then add_branch node
   else if node.ancestors = 0 then add_ready node
@@ -359,7 +359,7 @@ let insert opc arg res =
 
 let rec longest_path node =
   if node.length < 0 then begin
-    node.length <- 
+    node.length <-
       List.fold_left
         (fun len (son, delay) -> max len (longest_path son + delay))
         0 node.sons
@@ -447,10 +447,10 @@ let can_issue instr =
     | KF ->
         if !num_F < 2 then (incr num_F; true) else false
     | KI ->
-        if !num_I < 2 && !num_A + !num_I + !num_M < 4 
+        if !num_I < 2 && !num_A + !num_I + !num_M < 4
         then (incr num_I; true) else false
     | KM ->
-        if !num_M < 2 && !num_A + !num_I + !num_M < 4 
+        if !num_M < 2 && !num_A + !num_I + !num_M < 4
         then (incr num_M; true) else false
     | _  (* KB | KB_exc *) ->
         if !num_B < 3 then (incr num_B; true) else false
@@ -481,7 +481,7 @@ let emit_node date node =
       end)
     node.sons
 
-(* Emit all ready nodes that we can emit given the architectural 
+(* Emit all ready nodes that we can emit given the architectural
    constraints. *)
 
 let rec emit_ready_nodes filter date =
@@ -561,7 +561,7 @@ let end_basic_block () =
   (* Compute critical paths and rebuild ready queue sorted by
      decreasing criticality *)
   let r = !ready_queue in
-  ready_queue := []; 
+  ready_queue := [];
   let max_length =
     List.fold_left (fun len node -> max len (longest_path node)) 0 r in
   List.iter add_ready r;
@@ -760,7 +760,7 @@ let is_immediate_adds n = n >= -0x2000 && n < 0x2000
 
 let ones_pos n =
   let rec ones p accu =
-    if p >= 63 
+    if p >= 63
     then accu
     else ones (p+1) (if n land (1 lsl p) = 0 then accu else p :: accu) in
   ones 0 []
@@ -795,7 +795,7 @@ let emit_instr i =
       Lend -> ()
     | Lop(Imove | Ispill | Ireload) ->
         let src = i.arg.(0) and dst = i.res.(0) in
-        if src.loc <> dst.loc then begin        
+        if src.loc <> dst.loc then begin
           match (src.loc, dst.loc) with
             (Reg _, Reg _) ->
               insert "mov" (regs i.arg) (regs i.res)
@@ -1198,7 +1198,7 @@ let emit_instr i =
     | Lpushtrap ->
         end_basic_block();
         stack_offset := !stack_offset + 16;
-        (* Store trap pointer at sp, handler addr at sp+8, 
+        (* Store trap pointer at sp, handler addr at sp+8,
            and decrement sp by 16.  Remember, the bottom 16 bytes
            of the stack must be left free. *)
         `	add     r3 = 8, sp\n`;

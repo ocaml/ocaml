@@ -21,7 +21,7 @@ let ocaml_standard_library = Camlp4_import.Config.standard_library;;
 
 let camlp4_standard_library =
   try Sys.getenv "CAMLP4LIB"
-  with Not_found -> 
+  with Not_found ->
     Filename.concat ocaml_standard_library "camlp4";;
 
 let version = Sys.ocaml_version;;

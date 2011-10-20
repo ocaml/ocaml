@@ -29,7 +29,7 @@ value out_channel =
     open_out_gen [Open_wronly; Open_creat; Open_append; Open_text]
                  0o666 f
   with
-  [ Not_found -> stderr ];
+  [ Not_found -> Pervasives.stderr ];
 
 module StringSet = Set.Make String;
 
@@ -45,7 +45,7 @@ value mode =
           StringSet.add (String.sub str i (String.length str - i)) acc ] in
     let sections = loop StringSet.empty 0 in
     if StringSet.mem "*" sections then fun _ -> True
-    else fun x -> StringSet.mem x sections 
+    else fun x -> StringSet.mem x sections
   with [ Not_found -> fun _ -> False ];
 
 value formatter =

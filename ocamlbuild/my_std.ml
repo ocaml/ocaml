@@ -35,7 +35,7 @@ module Outcome = struct
     | Bad exn -> raise exn
 
   let wrap f x =
-    try Good (f x) with e -> Bad e 
+    try Good (f x) with e -> Bad e
 
 end
 
@@ -137,7 +137,7 @@ module String = struct
 
   let before s pos = sub s 0 pos
   let after s pos = sub s pos (length s - pos)
-  let first_chars s n = sub s 0 n 
+  let first_chars s n = sub s 0 n
   let last_chars s n = sub s (length s - n) n
 
   let rec eq_sub_strings s1 p1 s2 p2 len =
@@ -260,7 +260,7 @@ let filename_concat x y =
   if x.[String.length x - 1] = '/' then
     if y = "" then x
     else x ^ y
-  else x ^ "/" ^ y  
+  else x ^ "/" ^ y
 
 (* let reslash =
   match Sys.os_type with

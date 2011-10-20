@@ -347,4 +347,3 @@ void print_gotos(int stateno)
             fprintf(verbose_file, "\t%s  goto %d\n", symbol_name[as], k);
     }
 }
-

@@ -80,7 +80,7 @@ caml_allocN:
         .set    at
         ret     ($26)
         .end    caml_allocN
-        
+
         .globl  caml_call_gc
         .ent    caml_call_gc
         .align  3

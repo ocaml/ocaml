@@ -121,7 +121,7 @@ static char * searchpath(char * name)
   return name;
 }
 
-#endif  
+#endif
 
 static unsigned long read_size(char * ptr)
 {

@@ -65,7 +65,9 @@ val set_trace: bool -> bool
     executes the parsers prints a trace of its actions (reading a token,
     shifting a state, reducing by a rule) on standard output.
     [Parsing.set_trace false] turns this debugging trace off.
-    The boolean returned is the previous state of the trace flag. *)
+    The boolean returned is the previous state of the trace flag.
+    @since 3.11.0
+*)
 
 (**/**)
 

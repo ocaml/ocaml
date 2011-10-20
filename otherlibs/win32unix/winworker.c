@@ -47,30 +47,25 @@ LPWORKER lpWorkers       = NULL;
 DWORD    nWorkersCurrent = 0;
 DWORD    nWorkersMax     = 0;
 HANDLE   hWorkersMutex   = INVALID_HANDLE_VALUE;
-HANDLE   hWorkerHeap     = INVALID_HANDLE_VALUE;
 
 DWORD WINAPI worker_wait (LPVOID _data)
 {
   BOOL     bExit;
   LPWORKER lpWorker;
- 
+
   lpWorker = (LPWORKER )_data;
   bExit    = FALSE;
 
-#ifdef DBUG
-  dbug_print("Worker %x starting", lpWorker);
-#endif
+  DEBUG_PRINT("Worker %x starting", lpWorker);
   while (
-      !bExit 
+      !bExit
       && SignalObjectAndWait(
-        lpWorker->hWorkerReady, 
+        lpWorker->hWorkerReady,
         lpWorker->hCommandReady,
-        INFINITE, 
+        INFINITE,
         TRUE) == WAIT_OBJECT_0)
   {
-#ifdef DBUG
-    dbug_print("Worker %x running", lpWorker);
-#endif
+    DEBUG_PRINT("Worker %x running", lpWorker);
     switch (lpWorker->ECommand)
     {
       case WORKER_CMD_NONE:
@@ -90,9 +85,7 @@ DWORD WINAPI worker_wait (LPVOID _data)
         break;
     }
   };
-#ifdef DBUG
-  dbug_print("Worker %x exiting", lpWorker);
-#endif
+  DEBUG_PRINT("Worker %x exiting", lpWorker);
 
   return 0;
 }
@@ -101,13 +94,7 @@ LPWORKER worker_new (void)
 {
   LPWORKER lpWorker = NULL;
 
-  if (!HeapLock(hWorkerHeap))
-  {
-    win32_maperr(GetLastError());
-    uerror("worker_new", Nothing);
-  };
-  lpWorker = (LPWORKER)HeapAlloc(hWorkerHeap, 0, sizeof(WORKER));
-  HeapUnlock(hWorkerHeap);
+  lpWorker = (LPWORKER)caml_stat_alloc(sizeof(WORKER));
   list_init((LPLIST)lpWorker);
   lpWorker->hJobStarted  = CreateEvent(NULL, TRUE, FALSE, NULL);
   lpWorker->hJobStop     = CreateEvent(NULL, TRUE, FALSE, NULL);
@@ -117,11 +104,11 @@ LPWORKER worker_new (void)
   lpWorker->hCommandReady      = CreateEvent(NULL, FALSE, FALSE, NULL);
   lpWorker->ECommand           = WORKER_CMD_NONE;
   lpWorker->hThread = CreateThread(
-    NULL, 
-    THREAD_WORKERS_MEM, 
-    worker_wait, 
-    (LPVOID)lpWorker, 
-    0, 
+    NULL,
+    THREAD_WORKERS_MEM,
+    worker_wait,
+    (LPVOID)lpWorker,
+    0,
     NULL);
 
   return lpWorker;
@@ -130,18 +117,14 @@ LPWORKER worker_new (void)
 void worker_free (LPWORKER lpWorker)
 {
   /* Wait for termination of the worker */
-#ifdef DBUG
-  dbug_print("Shutting down worker %x", lpWorker);
-#endif
+  DEBUG_PRINT("Shutting down worker %x", lpWorker);
   WaitForSingleObject(lpWorker->hWorkerReady, INFINITE);
   lpWorker->ECommand = WORKER_CMD_STOP;
   SetEvent(lpWorker->hCommandReady);
   WaitForSingleObject(lpWorker->hThread, INFINITE);
 
   /* Free resources */
-#ifdef DBUG
-  dbug_print("Freeing resources of worker %x", lpWorker);
-#endif
+  DEBUG_PRINT("Freeing resources of worker %x", lpWorker);
   if (lpWorker->hThread != INVALID_HANDLE_VALUE)
   {
     CloseHandle(lpWorker->hThread);
@@ -181,13 +164,7 @@ void worker_free (LPWORKER lpWorker)
     lpWorker->hCommandReady = INVALID_HANDLE_VALUE;
   }
 
-  if (!HeapLock(hWorkerHeap))
-  {
-    win32_maperr(GetLastError());
-    uerror("worker_new", Nothing);
-  };
-  HeapFree(hWorkerHeap, 0, lpWorker);
-  HeapUnlock(hWorkerHeap);
+  caml_stat_free(lpWorker);
 };
 
 LPWORKER worker_pop (void)
@@ -203,12 +180,10 @@ LPWORKER worker_pop (void)
   }
   nWorkersCurrent++;
   nWorkersMax = (nWorkersCurrent > nWorkersMax ? nWorkersCurrent : nWorkersMax);
-#ifdef DBUG
-  dbug_print("Workers running current/runnning max/waiting: %d/%d/%d",
+  DEBUG_PRINT("Workers running current/runnning max/waiting: %d/%d/%d",
       nWorkersCurrent,
       nWorkersMax,
       list_length((LPLIST)lpWorkers));
-#endif
   ReleaseMutex(hWorkersMutex);
 
   if (lpWorkerFree == NULL)
@@ -236,34 +211,24 @@ void worker_push(LPWORKER lpWorker)
   bFreeWorker = TRUE;
 
   WaitForSingleObject(hWorkersMutex, INFINITE);
-#ifdef DBUG
-  dbug_print("Testing if we are under the maximum number of running workers");
-#endif
+  DEBUG_PRINT("Testing if we are under the maximum number of running workers");
   if (list_length((LPLIST)lpWorkers) < THREAD_WORKERS_MAX)
   {
-#ifdef DBUG
-    dbug_print("Saving this worker for future use");
-#endif
-#ifdef DBUG
-    dbug_print("Next: %x", ((LPLIST)lpWorker)->lpNext);
-#endif
+    DEBUG_PRINT("Saving this worker for future use");
+    DEBUG_PRINT("Next: %x", ((LPLIST)lpWorker)->lpNext);
     lpWorkers = (LPWORKER)list_concat((LPLIST)lpWorker, (LPLIST)lpWorkers);
     bFreeWorker = FALSE;
   };
   nWorkersCurrent--;
-#ifdef DBUG
-  dbug_print("Workers running current/runnning max/waiting: %d/%d/%d",
+  DEBUG_PRINT("Workers running current/runnning max/waiting: %d/%d/%d",
       nWorkersCurrent,
       nWorkersMax,
       list_length((LPLIST)lpWorkers));
-#endif
   ReleaseMutex(hWorkersMutex);
 
   if (bFreeWorker)
   {
-#ifdef DBUG
-    dbug_print("Freeing worker %x", lpWorker);
-#endif
+    DEBUG_PRINT("Freeing worker %x", lpWorker);
     worker_free(lpWorker);
   }
 }
@@ -275,17 +240,10 @@ void worker_init (void)
   /* Init a shared variable. The only way to ensure that no other
      worker will be at the same point is to use a critical section.
      */
-#ifdef DBUG
-  dbug_print("Allocating mutex for workers");
-#endif
+  DEBUG_PRINT("Allocating mutex for workers");
   if (hWorkersMutex == INVALID_HANDLE_VALUE)
   {
     hWorkersMutex = CreateMutex(NULL, FALSE, NULL);
-  }
-
-  if (hWorkerHeap == INVALID_HANDLE_VALUE)
-  {
-    hWorkerHeap = HeapCreate(0, sizeof(WORKER) * THREAD_WORKERS_MAX * 4, 0);
   }
 }
 
@@ -300,22 +258,18 @@ void worker_cleanup(void)
   if (hWorkersMutex != INVALID_HANDLE_VALUE)
   {
     WaitForSingleObject(hWorkersMutex, INFINITE);
-#ifdef DBUG
-    dbug_print("Freeing global resource of workers");
-#endif
+    DEBUG_PRINT("Freeing global resource of workers");
     /* Empty the queue of worker worker */
     while (lpWorkers != NULL)
     {
       ReleaseMutex(hWorkersMutex);
       lpWorker = worker_pop();
-#ifdef DBUG
-      dbug_print("Freeing worker %x", lpWorker);
-#endif
+      DEBUG_PRINT("Freeing worker %x", lpWorker);
       WaitForSingleObject(hWorkersMutex, INFINITE);
       worker_free(lpWorker);
     };
     ReleaseMutex(hWorkersMutex);
-    
+
     /* Destroy associated mutex */
     CloseHandle(hWorkersMutex);
     hWorkersMutex = INVALID_HANDLE_VALUE;
@@ -326,24 +280,18 @@ LPWORKER worker_job_submit (WORKERFUNC f, void *user_data)
 {
   LPWORKER lpWorker = worker_pop();
 
-#ifdef DBUG
-  dbug_print("Waiting for worker to be ready");
-#endif
+  DEBUG_PRINT("Waiting for worker to be ready");
   enter_blocking_section();
   WaitForSingleObject(lpWorker->hWorkerReady, INFINITE);
   ResetEvent(lpWorker->hWorkerReady);
   leave_blocking_section();
-#ifdef DBUG
-  dbug_print("Worker is ready");
-#endif
+  DEBUG_PRINT("Worker is ready");
 
   lpWorker->hJobFunc      = f;
   lpWorker->lpJobUserData = user_data;
   lpWorker->ECommand      = WORKER_CMD_EXEC;
 
-#ifdef DBUG
-  dbug_print("Call worker (func: %x, worker: %x)", f, lpWorker);
-#endif
+  DEBUG_PRINT("Call worker (func: %x, worker: %x)", f, lpWorker);
   SetEvent(lpWorker->hCommandReady);
 
   return (LPWORKER)lpWorker;
@@ -356,20 +304,14 @@ HANDLE worker_job_event_done (LPWORKER lpWorker)
 
 void worker_job_stop (LPWORKER lpWorker)
 {
-#ifdef DBUG
-  dbug_print("Sending stop signal to worker %x", lpWorker);
-#endif
+  DEBUG_PRINT("Sending stop signal to worker %x", lpWorker);
   SetEvent(lpWorker->hJobStop);
-#ifdef DBUG
-  dbug_print("Signal sent to worker %x", lpWorker);
-#endif
+  DEBUG_PRINT("Signal sent to worker %x", lpWorker);
 }
 
 void worker_job_finish (LPWORKER lpWorker)
 {
-#ifdef DBUG
-  dbug_print("Finishing call of worker %x", lpWorker);
-#endif
+  DEBUG_PRINT("Finishing call of worker %x", lpWorker);
   enter_blocking_section();
   WaitForSingleObject(lpWorker->hJobDone, INFINITE);
   leave_blocking_section();

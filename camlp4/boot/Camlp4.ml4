@@ -35,7 +35,6 @@ module Struct = struct
     sig INCLUDE "camlp4/Camlp4/Struct/FreeVars.mli"; end =
     struct INCLUDE "camlp4/Camlp4/Struct/FreeVars.ml"; end;
   module Grammar = struct
-    module Context = struct INCLUDE "camlp4/Camlp4/Struct/Grammar/Context.ml"; end;
     module Structure = struct INCLUDE "camlp4/Camlp4/Struct/Grammar/Structure.ml"; end;
     module Search = struct INCLUDE "camlp4/Camlp4/Struct/Grammar/Search.ml"; end;
     (* module Find = struct INCLUDE "camlp4/Camlp4/Struct/Grammar/Find.ml"; end; *)

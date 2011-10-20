@@ -23,18 +23,13 @@ open Types
 open Typedtree
 open Typeopt
 open Lambda
-open Format
 
 type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
-  | Illegal_tuple_expr
-  | Illegal_contracted_expr
-
 
 exception Error of Location.t * error
-exception Contract_fail of Location.t * Path.t option
 
 (* Forward declaration -- to be filled in by Translmod.transl_module *)
 let transl_module =
@@ -297,10 +292,10 @@ let transl_prim prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim.prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
+      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; arg2]
+    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -386,6 +381,7 @@ let check_recursive_lambda idlist lam =
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
+    | Lprim (Pmakearray (Pgenarray), args) -> false
     | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
     | lam -> check idlist lam
@@ -403,9 +399,8 @@ let check_recursive_lambda idlist lam =
         check idlist' body
     | Lprim(Pmakeblock(tag, mut), args) ->
         List.for_all (check idlist) args
-    | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
+    | Lprim(Pmakearray(_), args) ->
         List.for_all (check idlist) args
-    | Lprim (Pmakearray (Pgenarray), args) -> false
     | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
     | lam ->
@@ -533,62 +528,6 @@ let primitive_is_ccall = function
     Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ -> true
   | _ -> false
 
-(* Contracts *)
-
-let raise_blame loc pathop reason = 
-  let filename = match loc.Location.loc_start.Lexing.pos_fname with
-              | "" -> !Location.input_name
-              | x -> x
-  in
-  let func_name = match pathop with
-                  | Some path -> (Path.name path)      
-                  | None ->  "_"
-  in 
-  let ls = loc.Location.loc_start in
-  let le = loc.Location.loc_end in
-  let line = ls.Lexing.pos_lnum in
-  let fst_char = ls.Lexing.pos_cnum - ls.Lexing.pos_bol in
-  let last_char = le.Lexing.pos_cnum - ls.Lexing.pos_bol in
-  let cexn_path = Predef.path_contract_failure in
-  let cexn_ctag = Cstr_exception(cexn_path) in
-  let dummy_type_expr = { desc = Tvar; level = 0; id =0 } in
-  let mkexp ed ty = {exp_desc = ed ; exp_loc = loc; 
-                     exp_type = ty; exp_env = Env.empty} in
-  let cexn_cdesc = { cstr_res = Predef.type_exn;
-                           cstr_args = [dummy_type_expr]; 
-                           cstr_arity = 1;
-                           cstr_tag = cexn_ctag;
-                           cstr_consts = -1;
-                           cstr_nonconsts = -1;
-                           cstr_private = Asttypes.Public } in
-  let chars = String.concat "-" [string_of_int fst_char; 
-                                 string_of_int last_char] in
-
-  let msg = filename ^ ", " ^
-           "line: " ^ (string_of_int line) ^ ", " ^
-           "chars: " ^ chars ^ ", " ^
-           "Blame: " ^ func_name ^ " because " ^ reason in
-  mkexp (Texp_raise (mkexp (Texp_construct (Predef.path_contract_failure, 
-                       cexn_cdesc, [mkexp (Texp_constant (Const_string msg)) 
-                                           Predef.type_string]))
-                           Predef.type_exn)) dummy_type_expr
-
-let contract_exn blame =  match blame with 
-  | Caller (loc, caller_pathop, callee_path) -> 
-     let func_name = match caller_pathop with
-                  | Some path -> (Path.name path)      
-                  | None ->  "_"
-     in
-     let reason = func_name ^ " fails " ^ (Path.name callee_path) ^ 
-                  "'s precondition" in
-     raise_blame loc caller_pathop reason
-  | Callee (loc, path) -> 
-     let reason = (Path.name path) ^ "'s postcondition fails" in
-     raise_blame loc (Some path) reason
-  | _ -> failwith "impossible"
-  
-                   
-
 (* Assertions *)
 
 let assert_failed loc =
@@ -632,12 +571,12 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
-        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, []))
+        Lfunction(Curried, [obj; meth], Lsend(kind, Lvar meth, Lvar obj, [], e.exp_loc))
       else if p.prim_name = "%sendcache" then
         let obj = Ident.create "obj" and meth = Ident.create "meth" in
         let cache = Ident.create "cache" and pos = Ident.create "pos" in
         Lfunction(Curried, [obj; meth; cache; pos],
-                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos]))
+                  Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos], e.exp_loc))
       else
         transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
@@ -648,40 +587,7 @@ and transl_exp0 e =
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
-      (* local contract wrapping *)
-      let rec do_local xs accu = match xs with
-      | [] -> ([], accu)
-      | (p,e)::l -> begin match (p.pat_desc, e.exp_desc) with
-        | (Tpat_var id, Texp_local_contract (ci, ei)) -> 
-            let cdecl = { ttopctr_id = Path.Pident id;
-                       ttopctr_desc = contract_id_in_contract 
-			              Ident.empty accu
-                                      Ident.empty (Some (Pident id)) 
-                                      ci;
-                       ttopctr_type = ci.contract_type;
-                       ttopctr_loc = ci.contract_loc} in
-            let cexpr = contract_id_in_expr Ident.empty accu
-                                      Ident.empty (Some (Pident id)) ei in
-            let new_e = deep_transl_contract cexpr in
-            let (new_l, new_accu) = do_local l (cdecl::accu) in
-          ((p, new_e)::new_l, new_accu)
-        | (Tpat_var id, _) -> let (new_l, new_accu) = do_local l accu in
-               let cexpr = contract_id_in_expr Ident.empty accu
-                                      Ident.empty (Some (Pident id)) e in
-               let new_e = deep_transl_contract cexpr in
-               ((p, new_e)::new_l, new_accu)
-        | _ -> let (new_l, new_accu) = do_local l accu in
-               let cexpr = contract_id_in_expr Ident.empty accu
-                                      Ident.empty None e in
-               let new_e = deep_transl_contract cexpr in
-               ((p, new_e)::new_l, new_accu)
-        end in 
-      let (new_pat_expr_list, local_cdecls) = do_local pat_expr_list [] in 
-      let cbody = contract_id_in_expr Ident.empty local_cdecls 
-                                      Ident.empty None body in
-      let new_body = deep_transl_contract cbody in
-      transl_let rec_flag new_pat_expr_list 
-                 (event_before body (transl_exp new_body))
+      transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
   | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
@@ -708,10 +614,10 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
         let obj = List.hd argl in
-        wrap (Lsend (kind, List.nth argl 1, obj, []))
+        wrap (Lsend (kind, List.nth argl 1, obj, [], e.exp_loc))
       else if p.prim_name = "%sendcache" then
         match argl with [obj; meth; cache; pos] ->
-          wrap (Lsend(Cached, meth, obj, [cache; pos]))
+          wrap (Lsend(Cached, meth, obj, [cache; pos], e.exp_loc))
         | _ -> assert false
       else begin
         let prim = transl_prim p args in
@@ -746,7 +652,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(_, cstr, args) ->
+  | Texp_construct(cstr, args) ->
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -831,11 +737,11 @@ and transl_exp0 e =
       let obj = transl_exp expr in
       let lam =
         match met with
-          Tmeth_val id -> Lsend (Self, Lvar id, obj, [])
+          Tmeth_val id -> Lsend (Self, Lvar id, obj, [], e.exp_loc)
         | Tmeth_name nm ->
             let (tag, cache) = Translobj.meth obj nm in
             let kind = if cache = [] then Public else Cached in
-            Lsend (kind, tag, obj, cache)
+            Lsend (kind, tag, obj, cache, e.exp_loc)
       in
       event_after e lam
   | Texp_new (cl, _) ->
@@ -856,6 +762,8 @@ and transl_exp0 e =
              (Lvar cpy))
   | Texp_letmodule(id, modl, body) ->
       Llet(Strict, id, !transl_module Tcoerce_none None modl, transl_exp body)
+  | Texp_pack modl ->
+      !transl_module Tcoerce_none None modl
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
@@ -871,7 +779,7 @@ and transl_exp0 e =
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Texp_function(_, _)
-      | Texp_construct (_, {cstr_arity = 0}, _)
+      | Texp_construct ({cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
@@ -884,7 +792,7 @@ and transl_exp0 e =
               Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
-          | Tarrow(_,_,_,_) | Ttuple _ | Tobject(_,_) | Tnil | Tvariant _
+          | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil | Tvariant _
               -> transl_exp e
           (* optimize predefined types (excepted float) *)
           | Tconstr(_,_,_) ->
@@ -917,411 +825,6 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
-  | Texp_local_contract (c, e) -> 
-    (* This branch should not be reached as
-       we put c in the contract env at Texp_let *)
-      raise(Error(e.exp_loc,Illegal_contracted_expr)) 
-  | Texp_contract (c, e, callee, caller) -> 
-    (* This branch should not be reached as we expand e |><| c with
-       deep_transl_contract in transmod.ml. The purpose of doing this expansion 
-       at transmod is to expand it only once and send the result tree to 
-       a static contract checker (followed by/or) a dynamic contract checker. For 
-       static contract checking, it basically checks the reachability of Texp_bad. *)   
-      raise(Error(e.exp_loc,Illegal_contracted_expr)) 
-  | Texp_bad bl -> transl_blame bl 
-  | Texp_unr bl -> transl_blame bl
-  | Texp_Lambda (v, e) -> lambda_unit
-  | Texp_App (e, es) -> lambda_unit
-  | Texp_raise exp ->  Lprim (Praise, [transl_exp0 exp]) 
-
-and transl_blame bl = transl_exp0 (contract_exn bl)
-
-(* We expand the wrapped expression (e |><| c) at typedtree level, then do overall
-translation to lambda.
-val transl_contract: Typedtree.expression_desc ->  Typedtree.expression
-*)
-
-and transl_contract cntr e callee caller =
-  let cty  = e.exp_type in
-  let mkpat desc ty = { pat_desc =  desc; 
-                    pat_loc  = e.exp_loc;
-                    pat_type = ty;
-                    pat_env  = e.exp_env } in
-  let mkexp ed ty = {e with exp_desc = ed ; exp_type = ty} in
-  let mkident i ty = Texp_ident (Pident i , { val_type = ty;
-                                              val_kind = Val_reg}) in
-  (* below is the generate Contract_exn pattern *)
-  let cexn_path = Predef.path_contract_failure in
-  let cexn_ctag = Cstr_exception(cexn_path) in
-  let dummy_type_expr = { desc = Tvar; level = 0; id =0 } in
-  let cexn_cdesc = { cstr_res = Predef.type_exn;
-                     cstr_args = [dummy_type_expr];
-                     cstr_arity = 1;
-                     cstr_tag = cexn_ctag;
-                     cstr_consts = -1;
-                     cstr_nonconsts = -1;
-                     cstr_private = Asttypes.Public } in
-  let iexp i ty = Texp_ident (Pident i, 
-                   {val_type = ty; val_kind = Val_reg}) in 
-  let ids = (Ident.create_idents "pn" 4) in
-  let bls = [Predef.type_string; Predef.type_int; 
-             Predef.type_int; Predef.type_string] in
-  let pvars = List.map (fun (i,t) -> mkpat (Tpat_var i) t) 
-         (List.combine ids bls) in
-  let evars = List.map (fun (i,t) -> mkexp (iexp i t) t)
-                  (List.combine ids bls) in
-  let dummy_tuple = { desc = Ttuple bls; level = 0; id =0 } in
-  let cpat = Tpat_construct(cexn_path, cexn_cdesc, 
-                 [mkpat (Tpat_tuple pvars) dummy_tuple]) in
-  let contract_exn_pat = mkpat cpat Predef.type_exn in
-  (* contract_exn_pat is the Contract_exn pattern *)
-  let ce:expression_desc = match cntr.contract_desc with
-     | Tctr_pred (x, p, exnop) -> 
-       (* e |>r1,r2<| {x | p} =  let x = e in if p then x else r1 
-          This forces evaluation of e, that is, if e diverges, RHS diverges;
-          if e crashes, RHS crashes 
-       *) 
-       
-        let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
-        let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
-	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
-       
-     | Tctr_arrow (xop, c1, c2) -> 
-      (* picky version:
-         e |>r1,r2<| x:c1 -> c2 = \x. (e (x |>r2,r1<| c1)) |>r1,r2<| c2[(x |>r2,r1<| c1)/x]
-         lax version: 
-         e |>r1,r2<| x:c1 -> c2 = \x. (e (x |>r2,r1<| c1)) |>r1,r2<| c2
-         we are implementing the picky version. 
-      *)      
-         let c1_type = c1.contract_type in
-         let c2_type = c2.contract_type in
-         let res = match xop with
-         | Some x -> 
-	     let xvar = mkexp (mkident x c1_type) c1_type in
-             let c1x = transl_contract c1 xvar caller callee in
-	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
-              (* e.g. x:({a | a > 0} -> {b | true}) -> {c | x 0 > c} 
-                 we want to blame the x in {c | x 0 > c} 
-                 This is done in translmod.ml now because it can give more
-                 previse caller-location-to-be-blamed.  
-  	     
-             let callee_path = match callee.exp_desc with
-                             | Texp_bad (Blame (loc, pathopt)) -> pathopt
-                             | Texp_unr (Blame (loc, pathopt)) -> pathopt
-                             | _ -> None
-             in
-	     let blame_x = mkexp (Texp_bad (Blame (x.exp_loc, callee_path))) cty in
-	      let c1x_picky = transl_contract c1 xvar caller blame_x in 
-	     let c2subst = subst_contract x c1x_picky c2 in 
-	     let resfun = transl_contract c2subst (mkexp resarg c2_type) callee caller in
-             *)
-	     let resfun = transl_contract c2 (mkexp resarg c2_type) callee caller in
-	     Texp_function ([(mkpat (Tpat_var x) c1_type, resfun)], Partial)
-         | None -> 
-	     let x = Ident.create "c" in
-             let xvar = mkexp (mkident x c1_type) c1_type in
-             let c1x = transl_contract c1 xvar caller callee in
-   	     let resarg = Texp_apply (e, [(Some c1x, Required)]) in
-             let resfun = transl_contract c2 (mkexp resarg c2_type) callee caller in
-             Texp_function ([(mkpat (Tpat_var x) c1_type, resfun)], Partial)
-         in res
-     | Tctr_tuple cs -> 
-      (* e |>r1,r2<| (x:c1, c2) = match e with 
-                           (x1, x2) -> (x1 |>r1,r2<| c1, 
-                                        x2 |>r1,r2<| c2[(x1 |>r2,r1<| c1)/x])  *)
-       begin 	
-	  let new_ids =  (Ident.create_idents "x" (List.length cs))  in
-          let typs = match (Ctype.repr cty).desc with
-                         | Ttuple ts -> ts
-                         | _ -> raise(Error(e.exp_loc,Illegal_tuple_expr)) in
-          let (ps, es) = List.split (List.map (fun (i, t) -> 
-                                let vd = {val_type = t; val_kind = Val_reg} in
-				let exp = { exp_desc = Texp_ident (Pident i, vd);
-					    exp_loc = e.exp_loc;
-                                            exp_type = t;
-					    exp_env = e.exp_env
-					  } in
-		   	        (mkpat (Tpat_var i) t, exp))
-                            (List.combine new_ids typs)) in
-          (* similar to dependent function contract, the substitution
-            c2[(x1 |>r2,r1<| c1)/x] is done in transmod.ml *)
-          let ces = List.map (fun ((vo,c), ei) -> 
-                             transl_contract c ei callee caller)
-                             (List.combine cs es) in
-          let newpat = { pat_desc = Tpat_tuple ps;
-                         pat_loc = e.exp_loc;
-                         pat_type = cty;
-                         pat_env = e.exp_env } in
-          Texp_match (e, [(newpat, mkexp (Texp_tuple ces) cty)], Total)
-       end
-     | Tctr_constr (p1, cdesc, cs) -> 
-        (* this is constructor contract, which is the general case of tuple contract 
-           e |>r1,r2<| K ci = match e with 
-           | K x1 .. xn -> K (x1 |>r1,r2<| c1, .. ,
-                              xn |>r1,r2<| cn [(xi |>r1,r2<| ci)/xi] )
-           | _ -> r1 
-        *)
-        let ids = Ident.create_idents "px" (List.length cs) in
-        let xi = List.map (fun (i,t) -> mkpat (Tpat_var i) t)
-                          (List.combine ids cdesc.cstr_args) in
-        let xi_rhs = List.map (fun (i,t) -> 
-                          let vd = {val_type = t; val_kind = Val_reg} in
-                          mkexp (Texp_ident (Pident i,vd)) t)
-                          (List.combine ids cdesc.cstr_args) in
-        (* similar to dependent function contract, the substitution
-	   cn [(xi |>r1,r2<| ci)/xi] is done in transmod.ml *)
-        let kxi = (mkpat (Tpat_construct (p1, cdesc, xi)) cdesc.cstr_res, 
-                   mkexp (Texp_construct (p1, cdesc,  
-                      List.map (fun ((vo, c), e) -> transl_contract c e callee caller) 
-                      (List.combine cs xi_rhs))) cdesc.cstr_res) in     
-        Texp_match (e, [kxi; (mkpat Tpat_any cdesc.cstr_res, callee)], Total)
-     | Tctr_and (c1, c2) -> 
-         (* e |>r1,r2<| c1 and c2 = (e |>r1,r2<| c1) |>r1,r2<| c2 *)
-         let res = transl_contract c2 (transl_contract c1 e callee caller) callee caller in
-         res.exp_desc
-     | Tctr_or (c1, c2) -> 
-         (* e |>r1,r2<| c1 or c2 
-             = try e |>r1,r2<| c1 with
-                Contract_exn1 -> try e |>r1,r2<| c2 with
-                                     Contract_exn2 -> raise Contract_exn2
-                                   | _ -> e
-              | _ -> e
-         *)
-         let e1 = transl_contract c1 e callee caller in
-         let e2 = transl_contract c2 e callee caller in
-         let ctr_exn = Texp_construct(cexn_path, cexn_cdesc, 
-                       [mkexp (Texp_tuple evars) dummy_tuple]) in
-         let raise_ctr_exn = Texp_raise (mkexp ctr_exn Predef.type_exn) in 
-         let contract_exn_branch = (contract_exn_pat,
-                                   mkexp raise_ctr_exn Predef.type_bool) in
-         let branches2 = [contract_exn_branch; 
-                          (mkpat Tpat_any Predef.type_exn, e)] in 
-         let sndtry = mkexp (Texp_try(e2, branches2)) cty in
-         let branches1 = [(contract_exn_pat, sndtry);
-                         (mkpat Tpat_any Predef.type_exn, e)] in
-         Texp_try(e1, branches1)      
-     | Tctr_typconstr (p, cs) -> 
-        (* TO BE DONE. this could be a disjunctive contract. *)
-        e.exp_desc 
-     | Tctr_var v -> e.exp_desc
-       (* TO BE DONE
-         let c = lookup for v
-         let ce = transl_contract c e callee caller in
-         ce.exp_desc
-       *)
-     | Tctr_poly (vs, c) -> 
-      (* e |>r1,r2<| 'a. c = /\'a. e |>r1,r2<| c *)
-         let ce = transl_contract c e callee caller in
-         ce.exp_desc
-  in mkexp ce cty
-
-(* Given x:t1 -> t2, the subst_contract computes t2[(v |><| t1)/x] *)
-and subst_contract v e cntr = 
-  let mkpat var = { pat_desc = Tpat_var var; 
-                    pat_loc  = e.exp_loc;
-                    pat_type = e.exp_type;
-                    pat_env  = e.exp_env } in
-  let sc = match cntr.contract_desc with
-             Tctr_pred (x, p, exnop) -> 
-               (* {x | p} [e/v]   is expressed as  {x | let v = e in p} *) 
-               let sp = Texp_let (Nonrecursive, [(mkpat v, e)], p) in
-               Tctr_pred (x, { e with exp_desc = sp }, exnop) 
-           | Tctr_arrow (xop, c1, c2) -> 
-               let sc1 = subst_contract v e c1 in
-               let sc2 = subst_contract v e c2 in
-               Tctr_arrow (xop, sc1, sc2)
-           | Tctr_tuple cs -> 
-               Tctr_tuple (List.map (fun (vo,c) -> (vo, subst_contract v e c)) cs)
-           | Tctr_constr (i, cdesc, cs) -> 
-               Tctr_constr (i, cdesc, 
-                 List.map (fun (vo, c) -> (vo, subst_contract v e c)) cs)
-           | Tctr_and (c1, c2) -> 
-	       let sc1 = subst_contract v e c1 in
-               let sc2 = subst_contract v e c2 in
-               Tctr_and (sc1, sc2)
-           | Tctr_or (c1, c2) -> 
-	       let sc1 = subst_contract v e c1 in
-               let sc2 = subst_contract v e c2 in
-               Tctr_or (sc1, sc2)
-           | Tctr_typconstr (i, cs) -> 
-               Tctr_typconstr (i, List.map (subst_contract v e) cs)
-	   | Tctr_var v -> Tctr_var v
-           | Tctr_poly (vs, c) -> Tctr_poly (vs, subst_contract v e c)
-  in { cntr with contract_desc = sc }
-
-(* deep_transl_contract takes e and expands all ei |><| ci in e *)
-and deep_transl_contract expr = 
-      Typedtree.map_expression (fun ei -> match ei.exp_desc with
-          | Texp_contract (c, e, r1, r2) -> transl_contract c e r1 r2
-          | _ -> ei) expr
-   
-(* fetch_contract takes a function name and lookup its contract in the
-set of contract declarations. *)
-and fetch_contract_by_pattern p contract_decls = 
-   List.find (fun x -> match p.pat_desc with
-            | Tpat_var (i) -> begin
-                       match x.ttopctr_id with
-                       | Pident (j) -> j = i
-    		       | _ -> false 
-                     end       
-            | _ -> false) contract_decls
-      
-and fetch_contract_by_path p contract_decls = 
-  List.find (fun x -> match p with 
-   | Pident (i) -> begin 
-                    match x.ttopctr_id with
-                    | Pident (j) -> j = i
-                    | _ -> false
-                   end
-   | _ -> false) contract_decls
-
-and find_in_ident_tbl path = 
- function
-    Ident.Empty ->
-      raise Not_found
-  | Ident.Node(l, k, r, _) ->
-      let (p, cdecl) = (Ident.tbl_data) k in
-      let c = compare (Path.name path) (Path.name p) in
-      if c = 0 then
-        (Ident.tbl_data) k
-      else
-        find_in_ident_tbl path (if c < 0 then l else r)
-
-(* local_fun_contracts contains x:t1 in contract x:t1 -> t2.
-   contract_decls contains contract declaration in the current module
-       contract f = {...} -> {...}
-   opened_contracts contains contracts from open ... and 
-   contracts exported from nested modules.
-*)
-and wrap_id_with_contract local_fun_contracts contract_decls opened_contracts 
-            caller_pathop expr = 
-    let contracted_exp_desc = match expr.exp_desc with
-       | Texp_ident (callee_path, value_desc) -> 
-         let bl_caller = Caller (expr.exp_loc, caller_pathop, callee_path) in 
-         let bl_callee = Callee (expr.exp_loc, callee_path) in     
-         begin
-          try (* lookup for dependent contract first *)
-           let id = match callee_path with
-                     | Pident(i) -> i
-                     | _ -> raise Not_found
-           in
-           let c = Ident.find_same id local_fun_contracts in
-           requiresC c expr bl_caller bl_callee
-          with Not_found -> 
-          try (* lookup for contracts in current module *)
-           let c = fetch_contract_by_path callee_path contract_decls in
-           requiresC c.ttopctr_desc expr bl_caller bl_callee
-          with Not_found -> 
-	  try (* lookup for contracts in opened modules *)
- (* Format.fprintf Format.std_formatter "I am translcore: %a\n" 
-  (Ident.print_tbl Ident.print Printtyp.print_path_contract_declaration) opened_contracts; *)
-	   let (p, c) = find_in_ident_tbl callee_path opened_contracts in 
-             requiresC (core_contract_from_iface c.Types.ttopctr_desc) 
-		        expr bl_caller bl_callee 
- 	  with Not_found -> 	    
-            (*  Format.fprintf Format.std_formatter "Not_found: %s" (Path.name callee_path); *)
-	      expr.exp_desc
-         end
-       | others -> others
-  in { expr with exp_desc = contracted_exp_desc }
-
-(* contract_id_in_expr wrapped all functions called in expression with its contract
-if it has any contract. E.g. f x = ..f (x - 1) ... g x
- becomes f x = ..(f <| C_f) (x - 1) ... (g <| C_g) x
-val contract_id_in_expr :
-           Typedtree.core_contract Ident.tbl ->
-           Typedtree.contract_declaration list ->
-           ('a * Types.contract_declaration) Ident.tbl ->
-           Path.t option -> Typedtree.expression -> Typedtree.expression
-*)
-and contract_id_in_expr local_fun_contracts contract_decls opened_contracts 
-                        caller_pathop expr = 
-    map_expression (wrap_id_with_contract local_fun_contracts
-                                          contract_decls 
-		                          opened_contracts 
-		                          caller_pathop) expr    
-
-(* contract_id_in_contract wrapped all functions called in a contract with its
-contract if it has any conract. E.g. 
-contract h = {x | not (null x)} -> {y | true}
-contract f = {x | true)} -> {y | h x < y}
-
-becomes f = {x | true)} -> {y | (h <| C_h) x < y}
-This checking for contracts makes sure that we have crash-free contracts.
-It is good for dynamic contract checking and 
-essential for static contract checking for functions in a program. 
-val contract_id_in_contract :
-           Typedtree.core_contract Ident.tbl ->
-           Typedtree.contract_declaration list ->
-           ('a * Types.contract_declaration) Ident.tbl ->
-           Path.t option ->
-           Typedtree.core_contract -> Typedtree.core_contract
-*)
-and contract_id_in_contract local_fun_contracts contract_decls opened_contracts 
-                                caller_pathop c = 
-  let new_desc = match c.contract_desc with
-	  | Tctr_pred (id, e, exnop) -> 
-              let ce = contract_id_in_expr local_fun_contracts 
-                                           contract_decls 
-                                           opened_contracts
-                                           caller_pathop e in
-              let expanded_ce = deep_transl_contract ce in
-              Tctr_pred (id, expanded_ce, exnop)
-          | Tctr_arrow (idopt, c1, c2) -> 
-	      let new_c1 = contract_id_in_contract local_fun_contracts contract_decls 
-                                   opened_contracts caller_pathop c1 in
-              let new_local = match idopt with 
-                              | Some (id) -> Ident.add id c1 local_fun_contracts
-                              | None -> local_fun_contracts               
-              in
-	      let new_c2 = contract_id_in_contract new_local contract_decls 
-                                   opened_contracts caller_pathop c2 in
-              Tctr_arrow (idopt, new_c1, new_c2)
-          | Tctr_tuple cs -> 
-              let rec sub_dep xs local = begin match xs with
-                | [] -> []
-                | (vo, c)::l -> 
-                  let new_c = contract_id_in_contract local
-			       contract_decls opened_contracts caller_pathop c in
-                  let new_local = match vo with
-                       | None -> local_fun_contracts
-                       | Some (id) -> Ident.add id c local
-                  in (vo, new_c) :: sub_dep l new_local 
-                end
-             in Tctr_tuple (sub_dep cs local_fun_contracts)
-	  | Tctr_constr (i, cdesc, cs) -> 
-              let rec sub_dep xs local = begin match xs with
-                | [] -> []
-                | (vo, c)::l -> 
-                  let new_c = contract_id_in_contract local
-			       contract_decls opened_contracts caller_pathop c in
-                  let new_local = match vo with
-                       | None -> local_fun_contracts
-                       | Some (id) -> Ident.add id c local
-                  in (vo, new_c) :: sub_dep l new_local 
-                end
-             in Tctr_constr (i, cdesc, sub_dep cs local_fun_contracts)
-          | Tctr_and (c1, c2) -> 
-               let new_c1 = contract_id_in_contract local_fun_contracts contract_decls 
-                                   opened_contracts caller_pathop c1 in
-               let new_c2 = contract_id_in_contract local_fun_contracts contract_decls 
-                                   opened_contracts caller_pathop c2 in
-               Tctr_and (new_c1, new_c2)
-          | Tctr_or (c1, c2) -> 
-               let new_c1 = contract_id_in_contract local_fun_contracts contract_decls 
-                                   opened_contracts caller_pathop c1 in
-               let new_c2 = contract_id_in_contract local_fun_contracts contract_decls 
-                                   opened_contracts caller_pathop c2 in
-               Tctr_or (new_c1, new_c2)
-          | Tctr_typconstr (i, cs) -> 
-               Tctr_typconstr (i, List.map (contract_id_in_contract local_fun_contracts
-                               contract_decls opened_contracts caller_pathop) cs)
-          | Tctr_var v -> Tctr_var v
-          | Tctr_poly (vs, c) -> Tctr_poly (vs, contract_id_in_contract 
-                                                local_fun_contracts contract_decls
-                                                opened_contracts caller_pathop c)
-  in {c with contract_desc = new_desc}
-
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -1337,10 +840,10 @@ and transl_tupled_cases patl_expr_list =
 and transl_apply lam sargs loc =
   let lapply funct args =
     match funct with
-      Lsend(k, lmet, lobj, largs) ->
-        Lsend(k, lmet, lobj, largs @ args)
-    | Levent(Lsend(k, lmet, lobj, largs), _) ->
-        Lsend(k, lmet, lobj, largs @ args)
+      Lsend(k, lmet, lobj, largs, loc) ->
+        Lsend(k, lmet, lobj, largs @ args, loc)
+    | Levent(Lsend(k, lmet, lobj, largs, loc), _) ->
+        Lsend(k, lmet, lobj, largs @ args, loc)
     | Lapply(lexp, largs, _) ->
         Lapply(lexp, largs @ args, loc)
     | lexp ->
@@ -1533,7 +1036,7 @@ let transl_exception id path decl =
 
 (* Error report *)
 
-(* open Format *)
+open Format
 
 let report_error ppf = function
   | Illegal_letrec_pat ->
@@ -1545,9 +1048,3 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
-  | Illegal_tuple_expr -> 
-      fprintf ppf
-        "This expression is not of type tuple"
-  | Illegal_contracted_expr -> 
-      fprintf ppf
-        "Illegal contracted expr: please report this as a bug"

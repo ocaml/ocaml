@@ -22,7 +22,7 @@ open Widget
 exception TkError of string
       (* Raised by the communication functions *)
 
-val debug : bool ref 
+val debug : bool ref
       (* When set to true, displays approximation of intermediate Tcl code *)
 
 type tkArgs =
@@ -48,11 +48,11 @@ val keywords : (string * Arg.spec * string) list
     (* Command line parsing specification for Arg.parse, which contains
        the standard Tcl/Tk command line options such as "-display" and "-name".
        Add [keywords] to a [Arg.parse] call, then call [opentk].
-       Then [opentk] can make use of these command line options 
+       Then [opentk] can make use of these command line options
        to initiate applications. *)
 
 val opentk_with_args : string list -> toplevel widget
-    (* [opentk_with_args] is a lower level interface to initiate Tcl/Tk 
+    (* [opentk_with_args] is a lower level interface to initiate Tcl/Tk
        applications.  [opentk_with_args argv] initializes Tcl/Tk with
        the command line options given by [argv] *)
 
@@ -64,12 +64,12 @@ val openTk : ?display:string -> ?clas:string -> unit -> toplevel widget
 val openTkClass: string -> toplevel widget
     (* [openTkClass class] is equivalent to [opentk ["-name"; class]] *)
 val openTkDisplayClass: string -> string -> toplevel widget
-    (* [openTkDisplayClass disp class] is equivalent to 
+    (* [openTkDisplayClass disp class] is equivalent to
        [opentk ["-display"; disp; "-name"; class]] *)
 
 val closeTk : unit -> unit
-val finalizeTk : unit -> unit 
-    (* Finalize tcl/tk before exiting. This function will be automatically 
+val finalizeTk : unit -> unit
+    (* Finalize tcl/tk before exiting. This function will be automatically
        called when you call [Pervasives.exit ()] *)
 
 val mainLoop : unit -> unit

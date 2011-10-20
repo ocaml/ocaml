@@ -16,9 +16,13 @@
 /* Asm part of the runtime system, AMD64 processor */
 /* Must be preprocessed by cpp */
 
+/* PIC mode support based on contribution by Paul Stravers (see PR#4795) */
+
 #ifdef SYS_macosx
 
 #define G(r) _##r
+#define GREL(r) _##r@GOTPCREL
+#define GCALL(r) _##r
 #define FUNCTION_ALIGN 2
 #define EIGHT_ALIGN 3
 #define SIXTEEN_ALIGN 4
@@ -30,6 +34,8 @@
 #else
 
 #define G(r) r
+#define GREL(r) r@GOTPCREL
+#define GCALL(r) r@PLT
 #define FUNCTION_ALIGN 4
 #define EIGHT_ALIGN 8
 #define SIXTEEN_ALIGN 16
@@ -41,21 +47,86 @@
 
 #endif
 
+#ifdef __PIC__
+
+/* Position-independent operations on global variables. */
+
+/* Store [srcreg] in global [dstlabel].  Clobbers %r11. */
+#define STORE_VAR(srcreg,dstlabel) \
+        movq    GREL(dstlabel)(%rip), %r11 ; \
+        movq    srcreg, (%r11)
+
+/* Load global [srclabel] in register [dstreg].  Clobbers %r11. */
+#define LOAD_VAR(srclabel,dstreg) \
+        movq    GREL(srclabel)(%rip), %r11 ; \
+        movq    (%r11), dstreg
+
+/* Compare global [label] with register [reg].  Clobbers %rax. */
+#define CMP_VAR(label,reg) \
+        movq    GREL(label)(%rip), %rax ; \
+        cmpq    (%rax), reg
+
+/* Test 32-bit global [label] against mask [imm].  Clobbers %r11. */
+#define TESTL_VAR(imm,label) \
+        movq    GREL(label)(%rip), %r11 ; \
+        testl   imm, (%r11)
+
+/* Push global [label] on stack.  Clobbers %r11. */
+#define PUSH_VAR(srclabel) \
+        movq    GREL(srclabel)(%rip), %r11 ; \
+        pushq   (%r11)
+
+/* Pop global [label] off stack.  Clobbers %r11. */
+#define POP_VAR(dstlabel) \
+        movq    GREL(dstlabel)(%rip), %r11 ; \
+        popq    (%r11)
+
+/* Record lowest stack address and return address.  Clobbers %rax. */
+#define RECORD_STACK_FRAME(OFFSET) \
+	pushq   %r11 ; \
+        movq    8+OFFSET(%rsp), %rax ; \
+	STORE_VAR(%rax,caml_last_return_address) ; \
+        leaq    16+OFFSET(%rsp), %rax ; \
+	STORE_VAR(%rax,caml_bottom_of_stack) ; \
+	popq    %r11
+
+#else
+        
+/* Non-PIC operations on global variables.  Slightly faster. */
+
+#define STORE_VAR(srcreg,dstlabel) \
+        movq    srcreg, G(dstlabel)(%rip)
+
+#define LOAD_VAR(srclabel,dstreg) \
+        movq    G(srclabel)(%rip), dstreg
+
+#define CMP_VAR(label,reg) \
+        cmpq    G(label)(%rip), %r15
+
+#define TESTL_VAR(imm,label) \
+        testl   imm, G(label)(%rip)
+
+#define PUSH_VAR(srclabel) \
+        pushq   G(srclabel)(%rip)
+
+#define POP_VAR(dstlabel) \
+        popq    G(dstlabel)(%rip)
+
+#define RECORD_STACK_FRAME(OFFSET) \
+        movq    OFFSET(%rsp), %rax ; \
+	STORE_VAR(%rax,caml_last_return_address) ; \
+        leaq    8+OFFSET(%rsp), %rax ; \
+	STORE_VAR(%rax,caml_bottom_of_stack)
+
+#endif
 
         .text
 
 /* Allocation */
 
 FUNCTION(G(caml_call_gc))
-    /* Record lowest stack address and return address */
-        movq    0(%rsp), %rax
-        movq    %rax, G(caml_last_return_address)(%rip)
-        leaq    8(%rsp), %rax
-        movq    %rax, G(caml_bottom_of_stack)(%rip)
-.L105:  
-    /* Save caml_young_ptr, caml_exception_pointer */
-	movq	%r15, G(caml_young_ptr)(%rip)
-	movq	%r14, G(caml_exception_pointer)(%rip)
+        RECORD_STACK_FRAME(0)
+.Lcaml_call_gc:
     /* Build array of registers, save it into caml_gc_regs */
         pushq   %r13
         pushq   %r12
@@ -70,44 +141,50 @@ FUNCTION(G(caml_call_gc))
         pushq   %rdi
         pushq   %rbx
         pushq   %rax
-        movq    %rsp, G(caml_gc_regs)(%rip)
+        STORE_VAR(%rsp, caml_gc_regs)
+    /* Save caml_young_ptr, caml_exception_pointer */
+	STORE_VAR(%r15, caml_young_ptr)
+	STORE_VAR(%r14, caml_exception_pointer)
     /* Save floating-point registers */
         subq    $(16*8), %rsp
-        movlpd  %xmm0, 0*8(%rsp)
-        movlpd  %xmm1, 1*8(%rsp)
-        movlpd  %xmm2, 2*8(%rsp)
-        movlpd  %xmm3, 3*8(%rsp)
-        movlpd  %xmm4, 4*8(%rsp)
-        movlpd  %xmm5, 5*8(%rsp)
-        movlpd  %xmm6, 6*8(%rsp)
-        movlpd  %xmm7, 7*8(%rsp)
-        movlpd  %xmm8, 8*8(%rsp)
-        movlpd  %xmm9, 9*8(%rsp)
-        movlpd  %xmm10, 10*8(%rsp)
-        movlpd  %xmm11, 11*8(%rsp)
-        movlpd  %xmm12, 12*8(%rsp)
-        movlpd  %xmm13, 13*8(%rsp)
-        movlpd  %xmm14, 14*8(%rsp)
-        movlpd  %xmm15, 15*8(%rsp)
+        movsd   %xmm0, 0*8(%rsp)
+        movsd   %xmm1, 1*8(%rsp)
+        movsd   %xmm2, 2*8(%rsp)
+        movsd   %xmm3, 3*8(%rsp)
+        movsd   %xmm4, 4*8(%rsp)
+        movsd   %xmm5, 5*8(%rsp)
+        movsd   %xmm6, 6*8(%rsp)
+        movsd   %xmm7, 7*8(%rsp)
+        movsd   %xmm8, 8*8(%rsp)
+        movsd   %xmm9, 9*8(%rsp)
+        movsd   %xmm10, 10*8(%rsp)
+        movsd   %xmm11, 11*8(%rsp)
+        movsd   %xmm12, 12*8(%rsp)
+        movsd   %xmm13, 13*8(%rsp)
+        movsd   %xmm14, 14*8(%rsp)
+        movsd   %xmm15, 15*8(%rsp)
     /* Call the garbage collector */
-        call    G(caml_garbage_collection)
+        call    GCALL(caml_garbage_collection)
+    /* Restore caml_young_ptr, caml_exception_pointer */
+	LOAD_VAR(caml_young_ptr, %r15)
+	LOAD_VAR(caml_exception_pointer, %r14)
     /* Restore all regs used by the code generator */
-        movlpd  0*8(%rsp), %xmm0
-        movlpd  1*8(%rsp), %xmm1
-        movlpd  2*8(%rsp), %xmm2
-        movlpd  3*8(%rsp), %xmm3
-        movlpd  4*8(%rsp), %xmm4
-        movlpd  5*8(%rsp), %xmm5
-        movlpd  6*8(%rsp), %xmm6
-        movlpd  7*8(%rsp), %xmm7
-        movlpd  8*8(%rsp), %xmm8
-        movlpd  9*8(%rsp), %xmm9
-        movlpd  10*8(%rsp), %xmm10
-        movlpd  11*8(%rsp), %xmm11
-        movlpd  12*8(%rsp), %xmm12
-        movlpd  13*8(%rsp), %xmm13
-        movlpd  14*8(%rsp), %xmm14
-        movlpd  15*8(%rsp), %xmm15
+        movsd   0*8(%rsp), %xmm0
+        movsd   1*8(%rsp), %xmm1
+        movsd   2*8(%rsp), %xmm2
+        movsd   3*8(%rsp), %xmm3
+        movsd   4*8(%rsp), %xmm4
+        movsd   5*8(%rsp), %xmm5
+        movsd   6*8(%rsp), %xmm6
+        movsd   7*8(%rsp), %xmm7
+        movsd   8*8(%rsp), %xmm8
+        movsd   9*8(%rsp), %xmm9
+        movsd   10*8(%rsp), %xmm10
+        movsd   11*8(%rsp), %xmm11
+        movsd   12*8(%rsp), %xmm12
+        movsd   13*8(%rsp), %xmm13
+        movsd   14*8(%rsp), %xmm14
+        movsd   15*8(%rsp), %xmm15
         addq    $(16*8), %rsp
         popq    %rax
         popq    %rbx
@@ -122,86 +199,77 @@ FUNCTION(G(caml_call_gc))
         popq    %rbp
         popq    %r12
         popq    %r13
-    /* Restore caml_young_ptr, caml_exception_pointer */
-	movq	G(caml_young_ptr)(%rip), %r15
-	movq	G(caml_exception_pointer)(%rip), %r14
     /* Return to caller */
         ret
 
 FUNCTION(G(caml_alloc1))
+.Lcaml_alloc1:
         subq    $16, %r15
-        cmpq    G(caml_young_limit)(%rip), %r15
+        CMP_VAR(caml_young_limit, %r15)
         jb      .L100
         ret
 .L100:
-        movq    0(%rsp), %rax
-        movq    %rax, G(caml_last_return_address)(%rip)
-        leaq    8(%rsp), %rax
-        movq    %rax, G(caml_bottom_of_stack)(%rip)
+        RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .L105
+        call    .Lcaml_call_gc
 	addq	$8, %rsp
-        jmp     G(caml_alloc1)
+        jmp     .Lcaml_alloc1
 
 FUNCTION(G(caml_alloc2))
+.Lcaml_alloc2:
         subq    $24, %r15
-        cmpq    G(caml_young_limit)(%rip), %r15
+        CMP_VAR(caml_young_limit, %r15)
         jb      .L101
         ret
 .L101:
-        movq    0(%rsp), %rax
-        movq    %rax, G(caml_last_return_address)(%rip)
-        leaq    8(%rsp), %rax
-        movq    %rax, G(caml_bottom_of_stack)(%rip)
+        RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .L105
+        call    .Lcaml_call_gc
 	addq	$8, %rsp
-        jmp     G(caml_alloc2)
+        jmp     .Lcaml_alloc2
 
 FUNCTION(G(caml_alloc3))
+.Lcaml_alloc3:
         subq    $32, %r15
-        cmpq    G(caml_young_limit)(%rip), %r15
+        CMP_VAR(caml_young_limit, %r15)
         jb      .L102
         ret
 .L102:
-        movq    0(%rsp), %rax
-        movq    %rax, G(caml_last_return_address)(%rip)
-        leaq    8(%rsp), %rax
-        movq    %rax, G(caml_bottom_of_stack)(%rip)
+        RECORD_STACK_FRAME(0)
 	subq	$8, %rsp
-        call    .L105
+        call    .Lcaml_call_gc
 	addq	$8, %rsp
-        jmp     G(caml_alloc3)
+        jmp     .Lcaml_alloc3
 
 FUNCTION(G(caml_allocN))
+.Lcaml_allocN:
+        pushq   %rax                       /* save desired size */
         subq    %rax, %r15
-        cmpq    G(caml_young_limit)(%rip), %r15
+        CMP_VAR(caml_young_limit, %r15)
         jb      .L103
+        addq    $8, %rsp                  /* drop desired size */
         ret
 .L103:
-        pushq   %rax                       /* save desired size */
-        movq    8(%rsp), %rax
-        movq    %rax, G(caml_last_return_address)(%rip)
-        leaq    16(%rsp), %rax
-        movq    %rax, G(caml_bottom_of_stack)(%rip)
-        call    .L105
+        RECORD_STACK_FRAME(8)
+        call    .Lcaml_call_gc
         popq    %rax                      /* recover desired size */
-        jmp     G(caml_allocN)
+        jmp     .Lcaml_allocN
 
 /* Call a C function from Caml */
 
 FUNCTION(G(caml_c_call))
+.Lcaml_c_call:
     /* Record lowest stack address and return address */
         popq    %r12
-        movq    %r12, G(caml_last_return_address)(%rip)
-        movq    %rsp, G(caml_bottom_of_stack)(%rip)
+        STORE_VAR(%r12, caml_last_return_address)
+        STORE_VAR(%rsp, caml_bottom_of_stack)
     /* Make the exception handler and alloc ptr available to the C code */
-	movq	%r15, G(caml_young_ptr)(%rip)
-	movq	%r14, G(caml_exception_pointer)(%rip)
+	STORE_VAR(%r15, caml_young_ptr)
+	STORE_VAR(%r14, caml_exception_pointer)
     /* Call the function (address in %rax) */
         call    *%rax
     /* Reload alloc ptr */
-	movq	G(caml_young_ptr)(%rip), %r15
+	LOAD_VAR(caml_young_ptr, %r15)
     /* Return to caller */
 	pushq	%r12
 	ret
@@ -218,17 +286,17 @@ FUNCTION(G(caml_start_program))
         pushq   %r15
 	subq	$8, %rsp	/* stack 16-aligned */
     /* Initial entry point is G(caml_program) */
-        leaq    G(caml_program)(%rip), %r12
+        leaq    GCALL(caml_program)(%rip), %r12
     /* Common code for caml_start_program and caml_callback* */
-.L106:
+.Lcaml_start_program:
     /* Build a callback link */
 	subq	$8, %rsp	/* stack 16-aligned */
-        pushq   G(caml_gc_regs)(%rip)
-        pushq   G(caml_last_return_address)(%rip)
-        pushq   G(caml_bottom_of_stack)(%rip)
+        PUSH_VAR(caml_gc_regs)
+        PUSH_VAR(caml_last_return_address)
+        PUSH_VAR(caml_bottom_of_stack)
     /* Setup alloc ptr and exception ptr */
-	movq	G(caml_young_ptr)(%rip), %r15
-	movq	G(caml_exception_pointer)(%rip), %r14
+	LOAD_VAR(caml_young_ptr, %r15)
+	LOAD_VAR(caml_exception_pointer, %r14)
     /* Build an exception handler */
         lea     .L108(%rip), %r13
         pushq   %r13
@@ -242,12 +310,12 @@ FUNCTION(G(caml_start_program))
         popq    %r12    /* dummy register */
 .L109:
     /* Update alloc ptr and exception ptr */
-	movq	%r15, G(caml_young_ptr)(%rip)
-	movq	%r14, G(caml_exception_pointer)(%rip)
+	STORE_VAR(%r15,caml_young_ptr)
+	STORE_VAR(%r14,caml_exception_pointer)
     /* Pop the callback link, restoring the global variables */
-        popq    G(caml_bottom_of_stack)(%rip)
-        popq    G(caml_last_return_address)(%rip)
-        popq    G(caml_gc_regs)(%rip)
+	POP_VAR(caml_bottom_of_stack)
+        POP_VAR(caml_last_return_address)
+        POP_VAR(caml_gc_regs)
 	addq	$8, %rsp
     /* Restore callee-save registers. */
 	addq	$8, %rsp
@@ -268,7 +336,7 @@ FUNCTION(G(caml_start_program))
 /* Raise an exception from Caml */
 
 FUNCTION(G(caml_raise_exn))
-        testl   $1, G(caml_backtrace_active)(%rip)
+        TESTL_VAR($1, caml_backtrace_active)
         jne     .L110
         movq    %r14, %rsp
         popq    %r14
@@ -279,7 +347,7 @@ FUNCTION(G(caml_raise_exn))
         movq    0(%rsp), %rsi         /* arg 2: pc of raise */
         leaq    8(%rsp), %rdx         /* arg 3: sp of raise */
         movq    %r14, %rcx            /* arg 4: sp of handler */
-        call    G(caml_stash_backtrace)
+        call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
         movq    %r14, %rsp
         popq    %r14
@@ -288,24 +356,24 @@ FUNCTION(G(caml_raise_exn))
 /* Raise an exception from C */
 
 FUNCTION(G(caml_raise_exception))
-        testl   $1, G(caml_backtrace_active)(%rip)
+        TESTL_VAR($1, caml_backtrace_active)
         jne     .L111
         movq    %rdi, %rax
-        movq    G(caml_exception_pointer)(%rip), %rsp
+        LOAD_VAR(caml_exception_pointer, %rsp)  /* Cut stack */
         popq    %r14                  /* Recover previous exception handler */
-        movq    G(caml_young_ptr)(%rip), %r15 /* Reload alloc ptr */
+        LOAD_VAR(caml_young_ptr, %r15) /* Reload alloc ptr */
         ret
 .L111:
         movq    %rdi, %r12            /* Save exception bucket */
                                       /* arg 1: exception bucket */
-        movq    G(caml_last_return_address)(%rip), %rsi /* arg 2: pc of raise */
-        movq    G(caml_bottom_of_stack)(%rip), %rdx /* arg 3: sp of raise */
-        movq    G(caml_exception_pointer)(%rip), %rcx /* arg 4: sp of handler */
-        call    G(caml_stash_backtrace)
+	LOAD_VAR(caml_last_return_address,%rsi)   /* arg 2: pc of raise */
+        LOAD_VAR(caml_bottom_of_stack,%rdx)       /* arg 3: sp of raise */
+        LOAD_VAR(caml_exception_pointer,%rcx)     /* arg 4: sp of handler */
+        call    GCALL(caml_stash_backtrace)
         movq    %r12, %rax            /* Recover exception bucket */
-        movq    G(caml_exception_pointer)(%rip), %rsp
+	LOAD_VAR(caml_exception_pointer,%rsp)
         popq    %r14                  /* Recover previous exception handler */
-        movq    G(caml_young_ptr)(%rip), %r15 /* Reload alloc ptr */
+	LOAD_VAR(caml_young_ptr,%r15)  /* Reload alloc ptr */
         ret
 
 /* Callback from C to Caml */
@@ -323,7 +391,7 @@ FUNCTION(G(caml_callback_exn))
         movq    %rdi, %rbx      /* closure */
         movq    %rsi, %rax      /* argument */
         movq    0(%rbx), %r12   /* code pointer */
-        jmp     .L106
+        jmp     .Lcaml_start_program
 
 FUNCTION(G(caml_callback2_exn))
     /* Save callee-save registers */
@@ -338,8 +406,8 @@ FUNCTION(G(caml_callback2_exn))
         /* closure stays in %rdi */
         movq    %rsi, %rax               /* first argument */
         movq    %rdx, %rbx               /* second argument */
-        leaq    G(caml_apply2)(%rip), %r12  /* code pointer */
-        jmp     .L106
+        leaq    GCALL(caml_apply2)(%rip), %r12  /* code pointer */
+        jmp     .Lcaml_start_program
 
 FUNCTION(G(caml_callback3_exn))
     /* Save callee-save registers */
@@ -355,12 +423,12 @@ FUNCTION(G(caml_callback3_exn))
         movq    %rdx, %rbx               /* second argument */
         movq    %rdi, %rsi               /* closure */
         movq    %rcx, %rdi               /* third argument */
-        leaq    G(caml_apply3)(%rip), %r12  /* code pointer */
-        jmp     .L106
+        leaq    GCALL(caml_apply3)(%rip), %r12  /* code pointer */
+        jmp     .Lcaml_start_program
 
 FUNCTION(G(caml_ml_array_bound_error))
-        leaq    G(caml_array_bound_error)(%rip), %rax
-        jmp     G(caml_c_call)
+        leaq    GCALL(caml_array_bound_error)(%rip), %rax
+        jmp     .Lcaml_c_call
 
         .data
         .globl  G(caml_system__frametable)

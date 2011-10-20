@@ -49,7 +49,7 @@ let int_reg_name = [|
   (* 8-12 *)   "$8"; "$9"; "$10"; "$11"; "$12";
   (* 13-19 *)  "$16"; "$17"; "$18"; "$19"; "$20"; "$21"; "$22"
 |]
-  
+
 let float_reg_name = [|
   (* 100-107 *) "$f0"; "$f1"; "$f2"; "$f3"; "$f4"; "$f5"; "$f6"; "$f7";
   (* 108-115 *) "$f8"; "$f9"; "$f10"; "$f11"; "$f12"; "$f13"; "$f14"; "$f15";
@@ -208,9 +208,9 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   let as_cmd =
     if digital_asm && !Clflags.gprofile
-    then Config.as ^ " -pg"
-    else Config.as in
-  Ccomp.command (as_cmd ^ " -o " ^ 
+    then Config.asm ^ " -pg"
+    else Config.asm in
+  Ccomp.command (as_cmd ^ " -o " ^
                  Filename.quote outfile ^ " " ^ Filename.quote infile)
 
 open Clflags;;

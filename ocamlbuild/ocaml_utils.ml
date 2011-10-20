@@ -35,6 +35,11 @@ let stdlib_dir = lazy begin
   String.chomp (read_file ocamlc_where)
 end
 
+let pflag_and_dep tags ptag cmd_spec =
+  Param_tags.declare ptag
+    (fun param ->
+       flag_and_dep (Param_tags.make ptag param :: tags) (cmd_spec param))
+
 let module_name_of_filename f = String.capitalize (Pathname.remove_extensions f)
 let module_name_of_pathname x =
   module_name_of_filename (Pathname.to_string (Pathname.basename x))
@@ -144,7 +149,7 @@ let read_path_dependencies =
       let deps =
         List.fold_right begin fun (path, deps) acc ->
           let module_name' = module_name_of_pathname path in
-          if module_name' = module_name 
+          if module_name' = module_name
           then List.union deps acc
           else raise (Ocamldep_error(Printf.sprintf "Ocamldep.ocamldep: multiple files in ocamldep output (%s not expected)" path))
         end ocamldep_output [] in

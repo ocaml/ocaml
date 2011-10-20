@@ -218,7 +218,7 @@ struct
     String.concat "\n"
       [ "@ifinfo" ; s ; "@end ifinfo" ; "" ]
 
-  (** [install-info] informations *)
+  (** [install-info] information *)
   let dirsection sec =
     "@dircategory " ^ (escape sec)
 
@@ -294,14 +294,18 @@ class text =
       | Block t -> self#texi_of_Block t
       | Title (n, _, t) -> self#texi_of_Title n t
       | Link (s, t) -> self#texi_of_Link s t
-      | Ref (name, kind) ->self#texi_of_Ref name kind
+      | Ref (name, kind, _) ->self#texi_of_Ref name kind
       | Superscript t -> self#texi_of_Superscript t
       | Subscript t -> self#texi_of_Subscript t
       | Odoc_info.Module_list _ -> ""
       | Odoc_info.Index_list -> ""
       | Odoc_info.Custom (s,t) -> self#texi_of_custom_text s t
+      | Odoc_info.Target (target, code) -> self#texi_of_Target ~target ~code
 
     method texi_of_custom_text s t = ""
+
+    method texi_of_Target ~target ~code =
+      if String.lowercase target = "texi" then code else ""
 
     method texi_of_Verbatim s = s
     method texi_of_Raw s = self#escape s
@@ -461,6 +465,11 @@ class texi =
                    Raw " " ; Raw s ] @ t @ [ Newline ])
            see_l)
 
+    method text_of_before l =
+      List.flatten
+      (List.map
+        (fun x -> linebreak :: (to_text#text_of_before [x])) l)
+
     method text_of_params params_list =
         List.concat
           (List.map
@@ -470,7 +479,7 @@ class texi =
                  Raw " " ; Raw s ; Raw ": " ] @ t @ [ Newline ] )
              params_list)
 
-    method text_of_raised_exceptions = function
+    method! text_of_raised_exceptions = function
       | [] -> []
       | (s, t) :: [] ->
           [ linebreak ;
@@ -486,12 +495,12 @@ class texi =
                  (fun (ex, desc) ->(Code ex) :: (Raw " ") :: desc ) l ) ;
             Newline ]
 
-    method text_of_return_opt = function
+    method! text_of_return_opt = function
       | None -> []
       | Some t ->
           (Bold [Raw Odoc_messages.returns ]) :: Raw " " :: t @ [ Newline ]
 
-    method text_of_custom c_l =
+    method! text_of_custom c_l =
       List.flatten
         (List.rev
            (List.fold_left
@@ -505,7 +514,7 @@ class texi =
                  acc
               ) [] c_l))
 
-    method text_of_info ?(block=false) = function
+    method! text_of_info ?(block=false) = function
       | None -> []
       | Some info ->
           let t =
@@ -526,6 +535,7 @@ class texi =
                           self#text_of_version_opt info.i_version )
                    else [] ;
                    self#text_of_sees_opt info.i_sees ;
+                   self#text_of_before info.i_before ;
                    if is info.i_since
                    then ( linebreak ::
                           self#text_of_since_opt info.i_since )
@@ -555,7 +565,7 @@ class texi =
              (self#relative_idents m_name
                 (Odoc_info.string_of_type_expr typ)))
 
-    method text_of_short_type_expr m_name typ =
+    method! text_of_short_type_expr m_name typ =
       [ Raw (self#normal_type m_name typ) ]
 
     (** Return Texinfo code for a value. *)
@@ -716,7 +726,7 @@ class texi =
                 then " = " ^ (resolve_alias_name m)
                 else "" ) ] ] ;
           ( if is_alias_there m
-          then [ Ref (resolve_alias_name m, Some RK_module) ;
+          then [ Ref (resolve_alias_name m, Some RK_module, None) ;
                  Newline ; ]
           else [] ) ;
           ( if is_alias m
@@ -745,7 +755,7 @@ class texi =
                 then " = " ^ (resolve_alias_name mt)
                 else "" ) ] ] ;
           ( if is_alias_there mt
-          then [ Ref (resolve_alias_name mt, Some RK_module_type) ;
+          then [ Ref (resolve_alias_name mt, Some RK_module_type, None) ;
                  Newline ; ]
           else [] ) ;
           ( if is_alias mt
@@ -764,10 +774,10 @@ class texi =
                         [ Raw im.im_name ]
                     | Some (Mod { m_name = name }) ->
                         [ Raw name ; Raw "\n     " ;
-                          Ref (name, Some RK_module) ]
+                          Ref (name, Some RK_module, None) ]
                     | Some (Modtype { mt_name = name }) ->
                         [ Raw name ; Raw "\n     " ;
-                          Ref (name, Some RK_module_type) ]
+                          Ref (name, Some RK_module_type, None) ]
                     ) @
                    [ Newline ] @
                    (self#text_of_info im.im_info)
@@ -782,7 +792,7 @@ class texi =
       let t = [ self#fixedblock
                   [ Newline ; minus ; Raw "class " ;
                     Raw (Name.simple c.cl_name) ] ;
-                Ref (c.cl_name, Some RK_class) ; Newline ;
+                Ref (c.cl_name, Some RK_class, None) ; Newline ;
                 Newline ] @ (self#text_of_info c.cl_info) in
       self#texi_of_text t
 
@@ -792,7 +802,7 @@ class texi =
       let t = [ self#fixedblock
                   [ Newline ; minus ; Raw "class type " ;
                     Raw (Name.simple ct.clt_name) ] ;
-                Ref (ct.clt_name, Some RK_class_type) ; Newline ;
+                Ref (ct.clt_name, Some RK_class_type, None) ; Newline ;
                 Newline ] @ (self#text_of_info ct.clt_info) in
       self#texi_of_text t
 
@@ -836,7 +846,7 @@ class texi =
               | Cl _ -> Some RK_class
               | Cltype _ -> Some RK_class_type in
             (Code inh.ic_name) ::
-            (Ref (inh.ic_name, kind)) ::
+            (Ref (inh.ic_name, kind, None)) ::
             ( match inh.ic_text with
             | None -> []
             | Some t -> Newline :: t)

@@ -22,7 +22,7 @@ val is_nonexpansive: Typedtree.expression -> bool
 
 val type_binding:
         Env.t -> rec_flag ->
-          (Parsetree.pattern * Parsetree.expression) list -> 
+          (Parsetree.pattern * Parsetree.expression) list ->
           Annot.ident option ->
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_let:
@@ -46,13 +46,6 @@ val type_self_pattern:
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
         Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
-
-val tc_contract:
-        Env.t -> Parsetree.core_contract -> type_expr -> Typedtree.core_contract
-
-val tc_contract_in_sig:
-        Env.t -> Parsetree.core_contract -> type_expr -> Types.core_contract
-
 val type_exp:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_approx:
@@ -70,10 +63,7 @@ val force_delayed_checks: unit -> unit
 val self_coercion : (Path.t * Location.t list ref) list ref
 
 type error =
-    Unbound_value of Longident.t
-  | Unbound_constructor of Longident.t
-  | Unbound_label of Longident.t
-  | Polymorphic_label of Longident.t
+    Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
@@ -89,12 +79,11 @@ type error =
   | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
-  | Unbound_class of Longident.t
   | Virtual_class of Longident.t
   | Private_type of type_expr
   | Private_label of Longident.t * type_expr
   | Unbound_instance_variable of string
-  | Instance_variable_not_mutable of string
+  | Instance_variable_not_mutable of bool * string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
   | Outside_class
   | Value_multiply_overridden of string
@@ -107,7 +96,6 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
-  | Contract_wrong_type of Parsetree.core_contract * type_expr
 
 exception Error of Location.t * error
 
@@ -115,10 +103,11 @@ val report_error: formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
 val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
+(* Forward declaration, to be filled in by Typemod.type_open *)
+val type_open: (Env.t -> Location.t -> Longident.t -> Env.t) ref
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->
    Typedtree.class_structure * class_signature * string list) ref
 
-(* added by Dana as it is used in transl_contract_decl in typedecl.ml 
-val enter_variable: Location.t -> string -> Types.type_expr -> Ident.t *)
+val create_package_type: Location.t -> Env.t -> Parsetree.package_type -> type_expr

@@ -67,6 +67,7 @@ let cp src dst =
   if Filename.check_suffix src ".a"
   && Filename.check_suffix dst ".a"
   then cp_pf src dst
+  (* try to make a hard link *)
   else copy_file src dst
 
 let readlink = My_unix.readlink

@@ -201,7 +201,7 @@ CAMLprim value caml_ba_create(value vkind, value vlayout, value vdim)
     caml_invalid_argument("Bigarray.create: bad number of dimensions");
   for (i = 0; i < num_dims; i++) {
     dim[i] = Long_val(Field(vdim, i));
-    if (dim[i] < 0) 
+    if (dim[i] < 0)
       caml_invalid_argument("Bigarray.create: negative dimension");
   }
   flags = Int_val(vkind) | Int_val(vlayout);
@@ -529,8 +529,13 @@ static int caml_ba_compare(value v1, value v2)
   struct caml_ba_array * b1 = Caml_ba_array_val(v1);
   struct caml_ba_array * b2 = Caml_ba_array_val(v2);
   uintnat n, num_elts;
+  intnat flags1, flags2;
   int i;
 
+  /* Compare kind & layout in case the arguments are of different types */
+  flags1 = b1->flags & (CAML_BA_KIND_MASK | CAML_BA_LAYOUT_MASK);
+  flags2 = b2->flags & (CAML_BA_KIND_MASK | CAML_BA_LAYOUT_MASK);
+  if (flags1 != flags2) return flags2 - flags1;
   /* Compare number of dimensions */
   if (b1->num_dims != b2->num_dims) return b2->num_dims - b1->num_dims;
   /* Same number of dimensions: compare dimensions lexicographically */
@@ -697,7 +702,7 @@ static void caml_ba_serialize_longarray(void * data,
     caml_serialize_block_8(data, num_elts);
   } else {
     caml_serialize_int_1(0);
-    for (n = 0, p = data; n < num_elts; n++, p++) 
+    for (n = 0, p = data; n < num_elts; n++, p++)
       caml_serialize_int_4((int32) *p);
   }
 #else
@@ -765,7 +770,7 @@ static void caml_ba_deserialize_longarray(void * dest, intnat num_elts)
     caml_deserialize_block_8(dest, num_elts);
   } else {
     intnat * p, n;
-    for (n = 0, p = dest; n < num_elts; n++, p++) 
+    for (n = 0, p = dest; n < num_elts; n++, p++)
       *p = caml_deserialize_sint_4();
   }
 #else

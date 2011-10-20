@@ -45,14 +45,16 @@ and text_element =
               (** Style number, optional label, and text. *)
   | Latex of string (** A string for latex. *)
   | Link of string * text (** A reference string and the link text. *)
-  | Ref of string * ref_kind option
-       (** A reference to an element. Complete name and kind. *)
+  | Ref of string * ref_kind option * text option
+    (** A reference to an element. Complete name and kind. An optional
+        text can be given to display this text instead of the element name.*)
   | Superscript of text (** Superscripts. *)
   | Subscript of text (** Subscripts. *)
   | Module_list of string list
        (** The table of the given modules with their abstract; *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
   | Custom of string * text (** to extend \{foo syntax *)
+  | Target of string * string (** (target, code) : to specify code for a specific target format *)
 
 (** [text] is a list of text_elements. The order matters. *)
 and text = text_element list
@@ -79,6 +81,7 @@ type info = {
     i_version : string option; (** The string in the \@version tag. *)
     i_sees : see list; (** The list of \@see tags. *)
     i_since : string option; (** The string in the \@since tag. *)
+    i_before : (string * text) list; (** the version number and text in \@before tag *)
     i_deprecated : text option; (** The of the \@deprecated tag. *)
     i_params : param list; (** The list of parameter descriptions. *)
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
@@ -105,6 +108,7 @@ type merge_option =
   | Merge_version (** Versions are concatenated. *)
   | Merge_see (** See references are concatenated. *)
   | Merge_since (** Since information are concatenated. *)
+  | Merge_before (** Before information are concatenated. *)
   | Merge_deprecated (** Deprecated information are concatenated. *)
   | Merge_param (** Information on each parameter is concatenated,
                     and all parameters are kept. *)

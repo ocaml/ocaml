@@ -53,14 +53,14 @@ let get_real_filename name =
      (
       let paths = Filename.current_dir_name :: paths @ [Odoc_config.custom_generators_path] in
       try
-	let d = List.find
-	    (fun d -> Sys.file_exists (Filename.concat d name))
-	    paths
-	in
-	Filename.concat d name
+        let d = List.find
+            (fun d -> Sys.file_exists (Filename.concat d name))
+            paths
+        in
+        Filename.concat d name
       with
-	Not_found ->
-	  failwith (M.file_not_found_in_paths paths name)
+        Not_found ->
+          failwith (M.file_not_found_in_paths paths name)
      )
 
 let _ =
@@ -145,6 +145,3 @@ let _ =
   )
   else
     exit 0
-
-
-(* eof $Id$ *)

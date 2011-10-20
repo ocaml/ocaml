@@ -26,6 +26,8 @@ val use_lib : Pathname.t -> Pathname.t -> unit
 val cmi_of : Pathname.t -> Pathname.t
 val ocaml_add_include_flag : string -> Command.spec list -> Command.spec list
 val flag_and_dep : Tags.elt list -> Command.spec -> unit
+val pflag_and_dep : Tags.elt list -> Tags.elt -> (string -> Command.spec) ->
+  unit
 
 exception Ocamldep_error of string
 
@@ -41,4 +43,3 @@ val ocaml_lib :
   ?dir:Pathname.t ->
   ?tag_name:string ->
   Pathname.t -> unit
-

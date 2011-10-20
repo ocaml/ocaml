@@ -75,7 +75,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [( fmt %)]: format string substitution. Takes a format string
      argument and substitutes it to the internal format string [fmt]
      to print following arguments. The argument must have the same
-     type as [fmt].
+     type as the internal format string [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
    - [,]: the no-op delimiter for conversion specifications.
@@ -111,7 +111,9 @@ val eprintf : ('a, out_channel, unit) format -> 'a
 
 val ifprintf : 'a -> ('b, 'a, unit) format -> 'b
 (** Same as {!Printf.fprintf}, but does not print anything.
-    Useful to ignore some material when conditionally printing. *)
+    Useful to ignore some material when conditionally printing.
+    @since 3.10.0
+*)
 
 val sprintf : ('a, unit, string) format -> 'a
 (** Same as {!Printf.fprintf}, but instead of printing on an output channel,
@@ -127,23 +129,31 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 val kfprintf : (out_channel -> 'a) -> out_channel ->
               ('b, out_channel, unit, 'a) format4 -> 'b;;
 (** Same as [fprintf], but instead of returning immediately,
-   passes the out channel to its first argument at the end of printing. *)
+   passes the out channel to its first argument at the end of printing.
+   @since 3.09.0
+*)
 
 val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** Same as [sprintf] above, but instead of returning the string,
-   passes it to the first argument. *)
+   passes it to the first argument.
+   @since 3.09.0
+*)
 
 val kbprintf : (Buffer.t -> 'a) -> Buffer.t ->
               ('b, Buffer.t, unit, 'a) format4 -> 'b;;
 (** Same as [bprintf], but instead of returning immediately,
-   passes the buffer to its first argument at the end of printing. *)
+   passes the buffer to its first argument at the end of printing.
+   @since 3.10.0
+*)
+
+(** Deprecated *)
 
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** A deprecated synonym for [ksprintf]. *)
 
 (**/**)
 
-(* For system use only.  Don't call directly. *)
+(* For Caml system internal use only. Don't call directly. *)
 
 module CamlinternalPr : sig
 

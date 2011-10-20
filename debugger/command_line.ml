@@ -77,10 +77,10 @@ let error text =
   raise Toplevel
 
 let check_not_windows feature =
-  match Sys.os_type with 
+  match Sys.os_type with
   | "Win32" ->
       error ("'"^feature^"' feature not supported on Windows")
-  | _ -> 
+  | _ ->
       ()
 
 let eol =
@@ -227,7 +227,7 @@ let instr_shell ppf lexbuf =
   let cmd = String.concat " " cmdarg in
   (* perhaps we should use $SHELL -c ? *)
   let err = Sys.command cmd in
-  if (err != 0) then 
+  if (err != 0) then
     eprintf "Shell command %S failed with exit code %d\n%!" cmd err
 
 let instr_pwd ppf lexbuf =
@@ -363,8 +363,8 @@ let print_info_list ppf =
 
 let instr_complete ppf lexbuf =
   let ppf = Format.err_formatter in
-  let rec print_list l = 
-    try 
+  let rec print_list l =
+    try
       eol lexbuf;
       List.iter (function i -> fprintf ppf "%s@." i) l
     with _ ->
@@ -395,7 +395,7 @@ let instr_complete ppf lexbuf =
                   | [i] -> if i.info_name = ident then [] else [i.info_name]
                   | l   -> List.map (fun i -> i.info_name) l
                   end
-              | None -> 
+              | None ->
                   List.map (fun i -> i.info_name) !info_list
             end
             else ["info"]
@@ -807,6 +807,22 @@ let loading_mode_variable ppf =
       find loading_modes;
       fprintf ppf "@."
 
+let follow_fork_variable =
+  (function lexbuf ->
+     let mode =
+       match identifier_eol Lexer.lexeme lexbuf with
+       | "child" -> Fork_child
+       | "parent" -> Fork_parent
+       | _ -> error "Syntax error."
+     in
+       fork_mode := mode;
+       if !loaded then update_follow_fork_mode ()),
+  function ppf ->
+    fprintf ppf "%s@."
+      (match !fork_mode with
+         Fork_child -> "child"
+       | Fork_parent -> "parent")
+
 (** Infos. **)
 
 let pr_modules ppf mods =
@@ -992,10 +1008,10 @@ Argument N means do this N times (or till program stops for another reason)." };
      (* Breakpoints *)
      { instr_name = "break"; instr_prio = false;
        instr_action = instr_break; instr_repeat = false; instr_help =
-"Set breakpoint at specified line or function.\n\
-Syntax: break function-name\n\
-        break @ [module] linenum\n\
-        break @ [module] # characternum" };
+"Set breakpoint at specified line or function.\
+\nSyntax: break function-name\
+\n        break @ [module] linenum\
+\n        break @ [module] # characternum" };
      { instr_name = "delete"; instr_prio = false;
        instr_action = instr_delete; instr_repeat = false; instr_help =
 "delete some breakpoints.\n\
@@ -1065,7 +1081,7 @@ using \"load_printer\"." };
        var_action = loading_mode_variable ppf;
        var_help =
 "mode of loading.\n\
-It can be either :
+It can be either :\n\
   direct : the program is directly called by the debugger.\n\
   runtime : the debugger execute `ocamlrun programname arguments'.\n\
   manual : the program is not launched by the debugger,\n\
@@ -1075,7 +1091,7 @@ It can be either :
                                      checkpoint_max_count;
        var_help =
 "maximum number of process to keep." };
-     { var_name = "checkpoints"; 
+     { var_name = "checkpoints";
        var_action = boolean_variable false make_checkpoints;
        var_help =
 "whether to make checkpoints or not." };
@@ -1106,7 +1122,14 @@ It can be either :
        var_action = integer_variable false 1 "Must be at least 1"
                                      max_printer_steps;
        var_help =
-"maximal number of value nodes printed." }];
+"maximal number of value nodes printed." };
+     { var_name = "follow_fork_mode";
+       var_action = follow_fork_variable;
+       var_help =
+"process to follow after forking.\n\
+It can be either :
+  child : the newly created process.\n\
+  parent : the process that called fork.\n" }];
 
   info_list :=
     (* info name, function, help *)

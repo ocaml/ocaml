@@ -26,7 +26,7 @@ let rec eliminate_ref id = function
     Lvar v as lam ->
       if Ident.same v id then raise Real_reference else lam
   | Lconst cst as lam -> lam
-  | Lapply(e1, el, loc) -> 
+  | Lapply(e1, el, loc) ->
       Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el, loc)
   | Lfunction(kind, params, body) as lam ->
       if IdentSet.mem id (free_variables lam)
@@ -75,9 +75,9 @@ let rec eliminate_ref id = function
            dir, eliminate_ref id e3)
   | Lassign(v, e) ->
       Lassign(v, eliminate_ref id e)
-  | Lsend(k, m, o, el) ->
+  | Lsend(k, m, o, el, loc) ->
       Lsend(k, eliminate_ref id m, eliminate_ref id o,
-            List.map (eliminate_ref id) el)
+            List.map (eliminate_ref id) el, loc)
   | Levent(l, ev) ->
       Levent(eliminate_ref id l, ev)
   | Lifused(v, e) ->
@@ -85,7 +85,7 @@ let rec eliminate_ref id = function
 
 (* Simplification of exits *)
 
-let simplify_exits lam = 
+let simplify_exits lam =
 
   (* Count occurrences of (exit n ...) statements *)
   let exits = Hashtbl.create 17 in
@@ -101,7 +101,7 @@ let simplify_exits lam =
       incr (Hashtbl.find exits i)
     with
     | Not_found -> Hashtbl.add exits i (ref 1) in
-  
+
   let rec count = function
   | (Lvar _| Lconst _) -> ()
   | Lapply(l1, ll, _) -> count l1; List.iter count ll
@@ -144,7 +144,7 @@ let simplify_exits lam =
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcount *)
       count l
-  | Lsend(k, m, o, ll) -> List.iter count (m::o::ll)
+  | Lsend(k, m, o, ll, _) -> List.iter count (m::o::ll)
   | Levent(l, _) -> count l
   | Lifused(v, l) -> count l
 
@@ -250,7 +250,7 @@ let simplify_exits lam =
   | Lfor(v, l1, l2, dir, l3) ->
       Lfor(v, simplif l1, simplif l2, dir, simplif l3)
   | Lassign(v, l) -> Lassign(v, simplif l)
-  | Lsend(k, m, o, ll) -> Lsend(k, simplif m, simplif o, List.map simplif ll)
+  | Lsend(k, m, o, ll, loc) -> Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
   | Levent(l, ev) -> Levent(simplif l, ev)
   | Lifused(v, l) -> Lifused (v,simplif l)
   in
@@ -267,7 +267,7 @@ let simplify_lets lam =
       !(Hashtbl.find occ v)
     with Not_found ->
       0
-  and incr_var v = 
+  and incr_var v =
     try
       incr(Hashtbl.find occ v)
     with Not_found ->
@@ -313,7 +313,7 @@ let simplify_lets lam =
       (* Lalias-bound variables are never assigned, so don't increase
          v's refcount *)
       count l
-  | Lsend(_, m, o, ll) -> List.iter count (m::o::ll)
+  | Lsend(_, m, o, ll, _) -> List.iter count (m::o::ll)
   | Levent(l, _) -> count l
   | Lifused(v, l) ->
       if count_var v > 0 then count l
@@ -388,7 +388,7 @@ let simplify_lets lam =
          {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
                   sw_failaction = new_fail})
   | Lstaticraise (i,ls) ->
-      Lstaticraise (i, List.map simplif ls)   
+      Lstaticraise (i, List.map simplif ls)
   | Lstaticcatch(l1, (i,args), l2) ->
       Lstaticcatch (simplif l1, (i,args), simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
@@ -402,11 +402,93 @@ let simplify_lets lam =
   | Lfor(v, l1, l2, dir, l3) ->
       Lfor(v, simplif l1, simplif l2, dir, simplif l3)
   | Lassign(v, l) -> Lassign(v, simplif l)
-  | Lsend(k, m, o, ll) -> Lsend(k, simplif m, simplif o, List.map simplif ll)
+  | Lsend(k, m, o, ll, loc) -> Lsend(k, simplif m, simplif o, List.map simplif ll, loc)
   | Levent(l, ev) -> Levent(simplif l, ev)
   | Lifused(v, l) ->
       if count_var v > 0 then simplif l else lambda_unit
   in
   simplif lam
 
-let simplify_lambda lam = simplify_lets (simplify_exits lam)
+(* Tail call info in annotation files *)
+
+let is_tail_native_heuristic : (int -> bool) ref =
+  ref (fun n -> true)
+
+let rec emit_tail_infos is_tail lambda =
+  let call_kind args =
+    if is_tail
+    && ((not !Clflags.native_code)
+        || (!is_tail_native_heuristic (List.length args)))
+   then Annot.Tail
+   else Annot.Stack in
+  match lambda with
+  | Lvar _ -> ()
+  | Lconst _ -> ()
+  | Lapply (func, l, loc) ->
+      list_emit_tail_infos false l;
+      Stypes.record (Stypes.An_call (loc, call_kind l))
+  | Lfunction (_, _, lam) ->
+      emit_tail_infos true lam
+  | Llet (_, _, lam, body) ->
+      emit_tail_infos false lam;
+      emit_tail_infos is_tail body
+  | Lletrec (bindings, body) ->
+      List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
+      emit_tail_infos is_tail body
+  | Lprim (Pidentity, [arg]) ->
+      emit_tail_infos is_tail arg
+  | Lprim (Psequand, [arg1; arg2])
+  | Lprim (Psequor, [arg1; arg2]) ->
+      emit_tail_infos false arg1;
+      emit_tail_infos is_tail arg2
+  | Lprim (_, l) ->
+      list_emit_tail_infos false l
+  | Lswitch (lam, sw) ->
+      emit_tail_infos false lam;
+      list_emit_tail_infos_fun snd is_tail sw.sw_consts;
+      list_emit_tail_infos_fun snd is_tail sw.sw_blocks
+  | Lstaticraise (_, l) ->
+      list_emit_tail_infos false l
+  | Lstaticcatch (body, _, handler) ->
+      emit_tail_infos is_tail body;
+      emit_tail_infos is_tail handler
+  | Ltrywith (body, _, handler) ->
+      emit_tail_infos false body;
+      emit_tail_infos is_tail handler
+  | Lifthenelse (cond, ifso, ifno) ->
+      emit_tail_infos false cond;
+      emit_tail_infos is_tail ifso;
+      emit_tail_infos is_tail ifno
+  | Lsequence (lam1, lam2) ->
+      emit_tail_infos false lam1;
+      emit_tail_infos is_tail lam2
+  | Lwhile (cond, body) ->
+      emit_tail_infos false cond;
+      emit_tail_infos false body
+  | Lfor (_, low, high, _, body) ->
+      emit_tail_infos false low;
+      emit_tail_infos false high;
+      emit_tail_infos false body
+  | Lassign (_, lam) ->
+      emit_tail_infos false lam
+  | Lsend (_, meth, obj, args, loc) ->
+      emit_tail_infos false meth;
+      emit_tail_infos false obj;
+      list_emit_tail_infos false args;
+      Stypes.record (Stypes.An_call (loc, call_kind (obj :: args)))
+  | Levent (lam, _) ->
+      emit_tail_infos is_tail lam
+  | Lifused (_, lam) ->
+      emit_tail_infos is_tail lam
+and list_emit_tail_infos_fun f is_tail =
+  List.iter (fun x -> emit_tail_infos is_tail (f x))
+and list_emit_tail_infos is_tail =
+  List.iter (emit_tail_infos is_tail)
+
+(* The entry point:
+   simplification + emission of tailcall annotations, if needed. *)
+
+let simplify_lambda lam =
+  let res = simplify_lets (simplify_exits lam) in
+  if !Clflags.annotations then emit_tail_infos true res;
+  res

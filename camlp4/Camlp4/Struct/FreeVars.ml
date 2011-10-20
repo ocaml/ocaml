@@ -106,10 +106,10 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
       method class_str_item =
         fun
-        [ <:class_str_item< inherit $_$ >> as cst -> super#class_str_item cst
-        | <:class_str_item< inherit $ce$ as $s$ >> ->
+        [ <:class_str_item< inherit $override:_$ $_$ >> as cst -> super#class_str_item cst
+        | <:class_str_item< inherit $override:_$ $ce$ as $s$ >> ->
             (o#class_expr ce)#add_atom s
-        | <:class_str_item< value $mutable:_$ $s$ = $e$ >> ->
+        | <:class_str_item< value $override:_$ $mutable:_$ $s$ = $e$ >> ->
             (o#expr e)#add_atom s
         | <:class_str_item< value virtual $mutable:_$ $s$ : $t$ >> ->
             (o#ctyp t)#add_atom s
@@ -125,4 +125,3 @@ module Make (Ast : Sig.Camlp4Ast) = struct
   value free_vars env_init e =
     let fold = new fold_free_vars S.add ~env_init S.empty in (fold#expr e)#free;
 end;
-

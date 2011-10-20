@@ -91,7 +91,8 @@ value mk_meta m =
           let init = m_id m (meta_ident m m_name_cons) in
           let p = patt_of_data_ctor_decl m_name_cons tyargs in
           let e =
-            if cons = "BAnt" || cons = "OAnt" || cons = "LAnt" then
+            if List.mem cons  ["BAnt"; "OAnt"; "LAnt"; "ReAnt"; "DiAnt";
+                               "MuAnt"; "PrAnt"; "ViAnt"; "OvAnt"; "RvAnt"] then
               <:expr< $id:m.ant$ _loc x0 >>
             else if is_antiquot_data_ctor cons then
               expr_of_data_ctor_decl m.ant tyargs
@@ -151,7 +152,7 @@ value filter st =
           value meta_float _loc s = $m.flo$ _loc s;
           value meta_char _loc s = $m.chr$ _loc s;
           value meta_bool _loc =
-            fun   
+            fun
             [ False -> $m_uid m "False"$
             | True  -> $m_uid m "True"$ ];
           value rec meta_list mf_a _loc =

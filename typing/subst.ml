@@ -19,24 +19,17 @@ open Path
 open Types
 open Btype
 
-
-type t = 
+type t =
   { types: (Ident.t, Path.t) Tbl.t;
-    values: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
     for_saving: bool }
 
 let identity =
-  { types = Tbl.empty; values = Tbl.empty;
-    modules = Tbl.empty; modtypes = Tbl.empty;
+  { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
     for_saving = false }
 
-let get_values sub = sub.values
-
 let add_type id p s = { s with types = Tbl.add id p s.types }
-
-let add_value id p s = { s with values = Tbl.add id p s.values }
 
 let add_module id p s = { s with modules = Tbl.add id p s.modules }
 
@@ -52,6 +45,18 @@ let rec module_path s = function
   | Papply(p1, p2) ->
       Papply(module_path s p1, module_path s p2)
 
+let rec modtype_path s = function
+    Pident id as p ->
+      begin try
+        match Tbl.find id s.modtypes with
+          | Tmty_ident p -> p
+          | _ -> fatal_error "Subst.modtype_path"
+      with Not_found -> p end
+  | Pdot(p, n, pos) ->
+      Pdot(module_path s p, n, pos)
+  | Papply(p1, p2) ->
+      fatal_error "Subst.modtype_path"
+
 let type_path s = function
     Pident id as p ->
       begin try Tbl.find id s.types with Not_found -> p end
@@ -59,14 +64,6 @@ let type_path s = function
       Pdot(module_path s p, n, pos)
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
-
-let contract_path s = function
-    Pident id as p ->
-      begin try Tbl.find id s.values with Not_found -> p end
-  | Pdot(p, n, pos) ->
-      Pdot(module_path s p, n, pos)
-  | Papply(p1, p2) ->
-      Papply(module_path s p1, module_path s p2)
 
 (* Special type ids for saved signatures *)
 
@@ -89,7 +86,7 @@ let rec typexp s ty =
       else ty
   | Tsubst ty ->
       ty
-(* cannot do it, since it would omit substitution
+(* cannot do it, since it would omit subsitution
   | Tvariant row when not (static_row row) ->
       ty
 *)
@@ -103,6 +100,8 @@ let rec typexp s ty =
       begin match desc with
       | Tconstr(p, tl, abbrev) ->
           Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
+      | Tpackage(p, n, tl) ->
+          Tpackage(modtype_path s p, n, List.map (typexp s) tl)
       | Tobject (t1, name) ->
           Tobject (typexp s t1,
                  ref (match !name with
@@ -244,37 +243,6 @@ let value_description s descr =
   { val_type = type_expr s descr.val_type;
     val_kind = descr.val_kind }
 
-let expression s expr = 
-  let expr_subst s exp = match exp.exp_desc with
-  | Texp_ident (p, vd) -> 
-      let new_p = contract_path s p in
-      {exp with exp_desc = Texp_ident (new_p, vd)}
-  | others -> exp
-  in
-  map_expression (expr_subst s) expr
-
-let rec core_contract s c = 
-  {c with contract_desc = core_contract_desc s c.contract_desc}
-
-and dep_core_contract s = function (vo, c) -> 
-   (vo, core_contract s c)
-
-and core_contract_desc s = function 
-    Tctr_pred (id, expr, exnop) -> Tctr_pred (id, expression s expr, exnop)
-  | Tctr_arrow (id_opt, cc1, cc2) -> 
-      Tctr_arrow (id_opt, core_contract s cc1, core_contract s cc2) 
-  | Tctr_tuple (cs) -> Tctr_tuple (List.map (dep_core_contract s) cs)
-  | Tctr_constr(id, cdesc, cs) -> 
-      Tctr_constr (id, cdesc, List.map (dep_core_contract s) cs)
-  | Tctr_and (c1, c2) -> Tctr_and (core_contract s c1, core_contract s c2)
-  | Tctr_or (c1, c2) -> Tctr_or (core_contract s c1, core_contract s c2)
-  | Tctr_typconstr(id, cs) -> Tctr_typconstr (id, List.map (core_contract s) cs)
-  | Tctr_var (v) -> Tctr_var (v)
-  | Tctr_poly (vs, c) -> Tctr_poly (vs, core_contract s c)
-
-let contract_declaration s decl = 
-  { decl with ttopctr_desc = core_contract s decl.ttopctr_desc }
-
 let exception_declaration s tyl =
   List.map (type_expr s) tyl
 
@@ -290,20 +258,9 @@ let rec rename_bound_idents s idents = function
       let id' = Ident.rename id in
       rename_bound_idents (add_modtype id (Tmty_ident(Pident id')) s)
                           (id' :: idents) sg
-  | Tsig_value(id, _) :: sg ->
-      let id' = Ident.rename id in 
-      rename_bound_idents (add_value id (Pident id') s) (id' :: idents) sg 
-  | (Tsig_exception(id, _) | 
+  | (Tsig_value(id, _) | Tsig_exception(id, _) |
      Tsig_class(id, _, _) | Tsig_cltype(id, _, _)) :: sg ->
       let id' = Ident.rename id in
-      rename_bound_idents s (id' :: idents) sg 
-  | Tsig_contract(id, idx, _) :: sg -> 
-      (* We assume, in a signature, val decl is before contract decl. E.g.
-          val f: type1 -> type2   
-          contract f = c1 -> c2
-         So we skip contract decl here.         
-      *)
-      let id' = Ident.get_known_new_name id idents in
       rename_bound_idents s (id' :: idents) sg
 
 let rec modtype s = function
@@ -347,19 +304,22 @@ and signature_component s comp newid =
       Tsig_class(newid, class_declaration s d, rs)
   | Tsig_cltype(id, d, rs) ->
       Tsig_cltype(newid, cltype_declaration s d, rs)
-  | Tsig_contract(id, d, rs) -> 
-      Tsig_contract(newid, contract_declaration s d, rs)
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract
   | Tmodtype_manifest mty -> Tmodtype_manifest(modtype s mty)
 
-(* Composition of substitutions:  
+(* For every binding k |-> d of m1, add k |-> f d to m2 
+   and return resulting merged map. *)
+
+let merge_tbls f m1 m2 =
+  Tbl.fold (fun k d accu -> Tbl.add k (f d) accu) m1 m2
+
+(* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)
 
 let compose s1 s2 =
-  { types = Tbl.map (fun id p -> type_path s2 p) s1.types;
-    values = Tbl.map (fun id p -> contract_path s2 p) s1.values;
-    modules = Tbl.map (fun id p -> module_path s2 p) s1.modules;
-    modtypes = Tbl.map (fun id mty -> modtype s2 mty) s1.modtypes;
+  { types = merge_tbls (type_path s2) s1.types s2.types;
+    modules = merge_tbls (module_path s2) s1.modules s2.modules;
+    modtypes = merge_tbls (modtype s2) s1.modtypes s2.modtypes;
     for_saving = false }

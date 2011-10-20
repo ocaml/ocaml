@@ -57,13 +57,9 @@ let rec self depth on_the_go_orig target =
     if Resource.exists_in_source_dir target then
       Resource.Cache.import_in_build_dir target
     else
-    (* FIXME tags of target
-    let tags = Configuration.tags_of_target target in
-    let matching_rules = List.filter_opt (Rule.tags_matches tags) rules in *)
-    let matching_rules = List.filter_opt (Rule.can_produce target) (*matching_*)rules in
-    match matching_rules with
+    match List.filter_opt (Rule.can_produce target) rules with
     | [] -> failed target (Leaf target)
-    | _ ->
+    | matching_rules ->
       let rec until_works rs backtraces =
         match rs with
         | [] -> assert false
@@ -82,12 +78,24 @@ let rec self depth on_the_go_orig target =
                   | Target _ | Choice _ | Leaf _ -> ()
                 in until_works rs (backtrace :: backtraces)
       in until_works matching_rules []
+
+(* Build the first target that is buildable *)
 and self_first depth on_the_go already_failed rs =
   match rs with
   | [] -> Bad (Failed (Choice already_failed))
   | r :: rs ->
       try self depth on_the_go r; Good r
       with Failed backtrace -> self_first depth on_the_go (backtrace :: already_failed) rs
+
+(* This variant is the one (once partially applied) called the 'build'
+ * function in the rule actions.
+ *
+ * This one takes a list of list of pathnames to build.
+ * This is a parallel conjonction of sequential alternatives.
+ * This means that in each sublist of pathnames, the first
+ * target that is buildable will be picked. The outer list
+ * denotes that one can build each target in parallel.
+ *)
 and self_firsts depth on_the_go rss =
   let results = List.map (self_first depth on_the_go []) rss in
   let cmds, thunks =

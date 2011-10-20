@@ -17,13 +17,11 @@ open Glob_ast
 
 type conf_values =
   { plus_tags   : string list;
-    minus_tags  : string list;
-    plus_flags  : (string * string) list;
-    minus_flags : (string * string) list }
+    minus_tags  : string list }
 
 type conf = (Glob.globber * conf_values) list
 
-let empty = { plus_flags = []; minus_flags = []; plus_tags = []; minus_tags = [] }
+let empty = { plus_tags = []; minus_tags = [] }
 }
 
 let newline = ('\n' | '\r' | "\r\n")
@@ -36,9 +34,7 @@ let not_newline = [^ '\n' '\r' ]
 let not_newline_nor_colon = [^ '\n' '\r' ':' ]
 let normal_flag_value = [^ '(' ')' '\n' '\r']
 let normal = [^ ':' ',' '(' ')' ''' ' ' '\n' '\r']
-let tag = normal+ | ( normal+ ':' normal+ )
-let flag_name = normal+
-let flag_value = normal_flag_value+
+let tag = normal+ | ( normal+ ':' normal+ ) | normal+ '(' [^ ')' ]* ')'
 let variable = [ 'a'-'z' 'A'-'Z' '_' '-' '0'-'9' ]*
 let pattern = ([^ '(' ')' '\\' ] | '\\' [ '(' ')' ])*
 
@@ -85,15 +81,14 @@ and comma_or_blank_sep_strings_aux = parse
   | space* eof { [] }
   | _ { raise (Error "Expecting (comma|blank)-separated strings (2)") }
 
-and colon_sep_strings = parse
-  | ([^ ':']+ as word) eof { [word] }
-  | ([^ ':']+ as word) { word :: colon_sep_strings_aux lexbuf }
+and parse_environment_path = parse
+  | ([^ ':']* as word) { word :: parse_environment_path_aux lexbuf }
+  | ':' ([^ ':']* as word) { "" :: word :: parse_environment_path_aux lexbuf }
   | eof { [] }
-  | _ { raise (Error "Expecting colon-separated strings (1)") }
-and colon_sep_strings_aux = parse
-  | ':'+ ([^ ':']+ as word) { word :: colon_sep_strings_aux lexbuf }
+and parse_environment_path_aux = parse
+  | ':' ([^ ':']* as word) { word :: parse_environment_path_aux lexbuf }
   | eof { [] }
-  | _ { raise (Error "Expecting colon-separated strings (2)") }
+  | _ { raise (Error "Impossible: expecting colon-separated strings") }
 
 and conf_lines dir pos err = parse
   | space* '#' not_newline* newline { conf_lines dir (pos + 1) err lexbuf }
@@ -110,8 +105,6 @@ and conf_lines dir pos err = parse
   | _ { raise (Error(Printf.sprintf "Bad key in configuration line at line %d (from %s)" pos err)) }
 
 and conf_value pos err x = parse
-  | '-'  (flag_name as t1) '(' (flag_value as t2) ')' { { (x) with minus_flags = (t1, t2) :: x.minus_flags } }
-  | '+'? (flag_name as t1) '(' (flag_value as t2) ')' { { (x) with plus_flags = (t1, t2) :: x.plus_flags } }
   | '-'  (tag as tag) { { (x) with minus_tags = tag :: x.minus_tags } }
   | '+'? (tag as tag) { { (x) with plus_tags = tag :: x.plus_tags } }
   | (_ | eof) { raise (Error(Printf.sprintf "Bad value in configuration line at line %d (from %s)" pos err)) }
@@ -143,3 +136,21 @@ and unescape = parse
   | '\\' (['(' ')'] as c)        { c :: unescape lexbuf }
   | _ as c                       { c :: unescape lexbuf }
   | eof                          { [] }
+
+and ocamlfind_query = parse
+  | newline*
+    "package:" space* (not_newline* as n) newline+
+    "description:" space* (not_newline* as d) newline+
+    "version:" space* (not_newline* as v) newline+
+    "archive(s):" space* (not_newline* as a) newline+
+    "linkopts:" space* (not_newline* as lo) newline+
+    "location:" space* (not_newline* as l) newline+
+    { n, d, v, a, lo, l }
+  | _ { raise (Error "Bad ocamlfind query") }
+
+and trim_blanks = parse
+  | blank* (not_blank* as word) blank* { word }
+  | _ { raise (Error "Bad input for trim_blanks") }
+
+and tag_gen = parse
+  | (normal+ as name) ('(' ([^')']* as param) ')')? { name, param }

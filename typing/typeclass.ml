@@ -30,9 +30,7 @@ type error =
   | Apply_wrong_label of label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
-  | Unbound_class of Longident.t
   | Unbound_class_2 of Longident.t
-  | Unbound_class_type of Longident.t
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Constructor_type_mismatch of string * (type_expr * type_expr) list
@@ -50,6 +48,7 @@ type error =
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
   | Mutability_mismatch of string * mutable_flag
+  | No_overriding of string * string
 
 exception Error of Location.t * error
 
@@ -223,7 +222,12 @@ let enter_val cl_num vars inh lab mut virt ty val_env met_env par_env loc =
   vars := Vars.add lab (id, mut, virt, ty) !vars;
   result
 
-let inheritance self_type env concr_meths warn_meths loc parent =
+let concr_vals vars =
+  Vars.fold
+    (fun id (_, vf, _) s -> if vf = Virtual then s else Concr.add id s)
+    vars Concr.empty
+
+let inheritance self_type env ovf concr_meths warn_vals loc parent =
   match scrape_class_type parent with
     Tcty_signature cl_sig ->
 
@@ -238,22 +242,34 @@ let inheritance self_type env concr_meths warn_meths loc parent =
             assert false
       end;
 
-      let overridings = Concr.inter cl_sig.cty_concr warn_meths in
-      if not (Concr.is_empty overridings) then begin
-        let cname =
-          match parent with
-            Tcty_constr (p, _, _) -> Path.name p
-          | _ -> "inherited"
-        in
-        Location.prerr_warning loc
-          (Warnings.Method_override (cname :: Concr.elements overridings))
+      (* Overriding *)
+      let over_meths = Concr.inter cl_sig.cty_concr concr_meths in
+      let concr_vals = concr_vals cl_sig.cty_vars in
+      let over_vals = Concr.inter concr_vals warn_vals in
+      begin match ovf with
+        Some Fresh ->
+          let cname =
+            match parent with
+              Tcty_constr (p, _, _) -> Path.name p
+            | _ -> "inherited"
+          in
+          if not (Concr.is_empty over_meths) then
+            Location.prerr_warning loc
+              (Warnings.Method_override (cname :: Concr.elements over_meths));
+          if not (Concr.is_empty over_vals) then
+            Location.prerr_warning loc
+              (Warnings.Instance_variable_override
+                 (cname :: Concr.elements over_vals));
+      | Some Override
+        when Concr.is_empty over_meths && Concr.is_empty over_vals ->
+        raise (Error(loc, No_overriding ("","")))
+      | _ -> ()
       end;
 
-      let concr_meths = Concr.union cl_sig.cty_concr concr_meths in
-      (* No need to warn about overriding of inherited methods! *)
-      (* let warn_meths = Concr.union cl_sig.cty_concr warn_meths in *)
+      let concr_meths = Concr.union cl_sig.cty_concr concr_meths
+      and warn_vals = Concr.union concr_vals warn_vals in
 
-      (cl_sig, concr_meths, warn_meths)
+      (cl_sig, concr_meths, warn_vals)
 
   | _ ->
       raise(Error(loc, Structure_expected parent))
@@ -319,7 +335,7 @@ let rec class_type_field env self_type meths (val_sig, concr_meths, inher) =
         | _ -> inher
       in
       let (cl_sig, concr_meths, _) =
-        inheritance self_type env concr_meths Concr.empty sparent.pcty_loc
+        inheritance self_type env None concr_meths Concr.empty sparent.pcty_loc
           parent
       in
       let val_sig =
@@ -344,7 +360,7 @@ let rec class_type_field env self_type meths (val_sig, concr_meths, inher) =
 
 and class_signature env sty sign =
   let meths = ref Meths.empty in
-  let self_type = transl_simple_type env false sty in
+  let self_type = Ctype.expand_head env (transl_simple_type env false sty) in
 
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
@@ -372,10 +388,7 @@ and class_signature env sty sign =
 and class_type env scty =
   match scty.pcty_desc with
     Pcty_constr (lid, styl) ->
-      let (path, decl) =
-        try Env.lookup_cltype lid env with Not_found ->
-          raise(Error(scty.pcty_loc, Unbound_class_type lid))
-      in
+      let (path, decl) = Typetexp.find_cltype env scty.pcty_loc lid in
       if Path.same decl.clty_path unbound_class then
         raise(Error(scty.pcty_loc, Unbound_class_type_2 lid));
       let (params, clty) =
@@ -410,41 +423,31 @@ let class_type env scty =
 
 (*******************************)
 
-module StringSet = Set.Make(struct type t = string let compare = compare end)
-
 let rec class_field cl_num self_type meths vars
-    (val_env, met_env, par_env, fields, concr_meths, warn_meths,
-     warn_vals, inher) =
+    (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher) =
   function
-    Pcf_inher (sparent, super) ->
+    Pcf_inher (ovf, sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in
       let inher =
         match parent.cl_type with
           Tcty_constr (p, tl, _) -> (p, tl) :: inher
         | _ -> inher
       in
-      let (cl_sig, concr_meths, warn_meths) =
-        inheritance self_type val_env concr_meths warn_meths sparent.pcl_loc
-          parent.cl_type
+      let (cl_sig, concr_meths, warn_vals) =
+        inheritance self_type val_env (Some ovf) concr_meths warn_vals
+          sparent.pcl_loc parent.cl_type
       in
       (* Variables *)
-      let (val_env, met_env, par_env, inh_vars, warn_vals) =
+      let (val_env, met_env, par_env, inh_vars) =
         Vars.fold
-          (fun lab info (val_env, met_env, par_env, inh_vars, warn_vals) ->
+          (fun lab info (val_env, met_env, par_env, inh_vars) ->
              let mut, vr, ty = info in
              let (id, val_env, met_env, par_env) =
                enter_val cl_num vars true lab mut vr ty val_env met_env par_env
                  sparent.pcl_loc
              in
-             let warn_vals =
-               if vr = Virtual then warn_vals else
-               if StringSet.mem lab warn_vals then
-                 (Location.prerr_warning sparent.pcl_loc
-                   (Warnings.Instance_variable_override lab); warn_vals)
-               else StringSet.add lab warn_vals
-             in
-             (val_env, met_env, par_env, (lab, id) :: inh_vars, warn_vals))
-          cl_sig.cty_vars (val_env, met_env, par_env, [], warn_vals)
+             (val_env, met_env, par_env, (lab, id) :: inh_vars))
+          cl_sig.cty_vars (val_env, met_env, par_env, [])
       in
       (* Inherited concrete methods *)
       let inh_meths =
@@ -465,7 +468,7 @@ let rec class_field cl_num self_type meths vars
       in
       (val_env, met_env, par_env,
        lazy(Cf_inher (parent, inh_vars, inh_meths))::fields,
-       concr_meths, warn_meths, warn_vals, inher)
+       concr_meths, warn_vals, inher)
 
   | Pcf_valvirt (lab, mut, styp, loc) ->
       if !Clflags.principal then Ctype.begin_def ();
@@ -480,11 +483,16 @@ let rec class_field cl_num self_type meths vars
       in
       (val_env, met_env', par_env,
        lazy(Cf_val (lab, id, None, met_env' == met_env)) :: fields,
-       concr_meths, warn_meths, StringSet.remove lab warn_vals, inher)
+       concr_meths, warn_vals, inher)
 
-  | Pcf_val (lab, mut, sexp, loc) ->
-      if StringSet.mem lab warn_vals then
-        Location.prerr_warning loc (Warnings.Instance_variable_override lab);
+  | Pcf_val (lab, mut, ovf, sexp, loc) ->
+      if Concr.mem lab warn_vals then begin
+        if ovf = Fresh then
+          Location.prerr_warning loc (Warnings.Instance_variable_override[lab])
+      end else begin
+        if ovf = Override then
+          raise(Error(loc, No_overriding ("instance variable", lab)))
+      end;
       if !Clflags.principal then Ctype.begin_def ();
       let exp =
         try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
@@ -500,17 +508,19 @@ let rec class_field cl_num self_type meths vars
       in
       (val_env, met_env', par_env,
        lazy(Cf_val (lab, id, Some exp, met_env' == met_env)) :: fields,
-       concr_meths, warn_meths, StringSet.add lab warn_vals, inher)
+       concr_meths, Concr.add lab warn_vals, inher)
 
   | Pcf_virt (lab, priv, sty, loc) ->
       virtual_method val_env meths self_type lab priv sty loc;
-      let warn_meths = Concr.remove lab warn_meths in
-      (val_env, met_env, par_env, fields, concr_meths, warn_meths,
-       warn_vals, inher)
+      (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher)
 
-  | Pcf_meth (lab, priv, expr, loc)  ->
-      if Concr.mem lab warn_meths then
-        Location.prerr_warning loc (Warnings.Method_override [lab]);
+  | Pcf_meth (lab, priv, ovf, expr, loc)  ->
+      if Concr.mem lab concr_meths then begin
+        if ovf = Fresh then
+          Location.prerr_warning loc (Warnings.Method_override [lab])
+      end else begin
+        if ovf = Override then raise(Error(loc, No_overriding("method", lab)))
+      end;
       let (_, ty) =
         Ctype.filter_self_method val_env lab priv meths self_type
       in
@@ -551,12 +561,11 @@ let rec class_field cl_num self_type meths vars
           Cf_meth (lab, texp)
         end in
       (val_env, met_env, par_env, field::fields,
-       Concr.add lab concr_meths, Concr.add lab warn_meths, warn_vals, inher)
+       Concr.add lab concr_meths, warn_vals, inher)
 
   | Pcf_cstr (sty, sty', loc) ->
       type_constraint val_env sty sty' loc;
-      (val_env, met_env, par_env, fields, concr_meths, warn_meths,
-       warn_vals, inher)
+      (val_env, met_env, par_env, fields, concr_meths, warn_vals, inher)
 
   | Pcf_let (rec_flag, sdefs, loc) ->
       let (defs, val_env) =
@@ -586,7 +595,7 @@ let rec class_field cl_num self_type meths vars
           ([], met_env, par_env)
       in
       (val_env, met_env, par_env, lazy(Cf_let(rec_flag, defs, vals))::fields,
-       concr_meths, warn_meths, warn_vals, inher)
+       concr_meths, warn_vals, inher)
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
@@ -602,8 +611,7 @@ let rec class_field cl_num self_type meths vars
           Ctype.end_def ();
           Cf_init texp
         end in
-      (val_env, met_env, par_env, field::fields,
-       concr_meths, warn_meths, warn_vals, inher)
+      (val_env, met_env, par_env, field::fields, concr_meths, warn_vals, inher)
 
 and class_structure cl_num final val_env met_env loc (spat, str) =
   (* Environment for substructures *)
@@ -648,10 +656,9 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   end;
 
   (* Typing of class fields *)
-  let (_, _, _, fields, concr_meths, _, _, inher) =
+  let (_, _, _, fields, concr_meths, _, inher) =
     List.fold_left (class_field cl_num self_type meths vars)
-      (val_env, meth_env, par_env, [], Concr.empty, Concr.empty,
-       StringSet.empty, [])
+      (val_env, meth_env, par_env, [], Concr.empty, Concr.empty, [])
       str
   in
   Ctype.unify val_env self_type (Ctype.newvar ());
@@ -712,15 +719,14 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   let added = List.filter (fun x -> List.mem x l1) l2 in
   if added <> [] then
     Location.prerr_warning loc (Warnings.Implicit_public_methods added);
-  {cl_field = fields; cl_meths = meths}, sign
+  {cl_field = fields; cl_meths = meths},
+  if final then sign else
+  {sign with cty_self = Ctype.expand_head val_env public_self}
 
 and class_expr cl_num val_env met_env scl =
   match scl.pcl_desc with
     Pcl_constr (lid, styl) ->
-      let (path, decl) =
-        try Env.lookup_class lid val_env with Not_found ->
-          raise(Error(scl.pcl_loc, Unbound_class lid))
-      in
+      let (path, decl) = Typetexp.find_class val_env scl.pcl_loc lid in
       if Path.same decl.cty_path unbound_class then
         raise(Error(scl.pcl_loc, Unbound_class_2 lid));
       let tyl = List.map
@@ -762,12 +768,13 @@ and class_expr cl_num val_env met_env scl =
       let loc = default.pexp_loc in
       let scases =
         [{ppat_loc = loc; ppat_desc =
-          Ppat_construct(Longident.Lident"Some",
+          Ppat_construct(Longident.(Ldot (Lident"*predef*", "Some")),
                          Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
                          false)},
          {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
          {ppat_loc = loc; ppat_desc =
-          Ppat_construct(Longident.Lident"None", None, false)},
+          Ppat_construct(Longident.(Ldot (Lident"*predef*", "None")),
+                         None, false)},
          default] in
       let smatch =
         {pexp_loc = loc; pexp_desc =
@@ -1478,14 +1485,8 @@ let report_error ppf = function
       fprintf ppf "@[%s@ %a@]"
         "This pattern cannot match self: it only matches values of type"
         Printtyp.type_expr ty
-  | Unbound_class cl ->
-      fprintf ppf "@[Unbound class@ %a@]"
-      Printtyp.longident cl
   | Unbound_class_2 cl ->
       fprintf ppf "@[The class@ %a@ is not yet completely defined@]"
-      Printtyp.longident cl
-  | Unbound_class_type cl ->
-      fprintf ppf "@[Unbound class type@ %a@]"
       Printtyp.longident cl
   | Unbound_class_type_2 cl ->
       fprintf ppf "@[The class type@ %a@ is not yet completely defined@]"
@@ -1597,3 +1598,8 @@ let report_error ppf = function
       fprintf ppf
         "@[The instance variable is %s;@ it cannot be redefined as %s@]"
         mut1 mut2
+  | No_overriding (_, "") ->
+      fprintf ppf "@[This inheritance does not override any method@ %s@]"
+        "instance variable"
+  | No_overriding (kind, name) ->
+      fprintf ppf "@[The %s `%s'@ has no previous definition@]" kind name

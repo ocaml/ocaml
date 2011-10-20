@@ -45,30 +45,21 @@ let syscamllib x =
   if ccomptype = "msvc" then A(Printf.sprintf "lib%s.lib" x)
   else A("-l"^x)
 
-let mkobj obj file opts =
-  let obj = obj-.-C.o in
+let ccoutput cc obj file =
   if ccomptype = "msvc" then
-    Seq[Cmd(S[Sh C.bytecc; Sh C.bytecccompopts; opts; A"-c"; Px file]);
+    Seq[Cmd(S[cc; A"-c"; Px file]);
         mv (Pathname.basename (Pathname.update_extension C.o file)) obj]
   else
-    Cmd(S[Sh C.bytecc; Sh C.bytecccompopts; opts; A"-c"; P file; A"-o"; Px obj])
+    Cmd(S[cc; A"-c"; P file; A"-o"; Px obj])
 
-let mkdynobj obj file opts =
-  let d_obj = obj-.-"d"-.-C.o in
-  if ccomptype = "msvc" then
-    Seq[Cmd(S[Sh C.bytecc; opts; Sh C.dllcccompopts; A"-c"; Px file]);
-        mv (Pathname.basename (Pathname.update_extension C.o file)) d_obj]
-  else
-    Cmd(S[Sh C.bytecc; opts; Sh C.dllcccompopts; A"-c"; P file; A"-o"; Px d_obj])
+let mkobj obj file opts =
+  let tags = tags_of_pathname file++"c"++"compile"++ccomptype in
+  let bytecc_with_opts = S[Sh C.bytecc; Sh C.bytecccompopts; opts; T tags] in
+  ccoutput bytecc_with_opts obj file
 
 let mknatobj obj file opts =
-  let obj = obj-.-C.o in
-  if ccomptype = "msvc" then
-    Seq[Cmd(S[Sh C.nativecc; opts; A"-c"; Px file]);
-        mv (Pathname.basename (Pathname.update_extension C.o file)) obj]
-  else
-    Cmd(S[Sh C.nativecc; A"-O"; opts;
-          Sh C.nativecccompopts; A"-c"; P file; A"-o"; Px obj])
+  let nativecc_with_opts = S[Sh C.nativecc; opts; Sh C.nativecccompopts] in
+  ccoutput nativecc_with_opts obj file
 
 let add_exe a =
   if not windows || Pathname.check_extension a "exe" then a
@@ -125,6 +116,11 @@ let systhreads_dir = if_mixed_dir "otherlibs/systhreads";;
 let dynlink_dir    = if_mixed_dir "otherlibs/dynlink";;
 let str_dir        = if_mixed_dir "otherlibs/str";;
 let toplevel_dir   = if_mixed_dir "toplevel";;
+
+let systhreads_file f = "otherlibs/systhreads"/f
+let systhreads_obj f = "otherlibs/systhreads"/f-.-C.o
+let systhreads_lib f = "otherlibs/systhreads"/f-.-C.a
+let systhreads_dll f = "otherlibs/systhreads"/f-.-C.so
 
 let ocamlc_solver =
   let native_deps = ["ocamlc.opt"; "stdlib/stdlib.cmxa";
@@ -196,11 +192,11 @@ dispatch begin function
 
 let hot_camlp4boot = "camlp4"/"boot"/"camlp4boot.byte";;
 let cold_camlp4boot = "camlp4boot" (* The installed version *);;
+let cold_camlp4o = "camlp4o" (* The installed version *);;
 
 flag ["ocaml"; "ocamlyacc"] (A"-v");;
 
-flag ["ocaml"; "compile"; "warn_Ale"] (S[A"-w";A"Ale"; A"-warn-error";A"Ale"]);;
-flag ["ocaml"; "compile"; "warn_Alezv"] (S[A"-w";A"Alezv"; A"-warn-error";A"Alezv"]);;
+flag ["ocaml"; "compile"; "strict_sequence"] (A"-strict-sequence");;
 
 non_dependency "otherlibs/threads/pervasives.ml" "Unix";;
 non_dependency "otherlibs/threads/pervasives.ml" "String";;
@@ -287,7 +283,7 @@ Pathname.define_context "toplevel" ["toplevel"; "parsing"; "typing"; "bytecomp";
 Pathname.define_context "driver" ["driver"; "asmcomp"; "bytecomp"; "typing"; "utils"; "parsing"; "stdlib"];;
 Pathname.define_context "debugger" ["bytecomp"; "utils"; "typing"; "parsing"; "toplevel"; "stdlib"];;
 Pathname.define_context "otherlibs/dynlink" ["otherlibs/dynlink"; "bytecomp"; "utils"; "typing"; "parsing"; "stdlib"];;
-Pathname.define_context "otherlibs/dynlink/nat" ["otherlibs/dynlink/nat"; "stdlib"];;
+Pathname.define_context "otherlibs/dynlink/nat" ["otherlibs/dynlink/nat"; "asmcomp"; "stdlib"];;
 Pathname.define_context "asmcomp" ["asmcomp"; "bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
 Pathname.define_context "ocamlbuild" ["ocamlbuild"; "stdlib"; "."];;
 Pathname.define_context "lex" ["lex"; "stdlib"];;
@@ -313,13 +309,6 @@ copy_rule "The thread specific unix library (mllib)"     ~insert:`bottom "otherl
 
 (* Temporary rule, waiting for a full usage of ocamlbuild *)
 copy_rule "Temporary rule, waiting for a full usage of ocamlbuild" "%.mlbuild" "%.ml";;
-
-if windows then
-  copy_rule "thread_win32.ml -> thread.ml"
-    "otherlibs/systhreads/thread_win32.ml" "otherlibs/systhreads/thread.ml"
-else
-  copy_rule "thread_posix.ml -> thread.ml"
-    "otherlibs/systhreads/thread_posix.ml" "otherlibs/systhreads/thread.ml";;
 
 copy_rule "graph/graphics.ml -> win32graph/graphics.ml" "otherlibs/graph/graphics.ml" "otherlibs/win32graph/graphics.ml";;
 copy_rule "graph/graphics.mli -> win32graph/graphics.mli" "otherlibs/graph/graphics.mli" "otherlibs/win32graph/graphics.mli";;
@@ -410,17 +399,7 @@ rule "C files"
   ~dep:"%.c"
   ~insert:(`before "ocaml C stubs: c -> o")
   begin fun env _ ->
-    let c = env "%.c" in
-    mkobj (env "%") c (T(tags_of_pathname c++"c"++"compile"++ccomptype))
-  end;;
-
-rule "C files for windows dynamic libraries"
-  ~prod:("%.d"-.-C.o)
-  ~dep:"%.c"
-  ~insert:(`before "C files")
-  begin fun env _ ->
-    let c = env "%.c" in
-    mkdynobj (env "%") c (T(tags_of_pathname c++"c"++"compile"++"dll"++ccomptype))
+    mkobj (env ("%"-.-C.o)) (env "%.c") N
   end;;
 
 (* ../ is because .h files are not dependencies so they are not imported in build dir *)
@@ -484,88 +463,53 @@ flag ["c"; "compile"; "otherlibs_labltk"] (S[A"-Ibyterun"; Sh C.tk_defs; Sh C.sh
 
 (* Sys threads *)
 
-rule "posix native systhreads"
-  ~prod:"otherlibs/systhreads/posix_n.o"
-  ~dep:"otherlibs/systhreads/posix.c"
+let systhreads_stubs_headers =
+  List.map systhreads_file
+    [if windows then "st_win32.h" else "st_posix.h"; "threads.h"]
+;;
+
+rule "native systhreads"
+  ~prod:(systhreads_obj "st_stubs_n")
+  ~deps:(systhreads_file "st_stubs.c" :: systhreads_stubs_headers)
   ~insert:`top
   begin fun _ _ ->
-    Cmd(S[Sh C.nativecc; A"-O"; A"-I../asmrun"; A"-I../byterun";
-          Sh C.nativecccompopts; Sh C.sharedcccompopts;
-          A"-DNATIVE_CODE"; A("-DTARGET_"^C.arch); A("-DSYS_"^C.system); A"-c";
-          A"otherlibs/systhreads/posix.c"; A"-o"; Px"otherlibs/systhreads/posix_n.o"])
+    mknatobj (systhreads_obj "st_stubs_n")
+             (systhreads_file "st_stubs.c")
+             (S[A"-I../asmrun"; A"-I../byterun"; A"-Iotherlibs/systhreads";
+                if windows then N else Sh C.sharedcccompopts;
+                A"-DNATIVE_CODE"; A("-DTARGET_"^C.arch); A("-DSYS_"^C.system)])
   end;;
 
-rule "posix bytecode systhreads"
-  ~prod:"otherlibs/systhreads/posix_b.o"
-  ~dep:"otherlibs/systhreads/posix.c"
+rule "bytecode systhreads"
+  ~prod:(systhreads_obj "st_stubs_b")
+  ~deps:(systhreads_file "st_stubs.c" :: systhreads_stubs_headers)
   ~insert:`top
   begin fun _ _ ->
-    Cmd(S[Sh C.bytecc; A"-O"; A"-I../byterun";
-          Sh C.bytecccompopts; Sh C.sharedcccompopts;
-          A"-c"; A"otherlibs/systhreads/posix.c"; A"-o"; Px"otherlibs/systhreads/posix_b.o"])
+    mkobj (systhreads_obj "st_stubs_b") (systhreads_file "st_stubs.c")
+          (S[A"-I../byterun"; A"-Iotherlibs/systhreads"; Sh C.sharedcccompopts])
   end;;
 
-rule "windows native systhreads"
-  ~prod:("otherlibs/systhreads/win32_n"-.-C.o)
-  ~dep:"otherlibs/systhreads/win32.c"
-  ~insert:`top
-  begin fun _ _ ->
-    mknatobj "otherlibs/systhreads/win32_n"
-             "otherlibs/systhreads/win32.c"
-             (S[A"-I../asmrun"; A"-I../byterun"; A"-DNATIVE_CODE"])
-  end;;
-
-rule "windows bytecode static systhreads"
-  ~prod:("otherlibs/systhreads/win32_b"-.-C.o)
-  ~dep:"otherlibs/systhreads/win32.c"
-  ~insert:`top
-  begin fun _ _ ->
-    mkobj "otherlibs/systhreads/win32_b" "otherlibs/systhreads/win32.c"
-          ((*A"-O"; why ? *) A"-I../byterun")
-  end;;
-
-rule "windows bytecode dynamic systhreads"
-  ~prod:("otherlibs/systhreads/win32_b.d"-.-C.o)
-  ~dep:"otherlibs/systhreads/win32.c"
-  ~insert:`top
-  begin fun _ _ ->
-    mkdynobj "otherlibs/systhreads/win32_b" "otherlibs/systhreads/win32.c"
-             ((*A"-O"; why ? *) A"-I../byterun")
-  end;;
-
-if windows then begin
-  rule "windows libthreadsnat.a"
-    ~prod:("otherlibs/systhreads/libthreadsnat"-.-C.a)
-    ~dep:("otherlibs/systhreads/win32_n"-.-C.o)
-    ~insert:`top
-    begin fun _ _ ->
-      mklib ("otherlibs/systhreads/libthreadsnat"-.-C.a) (P("otherlibs/systhreads/win32_n"-.-C.o)) N
-    end
-end else begin
-(* Dynamic linking with -lpthread is risky on many platforms, so
-   do not create a shared object for libthreadsnat. *)
 rule "libthreadsnat.a"
-  ~prod:"otherlibs/systhreads/libthreadsnat.a"
-  ~dep:"otherlibs/systhreads/posix_n.o"
+  ~prod:(systhreads_lib "libthreadsnat")
+  ~dep:(systhreads_obj "st_stubs_n")
   ~insert:`top
   begin fun _ _ ->
-    mklib "otherlibs/systhreads/libthreadsnat.a" (A"otherlibs/systhreads/posix_n.o") N
+    if windows then
+      mklib (systhreads_lib "libthreadsnat") (P(systhreads_obj "st_stubs_n")) N
+    else
+      (* Dynamic linking with -lpthread is risky on many platforms, so
+        do not create a shared object for libthreadsnat. *)
+      Cmd(S[ar; A"rc"; Px(systhreads_lib "libthreadsnat");
+            P(systhreads_obj "st_stubs_n")])
   end;
 
 (* See remark above: force static linking of libthreadsnat.a *)
-flag ["ocaml"; "link"; "library"; "otherlibs_systhreads"; "native"] begin
-  S[A"-cclib"; syscamllib "threadsnat"; (* A"-cclib"; syscamllib "unix"; seems to be useless and can be dangerous during bootstrap *) Sh C.pthread_link]
-end;
-end;;
-
 if windows then
-copy_rule "systhreads/libthreads.clib is diffrent on windows"
-  ~insert:`top
-  ("otherlibs/systhreads/libthreadswin32"-.-C.a)
-  ("otherlibs/systhreads/libthreads"-.-C.a);;
+  flag ["ocaml"; "link"; "library"; "otherlibs_systhreads"; "native"] begin
+    S[A"-cclib"; syscamllib "threadsnat"; (* A"-cclib"; syscamllib "unix"; seems to be useless and can be dangerous during bootstrap *) Sh C.pthread_link]
+  end;;
 
 flag ["ocaml"; "ocamlmklib"; "otherlibs_systhreads"] (S[(* A"-cclib"; syscamllib "unix";; seems to be useless and can be dangerous during bootstrap *) Sh C.pthread_link]);;
-
 
 flag ["c"; "compile"; "otherlibs"] begin
   S[A"-I"; P"../byterun";
@@ -641,27 +585,16 @@ rule "camlheader"
             A"cp"; A"stdlib/camlheader"; A"stdlib/camlheader_ur"])
   end;;
 
-rule "ocaml C stubs on windows: dlib & d.o* -> dll"
-  ~prod:"%.dll"
-  ~deps:["%.dlib"(*; "byterun/libcamlrun"-.-C.a*)]
-  ~insert:`top
-  begin fun env build ->
-    let dlib = env "%.dlib" in
-    let dll = env "%.dll" in
-    let objs = string_list_of_file dlib in
-    let include_dirs = Pathname.include_dirs_of (Pathname.dirname dll) in
-    let resluts = build begin
-      List.map begin fun d_o ->
-        List.map (fun dir -> dir / (Pathname.update_extension C.o d_o)) include_dirs
-      end objs
-    end in
-    let objs = List.map begin function
-      | Outcome.Good d_o -> d_o
-      | Outcome.Bad exn -> raise exn
-    end resluts in
-    mkdll dll (S[atomize objs; P("byterun/libcamlrun"-.-C.a)])
-          (T(tags_of_pathname dll++"dll"++"link"++"c"))
+(* Private copy of dynlink.{ml,mli} in debugger/ *)
+copy_rule "otherlibs/dynlink/dynlink.mli -> debugger/dynlink.mli" "otherlibs/dynlink/dynlink.mli" "debugger/dynlink.mli";;
+rule "debugger/dynlink.ml"
+  ~prod: "debugger/dynlink.ml"
+  ~dep: "otherlibs/dynlink/dynlink.ml"
+  begin fun _ _ ->
+    Cmd(Sh"grep -v 'REMOVE_ME for ../../debugger/dynlink.ml' \
+           < otherlibs/dynlink/dynlink.ml >debugger/dynlink.ml")
   end;;
+
 
 copy_rule "win32unix use some unix files" "otherlibs/unix/%" "otherlibs/win32unix/%";;
 
@@ -750,6 +683,7 @@ let camlp4_import_list =
      "parsing/asttypes.mli";
      "parsing/parsetree.mli";
      "typing/outcometree.mli";
+     "typing/oprint.ml";
      "myocamlbuild_config.ml";
      "utils/config.mlbuild"]
 ;;
@@ -834,7 +768,7 @@ rule "camlp4: Camlp4/Struct/Lexer.ml -> boot/Lexer.ml"
   ~prod:"camlp4/boot/Lexer.ml"
   ~dep:"camlp4/Camlp4/Struct/Lexer.ml"
   begin fun _ _ ->
-    Cmd(S[P"camlp4o"; P"camlp4/Camlp4/Struct/Lexer.ml";
+    Cmd(S[P cold_camlp4o; P"camlp4/Camlp4/Struct/Lexer.ml";
           A"-printer"; A"r"; A"-o"; Px"camlp4/boot/Lexer.ml"])
   end;;
 
@@ -928,8 +862,6 @@ Pathname.define_context "otherlibs/labltk/jpf"
   ["otherlibs/labltk/jpf"; "otherlibs/labltk/labltk"; "otherlibs/labltk/support"; "stdlib"];;
 Pathname.define_context "otherlibs/labltk/frx"
   ["otherlibs/labltk/frx"; "otherlibs/labltk/camltk"; "otherlibs/labltk/support"; "stdlib"];;
-Pathname.define_context "otherlibs/labltk/tkanim"
-  ["otherlibs/labltk/tkanim"; "otherlibs/labltk/camltk"; "otherlibs/labltk/support"; "stdlib"];;
 Pathname.define_context "otherlibs/labltk/browser"
   ["otherlibs/labltk/browser"; "otherlibs/labltk/labltk"; "otherlibs/labltk/support"; "parsing"; "utils"; "typing"; "stdlib"];;
 

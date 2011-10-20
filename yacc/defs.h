@@ -356,4 +356,3 @@ extern void unterminated_union (int u_lineno, char *u_line, char *u_cptr);
 extern void used_reserved (char *s);
 extern void verbose (void);
 extern void write_section (char **section);
-

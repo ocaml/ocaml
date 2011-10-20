@@ -28,7 +28,7 @@ type error =
   | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
-  | Definition_mismatch of type_expr
+  | Definition_mismatch of type_expr * Includecore.type_mismatch list
   | Constraint_failed of type_expr * type_expr
   | Unconsistent_constraint of (type_expr * type_expr) list
   | Type_clash of (type_expr * type_expr) list
@@ -42,7 +42,6 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
-  | Illegal_contract_id of Longident.t
 
 exception Error of Location.t * error
 
@@ -317,18 +316,23 @@ let check_abbrev env (_, sdecl) (id, decl) =
         Tconstr(path, args, _) ->
           begin try
             let decl' = Env.find_type path env in
-            if List.length args = List.length decl.type_params
-            && Ctype.equal env false args decl.type_params
-            && Includecore.type_declarations env id
-                decl'
-                (Subst.type_declaration (Subst.add_type id path Subst.identity)
-                                        decl)
-            then ()
-            else raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+            let err =
+              if List.length args <> List.length decl.type_params
+              then [Includecore.Arity]
+              else if not (Ctype.equal env false args decl.type_params)
+              then [Includecore.Constraint]
+              else
+                Includecore.type_declarations env id
+                  decl'
+                  (Subst.type_declaration
+                     (Subst.add_type id path Subst.identity) decl)
+            in
+            if err <> [] then
+              raise(Error(sdecl.ptype_loc, Definition_mismatch (ty, err)))
           with Not_found ->
             raise(Error(sdecl.ptype_loc, Unavailable_type_constructor path))
           end
-      | _ -> raise(Error(sdecl.ptype_loc, Definition_mismatch ty))
+      | _ -> raise(Error(sdecl.ptype_loc, Definition_mismatch (ty, [])))
       end
   | _ -> ()
 
@@ -460,6 +464,8 @@ let compute_variance env tvl nega posi cntr ty =
       | Tpoly (ty, _) ->
           compute_same ty
       | Tvar | Tnil | Tlink _ | Tunivar -> ()
+      | Tpackage (_, _, tyl) ->
+          List.iter (compute_variance_rec true true true) tyl
     end
   in
   compute_variance_rec nega posi cntr ty;
@@ -598,6 +604,34 @@ let compute_variance_decls env cldecls =
        {cltydef with clty_variance = variance}))
     decls cldecls
 
+(* Check multiple declarations of labels/constructors *)
+
+let check_duplicates name_sdecl_list =
+  let labels = Hashtbl.create 7 and constrs = Hashtbl.create 7 in
+  List.iter
+    (fun (name, sdecl) -> match sdecl.ptype_kind with
+      Ptype_variant cl ->
+        List.iter
+          (fun (cname, _, loc) ->
+            try
+              let name' = Hashtbl.find constrs cname in
+              Location.prerr_warning loc
+                (Warnings.Duplicate_definitions
+                   ("constructor", cname, name', name))
+            with Not_found -> Hashtbl.add constrs cname name)
+          cl
+    | Ptype_record fl ->
+        List.iter
+          (fun (cname, _, _, loc) ->
+            try
+              let name' = Hashtbl.find labels cname in
+              Location.prerr_warning loc
+                (Warnings.Duplicate_definitions ("label", cname, name', name))
+            with Not_found -> Hashtbl.add labels cname name)
+          fl
+    | Ptype_abstract -> ())
+    name_sdecl_list
+
 (* Force recursion to go through id for private types*)
 let name_recursion sdecl id decl =
   match decl with
@@ -644,6 +678,8 @@ let transl_type_decl env name_sdecl_list =
   (* Translate each declaration. *)
   let decls =
     List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  (* Check for duplicates *)
+  check_duplicates name_sdecl_list;
   (* Build the final env. *)
   let newenv =
     List.fold_right
@@ -716,54 +752,6 @@ let transl_exn_rebind env loc lid =
     Cstr_exception path -> (path, cdescr.cstr_args)
   | _ -> raise(Error(loc, Not_an_exception lid))
 
-
-(* Type-check a contract and then translate untyped contract to 
-   typed contract declaration. 
-   The parameter *cdecls* is in the form:
-     contract f = ...
-     and g = ...
-   where f and g may be mutually recursive. 
-*)
-
-let rec transl_contract_decls env cdecls =
-  match cdecls with
-  | []     -> []
-  | (d::ds) -> let t_loc   = d.ptopctr_loc in
-               let x       = d.ptopctr_id in  (* x has type string *)
-               let longx   = Longident.Lident x in
-               let (path, vd) = try 
-                                  Env.lookup_value longx env 
-	                        with Not_found ->
-                                raise(Error(t_loc, Illegal_contract_id(longx))) in
-               let ty = vd.val_type in
-               let t_desc  = Typecore.tc_contract env d.ptopctr_desc ty in
-	       let t_d     = { Typedtree.ttopctr_id   = path; (* unique internal name *)
-                               ttopctr_desc = t_desc;
-                               ttopctr_type = ty; 
-                               ttopctr_loc  = t_loc } in
-               let t_ds    = transl_contract_decls env ds in
-               t_d::t_ds
-
-let rec transl_contract_decls_in_sig env cdecls =
-  match cdecls with
-  | []     -> []
-  | (d::ds) -> let t_loc   = d.ptopctr_loc in
-               let x       = d.ptopctr_id in  (* x has type string *)
-               let longx   = Longident.Lident x in
-               let (path, vd) = try 
-                                  Env.lookup_value longx env 
-	                        with Not_found ->
-                                raise(Error(t_loc, Illegal_contract_id(longx))) in
-               let ty = vd.val_type in
-               let t_desc  = Typecore.tc_contract_in_sig env d.ptopctr_desc ty in
-	       let t_decl = { Types.ttopctr_id   = path;
-                              ttopctr_desc = t_desc;
-                              ttopctr_type = ty;
-                              ttopctr_loc  = t_loc } in
-               let t_ds    = transl_contract_decls_in_sig env ds in
-               (Path.head path, t_decl)::t_ds
-
-
 (* Translate a value declaration *)
 let transl_value_decl env valdecl =
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
@@ -783,7 +771,7 @@ let transl_value_decl env valdecl =
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
-let transl_with_constraint env id row_path sdecl =
+let transl_with_constraint env id row_path orig_decl sdecl =
   reset_type_variables();
   Ctype.begin_def();
   let params =
@@ -791,6 +779,10 @@ let transl_with_constraint env id row_path sdecl =
       List.map (enter_type_variable true sdecl.ptype_loc) sdecl.ptype_params
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
+  let orig_decl = Ctype.instance_declaration orig_decl in
+  let arity_ok = List.length params = orig_decl.type_arity in
+  if arity_ok then
+    List.iter2 (Ctype.unify_var env) params orig_decl.type_params;
   List.iter
     (function (ty, ty', loc) ->
        try
@@ -803,7 +795,7 @@ let transl_with_constraint env id row_path sdecl =
   let decl =
     { type_params = params;
       type_arity = List.length params;
-      type_kind = Type_abstract;
+      type_kind = if arity_ok then orig_decl.type_kind else Type_abstract;
       type_private = sdecl.ptype_private;
       type_manifest =
         begin match sdecl.ptype_manifest with
@@ -905,18 +897,20 @@ let report_error ppf = function
   | Duplicate_constructor s ->
       fprintf ppf "Two constructors are named %s" s
   | Too_many_constructors ->
-      fprintf ppf "Too many non-constant constructors -- \
-                   maximum is %i non-constant constructors"
-        (Config.max_tag + 1)
+      fprintf ppf
+        "@[Too many non-constant constructors@ -- maximum is %i %s@]"
+        (Config.max_tag + 1) "non-constant constructors"
   | Duplicate_label s ->
       fprintf ppf "Two labels are named %s" s
   | Recursive_abbrev s ->
       fprintf ppf "The type abbreviation %s is cyclic" s
-  | Definition_mismatch ty ->
+  | Definition_mismatch (ty, errs) ->
       Printtyp.reset_and_mark_loops ty;
-      fprintf ppf
-        "The variant or record definition does not match that of type@ %a"
+      fprintf ppf "@[<v>@[<hov>%s@ %s@;<1 2>%a@]%a@]"
+        "This variant or record definition" "does not match that of type"
         Printtyp.type_expr ty
+        (Includecore.report_type_mismatch "the original" "this" "definition")
+        errs
   | Constraint_failed (ty, ty') ->
       fprintf ppf "Constraints are not satisfied in this type.@.";
       Printtyp.reset_and_mark_loops ty;
@@ -999,4 +993,3 @@ let report_error ppf = function
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
       fprintf ppf "This fixed type %s" r
-  | Illegal_contract_id lid -> fprintf ppf "No val declaration for contract id: %a"  Printtyp.longident lid

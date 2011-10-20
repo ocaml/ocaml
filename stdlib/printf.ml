@@ -106,6 +106,7 @@ let pad_string pad_char p neg s i len =
   then String.blit s i res 0 len
   else String.blit s i res (p - len) len;
   res
+;;
 
 (* Format a string given a %s format, e.g. %40s or %-20s.
    To do ?: ignore other flags (#, +, etc). *)
@@ -196,7 +197,8 @@ let sub_format incomplete_format bad_conversion_format conv fmt i =
 ;;
 
 let sub_format_for_printf conv =
-  sub_format incomplete_format bad_conversion_format conv;;
+  sub_format incomplete_format bad_conversion_format conv
+;;
 
 let iter_on_format_args fmt add_conv add_char =
 
@@ -307,7 +309,7 @@ let ac_of_format fmt =
 
 let count_arguments_of_format fmt =
   let ac = ac_of_format fmt in
-  (* For printing only regular arguments have to be counted. *)
+  (* For printing, only the regular arguments have to be counted. *)
   ac.ac_rglr
 ;;
 
@@ -376,7 +378,7 @@ type positional_specification =
    Note that this is optimized for the regular case, i.e. no positional
    parameter, since in this case we juste ``return'' the constant
    [Spec_none]; in case we have a positional parameter, we ``return'' a
-   [Spec_index] [positional_specification] which a bit more costly.
+   [Spec_index] [positional_specification] which is a bit more costly.
 
    Note also that we do not support [*$] specifications, since this would
    lead to type checking problems: a [*$] positional specification means
@@ -430,24 +432,33 @@ let get_index spec n =
 
 (* Format a float argument as a valid Caml lexeme. *)
 let format_float_lexeme =
-  let valid_float_lexeme sfmt s =
+
+  (* To be revised: this procedure should be a unique loop that performs the
+     validity check and the string lexeme modification at the same time.
+     Otherwise, it is too difficult to handle the strange padding facilities
+     given by printf. Let alone handling the correct widths indication,
+     knowing that we have sometime to add a '.' at the end of the result!
+  *)
+
+  let make_valid_float_lexeme s =
+    (* Check if s is already a valid lexeme:
+       in this case do nothing,
+       otherwise turn s into a valid Caml lexeme. *)
     let l = String.length s in
-    if l = 0 then "nan" else
-      let add_dot sfmt s = s ^ "." in
+    let rec valid_float_loop i =
+      if i >= l then s ^ "." else
+      match s.[i] with
+      (* Sure, this is already a valid float lexeme. *)
+      | '.' | 'e' | 'E' -> s
+      | _ -> valid_float_loop (i + 1) in
 
-      let rec loop i =
-        if i >= l then add_dot sfmt s else
-        match s.[i] with
-        | '.' -> s
-        | _ -> loop (i + 1) in
+    valid_float_loop 0 in
 
-      loop 0 in
-
-   (fun sfmt x ->
-    let s = format_float sfmt x in
-    match classify_float x with
-    | FP_normal | FP_subnormal | FP_zero -> valid_float_lexeme sfmt s
-    | FP_nan | FP_infinite -> s)
+  (fun sfmt x ->
+   let s = format_float sfmt x in
+   match classify_float x with
+   | FP_normal | FP_subnormal | FP_zero -> make_valid_float_lexeme s
+   | FP_nan | FP_infinite -> s)
 ;;
 
 (* Decode a format string and act on it.
@@ -654,9 +665,13 @@ let ksprintf k =
   mkprintf true get_buff Buffer.add_char Buffer.add_string ignore (get_cont k)
 ;;
 
+let sprintf fmt = ksprintf (fun s -> s) fmt;;
+
+(* Obsolete and deprecated. *)
 let kprintf = ksprintf;;
 
-let sprintf fmt = ksprintf (fun s -> s) fmt;;
+(* For Caml system internal use only: needed to implement modules [Format]
+  and [Scanf]. *)
 
 module CamlinternalPr = struct
 

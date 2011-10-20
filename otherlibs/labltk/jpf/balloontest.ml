@@ -29,4 +29,3 @@ let _ =
   pack [b];
   Balloon.put ~on: b ~ms: 1000 "Balloon";
   Printexc.catch mainLoop ()
- 

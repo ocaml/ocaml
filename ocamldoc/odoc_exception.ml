@@ -18,7 +18,7 @@ module Name = Odoc_name
 type exception_alias = {
     ea_name : Name.t ;
     mutable ea_ex : t_exception option ;
-  } 
+  }
 
 and t_exception = {
     ex_name : Name.t ;
@@ -27,6 +27,4 @@ and t_exception = {
     ex_alias : exception_alias option ;
     mutable ex_loc : Odoc_types.location ;
     mutable ex_code : string option ;
-  } 
-
-
+  }

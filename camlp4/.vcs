@@ -1,4 +1,0 @@
----
-exclude:
-  - !re boot/camlp4boot\.save\..*
-  - build/camlp4_config.ml

@@ -51,7 +51,7 @@ let rec field_kind_repr =
 let rec repr =
   function
     {desc = Tlink t'} ->
-      (* 
+      (*
          We do no path compression. Path compression does not seem to
          improve notably efficiency, and it prevents from changing a
          [Tlink] into another type (for instance, for undoing a
@@ -96,11 +96,11 @@ let row_repr row = row_repr_aux [] row
 let rec row_field tag row =
   let rec find = function
     | (tag',f) :: fields ->
-	if tag = tag' then row_field_repr f else find fields
+        if tag = tag' then row_field_repr f else find fields
     | [] ->
-	match repr row.row_more with
-	| {desc=Tvariant row'} -> row_field tag row'
-	| _ -> Rabsent
+        match repr row.row_more with
+        | {desc=Tvariant row'} -> row_field tag row'
+        | _ -> Rabsent
   in find row.row_fields
 
 let rec row_more row =
@@ -195,6 +195,7 @@ let iter_type_expr f ty =
   | Tsubst ty           -> f ty
   | Tunivar             -> ()
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
+  | Tpackage (_, _, l)  -> List.iter f l
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
@@ -256,14 +257,14 @@ let rec copy_type_desc f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
-
+  | Tpackage (p, n, l)  -> Tpackage (p, n, List.map f l)
 
 (* Utilities for copying *)
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)
 
-let save_desc ty desc = 
+let save_desc ty desc =
   saved_desc := (ty, desc)::!saved_desc
 
 let saved_kinds = ref [] (* duplicated kind variables *)
@@ -380,7 +381,7 @@ let rec forget_abbrev_rec mem path =
     Mnil ->
       assert false
   | Mcons (_, path', _, _, rem) when Path.same path path' ->
-      rem 
+      rem
   | Mcons (priv, path', v, v', rem) ->
       Mcons (priv, path', v, v', forget_abbrev_rec rem path)
   | Mlink mem' ->
@@ -445,7 +446,7 @@ let undo_change = function
   | Ccommu (r, v) -> r := v
   | Cuniv  (r, v) -> r := v
 
-type changes = 
+type changes =
     Change of change * changes ref
   | Unchanged
   | Invalid

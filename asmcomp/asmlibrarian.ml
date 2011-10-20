@@ -16,7 +16,7 @@
 
 open Misc
 open Config
-open Compilenv
+open Cmx_format
 
 type error =
     File_not_found of string
@@ -71,4 +71,3 @@ let report_error ppf = function
       fprintf ppf "Cannot find file %s" name
   | Archiver_error name ->
       fprintf ppf "Error while creating the library %s" name
-

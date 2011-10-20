@@ -150,7 +150,7 @@ and match_concrete_type pattern obj cstr ty ty_list =
   | Variant_type constr_list ->
       let tag = value_tag obj in
         (try
-           let constr = 
+           let constr =
              if same_type_constr cstr constr_type_exn then
                find_exception tag
              else

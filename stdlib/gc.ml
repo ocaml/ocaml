@@ -29,6 +29,7 @@ type stat = {
   fragments : int;
   compactions : int;
   top_heap_words : int;
+  stack_size : int;
 };;
 
 type control = {

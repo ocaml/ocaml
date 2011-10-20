@@ -51,11 +51,13 @@ value register_str_item_parser f = str_item_parser.val := f;
 value register_sig_item_parser f = sig_item_parser.val := f;
 value register_parser f g =
   do { str_item_parser.val := f; sig_item_parser.val := g };
+value current_parser () = (str_item_parser.val, sig_item_parser.val);
 
 value register_str_item_printer f = str_item_printer.val := f;
 value register_sig_item_printer f = sig_item_printer.val := f;
 value register_printer f g =
   do { str_item_printer.val := f; sig_item_printer.val := g };
+value current_printer () = (str_item_printer.val, sig_item_printer.val);
 
 module Plugin (Id : Sig.Id) (Maker : functor (Unit : sig end) -> sig end) = struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker (struct end) in ());
@@ -139,7 +141,7 @@ module CurrentParser = struct
   value parse_interf ?directive_handler loc strm =
     sig_item_parser.val ?directive_handler loc strm;
   value parse_implem ?directive_handler loc strm =
-    str_item_parser.val ?directive_handler loc strm; 
+    str_item_parser.val ?directive_handler loc strm;
 end;
 
 module CurrentPrinter = struct
@@ -147,7 +149,7 @@ module CurrentPrinter = struct
   value print_interf ?input_file ?output_file ast =
     sig_item_printer.val ?input_file ?output_file ast;
   value print_implem ?input_file ?output_file ast =
-    str_item_printer.val ?input_file ?output_file ast; 
+    str_item_printer.val ?input_file ?output_file ast;
 end;
 
 value enable_ocaml_printer () =
@@ -167,4 +169,3 @@ value enable_dump_camlp4_ast_printer () =
 
 value enable_null_printer () =
   let module M = Printer PP.Null.Id PP.Null.Make in ();
-

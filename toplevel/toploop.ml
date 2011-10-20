@@ -219,10 +219,10 @@ let execute_phrase print_outcome ppf phr =
       let oldenv = !toplevel_env in
       let _ = Unused_var.warn ppf sstr in
       Typecore.reset_delayed_checks ();
-      let (str1, sg, newenv) = Typemod.type_structure oldenv sstr Location.none in
+      let (str, sg, newenv) = Typemod.type_structure oldenv sstr Location.none
+      in
       Typecore.force_delayed_checks ();
-      let str = Translmod.transl_toplevel_contracts newenv str1 in       
-      let lam = Translmod.transl_toplevel_definition str in 
+      let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       begin try
         toplevel_env := newenv;
@@ -322,12 +322,12 @@ let first_line = ref true
 let got_eof = ref false;;
 
 let read_input_default prompt buffer len =
-  output_string stdout prompt; flush stdout;
+  output_string Pervasives.stdout prompt; flush Pervasives.stdout;
   let i = ref 0 in
   try
     while true do
       if !i >= len then raise Exit;
-      let c = input_char stdin in
+      let c = input_char Pervasives.stdin in
       buffer.[!i] <- c;
       incr i;
       if c = '\n' then raise Exit;

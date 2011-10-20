@@ -102,8 +102,8 @@ class text =
       ("\\.\\.\\.", "$\\ldots$");
       ("\\\\", "MAXENCE"^"XXX") ;
       ("&", "MAXENCE"^"YYY") ;
-      ("\\$", "MAXENCE"^"ZZZ")
-     ]
+      ("\\$", "MAXENCE"^"ZZZ");
+    ]
 
     val mutable subst_strings_simple =
       [
@@ -238,14 +238,22 @@ class text =
       | Odoc_info.Title (n, l_opt, t) -> self#latex_of_Title fmt n l_opt t
       | Odoc_info.Latex s -> self#latex_of_Latex fmt s
       | Odoc_info.Link (s, t) -> self#latex_of_Link fmt s t
-      | Odoc_info.Ref (name, ref_opt) -> self#latex_of_Ref fmt name ref_opt
+      | Odoc_info.Ref (name, ref_opt, text_opt) ->
+          self#latex_of_Ref fmt name ref_opt text_opt
       | Odoc_info.Superscript t -> self#latex_of_Superscript fmt t
       | Odoc_info.Subscript t -> self#latex_of_Subscript fmt t
       | Odoc_info.Module_list _ -> ()
       | Odoc_info.Index_list -> ()
       | Odoc_info.Custom (s,t) -> self#latex_of_custom_text fmt s t
+      | Odoc_info.Target (target, code) -> self#latex_of_Target fmt ~target ~code
 
     method latex_of_custom_text fmt s t = ()
+
+    method latex_of_Target fmt ~target ~code =
+      if String.lowercase target = "latex" then
+        self#latex_of_Latex fmt code
+      else
+        ()
 
     method latex_of_Raw fmt s =
       ps fmt (self#escape s)
@@ -344,11 +352,15 @@ class text =
       ps fmt s ;
       ps fmt "}]"
 
-    method latex_of_Ref fmt name ref_opt =
+    method latex_of_Ref fmt name ref_opt text_opt =
       match ref_opt with
         None ->
-          self#latex_of_text_element fmt
-            (Odoc_info.Code (Odoc_info.use_hidden_modules name))
+          self#latex_of_text fmt
+          (match text_opt with
+             None ->
+               [Odoc_info.Code (Odoc_info.use_hidden_modules name)]
+           | Some t -> t
+           )
       | Some (RK_section _) ->
           self#latex_of_text_element fmt
             (Latex ("["^(self#make_ref (self#label ~no_:false (Name.simple name)))^"]"))
@@ -366,11 +378,13 @@ class text =
             | Odoc_info.RK_method -> self#method_label
             | Odoc_info.RK_section _ -> assert false
           in
+          let text =
+            match text_opt with
+              None -> [Odoc_info.Code (Odoc_info.use_hidden_modules name)]
+            | Some t -> t
+          in
           self#latex_of_text fmt
-            [
-              Odoc_info.Code (Odoc_info.use_hidden_modules name) ;
-              Latex ("["^(self#make_ref (f_label name))^"]")
-            ]
+             (text @ [Latex ("["^(self#make_ref (f_label name))^"]")])
 
     method latex_of_Superscript fmt t =
       ps fmt "$^{";
@@ -610,6 +624,11 @@ class latex =
             [ Code " ";
               Code (self#relative_idents father s);
             ]
+      | Module_type_typeof s ->
+          self#latex_of_text fmt
+            [ Code "module type of ";
+              Code (self#relative_idents father s);
+            ]
 
     method latex_of_module_kind fmt father kind =
       match kind with
@@ -640,6 +659,16 @@ class latex =
       | Module_constraint (k, tk) ->
           (* TODO: on affiche quoi ? *)
           self#latex_of_module_kind fmt father k
+      | Module_typeof s ->
+          self#latex_of_text fmt
+            [ Code "module type of ";
+              Code (self#relative_idents father s);
+            ]
+      | Module_unpack (s, _) ->
+          self#latex_of_text fmt
+            [
+              Code (self#relative_idents father s);
+            ]
 
     method latex_of_class_kind fmt father kind =
       match kind with

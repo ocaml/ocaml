@@ -26,7 +26,7 @@ bad() {
 }
 
 finish_if_bad() {
-  if [ -f buildbot.failed ]; then 
+  if [ -f buildbot.failed ]; then
     finish
     exit 2
   fi

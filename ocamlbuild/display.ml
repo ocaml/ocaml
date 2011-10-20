@@ -25,10 +25,12 @@ module ANSI =
     let clear_to_eol oc () = fp oc "\027[K";;
     let bol oc () = fp oc "\r";;
     let get_columns () =
-      try
-        int_of_string (String.chomp (My_unix.run_and_read "tput cols"))
-      with
-      | Failure _ -> 80
+      if Sys.os_type = "Unix" then
+        try
+          int_of_string (String.chomp (My_unix.run_and_read "tput cols"))
+        with
+        | Failure _ -> 80
+      else 80
   end
 ;;
 (* ***)
@@ -140,7 +142,7 @@ let create
           ds_last_cached     = false;
           ds_changed         = false;
           ds_update_interval = default_update_interval;
-          ds_columns         = n; 
+          ds_columns         = n;
           ds_jobs            = 0;
           ds_jobs_cached     = 0;
           ds_tagline         = create_tagline description;
@@ -196,7 +198,7 @@ HH MM SS XXXX        PATHNAME
 |          |  \ number of jobs cached
 |          \ number of jobs
 \ elapsed time
-cmo mllib 
+cmo mllib
 ***)
 (*** redraw_sophisticated *)
 let redraw_sophisticated ds =

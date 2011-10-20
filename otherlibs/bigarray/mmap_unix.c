@@ -21,6 +21,7 @@
 #include "io.h"
 #include "mlvalues.h"
 #include "sys.h"
+#include "signals.h"
 
 extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 
@@ -65,10 +66,17 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
       caml_invalid_argument("Bigarray.create: negative dimension");
   }
   /* Determine file size */
+  caml_enter_blocking_section();
   currpos = lseek(fd, 0, SEEK_CUR);
-  if (currpos == -1) caml_sys_error(NO_ARG);
+  if (currpos == -1) {
+    caml_leave_blocking_section();
+    caml_sys_error(NO_ARG);
+  }
   file_size = lseek(fd, 0, SEEK_END);
-  if (file_size == -1) caml_sys_error(NO_ARG);
+  if (file_size == -1) {
+    caml_leave_blocking_section();
+    caml_sys_error(NO_ARG);
+  }
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = caml_ba_element_size[flags & CAML_BA_KIND_MASK];
@@ -77,20 +85,29 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   /* Check if the major dimension is unknown */
   if (dim[major_dim] == -1) {
     /* Determine major dimension from file size */
-    if (file_size < startpos)
+    if (file_size < startpos) {
+      caml_leave_blocking_section();
       caml_failwith("Bigarray.mmap: file position exceeds file size");
+    }
     data_size = file_size - startpos;
     dim[major_dim] = (uintnat) (data_size / array_size);
     array_size = dim[major_dim] * array_size;
-    if (array_size != data_size)
+    if (array_size != data_size) {
+      caml_leave_blocking_section();
       caml_failwith("Bigarray.mmap: file size doesn't match array dimensions");
+    }
   } else {
     /* Check that file is large enough, and grow it otherwise */
     if (file_size < startpos + array_size) {
-      if (lseek(fd, startpos + array_size - 1, SEEK_SET) == -1)
+      if (lseek(fd, startpos + array_size - 1, SEEK_SET) == -1) {
+        caml_leave_blocking_section();
         caml_sys_error(NO_ARG);
+      }
       c = 0;
-      if (write(fd, &c, 1) != 1) caml_sys_error(NO_ARG);
+      if (write(fd, &c, 1) != 1) {
+        caml_leave_blocking_section();
+        caml_sys_error(NO_ARG);
+      }
     }
   }
   /* Restore original file position */
@@ -102,6 +119,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   shared = Bool_val(vshared) ? MAP_SHARED : MAP_PRIVATE;
   addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
               shared, fd, startpos - delta);
+  caml_leave_blocking_section();
   if (addr == (void *) MAP_FAILED) caml_sys_error(NO_ARG);
   addr = (void *) ((uintnat) addr + delta);
   /* Build and return the Caml bigarray */
@@ -113,7 +131,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
 value caml_ba_map_file(value vfd, value vkind, value vlayout,
                        value vshared, value vdim, value vpos)
 {
-  invalid_argument("Bigarray.map_file: not supported");
+  caml_invalid_argument("Bigarray.map_file: not supported");
   return Val_unit;
 }
 

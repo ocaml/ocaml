@@ -17,3 +17,4 @@ interp.a.lst
 .gdb_history
 *.so
 *.a
+.depend.nt

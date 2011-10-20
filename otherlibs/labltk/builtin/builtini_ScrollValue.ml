@@ -11,13 +11,13 @@ let cCAMLtoTKscrollValue = function
 
 (* str l -> scrllv -> str l *)
 let cTKtoCAMLscrollValue = function
-   "scroll"::n::"pages"::l -> 
+   "scroll"::n::("pages"|"page")::l ->
      ScrollPage (int_of_string n), l
  | "scroll"::n::"units"::l ->
      ScrollUnit (int_of_string n), l
  | "moveto"::f::l ->
      MoveTo (float_of_string f), l
- | _ -> raise (Invalid_argument "TKtoCAMLscrollValue")
+ | l -> raise (Invalid_argument (String.concat " " ("TKtoCAMLscrollValue"::l)))
 ;;
 
 ##else
@@ -33,13 +33,13 @@ let cCAMLtoTKscrollValue : scrollValue -> tkArgs = function
 
 (* str l -> scrllv -> str l *)
 let cTKtoCAMLscrollValue = function
- | "scroll" :: n :: "pages" :: l -> 
+ | "scroll" :: n :: ("pages"|"page") :: l ->
      `Page (int_of_string n), l
  | "scroll" :: n :: "units" :: l ->
      `Unit (int_of_string n), l
  | "moveto" :: f :: l ->
      `Moveto (float_of_string f), l
- | _ -> raise (Invalid_argument "TKtoCAMLscrollValue")
+ | l -> raise (Invalid_argument (String.concat " " ("TKtoCAMLscrollValue"::l)))
 ;;
 
 ##endif

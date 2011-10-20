@@ -49,7 +49,7 @@ let slot_offset loc cl =
   | Outgoing n ->
       assert (n >= 0);
       n
-(* Record symbols used and defined - at the end generate extern for those 
+(* Record symbols used and defined - at the end generate extern for those
    used but not defined *)
 
 let symbols_defined = ref StringSet.empty
@@ -74,7 +74,7 @@ let emit_label lbl =
 (* Output an align directive. *)
 
 let emit_align n = `	ALIGN	{emit_int n}\n`
-  
+
 (* Output a pseudo-register *)
 
 let emit_reg = function
@@ -257,7 +257,7 @@ let name_for_cond_branch = function
   | Iunsigned Ceq -> "e"   | Iunsigned Cne -> "ne"
   | Iunsigned Cle -> "be"  | Iunsigned Cgt -> "a"
   | Iunsigned Clt -> "b"   | Iunsigned Cge -> "ae"
-    
+
 (* Output an = 0 or <> 0 test. *)
 
 let output_test_zero arg =
@@ -687,7 +687,7 @@ let emit_instr i =
             `	cmp	{emit_reg i.arg.(0)},{emit_reg i.arg.(1)}\n`;
             let b = name_for_cond_branch cmp in
             `	j{emit_string b}        {emit_label lbl}\n`
-        | Iinttest_imm((Isigned Ceq | Isigned Cne | 
+        | Iinttest_imm((Isigned Ceq | Isigned Cne |
                         Iunsigned Ceq | Iunsigned Cne) as cmp, 0) ->
             output_test_zero i.arg.(0);
             let b = name_for_cond_branch cmp in
@@ -813,7 +813,7 @@ let emit_item = function
       add_def_symbol s ;
       `{emit_symbol s} LABEL DWORD\n`
   | Cdefine_label lbl ->
-      `{emit_label (100000 + lbl)} `
+      `{emit_label (100000 + lbl)}	LABEL DWORD\n`
   | Cint8 n ->
       `	BYTE	{emit_int n}\n`
   | Cint16 n ->

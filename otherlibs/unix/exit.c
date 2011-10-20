@@ -22,5 +22,3 @@ CAMLprim value unix_exit(value n)
   return Val_unit;                  /* never reached, but suppress warnings */
                                     /* from smart compilers */
 }
-
-

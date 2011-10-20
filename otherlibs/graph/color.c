@@ -70,23 +70,23 @@ void caml_gr_init_direct_rgb_to_pixel(void)
 {
   Visual *visual;
   int i;
- 
+
   visual = DefaultVisual(caml_gr_display,caml_gr_screen);
-  
+
   if ( visual->class == TrueColor || visual->class == DirectColor ){
 
     caml_gr_red_mask = visual->red_mask;
     caml_gr_green_mask = visual->green_mask;
     caml_gr_blue_mask = visual->blue_mask;
- 
+
 #ifdef QUICKCOLORDEBUG
-    fprintf(stderr, "visual %lx %lx %lx\n", 
-            caml_gr_red_mask, 
-            caml_gr_green_mask, 
+    fprintf(stderr, "visual %lx %lx %lx\n",
+            caml_gr_red_mask,
+            caml_gr_green_mask,
             caml_gr_blue_mask);
 #endif
 
-    caml_gr_get_shifts(caml_gr_red_mask, &caml_gr_red_l, &caml_gr_red_r); 
+    caml_gr_get_shifts(caml_gr_red_mask, &caml_gr_red_l, &caml_gr_red_r);
 #ifdef QUICKCOLORDEBUG
     fprintf(stderr, "red %d %d\n", caml_gr_red_l, caml_gr_red_r);
 #endif
@@ -94,7 +94,7 @@ void caml_gr_init_direct_rgb_to_pixel(void)
       caml_gr_red_vals[i] = (((i << 8) + i) >> caml_gr_red_r) << caml_gr_red_l;
     }
 
-    caml_gr_get_shifts(caml_gr_green_mask, &caml_gr_green_l, &caml_gr_green_r); 
+    caml_gr_get_shifts(caml_gr_green_mask, &caml_gr_green_l, &caml_gr_green_r);
 #ifdef QUICKCOLORDEBUG
     fprintf(stderr, "green %d %d\n", caml_gr_green_l, caml_gr_green_r);
 #endif
@@ -102,16 +102,16 @@ void caml_gr_init_direct_rgb_to_pixel(void)
       caml_gr_green_vals[i] = (((i << 8) + i) >> caml_gr_green_r) << caml_gr_green_l;
     }
 
-    caml_gr_get_shifts(caml_gr_blue_mask, &caml_gr_blue_l, &caml_gr_blue_r); 
+    caml_gr_get_shifts(caml_gr_blue_mask, &caml_gr_blue_l, &caml_gr_blue_r);
 #ifdef QUICKCOLORDEBUG
     fprintf(stderr, "blue %d %d\n", caml_gr_blue_l, caml_gr_blue_r);
 #endif
     for(i=0; i<256; i++){
       caml_gr_blue_vals[i] = (((i << 8) + i) >> caml_gr_blue_r) << caml_gr_blue_l;
     }
-    
-    if( caml_gr_red_l < 0 || caml_gr_red_r < 0 || 
-        caml_gr_green_l < 0 || caml_gr_green_r < 0 || 
+
+    if( caml_gr_red_l < 0 || caml_gr_red_r < 0 ||
+        caml_gr_green_l < 0 || caml_gr_green_r < 0 ||
         caml_gr_blue_l < 0 || caml_gr_blue_r < 0 ){
 #ifdef QUICKCOLORDEBUG
       fprintf(stderr, "Damn, boost failed\n");
@@ -186,7 +186,7 @@ unsigned long caml_gr_pixel_rgb(int rgb)
 int caml_gr_rgb_pixel(long unsigned int pixel)
 {
   register int r,g,b;
- 
+
   XColor color;
   int i;
 

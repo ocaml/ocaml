@@ -1,0 +1,6 @@
+./program > testsignal2.result &
+pid=$!
+sleep 3
+kill -INT $pid
+sleep 1
+kill -9 $pid || true

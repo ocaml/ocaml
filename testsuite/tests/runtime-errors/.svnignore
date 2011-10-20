@@ -1,0 +1,11 @@
+#!/bin/sh
+
+svn propset svn:ignore -F - . <<EOF
+
+*.result
+*.byte
+*.native
+program
+*.bytecode
+
+EOF

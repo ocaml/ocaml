@@ -21,7 +21,7 @@ val arith_status: unit -> unit
 val get_error_when_null_denominator : unit -> bool
         (** See {!Arith_status.set_error_when_null_denominator}.*)
 val set_error_when_null_denominator : bool -> unit
-        (** Get or set the flag [null_denominator]. When on, attempting to 
+        (** Get or set the flag [null_denominator]. When on, attempting to
            create a rational with a null denominator raises an exception.
            When off, rationals with null denominators are accepted.
            Initially: on. *)
@@ -57,4 +57,3 @@ val set_floating_precision : int -> unit
            This parameter is the number of digits displayed when
            [approx_printing] is on.
            Initially: 12. *)
-

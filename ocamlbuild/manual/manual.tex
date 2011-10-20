@@ -40,7 +40,7 @@ libraries, package (-pack) debugging and profiling flags, C stubs.
 OCaml itself.
 \item Automatic inference of dependencies.
 \item Correct handling of dynamically discovered dependencies.
-\item Object files and other temporary files are created in a specific directory, leaving your main directory uncluttered.  
+\item Object files and other temporary files are created in a specific directory, leaving your main directory uncluttered.
 \item Sanity checks ensure that object files are where they are supposed to be: in the build directory.
 \item Regular projects are built using a single command with no extra files.
 \item Parallel compilation to speed up things on multi-core systems.
@@ -109,7 +109,7 @@ complex projects with arbitrary dependencies and actions.
 Your code is in the \texttt{\_build} directory, but \ocb automatically creates
 a symbolic link to the executables it produces in the current directory.
 \ocb copies the source files and compiles them in a separate directory
-which is \texttt{\_build} by default.  
+which is \texttt{\_build} by default.
 
 For \ocb, any file that is not in the build directory is a source file.
 It is not unreasonable to think that some users may have bought binary object files
@@ -143,7 +143,7 @@ by \ocb to denote native code executables.
 \begin{verbatim}
 % ls
 hello.ml
-% ocamlbuild hello.native        
+% ocamlbuild hello.native
 Finished, 4 targets (0 cached) in 00:00:00.
 % ls -l
 total 12
@@ -156,7 +156,7 @@ of compiling.  You usually won't have to look very often into this directory.  S
 into \texttt{\_build} and this is where the compilers will be run.  Various cache files are also stored
 there.  Its contents may look like this:
 \begin{verbatim}
-% ls -l _build 
+% ls -l _build
 total 208
 -rw-rw---- 1 linus gallium    337 2007-01-17 16:24 _digests
 -rw-rw---- 1 linus gallium    191 2007-01-17 16:24 hello.cmi
@@ -179,7 +179,7 @@ ocamlbuild hello.native -- Caesar
 and it will compile and then run \texttt{hello.native} with the arguments following \texttt{-{}-},
 which should display:
 \begin{verbatim}
-% ocamlbuild hello.native -- Caesar   
+% ocamlbuild hello.native -- Caesar
 Finished, 4 targets (0 cached) in 00:00:00.
 Hello, Caesar ! My name is _build/hello.native
 \end{verbatim}
@@ -514,7 +514,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
 %***)
 %(*** Subdirectories
 \subsection{Subdirectories}
-If the files of your project are held in one or more subdirectories, 
+If the files of your project are held in one or more subdirectories,
 \ocb must be made aware of that fact using the \texttt{-I} or \texttt{-Is} options
 or by adding an \texttt{include} tag.  For instance, assume your project is made
 of three subdirectories, \texttt{foo}, \texttt{bar} and \texttt{baz} containing
@@ -610,7 +610,7 @@ library.   Just   write   a   file  with  the  \texttt{mltop}  extension  (like
 You can specify preprocessor options with \texttt{-pp} followed by the
 preprocessor string, for instance \texttt{ocamlbuild -pp "camlp4o.opt -unsafe"}
 would run your sources thru CamlP4 with the \texttt{-unsafe} option.
-Another way is to use the tags file.  
+Another way is to use the tags file.
 \begin{center}
   \begin{tabular}{|l|l|l|}
     \hline
@@ -631,47 +631,47 @@ Another way is to use the tags file.
   \end{tabular}
 \end{center}
 
-%%%%% \subsubsection{An example, dealing with some configuration variables} 
-%%%%% 
+%%%%% \subsubsection{An example, dealing with some configuration variables}
+%%%%%
 %%%%% It's quite common to have in your sources some files that you want to access
 %%%%% when your program is running. One often uses some variables that are setup by
 %%%%% the end user. Now suppose that there is only two files that use these variables
 %%%%% (mylib.ml and parseopt.ml).
-%%%%% 
+%%%%%
 %%%%% In the \tags file:
 %%%%% \begin{verbatim}
 %%%%% "mylib.ml" or "parseopt.ml": pp(sed -e "s,LIBDIR,/usr/local/lib/FOO,g")
 %%%%% \end{verbatim}
-%%%%% 
+%%%%%
 %%%%% In fact that solution is not really acceptable, since the variable is hardcoded
 %%%%% in the \tags file. Trying to workaround this issue by using some shell variable
 %%%%% does not work either since the -pp argument will be escaped in simple quotes.
 %%%%% Note also that using some script shell that will do that sed and use \verb'$LIBDIR'
 %%%%% as a shell variable is not a good idea since \ocb don't know this dependency on that
 %%%%% shell script.
-%%%%% 
+%%%%%
 %%%%% There is in fact at least two good solutions. The first is to tell that dependency
 %%%%% using the \texttt{dep} function in your plugin. The second is simpler it just consist
 %%%%% on generating some OCaml file at configure time. By naming this configuration file
 %%%%% \texttt{myocamlbuild_config.ml} \ocb will make it also available to your plugin.
-%%%%% 
+%%%%%
 %%%%% In your \texttt{myocamlbuild_config.mli} interface:
 %%%%% \begin{verbotim}
 %%%%% val prefix : string
 %%%%% val libdir : string
 %%%%% \end{verbotim}
-%%%%% 
-%%%%% And in your \texttt{configure} script 
+%%%%%
+%%%%% And in your \texttt{configure} script
 %%%%% \begin{verbatim}
 %%%%% #!/bin/sh
-%%%%% 
+%%%%%
 %%%%% # Setting defaults values
 %%%%% PREFIX=/usr/local
 %%%%% LIBDIR=$PREFIX/lib/FOO
 %%%%% CONF=myocamlbuild_config.ml
-%%%%% 
+%%%%%
 %%%%% # ... some shell to parse option and check configuration ...
-%%%%% 
+%%%%%
 %%%%% # Dumping the configuration as an OCaml file.
 %%%%% rm -f $CONF
 %%%%% echo "let prefix = \"$PREFIX\";;" >> $CONF
@@ -751,21 +751,21 @@ the tags \texttt{ocaml}, \texttt{native}, \texttt{byte}, \texttt{program},
        \textbf{Tag} & \textbf{Display character} \\
        \hline
        \hline
-       ocaml	& O \\
+       ocaml    & O \\
        \hline
-       native	& N \\
+       native   & N \\
        \hline
-       byte	& B \\
+       byte     & B \\
        \hline
-       program	& P \\
+       program  & P \\
        \hline
-       pp	        & R \\
+       pp       & R \\
        \hline
-       debug	& D \\
+       debug    & D \\
        \hline
-       interf	& I \\
+       interf   & I \\
        \hline
-       link	& L \\
+       link     & L \\
        \hline
     \end{tabular}
   \end{center}
@@ -837,7 +837,7 @@ The second one is as a dispatcher for various actions defined using
 phony targets with shell script actions.  These actions include cleaning,
 cleaning really well, archiving, uploading and so on.  Their characteristic
 is that they rely little or not on the building process -- they either need
-the building to have been completed, or they don't need anything.  
+the building to have been completed, or they don't need anything.
 As \texttt{/bin/sh} scripts have been here for three to four decades and are
 not going anywhere, why not replace that functionality of makefiles with a
 shell script ?  We have thought of three bad reasons:

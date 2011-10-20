@@ -17,20 +17,20 @@ open Camltk
 
 let version = "$Id$"
 
-(* 
+(*
  * Link a scrollbar and a listbox
  *)
 let scroll_link sb lb =
-  Listbox.configure lb 
+  Listbox.configure lb
         [YScrollCommand (Scrollbar.set sb)];
-  Scrollbar.configure sb 
+  Scrollbar.configure sb
         [ScrollCommand (Listbox.yview lb)]
 
-(* 
- * Completion for listboxes, Macintosh style. 
+(*
+ * Completion for listboxes, Macintosh style.
  * As long as you type fast enough, the listbox is repositioned to the
  * first entry "greater" than the typed prefix.
- * assumes: 
+ * assumes:
  *   sorted list (otherwise it's stupid)
  *   fixed size, because we don't recompute size at each callback invocation
  *)
@@ -69,9 +69,9 @@ let add_completion lb action =
     recenter() in
 
 
-  bind lb [[], KeyPress] 
-      (BindSet([Ev_Char; Ev_Time], 
-          (function ev -> 
+  bind lb [[], KeyPress]
+      (BindSet([Ev_Char; Ev_Time],
+          (function ev ->
              (* consider only keys producing characters. The callback is called
               * even if you press Shift.
               *)
@@ -84,7 +84,7 @@ let add_completion lb action =
 
 let new_scrollable_listbox top options =
   let f = Frame.create top [] in
-  let lb = Listbox.create f options 
+  let lb = Listbox.create f options
   and sb = Scrollbar.create f [] in
     scroll_link sb lb;
     pack [lb] [Side Side_Left; Fill Fill_Both; Expand true];

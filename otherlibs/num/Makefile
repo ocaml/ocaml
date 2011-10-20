@@ -26,7 +26,6 @@ include ../Makefile
 
 clean::
 	rm -f *~
-	cd test; $(MAKE) clean
 
 bng.$(O): bng.h bng_digit.c \
        bng_alpha.c bng_amd64.c bng_ia32.c bng_mips.c bng_ppc.c bng_sparc.c

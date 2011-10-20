@@ -23,6 +23,7 @@ Fda
 Ocaml_specific
 Ocaml_arch
 Ocamlbuild_where
+Ocamlbuild_Myocamlbuild_config
 Lexers
 Glob
 Bool
@@ -38,3 +39,4 @@ Ocaml_dependencies
 Exit_codes
 Digest_cache
 Ocamlbuild_plugin
+Findlib

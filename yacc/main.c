@@ -55,6 +55,14 @@ char *text_file_name;
 char *union_file_name;
 char *verbose_file_name;
 
+#if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__) || (__APPLE__)
+#define HAVE_MKSTEMP
+#endif
+
+#ifdef HAVE_MKSTEMP
+int action_fd = -1, entry_fd = -1, text_fd = -1, union_fd = -1;
+#endif
+
 FILE *action_file;      /*  a temp file, used to save actions associated    */
                         /*  with rules until the parser is written          */
 FILE *entry_file;
@@ -93,16 +101,29 @@ char  *rassoc;
 short **derives;
 char *nullable;
 
+#if !defined(HAVE_MKSTEMP)
 extern char *mktemp(char *);
+#endif
 extern char *getenv(const char *);
 
 
 void done(int k)
 {
+#ifdef HAVE_MKSTEMP
+    if (action_fd != -1)
+       unlink(action_file_name);
+    if (entry_fd != -1)
+       unlink(entry_file_name);
+    if (text_fd != -1)
+       unlink(text_file_name);
+    if (union_fd != -1)
+       unlink(union_file_name);
+#else
     if (action_file) { fclose(action_file); unlink(action_file_name); }
     if (entry_file) { fclose(entry_file); unlink(entry_file_name); }
     if (text_file) { fclose(text_file); unlink(text_file_name); }
     if (union_file) { fclose(union_file); unlink(union_file_name); }
+#endif
     if (output_file && k > 0) {
       fclose(output_file); unlink(output_file_name);
     }
@@ -169,6 +190,9 @@ void getargs(int argc, char **argv)
             if (!strcmp (argv[i], "-version")){
               printf ("The Objective Caml parser generator, version "
                       OCAML_VERSION "\n");
+              exit (0);
+            }else if (!strcmp (argv[i], "-vnum")){
+              printf (OCAML_VERSION "\n");
               exit (0);
             }else{
               vflag = 1;
@@ -302,10 +326,25 @@ void create_file_names(void)
     union_file_name[len + 5] = 'u';
 
 #ifndef NO_UNIX
+#ifdef HAVE_MKSTEMP
+    action_fd = mkstemp(action_file_name);
+    if (action_fd == -1)
+        open_error(action_file_name);
+    entry_fd = mkstemp(entry_file_name);
+    if (entry_fd == -1)                 
+        open_error(entry_file_name);
+    text_fd = mkstemp(text_file_name);
+    if (text_fd == -1)
+        open_error(text_file_name);
+    union_fd = mkstemp(union_file_name);
+    if (union_fd == -1)
+        open_error(union_file_name);
+#else
     mktemp(action_file_name);
     mktemp(entry_file_name);
     mktemp(text_file_name);
     mktemp(union_file_name);
+#endif
 #endif
 
     len = strlen(file_prefix);
@@ -347,15 +386,27 @@ void open_files(void)
             open_error(input_file_name);
     }
 
+#ifdef HAVE_MKSTEMP
+    action_file = fdopen(action_fd, "w");
+#else
     action_file = fopen(action_file_name, "w");
+#endif
     if (action_file == 0)
         open_error(action_file_name);
 
+#ifdef HAVE_MKSTEMP
+    entry_file = fdopen(entry_fd, "w");
+#else
     entry_file = fopen(entry_file_name, "w");
+#endif
     if (entry_file == 0)
         open_error(entry_file_name);
 
+#ifdef HAVE_MKSTEMP
+    text_file = fdopen(text_fd, "w");
+#else
     text_file = fopen(text_file_name, "w");
+#endif
     if (text_file == 0)
         open_error(text_file_name);
 
@@ -371,7 +422,11 @@ void open_files(void)
         defines_file = fopen(defines_file_name, "w");
         if (defines_file == 0)
             open_error(defines_file_name);
+#ifdef HAVE_MKSTEMP
+        union_file = fdopen(union_fd, "w");
+#else
         union_file = fopen(union_file_name, "w");
+#endif
         if (union_file ==  0)
             open_error(union_file_name);
     }

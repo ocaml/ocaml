@@ -104,7 +104,7 @@ static void intern_cleanup(void)
   if (intern_obj_table != NULL) caml_stat_free(intern_obj_table);
   if (intern_extra_block != NULL) {
     /* free newly allocated heap chunk */
-    caml_free_for_heap(intern_extra_block); 
+    caml_free_for_heap(intern_extra_block);
   } else if (intern_block != 0) {
     /* restore original header for heap block, otherwise GC is confused */
     Hd_val(intern_block) = intern_header;
@@ -186,7 +186,7 @@ static void intern_rec(value *dest)
       read_shared:
         Assert (ofs > 0);
         Assert (ofs <= obj_counter);
-        Assert (intern_obj_table != NULL); 
+        Assert (intern_obj_table != NULL);
         v = intern_obj_table[obj_counter - ofs];
         break;
       case CODE_SHARED16:
@@ -237,7 +237,7 @@ static void intern_rec(value *dest)
           Permute_64(v, ARCH_FLOAT_ENDIANNESS, v, 0x01234567)
         else
           Permute_64(v, ARCH_FLOAT_ENDIANNESS, v, 0x76543210);
-#endif            
+#endif
         break;
       case CODE_DOUBLE_ARRAY8_LITTLE:
       case CODE_DOUBLE_ARRAY8_BIG:
@@ -508,7 +508,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
   intern_src = intern_input + ofs;
   intern_input_malloced = 1;
   magic = read32u();
-  if (magic != Intext_magic_number) 
+  if (magic != Intext_magic_number)
     caml_failwith("input_value_from_malloc: bad object");
   block_len = read32u();
   obj = input_val_from_block();
@@ -527,7 +527,7 @@ CAMLexport value caml_input_value_from_block(char * data, intnat len)
   intern_src = intern_input;
   intern_input_malloced = 0;
   magic = read32u();
-  if (magic != Intext_magic_number) 
+  if (magic != Intext_magic_number)
     caml_failwith("input_value_from_block: bad object");
   block_len = read32u();
   if (5*4 + block_len > len)

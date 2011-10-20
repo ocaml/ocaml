@@ -22,6 +22,7 @@ open Types
 open Lambda
 open Clambda
 open Cmm
+open Cmx_format
 
 (* Local binding of complex expressions *)
 
@@ -52,14 +53,18 @@ let floatarray_header len =
       block_header Obj.double_array_tag (len * size_float / size_addr)
 let string_header len =
       block_header Obj.string_tag ((len + size_addr) / size_addr)
-let boxedint_header = block_header Obj.custom_tag 2
+let boxedint32_header = block_header Obj.custom_tag 2
+let boxedint64_header = block_header Obj.custom_tag (1 + 8 / size_addr)
+let boxedintnat_header = block_header Obj.custom_tag 2
 
 let alloc_block_header tag sz = Cconst_natint(block_header tag sz)
 let alloc_float_header = Cconst_natint(float_header)
 let alloc_floatarray_header len = Cconst_natint(floatarray_header len)
 let alloc_closure_header sz = Cconst_natint(closure_header sz)
 let alloc_infix_header ofs = Cconst_natint(infix_header ofs)
-let alloc_boxedint_header = Cconst_natint(boxedint_header)
+let alloc_boxedint32_header = Cconst_natint(boxedint32_header)
+let alloc_boxedint64_header = Cconst_natint(boxedint64_header)
+let alloc_boxedintnat_header = Cconst_natint(boxedintnat_header)
 
 (* Integers *)
 
@@ -461,6 +466,12 @@ let operations_boxed_int bi =
   | Pint32 -> "caml_int32_ops"
   | Pint64 -> "caml_int64_ops"
 
+let alloc_header_boxed_int bi =
+  match bi with
+    Pnativeint -> alloc_boxedintnat_header
+  | Pint32 -> alloc_boxedint32_header
+  | Pint64 -> alloc_boxedint64_header
+
 let box_int bi arg =
   match arg with
     Cconst_int n ->
@@ -472,7 +483,7 @@ let box_int bi arg =
         if bi = Pint32 && size_int = 8 && big_endian
         then Cop(Clsl, [arg; Cconst_int 32])
         else arg in
-      Cop(Calloc, [alloc_boxedint_header;
+      Cop(Calloc, [alloc_header_boxed_int bi;
                    Cconst_symbol(operations_boxed_int bi);
                    arg'])
 
@@ -569,32 +580,34 @@ let bigarray_word_kind = function
   | Pbigarray_complex64 -> Double
 
 let bigarray_get unsafe elt_kind layout b args dbg =
-  match elt_kind with
-    Pbigarray_complex32 | Pbigarray_complex64 ->
-      let kind = bigarray_word_kind elt_kind in
-      let sz = bigarray_elt_size elt_kind / 2 in
-      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
-        box_complex
-          (Cop(Cload kind, [addr]))
-          (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
-  | _ ->
-      Cop(Cload (bigarray_word_kind elt_kind),
-          [bigarray_indexing unsafe elt_kind layout b args dbg])
+  bind "ba" b (fun b ->
+    match elt_kind with
+      Pbigarray_complex32 | Pbigarray_complex64 ->
+        let kind = bigarray_word_kind elt_kind in
+        let sz = bigarray_elt_size elt_kind / 2 in
+        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+          box_complex
+            (Cop(Cload kind, [addr]))
+            (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
+    | _ ->
+        Cop(Cload (bigarray_word_kind elt_kind),
+            [bigarray_indexing unsafe elt_kind layout b args dbg]))
 
 let bigarray_set unsafe elt_kind layout b args newval dbg =
-  match elt_kind with
-    Pbigarray_complex32 | Pbigarray_complex64 ->
-      let kind = bigarray_word_kind elt_kind in
-      let sz = bigarray_elt_size elt_kind / 2 in
-      bind "newval" newval (fun newv ->
-      bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
-        Csequence(
-          Cop(Cstore kind, [addr; complex_re newv]),
-          Cop(Cstore kind,
-              [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
-  | _ ->
-      Cop(Cstore (bigarray_word_kind elt_kind),
-          [bigarray_indexing unsafe elt_kind layout b args dbg; newval])
+  bind "ba" b (fun b ->
+    match elt_kind with
+      Pbigarray_complex32 | Pbigarray_complex64 ->
+        let kind = bigarray_word_kind elt_kind in
+        let sz = bigarray_elt_size elt_kind / 2 in
+        bind "newval" newval (fun newv ->
+        bind "addr" (bigarray_indexing unsafe elt_kind layout b args dbg) (fun addr ->
+          Csequence(
+            Cop(Cstore kind, [addr; complex_re newv]),
+            Cop(Cstore kind,
+                [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
+    | _ ->
+        Cop(Cstore (bigarray_word_kind elt_kind),
+            [bigarray_indexing unsafe elt_kind layout b args dbg; newval]))
 
 (* Simplification of some primitives into C calls *)
 
@@ -1553,13 +1566,13 @@ let rec emit_constant symb cst cont =
       Cdefine_symbol symb ::
       emit_string_constant s cont
   | Const_base(Const_int32 n) ->
-      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      Cint(boxedint32_header) :: Cdefine_symbol symb ::
       emit_boxed_int32_constant n cont
   | Const_base(Const_int64 n) ->
-      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      Cint(boxedint64_header) :: Cdefine_symbol symb ::
       emit_boxed_int64_constant n cont
   | Const_base(Const_nativeint n) ->
-      Cint(boxedint_header) :: Cdefine_symbol symb ::
+      Cint(boxedintnat_header) :: Cdefine_symbol symb ::
       emit_boxed_nativeint_constant n cont
   | Const_block(tag, fields) ->
       let (emit_fields, cont1) = emit_constant_fields fields cont in
@@ -1609,17 +1622,17 @@ and emit_constant_field field cont =
   | Const_base(Const_int32 n) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(boxedint_header) :: Cdefine_label lbl ::
+       Cint(boxedint32_header) :: Cdefine_label lbl ::
        emit_boxed_int32_constant n cont)
   | Const_base(Const_int64 n) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(boxedint_header) :: Cdefine_label lbl ::
+       Cint(boxedint64_header) :: Cdefine_label lbl ::
        emit_boxed_int64_constant n cont)
   | Const_base(Const_nativeint n) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,
-       Cint(boxedint_header) :: Cdefine_label lbl ::
+       Cint(boxedintnat_header) :: Cdefine_label lbl ::
        emit_boxed_nativeint_constant n cont)
   | Const_pointer n ->
       (Cint(Nativeint.add (Nativeint.shift_left (Nativeint.of_int n) 1) 1n),
@@ -1950,9 +1963,9 @@ let generic_functions shared units =
   let (apply,send,curry) =
     List.fold_left
       (fun (apply,send,curry) ui ->
-	 List.fold_right IntSet.add ui.Compilenv.ui_apply_fun apply,
-	 List.fold_right IntSet.add ui.Compilenv.ui_send_fun send,
-	 List.fold_right IntSet.add ui.Compilenv.ui_curry_fun curry)
+         List.fold_right IntSet.add ui.ui_apply_fun apply,
+         List.fold_right IntSet.add ui.ui_send_fun send,
+         List.fold_right IntSet.add ui.ui_curry_fun curry)
       (IntSet.empty,IntSet.empty,IntSet.empty)
       units in
   let apply = if shared then apply else IntSet.union apply default_apply in
@@ -2050,28 +2063,13 @@ let predef_exception name =
 
 let mapflat f l = List.flatten (List.map f l)
 
-type dynunit = {
-  name: string;
-  crc: Digest.t;
-  imports_cmi: (string * Digest.t) list;
-  imports_cmx: (string * Digest.t) list;
-  defines: string list;
-}
-
-type dynheader = {
-  magic: string;
-  units: dynunit list;
-}
-
-let dyn_magic_number = "Caml2007D001"
-
 let plugin_header units =
   let mk (ui,crc) =
-    { name = ui.Compilenv.ui_name;
-      crc = crc;
-      imports_cmi = ui.Compilenv.ui_imports_cmi;
-      imports_cmx = ui.Compilenv.ui_imports_cmx;
-      defines = ui.Compilenv.ui_defines 
+    { dynu_name = ui.ui_name;
+      dynu_crc = crc;
+      dynu_imports_cmi = ui.ui_imports_cmi;
+      dynu_imports_cmx = ui.ui_imports_cmx;
+      dynu_defines = ui.ui_defines
     } in
   global_data "caml_plugin_header"
-    { magic = dyn_magic_number; units = List.map mk units }
+    { dynu_magic = Config.cmxs_magic_number; dynu_units = List.map mk units }

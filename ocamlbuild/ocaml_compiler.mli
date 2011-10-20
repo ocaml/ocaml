@@ -19,6 +19,7 @@ val ocamlc_link_prog : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlc_p : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlopt_c : Tags.t -> Pathname.t -> Pathname.t -> Command.t
 val ocamlopt_link_lib : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
+val ocamlopt_link_shared_lib : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlopt_link_prog : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlopt_p : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
 val ocamlmklib : Tags.t -> Pathname.t list -> Pathname.t -> Command.t
@@ -44,6 +45,7 @@ val byte_debug_link : string -> string -> Rule.action
 val byte_debug_library_link : string -> string -> Rule.action
 val native_link : string -> string -> Rule.action
 val native_library_link : string -> string -> Rule.action
+val native_shared_library_link : ?tags:(string list) -> string -> string -> Rule.action
 val native_profile_link : string -> string -> Rule.action
 val native_profile_library_link : string -> string -> Rule.action
 val link_modules :
@@ -72,10 +74,14 @@ val native_pack_modules : string list -> string -> Rule.action
 val native_pack_mlpack : string -> string -> Rule.action
 val native_library_link_modules : string list -> string -> Rule.action
 val native_library_link_mllib : string -> string -> Rule.action
+val native_shared_library_link_modules : string list -> string -> Rule.action
+val native_shared_library_link_mldylib : string -> string -> Rule.action
 val native_profile_pack_modules : string list -> string -> Rule.action
 val native_profile_pack_mlpack : string -> string -> Rule.action
 val native_profile_library_link_modules : string list -> string -> Rule.action
 val native_profile_library_link_mllib : string -> string -> Rule.action
+val native_profile_shared_library_link_modules : string list -> string -> Rule.action
+val native_profile_shared_library_link_mldylib : string -> string -> Rule.action
 
 (** [hide_package_contents pack_name]
     Don't treat the given package as an open package.

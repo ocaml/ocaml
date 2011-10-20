@@ -264,6 +264,8 @@ installbin lex/ocamllex.opt$EXE $BINDIR/ocamllex.opt$EXE
 installbin tools/ocamldep.native$EXE $BINDIR/ocamldep.opt$EXE
 
 echo "Installing some tools..."
+installbin tools/objinfo.byte$EXE $BINDIR/ocamlobjinfo$EXE
+installbin ../tools/objinfo_helper$EXE $LIBDIR/objinfo_helper$EXE
 installbin tools/ocamlcp.byte$EXE $BINDIR/ocamlcp$EXE
 installbin tools/ocamldep.byte$EXE $BINDIR/ocamldep$EXE
 installbin tools/ocamlmklib.byte$EXE $BINDIR/ocamlmklib$EXE
@@ -344,10 +346,6 @@ installdir \
   otherlibs/labltk/lib/labltk.cma \
   otherlibs/labltk/lib/labltk.cmxa \
   otherlibs/labltk/lib/labltk.cmx \
-  otherlibs/labltk/tkanim/*.mli \
-  otherlibs/labltk/tkanim/*.cmi \
-  otherlibs/labltk/tkanim/tkanim.cma \
-  otherlibs/labltk/tkanim/tkanim.cmxa \
   otherlibs/labltk/compiler/tkcompiler \
   $LIBDIR/labltk
 
@@ -376,7 +374,6 @@ installdir \
   otherlibs/"$WIN32"unix/dllunix$EXT_DLL \
   otherlibs/threads/dllvmthreads$EXT_DLL \
   otherlibs/labltk/support/dlllabltk$EXT_DLL \
-  otherlibs/labltk/tkanim/dlltkanim$EXT_DLL \
   $STUBLIBDIR
 
 installlibdir \
@@ -403,8 +400,6 @@ installlibdir \
   otherlibs/labltk/support/liblabltk.$A \
   otherlibs/labltk/lib/labltk.$A \
   otherlibs/labltk/jpf/jpflib.$A \
-  otherlibs/labltk/tkanim/libtkanim.$A \
-  otherlibs/labltk/tkanim/tkanim.$A \
   otherlibs/labltk/frx/frxlib.$A \
   $LIBDIR/labltk
 

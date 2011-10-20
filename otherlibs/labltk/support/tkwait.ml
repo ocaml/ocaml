@@ -16,7 +16,10 @@
 
 (* $Id$ *)
 
-external internal_tracevis : string -> string -> unit
+external internal_tracevis : string -> Protocol.cbid -> unit
         = "camltk_wait_vis"
-external internal_tracedestroy : string -> string -> unit
+;;
+
+external internal_tracedestroy : string -> Protocol.cbid -> unit
         = "camltk_wait_des"
+;;
