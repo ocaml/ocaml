@@ -27,7 +27,7 @@ val transl_exn_rebind:
     Env.t -> Location.t -> Longident.t -> Path.t * exception_declaration
 
 val transl_value_decl:
-    Env.t -> Parsetree.value_description -> value_description
+    Env.t -> Location.t -> Parsetree.value_description -> value_description
 
 val transl_with_constraint:
     Env.t -> Ident.t -> Path.t option -> type_declaration ->

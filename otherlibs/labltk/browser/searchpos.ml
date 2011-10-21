@@ -495,7 +495,8 @@ and view_expr_type ?title ?path ?env ?(name="noname") t =
     | Some path -> parent_path path, ident_of_path path ~default:name
   in
   view_signature ~title ?path ?env
-    [Tsig_value (id, {val_type = t; val_kind = Val_reg})]
+    [Tsig_value (id, {val_type = t; val_kind = Val_reg;
+                      val_loc = Location.none})]
 
 and view_decl lid ~kind ~env =
   match kind with

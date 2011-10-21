@@ -123,7 +123,8 @@ let merge_constraint initial_env loc sg lid constr =
             type_variance =
               List.map (fun (c,n) -> (not n, not c, not c))
               sdecl.ptype_variance;
-	    type_newtype_level = None}
+            type_loc = Location.none;
+	    type_newtype_level = None }
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl = Typedecl.transl_with_constraint
@@ -380,7 +381,7 @@ and transl_signature env sg =
     | item :: srem ->
         match item.psig_desc with
         | Psig_value(name, sdesc) ->
-            let desc = Typedecl.transl_value_decl env sdesc in
+            let desc = Typedecl.transl_value_decl env item.psig_loc sdesc in
             let (id, newenv) = Env.enter_value name desc env in
             let rem = transl_sig newenv srem in
             if List.exists (Ident.equal id) (get_values rem) then rem
@@ -809,8 +810,8 @@ and type_structure funct_body anchor env sstr scope =
         (Tstr_value(rec_flag, defs) :: str_rem,
          map_end make_sig_value bound_idents sig_rem,
          final_env)
-    | {pstr_desc = Pstr_primitive(name, sdesc)} :: srem ->
-        let desc = Typedecl.transl_value_decl env sdesc in
+    | {pstr_desc = Pstr_primitive(name, sdesc); pstr_loc = loc} :: srem ->
+        let desc = Typedecl.transl_value_decl env loc sdesc in
         let (id, newenv) = Env.enter_value name desc env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (Tstr_primitive(id, desc) :: str_rem,

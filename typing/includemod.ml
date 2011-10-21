@@ -336,20 +336,30 @@ let type_declarations env id decl1 decl2 =
 open Format
 open Printtyp
 
+let show_loc msg ppf loc =
+  let pos = loc.Location.loc_start in
+  if List.mem pos.Lexing.pos_fname [""; "_none_"] then ()
+  else fprintf ppf "@\n@[%a: %s@]" Location.print_loc loc msg
+
+let show_locs ppf (loc1, loc2) =
+  show_loc "Expected declaration" ppf loc2;
+  show_loc "Actual declaration" ppf loc1
+
 let include_err ppf = function
   | Missing_field id ->
       fprintf ppf "The field `%a' is required but not provided" ident id
   | Value_descriptions(id, d1, d2) ->
       fprintf ppf
-       "@[<hv 2>Values do not match:@ \
-        %a@;<1 -2>is not included in@ %a@]"
-       (value_description id) d1 (value_description id) d2
+        "@[<hv 2>Values do not match:@ %a@;<1 -2>is not included in@ %a@]"
+        (value_description id) d1 (value_description id) d2;
+      show_locs ppf (d1.val_loc, d2.val_loc);
   | Type_declarations(id, d1, d2, errs) ->
-      fprintf ppf "@[@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a@]"
+      fprintf ppf "@[<v>@[<hv>%s:@;<1 2>%a@ %s@;<1 2>%a@]%a%a@]"
         "Type declarations do not match"
         (type_declaration id) d1
         "is not included in"
         (type_declaration id) d2
+        show_locs (d1.type_loc, d2.type_loc)
         (Includecore.report_type_mismatch
            "the first" "the second" "declaration") errs
   | Exception_declarations(id, d1, d2) ->

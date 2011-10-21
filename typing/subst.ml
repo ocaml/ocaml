@@ -180,9 +180,7 @@ let type_declaration s decl =
               (List.map (fun (n, mut, arg) -> (n, mut, typexp s arg)) lbls,
                rep)
         end;
-
       type_manifest =
-
         begin 
 	  match decl.type_manifest with
             None -> None
@@ -191,6 +189,7 @@ let type_declaration s decl =
       type_private = decl.type_private;
       type_variance = decl.type_variance;
       type_newtype_level = None;
+      type_loc = decl.type_loc;
     }
   in
   cleanup_types ();
@@ -249,7 +248,9 @@ let class_type s cty =
 
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
-    val_kind = descr.val_kind }
+    val_kind = descr.val_kind;
+    val_loc = descr.val_loc;
+   }
 
 let exception_declaration s tyl =
   List.map (type_expr s) tyl
