@@ -189,7 +189,7 @@ let type_declaration s decl =
       type_private = decl.type_private;
       type_variance = decl.type_variance;
       type_newtype_level = None;
-      type_loc = decl.type_loc;
+      type_loc = if s.for_saving then Location.none else decl.type_loc;
     }
   in
   cleanup_types ();
@@ -249,7 +249,7 @@ let class_type s cty =
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
     val_kind = descr.val_kind;
-    val_loc = descr.val_loc;
+    val_loc = if s.for_saving then Location.none else descr.val_loc;
    }
 
 let exception_declaration s tyl =
