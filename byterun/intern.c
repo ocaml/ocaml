@@ -19,6 +19,7 @@
 
 #include <string.h>
 #include "alloc.h"
+#include "callback.h"
 #include "custom.h"
 #include "fail.h"
 #include "gc.h"
@@ -51,6 +52,9 @@ static asize_t obj_counter;
 
 static value * intern_obj_table;
 /* The pointers to objects already seen */
+
+static value * function_placeholder;
+/* Used by debugger to replace code values */
 
 static unsigned int intern_color;
 /* Color to assign to newly created headers */
@@ -290,6 +294,10 @@ static void intern_rec(value *dest)
         ofs = read32u();
         readblock(cksum, 16);
         if (memcmp(cksum, caml_code_checksum(), 16) != 0) {
+	  if (function_placeholder != NULL) {
+	    v = *function_placeholder;
+	    break;
+	  }
           intern_cleanup();
           caml_failwith("input_value: code mismatch");
         }
@@ -422,6 +430,7 @@ value caml_input_val(struct channel *chan)
   whsize = size_32;
 #endif
   intern_alloc(whsize, num_objects);
+  function_placeholder = caml_named_value("Debugger.function_placeholder");
   /* Fill it in */
   intern_rec(&res);
   intern_add_to_heap(whsize);
@@ -461,6 +470,7 @@ CAMLexport value caml_input_val_from_string(value str, intnat ofs)
   whsize = size_32;
 #endif
   intern_alloc(whsize, num_objects);
+  function_placeholder = caml_named_value("Debugger.function_placeholder");
   intern_src = &Byte_u(str, ofs + 5*4); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
@@ -490,6 +500,7 @@ static value input_val_from_block(void)
   whsize = size_32;
 #endif
   intern_alloc(whsize, num_objects);
+  function_placeholder = caml_named_value("Debugger.function_placeholder");
   /* Fill it in */
   intern_rec(&obj);
   intern_add_to_heap(whsize);
