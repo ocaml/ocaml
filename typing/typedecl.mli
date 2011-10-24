@@ -33,6 +33,14 @@ val transl_with_constraint:
     Env.t -> Ident.t -> Path.t option -> type_declaration ->
     Parsetree.type_declaration -> type_declaration
 
+val transl_contract_decls:
+    Env.t -> Parsetree.contract_declaration list -> 
+    Typedtree.contract_declaration list
+
+val transl_contract_decls_in_sig:
+    Env.t -> Parsetree.contract_declaration list -> 
+    (Ident.t * Types.contract_declaration) list
+
 val abstract_type_decl: int -> type_declaration
 val approx_type_decl:
     Env.t -> (string * Parsetree.type_declaration) list ->
@@ -71,6 +79,7 @@ type error =
   | Unavailable_type_constructor of Path.t
   | Bad_fixed_type of string
   | Unbound_type_var_exc of type_expr * type_expr
+  | Illegal_contract_id of Longident.t
 
 exception Error of Location.t * error
 

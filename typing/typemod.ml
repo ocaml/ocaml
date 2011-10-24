@@ -23,6 +23,13 @@ open Types
 open Typedtree
 open Format
 
+(* naxu's temp file starts. *)
+
+let fmt_contract_declaration ppf (cdecl:Types.contract_declaration) = 
+  !Oprint.out_contract_declaration ppf cdecl
+
+(* naxu's temp file ends. *)
+
 type error =
     Cannot_apply of module_type
   | Not_included of Includemod.error list
@@ -282,6 +289,14 @@ and approx_sig env ssg =
                  Tsig_type(i2, d2, rs);
                  Tsig_type(i3, d3, rs)])
               decls [rem])
+      | Psig_contract cdecls -> 
+	  let typed_cdecls = Typedecl.transl_contract_decls env cdecls in
+	  let iface_cdecls = List.map Typedtree.contract_declaration_to_iface 
+	                              typed_cdecls in
+          let sg = List.map (fun c -> Tsig_contract (Path.head c.Types.ttopctr_id, 
+						     c, Trec_not)) 
+	                    iface_cdecls in
+	  sg @ approx_sig env srem
       | _ ->
           approx_sig env srem
 
@@ -455,6 +470,22 @@ and transl_signature env sg =
                      Tsig_type(i', d', rs);
                      Tsig_type(i'', d'', rs)])
                  classes [rem])
+	| Psig_contract(cds) -> 
+            (* check contract before translation:
+               1. we want to make sure that a contract C_f in a signature 
+                  (or .mli) is syntactically equivalent (up to 
+                  alpha-conversion) to the contract C_f in its struct (or .ml).
+                  The reason is that we have sub-typing relationship between
+                  signatures, sig1 <: sig2, but static sub-contracting is not 
+                  decidable, so we check syntactic equivalence. 
+               2. As a contract may contain function calls, all function 
+                  called must be exported in the signature as well.
+            *)
+            let cdecls = Typedecl.transl_contract_decls_in_sig env cds in
+	    (* val cdecls : (Ident.t * Types.contract_declaration) list *)
+            let rem = transl_sig env srem in
+            map_rec' (fun rs (id, decl) -> 
+	                  Tsig_contract(id, decl, rs)) cdecls rem
     in transl_sig env sg
 
 and transl_modtype_info env sinfo =
@@ -728,6 +759,32 @@ and type_structure funct_body anchor env sstr scope =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
+(* we want to put contracts in local modules in Tstr_mty_contracts(..) *)
+  let extract_contracts_from_sig id sg env1 = 
+             Env.fetch_contracts (Env.open_signature (Pident id) sg env1) in  
+  let rec extract_contracts id mty env1 = match mty with
+           | Tmty_ident(path) -> Ident.empty
+           | Tmty_signature(sg) -> extract_contracts_from_sig id sg env1
+           | Tmty_functor(id, mty1, mty2) -> 
+              Ident.merge (extract_contracts id mty1 env1) 
+                        (extract_contracts id mty2 env1)
+  (* it is easier for programmers to declare a contract for a function 
+     before function definition, but we can only typecheck the contract after
+     inferring the type for the function. So we re-order the sstr such that
+     the contract is after the function definition. *)
+  in 
+  let rec re_order xs = match xs with
+       | [] -> []
+       | [x] -> [x]
+       | (x::y::rem) -> begin match (x,y) with
+         | ({pstr_desc = Pstr_contract (ds)}, {pstr_desc = Pstr_open(m)}) ->
+                   x :: y :: (re_order rem)
+         | ({pstr_desc = Pstr_contract (ds1)}, {pstr_desc = Pstr_contract(ds2)}) ->
+                   re_order ({y with pstr_desc = Pstr_contract(ds1@ds2)} :: rem)
+         | ({pstr_desc = Pstr_contract (ds)}, _) -> y :: re_order (x :: rem)
+         | (_, _) -> x :: re_order (y :: rem)
+         end
+  in
   let rec type_struct env sstr =
     Ctype.init_def(Ident.current_time());
     match sstr with
@@ -776,6 +833,12 @@ and type_structure funct_body anchor env sstr scope =
         (Tstr_type decls :: str_rem,
          map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls sig_rem,
          final_env)
+    | {pstr_desc = Pstr_contract(sdecls)} :: srem  -> 
+        (* we type check a function's contract w.r.t the function's type *)
+        let contract_decls = Typedecl.transl_contract_decls env sdecls in 
+        let (str_rem, sig_rem, final_env) = type_struct env srem in
+        let newstr = (Tstr_contract contract_decls) :: str_rem in
+        (newstr, sig_rem, final_env)
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
         let arg = Typedecl.transl_exception env sarg in
         let (id, newenv) = Env.enter_exception name arg env in
@@ -798,7 +861,8 @@ and type_structure funct_body anchor env sstr scope =
         let mty = enrich_module_type anchor name modl.mod_type env in
         let (id, newenv) = Env.enter_module name mty env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        (Tstr_module(id, modl) :: str_rem,
+        (Tstr_module(id, modl) :: 
+	 Tstr_mty_contracts(extract_contracts id mty newenv) :: str_rem,
          Tsig_module(id, modl.mod_type, Trec_not) :: sig_rem,
          final_env)
     | {pstr_desc = Pstr_recmodule sbind; pstr_loc = loc} :: srem ->
@@ -898,7 +962,26 @@ and type_structure funct_body anchor env sstr scope =
   in
   if !Clflags.annotations
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
-  type_struct env sstr
+  let (str, sg, finalenv) = type_struct env (re_order sstr) in
+  let rec extract_typed_contracts xs = 
+           match xs with
+           | [] -> []
+           | (Tstr_contract(ds) :: rem) -> 
+	            ds@extract_typed_contracts rem 
+           | (_::rem) -> extract_typed_contracts rem
+  in 
+  let contract_decls = extract_typed_contracts str in 
+  (* In newstr2, we put opened contracts as Tstr_opened_contracts *)
+  let opened_contracts = Env.fetch_contracts finalenv in
+  let newstr2 = (Tstr_opened_contracts opened_contracts) :: str in
+  (* put contract in .ml in inferred sig *)
+  let newsg = sg @ (List.map (fun c -> 
+                   Tsig_contract (Path.head c.ttopctr_id, 
+                                  contract_declaration_to_iface c, 
+                                  Trec_not)) 
+		   contract_decls) in
+  (newstr2, newsg, finalenv)   (* end of type-checking for contracts *)
+  (* original: type_struct env sstr *)
 
 let type_module = type_module true false None
 let type_structure = type_structure false None

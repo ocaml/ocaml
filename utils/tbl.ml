@@ -57,6 +57,15 @@ let rec add x data = function
       else
         bal l v d (add x data r)
 
+(* naxu: generic_find takes a comparison function then find *)
+let rec generic_find cmp x = function
+    Empty ->
+      raise Not_found
+  | Node(l, v, d, r, _) ->
+      let c = cmp x v in
+      if c = 0 then d
+      else generic_find cmp x (if c < 0 then l else r)
+
 let rec find x = function
     Empty ->
       raise Not_found

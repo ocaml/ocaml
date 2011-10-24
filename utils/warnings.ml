@@ -50,6 +50,7 @@ type t =
   | Wildcard_arg_to_constant_constr         (* 28 *)
   | Eol_in_string                           (* 29 *)
   | Duplicate_definitions of string * string * string * string (*30 *)
+  | Static_contract of string * int * int * string (* 55 *)
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -89,6 +90,7 @@ let number = function
   | Wildcard_arg_to_constant_constr -> 28
   | Eol_in_string -> 29
   | Duplicate_definitions _ -> 30
+  | Static_contract _ -> 55
 ;;
 
 let last_warning_number = 30;;
@@ -116,7 +118,7 @@ let letter = function
   | 'q' -> []
   | 'r' -> [9]
   | 's' -> [10]
-  | 't' -> []
+  | 't' -> [55]
   | 'u' -> [11; 12]
   | 'v' -> [13]
   | 'w' -> []
@@ -260,6 +262,8 @@ let message = function
   | Duplicate_definitions (kind, cname, tc1, tc2) ->
       Printf.sprintf "the %s %s is defined in both types %s and %s."
         kind cname tc1 tc2
+  | Static_contract (filename, line, char, fname) -> 
+      "contract may be violated(" ^ filename ^ "," ^ fname ^ ")"
 ;;
 
 let nerrors = ref 0;;

@@ -27,6 +27,15 @@ open Translobj
 open Translcore
 open Translclass
 
+(* naxu's temp function starts *)
+
+let fmt_contract_declaration ppf (cdecl:Types.contract_declaration) = 
+  !Oprint.out_contract_declaration ppf cdecl 
+
+(* naxu's temp function ends. *)
+
+type module_coercion = Types.module_coercion
+
 type error =
   Circular_dependency of Ident.t
 
@@ -156,6 +165,8 @@ let init_shape modl =
         :: init_shape_struct env rem
     | Tsig_cltype(id, ctyp, _) :: rem ->
         init_shape_struct env rem
+    | Tsig_contract(id, cdecl, _) :: rem -> 
+        init_shape_struct (Env.add_contract id cdecl env) rem
   in
   try
     Some(undefined_location modl.mod_loc,
@@ -338,6 +349,13 @@ and transl_structure fields cc rootpath = function
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
+  (* the three constructors below are auxilary so we don't translate them *)
+  | Tstr_contract(decls) :: rem -> 
+      transl_structure fields cc rootpath rem
+  | Tstr_mty_contracts(tbl) :: rem ->
+      transl_structure fields cc rootpath rem
+  | Tstr_opened_contracts(tbl) :: rem -> 
+      transl_structure fields cc rootpath rem
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -446,6 +464,12 @@ let transl_store_structure glob map prims str =
       Llet(Strict, mid,
            subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
+  | Tstr_contract(decls) :: rem ->
+      transl_store subst rem
+  | Tstr_mty_contracts(decls) :: rem -> 
+      transl_store subst rem
+  | Tstr_opened_contracts(tbl) :: rem ->
+      transl_store subst rem
 
   and store_ident id =
     try
@@ -499,6 +523,9 @@ let rec defined_idents = function
       List.map (fun (i, _, _, _, _) -> i) cl_list @ defined_idents rem
   | Tstr_cltype cl_list :: rem -> defined_idents rem
   | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
+  | Tstr_contract decls :: rem -> defined_idents rem
+  | Tstr_mty_contracts decls :: rem -> defined_idents rem
+  | Tstr_opened_contracts tbl :: rem -> defined_idents rem
 
 (* Transform a coercion and the list of value identifiers defined by
    a toplevel structure into a table [id -> (pos, coercion)],
@@ -650,6 +677,12 @@ let transl_toplevel_item = function
           Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
+  | Tstr_contract(decls) ->
+      lambda_unit
+  | Tstr_mty_contracts(tbl) -> 
+      lambda_unit
+  | Tstr_opened_contracts(tbl) ->
+      lambda_unit
 
 let transl_toplevel_item_and_close itm =
   close_toplevel_term (transl_label_init (transl_toplevel_item itm))

@@ -18,6 +18,8 @@
 open Typedtree
 open Lambda
 
+type module_coercion = Types.module_coercion
+
 val transl_implementation: string -> structure * module_coercion -> lambda
 val transl_store_phrases: string -> structure -> int * lambda
 val transl_store_implementation:

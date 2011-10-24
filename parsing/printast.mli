@@ -18,3 +18,5 @@ open Format;;
 val interface : formatter -> signature_item list -> unit;;
 val implementation : formatter -> structure_item list -> unit;;
 val top_phrase : formatter -> toplevel_phrase -> unit;;
+val core_contract: int -> formatter -> core_contract -> unit;;
+val fmt_constant: formatter -> Asttypes.constant -> unit;;

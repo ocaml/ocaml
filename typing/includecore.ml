@@ -20,6 +20,11 @@ open Path
 open Types
 open Typedtree
 
+(* Inclusion between contract declarations *)
+
+let contract_declarations cdecl1 cdecl2 = 
+    eqContract cdecl1.Types.ttopctr_desc cdecl2.Types.ttopctr_desc 
+
 (* Inclusion between value descriptions *)
 
 exception Dont_match

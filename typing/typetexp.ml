@@ -84,6 +84,8 @@ let find_type = find_component Env.lookup_type (fun lid -> Unbound_type_construc
 
 let find_constructor = find_component Env.lookup_constructor (fun lid -> Unbound_constructor lid)
 
+let find_constructor_and_path = find_component Env.lookup_constructor_and_path (fun lid -> Unbound_constructor lid)
+
 let find_label = find_component Env.lookup_label (fun lid -> Unbound_label lid)
 
 let find_class = find_component Env.lookup_class (fun lid -> Unbound_class lid)

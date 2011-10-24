@@ -26,6 +26,8 @@ val type_declarations:
 
 type error =
     Missing_field of Ident.t
+  | Contract_declarations of 
+     Ident.t * Types.contract_declaration * Types.contract_declaration
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch list

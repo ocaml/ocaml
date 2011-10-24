@@ -110,6 +110,10 @@ module Options = Main_args.Make_bytecomp_options (struct
     custom_runtime := true; make_runtime := true; link_everything := true
   let _no_app_funct = unset applicative_functors
   let _noassert = set noassert
+  let _nocontract = set nocontract
+  let _dcontract = set dcontract
+  let _hcontract = set hcontract
+  let _scontract = set scontract
   let _nolabels = set classic
   let _noautolink = set no_auto_link
   let _nostdlib = set no_std_include

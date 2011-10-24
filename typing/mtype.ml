@@ -80,6 +80,8 @@ and strengthen_sig env sg p =
       sigelt :: strengthen_sig env rem p
   | (Tsig_cltype(id, decl, rs) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p
+  | (Tsig_contract(id, decl, rs) as sigelt) :: rem ->
+      sigelt :: strengthen_sig env rem p
 
 (* In nondep_supertype, env is only used for the type it assigns to id.
    Hence there is no need to keep env up-to-date by adding the bindings
@@ -131,6 +133,9 @@ let nondep_supertype env mid mty =
           :: rem'
       | Tsig_cltype(id, d, rs) ->
           Tsig_cltype(id, Ctype.nondep_cltype_declaration env mid d, rs)
+          :: rem'
+      | Tsig_contract(id, d, rs) -> 
+          Tsig_contract(id, d, rs)
           :: rem'
 
   and nondep_modtype_decl env = function
@@ -192,6 +197,8 @@ and type_paths_sig env p pos sg =
       type_paths_sig env p (pos+1) rem
   | (Tsig_cltype _) :: rem ->
       type_paths_sig env p pos rem
+  | (Tsig_contract _) :: rem -> 
+      type_paths_sig env p pos rem
 
 let rec no_code_needed env mty =
   match scrape env mty with
@@ -212,5 +219,5 @@ and no_code_needed_sig env sg =
       no_code_needed_sig (Env.add_module id mty env) rem
   | (Tsig_type _ | Tsig_modtype _ | Tsig_cltype _) :: rem ->
       no_code_needed_sig env rem
-  | (Tsig_exception _ | Tsig_class _) :: rem ->
+  | (Tsig_exception _ | Tsig_class _ | Tsig_contract _) :: rem ->
       false

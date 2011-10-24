@@ -35,6 +35,10 @@ module type Bytecomp_options =
     val _make_runtime : unit -> unit
     val _no_app_funct : unit -> unit
     val _noassert : unit -> unit
+    val _nocontract : unit -> unit
+    val _scontract : unit -> unit
+    val _dcontract : unit -> unit
+    val _hcontract : unit -> unit
     val _noautolink : unit -> unit
     val _nolabels : unit -> unit
     val _nostdlib : unit -> unit
@@ -75,6 +79,10 @@ module type Bytetop_options = sig
   val _labels : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _nocontract : unit -> unit
+  val _scontract : unit -> unit
+  val _dcontract : unit -> unit
+  val _hcontract : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nostdlib : unit -> unit
@@ -117,6 +125,10 @@ module type Optcomp_options = sig
   val _linkall : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _nocontract : unit -> unit
+  val _scontract : unit -> unit
+  val _dcontract : unit -> unit
+  val _hcontract : unit -> unit
   val _noautolink : unit -> unit
   val _nodynlink : unit -> unit
   val _nolabels : unit -> unit
@@ -171,6 +183,10 @@ module type Opttop_options = sig
   val _labels : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _nocontract : unit -> unit
+  val _scontract : unit -> unit
+  val _dcontract : unit -> unit
+  val _hcontract : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nostdlib : unit -> unit

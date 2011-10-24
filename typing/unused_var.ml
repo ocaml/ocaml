@@ -96,6 +96,7 @@ and structure_item ppf tbl s =
   | Pstr_value (recflag, pel) -> let_pel ppf tbl recflag pel None;
   | Pstr_primitive _ -> ()
   | Pstr_type _ -> ()
+  | Pstr_contract _ -> ()
   | Pstr_exception _ -> ()
   | Pstr_exn_rebind _ -> ()
   | Pstr_module (_, me) -> module_expr ppf tbl me;
@@ -131,6 +132,7 @@ and expression ppf tbl e =
       match_pel ppf tbl pel;
   | Pexp_tuple el -> List.iter (expression ppf tbl) el;
   | Pexp_construct (_, eo, _) -> expression_option ppf tbl eo;
+  | Pexp_contract (c_decl, e) -> expression ppf tbl e;
   | Pexp_variant (_, eo) -> expression_option ppf tbl eo;
   | Pexp_record (iel, eo) ->
       List.iter (fun (_, e) -> expression ppf tbl e) iel;

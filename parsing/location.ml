@@ -215,6 +215,11 @@ let get_pos_info pos =
   (filename, linenum, pos.pos_cnum - linebeg)
 ;;
 
+(* toString -- added by naxu *)
+let toString loc = 
+  let (file, line, startchar) = get_pos_info loc.loc_start in
+  file^"-"^(string_of_int line)^"-"^(string_of_int startchar)
+
 let print ppf loc =
   let (file, line, startchar) = get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in

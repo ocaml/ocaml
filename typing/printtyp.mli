@@ -39,7 +39,10 @@ val type_scheme_max: ?b_reset_names: bool ->
 val tree_of_value_description: Ident.t -> value_description -> out_sig_item
 val value_description: Ident.t -> formatter -> value_description -> unit
 val tree_of_type_declaration: Ident.t -> type_declaration -> rec_status -> out_sig_item
+val contract_declaration: Ident.t -> formatter -> contract_declaration -> unit
 val type_declaration: Ident.t -> formatter -> type_declaration -> unit
+val print_structure: formatter -> Typedtree.structure_item list -> unit
+val implementation: formatter -> Typedtree.structure_item list * module_coercion -> unit
 val tree_of_exception_declaration: Ident.t -> exception_declaration -> out_sig_item
 val exception_declaration: Ident.t -> formatter -> exception_declaration -> unit
 val tree_of_module: Ident.t -> module_type -> rec_status -> out_sig_item

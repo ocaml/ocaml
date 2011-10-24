@@ -104,6 +104,7 @@ and expression_desc =
   | Pexp_while of expression * expression
   | Pexp_for of string * expression * expression * direction_flag * expression
   | Pexp_constraint of expression * core_type option * core_type option
+  | Pexp_contract of core_contract * expression (* local contract *)
   | Pexp_when of expression * expression
   | Pexp_send of expression * string
   | Pexp_new of Longident.t
@@ -124,6 +125,24 @@ and expression_desc =
 and value_description =
   { pval_type: core_type;
     pval_prim: string list }
+
+(* contract description *)
+
+and core_contract =
+   { pctr_desc: core_contract_desc;
+     pctr_loc:  Location.t }
+
+and core_contract_desc = 
+    Pctr_pred of string * expression * ((pattern * expression) list) option
+  | Pctr_arrow of string option * core_contract * core_contract
+  | Pctr_tuple of (string option * core_contract) list
+  | Pctr_constr of Longident.t * (string option * core_contract) list
+  | Pctr_and of core_contract * core_contract
+  | Pctr_or of core_contract * core_contract
+  | Pctr_typconstr of Longident.t * core_contract list
+  | Pctr_var of string
+  | Pctr_poly of string list * core_contract
+
 
 (* Type declarations *)
 
@@ -226,6 +245,7 @@ and signature_item_desc =
   | Psig_include of module_type
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
+  | Psig_contract of contract_declaration list
 
 and modtype_declaration =
     Pmodtype_abstract
@@ -251,6 +271,17 @@ and module_expr_desc =
   | Pmod_constraint of module_expr * module_type
   | Pmod_unpack of expression * package_type
 
+(* Toplevel contract declaration  
+   Example:
+   contract f = k:({x | x > 0} -> {y | y > x}) -> {z | z > k 0} 
+   let f x y = x + y
+*)
+
+and contract_declaration =  
+  { ptopctr_id:  string;
+    ptopctr_desc: core_contract;
+    ptopctr_loc: Location.t }
+
 and structure = structure_item list
 
 and structure_item =
@@ -262,6 +293,7 @@ and structure_item_desc =
   | Pstr_value of rec_flag * (pattern * expression) list
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list
+  | Pstr_contract of contract_declaration list
   | Pstr_exception of string * exception_declaration
   | Pstr_exn_rebind of string * Longident.t
   | Pstr_module of string * module_expr

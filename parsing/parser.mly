@@ -20,6 +20,10 @@ open Asttypes
 open Longident
 open Parsetree
 
+let mktopctr i d =  (* toplevel contract *)
+  { ptopctr_id = i; ptopctr_desc = d; ptopctr_loc = symbol_rloc() }
+let mkctr d =   (* local contract *)
+  { pctr_desc = d; pctr_loc = symbol_rloc() }
 let mktyp d =
   { ptyp_desc = d; ptyp_loc = symbol_rloc() }
 let mkpat d =
@@ -231,6 +235,8 @@ let pat_of_label lbl =
 %token COLONGREATER
 %token COMMA
 %token CONSTRAINT
+%token CONTRACT
+%token SAT
 %token DO
 %token DONE
 %token DOT
@@ -478,6 +484,8 @@ structure_item:
       { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
+  | CONTRACT contract_declarations
+      { mkstr(Pstr_contract(List.rev $2)) } 
   | EXCEPTION UIDENT constructor_arguments
       { mkstr(Pstr_exception($2, $3)) }
   | EXCEPTION UIDENT EQUAL constr_longident
@@ -546,6 +554,8 @@ signature_item:
       { mksig(Psig_value($2, {pval_type = $4; pval_prim = $6})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
+  | CONTRACT contract_declarations
+      { mksig(Psig_contract(List.rev $2)) } 
   | EXCEPTION UIDENT constructor_arguments
       { mksig(Psig_exception($2, $3)) }
   | MODULE UIDENT module_declaration
@@ -1063,7 +1073,10 @@ let_binding:
                                ghtyp(Ptyp_poly($3,$5)))),
          $7) }
   | pattern EQUAL seq_expr
-      { ($1, $3) }
+      { ($1, $3) },
+  | val_ident SAT core_contract EQUAL seq_expr
+      { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, 
+          ghexp(Pexp_contract($3, $5))) }
 ;
 fun_binding:
     strict_binding
@@ -1128,6 +1141,65 @@ type_constraint:
   | COLONGREATER core_type                      { (None, Some $2) }
   | COLON error                                 { syntax_error() }
   | COLONGREATER error                          { syntax_error() }
+;
+
+/* Polymorphic contracts */
+
+contractvar_list:
+    QUOTE ident                                  { [$2] }
+  | contractvar_list QUOTE ident                 { $3 :: $1 }
+;
+
+/* Core contracts */
+
+core_contract:
+    simple_core_contract_or_tuple
+      { $1 }
+  | val_ident COLON simple_core_contract_or_tuple MINUSGREATER core_contract
+      { mkctr(Pctr_arrow(Some $1, $3, $5)) } 
+  | simple_core_contract_or_tuple MINUSGREATER core_contract
+      { mkctr(Pctr_arrow(None, $1, $3)) } 
+  | simple_core_contract_or_tuple AND core_contract
+      { mkctr(Pctr_and($1, $3)) }
+  | simple_core_contract_or_tuple OR core_contract
+      { mkctr(Pctr_and($1, $3)) }
+  | contractvar_list DOT core_contract
+     { mkctr(Pctr_poly(List.rev $1, $3)) }
+ ;
+
+simple_core_contract_or_tuple:
+    simple_core_contract                        { $1 }
+  | tuple_contract
+      { mkctr(Pctr_tuple(List.rev $1)) } 
+;
+
+tuple_contract:
+  | tuple_contract STAR dep_core_contract       { $3 :: $1 }
+  | dep_core_contract STAR dep_core_contract    { [$3; $1] }
+;
+
+dep_core_contract:
+    val_ident COLON simple_core_contract        { (Some $1, $3) } 
+  | simple_core_contract                        { (None, $1) }  
+;   
+
+simple_core_contract:
+    LBRACE val_ident BAR expr RBRACE         
+      { mkctr(Pctr_pred($2, $4, None)) }
+  | TRY LBRACE val_ident BAR expr RBRACE WITH opt_bar match_cases
+      { mkctr(Pctr_pred($3, $5, Some (List.rev $9))) }
+  | QUOTE ident
+      { mkctr(Pctr_var($2)) }
+  | type_longident
+      { mkctr(Pctr_typconstr($1, [])) }
+  | simple_core_contract type_longident
+      { mkctr(Pctr_typconstr($2, [$1])) }
+  | constr_longident 
+    { mkctr(Pctr_constr($1, [])) } 
+  | constr_longident OF tuple_contract
+    { mkctr(Pctr_constr($1, List.rev $3)) } 
+  | LPAREN core_contract RPAREN
+      { $2 }
 ;
 
 /* Patterns */
@@ -1217,6 +1289,17 @@ record_pattern_end:
 primitive_declaration:
     STRING                                      { [$1] }
   | STRING primitive_declaration                { $1 :: $2 }
+;
+
+/* Contract declarations */
+
+contract_declarations:
+    contract_declaration                                { [$1] }
+  | contract_declarations AND contract_declaration      { $3 :: $1 }
+;
+contract_declaration:
+    val_ident EQUAL core_contract		
+      { mktopctr $1 $3 }
 ;
 
 /* Type declarations */

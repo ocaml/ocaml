@@ -21,6 +21,8 @@ open Typedtree
 
 type error =
     Missing_field of Ident.t
+  | Contract_declarations of 
+      Ident.t * Types.contract_declaration * Types.contract_declaration
   | Value_descriptions of Ident.t * value_description * value_description
   | Type_declarations of Ident.t * type_declaration
         * type_declaration * Includecore.type_mismatch list
@@ -43,6 +45,14 @@ exception Error of error list
 (* All functions "blah env x1 x2" check that x1 is included in x2,
    i.e. that x1 is the type of an implementation that fulfills the
    specification x2. If not, Error is raised with a backtrace of the error. *)
+
+(* Inclusion between contract declarations *)
+
+let contract_declarations env subst id decl1 decl2 =
+  let decl2 = Subst.contract_declaration subst decl2 in
+  if Includecore.contract_declarations decl1 decl2
+  then ()
+  else raise(Error[Contract_declarations(id, decl1, decl2)])
 
 (* Inclusion between value descriptions *)
 
@@ -102,6 +112,7 @@ type field_desc =
   | Field_modtype of string
   | Field_class of string
   | Field_classtype of string
+  | Field_contract of string
 
 let item_ident_name = function
     Tsig_value(id, _) -> (id, Field_value(Ident.name id))
@@ -111,6 +122,7 @@ let item_ident_name = function
   | Tsig_modtype(id, _) -> (id, Field_modtype(Ident.name id))
   | Tsig_class(id, _, _) -> (id, Field_class(Ident.name id))
   | Tsig_cltype(id, _, _) -> (id, Field_classtype(Ident.name id))
+  | Tsig_contract(id, _, _) -> (id, Field_contract(Ident.name id))
 
 (* Simplify a structure coercion *)
 
@@ -185,6 +197,7 @@ and signatures env subst sig1 sig2 =
             Tsig_value(_,{val_kind = Val_prim _})
           | Tsig_type(_,_,_)
           | Tsig_modtype(_,_)
+	  | Tsig_contract(_,_,_)
           | Tsig_cltype(_,_,_) -> pos
           | Tsig_value(_,_)
           | Tsig_exception(_,_)
@@ -227,7 +240,9 @@ and signatures env subst sig1 sig2 =
                 Subst.add_module id2 (Pident id1) subst
             | Tsig_modtype _ ->
                 Subst.add_modtype id2 (Tmty_ident (Pident id1)) subst
-            | Tsig_value _ | Tsig_exception _ | Tsig_class _ | Tsig_cltype _ ->
+            | Tsig_value _ | Tsig_contract _ -> 
+		Subst.add_value id2 (Pident id1) subst
+	    | Tsig_exception _ | Tsig_class _ | Tsig_cltype _ ->
                 subst
           in
           pair_components new_subst
@@ -269,6 +284,11 @@ and signature_components env subst = function
       (pos, Tcoerce_none) :: signature_components env subst rem
   | (Tsig_cltype(id1, info1, _), Tsig_cltype(id2, info2, _), pos) :: rem ->
       class_type_declarations env subst id1 info1 info2;
+      signature_components env subst rem
+ (* (contract1 = contract2 /\ others1 <: others2) => sig1 <: sig2 *)
+  | (Tsig_contract(id1, cdecl1, _), Tsig_contract(id2, cdecl2, _), pos) 
+    :: rem ->
+      contract_declarations env subst id1 cdecl1 cdecl2;
       signature_components env subst rem
   | _ ->
       assert false
@@ -331,6 +351,12 @@ open Printtyp
 let include_err ppf = function
   | Missing_field id ->
       fprintf ppf "The field `%a' is required but not provided" ident id
+  | Contract_declarations(id, d1, d2) -> 
+      fprintf ppf
+       "@[<hv 2>Contract declarations do not match:@ \
+        %a@;<1 -2>is not the same as@ %a@]"
+       (contract_declaration id) d1
+       (contract_declaration id) d2
   | Value_descriptions(id, d1, d2) ->
       fprintf ppf
        "@[<hv 2>Values do not match:@ \

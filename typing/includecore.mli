@@ -17,6 +17,9 @@
 open Types
 open Typedtree
 
+val contract_declarations:
+	  Types.contract_declaration -> Types.contract_declaration -> bool
+
 exception Dont_match
 
 type type_mismatch =

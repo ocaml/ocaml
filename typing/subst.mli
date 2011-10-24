@@ -33,6 +33,7 @@ type t
 val identity: t
 
 val add_type: Ident.t -> Path.t -> t -> t
+val add_value: Ident.t -> Path.t -> t -> t
 val add_module: Ident.t -> Path.t -> t -> t
 val add_modtype: Ident.t -> module_type -> t -> t
 val for_saving: t -> t
@@ -52,6 +53,7 @@ val cltype_declaration: t -> cltype_declaration -> cltype_declaration
 val modtype: t -> module_type -> module_type
 val signature: t -> signature -> signature
 val modtype_declaration: t -> modtype_declaration -> modtype_declaration
+val contract_declaration: t -> contract_declaration -> contract_declaration
 
 (* Composition of substitutions:
      apply (compose s1 s2) x = apply s2 (apply s1 x) *)

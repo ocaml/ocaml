@@ -142,6 +142,22 @@ let mk_noassert f =
   "-noassert", Arg.Unit f, " Do not compile assertion checks"
 ;;
 
+let mk_nocontract f =
+  "-nocontract", Arg.Unit f, " Do not compile contract checks"
+;;
+
+let mk_scontract f =
+  "-scontract", Arg.Unit f, " Compile with static contract checking"
+;;
+
+let mk_dcontract f =
+  "-dcontract", Arg.Unit f, " Compile contracts for dynamic checking"
+;;
+
+let mk_hcontract f =
+  "-hcontract", Arg.Unit f, " Perform hybrid contract checking"
+;;
+
 let mk_noautolink_byt f =
   "-noautolink", Arg.Unit f,
   " Do not automatically link C libraries specified in .cma files"
@@ -393,6 +409,10 @@ module type Bytecomp_options = sig
   val _make_runtime : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _nocontract : unit -> unit
+  val _scontract : unit -> unit
+  val _dcontract : unit -> unit
+  val _hcontract : unit -> unit
   val _noautolink : unit -> unit
   val _nolabels : unit -> unit
   val _nostdlib : unit -> unit
@@ -432,6 +452,10 @@ module type Bytetop_options = sig
   val _labels : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _nocontract : unit -> unit
+  val _scontract : unit -> unit
+  val _dcontract : unit -> unit
+  val _hcontract : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nostdlib : unit -> unit
@@ -474,6 +498,10 @@ module type Optcomp_options = sig
   val _linkall : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _nocontract : unit -> unit
+  val _scontract : unit -> unit
+  val _dcontract : unit -> unit
+  val _hcontract : unit -> unit
   val _noautolink : unit -> unit
   val _nodynlink : unit -> unit
   val _nolabels : unit -> unit
@@ -528,6 +556,10 @@ module type Opttop_options = sig
   val _labels : unit -> unit
   val _no_app_funct : unit -> unit
   val _noassert : unit -> unit
+  val _nocontract : unit -> unit
+  val _scontract : unit -> unit
+  val _dcontract : unit -> unit
+  val _hcontract : unit -> unit
   val _nolabels : unit -> unit
   val _noprompt : unit -> unit
   val _nostdlib : unit -> unit
@@ -595,6 +627,10 @@ struct
     mk_modern F._labels;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
+    mk_nocontract F._nocontract;
+    mk_scontract F._scontract;
+    mk_dcontract F._dcontract;
+    mk_hcontract F._hcontract;
     mk_noautolink_byt F._noautolink;
     mk_nolabels F._nolabels;
     mk_nostdlib F._nostdlib;
@@ -638,6 +674,10 @@ struct
     mk_labels F._labels;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
+    mk_nocontract F._nocontract;
+    mk_scontract F._scontract;
+    mk_dcontract F._dcontract;
+    mk_hcontract F._hcontract;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nostdlib F._nostdlib;
@@ -684,6 +724,10 @@ struct
     mk_linkall F._linkall;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
+    mk_nocontract F._nocontract;
+    mk_scontract F._scontract;
+    mk_dcontract F._dcontract;
+    mk_hcontract F._hcontract;
     mk_noautolink_opt F._noautolink;
     mk_nodynlink F._nodynlink;
     mk_nolabels F._nolabels;
@@ -739,6 +783,10 @@ module Make_opttop_options (F : Opttop_options) = struct
     mk_labels F._labels;
     mk_no_app_funct F._no_app_funct;
     mk_noassert F._noassert;
+    mk_nocontract F._nocontract;
+    mk_scontract F._scontract;
+    mk_dcontract F._dcontract;
+    mk_hcontract F._hcontract;
     mk_nolabels F._nolabels;
     mk_noprompt F._noprompt;
     mk_nostdlib F._nostdlib;

@@ -17,6 +17,7 @@
 type t
 
 val create: string -> t
+val create_idents: string -> int -> t list
 val create_persistent: string -> t
 val create_predef_exn: string -> t
 val rename: t -> t
@@ -49,11 +50,25 @@ val reinit: unit -> unit
 
 val print: Format.formatter -> t -> unit
 
-type 'a tbl
-        (* Association tables from identifiers to type 'a. *)
+type 'a tbl = (* Association tables from identifiers to type 'a. *)
+    Empty
+  | Node of 'a tbl * 'a data * 'a tbl * int
+
+and 'a data =
+  { ident: t;
+    data: 'a;
+    previous: 'a data option }
 
 val empty: 'a tbl
+val tbl_data: 'a data -> 'a
+val tbl_ident: 'a data -> t
 val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
 val find_name: string -> 'a tbl -> 'a
 val keys: 'a tbl -> t list
+
+val get_known_new_name: t -> t list -> t
+
+val merge: 'a tbl -> 'a tbl -> 'a tbl
+val raw_keys: t tbl -> t list
+(* val find: Path.t -> 'a tbl -> 'a *)

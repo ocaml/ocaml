@@ -23,11 +23,14 @@ open Types
 open Typedtree
 open Typeopt
 open Lambda
+open Format
+open Verify
 
 type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Illegal_contracted_expr
 
 exception Error of Location.t * error
 
@@ -292,10 +295,10 @@ let transl_prim prim args =
          simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim.prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
+      [arg1; {exp_desc = Texp_construct(_,{cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
+    | [{exp_desc = Texp_construct(_,{cstr_tag = Cstr_constant _}, _)}; arg2]
       when simplify_constant_constructor ->
         intcomp
     | [arg1; {exp_desc = Texp_variant(_, None)}]
@@ -528,6 +531,62 @@ let primitive_is_ccall = function
     Pbigarrayref _ | Pbigarrayset _ | Pduprecord _ -> true
   | _ -> false
 
+(* Contracts *)
+
+let raise_blame loc pathop reason = 
+  let filename = match loc.Location.loc_start.Lexing.pos_fname with
+              | "" -> !Location.input_name
+              | x -> x
+  in
+  let func_name = match pathop with
+                  | Some path -> (Path.name path)      
+                  | None ->  "_"
+  in 
+  let ls = loc.Location.loc_start in
+  let le = loc.Location.loc_end in
+  let line = ls.Lexing.pos_lnum in
+  let fst_char = ls.Lexing.pos_cnum - ls.Lexing.pos_bol in
+  let last_char = le.Lexing.pos_cnum - ls.Lexing.pos_bol in
+  let cexn_path = Predef.path_contract_failure in
+  let cexn_ctag = Cstr_exception(cexn_path) in
+  let dummy_type_expr = { desc = Tvar; level = 0; id =0 } in
+  let mkexp ed ty = {exp_desc = ed ; exp_loc = loc; 
+                     exp_type = ty; exp_env = Env.empty} in
+  let cexn_cdesc = { cstr_res = Predef.type_exn;
+                           cstr_args = [dummy_type_expr]; 
+                           cstr_arity = 1;
+                           cstr_tag = cexn_ctag;
+                           cstr_consts = -1;
+                           cstr_nonconsts = -1;
+                           cstr_private = Asttypes.Public } in
+  let chars = String.concat "-" [string_of_int fst_char; 
+                                 string_of_int last_char] in
+
+  let msg = filename ^ ", " ^
+           "line: " ^ (string_of_int line) ^ ", " ^
+           "chars: " ^ chars ^ ", " ^
+           "Blame " ^ func_name ^ ", because " ^ reason in
+  mkexp (Texp_raise (mkexp (Texp_construct (Predef.path_contract_failure, 
+                       cexn_cdesc, [mkexp (Texp_constant (Const_string msg)) 
+                                           Predef.type_string]))
+                           Predef.type_exn)) dummy_type_expr
+
+let contract_exn blame =  match blame with 
+  | Caller (loc, caller_pathop, callee_path) -> 
+     let func_name = match caller_pathop with
+                  | Some path -> (Path.name path)      
+                  | None ->  "_"
+     in
+     let reason = func_name ^ " fails " ^ (Path.name callee_path) ^ 
+                  "'s precondition" in
+     raise_blame loc caller_pathop reason
+  | Callee (loc, path) -> 
+     let reason = (Path.name path) ^ "'s postcondition fails  or " ^
+                  (Path.name path) ^ " violates its parameter's contract"
+                   in
+     raise_blame loc (Some path) reason
+  | _ -> failwith "impossible"
+  
 (* Assertions *)
 
 let assert_failed loc =
@@ -587,7 +646,39 @@ and transl_exp0 e =
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
-      transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
+      (* original: 
+	 transl_let rec_flag pat_expr_list (event_before body (transl_exp body)) *)
+      let cenv = ThmEnv.initEnv [] Ident.empty in
+      (* local contract wrapping *)
+      let rec do_local xs accu = match xs with
+      | [] -> ([], accu)
+      | (p,e)::l -> begin match (p.pat_desc, e.exp_desc) with
+        | (Tpat_var id, Texp_local_contract (ci, ei)) -> 
+	    let cenv = ThmEnv.update_name cenv (Path.Pident id) in
+            let cdecl = { ttopctr_id = Path.Pident id;
+                       ttopctr_desc = contract_id_in_contract cenv ci;
+                       ttopctr_type = ci.contract_type;
+                       ttopctr_loc = ci.contract_loc} in
+            let cexpr = contract_id_in_expr cenv ei in
+            let new_e = deep_transl_contract cenv cexpr in
+	    let new_cenv = ThmEnv.add_contract_decl cenv cdecl in
+            let (new_l, new_accu) = do_local l new_cenv in
+          ((p, new_e)::new_l, new_accu)
+        | (Tpat_var id, _) -> 
+	    let (new_l, new_accu) = do_local l accu in
+            let cexpr = contract_id_in_expr cenv e in
+            let new_e = deep_transl_contract cenv cexpr in
+            ((p, new_e)::new_l, new_accu)
+        | _ -> let (new_l, new_accu) = do_local l accu in
+               let cexpr = contract_id_in_expr cenv e in
+               let new_e = deep_transl_contract cenv cexpr in
+               ((p, new_e)::new_l, new_accu)
+        end in 
+      let (new_pat_expr_list, wrapped_cenv) = do_local pat_expr_list cenv in 
+      let cbody = contract_id_in_expr wrapped_cenv body in
+      let new_body = deep_transl_contract wrapped_cenv cbody in
+      transl_let rec_flag new_pat_expr_list 
+                 (event_before body (transl_exp new_body))
   | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
@@ -652,7 +743,7 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(cstr, args) ->
+  | Texp_construct(_,cstr, args) ->
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
@@ -779,7 +870,7 @@ and transl_exp0 e =
           ( Const_int _ | Const_char _ | Const_string _
           | Const_int32 _ | Const_int64 _ | Const_nativeint _ )
       | Texp_function(_, _)
-      | Texp_construct ({cstr_arity = 0}, _)
+      | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
           Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
@@ -825,6 +916,24 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
+  | Texp_local_contract (c, e) -> 
+    (* This branch should not be reached as
+       we put c in the contract env at Texp_let *)
+      raise(Error(e.exp_loc,Illegal_contracted_expr))
+  | Texp_contract (c, e1, callee, caller) -> 
+    (* This branch should not be reached as we expand e |><| c with
+       deep_transl_contract in transmod.ml. The purpose of doing this expansion 
+       at transmod is to expand it only once and send the result tree to 
+       a static contract checker (followed by/or) a dynamic contract checker. For 
+       static contract checking, it basically checks the reachability of Texp_bad. *) 
+       raise(Error(e.exp_loc,Illegal_contracted_expr)) 
+  | Texp_bad bl -> transl_blame bl 
+  | Texp_unr bl -> transl_blame bl
+  | Texp_Lambda (v, e) -> lambda_unit
+  | Texp_App (e, es) -> lambda_unit
+  | Texp_raise exp ->  Lprim (Praise, [transl_exp0 exp]) 
+
+and transl_blame bl = transl_exp0 (contract_exn bl)
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -1048,3 +1157,6 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Illegal_contracted_expr -> 
+      fprintf ppf
+        "Illegal contracted expr: please report this as a bug"

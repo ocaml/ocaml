@@ -92,6 +92,7 @@ and out_sig_item =
   | Osig_module of string * out_module_type * out_rec_status
   | Osig_type of out_type_decl * out_rec_status
   | Osig_value of string * out_type * string list
+  | Osig_contract of string * Types.contract_declaration * out_rec_status
 and out_type_decl =
   string * (string * (bool * bool)) list * out_type * Asttypes.private_flag *
   (out_type * out_type) list

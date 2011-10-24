@@ -21,9 +21,13 @@ open Types
 open Typedtree
 open Btype
 open Ctype
+open Env   (* for tc_contract *)
 
 type error =
-    Polymorphic_label of Longident.t
+    Unbound_value of Longident.t
+  | Unbound_constructor of Longident.t
+  | Unbound_label of Longident.t
+  | Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
@@ -56,6 +60,7 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Contract_wrong_type of Parsetree.core_contract * type_expr
 
 exception Error of Location.t * error
 
@@ -111,12 +116,13 @@ let type_option ty =
 
 let option_none ty loc =
   let cnone = Env.lookup_constructor (Longident.Lident "None") Env.initial in
-  { exp_desc = Texp_construct(cnone, []);
+  { exp_desc = Texp_construct(Path.Pident (Ident.create "empty_path"), cnone, []);
     exp_type = ty; exp_loc = loc; exp_env = Env.initial }
 
 let option_some texp =
   let csome = Env.lookup_constructor (Longident.Lident "Some") Env.initial in
-  { exp_desc = Texp_construct(csome, [texp]); exp_loc = texp.exp_loc;
+  { exp_desc = Texp_construct(Path.Pident (Ident.create "empty_path"), csome, [texp]); 
+    exp_loc = texp.exp_loc;
     exp_type = type_option texp.exp_type; exp_env = texp.exp_env }
 
 let extract_option_type env ty =
@@ -253,7 +259,7 @@ let rec build_as_type env p =
   | Tpat_tuple pl ->
       let tyl = List.map (build_as_type env) pl in
       newty (Ttuple tyl)
-  | Tpat_construct(cstr, pl) ->
+  | Tpat_construct(_,cstr, pl) ->
       if cstr.cstr_private = Private then p.pat_type else
       let tyl = List.map (build_as_type env) pl in
       let ty_args, ty_res = instance_constructor cstr in
@@ -452,7 +458,12 @@ let rec type_pat env sp =
         pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl));
         pat_env = env }
   | Ppat_construct(lid, sarg, explicit_arity) ->
-      let constr = Typetexp.find_constructor env loc lid in
+      (* original: let constr = Typetexp.find_constructor env loc lid in *)
+      let (path, constr) =
+        try
+          Typetexp.find_constructor_and_path env loc lid 
+        with Not_found ->
+          raise(Error(sp.ppat_loc, Unbound_constructor lid)) in
       let sargs =
         match sarg with
           None -> []
@@ -471,7 +482,7 @@ let rec type_pat env sp =
       let (ty_args, ty_res) = instance_constructor constr in
       List.iter2 (unify_pat env) args ty_args;
       rp {
-        pat_desc = Tpat_construct(constr, args);
+        pat_desc = Tpat_construct(path,constr, args);
         pat_loc = loc;
         pat_type = ty_res;
         pat_env = env }
@@ -661,7 +672,7 @@ let rec is_nonexpansive exp =
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map fst el)
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
-  | Texp_construct(_, el) ->
+  | Texp_construct(_,_, el) ->
       List.for_all is_nonexpansive el
   | Texp_variant(_, arg) -> is_nonexpansive_opt arg
   | Texp_record(lbl_exp_list, opt_init_exp) ->
@@ -712,6 +723,7 @@ and is_nonexpansive_mod mexp =
               List.for_all (fun (_, m) -> is_nonexpansive_mod m) id_mod_list
           | Tstr_exception _ -> false (* true would be unsound *)
           | Tstr_class _ -> false (* could be more precise *)
+	  | Tstr_contract _ | Tstr_opened_contracts _ | Tstr_mty_contracts _ -> false
         )
         items
   | Tmod_apply _ -> false
@@ -1373,6 +1385,14 @@ let rec type_exp env sexp =
         exp_loc = arg.exp_loc;
         exp_type = ty';
         exp_env = env }
+  | Pexp_contract(c, e) ->  
+      let typed_e = type_exp env e in
+      let ty = typed_e.exp_type in
+      let typed_c = tc_contract env c ty in
+      re { exp_desc = Texp_local_contract (typed_c, typed_e); 
+           exp_loc = typed_e.exp_loc;
+           exp_type = ty;
+           exp_env = env }
   | Pexp_when(scond, sbody) ->
       let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_exp env sbody in
@@ -1922,7 +1942,12 @@ and type_application env funct sargs =
         type_args [] [] ty ty sargs []
 
 and type_construct env loc lid sarg explicit_arity ty_expected =
-  let constr = Typetexp.find_constructor env loc lid in
+  (* original: let constr = Typetexp.find_constructor env loc lid in *)
+  let (path, constr) =
+    try
+      Env.lookup_constructor_and_path lid env
+    with Not_found ->
+      raise(Error(loc, Unbound_constructor lid)) in
   let sargs =
     match sarg with
       None -> []
@@ -1941,7 +1966,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   end;
   let texp =
     re {
-      exp_desc = Texp_construct(constr, []);
+      exp_desc = Texp_construct(path,constr, []);
       exp_loc = loc;
       exp_type = instance ty_res;
       exp_env = env } in
@@ -1949,7 +1974,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   let args = List.map2 (type_argument env) sargs ty_args in
   if constr.cstr_private = Private then
     raise(Error(loc, Private_type ty_res));
-  { texp with exp_desc = Texp_construct(constr, args) }
+  { texp with exp_desc = Texp_construct(path,constr, args) }
 
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)
@@ -2115,6 +2140,153 @@ and type_expect ?in_function env sexp ty_expected =
       unify_exp env exp ty_expected;
       exp
 
+(* converting the contract declared in signature from Pctr to Tctr. 
+This checking is done when we read a .mli *)
+and tc_contract_in_sig env c ty = 
+  let typedtree_core_contract = tc_contract env c ty in
+  core_contract_to_iface typedtree_core_contract
+
+(* val type_cs : Env.t -> (string option * Parsetree.core_contract) list -> 
+                 Typedtree.core_conract *)
+and tc_dep_contracts env = function 
+  | [] -> [] 
+  | (((vo,c),t)::l) -> 
+      let (typed_c, env_after_c) = tc_contract_aux env c t in
+      let (id_xop, env_for_rest) = match vo with
+          | None -> begin
+              match typed_c.contract_desc with
+               (* we convert {x | x > 0} * {y | y > x} to
+                  x:{x | x > 0} * {y | y > x} so that we do not need
+                  extra work at transl_contract side. *) 
+              | Tctr_pred(id_x, e, exnop) -> (Some id_x, env_after_c)
+              | _ -> (None, env_after_c)
+              end
+          | Some x -> begin
+             let val1_desc = {val_type = t; val_kind = Val_reg} in
+             let (id_x, new_env) = enter_value x val1_desc env in
+             (Some id_x, new_env)
+             end
+      in (id_xop, typed_c) :: tc_dep_contracts env_for_rest l
+            
+          
+(* type checking contract 
+val tc_contract:
+      Env.t -> Parsetree.core_contract -> type_expr ->
+      Typedtree.core_contract 
+*)
+and tc_contract_aux env c ty = 
+  let rty = Ctype.repr ty in  (* This is to replace Tlink by its real type. *)
+  let loc = c.pctr_loc in
+  let (typed_c, local_env) = match c.pctr_desc with
+        Pctr_pred (x, e, exnop) -> 
+          let val_desc = { val_type = rty; val_kind = Val_reg } in
+          let (id_x, new_env) = enter_value x val_desc env in
+          let typed_e = type_exp new_env e in
+          (* the new_env contains x so that we can write contract
+             {x | x > 0} -> {y | y > x} by assuming x scopes over the RHS of -> . *)
+          let typed_exns = begin match exnop with
+          | None -> None
+          | Some exns -> let cases, _ = 
+                 type_cases env (instance Predef.type_exn) Predef.type_bool None exns
+                        in Some cases end in
+          (Tctr_pred (id_x, typed_e, typed_exns), new_env) 
+      | Pctr_arrow (xop, c1, c2) ->  
+          let (ty1, ty2) = match rty.desc with
+                           | Tarrow (l, t1, t2, cm) -> (t1, t2)                
+			   | Tpoly _ -> print_string "Tpoly...\n";
+                                  raise(Error(loc,Contract_wrong_type(c,rty))) 
+                           | _ -> print_string "after Tpoly:\n";
+                                 raise(Error(loc,Contract_wrong_type(c,rty))) 
+          in
+          let (typed_c1, env_after_c1) = tc_contract_aux env c1 ty1 in
+          let (id_xop, env_for_c2) = 
+                match xop with
+                   Some x -> let val1_desc = {val_type = ty1; val_kind = Val_reg} in
+		             let (id_x, new_env) = enter_value x val1_desc env in
+                             (* putting a in the env
+                                a:{x | x > 0} -> {y | y > a} 
+                                It is ok to write such contract:
+                                x:{x | x > 0} -> {y | y > x} *)
+                             (Some id_x, new_env)
+                 | None   -> begin 
+                              match typed_c1.contract_desc with
+			      (* we convert  {x | x > 0} -> {y | y > x} to
+				 x:{x | x > 0} -> {y | y > x} so that we do not need
+                                 extra work at transl_contract side. *)
+                              | Tctr_pred(id_x, e, exnop) -> (Some id_x, env_after_c1)
+                              | _ -> (None, env_after_c1)
+                             end
+          in
+          let typed_c2 = tc_contract env_for_c2 c2 ty2 in
+          (Tctr_arrow (id_xop, typed_c1, typed_c2), env) (* return original env *) 
+      | Pctr_tuple cs ->          
+          let result = match rty.desc with
+                       | Ttuple ts -> 
+                              Tctr_tuple (tc_dep_contracts env (List.combine cs ts))
+                       | _ -> raise(Error(loc,Contract_wrong_type (c,rty)))
+          in (result, env)
+      | Pctr_constr(lid, cs) -> 
+          let (path, constr) = 
+               try 
+                 Env.lookup_constructor_and_path lid env 
+               with Not_found ->
+	         raise(Error(loc, Unbound_constructor lid)) in
+          let tys = constr.cstr_args in
+          let result = Tctr_constr (path, constr, tc_dep_contracts env (List.combine cs tys)) in
+          
+          (result, env)
+      | Pctr_and (c1, c2) -> 
+          let  typed_c1 = tc_contract env c1 rty in
+          let  typed_c2 = tc_contract env c2 rty in
+          (Tctr_and (typed_c1, typed_c2), env)
+      | Pctr_or (c1, c2) -> 
+          let  typed_c1 = tc_contract env c1 rty in
+          let  typed_c2 = tc_contract env c2 rty in
+          (Tctr_or (typed_c1, typed_c2), env)
+      | Pctr_typconstr (lid, cs) -> 
+          let (path, td) = 
+               try 
+                 Env.lookup_type lid env 
+               with Not_found ->
+	         raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid)) in
+          let typed_cs = List.map (fun (c, t) -> 
+                           let (typed_c, env) = tc_contract_aux env c t in
+                              typed_c) (List.combine cs td.type_params) in
+          (Tctr_typconstr(path, typed_cs), env)
+      | Pctr_var (v) -> 
+          (* let (typed_v, vd) = let lid = Longident.Lident v in
+               try
+                 Env.lookup_value lid env 
+               with Not_found -> 
+                 raise(Error(loc, Unbound_value lid)) in *)
+          (Tctr_var (Ident.create v), env)
+      | Pctr_poly (vs, c) ->  (*
+          let (ts, poly_t) = match rty.desc with
+                       | Tpoly (t, ts) -> (ts, t)
+                       | _ -> raise(Error(loc,Contract_wrong_type(c,rty))) in
+          let rec id_vs vs ts env = begin match (vs,ts) with
+          | ([], []) -> ([], env)
+          | (v1 :: vss, t1 :: tss) -> 
+                    let val_desc = { val_type = t1; val_kind = Val_reg } in
+                    let (id_v1, env1) = enter_value v1 val_desc env in
+                    let (id_vss, nenv) = id_vs vss tss env1 in
+                    (id_v1 :: id_vss, nenv)
+          | (_, _) -> print_string "typecore:unequal length";
+                      raise(Error(loc, Contract_wrong_type(c,rty)))
+          end in 
+          let (typed_vs, newenv) = id_vs vs ts in *)
+          let tvs = List.map (fun i -> Ident.create i) vs in
+          let (typed_c, _) = tc_contract_aux env c rty in
+          (Tctr_poly (tvs, typed_c), env)
+  in
+  ({ contract_desc = typed_c;
+     contract_loc  = loc; 
+     contract_type = ty;
+     contract_env  = env }, local_env)
+
+and tc_contract env c ty = let (typed_c, _) = tc_contract_aux env c ty in
+                           typed_c
+
 (* Typing of statements (expressions whose values are discarded) *)
 
 and type_statement env sexp =
@@ -2279,6 +2451,12 @@ open Format
 open Printtyp
 
 let report_error ppf = function
+  | Unbound_value lid ->
+      fprintf ppf "Unbound value %a" longident lid
+  | Unbound_constructor lid ->
+      fprintf ppf "Unbound constructor %a" longident lid
+  | Unbound_label lid ->
+      fprintf ppf "Unbound record field label %a" longident lid
   | Polymorphic_label lid ->
       fprintf ppf "@[The record field label %a is polymorphic.@ %s@]"
         longident lid "You cannot instantiate it in a pattern."
@@ -2426,3 +2604,6 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+  | Contract_wrong_type (c,ty) -> 
+      Printast.core_contract 0 ppf c;
+      fprintf ppf "is expected to have type %a" type_expr ty

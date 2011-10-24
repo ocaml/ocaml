@@ -27,6 +27,9 @@ let create s =
   incr currentstamp;
   { name = s; stamp = !currentstamp; flags = 0 }
 
+let rec create_idents s n = 
+  if n=0 then [] else create s :: create_idents s (n-1)
+
 let create_predef_exn s =
   incr currentstamp;
   { name = s; stamp = !currentstamp; flags = predef_exn_flag }
@@ -96,6 +99,8 @@ and 'a data =
     previous: 'a data option }
 
 let empty = Empty
+let tbl_data (k: 'a data) = k.data
+let tbl_ident (k: 'a data) = k.ident
 
 (* Inline expansion of height for better speed
  * let height = function
@@ -182,3 +187,37 @@ let rec keys_aux stack accu = function
       keys_aux (l :: stack) (k.ident :: accu) r
 
 let keys tbl = keys_aux [] [] tbl
+
+(* we want to rename id to the name that is an element in idents *)
+let rec get_known_new_name id idents = 
+  match idents with
+    [] -> raise Not_found
+  | (i :: rem) -> let c = compare id.name i.name in
+                  if c = 0 then { id with stamp = i.stamp }
+                  else get_known_new_name id rem
+
+(* naxu adds merge *) 
+let rec merge t1 t2 =
+  match (t1, t2) with
+    (Empty, t) -> t
+  | (t, Empty) -> t
+  | (Node(l1, d1, r1, h1), Node(l2, d2, r2, h2)) ->
+      balance l1  d1 (balance (merge r1 l2) d2 r2)
+
+let rec raw_keys_aux stack accu = function
+    Empty ->
+      begin match stack with
+        [] -> accu
+      | a :: l -> keys_aux l accu a
+      end
+  | Node(l, k, r, _) ->
+      keys_aux (l :: stack) (k.data :: accu) r
+
+let raw_keys tbl = raw_keys_aux [] [] tbl
+
+
+let rec map f = function
+    Empty -> Empty
+  | Node(l, k, r, i) -> Node(map f l, {ident = k.ident;
+                                       data = f k.data;
+                                       previous = k.previous}, map f r, i)
