@@ -15,23 +15,30 @@
 # The main Makefile
 
 include config/Makefile
-include stdlib/StdlibModules
+#include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
-COMPFLAGS=-strict-sequence -warn-error A $(INCLUDES)
-LINKFLAGS=
+#CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
+#CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -I otherlibs/dynlink
+#COMPFLAGS=-strict-sequence -warn-error A $(INCLUDES)
+#LINKFLAGS=
 
-CAMLYACC=boot/ocamlyacc
+CAMLC=ocamlc -g
+CAMLOPT=ocamlopt
+COMPFLAGS=-warn-error A -I +ocamlgraph $(INCLUDES)
+LINKFLAGS=-I +ocamlgraph unix.cma nums.cma graph.cma str.cma
+
+#CAMLYACC=boot/ocamlyacc
+CAMLYACC=ocamlyacc
 YACCFLAGS=-v
-CAMLLEX=boot/ocamlrun boot/ocamllex
-CAMLDEP=boot/ocamlrun tools/ocamldep
+CAMLLEX=ocamllex
+CAMLDEP=ocamldep
 DEPFLAGS=$(INCLUDES)
-CAMLRUN=byterun/ocamlrun
+CAMLRUN=ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
 
-INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
+INCLUDES=-I utils -I parsing -I typing -I ergo -I verify \
+	 -I bytecomp -I asmcomp -I driver \
 	 -I toplevel
 
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
@@ -46,8 +53,7 @@ PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
 
 TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
-  typing/btype.cmo typing/oprint.cmo \
-  typing/subst.cmo typing/predef.cmo \
+  typing/btype.cmo typing/subst.cmo typing/predef.cmo typing/oprint.cmo \
   typing/datarepr.cmo typing/env.cmo \
   typing/typedtree.cmo typing/ctype.cmo \
   typing/printtyp.cmo typing/includeclass.cmo \
@@ -56,6 +62,20 @@ TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
   typing/typetexp.cmo typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
   typing/typemod.cmo
+
+ERGO=ergo/exception.cmo ergo/print_color.cmo ergo/options.cmo ergo/loc.cmo \
+      ergo/hashcons.cmo ergo/hstring.cmo ergo/builtin.cmo \
+      ergo/symbols.cmo ergo/ergo_subst.cmo ergo/ty.cmo ergo/term.cmo \
+      ergo/literal.cmo ergo/formula.cmo ergo/common.cmo \
+      ergo/explanation.cmo ergo/polynome.cmo ergo/ac.cmo \
+      ergo/uf.cmo ergo/use.cmo ergo/intervals.cmo ergo/fm.cmo ergo/arith.cmo \
+      ergo/pairs.cmo ergo/bitv.cmo ergo/arrays.cmo ergo/combine.cmo \
+      ergo/cc.cmo ergo/existantial.cmo ergo/pruning.cmo \
+      ergo/triggers.cmo ergo/cnf.cmo ergo/why_typing.cmo ergo/ergo_matching.cmo \
+      ergo/sat.cmo ergo/frontend.cmo
+
+VERIFY=verify/escSyn.cmo verify/thmEnv.cmo verify/toErgosrc.cmo \
+       verify/thmProvers.cmo verify/esc.cmo verify/verify.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
@@ -96,19 +116,19 @@ TOPLEVEL=driver/pparse.cmo driver/errors.cmo driver/compile.cmo \
 TOPLEVELLIB=toplevel/toplevellib.cma
 TOPLEVELSTART=toplevel/topstart.cmo
 
-COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
+COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(BYTECOMP) $(DRIVER)
 
-TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
+TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
-NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) \
+NATTOPOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(ASMCOMP) \
   driver/pparse.cmo driver/opterrors.cmo driver/optcompile.cmo \
   driver/main_args.cmo \
   toplevel/genprintval.cmo toplevel/opttoploop.cmo toplevel/opttopdirs.cmo \
   toplevel/opttopmain.cmo toplevel/opttopstart.cmo
 
-OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
+OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(VERIFY) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
@@ -742,12 +762,12 @@ clean::
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 partialclean::
-	for d in utils parsing typing bytecomp asmcomp driver toplevel tools; \
+	for d in utils parsing typing ergo verify bytecomp asmcomp driver toplevel tools; \
 	  do rm -f $$d/*.cm[iox] $$d/*.annot $$d/*.[so] $$d/*~; done
 	rm -f *~
 
 depend: beforedepend
-	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \
+	(for d in utils parsing typing ergo verify bytecomp asmcomp driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend
 
