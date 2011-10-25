@@ -905,7 +905,7 @@ val exit : int -> 'a
 (** Terminate the process, returning the given status code
    to the operating system: usually 0 to indicate no errors,
    and a small positive integer to indicate failure.
-   All open output channels are flushed with flush_all.
+   All open output channels are flushed with [flush_all].
    An implicit [exit 0] is performed each time a program
    terminates normally.  An implicit [exit 2] is performed if the program
    terminates early because of an uncaught exception. *)
