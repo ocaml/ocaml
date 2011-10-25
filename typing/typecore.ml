@@ -531,7 +531,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
                pat_env = !env }
       | _ -> assert false
       end
-  |Ppat_alias(sq, name) ->
+  | Ppat_alias(sq, name) ->
       let q = type_pat sq expected_ty in
       begin_def ();
       let ty_var = build_as_type !env q in
@@ -550,7 +550,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_tuple spl ->
+  | Ppat_tuple spl ->
       let spl_ann = List.map (fun p -> (p,newvar ())) spl in
       let ty = newty (Ttuple(List.map snd spl_ann)) in
       unify_pat_types loc !env ty expected_ty;
@@ -560,7 +560,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_construct(lid, sarg, explicit_arity) ->
+  | Ppat_construct(lid, sarg, explicit_arity) ->
       let constr =
         match lid, constrs with
           Longident.Lident s, Some constrs when Hashtbl.mem constrs s ->
@@ -600,7 +600,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_variant(l, sarg) ->
+  | Ppat_variant(l, sarg) ->
       let arg = may_map (fun p -> type_pat p (newvar())) sarg in
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields =
@@ -658,7 +658,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_or(sp1, sp2) ->
+  | Ppat_or(sp1, sp2) ->
       let initial_pattern_variables = !pattern_variables in
       let p1 = type_pat ~mode:Inside_or sp1 expected_ty in
       let p1_variables = !pattern_variables in
@@ -673,7 +673,7 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_lazy sp1 ->
+  | Ppat_lazy sp1 ->
       let nv = newvar () in
       unify_pat_types loc !env (instance (Predef.type_lazy_t nv)) expected_ty;
       let p1 = type_pat sp1 nv in
@@ -682,13 +682,13 @@ let rec type_pat ~constrs ~labels ~no_existentials ~mode ~env sp expected_ty =
         pat_loc = loc;
         pat_type = expected_ty;
         pat_env = !env }
-  |Ppat_constraint(sp, sty) ->
+  | Ppat_constraint(sp, sty) ->
       let ty, force = Typetexp.transl_simple_type_delayed !env sty in
       unify_pat_types loc !env ty expected_ty;
       let p = type_pat sp expected_ty in
       pattern_force := force :: !pattern_force;
       p
-  |Ppat_type lid ->
+  | Ppat_type lid ->
       let (r,ty) = build_or_pat !env loc lid in
       unify_pat_types loc !env ty expected_ty;
       r
@@ -906,7 +906,11 @@ and is_nonexpansive_opt = function
     None -> true
   | Some e -> is_nonexpansive e
 
-(* Typing of printf formats.
+(* Typing format strings for printing or reading.
+
+   This format strings are used by functions in modules Printf, Format, and
+   Scanf.
+
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
 external string_to_format :
@@ -960,7 +964,14 @@ let type_format loc fmt =
         else incomplete_format fmt else
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
+      | '@' -> skip_indication (i + 1)
       | _ -> scan_format (i + 1)
+    and skip_indication i =
+      if i >= len then incomplete_format fmt else
+      match fmt.[i] with
+      | '@' | '%' -> scan_format (i + 1)
+      | _ -> scan_format i
+
     and scan_opts i j =
       if j >= len then incomplete_format fmt else
       match fmt.[j] with

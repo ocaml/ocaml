@@ -1317,15 +1317,18 @@ let scan_format ib ef fmt rv f =
 
     let rec scan_fmt ir f i =
       if i > lim then ir, f else
-      match Sformat.get fmt i with
+      match Sformat.unsafe_get fmt i with
       | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
       | '%' -> scan_skip ir f (succ i)
-      | '@' ->
-        let i = succ i in
-        if i > lim then incomplete_format fmt else begin
-        check_char ib (Sformat.get fmt i);
-        scan_fmt ir f (succ i) end
+      | '@' -> skip_indication ir f (succ i)
       | c -> check_char ib c; scan_fmt ir f (succ i)
+
+    and skip_indication ir f i =
+     if i < lim then
+       match Sformat.unsafe_get fmt i with
+       | '@' | '%' as c -> check_char ib c; scan_fmt ir f (succ i)
+       | c -> check_char ib c; scan_fmt ir f i
+     else incomplete_format fmt
 
     and scan_skip ir f i =
       if i > lim then ir, f else
@@ -1334,30 +1337,35 @@ let scan_format ib ef fmt rv f =
       | _ -> scan_limits false ir f i
 
     and scan_limits skip ir f i =
-      if i > lim then ir, f else
-      let max_opt, min_opt, i =
+
+      let rec scan_width i =
+        if i > lim then incomplete_format fmt else
         match Sformat.get fmt i with
         | '0' .. '9' as conv ->
-          let rec read_width accu i =
-            if i > lim then accu, i else
-            match Sformat.get fmt i with
-            | '0' .. '9' as c ->
-              let accu = 10 * accu + decimal_value_of_char c in
-              read_width accu (succ i)
-            | _ -> accu, i in
+          let width, i = read_width (decimal_value_of_char conv) (succ i) in
+          Some width, i
+        | _ -> None, i
 
-          let max, i = read_width (decimal_value_of_char conv) (succ i) in
+      and scan_precision i =
+        begin
+          match Sformat.get fmt i with
+          | '.' ->
+            let precision, i = read_width 0 (succ i) in
+            (Some precision, i)
+          | _ -> None, i
+        end
 
-          if i > lim then incomplete_format fmt else
-          begin
-            match Sformat.get fmt i with
-            | '.' ->
-              let min, i = read_width 0 (succ i) in
-              (Some max, Some min, i)
-            | _ -> Some max, None, i
-          end
-        | _ -> None, None, i in
+      and read_width accu i =
+        if i > lim then accu, i else
+        match Sformat.unsafe_get fmt i with
+        | '0' .. '9' as c ->
+          let accu = 10 * accu + decimal_value_of_char c in
+          read_width accu (succ i)
+        | _ -> accu, i in
 
+      if i > lim then ir, f else
+      let max_opt, i = scan_width i in
+      let min_opt, i = scan_precision i in
       scan_conversion skip max_opt min_opt ir f i
 
     and scan_conversion skip max_opt min_opt ir f i =
