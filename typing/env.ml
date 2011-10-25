@@ -285,10 +285,10 @@ let find_type_expansion ?(use_local=true) ?level path env =
   let decl = find_type path env in
   if not use_local && not (decl.type_newtype_level = None) then raise Not_found;
   (* the level is changed when updating newtype definitions *)
-  begin match level, decl.type_newtype_level with
+  (* begin match level, decl.type_newtype_level with
     Some level, Some (_, exp_level) when level < exp_level -> raise Not_found
   | _ -> ()
-  end;
+  end; *)
   match decl.type_manifest with
   | Some body when decl.type_private = Public
               || decl.type_kind <> Type_abstract

@@ -2544,9 +2544,6 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     let ty_res' = instance env ty_res in
     List.iter (fun (_,exp) -> unify_exp env exp ty_res') cases
   end;
-  end_def ();
-  (* Ensure that existential types do not escape *)
-  unify_exp_types loc env (instance env ty_res) (newvar ()) ;
   let partial =
     if partial_flag then
       Parmatch.check_partial_gadt (partial_pred ~lev env ty_arg) loc cases
@@ -2554,6 +2551,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       Partial
   in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
+  end_def ();
+  (* Ensure that existential types do not escape *)
+  unify_exp_types loc env (instance env ty_res) (newvar ()) ;
   cases, partial
 
 (* Typing of let bindings *)

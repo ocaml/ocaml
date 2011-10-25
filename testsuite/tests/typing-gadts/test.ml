@@ -273,6 +273,52 @@ let f (type a) (x : a t) y =
     in M.z
 ;; (* ok *)
 
+(* Objects and variants *)
+
+type _ h =
+  | Has_m : <m : int> h
+  | Has_b : <b : bool> h
+
+let f : type a. a h -> a = function
+  | Has_m -> object method m = 1 end
+  | Has_b -> object method b = true end
+;;
+type _ j =
+  | Has_A : [`A of int] j
+  | Has_B : [`B of bool] j
+
+let f : type a. a j -> a = function
+  | Has_A -> `A 1
+  | Has_B -> `B true
+;;
+type (_,_) eq = Eq : ('a,'a) eq
+;;
+let f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
+  fun Eq o -> o
+;; (* fail *)
+
+let f : type a b. (a,b) eq -> <m : a; ..> -> <m : b; ..> =
+  fun Eq o -> o
+;; (* fail *)
+
+let f : type a b. (a,b) eq -> <m : a> -> <m : b> =
+  fun Eq o -> o
+;; (* ok *)
+
+let int_of_bool : (bool,int) eq = Obj.magic Eq;;
+
+let x = object method m = true end;;
+let y = (x, f int_of_bool x);;
+
+let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
+  fun Eq o -> o ;; (* fail *)
+
+let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
+  fun Eq o -> o ;; (* fail *)
+
+let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
+  fun Eq o -> o ;; (* should be ok *)
+
 (* Pattern matching *)
 
 type 'a t =

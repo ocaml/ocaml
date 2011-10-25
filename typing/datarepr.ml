@@ -68,10 +68,7 @@ let constructor_descrs ty_res cstrs priv =
 	  | None -> []
 	  | Some type_ret ->
 	      let res_vars = free_vars type_ret in
-	      let arg_vars = 
-		List.fold_left TypeSet.union TypeSet.empty
-		  (List.map free_vars ty_args)
-	      in
+	      let arg_vars = free_vars (newgenty (Ttuple ty_args)) in
 	      TypeSet.elements (TypeSet.diff arg_vars res_vars)
 	in
 	let cstr =

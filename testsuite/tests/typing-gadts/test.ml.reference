@@ -50,9 +50,9 @@ module Nonexhaustive :
 #               Characters 119-120:
       let eval (D x) = x
                        ^
-Error: This expression has type &x12 t but an expression was expected of type
-         &x12 t
-       The type constructor &x12 would escape its scope
+Error: This expression has type ex#12 t
+       but an expression was expected of type ex#12 t
+       The type constructor ex#12 would escape its scope
 #                       Characters 157-158:
   	  C ->
      ^
@@ -120,10 +120,45 @@ Error: This expression has type int but an expression was expected of type
 #               Characters 136-137:
       let module M = struct type b = a let z = (y : b) end
                                                 ^
-Error: This expression has type a but an expression was expected of type
-         b = int
-       Type b = int is not compatible with type 'a 
+Error: This expression has type a = int
+       but an expression was expected of type b = int
+       Type a = int is not compatible with type 'a 
 #           val f : 'a t -> int -> int = <fun>
+#                     type 'a h = Has_m : < m : int > h | Has_b : < b : bool > h
+val f : 'a h -> 'a = <fun>
+#               type 'a j = Has_A : [ `A of int ] j | Has_B : [ `B of bool ] j
+val f : 'a j -> 'a = <fun>
+#   type ('a, 'b) eq = Eq : ('a, 'a) eq
+#     Characters 4-90:
+  ....f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
+    fun Eq o -> o
+Error: This type scheme cannot quantify 'x0 :
+it is aliased to another variable.
+#       Characters 74-75:
+    fun Eq o -> o
+                ^
+Error: This expression has type < m : a; .. >
+       but an expression was expected of type < m : b; .. >
+       Type a is not compatible with type b = a 
+       Type b = a is not compatible with type 'a 
+       Types for method m are incompatible
+#       val f : ('a, 'b) eq -> < m : 'a > -> < m : 'b > = <fun>
+#   val int_of_bool : (bool, int) eq = Eq
+#   val x : < m : bool > = <obj>
+# val y : < m : bool > * < m : int > = (<obj>, <obj>)
+#     Characters 5-75:
+  ....f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
+    fun Eq o -> o..............
+Error: This definition has type
+         'a. ('a, 'a) eq -> ([> `A of 'a ] as 'b) -> 'b
+       which is less general than 'x1 'x0. ('x1, 'x0) eq -> 'b -> 'b
+#     Characters 5-85:
+  ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
+    fun Eq o -> o..............
+Error: This definition has type
+         ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
+       which is less general than 'x1 'x0. ('x1, 'x0) eq -> 'c -> 'c
+#     val f : ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ] = <fun>
 #                                                     type 'a t = A of int | B of bool | C of float | D of 'a
 type 'a ty =
     TE : 'a ty -> 'a array ty
@@ -154,6 +189,17 @@ Error: This pattern matches values of type 'a array
                            ^^^^^^^
 Error: This pattern matches values of type 'a array
        but a pattern was expected which matches values of type a
-#                       type ('a, 'b) pair = { left : 'a; right : 'b; }
+#                       Characters 92-334:
+  ..match {left=x; right=y} with
+    | {left=_; right=A z} -> z
+    | {left=_; right=B z} -> if z then 1 else 2
+    | {left=_; right=C z} -> truncate z
+    | {left=TE TC; right=D [|1.0|]} -> 14
+    | {left=TA; right=D 0} -> -1
+    | {left=TA; right=D z} -> z
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a value that is not matched:
+{left=TE (TE _); right=D [| _ |]}
+type ('a, 'b) pair = { left : 'a; right : 'b; }
 val f : 'a ty -> 'a t -> int = <fun>
 # 
