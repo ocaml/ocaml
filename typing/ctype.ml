@@ -140,9 +140,18 @@ let is_object_type path =
 
 (**** Abbreviations without parameters ****)
 (* Shall reset after generalizing *)
+
+let trace_gadt_instances = ref false
+let check_trace_gadt_instances env =
+  not !trace_gadt_instances && Env.has_local_constraints env &&
+  (trace_gadt_instances := true; cleanup_abbrev (); true)
+
 let simple_abbrevs = ref Mnil
+
 let proper_abbrevs path tl abbrev =
-  if !Clflags.principal || tl <> [] || is_object_type path then abbrev
+  if tl <> [] || !trace_gadt_instances || !Clflags.principal ||
+     is_object_type path
+  then abbrev
   else simple_abbrevs
 
 (**** Some type creators ****)
@@ -696,7 +705,7 @@ let get_level env p =
 let rec update_level env level ty =
   let ty = repr ty in
   if ty.level > level then begin
-    if !Clflags.principal && Env.has_local_constraints env then begin
+    if Env.has_local_constraints env then begin
       match Env.gadt_instance_level env ty with
         Some lv -> if level < lv then raise (Unify [(ty, newvar2 level)])
       | None -> ()
@@ -920,12 +929,12 @@ let rec copy ?env ?partial ty =
     save_desc ty desc;
     let t = newvar() in          (* Stub *)
     begin match env with
-    | Some env ->
+      Some env when Env.has_local_constraints env ->
         begin match Env.gadt_instance_level env ty with
           Some lv -> Env.add_gadt_instances env lv [t]
         | None -> ()
         end
-    | None -> ()
+    | _ -> ()
     end;
     ty.desc <- Tsubst t;
     t.desc <-
@@ -994,7 +1003,7 @@ let rec copy ?env ?partial ty =
 (**** Variants of instantiations ****)
 
 let gadt_env env =
-  if !Clflags.principal && Env.has_local_constraints env
+  if Env.has_local_constraints env
   then Some env
   else None
 
@@ -1257,6 +1266,7 @@ let check_abbrev_env env =
     previous_env := env
   end
 
+
 (* Expand an abbreviation. The expansion is memorized. *)
 (*
    Assume the level is greater than the path binding time of the
@@ -1309,7 +1319,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
           | _ -> ()
           end;
           (* For gadts, remember type as non exportable *)
-          if !Clflags.principal then begin
+          if !trace_gadt_instances then begin
             match lv with
               Some lv -> Env.add_gadt_instances env lv [ty; ty']
             | None ->
@@ -1353,7 +1363,7 @@ let rec try_expand_head env ty =
     try try_expand_head env ty'
     with Cannot_expand -> ty'
   in
-  if !Clflags.principal then begin
+  if Env.has_local_constraints env then begin
     match Env.gadt_instance_level env ty'' with
       None    -> ()
     | Some lv -> Env.add_gadt_instance_chain env lv ty
@@ -2072,10 +2082,11 @@ let rec unify (env:Env.t ref) t1 t2 =
   let t1 = repr t1 in
   let t2 = repr t2 in
   if unify_eq !env t1 t2 then () else
+  let reset_tracing = check_trace_gadt_instances !env in
   
   try
     type_changed := true;
-    match (t1.desc, t2.desc) with
+    begin match (t1.desc, t2.desc) with
       (Tvar _, Tconstr _) when deep_occur t1 t2 ->
         unify2 env t1 t2
     | (Tconstr _, Tvar _) when deep_occur t2 t1 ->
@@ -2105,7 +2116,10 @@ let rec unify (env:Env.t ref) t1 t2 =
         link_type t1 t2
     | _ ->
         unify2 env t1 t2
+    end;
+    if reset_tracing then trace_gadt_instances := false;
   with Unify trace ->
+    if reset_tracing then trace_gadt_instances := false;
     raise (Unify ((t1, t2)::trace))
 
 and unify2 env t1 t2 =
@@ -2121,7 +2135,7 @@ and unify2 env t1 t2 =
   if unify_eq !env t1' t2' then () else
 
   let t1 = repr t1 and t2 = repr t2 in
-  if !Clflags.principal then begin
+  if !trace_gadt_instances then begin
     match Env.gadt_instance_level !env t1',Env.gadt_instance_level !env t2' with
       Some lv1, Some lv2 ->
         if lv1 > lv2 then Env.add_gadt_instance_chain !env lv1 t2 else
@@ -2175,10 +2189,8 @@ and unify3 env t1 t1' t2 t2' =
       update_level !env t2'.level t1;
       link_type t2' t1;
   | _ ->
-      if !Clflags.principal then begin
-        update_level !env t1'.level t2;
-        update_level !env t2'.level t1;
-      end;
+      update_level !env t1'.level t2;
+      update_level !env t2'.level t1;
       begin match umode with
       | Old ->
           old_link ()
@@ -2501,10 +2513,12 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
   | Rabsent, Rabsent -> ()
   | Reither(false, tl, _, e1), Rpresent(Some t2) when not fixed1 ->
       set_row_field e1 f2;
+      update_level !env (repr more).level t2;
       (try List.iter (fun t1 -> unify env t1 t2) tl
       with exn -> e1 := None; raise exn)
   | Rpresent(Some t1), Reither(false, tl, _, e2) when not fixed2 ->
       set_row_field e2 f1;
+      update_level !env (repr more).level t1;
       (try List.iter (unify env t1) tl
       with exn -> e2 := None; raise exn)
   | Reither(true, [], _, e1), Rpresent None when not fixed1 ->
@@ -2544,11 +2558,14 @@ let unify_var env t1 t2 =
   if t1 == t2 then () else
   match t1.desc with
     Tvar _ ->
+      let reset_tracing = check_trace_gadt_instances env in
       begin try
         occur env t1 t2;
         update_level env t1.level t2;
-        link_type t1 t2
+        link_type t1 t2;
+        if reset_tracing then trace_gadt_instances := false;
       with Unify trace ->
+        if reset_tracing then trace_gadt_instances := false;
         let expanded_trace = expand_trace env ((t1,t2)::trace) in 
         raise (Unify expanded_trace)
       end

@@ -1,5 +1,5 @@
 
-#                                             module Exp :
+#                                                         module Exp :
   sig
     type 'a t =
         IntLit : int -> int t
@@ -8,6 +8,7 @@
       | App : ('a -> 'b) t * 'a t -> 'b t
       | Abs : ('a -> 'b) -> ('a -> 'b) t
     val eval : 'a t -> 'a
+    val discern : 'a t -> int
   end
 #                                     module List :
   sig
@@ -49,9 +50,9 @@ module Nonexhaustive :
 #               Characters 119-120:
       let eval (D x) = x
                        ^
-Error: This expression has type &x7 t but an expression was expected of type
-         &x7 t
-       The type constructor &x7 would escape its scope
+Error: This expression has type &x12 t but an expression was expected of type
+         &x12 t
+       The type constructor &x12 would escape its scope
 #                       Characters 157-158:
   	  C ->
      ^
@@ -89,7 +90,9 @@ Error: This expression has type a = int
                                 ^^^^^^^^^^^^
 Error: This expression has type int but an expression was expected of type
          int
+#       val test : 'a t -> int = <fun>
 #       val test : 'a t -> 'a = <fun>
+#       val test : 'a t -> int = <fun>
 #       val test : 'a t -> 'a = <fun>
 #         val test2 : 'a t -> 'a option = <fun>
 #         val test2 : 'a t -> 'a option = <fun>
@@ -101,11 +104,23 @@ Error: This expression has type int option
        but an expression was expected of type a option
 #           val test2 : 'a t -> 'a option = <fun>
 #               val test2 : 'a t -> 'a option = <fun>
-#               val f : 'a t -> 'a -> 'a = <fun>
+#       Characters 100-101:
+    match v with Int -> let y = either 1 x in y
+                                              ^
+Error: This expression has type int but an expression was expected of type
+         int
+#             val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #     val f : 'a t -> 'a -> 'a = <fun>
+#               Characters 136-137:
+      let module M = struct type b = a let z = (y : b) end
+                                                ^
+Error: This expression has type a but an expression was expected of type
+         b = int
+       Type b = int is not compatible with type 'a 
+#           val f : 'a t -> int -> int = <fun>
 #                                                     type 'a t = A of int | B of bool | C of float | D of 'a
 type 'a ty =
     TE : 'a ty -> 'a array ty

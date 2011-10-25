@@ -1187,13 +1187,24 @@ let create_package_type loc env (p, l) =
                    List.map (Typetexp.transl_simple_type env false)
                      (List.map snd l)))
 
+let wrap_unpacks sexp unpacks =
+  List.fold_left
+    (fun sexp (name, loc) ->
+      {pexp_loc = sexp.pexp_loc; pexp_desc = Pexp_letmodule (
+       name,
+       {pmod_loc = loc; pmod_desc = Pmod_unpack
+          {pexp_desc=Pexp_ident(Longident.Lident name); pexp_loc=loc}},
+       sexp)})
+    sexp unpacks
+
+(* Helpers for type_cases *)
 let iter_ppat f p = 
   match p.ppat_desc with
   | Ppat_any | Ppat_var _ | Ppat_constant _ 
-  | Ppat_type _ | Ppat_unpack _ | Ppat_construct _ -> ()    
+  | Ppat_type _ | Ppat_unpack _ -> ()    
   | Ppat_array pats -> List.iter f pats
   | Ppat_or (p1,p2) -> f p1; f p2
-  | Ppat_variant (label, arg) -> may f arg
+  | Ppat_variant (_, arg) | Ppat_construct (_, arg, _) -> may f arg
   | Ppat_tuple lst ->  List.iter f lst
   | Ppat_alias (p,_) | Ppat_constraint (p,_) | Ppat_lazy p -> f p 
   | Ppat_record (args, flag) -> List.iter (fun (_,p) -> f p) args 
@@ -1206,15 +1217,38 @@ let contains_polymorphic_variant p =
   in
   try loop p; false with Exit -> true
 
-let wrap_unpacks sexp unpacks =
+let contains_gadt env p =
+  let rec loop p =
+    match p.ppat_desc with
+      Ppat_construct (lid, _, _) ->
+        let constr = Env.lookup_constructor lid env in
+        if constr.cstr_generalized then raise Exit else iter_ppat loop p
+    | _ -> iter_ppat loop p
+  in
+  try loop p; false with
+    Exit -> true
+  | Not_found -> false
+
+let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
+
+(* Duplicate types of values in the environment *)
+(* XXX Should we do something about global type variables too? *)
+let duplicate_ident_types loc caselist env =
+  let caselist =
+    List.filter (fun (pat, _) -> contains_gadt env pat) caselist in
+  let idents = Unused_var.free_idents
+      {pexp_desc = Pexp_match(dummy_expr,caselist); pexp_loc = loc} in
   List.fold_left
-    (fun sexp (name, loc) ->
-      {pexp_loc = sexp.pexp_loc; pexp_desc = Pexp_letmodule (
-       name,
-       {pmod_loc = loc; pmod_desc = Pmod_unpack
-          {pexp_desc=Pexp_ident(Longident.Lident name); pexp_loc=loc}},
-       sexp)})
-    sexp unpacks
+    (fun env s ->
+      try
+        let (path, desc) = Typetexp.find_value env loc (Longident.Lident s) in
+        match path with
+          Path.Pident id ->
+            let desc = {desc with val_type = correct_levels desc.val_type} in
+            Env.add_value id desc env
+        | _ -> env
+      with Not_found -> env)
+    env idents
 
 (* Typing of expressions *)
 
@@ -1635,15 +1669,16 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = instance_def Predef.type_unit;
         exp_env = env }
   | Pexp_constraint(sarg, sty, sty') ->
+      let separate = !Clflags.principal || Env.has_local_constraints env in
       let (arg, ty') =
         match (sty, sty') with
           (None, None) ->               (* Case actually unused *)
             let arg = type_exp env sarg in
             (arg, arg.exp_type)
         | (Some sty, None) ->
-            if !Clflags.principal then begin_def ();
+            if separate then begin_def ();
             let ty = Typetexp.transl_simple_type env false sty in
-            if !Clflags.principal then begin
+            if separate then begin
               end_def ();
               generalize_structure ty;
               (type_argument env sarg ty (instance env ty), instance env ty)
@@ -1653,10 +1688,10 @@ and type_expect ?in_function env sexp ty_expected =
             let (ty', force) =
               Typetexp.transl_simple_type_delayed env sty'
             in
-            if !Clflags.principal then begin_def ();
+            if separate then begin_def ();
             let arg = type_exp env sarg in
             let gen =
-              if !Clflags.principal then begin
+              if separate then begin
                 end_def ();
                 let tv = newvar () in
                 let gen = generalizable tv.level arg.exp_type in
@@ -1700,7 +1735,7 @@ and type_expect ?in_function env sexp ty_expected =
             end;
             (arg, ty')
         | (Some sty, Some sty') ->
-            if !Clflags.principal then begin_def ();
+            if separate then begin_def ();
             let (ty, force) =
               Typetexp.transl_simple_type_delayed env sty
             and (ty', force') =
@@ -1712,7 +1747,7 @@ and type_expect ?in_function env sexp ty_expected =
             with Subtype (tr1, tr2) ->
               raise(Error(loc, Not_subtype(tr1, tr2)))
             end;
-            if !Clflags.principal then begin
+            if separate then begin
               end_def ();
               generalize_structure ty;
               generalize_structure ty';
@@ -2057,9 +2092,10 @@ and type_expect ?in_function env sexp ty_expected =
 and type_label_exp create env loc ty_expected (label, sarg) =
   (* Here also ty_expected may be at generic_level *)
   begin_def ();
-  if !Clflags.principal then (begin_def (); begin_def ()) ;
+  let separate = !Clflags.principal || Env.has_local_constraints env in
+  if separate then (begin_def (); begin_def ()) ;
   let (vars, ty_arg, ty_res) = instance_label true label in
-  if !Clflags.principal then begin
+  if separate then begin
     end_def ();
     (* Generalize label information *)
     generalize_structure ty_arg;
@@ -2072,7 +2108,7 @@ and type_label_exp create env loc ty_expected (label, sarg) =
   end;
   (* Instantiate so that we can generalize internal nodes *)
   let ty_arg = instance_def ty_arg in
-  if !Clflags.principal then begin
+  if separate then begin
     end_def ();
     (* Generalize information merged from ty_expected *)
     generalize_structure ty_arg
@@ -2360,7 +2396,8 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
   if List.length sargs <> constr.cstr_arity then
     raise(Error(loc, Constructor_arity_mismatch
                   (lid, constr.cstr_arity, List.length sargs)));
-  if !Clflags.principal then (begin_def (); begin_def ());
+  let separate = !Clflags.principal || Env.has_local_constraints env in
+  if separate then (begin_def (); begin_def ());
   let (ty_args, ty_res) = instance_constructor constr in
   let texp =
     re {
@@ -2368,7 +2405,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
       exp_loc = loc;
       exp_type = ty_res;
       exp_env = env } in
-  if !Clflags.principal then begin
+  if separate then begin
     end_def ();
     generalize_structure ty_res;
     unify_exp env {texp with exp_type = instance_def ty_res}
@@ -2383,7 +2420,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
     | _ -> assert false
   in
   let texp = {texp with exp_type = ty_res} in
-  if not !Clflags.principal then unify_exp env texp (instance env ty_expected);
+  if not separate then unify_exp env texp (instance env ty_expected);
   let args = List.map2 (fun e (t,t0) -> type_argument env e t t0) sargs
       (List.combine ty_args ty_args0) in
   if constr.cstr_private = Private then
@@ -2419,15 +2456,23 @@ and type_statement env sexp =
 (* Typing of match cases *)
 
 and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
+  let dont_propagate, has_gadts =
+    let patterns = List.map fst caselist in
+    List.exists contains_polymorphic_variant patterns,
+    List.exists (contains_gadt env) patterns in
+  let ty_arg, ty_res, env =
+    if has_gadts && not !Clflags.principal then
+      correct_levels ty_arg, correct_levels ty_res,
+      duplicate_ident_types loc caselist env
+    else ty_arg, ty_res, env in
   begin_def ();
   Ident.set_current_time (get_current_level ()); 
   let lev = Ident.current_time () in
-  let env = Env.add_gadt_instance_level lev env in
-  Ctype.init_def (lev+1000);
+  let env = if has_gadts then Env.add_gadt_instance_level lev env else env in
+  (* prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
+  Ctype.init_def (lev+1000);               (* for existentials *)
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
-  let dont_propagate =
-    List.exists (fun (p,_) -> contains_polymorphic_variant p) caselist in
   let pattern_force = ref [] in
   (* Format.printf "@[%i %i@ %a@]@." lev (get_current_level())
     Printtyp.raw_type_expr ty_arg; *)
@@ -2485,7 +2530,9 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
             let ty = instance ~partial:true env ty_res in
             end_def ();
             generalize_structure ty; ty
-          end else ty_res in
+          end
+          else if contains_gadt env spat then correct_levels ty_res
+          else ty_res in
         (* Format.printf "@[%i %i, ty_res' =@ %a@]@." lev (get_current_level())
           Printtyp.raw_type_expr ty_res'; *)
         let exp = type_expect ?in_function ext_env sexp ty_res' in
@@ -2493,7 +2540,7 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
          {exp with exp_type = instance env ty_res'}))
       pat_env_list caselist
   in
-  if !Clflags.principal then begin
+  if !Clflags.principal || has_gadts then begin
     let ty_res' = instance env ty_res in
     List.iter (fun (_,exp) -> unify_exp env exp ty_res') cases
   end;

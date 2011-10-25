@@ -25,17 +25,8 @@ module Exp =
       | Pair _ -> 3
       | App _ -> 4
       | Abs _ -> 5
-
-    let map : type a. <m : 'a. 'a t -> 'a t> -> a t -> a t =
-      fun o x -> x
-          
-
   end
 ;;
-
-type ('a,'b,'c ) tag = L : ('a,'b,'a) tag | R : ('a,'b,'b) tag 
-type ('a,'b) sum = Prod : ('a,'b,'c) tag * 'c -> ('a,'b) sum
-
 
 module List = 
   struct
@@ -244,7 +235,6 @@ let we_y1x (type a) (x : a) (v : a t) =
 ;; (* fail *)
 
 (* Effect of external consraints *)
-
 let f (type a) (x : a t) y =
   ignore (y : a);
   let r = match x with Int -> (y : a) in (* ok *)

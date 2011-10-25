@@ -285,10 +285,9 @@ let find_type_expansion ?(use_local=true) ?level path env =
   let decl = find_type path env in
   if not use_local && not (decl.type_newtype_level = None) then raise Not_found;
   (* the level is changed when updating newtype definitions *)
-  if !Clflags.principal then begin
-    match level, decl.type_newtype_level with
-      Some level, Some (_, exp_level) when level < exp_level -> raise Not_found
-    | _ -> ()
+  begin match level, decl.type_newtype_level with
+    Some level, Some (_, exp_level) when level < exp_level -> raise Not_found
+  | _ -> ()
   end;
   match decl.type_manifest with
   | Some body when decl.type_private = Public
@@ -476,6 +475,9 @@ let gadt_instance_level env t =
 let add_gadt_instances env lv tl =
   let r =
     try List.assoc lv env.gadt_instances with Not_found -> assert false in
+  (* Format.eprintf "Added";
+  List.iter (fun ty -> Format.eprintf "@ %a" !Btype.print_raw ty) tl;
+  Format.eprintf "@."; *)
   set_typeset r (List.fold_right TypeSet.add tl !r)
 
 (* Only use this after expand_head! *)
@@ -485,13 +487,17 @@ let add_gadt_instance_chain env lv t =
   let rec add_instance t =
     let t = repr t in
     if not (TypeSet.mem t !r) then begin
+      (* Format.eprintf "@ %a" !Btype.print_raw t; *)
       set_typeset r (TypeSet.add t !r);
       match t.desc with
         Tconstr (p, _, memo) ->
           may add_instance (find_expans Private p !memo)
       | _ -> ()
     end
-  in add_instance t
+  in
+  (* Format.eprintf "Added chain"; *)
+  add_instance t
+  (* Format.eprintf "@." *)
 
 (* Expand manifest module type names at the top of the given module type *)
 
