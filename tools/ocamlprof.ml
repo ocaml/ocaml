@@ -256,6 +256,9 @@ and rw_exp iflag sexp =
   | Pexp_constraint(sarg, _, _) ->
     rewrite_exp iflag sarg
 
+  | Pexp_contract(c, e) -> 
+     rewrite_exp iflag e
+
   | Pexp_when(scond, sbody) ->
     rewrite_exp iflag scond;
     rewrite_exp iflag sbody

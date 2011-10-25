@@ -14,10 +14,10 @@
 
 include ../config/Makefile
 
-CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -strict-sequence -nostdlib -I ../boot
-CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
-CAMLLEX=$(CAMLRUN) ../boot/ocamllex
+CAMLRUN=ocamlrun
+CAMLC=ocamlc -strict-sequence -nostdlib -I /usr/local/lib/ocaml 
+CAMLOPT=ocamlopt -nostdlib -I /usr/local/lib/ocaml
+CAMLLEX=ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 	 -I ../driver
 COMPFLAGS= -warn-error A $(INCLUDES)

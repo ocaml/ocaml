@@ -149,6 +149,7 @@ let rec add_expr bv exp =
       add_expr bv e1;
       add_opt add_type bv oty2;
       add_opt add_type bv oty3
+  | Pexp_contract(c, e) -> add_expr bv e
   | Pexp_when(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_send(e, m) -> add_expr bv e
   | Pexp_new l -> add bv l
@@ -216,6 +217,7 @@ and add_sig_item bv item =
       List.iter (add_class_description bv) cdl; bv
   | Psig_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
+  | Psig_contract cdecls -> bv
 
 and add_module bv modl =
   match modl.pmod_desc with
@@ -245,6 +247,7 @@ and add_struct_item bv item =
       add_type bv vd.pval_type; bv
   | Pstr_type dcls ->
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
+  | Pstr_contract dcls -> bv
   | Pstr_exception(id, args) ->
       List.iter (add_type bv) args; bv
   | Pstr_exn_rebind(id, l) ->
