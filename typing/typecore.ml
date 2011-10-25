@@ -774,7 +774,14 @@ let type_format loc fmt =
         else incomplete_format fmt else
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
+      | '@' -> skip_indication (i + 1)
       | _ -> scan_format (i + 1)
+    and skip_indication i =
+      if i >= len then incomplete_format fmt else
+      match fmt.[i] with
+      | '@' | '%' -> scan_format (i + 1)
+      | _ -> scan_format i
+
     and scan_opts i j =
       if j >= len then incomplete_format fmt else
       match fmt.[j] with

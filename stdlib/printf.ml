@@ -253,10 +253,18 @@ let iter_on_format_args fmt add_conv add_char =
 
   and scan_fmt i =
     if i < lim then
-     if Sformat.get fmt i = '%'
-     then scan_fmt (scan_flags false (succ i))
-     else scan_fmt (succ i)
-    else i in
+      match Sformat.get fmt i with
+      | '%' -> scan_fmt (scan_flags false (succ i))
+      | '@' -> skip_indication (succ i)
+      | _ -> scan_fmt (succ i)
+    else i
+
+  and skip_indication i =
+    if i < lim then
+      match Sformat.get fmt i with
+      | '@' | '%' -> scan_fmt (succ i)
+      | _ -> scan_fmt (succ i)
+    else scan_fmt i in
 
   ignore (scan_fmt 0)
 ;;
@@ -606,7 +614,15 @@ let mkprintf to_s get_out outc outs flush k fmt =
        if i >= len then Obj.magic (k out) else
        match Sformat.unsafe_get fmt i with
        | '%' -> scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
-       |  c  -> outc out c; doprn n (succ i)
+       | '@' -> skip_indication n (succ i)
+       | c  -> outc out c; doprn n (succ i)
+    and skip_indication n i =
+      if i < len then
+        match Sformat.unsafe_get fmt i with
+        | '@' | '%' as c -> outc out c; doprn n (succ i)
+        | c -> outc out '@'; outc out c; doprn n (succ i)
+      else incomplete_format fmt
+
     and cont_s n s i =
       outs out s; doprn n i
     and cont_a n printer arg i =

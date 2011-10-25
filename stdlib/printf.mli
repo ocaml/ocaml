@@ -20,7 +20,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    [arg1] to [argN] according to the format string [format], and
    outputs the resulting string on the channel [outchan].
 
-   The format is a character string which contains two types of
+   The format string is a character string which contains two types of
    objects: plain characters, which are simply copied to the output
    channel, and conversion specifications, each of which causes
    conversion and printing of arguments.
@@ -31,7 +31,14 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 
    In short, a conversion specification consists in the [%] character,
    followed by optional modifiers and a type which is made of one or
-   two characters. The types and their meanings are:
+   two characters.
+
+   As a special convention for format strings, the [\@] character introduces
+   an escape for both characters [\@] and [%]: in a format string,
+   [\@\@] and [\@%] are respectively equivalent to the plain characters [\@]
+   and [%].
+
+   The types and their meanings are:
 
    - [d], [i], [n], [l], [L], or [N]: convert an integer argument to
      signed decimal.
