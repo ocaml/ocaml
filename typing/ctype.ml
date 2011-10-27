@@ -2388,7 +2388,7 @@ and unify_pairs mode env tpl =
 and unify_row env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let rm1 = row_more row1 and rm2 = row_more row2 in
-  if not (static_row row1) && unify_eq !env rm1 rm2 then () else
+  if unify_eq !env rm1 rm2 then () else
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   if r1 <> [] && r2 <> [] then begin
     let ht = Hashtbl.create (List.length r1) in
@@ -2402,8 +2402,7 @@ and unify_row env row1 row2 =
   let more =
     if row1.row_fixed then rm1 else
     if row2.row_fixed then rm2 else
-    newgenvar ()
-  in update_level !env (min rm1.level rm2.level) more;
+    newty2 (min rm1.level rm2.level) (Tvar None) in
   let fixed = row1.row_fixed || row2.row_fixed
   and closed = row1.row_closed || row2.row_closed in
   let keep switch =
@@ -2443,14 +2442,16 @@ and unify_row env row1 row2 =
       let t1 = mkvariant [] true and t2 = mkvariant rest false in
       raise (Unify [if row == row1 then (t1,t2) else (t2,t1)])
     end;
-    if static_row row then () else
+    (* The following test is not principal... should rather use Tnil *)
+    if !trace_gadt_instances && static_row row then () else
     let rm = row_more row in
+    if !trace_gadt_instances then
+      update_level !env rm.level (newgenty (Tvariant row));
     if row.row_fixed then
-      if row0.row_more == rm then () else
-      if is_Tvar rm then link_type rm row0.row_more else
-      unify env rm row0.row_more
+      if more == rm then () else
+      if is_Tvar rm then link_type rm more else unify env rm more
     else
-      let ty = newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
+      let ty = newgenty (Tvariant {row0 with row_fields = rest}) in
       update_level !env rm.level ty;
       link_type rm ty
   in

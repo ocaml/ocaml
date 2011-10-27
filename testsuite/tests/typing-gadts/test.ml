@@ -291,8 +291,9 @@ let f : type a. a j -> a = function
   | Has_A -> `A 1
   | Has_B -> `B true
 ;;
-type (_,_) eq = Eq : ('a,'a) eq
-;;
+
+type (_,_) eq = Eq : ('a,'a) eq ;;
+
 let f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
   fun Eq o -> o
 ;; (* fail *)
@@ -300,6 +301,9 @@ let f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
 let f : type a b. (a,b) eq -> <m : a; ..> -> <m : b; ..> =
   fun Eq o -> o
 ;; (* fail *)
+
+let f (type a) (type b) (eq : (a,b) eq) (o : <m : a; ..>) : <m : b; ..> =
+  match eq with Eq -> o ;; (* should fail *)
 
 let f : type a b. (a,b) eq -> <m : a> -> <m : b> =
   fun Eq o -> o
@@ -310,14 +314,25 @@ let int_of_bool : (bool,int) eq = Obj.magic Eq;;
 let x = object method m = true end;;
 let y = (x, f int_of_bool x);;
 
+let f : type a. (a, int) eq -> <m : a> -> bool =
+  fun Eq o -> ignore (o : <m : int; ..>); o#m = 3
+;; (* should be ok *)
+
 let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
   fun Eq o -> o ;; (* fail *)
+
+let f (type a) (type b) (eq : (a,b) eq) (v : [> `A of a]) : [> `A of b] =
+  match eq with Eq -> v ;; (* should fail *)
 
 let f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
   fun Eq o -> o ;; (* fail *)
 
 let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
-  fun Eq o -> o ;; (* should be ok *)
+  fun Eq o -> o ;; (* ok *)
+
+let f : type a. (a, int) eq -> [`A of a] -> bool =
+  fun Eq v -> match v with `A 1 -> true | _ -> false
+;; (* ok *)
 
 (* Pattern matching *)
 

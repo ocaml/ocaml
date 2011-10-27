@@ -1387,7 +1387,8 @@ and type_expect ?in_function env sexp ty_expected =
         match in_function with Some p -> p
         | None -> (loc, instance env ty_expected)
       in
-      if !Clflags.principal then begin_def ();
+      let separate = !Clflags.principal || Env.has_local_constraints env in
+      if separate then begin_def ();
       let (ty_arg, ty_res) =
         try filter_arrow env (instance env ty_expected) l
         with Unify _ ->
@@ -1408,7 +1409,7 @@ and type_expect ?in_function env sexp ty_expected =
           type_option tv
         else ty_arg
       in
-      if !Clflags.principal then begin
+      if separate then begin
         end_def ();
         generalize_structure ty_arg;
         generalize_structure ty_res
@@ -1458,9 +1459,10 @@ and type_expect ?in_function env sexp ty_expected =
         exp_type = ty_res;
         exp_env = env }
   | Pexp_match(sarg, caselist) ->
-      if !Clflags.principal then begin_def ();
+      let separate = !Clflags.principal || Env.has_local_constraints env in
+      if separate then begin_def ();
       let arg = type_exp env sarg in
-      if !Clflags.principal then begin
+      if separate then begin
           end_def ();
           generalize_structure arg.exp_type;
       end;

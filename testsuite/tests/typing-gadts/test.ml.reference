@@ -129,7 +129,7 @@ val f : 'a h -> 'a = <fun>
 #               type 'a j = Has_A : [ `A of int ] j | Has_B : [ `B of bool ] j
 val f : 'a j -> 'a = <fun>
 #   type ('a, 'b) eq = Eq : ('a, 'a) eq
-#     Characters 4-90:
+#       Characters 5-91:
   ....f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
     fun Eq o -> o
 Error: This type scheme cannot quantify 'x0 :
@@ -142,16 +142,35 @@ Error: This expression has type < m : a; .. >
        Type a is not compatible with type b = a 
        Type b = a is not compatible with type 'a 
        Types for method m are incompatible
+#     Characters 97-98:
+    match eq with Eq -> o ;; (* should fail *)
+                        ^
+Error: This expression has type < m : a; .. >
+       but an expression was expected of type < m : b; .. >
+       Type a is not compatible with type b = a 
+       Type b = a is not compatible with type 'a 
+       Types for method m are incompatible
 #       val f : ('a, 'b) eq -> < m : 'a > -> < m : 'b > = <fun>
 #   val int_of_bool : (bool, int) eq = Eq
 #   val x : < m : bool > = <obj>
 # val y : < m : bool > * < m : int > = (<obj>, <obj>)
-#     Characters 5-75:
-  ....f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
-    fun Eq o -> o..............
-Error: This definition has type
-         'a. ('a, 'a) eq -> ([> `A of 'a ] as 'b) -> 'b
-       which is less general than 'x1 'x0. ('x1, 'x0) eq -> 'b -> 'b
+#       val f : ('a, int) eq -> < m : 'a > -> bool = <fun>
+#     Characters 74-75:
+    fun Eq o -> o ;; (* fail *)
+                ^
+Error: This expression has type [> `A of a ]
+       but an expression was expected of type [> `A of b ]
+       Type a is not compatible with type b = a 
+       Type b = a is not compatible with type 'a 
+       Types for tag `A are incompatible
+#     Characters 97-98:
+    match eq with Eq -> v ;; (* should fail *)
+                        ^
+Error: This expression has type [> `A of a ]
+       but an expression was expected of type [> `A of b ]
+       Type a is not compatible with type b = a 
+       Type b = a is not compatible with type 'a 
+       Types for tag `A are incompatible
 #     Characters 5-85:
   ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
     fun Eq o -> o..............
@@ -159,6 +178,7 @@ Error: This definition has type
          ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
        which is less general than 'x1 'x0. ('x1, 'x0) eq -> 'c -> 'c
 #     val f : ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ] = <fun>
+#       val f : ('a, int) eq -> [ `A of 'a ] -> bool = <fun>
 #                                                     type 'a t = A of int | B of bool | C of float | D of 'a
 type 'a ty =
     TE : 'a ty -> 'a array ty
