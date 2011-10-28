@@ -232,14 +232,21 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
 (** {6 Format string description} *)
 
-(** The format is a character string which contains three types of
+(** The format string is a character string which contains three types of
     objects:
     - plain characters, which are simply matched with the characters of the
       input (with a special case for space and line feed, see {!Scanf.space}),
     - conversion specifications, each of which causes reading and conversion of
       one argument for the function [f] (see {!Scanf.conversion}),
     - scanning indications to specify boundaries of tokens
-      (see scanning {!Scanf.indication}). *)
+      (see scanning {!Scanf.indication}).
+
+   As a special convention for format strings, the [\@] character introduces
+   an escape for both characters [\@] and [%]: in a format string,
+   [\@\@] and [\@%] are respectively equivalent to the plain characters [\@]
+   and [%].
+   @since 3.13
+*)
 
 (** {7:space The space character in format strings} *)
 
@@ -269,11 +276,6 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
    In short, a conversion specification consists in the [%] character,
    followed by optional modifiers, and a type which is made of one or
    several characters.
-
-   As a special convention for format strings, the [\@] character introduces
-   an escape for both characters [\@] and [%]: in a format string,
-   [\@\@] and [\@%] are respectively equivalent to the plain characters [\@]
-   and [%].
 
    The types and their meanings are:
 
@@ -411,7 +413,6 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     possible. For instance, ["%s@\t"] reads a string up to the next
     tab character or up to the end of input.
 
-
     When it does not introduce a scanning indication, the [\@] character
     introduces an escape for the next character: [\@c] is treated as a plain
     [c] character.
@@ -506,4 +507,10 @@ val format_from_string :
     Raise [Scan_failure] if [s], considered as a format string, does not
     have the same type as [fmt].
     @since 3.10.0
+*)
+
+(*
+ Local Variables:
+  compile-command: "cd ..; make world"
+  End:
 *)

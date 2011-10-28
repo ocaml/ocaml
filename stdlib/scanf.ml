@@ -214,16 +214,16 @@ module Scanning : SCANNING = struct
 
   let token_count ib = ib.token_count;;
 
-  let skip_char max ib =
+  let skip_char width ib =
     invalidate_current_char ib;
-    max
+    width
   ;;
 
-  let ignore_char max ib = skip_char (max - 1) ib;;
+  let ignore_char width ib = skip_char (width - 1) ib;;
 
-  let store_char max ib c =
+  let store_char width ib c =
     Buffer.add_char ib.tokbuf c;
-    ignore_char max ib
+    ignore_char width ib
   ;;
 
   let default_token_buffer_size = 1024;;
@@ -432,19 +432,14 @@ let bad_end_of_input message =
         premature end of file occurred before end of token" message)
 ;;
 
-let int_max = function
+let int_of_width_opt = function
   | None -> max_int
-  | Some max -> max
+  | Some width -> width
 ;;
 
-let int_min = function
+let int_of_prec_opt = function
   | None -> 0
-  | Some max -> max
-;;
-
-let float_min = function
-  | None -> max_int
-  | Some min -> min
+  | Some prec -> prec
 ;;
 
 module Sformat = Printf.CamlinternalPr.Sformat;;
@@ -593,55 +588,55 @@ let token_int64 conv ib = int64_of_string (token_int_literal conv ib);;
    available before calling one of the digit scanning functions). *)
 
 (* The decimal case is treated especially for optimization purposes. *)
-let rec scan_decimal_digits max ib =
-  if max = 0 then max else
+let rec scan_decimal_digits width ib =
+  if width = 0 then width else
   let c = Scanning.peek_char ib in
-  if Scanning.eof ib then max else
+  if Scanning.eof ib then width else
   match c with
   | '0' .. '9' as c ->
-    let max = Scanning.store_char max ib c in
-    scan_decimal_digits max ib
+    let width = Scanning.store_char width ib c in
+    scan_decimal_digits width ib
   | '_' ->
-    let max = Scanning.ignore_char max ib in
-    scan_decimal_digits max ib
-  | _ -> max
+    let width = Scanning.ignore_char width ib in
+    scan_decimal_digits width ib
+  | _ -> width
 ;;
 
-let scan_decimal_digits_plus max ib =
-  if max = 0 then bad_token_length "decimal digits" else
+let scan_decimal_digits_plus width ib =
+  if width = 0 then bad_token_length "decimal digits" else
   let c = Scanning.checked_peek_char ib in
   match c with
   | '0' .. '9' ->
-    let max = Scanning.store_char max ib c in
-    scan_decimal_digits max ib
+    let width = Scanning.store_char width ib c in
+    scan_decimal_digits width ib
   | c ->
     bad_input (Printf.sprintf "character %C is not a decimal digit" c)
 ;;
 
-let scan_digits_plus digitp max ib =
+let scan_digits_plus digitp width ib =
   (* To scan numbers from other bases, we use a predicate argument to
      scan_digits. *)
-  let rec scan_digits max =
-    if max = 0 then max else
+  let rec scan_digits width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     match c with
     | c when digitp c ->
-      let max = Scanning.store_char max ib c in
-      scan_digits max
+      let width = Scanning.store_char width ib c in
+      scan_digits width
     | '_' ->
-      let max = Scanning.ignore_char max ib in
-      scan_digits max
-    | _ -> max in
+      let width = Scanning.ignore_char width ib in
+      scan_digits width
+    | _ -> width in
 
   (* Ensure we have got enough width left,
      and read at list one digit. *)
-  if max = 0 then bad_token_length "digits" else
+  if width = 0 then bad_token_length "digits" else
   let c = Scanning.checked_peek_char ib in
 
   if digitp c then
-    let max = Scanning.store_char max ib c in
-    scan_digits max
+    let width = Scanning.store_char width ib c in
+    scan_digits width
   else
     bad_input (Printf.sprintf "character %C is not a digit" c)
 ;;
@@ -670,144 +665,146 @@ let scan_hexadecimal_int = scan_digits_plus is_hexa_digit;;
 (* Scan a decimal integer. *)
 let scan_unsigned_decimal_int = scan_decimal_digits_plus;;
 
-let scan_sign max ib =
+let scan_sign width ib =
   let c = Scanning.checked_peek_char ib in
   match c with
-  | '+' -> Scanning.store_char max ib c
-  | '-' -> Scanning.store_char max ib c
-  | _ -> max
+  | '+' -> Scanning.store_char width ib c
+  | '-' -> Scanning.store_char width ib c
+  | _ -> width
 ;;
 
-let scan_optionally_signed_decimal_int max ib =
-  let max = scan_sign max ib in
-  scan_unsigned_decimal_int max ib
+let scan_optionally_signed_decimal_int width ib =
+  let width = scan_sign width ib in
+  scan_unsigned_decimal_int width ib
 ;;
 
 (* Scan an unsigned integer that could be given in any (common) basis.
    If digits are prefixed by one of 0x, 0X, 0o, or 0b, the number is
    assumed to be written respectively in hexadecimal, hexadecimal,
    octal, or binary. *)
-let scan_unsigned_int max ib =
+let scan_unsigned_int width ib =
   match Scanning.checked_peek_char ib with
   | '0' as c ->
-    let max = Scanning.store_char max ib c in
-    if max = 0 then max else
+    let width = Scanning.store_char width ib c in
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     begin match c with
-    | 'x' | 'X' -> scan_hexadecimal_int (Scanning.store_char max ib c) ib
-    | 'o' -> scan_octal_int (Scanning.store_char max ib c) ib
-    | 'b' -> scan_binary_int (Scanning.store_char max ib c) ib
-    | _ -> scan_decimal_digits max ib end
-  | _ -> scan_unsigned_decimal_int max ib
+    | 'x' | 'X' -> scan_hexadecimal_int (Scanning.store_char width ib c) ib
+    | 'o' -> scan_octal_int (Scanning.store_char width ib c) ib
+    | 'b' -> scan_binary_int (Scanning.store_char width ib c) ib
+    | _ -> scan_decimal_digits width ib end
+  | _ -> scan_unsigned_decimal_int width ib
 ;;
 
-let scan_optionally_signed_int max ib =
-  let max = scan_sign max ib in
-  scan_unsigned_int max ib
+let scan_optionally_signed_int width ib =
+  let width = scan_sign width ib in
+  scan_unsigned_int width ib
 ;;
 
-let scan_int_conv conv max _min ib =
+let scan_int_conv conv width _prec ib =
   match conv with
-  | 'b' -> scan_binary_int max ib
-  | 'd' -> scan_optionally_signed_decimal_int max ib
-  | 'i' -> scan_optionally_signed_int max ib
-  | 'o' -> scan_octal_int max ib
-  | 'u' -> scan_unsigned_decimal_int max ib
-  | 'x' | 'X' -> scan_hexadecimal_int max ib
+  | 'b' -> scan_binary_int width ib
+  | 'd' -> scan_optionally_signed_decimal_int width ib
+  | 'i' -> scan_optionally_signed_int width ib
+  | 'o' -> scan_octal_int width ib
+  | 'u' -> scan_unsigned_decimal_int width ib
+  | 'x' | 'X' -> scan_hexadecimal_int width ib
   | _ -> assert false
 ;;
 
 (* Scanning floating point numbers. *)
 (* Fractional part is optional and can be reduced to 0 digits. *)
-let scan_frac_part max ib =
-  if max = 0 then max else
+let scan_frac_part width ib =
+  if width = 0 then width else
   let c = Scanning.peek_char ib in
-  if Scanning.eof ib then max else
+  if Scanning.eof ib then width else
   match c with
   | '0' .. '9' as c ->
-    scan_decimal_digits (Scanning.store_char max ib c) ib
-  | _ -> max
+    scan_decimal_digits (Scanning.store_char width ib c) ib
+  | _ -> width
 ;;
 
 (* Exp part is optional and can be reduced to 0 digits. *)
-let scan_exp_part max ib =
-  if max = 0 then max else
+let scan_exp_part width ib =
+  if width = 0 then width else
   let c = Scanning.peek_char ib in
-  if Scanning.eof ib then max else
+  if Scanning.eof ib then width else
   match c with
   | 'e' | 'E' as c ->
-    scan_optionally_signed_decimal_int (Scanning.store_char max ib c) ib
-  | _ -> max
+    scan_optionally_signed_decimal_int (Scanning.store_char width ib c) ib
+  | _ -> width
 ;;
 
 (* Scan the integer part of a floating point number, (not using the
    Caml lexical convention since the integer part can be empty):
    an optional sign, followed by a possibly empty sequence of decimal
    digits (e.g. -.1). *)
-let scan_int_part max ib =
-  let max = scan_sign max ib in
-  scan_decimal_digits max ib
+let scan_int_part width ib =
+  let width = scan_sign width ib in
+  scan_decimal_digits width ib
 ;;
 
 (*
-    For the time being we have (as found in scanf.mli):
-    The field width is composed of an optional integer literal
-    indicating the maximal width of the token to read.
-    Unfortunately, the type-checker let the user write an optional precision,
-    since this is valid for printf format strings.
+   For the time being we have (as found in scanf.mli):
+   The field width is composed of an optional integer literal
+   indicating the maximal width of the token to read.
+   Unfortunately, the type-checker let the user write an optional precision,
+   since this is valid for printf format strings.
 
-   Thus, the next step for Scanf is to support a full width indication, more
-   or less similar to the one for printf, possibly extended to the
-   specification of a [max, min] range for the width of the token read for
-   strings. Something like the following spec for scanf.mli:
+   Thus, the next step for Scanf is to support a full width and precision
+   indication, more or less similar to the one for printf, possibly extended
+   to the specification of a [max, min] range for the width of the token read
+   for strings. Something like the following spec for scanf.mli:
 
    The optional [width] is an integer indicating the maximal
    width of the token read. For instance, [%6d] reads an integer,
    having at most 6 characters.
 
    The optional [precision] is a dot [.] followed by an integer:
-   - in the floating point number conversions ([%f], [%e], [%g], [%F], [%E], and
-   [%F] conversions, the [precision] indicates the maximum number of digits
-   that may follow the decimal point. For instance, [%.4f] reads a [float]
-   with at most 4 fractional digits,
+
+   - in the floating point number conversions ([%f], [%e], [%g], [%F], [%E],
+   and [%F] conversions, the [precision] indicates the maximum number of
+   digits that may follow the decimal point. For instance, [%.4f] reads a
+   [float] with at most 4 fractional digits,
+
    - in the string conversions ([%s], [%S], [%\[ range \]]), and in the
    integer number conversions ([%i], [%d], [%u], [%x], [%o], and their
-   [int32], [int64], and [native_int] correspondent), the
-   [precision] indicates the required minimum width of the token read,
+   [int32], [int64], and [native_int] correspondent), the [precision]
+   indicates the required minimum width of the token read,
+
    - on all other conversions, the width and precision are meaningless and
    ignored (FIXME: lead to a runtime error ? type checking error ?).
-
 *)
-let scan_float max max_frac_part ib =
-  let max = scan_int_part max ib in
-  if max = 0 then max, max_frac_part else
+
+let scan_float width precision ib =
+  let width = scan_int_part width ib in
+  if width = 0 then width, precision else
   let c = Scanning.peek_char ib in
-  if Scanning.eof ib then max, max_frac_part else
+  if Scanning.eof ib then width, precision else
   match c with
   | '.' ->
-    let max = Scanning.store_char max ib c in
-    let max_precision = min max max_frac_part in
-    let max = max - (max_precision - scan_frac_part max_precision ib) in
-    scan_exp_part max ib, max_frac_part
+    let width = Scanning.store_char width ib c in
+    let precision = min width precision in
+    let width = width - (precision - scan_frac_part precision ib) in
+    scan_exp_part width ib, precision
   | _ ->
-    scan_exp_part max ib, max_frac_part
+    scan_exp_part width ib, precision
 ;;
 
-let scan_Float max max_frac_part ib =
-  let max = scan_optionally_signed_decimal_int max ib in
-  if max = 0 then bad_float () else
+let scan_Float width precision ib =
+  let width = scan_optionally_signed_decimal_int width ib in
+  if width = 0 then bad_float () else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then bad_float () else
   match c with
   | '.' ->
-    let max = Scanning.store_char max ib c in
-    let max_precision = min max max_frac_part in
-    let max = max - (max_precision - scan_frac_part max_precision ib) in
-    let max = scan_frac_part max ib in
-    scan_exp_part max ib
+    let width = Scanning.store_char width ib c in
+    let precision = min width precision in
+    let width = width - (precision - scan_frac_part precision ib) in
+    scan_exp_part width ib
   | 'e' | 'E' ->
-    scan_exp_part max ib
+    scan_exp_part width ib
   | _ -> bad_float ()
 ;;
 
@@ -817,26 +814,26 @@ let scan_Float max max_frac_part ib =
    indication list [stp].
    It also stops at end of file or when the maximum number of characters has
    been read.*)
-let scan_string stp max ib =
-  let rec loop max =
-    if max = 0 then max else
+let scan_string stp width ib =
+  let rec loop width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if stp = [] then
       match c with
-      | ' ' | '\t' | '\n' | '\r' -> max
-      | c -> loop (Scanning.store_char max ib c) else
-    if List.memq c stp then Scanning.skip_char max ib else
-    loop (Scanning.store_char max ib c) in
-  loop max
+      | ' ' | '\t' | '\n' | '\r' -> width
+      | c -> loop (Scanning.store_char width ib c) else
+    if List.memq c stp then Scanning.skip_char width ib else
+    loop (Scanning.store_char width ib c) in
+  loop width
 ;;
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
-let scan_char max ib =
-  (* The case max = 0 could not happen here, since it is tested before
+let scan_char width ib =
+  (* The case width = 0 could not happen here, since it is tested before
      calling scan_char, in the main scanning function.
-    if max = 0 then bad_token_length "a character" else *)
-  Scanning.store_char max ib (Scanning.checked_peek_char ib)
+    if width = 0 then bad_token_length "a character" else *)
+  Scanning.store_char width ib (Scanning.checked_peek_char ib)
 ;;
 
 let char_for_backslash = function
@@ -891,8 +888,8 @@ let char_for_hexadecimal_code c1 c2 =
 
 (* Called in particular when encountering '\\' as starter of a char.
    Stops before the corresponding '\''. *)
-let check_next_char message max ib =
-  if max = 0 then bad_token_length message else
+let check_next_char message width ib =
+  if width = 0 then bad_token_length message else
   let c = Scanning.peek_char ib in
   if Scanning.eof ib then bad_end_of_input message else
   c
@@ -901,10 +898,10 @@ let check_next_char message max ib =
 let check_next_char_for_char = check_next_char "a Char";;
 let check_next_char_for_string = check_next_char "a String";;
 
-let scan_backslash_char max ib =
-  match check_next_char_for_char max ib with
+let scan_backslash_char width ib =
+  match check_next_char_for_char width ib with
   | '\\' | '\'' | '\"' | 'n' | 't' | 'b' | 'r' as c ->
-    Scanning.store_char max ib (char_for_backslash c)
+    Scanning.store_char width ib (char_for_backslash c)
   | '0' .. '9' as c ->
     let get_digit () =
       let c = Scanning.next_char ib in
@@ -914,7 +911,7 @@ let scan_backslash_char max ib =
     let c0 = c in
     let c1 = get_digit () in
     let c2 = get_digit () in
-    Scanning.store_char (max - 2) ib (char_for_decimal_code c0 c1 c2)
+    Scanning.store_char (width - 2) ib (char_for_decimal_code c0 c1 c2)
   | 'x' ->
     let get_digit () =
       let c = Scanning.next_char ib in
@@ -923,68 +920,68 @@ let scan_backslash_char max ib =
       | c -> bad_input_escape c in
     let c1 = get_digit () in
     let c2 = get_digit () in
-    Scanning.store_char (max - 2) ib (char_for_hexadecimal_code c1 c2)
+    Scanning.store_char (width - 2) ib (char_for_hexadecimal_code c1 c2)
   | c ->
     bad_input_escape c
 ;;
 
 (* Scan a character (a Caml token). *)
-let scan_Char max ib =
+let scan_Char width ib =
 
-  let rec find_start max =
+  let rec find_start width =
     match Scanning.checked_peek_char ib with
-    | '\'' -> find_char (Scanning.ignore_char max ib)
+    | '\'' -> find_char (Scanning.ignore_char width ib)
     | c -> character_mismatch '\'' c
 
-  and find_char max =
-    match check_next_char_for_char max ib with
-    | '\\' -> find_stop (scan_backslash_char (Scanning.ignore_char max ib) ib)
-    | c -> find_stop (Scanning.store_char max ib c)
+  and find_char width =
+    match check_next_char_for_char width ib with
+    | '\\' -> find_stop (scan_backslash_char (Scanning.ignore_char width ib) ib)
+    | c -> find_stop (Scanning.store_char width ib c)
 
-  and find_stop max =
-    match check_next_char_for_char max ib with
-    | '\'' -> Scanning.ignore_char max ib
+  and find_stop width =
+    match check_next_char_for_char width ib with
+    | '\'' -> Scanning.ignore_char width ib
     | c -> character_mismatch '\'' c in
 
-  find_start max
+  find_start width
 ;;
 
 (* Scan a delimited string (a Caml token). *)
-let scan_String max ib =
+let scan_String width ib =
 
-  let rec find_start max =
+  let rec find_start width =
     match Scanning.checked_peek_char ib with
-    | '\"' -> find_stop (Scanning.ignore_char max ib)
+    | '\"' -> find_stop (Scanning.ignore_char width ib)
     | c -> character_mismatch '\"' c
 
-  and find_stop max =
-    match check_next_char_for_string max ib with
-    | '\"' -> Scanning.ignore_char max ib
-    | '\\' -> scan_backslash (Scanning.ignore_char max ib)
-    | c -> find_stop (Scanning.store_char max ib c)
+  and find_stop width =
+    match check_next_char_for_string width ib with
+    | '\"' -> Scanning.ignore_char width ib
+    | '\\' -> scan_backslash (Scanning.ignore_char width ib)
+    | c -> find_stop (Scanning.store_char width ib c)
 
-  and scan_backslash max =
-    match check_next_char_for_string max ib with
-    | '\r' -> skip_newline (Scanning.ignore_char max ib)
-    | '\n' -> skip_spaces (Scanning.ignore_char max ib)
-    | _ -> find_stop (scan_backslash_char max ib)
+  and scan_backslash width =
+    match check_next_char_for_string width ib with
+    | '\r' -> skip_newline (Scanning.ignore_char width ib)
+    | '\n' -> skip_spaces (Scanning.ignore_char width ib)
+    | _ -> find_stop (scan_backslash_char width ib)
 
-  and skip_newline max =
-    match check_next_char_for_string max ib with
-    | '\n' -> skip_spaces (Scanning.ignore_char max ib)
-    | _ -> find_stop (Scanning.store_char max ib '\r')
+  and skip_newline width =
+    match check_next_char_for_string width ib with
+    | '\n' -> skip_spaces (Scanning.ignore_char width ib)
+    | _ -> find_stop (Scanning.store_char width ib '\r')
 
-  and skip_spaces max =
-    match check_next_char_for_string max ib with
-    | ' ' -> skip_spaces (Scanning.ignore_char max ib)
-    | _ -> find_stop max in
+  and skip_spaces width =
+    match check_next_char_for_string width ib with
+    | ' ' -> skip_spaces (Scanning.ignore_char width ib)
+    | _ -> find_stop width in
 
-  find_start max
+  find_start width
 ;;
 
 (* Scan a boolean (a Caml token). *)
-let scan_bool max ib =
-  if max < 4 then bad_token_length "a boolean" else
+let scan_bool width ib =
+  if width < 4 then bad_token_length "a boolean" else
   let c = Scanning.checked_peek_char ib in
   let m =
     match c with
@@ -993,7 +990,7 @@ let scan_bool max ib =
     | c ->
       bad_input
         (Printf.sprintf "the character %C cannot start a boolean" c) in
-  scan_string [] (min max m) ib
+  scan_string [] (min width m) ib
 ;;
 
 (* Reading char sets in %[...] conversions. *)
@@ -1155,75 +1152,75 @@ let find_setp stp char_set =
     setp
 ;;
 
-let scan_chars_in_char_set stp char_set max ib =
-  let rec loop_pos1 cp1 max =
-    if max = 0 then max else
+let scan_chars_in_char_set stp char_set width ib =
+  let rec loop_pos1 cp1 width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if c == cp1
-    then loop_pos1 cp1 (Scanning.store_char max ib c)
-    else max
-  and loop_pos2 cp1 cp2 max =
-    if max = 0 then max else
+    then loop_pos1 cp1 (Scanning.store_char width ib c)
+    else width
+  and loop_pos2 cp1 cp2 width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if c == cp1 || c == cp2
-    then loop_pos2 cp1 cp2 (Scanning.store_char max ib c)
-    else max
-  and loop_pos3 cp1 cp2 cp3 max =
-    if max = 0 then max else
+    then loop_pos2 cp1 cp2 (Scanning.store_char width ib c)
+    else width
+  and loop_pos3 cp1 cp2 cp3 width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if c == cp1 || c == cp2 || c == cp3
-    then loop_pos3 cp1 cp2 cp3 (Scanning.store_char max ib c)
-    else max
-  and loop_neg1 cp1 max =
-    if max = 0 then max else
+    then loop_pos3 cp1 cp2 cp3 (Scanning.store_char width ib c)
+    else width
+  and loop_neg1 cp1 width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if c != cp1
-    then loop_neg1 cp1 (Scanning.store_char max ib c)
-    else max
-  and loop_neg2 cp1 cp2 max =
-    if max = 0 then max else
+    then loop_neg1 cp1 (Scanning.store_char width ib c)
+    else width
+  and loop_neg2 cp1 cp2 width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if c != cp1 && c != cp2
-    then loop_neg2 cp1 cp2 (Scanning.store_char max ib c)
-    else max
-  and loop_neg3 cp1 cp2 cp3 max =
-    if max = 0 then max else
+    then loop_neg2 cp1 cp2 (Scanning.store_char width ib c)
+    else width
+  and loop_neg3 cp1 cp2 cp3 width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if c != cp1 && c != cp2 && c != cp3
-    then loop_neg3 cp1 cp2 cp3 (Scanning.store_char max ib c)
-    else max
-  and loop setp max =
-    if max = 0 then max else
+    then loop_neg3 cp1 cp2 cp3 (Scanning.store_char width ib c)
+    else width
+  and loop setp width =
+    if width = 0 then width else
     let c = Scanning.peek_char ib in
-    if Scanning.eof ib then max else
+    if Scanning.eof ib then width else
     if setp c == 1
-    then loop setp (Scanning.store_char max ib c)
-    else max in
+    then loop setp (Scanning.store_char width ib c)
+    else width in
 
-  let max =
+  let width =
     match char_set with
     | Pos_set set ->
       begin match String.length set with
-      | 0 -> loop (fun _ -> 0) max
-      | 1 -> loop_pos1 set.[0] max
-      | 2 -> loop_pos2 set.[0] set.[1] max
-      | 3 when set.[1] != '-' -> loop_pos3 set.[0] set.[1] set.[2] max
-      | _ -> loop (find_setp stp char_set) max end
+      | 0 -> loop (fun _ -> 0) width
+      | 1 -> loop_pos1 set.[0] width
+      | 2 -> loop_pos2 set.[0] set.[1] width
+      | 3 when set.[1] != '-' -> loop_pos3 set.[0] set.[1] set.[2] width
+      | _ -> loop (find_setp stp char_set) width end
     | Neg_set set ->
       begin match String.length set with
-      | 0 -> loop (fun _ -> 1) max
-      | 1 -> loop_neg1 set.[0] max
-      | 2 -> loop_neg2 set.[0] set.[1] max
-      | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] max
-      | _ -> loop (find_setp stp char_set) max end in
+      | 0 -> loop (fun _ -> 1) width
+      | 1 -> loop_neg1 set.[0] width
+      | 2 -> loop_neg2 set.[0] set.[1] width
+      | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] width
+      | _ -> loop (find_setp stp char_set) width end in
   ignore_stoppers stp ib;
-  max
+  width
 ;;
 
 let get_count t ib =
@@ -1342,7 +1339,7 @@ let scan_format ib ef fmt rv f =
         if i > lim then incomplete_format fmt else
         match Sformat.get fmt i with
         | '0' .. '9' as conv ->
-          let width, i = read_width (decimal_value_of_char conv) (succ i) in
+          let width, i = read_int_literal (decimal_value_of_char conv) (succ i) in
           Some width, i
         | _ -> None, i
 
@@ -1350,70 +1347,68 @@ let scan_format ib ef fmt rv f =
         begin
           match Sformat.get fmt i with
           | '.' ->
-            let precision, i = read_width 0 (succ i) in
+            let precision, i = read_int_literal 0 (succ i) in
             (Some precision, i)
           | _ -> None, i
         end
 
-      and read_width accu i =
+      and read_int_literal accu i =
         if i > lim then accu, i else
         match Sformat.unsafe_get fmt i with
         | '0' .. '9' as c ->
           let accu = 10 * accu + decimal_value_of_char c in
-          read_width accu (succ i)
+          read_int_literal accu (succ i)
         | _ -> accu, i in
 
       if i > lim then ir, f else
-      let max_opt, i = scan_width i in
-      let min_opt, i = scan_precision i in
-      scan_conversion skip max_opt min_opt ir f i
+      let width_opt, i = scan_width i in
+      let prec_opt, i = scan_precision i in
+      scan_conversion skip width_opt prec_opt ir f i
 
-    and scan_conversion skip max_opt min_opt ir f i =
+    and scan_conversion skip width_opt prec_opt ir f i =
       let stack = if skip then no_stack else stack in
-      let max = int_max max_opt in
-      let min = int_min min_opt in
+      let width = int_of_width_opt width_opt in
+      let prec = int_of_prec_opt prec_opt in
       match Sformat.get fmt i with
       | '%' as conv ->
         check_char ib conv; scan_fmt ir f (succ i)
       | 's' ->
         let i, stp = scan_fmt_stoppers (succ i) in
-        let _x = scan_string stp max ib in
+        let _x = scan_string stp width ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | 'S' ->
-        let _x = scan_String max ib in
+        let _x = scan_String width ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | '[' (* ']' *) ->
         let i, char_set = read_char_set fmt (succ i) in
         let i, stp = scan_fmt_stoppers (succ i) in
-        let _x = scan_chars_in_char_set stp char_set max ib in
+        let _x = scan_chars_in_char_set stp char_set width ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
-      | ('c' | 'C') when max = 0 ->
+      | ('c' | 'C') when width = 0 ->
         let c = Scanning.checked_peek_char ib in
         scan_fmt ir (stack f c) (succ i)
       | 'c' ->
-        let _x = scan_char max ib in
+        let _x = scan_char width ib in
         scan_fmt ir (stack f (token_char ib)) (succ i)
       | 'C' ->
-        let _x = scan_Char max ib in
+        let _x = scan_Char width ib in
         scan_fmt ir (stack f (token_char ib)) (succ i)
       | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-        let _x = scan_int_conv conv max min ib in
+        let _x = scan_int_conv conv width prec ib in
         scan_fmt ir (stack f (token_int conv ib)) (succ i)
       | 'N' as conv ->
         scan_fmt ir (stack f (get_count conv ib)) (succ i)
       | 'f' | 'e' | 'E' | 'g' | 'G' ->
-        let min = float_min min_opt in
-        let _x = scan_float max min ib in
+        let _x = scan_float width prec ib in
         scan_fmt ir (stack f (token_float ib)) (succ i)
       | 'F' ->
-        let min = float_min min_opt in
-        let _x = scan_Float max min ib in
+        let _x = scan_Float width prec ib in
         scan_fmt ir (stack f (token_float ib)) (succ i)
-(*      | 'B' | 'b' when max = Some 0 ->
-        let _x = scan_bool max ib in
+(*      | 'B' | 'b' when width = Some 0 ->
+        let _x = scan_bool width ib in
         scan_fmt ir (stack f (token_int ib)) (succ i) *)
       | 'B' | 'b' ->
-        let _x = scan_bool max ib in
+        let _x = scan_bool width ib in
         scan_fmt ir (stack f (token_bool ib)) (succ i)
       | 'r' ->
         if ir > limr then assert false else
@@ -1425,7 +1420,7 @@ let scan_format ib ef fmt rv f =
         match Sformat.get fmt i with
         (* This is in fact an integer conversion (e.g. %ld, %ni, or %Lo). *)
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv1 ->
-          let _x = scan_int_conv conv1 max min ib in
+          let _x = scan_int_conv conv1 width prec ib in
           (* Look back to the character that triggered the integer conversion
              (this character is either 'l', 'n' or 'L') to find the
              conversion to apply to the integer token read. *)
@@ -1449,7 +1444,7 @@ let scan_format ib ef fmt rv f =
         let mf = Sformat.sub fmt (Sformat.index_of_int i) (j - 2 - i) in
         (* Read the specified format string in the input buffer,
            and check its correctness. *)
-        let _x = scan_String max ib in
+        let _x = scan_String width ib in
         let rf = token_string ib in
         if not (compatible_format_type rf mf) then format_mismatch rf mf else
         (* For conversion %{%}, just return this format string as the token
@@ -1525,3 +1520,9 @@ let string_to_String s =
 let format_from_string s fmt =
   sscanf_format (string_to_String s) fmt (fun x -> x)
 ;;
+
+(*
+ Local Variables:
+  compile-command: "cd ..; make world"
+  End:
+*)
