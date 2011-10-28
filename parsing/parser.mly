@@ -70,8 +70,9 @@ let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
 
 let mkassert e =
   match e with
-  | {pexp_desc = Pexp_construct (Lident "false", None, false) } ->
-         mkexp (Pexp_assertfalse)
+  | { pexp_desc = Pexp_construct (Lident "false", None, false);
+      pexp_loc = _ } ->
+      mkexp (Pexp_assertfalse)
   | _ -> mkexp (Pexp_assert (e))
 ;;
 
@@ -93,7 +94,7 @@ let mkuminus name arg =
       mkexp(Pexp_constant(Const_int64(Int64.neg n)))
   | "-", Pexp_constant(Const_nativeint n) ->
       mkexp(Pexp_constant(Const_nativeint(Nativeint.neg n)))
-  | ("-" | "-."), Pexp_constant(Const_float f) ->
+  | _, Pexp_constant(Const_float f) ->
       mkexp(Pexp_constant(Const_float(neg_float_string f)))
   | _ ->
       mkexp(Pexp_apply(mkoperator ("~" ^ name) 1, ["", arg]))
@@ -160,7 +161,7 @@ let bigarray_function str name =
   Ldot(Ldot(Lident "Bigarray", str), name)
 
 let bigarray_untuplify = function
-    { pexp_desc = Pexp_tuple explist} -> explist
+    { pexp_desc = Pexp_tuple explist; pexp_loc = _ } -> explist
   | exp -> [exp]
 
 let bigarray_get arr arg =
@@ -588,7 +589,7 @@ structure_tail:
 structure_item:
     LET rec_flag let_bindings
       { match $3 with
-          [{ppat_desc = Ppat_any}, exp] -> mkstr(Pstr_eval exp)
+          [{ ppat_desc = Ppat_any; ppat_loc = _ }, exp] -> mkstr(Pstr_eval exp)
         | _ -> mkstr(Pstr_value($2, List.rev $3)) }
   | EXTERNAL val_ident COLON core_type EQUAL primitive_declaration
       { mkstr(Pstr_primitive($2, {pval_type = $4; pval_prim = $6})) }
@@ -1386,7 +1387,7 @@ type_declaration:
               ptype_private = private_flag;
               ptype_manifest = manifest;
               ptype_variance = variance;
-              ptype_loc = symbol_rloc()}) }
+              ptype_loc = symbol_rloc() }) }
 ;
 constraints:
         constraints CONSTRAINT constrain        { $3 :: $1 }
