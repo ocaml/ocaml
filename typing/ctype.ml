@@ -1876,8 +1876,7 @@ let rec mcomp type_pairs subst env t1 t2 =
           with Not_found ->
               TypePairs.add type_pairs (t1', t2') ();
               match (t1'.desc, t2'.desc) with
-                  (Tvar _, Tvar _) ->
-                    fatal_error "types should not include variables"
+                  (Tvar _, Tvar _) -> assert false
                 | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _))
                   when l1 = l2 || not (is_optional l1 || is_optional l2) ->
                   mcomp type_pairs subst env t1 t2;
@@ -1886,7 +1885,7 @@ let rec mcomp type_pairs subst env t1 t2 =
                   mcomp_list type_pairs subst env tl1 tl2
                 | (Tconstr (p1, _, _), Tconstr (p2, _, _)) ->
                   mcomp_type_decl type_pairs subst env p1 p2;
-                | Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2)
+                | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2))
                   when Path.same p1 p2 && n1 = n2 ->
                   mcomp_list type_pairs subst env tl1 tl2
                 | (Tvariant row1, Tvariant row2) ->
@@ -1914,13 +1913,13 @@ and mcomp_list type_pairs subst env tl1 tl2 =
   List.iter2 (mcomp type_pairs subst env) tl1 tl2
 
 and mcomp_fields type_pairs subst env ty1 ty2 =
-  if not (concrete_object ty1) || not (concrete_object ty2) then
-    fatal_error "object was not closed";
+  if not (concrete_object ty1 && concrete_object ty2) then assert false;
   let (fields2, rest2) = flatten_fields ty2 in
   let (fields1, rest1) = flatten_fields ty1 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   mcomp type_pairs subst env rest1 rest2;
-  if (miss1 <> []) || (miss2 <> []) then raise (Unify []); 
+  if miss1 <> []  && (object_row ty1).desc = Tnil
+  || miss2 <> []  && (object_row ty2).desc = Tnil then raise (Unify []);
   List.iter
     (function (n, k1, t1, k2, t2) ->
        mcomp_kind k1 k2;
@@ -1938,24 +1937,28 @@ and mcomp_kind k1 k2 =
 and mcomp_row type_pairs subst env row1 row2 =
   let row1 = row_repr row1 and row2 = row_repr row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
-  if not row1.row_closed then fatal_error "variant should be closed";
-  if not row2.row_closed then fatal_error "variant should be closed";
-  if r1 <> [] || r2 <> [] || filter_row_fields false (r1 @ r2) <> []
-  then raise (Unify []);
+  let cannot_erase (_,f) =
+    match row_field_repr f with
+      Rpresent _ -> true
+    | Rabsent | Reither _ -> false
+  in
+  if row1.row_closed && List.exists cannot_erase r2
+  || row2.row_closed && List.exists cannot_erase r1 then raise (Unify []);
   List.iter
     (fun (_,f1,f2) ->
       match row_field_repr f1, row_field_repr f2 with
+      | Rpresent None, (Rpresent (Some _) | Reither (_, _::_, _, _) | Rabsent)
+      | Rpresent (Some _), (Rpresent None | Reither (true, _, _, _) | Rabsent)
+      | (Reither (_, _::_, _, _) | Rabsent), Rpresent None
+      | (Reither (true, _, _, _) | Rabsent), Rpresent (Some _) ->
+          raise (Unify [])
       | Rpresent(Some t1), Rpresent(Some t2) ->
           mcomp type_pairs subst env t1 t2
-      | Reither(true, [], _, _), Reither(true, [], _, _) ->
-          ()
-      | Reither(false, tl1, _, _), Reither(false, tl2, _, _) ->
-          List.iter (fun t ->
-            List.iter (fun t' -> mcomp type_pairs subst env t t') tl1)
-            tl2
-      | Rpresent None, Rpresent None -> ()
-      | Rabsent, Rabsent -> ()
-      | _ -> raise (Unify []))
+      | Rpresent(Some t1), Reither(false, tl2, _, _) ->
+          List.iter (mcomp type_pairs subst env t1) tl2
+      | Reither(false, tl1, _, _), Rpresent(Some t2) ->
+          List.iter (mcomp type_pairs subst env t2) tl1
+      | _ -> ())
     pairs
 
 and mcomp_type_decl type_pairs subst env p1 p2 = 
@@ -1964,7 +1967,6 @@ and mcomp_type_decl type_pairs subst env p1 p2 =
       Path.Pident _ -> true
     | _ -> false
   in
-
   let decl = Env.find_type p1 env in
   let decl' = Env.find_type p2 env in
   let both_oldtypes =

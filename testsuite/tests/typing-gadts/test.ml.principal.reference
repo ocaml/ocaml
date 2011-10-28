@@ -79,6 +79,14 @@ Error: This pattern matches values of type b
 #   type 'a t = Int : int t
 #   val ky : 'a -> 'a -> 'a = <fun>
 #       val test : 'a t -> 'a = <fun>
+#       val test : 'a t -> int = <fun>
+#       Characters 49-61:
+    function Int -> ky (1 : a) 1  (* fails *)
+                    ^^^^^^^^^^^^
+Error: This expression has type a = int
+       but an expression was expected of type a = int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 #         Characters 70-82:
     let r = match x with Int -> ky (1 : a) 1  (* fails *)
                                 ^^^^^^^^^^^^

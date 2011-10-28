@@ -169,6 +169,14 @@ let test : type a. a t -> a =
   function Int -> ky (1 : a) 1
 ;;
 
+let test : type a. a t -> _ =
+  function Int -> 1       (* ok *)
+;;
+
+let test : type a. a t -> _ =
+  function Int -> ky (1 : a) 1  (* fails *)
+;;
+
 let test : type a. a t -> a = fun x ->
   let r = match x with Int -> ky (1 : a) 1  (* fails *)
   in r
