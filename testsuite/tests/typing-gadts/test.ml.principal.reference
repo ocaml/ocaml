@@ -84,12 +84,15 @@ Error: This pattern matches values of type b
                                 ^^^^^^^^^^^^
 Error: This expression has type a = int
        but an expression was expected of type a = int
-       Type a = int is not compatible with type 'a 
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 #       Characters 69-81:
     let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                 ^^^^^^^^^^^^
 Error: This expression has type int but an expression was expected of type
          int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 #       val test : 'a t -> int = <fun>
 #       val test : 'a t -> 'a = <fun>
 #       val test : 'a t -> int = <fun>
@@ -103,7 +106,8 @@ Error: This expression has type int but an expression was expected of type
 Error: This expression has type int option
        but an expression was expected of type a option
        Type int is not compatible with type a = int 
-       Type a = int is not compatible with type 'a 
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 #           val test2 : 'a t -> 'a option = <fun>
 #               val test2 : 'a t -> 'a option = <fun>
 #       Characters 100-101:
@@ -111,6 +115,8 @@ Error: This expression has type int option
                                               ^
 Error: This expression has type int but an expression was expected of type
          int
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 #             val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
 #         val f : 'a t -> 'a -> 'a = <fun>
@@ -121,7 +127,8 @@ Error: This expression has type int but an expression was expected of type
                                                 ^
 Error: This expression has type a = int
        but an expression was expected of type b = int
-       Type a = int is not compatible with type 'a 
+       This instance of int is ambiguous:
+       it would escape the scope of its equation
 #           val f : 'a t -> int -> int = <fun>
 #                     type 'a h = Has_m : < m : int > h | Has_b : < b : bool > h
 val f : 'a h -> 'a = <fun>
@@ -131,53 +138,85 @@ val f : 'a j -> 'a = <fun>
 #       Characters 5-91:
   ....f : type a b. (a,b) eq -> (<m : a; ..> as 'a) -> (<m : b; ..> as 'a) =
     fun Eq o -> o
-Error: This type scheme cannot quantify 'x0 :
-it is aliased to another variable.
+Error: The universal type variable 'b cannot be generalized:
+       it is already bound to another variable.
 #       Characters 74-75:
     fun Eq o -> o
                 ^
 Error: This expression has type < m : a; .. >
        but an expression was expected of type < m : b; .. >
        Type a is not compatible with type b = a 
-       Type b = a is not compatible with type 'a 
-       Types for method m are incompatible
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 #     Characters 97-98:
     match eq with Eq -> o ;; (* should fail *)
                         ^
 Error: This expression has type < m : a; .. >
        but an expression was expected of type < m : b; .. >
        Type a is not compatible with type b = a 
-       Type b = a is not compatible with type 'a 
-       Types for method m are incompatible
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 #       val f : ('a, 'b) eq -> < m : 'a > -> < m : 'b > = <fun>
 #   val int_of_bool : (bool, int) eq = Eq
 #   val x : < m : bool > = <obj>
 # val y : < m : bool > * < m : int > = (<obj>, <obj>)
 #       val f : ('a, int) eq -> < m : 'a > -> bool = <fun>
+#           Characters 146-147:
+      let r : < m : b > = match eq with Eq -> o in (* fail with principal *)
+                                              ^
+Error: This expression has type < m : a >
+       but an expression was expected of type < m : b >
+       Type a is not compatible with type b = a 
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+#           Characters 118-119:
+      let r : < m : b > = match eq with Eq -> o in (* fail *)
+                                              ^
+Error: This expression has type < m : a; .. >
+       but an expression was expected of type < m : b >
+       Type a is not compatible with type b = a 
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 #     Characters 74-75:
     fun Eq o -> o ;; (* fail *)
                 ^
 Error: This expression has type [> `A of a ]
        but an expression was expected of type [> `A of b ]
        Type a is not compatible with type b = a 
-       Type b = a is not compatible with type 'a 
-       Types for tag `A are incompatible
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 #     Characters 97-98:
     match eq with Eq -> v ;; (* should fail *)
                         ^
 Error: This expression has type [> `A of a ]
        but an expression was expected of type [> `A of b ]
        Type a is not compatible with type b = a 
-       Type b = a is not compatible with type 'a 
-       Types for tag `A are incompatible
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 #     Characters 5-85:
   ....f : type a b. (a,b) eq -> [< `A of a | `B] -> [< `A of b | `B] =
     fun Eq o -> o..............
 Error: This definition has type
-         ('a, 'b) eq -> ([< `A of 'b & 'a | `B ] as 'c) -> 'c
-       which is less general than 'x1 'x0. ('x1, 'x0) eq -> 'c -> 'c
+         ('c, 'd) eq -> ([< `A of 'd & 'c | `B ] as 'e) -> 'e
+       which is less general than 'a 'b. ('a, 'b) eq -> 'e -> 'e
 #     val f : ('a, 'b) eq -> [ `A of 'a | `B ] -> [ `A of 'b | `B ] = <fun>
 #       val f : ('a, int) eq -> [ `A of 'a ] -> bool = <fun>
+#           Characters 166-167:
+      let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
+                                                   ^
+Error: This expression has type [ `A of a | `B ]
+       but an expression was expected of type [ `A of b | `B ]
+       Type a is not compatible with type b = a 
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
+#           Characters 131-132:
+      let r : [`A of b | `B] = match eq with Eq -> o in (* fail *)
+                                                   ^
+Error: This expression has type [> `A of a | `B ]
+       but an expression was expected of type [ `A of b | `B ]
+       Type a is not compatible with type b = a 
+       This instance of a is ambiguous:
+       it would escape the scope of its equation
 #                                                     type 'a t = A of int | B of bool | C of float | D of 'a
 type 'a ty =
     TE : 'a ty -> 'a array ty

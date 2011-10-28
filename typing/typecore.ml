@@ -2462,17 +2462,21 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
     let patterns = List.map fst caselist in
     List.exists contains_polymorphic_variant patterns,
     List.exists (contains_gadt env) patterns in
+  (* prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
   let ty_arg, ty_res, env =
     if has_gadts && not !Clflags.principal then
       correct_levels ty_arg, correct_levels ty_res,
       duplicate_ident_types loc caselist env
     else ty_arg, ty_res, env in
-  begin_def ();
-  Ident.set_current_time (get_current_level ()); 
-  let lev = Ident.current_time () in
-  let env = if has_gadts then Env.add_gadt_instance_level lev env else env in
-  (* prerr_endline ( if has_gadts then "contains gadt" else "no gadt"); *)
-  Ctype.init_def (lev+1000);               (* for existentials *)
+  let lev, env =
+    if has_gadts then begin
+      begin_def ();
+      Ident.set_current_time (get_current_level ()); 
+      let lev = Ident.current_time () in
+      Ctype.init_def (lev+1000);               (* for existentials *)
+      (lev, Env.add_gadt_instance_level lev env)
+    end else (get_current_level (), env)
+  in
   if !Clflags.principal then begin_def (); (* propagation of the argument *)
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
@@ -2553,9 +2557,11 @@ and type_cases ?in_function env ty_arg ty_res partial_flag loc caselist =
       Partial
   in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
-  end_def ();
-  (* Ensure that existential types do not escape *)
-  unify_exp_types loc env (instance env ty_res) (newvar ()) ;
+  if has_gadts then begin
+    end_def ();
+    (* Ensure that existential types do not escape *)
+    unify_exp_types loc env (instance env ty_res) (newvar ()) ;
+  end;
   cases, partial
 
 (* Typing of let bindings *)

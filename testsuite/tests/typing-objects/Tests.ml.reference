@@ -268,11 +268,13 @@ Error: Type int -> bool is not a subtype of int -> int
   fun (x : 'a t as 'a) -> ();;
            ^^^^^^^^^^
 Error: This alias is bound to type 'a t but is used as an instance of type 'a
+       The type variable 'a occurs inside 'a t
 # Characters 19-20:
   fun (x : 'a t) -> (x : 'a); ();;
                      ^
 Error: This expression has type 'a t but an expression was expected of type
          'a
+       The type variable 'a occurs inside 'a t
 # type 'a t = < x : 'a >
 # - : ('a t as 'a) -> unit = <fun>
 # Characters 18-26:

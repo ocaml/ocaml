@@ -933,6 +933,8 @@ let rec trace fst txt ppf = function
   | _ -> ()
 
 let rec filter_trace = function
+  | (_, t1') :: (_, t2') :: [] when is_Tvar t1' || is_Tvar t2' ->
+      []
   | (t1, t1') :: (t2, t2') :: rem ->
       let rem' = filter_trace rem in
       if t1 == t1' && t2 == t2'
@@ -969,10 +971,8 @@ let print_tags ppf fields =
 let has_explanation unif t3 t4 =
   match t3.desc, t4.desc with
     Tfield _, _ | _, Tfield _
-  | Tunivar _, Tvar _ | Tvar _, Tunivar _
+  | _, Tvar _ | Tvar _, _
   | Tvariant _, Tvariant _ -> true
-  | Tconstr (p, _, _), Tvar _ | Tvar _, Tconstr (p, _, _) ->
-      unif && min t3.level t4.level < Path.binding_time p
   | _ -> false
 
 let rec mismatch unif = function
@@ -990,18 +990,27 @@ let explanation unif t3 t4 ppf =
   | Tfield _, Tvar _ | Tvar _, Tfield _ ->
       fprintf ppf "@,Self type cannot escape its class"
   | Tconstr (p, tl, _), Tvar _
-    when unif && (tl = [] || t4.level < Path.binding_time p) ->
+    when unif && t4.level < Path.binding_time p ->
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p
   | Tvar _, Tconstr (p, tl, _)
-    when unif && (tl = [] || t3.level < Path.binding_time p) ->
+    when unif && t3.level < Path.binding_time p ->
       fprintf ppf
         "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
         path p
   | Tvar _, Tunivar _ | Tunivar _, Tvar _ ->
       fprintf ppf "@,The universal variable %a would escape its scope"
         type_expr (if is_Tunivar t3 then t3 else t4)
+  | Tvar _, _ | _, Tvar _ ->
+      let t, t' = if is_Tvar t3 then (t3, t4) else (t4, t3) in
+      if occur_in Env.empty t t' then
+        fprintf ppf "@,@[<hov>The type variable %a occurs inside@ %a@]"
+          type_expr t type_expr t'
+      else
+        fprintf ppf "@,@[<hov>This instance of %a is ambiguous:@ %s@]"
+          type_expr t'
+          "it would escape the scope of its equation"
   | Tfield (lab, _, _, _), _
   | _, Tfield (lab, _, _, _) when lab = dummy_method ->
       fprintf ppf

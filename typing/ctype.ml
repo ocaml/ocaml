@@ -774,8 +774,8 @@ let generalize_expansive env ty =
   simple_abbrevs := Mnil;
   try
     generalize_expansive env !nongen_level ty
-  with Unify [_, ty'] ->
-    raise (Unify [ty, ty'])
+  with Unify ([_, ty'] as tr) ->
+    raise (Unify ((ty, ty') :: tr))
 
 (* Correct the levels of type [ty]. *)
 let correct_levels ty =
@@ -970,7 +970,7 @@ let rec copy ?env ?partial ty =
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
-                | Tconstr _ ->
+                | Tconstr _ | Tnil ->
                     if keep then save_desc more more.desc;
                     copy more
                 | Tvar _ | Tunivar _ ->
@@ -979,8 +979,7 @@ let rec copy ?env ?partial ty =
                 |  _ -> assert false
               in
               (* Register new type first for recursion *)
-              if static_row row then more.desc <- Tsubst more'
-              else more.desc <- Tsubst(newgenty(Ttuple[more';t]));
+              more.desc <- Tsubst(newgenty(Ttuple[more';t]));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
           end
@@ -1047,9 +1046,6 @@ let new_declaration newtype manifest =
     type_variance = [];
     type_newtype_level = newtype;
   }
-
-let unify' = (* Forward declaration *)
-  ref (fun env ty1 ty2 -> raise (Unify []))
 
 let instance_constructor ?in_pattern cstr =
   let ty_res = copy cstr.cstr_res in
@@ -1546,6 +1542,9 @@ let occur env ty0 ty =
     merge type_changed old;
     raise (match exn with Occur -> Unify [] | _ -> exn)
 
+let occur_in env ty0 t =
+  try occur env ty0 t; false with Unify _ -> true
+
 (* checks that a local constraint is non recursive *)
 let rec local_non_recursive_abbrev visited env p ty =
   let ty = repr ty in
@@ -1909,7 +1908,6 @@ let rec mcomp type_pairs subst env t1 t2 =
                   raise (Unify [])
           end
 
-
 and mcomp_list type_pairs subst env tl1 tl2 =
   if List.length tl1 <> List.length tl2 then
     raise (Unify []);
@@ -1986,8 +1984,6 @@ and mcomp_type_decl type_pairs subst env p1 p2 =
     | Type_variant v1, Type_variant v2 ->
         mcomp_variant_description type_pairs subst env v1 v2
     | _ -> ()
-
-
 
 and mcomp_type_option type_pairs subst env t t' = 
   match t, t' with
@@ -2367,8 +2363,8 @@ and unify_row env row1 row2 =
       raise (Unify [if row == row1 then (t1,t2) else (t2,t1)])
     end;
     (* The following test is not principal... should rather use Tnil *)
-    if !trace_gadt_instances && static_row row then () else
     let rm = row_more row in
+    if !trace_gadt_instances && rm.desc = Tnil then () else
     if !trace_gadt_instances then
       update_level !env rm.level (newgenty (Tvariant row));
     if row.row_fixed then
@@ -2658,14 +2654,11 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
             when Path.same p1 p2 && n1 = n2 ->
               moregen_list inst_nongen type_pairs env tl1 tl2
           | (Tvariant row1, Tvariant row2) ->
-              change_mode Old
-                (fun () -> moregen_row inst_nongen type_pairs env row1 row2)
+              moregen_row inst_nongen type_pairs env row1 row2
           | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
-              change_mode Old
-                (fun () -> moregen_fields inst_nongen type_pairs env fi1 fi2)
+              moregen_fields inst_nongen type_pairs env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
-              change_mode Old
-                (fun () -> moregen_fields inst_nongen type_pairs env t1' t2')
+              moregen_fields inst_nongen type_pairs env t1' t2'
           | (Tnil, Tnil) ->
               ()
           | (Tpoly (t1, []), Tpoly (t2, [])) ->
@@ -3720,7 +3713,7 @@ and subtype_row env trace row1 row2 cstrs =
   match more1.desc, more2.desc with
     Tconstr(p1,_,_), Tconstr(p2,_,_) when Path.same p1 p2 ->
       subtype_rec env ((more1,more2)::trace) more1 more2 cstrs
-  | (Tvar _|Tconstr _), (Tvar _|Tconstr _)
+  | (Tvar _|Tconstr _|Tnil), (Tvar _|Tconstr _|Tnil)
     when row1.row_closed && r1 = [] ->
       List.fold_left
         (fun cstrs (_,f1,f2) ->
@@ -3952,7 +3945,7 @@ let rec nondep_type_rec env id ty =
             (* Register new type first for recursion *)
             TypeHash.add nondep_variants more ty';
             let static = static_row row in
-            let more' = if static then newgenvar () else more in
+            let more' = if static then newgenty Tnil else more in
             (* Return a new copy *)
             let row =
               copy_row (nondep_type_rec env id) true row true more' in

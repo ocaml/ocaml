@@ -265,8 +265,8 @@ Error: This field value has type 'b option ref option
 #           Characters 145-166:
   object method virtual visit : 'a.('a visitor -> 'a) end;;
                                 ^^^^^^^^^^^^^^^^^^^^^
-Error: This type scheme cannot quantify 'a :
-it escapes this scope.
+Error: The universal type variable 'a cannot be generalized:
+       it escapes its scope.
 #                 type ('a, 'b) list_visitor = < caseCons : 'b -> 'b list -> 'a; caseNil : 'a >
 type 'b alist = < visit : 'a. ('a, 'b) list_visitor -> 'a >
 class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end

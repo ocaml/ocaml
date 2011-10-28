@@ -317,7 +317,8 @@ let rec transl_type env policy styp =
                       row_fixed = false; row_more = newvar () } in
           let static = Btype.static_row row in
           let row =
-            if static || policy <> Univars then row
+            if static then { row with row_more = newty Tnil }
+            else if policy <> Univars then row
             else { row with row_more = new_pre_univar () }
           in
           newty (Tvariant row)
@@ -454,7 +455,8 @@ let rec transl_type env policy styp =
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =
-        if static || policy <> Univars then row
+        if static then { row with row_more = newty Tnil }
+        else if policy <> Univars then row
         else { row with row_more = new_pre_univar () }
       in
       newty (Tvariant row)
@@ -662,14 +664,16 @@ let report_error ppf = function
         Printtyp.type_expr ty
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
-        "Variant tags `%s@ and `%s have the same hash value.@ Change one of them."
-        lab1 lab2
+        "@[Variant tags `%s@ and `%s have the same hash value.@ %s@]"
+        lab1 lab2 "Change one of them."
   | Invalid_variable_name name ->
       fprintf ppf "The type variable name %s is not allowed in programs" name
   | Cannot_quantify (name, v) ->
-      fprintf ppf "This type scheme cannot quantify '%s :@ %s." name
-        (if Btype.is_Tvar v then "it escapes this scope" else
-         if Btype.is_Tunivar v then "it is aliased to another variable"
+      fprintf ppf
+        "@[<hov>The universal type variable '%s cannot be generalized:@ %s.@]"
+        name
+        (if Btype.is_Tvar v then "it escapes its scope" else
+         if Btype.is_Tunivar v then "it is already bound to another variable"
          else "it is not a variable")
   | Multiple_constraints_on_type s ->
       fprintf ppf "Multiple constraints for type %s" s

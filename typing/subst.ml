@@ -129,7 +129,7 @@ let rec typexp s ty =
               let more' =
                 match more.desc with
                   Tsubst ty -> ty
-                | Tconstr _ -> typexp s more
+                | Tconstr _ | Tnil -> typexp s more
                 | Tunivar _ | Tvar _ ->
                     save_desc more more.desc;
                     if s.for_saving then newpersty more.desc else

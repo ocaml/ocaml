@@ -246,17 +246,14 @@ let variables_of_type =
   loop  
 
 let varify_constructors var_names t = 
-  let counter = ref 0 in 
   let offlimits = variables_of_type t in
   let freshly_created = ref [] in
-  let rec fresh () = 
-    let ret = "x" ^ (string_of_int !counter) in 
-    counter := !counter + 1;
-    if List.mem ret offlimits then fresh () 
-    else
-      begin 
-        freshly_created := ret :: !freshly_created;
-        ret end
+  let rec fresh ?(count=0) name =
+    let ret = if count = 0 then name else name ^ string_of_int count in
+    if List.mem ret offlimits then fresh ~count:(count+1) name else begin 
+      freshly_created := ret :: !freshly_created;
+      ret
+    end
   in
   let sofar : (string,string) Hashtbl.t = Hashtbl.create 0 in
   let rec loop t = 
@@ -272,7 +269,7 @@ let varify_constructors var_names t =
 		Ptyp_var (Hashtbl.find sofar s)
 	  with
 	    | Not_found ->
-	      let name = fresh () in 
+	      let name = fresh s in 
 	      Hashtbl.add sofar s name;
 	      Ptyp_var name end
       | Ptyp_constr(longident, lst) ->

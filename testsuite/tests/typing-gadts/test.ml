@@ -318,6 +318,18 @@ let f : type a. (a, int) eq -> <m : a> -> bool =
   fun Eq o -> ignore (o : <m : int; ..>); o#m = 3
 ;; (* should be ok *)
 
+let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
+  fun eq o ->
+    ignore (o : < m : a >);
+    let r : < m : b > = match eq with Eq -> o in (* fail with principal *)
+    r;;
+
+let f : type a b. (a,b) eq -> < m : a; .. > -> < m : b > =
+  fun eq o ->
+    let r : < m : b > = match eq with Eq -> o in (* fail *)
+    ignore (o : < m : a >);
+    r;;
+
 let f : type a b. (a,b) eq -> [> `A of a] -> [> `A of b] =
   fun Eq o -> o ;; (* fail *)
 
@@ -333,6 +345,18 @@ let f : type a b. (a,b) eq -> [`A of a | `B] -> [`A of b | `B] =
 let f : type a. (a, int) eq -> [`A of a] -> bool =
   fun Eq v -> match v with `A 1 -> true | _ -> false
 ;; (* ok *)
+
+let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
+  fun eq o ->
+    ignore (o : [< `A of a | `B]);
+    let r : [`A of b | `B] = match eq with Eq -> o in (* fail with principal *)
+    r;;
+
+let f : type a b. (a,b) eq -> [> `A of a | `B] -> [`A of b | `B] =
+  fun eq o ->
+    let r : [`A of b | `B] = match eq with Eq -> o in (* fail *)
+    ignore (o : [< `A of a | `B]);
+    r;;
 
 (* Pattern matching *)
 
