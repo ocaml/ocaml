@@ -37,7 +37,9 @@ let report_error ppf = function
           Location.print_error opening_loc opening
       end
   | Applicative_path loc ->
-      fprintf ppf "%aSyntax error: applicative paths of the form F(X).t are not supported when the option -no-app-func is set."
+      fprintf ppf
+        "%aSyntax error: applicative paths of the form F(X).t \
+         are not supported when the option -no-app-func is set."
         Location.print_error loc
   | Other loc ->
       fprintf ppf "%aSyntax error" Location.print_error loc
