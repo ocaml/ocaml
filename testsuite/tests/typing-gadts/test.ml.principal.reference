@@ -97,8 +97,8 @@ Error: This expression has type a = int
 #       Characters 69-81:
     let r = match x with Int -> ky 1 (1 : a)  (* fails *)
                                 ^^^^^^^^^^^^
-Error: This expression has type int but an expression was expected of type
-         int
+Error: This expression has type a = int
+       but an expression was expected of type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #       val test : 'a t -> int = <fun>
@@ -121,8 +121,8 @@ Error: This expression has type int option
 #       Characters 100-101:
     match v with Int -> let y = either 1 x in y
                                               ^
-Error: This expression has type int but an expression was expected of type
-         int
+Error: This expression has type a = int
+       but an expression was expected of type a = int
        This instance of int is ambiguous:
        it would escape the scope of its equation
 #             val f : 'a t -> 'a -> 'a = <fun>

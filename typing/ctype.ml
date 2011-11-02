@@ -191,22 +191,8 @@ module TypePairs =
 type unification_mode = 
   | Expression (* unification in expression *)
   | Pattern (* unification in pattern which may add local constraints *)
-  | Old
-      (* unification in pattern, old style. 
-         local constraints are not used nor generated *)
 
 let umode = ref Expression
-
-let actual_mode env = 
-  match !umode with
-  | Old -> Old
-  | Expression when not (Env.has_local_constraints env) -> Old
-  | Pattern | Expression -> !umode
-
-let use_local () = 
-  match !umode with
-  | Expression | Pattern -> true
-  | Old -> false
 
 let set_mode mode f = 
   let old_unification_mode = !umode in
@@ -217,25 +203,6 @@ let set_mode mode f =
     ret
   with e ->
     umode := old_unification_mode;
-    raise e
-
-let change_mode mode f = 
-  let old_unification_mode = !umode in
-  if old_unification_mode = mode then f () else
-  try match old_unification_mode, mode with
-    Expression, Pattern -> 
-      umode := mode; 
-      f ();
-      umode := old_unification_mode;
-  | _ -> 
-      umode := mode; 
-      cleanup_abbrev (); 
-      f (); 
-      cleanup_abbrev ();
-      umode := old_unification_mode
-  with e -> 
-    umode := old_unification_mode;
-    cleanup_abbrev ();
     raise e
 
                   (**********************************************)
@@ -1338,9 +1305,7 @@ let expand_abbrev_gen kind find_type_expansion env ty =
 (* inside objects and variants we do not want to 
    use local constraints *)
 let expand_abbrev ty =
-  let use_local = use_local () in
-  expand_abbrev_gen Public
-    (fun level -> Env.find_type_expansion ~use_local ~level) ty
+  expand_abbrev_gen Public (fun level -> Env.find_type_expansion ~level) ty
 
 let safe_abbrev env ty =
   let snap = Btype.snapshot () in
@@ -2037,21 +2002,20 @@ let add_gadt_equation env source destination =
   env := Env.add_local_constraint source decl newtype_level !env;
   cleanup_abbrev ()          
 
-let unify_eq_set = ref (TypePairs.create 1)
+let unify_eq_set = TypePairs.create 11
 
 let order_type_pair t1 t2 =
   if t1.id <= t2.id then (t1, t2) else (t2, t1)
 
 let add_type_equality t1 t2 = 
-  TypePairs.add !unify_eq_set (order_type_pair t1 t2) ()
+  TypePairs.add unify_eq_set (order_type_pair t1 t2) ()
         
 let unify_eq env t1 t2 =
-  if t1 == t2 then true else
-  let umode = actual_mode env in 
-  match umode with
-  | Old -> false
-  | Pattern | Expression ->
-      try TypePairs.find !unify_eq_set (order_type_pair t1 t2); true
+  t1 == t2 ||
+  match !umode with
+  | Expression -> false
+  | Pattern ->
+      try TypePairs.find unify_eq_set (order_type_pair t1 t2); true
       with Not_found -> false
 
 let rec unify (env:Env.t ref) t1 t2 =
@@ -2152,13 +2116,13 @@ and unify3 env t1 t1' t2 t2' =
   | _ ->
       update_level !env t1'.level t2;
       update_level !env t2'.level t1;
-      let umode = actual_mode !env in
+      let umode = !umode in
       begin match umode with
-      | Old ->
+      | Expression ->
           occur !env t1' t2';
           update_level !env t1'.level t2;
           link_type t1' t2
-      | Pattern | Expression ->
+      | Pattern ->
           add_type_equality t1' t2'
       end;
       try match (d1, d2) with
@@ -2443,20 +2407,13 @@ and unify_row_field env fixed1 fixed2 more l f1 f2 =
 
 
 let unify env ty1 ty2 =
-  let old = !unify_eq_set in
-  unify_eq_set := TypePairs.create 11;
   try
-    unify env ty1 ty2;
-    unify_eq_set := old;
-  with e ->
-    unify_eq_set := old;
-    match e with
-      Unify trace ->
-        raise (Unify (expand_trace !env trace))
-    | Recursive_abbrev ->
-        raise (Unification_recursive_abbrev (expand_trace !env [(ty1,ty2)]))
-    | _ -> raise e
-
+    unify env ty1 ty2
+  with
+    Unify trace ->
+      raise (Unify (expand_trace !env trace))
+  | Recursive_abbrev ->
+      raise (Unification_recursive_abbrev (expand_trace !env [(ty1,ty2)]))
 
 let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
   try
@@ -2464,10 +2421,12 @@ let unify_gadt ~newtype_level:lev (env:Env.t ref) ty1 ty2 =
     newtype_level := Some lev;
     set_mode Pattern (fun () -> unify env ty1 ty2);
     newtype_level := None;
-  with 
-    Unify e -> raise (Unify e)
-  | e -> newtype_level := None; raise e
-
+    TypePairs.clear unify_eq_set;
+  with e ->
+    TypePairs.clear unify_eq_set;
+    match e with
+      Unify e -> raise (Unify e)
+    | e -> newtype_level := None; raise e
 
 let unify_var env t1 t2 =
   let t1 = repr t1 and t2 = repr t2 in
@@ -2488,9 +2447,6 @@ let unify_var env t1 t2 =
   | _ ->
       unify (ref env) t1 t2
 
-let unify_var env t1 t2 = 
-  unify_var env t1 t2
-
 let _ = unify' := unify_var
 
 let unify_pairs env ty1 ty2 pairs =
@@ -2498,8 +2454,7 @@ let unify_pairs env ty1 ty2 pairs =
   unify env ty1 ty2
 
 let unify env ty1 ty2 =
-  univar_pairs := [];
-  unify (ref env) ty1 ty2
+  unify_pairs (ref env) ty1 ty2 []
 
 
 
