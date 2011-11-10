@@ -797,7 +797,7 @@ let type_format loc fmt =
             let k = k + 1 in
             if k >= len then j - 1 else
             begin match fmt.[k] with
-            | '%' -> k
+            | '%' | '@' -> k
             | _c -> j - 1
             end 
           | _c -> j
@@ -812,7 +812,7 @@ let type_format loc fmt =
             let j = j + 1 in
             if j >= len then incomplete_format fmt else
             begin match fmt.[j] with
-            | '%' -> scan_closing (j + 1)
+            | '%' | '@' -> scan_closing (j + 1)
             | c -> bad_conversion fmt j c
             end
           | c -> scan_closing (j + 1) in
