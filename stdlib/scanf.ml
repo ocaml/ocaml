@@ -998,31 +998,51 @@ type char_set =
    | Neg_set of string (* Negative (complementary) set. *)
 ;;
 
+
 (* Char sets are read as sub-strings in the format string. *)
-let read_char_set fmt i =
-  let lim = Sformat.length fmt - 1 in
+let scan_range fmt j =
 
-  let rec find_in_set j =
-    if j > lim then incomplete_format fmt else
+  let len = Sformat.length fmt in
+
+  let buffer = Buffer.create len in
+
+  let rec scan_closing j =
+    if j >= len then incomplete_format fmt else
     match Sformat.get fmt j with
-    | ']' -> j
-    | c -> find_in_set (succ j)
+    | ']' -> j, Buffer.contents buffer
+    | '%' ->
+      let j = j + 1 in
+      if j >= len then incomplete_format fmt else
+      begin match Sformat.get fmt j with
+      | '%' | '@' as c ->
+        Buffer.add_char buffer c;
+        scan_closing (j + 1)
+      | c -> bad_conversion fmt j c
+      end
+    | c ->
+      Buffer.add_char buffer c;
+      scan_closing (j + 1) in
 
-  and find_set i =
-    if i > lim then incomplete_format fmt else
-    match Sformat.get fmt i with
-    | ']' -> find_in_set (succ i)
-    | c -> find_in_set i in
+  let scan_first_pos j =
+    if j >= len then incomplete_format fmt else
+    match Sformat.get fmt j with
+    | ']' as c ->
+      Buffer.add_char buffer c;
+      scan_closing (j + 1)
+    | c -> scan_closing j in
 
-  if i > lim then incomplete_format fmt else
-  match Sformat.get fmt i with
-  | '^' ->
-    let i = succ i in
-    let j = find_set i in
-    j, Neg_set (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
-  | _ ->
-    let j = find_set i in
-    j, Pos_set (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
+  let rec scan_first_neg j =
+    if j >= len then incomplete_format fmt else
+    match Sformat.get fmt j with
+    | '^' ->
+      let j = j + 1 in
+      let k, char_set = scan_first_pos j in
+      k, Neg_set char_set
+    | c ->
+      let k, char_set = scan_first_pos j in
+      k, Pos_set char_set in
+
+  scan_first_neg j
 ;;
 
 (* Char sets are now represented as bit vectors that are represented as
@@ -1090,7 +1110,7 @@ let make_char_bit_vect bit set =
 ;;
 
 (* Compute the predicate on chars corresponding to a char set. *)
-let make_pred bit set stp =
+let make_predicate bit set stp =
   let r = make_char_bit_vect bit set in
   List.iter
     (fun c -> set_bit_of_range r (int_of_char c) (bit_not bit)) stp;
@@ -1110,9 +1130,9 @@ let make_setp stp char_set =
       (fun c -> if c == p1 || c == p2 then 1 else 0)
     | 3 ->
       let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-      if p2 = '-' then make_pred 1 set stp else
+      if p2 = '-' then make_predicate 1 set stp else
       (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
-    | n -> make_pred 1 set stp
+    | n -> make_predicate 1 set stp
     end
   | Neg_set set ->
     begin match String.length set with
@@ -1125,9 +1145,9 @@ let make_setp stp char_set =
       (fun c -> if c != p1 && c != p2 then 1 else 0)
     | 3 ->
       let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-      if p2 = '-' then make_pred 0 set stp else
+      if p2 = '-' then make_predicate 0 set stp else
       (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
-    | n -> make_pred 0 set stp
+    | n -> make_predicate 0 set stp
     end
 ;;
 
@@ -1314,13 +1334,8 @@ let scan_format ib ef fmt rv f =
     let rec scan_fmt ir f i =
       if i > lim then ir, f else
       match Sformat.get fmt i with
-      | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
       | '%' -> scan_skip ir f (succ i)
-      | '@' ->
-        let i = succ i in
-        if i > lim then incomplete_format fmt else begin
-        check_char ib (Sformat.get fmt i);
-        scan_fmt ir f (succ i) end
+      | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
       | c -> check_char ib c; scan_fmt ir f (succ i)
 
     and scan_skip ir f i =
@@ -1361,18 +1376,25 @@ let scan_format ib ef fmt rv f =
       let max = int_max max_opt in
       let min = int_min min_opt in
       match Sformat.get fmt i with
-      | '%' as conv ->
-        check_char ib conv; scan_fmt ir f (succ i)
+      | '%' | '@' as c ->
+        check_char ib c;
+        scan_fmt ir f (succ i)
+      | '!' ->
+        if not (Scanning.end_of_input ib)
+        then bad_input "end of input not found" else
+        scan_fmt ir f (succ i)
+      | ',' ->
+        scan_fmt ir f (succ i)
       | 's' ->
-        let i, stp = scan_fmt_stoppers (succ i) in
+        let i, stp = scan_indication (succ i) in
         let _x = scan_string stp max ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | 'S' ->
         let _x = scan_String max ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | '[' (* ']' *) ->
-        let i, char_set = read_char_set fmt (succ i) in
-        let i, stp = scan_fmt_stoppers (succ i) in
+        let i, char_set = scan_range fmt (succ i) in
+        let i, stp = scan_indication (succ i) in
         let _x = scan_chars_in_char_set stp char_set max ib in
         scan_fmt ir (stack f (token_string ib)) (succ i)
       | ('c' | 'C') when max = 0 ->
@@ -1423,11 +1445,6 @@ let scan_format ib ef fmt rv f =
           | _ -> scan_fmt ir (stack f (token_int64 conv1 ib)) (succ i) end
         (* This is not an integer conversion, but a regular %l, %n or %L. *)
         | _ -> scan_fmt ir (stack f (get_count conv0 ib)) i end
-      | '!' ->
-        if Scanning.end_of_input ib then scan_fmt ir f (succ i)
-        else bad_input "end of input not found"
-      | ',' ->
-        scan_fmt ir f (succ i)
       | '(' | '{' as conv (* ')' '}' *) ->
         let i = succ i in
         (* Find the static specification for the format to read. *)
@@ -1451,13 +1468,24 @@ let scan_format ib ef fmt rv f =
 
       | c -> bad_conversion fmt i c
 
-    and scan_fmt_stoppers i =
-      if i > lim then i - 1, [] else
-      match Sformat.get fmt i with
-      | '@' when i < lim -> let i = succ i in i, [Sformat.get fmt i]
-      | '@' when i = lim -> incomplete_format fmt
-      | _ -> i - 1, [] in
-
+    and scan_indication j =
+      if j > lim then j - 1, [] else
+      match Sformat.get fmt j with
+      | '@' ->
+        let k = j + 1 in
+        if k > lim then j - 1, [] else
+        begin match Sformat.get fmt k with
+        | '%' ->
+          let k = k + 1 in
+          if k > lim then j - 1, [] else
+          begin match Sformat.get fmt k with
+          | '%' | '@' as c  -> k, [ c ]
+          | _c -> j - 1, []
+          end
+        | c -> j, [ c ]
+        end
+      | _c -> j - 1, [] in
+ 
     scan_fmt in
 
 
