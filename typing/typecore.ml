@@ -737,25 +737,6 @@ let type_format loc fmt =
   let incomplete_format fmt =
     raise (Error (loc, Incomplete_format fmt)) in
 
-  let range_closing_index fmt i =
-
-    let len = String.length fmt in
-    let find_closing j =
-      if j >= len then incomplete_format fmt else
-      try String.index_from fmt j ']' with
-      | Not_found -> incomplete_format fmt in
-    let skip_pos j =
-      if j >= len then incomplete_format fmt else
-      match fmt.[j] with
-      | ']' -> find_closing (j + 1)
-      | c -> find_closing j in
-    let rec skip_neg j =
-      if j >= len then incomplete_format fmt else
-      match fmt.[j] with
-      | '^' -> skip_pos (j + 1)
-      | c -> skip_pos j in
-    find_closing (skip_neg (i + 1)) in
-
   let rec type_in_format fmt =
 
     let len = String.length fmt in
@@ -774,14 +755,7 @@ let type_format loc fmt =
         else incomplete_format fmt else
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
-      | '@' -> skip_indication (i + 1)
       | _ -> scan_format (i + 1)
-    and skip_indication i =
-      if i >= len then incomplete_format fmt else
-      match fmt.[i] with
-      | '@' | '%' -> scan_format (i + 1)
-      | _ -> scan_format i
-
     and scan_opts i j =
       if j >= len then incomplete_format fmt else
       match fmt.[j] with
@@ -812,6 +786,47 @@ let type_format loc fmt =
         match fmt.[j] with
         | '.' -> scan_width_or_prec_value scan_conversion i (j + 1)
         | _ -> scan_conversion i j
+      and scan_indication j =
+        if j >= len then j - 1 else
+        match fmt.[j] with
+        | '@' ->
+          let j = j + 1 in
+          if j >= len then j - 1 else
+          begin match fmt.[j] with
+          | '%' ->
+            let j = j + 1 in
+            if j >= len then j - 1 else
+            begin match fmt.[j] with
+            | '%' -> j
+            | _c -> j - 1
+            end 
+          | _c -> j
+          end
+        | _c -> j - 1
+      and scan_range j =
+        let rec scan_closing j =
+          if j >= len then incomplete_format fmt else
+          match fmt.[j] with
+          | ']' -> j
+          | '%' ->
+            let j = j + 1 in
+            if j >= len then incomplete_format fmt else
+            begin match fmt.[j] with
+            | '%' -> scan_closing (j + 1)
+            | c -> bad_conversion fmt j c
+            end
+          | c -> scan_closing (j + 1) in
+        let skip_pos j =
+          if j >= len then incomplete_format fmt else
+          match fmt.[j] with
+          | ']' -> scan_closing (j + 1)
+          | c -> scan_closing j in
+        let rec skip_neg j =
+          if j >= len then incomplete_format fmt else
+          match fmt.[j] with
+          | '^' -> skip_pos (j + 1)
+          | c -> skip_pos j in
+        scan_closing (skip_neg j)
 
       and conversion j ty_arg =
         let ty_uresult, ty_result = scan_format (j + 1) in
@@ -831,13 +846,16 @@ let type_format loc fmt =
       and scan_conversion i j =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
-        | '%' | '!' | ',' -> scan_format (j + 1)
-        | 's' | 'S' -> conversion j Predef.type_string
+        | '%' | '@' | '!' | ',' -> scan_format (j + 1)
+        | 's' | 'S' ->
+           let j = scan_indication (j + 1) in
+           conversion j Predef.type_string
         | '[' ->
-          let j = range_closing_index fmt j in
+          let j = scan_range (j + 1) in
+          let j = scan_indication (j + 1) in
           conversion j Predef.type_string
         | 'c' | 'C' -> conversion j Predef.type_char
-        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
+        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' | 'N' ->
           conversion j Predef.type_int
         | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
         | 'B' | 'b' -> conversion j Predef.type_bool
@@ -866,7 +884,7 @@ let type_format loc fmt =
           let j = j + 1 in
           if j >= len then conversion (j - 1) Predef.type_int else begin
             match fmt.[j] with
-            | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+            | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' ->
               let ty_arg =
                 match c with
                 | 'l' -> Predef.type_int32
@@ -895,9 +913,10 @@ let type_format loc fmt =
     let ty_ureader, ty_args = scan_format 0 in
     newty
       (Tconstr
-         (Predef.path_format6,
-          [ty_args; ty_input; ty_aresult; ty_ureader; ty_uresult; ty_result],
-          ref Mnil)) in
+        (Predef.path_format6,
+         [ ty_args; ty_input; ty_aresult;
+           ty_ureader; ty_uresult; ty_result; ],
+         ref Mnil)) in
 
   type_in_format fmt
 
