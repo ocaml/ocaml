@@ -790,14 +790,14 @@ let type_format loc fmt =
         if j >= len then j - 1 else
         match fmt.[j] with
         | '@' ->
-          let j = j + 1 in
-          if j >= len then j - 1 else
-          begin match fmt.[j] with
+          let k = j + 1 in
+          if k >= len then j - 1 else
+          begin match fmt.[k] with
           | '%' ->
-            let j = j + 1 in
-            if j >= len then j - 1 else
-            begin match fmt.[j] with
-            | '%' -> j
+            let k = k + 1 in
+            if k >= len then j - 1 else
+            begin match fmt.[k] with
+            | '%' -> k
             | _c -> j - 1
             end 
           | _c -> j
@@ -816,17 +816,18 @@ let type_format loc fmt =
             | c -> bad_conversion fmt j c
             end
           | c -> scan_closing (j + 1) in
-        let skip_pos j =
+        let scan_first_pos j =
           if j >= len then incomplete_format fmt else
           match fmt.[j] with
           | ']' -> scan_closing (j + 1)
           | c -> scan_closing j in
-        let rec skip_neg j =
+        let rec scan_first_neg j =
           if j >= len then incomplete_format fmt else
           match fmt.[j] with
-          | '^' -> skip_pos (j + 1)
-          | c -> skip_pos j in
-        scan_closing (skip_neg j)
+          | '^' -> scan_first_pos (j + 1)
+          | c -> scan_first_pos j in
+        
+        scan_first_neg j
 
       and conversion j ty_arg =
         let ty_uresult, ty_result = scan_format (j + 1) in
@@ -848,8 +849,8 @@ let type_format loc fmt =
         match fmt.[j] with
         | '%' | '@' | '!' | ',' -> scan_format (j + 1)
         | 's' | 'S' ->
-           let j = scan_indication (j + 1) in
-           conversion j Predef.type_string
+          let j = scan_indication (j + 1) in
+          conversion j Predef.type_string
         | '[' ->
           let j = scan_range (j + 1) in
           let j = scan_indication (j + 1) in
