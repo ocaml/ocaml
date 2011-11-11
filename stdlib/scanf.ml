@@ -1336,6 +1336,11 @@ let scan_format ib ef fmt rv f =
       match Sformat.get fmt i with
       | '%' -> scan_skip ir f (succ i)
       | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
+      | '@' ->
+        let i = succ i in
+        if i > lim then incomplete_format fmt else begin
+        check_char ib (Sformat.get fmt i);
+        scan_fmt ir f (succ i) end
       | c -> check_char ib c; scan_fmt ir f (succ i)
 
     and scan_skip ir f i =
@@ -1482,10 +1487,10 @@ let scan_format ib ef fmt rv f =
           | '%' | '@' as c  -> k, [ c ]
           | _c -> j - 1, []
           end
-        | c -> j, [ c ]
+        | c -> k, [ c ]
         end
       | _c -> j - 1, [] in
- 
+
     scan_fmt in
 
 

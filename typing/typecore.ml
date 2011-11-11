@@ -799,8 +799,8 @@ let type_format loc fmt =
             begin match fmt.[k] with
             | '%' | '@' -> k
             | _c -> j - 1
-            end 
-          | _c -> j
+            end
+          | _c -> k
           end
         | _c -> j - 1
       and scan_range j =
@@ -826,7 +826,7 @@ let type_format loc fmt =
           match fmt.[j] with
           | '^' -> scan_first_pos (j + 1)
           | c -> scan_first_pos j in
-        
+
         scan_first_neg j
 
       and conversion j ty_arg =
