@@ -313,6 +313,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
       first character of the range (or just after the [^] in case of
       range negation); hence [\[\]\]] matches a [\]] character and
       [\[^\]\]] matches any character that is not [\]].
+      Use [%%] and [%\@] to include a [%] or a [\@] in a range.
     - [r]: user-defined reader. Takes the next [ri] formatted input function and
       applies it to the scanning buffer [ib] to read the next argument. The
       input function [ri] must therefore have type [Scanning.in_channel -> 'a] and
@@ -347,6 +348,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
     - [N] or [L]: returns the number of tokens read so far.
     - [!]: matches the end of input condition.
     - [%]: matches one [%] character in the input.
+    - [\@]: matches one [\@] character in the input.
     - [,]: the no-op delimiter for conversion specifications.
 
     Following the [%] character that introduces a conversion, there may be
@@ -383,7 +385,7 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 (** Scanning indications appear just after the string conversions [%s]
     and [%\[ range \]] to delimit the end of the token. A scanning
     indication is introduced by a [@] character, followed by some
-    constant character [c]. It means that the string token should end
+    plain character [c]. It means that the string token should end
     just before the next matching [c] (which is skipped). If no [c]
     character is encountered, the string token spreads as much as
     possible. For instance, ["%s@\t"] reads a string up to the next
@@ -393,7 +395,11 @@ val bscanf : Scanning.in_channel -> ('a, 'b, 'c, 'd) scanner;;
 
     Note:
 
-    - the scanning indications introduce slight differences in the syntax of
+    - As usual in format strings, [%] characters must be escaped using [%%]
+      and [%\@] is equivalent to [\@]; this rule still holds within range
+      specifications and scanning indications.
+      For instance, ["%s@%%"] reads a string up to the next [%] character.
+    - The scanning indications introduce slight differences in the syntax of
     [Scanf] format strings, compared to those used for the [Printf]
     module. However, the scanning indications are similar to those used in
     the [Format] module; hence, when producing formatted text to be scanned
