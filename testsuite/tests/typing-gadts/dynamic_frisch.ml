@@ -358,16 +358,46 @@ let ty_list : type a e. (a, e) ty -> (a vlist, e) ty = fun t ->
 let v = variantize Enil (ty_list Int) (`Cons (1, `Cons (2, `Nil))) ;;
 
 
-(* This one cause an infinite loop!
-let ty_list t : ([`Nil | `Cons of 'a * 'l] as 'l, 'e) ty =
-  let targ = Pair (t, Var) in
+(* Simpler but weaker approach *)
+
+type (_,_) ty =
+  | Int: (int,_) ty
+  | String: (string,_) ty
+  | List: ('a,'e) ty -> ('a list, 'e) ty
+  | Option: ('a,'e) ty -> ('a option, 'e) ty
+  | Pair: (('a,'e) ty * ('b,'e) ty) -> ('a * 'b,'e) ty
+  | Var: ('a, 'a -> 'e) ty
+  | Rec: ('a, 'a -> 'e) ty -> ('a,'e) ty
+  | Pop: ('a, 'e) ty -> ('a, 'b -> 'e) ty
+  | Conv: string * ('a -> 'b) * ('b -> 'a) * ('b, 'e) ty -> ('a, 'e) ty
+  | Sum: ('a -> string * 'e ty_dyn option) * (string * 'e ty_dyn option -> 'a)
+             -> ('a, 'e) ty
+and 'e ty_dyn =
+  | Tdyn : ('a,'e) ty * 'a -> 'e ty_dyn
+
+let ty_abc : ([`A of int | `B of string | `C],'e) ty =
+  (* Could also use [get_case] for proj, but direct definition is shorter *)
+  Sum (
+  (function
+      `A n -> "A", Some (Tdyn (Int, n))
+    | `B s -> "B", Some (Tdyn (String, s))
+    | `C   -> "C", None),
+  (function
+      "A", Some (Tdyn (Int, n)) -> `A n
+    | "B", Some (Tdyn (String, s)) -> `B s
+    | "C", None -> `C
+    | _ -> invalid_arg "ty_abc"))
+;;
+
+(* Breaks: no way to pattern-match on a full recursive type *)
+let ty_list : type a e. (a,e) ty -> (a vlist,e) ty = fun t ->
+  let targ = Pair (Pop t, Var) in
   Rec (Sum (
   (function `Nil -> "Nil", None
     | `Cons p -> "Cons", Some (Tdyn (targ, p))),
   (function "Nil", None -> `Nil
-    | "Cons", Some (Tdyn (Pair (_, Var), p)) -> `Cons p)))
-*)
-
+    | "Cons", Some (Tdyn (Pair (_, Var), (p : a * a vlist))) -> `Cons p)))
+;;
 
 (* Define Sum using object instead of record for first-class polymorphism *)
 

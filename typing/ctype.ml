@@ -1762,26 +1762,24 @@ let reify env t =
   in
   let visited = ref TypeSet.empty in
   let rec iterator ty = 
-    if TypeSet.mem ty !visited then () else
-    visited := TypeSet.add t !visited;
     let ty = repr ty in
-    match ty.desc with
-      Tvar o ->
-        let name = match o with Some s -> s | _ -> "ex" in
-        let t = create_fresh_constr ty.level name in
-        link_type ty t
-    | Tobject _ ->
-        iterator (row_variable ty);
-        iter_type_expr iterator ty
-    | Tvariant r ->
-        if not (static_row r) then iterator (row_more r);
-        iter_type_expr iterator ty
-    | Tconstr (p, _, _) when is_object_type p ->
-        iter_type_expr iterator (full_expand !env ty)
-    | _ ->
-        iter_type_expr iterator ty
+    if TypeSet.mem ty !visited then () else begin
+      visited := TypeSet.add ty !visited;
+      match ty.desc with
+        Tvar o ->
+          let name = match o with Some s -> s | _ -> "ex" in
+          let t = create_fresh_constr ty.level name in
+          link_type ty t
+      | Tvariant r ->
+          if not (static_row r) then iterator (row_more r);
+          iter_row iterator r
+      | Tconstr (p, _, _) when is_object_type p ->
+          iter_type_expr iterator (full_expand !env ty)
+      | _ ->
+          iter_type_expr iterator ty
+    end
   in
-  iter_type_expr iterator t
+  iterator t
 
 let is_abstract_newtype env p = 
   let decl = Env.find_type p env in 
