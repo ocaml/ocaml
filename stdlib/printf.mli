@@ -33,10 +33,10 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    followed by optional modifiers and a type which is made of one or
    two characters.
 
-   As a special convention for format strings, the [\@] character introduces
-   an escape for both characters [\@] and [%]: in a format string,
-   [\@\@] and [\@%] are respectively equivalent to the plain characters [\@]
-   and [%].
+   As a special convention for format strings, the [%] character introduces
+   an escape for both characters [%] and [\@]: in a format string,
+   [%%] and [%\@] are respectively equivalent to the plain characters [%]
+   and [\@].
 
    The types and their meanings are:
 
@@ -85,6 +85,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      type as the internal format string [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
+   - [\@]: take no argument and output one [\@] character.
    - [,]: the no-op delimiter for conversion specifications.
 
    The optional [flags] are:
