@@ -569,15 +569,40 @@ let compute_variance_type env check (required, loc) decl tyl =
 
 let add_false = List.map (fun ty -> false, ty)
 
-let rec anonymous env ty =
-  match (Ctype.expand_head env ty).desc with
-  | Tvar _ -> false
-  | Tobject (fi, _) ->
-      let _, rv = Ctype.flatten_fields fi in anonymous env rv
-  | Tvariant row ->
-      let rv = Btype.row_more row in anonymous env rv
+(* A parameter is constrained if either is is instantiated,
+   or it is a variable appearing in another parameter *)
+let constrained env vars ty =
+  let ty = Ctype.expand_head env ty in
+  match ty.desc with
+  | Tvar _ -> List.exists (fun tl -> List.memq ty tl) vars
   | _ -> true
-      
+
+let compute_variance_gadt env check (required, loc as rloc) decl
+    (_, tl, ret_type_opt) =
+  match ret_type_opt with
+  | None ->
+      compute_variance_type env check rloc {decl with type_private = Private}
+        (add_false tl)
+  | Some ret_type ->
+      match Ctype.repr ret_type with
+      | {desc=Tconstr (path, tyl, _)} ->
+          let fvl = List.map Ctype.free_variables tyl in
+          let _ =
+            List.fold_left2
+              (fun (fv1,fv2) ty (c,n) ->
+                match fv2 with [] -> assert false
+                | fv :: fv2 ->
+                    (* fv1 @ fv2 = free_variables of other parameters *)
+                    if (c||n) && constrained env (fv1 @ fv2) ty then
+                      raise (Error(loc, Varying_anonymous));
+                    (fv :: fv1, fv2))
+              ([], fvl) tyl required
+          in
+          compute_variance_type env check rloc
+            {decl with type_params = tyl; type_private = Private}
+            (add_false tl)
+      | _ -> assert false
+            
 let compute_variance_decl env check decl (required, loc as rloc) =
   if decl.type_kind = Type_abstract && decl.type_manifest = None then
     List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
@@ -592,33 +617,10 @@ let compute_variance_decl env check decl (required, loc as rloc) =
       if List.for_all (fun (_,_,ret) -> ret = None) tll then
         compute_variance_type env check rloc decl
           (add_false (List.flatten (List.map (fun (_,tyl,_) -> tyl) tll)))
-      else begin match
-        List.map
-          (fun (_,tl,ret_type_opt) ->
-	    match ret_type_opt with
-	    | None ->
-                compute_variance_type env check rloc
-                  {decl with type_private = Private}
-                  (add_false tl)
-	    | Some ret_type ->
-                match Ctype.repr ret_type with
-                | {desc=Tconstr (path, tyl, _)} ->
-                    let varying =
-                      List.filter
-                        (fun ((ty1,ty2),(c,n)) -> (c||n) && anonymous env ty2)
-                        (List.combine (List.combine decl.type_params tyl)
-                           required)
-                    in
-                    let vpar, vret = List.split (List.map fst varying) in
-                    if not (Ctype.equal env true vpar vret) then
-                      raise (Error(loc, Varying_anonymous));
-                    compute_variance_type env check rloc
-                      {decl with type_params = tyl; type_private = Private}
-                      (add_false tl)
-                | _ -> assert false)
-          tll
-      with vari :: _ -> vari
-      | _ -> assert false
+      else begin
+        match List.map (compute_variance_gadt env check rloc decl) tll with
+        | vari :: _ -> vari
+        | _ -> assert false
       end
   | Type_record (ftl, _) ->
       compute_variance_type env check rloc decl

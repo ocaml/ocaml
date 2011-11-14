@@ -1787,28 +1787,13 @@ let is_abstract_newtype env p =
   decl.type_manifest = None &&
   decl.type_kind = Type_abstract
 
-let definitely_abstract env p = 
-  let is_abstract p = 
-    let decl = Env.find_type p env in
-    match decl.type_manifest with
-    | Some _ -> false
-    | None ->
-        match decl.type_kind with
-        | Type_abstract -> true
-        | (Type_record _ | Type_variant _) -> false
-  in
-  let in_current_module = 
-    function
-      | Path.Pident _ -> true
-      | (Path.Pdot _ | Path.Papply _) -> false
-  in
-  is_abstract p && in_current_module p
-
+let in_current_module = function
+  | Path.Pident _ -> true
+  | Path.Pdot _ | Path.Papply _ -> false
 
 let in_pervasives p = 
     try ignore (Env.find_type p Env.initial); true
     with Not_found -> false
-
         
 (* mcomp type_pairs subst env t1 t2 does not raise an 
    exception if it is possible that t1 and t2 are actually
@@ -1846,8 +1831,8 @@ let rec mcomp type_pairs subst env t1 t2 =
                   mcomp type_pairs subst env u1 u2;
                 | (Ttuple tl1, Ttuple tl2) ->
                   mcomp_list type_pairs subst env tl1 tl2
-                | (Tconstr (p1, _, _), Tconstr (p2, _, _)) ->
-                  mcomp_type_decl type_pairs subst env p1 p2;
+                | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) ->
+                  mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2
                 | (Tpackage (p1, n1, tl1), Tpackage (p2, n2, tl2))
                   when Path.same p1 p2 && n1 = n2 ->
                   mcomp_list type_pairs subst env tl1 tl2
@@ -1924,31 +1909,30 @@ and mcomp_row type_pairs subst env row1 row2 =
       | _ -> ())
     pairs
 
-and mcomp_type_decl type_pairs subst env p1 p2 = 
-  if Path.same p1 p2 then () else
-  let is_current_module = function
-      Path.Pident _ -> true
-    | _ -> false
+and mcomp_type_decl type_pairs subst env p1 p2 tl1 tl2 = 
+  let non_aliased p decl =
+    in_pervasives p ||
+    in_current_module p && decl.type_newtype_level = None
   in
   let decl = Env.find_type p1 env in
   let decl' = Env.find_type p2 env in
-  let both_oldtypes =
-    decl.type_newtype_level = None && decl'.type_newtype_level = None in
-  if 
-    (is_current_module p1 && is_current_module p2 && both_oldtypes) ||
-    (in_pervasives p1 && in_pervasives p2)
-  then 
-    raise (Unify [])
-  else
-    match decl.type_kind, decl'.type_kind with
-    | Type_record (lst,r), Type_record (lst',r') ->
-        if r = r' then 
-          mcomp_record_description type_pairs subst env lst lst'
-        else
-          raise (Unify [])
-    | Type_variant v1, Type_variant v2 ->
-        mcomp_variant_description type_pairs subst env v1 v2
-    | _ -> ()
+  if Path.same p1 p2 then
+    if non_aliased p1 decl then mcomp_list type_pairs subst env tl1 tl2 else ()
+  else match decl.type_kind, decl'.type_kind with
+  | Type_record (lst,r), Type_record (lst',r') when r = r' ->
+      mcomp_list type_pairs subst env tl1 tl2;
+      mcomp_record_description type_pairs subst env lst lst'
+  | Type_variant v1, Type_variant v2 ->
+      mcomp_list type_pairs subst env tl1 tl2;
+      mcomp_variant_description type_pairs subst env v1 v2
+  | Type_variant _, Type_record _
+  | Type_record _, Type_variant _ -> raise (Unify [])
+  | _ ->
+      let is_datatype = function
+          {type_kind = Type_record _ | Type_variant _} -> true
+        | _ -> false in
+      if non_aliased p1 decl && (non_aliased p2 decl' || is_datatype decl')
+      || is_datatype decl && non_aliased p2 decl' then raise (Unify [])
 
 and mcomp_type_option type_pairs subst env t t' = 
   match t, t' with
@@ -2135,7 +2119,9 @@ and unify3 env t1 t1' t2 t2' =
       | (Ttuple tl1, Ttuple tl2) ->
           unify_list env tl1 tl2
       | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-          unify_list env tl1 tl2
+          if umode = Expression || in_current_module p1 || in_pervasives p1
+          then unify_list env tl1 tl2
+          else set_mode Expression (fun () -> unify_list env tl1 tl2)
       | (Tconstr ((Path.Pident p) as path,[],_),
          Tconstr ((Path.Pident p') as path',[],_))
         when is_abstract_newtype !env path && is_abstract_newtype !env path'

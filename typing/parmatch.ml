@@ -377,15 +377,15 @@ let discr_pat q pss =
   | (({pat_desc = Tpat_lazy _} as p)::_)::_ -> normalize_pat p
   | (({pat_desc = Tpat_record largs} as p)::_)::pss ->
       let new_omegas =
-        List.fold_left
-          (fun r (lbl,_) ->
+        List.fold_right
+          (fun (lbl,_) r ->
             try
               let _ = get_field lbl.lbl_pos r in
               r
             with Not_found ->
               (lbl,omega)::r)
-          (record_arg acc)
-          largs in
+          largs (record_arg acc)
+      in
       acc_pat
         (make_pat (Tpat_record new_omegas) p.pat_type p.pat_env)
         pss
@@ -2022,4 +2022,5 @@ let check_partial_gadt pred loc casel =
   | Partial -> Partial
   | Total -> 
       (* checks for missing GADT constructors *)
-      check_partial_param (do_check_partial_gadt pred) do_check_fragile_gadt loc casel
+      check_partial_param (do_check_partial_gadt pred)
+        do_check_fragile_gadt loc casel

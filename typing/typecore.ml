@@ -1221,13 +1221,13 @@ let contains_gadt env p =
   let rec loop p =
     match p.ppat_desc with
       Ppat_construct (lid, _, _) ->
-        let constr = Env.lookup_constructor lid env in
-        if constr.cstr_generalized then raise Exit else iter_ppat loop p
+        begin try
+          if (Env.lookup_constructor lid env).cstr_generalized then raise Exit
+        with Not_found -> ()
+        end; iter_ppat loop p
     | _ -> iter_ppat loop p
   in
-  try loop p; false with
-    Exit -> true
-  | Not_found -> false
+  try loop p; false with Exit -> true
 
 let dummy_expr = {pexp_desc = Pexp_tuple []; pexp_loc = Location.none}
 

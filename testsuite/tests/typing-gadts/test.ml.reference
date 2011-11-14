@@ -252,7 +252,7 @@ Error: This pattern matches values of type 'a array
     | {left=TA; right=D z} -> z
 Warning 8: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
-{left=TE (TE _); right=D [| _ |]}
+{left=TE TC; right=D [|  |]}
 type ('a, 'b) pair = { left : 'a; right : 'b; }
 val f : 'a ty -> 'a t -> int = <fun>
 # 
