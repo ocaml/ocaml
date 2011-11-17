@@ -210,41 +210,6 @@ let rec transl_core_contract env cntr e callee caller =
         let expanded_p = deep_transl_contract env wrapped_p in
         let cond = Texp_ifthenelse (subst [] x new_x expanded_p, xe, Some callee) in 
 	Texp_let (Nonrecursive, [(mkpat (Tpat_var new_x) cty, e)], mkexp cond cty) 
-       
-       (* e |>r1,r2<| try {x | p} with [Ei -> booli] 
-          if (try let x = e in p
-              with Contract_exn (f,row,col,bl) -> raise Contract_exn (f,row,col,bl)
-                    | Ei .. -> booli
-                    | _ -> false)
-          then e else r1
-          This forces evaluation of e, that is, if e diverges, RHS diverges;
-          However, if e throws an exception, we still test p[e/x], which may 
-          allow certain exceptions. If p[e/x] throws exceptions, we treat it
-          as false, thus raise exception r1.
-        *)
-        (*
-        begin match exnop with
-        | None -> 
-
-        let xe = Texp_ident (Pident x, {val_type = cty; val_kind = Val_reg}) in
-        let cond = Texp_ifthenelse (p, mkexp xe cty, Some callee) in
-	Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], mkexp cond cty) 
-
-        | Some exns -> 
-
-	let letexp = Texp_let (Nonrecursive, [(mkpat (Tpat_var x) cty, e)], p) in
-        let ctr_exn = Texp_construct(cexn_path, cexn_cdesc, 
-                       [mkexp (Texp_tuple evars) dummy_tuple]) in
-        let raise_ctr_exn = Texp_raise (mkexp ctr_exn Predef.type_exn) in 
-        let contract_exn_branch = (contract_exn_pat,
-                                   mkexp raise_ctr_exn Predef.type_bool) in
-        let branches = (contract_exn_branch :: exns) @     
-                    [(mkpat Tpat_any Predef.type_exn,     (* the -> false branch *)
-                     mkexp (Texp_constant(Const_int 0)) Predef.type_bool)] in
-	let trycond = Texp_try(mkexp letexp Predef.type_bool, branches) in
-        Texp_ifthenelse (mkexp trycond Predef.type_bool, e, Some callee) 
-        end
-        *)
      | Tctr_arrow (xop, c1, c2) -> 
       (* indy version:
          e |>r1,r2<| x:c1 -> c2 = 
@@ -612,8 +577,12 @@ let rec transl_str_contracts contract_flag env strs =
                       with ToErgosrc.Error(loc,err) -> 
 			ToErgosrc.report_error std_formatter err; env 
      in
-     let wrapped_pat_expr_list = 
-       List.map (contract_wrapping module_env) pat_expr_list in
+     let wrapped_pat_expr_list =
+       List.map (fun (p,e) -> 
+	     let senv = match p.pat_desc with
+	     | Tpat_var (id) -> update_name module_env (Pident id)
+             | _ -> module_env in 
+             contract_wrapping senv (p,e)) pat_expr_list in        
      let contract_rem = transl_str_contracts contract_flag module_env rem in
      (Tstr_value(rec_flag, wrapped_pat_expr_list))::contract_rem
  | (Tstr_type id_tdecl_list) :: rem -> 
