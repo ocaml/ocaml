@@ -524,8 +524,8 @@ let rec transl_str_contracts contract_flag env strs =
      in
      (* wrapping free-variables in function body with its contract, the caller
         is thus the current function name *)
-     let cexpr = contract_id_in_expr env expr in  
-     let expanded_cexpr = deep_transl_contract env cexpr in 
+     let cexpr = contract_id_in_expr senv expr in  
+     let expanded_cexpr = deep_transl_contract senv cexpr in 
      if contract_flag = 0 then (* dynamic contract checking only *)    
        (pat, expanded_cexpr)
      else if contract_flag = 1 then (* static contract checking only *)
@@ -535,7 +535,7 @@ let rec transl_str_contracts contract_flag env strs =
          let bl_callee = Callee (cexpr.exp_loc, fpath) in
          let ce = ensuresC c.ttopctr_desc cexpr bl_callee in
          let _ = static_contract_checking senv 
-                      (fid, deep_transl_contract env (mkexp ce))  in
+                      (fid, deep_transl_contract senv (mkexp ce))  in
          (pat, expr)  
        with Not_found -> 
          let _ = static_contract_checking senv (fid, expanded_cexpr) in
